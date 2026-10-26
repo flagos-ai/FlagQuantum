@@ -1,0 +1,24 @@
+{
+  "scope": "post_run_existing_report_hash_count_entropy_and_source_checks_no_new_samples",
+  "source_revision": "7384185fc297ed7410637c6f4a45a06f82ffeb35",
+  "source_bundle_sha256": "0bd504d248d84323451845c5f6f4fcb82a0970daf7895e8e18ce72150422b092",
+  "image_id": "sha256:9465e1fca0a8c22af1b2ee657c8a6ee7e9f9f8e74d873b0add84b274da58b9e2",
+  "device": "cpu",
+  "cpus": 8,
+  "memory_limit": "8g",
+  "threads": 1,
+  "primary_test_files_mounted": false,
+  "exit_code": 0,
+  "raw_output_sha256": {
+    "manifest.json": "93e45eafd9d9e548b096118a43457b20bdb28e17c171761c4eaa773ad36f07f1",
+    "seed-11.json": "43088dc309efe1b83a37ebc53469652051d073248c08e4f8ff3f103c7bab9e7c",
+    "seed-22.json": "497a42c4acc60170d55f636e4fa9f3358061566aa3cc910f15334016f839fabd",
+    "seed-33.json": "495494fe75f07f074910f75b5f4733bdd1672f7c4e4f8c7d19fb98bfc4340ab0"
+  },
+  "verified_protocol_and_source_hashes": true,
+  "verified_archived_checkpoint_and_tensor_hashes": true,
+  "verified_counts_and_empirical_entropies": true,
+  "fresh_diagnostic_shots_per_seed": 4096,
+  "new_optimizer_steps": 0,
+  "new_primary_logical_test_shots": 0
+}

@@ -17,6 +17,36 @@ Benchmark claims require audited artifacts and are not inferred from this file.
 
 ## Unreleased
 
+- Make experimental dynamic backend assessment consume the same fail-closed
+  requirement/snapshot matcher as stable remote `fq.run(...)`. A coarse
+  `supports_dynamic_circuits=True` profile can still describe experimental
+  packaging constraints but cannot report execution admission without detailed
+  device-scoped facts and evidence.
+- Guard stable remote `DynamicCircuit` calls at the `fq.run(...)` facade before
+  compiler or provider dispatch. Remote targets now fail closed with the exact
+  target and ordered capability blockers until a detailed device-scoped
+  snapshot satisfies the existing provider-neutral matcher. This does not
+  activate any remote dynamic provider or perform discovery, credential,
+  network, package, or task work; local dynamic execution and static remote
+  dispatch remain unchanged.
+- Target QEC retirement for **0.4.0**: remove the 23 approved historical flat
+  module imports and their pickle lookup paths. Keep all 108 ordered
+  `flagquantum.qec` exports, signatures, numerical results and registration
+  behavior. Use root imports or the canonical responsibility packages listed in
+  the [migration guide](../guides/QEC_PACKAGE_LAYOUT.md).
+- Keep only the original registered `RotatedSurfaceCode`; root, `qec.codes`,
+  `codes.surface` and the factory use that same class. Its existing
+  `flagquantum.qec.codes` pickle identifier survives. The historical
+  `qec.surface` class and private duplicate are removed without a replacement
+  frame class. Artifacts referencing retired paths must be loaded/exported
+  using the pre-retirement version before upgrading; no compatibility
+  unpickler is provided. Original frozen restructuring fixtures remain unchanged.
+
+- Promote the completed local DynamicCircuit execution contract to stable.
+  `fq.plan(...)` and `fq.run(...)` remain the single planning and execution
+  entries, return `fq.ExecutionResult`, and preserve plan identity. This is a
+  contract-status change only: no signature, root export, schema, or runtime
+  behavior changes, and `run_dynamic` remains experimental.
 - Add a reproducible local performance runner for the stable DynamicCircuit
   `fq.plan` / `fq.run` path. It measures planning, explicit-plan execution,
   automatic planning and execution, the native numerical oracle, memory-bound

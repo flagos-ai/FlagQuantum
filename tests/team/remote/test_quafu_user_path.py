@@ -17,14 +17,17 @@ def test_quafu_bell_example_uses_complete_public_path(monkeypatch, capsys) -> No
     captured = {}
 
     class Result:
-        provenance: ClassVar[dict[str, str]] = {"task_id": "task-17"}
+        provenance: ClassVar[dict[str, str]] = {
+            "task_id": "task-17",
+            "service_compiler": "qiskit",
+        }
         counts: ClassVar[list[dict[str, int]]] = [{"00": 513, "11": 511}]
 
     def run(program, **options):
         captured.update(program=program, options=options)
         return Result()
 
-    monkeypatch.setenv("QUAFU_API_TOKEN", "test-token")
+    monkeypatch.setenv("QUAFU_API_KEY", "test-key")
     monkeypatch.setattr(fq, "run", run)
 
     root = Path(__file__).resolve().parents[3]
@@ -37,5 +40,7 @@ def test_quafu_bell_example_uses_complete_public_path(monkeypatch, capsys) -> No
         "name": "flagquantum bell",
     }
     assert capsys.readouterr().out == (
-        "task: task-17\ncounts: {'00': 513, '11': 511}\n"
+        "task: task-17\n"
+        "service compiler: qiskit\n"
+        "counts: {'00': 513, '11': 511}\n"
     )

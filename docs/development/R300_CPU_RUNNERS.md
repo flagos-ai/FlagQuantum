@@ -1,21 +1,29 @@
 # R300 CPU CI runners
 
-PR scheduling on R300 is temporarily paused because source transfer and cold
-Python/compiler installation repeatedly timed out. Qiskit, Cirq and Braket use
-`flagquantum-cpu-general` for trusted runs and `ubuntu-latest` for fork PRs.
-All existing SDK versions, native preflight and required test commands remain.
-R300 qualification is manual-only; ordinary PRs never start R300 jobs or depend
-on an experimental pool plan. Historical qualification and proposed pool design
-below do not imply that R300 PR scheduling is currently enabled.
+R300 PR scheduling is paused; qualification remains manual-only. Ordinary PRs
+do not start R300 jobs or depend on an experimental pool plan. SDK checks retain
+all certified versions, native CPU preflight and required test selections.
 
+Qiskit, Cirq and Braket compatibility use the accepted fixed CPU pool for
+latency and source-transport reliability. Same-repository pull requests and
+manual CI runs use this pool; fork pull requests retain `ubuntu-latest` and the
+existing hosted concurrency buckets. The scale-set diagnostics remain available
+for future qualification.
 
-Initial qualification used Qiskit on `flagcicd-r300-cpu05`, Braket on
-`flagcicd-r300-cpu03`, and Cirq on `flagcicd-r300-cpu04`. All three completed
-resource inventory, native CPU preflight and both certified SDK versions.
-The experimental registry below is disconnected from current PR jobs.
-Before the pause, same-repository pull requests and manual CI runs used these targets. Fork pull
-requests retain `ubuntu-latest` and its existing hosted concurrency buckets.
-The two certified SDK versions in each compatibility job remain unchanged.
+Qiskit previously qualified on `flagcicd-r300-cpu05`. Its two certified versions
+now use parallel `qiskit-compat` jobs on the accepted fixed CPU pool, because a
+R300 capacity wait exceeded ten minutes before certification started. The fixed
+pool completed both versions and the stable gate in 4.2 minutes during validation.
+Each lane retains the native CPU preflight and all SDK checks;
+`qiskit-optional` requires both lanes to succeed. The R300 validation workflow
+continues to inventory cpu05; this routing change does not remove its diagnostics.
+Cirq's latest cpu04 attempt exhausted both the three-minute artifact budget and
+five-minute checkout budget before any tests started. Its fixed-pool route keeps
+native CPU preflight and both complete 1.6.1/1.7.0 certification selections.
+Braket subsequently exhausted the same three-minute artifact and five-minute
+checkout budgets on cpu03 before any tests started. It now uses the fixed pool
+with both 1.117.0/1.127.1 SDK selections and native CPU preflight intact.
+Fixed-host jobs reuse verified incremental Git objects.
 
 ## Validation and limits
 
@@ -39,11 +47,11 @@ and venv support from the Tsinghua Ubuntu mirror with bounded, non-interactive
 sudo commands. A job-local DEB822 source uses the official Ubuntu archive keyring;
 signature verification remains enabled. If mirror metadata cannot be fetched,
 a warning records a bounded retry against the image's configured Ubuntu sources.
-The three SDK jobs use this distribution Python instead of downloading a GitHub
+The R300 SDK jobs use this distribution Python instead of downloading a GitHub
 Python tarball; hosted fork jobs retain `setup-python`. Compilation uses at most
 two processes. The cross-version manual probes still use `setup-python`.
 Python packages use the existing Tsinghua pip index, while CPU PyTorch uses the
-existing Aliyun wheel mirror and official fallback.
+official CPU wheel index after the verified local cache; ordinary Python dependencies retain the Tsinghua PyPI index.
 Each job keeps a private virtual environment through `isolated-python`, CPU-only
 PyTorch through `install-cpu-torch`, and a writable temporary pip cache.
 
@@ -78,16 +86,18 @@ changes the tested commit.
 
 Cirq initially qualified on cpu16, but two attempts on the integrated revision
 subsequently exhausted both the three-minute artifact and five-minute checkout
-budgets before reaching tests. Cirq therefore moves to inventoried cpu04;
-qualification requires the full native and certified SDK tests on that target.
+budgets before reaching tests. Cirq then moved to inventoried cpu04 for qualification. After the later
+integrated cpu04 source-transport failure, the normal CI lane returned to the
+accepted fixed pool with all native and SDK tests intact.
 The cpu16 network failure remains unqualified for current routing; increasing
 timeouts or repeatedly rerunning it is not treated as a repair.
 
-The three SDK jobs use distinct scale sets so one set's occupied slots do not
-serialize unrelated compatibility checks. The native CPU tests execute before
-the SDK matrix on every migrated job. Their full SDK tests remain required CI
-checks, and every job has a 30-minute timeout. GPU, A800 CPU/runtime, full-history quality and fixed-host
-performance jobs retain their existing routes.
+All three SDK lanes now use the wide fixed CPU pool. R300 remains available
+through manual diagnostics until its source transport and capacity are qualified
+again. Native CPU tests execute before SDK certification on every lane. Their
+full SDK tests remain required CI checks, and every job has a 30-minute timeout.
+GPU, A800 CPU/runtime, full-history quality and fixed-host performance jobs retain
+their existing routes.
 
 ## Repeat the checks
 
@@ -304,3 +314,14 @@ inspect shared-node resource metrics and explicit Pod budgets. No CPU hardware
 fault was established by this run. Keep PR scheduling paused until the download
 failures are repaired and repeated end-to-end runs, including intended SDK
 versions, succeed without relying on failed primary-path probes.
+
+## Official CPU wheel stability retest
+
+The installer now preserves verified local CPU wheels and otherwise selects Torch
+only from `https://download.pytorch.org/whl/cpu`, with a 300-second deadline and
+no silent fallback to the ordinary PyPI Torch distribution. Self-hosted private
+environments continue to use Tsinghua PyPI for ordinary dependencies; the signed
+Tsinghua Ubuntu bootstrap is unchanged. PR scheduling remains paused while three
+consecutive same-revision manual R300 runs are collected. Actual installer source,
+all download probes, exact source restoration and native test results must be
+reviewed; a cache hit does not demonstrate official wheel download health.

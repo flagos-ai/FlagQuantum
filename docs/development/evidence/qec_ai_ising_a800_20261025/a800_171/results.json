@@ -1,0 +1,415 @@
+{
+  "manifest_sha256": "995fb2bf698ec059dcf5a4b396a38d21c9da954d2b798a5939c0e64838c60331",
+  "circuit_sha256": "0fa86bd7b534da215f58cb4611236db52d60ddc588da819b0d547a91026195e2",
+  "training_dem_sha256": "cd96d502913b7f5000679d89d9bfe6d3ebfdcf12aaec3cf6acdb4d89b01a24d8",
+  "choices_sha256": "9661f22c03d4b65f978ebd2e46cf7ad520695351196fc4affc932d6be7130a35",
+  "checkpoint_sha256": {
+    "11": "ee53240c4e1769d48585bbdeeb7727bd73fc82808ec381c72805dc01f9435576",
+    "22": "f18bf2766bd72b390dfeca876acd4cec3f6b78233ef665726e56aa232247b34b",
+    "33": "19a0a0fae5f3637d997bc7be3536f86e544586409953d16aff922888425d15f9"
+  },
+  "training_cost": {
+    "11": {
+      "steps": 200,
+      "model_shots": 25600,
+      "training_and_save_seconds": 59.748275104910135,
+      "parameters": 81
+    },
+    "22": {
+      "steps": 200,
+      "model_shots": 25600,
+      "training_and_save_seconds": 60.58493363112211,
+      "parameters": 81
+    },
+    "33": {
+      "steps": 200,
+      "model_shots": 25600,
+      "training_and_save_seconds": 58.419852113351226,
+      "parameters": 81
+    }
+  },
+  "ising_boundary_only_control": {
+    "shots": 65536,
+    "baseline_failures": 83,
+    "hybrid_failures": 83,
+    "wins": 0,
+    "losses": 0
+  },
+  "predictions_sha256": {
+    "11": "a3e50d37f8a0ce351ae5e2acc6476e0e5ebfd9030bef8f7eb97b23b179900a27",
+    "22": "53ac662b2c265e047a30f1e5c113504794a5eae96834a5e11afc37fd16d383ac",
+    "33": "c69c6c912a85d37c94ece177b3b4a436afad2496534f4f79d6bbfbf76781e57d"
+  },
+  "test_shots_sha256": "5be6bf7510a3dca846fd4cae84092286803e25c175abdba9960ebcf3f8128f5c",
+  "distinct_test_shots": 65536,
+  "detectors_sha256": "97dfb7e6775d40368fc1f70f99f696fd9dbde103c8fe79752eee2dddf4905ce5",
+  "truth_sha256": "292b4a1c386d9776a70e36367240d3566e855e16b65e3897548ca12f4ec86697",
+  "records": [
+    {
+      "seed": 11,
+      "path": "flagquantum_raw",
+      "probability_threshold": 1.0,
+      "ising_logit_threshold_data_and_syndrome": null,
+      "temperature": 1.0,
+      "input_detector_density": 0.04689962416887283,
+      "residual_detector_density": 0.04689962416887283,
+      "changed_detector_bits": 0,
+      "counts": {
+        "shots": 65536,
+        "baseline_failures": 83,
+        "hybrid_failures": 83,
+        "wins": 0,
+        "losses": 0
+      },
+      "summary": {
+        "baseline_ler": 0.0012664794921875,
+        "hybrid_ler": 0.0012664794921875,
+        "baseline_interval": [
+          0.0,
+          0.008504610690703598
+        ],
+        "hybrid_interval": [
+          0.0,
+          0.008504610690703598
+        ],
+        "ratio_upper": null,
+        "paired_p_value": 1.0,
+        "quality_gate": "inconclusive"
+      }
+    },
+    {
+      "seed": 11,
+      "path": "flagquantum_calibrated",
+      "probability_threshold": 1.0,
+      "ising_logit_threshold_data_and_syndrome": null,
+      "temperature": 0.5,
+      "input_detector_density": 0.04689962416887283,
+      "residual_detector_density": 0.04689962416887283,
+      "changed_detector_bits": 0,
+      "counts": {
+        "shots": 65536,
+        "baseline_failures": 83,
+        "hybrid_failures": 83,
+        "wins": 0,
+        "losses": 0
+      },
+      "summary": {
+        "baseline_ler": 0.0012664794921875,
+        "hybrid_ler": 0.0012664794921875,
+        "baseline_interval": [
+          0.0,
+          0.008504610690703598
+        ],
+        "hybrid_interval": [
+          0.0,
+          0.008504610690703598
+        ],
+        "ratio_upper": null,
+        "paired_p_value": 1.0,
+        "quality_gate": "inconclusive"
+      }
+    },
+    {
+      "seed": 11,
+      "path": "ising",
+      "probability_threshold": null,
+      "ising_logit_threshold_data_and_syndrome": 0.0,
+      "temperature": 1.0,
+      "input_detector_density": 0.04689962416887283,
+      "residual_detector_density": 0.0013564851833507419,
+      "changed_detector_bits": 2185773,
+      "counts": {
+        "shots": 65536,
+        "baseline_failures": 83,
+        "hybrid_failures": 72,
+        "wins": 61,
+        "losses": 50
+      },
+      "summary": {
+        "baseline_ler": 0.0012664794921875,
+        "hybrid_ler": 0.0010986328125,
+        "baseline_interval": [
+          0.0,
+          0.008504610690703598
+        ],
+        "hybrid_interval": [
+          0.0,
+          0.008336764011016098
+        ],
+        "ratio_upper": null,
+        "paired_p_value": 0.3425805825718972,
+        "quality_gate": "inconclusive"
+      }
+    },
+    {
+      "seed": 11,
+      "path": "flagquantum_calibrated_vs_ising",
+      "counts": {
+        "shots": 65536,
+        "baseline_failures": 72,
+        "hybrid_failures": 83,
+        "wins": 50,
+        "losses": 61
+      },
+      "summary": {
+        "baseline_ler": 0.0010986328125,
+        "hybrid_ler": 0.0012664794921875,
+        "baseline_interval": [
+          0.0,
+          0.008336764011016098
+        ],
+        "hybrid_interval": [
+          0.0,
+          0.008504610690703598
+        ],
+        "ratio_upper": null,
+        "paired_p_value": 0.3425805825718972,
+        "quality_gate": "inconclusive"
+      }
+    },
+    {
+      "seed": 22,
+      "path": "flagquantum_raw",
+      "probability_threshold": 1.0,
+      "ising_logit_threshold_data_and_syndrome": null,
+      "temperature": 1.0,
+      "input_detector_density": 0.04689962416887283,
+      "residual_detector_density": 0.04689962416887283,
+      "changed_detector_bits": 0,
+      "counts": {
+        "shots": 65536,
+        "baseline_failures": 83,
+        "hybrid_failures": 83,
+        "wins": 0,
+        "losses": 0
+      },
+      "summary": {
+        "baseline_ler": 0.0012664794921875,
+        "hybrid_ler": 0.0012664794921875,
+        "baseline_interval": [
+          0.0,
+          0.008504610690703598
+        ],
+        "hybrid_interval": [
+          0.0,
+          0.008504610690703598
+        ],
+        "ratio_upper": null,
+        "paired_p_value": 1.0,
+        "quality_gate": "inconclusive"
+      }
+    },
+    {
+      "seed": 22,
+      "path": "flagquantum_calibrated",
+      "probability_threshold": 1.0,
+      "ising_logit_threshold_data_and_syndrome": null,
+      "temperature": 0.25,
+      "input_detector_density": 0.04689962416887283,
+      "residual_detector_density": 0.04689962416887283,
+      "changed_detector_bits": 0,
+      "counts": {
+        "shots": 65536,
+        "baseline_failures": 83,
+        "hybrid_failures": 83,
+        "wins": 0,
+        "losses": 0
+      },
+      "summary": {
+        "baseline_ler": 0.0012664794921875,
+        "hybrid_ler": 0.0012664794921875,
+        "baseline_interval": [
+          0.0,
+          0.008504610690703598
+        ],
+        "hybrid_interval": [
+          0.0,
+          0.008504610690703598
+        ],
+        "ratio_upper": null,
+        "paired_p_value": 1.0,
+        "quality_gate": "inconclusive"
+      }
+    },
+    {
+      "seed": 22,
+      "path": "ising",
+      "probability_threshold": null,
+      "ising_logit_threshold_data_and_syndrome": 0.0,
+      "temperature": 1.0,
+      "input_detector_density": 0.04689962416887283,
+      "residual_detector_density": 0.0013564851833507419,
+      "changed_detector_bits": 2185773,
+      "counts": {
+        "shots": 65536,
+        "baseline_failures": 83,
+        "hybrid_failures": 72,
+        "wins": 61,
+        "losses": 50
+      },
+      "summary": {
+        "baseline_ler": 0.0012664794921875,
+        "hybrid_ler": 0.0010986328125,
+        "baseline_interval": [
+          0.0,
+          0.008504610690703598
+        ],
+        "hybrid_interval": [
+          0.0,
+          0.008336764011016098
+        ],
+        "ratio_upper": null,
+        "paired_p_value": 0.3425805825718972,
+        "quality_gate": "inconclusive"
+      }
+    },
+    {
+      "seed": 22,
+      "path": "flagquantum_calibrated_vs_ising",
+      "counts": {
+        "shots": 65536,
+        "baseline_failures": 72,
+        "hybrid_failures": 83,
+        "wins": 50,
+        "losses": 61
+      },
+      "summary": {
+        "baseline_ler": 0.0010986328125,
+        "hybrid_ler": 0.0012664794921875,
+        "baseline_interval": [
+          0.0,
+          0.008336764011016098
+        ],
+        "hybrid_interval": [
+          0.0,
+          0.008504610690703598
+        ],
+        "ratio_upper": null,
+        "paired_p_value": 0.3425805825718972,
+        "quality_gate": "inconclusive"
+      }
+    },
+    {
+      "seed": 33,
+      "path": "flagquantum_raw",
+      "probability_threshold": 1.0,
+      "ising_logit_threshold_data_and_syndrome": null,
+      "temperature": 1.0,
+      "input_detector_density": 0.04689962416887283,
+      "residual_detector_density": 0.04689962416887283,
+      "changed_detector_bits": 0,
+      "counts": {
+        "shots": 65536,
+        "baseline_failures": 83,
+        "hybrid_failures": 83,
+        "wins": 0,
+        "losses": 0
+      },
+      "summary": {
+        "baseline_ler": 0.0012664794921875,
+        "hybrid_ler": 0.0012664794921875,
+        "baseline_interval": [
+          0.0,
+          0.008504610690703598
+        ],
+        "hybrid_interval": [
+          0.0,
+          0.008504610690703598
+        ],
+        "ratio_upper": null,
+        "paired_p_value": 1.0,
+        "quality_gate": "inconclusive"
+      }
+    },
+    {
+      "seed": 33,
+      "path": "flagquantum_calibrated",
+      "probability_threshold": 1.0,
+      "ising_logit_threshold_data_and_syndrome": null,
+      "temperature": 0.5,
+      "input_detector_density": 0.04689962416887283,
+      "residual_detector_density": 0.04689962416887283,
+      "changed_detector_bits": 0,
+      "counts": {
+        "shots": 65536,
+        "baseline_failures": 83,
+        "hybrid_failures": 83,
+        "wins": 0,
+        "losses": 0
+      },
+      "summary": {
+        "baseline_ler": 0.0012664794921875,
+        "hybrid_ler": 0.0012664794921875,
+        "baseline_interval": [
+          0.0,
+          0.008504610690703598
+        ],
+        "hybrid_interval": [
+          0.0,
+          0.008504610690703598
+        ],
+        "ratio_upper": null,
+        "paired_p_value": 1.0,
+        "quality_gate": "inconclusive"
+      }
+    },
+    {
+      "seed": 33,
+      "path": "ising",
+      "probability_threshold": null,
+      "ising_logit_threshold_data_and_syndrome": 0.0,
+      "temperature": 1.0,
+      "input_detector_density": 0.04689962416887283,
+      "residual_detector_density": 0.0013564851833507419,
+      "changed_detector_bits": 2185773,
+      "counts": {
+        "shots": 65536,
+        "baseline_failures": 83,
+        "hybrid_failures": 72,
+        "wins": 61,
+        "losses": 50
+      },
+      "summary": {
+        "baseline_ler": 0.0012664794921875,
+        "hybrid_ler": 0.0010986328125,
+        "baseline_interval": [
+          0.0,
+          0.008504610690703598
+        ],
+        "hybrid_interval": [
+          0.0,
+          0.008336764011016098
+        ],
+        "ratio_upper": null,
+        "paired_p_value": 0.3425805825718972,
+        "quality_gate": "inconclusive"
+      }
+    },
+    {
+      "seed": 33,
+      "path": "flagquantum_calibrated_vs_ising",
+      "counts": {
+        "shots": 65536,
+        "baseline_failures": 72,
+        "hybrid_failures": 83,
+        "wins": 50,
+        "losses": 61
+      },
+      "summary": {
+        "baseline_ler": 0.0010986328125,
+        "hybrid_ler": 0.0012664794921875,
+        "baseline_interval": [
+          0.0,
+          0.008336764011016098
+        ],
+        "hybrid_interval": [
+          0.0,
+          0.008504610690703598
+        ],
+        "ratio_upper": null,
+        "paired_p_value": 0.3425805825718972,
+        "quality_gate": "inconclusive"
+      }
+    }
+  ]
+}

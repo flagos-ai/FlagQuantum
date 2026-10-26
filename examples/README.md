@@ -12,6 +12,53 @@ Examples driven by the root-level `fq` alias use:
 
 These examples do not use that alias:
 
+- `qec/matched_primary.py`: guarded fixed primary capture and externally hash-bound replay/32-comparison summaries; reuses shared prediction shards and existing statistics; no trusted controller or formal execution CLI.
+- `qec/matched_parity.py`: verifies frozen decisions before a single shared probe and composes explicit CNN/MLP parity paths; hardware-only receipt guards and two-host verification; no primary sampler or CLI.
+- `qec/matched_validation.py`: internal shared physical-validation capture and all sixty threshold trials with explicit architecture identities; no primary sampler or launch CLI.
+- `qec/matched_selection.py`: internal final-six temperature fitting on shared, saved independent calibration streams; no physical validation, CLI or formal launch authorization.
+- `qec/matched_training.py`: internal fixed-budget paired Trainer composition with observed batch hashes and shared stored held-out scoring and a complete-artifact gate returning all six final models; no CLI or formal launch authorization.
+- `qec/matched_initialization.py`: freezes and verifies all six seed/architecture initial states and Torch RNG without samples or optimizer updates.
+- `qec/matched_checkpoints.py`: binds unchanged private Trainer checkpoints to the verified layout, both prospective documents and an externally frozen inventory; no standalone study launch.
+- `qec/ising_layout.py`: verifies pinned Ising measurement-record geometry and the private CNN input mapping without sampling, training or loading weights.
+
+- `qec/run_matched_assessment.py`: inspected-container zero-sample preflight and internal fixed-deadline prepare/peer/finish/run composition; trusted SSH orchestration and launch CLI remain pending.
+- `qec/run_continued_assessment.py`: controller-bound, fixed-budget A800 study coordination with preflight and immutable handoffs; see the frozen physical protocol.
+
+- `qec/continued_primary.py`: guarded fixed primary prediction shards and registered offline summaries; no formal execution CLI.
+
+- `qec/continued_parity.py`: internal frozen-probe and two-host bit-parity prerequisites; no primary sampler or CLI.
+
+- `qec/continued_selection.py`: internal calibration and physical-validation decision stages for the registered continued-checkpoint study; no sampling CLI.
+
+- `qec/continued_assessment.py`: verifies six frozen QEC checkpoint inputs; the CLI does not expose physical sampling.
+
+- `qec/study_training_budget.py`: preregistered CPU continuation of audited QEC checkpoints; see `docs/development/QEC_AI_TRAINING_SUFFICIENCY.md`.
+
+- [`qec/diagnose_predecoder.py`](qec/diagnose_predecoder.py) inspects archived
+  CPU QEC checkpoints with exact H/L equivalence and MLP feature-label diagnostics.
+  `--fixture-smoke` runs an exact cycle probe with Core Torch alone. Archived
+  runs verify the previous study's inputs and producing environment before new
+  fixed-budget samples; they never retrain or access primary logical tests.
+
+- [`qec/compare_ising.py`](qec/compare_ising.py) connects the private QEC reference
+  to a pinned optional Ising checkout and a shared batched global decoder. Smoke
+  uses untrained weights and does not establish a pretrained-model ranking.
+
+- [`qec/assess_predecoder.py`](qec/assess_predecoder.py) runs the private paired
+  QEC study through domain imports.
+
+- [`qec/calibrate_predecoder.py`](qec/calibrate_predecoder.py) diagnoses label/loss
+  sparsity and fits confidence calibration with separate validation and test
+  streams; it uses private QEC domain imports.
+
+- [`qec/correlated_circuit_noise.py`](qec/correlated_circuit_noise.py) uses the
+  public QEC and Noise namespaces to build exclusive two-qubit Pauli faults,
+  sample their declared detector model and demonstrate independent-only export
+  refusal. Core Torch is sufficient; circuit execution separately needs Stim.
+
+- [`qec/ai_predecoder.py`](qec/ai_predecoder.py) trains and evaluates the private
+  QEC predecoder through domain imports; it does not use the root-level alias.
+
 - [`visualize_rydberg_transport.py`](visualize_rydberg_transport.py) uses Core
   commanded positions and the existing optional Matplotlib visualization extra.
 - [`terminal_instrument_sampling.py`](terminal_instrument_sampling.py) samples
@@ -100,7 +147,7 @@ These examples do not use that alias:
   the QEC public surface to run the existing repetition-memory feedback workflow
   and check its correction, logical error rate and decoded bits.
 - [`qec/code_family_imports.py`](qec/code_family_imports.py) imports QEC code
-  records and historical aliases to check independent surface identities, pickle
+  records through root and package imports to check one surface class, pickle
   paths, Steane matrices and the existing memory noise sweep.
 - [`qec/memory_layout_and_sampling.py`](qec/memory_layout_and_sampling.py)
   imports QEC declarations, maps and sampling directly, then runs all three
@@ -110,13 +157,28 @@ These examples do not use that alias:
   chunk and verify the historical pickle class; no optional SDK is required.
 - [`qec/decoder_registry_and_pickle.py`](qec/decoder_registry_and_pickle.py)
   uses QEC registry imports to compare three in-tree decoders and verify the
-  historical matcher pickle class, without an optional SDK.
+  canonical matcher pickle class, without an optional SDK.
 - [`qec/installed_imports.py`](qec/installed_imports.py) checks existing QEC
-  exports, independent rotated-class pickle paths, decoding and a noiseless
+  exports, one registered rotated-class pickle path, decoding and a noiseless
   memory sweep; run it outside the checkout to verify an installed wheel.
+- [`qec/circuit_noise_dem.py`](qec/circuit_noise_dem.py) builds and samples a
+  distance-five circuit-location surface-code DEM without a dense statevector
+  or optional SDK; the physical circuit has 49 qubits.
 - [`qec/stim_user_migration.py`](qec/stim_user_migration.py) — it imports the QEC
   subpackage surface, where the detector error model reader and the decoder
   registry live, and `stim`, because the circuit layer stays Stim's.
+- [`qec/stim_experiment_bridge.py`](qec/stim_experiment_bridge.py) uses the QEC
+  domain and opt-in Stim adapter imports rather than the root-level alias. Native
+  memory export and external annotated text share the existing sampler, decoder
+  and fixed-shot statistics; both original circuits generate their own samples.
+- [`qec/stim_pymatching_baseline.py`](qec/stim_pymatching_baseline.py) imports
+  QEC sampling and decoder APIs from the subpackage to evaluate streamed Stim
+  memory samples with PyMatching batch predictions. It reports fixed-shot logical
+  failures, per-observable counts, a Wilson 95% interval and experiment metadata;
+  both optional SDKs are required. `--code surface --distance 5 --basis x`
+  selects three rounds of the existing rotated Surface code in a certified
+  all-data X frame; `--basis z` uses its declared Z logical. The report records
+  the logical support and reuses the same fixed-shot statistics.
 - [`qec/css_code_from_matrices.py`](qec/css_code_from_matrices.py) — it imports
   the QEC subpackage surface, because the code record built from parity-check
   matrices lives there and has no root-level `fq.` name.
@@ -720,3 +782,66 @@ omega control is bound per interval by the training example. Display samples
 are not the numerical integration grid. This example reuses the moving-pair
 source from train_rydberg_controls and adds no public drawing API or renderer
 registry. The exported SVG/PNG is suitable for inspection without a GUI.
+
+### Ising fusion observation
+
+Run `python -m examples.ising_fusion_measurement` after
+`python -m examples.ising_braid_execution` to inspect ideal pair-charge QND
+measurement. Both initial fusion channels use the same native braid, sealed
+plan replay and explicit terminal instrument. The example shows input coherence
+0.5 becoming zero when the result is unread, while each normalized conditional
+state preserves its measured charge on a second observation. These conditional
+states are calculated explicitly using existing Kraus maps; the sampler itself
+returns outcome indices, not post-measurement states or feedback events.
+
+At 20,000 shots, both probabilities are 0.5 and their binomial standard error is
+about 0.003536. The numerical probability error is checked separately against
+1e-12; sampled frequencies use a six-standard-error bound plus two counts. A
+private seed reproduces outcomes without changing caller RNG state. This is the
+fixed four-sigma, total-vacuum CPU model, not hardware, other anyon sectors, or a
+universal gate set.
+
+### Spin-mode thermal truncation
+
+Run `python -m examples.spin_mode_convergence` for resonant, lossless spin-mode
+exchange, with spin first and a thermal oscillator second. Unlike the vacuum
+one-excitation training example, this input has a nonzero tail at every Fock
+cutoff. The example compares mode dimensions 3, 5 and 7 to independent closed
+Rabi blocks and a 64-term geometric thermal sum (omitted mass below 0.2**64).
+It checks full complex density matrices, total excitation conservation, coupling
+gradients, named outputs, optimizer updates and detached numeric JSON replay.
+
+Finite initial thermal weights are explicitly normalized after truncation. The
+highest excited spin/mode state is artificially dark because the next Fock level
+is absent. Both conditioning away the tail and this blocked transition enter
+the reported probability-error bound `q**N + (1-q)*q**(N-1)/(1-q**N)`. Increasing
+cutoff reduces the observed final-time error for this declared parameter set;
+this is not a universal monotonic-convergence rule. Integration error is checked
+separately at 1e-10. The fitted target uses the same finite model, so fitting is
+not evidence that its truncation error disappeared.
+
+The example composes existing mixed dimensions, boson algebra, parameter binding,
+Lindblad planning, Krylov evolution and PyTorch. It adds no ion-trap frontend,
+heating, laser calibration, hardware execution or distributed-capacity claim.
+
+### Driven three-level leakage and time-grid convergence
+
+Run `python -m examples.driven_three_level` for a rotating-frame, weakly
+anharmonic three-level model with four noncommuting in-phase/quadrature pulses.
+The model includes the sqrt(2) ladder coupling to level 2, detuning 0.15 and
+anharmonicity -3, in inverse time units. A segment lasts 0.25. There is no
+dissipation, calibrated device, hardware pulse emission or ion-trap model.
+
+Existing interval parameters bind all eight control values. Named outputs
+report ground/excited/leakage populations. Independent 3x3 unitary products
+check the entire complex density at pulse boundaries; reversed pulse order must
+give a different result. All eight leakage derivatives are compared against
+four-point finite differences of that independent reference.
+
+Refinement subdivides the same constant segments and repeats the same bindings.
+It does not change or resample the waveform: Runge-Kutta errors decrease by
+about 16 per doubling, while the existing Krylov path is checked at 1e-10.
+The optimizer minimizes `(1-P1)**2 + 2*P2`; its improved population and leakage
+are not a unitary-gate fidelity claim. Detached numeric plans replay exactly,
+but JSON does not preserve the training graph. All solvers, bindings, outputs
+and artifacts reuse the existing shared dynamics workflow.

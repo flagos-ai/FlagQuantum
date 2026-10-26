@@ -855,7 +855,7 @@ def test_the_lane_audit_reads_the_workflows_it_claims_to() -> None:
     # `distributed-cpu-shard` selects through a tier, not an inline expression, and a
     # job that installs Qiskit pins the distribution rather than the extra.
     assert "distributed_cpu" in by_name["distributed-cpu-shard"].expressions
-    assert "qiskit" in by_name["qiskit-optional"].extras
+    assert "qiskit" in by_name["qiskit-compat"].extras
 
     # Reading the whole shell block would credit this job with `dev`, because it
     # starts with `python -c "import pytest, torch"`.

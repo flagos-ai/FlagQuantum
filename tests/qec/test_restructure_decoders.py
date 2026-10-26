@@ -10,6 +10,12 @@ from pathlib import Path
 
 import pytest
 import torch
+from _retirement import (
+    assert_metadata,
+    assert_namespace,
+    assert_retired_payload,
+    resolve,
+)
 
 import flagquantum.qec as qec
 from flagquantum.errors import CapabilityError
@@ -32,11 +38,7 @@ def _plain(value: object) -> object:
 
 
 def _resolve(path: str) -> object:
-    parts = path.split(".")
-    value = importlib.import_module(".".join(parts[:3]))
-    for part in parts[3:]:
-        value = getattr(value, part)
-    return value
+    return resolve(path)
 
 
 def _model() -> qec.DetectorErrorModel:
@@ -129,32 +131,33 @@ def _scenarios() -> dict[str, object]:
     return result
 
 
-def test_old_decoder_global_pickles_and_typevar_keep_exact_identities() -> None:
-    # Repository-owned pre-move fixture, never an external pickle.
-    restored = pickle.loads((_FIXTURES / "restructure_006_globals.pkl").read_bytes())
-    for path, value in restored.items():
-        assert value is _resolve(path), path
-        assert pickle.loads(pickle.dumps(value, protocol=4)) is value, path
+def test_retired_decoder_global_pickles_refuse_and_current_globals_roundtrip() -> None:
+    assert_retired_payload("restructure_006_globals.pkl")
+    metadata = json.loads((_FIXTURES / "restructure_006_metadata.json").read_text())
+    for path in metadata["definitions"]:
+        if len(path.split(".")) == 4:
+            value = _resolve(path)
+            assert pickle.loads(pickle.dumps(value, protocol=4)) is value, path
 
 
-def test_decoder_metadata_and_historical_namespaces_remain_identical() -> None:
+def test_decoder_metadata_and_surviving_namespaces_follow_the_retirement_boundary() -> (
+    None
+):
     expected = json.loads((_FIXTURES / "restructure_006_metadata.json").read_text())
     for path, metadata in expected["definitions"].items():
-        value = _resolve(path)
-        if isinstance(value, property):
-            value = value.fget
-        name = getattr(value, "__qualname__", getattr(value, "__name__", None))
-        assert [value.__module__, name] == metadata, path
+        assert_metadata(path, metadata[0], metadata[1])
     for old, names in expected["namespaces"].items():
-        module = importlib.import_module("flagquantum.qec." + old)
-        for name in names:
-            assert hasattr(module, name), (old, name)
+        assert_namespace(old, names)
 
 
 def test_decoder_numerical_carrier_and_streaming_baseline() -> None:
     expected = json.loads((_FIXTURES / "restructure_006_results.json").read_text())
     expected.pop("adapter")
-    assert _scenarios() == expected
+    actual = _scenarios()
+    old_module, qualname = expected.pop("decorator")
+    assert old_module == "flagquantum.qec.registry"
+    assert actual.pop("decorator") == ["flagquantum.qec.decoders.registry", qualname]
+    assert actual == expected
 
 
 def _adapter_scenario() -> dict[str, object]:
@@ -184,18 +187,18 @@ def test_adapter_results_and_existing_pickle_capability() -> None:
     assert _adapter_scenario() == expected["adapter"]
 
 
-def test_old_decoder_instances_resume_with_the_same_classes_and_results() -> None:
-    restored = pickle.loads((_FIXTURES / "restructure_006_instances.pkl").read_bytes())
+def test_decoder_checkpoints_resume_with_the_same_classes_and_results() -> None:
+    assert_retired_payload("restructure_006_instances.pkl")
+    evidence = (
+        Path(__file__).with_name("retirement_fixtures") / "surviving_instances.pkl"
+    )
+    restored = pickle.loads(evidence.read_bytes())["restructure_006_instances.pkl"]
     expected = json.loads((_FIXTURES / "restructure_006_results.json").read_text())
     for path, value in restored.items():
         assert type(value) is _resolve(path), path
         assert type(pickle.loads(pickle.dumps(value))) is type(value), path
         name = type(value).__name__
-        if name == "SlidingWindowDecoder":
-            assert [_plain(value.decode_round(())) for _ in range(3)] == expected[
-                "stream"
-            ][1:]
-        elif name == "RepetitionLookupDecoder":
+        if name == "RepetitionLookupDecoder":
             assert _plain(value.decode(_history())) == expected["repetition:lookup"]
         elif name in ("RepetitionStreamingLookupDecoder", "RepetitionTemporalDecoder"):
             key = (
@@ -206,17 +209,26 @@ def test_old_decoder_instances_resume_with_the_same_classes_and_results() -> Non
             assert (
                 _plain(value.decode_round(_history())) == expected["repetition:" + key]
             )
-        elif name != "MatchingDependencyError":
-            original = qec.get_decoder(
-                {
-                    "MinimumWeightMatchingDecoder": qec.AUTHORITY_NAME,
-                    "BeliefPropagationDecoder": qec.BELIEF_PROPAGATION_NAME,
-                    "BeliefPropagationOsdDecoder": qec.BELIEF_PROPAGATION_OSD_NAME,
-                    "SlidingWindowMatchingDecoder": qec.SLIDING_WINDOW_NAME,
-                }[name],
-                _model(),
-            )
-            assert _plain(value.decode((0,))) == _plain(original.decode((0,)))
+        else:
+            assert name == "MatchingDependencyError"
+    for name in (
+        qec.AUTHORITY_NAME,
+        qec.BELIEF_PROPAGATION_NAME,
+        qec.BELIEF_PROPAGATION_OSD_NAME,
+        qec.SLIDING_WINDOW_NAME,
+    ):
+        original = qec.get_decoder(name, _model())
+        current = pickle.loads(pickle.dumps(original, protocol=4))
+        assert type(current) is type(original)
+        for syndrome in ((), (0,), (1,), (0, 1)):
+            assert _plain(current.decode(syndrome)) == _plain(original.decode(syndrome))
+    stream = qec.SlidingWindowDecoder(_stream_spec(), qec.BELIEF_PROPAGATION_NAME)
+    assert _plain(stream.decode_round((0,))) == expected["stream"][0]
+    resumed = pickle.loads(pickle.dumps(stream, protocol=4))
+    assert type(resumed) is type(stream)
+    assert [_plain(resumed.decode_round(())) for _ in range(3)] == expected["stream"][
+        1:
+    ]
 
 
 def test_historical_decoder_imports_are_canonical_aliases() -> None:
@@ -238,23 +250,21 @@ def test_historical_decoder_imports_are_canonical_aliases() -> None:
         assert _resolve(path) is getattr(owner, parts[3]), path
 
 
-def test_one_registry_serves_old_root_and_canonical_plugin_imports() -> None:
-    from flagquantum.qec import registry as historical
+def test_one_registry_serves_root_and_canonical_plugin_imports() -> None:
     from flagquantum.qec.decoders import registry as owner
 
     qec.decoder_names()
     table = owner._DECODERS
-    assert historical._DECODERS is table
-    assert historical.register_decoder is qec.register_decoder is owner.register_decoder
+    assert qec.register_decoder is owner.register_decoder
     original = dict(table)
     try:
         assert (
-            historical.register_decoder("package_identity_probe")(
+            owner.register_decoder("package_identity_probe")(
                 qec.MinimumWeightMatchingDecoder
             )
             is qec.MinimumWeightMatchingDecoder
         )
-        for get in (historical.get_decoder, qec.get_decoder, owner.get_decoder):
+        for get in (qec.get_decoder, owner.get_decoder):
             assert (
                 type(get("package_identity_probe", _model()))
                 is qec.MinimumWeightMatchingDecoder

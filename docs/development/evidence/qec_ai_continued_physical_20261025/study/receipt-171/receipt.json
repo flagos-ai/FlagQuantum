@@ -1,0 +1,132 @@
+{
+  "purpose": "continued_cuda_bit_parity",
+  "host": "a800-171",
+  "protocol_sha256": "9f48cc9ad7b28a787e98211a9b436c795d7251c02d87e600eb2d26a4dffacd31",
+  "choices_sha256": "3b8c50ecd3513f676134acf37812c34ea2bca62096974e9417ae6ef92adac5d0",
+  "circuit_sha256": "0fa86bd7b534da215f58cb4611236db52d60ddc588da819b0d547a91026195e2",
+  "probes_sha256": "78d6a4b0be97d1a5b71fea7af8644280054f093a41576fceeaee3a4c06f9b11d",
+  "source_sha256": "70294285c406e2b364a7935ac27726450460526ef3e20d9ffb09f12af19505d9",
+  "image": "sha256:9465e1fca0a8c22af1b2ee657c8a6ee7e9f9f8e74d873b0add84b274da58b9e2",
+  "torch_version": "2.13.0+cu130",
+  "pipeline_state_sha256": "8ddaac784ce4227c40bad2affef163a1bc542535d5db5304cc54df1832bfd8ef",
+  "hardware": {
+    "device": "cuda:0",
+    "name": "NVIDIA A800-SXM4-80GB",
+    "nvidia_smi_uuid_name_driver": "GPU-8d4625ed-afbf-f128-b129-41d820bbaa03, NVIDIA A800-SXM4-80GB, 580.126.20",
+    "total_memory_bytes": 85093777408,
+    "free_memory_bytes_at_preflight": 84648263680,
+    "cuda_runtime": "13.0",
+    "image_id": "sha256:9465e1fca0a8c22af1b2ee657c8a6ee7e9f9f8e74d873b0add84b274da58b9e2",
+    "hostname": "b4560696f026",
+    "tf32": false,
+    "autocast": false,
+    "deterministic_algorithms": true
+  },
+  "paths": [
+    {
+      "name": "global",
+      "synthetic_rows": 722,
+      "physical_rows": 64,
+      "residual_frame_sha256": "d39302117782356cca33229257fc0a9612164aac73f4bebc98498052df006fdd",
+      "physical_predictions_sha256": "8f545982c87a3948554a94e58f9195caa472debaf7a3553446e0dd6577a2fd4c"
+    },
+    {
+      "name": "fast",
+      "synthetic_rows": 722,
+      "physical_rows": 64,
+      "residual_frame_sha256": "6624b71b17a2dddcfa702c1a3d5a50f1a2245a31eef459db51c7675102305f76",
+      "physical_predictions_sha256": "8f545982c87a3948554a94e58f9195caa472debaf7a3553446e0dd6577a2fd4c"
+    },
+    {
+      "name": "mask-only",
+      "synthetic_rows": 722,
+      "physical_rows": 64,
+      "residual_frame_sha256": "e997c42fe3b975543b0d90f79a53684802cdb3ce8b3ffa8bbb0b8bf5672c4606",
+      "physical_predictions_sha256": "8f545982c87a3948554a94e58f9195caa472debaf7a3553446e0dd6577a2fd4c"
+    },
+    {
+      "name": "native-11-step-200-raw",
+      "synthetic_rows": 722,
+      "physical_rows": 64,
+      "residual_frame_sha256": "d39302117782356cca33229257fc0a9612164aac73f4bebc98498052df006fdd",
+      "physical_predictions_sha256": "8f545982c87a3948554a94e58f9195caa472debaf7a3553446e0dd6577a2fd4c"
+    },
+    {
+      "name": "native-11-step-200-calibrated",
+      "synthetic_rows": 722,
+      "physical_rows": 64,
+      "residual_frame_sha256": "d39302117782356cca33229257fc0a9612164aac73f4bebc98498052df006fdd",
+      "physical_predictions_sha256": "8f545982c87a3948554a94e58f9195caa472debaf7a3553446e0dd6577a2fd4c"
+    },
+    {
+      "name": "native-11-step-2000-raw",
+      "synthetic_rows": 722,
+      "physical_rows": 64,
+      "residual_frame_sha256": "d39302117782356cca33229257fc0a9612164aac73f4bebc98498052df006fdd",
+      "physical_predictions_sha256": "8f545982c87a3948554a94e58f9195caa472debaf7a3553446e0dd6577a2fd4c"
+    },
+    {
+      "name": "native-11-step-2000-calibrated",
+      "synthetic_rows": 722,
+      "physical_rows": 64,
+      "residual_frame_sha256": "d39302117782356cca33229257fc0a9612164aac73f4bebc98498052df006fdd",
+      "physical_predictions_sha256": "8f545982c87a3948554a94e58f9195caa472debaf7a3553446e0dd6577a2fd4c"
+    },
+    {
+      "name": "native-22-step-200-raw",
+      "synthetic_rows": 722,
+      "physical_rows": 64,
+      "residual_frame_sha256": "d39302117782356cca33229257fc0a9612164aac73f4bebc98498052df006fdd",
+      "physical_predictions_sha256": "8f545982c87a3948554a94e58f9195caa472debaf7a3553446e0dd6577a2fd4c"
+    },
+    {
+      "name": "native-22-step-200-calibrated",
+      "synthetic_rows": 722,
+      "physical_rows": 64,
+      "residual_frame_sha256": "d39302117782356cca33229257fc0a9612164aac73f4bebc98498052df006fdd",
+      "physical_predictions_sha256": "8f545982c87a3948554a94e58f9195caa472debaf7a3553446e0dd6577a2fd4c"
+    },
+    {
+      "name": "native-22-step-2000-raw",
+      "synthetic_rows": 722,
+      "physical_rows": 64,
+      "residual_frame_sha256": "d39302117782356cca33229257fc0a9612164aac73f4bebc98498052df006fdd",
+      "physical_predictions_sha256": "8f545982c87a3948554a94e58f9195caa472debaf7a3553446e0dd6577a2fd4c"
+    },
+    {
+      "name": "native-22-step-2000-calibrated",
+      "synthetic_rows": 722,
+      "physical_rows": 64,
+      "residual_frame_sha256": "d39302117782356cca33229257fc0a9612164aac73f4bebc98498052df006fdd",
+      "physical_predictions_sha256": "8f545982c87a3948554a94e58f9195caa472debaf7a3553446e0dd6577a2fd4c"
+    },
+    {
+      "name": "native-33-step-200-raw",
+      "synthetic_rows": 722,
+      "physical_rows": 64,
+      "residual_frame_sha256": "d39302117782356cca33229257fc0a9612164aac73f4bebc98498052df006fdd",
+      "physical_predictions_sha256": "8f545982c87a3948554a94e58f9195caa472debaf7a3553446e0dd6577a2fd4c"
+    },
+    {
+      "name": "native-33-step-200-calibrated",
+      "synthetic_rows": 722,
+      "physical_rows": 64,
+      "residual_frame_sha256": "d39302117782356cca33229257fc0a9612164aac73f4bebc98498052df006fdd",
+      "physical_predictions_sha256": "8f545982c87a3948554a94e58f9195caa472debaf7a3553446e0dd6577a2fd4c"
+    },
+    {
+      "name": "native-33-step-2000-raw",
+      "synthetic_rows": 722,
+      "physical_rows": 64,
+      "residual_frame_sha256": "d39302117782356cca33229257fc0a9612164aac73f4bebc98498052df006fdd",
+      "physical_predictions_sha256": "8f545982c87a3948554a94e58f9195caa472debaf7a3553446e0dd6577a2fd4c"
+    },
+    {
+      "name": "native-33-step-2000-calibrated",
+      "synthetic_rows": 722,
+      "physical_rows": 64,
+      "residual_frame_sha256": "d39302117782356cca33229257fc0a9612164aac73f4bebc98498052df006fdd",
+      "physical_predictions_sha256": "8f545982c87a3948554a94e58f9195caa472debaf7a3553446e0dd6577a2fd4c"
+    }
+  ]
+}

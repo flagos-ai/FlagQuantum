@@ -23,6 +23,7 @@ from ..core.ir.program.physical import (
     is_physical_record,
 )
 from ..core.ir.program.verifier import verify_program_record
+from ..core.ising import IsingBraidProgram
 from ..core.parameters import (
     bind_parameter_value,
     parameter_names_in_value,
@@ -42,6 +43,8 @@ def native_record(value: object) -> ProgramRecord | None:
     """Recognize native inputs without widening low-level mathematical entries."""
     if isinstance(value, RydbergProgram):
         return value.to_ir()
+    if isinstance(value, IsingBraidProgram):
+        value = value.to_ir()
     if not isinstance(value, ProgramRecord) or not is_physical_record(value):
         return None
     diagnostics = verify_program_record(value)
@@ -50,6 +53,11 @@ def native_record(value: object) -> ProgramRecord | None:
         if any(d.code == "physical.unsupported_structure" for d in diagnostics):
             raise CapabilityError(message)
         raise IRValidationError(message)
+    if not isinstance(value.physical_context, RydbergContext):
+        raise CapabilityError(
+            "Lindblad requires timed Rydberg controls; discrete Ising braids "
+            "do not define a Hamiltonian"
+        )
     return value
 
 
@@ -82,7 +90,7 @@ def _grid(
     controls = tuple(
         op.physical_data
         for op in record.functions[0].blocks[0].operations
-        if op.physical_data is not None
+        if isinstance(op.physical_data, (RydbergTransport, RydbergPulse))
     )
     source = _boundary_times(controls)
     values = grid.tolist()
@@ -126,6 +134,17 @@ def native_model(
     parameter_values: Any = None,
 ) -> tuple[dict[str, Any], list[dict[str, float]] | None]:
     """Assemble interval matrices; existing normalizers and engines execute them."""
+    supported = {"rydberg.move": RydbergTransport, "rydberg.pulse": RydbergPulse}
+    for operation in record.functions[0].blocks[0].operations:
+        payload_type = supported.get(operation.opcode)
+        if payload_type is None or not isinstance(
+            operation.physical_data, payload_type
+        ):
+            raise CapabilityError(
+                "unconditional native Rydberg evolution requires only pulse "
+                "and transport controls; observation operations require a "
+                "conditional trajectory"
+            )
     context = record.physical_context
     assert isinstance(context, RydbergContext)
     count = len(context.atoms)

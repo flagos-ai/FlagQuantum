@@ -1,0 +1,92 @@
+{
+  "config": {
+    "smoke": false,
+    "distance": 3,
+    "rounds": 3,
+    "probability": 0.003,
+    "basis": "X",
+    "rotation": "XV",
+    "threads": 1
+  },
+  "ising_source_sha256": "ed9e6c56f263e0cd9fcc04a494e9cf6544c9f78cbb54c788fcce71b2e961b70e",
+  "weights": {
+    "status": "external_checkpoint_training_history_unverified",
+    "sha256": "22db7ad25b584d7588493d6ef815381c8d1263cfb29f212391a591b285ad0a05",
+    "kernel_size": "[3, 3, 3, 3]",
+    "receptive_field": "9",
+    "model_version": "predecoder_memory_v1",
+    "num_filters": "[128, 128, 128, 4]",
+    "quant_format": "fp16",
+    "model_id": "1"
+  },
+  "protocol_sha256": "c66cb2c3a0793fe4511afd64d2257ac0c9c830e40d4939132aa19ec557914f0d",
+  "source_sha256": {
+    "/Users/baai/Documents/liuwei/FlagQuantum-ai-ising-comparison/examples/qec/compare_ising.py": "ea4cd67d310270a2ee39aeb82e09b08cee8fc8f9a4ed324933ee27a77e36a9e8",
+    "flagquantum/qec/decoders/_ai/assessment.py": "c48e1e5650b07a96fb06cc2e4d394539833e5040ee09d00107f7a7e2b4e97922",
+    "flagquantum/qec/decoders/_ai/spacetime.py": "1bfcc839e4e07130b81ee52925cf58ea67e884ba7091d1de24cc64d8711c6ef3",
+    "flagquantum/qec/decoders/_ai/diagnostics.py": "816e4a4051e828c52aee0a7fe746447e5e57fd3f6ac3e9ec469c241ab2677516",
+    "flagquantum/qec/decoders/_ai/__init__.py": "98190f335763fa2f0d50ea0035acd237b4691ccb03a864b574ab9963f3114f02",
+    "flagquantum/qec/decoders/_ai/comparison.py": "cbf512fc31bce7d09f5dc776dac5b33ae78d2d2185e9e2fc08ed881acb7d278f",
+    "flagquantum/qec/decoders/_ai/predecoder.py": "9ccd83a8dbfaae2200958423997f7477c450c672417397c0c6d282f1f9baa6a7",
+    "flagquantum/qec/decoders/_ai/training.py": "427c10ad5a27890cffd358478a35d429803226aa3945ae32d09176b73c853d21",
+    "flagquantum/qec/decoders/_ai/calibration.py": "57cd2daee6595561004d6596ab76a7238307af8228da87cb9c5b738959d0c3d1"
+  },
+  "noise_parameters": {
+    "p_cnot_IX": 0.0002,
+    "p_cnot_IY": 0.0002,
+    "p_cnot_IZ": 0.0002,
+    "p_cnot_XI": 0.0002,
+    "p_cnot_XX": 0.0002,
+    "p_cnot_XY": 0.0002,
+    "p_cnot_XZ": 0.0002,
+    "p_cnot_YI": 0.0002,
+    "p_cnot_YX": 0.0002,
+    "p_cnot_YY": 0.0002,
+    "p_cnot_YZ": 0.0002,
+    "p_cnot_ZI": 0.0002,
+    "p_cnot_ZX": 0.0002,
+    "p_cnot_ZY": 0.0002,
+    "p_cnot_ZZ": 0.0002,
+    "p_idle_cnot_X": 0.001,
+    "p_idle_cnot_Y": 0.001,
+    "p_idle_cnot_Z": 0.001,
+    "p_idle_spam_X": 0.001996,
+    "p_idle_spam_Y": 0.001996,
+    "p_idle_spam_Z": 0.001996,
+    "p_meas_X": 0.002,
+    "p_meas_Z": 0.002,
+    "p_prep_X": 0.002,
+    "p_prep_Z": 0.002
+  },
+  "training_dem_approximate_disjoint_errors": true,
+  "test_sampling": "original_stim_circuit_no_dem_sampling",
+  "matching": "shared_pymatching_uncorrelated_batch_decode",
+  "ising_terminal_complement_input": "upstream_masks_it_including_without_local_correction",
+  "dtype": "float32_both_models_external_fp16_weights_promoted_if_applicable",
+  "python": "3.11.16",
+  "torch": "2.10.0",
+  "platform": "macOS-27.0-arm64-arm-64bit",
+  "dependencies": {
+    "numpy": "2.4.6",
+    "stim": "1.16.0",
+    "pymatching": "2.4.0",
+    "omegaconf": "2.4.0",
+    "safetensors": "0.8.0"
+  },
+  "thread_environment": {
+    "OMP_NUM_THREADS": "1",
+    "MKL_NUM_THREADS": "1",
+    "OPENBLAS_NUM_THREADS": null
+  },
+  "torch_threads": 1,
+  "torch_interop_threads": 1,
+  "distribution_semantics": "single_device_fast_path",
+  "training_budget_comparable": false,
+  "scientific_ranking_allowed": false,
+  "purpose": "fixed_budget_exploratory_cpu_comparison",
+  "raw_manifest_sha256": "ce32721505464b9488b61f3310f57de9d4c7df01ac9058bf78765f5845a4a838",
+  "ising_source": {
+    "repository": "NVIDIA/Ising-Decoding",
+    "commit": "ea7c1bb3b823fc6a38472d0d95974b6d01932288"
+  }
+}

@@ -30,7 +30,7 @@ def test_self_hosted_jobs_have_no_matrix_parallelism_limit() -> None:
 def test_self_hosted_cpu_capacity_groups_do_not_serialize_ready_work() -> None:
     groups: set[str] = set()
     found = []
-    for workflow in ("ci.yml", "pre-commit.yaml"):
+    for workflow_index, workflow in enumerate(("ci.yml", "pre-commit.yaml")):
         for name, job in yaml.safe_load((WORKFLOWS / workflow).read_text())[
             "jobs"
         ].items():
@@ -75,7 +75,8 @@ def test_self_hosted_cpu_capacity_groups_do_not_serialize_ready_work() -> None:
                 dict(zip(matrix, values, strict=True))
                 for values in product(*matrix.values())
             ]
-            for run in (1, 2):
+            # A GitHub run ID is globally unique, including across workflows.
+            for run in (1 + 2 * workflow_index, 2 + 2 * workflow_index):
                 for index, _row in enumerate(rows):
                     group = template.replace(selector, f"{prefix}-{run}-{name}-{index}")
                     assert (

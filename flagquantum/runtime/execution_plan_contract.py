@@ -8,6 +8,8 @@ from collections.abc import Mapping, Sequence
 from dataclasses import fields, replace
 from typing import TYPE_CHECKING, Any
 
+import torch
+
 from ..core.contracts import (
     CapabilityContract,
     EstimatedResources,
@@ -19,6 +21,7 @@ from ..errors import PlanningError
 from ..version import __version__
 
 if TYPE_CHECKING:
+    from ..core.ir.program.model import ProgramRecord
     from .execution_plan import ExecutionPlan, LayerPlan
     from .options import ExecutionOptions
     from .options_resolver import ResolvedExecutionOptions
@@ -112,15 +115,23 @@ def execution_plan_contract(plan: ExecutionPlan) -> RuntimePlanContract:
         dtype=str(config.get("complex_dtype", "complex64")),
         world_size=plan.world_size,
     )
-    identity = (
-        f"{plan.analysis.n_qubits}:{plan.analysis.n_instructions}:"
-        f"{plan.state_mode}:{plan.world_size}:{plan.state_bytes}"
-    )
+    if plan.analysis is None:
+        from ._ising_plan import braid_depth
+
+        depth = braid_depth(plan)
+        plan_id = plan.identity
+    else:
+        depth = plan.analysis.depth
+        identity = (
+            f"{plan.analysis.n_qubits}:{plan.analysis.n_instructions}:"
+            f"{plan.state_mode}:{plan.world_size}:{plan.state_bytes}"
+        )
+        plan_id = hashlib.sha256(identity.encode("utf-8")).hexdigest()
     return RuntimePlanContract(
         requested=requested,
         estimated=EstimatedResources(
             memory_bytes=plan.state_bytes,
-            depth=plan.analysis.depth,
+            depth=depth,
         ),
         capability=CapabilityContract(
             backend=requested.backend,
@@ -129,7 +140,7 @@ def execution_plan_contract(plan: ExecutionPlan) -> RuntimePlanContract:
             modes=(plan.state_mode,),
             supports_distributed=plan.world_size > 1,
         ),
-        plan_id=hashlib.sha256(identity.encode("utf-8")).hexdigest(),
+        plan_id=plan_id,
     )
 
 
@@ -204,6 +215,10 @@ def plan_from_dict(payload: Mapping[str, Any]) -> ExecutionPlan:
     """Restore a plan without replanning and verify every identity component."""
 
     normalized = validate_plan_payload(payload)
+    if normalized["version"] in ("1.1", "1.2", "1.3"):
+        from ._ising_plan import restore_ising_plan
+
+        return restore_ising_plan(normalized)
     program = CircuitIR.from_dict(normalized["program"])
     decision = normalized["decision"]
 
@@ -289,8 +304,11 @@ def plan_from_json(text: str) -> ExecutionPlan:
 
 
 def _validate_plan_schema(values: Mapping[str, Any]) -> None:
-    unknown = set(values) - _TOP_LEVEL_FIELDS
-    missing = _TOP_LEVEL_FIELDS - set(values)
+    expected = _TOP_LEVEL_FIELDS | (
+        {"outputs"} if values.get("version") in ("1.1", "1.2", "1.3") else set()
+    )
+    unknown = set(values) - expected
+    missing = expected - set(values)
     if unknown or missing:
         details = []
         if unknown:
@@ -302,7 +320,7 @@ def _validate_plan_schema(values: Mapping[str, Any]) -> None:
         raise ExecutionPlanContractError(
             "unsupported_schema", "invalid ExecutionPlan schema"
         )
-    if values["version"] != EXECUTION_PLAN_VERSION:
+    if values["version"] not in (EXECUTION_PLAN_VERSION, "1.1", "1.2", "1.3"):
         raise ExecutionPlanContractError(
             "unsupported_schema",
             f"unsupported ExecutionPlan version {values['version']!r}",
@@ -339,14 +357,20 @@ def _validate_plan_options(values: Mapping[str, Any]) -> dict[str, Any]:
 def _validate_plan_identity(
     values: Mapping[str, Any],
     *,
-    program: CircuitIR,
+    program: CircuitIR | ProgramRecord,
     resolved: Mapping[str, Any],
     fingerprints: Mapping[str, Any],
     environment: Mapping[str, Any],
     decision: Mapping[str, Any],
 ) -> None:
+    if isinstance(program, CircuitIR):
+        program_fingerprint = program.content_hash
+    else:
+        from ..core.ir.program.physical_codec import native_program_to_dict
+
+        program_fingerprint = canonical_hash(native_program_to_dict(program))
     expected_fingerprints = {
-        "program": program.content_hash,
+        "program": program_fingerprint,
         "options": canonical_hash(resolved),
         "environment": canonical_hash(environment),
         "compiler": canonical_hash(_compiler_identity()),
@@ -362,7 +386,12 @@ def _validate_plan_identity(
             raise ExecutionPlanContractError(
                 reasons[name], f"{name} fingerprint mismatch"
             )
-    if environment != _environment_requirements(decision):
+    if environment != _environment_requirements(
+        decision,
+        rng_torch_version=(
+            str(torch.__version__) if values["version"] == "1.3" else None
+        ),
+    ):
         raise ExecutionPlanContractError(
             "environment_incompatible",
             "environment requirements disagree with the execution decision",
@@ -393,6 +422,10 @@ def validate_plan_payload(payload: Mapping[str, Any]) -> dict[str, Any]:
         raise TypeError("execution plan payload must be a mapping")
     values = dict(payload)
     _validate_plan_schema(values)
+    if values["version"] in ("1.1", "1.2", "1.3"):
+        from ._ising_plan import validate_ising_payload
+
+        return validate_ising_payload(values)
 
     program_payload = _require_mapping("program", values["program"])
     try:
@@ -625,14 +658,16 @@ def _resolve_planned_device(device: str, *, backend: str) -> str:
         ) from exc
 
 
-def _environment_requirements(decision: Mapping[str, object]) -> dict[str, object]:
+def _environment_requirements(
+    decision: Mapping[str, object], *, rng_torch_version: str | None = None
+) -> dict[str, object]:
     world_size_value = decision["world_size"]
     if not isinstance(world_size_value, int) or isinstance(world_size_value, bool):
         raise ExecutionPlanContractError(
             "identity_mismatch", "decision world_size must be an integer"
         )
     world_size = world_size_value
-    return {
+    requirements: dict[str, object] = {
         "protocol": "flagquantum.execution_environment",
         "version": "1.0",
         "backend": decision["backend"],
@@ -646,6 +681,10 @@ def _environment_requirements(decision: Mapping[str, object]) -> dict[str, objec
         "allow_approximate": decision["allow_approximate"],
     }
 
+    if rng_torch_version is not None:
+        requirements.update(version="1.1", rng_torch_version=rng_torch_version)
+    return requirements
+
 
 def _compiler_identity() -> dict[str, str]:
     return {
@@ -656,6 +695,10 @@ def _compiler_identity() -> dict[str, str]:
 
 
 def _identity(payload: Mapping[str, object], *, compiler: Mapping[str, str]) -> str:
+    if payload.get("version") in ("1.1", "1.2", "1.3"):
+        return canonical_hash(
+            {key: value for key, value in payload.items() if key != "identity"}
+        )
     fingerprints = _require_mapping("fingerprints", payload["fingerprints"])
     identity_payload = {
         "schema": payload["schema"],

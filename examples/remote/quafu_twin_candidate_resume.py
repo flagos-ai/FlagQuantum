@@ -1,6 +1,7 @@
 """Submit once, then resume a frozen Twin candidate comparison.
 
-Set ``QUAFU_API_TOKEN`` and create ``twin-incumbent.json`` with
+Set ``QUAFU_API_KEY`` and the temporary calibration-only ``QUAFU_API_TOKEN``,
+then create ``twin-incumbent.json`` with
 ``fq.twin.dump_twin`` before using this example.
 
 ``submit`` explicitly creates one 1,024-shot Shenglian task and immediately
@@ -116,8 +117,11 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("command", choices=("submit", "resume"))
     args = parser.parse_args()
-    if not os.getenv("QUAFU_API_TOKEN"):
-        raise RuntimeError("Set QUAFU_API_TOKEN before contacting Quafu SQC")
+    if not os.getenv("QUAFU_API_KEY") or not os.getenv("QUAFU_API_TOKEN"):
+        raise RuntimeError(
+            "Set QUAFU_API_KEY for SDK execution and QUAFU_API_TOKEN for "
+            "legacy calibration reads"
+        )
 
     provider = QuafuProvider()
     if args.command == "submit":

@@ -47,9 +47,8 @@ from dataclasses import dataclass
 from numbers import Integral, Real
 
 from flagquantum.errors import CapabilityError
-from flagquantum.qec.codes._compat import _retain_module
-from flagquantum.qec.decoding_graph import DecodingGraph, DecodingGraphEdge
 from flagquantum.qec.dem import DetectorErrorModel
+from flagquantum.qec.dem.graph import DecodingGraph, DecodingGraphEdge
 
 __all__ = ("MatchingDecodeResult", "MinimumWeightMatchingDecoder")
 
@@ -470,18 +469,3 @@ def _pairing(
         else:
             mask ^= 1 << first
     return tuple(pairing)
-
-
-_retain_module(
-    "flagquantum.qec.matching",
-    _SearchTree,
-    MatchingDecodeResult,
-    MinimumWeightMatchingDecoder,
-    _toggle,
-    _defects,
-    _detector_adjacency,
-    _search,
-    _pair_weights,
-    _boundary_weights,
-    _pairing,
-)

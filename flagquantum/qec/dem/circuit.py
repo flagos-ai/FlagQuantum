@@ -1,7 +1,7 @@
 """A detector error model read back as an executable circuit.
 
 The other direction of this domain's construction lives in
-:mod:`flagquantum.qec.dem_construction`: it reads a circuit and a noise record and
+:mod:`flagquantum.qec.dem.construction`: it reads a circuit and a noise record and
 derives the mechanisms a shot can fire. This module is the reverse reading, and
 what makes it possible is that a detector error model is already a circuit's worth
 of arithmetic stated in another vocabulary. A mechanism is a set of detectors and
@@ -71,7 +71,7 @@ root, and squaring a square root is not the identity on a double: it disagrees
 with ``p`` for roughly half of all doubles, ``0.01`` and ``0.5`` among them. The
 declared parameter is therefore the probability, the matrix is checked against it,
 and a program whose two halves disagree is refused rather than averaged. This is
-the same division ``flagquantum/qec/sampling.py`` writes its noise instructions
+the same division ``flagquantum/qec/execution/sampling.py`` writes its noise instructions
 with: a channel states its rates and carries the operators those rates were turned
 into.
 """
@@ -87,7 +87,6 @@ import torch
 
 from flagquantum.core.ir import CircuitIR, Instruction, ensure_circuit_ir
 from flagquantum.core.operator_schema import canonical_opcode
-from flagquantum.qec.codes._compat import _retain_module
 from flagquantum.qec.dem.alternatives import fault_groups
 
 if TYPE_CHECKING:  # pragma: no cover - imported for typing only
@@ -134,7 +133,7 @@ def circuit_from_detector_error_model(model: DetectorErrorModel) -> CircuitIR:
     the group is one fault -- its members' frames are the branches of that channel,
     each carrying the member's own probability, and the identity is the left-over
     mass of the fault firing none of them. That is the reading
-    :mod:`flagquantum.qec.dem_alternatives` states, and it is why a realization of
+    :mod:`flagquantum.qec.dem.alternatives` states, and it is why a realization of
     an id-carrying model draws at most one member of a group per shot instead of
     drawing them independently.
 
@@ -529,20 +528,3 @@ def _count(value: Any, *, name: str) -> int:
     if value < 0:
         raise ValueError(f"{name} must be non-negative")
     return int(value)
-
-
-_retain_module(
-    "flagquantum.qec.dem_circuit",
-    circuit_from_detector_error_model,
-    detector_error_model_from_circuit,
-    _require_every_mechanism_fires,
-    _mechanisms,
-    _operators,
-    _declared_probabilities,
-    _error_id,
-    _support,
-    _frame,
-    _scale,
-    _frame_support,
-    _count,
-)

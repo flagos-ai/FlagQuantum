@@ -1,6 +1,7 @@
 """Check a dynamic circuit against a backend before remote submission."""
 
 import flagquantum as fq
+import flagquantum.errors as fqe
 from flagquantum.deployment import CloudBackendProfile
 from flagquantum.dynamic import DynamicCircuit
 
@@ -23,6 +24,15 @@ def main() -> None:
 
     print(f"compatible: {report.compatible}")
     print(f"blockers: {report.blockers}")
+    assert not report.compatible
+    assert "dynamic_capability_fact_missing:mid_circuit_measurement" in (
+        report.blockers
+    )
+
+    try:
+        fq.run(circuit, target="quafu:Baihua", shots=128)
+    except fqe.CapabilityError as error:
+        print(f"stable remote refusal: {error}")
 
 
 if __name__ == "__main__":

@@ -1,0 +1,36 @@
+{
+  "schema_version": "1.0",
+  "attestation_scope": "conformance_fixture_only",
+  "provider": "quafu",
+  "backend": {
+    "name": "Baihua",
+    "logical_qubits": 4,
+    "physical_qubits": 4,
+    "native_operations": ["cz", "h", "rx", "ry", "rz"],
+    "directed_connectivity": [[0, 1], [1, 0], [1, 2], [2, 1], [2, 3], [3, 2]]
+  },
+  "program": {
+    "dialect": "openqasm",
+    "version": "3.0"
+  },
+  "dynamic": {
+    "mid_circuit_measurement": true,
+    "reset": true,
+    "repeated_measurement": true,
+    "classical_feed_forward": true,
+    "conditional_operations": ["rx", "rz"],
+    "condition_width": 1,
+    "condition_values": [0, 1],
+    "condition_disjunction": false,
+    "mid_circuit_result_data": false
+  },
+  "identity": {
+    "provider_version": "quafu-contract-fixture-1",
+    "target_revision": "fixture-calibration-1",
+    "environment_id": "offline-contract-fixture",
+    "captured_at": "2026-10-24T10:00:00Z",
+    "valid_until": "2026-10-24T11:00:00Z",
+    "evidence_id": "quafu-dynamic-contract-fixture",
+    "evidence_state": "declared"
+  }
+}

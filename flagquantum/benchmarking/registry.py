@@ -24,6 +24,39 @@ class RunnerSpec:
 
 
 _RUNNERS: dict[str, RunnerSpec] = {
+    "ftqc_mixed_reference": RunnerSpec(
+        name="ftqc_mixed_reference",
+        module="flagquantum.benchmarking.ftqc_mixed_reference",
+        attribute="main",
+        category="simulation",
+        summary="Observe one approved exact CPU Clifford+T study point.",
+        hardware="CPU; core Torch only; n=4/8; external RSS watchdog for collection",
+        example="flagquantum-benchmark run ftqc_mixed_reference --n 4 --t 2 --mode mps --json-output results/mixed.json",
+    ),
+    "ftqc_exact_reference": RunnerSpec(
+        name="ftqc_exact_reference",
+        module="flagquantum.benchmarking.ftqc_exact_reference",
+        attribute="main",
+        category="simulation",
+        summary="Observe fixed H-T-H construction, planning and execution phases.",
+        hardware="CPU; core Torch only; one unencoded qubit",
+        example=(
+            "flagquantum-benchmark run ftqc_exact_reference "
+            "--json-output results/ftqc-exact-reference.json"
+        ),
+    ),
+    "qec_memory_sampling": RunnerSpec(
+        name="qec_memory_sampling",
+        module="flagquantum.benchmarking.qec_memory_sampling",
+        attribute="main",
+        category="qec",
+        summary="Observe compiled Surface memory sampling phases and local memory.",
+        hardware="CPU; Stim/PyMatching extras required; process RSS available on Unix",
+        example=(
+            "flagquantum-benchmark run qec_memory_sampling --shots 128 "
+            "--batch-size 32 --json-output results/qec-memory-sampling.json"
+        ),
+    ),
     "batched_statevector_memory": RunnerSpec(
         name="batched_statevector_memory",
         module="flagquantum.benchmarking.batched_statevector_memory",
@@ -73,6 +106,19 @@ _RUNNERS: dict[str, RunnerSpec] = {
             "flagquantum-benchmark run dynamic_unified_run "
             "--batched-shots 4096 --trajectory-shots 64 --iterations 9 "
             "--json-output results/dynamic-unified-run.json"
+        ),
+    ),
+    "dynamic_remote_preflight": RunnerSpec(
+        name="dynamic_remote_preflight",
+        module="flagquantum.benchmarking.dynamic_remote_preflight",
+        attribute="main",
+        category="runtime",
+        summary="Measure remote DynamicCircuit preflight and static classification.",
+        hardware="CPU only",
+        example=(
+            "flagquantum-benchmark run dynamic_remote_preflight "
+            "--feedback-pairs 1 16 128 --iterations 101 "
+            "--json-output results/dynamic-remote-preflight.json"
         ),
     ),
     "statevector_local": RunnerSpec(

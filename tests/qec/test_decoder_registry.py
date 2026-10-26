@@ -1,6 +1,6 @@
 """The name-keyed registry of detector error model decoders.
 
-`flagquantum/qec/registry.py` is the factory half of the decoder row: a name
+`flagquantum/qec/decoders/registry.py` is the factory half of the decoder row: a name
 reaches a class, and a call site that holds a detector error model does not have
 to know which class that is. Three claims are asserted here, and the file is
 arranged around them.

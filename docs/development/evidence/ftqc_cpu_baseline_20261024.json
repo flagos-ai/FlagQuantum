@@ -1,0 +1,3269 @@
+{
+  "source_revision": "89221bdb88aca82a017fcce27b49b9eb9fca33ac",
+  "tracked_tree_clean": true,
+  "started_at": "2026-10-24T09:52:57.530797+00:00",
+  "platform": "macOS-27.0-arm64-arm-64bit",
+  "machine": "arm64",
+  "processor": "Apple M5",
+  "versions": {
+    "python": "3.12.14",
+    "torch": "2.13.0",
+    "stim": "1.16.0",
+    "pymatching": "2.4.0",
+    "torch_threads": 1
+  },
+  "threads": {
+    "OMP_NUM_THREADS": "1",
+    "MKL_NUM_THREADS": "1",
+    "OPENBLAS_NUM_THREADS": "1"
+  },
+  "goals_enabled": false,
+  "scalability_claim_allowed": false,
+  "release_gate_allowed": false,
+  "distribution_semantics": "single_process",
+  "world_size": 1,
+  "local_world_size": 1,
+  "node_count": 1,
+  "rank_ownership": {
+    "0": "whole_workload"
+  },
+  "communication_bytes": 0,
+  "classification": "local_non_release",
+  "scope": "Initial measurements only; no comparative speedup/capacity claim, no new performance threshold; runtime for each case includes fresh interpreter/imports unless the producer explicitly reports another boundary.",
+  "cases": [
+    {
+      "id": "W3-d3-00",
+      "command": [
+        "python",
+        "benchmarks/qec_clifford_dem_construction.py",
+        "--distance",
+        "3",
+        "--rounds",
+        "3",
+        "--output",
+        "/tmp/ftqc-baseline/dem-d3-0.json"
+      ],
+      "timeout_seconds": 300,
+      "status": "success",
+      "returncode": 0,
+      "warmup": true,
+      "process_wall_seconds_including_imports": 1.0466656670032535,
+      "payload": {
+        "benchmark": "qec_clifford_dem_construction",
+        "source_revision": "89221bdb88aca82a017fcce27b49b9eb9fca33ac",
+        "platform": "macOS-27.0-arm64-arm-64bit",
+        "python": "3.12.14",
+        "torch": "2.13.0",
+        "machine": "arm64",
+        "logical_cpu_count": 10,
+        "torch_threads": 1,
+        "device": "cpu",
+        "world_size": 1,
+        "local_world_size": 1,
+        "node_count": 1,
+        "rank_ownership": {
+          "0": "whole_model"
+        },
+        "communication_bytes": 0,
+        "distribution_semantics": "single_process",
+        "scalability_claim_allowed": false,
+        "release_gate_allowed": false,
+        "non_release_evidence": true,
+        "benchmark_evidence_class": "local_non_release",
+        "scalability_blockers": [
+          "local_cpu_construction_not_release_scalability_evidence"
+        ],
+        "blockers": [
+          "local_cpu_construction_not_release_scalability_evidence"
+        ],
+        "distance": 3,
+        "rounds": 3,
+        "physical_qubits": 17,
+        "instructions": 144,
+        "parities": 25,
+        "fault_locations": 144,
+        "reverse_instruction_visits": 3600,
+        "fault_response_queries": 3600,
+        "model_errors_after_merge": 52,
+        "model_construction_seconds_with_tracemalloc": 0.17721287500171456,
+        "peak_traced_python_bytes": 475826,
+        "process_max_rss_before_bytes": 216629248,
+        "process_max_rss_after_bytes": 217595904
+      },
+      "stderr_present": false
+    },
+    {
+      "id": "W3-d3-01",
+      "command": [
+        "python",
+        "benchmarks/qec_clifford_dem_construction.py",
+        "--distance",
+        "3",
+        "--rounds",
+        "3",
+        "--output",
+        "/tmp/ftqc-baseline/dem-d3-1.json"
+      ],
+      "timeout_seconds": 300,
+      "status": "success",
+      "returncode": 0,
+      "warmup": true,
+      "process_wall_seconds_including_imports": 1.07357083298848,
+      "payload": {
+        "benchmark": "qec_clifford_dem_construction",
+        "source_revision": "89221bdb88aca82a017fcce27b49b9eb9fca33ac",
+        "platform": "macOS-27.0-arm64-arm-64bit",
+        "python": "3.12.14",
+        "torch": "2.13.0",
+        "machine": "arm64",
+        "logical_cpu_count": 10,
+        "torch_threads": 1,
+        "device": "cpu",
+        "world_size": 1,
+        "local_world_size": 1,
+        "node_count": 1,
+        "rank_ownership": {
+          "0": "whole_model"
+        },
+        "communication_bytes": 0,
+        "distribution_semantics": "single_process",
+        "scalability_claim_allowed": false,
+        "release_gate_allowed": false,
+        "non_release_evidence": true,
+        "benchmark_evidence_class": "local_non_release",
+        "scalability_blockers": [
+          "local_cpu_construction_not_release_scalability_evidence"
+        ],
+        "blockers": [
+          "local_cpu_construction_not_release_scalability_evidence"
+        ],
+        "distance": 3,
+        "rounds": 3,
+        "physical_qubits": 17,
+        "instructions": 144,
+        "parities": 25,
+        "fault_locations": 144,
+        "reverse_instruction_visits": 3600,
+        "fault_response_queries": 3600,
+        "model_errors_after_merge": 52,
+        "model_construction_seconds_with_tracemalloc": 0.19000604099710472,
+        "peak_traced_python_bytes": 475871,
+        "process_max_rss_before_bytes": 215826432,
+        "process_max_rss_after_bytes": 216186880
+      },
+      "stderr_present": false
+    },
+    {
+      "id": "W3-d3-02",
+      "command": [
+        "python",
+        "benchmarks/qec_clifford_dem_construction.py",
+        "--distance",
+        "3",
+        "--rounds",
+        "3",
+        "--output",
+        "/tmp/ftqc-baseline/dem-d3-2.json"
+      ],
+      "timeout_seconds": 300,
+      "status": "success",
+      "returncode": 0,
+      "warmup": true,
+      "process_wall_seconds_including_imports": 1.0647383339965018,
+      "payload": {
+        "benchmark": "qec_clifford_dem_construction",
+        "source_revision": "89221bdb88aca82a017fcce27b49b9eb9fca33ac",
+        "platform": "macOS-27.0-arm64-arm-64bit",
+        "python": "3.12.14",
+        "torch": "2.13.0",
+        "machine": "arm64",
+        "logical_cpu_count": 10,
+        "torch_threads": 1,
+        "device": "cpu",
+        "world_size": 1,
+        "local_world_size": 1,
+        "node_count": 1,
+        "rank_ownership": {
+          "0": "whole_model"
+        },
+        "communication_bytes": 0,
+        "distribution_semantics": "single_process",
+        "scalability_claim_allowed": false,
+        "release_gate_allowed": false,
+        "non_release_evidence": true,
+        "benchmark_evidence_class": "local_non_release",
+        "scalability_blockers": [
+          "local_cpu_construction_not_release_scalability_evidence"
+        ],
+        "blockers": [
+          "local_cpu_construction_not_release_scalability_evidence"
+        ],
+        "distance": 3,
+        "rounds": 3,
+        "physical_qubits": 17,
+        "instructions": 144,
+        "parities": 25,
+        "fault_locations": 144,
+        "reverse_instruction_visits": 3600,
+        "fault_response_queries": 3600,
+        "model_errors_after_merge": 52,
+        "model_construction_seconds_with_tracemalloc": 0.18552774999989197,
+        "peak_traced_python_bytes": 475871,
+        "process_max_rss_before_bytes": 216514560,
+        "process_max_rss_after_bytes": 217481216
+      },
+      "stderr_present": false
+    },
+    {
+      "id": "W3-d3-03",
+      "command": [
+        "python",
+        "benchmarks/qec_clifford_dem_construction.py",
+        "--distance",
+        "3",
+        "--rounds",
+        "3",
+        "--output",
+        "/tmp/ftqc-baseline/dem-d3-3.json"
+      ],
+      "timeout_seconds": 300,
+      "status": "success",
+      "returncode": 0,
+      "warmup": false,
+      "process_wall_seconds_including_imports": 1.0680317919905065,
+      "payload": {
+        "benchmark": "qec_clifford_dem_construction",
+        "source_revision": "89221bdb88aca82a017fcce27b49b9eb9fca33ac",
+        "platform": "macOS-27.0-arm64-arm-64bit",
+        "python": "3.12.14",
+        "torch": "2.13.0",
+        "machine": "arm64",
+        "logical_cpu_count": 10,
+        "torch_threads": 1,
+        "device": "cpu",
+        "world_size": 1,
+        "local_world_size": 1,
+        "node_count": 1,
+        "rank_ownership": {
+          "0": "whole_model"
+        },
+        "communication_bytes": 0,
+        "distribution_semantics": "single_process",
+        "scalability_claim_allowed": false,
+        "release_gate_allowed": false,
+        "non_release_evidence": true,
+        "benchmark_evidence_class": "local_non_release",
+        "scalability_blockers": [
+          "local_cpu_construction_not_release_scalability_evidence"
+        ],
+        "blockers": [
+          "local_cpu_construction_not_release_scalability_evidence"
+        ],
+        "distance": 3,
+        "rounds": 3,
+        "physical_qubits": 17,
+        "instructions": 144,
+        "parities": 25,
+        "fault_locations": 144,
+        "reverse_instruction_visits": 3600,
+        "fault_response_queries": 3600,
+        "model_errors_after_merge": 52,
+        "model_construction_seconds_with_tracemalloc": 0.16946808400098234,
+        "peak_traced_python_bytes": 475826,
+        "process_max_rss_before_bytes": 216334336,
+        "process_max_rss_after_bytes": 217284608
+      },
+      "stderr_present": false
+    },
+    {
+      "id": "W3-d3-04",
+      "command": [
+        "python",
+        "benchmarks/qec_clifford_dem_construction.py",
+        "--distance",
+        "3",
+        "--rounds",
+        "3",
+        "--output",
+        "/tmp/ftqc-baseline/dem-d3-4.json"
+      ],
+      "timeout_seconds": 300,
+      "status": "success",
+      "returncode": 0,
+      "warmup": false,
+      "process_wall_seconds_including_imports": 1.000560291999136,
+      "payload": {
+        "benchmark": "qec_clifford_dem_construction",
+        "source_revision": "89221bdb88aca82a017fcce27b49b9eb9fca33ac",
+        "platform": "macOS-27.0-arm64-arm-64bit",
+        "python": "3.12.14",
+        "torch": "2.13.0",
+        "machine": "arm64",
+        "logical_cpu_count": 10,
+        "torch_threads": 1,
+        "device": "cpu",
+        "world_size": 1,
+        "local_world_size": 1,
+        "node_count": 1,
+        "rank_ownership": {
+          "0": "whole_model"
+        },
+        "communication_bytes": 0,
+        "distribution_semantics": "single_process",
+        "scalability_claim_allowed": false,
+        "release_gate_allowed": false,
+        "non_release_evidence": true,
+        "benchmark_evidence_class": "local_non_release",
+        "scalability_blockers": [
+          "local_cpu_construction_not_release_scalability_evidence"
+        ],
+        "blockers": [
+          "local_cpu_construction_not_release_scalability_evidence"
+        ],
+        "distance": 3,
+        "rounds": 3,
+        "physical_qubits": 17,
+        "instructions": 144,
+        "parities": 25,
+        "fault_locations": 144,
+        "reverse_instruction_visits": 3600,
+        "fault_response_queries": 3600,
+        "model_errors_after_merge": 52,
+        "model_construction_seconds_with_tracemalloc": 0.17118066699185874,
+        "peak_traced_python_bytes": 475826,
+        "process_max_rss_before_bytes": 216039424,
+        "process_max_rss_after_bytes": 217006080
+      },
+      "stderr_present": false
+    },
+    {
+      "id": "W3-d3-05",
+      "command": [
+        "python",
+        "benchmarks/qec_clifford_dem_construction.py",
+        "--distance",
+        "3",
+        "--rounds",
+        "3",
+        "--output",
+        "/tmp/ftqc-baseline/dem-d3-5.json"
+      ],
+      "timeout_seconds": 300,
+      "status": "success",
+      "returncode": 0,
+      "warmup": false,
+      "process_wall_seconds_including_imports": 0.9735890000010841,
+      "payload": {
+        "benchmark": "qec_clifford_dem_construction",
+        "source_revision": "89221bdb88aca82a017fcce27b49b9eb9fca33ac",
+        "platform": "macOS-27.0-arm64-arm-64bit",
+        "python": "3.12.14",
+        "torch": "2.13.0",
+        "machine": "arm64",
+        "logical_cpu_count": 10,
+        "torch_threads": 1,
+        "device": "cpu",
+        "world_size": 1,
+        "local_world_size": 1,
+        "node_count": 1,
+        "rank_ownership": {
+          "0": "whole_model"
+        },
+        "communication_bytes": 0,
+        "distribution_semantics": "single_process",
+        "scalability_claim_allowed": false,
+        "release_gate_allowed": false,
+        "non_release_evidence": true,
+        "benchmark_evidence_class": "local_non_release",
+        "scalability_blockers": [
+          "local_cpu_construction_not_release_scalability_evidence"
+        ],
+        "blockers": [
+          "local_cpu_construction_not_release_scalability_evidence"
+        ],
+        "distance": 3,
+        "rounds": 3,
+        "physical_qubits": 17,
+        "instructions": 144,
+        "parities": 25,
+        "fault_locations": 144,
+        "reverse_instruction_visits": 3600,
+        "fault_response_queries": 3600,
+        "model_errors_after_merge": 52,
+        "model_construction_seconds_with_tracemalloc": 0.17272654199041426,
+        "peak_traced_python_bytes": 475871,
+        "process_max_rss_before_bytes": 215859200,
+        "process_max_rss_after_bytes": 216875008
+      },
+      "stderr_present": false
+    },
+    {
+      "id": "W3-d3-06",
+      "command": [
+        "python",
+        "benchmarks/qec_clifford_dem_construction.py",
+        "--distance",
+        "3",
+        "--rounds",
+        "3",
+        "--output",
+        "/tmp/ftqc-baseline/dem-d3-6.json"
+      ],
+      "timeout_seconds": 300,
+      "status": "success",
+      "returncode": 0,
+      "warmup": false,
+      "process_wall_seconds_including_imports": 1.0552172909956425,
+      "payload": {
+        "benchmark": "qec_clifford_dem_construction",
+        "source_revision": "89221bdb88aca82a017fcce27b49b9eb9fca33ac",
+        "platform": "macOS-27.0-arm64-arm-64bit",
+        "python": "3.12.14",
+        "torch": "2.13.0",
+        "machine": "arm64",
+        "logical_cpu_count": 10,
+        "torch_threads": 1,
+        "device": "cpu",
+        "world_size": 1,
+        "local_world_size": 1,
+        "node_count": 1,
+        "rank_ownership": {
+          "0": "whole_model"
+        },
+        "communication_bytes": 0,
+        "distribution_semantics": "single_process",
+        "scalability_claim_allowed": false,
+        "release_gate_allowed": false,
+        "non_release_evidence": true,
+        "benchmark_evidence_class": "local_non_release",
+        "scalability_blockers": [
+          "local_cpu_construction_not_release_scalability_evidence"
+        ],
+        "blockers": [
+          "local_cpu_construction_not_release_scalability_evidence"
+        ],
+        "distance": 3,
+        "rounds": 3,
+        "physical_qubits": 17,
+        "instructions": 144,
+        "parities": 25,
+        "fault_locations": 144,
+        "reverse_instruction_visits": 3600,
+        "fault_response_queries": 3600,
+        "model_errors_after_merge": 52,
+        "model_construction_seconds_with_tracemalloc": 0.17618670799129177,
+        "peak_traced_python_bytes": 475826,
+        "process_max_rss_before_bytes": 209223680,
+        "process_max_rss_after_bytes": 209223680
+      },
+      "stderr_present": false
+    },
+    {
+      "id": "W3-d3-07",
+      "command": [
+        "python",
+        "benchmarks/qec_clifford_dem_construction.py",
+        "--distance",
+        "3",
+        "--rounds",
+        "3",
+        "--output",
+        "/tmp/ftqc-baseline/dem-d3-7.json"
+      ],
+      "timeout_seconds": 300,
+      "status": "success",
+      "returncode": 0,
+      "warmup": false,
+      "process_wall_seconds_including_imports": 1.0913965419895248,
+      "payload": {
+        "benchmark": "qec_clifford_dem_construction",
+        "source_revision": "89221bdb88aca82a017fcce27b49b9eb9fca33ac",
+        "platform": "macOS-27.0-arm64-arm-64bit",
+        "python": "3.12.14",
+        "torch": "2.13.0",
+        "machine": "arm64",
+        "logical_cpu_count": 10,
+        "torch_threads": 1,
+        "device": "cpu",
+        "world_size": 1,
+        "local_world_size": 1,
+        "node_count": 1,
+        "rank_ownership": {
+          "0": "whole_model"
+        },
+        "communication_bytes": 0,
+        "distribution_semantics": "single_process",
+        "scalability_claim_allowed": false,
+        "release_gate_allowed": false,
+        "non_release_evidence": true,
+        "benchmark_evidence_class": "local_non_release",
+        "scalability_blockers": [
+          "local_cpu_construction_not_release_scalability_evidence"
+        ],
+        "blockers": [
+          "local_cpu_construction_not_release_scalability_evidence"
+        ],
+        "distance": 3,
+        "rounds": 3,
+        "physical_qubits": 17,
+        "instructions": 144,
+        "parities": 25,
+        "fault_locations": 144,
+        "reverse_instruction_visits": 3600,
+        "fault_response_queries": 3600,
+        "model_errors_after_merge": 52,
+        "model_construction_seconds_with_tracemalloc": 0.17867254099110141,
+        "peak_traced_python_bytes": 475871,
+        "process_max_rss_before_bytes": 201342976,
+        "process_max_rss_after_bytes": 201342976
+      },
+      "stderr_present": false
+    },
+    {
+      "id": "W3-d3-08",
+      "command": [
+        "python",
+        "benchmarks/qec_clifford_dem_construction.py",
+        "--distance",
+        "3",
+        "--rounds",
+        "3",
+        "--output",
+        "/tmp/ftqc-baseline/dem-d3-8.json"
+      ],
+      "timeout_seconds": 300,
+      "status": "success",
+      "returncode": 0,
+      "warmup": false,
+      "process_wall_seconds_including_imports": 0.9811702500010142,
+      "payload": {
+        "benchmark": "qec_clifford_dem_construction",
+        "source_revision": "89221bdb88aca82a017fcce27b49b9eb9fca33ac",
+        "platform": "macOS-27.0-arm64-arm-64bit",
+        "python": "3.12.14",
+        "torch": "2.13.0",
+        "machine": "arm64",
+        "logical_cpu_count": 10,
+        "torch_threads": 1,
+        "device": "cpu",
+        "world_size": 1,
+        "local_world_size": 1,
+        "node_count": 1,
+        "rank_ownership": {
+          "0": "whole_model"
+        },
+        "communication_bytes": 0,
+        "distribution_semantics": "single_process",
+        "scalability_claim_allowed": false,
+        "release_gate_allowed": false,
+        "non_release_evidence": true,
+        "benchmark_evidence_class": "local_non_release",
+        "scalability_blockers": [
+          "local_cpu_construction_not_release_scalability_evidence"
+        ],
+        "blockers": [
+          "local_cpu_construction_not_release_scalability_evidence"
+        ],
+        "distance": 3,
+        "rounds": 3,
+        "physical_qubits": 17,
+        "instructions": 144,
+        "parities": 25,
+        "fault_locations": 144,
+        "reverse_instruction_visits": 3600,
+        "fault_response_queries": 3600,
+        "model_errors_after_merge": 52,
+        "model_construction_seconds_with_tracemalloc": 0.16640770799131133,
+        "peak_traced_python_bytes": 475826,
+        "process_max_rss_before_bytes": 216350720,
+        "process_max_rss_after_bytes": 217366528
+      },
+      "stderr_present": false
+    },
+    {
+      "id": "W3-d3-09",
+      "command": [
+        "python",
+        "benchmarks/qec_clifford_dem_construction.py",
+        "--distance",
+        "3",
+        "--rounds",
+        "3",
+        "--output",
+        "/tmp/ftqc-baseline/dem-d3-9.json"
+      ],
+      "timeout_seconds": 300,
+      "status": "success",
+      "returncode": 0,
+      "warmup": false,
+      "process_wall_seconds_including_imports": 1.014889083991875,
+      "payload": {
+        "benchmark": "qec_clifford_dem_construction",
+        "source_revision": "89221bdb88aca82a017fcce27b49b9eb9fca33ac",
+        "platform": "macOS-27.0-arm64-arm-64bit",
+        "python": "3.12.14",
+        "torch": "2.13.0",
+        "machine": "arm64",
+        "logical_cpu_count": 10,
+        "torch_threads": 1,
+        "device": "cpu",
+        "world_size": 1,
+        "local_world_size": 1,
+        "node_count": 1,
+        "rank_ownership": {
+          "0": "whole_model"
+        },
+        "communication_bytes": 0,
+        "distribution_semantics": "single_process",
+        "scalability_claim_allowed": false,
+        "release_gate_allowed": false,
+        "non_release_evidence": true,
+        "benchmark_evidence_class": "local_non_release",
+        "scalability_blockers": [
+          "local_cpu_construction_not_release_scalability_evidence"
+        ],
+        "blockers": [
+          "local_cpu_construction_not_release_scalability_evidence"
+        ],
+        "distance": 3,
+        "rounds": 3,
+        "physical_qubits": 17,
+        "instructions": 144,
+        "parities": 25,
+        "fault_locations": 144,
+        "reverse_instruction_visits": 3600,
+        "fault_response_queries": 3600,
+        "model_errors_after_merge": 52,
+        "model_construction_seconds_with_tracemalloc": 0.16741341700253543,
+        "peak_traced_python_bytes": 475826,
+        "process_max_rss_before_bytes": 215662592,
+        "process_max_rss_after_bytes": 216629248
+      },
+      "stderr_present": false
+    },
+    {
+      "id": "W3-d3-10",
+      "command": [
+        "python",
+        "benchmarks/qec_clifford_dem_construction.py",
+        "--distance",
+        "3",
+        "--rounds",
+        "3",
+        "--output",
+        "/tmp/ftqc-baseline/dem-d3-10.json"
+      ],
+      "timeout_seconds": 300,
+      "status": "success",
+      "returncode": 0,
+      "warmup": false,
+      "process_wall_seconds_including_imports": 1.009534667013213,
+      "payload": {
+        "benchmark": "qec_clifford_dem_construction",
+        "source_revision": "89221bdb88aca82a017fcce27b49b9eb9fca33ac",
+        "platform": "macOS-27.0-arm64-arm-64bit",
+        "python": "3.12.14",
+        "torch": "2.13.0",
+        "machine": "arm64",
+        "logical_cpu_count": 10,
+        "torch_threads": 1,
+        "device": "cpu",
+        "world_size": 1,
+        "local_world_size": 1,
+        "node_count": 1,
+        "rank_ownership": {
+          "0": "whole_model"
+        },
+        "communication_bytes": 0,
+        "distribution_semantics": "single_process",
+        "scalability_claim_allowed": false,
+        "release_gate_allowed": false,
+        "non_release_evidence": true,
+        "benchmark_evidence_class": "local_non_release",
+        "scalability_blockers": [
+          "local_cpu_construction_not_release_scalability_evidence"
+        ],
+        "blockers": [
+          "local_cpu_construction_not_release_scalability_evidence"
+        ],
+        "distance": 3,
+        "rounds": 3,
+        "physical_qubits": 17,
+        "instructions": 144,
+        "parities": 25,
+        "fault_locations": 144,
+        "reverse_instruction_visits": 3600,
+        "fault_response_queries": 3600,
+        "model_errors_after_merge": 52,
+        "model_construction_seconds_with_tracemalloc": 0.18866241700015962,
+        "peak_traced_python_bytes": 475871,
+        "process_max_rss_before_bytes": 216203264,
+        "process_max_rss_after_bytes": 217219072
+      },
+      "stderr_present": false
+    },
+    {
+      "id": "W3-d3-11",
+      "command": [
+        "python",
+        "benchmarks/qec_clifford_dem_construction.py",
+        "--distance",
+        "3",
+        "--rounds",
+        "3",
+        "--output",
+        "/tmp/ftqc-baseline/dem-d3-11.json"
+      ],
+      "timeout_seconds": 300,
+      "status": "success",
+      "returncode": 0,
+      "warmup": false,
+      "process_wall_seconds_including_imports": 1.244300165999448,
+      "payload": {
+        "benchmark": "qec_clifford_dem_construction",
+        "source_revision": "89221bdb88aca82a017fcce27b49b9eb9fca33ac",
+        "platform": "macOS-27.0-arm64-arm-64bit",
+        "python": "3.12.14",
+        "torch": "2.13.0",
+        "machine": "arm64",
+        "logical_cpu_count": 10,
+        "torch_threads": 1,
+        "device": "cpu",
+        "world_size": 1,
+        "local_world_size": 1,
+        "node_count": 1,
+        "rank_ownership": {
+          "0": "whole_model"
+        },
+        "communication_bytes": 0,
+        "distribution_semantics": "single_process",
+        "scalability_claim_allowed": false,
+        "release_gate_allowed": false,
+        "non_release_evidence": true,
+        "benchmark_evidence_class": "local_non_release",
+        "scalability_blockers": [
+          "local_cpu_construction_not_release_scalability_evidence"
+        ],
+        "blockers": [
+          "local_cpu_construction_not_release_scalability_evidence"
+        ],
+        "distance": 3,
+        "rounds": 3,
+        "physical_qubits": 17,
+        "instructions": 144,
+        "parities": 25,
+        "fault_locations": 144,
+        "reverse_instruction_visits": 3600,
+        "fault_response_queries": 3600,
+        "model_errors_after_merge": 52,
+        "model_construction_seconds_with_tracemalloc": 0.2110857079969719,
+        "peak_traced_python_bytes": 475871,
+        "process_max_rss_before_bytes": 200261632,
+        "process_max_rss_after_bytes": 200261632
+      },
+      "stderr_present": false
+    },
+    {
+      "id": "W3-d3-12",
+      "command": [
+        "python",
+        "benchmarks/qec_clifford_dem_construction.py",
+        "--distance",
+        "3",
+        "--rounds",
+        "3",
+        "--output",
+        "/tmp/ftqc-baseline/dem-d3-12.json"
+      ],
+      "timeout_seconds": 300,
+      "status": "success",
+      "returncode": 0,
+      "warmup": false,
+      "process_wall_seconds_including_imports": 1.264327625001897,
+      "payload": {
+        "benchmark": "qec_clifford_dem_construction",
+        "source_revision": "89221bdb88aca82a017fcce27b49b9eb9fca33ac",
+        "platform": "macOS-27.0-arm64-arm-64bit",
+        "python": "3.12.14",
+        "torch": "2.13.0",
+        "machine": "arm64",
+        "logical_cpu_count": 10,
+        "torch_threads": 1,
+        "device": "cpu",
+        "world_size": 1,
+        "local_world_size": 1,
+        "node_count": 1,
+        "rank_ownership": {
+          "0": "whole_model"
+        },
+        "communication_bytes": 0,
+        "distribution_semantics": "single_process",
+        "scalability_claim_allowed": false,
+        "release_gate_allowed": false,
+        "non_release_evidence": true,
+        "benchmark_evidence_class": "local_non_release",
+        "scalability_blockers": [
+          "local_cpu_construction_not_release_scalability_evidence"
+        ],
+        "blockers": [
+          "local_cpu_construction_not_release_scalability_evidence"
+        ],
+        "distance": 3,
+        "rounds": 3,
+        "physical_qubits": 17,
+        "instructions": 144,
+        "parities": 25,
+        "fault_locations": 144,
+        "reverse_instruction_visits": 3600,
+        "fault_response_queries": 3600,
+        "model_errors_after_merge": 52,
+        "model_construction_seconds_with_tracemalloc": 0.20676766599353869,
+        "peak_traced_python_bytes": 475871,
+        "process_max_rss_before_bytes": 204750848,
+        "process_max_rss_after_bytes": 205127680
+      },
+      "stderr_present": false
+    },
+    {
+      "id": "W3-d5-00",
+      "command": [
+        "python",
+        "benchmarks/qec_clifford_dem_construction.py",
+        "--distance",
+        "5",
+        "--rounds",
+        "3",
+        "--output",
+        "/tmp/ftqc-baseline/dem-d5-0.json"
+      ],
+      "timeout_seconds": 300,
+      "status": "success",
+      "returncode": 0,
+      "warmup": true,
+      "process_wall_seconds_including_imports": 2.119033125010901,
+      "payload": {
+        "benchmark": "qec_clifford_dem_construction",
+        "source_revision": "89221bdb88aca82a017fcce27b49b9eb9fca33ac",
+        "platform": "macOS-27.0-arm64-arm-64bit",
+        "python": "3.12.14",
+        "torch": "2.13.0",
+        "machine": "arm64",
+        "logical_cpu_count": 10,
+        "torch_threads": 1,
+        "device": "cpu",
+        "world_size": 1,
+        "local_world_size": 1,
+        "node_count": 1,
+        "rank_ownership": {
+          "0": "whole_model"
+        },
+        "communication_bytes": 0,
+        "distribution_semantics": "single_process",
+        "scalability_claim_allowed": false,
+        "release_gate_allowed": false,
+        "non_release_evidence": true,
+        "benchmark_evidence_class": "local_non_release",
+        "scalability_blockers": [
+          "local_cpu_construction_not_release_scalability_evidence"
+        ],
+        "blockers": [
+          "local_cpu_construction_not_release_scalability_evidence"
+        ],
+        "distance": 5,
+        "rounds": 3,
+        "physical_qubits": 49,
+        "instructions": 456,
+        "parities": 73,
+        "fault_locations": 480,
+        "reverse_instruction_visits": 33288,
+        "fault_response_queries": 35040,
+        "model_errors_after_merge": 179,
+        "model_construction_seconds_with_tracemalloc": 1.00489741700585,
+        "peak_traced_python_bytes": 1387985,
+        "process_max_rss_before_bytes": 216645632,
+        "process_max_rss_after_bytes": 218775552
+      },
+      "stderr_present": false
+    },
+    {
+      "id": "W3-d5-01",
+      "command": [
+        "python",
+        "benchmarks/qec_clifford_dem_construction.py",
+        "--distance",
+        "5",
+        "--rounds",
+        "3",
+        "--output",
+        "/tmp/ftqc-baseline/dem-d5-1.json"
+      ],
+      "timeout_seconds": 300,
+      "status": "success",
+      "returncode": 0,
+      "warmup": true,
+      "process_wall_seconds_including_imports": 1.9791037909890292,
+      "payload": {
+        "benchmark": "qec_clifford_dem_construction",
+        "source_revision": "89221bdb88aca82a017fcce27b49b9eb9fca33ac",
+        "platform": "macOS-27.0-arm64-arm-64bit",
+        "python": "3.12.14",
+        "torch": "2.13.0",
+        "machine": "arm64",
+        "logical_cpu_count": 10,
+        "torch_threads": 1,
+        "device": "cpu",
+        "world_size": 1,
+        "local_world_size": 1,
+        "node_count": 1,
+        "rank_ownership": {
+          "0": "whole_model"
+        },
+        "communication_bytes": 0,
+        "distribution_semantics": "single_process",
+        "scalability_claim_allowed": false,
+        "release_gate_allowed": false,
+        "non_release_evidence": true,
+        "benchmark_evidence_class": "local_non_release",
+        "scalability_blockers": [
+          "local_cpu_construction_not_release_scalability_evidence"
+        ],
+        "blockers": [
+          "local_cpu_construction_not_release_scalability_evidence"
+        ],
+        "distance": 5,
+        "rounds": 3,
+        "physical_qubits": 49,
+        "instructions": 456,
+        "parities": 73,
+        "fault_locations": 480,
+        "reverse_instruction_visits": 33288,
+        "fault_response_queries": 35040,
+        "model_errors_after_merge": 179,
+        "model_construction_seconds_with_tracemalloc": 1.028801458000089,
+        "peak_traced_python_bytes": 1388030,
+        "process_max_rss_before_bytes": 217317376,
+        "process_max_rss_after_bytes": 219856896
+      },
+      "stderr_present": false
+    },
+    {
+      "id": "W3-d5-02",
+      "command": [
+        "python",
+        "benchmarks/qec_clifford_dem_construction.py",
+        "--distance",
+        "5",
+        "--rounds",
+        "3",
+        "--output",
+        "/tmp/ftqc-baseline/dem-d5-2.json"
+      ],
+      "timeout_seconds": 300,
+      "status": "success",
+      "returncode": 0,
+      "warmup": true,
+      "process_wall_seconds_including_imports": 2.111044707999099,
+      "payload": {
+        "benchmark": "qec_clifford_dem_construction",
+        "source_revision": "89221bdb88aca82a017fcce27b49b9eb9fca33ac",
+        "platform": "macOS-27.0-arm64-arm-64bit",
+        "python": "3.12.14",
+        "torch": "2.13.0",
+        "machine": "arm64",
+        "logical_cpu_count": 10,
+        "torch_threads": 1,
+        "device": "cpu",
+        "world_size": 1,
+        "local_world_size": 1,
+        "node_count": 1,
+        "rank_ownership": {
+          "0": "whole_model"
+        },
+        "communication_bytes": 0,
+        "distribution_semantics": "single_process",
+        "scalability_claim_allowed": false,
+        "release_gate_allowed": false,
+        "non_release_evidence": true,
+        "benchmark_evidence_class": "local_non_release",
+        "scalability_blockers": [
+          "local_cpu_construction_not_release_scalability_evidence"
+        ],
+        "blockers": [
+          "local_cpu_construction_not_release_scalability_evidence"
+        ],
+        "distance": 5,
+        "rounds": 3,
+        "physical_qubits": 49,
+        "instructions": 456,
+        "parities": 73,
+        "fault_locations": 480,
+        "reverse_instruction_visits": 33288,
+        "fault_response_queries": 35040,
+        "model_errors_after_merge": 179,
+        "model_construction_seconds_with_tracemalloc": 1.0121393339941278,
+        "peak_traced_python_bytes": 1388030,
+        "process_max_rss_before_bytes": 205422592,
+        "process_max_rss_after_bytes": 206340096
+      },
+      "stderr_present": false
+    },
+    {
+      "id": "W3-d5-03",
+      "command": [
+        "python",
+        "benchmarks/qec_clifford_dem_construction.py",
+        "--distance",
+        "5",
+        "--rounds",
+        "3",
+        "--output",
+        "/tmp/ftqc-baseline/dem-d5-3.json"
+      ],
+      "timeout_seconds": 300,
+      "status": "success",
+      "returncode": 0,
+      "warmup": false,
+      "process_wall_seconds_including_imports": 1.942058000000543,
+      "payload": {
+        "benchmark": "qec_clifford_dem_construction",
+        "source_revision": "89221bdb88aca82a017fcce27b49b9eb9fca33ac",
+        "platform": "macOS-27.0-arm64-arm-64bit",
+        "python": "3.12.14",
+        "torch": "2.13.0",
+        "machine": "arm64",
+        "logical_cpu_count": 10,
+        "torch_threads": 1,
+        "device": "cpu",
+        "world_size": 1,
+        "local_world_size": 1,
+        "node_count": 1,
+        "rank_ownership": {
+          "0": "whole_model"
+        },
+        "communication_bytes": 0,
+        "distribution_semantics": "single_process",
+        "scalability_claim_allowed": false,
+        "release_gate_allowed": false,
+        "non_release_evidence": true,
+        "benchmark_evidence_class": "local_non_release",
+        "scalability_blockers": [
+          "local_cpu_construction_not_release_scalability_evidence"
+        ],
+        "blockers": [
+          "local_cpu_construction_not_release_scalability_evidence"
+        ],
+        "distance": 5,
+        "rounds": 3,
+        "physical_qubits": 49,
+        "instructions": 456,
+        "parities": 73,
+        "fault_locations": 480,
+        "reverse_instruction_visits": 33288,
+        "fault_response_queries": 35040,
+        "model_errors_after_merge": 179,
+        "model_construction_seconds_with_tracemalloc": 1.0121804579976015,
+        "peak_traced_python_bytes": 1388030,
+        "process_max_rss_before_bytes": 218136576,
+        "process_max_rss_after_bytes": 219889664
+      },
+      "stderr_present": false
+    },
+    {
+      "id": "W3-d5-04",
+      "command": [
+        "python",
+        "benchmarks/qec_clifford_dem_construction.py",
+        "--distance",
+        "5",
+        "--rounds",
+        "3",
+        "--output",
+        "/tmp/ftqc-baseline/dem-d5-4.json"
+      ],
+      "timeout_seconds": 300,
+      "status": "success",
+      "returncode": 0,
+      "warmup": false,
+      "process_wall_seconds_including_imports": 3.7327957499946933,
+      "payload": {
+        "benchmark": "qec_clifford_dem_construction",
+        "source_revision": "89221bdb88aca82a017fcce27b49b9eb9fca33ac",
+        "platform": "macOS-27.0-arm64-arm-64bit",
+        "python": "3.12.14",
+        "torch": "2.13.0",
+        "machine": "arm64",
+        "logical_cpu_count": 10,
+        "torch_threads": 1,
+        "device": "cpu",
+        "world_size": 1,
+        "local_world_size": 1,
+        "node_count": 1,
+        "rank_ownership": {
+          "0": "whole_model"
+        },
+        "communication_bytes": 0,
+        "distribution_semantics": "single_process",
+        "scalability_claim_allowed": false,
+        "release_gate_allowed": false,
+        "non_release_evidence": true,
+        "benchmark_evidence_class": "local_non_release",
+        "scalability_blockers": [
+          "local_cpu_construction_not_release_scalability_evidence"
+        ],
+        "blockers": [
+          "local_cpu_construction_not_release_scalability_evidence"
+        ],
+        "distance": 5,
+        "rounds": 3,
+        "physical_qubits": 49,
+        "instructions": 456,
+        "parities": 73,
+        "fault_locations": 480,
+        "reverse_instruction_visits": 33288,
+        "fault_response_queries": 35040,
+        "model_errors_after_merge": 179,
+        "model_construction_seconds_with_tracemalloc": 1.2042834579915507,
+        "peak_traced_python_bytes": 1387985,
+        "process_max_rss_before_bytes": 212893696,
+        "process_max_rss_after_bytes": 212893696
+      },
+      "stderr_present": false
+    },
+    {
+      "id": "W3-d5-05",
+      "command": [
+        "python",
+        "benchmarks/qec_clifford_dem_construction.py",
+        "--distance",
+        "5",
+        "--rounds",
+        "3",
+        "--output",
+        "/tmp/ftqc-baseline/dem-d5-5.json"
+      ],
+      "timeout_seconds": 300,
+      "status": "success",
+      "returncode": 0,
+      "warmup": false,
+      "process_wall_seconds_including_imports": 2.2890842919878196,
+      "payload": {
+        "benchmark": "qec_clifford_dem_construction",
+        "source_revision": "89221bdb88aca82a017fcce27b49b9eb9fca33ac",
+        "platform": "macOS-27.0-arm64-arm-64bit",
+        "python": "3.12.14",
+        "torch": "2.13.0",
+        "machine": "arm64",
+        "logical_cpu_count": 10,
+        "torch_threads": 1,
+        "device": "cpu",
+        "world_size": 1,
+        "local_world_size": 1,
+        "node_count": 1,
+        "rank_ownership": {
+          "0": "whole_model"
+        },
+        "communication_bytes": 0,
+        "distribution_semantics": "single_process",
+        "scalability_claim_allowed": false,
+        "release_gate_allowed": false,
+        "non_release_evidence": true,
+        "benchmark_evidence_class": "local_non_release",
+        "scalability_blockers": [
+          "local_cpu_construction_not_release_scalability_evidence"
+        ],
+        "blockers": [
+          "local_cpu_construction_not_release_scalability_evidence"
+        ],
+        "distance": 5,
+        "rounds": 3,
+        "physical_qubits": 49,
+        "instructions": 456,
+        "parities": 73,
+        "fault_locations": 480,
+        "reverse_instruction_visits": 33288,
+        "fault_response_queries": 35040,
+        "model_errors_after_merge": 179,
+        "model_construction_seconds_with_tracemalloc": 1.0768223750055768,
+        "peak_traced_python_bytes": 1388030,
+        "process_max_rss_before_bytes": 200310784,
+        "process_max_rss_after_bytes": 203259904
+      },
+      "stderr_present": false
+    },
+    {
+      "id": "W3-d5-06",
+      "command": [
+        "python",
+        "benchmarks/qec_clifford_dem_construction.py",
+        "--distance",
+        "5",
+        "--rounds",
+        "3",
+        "--output",
+        "/tmp/ftqc-baseline/dem-d5-6.json"
+      ],
+      "timeout_seconds": 300,
+      "status": "success",
+      "returncode": 0,
+      "warmup": false,
+      "process_wall_seconds_including_imports": 2.019320583989611,
+      "payload": {
+        "benchmark": "qec_clifford_dem_construction",
+        "source_revision": "89221bdb88aca82a017fcce27b49b9eb9fca33ac",
+        "platform": "macOS-27.0-arm64-arm-64bit",
+        "python": "3.12.14",
+        "torch": "2.13.0",
+        "machine": "arm64",
+        "logical_cpu_count": 10,
+        "torch_threads": 1,
+        "device": "cpu",
+        "world_size": 1,
+        "local_world_size": 1,
+        "node_count": 1,
+        "rank_ownership": {
+          "0": "whole_model"
+        },
+        "communication_bytes": 0,
+        "distribution_semantics": "single_process",
+        "scalability_claim_allowed": false,
+        "release_gate_allowed": false,
+        "non_release_evidence": true,
+        "benchmark_evidence_class": "local_non_release",
+        "scalability_blockers": [
+          "local_cpu_construction_not_release_scalability_evidence"
+        ],
+        "blockers": [
+          "local_cpu_construction_not_release_scalability_evidence"
+        ],
+        "distance": 5,
+        "rounds": 3,
+        "physical_qubits": 49,
+        "instructions": 456,
+        "parities": 73,
+        "fault_locations": 480,
+        "reverse_instruction_visits": 33288,
+        "fault_response_queries": 35040,
+        "model_errors_after_merge": 179,
+        "model_construction_seconds_with_tracemalloc": 1.027507874998264,
+        "peak_traced_python_bytes": 1388030,
+        "process_max_rss_before_bytes": 217923584,
+        "process_max_rss_after_bytes": 220446720
+      },
+      "stderr_present": false
+    },
+    {
+      "id": "W3-d5-07",
+      "command": [
+        "python",
+        "benchmarks/qec_clifford_dem_construction.py",
+        "--distance",
+        "5",
+        "--rounds",
+        "3",
+        "--output",
+        "/tmp/ftqc-baseline/dem-d5-7.json"
+      ],
+      "timeout_seconds": 300,
+      "status": "success",
+      "returncode": 0,
+      "warmup": false,
+      "process_wall_seconds_including_imports": 2.1073402500041993,
+      "payload": {
+        "benchmark": "qec_clifford_dem_construction",
+        "source_revision": "89221bdb88aca82a017fcce27b49b9eb9fca33ac",
+        "platform": "macOS-27.0-arm64-arm-64bit",
+        "python": "3.12.14",
+        "torch": "2.13.0",
+        "machine": "arm64",
+        "logical_cpu_count": 10,
+        "torch_threads": 1,
+        "device": "cpu",
+        "world_size": 1,
+        "local_world_size": 1,
+        "node_count": 1,
+        "rank_ownership": {
+          "0": "whole_model"
+        },
+        "communication_bytes": 0,
+        "distribution_semantics": "single_process",
+        "scalability_claim_allowed": false,
+        "release_gate_allowed": false,
+        "non_release_evidence": true,
+        "benchmark_evidence_class": "local_non_release",
+        "scalability_blockers": [
+          "local_cpu_construction_not_release_scalability_evidence"
+        ],
+        "blockers": [
+          "local_cpu_construction_not_release_scalability_evidence"
+        ],
+        "distance": 5,
+        "rounds": 3,
+        "physical_qubits": 49,
+        "instructions": 456,
+        "parities": 73,
+        "fault_locations": 480,
+        "reverse_instruction_visits": 33288,
+        "fault_response_queries": 35040,
+        "model_errors_after_merge": 179,
+        "model_construction_seconds_with_tracemalloc": 1.0430012919969158,
+        "peak_traced_python_bytes": 1387985,
+        "process_max_rss_before_bytes": 211156992,
+        "process_max_rss_after_bytes": 211156992
+      },
+      "stderr_present": false
+    },
+    {
+      "id": "W3-d5-08",
+      "command": [
+        "python",
+        "benchmarks/qec_clifford_dem_construction.py",
+        "--distance",
+        "5",
+        "--rounds",
+        "3",
+        "--output",
+        "/tmp/ftqc-baseline/dem-d5-8.json"
+      ],
+      "timeout_seconds": 300,
+      "status": "success",
+      "returncode": 0,
+      "warmup": false,
+      "process_wall_seconds_including_imports": 2.344868917003623,
+      "payload": {
+        "benchmark": "qec_clifford_dem_construction",
+        "source_revision": "89221bdb88aca82a017fcce27b49b9eb9fca33ac",
+        "platform": "macOS-27.0-arm64-arm-64bit",
+        "python": "3.12.14",
+        "torch": "2.13.0",
+        "machine": "arm64",
+        "logical_cpu_count": 10,
+        "torch_threads": 1,
+        "device": "cpu",
+        "world_size": 1,
+        "local_world_size": 1,
+        "node_count": 1,
+        "rank_ownership": {
+          "0": "whole_model"
+        },
+        "communication_bytes": 0,
+        "distribution_semantics": "single_process",
+        "scalability_claim_allowed": false,
+        "release_gate_allowed": false,
+        "non_release_evidence": true,
+        "benchmark_evidence_class": "local_non_release",
+        "scalability_blockers": [
+          "local_cpu_construction_not_release_scalability_evidence"
+        ],
+        "blockers": [
+          "local_cpu_construction_not_release_scalability_evidence"
+        ],
+        "distance": 5,
+        "rounds": 3,
+        "physical_qubits": 49,
+        "instructions": 456,
+        "parities": 73,
+        "fault_locations": 480,
+        "reverse_instruction_visits": 33288,
+        "fault_response_queries": 35040,
+        "model_errors_after_merge": 179,
+        "model_construction_seconds_with_tracemalloc": 1.181772459007334,
+        "peak_traced_python_bytes": 1387985,
+        "process_max_rss_before_bytes": 217595904,
+        "process_max_rss_after_bytes": 218791936
+      },
+      "stderr_present": false
+    },
+    {
+      "id": "W3-d5-09",
+      "command": [
+        "python",
+        "benchmarks/qec_clifford_dem_construction.py",
+        "--distance",
+        "5",
+        "--rounds",
+        "3",
+        "--output",
+        "/tmp/ftqc-baseline/dem-d5-9.json"
+      ],
+      "timeout_seconds": 300,
+      "status": "success",
+      "returncode": 0,
+      "warmup": false,
+      "process_wall_seconds_including_imports": 2.5550894159969175,
+      "payload": {
+        "benchmark": "qec_clifford_dem_construction",
+        "source_revision": "89221bdb88aca82a017fcce27b49b9eb9fca33ac",
+        "platform": "macOS-27.0-arm64-arm-64bit",
+        "python": "3.12.14",
+        "torch": "2.13.0",
+        "machine": "arm64",
+        "logical_cpu_count": 10,
+        "torch_threads": 1,
+        "device": "cpu",
+        "world_size": 1,
+        "local_world_size": 1,
+        "node_count": 1,
+        "rank_ownership": {
+          "0": "whole_model"
+        },
+        "communication_bytes": 0,
+        "distribution_semantics": "single_process",
+        "scalability_claim_allowed": false,
+        "release_gate_allowed": false,
+        "non_release_evidence": true,
+        "benchmark_evidence_class": "local_non_release",
+        "scalability_blockers": [
+          "local_cpu_construction_not_release_scalability_evidence"
+        ],
+        "blockers": [
+          "local_cpu_construction_not_release_scalability_evidence"
+        ],
+        "distance": 5,
+        "rounds": 3,
+        "physical_qubits": 49,
+        "instructions": 456,
+        "parities": 73,
+        "fault_locations": 480,
+        "reverse_instruction_visits": 33288,
+        "fault_response_queries": 35040,
+        "model_errors_after_merge": 179,
+        "model_construction_seconds_with_tracemalloc": 1.148674583004322,
+        "peak_traced_python_bytes": 1388030,
+        "process_max_rss_before_bytes": 199933952,
+        "process_max_rss_after_bytes": 201555968
+      },
+      "stderr_present": false
+    },
+    {
+      "id": "W3-d5-10",
+      "command": [
+        "python",
+        "benchmarks/qec_clifford_dem_construction.py",
+        "--distance",
+        "5",
+        "--rounds",
+        "3",
+        "--output",
+        "/tmp/ftqc-baseline/dem-d5-10.json"
+      ],
+      "timeout_seconds": 300,
+      "status": "success",
+      "returncode": 0,
+      "warmup": false,
+      "process_wall_seconds_including_imports": 2.3059311250108294,
+      "payload": {
+        "benchmark": "qec_clifford_dem_construction",
+        "source_revision": "89221bdb88aca82a017fcce27b49b9eb9fca33ac",
+        "platform": "macOS-27.0-arm64-arm-64bit",
+        "python": "3.12.14",
+        "torch": "2.13.0",
+        "machine": "arm64",
+        "logical_cpu_count": 10,
+        "torch_threads": 1,
+        "device": "cpu",
+        "world_size": 1,
+        "local_world_size": 1,
+        "node_count": 1,
+        "rank_ownership": {
+          "0": "whole_model"
+        },
+        "communication_bytes": 0,
+        "distribution_semantics": "single_process",
+        "scalability_claim_allowed": false,
+        "release_gate_allowed": false,
+        "non_release_evidence": true,
+        "benchmark_evidence_class": "local_non_release",
+        "scalability_blockers": [
+          "local_cpu_construction_not_release_scalability_evidence"
+        ],
+        "blockers": [
+          "local_cpu_construction_not_release_scalability_evidence"
+        ],
+        "distance": 5,
+        "rounds": 3,
+        "physical_qubits": 49,
+        "instructions": 456,
+        "parities": 73,
+        "fault_locations": 480,
+        "reverse_instruction_visits": 33288,
+        "fault_response_queries": 35040,
+        "model_errors_after_merge": 179,
+        "model_construction_seconds_with_tracemalloc": 1.1765009579976322,
+        "peak_traced_python_bytes": 1387985,
+        "process_max_rss_before_bytes": 217989120,
+        "process_max_rss_after_bytes": 218955776
+      },
+      "stderr_present": false
+    },
+    {
+      "id": "W3-d5-11",
+      "command": [
+        "python",
+        "benchmarks/qec_clifford_dem_construction.py",
+        "--distance",
+        "5",
+        "--rounds",
+        "3",
+        "--output",
+        "/tmp/ftqc-baseline/dem-d5-11.json"
+      ],
+      "timeout_seconds": 300,
+      "status": "success",
+      "returncode": 0,
+      "warmup": false,
+      "process_wall_seconds_including_imports": 2.1708854169992264,
+      "payload": {
+        "benchmark": "qec_clifford_dem_construction",
+        "source_revision": "89221bdb88aca82a017fcce27b49b9eb9fca33ac",
+        "platform": "macOS-27.0-arm64-arm-64bit",
+        "python": "3.12.14",
+        "torch": "2.13.0",
+        "machine": "arm64",
+        "logical_cpu_count": 10,
+        "torch_threads": 1,
+        "device": "cpu",
+        "world_size": 1,
+        "local_world_size": 1,
+        "node_count": 1,
+        "rank_ownership": {
+          "0": "whole_model"
+        },
+        "communication_bytes": 0,
+        "distribution_semantics": "single_process",
+        "scalability_claim_allowed": false,
+        "release_gate_allowed": false,
+        "non_release_evidence": true,
+        "benchmark_evidence_class": "local_non_release",
+        "scalability_blockers": [
+          "local_cpu_construction_not_release_scalability_evidence"
+        ],
+        "blockers": [
+          "local_cpu_construction_not_release_scalability_evidence"
+        ],
+        "distance": 5,
+        "rounds": 3,
+        "physical_qubits": 49,
+        "instructions": 456,
+        "parities": 73,
+        "fault_locations": 480,
+        "reverse_instruction_visits": 33288,
+        "fault_response_queries": 35040,
+        "model_errors_after_merge": 179,
+        "model_construction_seconds_with_tracemalloc": 1.062205708003603,
+        "peak_traced_python_bytes": 1387985,
+        "process_max_rss_before_bytes": 207372288,
+        "process_max_rss_after_bytes": 209108992
+      },
+      "stderr_present": false
+    },
+    {
+      "id": "W3-d5-12",
+      "command": [
+        "python",
+        "benchmarks/qec_clifford_dem_construction.py",
+        "--distance",
+        "5",
+        "--rounds",
+        "3",
+        "--output",
+        "/tmp/ftqc-baseline/dem-d5-12.json"
+      ],
+      "timeout_seconds": 300,
+      "status": "success",
+      "returncode": 0,
+      "warmup": false,
+      "process_wall_seconds_including_imports": 2.072094791001291,
+      "payload": {
+        "benchmark": "qec_clifford_dem_construction",
+        "source_revision": "89221bdb88aca82a017fcce27b49b9eb9fca33ac",
+        "platform": "macOS-27.0-arm64-arm-64bit",
+        "python": "3.12.14",
+        "torch": "2.13.0",
+        "machine": "arm64",
+        "logical_cpu_count": 10,
+        "torch_threads": 1,
+        "device": "cpu",
+        "world_size": 1,
+        "local_world_size": 1,
+        "node_count": 1,
+        "rank_ownership": {
+          "0": "whole_model"
+        },
+        "communication_bytes": 0,
+        "distribution_semantics": "single_process",
+        "scalability_claim_allowed": false,
+        "release_gate_allowed": false,
+        "non_release_evidence": true,
+        "benchmark_evidence_class": "local_non_release",
+        "scalability_blockers": [
+          "local_cpu_construction_not_release_scalability_evidence"
+        ],
+        "blockers": [
+          "local_cpu_construction_not_release_scalability_evidence"
+        ],
+        "distance": 5,
+        "rounds": 3,
+        "physical_qubits": 49,
+        "instructions": 456,
+        "parities": 73,
+        "fault_locations": 480,
+        "reverse_instruction_visits": 33288,
+        "fault_response_queries": 35040,
+        "model_errors_after_merge": 179,
+        "model_construction_seconds_with_tracemalloc": 1.0475575419986853,
+        "peak_traced_python_bytes": 1387985,
+        "process_max_rss_before_bytes": 217382912,
+        "process_max_rss_after_bytes": 218660864
+      },
+      "stderr_present": false
+    },
+    {
+      "id": "W3-d7-00",
+      "command": [
+        "python",
+        "benchmarks/qec_clifford_dem_construction.py",
+        "--distance",
+        "7",
+        "--rounds",
+        "3",
+        "--output",
+        "/tmp/ftqc-baseline/dem-d7-0.json"
+      ],
+      "timeout_seconds": 300,
+      "status": "success",
+      "returncode": 0,
+      "warmup": true,
+      "process_wall_seconds_including_imports": 5.1399002079997445,
+      "payload": {
+        "benchmark": "qec_clifford_dem_construction",
+        "source_revision": "89221bdb88aca82a017fcce27b49b9eb9fca33ac",
+        "platform": "macOS-27.0-arm64-arm-64bit",
+        "python": "3.12.14",
+        "torch": "2.13.0",
+        "machine": "arm64",
+        "logical_cpu_count": 10,
+        "torch_threads": 1,
+        "device": "cpu",
+        "world_size": 1,
+        "local_world_size": 1,
+        "node_count": 1,
+        "rank_ownership": {
+          "0": "whole_model"
+        },
+        "communication_bytes": 0,
+        "distribution_semantics": "single_process",
+        "scalability_claim_allowed": false,
+        "release_gate_allowed": false,
+        "non_release_evidence": true,
+        "benchmark_evidence_class": "local_non_release",
+        "scalability_blockers": [
+          "local_cpu_construction_not_release_scalability_evidence"
+        ],
+        "blockers": [
+          "local_cpu_construction_not_release_scalability_evidence"
+        ],
+        "distance": 7,
+        "rounds": 3,
+        "physical_qubits": 97,
+        "instructions": 936,
+        "parities": 145,
+        "fault_locations": 1008,
+        "reverse_instruction_visits": 135720,
+        "fault_response_queries": 146160,
+        "model_errors_after_merge": 382,
+        "model_construction_seconds_with_tracemalloc": 3.6822413750051055,
+        "peak_traced_python_bytes": 2596160,
+        "process_max_rss_before_bytes": 219234304,
+        "process_max_rss_after_bytes": 219234304
+      },
+      "stderr_present": false
+    },
+    {
+      "id": "W3-d7-01",
+      "command": [
+        "python",
+        "benchmarks/qec_clifford_dem_construction.py",
+        "--distance",
+        "7",
+        "--rounds",
+        "3",
+        "--output",
+        "/tmp/ftqc-baseline/dem-d7-1.json"
+      ],
+      "timeout_seconds": 300,
+      "status": "success",
+      "returncode": 0,
+      "warmup": true,
+      "process_wall_seconds_including_imports": 5.2769947909982875,
+      "payload": {
+        "benchmark": "qec_clifford_dem_construction",
+        "source_revision": "89221bdb88aca82a017fcce27b49b9eb9fca33ac",
+        "platform": "macOS-27.0-arm64-arm-64bit",
+        "python": "3.12.14",
+        "torch": "2.13.0",
+        "machine": "arm64",
+        "logical_cpu_count": 10,
+        "torch_threads": 1,
+        "device": "cpu",
+        "world_size": 1,
+        "local_world_size": 1,
+        "node_count": 1,
+        "rank_ownership": {
+          "0": "whole_model"
+        },
+        "communication_bytes": 0,
+        "distribution_semantics": "single_process",
+        "scalability_claim_allowed": false,
+        "release_gate_allowed": false,
+        "non_release_evidence": true,
+        "benchmark_evidence_class": "local_non_release",
+        "scalability_blockers": [
+          "local_cpu_construction_not_release_scalability_evidence"
+        ],
+        "blockers": [
+          "local_cpu_construction_not_release_scalability_evidence"
+        ],
+        "distance": 7,
+        "rounds": 3,
+        "physical_qubits": 97,
+        "instructions": 936,
+        "parities": 145,
+        "fault_locations": 1008,
+        "reverse_instruction_visits": 135720,
+        "fault_response_queries": 146160,
+        "model_errors_after_merge": 382,
+        "model_construction_seconds_with_tracemalloc": 3.7490402499970514,
+        "peak_traced_python_bytes": 2596160,
+        "process_max_rss_before_bytes": 207028224,
+        "process_max_rss_after_bytes": 207028224
+      },
+      "stderr_present": false
+    },
+    {
+      "id": "W3-d7-02",
+      "command": [
+        "python",
+        "benchmarks/qec_clifford_dem_construction.py",
+        "--distance",
+        "7",
+        "--rounds",
+        "3",
+        "--output",
+        "/tmp/ftqc-baseline/dem-d7-2.json"
+      ],
+      "timeout_seconds": 300,
+      "status": "success",
+      "returncode": 0,
+      "warmup": true,
+      "process_wall_seconds_including_imports": 5.062056041992037,
+      "payload": {
+        "benchmark": "qec_clifford_dem_construction",
+        "source_revision": "89221bdb88aca82a017fcce27b49b9eb9fca33ac",
+        "platform": "macOS-27.0-arm64-arm-64bit",
+        "python": "3.12.14",
+        "torch": "2.13.0",
+        "machine": "arm64",
+        "logical_cpu_count": 10,
+        "torch_threads": 1,
+        "device": "cpu",
+        "world_size": 1,
+        "local_world_size": 1,
+        "node_count": 1,
+        "rank_ownership": {
+          "0": "whole_model"
+        },
+        "communication_bytes": 0,
+        "distribution_semantics": "single_process",
+        "scalability_claim_allowed": false,
+        "release_gate_allowed": false,
+        "non_release_evidence": true,
+        "benchmark_evidence_class": "local_non_release",
+        "scalability_blockers": [
+          "local_cpu_construction_not_release_scalability_evidence"
+        ],
+        "blockers": [
+          "local_cpu_construction_not_release_scalability_evidence"
+        ],
+        "distance": 7,
+        "rounds": 3,
+        "physical_qubits": 97,
+        "instructions": 936,
+        "parities": 145,
+        "fault_locations": 1008,
+        "reverse_instruction_visits": 135720,
+        "fault_response_queries": 146160,
+        "model_errors_after_merge": 382,
+        "model_construction_seconds_with_tracemalloc": 3.681494874996133,
+        "peak_traced_python_bytes": 2596205,
+        "process_max_rss_before_bytes": 203194368,
+        "process_max_rss_after_bytes": 207585280
+      },
+      "stderr_present": false
+    },
+    {
+      "id": "W3-d7-03",
+      "command": [
+        "python",
+        "benchmarks/qec_clifford_dem_construction.py",
+        "--distance",
+        "7",
+        "--rounds",
+        "3",
+        "--output",
+        "/tmp/ftqc-baseline/dem-d7-3.json"
+      ],
+      "timeout_seconds": 300,
+      "status": "success",
+      "returncode": 0,
+      "warmup": false,
+      "process_wall_seconds_including_imports": 4.8225343330123,
+      "payload": {
+        "benchmark": "qec_clifford_dem_construction",
+        "source_revision": "89221bdb88aca82a017fcce27b49b9eb9fca33ac",
+        "platform": "macOS-27.0-arm64-arm-64bit",
+        "python": "3.12.14",
+        "torch": "2.13.0",
+        "machine": "arm64",
+        "logical_cpu_count": 10,
+        "torch_threads": 1,
+        "device": "cpu",
+        "world_size": 1,
+        "local_world_size": 1,
+        "node_count": 1,
+        "rank_ownership": {
+          "0": "whole_model"
+        },
+        "communication_bytes": 0,
+        "distribution_semantics": "single_process",
+        "scalability_claim_allowed": false,
+        "release_gate_allowed": false,
+        "non_release_evidence": true,
+        "benchmark_evidence_class": "local_non_release",
+        "scalability_blockers": [
+          "local_cpu_construction_not_release_scalability_evidence"
+        ],
+        "blockers": [
+          "local_cpu_construction_not_release_scalability_evidence"
+        ],
+        "distance": 7,
+        "rounds": 3,
+        "physical_qubits": 97,
+        "instructions": 936,
+        "parities": 145,
+        "fault_locations": 1008,
+        "reverse_instruction_visits": 135720,
+        "fault_response_queries": 146160,
+        "model_errors_after_merge": 382,
+        "model_construction_seconds_with_tracemalloc": 3.574016708007548,
+        "peak_traced_python_bytes": 2596205,
+        "process_max_rss_before_bytes": 220053504,
+        "process_max_rss_after_bytes": 225230848
+      },
+      "stderr_present": false
+    },
+    {
+      "id": "W3-d7-04",
+      "command": [
+        "python",
+        "benchmarks/qec_clifford_dem_construction.py",
+        "--distance",
+        "7",
+        "--rounds",
+        "3",
+        "--output",
+        "/tmp/ftqc-baseline/dem-d7-4.json"
+      ],
+      "timeout_seconds": 300,
+      "status": "success",
+      "returncode": 0,
+      "warmup": false,
+      "process_wall_seconds_including_imports": 5.071733792006853,
+      "payload": {
+        "benchmark": "qec_clifford_dem_construction",
+        "source_revision": "89221bdb88aca82a017fcce27b49b9eb9fca33ac",
+        "platform": "macOS-27.0-arm64-arm-64bit",
+        "python": "3.12.14",
+        "torch": "2.13.0",
+        "machine": "arm64",
+        "logical_cpu_count": 10,
+        "torch_threads": 1,
+        "device": "cpu",
+        "world_size": 1,
+        "local_world_size": 1,
+        "node_count": 1,
+        "rank_ownership": {
+          "0": "whole_model"
+        },
+        "communication_bytes": 0,
+        "distribution_semantics": "single_process",
+        "scalability_claim_allowed": false,
+        "release_gate_allowed": false,
+        "non_release_evidence": true,
+        "benchmark_evidence_class": "local_non_release",
+        "scalability_blockers": [
+          "local_cpu_construction_not_release_scalability_evidence"
+        ],
+        "blockers": [
+          "local_cpu_construction_not_release_scalability_evidence"
+        ],
+        "distance": 7,
+        "rounds": 3,
+        "physical_qubits": 97,
+        "instructions": 936,
+        "parities": 145,
+        "fault_locations": 1008,
+        "reverse_instruction_visits": 135720,
+        "fault_response_queries": 146160,
+        "model_errors_after_merge": 382,
+        "model_construction_seconds_with_tracemalloc": 3.7396984579972923,
+        "peak_traced_python_bytes": 2596205,
+        "process_max_rss_before_bytes": 219873280,
+        "process_max_rss_after_bytes": 224329728
+      },
+      "stderr_present": false
+    },
+    {
+      "id": "W3-d7-05",
+      "command": [
+        "python",
+        "benchmarks/qec_clifford_dem_construction.py",
+        "--distance",
+        "7",
+        "--rounds",
+        "3",
+        "--output",
+        "/tmp/ftqc-baseline/dem-d7-5.json"
+      ],
+      "timeout_seconds": 300,
+      "status": "success",
+      "returncode": 0,
+      "warmup": false,
+      "process_wall_seconds_including_imports": 5.353844833996845,
+      "payload": {
+        "benchmark": "qec_clifford_dem_construction",
+        "source_revision": "89221bdb88aca82a017fcce27b49b9eb9fca33ac",
+        "platform": "macOS-27.0-arm64-arm-64bit",
+        "python": "3.12.14",
+        "torch": "2.13.0",
+        "machine": "arm64",
+        "logical_cpu_count": 10,
+        "torch_threads": 1,
+        "device": "cpu",
+        "world_size": 1,
+        "local_world_size": 1,
+        "node_count": 1,
+        "rank_ownership": {
+          "0": "whole_model"
+        },
+        "communication_bytes": 0,
+        "distribution_semantics": "single_process",
+        "scalability_claim_allowed": false,
+        "release_gate_allowed": false,
+        "non_release_evidence": true,
+        "benchmark_evidence_class": "local_non_release",
+        "scalability_blockers": [
+          "local_cpu_construction_not_release_scalability_evidence"
+        ],
+        "blockers": [
+          "local_cpu_construction_not_release_scalability_evidence"
+        ],
+        "distance": 7,
+        "rounds": 3,
+        "physical_qubits": 97,
+        "instructions": 936,
+        "parities": 145,
+        "fault_locations": 1008,
+        "reverse_instruction_visits": 135720,
+        "fault_response_queries": 146160,
+        "model_errors_after_merge": 382,
+        "model_construction_seconds_with_tracemalloc": 3.97924050000438,
+        "peak_traced_python_bytes": 2596205,
+        "process_max_rss_before_bytes": 219152384,
+        "process_max_rss_after_bytes": 219152384
+      },
+      "stderr_present": false
+    },
+    {
+      "id": "W3-d7-06",
+      "command": [
+        "python",
+        "benchmarks/qec_clifford_dem_construction.py",
+        "--distance",
+        "7",
+        "--rounds",
+        "3",
+        "--output",
+        "/tmp/ftqc-baseline/dem-d7-6.json"
+      ],
+      "timeout_seconds": 300,
+      "status": "success",
+      "returncode": 0,
+      "warmup": false,
+      "process_wall_seconds_including_imports": 5.109208833004232,
+      "payload": {
+        "benchmark": "qec_clifford_dem_construction",
+        "source_revision": "89221bdb88aca82a017fcce27b49b9eb9fca33ac",
+        "platform": "macOS-27.0-arm64-arm-64bit",
+        "python": "3.12.14",
+        "torch": "2.13.0",
+        "machine": "arm64",
+        "logical_cpu_count": 10,
+        "torch_threads": 1,
+        "device": "cpu",
+        "world_size": 1,
+        "local_world_size": 1,
+        "node_count": 1,
+        "rank_ownership": {
+          "0": "whole_model"
+        },
+        "communication_bytes": 0,
+        "distribution_semantics": "single_process",
+        "scalability_claim_allowed": false,
+        "release_gate_allowed": false,
+        "non_release_evidence": true,
+        "benchmark_evidence_class": "local_non_release",
+        "scalability_blockers": [
+          "local_cpu_construction_not_release_scalability_evidence"
+        ],
+        "blockers": [
+          "local_cpu_construction_not_release_scalability_evidence"
+        ],
+        "distance": 7,
+        "rounds": 3,
+        "physical_qubits": 97,
+        "instructions": 936,
+        "parities": 145,
+        "fault_locations": 1008,
+        "reverse_instruction_visits": 135720,
+        "fault_response_queries": 146160,
+        "model_errors_after_merge": 382,
+        "model_construction_seconds_with_tracemalloc": 3.8406132080126554,
+        "peak_traced_python_bytes": 2596205,
+        "process_max_rss_before_bytes": 220758016,
+        "process_max_rss_after_bytes": 222461952
+      },
+      "stderr_present": false
+    },
+    {
+      "id": "W3-d7-07",
+      "command": [
+        "python",
+        "benchmarks/qec_clifford_dem_construction.py",
+        "--distance",
+        "7",
+        "--rounds",
+        "3",
+        "--output",
+        "/tmp/ftqc-baseline/dem-d7-7.json"
+      ],
+      "timeout_seconds": 300,
+      "status": "success",
+      "returncode": 0,
+      "warmup": false,
+      "process_wall_seconds_including_imports": 5.8418724999937695,
+      "payload": {
+        "benchmark": "qec_clifford_dem_construction",
+        "source_revision": "89221bdb88aca82a017fcce27b49b9eb9fca33ac",
+        "platform": "macOS-27.0-arm64-arm-64bit",
+        "python": "3.12.14",
+        "torch": "2.13.0",
+        "machine": "arm64",
+        "logical_cpu_count": 10,
+        "torch_threads": 1,
+        "device": "cpu",
+        "world_size": 1,
+        "local_world_size": 1,
+        "node_count": 1,
+        "rank_ownership": {
+          "0": "whole_model"
+        },
+        "communication_bytes": 0,
+        "distribution_semantics": "single_process",
+        "scalability_claim_allowed": false,
+        "release_gate_allowed": false,
+        "non_release_evidence": true,
+        "benchmark_evidence_class": "local_non_release",
+        "scalability_blockers": [
+          "local_cpu_construction_not_release_scalability_evidence"
+        ],
+        "blockers": [
+          "local_cpu_construction_not_release_scalability_evidence"
+        ],
+        "distance": 7,
+        "rounds": 3,
+        "physical_qubits": 97,
+        "instructions": 936,
+        "parities": 145,
+        "fault_locations": 1008,
+        "reverse_instruction_visits": 135720,
+        "fault_response_queries": 146160,
+        "model_errors_after_merge": 382,
+        "model_construction_seconds_with_tracemalloc": 4.359892874999787,
+        "peak_traced_python_bytes": 2596160,
+        "process_max_rss_before_bytes": 220217344,
+        "process_max_rss_after_bytes": 223002624
+      },
+      "stderr_present": false
+    },
+    {
+      "id": "W3-d7-08",
+      "command": [
+        "python",
+        "benchmarks/qec_clifford_dem_construction.py",
+        "--distance",
+        "7",
+        "--rounds",
+        "3",
+        "--output",
+        "/tmp/ftqc-baseline/dem-d7-8.json"
+      ],
+      "timeout_seconds": 300,
+      "status": "success",
+      "returncode": 0,
+      "warmup": false,
+      "process_wall_seconds_including_imports": 5.015419415998622,
+      "payload": {
+        "benchmark": "qec_clifford_dem_construction",
+        "source_revision": "89221bdb88aca82a017fcce27b49b9eb9fca33ac",
+        "platform": "macOS-27.0-arm64-arm-64bit",
+        "python": "3.12.14",
+        "torch": "2.13.0",
+        "machine": "arm64",
+        "logical_cpu_count": 10,
+        "torch_threads": 1,
+        "device": "cpu",
+        "world_size": 1,
+        "local_world_size": 1,
+        "node_count": 1,
+        "rank_ownership": {
+          "0": "whole_model"
+        },
+        "communication_bytes": 0,
+        "distribution_semantics": "single_process",
+        "scalability_claim_allowed": false,
+        "release_gate_allowed": false,
+        "non_release_evidence": true,
+        "benchmark_evidence_class": "local_non_release",
+        "scalability_blockers": [
+          "local_cpu_construction_not_release_scalability_evidence"
+        ],
+        "blockers": [
+          "local_cpu_construction_not_release_scalability_evidence"
+        ],
+        "distance": 7,
+        "rounds": 3,
+        "physical_qubits": 97,
+        "instructions": 936,
+        "parities": 145,
+        "fault_locations": 1008,
+        "reverse_instruction_visits": 135720,
+        "fault_response_queries": 146160,
+        "model_errors_after_merge": 382,
+        "model_construction_seconds_with_tracemalloc": 3.6961587500118185,
+        "peak_traced_python_bytes": 2596160,
+        "process_max_rss_before_bytes": 220037120,
+        "process_max_rss_after_bytes": 222167040
+      },
+      "stderr_present": false
+    },
+    {
+      "id": "W3-d7-09",
+      "command": [
+        "python",
+        "benchmarks/qec_clifford_dem_construction.py",
+        "--distance",
+        "7",
+        "--rounds",
+        "3",
+        "--output",
+        "/tmp/ftqc-baseline/dem-d7-9.json"
+      ],
+      "timeout_seconds": 300,
+      "status": "success",
+      "returncode": 0,
+      "warmup": false,
+      "process_wall_seconds_including_imports": 5.029273417007062,
+      "payload": {
+        "benchmark": "qec_clifford_dem_construction",
+        "source_revision": "89221bdb88aca82a017fcce27b49b9eb9fca33ac",
+        "platform": "macOS-27.0-arm64-arm-64bit",
+        "python": "3.12.14",
+        "torch": "2.13.0",
+        "machine": "arm64",
+        "logical_cpu_count": 10,
+        "torch_threads": 1,
+        "device": "cpu",
+        "world_size": 1,
+        "local_world_size": 1,
+        "node_count": 1,
+        "rank_ownership": {
+          "0": "whole_model"
+        },
+        "communication_bytes": 0,
+        "distribution_semantics": "single_process",
+        "scalability_claim_allowed": false,
+        "release_gate_allowed": false,
+        "non_release_evidence": true,
+        "benchmark_evidence_class": "local_non_release",
+        "scalability_blockers": [
+          "local_cpu_construction_not_release_scalability_evidence"
+        ],
+        "blockers": [
+          "local_cpu_construction_not_release_scalability_evidence"
+        ],
+        "distance": 7,
+        "rounds": 3,
+        "physical_qubits": 97,
+        "instructions": 936,
+        "parities": 145,
+        "fault_locations": 1008,
+        "reverse_instruction_visits": 135720,
+        "fault_response_queries": 146160,
+        "model_errors_after_merge": 382,
+        "model_construction_seconds_with_tracemalloc": 3.8291420829918934,
+        "peak_traced_python_bytes": 2596205,
+        "process_max_rss_before_bytes": 219725824,
+        "process_max_rss_after_bytes": 222085120
+      },
+      "stderr_present": false
+    },
+    {
+      "id": "W3-d7-10",
+      "command": [
+        "python",
+        "benchmarks/qec_clifford_dem_construction.py",
+        "--distance",
+        "7",
+        "--rounds",
+        "3",
+        "--output",
+        "/tmp/ftqc-baseline/dem-d7-10.json"
+      ],
+      "timeout_seconds": 300,
+      "status": "success",
+      "returncode": 0,
+      "warmup": false,
+      "process_wall_seconds_including_imports": 4.559143332997337,
+      "payload": {
+        "benchmark": "qec_clifford_dem_construction",
+        "source_revision": "89221bdb88aca82a017fcce27b49b9eb9fca33ac",
+        "platform": "macOS-27.0-arm64-arm-64bit",
+        "python": "3.12.14",
+        "torch": "2.13.0",
+        "machine": "arm64",
+        "logical_cpu_count": 10,
+        "torch_threads": 1,
+        "device": "cpu",
+        "world_size": 1,
+        "local_world_size": 1,
+        "node_count": 1,
+        "rank_ownership": {
+          "0": "whole_model"
+        },
+        "communication_bytes": 0,
+        "distribution_semantics": "single_process",
+        "scalability_claim_allowed": false,
+        "release_gate_allowed": false,
+        "non_release_evidence": true,
+        "benchmark_evidence_class": "local_non_release",
+        "scalability_blockers": [
+          "local_cpu_construction_not_release_scalability_evidence"
+        ],
+        "blockers": [
+          "local_cpu_construction_not_release_scalability_evidence"
+        ],
+        "distance": 7,
+        "rounds": 3,
+        "physical_qubits": 97,
+        "instructions": 936,
+        "parities": 145,
+        "fault_locations": 1008,
+        "reverse_instruction_visits": 135720,
+        "fault_response_queries": 146160,
+        "model_errors_after_merge": 382,
+        "model_construction_seconds_with_tracemalloc": 3.3332164589955937,
+        "peak_traced_python_bytes": 2596160,
+        "process_max_rss_before_bytes": 219987968,
+        "process_max_rss_after_bytes": 221954048
+      },
+      "stderr_present": false
+    },
+    {
+      "id": "W3-d7-11",
+      "command": [
+        "python",
+        "benchmarks/qec_clifford_dem_construction.py",
+        "--distance",
+        "7",
+        "--rounds",
+        "3",
+        "--output",
+        "/tmp/ftqc-baseline/dem-d7-11.json"
+      ],
+      "timeout_seconds": 300,
+      "status": "success",
+      "returncode": 0,
+      "warmup": false,
+      "process_wall_seconds_including_imports": 5.05692045899923,
+      "payload": {
+        "benchmark": "qec_clifford_dem_construction",
+        "source_revision": "89221bdb88aca82a017fcce27b49b9eb9fca33ac",
+        "platform": "macOS-27.0-arm64-arm-64bit",
+        "python": "3.12.14",
+        "torch": "2.13.0",
+        "machine": "arm64",
+        "logical_cpu_count": 10,
+        "torch_threads": 1,
+        "device": "cpu",
+        "world_size": 1,
+        "local_world_size": 1,
+        "node_count": 1,
+        "rank_ownership": {
+          "0": "whole_model"
+        },
+        "communication_bytes": 0,
+        "distribution_semantics": "single_process",
+        "scalability_claim_allowed": false,
+        "release_gate_allowed": false,
+        "non_release_evidence": true,
+        "benchmark_evidence_class": "local_non_release",
+        "scalability_blockers": [
+          "local_cpu_construction_not_release_scalability_evidence"
+        ],
+        "blockers": [
+          "local_cpu_construction_not_release_scalability_evidence"
+        ],
+        "distance": 7,
+        "rounds": 3,
+        "physical_qubits": 97,
+        "instructions": 936,
+        "parities": 145,
+        "fault_locations": 1008,
+        "reverse_instruction_visits": 135720,
+        "fault_response_queries": 146160,
+        "model_errors_after_merge": 382,
+        "model_construction_seconds_with_tracemalloc": 3.695746874989709,
+        "peak_traced_python_bytes": 2596160,
+        "process_max_rss_before_bytes": 220135424,
+        "process_max_rss_after_bytes": 221233152
+      },
+      "stderr_present": false
+    },
+    {
+      "id": "W3-d7-12",
+      "command": [
+        "python",
+        "benchmarks/qec_clifford_dem_construction.py",
+        "--distance",
+        "7",
+        "--rounds",
+        "3",
+        "--output",
+        "/tmp/ftqc-baseline/dem-d7-12.json"
+      ],
+      "timeout_seconds": 300,
+      "status": "success",
+      "returncode": 0,
+      "warmup": false,
+      "process_wall_seconds_including_imports": 4.794124958003522,
+      "payload": {
+        "benchmark": "qec_clifford_dem_construction",
+        "source_revision": "89221bdb88aca82a017fcce27b49b9eb9fca33ac",
+        "platform": "macOS-27.0-arm64-arm-64bit",
+        "python": "3.12.14",
+        "torch": "2.13.0",
+        "machine": "arm64",
+        "logical_cpu_count": 10,
+        "torch_threads": 1,
+        "device": "cpu",
+        "world_size": 1,
+        "local_world_size": 1,
+        "node_count": 1,
+        "rank_ownership": {
+          "0": "whole_model"
+        },
+        "communication_bytes": 0,
+        "distribution_semantics": "single_process",
+        "scalability_claim_allowed": false,
+        "release_gate_allowed": false,
+        "non_release_evidence": true,
+        "benchmark_evidence_class": "local_non_release",
+        "scalability_blockers": [
+          "local_cpu_construction_not_release_scalability_evidence"
+        ],
+        "blockers": [
+          "local_cpu_construction_not_release_scalability_evidence"
+        ],
+        "distance": 7,
+        "rounds": 3,
+        "physical_qubits": 97,
+        "instructions": 936,
+        "parities": 145,
+        "fault_locations": 1008,
+        "reverse_instruction_visits": 135720,
+        "fault_response_queries": 146160,
+        "model_errors_after_merge": 382,
+        "model_construction_seconds_with_tracemalloc": 3.3849668750044657,
+        "peak_traced_python_bytes": 2596205,
+        "process_max_rss_before_bytes": 219643904,
+        "process_max_rss_after_bytes": 221937664
+      },
+      "stderr_present": false
+    },
+    {
+      "id": "W2-repetition-d3-z",
+      "command": [
+        "python",
+        "examples/qec/stim_pymatching_baseline.py",
+        "--code",
+        "repetition",
+        "--distance",
+        "3",
+        "--basis",
+        "z",
+        "--shots",
+        "4096",
+        "--batch-size",
+        "32"
+      ],
+      "timeout_seconds": 120,
+      "status": "success",
+      "returncode": 0,
+      "warmup": false,
+      "process_wall_seconds_including_imports": 1.0034739170077955,
+      "payload": {
+        "batch_size": 32,
+        "code": "RepetitionCode",
+        "confidence_interval": [
+          0.004137683601119058,
+          0.00899488734375388
+        ],
+        "confidence_level": 0.95,
+        "decoder": "pymatching_batch",
+        "detectors": 8,
+        "distance": 3,
+        "interval_method": "wilson",
+        "logical_error_rate": 0.006103515625,
+        "logical_failures": 25,
+        "noise": {
+          "both_flip": 0.0,
+          "data_flip": 0.02,
+          "measurement_flip": 0.03,
+          "phase_flip": 0.0
+        },
+        "observable_failures": [
+          25
+        ],
+        "observables": 1,
+        "platform": "macOS-27.0-arm64-arm-64bit",
+        "requested_shots": 4096,
+        "rounds": 3,
+        "sampling": "circuit",
+        "seed": 53,
+        "seed_schedule": "continuous_stream",
+        "shots": 4096,
+        "stopping_rule": "fixed_shots",
+        "versions": {
+          "flagquantum": "0.4.0",
+          "pymatching": "2.4.0",
+          "python": "3.12.14",
+          "stim": "1.16.0",
+          "torch": "2.13.0"
+        }
+      },
+      "stderr_present": false
+    },
+    {
+      "id": "W2-surface-d3-x",
+      "command": [
+        "python",
+        "examples/qec/stim_pymatching_baseline.py",
+        "--code",
+        "surface",
+        "--distance",
+        "3",
+        "--basis",
+        "x",
+        "--shots",
+        "4096",
+        "--batch-size",
+        "32"
+      ],
+      "timeout_seconds": 120,
+      "status": "success",
+      "returncode": 0,
+      "warmup": false,
+      "process_wall_seconds_including_imports": 0.965047666002647,
+      "payload": {
+        "batch_size": 32,
+        "code": "RotatedSurfaceCode",
+        "confidence_interval": [
+          0.003940714277798989,
+          0.008704032925573636
+        ],
+        "confidence_level": 0.95,
+        "decoder": "pymatching_batch",
+        "detectors": 24,
+        "distance": 3,
+        "interval_method": "wilson",
+        "logical_error_rate": 0.005859375,
+        "logical_failures": 24,
+        "logical_support": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8
+        ],
+        "noise": {
+          "both_flip": 0.0,
+          "data_flip": 0.005,
+          "measurement_flip": 0.009,
+          "phase_flip": 0.007
+        },
+        "observable_failures": [
+          24
+        ],
+        "observables": 1,
+        "platform": "macOS-27.0-arm64-arm-64bit",
+        "readout_basis": "x",
+        "requested_shots": 4096,
+        "rounds": 3,
+        "sampling": "circuit",
+        "seed": 53,
+        "seed_schedule": "continuous_stream",
+        "shots": 4096,
+        "stopping_rule": "fixed_shots",
+        "versions": {
+          "flagquantum": "0.4.0",
+          "pymatching": "2.4.0",
+          "python": "3.12.14",
+          "stim": "1.16.0",
+          "torch": "2.13.0"
+        }
+      },
+      "stderr_present": false
+    },
+    {
+      "id": "W2-surface-d3-z",
+      "command": [
+        "python",
+        "examples/qec/stim_pymatching_baseline.py",
+        "--code",
+        "surface",
+        "--distance",
+        "3",
+        "--basis",
+        "z",
+        "--shots",
+        "4096",
+        "--batch-size",
+        "32"
+      ],
+      "timeout_seconds": 120,
+      "status": "success",
+      "returncode": 0,
+      "warmup": false,
+      "process_wall_seconds_including_imports": 1.5209627500007628,
+      "payload": {
+        "batch_size": 32,
+        "code": "RotatedSurfaceCode",
+        "confidence_interval": [
+          0.0025929778542005417,
+          0.006637003158669915
+        ],
+        "confidence_level": 0.95,
+        "decoder": "pymatching_batch",
+        "detectors": 24,
+        "distance": 3,
+        "interval_method": "wilson",
+        "logical_error_rate": 0.004150390625,
+        "logical_failures": 17,
+        "logical_support": [
+          0,
+          1,
+          2
+        ],
+        "noise": {
+          "both_flip": 0.0,
+          "data_flip": 0.005,
+          "measurement_flip": 0.009,
+          "phase_flip": 0.007
+        },
+        "observable_failures": [
+          17
+        ],
+        "observables": 1,
+        "platform": "macOS-27.0-arm64-arm-64bit",
+        "readout_basis": "z",
+        "requested_shots": 4096,
+        "rounds": 3,
+        "sampling": "circuit",
+        "seed": 53,
+        "seed_schedule": "continuous_stream",
+        "shots": 4096,
+        "stopping_rule": "fixed_shots",
+        "versions": {
+          "flagquantum": "0.4.0",
+          "pymatching": "2.4.0",
+          "python": "3.12.14",
+          "stim": "1.16.0",
+          "torch": "2.13.0"
+        }
+      },
+      "stderr_present": false
+    },
+    {
+      "id": "W2-surface-d5-x",
+      "command": [
+        "python",
+        "examples/qec/stim_pymatching_baseline.py",
+        "--code",
+        "surface",
+        "--distance",
+        "5",
+        "--basis",
+        "x",
+        "--shots",
+        "4096",
+        "--batch-size",
+        "32"
+      ],
+      "timeout_seconds": 120,
+      "status": "success",
+      "returncode": 0,
+      "warmup": false,
+      "process_wall_seconds_including_imports": 1.842631125007756,
+      "payload": {
+        "batch_size": 32,
+        "code": "RotatedSurfaceCode",
+        "confidence_interval": [
+          0.0002491200948151937,
+          0.0021513285370509234
+        ],
+        "confidence_level": 0.95,
+        "decoder": "pymatching_batch",
+        "detectors": 72,
+        "distance": 5,
+        "interval_method": "wilson",
+        "logical_error_rate": 0.000732421875,
+        "logical_failures": 3,
+        "logical_support": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19,
+          20,
+          21,
+          22,
+          23,
+          24
+        ],
+        "noise": {
+          "both_flip": 0.0,
+          "data_flip": 0.005,
+          "measurement_flip": 0.009,
+          "phase_flip": 0.007
+        },
+        "observable_failures": [
+          3
+        ],
+        "observables": 1,
+        "platform": "macOS-27.0-arm64-arm-64bit",
+        "readout_basis": "x",
+        "requested_shots": 4096,
+        "rounds": 3,
+        "sampling": "circuit",
+        "seed": 53,
+        "seed_schedule": "continuous_stream",
+        "shots": 4096,
+        "stopping_rule": "fixed_shots",
+        "versions": {
+          "flagquantum": "0.4.0",
+          "pymatching": "2.4.0",
+          "python": "3.12.14",
+          "stim": "1.16.0",
+          "torch": "2.13.0"
+        }
+      },
+      "stderr_present": false
+    },
+    {
+      "id": "W2-surface-d5-z",
+      "command": [
+        "python",
+        "examples/qec/stim_pymatching_baseline.py",
+        "--code",
+        "surface",
+        "--distance",
+        "5",
+        "--basis",
+        "z",
+        "--shots",
+        "4096",
+        "--batch-size",
+        "32"
+      ],
+      "timeout_seconds": 120,
+      "status": "success",
+      "returncode": 0,
+      "warmup": false,
+      "process_wall_seconds_including_imports": 1.5927282079937868,
+      "payload": {
+        "batch_size": 32,
+        "code": "RotatedSurfaceCode",
+        "confidence_interval": [
+          0.00013391454481334652,
+          0.001778710345552461
+        ],
+        "confidence_level": 0.95,
+        "decoder": "pymatching_batch",
+        "detectors": 72,
+        "distance": 5,
+        "interval_method": "wilson",
+        "logical_error_rate": 0.00048828125,
+        "logical_failures": 2,
+        "logical_support": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "noise": {
+          "both_flip": 0.0,
+          "data_flip": 0.005,
+          "measurement_flip": 0.009,
+          "phase_flip": 0.007
+        },
+        "observable_failures": [
+          2
+        ],
+        "observables": 1,
+        "platform": "macOS-27.0-arm64-arm-64bit",
+        "readout_basis": "z",
+        "requested_shots": 4096,
+        "rounds": 3,
+        "sampling": "circuit",
+        "seed": 53,
+        "seed_schedule": "continuous_stream",
+        "shots": 4096,
+        "stopping_rule": "fixed_shots",
+        "versions": {
+          "flagquantum": "0.4.0",
+          "pymatching": "2.4.0",
+          "python": "3.12.14",
+          "stim": "1.16.0",
+          "torch": "2.13.0"
+        }
+      },
+      "stderr_present": false
+    },
+    {
+      "id": "W2-surface-d7-x",
+      "command": [
+        "python",
+        "examples/qec/stim_pymatching_baseline.py",
+        "--code",
+        "surface",
+        "--distance",
+        "7",
+        "--basis",
+        "x",
+        "--shots",
+        "4096",
+        "--batch-size",
+        "32"
+      ],
+      "timeout_seconds": 120,
+      "status": "success",
+      "returncode": 0,
+      "warmup": false,
+      "process_wall_seconds_including_imports": 11.7211737500038,
+      "payload": {
+        "batch_size": 32,
+        "code": "RotatedSurfaceCode",
+        "confidence_interval": [
+          0.0,
+          0.0009369774073651877
+        ],
+        "confidence_level": 0.95,
+        "decoder": "pymatching_batch",
+        "detectors": 144,
+        "distance": 7,
+        "interval_method": "wilson",
+        "logical_error_rate": 0.0,
+        "logical_failures": 0,
+        "logical_support": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19,
+          20,
+          21,
+          22,
+          23,
+          24,
+          25,
+          26,
+          27,
+          28,
+          29,
+          30,
+          31,
+          32,
+          33,
+          34,
+          35,
+          36,
+          37,
+          38,
+          39,
+          40,
+          41,
+          42,
+          43,
+          44,
+          45,
+          46,
+          47,
+          48
+        ],
+        "noise": {
+          "both_flip": 0.0,
+          "data_flip": 0.005,
+          "measurement_flip": 0.009,
+          "phase_flip": 0.007
+        },
+        "observable_failures": [
+          0
+        ],
+        "observables": 1,
+        "platform": "macOS-27.0-arm64-arm-64bit",
+        "readout_basis": "x",
+        "requested_shots": 4096,
+        "rounds": 3,
+        "sampling": "circuit",
+        "seed": 53,
+        "seed_schedule": "continuous_stream",
+        "shots": 4096,
+        "stopping_rule": "fixed_shots",
+        "versions": {
+          "flagquantum": "0.4.0",
+          "pymatching": "2.4.0",
+          "python": "3.12.14",
+          "stim": "1.16.0",
+          "torch": "2.13.0"
+        }
+      },
+      "stderr_present": false
+    },
+    {
+      "id": "W2-surface-d7-z",
+      "command": [
+        "python",
+        "examples/qec/stim_pymatching_baseline.py",
+        "--code",
+        "surface",
+        "--distance",
+        "7",
+        "--basis",
+        "z",
+        "--shots",
+        "4096",
+        "--batch-size",
+        "32"
+      ],
+      "timeout_seconds": 120,
+      "status": "success",
+      "returncode": 0,
+      "warmup": false,
+      "process_wall_seconds_including_imports": 2.5933304159989348,
+      "payload": {
+        "batch_size": 32,
+        "code": "RotatedSurfaceCode",
+        "confidence_interval": [
+          0.0,
+          0.0009369774073651877
+        ],
+        "confidence_level": 0.95,
+        "decoder": "pymatching_batch",
+        "detectors": 144,
+        "distance": 7,
+        "interval_method": "wilson",
+        "logical_error_rate": 0.0,
+        "logical_failures": 0,
+        "logical_support": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "noise": {
+          "both_flip": 0.0,
+          "data_flip": 0.005,
+          "measurement_flip": 0.009,
+          "phase_flip": 0.007
+        },
+        "observable_failures": [
+          0
+        ],
+        "observables": 1,
+        "platform": "macOS-27.0-arm64-arm-64bit",
+        "readout_basis": "z",
+        "requested_shots": 4096,
+        "rounds": 3,
+        "sampling": "circuit",
+        "seed": 53,
+        "seed_schedule": "continuous_stream",
+        "shots": 4096,
+        "stopping_rule": "fixed_shots",
+        "versions": {
+          "flagquantum": "0.4.0",
+          "pymatching": "2.4.0",
+          "python": "3.12.14",
+          "stim": "1.16.0",
+          "torch": "2.13.0"
+        }
+      },
+      "stderr_present": false
+    },
+    {
+      "id": "W5-dynamic",
+      "command": [
+        "python",
+        "-m",
+        "flagquantum.benchmarking",
+        "run",
+        "dynamic_unified_run",
+        "--batched-shots",
+        "128",
+        "--trajectory-shots",
+        "8",
+        "--static-shots",
+        "128",
+        "--seed",
+        "53",
+        "--warmup",
+        "3",
+        "--iterations",
+        "10",
+        "--planning-iterations",
+        "10",
+        "--json-output",
+        "/tmp/ftqc-baseline/dynamic.json"
+      ],
+      "timeout_seconds": 120,
+      "status": "success",
+      "returncode": 0,
+      "warmup": false,
+      "process_wall_seconds_including_imports": 0.9298094160039909,
+      "payload": {
+        "artifact_class": "measured_local_run",
+        "benchmark": "dynamic_unified_run",
+        "benchmark_evidence_class": "comparison_non_release",
+        "budget_checks": {
+          "automatic_over_explicit_median": true,
+          "explicit_over_native_median": true,
+          "planning_p95_seconds": true,
+          "static_automatic_over_explicit_median": true
+        },
+        "budget_passed": true,
+        "budgets": {
+          "automatic_over_explicit_median": 2.0,
+          "explicit_over_native_median": 3.0,
+          "planning_p95_seconds": 0.05,
+          "static_automatic_over_explicit_median": 2.0
+        },
+        "claim_evidence_type": "local_performance",
+        "distribution_semantics": "single_process",
+        "dynamic_cases": [
+          {
+            "correctness": {
+              "automatic_matches_explicit": true,
+              "stable_matches_native_oracle": true
+            },
+            "execution_strategy": "batched_statevector_kernel",
+            "memory_limit_bytes": 268435456,
+            "name": "batched",
+            "plan_identity": "c0e6e1362d43dc2343432cae2c8654f60dff344c3520a2e562f55c068de25055",
+            "ratios": {
+              "automatic_over_explicit_median": 1.1962513985808005,
+              "explicit_over_native_median": 2.4980754218344234
+            },
+            "shots": 128,
+            "timing": {
+              "automatic_plan_and_run": {
+                "median_seconds": 0.0008749580083531328,
+                "p95_seconds": 0.0011360811033227945,
+                "relative_median_absolute_deviation": 0.036430331029632425,
+                "sample_count": 10,
+                "samples_seconds": [
+                  0.0008446249994449317,
+                  0.0008415409974986687,
+                  0.0008986659959191456,
+                  0.0008549160120310262,
+                  0.0008384579996345565,
+                  0.0010345830087317154,
+                  0.001027916994644329,
+                  0.0008950000046752393,
+                  0.0008517090027453378,
+                  0.001219124998897314
+                ]
+              },
+              "explicit_plan_run": {
+                "median_seconds": 0.0007314164977287874,
+                "p95_seconds": 0.0008994893963972571,
+                "relative_median_absolute_deviation": 0.02905320638370203,
+                "sample_count": 10,
+                "samples_seconds": [
+                  0.0009603329963283613,
+                  0.0008251249964814633,
+                  0.0007354999979725108,
+                  0.0007504159875679761,
+                  0.000727332997485064,
+                  0.0007079159986460581,
+                  0.0007267499895533547,
+                  0.0007075419998727739,
+                  0.0007019999902695417,
+                  0.0007362920005107298
+                ]
+              },
+              "native_oracle": {
+                "median_seconds": 0.0002927919995272532,
+                "p95_seconds": 0.00040648750218679196,
+                "relative_median_absolute_deviation": 0.020920987451960096,
+                "sample_count": 10,
+                "samples_seconds": [
+                  0.00029095899662934244,
+                  0.0002880829997593537,
+                  0.000294625002425164,
+                  0.0002873330086003989,
+                  0.00028929200198035687,
+                  0.0002859999949578196,
+                  0.0004086250119144097,
+                  0.0004038749902974814,
+                  0.0003250419977121055,
+                  0.0003008339990628883
+                ]
+              }
+            }
+          },
+          {
+            "correctness": {
+              "automatic_matches_explicit": true,
+              "stable_matches_native_oracle": true
+            },
+            "execution_strategy": "trajectory_direct_statevector_kernel",
+            "memory_limit_bytes": 1,
+            "name": "trajectory_memory_fallback",
+            "plan_identity": "566da5e753e086e81194e6e35ab31c0adb629d37c518afdb333c90da988e8c52",
+            "ratios": {
+              "automatic_over_explicit_median": 1.1304201377646483,
+              "explicit_over_native_median": 1.493506113879152
+            },
+            "shots": 8,
+            "timing": {
+              "automatic_plan_and_run": {
+                "median_seconds": 0.0013972705055493861,
+                "p95_seconds": 0.0017785001451557031,
+                "relative_median_absolute_deviation": 0.015119116496283919,
+                "sample_count": 10,
+                "samples_seconds": [
+                  0.0019386249914532527,
+                  0.0015822499990463257,
+                  0.001413791993400082,
+                  0.0013695420057047158,
+                  0.0013811250100843608,
+                  0.001382707996526733,
+                  0.0015827919996809214,
+                  0.0014102080021984875,
+                  0.0013843330089002848,
+                  0.0013715410022996366
+                ]
+              },
+              "explicit_plan_run": {
+                "median_seconds": 0.0012360629989416339,
+                "p95_seconds": 0.014280753648927178,
+                "relative_median_absolute_deviation": 0.05460926523019153,
+                "sample_count": 10,
+                "samples_seconds": [
+                  0.0013000830076634884,
+                  0.0012852919899160042,
+                  0.0011868340079672635,
+                  0.001171875002910383,
+                  0.0011629580112639815,
+                  0.0011652500106720254,
+                  0.0011730840051313862,
+                  0.0013832080003339797,
+                  0.0013091250002617016,
+                  0.024833290997776203
+                ]
+              },
+              "native_oracle": {
+                "median_seconds": 0.0008276250009657815,
+                "p95_seconds": 0.0010986838453391097,
+                "relative_median_absolute_deviation": 0.06192357953922566,
+                "sample_count": 10,
+                "samples_seconds": [
+                  0.0008942080021370202,
+                  0.0012252089945832267,
+                  0.0008839999936753884,
+                  0.0009440419962629676,
+                  0.0008072089985944331,
+                  0.0007838750025257468,
+                  0.0007773340039420873,
+                  0.0007754169928375632,
+                  0.0008344999951077625,
+                  0.0008207500068238005
+                ]
+              }
+            }
+          }
+        ],
+        "flagquantum": "0.4.0",
+        "hostname": "redacted",
+        "machine": "arm64",
+        "methodology": {
+          "iterations": 10,
+          "planning_iterations": 10,
+          "warmup": 3
+        },
+        "non_release_evidence": true,
+        "planning": {
+          "median_seconds": 0.00011364599777152762,
+          "p95_seconds": 0.00014168125198921183,
+          "relative_median_absolute_deviation": 0.031532095337672345,
+          "sample_count": 10,
+          "samples_seconds": [
+            0.0001584999990882352,
+            0.00012112500553485006,
+            0.00011749999248422682,
+            0.0001171670010080561,
+            0.00011420800001360476,
+            0.00011304199870210141,
+            0.00011170899961143732,
+            0.00011308399552945048,
+            0.00011000000813510269,
+            0.00010879200999625027
+          ]
+        },
+        "platform": "macOS-27.0-arm64-arm-64bit",
+        "python": "3.12.14",
+        "release_gate_allowed": false,
+        "runner": "dynamic_unified_run",
+        "scalability_blockers": [
+          "single-process local execution",
+          "no cross-rank state partitioning",
+          "no accelerator or QPU measurement"
+        ],
+        "scalability_claim_allowed": false,
+        "schema": "flagquantum.dynamic_unified_run.local_performance.v1",
+        "seed": 53,
+        "static_sentinel": {
+          "correctness": {
+            "automatic_matches_explicit": true
+          },
+          "ratios": {
+            "automatic_over_explicit_median": 1.4410460870378274
+          },
+          "shots": 128,
+          "timing": {
+            "automatic_plan_and_run": {
+              "median_seconds": 0.000789332996646408,
+              "p95_seconds": 0.000948448096460197,
+              "relative_median_absolute_deviation": 0.041911967247926514,
+              "sample_count": 10,
+              "samples_seconds": [
+                0.000868333998369053,
+                0.0007921659998828545,
+                0.0007739579887129366,
+                0.0007949999999254942,
+                0.0007556670025223866,
+                0.0007553750037914142,
+                0.0007864999934099615,
+                0.0007568339933641255,
+                0.0009725419949973002,
+                0.0009189999982481822
+              ]
+            },
+            "explicit_plan_run": {
+              "median_seconds": 0.0005477500017150305,
+              "p95_seconds": 0.0005722395588236395,
+              "relative_median_absolute_deviation": 0.01373072490574696,
+              "sample_count": 10,
+              "samples_seconds": [
+                0.0005647920042974874,
+                0.0005783330125268549,
+                0.0005439579981612042,
+                0.0005404999974416569,
+                0.0005515420052688569,
+                0.0005555420066229999,
+                0.0005352919979486614,
+                0.0005425840063253418,
+                0.000560500004212372,
+                0.0005439579981612042
+              ]
+            }
+          }
+        },
+        "torch": "2.13.0",
+        "torch_num_threads": 1,
+        "world_size": 1
+      },
+      "stderr_present": false
+    }
+  ],
+  "blockers": [
+    "W4 mixed algorithm not selected",
+    "W7 domestic device not selected",
+    "W8 experimental dataset not selected",
+    "W1/W6 phase timing instrumentation not yet collected"
+  ],
+  "completed_at": "2026-10-24T09:55:09.580505+00:00",
+  "tracked_tree_clean_after": true,
+  "retained_original_sha256": "a9d551c228867e08d44782cf2baa0df31659775acdefcce59a23d17645c41b18",
+  "redaction": "Command interpreter and output paths normalized; producer hostname redacted; duplicate stdout omitted because its decoded payload is retained. Numerical payloads unchanged. Original stdout/stderr and collector retained locally.",
+  "collection_preflight_failure": "An initial startup stopped before measurements when the sandbox denied CPU-model sysctl. The empty output directory was removed and the same bounded collector ran with read-only CPU identity permitted. No failed measurement was discarded.",
+  "source_tree_sha256": "cab4ad67abcbb3457960df7619f959201e3711447100228bd32a905d266cd7e0",
+  "source_tree_digest_method": "SHA-256 of git cat-file tree <source_revision>^{tree} raw bytes; the commit field remains the checkout revision. A tree object ID is not a commit ID."
+}

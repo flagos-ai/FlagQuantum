@@ -304,6 +304,7 @@ the device and run the file directly.
 
 | Variable | Test | What it runs |
 | --- | --- | --- |
+| `FLAGQUANTUM_ISING_SOURCE` | `tests/qec/test_ising_comparison.py` | Path to the pinned NVIDIA Ising-Decoding checkout; runs real-upstream CPU smoke, X/Z boundary-mask conformance and SafeTensors loading checks. Install the optional inference dependencies described in [the comparison protocol](QEC_AI_ISING_COMPARISON.md), then run this file directly. No gated weights are needed for these explicitly untrained integration checks. |
 | `FLAGQUANTUM_DOMESTIC_ATTESTATION` | `tests/test_domestic_single_card_certification.py` | `tools/validate_domestic_single_card.py --attestation <value>` over the P0-P5 phases |
 | `FLAGQUANTUM_TEST_FLAGOS_CUDA` | `tests/test_flagos_cuda_reference.py` | `tools/validate_flagos_cuda_reference.py` |
 | `FLAGQUANTUM_TEST_FLAGOS_DISTRIBUTED` | `tests/test_flagos_distributed_conformance.py` | `tools/validate_flagos_distributed_conformance.py` |
@@ -493,12 +494,13 @@ pushes run the installed-wheel acceptance job instead of another full matrix;
 manual full validation remains available. See [the PR and main policy](CI_MERGE_QUEUE.md).
 
 GPU and multi-node tiers must run on explicitly provisioned environments.
-The checked-in `ci.yml` defines twenty-four jobs:
+The checked-in `ci.yml` defines twenty-five jobs:
 
 - `pre-commit`: source-file hygiene hooks, using the same action as the manual
   diagnostics workflow;
 - `prepare-source`: package the exact commit and complete tree, plus a smaller
-  incremental Git pack, before the test jobs fan out. A800 jobs verify the
+  incremental Git pack, before the test jobs fan out. Trusted portable CPU jobs
+  (including optional SDK, dependency-bound and supply-chain checks) verify the
   commit and the presence of every required tree object, reuse their existing Git objects, and
   download the complete pack when the cache is incomplete;
 
@@ -534,10 +536,21 @@ The checked-in `ci.yml` defines twenty-four jobs:
   preparation is capped at ten minutes and reuses validated complete cu13 wheel
   caches across recipe revisions. Self-hosted cold downloads previously spent
   over 27 minutes in dependency setup before timing out, without starting tests;
-- `qiskit-optional`: the machine-readable interoperability contract plus real
+- `qiskit-compat`: two independent, parallel Qiskit 2.0.x/2.5.x jobs, each
+  running the machine-readable interoperability contract plus real
   Qiskit IR, statevector, wire-order, classical-bit, fixed-seed bidirectional
   differential programs, and local Aer conformance on the certified Qiskit
-  2.0.x and 2.5.x lanes, isolated from the core environment;
+  2.0.x and 2.5.x lanes, isolated from the core environment. Both original test
+  commands run on each version with quota-aware pytest workers, grouped by file
+  so module-scoped benchmark fixtures are built once per file. Verified Git
+  objects avoid downloading the complete source tree when the incremental pack
+  is sufficient; an incomplete cache still triggers the full verified pack.
+  Each account retains only private wheel bytes, and hosted jobs cache wheel
+  files by OS, architecture, Python and certified version line. Every run resolves
+  the live index before installing from the resulting offline dependency closure,
+  so a cache hit does not pin wildcard lanes to stale patch releases;
+- `qiskit-optional`: the stable gate that requires both Qiskit matrix jobs to
+  succeed; fork legs share the existing hosted bucket, keeping the hosted ceiling;
 - `pennylane-optional`: the IR-only contract, complex128 QuantumScript
   semantics, and explicit local `lightning.qubit` statevector/shot execution
   against the minimum 0.44.1 and latest 0.45.1 supported lanes;
@@ -621,6 +634,10 @@ versions and may run concurrently on separate A100 registrations. The private-en
 paths, retains the verified A100 bootstrap and CPU wheel cache, and bounds the
 domestic wheel download before falling back to the official CPU index. CPU jobs
 hide GPUs and verify dependency consistency and CPU-only framework selection.
+Core tiers use the same CPU installer while retaining their empty private
+virtual environments: the installer reads each host's configured wheel cache,
+uses the bounded domestic fallback, and caps official CPU downloads at five
+minutes. The no-NumPy and no-optional-framework checks remain unchanged.
 The sixteen coverage shards use checked-in duration hints from a cited CI run and a
 deterministic least-loaded assignment, then merge raw data before applying the
 unchanged coverage policy; their union is the former selection, not a reduced
@@ -817,6 +834,15 @@ changes. The scheduled entry point is `cron: "17 3 * * 1"`, which is 03:17 UTC
 on Monday. Hardware manifests and raw logs are uploaded even on failure; skips
 must carry a reason and are not evidence of success, and neither is an artifact
 whose `measurement_validity` is not `clean` evidence of performance.
+
+In `continuous_performance.py --mode distributed-shard`, a warmup is one complete
+block of `inner_loops` operations with the same compute, collective and device
+synchronizations used for a measured sample. Warmup time is initialization;
+measured samples and communication totals exclude it. Earlier revisions warmed
+only individual asynchronous operations. Their raw records retain their original
+meaning and must not be relabeled as having used the complete-block warmup.
+This correction does not change the sample count or variance threshold and does
+not establish that warmup was the only cause of a failed performance gate.
 
 ## Coverage gate
 

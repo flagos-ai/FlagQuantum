@@ -279,7 +279,94 @@ separate check. This supplies the bounded photonic reference scenario below
 through existing shared capabilities, without promoting a Gaussian backend or
 native optical-program frontend.
 
+[Proposal 085](../development/API_CHANGE_PROPOSAL_085_ISING_BRAID_PROGRAMS.md)
+was explicitly approved on 2026-10-23 for baseline-first staged implementation.
+It specifies a fixed-charge Ising braid frontend on the same
+Core ProgramRecord, exact existing operator actions, shared root planning and
+results, and explicit terminal QND charge instruments. Its native-only plan
+admission must preserve old circuit and Lindblad plans without reporting fusion
+coordinates as qubits or braid ordinals as physical time. The runnable
+current-API matrix probe establishes reuse only, not native support. The
+replaceable baseline must precede domain implementations, and each later PR
+retains its own merge and complete-verification gates.
+
+The replaceable baseline landed in #761. The Core source delivery adds the
+experimental IsingBraidProgram, immutable four-sigma context/exchanges and
+native-source encoding 1.1 through existing ProgramRecord authorities. It
+preserves Rydberg source 1.0 and old plan bytes. Run
+`python -m examples.ising_braid_source` for source snapshots, fusion coordinates
+and shared matrix outputs. The subsequent Simulation and Runtime deliveries add
+finite F/R actions through existing SuperOperator algebra and the same root
+plan/run, ExecutionPlan and ExecutionResult. Native-only plan 1.1 seals Core
+source 1.1 and ordered matrix outputs, with null circuit analysis and unchanged
+old circuit/Lindblad payloads. The four baseline factories now use the real
+source/planner/executor/reader while their independent physical assertions stay
+fixed. `python -m examples.ising_braid_execution` exercises exact JSON replay and
+explicit terminal pair-charge QND observations. Full applicable remote gates
+remain required before each authorized merge. This is only the fixed four-sigma
+vacuum CPU slice; it does not certify full M3, other anyon sectors, physical
+hardware, gradients or universal anyon computation.
+
+[Proposal 089](../development/API_CHANGE_PROPOSAL_089_ISING_UNREAD_OBSERVATION.md)
+now adds one ideal unread observation of the current first pair between native
+Ising exchanges. Baseline #798, source #804, Simulation #807 and Runtime #809
+reuse ProgramRecord, existing Kraus actions and root plan/run/results. Only the
+new operation uses native source/plan 1.2; braid-only 1.1 and all old captures
+remain unchanged. The four replaceable factories now use the real path while
+independent physical assertions and 1e-12/rtol=0 budgets stay fixed. The
+[delivery record](../api-changes/FQ-ISING-UNREAD-OBSERVATION-20261024.md) runs an
+exchange/channel/inverse program with P(psi)=0.5 and exact JSON replay. It
+produces a mixed density without selecting an intermediate outcome or creating
+an event/feedback record. The separately approved sampled slice below selects one branch; intermediate
+atom-presence instruments and hardware feedback retain separate contract gates.
+
+[Proposal 091](../development/API_CHANGE_PROPOSAL_091_ISING_SAMPLED_OBSERVATION.md)
+was approved before baseline #821, Core #824, Simulation #827 and Runtime #838.
+One `measure_pair()` reuses the native IR, existing Kraus continuation, terminal
+probability/private-draw authority and canonical results. Explicit `shots=1`
+and seed admit a CPU conditional trajectory with native source/plan 1.3 and a
+PyTorch-version-bound RNG environment; braid-only 1.1, unread 1.2 and other old
+artifacts retain exact bytes. Four baseline factories now use the real path,
+with unchanged independent F/R consumers. The
+[M3 acceptance review](../development/M3_SCENARIO_ACCEPTANCE.md#current-api-user-workflow)
+contains runnable JSON replay and the expected `1.3 / True / True / True` output.
+This fixed four-sigma vacuum profile adds no multi-shot native batch, classical
+register, feedback, detector event time, other sector or hardware support.
+
 ### Reference scenarios
+
+The [M3 scenario acceptance review](../development/M3_SCENARIO_ACCEPTANCE.md)
+links executable witnesses, shared boundaries and separate numerical,
+truncation, gradient and sampling budgets. It includes the merged driven
+three-level (#787), thermal spin-mode (#782) and native fusion-observation
+(#778), unread continuation (#809) and single sampled continuation (#838)
+slices. These are bounded CPU references, not full M3/M4 or hardware
+certification. The separately approved proposal 092 now adds one intermediate
+atom-presence instrument on the existing native Rydberg schedule and a single
+seeded CPU conditional continuation. Core #869, Simulation #875 and Runtime
+[#879](https://github.com/flagos-ai/FlagQuantum/pull/879) reuse existing IR,
+full-grid binding, Liouvillian, integrators, private sampling and canonical result
+authorities. The [accepted trajectory evidence and public workflow](../api-changes/FQ-RYDBERG-PRESENCE-TRAJECTORY-20261025.md)
+retain atom identity, distinguish physical loss from no-flag detection, and keep
+post-observation and forward time rows explicit. Multi-event trajectories,
+feedback, heating, calibration and device execution remain separate decisions;
+this inventory approves no additional protected interface or M4 claim.
+
+The user approved the bounded
+[driven three-level relaxation contract](../development/M3_NEXT_SCENARIO_CONTRACT_REVIEW.md)
+on 2026-10-26. Implementation [#886](https://github.com/flagos-ai/FlagQuantum/pull/886)
+merged as `05bca74d08ac905f4ccdbb03235f2a478b2f89b7` under its independent human
+grant, after complete CI `40269085812`, GPU `40269085833` and the remote Python
+3.10/3.11/3.12 matrix succeeded at head
+`2bb50f2fd54a5315bf80772569b0527bcef91488`. The example and independent
+integration acceptance reuse existing numeric Lindblad planning, fixed collapse
+rates, interval bindings, autograd and results; public APIs and library
+production code are unchanged. Local default verification passed 16,017 cases
+(224 skipped) and integration passed 2,515 (177 skipped), both with zero XML
+failures/errors. Main smoke `40271009760` succeeded; this is only a smoke check.
+The accepted slice covers a finite phenomenological cascade, not calibrated
+hardware, gate fidelity, higher-level truncation or all M3/M4 gates. The existing
+closed-model reference remains unchanged.
 
 | Scenario | Shared capability under test | Additional acceptance |
 | --- | --- | --- |

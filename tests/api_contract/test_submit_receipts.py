@@ -12,9 +12,11 @@ from typing import Any
 import pytest
 
 import flagquantum as fq
+from flagquantum.errors import ExecutionError
 from flagquantum.remote import _job_receipts, jobs
 from flagquantum.remote.compute import JiudingCredentials
 from flagquantum.remote.compute._native_job import NativeJiudingJobClient
+from flagquantum.remote.qpu import _quafu_sdk
 from flagquantum.remote.qpu.quafu import QuafuProvider
 
 pytestmark = pytest.mark.unit
@@ -30,26 +32,19 @@ def session(
     credentials = JiudingCredentials(access_key="private-ak", secret_key="private-sk")
 
     class Transport:
-        def post_json(
-            self, url: str, payload: dict, headers: dict, timeout: float
-        ) -> dict:
-            calls.append(payload)
+        def submit(self, qasm: str, **options: Any) -> SimpleNamespace:
+            calls.append({"qasm": qasm, **options})
             if errors:
                 raise errors[0]
-            return {"job_id": "job-123"}
-
-        def get_json(self, url: str, headers: dict, timeout: float) -> dict:
-            if url.endswith("/healthz"):
-                return {"healthy": True}
-            raise AssertionError("Submission/restoration must not poll")
+            return SimpleNamespace(id="job-123", n_tasks=1)
 
     class Quafu(QuafuProvider):
         def __init__(self, **kwargs: Any) -> None:
             clients.append(self)
             super().__init__(
-                api_key="private-api-key",
-                task_server_url="https://quafu.test/api/v1",
-                transport=Transport(),
+                _sdk_adapter=_quafu_sdk._QuafuSdkAdapter.for_submission(
+                    client=Transport()
+                ),
                 **kwargs,
             )
 
@@ -237,7 +232,9 @@ def test_lost_submission_response_is_not_retried(
 ) -> None:
     path = tmp_path / "uncertain.json"
     session.errors.append(TimeoutError("response lost"))
-    with pytest.raises(TimeoutError, match="response lost"):
+    error = ExecutionError if session.provider == "quafu" else TimeoutError
+    message = "TimeoutError" if session.provider == "quafu" else "response lost"
+    with pytest.raises(error, match=message):
         _submit(session, path)
     session.errors.clear()
     with pytest.raises(RuntimeError, match="reconcile"):

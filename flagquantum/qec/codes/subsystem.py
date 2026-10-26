@@ -50,7 +50,6 @@ from numbers import Integral
 
 from ..gf2 import rank
 from ..pauli import Pauli
-from ._compat import _retain_module
 from ._css_helpers import (
     _DISTANCE_SEARCH_WEIGHT,
     BinaryMatrix,
@@ -587,12 +586,3 @@ def tesseract_free_cnot_pairs() -> tuple[tuple[int, int], ...]:
     """
 
     return ((0, 1), (2, 3))
-
-
-_retain_module(
-    "flagquantum.qec.subsystem",
-    SubsystemCode,
-    tesseract_code,
-    tesseract_column_swap,
-    tesseract_free_cnot_pairs,
-)

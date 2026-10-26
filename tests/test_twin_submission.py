@@ -101,6 +101,38 @@ def test_submission_round_trip_resumes_validation_without_submission(tmp_path):
     assert report.validation.shots == 1024
 
 
+def test_submission_persists_sdk_physical_validation_identity(tmp_path):
+    experiment = _experiment()
+    receipt = _receipt(experiment)
+    receipt.payload.update(
+        {
+            "source_qasm_sha256": experiment.submitted_qasm_identity,
+            "submitted_qasm_sha256": "1" * 64,
+            "service_compiler": "none",
+            "quafu_protocol": "quafu_sdk_v1",
+            "backend_snapshot_sha256": "2" * 64,
+            "calibration_id": "cal-1",
+            "measurement_mapping": [
+                {"cbit": 0, "logical_qubit": 0, "physical_qubit": 20},
+                {"cbit": 1, "logical_qubit": 1, "physical_qubit": 27},
+            ],
+        }
+    )
+    destination = tmp_path / "sdk-twin-submission.json"
+
+    fq.twin.dump_submission(
+        fq.twin.TwinSubmission.from_receipt(experiment, receipt), destination
+    )
+    restored = fq.twin.load_submission(destination)
+
+    assert restored.receipt.payload["source_qasm_sha256"] == (
+        experiment.submitted_qasm_identity
+    )
+    assert restored.receipt.payload["submitted_qasm_sha256"] == "1" * 64
+    assert restored.receipt.payload["quafu_protocol"] == "quafu_sdk_v1"
+    assert restored.receipt.payload["calibration_id"] == "cal-1"
+
+
 def test_submission_copy_is_immutable_and_save_is_idempotent(tmp_path):
     experiment = _experiment()
     receipt = _receipt(experiment)

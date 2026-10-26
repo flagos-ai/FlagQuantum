@@ -1,0 +1,159 @@
+{
+  "schema_version": "1.0",
+  "status": "approved_for_staged_implementation",
+  "proposal": "docs/development/API_CHANGE_PROPOSAL_086_DYNAMIC_REMOTE_CAPABILITY.md",
+  "approval": {
+    "approved_by": "API owner via explicit user directive",
+    "approved_at": "2026-10-23",
+    "directive": "approve API-CHANGE-086-DYNAMIC-REMOTE-CAPABILITY-CONTRACT",
+    "approved_scope": "remote dynamic capability candidate contract and failing-first conformance baseline"
+  },
+  "delivery_stage": {
+    "name": "contract_and_conformance_baseline",
+    "runtime_activation": false,
+    "provider_activation": false,
+    "network_access": false,
+    "task_submission": false,
+    "public_behavior_change": false,
+    "successor": "requirement_and_snapshot_bridge"
+  },
+  "compatibility": {
+    "additive_behavior_only": true,
+    "public_signature_change": false,
+    "root_export_change": false,
+    "circuit_ir_schema_change": false,
+    "execution_plan_schema_change": false,
+    "deployment_package_schema_change": false,
+    "execution_result_schema_change": false,
+    "cloud_backend_profile_schema_change": false,
+    "dynamic_circuit_and_circuit_remain_distinct": true,
+    "run_dynamic_remains_experimental": true
+  },
+  "existing_authorities": {
+    "program": "flagquantum.dynamic.DynamicCircuit",
+    "semantic_ir": "flagquantum.CircuitIR@1.0",
+    "dynamic_feature_vocabulary": "flagquantum.runtime.dynamic.conformance.DynamicFeatureSet",
+    "target_capability_authority": "flagquantum.core.target_capabilities",
+    "provider_projection": "flagquantum.deployment.CloudBackendProfile",
+    "provider_boundary": "flagquantum.remote.qpu",
+    "execution": "flagquantum.run",
+    "result": "flagquantum.ExecutionResult"
+  },
+  "user_workflow": {
+    "eventual_entry": "fq.run(circuit, target='amazon-braket:<device-arn>', shots=128)",
+    "target_selection": "explicit",
+    "automatic_provider_selection": false,
+    "silent_local_fallback": false,
+    "new_remote_dynamic_entry": false,
+    "candidate_target_spelling": "amazon-braket:<device-arn>"
+  },
+  "requirement_vector": {
+    "source": "ordered CircuitIR instructions",
+    "fields": [
+      "mid_circuit_measurement",
+      "reset",
+      "repeated_measurement",
+      "classical_feed_forward",
+      "supported_conditional_gates",
+      "max_condition_bits",
+      "condition_values",
+      "supports_disjunctive_conditions",
+      "returns_mid_circuit_measurements"
+    ],
+    "caller_declaration_accepted": false,
+    "coarse_dynamic_boolean_sufficient": false,
+    "requirements_may_weaken_after_routing": false
+  },
+  "evidence_states": {
+    "declared": "fresh device-scoped provider declaration",
+    "verified": "retained controlled task evidence for the named target",
+    "certified": "independently reviewable evidence satisfying release policy",
+    "stable_provider_promotion_requires": "certified",
+    "simulator_success_is_hardware_evidence": false,
+    "sdk_syntax_is_hardware_evidence": false,
+    "provider_family_name_is_device_evidence": false
+  },
+  "fact_states": [
+    "supported",
+    "unsupported",
+    "unknown",
+    "unmeasured",
+    "not_exposed",
+    "stale",
+    "missing"
+  ],
+  "blocker_categories": {
+    "missing": "dynamic_capability_fact_missing:<fact>",
+    "stale": "dynamic_capability_snapshot_stale",
+    "unknown": "dynamic_capability_fact_unknown:<fact>",
+    "unmeasured": "dynamic_capability_fact_unmeasured:<fact>",
+    "unsupported": "dynamic_capability_fact_unsupported:<fact>",
+    "not_exposed": "dynamic_capability_fact_not_exposed:<fact>",
+    "value_mismatch": "dynamic_capability_value_mismatch:<fact>",
+    "target_identity_mismatch": "dynamic_target_identity_mismatch",
+    "routing_weakened_requirement": "dynamic_requirement_weakened_after_routing",
+    "result_form_unavailable": "dynamic_result_form_unavailable:<form>"
+  },
+  "admission_order": [
+    "validate CircuitIR ordering and measurement-condition def-use",
+    "lower and exactly restore Program IR",
+    "derive the dynamic requirement vector",
+    "resolve one explicit target and fresh provider snapshot",
+    "match generic dynamic features and capacity",
+    "legalize, route, and lower to the provider dialect",
+    "re-match routed artifact and provider restrictions",
+    "seal deployment package and identity",
+    "run non-submitting provider dry run",
+    "submit exactly once"
+  ],
+  "fail_closed": {
+    "mandatory_fact_not_accepted": "CapabilityError before compilation, packaging, or submission",
+    "unknown_target": "CapabilityError without local fallback",
+    "quafu_dynamic_program": "refused before provider construction or request",
+    "azure_dynamic_program": "refused before provider construction or request",
+    "non_iqm_braket_dynamic_program": "refused before provider construction or request",
+    "incomplete_iqm_profile": "refused before provider construction or request",
+    "rng_consumed_on_refusal": false,
+    "task_submitted_on_refusal": false,
+    "charge_possible_on_refusal": false,
+    "partial_result_on_refusal": false
+  },
+  "result_projection": {
+    "type": "flagquantum.ExecutionResult",
+    "required_identity": [
+      "requested target",
+      "effective target",
+      "deployment artifact identity",
+      "provider task identity",
+      "capability snapshot identity"
+    ],
+    "required_counts": [
+      "requested shots",
+      "completed shots"
+    ],
+    "mid_circuit_measurements": "returned only when the provider supplies them",
+    "invent_missing_measurements": false,
+    "provider_native_task_exposed": false,
+    "raw_provider_payload_exposed": false
+  },
+  "initial_provider_policy": {
+    "positive_candidate": "amazon-braket:IQM",
+    "candidate_status": "experimental_until_live_evidence",
+    "quafu": "unsupported_or_unknown",
+    "azure": "unsupported_or_unknown",
+    "ibm": "future_target_without_inferred_support",
+    "quantinuum": "future_target_without_inferred_support"
+  },
+  "activation_gates": [
+    "contract baseline merged",
+    "requirements are derived from CircuitIR",
+    "provider facts carry device identity, freshness, exposure, support, and evidence level",
+    "coarse supports_dynamic_circuits cannot admit execution",
+    "all mandatory non-accepted fact states fail with distinct blockers",
+    "pre-routing and post-routing matching preserve requirements",
+    "negative provider routes prove zero provider construction and zero submission",
+    "mocked IQM route proves exactly-once submission and retained identities",
+    "live evidence and performance budgets pass",
+    "exact provider and feature slice receives separate promotion approval"
+  ]
+}

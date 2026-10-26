@@ -442,10 +442,12 @@ channel beside a Z channel, because the two would fire independently and that is
 different mechanism. The suite states the difference where it lives rather than
 only in the marginals: a one-branch Y model and a two-fault reading of it agree on
 every single-detector rate and disagree on the pair rates between the two detector
-bands, and the sampled pair rates follow the one-branch model. What the sampler
-still does not reach is a channel placed after a named gate and a depolarizing or
-damping channel, and that narrower state is recorded in the sampling entry's own
-limitations rather than approximated here.
+bands, and the sampled pair rates follow the one-branch model. The original sampler limitation is superseded by
+[QEC-FUNCTIONAL-004](../../docs/development/QEC_FUNCTIONAL_004.md): gate-bound
+one-/two-qubit Pauli Kraus mixtures, including depolarization, now retain
+exclusive alternatives in construction and circuit sampling. Non-Pauli Kraus
+branches, including damping, remain refused. No correlated-decoder or threshold
+claim follows from exact noise construction.
 
 The earlier revision that the paragraph above retracts, kept verbatim rather than
 dropped:
@@ -611,7 +613,7 @@ reproduces the marginals by construction -- while its pair rates miss by 10.7 to
 23.6 times the pair tolerance, against a largest true pair covariance of 0.0284
 to 0.1794.
 
-The circuit route is a derivation, not an execution, so it is bounded by the
+The round-boundary circuit route is a derivation, not an execution, so it is bounded by the
 detector error model's own cost rather than by the statevector amplitude ceiling.
 A mechanism's flip set is read off the circuit's detector and observable layouts,
 from the code's check types and the frame the experiment is prepared and read out
@@ -632,11 +634,15 @@ A rotated surface code is `distance**2` data qubits plus one ancilla per check:
 `distance=2` is 7 qubits and `distance=3` is 17, and both build in seconds, while
 `distance=4` is 31 qubits (2**31 amplitudes) and did not complete in forty-five
 minutes, and `distance=5` is 49 qubits and fails on the allocator. The modelled
-rotated-surface distance is therefore three. Reaching five and seven needs a
-signature route that does not materialise the state — either a first-party
-Clifford propagation in this layer, which is a second implementation of an
-algorithm this layer otherwise does not own, or an explicit decision that the
-larger-distance curve is a reference-only comparison.
+rotated-surface distance of that historical reference is therefore three.
+[QEC-FUNCTIONAL-003](../../docs/development/QEC_FUNCTIONAL_003.md) now supplies
+the missing production gate-bound route: QEC composes its layouts with a private
+Simulation-owned Clifford parity primitive, reusing the existing gate images.
+It handles measurements and resets without amplitudes and builds distance-five
+and distance-seven circuit-location models with reference execution disabled.
+The new resource artifact measures 17, 49 and 97 physical qubits; it makes no
+threshold or decoder-quality claim. The historical execution numbers above
+still describe the independent oracle, not the new production construction.
 
 Three shapes are still refused with the reason the injection engine stated,
 because a model built from a record that misdescribes the program it stores would

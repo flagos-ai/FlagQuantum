@@ -1,4 +1,4 @@
-"""Use the existing decoder registry and retain historical pickle paths."""
+"""Use the existing decoder registry and round-trip canonical decoder checkpoints."""
 
 import pickle
 
@@ -17,6 +17,6 @@ for name in (
     print(name, decoder.decode((0,)).observables)
 decoder = get_decoder("minimum_weight_matching", model)
 restored = pickle.loads(pickle.dumps(decoder))
-print("Historical pickle class:", type(restored).__module__)
+print("Pickle class:", type(restored).__module__)
 print("Same class:", type(restored) is type(decoder))
 print("Registered decoders:", len(decoder_names()))

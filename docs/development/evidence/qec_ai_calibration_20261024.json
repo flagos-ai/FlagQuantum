@@ -1,0 +1,1329 @@
+{
+  "schema": "qec_predecoder_calibration_v1",
+  "mode": "full",
+  "claim": "diagnostic_research_only",
+  "configuration": {
+    "seeds": [
+      11,
+      22,
+      33
+    ],
+    "models": [
+      "mlp",
+      "cnn"
+    ],
+    "steps": 200,
+    "batch_size": 128,
+    "diagnostic_shots": 4096,
+    "calibration_shots": 4096,
+    "validation_shots": 4096,
+    "test_shots": 65536,
+    "train_cell": [
+      3,
+      3,
+      0.02
+    ],
+    "fit_cell": [
+      3,
+      3,
+      0.006
+    ],
+    "test_cell": [
+      5,
+      5,
+      0.003
+    ],
+    "temperatures": [
+      0.25,
+      0.5,
+      1.0,
+      2.0,
+      4.0
+    ],
+    "thresholds": [
+      0.5,
+      0.7,
+      0.9,
+      0.99,
+      1.0
+    ],
+    "primary_alpha": 0.008333333333333333
+  },
+  "configuration_sha256": "5a2ff62bc93a0025db6efe65ed9463f5cda47126fac9c450c63069d8a9034e40",
+  "protocol_sha256": "4b85154a2fc2fa08471e79c82110b885d24f720666435f618cb36d77e5b5acc6",
+  "source_sha256": {
+    "examples/qec/calibrate_predecoder.py": "5f129b477024df230d2f82134dc475a89e4f02c2782f3ef5b6a9190140469b6a",
+    "examples/qec/assess_predecoder.py": "55cdf254b42cde15b94a7aad271438713db98e0ceca645942aeec66123be8517",
+    "flagquantum/qec/decoders/_ai/__init__.py": "98190f335763fa2f0d50ea0035acd237b4691ccb03a864b574ab9963f3114f02",
+    "flagquantum/qec/decoders/_ai/assessment.py": "c48e1e5650b07a96fb06cc2e4d394539833e5040ee09d00107f7a7e2b4e97922",
+    "flagquantum/qec/decoders/_ai/calibration.py": "57cd2daee6595561004d6596ab76a7238307af8228da87cb9c5b738959d0c3d1",
+    "flagquantum/qec/decoders/_ai/diagnostics.py": "816e4a4051e828c52aee0a7fe746447e5e57fd3f6ac3e9ec469c241ab2677516",
+    "flagquantum/qec/decoders/_ai/predecoder.py": "510f63a60542fef509850bcdea29b574bf2e28de586353a5dc448d0e64af567b",
+    "flagquantum/qec/decoders/_ai/spacetime.py": "1bfcc839e4e07130b81ee52925cf58ea67e884ba7091d1de24cc64d8711c6ef3",
+    "flagquantum/qec/decoders/_ai/training.py": "427c10ad5a27890cffd358478a35d429803226aa3945ae32d09176b73c853d21"
+  },
+  "environment": {
+    "python": "3.11.16",
+    "torch": "2.10.0",
+    "pymatching": "2.4.0",
+    "device": "cpu",
+    "torch_threads": 1
+  },
+  "distinct_test_draws": 196608,
+  "rows": [
+    {
+      "seed": 11,
+      "model": "mlp",
+      "checkpoint": "mlp-seed11.pt",
+      "checkpoint_sha256": "4a15c38a4cd6e3b7cb4cef10095c2f222f15c48b43e1e46a9db5839f1d3dbcb7",
+      "first_loss": 0.4478483498096466,
+      "last_loss": 0.11849468946456909,
+      "training_diagnostics": {
+        "total_labels": 184320,
+        "positive_labels": 4171,
+        "negative_labels": 180149,
+        "positive_bce_sum": 10672.65627314206,
+        "negative_bce_sum": 10219.176894013694,
+        "predicted_positive_labels": 0,
+        "mean_probability": 0.055642104684690885,
+        "brier_score": 0.02225014581244642
+      },
+      "calibration": {
+        "temperature": 0.5,
+        "raw_mean_bce": 0.07257399708914976,
+        "calibrated_mean_bce": 0.03629211769246486,
+        "raw_brier": 0.008497715337602777,
+        "calibrated_brier": 0.006344245901531452
+      },
+      "raw_validation_diagnostics": {
+        "total_labels": 184320,
+        "positive_labels": 1202,
+        "negative_labels": 183118,
+        "positive_bce_sum": 3175.175612634895,
+        "negative_bce_sum": 10254.273888295511,
+        "predicted_positive_labels": 0,
+        "mean_probability": 0.054555742832682684,
+        "brier_score": 0.008594504702518452
+      },
+      "calibrated_validation_diagnostics": {
+        "total_labels": 184320,
+        "positive_labels": 1202,
+        "negative_labels": 183118,
+        "positive_bce_sum": 6179.666746525261,
+        "negative_bce_sum": 612.3891237770018,
+        "predicted_positive_labels": 0,
+        "mean_probability": 0.003354865119957942,
+        "brier_score": 0.006456580955515207
+      },
+      "controls": [
+        {
+          "control": "raw",
+          "temperature": 1.0,
+          "validation": {
+            "threshold": 1.0,
+            "trials": [
+              {
+                "threshold": 0.5,
+                "counts": {
+                  "shots": 4096,
+                  "baseline_failures": 13,
+                  "hybrid_failures": 13,
+                  "wins": 0,
+                  "losses": 0
+                }
+              },
+              {
+                "threshold": 0.7,
+                "counts": {
+                  "shots": 4096,
+                  "baseline_failures": 13,
+                  "hybrid_failures": 13,
+                  "wins": 0,
+                  "losses": 0
+                }
+              },
+              {
+                "threshold": 0.9,
+                "counts": {
+                  "shots": 4096,
+                  "baseline_failures": 13,
+                  "hybrid_failures": 13,
+                  "wins": 0,
+                  "losses": 0
+                }
+              },
+              {
+                "threshold": 0.99,
+                "counts": {
+                  "shots": 4096,
+                  "baseline_failures": 13,
+                  "hybrid_failures": 13,
+                  "wins": 0,
+                  "losses": 0
+                }
+              },
+              {
+                "threshold": 1.0,
+                "counts": {
+                  "shots": 4096,
+                  "baseline_failures": 13,
+                  "hybrid_failures": 13,
+                  "wins": 0,
+                  "losses": 0
+                }
+              }
+            ]
+          },
+          "test": {
+            "shots": 65536,
+            "baseline_failures": 10,
+            "hybrid_failures": 10,
+            "wins": 0,
+            "losses": 0
+          },
+          "summary": {
+            "baseline_ler": 0.000152587890625,
+            "hybrid_ler": 0.000152587890625,
+            "baseline_interval": [
+              0.0,
+              0.005934647216018743
+            ],
+            "hybrid_interval": [
+              0.0,
+              0.005934647216018743
+            ],
+            "ratio_upper": null,
+            "paired_p_value": 1.0,
+            "quality_gate": "inconclusive"
+          }
+        },
+        {
+          "control": "calibrated",
+          "temperature": 0.5,
+          "validation": {
+            "threshold": 1.0,
+            "trials": [
+              {
+                "threshold": 0.5,
+                "counts": {
+                  "shots": 4096,
+                  "baseline_failures": 13,
+                  "hybrid_failures": 13,
+                  "wins": 0,
+                  "losses": 0
+                }
+              },
+              {
+                "threshold": 0.7,
+                "counts": {
+                  "shots": 4096,
+                  "baseline_failures": 13,
+                  "hybrid_failures": 13,
+                  "wins": 0,
+                  "losses": 0
+                }
+              },
+              {
+                "threshold": 0.9,
+                "counts": {
+                  "shots": 4096,
+                  "baseline_failures": 13,
+                  "hybrid_failures": 13,
+                  "wins": 0,
+                  "losses": 0
+                }
+              },
+              {
+                "threshold": 0.99,
+                "counts": {
+                  "shots": 4096,
+                  "baseline_failures": 13,
+                  "hybrid_failures": 13,
+                  "wins": 0,
+                  "losses": 0
+                }
+              },
+              {
+                "threshold": 1.0,
+                "counts": {
+                  "shots": 4096,
+                  "baseline_failures": 13,
+                  "hybrid_failures": 13,
+                  "wins": 0,
+                  "losses": 0
+                }
+              }
+            ]
+          },
+          "test": {
+            "shots": 65536,
+            "baseline_failures": 10,
+            "hybrid_failures": 10,
+            "wins": 0,
+            "losses": 0
+          },
+          "summary": {
+            "baseline_ler": 0.000152587890625,
+            "hybrid_ler": 0.000152587890625,
+            "baseline_interval": [
+              0.0,
+              0.007015695782696688
+            ],
+            "hybrid_interval": [
+              0.0,
+              0.007015695782696688
+            ],
+            "ratio_upper": null,
+            "paired_p_value": 1.0,
+            "quality_gate": "inconclusive"
+          }
+        }
+      ]
+    },
+    {
+      "seed": 11,
+      "model": "cnn",
+      "checkpoint": "cnn-seed11.pt",
+      "checkpoint_sha256": "4945e8392f524a08db40ea349c410c8a7d80304bc51733fef9d263b106e86b62",
+      "first_loss": 0.8156226873397827,
+      "last_loss": 0.11740905791521072,
+      "training_diagnostics": {
+        "total_labels": 184320,
+        "positive_labels": 4171,
+        "negative_labels": 180149,
+        "positive_bce_sum": 13367.572240980637,
+        "negative_bce_sum": 7260.4492330424655,
+        "predicted_positive_labels": 0,
+        "mean_probability": 0.03952517914839174,
+        "brier_score": 0.022355529024182037
+      },
+      "calibration": {
+        "temperature": 0.5,
+        "raw_mean_bce": 0.06036809524984413,
+        "calibrated_mean_bce": 0.042449922299792046,
+        "raw_brier": 0.007432893162083071,
+        "calibrated_brier": 0.006388083970500231
+      },
+      "raw_validation_diagnostics": {
+        "total_labels": 184320,
+        "positive_labels": 1202,
+        "negative_labels": 183118,
+        "positive_bce_sum": 3874.3259697626954,
+        "negative_bce_sum": 7319.2441501215935,
+        "predicted_positive_labels": 0,
+        "mean_probability": 0.039185902246641674,
+        "brier_score": 0.007537619041027838
+      },
+      "calibrated_validation_diagnostics": {
+        "total_labels": 184320,
+        "positive_labels": 1202,
+        "negative_labels": 183118,
+        "positive_bce_sum": 7653.001084662325,
+        "negative_bce_sum": 304.3434054348098,
+        "predicted_positive_labels": 0,
+        "mean_probability": 0.0016610046549281347,
+        "brier_score": 0.0065016115996102105
+      },
+      "controls": [
+        {
+          "control": "raw",
+          "temperature": 1.0,
+          "validation": {
+            "threshold": 1.0,
+            "trials": [
+              {
+                "threshold": 0.5,
+                "counts": {
+                  "shots": 4096,
+                  "baseline_failures": 13,
+                  "hybrid_failures": 13,
+                  "wins": 0,
+                  "losses": 0
+                }
+              },
+              {
+                "threshold": 0.7,
+                "counts": {
+                  "shots": 4096,
+                  "baseline_failures": 13,
+                  "hybrid_failures": 13,
+                  "wins": 0,
+                  "losses": 0
+                }
+              },
+              {
+                "threshold": 0.9,
+                "counts": {
+                  "shots": 4096,
+                  "baseline_failures": 13,
+                  "hybrid_failures": 13,
+                  "wins": 0,
+                  "losses": 0
+                }
+              },
+              {
+                "threshold": 0.99,
+                "counts": {
+                  "shots": 4096,
+                  "baseline_failures": 13,
+                  "hybrid_failures": 13,
+                  "wins": 0,
+                  "losses": 0
+                }
+              },
+              {
+                "threshold": 1.0,
+                "counts": {
+                  "shots": 4096,
+                  "baseline_failures": 13,
+                  "hybrid_failures": 13,
+                  "wins": 0,
+                  "losses": 0
+                }
+              }
+            ]
+          },
+          "test": {
+            "shots": 65536,
+            "baseline_failures": 10,
+            "hybrid_failures": 10,
+            "wins": 0,
+            "losses": 0
+          },
+          "summary": {
+            "baseline_ler": 0.000152587890625,
+            "hybrid_ler": 0.000152587890625,
+            "baseline_interval": [
+              0.0,
+              0.005934647216018743
+            ],
+            "hybrid_interval": [
+              0.0,
+              0.005934647216018743
+            ],
+            "ratio_upper": null,
+            "paired_p_value": 1.0,
+            "quality_gate": "inconclusive"
+          }
+        },
+        {
+          "control": "calibrated",
+          "temperature": 0.5,
+          "validation": {
+            "threshold": 1.0,
+            "trials": [
+              {
+                "threshold": 0.5,
+                "counts": {
+                  "shots": 4096,
+                  "baseline_failures": 13,
+                  "hybrid_failures": 13,
+                  "wins": 0,
+                  "losses": 0
+                }
+              },
+              {
+                "threshold": 0.7,
+                "counts": {
+                  "shots": 4096,
+                  "baseline_failures": 13,
+                  "hybrid_failures": 13,
+                  "wins": 0,
+                  "losses": 0
+                }
+              },
+              {
+                "threshold": 0.9,
+                "counts": {
+                  "shots": 4096,
+                  "baseline_failures": 13,
+                  "hybrid_failures": 13,
+                  "wins": 0,
+                  "losses": 0
+                }
+              },
+              {
+                "threshold": 0.99,
+                "counts": {
+                  "shots": 4096,
+                  "baseline_failures": 13,
+                  "hybrid_failures": 13,
+                  "wins": 0,
+                  "losses": 0
+                }
+              },
+              {
+                "threshold": 1.0,
+                "counts": {
+                  "shots": 4096,
+                  "baseline_failures": 13,
+                  "hybrid_failures": 13,
+                  "wins": 0,
+                  "losses": 0
+                }
+              }
+            ]
+          },
+          "test": {
+            "shots": 65536,
+            "baseline_failures": 10,
+            "hybrid_failures": 10,
+            "wins": 0,
+            "losses": 0
+          },
+          "summary": {
+            "baseline_ler": 0.000152587890625,
+            "hybrid_ler": 0.000152587890625,
+            "baseline_interval": [
+              0.0,
+              0.007015695782696688
+            ],
+            "hybrid_interval": [
+              0.0,
+              0.007015695782696688
+            ],
+            "ratio_upper": null,
+            "paired_p_value": 1.0,
+            "quality_gate": "inconclusive"
+          }
+        }
+      ]
+    },
+    {
+      "seed": 22,
+      "model": "mlp",
+      "checkpoint": "mlp-seed22.pt",
+      "checkpoint_sha256": "807cce07627a7f2d943f58106275e8864d61288bf577dad592867cda6af85400",
+      "first_loss": 0.7593283653259277,
+      "last_loss": 0.15467852354049683,
+      "training_diagnostics": {
+        "total_labels": 184320,
+        "positive_labels": 4147,
+        "negative_labels": 180173,
+        "positive_bce_sum": 8330.510624696137,
+        "negative_bce_sum": 19561.821089304773,
+        "predicted_positive_labels": 0,
+        "mean_probability": 0.1035251026239749,
+        "brier_score": 0.02731707781643193
+      },
+      "calibration": {
+        "temperature": 0.5,
+        "raw_mean_bce": 0.12778658813553934,
+        "calibrated_mean_bce": 0.0410834931565154,
+        "raw_brier": 0.01694196094199983,
+        "calibrated_brier": 0.0068430616263692795
+      },
+      "raw_validation_diagnostics": {
+        "total_labels": 184320,
+        "positive_labels": 1284,
+        "negative_labels": 183036,
+        "positive_bce_sum": 2611.954988392445,
+        "negative_bce_sum": 20955.8159463387,
+        "predicted_positive_labels": 0,
+        "mean_probability": 0.10828044002869505,
+        "brier_score": 0.016972457108880123
+      },
+      "calibrated_validation_diagnostics": {
+        "total_labels": 184320,
+        "positive_labels": 1284,
+        "negative_labels": 183036,
+        "positive_bce_sum": 4892.62937072171,
+        "negative_bce_sum": 2704.940478002591,
+        "predicted_positive_labels": 0,
+        "mean_probability": 0.01471715216536474,
+        "brier_score": 0.0068833671296020405
+      },
+      "controls": [
+        {
+          "control": "raw",
+          "temperature": 1.0,
+          "validation": {
+            "threshold": 1.0,
+            "trials": [
+              {
+                "threshold": 0.5,
+                "counts": {
+                  "shots": 4096,
+                  "baseline_failures": 13,
+                  "hybrid_failures": 13,
+                  "wins": 0,
+                  "losses": 0
+                }
+              },
+              {
+                "threshold": 0.7,
+                "counts": {
+                  "shots": 4096,
+                  "baseline_failures": 13,
+                  "hybrid_failures": 13,
+                  "wins": 0,
+                  "losses": 0
+                }
+              },
+              {
+                "threshold": 0.9,
+                "counts": {
+                  "shots": 4096,
+                  "baseline_failures": 13,
+                  "hybrid_failures": 13,
+                  "wins": 0,
+                  "losses": 0
+                }
+              },
+              {
+                "threshold": 0.99,
+                "counts": {
+                  "shots": 4096,
+                  "baseline_failures": 13,
+                  "hybrid_failures": 13,
+                  "wins": 0,
+                  "losses": 0
+                }
+              },
+              {
+                "threshold": 1.0,
+                "counts": {
+                  "shots": 4096,
+                  "baseline_failures": 13,
+                  "hybrid_failures": 13,
+                  "wins": 0,
+                  "losses": 0
+                }
+              }
+            ]
+          },
+          "test": {
+            "shots": 65536,
+            "baseline_failures": 10,
+            "hybrid_failures": 10,
+            "wins": 0,
+            "losses": 0
+          },
+          "summary": {
+            "baseline_ler": 0.000152587890625,
+            "hybrid_ler": 0.000152587890625,
+            "baseline_interval": [
+              0.0,
+              0.005934647216018743
+            ],
+            "hybrid_interval": [
+              0.0,
+              0.005934647216018743
+            ],
+            "ratio_upper": null,
+            "paired_p_value": 1.0,
+            "quality_gate": "inconclusive"
+          }
+        },
+        {
+          "control": "calibrated",
+          "temperature": 0.5,
+          "validation": {
+            "threshold": 1.0,
+            "trials": [
+              {
+                "threshold": 0.5,
+                "counts": {
+                  "shots": 4096,
+                  "baseline_failures": 13,
+                  "hybrid_failures": 13,
+                  "wins": 0,
+                  "losses": 0
+                }
+              },
+              {
+                "threshold": 0.7,
+                "counts": {
+                  "shots": 4096,
+                  "baseline_failures": 13,
+                  "hybrid_failures": 13,
+                  "wins": 0,
+                  "losses": 0
+                }
+              },
+              {
+                "threshold": 0.9,
+                "counts": {
+                  "shots": 4096,
+                  "baseline_failures": 13,
+                  "hybrid_failures": 13,
+                  "wins": 0,
+                  "losses": 0
+                }
+              },
+              {
+                "threshold": 0.99,
+                "counts": {
+                  "shots": 4096,
+                  "baseline_failures": 13,
+                  "hybrid_failures": 13,
+                  "wins": 0,
+                  "losses": 0
+                }
+              },
+              {
+                "threshold": 1.0,
+                "counts": {
+                  "shots": 4096,
+                  "baseline_failures": 13,
+                  "hybrid_failures": 13,
+                  "wins": 0,
+                  "losses": 0
+                }
+              }
+            ]
+          },
+          "test": {
+            "shots": 65536,
+            "baseline_failures": 10,
+            "hybrid_failures": 10,
+            "wins": 0,
+            "losses": 0
+          },
+          "summary": {
+            "baseline_ler": 0.000152587890625,
+            "hybrid_ler": 0.000152587890625,
+            "baseline_interval": [
+              0.0,
+              0.007015695782696688
+            ],
+            "hybrid_interval": [
+              0.0,
+              0.007015695782696688
+            ],
+            "ratio_upper": null,
+            "paired_p_value": 1.0,
+            "quality_gate": "inconclusive"
+          }
+        }
+      ]
+    },
+    {
+      "seed": 22,
+      "model": "cnn",
+      "checkpoint": "cnn-seed22.pt",
+      "checkpoint_sha256": "d0c5e4f03103cdb825f1c2d7a7c5463870a996a5b19fa8ed390361543b2f9a5e",
+      "first_loss": 0.8755836486816406,
+      "last_loss": 0.12097451090812683,
+      "training_diagnostics": {
+        "total_labels": 184320,
+        "positive_labels": 4147,
+        "negative_labels": 180173,
+        "positive_bce_sum": 12582.35049283669,
+        "negative_bce_sum": 8909.257924872749,
+        "predicted_positive_labels": 0,
+        "mean_probability": 0.048242401383827946,
+        "brier_score": 0.022661821124954375
+      },
+      "calibration": {
+        "temperature": 0.5,
+        "raw_mean_bce": 0.07031405495365894,
+        "calibrated_mean_bce": 0.04384955565946895,
+        "raw_brier": 0.008604723468236073,
+        "calibrated_brier": 0.0068937733448354655
+      },
+      "raw_validation_diagnostics": {
+        "total_labels": 184320,
+        "positive_labels": 1284,
+        "negative_labels": 183036,
+        "positive_bce_sum": 3890.6376182136064,
+        "negative_bce_sum": 9094.526024049735,
+        "predicted_positive_labels": 0,
+        "mean_probability": 0.04847070685215051,
+        "brier_score": 0.008644453398187459
+      },
+      "calibrated_validation_diagnostics": {
+        "total_labels": 184320,
+        "positive_labels": 1284,
+        "negative_labels": 183036,
+        "positive_bce_sum": 7657.373221558245,
+        "negative_bce_sum": 474.9082548639505,
+        "predicted_positive_labels": 0,
+        "mean_probability": 0.0025911238295662667,
+        "brier_score": 0.006937017186496869
+      },
+      "controls": [
+        {
+          "control": "raw",
+          "temperature": 1.0,
+          "validation": {
+            "threshold": 1.0,
+            "trials": [
+              {
+                "threshold": 0.5,
+                "counts": {
+                  "shots": 4096,
+                  "baseline_failures": 13,
+                  "hybrid_failures": 13,
+                  "wins": 0,
+                  "losses": 0
+                }
+              },
+              {
+                "threshold": 0.7,
+                "counts": {
+                  "shots": 4096,
+                  "baseline_failures": 13,
+                  "hybrid_failures": 13,
+                  "wins": 0,
+                  "losses": 0
+                }
+              },
+              {
+                "threshold": 0.9,
+                "counts": {
+                  "shots": 4096,
+                  "baseline_failures": 13,
+                  "hybrid_failures": 13,
+                  "wins": 0,
+                  "losses": 0
+                }
+              },
+              {
+                "threshold": 0.99,
+                "counts": {
+                  "shots": 4096,
+                  "baseline_failures": 13,
+                  "hybrid_failures": 13,
+                  "wins": 0,
+                  "losses": 0
+                }
+              },
+              {
+                "threshold": 1.0,
+                "counts": {
+                  "shots": 4096,
+                  "baseline_failures": 13,
+                  "hybrid_failures": 13,
+                  "wins": 0,
+                  "losses": 0
+                }
+              }
+            ]
+          },
+          "test": {
+            "shots": 65536,
+            "baseline_failures": 10,
+            "hybrid_failures": 10,
+            "wins": 0,
+            "losses": 0
+          },
+          "summary": {
+            "baseline_ler": 0.000152587890625,
+            "hybrid_ler": 0.000152587890625,
+            "baseline_interval": [
+              0.0,
+              0.005934647216018743
+            ],
+            "hybrid_interval": [
+              0.0,
+              0.005934647216018743
+            ],
+            "ratio_upper": null,
+            "paired_p_value": 1.0,
+            "quality_gate": "inconclusive"
+          }
+        },
+        {
+          "control": "calibrated",
+          "temperature": 0.5,
+          "validation": {
+            "threshold": 1.0,
+            "trials": [
+              {
+                "threshold": 0.5,
+                "counts": {
+                  "shots": 4096,
+                  "baseline_failures": 13,
+                  "hybrid_failures": 13,
+                  "wins": 0,
+                  "losses": 0
+                }
+              },
+              {
+                "threshold": 0.7,
+                "counts": {
+                  "shots": 4096,
+                  "baseline_failures": 13,
+                  "hybrid_failures": 13,
+                  "wins": 0,
+                  "losses": 0
+                }
+              },
+              {
+                "threshold": 0.9,
+                "counts": {
+                  "shots": 4096,
+                  "baseline_failures": 13,
+                  "hybrid_failures": 13,
+                  "wins": 0,
+                  "losses": 0
+                }
+              },
+              {
+                "threshold": 0.99,
+                "counts": {
+                  "shots": 4096,
+                  "baseline_failures": 13,
+                  "hybrid_failures": 13,
+                  "wins": 0,
+                  "losses": 0
+                }
+              },
+              {
+                "threshold": 1.0,
+                "counts": {
+                  "shots": 4096,
+                  "baseline_failures": 13,
+                  "hybrid_failures": 13,
+                  "wins": 0,
+                  "losses": 0
+                }
+              }
+            ]
+          },
+          "test": {
+            "shots": 65536,
+            "baseline_failures": 10,
+            "hybrid_failures": 10,
+            "wins": 0,
+            "losses": 0
+          },
+          "summary": {
+            "baseline_ler": 0.000152587890625,
+            "hybrid_ler": 0.000152587890625,
+            "baseline_interval": [
+              0.0,
+              0.007015695782696688
+            ],
+            "hybrid_interval": [
+              0.0,
+              0.007015695782696688
+            ],
+            "ratio_upper": null,
+            "paired_p_value": 1.0,
+            "quality_gate": "inconclusive"
+          }
+        }
+      ]
+    },
+    {
+      "seed": 33,
+      "model": "mlp",
+      "checkpoint": "mlp-seed33.pt",
+      "checkpoint_sha256": "b88d0d9d117ce17e5fcebebe697bf06f2c0baed8f3fcc3291a731923945d4064",
+      "first_loss": 0.5866777896881104,
+      "last_loss": 0.13659332692623138,
+      "training_diagnostics": {
+        "total_labels": 184320,
+        "positive_labels": 4332,
+        "negative_labels": 179988,
+        "positive_bce_sum": 10818.615769240872,
+        "negative_bce_sum": 14578.21812480757,
+        "predicted_positive_labels": 0,
+        "mean_probability": 0.07790180506168992,
+        "brier_score": 0.02571441127647987
+      },
+      "calibration": {
+        "temperature": 0.5,
+        "raw_mean_bce": 0.09256562802343975,
+        "calibrated_mean_bce": 0.042655287245197335,
+        "raw_brier": 0.011305338335412755,
+        "calibrated_brier": 0.007202481977841243
+      },
+      "raw_validation_diagnostics": {
+        "total_labels": 184320,
+        "positive_labels": 1238,
+        "negative_labels": 183082,
+        "positive_bce_sum": 3228.9155700855226,
+        "negative_bce_sum": 13580.944319333368,
+        "predicted_positive_labels": 0,
+        "mean_probability": 0.0715078258154992,
+        "brier_score": 0.010843766831894006
+      },
+      "calibrated_validation_diagnostics": {
+        "total_labels": 184320,
+        "positive_labels": 1238,
+        "negative_labels": 183082,
+        "positive_bce_sum": 6276.126780661136,
+        "negative_bce_sum": 1083.2340817027455,
+        "predicted_positive_labels": 0,
+        "mean_probability": 0.005901766791308622,
+        "brier_score": 0.006667016734058431
+      },
+      "controls": [
+        {
+          "control": "raw",
+          "temperature": 1.0,
+          "validation": {
+            "threshold": 1.0,
+            "trials": [
+              {
+                "threshold": 0.5,
+                "counts": {
+                  "shots": 4096,
+                  "baseline_failures": 13,
+                  "hybrid_failures": 13,
+                  "wins": 0,
+                  "losses": 0
+                }
+              },
+              {
+                "threshold": 0.7,
+                "counts": {
+                  "shots": 4096,
+                  "baseline_failures": 13,
+                  "hybrid_failures": 13,
+                  "wins": 0,
+                  "losses": 0
+                }
+              },
+              {
+                "threshold": 0.9,
+                "counts": {
+                  "shots": 4096,
+                  "baseline_failures": 13,
+                  "hybrid_failures": 13,
+                  "wins": 0,
+                  "losses": 0
+                }
+              },
+              {
+                "threshold": 0.99,
+                "counts": {
+                  "shots": 4096,
+                  "baseline_failures": 13,
+                  "hybrid_failures": 13,
+                  "wins": 0,
+                  "losses": 0
+                }
+              },
+              {
+                "threshold": 1.0,
+                "counts": {
+                  "shots": 4096,
+                  "baseline_failures": 13,
+                  "hybrid_failures": 13,
+                  "wins": 0,
+                  "losses": 0
+                }
+              }
+            ]
+          },
+          "test": {
+            "shots": 65536,
+            "baseline_failures": 8,
+            "hybrid_failures": 8,
+            "wins": 0,
+            "losses": 0
+          },
+          "summary": {
+            "baseline_ler": 0.0001220703125,
+            "hybrid_ler": 0.0001220703125,
+            "baseline_interval": [
+              0.0,
+              0.005904129637893743
+            ],
+            "hybrid_interval": [
+              0.0,
+              0.005904129637893743
+            ],
+            "ratio_upper": null,
+            "paired_p_value": 1.0,
+            "quality_gate": "inconclusive"
+          }
+        },
+        {
+          "control": "calibrated",
+          "temperature": 0.5,
+          "validation": {
+            "threshold": 1.0,
+            "trials": [
+              {
+                "threshold": 0.5,
+                "counts": {
+                  "shots": 4096,
+                  "baseline_failures": 13,
+                  "hybrid_failures": 13,
+                  "wins": 0,
+                  "losses": 0
+                }
+              },
+              {
+                "threshold": 0.7,
+                "counts": {
+                  "shots": 4096,
+                  "baseline_failures": 13,
+                  "hybrid_failures": 13,
+                  "wins": 0,
+                  "losses": 0
+                }
+              },
+              {
+                "threshold": 0.9,
+                "counts": {
+                  "shots": 4096,
+                  "baseline_failures": 13,
+                  "hybrid_failures": 13,
+                  "wins": 0,
+                  "losses": 0
+                }
+              },
+              {
+                "threshold": 0.99,
+                "counts": {
+                  "shots": 4096,
+                  "baseline_failures": 13,
+                  "hybrid_failures": 13,
+                  "wins": 0,
+                  "losses": 0
+                }
+              },
+              {
+                "threshold": 1.0,
+                "counts": {
+                  "shots": 4096,
+                  "baseline_failures": 13,
+                  "hybrid_failures": 13,
+                  "wins": 0,
+                  "losses": 0
+                }
+              }
+            ]
+          },
+          "test": {
+            "shots": 65536,
+            "baseline_failures": 8,
+            "hybrid_failures": 8,
+            "wins": 0,
+            "losses": 0
+          },
+          "summary": {
+            "baseline_ler": 0.0001220703125,
+            "hybrid_ler": 0.0001220703125,
+            "baseline_interval": [
+              0.0,
+              0.006985178204571688
+            ],
+            "hybrid_interval": [
+              0.0,
+              0.006985178204571688
+            ],
+            "ratio_upper": null,
+            "paired_p_value": 1.0,
+            "quality_gate": "inconclusive"
+          }
+        }
+      ]
+    },
+    {
+      "seed": 33,
+      "model": "cnn",
+      "checkpoint": "cnn-seed33.pt",
+      "checkpoint_sha256": "03ee576ee9a0a0ec97fa650aa31c19d2e7008dbafcfc81a15cbb9d0fd0c5137b",
+      "first_loss": 0.6446232795715332,
+      "last_loss": 0.11570968478918076,
+      "training_diagnostics": {
+        "total_labels": 184320,
+        "positive_labels": 4332,
+        "negative_labels": 179988,
+        "positive_bce_sum": 13537.10811293664,
+        "negative_bce_sum": 8105.120053341019,
+        "predicted_positive_labels": 0,
+        "mean_probability": 0.04403037622641884,
+        "brier_score": 0.02337592240361762
+      },
+      "calibration": {
+        "temperature": 0.5,
+        "raw_mean_bce": 0.0673826559452229,
+        "calibrated_mean_bce": 0.046830237333003816,
+        "raw_brier": 0.008559614382415023,
+        "calibrated_brier": 0.007232970518677945
+      },
+      "raw_validation_diagnostics": {
+        "total_labels": 184320,
+        "positive_labels": 1238,
+        "negative_labels": 183082,
+        "positive_bce_sum": 3868.9034902278822,
+        "negative_bce_sum": 8243.857437383711,
+        "predicted_positive_labels": 0,
+        "mean_probability": 0.044028763156031284,
+        "brier_score": 0.008065124285111467
+      },
+      "calibrated_validation_diagnostics": {
+        "total_labels": 184320,
+        "positive_labels": 1238,
+        "negative_labels": 183082,
+        "positive_bce_sum": 7629.179690462779,
+        "negative_bce_sum": 387.9949257033939,
+        "predicted_positive_labels": 0,
+        "mean_probability": 0.002116930457034148,
+        "brier_score": 0.006692756861043881
+      },
+      "controls": [
+        {
+          "control": "raw",
+          "temperature": 1.0,
+          "validation": {
+            "threshold": 1.0,
+            "trials": [
+              {
+                "threshold": 0.5,
+                "counts": {
+                  "shots": 4096,
+                  "baseline_failures": 13,
+                  "hybrid_failures": 13,
+                  "wins": 0,
+                  "losses": 0
+                }
+              },
+              {
+                "threshold": 0.7,
+                "counts": {
+                  "shots": 4096,
+                  "baseline_failures": 13,
+                  "hybrid_failures": 13,
+                  "wins": 0,
+                  "losses": 0
+                }
+              },
+              {
+                "threshold": 0.9,
+                "counts": {
+                  "shots": 4096,
+                  "baseline_failures": 13,
+                  "hybrid_failures": 13,
+                  "wins": 0,
+                  "losses": 0
+                }
+              },
+              {
+                "threshold": 0.99,
+                "counts": {
+                  "shots": 4096,
+                  "baseline_failures": 13,
+                  "hybrid_failures": 13,
+                  "wins": 0,
+                  "losses": 0
+                }
+              },
+              {
+                "threshold": 1.0,
+                "counts": {
+                  "shots": 4096,
+                  "baseline_failures": 13,
+                  "hybrid_failures": 13,
+                  "wins": 0,
+                  "losses": 0
+                }
+              }
+            ]
+          },
+          "test": {
+            "shots": 65536,
+            "baseline_failures": 8,
+            "hybrid_failures": 8,
+            "wins": 0,
+            "losses": 0
+          },
+          "summary": {
+            "baseline_ler": 0.0001220703125,
+            "hybrid_ler": 0.0001220703125,
+            "baseline_interval": [
+              0.0,
+              0.005904129637893743
+            ],
+            "hybrid_interval": [
+              0.0,
+              0.005904129637893743
+            ],
+            "ratio_upper": null,
+            "paired_p_value": 1.0,
+            "quality_gate": "inconclusive"
+          }
+        },
+        {
+          "control": "calibrated",
+          "temperature": 0.5,
+          "validation": {
+            "threshold": 1.0,
+            "trials": [
+              {
+                "threshold": 0.5,
+                "counts": {
+                  "shots": 4096,
+                  "baseline_failures": 13,
+                  "hybrid_failures": 13,
+                  "wins": 0,
+                  "losses": 0
+                }
+              },
+              {
+                "threshold": 0.7,
+                "counts": {
+                  "shots": 4096,
+                  "baseline_failures": 13,
+                  "hybrid_failures": 13,
+                  "wins": 0,
+                  "losses": 0
+                }
+              },
+              {
+                "threshold": 0.9,
+                "counts": {
+                  "shots": 4096,
+                  "baseline_failures": 13,
+                  "hybrid_failures": 13,
+                  "wins": 0,
+                  "losses": 0
+                }
+              },
+              {
+                "threshold": 0.99,
+                "counts": {
+                  "shots": 4096,
+                  "baseline_failures": 13,
+                  "hybrid_failures": 13,
+                  "wins": 0,
+                  "losses": 0
+                }
+              },
+              {
+                "threshold": 1.0,
+                "counts": {
+                  "shots": 4096,
+                  "baseline_failures": 13,
+                  "hybrid_failures": 13,
+                  "wins": 0,
+                  "losses": 0
+                }
+              }
+            ]
+          },
+          "test": {
+            "shots": 65536,
+            "baseline_failures": 8,
+            "hybrid_failures": 8,
+            "wins": 0,
+            "losses": 0
+          },
+          "summary": {
+            "baseline_ler": 0.0001220703125,
+            "hybrid_ler": 0.0001220703125,
+            "baseline_interval": [
+              0.0,
+              0.006985178204571688
+            ],
+            "hybrid_interval": [
+              0.0,
+              0.006985178204571688
+            ],
+            "ratio_upper": null,
+            "paired_p_value": 1.0,
+            "quality_gate": "inconclusive"
+          }
+        }
+      ]
+    }
+  ]
+}

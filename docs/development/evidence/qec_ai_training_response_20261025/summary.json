@@ -1,0 +1,9 @@
+{
+  "per_seed_descriptive_response": {
+    "11": true,
+    "22": true,
+    "33": true
+  },
+  "consistent_descriptive_training_response": true,
+  "logical_quality_claim_allowed": false
+}

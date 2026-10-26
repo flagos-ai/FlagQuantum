@@ -1,5 +1,5 @@
 name: Install CPU PyTorch
-description: Use a domestic CPU wheel mirror with an official CPU index fallback
+description: Install CPU-only PyTorch from a verified cache or the official CPU index
 inputs:
   torch-spec:
     description: Requested CPU PyTorch requirement, including dependency-bound matrix lanes
@@ -19,25 +19,12 @@ runs:
           [ -d "$cpu_wheel_cache" ] && \
           python -m pip install --no-index --no-deps --find-links "$cpu_wheel_cache" "$FQ_TORCH_SPEC"; then
           echo "CPU PyTorch installed from the local A800 wheel cache"
-        elif [ "${RUNNER_ENVIRONMENT:-}" = "self-hosted" ]; then
-          # Select Torch only from the CPU directory, then resolve its ordinary
-          # dependencies through the job's PyPI mirror without upgrading Torch.
-          wheel_directory="$(mktemp -d "$RUNNER_TEMP/fq-cpu-wheel.XXXXXX")"
-          trap 'rm -rf "$wheel_directory"' EXIT
-          if TMPDIR="$wheel_directory" timeout --kill-after=10s 180s python -m pip download \
-            --only-binary=:all: --no-index --no-deps \
-            --find-links https://mirrors.aliyun.com/pytorch-wheels/cpu/ \
-            --dest "$wheel_directory" "$FQ_TORCH_SPEC" && \
-            python -m pip install --no-deps "$wheel_directory"/*.whl; then
-            echo "CPU PyTorch installed through the domestic mirror"
-          else
-            echo "::warning::CPU mirror installation failed; retrying the official CPU index"
-            python -m pip install --no-deps "$FQ_TORCH_SPEC" \
-              --index-url https://download.pytorch.org/whl/cpu
-          fi
         else
-          python -m pip install --no-deps "$FQ_TORCH_SPEC" \
+          # Restrict Torch itself to the CPU index; ordinary dependencies retain
+          # the job's PyPI configuration (Tsinghua on trusted self-hosted jobs).
+          timeout --kill-after=10s 300s python -m pip install --no-deps "$FQ_TORCH_SPEC" \
             --index-url https://download.pytorch.org/whl/cpu
+          echo "CPU PyTorch installed from the official CPU index"
         fi
         python -m pip install "$FQ_TORCH_SPEC"
         python -c "import torch; assert torch.version.cuda is None, torch.version.cuda; assert '+cpu' in torch.__version__, torch.__version__; print('CPU PyTorch:', torch.__version__)"

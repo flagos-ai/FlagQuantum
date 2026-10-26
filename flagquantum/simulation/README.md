@@ -574,3 +574,58 @@ consumers in test_rydberg_transport_contract.py now use native fixtures;
 test_native_rydberg_dynamics.py covers source-aware replay, controls and refusals.
 Keep both sets when changing assembly. No quantum motion, heating, sampled events,
 feedback, GPU/distributed native dynamics or hardware control is implemented.
+
+## Fixed Ising braid and unread-charge actions
+
+`ising_braid.py` consumes Core's approved four-sigma, total-vacuum source. Its
+internal `evolve_ising_braid` entry applies each ordered F/R generator through
+the existing `SuperOperator.left_right_multiply(...).apply(...)` algebra and
+returns one CPU complex128 density matrix in the declared fusion coordinates.
+It introduces no numerical time, Hamiltonian, integrator, backend or result
+wrapper. Clockwise exchanges use the adjoints with their full complex phases.
+The approved `ising.dephase_pair` operation uses the existing
+`SuperOperator.from_kraus` with the two current-pair charge projectors. It sums
+both branches without selection or renormalization, retaining zero-weight
+branches as zero. Ordered continuation can therefore evolve a mixed density.
+
+`tests/unit/test_ising_braid_actions.py` uses independent closed-form complex
+generators and vector evolution to check both braid relations, distant
+commutation, inverses and complete density matrices, all at atol=1e-12, rtol=0.
+Global unitary phase and phase-invariant density action have separate checks.
+The source is validated by Core before numerical work; other profiles are
+refused. Braid-only native execution is already available through Runtime.
+Runtime admits source/plan 1.2 through existing `fq.plan`/`fq.run`. The four
+proposal 089 baseline factories now use real source, planning, execution and JSON
+replay; their independent consumer assertions remain unchanged. `tests/unit/test_ising_unread_actions.py`
+checks independent full-density and weighted conditional continuations, pure/
+mixed echoes, trace, coherence, positivity and unchanged RNG at the same budget.
+
+The approved sampled extension uses two private numerical seams in the same
+module: `_ising_sampled_prefix` evolves to the single declared observation,
+and `_continue_ising_sampled` applies the Runtime-selected projector, divides
+by its original positive trace, and evolves the ordered suffix. Both reuse the
+same exchange actions and Kraus machinery as the unread path. Simulation does
+not draw an outcome or create measurement results. The full-density entry
+rejects sampled sources before exchange arithmetic. Runtime now composes the
+two private seams for native `fq.plan`/`fq.run` admission with one explicit shot
+and seed, and owns the resulting intermediate measurement record.
+
+Validate this numerical boundary with:
+
+```bash
+python -m pytest tests/unit/test_ising_sampled_actions.py tests/unit/test_ising_unread_actions.py -q
+```
+
+The conditional tests compare independent complex F/R densities and weighted
+unread continuation at atol=1e-12, rtol=0, including zero and tiny positive
+branches, original-trace normalization, unchanged inputs and unchanged RNG.
+
+## Intermediate Rydberg presence evolution
+
+The private seams in `rydberg_presence.py` assemble the existing full native
+control schedule once, preserving absolute grid times and interval bindings.
+They evolve its prefix, apply a Runtime-selected Kraus branch using its original
+positive trace, and continue the existing numerical engine on the remaining
+bound intervals. Boundary rows are post-observation; earlier rows remain forward
+states. Runtime owns private draws and canonical result records. These seams do
+not enable unconditional `fql.plan` or the future native sampled plan reader.

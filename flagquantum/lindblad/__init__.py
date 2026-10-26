@@ -178,6 +178,8 @@ def run(
     """Run a sealed plan or a request, optionally binding one mapping per interval."""
 
     if isinstance(hamiltonian_or_plan, LindbladPlan):
+        if hamiltonian_or_plan.to_dict().get("version") == "1.8":
+            raise CapabilityError("sampled presence plans require fq.run(plan)")
         if (
             initial_state is not _MISSING
             or times is not _MISSING
@@ -214,6 +216,8 @@ def run(
             parameter_values=parameter_values,
             basis_labels=basis_labels,
         )
+    if execution_plan.to_dict().get("version") == "1.8":
+        raise CapabilityError("sampled presence plans require fq.run(plan)")
     request = execution_plan._execution_request()
     execute = (
         _evolve_density_matrix
@@ -277,8 +281,32 @@ def plan(
         ('crank-nicolson', 2)
     """
 
-    device, dtype, batch_size, require_gradients = _execution_settings(options)
     record = native_record(hamiltonian)
+    if record is not None:
+        from ..core.ir.program.physical import RydbergPresence
+
+        if any(
+            isinstance(op.physical_data, RydbergPresence)
+            for op in record.functions[0].blocks[0].operations
+        ):
+            from ..runtime._rydberg_presence import build_presence_plan
+
+            return build_presence_plan(
+                record,
+                initial_state,
+                times,
+                options=options,
+                n_qubits=n_qubits,
+                dimensions=dimensions,
+                basis_labels=basis_labels,
+                collapse_operators=collapse_operators,
+                parameter_values=parameter_values,
+                outputs=outputs,
+                return_density_matrices=return_density_matrices,
+                method=method,
+                solve_tolerance=solve_tolerance,
+            )
+    device, dtype, batch_size, require_gradients = _execution_settings(options)
     if record is not None:
         from ._native_plan import build_native_plan
 

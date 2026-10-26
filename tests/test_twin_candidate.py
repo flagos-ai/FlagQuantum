@@ -420,6 +420,7 @@ def test_complete_quafu_candidate_example_executes_offline(monkeypatch, tmp_path
 
     provider = Provider()
     monkeypatch.setenv("QUAFU_API_TOKEN", "offline-test-token")
+    monkeypatch.setenv("QUAFU_API_KEY", "offline-test-key")
     monkeypatch.setattr(quafu_twin_candidate, "QuafuProvider", lambda: provider)
     monkeypatch.setattr(quafu_twin_candidate, "INCUMBENT_PATH", incumbent_path)
 
@@ -490,6 +491,7 @@ def test_resumable_candidate_example_submits_once_then_only_fetches(
 
     provider = Provider()
     monkeypatch.setenv("QUAFU_API_TOKEN", "offline-test-token")
+    monkeypatch.setenv("QUAFU_API_KEY", "offline-test-key")
     monkeypatch.setattr(quafu_twin_candidate_resume, "QuafuProvider", lambda: provider)
     monkeypatch.setattr(quafu_twin_candidate_resume, "INCUMBENT_PATH", incumbent_path)
     monkeypatch.setattr(quafu_twin_candidate_resume, "SUBMISSION_PATH", submission_path)

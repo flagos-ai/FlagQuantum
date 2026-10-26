@@ -1,0 +1,120 @@
+{
+  "schema_version": "1.0",
+  "status": "approved_for_staged_implementation",
+  "proposal": "docs/development/API_CHANGE_PROPOSAL_090_QUAFU_DYNAMIC_VERTICAL_SLICE.md",
+  "approval": {
+    "approved_by": "API owner via explicit user directive",
+    "approved_at": "2026-10-24",
+    "directive": "approve API-CHANGE-090-QUAFU-DYNAMIC-VERTICAL-SLICE",
+    "approved": true,
+    "authorized_stages": [
+      "snapshot_normalization",
+      "provider_legality_preview",
+      "offline_package_sealing",
+      "mocked_exactly_once_submission",
+      "stable_facade_wiring"
+    ]
+  },
+  "provider_slice": {
+    "provider": "quafu",
+    "candidate_backend": "Baihua",
+    "positive_dynamic_support_claim": false,
+    "stable_user_entry": "flagquantum.run",
+    "public_provider_factory_added": false
+  },
+  "existing_authorities": {
+    "program": "flagquantum.dynamic.DynamicCircuit",
+    "source_requirements": "flagquantum.core.target_capabilities.RequirementSet",
+    "target_snapshot": "flagquantum.core.target_capabilities.TargetCapabilitySnapshot",
+    "post_routing_rematch": "flagquantum.runtime.dynamic.post_routing",
+    "deployment_package": "flagquantum.deployment.cloud.DeploymentPackage",
+    "provider": "flagquantum.remote.qpu.QuafuProvider",
+    "execution": "flagquantum.run"
+  },
+  "authoritative_dynamic_facts": [
+    "mid_circuit_measurement",
+    "reset",
+    "repeated_measurement",
+    "classical_feed_forward",
+    "conditional_operations",
+    "condition_width",
+    "condition_values",
+    "condition_disjunction",
+    "mid_circuit_result_data",
+    "native_operations",
+    "directed_connectivity",
+    "logical_capacity",
+    "physical_capacity",
+    "program_dialect",
+    "program_version"
+  ],
+  "non_authoritative_signals": [
+    "screenshot",
+    "backend_status",
+    "queue_depth",
+    "qubit_count",
+    "basis_gate_names",
+    "calibration_recency",
+    "successful_static_job",
+    "coarse_supports_dynamic_circuits_boolean"
+  ],
+  "decision_order": [
+    "source_requirement_identity",
+    "target_snapshot_completeness",
+    "pre_routing_capability_match",
+    "routing_semantic_preservation",
+    "post_routing_capability_rematch",
+    "quafu_provider_legality",
+    "deployment_package_sealing",
+    "mocked_exactly_once_task_creation",
+    "normalized_result_validation"
+  ],
+  "blocker_codes": [
+    "quafu_dynamic_capability_evidence_unavailable",
+    "quafu_dynamic_dialect_unconfirmed",
+    "quafu_dynamic_request_shape_unsupported",
+    "quafu_dynamic_connectivity_unavailable",
+    "quafu_dynamic_provider_legality_rejected",
+    "quafu_dynamic_snapshot_identity_mismatch",
+    "quafu_dynamic_legacy_submission_not_idempotent",
+    "quafu_dynamic_result_contract_unconfirmed"
+  ],
+  "package_identity_inputs": [
+    "source_requirement_set_id",
+    "target_snapshot_id",
+    "calibration_id",
+    "routed_artifact_sha256",
+    "routing_evidence_sha256",
+    "provider_legality_identity",
+    "package_artifact_sha256"
+  ],
+  "exactly_once_policy": {
+    "initial_transport": "quafu_task_api_v1_mock",
+    "maximum_post_requests_per_execution_attempt": 1,
+    "idempotency_identity_bound_to_package": true,
+    "retry_after_ambiguous_post": false,
+    "legacy_fallback_after_post": false,
+    "legacy_dynamic_submission_enabled": false
+  },
+  "delivery_stages": [
+    "snapshot_normalization",
+    "provider_legality_preview",
+    "offline_package_sealing",
+    "mocked_exactly_once_submission",
+    "stable_facade_wiring",
+    "separately_authorized_bounded_live_discovery",
+    "separately_authorized_bounded_live_submission"
+  ],
+  "proposal_boundaries": {
+    "public_api_change": false,
+    "serialized_public_schema_change": false,
+    "provider_activation": false,
+    "credential_access": false,
+    "network_access": false,
+    "live_discovery": false,
+    "task_submission": false,
+    "charging": false,
+    "hardware_support_claim": false,
+    "silent_fallback": false
+  }
+}

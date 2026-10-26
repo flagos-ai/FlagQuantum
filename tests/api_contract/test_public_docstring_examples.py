@@ -61,6 +61,7 @@ from flagquantum.compiler.openqasm_import import (
 )
 from flagquantum.compiler.resource_estimation import estimate_resources
 from flagquantum.compiler.translate import translate
+from flagquantum.core.ising import IsingBraidProgram
 from flagquantum.drawer import ClassicalLayer, LatexFigure, draw_hybrid, draw_latex
 from flagquantum.dynamic import DynamicCircuit
 from flagquantum.ecosystem.cirq import run as run_cirq
@@ -84,9 +85,11 @@ from flagquantum.qec import (
     CssCodeMatrices,
     FloquetCode,
     MeasurementPhase,
+    PyMatchingDecoder,
     SubsystemCode,
     bivariate_bicycle_code,
     build_memory_circuit,
+    compile_memory_sampler,
     qldpc_code,
     reed_muller_code,
     ring_floquet_code,
@@ -95,6 +98,11 @@ from flagquantum.qec import (
     tesseract_free_cnot_pairs,
     toric_code,
     triangular_colour_code,
+)
+from flagquantum.qec.adapters.stim import (
+    compile_stim_sampler,
+    memory_to_stim_text,
+    stim_circuit_to_dem_text,
 )
 from flagquantum.runtime import planner
 from flagquantum.runtime.executors.statevector import gather_distributed_statevector
@@ -208,6 +216,7 @@ ENTRIES = (
     FloquetCode,
     Hamiltonian,
     HartreeFockSolution,
+    IsingBraidProgram,
     Layout,
     LinkErrorRates,
     MeasurementPhase,
@@ -222,6 +231,8 @@ ENTRIES = (
     boson_position,
     bivariate_bicycle_code,
     build_memory_circuit,
+    compile_memory_sampler,
+    compile_stim_sampler,
     coupler_hardware_efficient_ansatz,
     create_molecular_hamiltonian,
     exponential_pauli_operator,
@@ -250,10 +261,12 @@ ENTRIES = (
     import_qcis,
     jordan_wigner,
     maxcut_hamiltonian,
+    memory_to_stim_text,
     molecular_integrals,
     optimize,
     pauli_exponential_circuit,
     pauli_readout,
+    PyMatchingDecoder.decode_batch,
     parity_encoding,
     plan_lindblad_evolution,
     planner.plan,
@@ -268,6 +281,7 @@ ENTRIES = (
     run_qiskit,
     single_excitation,
     surface_code_qubits_per_logical,
+    stim_circuit_to_dem_text,
     tesseract_code,
     tesseract_column_swap,
     tesseract_free_cnot_pairs,
@@ -328,6 +342,13 @@ def test_every_module_with_examples_is_covered() -> None:
     nothing ran it. Adding the module's public entry to ``ENTRIES`` is the fix.
     """
     covered = {entry.__module__ for entry in ENTRIES}
+    batch_owner = importlib.import_module("flagquantum.qec.adapters.pymatching")
+    assert batch_owner.PyMatchingDecoder.decode_batch is PyMatchingDecoder.decode_batch
+    assert (
+        Path(PyMatchingDecoder.decode_batch.__code__.co_filename).resolve()
+        == Path(batch_owner.__file__).resolve()
+    )
+    covered.add(batch_owner.__name__)
     # Historical pickle modules differ from physical owners after relocation.
     # Map only existing executable entries, checking their actual source files.
     for entry, owner_name in (
@@ -366,6 +387,6 @@ def test_every_module_with_examples_is_covered() -> None:
     covered.add(owner.__name__)
     uncovered = sorted(_modules_with_examples() - covered)
 
-    assert uncovered == [], (
-        "docstring examples in modules that no doctest entry runs: " f"{uncovered}"
-    )
+    assert (
+        uncovered == []
+    ), f"docstring examples in modules that no doctest entry runs: {uncovered}"

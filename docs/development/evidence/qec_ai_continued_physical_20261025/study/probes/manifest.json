@@ -1,0 +1,13 @@
+{
+  "purpose": "continued_physical_probe",
+  "protocol_sha256": "9f48cc9ad7b28a787e98211a9b436c795d7251c02d87e600eb2d26a4dffacd31",
+  "choices_sha256": "3b8c50ecd3513f676134acf37812c34ea2bca62096974e9417ae6ef92adac5d0",
+  "circuit_sha256": "0fa86bd7b534da215f58cb4611236db52d60ddc588da819b0d547a91026195e2",
+  "seed": 17000011,
+  "physical_shots": 64,
+  "detectors": 720,
+  "observables": 1,
+  "file_sha256": "6baf1dbd288e8d10c47871853c86d211417f8dd46090bfdf8acfa7176905cc37",
+  "detectors_sha256": "c388426c664daf5c20b51f34561c5ccd336375cae7c6e0dc43ef286fe9407f6d",
+  "truth_sha256": "8f545982c87a3948554a94e58f9195caa472debaf7a3553446e0dd6577a2fd4c"
+}

@@ -27,6 +27,19 @@ Compute, Remote, ecosystem frameworks, gateways, and infrastructure libraries.
   scalar codec; the numerical plan stays outside Core.
   `geometry.py` owns finite Cartesian pairs for this profile and the separately
   scheduled Remote normalizer replacement. Neither file executes dynamics.
+- `ising.py`: the experimental four-sigma, total-vacuum Ising source builder.
+  It reuses the same ProgramRecord, typed physical profiles and source codec.
+  Braid-only sources retain version 1.1; exactly one `dephase_pair()` observation
+  selects source 1.2. Exactly one `measure_pair()` selects source 1.3 for a
+  declared sampled observation; the two forms are mutually exclusive. Both
+  observe the current first pair without adding physical time or a classical
+  bit. The sampled builder returns the source, never an outcome. Rydberg
+  source 1.0 is unchanged.
+  Charge projectors are CPU mathematical inputs. Native braid execution,
+  executable plans and numerical F/R/Kraus actions remain outside this source gate.
+  Runtime separately admits matching native plans, including one explicitly
+  seeded CPU trajectory for sampled source 1.3. Core owns no numerical observation algorithm, RNG,
+  execution state or plan/environment version activation.
 - `target_capabilities.py`: vendor-neutral target capability vocabulary.
 - `numerics.py`: precision and accuracy requirements, not numerical kernels.
 - `contracts.py`: versioned cross-domain execution and evidence records.
@@ -72,3 +85,27 @@ python -m pytest tests/unit/test_rydberg_program.py \
 A typical geometry change belongs in the typed profile and its consumer tests;
 numerical evolution belongs in Simulation. Do not reserve physical opcode names
 globally or modify old plan fixtures to hide a failure.
+
+For discrete braid source construction and its admission/refusal boundaries:
+
+```bash
+python -m examples.ising_braid_source
+python -m pytest tests/unit/test_ising_braid_source.py \
+  tests/unit/test_ising_braid_contract.py \
+  tests/unit/test_ising_sampled_source.py \
+  tests/unit/test_rydberg_program_compatibility.py -q
+```
+
+Append order is braid order, never a timestamp. Keep typed source verification
+in the existing physical-profile boundary and exact serialization in its codec;
+do not introduce circuit lowering, a Hamiltonian logarithm or another executor.
+
+## Rydberg presence source
+
+`RydbergProgram.measure_presence(atom, *, at, efficiency)` records one named-atom
+observation in the existing physical IR. It uses source 1.4 only when present.
+Snapshot validation requires the time strictly inside the original control
+horizon. Core owns scalar, roster and source validation; output-grid placement,
+private sampling and conditional numerical execution belong to later domains.
+The existing unconditional Lindblad assembler refuses this source before grid
+assembly. Ordinary pulse/transport sources retain source 1.0 bytes.

@@ -183,3 +183,26 @@ def test_manual_network_retest_targets_previous_failures_without_admission(
     assert probe["if"] == "inputs.diagnose_network"
     assert probe["timeout-minutes"] == 8
     assert qualification["steps"][1]["uses"].startswith("actions/download-artifact@")
+
+
+def test_network_retest_cannot_claim_a_cached_torch_as_a_download() -> None:
+    import yaml
+
+    root = Path(__file__).resolve().parents[2]
+    action = yaml.safe_load(
+        (root / ".github/workflows/r300-validation.yml").read_text()
+    )
+    steps = action["jobs"]["pool-qualification"]["steps"]
+    installer = next(
+        i
+        for i, step in enumerate(steps)
+        if step.get("uses") == "./.github/actions/install-cpu-torch"
+    )
+    cold = steps[installer - 1]
+    assert cold["if"] == "inputs.diagnose_network"
+    assert 'test -n "$VIRTUAL_ENV"' in cold["run"]
+    assert "python -m pip uninstall -y torch" in cold["run"]
+    assert steps[installer]["env"]["PIP_NO_CACHE_DIR"] == "1"
+    assert steps[installer]["env"]["FQ_CPU_WHEEL_CACHE"].startswith(
+        "${{ runner.temp }}"
+    )

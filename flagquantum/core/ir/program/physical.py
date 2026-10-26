@@ -1,7 +1,7 @@
-"""The typed Rydberg profile of ProgramRecord, without a second program IR.
+"""Typed native profiles of ProgramRecord, without a second program IR.
 
-This module validates imposed controls and their geometry. It does not assemble
-Hamiltonians, bind controls, evolve states or own any execution backend.
+This module validates discrete braid words and imposed atomic controls/geometry.
+It does not assemble Hamiltonians, bind controls, evolve states or own an executor.
 """
 
 from __future__ import annotations
@@ -21,6 +21,30 @@ if TYPE_CHECKING:
     from .model import Operation, ProgramRecord
 
 ControlScalar: TypeAlias = float | Parameter | ParameterExpression
+
+
+@dataclass(frozen=True)
+class IsingContext:
+    anyon_ids: tuple[str, ...]
+    total_charge: Literal["1"]
+    fusion_tree: Literal["left_associated"]
+    gauge: Literal["nayak_ising"]
+    initial_channel: Literal["1", "psi"]
+
+
+@dataclass(frozen=True)
+class IsingExchange:
+    left: int
+    clockwise: bool
+
+
+def check_ising_exchange(data: IsingExchange) -> None:
+    if type(data.left) is not int:
+        raise TypeError("exchange left must be an integer, excluding bool")
+    if data.left not in (0, 1, 2):
+        raise ValueError("exchange left must be 0, 1 or 2")
+    if type(data.clockwise) is not bool:
+        raise TypeError("exchange clockwise must be a bool")
 
 
 @dataclass(frozen=True)
@@ -57,6 +81,13 @@ class RydbergPulse:
     detuning: ControlScalar
     phase: ControlScalar
     channel: str
+
+
+@dataclass(frozen=True)
+class RydbergPresence:
+    atom: str
+    at: float
+    efficiency: float
 
 
 def identifier(value: object, field: str) -> str:
@@ -141,8 +172,19 @@ def check_context(context: RydbergContext) -> None:
 
 
 def check_control(
-    context: RydbergContext, data: RydbergTransport | RydbergPulse
+    context: RydbergContext, data: RydbergTransport | RydbergPulse | RydbergPresence
 ) -> None:
+    if isinstance(data, RydbergPresence):
+        atom = identifier(data.atom, "observation atom")
+        if atom not in dict(context.atoms):
+            raise ValueError(f"unknown observation atom {atom!r}")
+        at = finite_real(data.at, "at")
+        efficiency = finite_real(data.efficiency, "efficiency")
+        if at <= 0 or not 0 <= efficiency <= 1:
+            raise ValueError(
+                "observation requires positive time and efficiency in [0, 1]"
+            )
+        return
     if not isinstance(data.atoms, tuple) or not data.atoms:
         raise ValueError("control atoms must be a nonempty immutable group")
     order = {actor: i for i, (actor, _) in enumerate(context.atoms)}
@@ -185,7 +227,9 @@ def check_control(
 
 def operation_key(operation: Operation) -> tuple[float, str, tuple[str, ...], str]:
     data = operation.physical_data
-    assert data is not None
+    if isinstance(data, RydbergPresence):
+        return data.at, operation.opcode, (data.atom,), ""
+    assert isinstance(data, (RydbergTransport, RydbergPulse))
     return data.start, operation.opcode, data.atoms, data.channel
 
 
@@ -289,7 +333,9 @@ def commanded_position(
         if isinstance(op.physical_data, RydbergTransport)
     )
     controls = tuple(
-        op.physical_data for op in operations if op.physical_data is not None
+        op.physical_data
+        for op in operations
+        if isinstance(op.physical_data, (RydbergTransport, RydbergPulse))
     )
     boundaries = _boundary_times(controls)
     matching = {value for value in boundaries.values() if same_time(time, value)}
@@ -394,18 +440,146 @@ def _structural_errors(record: ProgramRecord) -> tuple[LevelDiagnostic, ...]:
                 op
                 for op in block.operations
                 if op.physical_data is None
-                and op.opcode not in ("rydberg.move", "rydberg.pulse")
+                and op.opcode
+                not in (
+                    "rydberg.move",
+                    "rydberg.pulse",
+                    "ising.exchange",
+                    "ising.dephase_pair",
+                    "ising.measure_pair",
+                )
             )
             blocks.append(replace(block, operations=ordinary))
         diagnostics.extend(_verify_function(replace(function, blocks=tuple(blocks))))
     return tuple(diagnostics)
 
 
+def _verify_ising_program(
+    record: ProgramRecord, context: IsingContext
+) -> tuple[LevelDiagnostic, ...]:
+    if (
+        type(context) is not IsingContext
+        or not isinstance(context.anyon_ids, tuple)
+        or not all(isinstance(value, str) for value in context.anyon_ids)
+        or context.anyon_ids != ("a", "b", "c", "d")
+        or not all(
+            isinstance(value, str)
+            for value in (
+                context.total_charge,
+                context.fusion_tree,
+                context.gauge,
+                context.initial_channel,
+            )
+        )
+        or context.total_charge != "1"
+        or context.fusion_tree != "left_associated"
+        or context.gauge != "nayak_ising"
+        or context.initial_channel not in ("1", "psi")
+    ):
+        return (
+            _diagnostic(
+                "physical.invalid_context",
+                "Ising source requires its exact frozen profile: four ordered sigma anyons, vacuum total charge, "
+                "the left-associated tree, nayak_ising gauge and channel '1' or 'psi'",
+            ),
+        )
+    structure_errors = _structural_errors(record)
+    if structure_errors:
+        return structure_errors
+    if (
+        len(record.functions) != 1
+        or record.functions[0].name != "main"
+        or record.functions[0].entry != "entry"
+        or len(record.functions[0].blocks) != 1
+    ):
+        return (
+            _diagnostic(
+                "physical.unsupported_structure",
+                "Ising source requires one main/entry block",
+            ),
+        )
+    block = record.functions[0].blocks[0]
+    if (
+        block.name != "entry"
+        or block.arguments
+        or block.edges
+        or block.terminator != "return"
+        or record.canonical_payload is not None
+        or any(
+            op.physical_data is None
+            and op.opcode
+            not in ("ising.exchange", "ising.dephase_pair", "ising.measure_pair")
+            for op in block.operations
+        )
+    ):
+        return (
+            _diagnostic(
+                "physical.unsupported_structure",
+                "Ising exchanges cannot carry SSA, control-flow or circuit payloads",
+            ),
+        )
+    diagnostics: list[LevelDiagnostic] = []
+    observations = 0
+    for index, operation in enumerate(block.operations):
+        data = operation.physical_data
+        if (
+            operation.opcode in ("ising.dephase_pair", "ising.measure_pair")
+            and data is None
+        ):
+            observations += 1
+            if (
+                observations > 1
+                or any(
+                    type(value) is not tuple or bool(value)
+                    for value in (
+                        operation.operands,
+                        operation.results,
+                        operation.parameters,
+                        operation.condition_clauses,
+                    )
+                )
+                or operation.literal is not None
+            ):
+                diagnostics.append(
+                    _diagnostic(
+                        "physical.invalid_operation",
+                        f"operation {index} requires a single unread or sampled observation with no SSA or control data",
+                    )
+                )
+            continue
+        if (
+            operation.opcode != "ising.exchange"
+            or type(data) is not IsingExchange
+            or operation.operands
+            or operation.results
+            or operation.parameters
+            or operation.literal is not None
+            or operation.condition_clauses
+        ):
+            diagnostics.append(
+                _diagnostic(
+                    "physical.invalid_operation",
+                    f"operation {index} requires only typed Ising exchange data",
+                )
+            )
+            continue
+        assert isinstance(data, IsingExchange)
+        try:
+            check_ising_exchange(data)
+        except (TypeError, ValueError) as exc:
+            diagnostics.append(
+                _diagnostic("physical.invalid_operation", f"operation {index}: {exc}")
+            )
+    return tuple(diagnostics)
+
+
 def verify_physical_program(record: ProgramRecord) -> tuple[LevelDiagnostic, ...]:
-    """Verify the one admitted physical profile through the existing verifier."""
+    """Verify the admitted native profiles through the existing verifier."""
     from .model import Operation
 
     context = record.physical_context
+    if isinstance(context, IsingContext):
+        return _verify_ising_program(record, context)
     if not isinstance(context, RydbergContext):
         return (
             _diagnostic(
@@ -450,6 +624,7 @@ def verify_physical_program(record: ProgramRecord) -> tuple[LevelDiagnostic, ...
                 "native controls cannot carry SSA arguments, edges, branches or a circuit payload",
             ),
         )
+    observations: list[RydbergPresence] = []
     controls: list[RydbergTransport | RydbergPulse] = []
     diagnostics: list[LevelDiagnostic] = []
     if not isinstance(block.operations, tuple):
@@ -484,7 +659,15 @@ def verify_physical_program(record: ProgramRecord) -> tuple[LevelDiagnostic, ...
         expected = (
             RydbergTransport
             if operation.opcode == "rydberg.move"
-            else RydbergPulse if operation.opcode == "rydberg.pulse" else None
+            else (
+                RydbergPulse
+                if operation.opcode == "rydberg.pulse"
+                else (
+                    RydbergPresence
+                    if operation.opcode == "rydberg.measure_presence"
+                    else None
+                )
+            )
         )
         if expected is None or type(data) is not expected:
             diagnostics.append(
@@ -494,7 +677,7 @@ def verify_physical_program(record: ProgramRecord) -> tuple[LevelDiagnostic, ...
                 )
             )
             continue
-        assert isinstance(data, (RydbergTransport, RydbergPulse))
+        assert isinstance(data, (RydbergTransport, RydbergPulse, RydbergPresence))
         try:
             check_control(context, data)
         except (TypeError, ValueError) as exc:
@@ -502,7 +685,10 @@ def verify_physical_program(record: ProgramRecord) -> tuple[LevelDiagnostic, ...
                 _diagnostic("physical.invalid_operation", f"operation {i}: {exc}")
             )
             continue
-        controls.append(data)
+        if isinstance(data, RydbergPresence):
+            observations.append(data)
+        else:
+            controls.append(data)
     if diagnostics:
         return tuple(diagnostics)
     if tuple(sorted(block.operations, key=operation_key)) != block.operations:
@@ -516,6 +702,15 @@ def verify_physical_program(record: ProgramRecord) -> tuple[LevelDiagnostic, ...
         boundary_map = _boundary_times(tuple(controls))
     except ValueError as exc:
         return (_diagnostic("physical.invalid_operation", str(exc)),)
+    if observations:
+        horizon = max((c.start + c.duration for c in controls), default=0.0)
+        if len(observations) != 1 or not 0 < observations[0].at < horizon:
+            return (
+                _diagnostic(
+                    "physical.invalid_operation",
+                    "one observation must be strictly inside the control horizon",
+                ),
+            )
     moves = tuple(c for c in controls if isinstance(c, RydbergTransport))
     issue = _histories(context, moves)
     if issue is not None:

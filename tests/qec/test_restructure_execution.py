@@ -14,6 +14,11 @@ from pathlib import Path
 
 import pytest
 import torch
+from _retirement import (
+    assert_metadata,
+    assert_retired_payload,
+    resolve,
+)
 
 import flagquantum.qec as qec
 
@@ -35,7 +40,10 @@ def _plain(value: object) -> object:
 
 
 def _declarations() -> dict[str, object]:
-    from flagquantum.qec.dem_construction import _forced_signature, _inject_data_flip
+    from flagquantum.qec.execution.signatures import (
+        _forced_signature,
+        _inject_data_flip,
+    )
 
     result = {}
     for name, code in (
@@ -105,11 +113,7 @@ def _samples() -> dict[str, object]:
 
 
 def _resolve(path: str) -> object:
-    parts = path.split(".")
-    value = importlib.import_module(".".join(parts[:3]))
-    for part in parts[3:]:
-        value = getattr(value, part)
-    return value
+    return resolve(path)
 
 
 def test_declarations_layouts_contexts_and_forced_signatures_match_pre_move() -> None:
@@ -130,25 +134,24 @@ def test_sampling_and_feedback_match_pre_move() -> None:
     assert _samples() == expected["samples"]
 
 
-def test_pre_move_globals_and_records_keep_identity_and_pickle_paths() -> None:
-    # Trusted repository-owned fixture, never external input.
-    restored = pickle.loads((_FIXTURES / "restructure_004_globals.pkl").read_bytes())
-    for path, value in restored["globals"].items():
-        assert value is _resolve(path), path
-        assert pickle.loads(pickle.dumps(value)) is value
-    for path, instance in restored["instances"].items():
-        assert type(instance) is _resolve(path)
-        assert type(pickle.loads(pickle.dumps(instance))) is type(instance)
+def test_original_execution_pickle_is_retired_and_canonical_checkpoints_preserve_state() -> (
+    None
+):
+    assert_retired_payload("restructure_004_globals.pkl")
+    memory = qec.build_memory_circuit(qec.RepetitionCode(), rounds=2)
+    context = qec.decoder_context_from_memory_circuit(
+        memory, noise=qec.PhenomenologicalNoise(data_flip=0.125, measurement_flip=0.25)
+    )
+    values = (memory, context, context.full_component())
+    for value in values:
+        restored = pickle.loads(pickle.dumps(value, protocol=4))
+        assert type(restored) is type(value)
+        assert _plain(restored) == _plain(value)
     expected = json.loads((_FIXTURES / "restructure_004_metadata.json").read_text())
     for path, metadata in expected.items():
-        value = _resolve(path)
-        if isinstance(value, property):
-            value = value.fget
-        assert (value.__module__, value.__qualname__) == tuple(metadata), path
-
+        assert_metadata(path, metadata[0], metadata[1])
     checkpoint = io.BytesIO()
-    instances = restored["instances"]
-    torch.save(instances, checkpoint)
+    torch.save(values, checkpoint)
     checkpoint.seek(0)
     allowed = set()
 
@@ -161,14 +164,10 @@ def test_pre_move_globals_and_records_keep_identity_and_pickle_paths() -> None:
             for item in value:
                 allow_records(item)
 
-    for instance in instances.values():
-        allow_records(instance)
-    # Caller-owned allowlist uses the same historical class identifiers.
+    allow_records(values)
     with torch.serialization.safe_globals(list(allowed)):
-        loaded = torch.load(checkpoint, weights_only=True)
-    for path, instance in loaded.items():
-        assert type(instance) is _resolve(path)
-        assert _plain(instance) == _plain(instances[path])
+        restored = torch.load(checkpoint, weights_only=True)
+    assert _plain(restored) == _plain(values)
 
 
 @pytest.mark.parametrize(
@@ -180,23 +179,20 @@ def test_pre_move_globals_and_records_keep_identity_and_pickle_paths() -> None:
         ("repetition", "execution.repetition"),
     ),
 )
-def test_historical_execution_imports_are_aliases(old: str, new: str) -> None:
-    historical = importlib.import_module("flagquantum.qec." + old)
+def test_execution_imports_use_canonical_owners(old: str, new: str) -> None:
+    with pytest.raises(ModuleNotFoundError):
+        importlib.import_module("flagquantum.qec." + old)
     owner = importlib.import_module("flagquantum.qec." + new)
-    assert historical.__all__ == owner.__all__
-    for name in historical.__all__:
-        assert getattr(historical, name) is getattr(owner, name)
-
+    for name in owner.__all__:
+        assert getattr(owner, name) is getattr(qec, name)
     if old == "circuit":
         script = r"""
 import importlib.abc
 import sys
 import flagquantum.qec
-blocked = ("flagquantum.compiler", "flagquantum.runtime", "flagquantum.qec.execution",
-           "flagquantum.qec.dem", "flagquantum.qec.context", "flagquantum.qec.sampling",
-           "flagquantum.qec.repetition")
-for name in list(sys.modules):
-    if name.startswith(blocked) or name.startswith("flagquantum.qec.circuits") or name == "flagquantum.qec.circuit":
+blocked = ("flagquantum.compiler", "flagquantum.runtime", "flagquantum.qec.execution", "flagquantum.qec.dem")
+for name in tuple(sys.modules):
+    if name.startswith(blocked) or name.startswith("flagquantum.qec.circuits"):
         del sys.modules[name]
 class NoExecution(importlib.abc.MetaPathFinder):
     def find_spec(self, fullname, path=None, target=None):

@@ -14,7 +14,6 @@ from examples.remote import quafu_twin_evidence
 from flagquantum.remote.qpu import (
     DeploymentResult,
     ProviderTaskHandle,
-    QuafuProvider,
     build_result_metadata,
 )
 from flagquantum.twin import TwinExperiment
@@ -86,6 +85,7 @@ def _handle(experiment, *, digest=None):
             "routing_evidence_sha256": program_identity,
             "deployment_artifact_sha256": program_identity,
             "submitted_qasm_sha256": program_identity,
+            "quafu_protocol": "quafu_sdk_v1",
             "compiler": None,
             "target_qubits": list(experiment.target_qubits),
         },
@@ -168,6 +168,53 @@ def test_direct_experiment_generates_exact_circuit_evidence():
     assert evidence_report.status == "exact_circuit_verified"
 
 
+def test_sdk_physical_program_remains_bound_to_twin_source() -> None:
+    circuit = fq.Circuit(2).h(0).cx(0, 1)
+    experiment = _experiment(submitted_qasm=None, circuit=circuit)
+    physical_qasm = (
+        "OPENQASM 2.0;\n"
+        'include "qelib1.inc";\n'
+        "qreg q[5];\n"
+        "creg c[2];\n"
+        "h q[3];\n"
+        "h q[4];\n"
+        "cz q[3], q[4];\n"
+        "h q[4];\n"
+        "measure q[3] -> c[0];\n"
+        "measure q[4] -> c[1];"
+    )
+    physical_identity = hashlib.sha256(physical_qasm.encode()).hexdigest()
+    receipt = _handle(experiment)
+    receipt.payload.update(
+        {
+            "source_qasm_sha256": experiment.submitted_qasm_identity,
+            "submitted_qasm_sha256": physical_identity,
+            "quafu_protocol": "quafu_sdk_v1",
+        }
+    )
+    result = DeploymentResult(
+        handle=receipt,
+        counts={"00": 512, "11": 512},
+        shots=1024,
+        metadata=build_result_metadata(
+            receipt,
+            {
+                "executed_qasm": physical_qasm,
+                "quafu_protocol": "quafu_sdk_v1",
+                "source_qasm_sha256": experiment.submitted_qasm_identity,
+                "submitted_qasm_sha256": physical_identity,
+            },
+        ),
+    )
+
+    report = experiment.validate_result(result, receipt=receipt)
+    evidence = experiment.evidence_from_report(report, circuit=circuit)
+
+    assert report.executed_qasm_identity == physical_identity
+    assert report.executed_program_matches_submission is False
+    assert evidence.verified_circuit_identities == (circuit.to_ir().content_hash,)
+
+
 def test_complete_quafu_twin_evidence_example_executes_offline(monkeypatch, tmp_path):
     class Provider:
         provider = "quafu"
@@ -226,6 +273,7 @@ def test_complete_quafu_twin_evidence_example_executes_offline(monkeypatch, tmp_
     destination = tmp_path / "twin-evidence.json"
     validation_destination = tmp_path / "twin-validation.json"
     monkeypatch.setenv("QUAFU_API_TOKEN", "offline-test-token")
+    monkeypatch.setenv("QUAFU_API_KEY", "offline-test-key")
     monkeypatch.setattr(quafu_twin_evidence, "QuafuProvider", lambda: provider)
     monkeypatch.setattr(quafu_twin_evidence, "TARGET", "quafu:Baihua")
     monkeypatch.setattr(quafu_twin_evidence, "BACKEND", "Baihua")
@@ -459,12 +507,18 @@ def test_real_quafu_response_shape_distinguishes_submitted_and_executed_qasm():
     )
     receipt = _handle(experiment)
 
-    class Transport:
-        def get_json(self, url, headers, timeout):
-            return response
-
-    provider = QuafuProvider(base_url="https://quafu.test", transport=Transport())
-    result = provider.fetch_result(receipt)
+    result = DeploymentResult(
+        handle=receipt,
+        counts=response["count"],
+        shots=response["shots"],
+        metadata=build_result_metadata(
+            receipt,
+            {
+                "circuit": response["circuit"],
+                "transpiled": response["transpiled"],
+            },
+        ),
+    )
     report = experiment.validate_result(result, receipt=receipt)
 
     assert result.metadata["circuit"] == experiment.submitted_qasm

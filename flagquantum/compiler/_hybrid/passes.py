@@ -96,6 +96,7 @@ def run_pass_pipeline(
         raise ValueError("hybrid pass pipeline exceeds the 32-pass limit")
     current = program
     current_analysis = analyze_program(current)
+    source_identity = current_identity = current.semantic_identity
     records = []
     for item in selected:
         name = str(getattr(item, "name", "")).strip()
@@ -112,6 +113,7 @@ def run_pass_pipeline(
             )
         transformed = outcome.program
         after = analyze_program(transformed)
+        transformed_identity = transformed.semantic_identity
         before_loops = direct_constant_loop_counts(current, current_analysis)
         after_loop_ids = set(direct_constant_loop_counts(transformed, after))
         preexpanded_iterations = sum(
@@ -122,8 +124,8 @@ def run_pass_pipeline(
         records.append(
             PassRecord(
                 name,
-                current.semantic_identity,
-                transformed.semantic_identity,
+                current_identity,
+                transformed_identity,
                 current_analysis.operation_count,
                 after.operation_count,
                 preexpanded_iterations,
@@ -132,11 +134,12 @@ def run_pass_pipeline(
             )
         )
         current = transformed
+        current_identity = transformed_identity
         current_analysis = after
     return HybridOptimizationResult(
         current,
-        source_identity=program.semantic_identity,
-        optimized_identity=current.semantic_identity,
+        source_identity=source_identity,
+        optimized_identity=current_identity,
         records=tuple(records),
     )
 

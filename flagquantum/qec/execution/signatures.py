@@ -14,9 +14,17 @@ from typing import Literal
 
 from ...compiler._hybrid import INDEX, capture_source, lower_dynamic_program
 from ...core.ir import CircuitIR
-from ...runtime.dynamic.hybrid_session import execute_hybrid_dynamic_session
+from ...runtime.dynamic.hybrid_session import (
+    _validate_session_ir,
+    execute_hybrid_dynamic_session,
+)
+from ...simulation.stabilizer._fault_signatures import (
+    _clifford_product_signatures,
+)
+from ...simulation.stabilizer._fault_signatures import (
+    _pauli_channel_terms as _pauli_channel_terms,
+)
 from ..circuits.memory import MeasurementRef, MemoryCircuit
-from ..codes._compat import _retain_module
 
 # One shared vocabulary for the physical fault families enumerated by both routes.
 _DataFaultFamily = Literal["data", "phase", "both"]
@@ -245,6 +253,81 @@ def _forced_signature(
     return _executed_flip_set(circuit, lowered)
 
 
+def _gate_fault_signatures(
+    circuit: MemoryCircuit,
+    program: CircuitIR,
+    faults: tuple[tuple[int, int, str], ...],
+) -> tuple[tuple[tuple[int, ...], tuple[int, ...]], ...]:
+    """Read exact single-qubit fault responses through the existing QEC layouts."""
+    return _gate_product_signatures(
+        circuit,
+        program,
+        tuple((position, (qubit,), pauli) for position, qubit, pauli in faults),
+    )
+
+
+def _gate_product_signatures(
+    circuit: MemoryCircuit,
+    program: CircuitIR,
+    faults: tuple[tuple[int, tuple[int, ...], str], ...],
+) -> tuple[tuple[tuple[int, ...], tuple[int, ...]], ...]:
+    """Read exact Simulation fault responses through the existing QEC layouts."""
+    if not faults:
+        return ()
+    _validate_session_ir(program)
+    positions = {
+        check.ancilla_qubit: position
+        for position, check in enumerate(circuit.code.checks)
+    }
+    # Translate validated classical addresses into measurement occurrences;
+    # Simulation owns recorded parities without knowing the QEC register layout.
+    recorded: dict[int, int] = {}
+    measurement = 0
+    for instruction in program.instructions:
+        if instruction.name == "measure":
+            recorded[int(instruction.metadata["classical_bit"])] = measurement
+            measurement += 1
+
+    def parity(
+        references: tuple[MeasurementRef, ...],
+    ) -> tuple[tuple[int, ...], tuple[int, ...]]:
+        measurements: list[int] = []
+        terminal: list[int] = []
+        for reference in references:
+            if reference.round_index is None:
+                terminal.append(reference.qubit)
+                continue
+            position = positions.get(reference.qubit)
+            if position is None:
+                raise ValueError(
+                    f"detector syndrome measurement names ancilla qubit "
+                    f"{reference.qubit}, which no check owns"
+                )
+            bit = reference.round_index * len(circuit.code.checks) + position
+            if bit not in recorded:
+                raise IndexError(f"syndrome classical bit {bit} was not recorded")
+            measurements.append(recorded[bit])
+        return tuple(measurements), tuple(terminal)
+
+    detectors = circuit.detectors.detectors
+    observables = circuit.observables.observables
+    parities = tuple(parity(detector.parity) for detector in detectors) + tuple(
+        ((), observable.pauli.support) for observable in observables
+    )
+    responses = _clifford_product_signatures(program, parities=parities, faults=faults)
+    return tuple(
+        (
+            tuple(d.index for i, d in enumerate(detectors) if (response >> i) & 1),
+            tuple(
+                o.index
+                for i, o in enumerate(observables, start=len(detectors))
+                if (response >> i) & 1
+            ),
+        )
+        for response in responses
+    )
+
+
 def _lowered_source(source: str, *, rounds: int, checks: int) -> CircuitIR:
     """Return ``source`` lowered with the round count and measurement budget given.
 
@@ -352,18 +435,3 @@ def _executed_flip_set(
             "in the reference gate set"
         )
     return signature
-
-
-_retain_module(
-    "flagquantum.qec.dem_construction",
-    _lowered_program,
-    _checked_round,
-    _checked_wire,
-    _single_anchor,
-    _forced_flip,
-    _inject_data_flip,
-    _inject_measurement_flip,
-    _forced_signature,
-    _lowered_source,
-    _executed_flip_set,
-)

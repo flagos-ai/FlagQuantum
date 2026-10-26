@@ -51,7 +51,7 @@ SKIPPED_DIRECTORIES = frozenset(
 CANONICAL_KIND = "flagquantum.circuit_ir"
 
 EXPECTED_SCHEMA = "flagquantum.multi_level_ir_internal_contract"
-EXPECTED_VERSION = "0.4"
+EXPECTED_VERSION = "0.5"
 EXPECTED_STATUS = "implementation_authorized"
 EXPECTED_OWNER = "core"
 EXPECTED_PUBLIC_LEVEL = "circuit"
@@ -66,18 +66,29 @@ EXPECTED_FORBIDDEN_STATES = ("best_effort",)
 EXPECTED_VALUE_KINDS = ("bool", "index", "scalar", "tensor", "qubit")
 EXPECTED_LINEAR_VALUE_KINDS = ("qubit",)
 EXPECTED_TERMINATORS = ("return", "branch")
-EXPECTED_PHYSICAL_PROFILE = {
-    "kind": "rydberg",
-    "approval_basis": "docs/api-changes/FQ-RYDBERG-TRANSPORT-PROGRAMS-20261022.md",
-    "context_type": "flagquantum.core.ir.program.physical.RydbergContext",
-    "operation_types": [
-        "flagquantum.core.ir.program.physical.RydbergTransport",
-        "flagquantum.core.ir.program.physical.RydbergPulse",
-    ],
-    "frontend": "flagquantum.experimental.simulation.RydbergProgram",
-    "operation_field": "physical_data",
-    "program_field": "physical_context",
-}
+EXPECTED_PHYSICAL_PROFILES = [
+    {
+        "kind": "rydberg",
+        "approval_basis": "docs/api-changes/FQ-RYDBERG-TRANSPORT-PROGRAMS-20261022.md",
+        "context_type": "flagquantum.core.ir.program.physical.RydbergContext",
+        "operation_types": [
+            "flagquantum.core.ir.program.physical.RydbergTransport",
+            "flagquantum.core.ir.program.physical.RydbergPulse",
+        ],
+        "frontend": "flagquantum.experimental.simulation.RydbergProgram",
+        "operation_field": "physical_data",
+        "program_field": "physical_context",
+    },
+    {
+        "kind": "ising_braid",
+        "approval_basis": "docs/api-changes/FQ-ISING-BRAID-PROGRAMS-20261023.md",
+        "context_type": "flagquantum.core.ir.program.physical.IsingContext",
+        "operation_types": ["flagquantum.core.ir.program.physical.IsingExchange"],
+        "frontend": "flagquantum.experimental.simulation.IsingBraidProgram",
+        "operation_field": "physical_data",
+        "program_field": "physical_context",
+    },
+]
 
 EXPECTED_KEYS = frozenset(
     {
@@ -99,7 +110,7 @@ EXPECTED_KEYS = frozenset(
         "linear_value_kinds",
         "terminators",
         "dynamic_operation_signatures",
-        "physical_profile",
+        "physical_profiles",
         "diagnostic_codes",
         "rules",
         "exclusions",
@@ -548,12 +559,16 @@ def contract_errors(
         if not isinstance(value, str) or not (ROOT / value).is_file():
             errors.append(f"{key} {value!r} does not exist")
 
-    profile = contract.get("physical_profile")
-    if profile != EXPECTED_PHYSICAL_PROFILE:
-        errors.append("physical_profile differs from approved proposal 081")
-    if not isinstance(profile, dict) or profile.get("kind") != "rydberg":
-        errors.append("the physical profile must be the approved Rydberg profile")
-    else:
+    profiles = contract.get("physical_profiles")
+    if profiles != EXPECTED_PHYSICAL_PROFILES:
+        errors.append("physical_profiles differ from approved proposals 081/085")
+    if not isinstance(profiles, list):
+        errors.append("physical_profiles must list the admitted typed profiles")
+        profiles = []
+    for profile in profiles:
+        if not isinstance(profile, dict):
+            errors.append("each physical profile must be a typed-profile declaration")
+            continue
         if not (ROOT / str(profile.get("approval_basis", ""))).is_file():
             errors.append(
                 "the physical profile requires its approved authorization record"
@@ -562,7 +577,7 @@ def contract_errors(
             value = profile.get(key)
             if not isinstance(value, str) or _resolve_authority(value):
                 errors.append(
-                    f"physical_profile.{key} must resolve to its real implementation"
+                    f"physical_profiles.{key} must resolve to its real implementation"
                 )
         for value in profile.get("operation_types", ()):
             if not isinstance(value, str) or _resolve_authority(value):

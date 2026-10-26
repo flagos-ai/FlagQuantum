@@ -15,7 +15,7 @@ on:
 #
 # CPU smoke/unit, runtime, coverage and distributed suites use A800 CPU runners.
 # Portable trusted Ubuntu checks share the general CPU runner pool.
-# R300 PR scheduling is paused; SDK checks use the existing general CPU pool.
+# SDK compatibility checks use the accepted fixed CPU pool; R300 keeps manual diagnostics.
 # Full-history quality checks retain A100; fork jobs use hosted runners.
 # Trusted manual validation uses the same A800 routing as same-repository PRs.
 # A800 jobs use up to 16 quota-aware workers and a private environment per run.
@@ -33,42 +33,61 @@ concurrency:
 
 jobs:
   pre-commit:
-    runs-on: ubuntu-latest
+    runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'flagquantum-a100-cpu' || 'ubuntu-latest' }}
+    timeout-minutes: 15
     concurrency:
-      group: flagquantum-gh-${{ github.event.pull_request.number || github.ref_name }}-light-c
+      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('a100-cpu-{0}-pre-commit-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-${{ github.event.pull_request.number || github.ref_name }}-light-c
       queue: max
     steps:
+      - name: Clear sparse checkout state from a previous job
+        run: |
+          if [ -d .git ]; then
+            git sparse-checkout disable
+            rm -f .git/info/sparse-checkout
+            git config --local --unset core.sparseCheckout || true
+          fi
       - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
       - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
+      - uses: ./.github/actions/isolated-python
       - uses: ./.github/actions/source-hygiene
 
-  # Prepare source before fan-out so the first hosted slot also unlocks A800 jobs.
+  # Trusted source preparation unlocks A800 jobs without a hosted runner slot.
   prepare-source:
     outputs:
       artifact-key: ${{ steps.pack-source.outputs.artifact-key }}
-    runs-on: ubuntu-latest
+    runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'flagquantum-a100-cpu' || 'ubuntu-latest' }}
     timeout-minutes: 5
     permissions:
       contents: read
     concurrency:
-      group: flagquantum-gh-${{ github.event.pull_request.number || github.ref_name }}-cpucore-3.12
+      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('a100-cpu-{0}-prepare-source-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-${{ github.event.pull_request.number || github.ref_name }}-cpucore-3.12
       queue: max
     steps:
+      - name: Clear sparse checkout state from a previous job
+        run: |
+          if [ -d .git ]; then
+            git sparse-checkout disable
+            rm -f .git/info/sparse-checkout
+            git config --local --unset core.sparseCheckout || true
+          fi
       - uses: actions/checkout@v4
         with:
+          persist-credentials: false
           fetch-depth: 16
       - name: Pack the exact commit and its complete tree for the A800 runners
         id: pack-source
         run: |
           set -o pipefail
           echo "artifact-key=${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}" >> "$GITHUB_OUTPUT"
-          mkdir -p "$RUNNER_TEMP/ci-source"
+          mkdir "$RUNNER_TEMP/ci-source"
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
           git rev-parse HEAD > "$RUNNER_TEMP/ci-source/source.sha"
           git rev-list --objects --no-walk HEAD | git pack-objects --stdout > "$RUNNER_TEMP/ci-source/source.pack"
-          mkdir -p "$RUNNER_TEMP/ci-source-incremental"
+          mkdir "$RUNNER_TEMP/ci-source-incremental"
           cp "$RUNNER_TEMP/ci-source/source.sha" "$RUNNER_TEMP/ci-source-incremental/source.sha"
           base="$(git rev-list --first-parent --max-count=9 HEAD | tail -n 1)"
           {
@@ -417,6 +436,8 @@ jobs:
       - name: Install CPU PyTorch through the shared mirror policy
         uses: ./.github/actions/install-cpu-torch
         timeout-minutes: 8
+        with:
+          torch-spec: "torch>=2.13,<2.14"
       - run: python -m pip install --no-build-isolation -e '.[dev]'
       - name: Verify dependency consistency and the CPU-only PyTorch build
         run: |
@@ -550,6 +571,8 @@ jobs:
       - name: Install CPU PyTorch through the shared mirror policy
         uses: ./.github/actions/install-cpu-torch
         timeout-minutes: 8
+        with:
+          torch-spec: "torch>=2.13,<2.14"
       - run: python -m pip install --no-build-isolation -e '.[dev]'
       - name: Verify dependency consistency and the CPU-only PyTorch build
         run: |
@@ -651,6 +674,8 @@ jobs:
       - name: Install CPU PyTorch through the shared mirror policy
         uses: ./.github/actions/install-cpu-torch
         timeout-minutes: 8
+        with:
+          torch-spec: "torch>=2.13,<2.14"
       - run: python -m pip install --no-build-isolation -e '.[dev]'
       - name: Verify dependency consistency and the CPU-only PyTorch build
         run: |
@@ -694,6 +719,28 @@ jobs:
       queue: max
     steps:
       - uses: actions/download-artifact@v8.0.2
+        with:
+          digest-mismatch: error
+          name: ci-source-incremental-${{ needs.prepare-source.outputs.artifact-key }}
+          path: ${{ runner.temp }}/ci-source
+      - name: Check whether cached Git objects complete the source tree
+        id: source-cache
+        run: |
+          sha="$(cat "$RUNNER_TEMP/ci-source/source.sha")"
+          test "$sha" = "$GITHUB_SHA"
+          if [ ! -d .git ]; then
+            git init .
+          fi
+          git index-pack --stdin < "$RUNNER_TEMP/ci-source/source.pack"
+          complete=false
+          if objects="$(git rev-list --objects --missing=print --no-walk "$sha")"; then
+            if ! printf '%s\n' "$objects" | grep -q '^?'; then
+              complete=true
+            fi
+          fi
+          echo "complete=$complete" >> "$GITHUB_OUTPUT"
+      - uses: actions/download-artifact@v8.0.2
+        if: steps.source-cache.outputs.complete != 'true'
         with:
           digest-mismatch: error
           name: ci-source-${{ needs.prepare-source.outputs.artifact-key }}
@@ -740,6 +787,28 @@ jobs:
       OPTIONAL_VERSIONS: "1.32.3 1.32.*"
     steps:
       - uses: actions/download-artifact@v8.0.2
+        with:
+          digest-mismatch: error
+          name: ci-source-incremental-${{ needs.prepare-source.outputs.artifact-key }}
+          path: ${{ runner.temp }}/ci-source
+      - name: Check whether cached Git objects complete the source tree
+        id: source-cache
+        run: |
+          sha="$(cat "$RUNNER_TEMP/ci-source/source.sha")"
+          test "$sha" = "$GITHUB_SHA"
+          if [ ! -d .git ]; then
+            git init .
+          fi
+          git index-pack --stdin < "$RUNNER_TEMP/ci-source/source.pack"
+          complete=false
+          if objects="$(git rev-list --objects --missing=print --no-walk "$sha")"; then
+            if ! printf '%s\n' "$objects" | grep -q '^?'; then
+              complete=true
+            fi
+          fi
+          echo "complete=$complete" >> "$GITHUB_OUTPUT"
+      - uses: actions/download-artifact@v8.0.2
+        if: steps.source-cache.outputs.complete != 'true'
         with:
           digest-mismatch: error
           name: ci-source-${{ needs.prepare-source.outputs.artifact-key }}
@@ -798,6 +867,28 @@ jobs:
       - uses: actions/download-artifact@v8.0.2
         with:
           digest-mismatch: error
+          name: ci-source-incremental-${{ needs.prepare-source.outputs.artifact-key }}
+          path: ${{ runner.temp }}/ci-source
+      - name: Check whether cached Git objects complete the source tree
+        id: source-cache
+        run: |
+          sha="$(cat "$RUNNER_TEMP/ci-source/source.sha")"
+          test "$sha" = "$GITHUB_SHA"
+          if [ ! -d .git ]; then
+            git init .
+          fi
+          git index-pack --stdin < "$RUNNER_TEMP/ci-source/source.pack"
+          complete=false
+          if objects="$(git rev-list --objects --missing=print --no-walk "$sha")"; then
+            if ! printf '%s\n' "$objects" | grep -q '^?'; then
+              complete=true
+            fi
+          fi
+          echo "complete=$complete" >> "$GITHUB_OUTPUT"
+      - uses: actions/download-artifact@v8.0.2
+        if: steps.source-cache.outputs.complete != 'true'
+        with:
+          digest-mismatch: error
           name: ci-source-${{ needs.prepare-source.outputs.artifact-key }}
           path: ${{ runner.temp }}/ci-source
       - name: Restore and verify this run's exact source commit
@@ -833,18 +924,44 @@ jobs:
           path: ${{ env.FQ_CI_REPORT_DIR }}
           retention-days: 7
 
-  qiskit-optional:
+  qiskit-compat:
     needs: prepare-source
     runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'flagquantum-cpu-general' || 'ubuntu-latest' }}
     timeout-minutes: 30
     concurrency:
-      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('a100-cpu-{0}-qiskit-optional-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-${{ github.event.pull_request.number || github.ref_name }}-light-b
+      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('a100-cpu-{0}-qiskit-compat-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-${{ github.event.pull_request.number || github.ref_name }}-light-b
       queue: max
+    strategy:
+      fail-fast: false
+      matrix:
+        qiskit: ["2.0", "2.5"]
     env:
       MAX_JOBS: "2"
-      OPTIONAL_VERSIONS: "2.0.* 2.5.*"
+      QISKIT_VERSION: ${{ matrix.qiskit }}.*
     steps:
       - uses: actions/download-artifact@v8.0.2
+        with:
+          digest-mismatch: error
+          name: ci-source-incremental-${{ needs.prepare-source.outputs.artifact-key }}
+          path: ${{ runner.temp }}/ci-source
+      - name: Check whether cached Git objects complete the source tree
+        id: source-cache
+        run: |
+          sha="$(cat "$RUNNER_TEMP/ci-source/source.sha")"
+          test "$sha" = "$GITHUB_SHA"
+          if [ ! -d .git ]; then
+            git init .
+          fi
+          git index-pack --stdin < "$RUNNER_TEMP/ci-source/source.pack"
+          complete=false
+          if objects="$(git rev-list --objects --missing=print --no-walk "$sha")"; then
+            if ! printf '%s\n' "$objects" | grep -q '^?'; then
+              complete=true
+            fi
+          fi
+          echo "complete=$complete" >> "$GITHUB_OUTPUT"
+      - uses: actions/download-artifact@v8.0.2
+        if: steps.source-cache.outputs.complete != 'true'
         with:
           digest-mismatch: error
           name: ci-source-${{ needs.prepare-source.outputs.artifact-key }}
@@ -878,31 +995,39 @@ jobs:
         run: |
           python -c "import torch; from flagquantum.simulation.native_cpu import adjoint; assert torch.version.cuda is None; assert adjoint.native_cpu_adjoint_available(), repr(adjoint._EXTENSION_ERROR)"
           python -m pytest tests/test_native_circuit.py tests/test_backends.py tests/smoke/test_smoke_baseline.py -q
-      - name: Verify both certified Qiskit and Aer versions
+      - name: Select a private Qiskit wheel cache
+        run: |
+          if [ "$RUNNER_ENVIRONMENT" = self-hosted ]; then
+            directory="$HOME/.cache/fq-qiskit-wheels/py312/${{ matrix.qiskit }}"
+          else
+            directory="$RUNNER_TEMP/qiskit-wheels"
+          fi
+          mkdir -p "$directory"
+          echo "FQ_QISKIT_WHEEL_DIRECTORY=$directory" >> "$GITHUB_ENV"
+      - uses: actions/cache@v4
+        if: runner.environment == 'github-hosted'
+        with:
+          path: ${{ env.FQ_QISKIT_WHEEL_DIRECTORY }}
+          key: qiskit-wheels-${{ runner.os }}-${{ runner.arch }}-py312-${{ matrix.qiskit }}-${{ hashFiles('dependency-policy.toml', '.github/actions/prepare-qiskit-wheels/action.yml') }}
+      - uses: ./.github/actions/prepare-qiskit-wheels
+      - name: Verify this certified Qiskit and Aer pair
+        # Keep module-scoped benchmark fixtures on one worker per file.
+        env:
+          PYTEST_ADDOPTS: -n ${{ env.FQ_PYTEST_WORKERS }} --dist=loadfile --durations=50
         run: |
           set -euxo pipefail
-          for version in ${OPTIONAL_VERSIONS}; do
-            python -m pip install --upgrade \
-              "qiskit[qasm3-import]==${version}" \
-              'qiskit-aer==0.17.*' \
-              'sympy>=1.13,<2'
-            python tools/check_qiskit_interop_contract.py
-            python -m pytest tests/api_contract/test_open_source_golden_paths.py tests/team/ecosystem/test_qiskit_boundary_semantics.py tests/test_dynamic_conformance.py tests/test_qiskit_interop.py tests/test_qiskit_interop_conformance.py tests/optional/test_qiskit_aer_backend.py -m qiskit -q
-            # Ten of the fifteen compiler benchmark contracts do not check this
-            # repository against itself. Each builds its payload in-process, reads
-            # a Qiskit anchor out of it, and compares the two, so the comparison
-            # exists only where Qiskit is importable and the file skips when it is
-            # not. The only lane that collected these files is `distributed-cpu`,
-            # which installs no Qiskit, so all ten comparisons skipped on every
-            # pull request and were reported as passes by the tier that owns their
-            # marker; a skipped agreement check reads exactly like an agreement.
-            # They are read here instead, on both certified lanes, because an
-            # anchor is only comparable with a release this repository certifies.
-            # `tests/benchmark_contract/qiskit_lane.py` holds that rule and fails
-            # rather than skips when a host is outside it.
-            python -m pytest tests/benchmark_contract/test_compiler_*.py -m benchmark_contract -q
-            python -c "import sys, flagquantum; assert not any(name == 'qiskit' or name.startswith('qiskit.') or name == 'qiskit_aer' or name.startswith('qiskit_aer.') for name in sys.modules)"
-          done
+          version="$QISKIT_VERSION"
+          python -m pip install --no-index --find-links "$FQ_QISKIT_WHEEL_DIRECTORY" --upgrade \
+            "qiskit[qasm3-import]==${version}" \
+            'qiskit-aer==0.17.*' \
+            'sympy>=1.13,<2'
+          python -m pip check
+          python tools/check_qiskit_interop_contract.py
+          python -m pytest tests/api_contract/test_open_source_golden_paths.py tests/team/ecosystem/test_qiskit_boundary_semantics.py tests/test_dynamic_conformance.py tests/test_qiskit_interop.py tests/test_qiskit_interop_conformance.py tests/optional/test_qiskit_aer_backend.py -m qiskit -q
+          # Read every compiler Qiskit anchor on both certified versions.
+          # The distributed tier has no Qiskit and cannot validate these comparisons.
+          python -m pytest tests/benchmark_contract/test_compiler_*.py -m benchmark_contract -q
+          python -c "import sys, flagquantum; assert not any(name == 'qiskit' or name.startswith('qiskit.') or name == 'qiskit_aer' or name.startswith('qiskit_aer.') for name in sys.modules)"
       - name: Retain resource limits and pytest timing reports
         if: ${{ always() && env.FQ_CI_REPORT_DIR != '' }}
         uses: actions/upload-artifact@v4
@@ -910,6 +1035,18 @@ jobs:
           name: cpu-report-${{ github.job }}-${{ strategy.job-index || '0' }}
           path: ${{ env.FQ_CI_REPORT_DIR }}
           retention-days: 7
+
+  qiskit-optional:
+    if: ${{ always() }}
+    needs: qiskit-compat
+    runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'flagquantum-cpu-general' || 'ubuntu-latest' }}
+    timeout-minutes: 5
+    concurrency:
+      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('a100-cpu-{0}-qiskit-optional-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-${{ github.event.pull_request.number || github.ref_name }}-light-b
+      queue: max
+    steps:
+      - name: Require both certified Qiskit pairs to pass
+        run: test '${{ needs.qiskit-compat.result }}' = success
 
   cirq-optional:
     needs: prepare-source
@@ -923,6 +1060,28 @@ jobs:
       OPTIONAL_VERSIONS: "1.6.1 1.7.0"
     steps:
       - uses: actions/download-artifact@v8.0.2
+        with:
+          digest-mismatch: error
+          name: ci-source-incremental-${{ needs.prepare-source.outputs.artifact-key }}
+          path: ${{ runner.temp }}/ci-source
+      - name: Check whether cached Git objects complete the source tree
+        id: source-cache
+        run: |
+          sha="$(cat "$RUNNER_TEMP/ci-source/source.sha")"
+          test "$sha" = "$GITHUB_SHA"
+          if [ ! -d .git ]; then
+            git init .
+          fi
+          git index-pack --stdin < "$RUNNER_TEMP/ci-source/source.pack"
+          complete=false
+          if objects="$(git rev-list --objects --missing=print --no-walk "$sha")"; then
+            if ! printf '%s\n' "$objects" | grep -q '^?'; then
+              complete=true
+            fi
+          fi
+          echo "complete=$complete" >> "$GITHUB_OUTPUT"
+      - uses: actions/download-artifact@v8.0.2
+        if: steps.source-cache.outputs.complete != 'true'
         with:
           digest-mismatch: error
           name: ci-source-${{ needs.prepare-source.outputs.artifact-key }}
@@ -985,6 +1144,28 @@ jobs:
       OPTIONAL_VERSIONS: "1.117.0 1.127.1"
     steps:
       - uses: actions/download-artifact@v8.0.2
+        with:
+          digest-mismatch: error
+          name: ci-source-incremental-${{ needs.prepare-source.outputs.artifact-key }}
+          path: ${{ runner.temp }}/ci-source
+      - name: Check whether cached Git objects complete the source tree
+        id: source-cache
+        run: |
+          sha="$(cat "$RUNNER_TEMP/ci-source/source.sha")"
+          test "$sha" = "$GITHUB_SHA"
+          if [ ! -d .git ]; then
+            git init .
+          fi
+          git index-pack --stdin < "$RUNNER_TEMP/ci-source/source.pack"
+          complete=false
+          if objects="$(git rev-list --objects --missing=print --no-walk "$sha")"; then
+            if ! printf '%s\n' "$objects" | grep -q '^?'; then
+              complete=true
+            fi
+          fi
+          echo "complete=$complete" >> "$GITHUB_OUTPUT"
+      - uses: actions/download-artifact@v8.0.2
+        if: steps.source-cache.outputs.complete != 'true'
         with:
           digest-mismatch: error
           name: ci-source-${{ needs.prepare-source.outputs.artifact-key }}
@@ -1134,6 +1315,28 @@ jobs:
       - uses: actions/download-artifact@v8.0.2
         with:
           digest-mismatch: error
+          name: ci-source-incremental-${{ needs.prepare-source.outputs.artifact-key }}
+          path: ${{ runner.temp }}/ci-source
+      - name: Check whether cached Git objects complete the source tree
+        id: source-cache
+        run: |
+          sha="$(cat "$RUNNER_TEMP/ci-source/source.sha")"
+          test "$sha" = "$GITHUB_SHA"
+          if [ ! -d .git ]; then
+            git init .
+          fi
+          git index-pack --stdin < "$RUNNER_TEMP/ci-source/source.pack"
+          complete=false
+          if objects="$(git rev-list --objects --missing=print --no-walk "$sha")"; then
+            if ! printf '%s\n' "$objects" | grep -q '^?'; then
+              complete=true
+            fi
+          fi
+          echo "complete=$complete" >> "$GITHUB_OUTPUT"
+      - uses: actions/download-artifact@v8.0.2
+        if: steps.source-cache.outputs.complete != 'true'
+        with:
+          digest-mismatch: error
           name: ci-source-${{ needs.prepare-source.outputs.artifact-key }}
           path: ${{ runner.temp }}/ci-source
       - name: Restore and verify this run's exact source commit
@@ -1209,6 +1412,28 @@ jobs:
             torch: "torch>=2.14,<2.15"
     steps:
       - uses: actions/download-artifact@v8.0.2
+        with:
+          digest-mismatch: error
+          name: ci-source-incremental-${{ needs.prepare-source.outputs.artifact-key }}
+          path: ${{ runner.temp }}/ci-source
+      - name: Check whether cached Git objects complete the source tree
+        id: source-cache
+        run: |
+          sha="$(cat "$RUNNER_TEMP/ci-source/source.sha")"
+          test "$sha" = "$GITHUB_SHA"
+          if [ ! -d .git ]; then
+            git init .
+          fi
+          git index-pack --stdin < "$RUNNER_TEMP/ci-source/source.pack"
+          complete=false
+          if objects="$(git rev-list --objects --missing=print --no-walk "$sha")"; then
+            if ! printf '%s\n' "$objects" | grep -q '^?'; then
+              complete=true
+            fi
+          fi
+          echo "complete=$complete" >> "$GITHUB_OUTPUT"
+      - uses: actions/download-artifact@v8.0.2
+        if: steps.source-cache.outputs.complete != 'true'
         with:
           digest-mismatch: error
           name: ci-source-${{ needs.prepare-source.outputs.artifact-key }}
@@ -1352,6 +1577,20 @@ jobs:
           popd
       - name: Write checksummed artifact manifest
         run: python tools/artifact_manifest.py --output dist/manifest.json dist/*.whl dist/*.tar.gz
+      - name: Verify real QEC optional installations outside the checkout
+        id: qec-installed
+        timeout-minutes: 15
+        run: >-
+          python tools/check_qec_installed_profiles.py
+          --dist-dir dist
+          --report-dir "${{ runner.temp }}/qec-installed-reports"
+      - name: Retain installed QEC evidence
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: qec-installed-${{ github.sha }}
+          path: ${{ runner.temp }}/qec-installed-reports/
+          retention-days: 7
       - uses: actions/upload-artifact@v4
         with:
           name: flagquantum-distributions-${{ github.sha }}
@@ -1697,6 +1936,28 @@ jobs:
       - uses: actions/download-artifact@v8.0.2
         with:
           digest-mismatch: error
+          name: ci-source-incremental-${{ needs.prepare-source.outputs.artifact-key }}
+          path: ${{ runner.temp }}/ci-source
+      - name: Check whether cached Git objects complete the source tree
+        id: source-cache
+        run: |
+          sha="$(cat "$RUNNER_TEMP/ci-source/source.sha")"
+          test "$sha" = "$GITHUB_SHA"
+          if [ ! -d .git ]; then
+            git init .
+          fi
+          git index-pack --stdin < "$RUNNER_TEMP/ci-source/source.pack"
+          complete=false
+          if objects="$(git rev-list --objects --missing=print --no-walk "$sha")"; then
+            if ! printf '%s\n' "$objects" | grep -q '^?'; then
+              complete=true
+            fi
+          fi
+          echo "complete=$complete" >> "$GITHUB_OUTPUT"
+      - uses: actions/download-artifact@v8.0.2
+        if: steps.source-cache.outputs.complete != 'true'
+        with:
+          digest-mismatch: error
           name: ci-source-${{ needs.prepare-source.outputs.artifact-key }}
           path: ${{ runner.temp }}/ci-source
       - name: Restore and verify this run's exact source commit
@@ -1765,6 +2026,7 @@ jobs:
       - azure-optional
       - triton-optional
       - qiskit-optional
+      - qiskit-compat
       - cirq-optional
       - braket-optional
       - cudaq-optional

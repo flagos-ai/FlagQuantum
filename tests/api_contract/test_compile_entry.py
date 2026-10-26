@@ -27,7 +27,7 @@ def test_fq_compile_resolves_quafu_target_for_named_plugin(monkeypatch):
     captured = {}
 
     class Provider:
-        def fetch_chip_info(self, backend):
+        def _qsteed_chip_info(self, backend):
             assert backend == "ScQ-P10"
             return chip_info
 

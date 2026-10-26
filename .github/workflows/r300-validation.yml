@@ -370,8 +370,16 @@ jobs:
           python-version: "3.12"
       - uses: ./.github/actions/isolated-python
       - run: python -m pip install --upgrade pip 'setuptools>=77.0.3' wheel
+      - name: Require a cold official CPU wheel download
+        if: inputs.diagnose_network
+        run: |
+          test -n "$VIRTUAL_ENV"
+          python -m pip uninstall -y torch
       - uses: ./.github/actions/install-cpu-torch
         timeout-minutes: 8
+        env:
+          FQ_CPU_WHEEL_CACHE: ${{ runner.temp }}/r300-no-shared-wheel-cache
+          PIP_NO_CACHE_DIR: "1"
       - run: python -m pip install --no-build-isolation -e '.[dev]'
       - name: Validate the CPU runtime before SDK certification
         run: |

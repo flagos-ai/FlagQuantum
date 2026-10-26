@@ -43,7 +43,6 @@ import torch
 
 from ..gf2 import rank
 from ..pauli import Pauli
-from ._compat import _retain_module
 from ._css_helpers import (
     _DISTANCE_SEARCH_WEIGHT,
     BinaryMatrix,
@@ -641,14 +640,3 @@ class CssCode:
                 "records with == or hash a record built from hand-written blocks"
             )
         return hash((self.hz, self.hx, self.lz, self.lx, self.distance))
-
-
-_retain_module(
-    "flagquantum.qec.css_code",
-    _row_masks,
-    _support,
-    _row_basis,
-    _in_span,
-    _stated,
-    CssCode,
-)

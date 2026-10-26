@@ -1,6 +1,7 @@
 """Validate a Twin candidate across three fixed Shenglian circuits.
 
-Set ``QUAFU_API_TOKEN`` and create ``twin-incumbent.json`` first. The workflow
+Set ``QUAFU_API_KEY`` and the temporary calibration-only ``QUAFU_API_TOKEN``,
+then create ``twin-incumbent.json``. The workflow
 uses separate commands so every accepted task is checkpointed before another
 submission can begin:
 
@@ -152,8 +153,11 @@ def main() -> None:
     parser.add_argument("command", choices=("prepare", "submit", "evaluate"))
     parser.add_argument("index", nargs="?", type=int)
     args = parser.parse_args()
-    if not os.getenv("QUAFU_API_TOKEN"):
-        raise RuntimeError("Set QUAFU_API_TOKEN before contacting Quafu SQC")
+    if not os.getenv("QUAFU_API_KEY") or not os.getenv("QUAFU_API_TOKEN"):
+        raise RuntimeError(
+            "Set QUAFU_API_KEY for SDK execution and QUAFU_API_TOKEN for "
+            "legacy calibration reads"
+        )
     provider = QuafuProvider()
     if args.command == "prepare":
         if args.index is not None:

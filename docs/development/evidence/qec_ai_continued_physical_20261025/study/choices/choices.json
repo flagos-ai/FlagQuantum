@@ -1,0 +1,786 @@
+{
+  "purpose": "continued_frozen_choices",
+  "protocol_sha256": "9f48cc9ad7b28a787e98211a9b436c795d7251c02d87e600eb2d26a4dffacd31",
+  "circuit_sha256": "0fa86bd7b534da215f58cb4611236db52d60ddc588da819b0d547a91026195e2",
+  "checkpoints": [
+    {
+      "seed": 11,
+      "step": 200,
+      "checkpoint_sha256": "486ff5bd69cdee480b9cf74c08c3e3c4a14da49b08cb9f985d8bc4c8fe86238d",
+      "model_state_sha256": "7d7b21493c52e79299db6a74f29c2ce98735313e82ba357ae62c98f723d16940"
+    },
+    {
+      "seed": 11,
+      "step": 2000,
+      "checkpoint_sha256": "e55a87844700855b373e10281fd973429e820ac9d745d5965b249fa60f0ae681",
+      "model_state_sha256": "9db943ce4ba73f54eb025761a7716fba7f79a8961194d8247ac5cd044aa10eb2"
+    },
+    {
+      "seed": 22,
+      "step": 200,
+      "checkpoint_sha256": "60197af1f319d97d5bd8400ec024603024f97b0c4b325711e14d7f3c1e4f8d67",
+      "model_state_sha256": "928098c93c6f59f7f16c3424037f487be9d693f33dd63377766af13c41878ea8"
+    },
+    {
+      "seed": 22,
+      "step": 2000,
+      "checkpoint_sha256": "c88803301e39cdde60c4f8542cb222005fa17df8cc204a967cba1dc2a49cdc09",
+      "model_state_sha256": "97a28cff48e30505088e6f6eb0bc2e55f0eb622acc3217fb96439e3d48095bd2"
+    },
+    {
+      "seed": 33,
+      "step": 200,
+      "checkpoint_sha256": "c2f776ac21ef719ba3fac521be5645d931bb2b365c651427bd4227ea13bddc27",
+      "model_state_sha256": "7dfb531d192d6f04773ee88dd5452349a6b821233a1aada01deea738ec67d2cc"
+    },
+    {
+      "seed": 33,
+      "step": 2000,
+      "checkpoint_sha256": "79560aecb5dab6ff42def1370f9af1fd6949da582b51569111db106b868f9685",
+      "model_state_sha256": "558e02099c76977d3475fb172112ca7d106a229cd2e21f5d7233c268cb3eaa32"
+    }
+  ],
+  "calibration_sha256": "0e74ab1d0574912b594e5dee934f245e8be0be69d1445145378b9b6836699d90",
+  "validation_sha256": "81a63c463ab82bbd003c2f89fb38165a3f496cf931ceb98e2a8ebb56fb3adc38",
+  "source_sha256": {
+    "examples/qec/continued_selection.py": "f6aca5ccdecceaf17af39179102ce89ff7335063ca1adcafcd552c17589377b8",
+    "examples/qec/continued_assessment.py": "77eff7e88ee53df46390aedc98501cc899f7cb65e9c1aa9bbba3c6ee9564bb99",
+    "flagquantum/qec/decoders/_ai/calibration.py": "09ada8143020e595dac5d7ce6fa9e672d22529dc25eef3d5b34413323431775b",
+    "flagquantum/qec/decoders/_ai/comparison.py": "3c622839a42d1b2fecd49369d4b8b8cfddd4bc854c4beb36e9fc99da710772bc",
+    "flagquantum/qec/decoders/_ai/predecoder.py": "bf6a3464338897e19410d65706efb86570a954d6c3479bd0b26e70cdf02099eb"
+  },
+  "paths": [
+    {
+      "seed": 11,
+      "step": 200,
+      "mode": "raw",
+      "temperature": 1.0,
+      "selection": {
+        "threshold": 1.0,
+        "trials": [
+          {
+            "threshold": 0.5,
+            "counts": {
+              "shots": 131072,
+              "baseline_failures": 150,
+              "hybrid_failures": 150,
+              "wins": 0,
+              "losses": 0
+            }
+          },
+          {
+            "threshold": 0.7,
+            "counts": {
+              "shots": 131072,
+              "baseline_failures": 150,
+              "hybrid_failures": 150,
+              "wins": 0,
+              "losses": 0
+            }
+          },
+          {
+            "threshold": 0.9,
+            "counts": {
+              "shots": 131072,
+              "baseline_failures": 150,
+              "hybrid_failures": 150,
+              "wins": 0,
+              "losses": 0
+            }
+          },
+          {
+            "threshold": 0.99,
+            "counts": {
+              "shots": 131072,
+              "baseline_failures": 150,
+              "hybrid_failures": 150,
+              "wins": 0,
+              "losses": 0
+            }
+          },
+          {
+            "threshold": 1.0,
+            "counts": {
+              "shots": 131072,
+              "baseline_failures": 150,
+              "hybrid_failures": 150,
+              "wins": 0,
+              "losses": 0
+            }
+          }
+        ]
+      }
+    },
+    {
+      "seed": 11,
+      "step": 200,
+      "mode": "calibrated",
+      "temperature": 0.5,
+      "selection": {
+        "threshold": 1.0,
+        "trials": [
+          {
+            "threshold": 0.5,
+            "counts": {
+              "shots": 131072,
+              "baseline_failures": 150,
+              "hybrid_failures": 150,
+              "wins": 0,
+              "losses": 0
+            }
+          },
+          {
+            "threshold": 0.7,
+            "counts": {
+              "shots": 131072,
+              "baseline_failures": 150,
+              "hybrid_failures": 150,
+              "wins": 0,
+              "losses": 0
+            }
+          },
+          {
+            "threshold": 0.9,
+            "counts": {
+              "shots": 131072,
+              "baseline_failures": 150,
+              "hybrid_failures": 150,
+              "wins": 0,
+              "losses": 0
+            }
+          },
+          {
+            "threshold": 0.99,
+            "counts": {
+              "shots": 131072,
+              "baseline_failures": 150,
+              "hybrid_failures": 150,
+              "wins": 0,
+              "losses": 0
+            }
+          },
+          {
+            "threshold": 1.0,
+            "counts": {
+              "shots": 131072,
+              "baseline_failures": 150,
+              "hybrid_failures": 150,
+              "wins": 0,
+              "losses": 0
+            }
+          }
+        ]
+      }
+    },
+    {
+      "seed": 11,
+      "step": 2000,
+      "mode": "raw",
+      "temperature": 1.0,
+      "selection": {
+        "threshold": 1.0,
+        "trials": [
+          {
+            "threshold": 0.5,
+            "counts": {
+              "shots": 131072,
+              "baseline_failures": 150,
+              "hybrid_failures": 184,
+              "wins": 41,
+              "losses": 75
+            }
+          },
+          {
+            "threshold": 0.7,
+            "counts": {
+              "shots": 131072,
+              "baseline_failures": 150,
+              "hybrid_failures": 150,
+              "wins": 0,
+              "losses": 0
+            }
+          },
+          {
+            "threshold": 0.9,
+            "counts": {
+              "shots": 131072,
+              "baseline_failures": 150,
+              "hybrid_failures": 150,
+              "wins": 0,
+              "losses": 0
+            }
+          },
+          {
+            "threshold": 0.99,
+            "counts": {
+              "shots": 131072,
+              "baseline_failures": 150,
+              "hybrid_failures": 150,
+              "wins": 0,
+              "losses": 0
+            }
+          },
+          {
+            "threshold": 1.0,
+            "counts": {
+              "shots": 131072,
+              "baseline_failures": 150,
+              "hybrid_failures": 150,
+              "wins": 0,
+              "losses": 0
+            }
+          }
+        ]
+      }
+    },
+    {
+      "seed": 11,
+      "step": 2000,
+      "mode": "calibrated",
+      "temperature": 0.5,
+      "selection": {
+        "threshold": 1.0,
+        "trials": [
+          {
+            "threshold": 0.5,
+            "counts": {
+              "shots": 131072,
+              "baseline_failures": 150,
+              "hybrid_failures": 184,
+              "wins": 41,
+              "losses": 75
+            }
+          },
+          {
+            "threshold": 0.7,
+            "counts": {
+              "shots": 131072,
+              "baseline_failures": 150,
+              "hybrid_failures": 150,
+              "wins": 0,
+              "losses": 0
+            }
+          },
+          {
+            "threshold": 0.9,
+            "counts": {
+              "shots": 131072,
+              "baseline_failures": 150,
+              "hybrid_failures": 150,
+              "wins": 0,
+              "losses": 0
+            }
+          },
+          {
+            "threshold": 0.99,
+            "counts": {
+              "shots": 131072,
+              "baseline_failures": 150,
+              "hybrid_failures": 150,
+              "wins": 0,
+              "losses": 0
+            }
+          },
+          {
+            "threshold": 1.0,
+            "counts": {
+              "shots": 131072,
+              "baseline_failures": 150,
+              "hybrid_failures": 150,
+              "wins": 0,
+              "losses": 0
+            }
+          }
+        ]
+      }
+    },
+    {
+      "seed": 22,
+      "step": 200,
+      "mode": "raw",
+      "temperature": 1.0,
+      "selection": {
+        "threshold": 1.0,
+        "trials": [
+          {
+            "threshold": 0.5,
+            "counts": {
+              "shots": 131072,
+              "baseline_failures": 150,
+              "hybrid_failures": 150,
+              "wins": 0,
+              "losses": 0
+            }
+          },
+          {
+            "threshold": 0.7,
+            "counts": {
+              "shots": 131072,
+              "baseline_failures": 150,
+              "hybrid_failures": 150,
+              "wins": 0,
+              "losses": 0
+            }
+          },
+          {
+            "threshold": 0.9,
+            "counts": {
+              "shots": 131072,
+              "baseline_failures": 150,
+              "hybrid_failures": 150,
+              "wins": 0,
+              "losses": 0
+            }
+          },
+          {
+            "threshold": 0.99,
+            "counts": {
+              "shots": 131072,
+              "baseline_failures": 150,
+              "hybrid_failures": 150,
+              "wins": 0,
+              "losses": 0
+            }
+          },
+          {
+            "threshold": 1.0,
+            "counts": {
+              "shots": 131072,
+              "baseline_failures": 150,
+              "hybrid_failures": 150,
+              "wins": 0,
+              "losses": 0
+            }
+          }
+        ]
+      }
+    },
+    {
+      "seed": 22,
+      "step": 200,
+      "mode": "calibrated",
+      "temperature": 0.25,
+      "selection": {
+        "threshold": 1.0,
+        "trials": [
+          {
+            "threshold": 0.5,
+            "counts": {
+              "shots": 131072,
+              "baseline_failures": 150,
+              "hybrid_failures": 150,
+              "wins": 0,
+              "losses": 0
+            }
+          },
+          {
+            "threshold": 0.7,
+            "counts": {
+              "shots": 131072,
+              "baseline_failures": 150,
+              "hybrid_failures": 150,
+              "wins": 0,
+              "losses": 0
+            }
+          },
+          {
+            "threshold": 0.9,
+            "counts": {
+              "shots": 131072,
+              "baseline_failures": 150,
+              "hybrid_failures": 150,
+              "wins": 0,
+              "losses": 0
+            }
+          },
+          {
+            "threshold": 0.99,
+            "counts": {
+              "shots": 131072,
+              "baseline_failures": 150,
+              "hybrid_failures": 150,
+              "wins": 0,
+              "losses": 0
+            }
+          },
+          {
+            "threshold": 1.0,
+            "counts": {
+              "shots": 131072,
+              "baseline_failures": 150,
+              "hybrid_failures": 150,
+              "wins": 0,
+              "losses": 0
+            }
+          }
+        ]
+      }
+    },
+    {
+      "seed": 22,
+      "step": 2000,
+      "mode": "raw",
+      "temperature": 1.0,
+      "selection": {
+        "threshold": 1.0,
+        "trials": [
+          {
+            "threshold": 0.5,
+            "counts": {
+              "shots": 131072,
+              "baseline_failures": 150,
+              "hybrid_failures": 150,
+              "wins": 0,
+              "losses": 0
+            }
+          },
+          {
+            "threshold": 0.7,
+            "counts": {
+              "shots": 131072,
+              "baseline_failures": 150,
+              "hybrid_failures": 150,
+              "wins": 0,
+              "losses": 0
+            }
+          },
+          {
+            "threshold": 0.9,
+            "counts": {
+              "shots": 131072,
+              "baseline_failures": 150,
+              "hybrid_failures": 150,
+              "wins": 0,
+              "losses": 0
+            }
+          },
+          {
+            "threshold": 0.99,
+            "counts": {
+              "shots": 131072,
+              "baseline_failures": 150,
+              "hybrid_failures": 150,
+              "wins": 0,
+              "losses": 0
+            }
+          },
+          {
+            "threshold": 1.0,
+            "counts": {
+              "shots": 131072,
+              "baseline_failures": 150,
+              "hybrid_failures": 150,
+              "wins": 0,
+              "losses": 0
+            }
+          }
+        ]
+      }
+    },
+    {
+      "seed": 22,
+      "step": 2000,
+      "mode": "calibrated",
+      "temperature": 0.5,
+      "selection": {
+        "threshold": 1.0,
+        "trials": [
+          {
+            "threshold": 0.5,
+            "counts": {
+              "shots": 131072,
+              "baseline_failures": 150,
+              "hybrid_failures": 150,
+              "wins": 0,
+              "losses": 0
+            }
+          },
+          {
+            "threshold": 0.7,
+            "counts": {
+              "shots": 131072,
+              "baseline_failures": 150,
+              "hybrid_failures": 150,
+              "wins": 0,
+              "losses": 0
+            }
+          },
+          {
+            "threshold": 0.9,
+            "counts": {
+              "shots": 131072,
+              "baseline_failures": 150,
+              "hybrid_failures": 150,
+              "wins": 0,
+              "losses": 0
+            }
+          },
+          {
+            "threshold": 0.99,
+            "counts": {
+              "shots": 131072,
+              "baseline_failures": 150,
+              "hybrid_failures": 150,
+              "wins": 0,
+              "losses": 0
+            }
+          },
+          {
+            "threshold": 1.0,
+            "counts": {
+              "shots": 131072,
+              "baseline_failures": 150,
+              "hybrid_failures": 150,
+              "wins": 0,
+              "losses": 0
+            }
+          }
+        ]
+      }
+    },
+    {
+      "seed": 33,
+      "step": 200,
+      "mode": "raw",
+      "temperature": 1.0,
+      "selection": {
+        "threshold": 1.0,
+        "trials": [
+          {
+            "threshold": 0.5,
+            "counts": {
+              "shots": 131072,
+              "baseline_failures": 150,
+              "hybrid_failures": 150,
+              "wins": 0,
+              "losses": 0
+            }
+          },
+          {
+            "threshold": 0.7,
+            "counts": {
+              "shots": 131072,
+              "baseline_failures": 150,
+              "hybrid_failures": 150,
+              "wins": 0,
+              "losses": 0
+            }
+          },
+          {
+            "threshold": 0.9,
+            "counts": {
+              "shots": 131072,
+              "baseline_failures": 150,
+              "hybrid_failures": 150,
+              "wins": 0,
+              "losses": 0
+            }
+          },
+          {
+            "threshold": 0.99,
+            "counts": {
+              "shots": 131072,
+              "baseline_failures": 150,
+              "hybrid_failures": 150,
+              "wins": 0,
+              "losses": 0
+            }
+          },
+          {
+            "threshold": 1.0,
+            "counts": {
+              "shots": 131072,
+              "baseline_failures": 150,
+              "hybrid_failures": 150,
+              "wins": 0,
+              "losses": 0
+            }
+          }
+        ]
+      }
+    },
+    {
+      "seed": 33,
+      "step": 200,
+      "mode": "calibrated",
+      "temperature": 0.5,
+      "selection": {
+        "threshold": 1.0,
+        "trials": [
+          {
+            "threshold": 0.5,
+            "counts": {
+              "shots": 131072,
+              "baseline_failures": 150,
+              "hybrid_failures": 150,
+              "wins": 0,
+              "losses": 0
+            }
+          },
+          {
+            "threshold": 0.7,
+            "counts": {
+              "shots": 131072,
+              "baseline_failures": 150,
+              "hybrid_failures": 150,
+              "wins": 0,
+              "losses": 0
+            }
+          },
+          {
+            "threshold": 0.9,
+            "counts": {
+              "shots": 131072,
+              "baseline_failures": 150,
+              "hybrid_failures": 150,
+              "wins": 0,
+              "losses": 0
+            }
+          },
+          {
+            "threshold": 0.99,
+            "counts": {
+              "shots": 131072,
+              "baseline_failures": 150,
+              "hybrid_failures": 150,
+              "wins": 0,
+              "losses": 0
+            }
+          },
+          {
+            "threshold": 1.0,
+            "counts": {
+              "shots": 131072,
+              "baseline_failures": 150,
+              "hybrid_failures": 150,
+              "wins": 0,
+              "losses": 0
+            }
+          }
+        ]
+      }
+    },
+    {
+      "seed": 33,
+      "step": 2000,
+      "mode": "raw",
+      "temperature": 1.0,
+      "selection": {
+        "threshold": 1.0,
+        "trials": [
+          {
+            "threshold": 0.5,
+            "counts": {
+              "shots": 131072,
+              "baseline_failures": 150,
+              "hybrid_failures": 228,
+              "wins": 47,
+              "losses": 125
+            }
+          },
+          {
+            "threshold": 0.7,
+            "counts": {
+              "shots": 131072,
+              "baseline_failures": 150,
+              "hybrid_failures": 150,
+              "wins": 0,
+              "losses": 0
+            }
+          },
+          {
+            "threshold": 0.9,
+            "counts": {
+              "shots": 131072,
+              "baseline_failures": 150,
+              "hybrid_failures": 150,
+              "wins": 0,
+              "losses": 0
+            }
+          },
+          {
+            "threshold": 0.99,
+            "counts": {
+              "shots": 131072,
+              "baseline_failures": 150,
+              "hybrid_failures": 150,
+              "wins": 0,
+              "losses": 0
+            }
+          },
+          {
+            "threshold": 1.0,
+            "counts": {
+              "shots": 131072,
+              "baseline_failures": 150,
+              "hybrid_failures": 150,
+              "wins": 0,
+              "losses": 0
+            }
+          }
+        ]
+      }
+    },
+    {
+      "seed": 33,
+      "step": 2000,
+      "mode": "calibrated",
+      "temperature": 0.5,
+      "selection": {
+        "threshold": 1.0,
+        "trials": [
+          {
+            "threshold": 0.5,
+            "counts": {
+              "shots": 131072,
+              "baseline_failures": 150,
+              "hybrid_failures": 228,
+              "wins": 47,
+              "losses": 125
+            }
+          },
+          {
+            "threshold": 0.7,
+            "counts": {
+              "shots": 131072,
+              "baseline_failures": 150,
+              "hybrid_failures": 184,
+              "wins": 41,
+              "losses": 75
+            }
+          },
+          {
+            "threshold": 0.9,
+            "counts": {
+              "shots": 131072,
+              "baseline_failures": 150,
+              "hybrid_failures": 150,
+              "wins": 0,
+              "losses": 0
+            }
+          },
+          {
+            "threshold": 0.99,
+            "counts": {
+              "shots": 131072,
+              "baseline_failures": 150,
+              "hybrid_failures": 150,
+              "wins": 0,
+              "losses": 0
+            }
+          },
+          {
+            "threshold": 1.0,
+            "counts": {
+              "shots": 131072,
+              "baseline_failures": 150,
+              "hybrid_failures": 150,
+              "wins": 0,
+              "losses": 0
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

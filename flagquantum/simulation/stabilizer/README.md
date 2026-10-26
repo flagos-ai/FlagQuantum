@@ -76,6 +76,15 @@ the ones no amplitude store can hold.
 - Run `python -m pytest tests/team/simulation/test_stabilizer_engine.py tests/team/simulation/test_stabilizer_positioned_noise.py -q`
   after a typical local change.
 
+The private `_fault_signatures.py` primitive reuses the engine's Clifford images
+to propagate recorded-measurement and terminal-Z parities backwards through gates,
+measurements and resets. It returns exact post-instruction Pauli responses without
+Stim, amplitudes or sampling, and refuses nondeterministic parities. QEC's
+execution bridge supplies its layouts; this primitive owns no codes, noise-rule
+placement or detector numbering. Run
+`python -m pytest tests/team/simulation/test_clifford_fault_signatures.py -q`
+after changing it. Its local conjugation tests use independent dense evolution.
+
 ## What this package must not own
 
 Device selection, backend dispatch, shot policy, seed streams, job lifecycle,
@@ -112,9 +121,44 @@ replacement interface, and an exit plan. Here they are:
 
 ## Determinism
 
+QEC repeated sampling uses the private `engine._prepare_noisy_measurements`
+boundary. It accepts the same positioned-noise grammar as the one-shot entry,
+compiles once, and returns a private numerical stream with `sample` and `close`.
+SDK circuit and sampler objects stay in `engine.py`. Draws return owned CPU
+integer measurement records with validated width and binary values; the stream
+retains no drawn batches. Close drops the compiled-state reference. QEC owns
+process/thread restrictions, RNG call sequencing, poisoning and public lifecycle;
+this primitive adds no Runtime scheduling policy or public Simulation export.
+
+The existing one-shot entry uses the same preparation implementation and closes
+it after its draw. Its seed and result behavior remain protected by existing
+fixtures. `test_prepared_stabilizer_sampling.py` checks one compilation, release,
+invalid records and independently authored measurement distributions. A future
+Clifford kernel can replace this private boundary without changing the QEC
+consumer, as the controlled-record replacement test demonstrates.
+
 A seed reproduces a run on one engine version and one machine instruction set
 and does not pin a bit pattern. That is the engine's documented behaviour, so a
 seeded comparison across hosts is a comparison of distributions, not of bits.
 Sampling is not differentiable and no gradient is claimed for it - a
 differentiable stabilizer objective is a separate capability with its own
 evidence.
+
+Private `_fault_signatures.py` also classifies bounded Pauli channels through
+the existing engine authority and propagates simultaneous products for QEC.
+It does not sample or import Stim. Run
+`python -m pytest tests/team/simulation/test_correlated_fault_signatures.py -q`
+for dense-reference, global-phase, reset and odd-parity checks.
+
+The approved QEC Stim experiment adapter additionally uses private
+`_annotated_stim_text`, `_prepare_stim_experiment` and
+`_stim_experiment_dem_text`. These keep all SDK parsing, serialization,
+reference-normalized detector sampling and strict DEM conversion here. QEC
+supplies positioned IR and parity columns and reuses its existing sampler
+lifecycle. Original noisy circuits generate samples independently of whether
+exact noisy DEM analysis succeeds. Normalization supplies only missing shape
+declarations and preserves effective coordinates through bounded repeats.
+Run `python -m pytest tests/team/simulation/test_stim_annotated_engine.py -q`
+for independent SDK, joint-law, reference, bounds and failure evidence.
+Pure scalar and Pauli-support checks live in `_validation.py`; their validation
+behavior is unchanged and they hold no SDK state.

@@ -19,13 +19,11 @@ per round per matching gate. Neither position exists in the source program, whos
 bounded hybrid capture refuses a channel call outright, so the placement is
 derived here from the lowered program rather than written into the experiment.
 
-Which Pauli an error is is the other half of the join, and it is the part the
-engine constrains. The engine executes one channel -- a single-qubit bit flip --
-so the record's Z and Y families are placed as that channel conjugated by the
-Clifford that turns the flip into the Pauli they name, which is one draw at that
-family's rate rather than a pair of independent bit flips. A family the
-conjugation cannot express has no route here and is refused rather than sampled
-as a nearby Pauli.
+The stabilizer engine reads the actual Pauli Kraus operators. A gate-bound
+one-/two-qubit mixture is one complete channel at its location, with mutually
+exclusive branches; separate channel locations remain independent. The existing
+round-boundary X/Z/Y factories and old gate-bound X/Z reconstruction are
+preserved. Unsupported channels are refused without substituting another Pauli.
 
 The derived placement rests on one property of the emitted program, checked
 rather than assumed: the syndrome loop lowers to `rounds` identical round
@@ -42,15 +40,25 @@ predicted rates.
 
 from __future__ import annotations
 
+import os
+import threading
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from numbers import Integral
-from types import MappingProxyType
-from typing import Literal
+from types import MappingProxyType, TracebackType
+from typing import Literal, NoReturn, SupportsIndex
 
 import torch
 
+from flagquantum.qec.dem.construction import (
+    _check_rate_order,
+    _data_family_rates,
+    _gate_bound_mechanisms,
+)
+from flagquantum.qec.execution.signatures import _MechanismKind
+
 from ...core.ir import CircuitIR, Instruction
+from ...core.runtime_config import get_runtime_config
 from ...noise import (
     KrausChannel,
     NoiseModel,
@@ -59,15 +67,12 @@ from ...noise import (
     y_flip_channel,
 )
 from ...simulation.stabilizer import sample_noisy_measurements
-from ..circuits.memory import MeasurementRef, MemoryCircuit
-from ..codes._compat import _retain_module
-from ..dem import DemSample
-from ..dem_construction import (
-    _check_rate_order,
-    _data_family_rates,
-    _gate_bound_mechanisms,
-    _MechanismKind,
+from ...simulation.stabilizer.engine import (
+    _prepare_noisy_measurements,
+    _PreparedMeasurements,
 )
+from ..circuits.memory import MeasurementRef, MemoryCircuit
+from ..dem import DemSample
 from ..noise import PhenomenologicalNoise
 from .signatures import _lowered_program
 
@@ -92,7 +97,7 @@ _DATA_FAULT_CHANNELS: Mapping[_ChannelName, Callable[[float], KrausChannel]] = (
 
 # The one lowered opcode a memory experiment's readout-basis rotation is a
 # sequence of. The rotation itself is built once, in
-# :func:`~flagquantum.qec.circuit.build_memory_circuit`, as one gate per data
+# :func:`~flagquantum.qec.circuits.memory.build_memory_circuit`, as one gate per data
 # qubit; naming the opcode here is what lets the plan recognise it in the lowered
 # program without re-deriving the experiment's basis semantics.
 _ROTATION_OPCODE = "h"
@@ -258,7 +263,7 @@ class _NoiseLocation:
     channel rather than the family's scalar.
 
     ``kind`` names the noise record's own field, as
-    :class:`~flagquantum.qec.dem_construction._Mechanism` does, so the two routes
+    :class:`~flagquantum.qec.dem.construction._Mechanism` does, so the two routes
     enumerate the same families under the same names, and ``channel`` names the
     channel that family is placed as. A family's fault *is* one Pauli, so a
     location states which of the three channels carries it rather than leaving
@@ -430,7 +435,7 @@ def _gate_bound_locations(
     """Return every location a gate-bound record places, in placement order.
 
     The faults and the instruction each one follows come from
-    :func:`~flagquantum.qec.dem_construction._gate_bound_mechanisms`, the walk the
+    :func:`~flagquantum.qec.dem.construction._gate_bound_mechanisms`, the walk the
     model's own route splices with, so a fault cannot be placed at one position
     here and read at another there. The position a location is placed at is the
     instruction *after* the gate the rule matched, because a channel bound to a
@@ -438,7 +443,7 @@ def _gate_bound_locations(
     reported in is the round that gate is in, which is what ``plan``'s block
     length converts an instruction index into.
 
-    Every channel :func:`~flagquantum.qec.dem_construction._gate_bound_mechanisms`
+    Every channel :func:`~flagquantum.qec.dem.construction._gate_bound_mechanisms`
     accepts is a single-qubit Pauli fault, so every one of them is one of the
     three channels :data:`_DATA_FAULT_CHANNELS` holds and no location reaches the
     engine as a channel it would refuse.
@@ -476,7 +481,7 @@ def _round_boundary_locations(
     before that round's parity-check CNOTs", so the three differ in which channel
     is placed and not in where it goes. A round's three families are one group
     before that round's first gate, one pass per family in the order
-    :func:`~flagquantum.qec.dem_construction._data_family_rates` states them, so a
+    :func:`~flagquantum.qec.dem.construction._data_family_rates` states them, so a
     family cannot be placed under one name here and recorded under another there.
     The three channels are the three Pauli faults, and the Z fault propagates to
     the X-type checks the way the X fault propagates to the Z-type ones, which is
@@ -487,7 +492,7 @@ def _round_boundary_locations(
 
     The per-check vector is indexed in the matrix row order, Z-type checks first,
     which is not the declaration order the plan's offsets are in; the two are
-    related by :func:`~flagquantum.qec.dem_construction._check_rate_order`, the
+    related by :func:`~flagquantum.qec.dem.construction._check_rate_order`, the
     same translation the construction routes use, so a rate cannot name one check
     here and another there.
 
@@ -573,16 +578,33 @@ def _noisy_program(
         by_index.setdefault(location.instruction_index, []).append(
             (location.channel, location.wire, float(location.probability))
         )
+    templates: dict[
+        tuple[Callable[[float], KrausChannel], float, str, torch.dtype, torch.device],
+        tuple[torch.Tensor, ...],
+    ] = {}
     instructions: list[Instruction] = []
     for index, instruction in enumerate(plan.program.instructions):
         for channel, wire, probability in by_index.get(index, ()):
             factory = _DATA_FAULT_CHANNELS[channel]
+            key = (
+                factory,
+                probability,
+                get_runtime_config().complex_dtype,
+                torch.get_default_dtype(),
+                torch.get_default_device(),
+            )
+            operators = templates.get(key)
+            if operators is None:
+                operators = factory(probability).kraus
+                templates[key] = operators
             instructions.append(
                 Instruction(
                     name=channel,
                     wires=(wire,),
                     params={"probability": float(probability)},
-                    matrix=factory(probability).kraus,
+                    # Instructions retain mutable tensors: each location must own
+                    # its operators even when their factory calculation repeats.
+                    matrix=tuple(operator.clone() for operator in operators),
                     metadata={"is_channel": True},
                 )
             )
@@ -594,38 +616,108 @@ def _noisy_program(
     )
 
 
-def _recorded_bits(
-    memory: MemoryCircuit, plan: _MeasurementPlan, record: torch.Tensor
-) -> tuple[torch.Tensor, torch.Tensor]:
-    """Return the detection events and observable flips a record holds."""
+def _positioned_noise_program(
+    circuit: MemoryCircuit,
+    plan: _MeasurementPlan,
+    noise: PhenomenologicalNoise | NoiseModel,
+) -> CircuitIR:
+    if not isinstance(noise, NoiseModel):
+        return _noisy_program(plan, _noise_locations(circuit, plan, noise))
+    from ..dem.circuit_noise import _circuit_noise_locations
 
-    shots = int(record.shape[0])
-    dtype = torch.int8
-    detectors = torch.zeros((shots, len(memory.detectors)), dtype=dtype)
-    observables = torch.zeros((shots, len(memory.observables)), dtype=dtype)
+    by_index: dict[int, list[Instruction]] = {}
+    for location in _circuit_noise_locations(noise, plan.program):
+        by_index.setdefault(location.position + 1, []).append(
+            Instruction(
+                name=location.channel.name,
+                wires=location.qubits,
+                params=(
+                    {"probability": location.terms[0][1]}
+                    if location.independent
+                    else {}
+                ),
+                matrix=location.channel.kraus,
+                metadata={"is_channel": True},
+            )
+        )
+    instructions: list[Instruction] = []
+    for index, instruction in enumerate(plan.program.instructions):
+        instructions.extend(by_index.get(index, ()))
+        instructions.append(instruction)
+    return CircuitIR(
+        n_wires=plan.program.n_wires,
+        instructions=tuple(instructions),
+        metadata=dict(plan.program.metadata),
+    )
 
-    def recorded(reference: MeasurementRef) -> torch.Tensor:
+
+def _parity_columns(
+    memory: MemoryCircuit, plan: _MeasurementPlan
+) -> tuple[tuple[tuple[int, ...], ...], tuple[tuple[int, ...], ...]]:
+    """Snapshot parity columns; later draws retain no caller-owned layouts."""
+
+    def column(reference: MeasurementRef) -> int:
         if reference.round_index is None:
-            return record[:, plan.terminal_columns[reference.qubit]]
-        column = plan.syndrome_columns.get((reference.round_index, reference.qubit))
-        if column is None:
+            return plan.terminal_columns[reference.qubit]
+        result = plan.syndrome_columns.get((reference.round_index, reference.qubit))
+        if result is None:
             raise ValueError(
                 f"detector syndrome measurement names ancilla qubit "
                 f"{reference.qubit}, which no check owns"
             )
-        return record[:, column]
+        return result
 
+    detectors: list[tuple[int, ...]] = [()] * len(memory.detectors)
+    observables: list[tuple[int, ...]] = [()] * len(memory.observables)
     for detector in memory.detectors.detectors:
-        parity = torch.zeros(shots, dtype=dtype)
-        for reference in detector.parity:
-            parity ^= recorded(reference)
-        detectors[:, detector.index] = parity
+        detectors[detector.index] = tuple(column(ref) for ref in detector.parity)
     for observable in memory.observables.observables:
-        parity = torch.zeros(shots, dtype=dtype)
-        for reference in observable.measurement_parity:
-            parity ^= record[:, plan.terminal_columns[reference.qubit]]
-        observables[:, observable.index] = parity
-    return detectors, observables
+        observables[observable.index] = tuple(
+            plan.terminal_columns[ref.qubit] for ref in observable.measurement_parity
+        )
+    return tuple(detectors), tuple(observables)
+
+
+def _prepare_parity_groups(
+    columns: tuple[tuple[int, ...], ...],
+) -> tuple[tuple[torch.Tensor, torch.Tensor], ...]:
+    groups: dict[int, list[tuple[int, tuple[int, ...]]]] = {}
+    for index, parity in enumerate(columns):
+        if parity:
+            groups.setdefault(len(parity), []).append((index, parity))
+    return tuple(
+        (
+            torch.tensor([index for index, _ in group], dtype=torch.long),
+            torch.tensor([parity for _, parity in group], dtype=torch.long),
+        )
+        for group in groups.values()
+    )
+
+
+def _parity_bits(
+    columns: tuple[tuple[int, ...], ...],
+    record: torch.Tensor,
+    groups: tuple[tuple[torch.Tensor, torch.Tensor], ...] | None = None,
+) -> torch.Tensor:
+    result = torch.zeros((record.shape[0], len(columns)), dtype=torch.int8)
+    if groups is None:
+        groups = _prepare_parity_groups(columns)
+    if not groups:
+        return result
+    # Byte sums wrap modulo 256 without changing GF(2), even for long products.
+    binary_record = record.to(torch.uint8)
+    for outputs, sources in groups:
+        bits = binary_record[:, sources].sum(dim=2, dtype=torch.uint8).bitwise_and_(1)
+        result[:, outputs] = bits.to(torch.int8)
+    return result
+
+
+def _recorded_bits(
+    memory: MemoryCircuit, plan: _MeasurementPlan, record: torch.Tensor
+) -> tuple[torch.Tensor, torch.Tensor]:
+    """Return the detection events and observable flips a record holds."""
+    detectors, observables = _parity_columns(memory, plan)
+    return _parity_bits(detectors, record), _parity_bits(observables, record)
 
 
 def _sample_record(
@@ -638,8 +730,7 @@ def _sample_record(
     """Lower, place and execute one experiment, returning its engine record."""
 
     plan = _measurement_plan(circuit)
-    locations = _noise_locations(circuit, plan, noise)
-    program = _noisy_program(plan, locations)
+    program = _positioned_noise_program(circuit, plan, noise)
     data_qubits = tuple(circuit.code.data_qubits)
     record = sample_noisy_measurements(
         program, shots=shots, terminal_qubits=data_qubits, seed=seed
@@ -710,7 +801,7 @@ def sample_memory_measurements(
         ValueError: ``shots`` is not positive, or the program does not lower to
             identical syndrome rounds that measure each check once.
         CapabilityError: The noise record names a fault this grammar cannot
-            place, or states a channel that is not a single-qubit Pauli fault.
+            place, or states a channel outside the supported one-/two-qubit Pauli mixture grammar.
         StabilizerDependencyError: The optional stabilizer engine is not
             installed.
     """
@@ -778,7 +869,7 @@ def sample_memory_circuit(
         ValueError: ``shots`` is not positive, or the program does not lower to
             identical syndrome rounds that measure each check once.
         CapabilityError: The noise record names a fault this grammar cannot
-            place, or states a channel that is not a single-qubit Pauli fault.
+            place, or states a channel outside the supported one-/two-qubit Pauli mixture grammar.
         StabilizerDependencyError: The optional stabilizer engine is not
             installed.
     """
@@ -797,25 +888,186 @@ def sample_memory_circuit(
     return DemSample(detectors=detectors, observables=observables)
 
 
-__all__ = ("MeasurementSamples", "sample_memory_circuit", "sample_memory_measurements")
+class MemorySampler:
+    """A compiled memory experiment owned by its creator process and thread.
+
+    Obtain a handle with :func:`compile_memory_sampler` or the opt-in
+    ``flagquantum.qec.adapters.stim.compile_stim_sampler``. Sampling advances one
+    continuous engine stream; a fixed seed reproduces an identical sequence of
+    sample calls on the same engine version and instruction set. Configuration
+    is fixed at construction. Use a context manager or call :meth:`close` to
+    release prepared state. Live handles cannot be copied or serialized.
+    """
+
+    __slots__ = (
+        "_sampler",
+        "_detector_columns",
+        "_observable_columns",
+        "_detector_groups",
+        "_observable_groups",
+        "_owner_pid",
+        "_owner_thread",
+    )
+
+    _sampler: _PreparedMeasurements | None
+    _detector_columns: tuple[tuple[int, ...], ...]
+    _observable_columns: tuple[tuple[int, ...], ...]
+    _detector_groups: tuple[tuple[torch.Tensor, torch.Tensor], ...]
+    _observable_groups: tuple[tuple[torch.Tensor, torch.Tensor], ...]
+    _owner_pid: int
+    _owner_thread: threading.Thread
+
+    def __init__(self) -> None:
+        raise TypeError("use compile_memory_sampler to construct a MemorySampler")
+
+    def _check_owner(self) -> None:
+        if (
+            os.getpid() != self._owner_pid
+            or threading.current_thread() is not self._owner_thread
+        ):
+            raise RuntimeError(
+                "memory sampler belongs to its creator process and thread"
+            )
+
+    def _open_sampler(self) -> _PreparedMeasurements:
+        self._check_owner()
+        if self._sampler is None:
+            raise RuntimeError("memory sampler is closed")
+        return self._sampler
+
+    def sample(self, *, shots: int) -> DemSample:
+        """Draw a positive number of independent experiment repetitions.
+
+        Returns caller-owned CPU int8 detector and observable bit tensors.
+        Invalid shot counts raise TypeError or ValueError without advancing the
+        stream. Lifecycle misuse raises RuntimeError. Execution failures close
+        the handle before propagating the original error.
+        """
+        prepared = self._open_sampler()
+        shots = _checked_shots(shots)
+        try:
+            record = prepared.sample(shots=shots).to(torch.uint8)
+            return DemSample(
+                detectors=_parity_bits(
+                    self._detector_columns, record, self._detector_groups
+                ),
+                observables=_parity_bits(
+                    self._observable_columns, record, self._observable_groups
+                ),
+            )
+        except BaseException:
+            # RNG advancement cannot be rolled back, including interrupted draws.
+            self.close()
+            raise
+
+    def close(self) -> None:
+        """Release prepared state; repeated calls by the owner are harmless."""
+        self._check_owner()
+        if self._sampler is not None:
+            self._sampler.close()
+            self._sampler = None
+            self._detector_columns = ()
+            self._observable_columns = ()
+            self._detector_groups = ()
+            self._observable_groups = ()
+
+    def __enter__(self) -> MemorySampler:
+        self._open_sampler()
+        return self
+
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_value: BaseException | None,
+        traceback: TracebackType | None,
+    ) -> None:
+        self.close()
+
+    def __reduce_ex__(self, protocol: SupportsIndex) -> NoReturn:
+        raise TypeError("live memory samplers cannot be copied or serialized")
 
 
-_retain_module(
-    "flagquantum.qec.sampling",
-    _MeasurementPlan,
-    MeasurementSamples,
-    _NoiseLocation,
-    _checked_shots,
-    _checked_seed,
-    _rotation_template,
-    _measurement_plan,
-    _noise_locations,
-    _gate_bound_locations,
-    _round_boundary_locations,
-    _noisy_program,
-    _recorded_bits,
-    _sample_record,
-    _measurement_samples,
-    sample_memory_measurements,
-    sample_memory_circuit,
+def compile_memory_sampler(
+    circuit: MemoryCircuit,
+    *,
+    noise: PhenomenologicalNoise | NoiseModel,
+    seed: int | None = None,
+) -> MemorySampler:
+    """Compile one memory experiment for repeated, bounded-size sample calls.
+
+    Lowering, noise placement, parity mapping and engine compilation happen once.
+    The handle snapshots configuration and retains no sampled batches or mutable
+    caller layouts. Only its creator process and thread may sample or close it.
+
+    Args:
+        circuit: The configured memory experiment.
+        noise: Existing phenomenological or gate-bound noise configuration.
+        seed: Initial stream seed, with the engine's reproducibility scope.
+
+    Returns:
+        A handle supporting ``sample(shots=...)``, ``close()`` and context use.
+
+    Raises:
+        TypeError: Circuit, noise or seed has an invalid type.
+        ValueError: The configured memory or seed is invalid.
+        CapabilityError: The existing noise or Clifford grammar is unsupported.
+        StabilizerDependencyError: The optional engine is not installed.
+
+    Examples:
+        >>> from importlib.util import find_spec
+        >>> from flagquantum.qec import (
+        ...     PhenomenologicalNoise, RepetitionCode, build_memory_circuit,
+        ...     compile_memory_sampler,
+        ... )
+        >>> if find_spec("stim") is not None:
+        ...     memory = build_memory_circuit(RepetitionCode(distance=3), rounds=3)
+        ...     with compile_memory_sampler(memory, noise=PhenomenologicalNoise(), seed=53) as sampler:
+        ...         batch = sampler.sample(shots=4)
+        ...         assert batch.detectors.shape == (4, 8)
+        ...         assert not batch.detectors.any() and not batch.observables.any()
+    """
+    if not isinstance(circuit, MemoryCircuit):
+        raise TypeError("circuit must be a MemoryCircuit")
+    if not isinstance(noise, (PhenomenologicalNoise, NoiseModel)):
+        raise TypeError(
+            "noise must be a PhenomenologicalNoise or a NoiseModel, got "
+            f"{type(noise).__name__}"
+        )
+    seed = _checked_seed(seed)
+    plan = _measurement_plan(circuit)
+    program = _positioned_noise_program(circuit, plan, noise)
+    detectors, observables = _parity_columns(circuit, plan)
+    prepared = _prepare_noisy_measurements(
+        program, terminal_qubits=tuple(circuit.code.data_qubits), seed=seed
+    )
+    try:
+        return _memory_sampler(prepared, detectors, observables)
+    except BaseException:
+        prepared.close()
+        raise
+
+
+def _memory_sampler(
+    prepared: _PreparedMeasurements,
+    detectors: tuple[tuple[int, ...], ...],
+    observables: tuple[tuple[int, ...], ...],
+) -> MemorySampler:
+    """Attach the same owned lifecycle to native records or normalized flips."""
+    handle = object.__new__(MemorySampler)
+    handle._detector_groups = _prepare_parity_groups(detectors)
+    handle._observable_groups = _prepare_parity_groups(observables)
+    handle._sampler = prepared
+    handle._detector_columns = detectors
+    handle._observable_columns = observables
+    handle._owner_pid = os.getpid()
+    handle._owner_thread = threading.current_thread()
+    return handle
+
+
+__all__ = (
+    "MeasurementSamples",
+    "sample_memory_circuit",
+    "sample_memory_measurements",
+    "MemorySampler",
+    "compile_memory_sampler",
 )

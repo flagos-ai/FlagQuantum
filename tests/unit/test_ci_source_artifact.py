@@ -24,7 +24,7 @@ ROOT = Path(__file__).resolve().parents[2]
         ("ci.yml", "jax-optional"),
         ("ci.yml", "azure-optional"),
         ("ci.yml", "triton-optional"),
-        ("ci.yml", "qiskit-optional"),
+        pytest.param("ci.yml", "qiskit-compat", id="ci.yml-qiskit-optional"),
         ("ci.yml", "cirq-optional"),
         ("ci.yml", "braket-optional"),
         ("ci.yml", "cudaq-optional"),
@@ -41,7 +41,9 @@ def test_source_artifact_restores_the_exact_tree_and_rejects_another_commit(
 ) -> None:
     jobs = yaml.safe_load((ROOT / ".github/workflows" / workflow).read_text())["jobs"]
     pack = next(
-        step["run"] for step in jobs["prepare-source"]["steps"] if "run" in step
+        step["run"]
+        for step in jobs["prepare-source"]["steps"]
+        if step.get("id") == "pack-source"
     )
     restore = next(
         step["run"]
@@ -113,6 +115,10 @@ def test_source_artifact_restores_the_exact_tree_and_rejects_another_commit(
     )
     shell(pack, source)
     assert output.read_text().strip() == "artifact-key=123-1"
+    # Persistent services must refuse a stale producer directory, not overwrite it.
+    retained_pack = (temporary / "ci-source/source.pack").read_bytes()
+    assert shell(pack, source, check=False).returncode != 0
+    assert (temporary / "ci-source/source.pack").read_bytes() == retained_pack
     # A failed consumer can rerun without rerunning the successful producer.
     environment["GITHUB_RUN_ATTEMPT"] = "2"
     artifact_key = jobs["prepare-source"]["outputs"]["artifact-key"]

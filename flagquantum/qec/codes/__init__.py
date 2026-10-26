@@ -50,7 +50,7 @@ if TYPE_CHECKING:
     # The matrix route's record, which this module's derived families build and
     # which is not imported at run time: it rests on this module's protocol, so a
     # module-level import here would close a cycle between the two.
-    from ..css_code import CssCode
+    from flagquantum.qec.codes.css import CssCode
 
 
 from ._css_helpers import _DISTANCE_SEARCH_WEIGHT as _DISTANCE_SEARCH_WEIGHT
@@ -260,7 +260,7 @@ def __getattr__(name: str) -> Any:
     """
 
     if name == "CssCode":
-        from ..css_code import CssCode
+        from flagquantum.qec.codes.css import CssCode
 
         return CssCode
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

@@ -1,0 +1,691 @@
+{
+  "distribution_semantics": "single_process",
+  "local_ratio": 1.1484919921806378,
+  "local_world_size": 1,
+  "median_pipeline_seconds": {
+    "baseline": 1.9443274590012152,
+    "candidate": 1.692939500004286
+  },
+  "node_count": 1,
+  "non_release_evidence": true,
+  "paired": {
+    "baseline_archive_sha256": "df356205c1388d5da8a3fa1244d167e244d73a07012edd66bb8ccd85541bdc70",
+    "elapsed_seconds": 65.14316624999628,
+    "protocol": {
+      "base_commit": "677c5d47d67f1fc71274be672548d6a626334852",
+      "case": {
+        "basis": "x",
+        "batch_size": 128,
+        "distance": 9,
+        "entrance": "native",
+        "noise": {
+          "data_flip": 0.005,
+          "measurement_flip": 0.009,
+          "phase_flip": 0.007
+        },
+        "rounds": 3,
+        "seed": 53,
+        "shots": 1025
+      },
+      "claim": "One CPU pipeline-local reuse of immutable semantic identities; no global cache, changed identity law, skipped verification or GPU claim. Protocol fixed before candidate collection.",
+      "correctness": "after timed observations, exact source-text/detector/observable/prediction SHA256 and nonzero detector event count compared across all6processes using same1025shots/seed/batch; never count diagnostics as timed results",
+      "fresh_processes": 6,
+      "implementation_commit": "3a10eb650f35994f9a2c5dfafcb7cb5507f42f95",
+      "instrumentation": "none inside timed _observe",
+      "measured_repeats": 3,
+      "orders": [
+        [
+          "baseline",
+          "candidate"
+        ],
+        [
+          "candidate",
+          "baseline"
+        ],
+        [
+          "baseline",
+          "candidate"
+        ]
+      ],
+      "per_process_timeout_seconds": 30,
+      "study_timeout_seconds": 180,
+      "threads": 1,
+      "warmup": 1
+    },
+    "results": [
+      {
+        "exit_code": 0,
+        "label": "baseline",
+        "pair": 1,
+        "report": {
+          "diagnostic_detector_events": 8061,
+          "diagnostic_shots": 1025,
+          "fingerprints": {
+            "detectors": "bf7ddcfa043f4467df61ecdce456ce2a3c90704ddda66c3f7dd41a889f4baf7b",
+            "observables": "add638ee334ecf76d69f82fab25cf89d7ecaba25bf9e7b70bef1543eaa9c01b6",
+            "predictions": "add638ee334ecf76d69f82fab25cf89d7ecaba25bf9e7b70bef1543eaa9c01b6",
+            "source_text": "adb7c8c6c4ae38899db8cd4e00aa9d2623a9e31a59ebedf387f34be51a59ddb0"
+          },
+          "label": "baseline",
+          "module_path": "/private/tmp/fq-qec-semantic-reference/flagquantum/__init__.py",
+          "observations": [
+            {
+              "batches": 9,
+              "completed_shots": 1025,
+              "logical_failures": 0,
+              "phases_seconds": {
+                "count_reduction": 0.00014341698260977864,
+                "decoder_setup": 0.33056270799716003,
+                "decoding": 0.002615124947624281,
+                "memory_construction": 0.012495250004576519,
+                "native_export": 0.9539384999952745,
+                "sampler_compile": 0.8867576250049751,
+                "sampling": 0.02125324899679981,
+                "strict_dem_construction": 0.005685749987605959
+              },
+              "pipeline_seconds": 2.2135105000052135,
+              "shots_per_second": 463.0653434883574,
+              "visible_batch_tensor_bytes_max": 30976,
+              "warmup": true
+            },
+            {
+              "batches": 9,
+              "completed_shots": 1025,
+              "logical_failures": 0,
+              "phases_seconds": {
+                "count_reduction": 0.00010154201299883425,
+                "decoder_setup": 0.0032355839794036,
+                "decoding": 0.0017127490136772394,
+                "memory_construction": 0.01499487500404939,
+                "native_export": 0.8681881249940488,
+                "sampler_compile": 0.8502880409942009,
+                "sampling": 0.021426166960736737,
+                "strict_dem_construction": 0.005186416994547471
+              },
+              "pipeline_seconds": 1.765183084004093,
+              "shots_per_second": 580.6763101734003,
+              "visible_batch_tensor_bytes_max": 30976,
+              "warmup": false
+            },
+            {
+              "batches": 9,
+              "completed_shots": 1025,
+              "logical_failures": 0,
+              "phases_seconds": {
+                "count_reduction": 0.00012845799210481346,
+                "decoder_setup": 0.0028140420035924762,
+                "decoding": 0.0019969590357504785,
+                "memory_construction": 0.01648466702317819,
+                "native_export": 0.9072135409805924,
+                "sampler_compile": 0.9633349580108188,
+                "sampling": 0.026199459010967985,
+                "strict_dem_construction": 0.005706500000087544
+              },
+              "pipeline_seconds": 1.923921417008387,
+              "shots_per_second": 532.7660428011815,
+              "visible_batch_tensor_bytes_max": 30976,
+              "warmup": false
+            },
+            {
+              "batches": 9,
+              "completed_shots": 1025,
+              "logical_failures": 0,
+              "phases_seconds": {
+                "count_reduction": 0.00011024900595657527,
+                "decoder_setup": 0.0028645420097745955,
+                "decoding": 0.002171918051317334,
+                "memory_construction": 0.012183583981823176,
+                "native_export": 0.88244816599763,
+                "sampler_compile": 0.9183516670018435,
+                "sampling": 0.0257329179730732,
+                "strict_dem_construction": 0.006789207982365042
+              },
+              "pipeline_seconds": 1.85070454198285,
+              "shots_per_second": 553.8431320332808,
+              "visible_batch_tensor_bytes_max": 30976,
+              "warmup": false
+            }
+          ],
+          "rss_whole_process_including_diagnostics_bytes": 239206400,
+          "source_identity_method": "exact git archive baseline or clean candidate checkout; controller verified",
+          "source_revision": "677c5d47d67f1fc71274be672548d6a626334852",
+          "torch_threads": 1,
+          "versions": {
+            "pymatching": "2.4.0",
+            "stim": "1.16.0",
+            "torch": "2.13.0"
+          }
+        },
+        "status": "success"
+      },
+      {
+        "exit_code": 0,
+        "label": "candidate",
+        "pair": 1,
+        "report": {
+          "diagnostic_detector_events": 8061,
+          "diagnostic_shots": 1025,
+          "fingerprints": {
+            "detectors": "bf7ddcfa043f4467df61ecdce456ce2a3c90704ddda66c3f7dd41a889f4baf7b",
+            "observables": "add638ee334ecf76d69f82fab25cf89d7ecaba25bf9e7b70bef1543eaa9c01b6",
+            "predictions": "add638ee334ecf76d69f82fab25cf89d7ecaba25bf9e7b70bef1543eaa9c01b6",
+            "source_text": "adb7c8c6c4ae38899db8cd4e00aa9d2623a9e31a59ebedf387f34be51a59ddb0"
+          },
+          "label": "candidate",
+          "module_path": "/Users/baai/Documents/liuwei/FlagQuantum-qec-compatibility-roadmap/flagquantum/__init__.py",
+          "observations": [
+            {
+              "batches": 9,
+              "completed_shots": 1025,
+              "logical_failures": 0,
+              "phases_seconds": {
+                "count_reduction": 0.00021345698041841388,
+                "decoder_setup": 0.2310920830059331,
+                "decoding": 0.002379249985096976,
+                "memory_construction": 0.012798084004316479,
+                "native_export": 0.978604040981736,
+                "sampler_compile": 0.7078374169941526,
+                "sampling": 0.026001583959441632,
+                "strict_dem_construction": 0.006412582995835692
+              },
+              "pipeline_seconds": 1.9654036669817287,
+              "shots_per_second": 521.5213633818507,
+              "visible_batch_tensor_bytes_max": 30976,
+              "warmup": true
+            },
+            {
+              "batches": 9,
+              "completed_shots": 1025,
+              "logical_failures": 0,
+              "phases_seconds": {
+                "count_reduction": 0.00018983401241712272,
+                "decoder_setup": 0.0037717079976573586,
+                "decoding": 0.002564707974670455,
+                "memory_construction": 0.018997292005224153,
+                "native_export": 0.7706790419761091,
+                "sampler_compile": 0.8586173339863308,
+                "sampling": 0.029697124002268538,
+                "strict_dem_construction": 0.0067070419900119305
+              },
+              "pipeline_seconds": 1.6913067919958849,
+              "shots_per_second": 606.0402552930173,
+              "visible_batch_tensor_bytes_max": 30976,
+              "warmup": false
+            },
+            {
+              "batches": 9,
+              "completed_shots": 1025,
+              "logical_failures": 0,
+              "phases_seconds": {
+                "count_reduction": 0.00018937498680315912,
+                "decoder_setup": 0.0037752909993287176,
+                "decoding": 0.0024464589660055935,
+                "memory_construction": 0.012930334021802992,
+                "native_export": 0.8977955830050632,
+                "sampler_compile": 0.8719715420156717,
+                "sampling": 0.031176709017017856,
+                "strict_dem_construction": 0.005960374983260408
+              },
+              "pipeline_seconds": 1.8263261670072097,
+              "shots_per_second": 561.236004015461,
+              "visible_batch_tensor_bytes_max": 30976,
+              "warmup": false
+            },
+            {
+              "batches": 9,
+              "completed_shots": 1025,
+              "logical_failures": 0,
+              "phases_seconds": {
+                "count_reduction": 0.0004612909979186952,
+                "decoder_setup": 0.004852124984608963,
+                "decoding": 0.0040904589695855975,
+                "memory_construction": 0.010870208992855623,
+                "native_export": 0.8508149579865858,
+                "sampler_compile": 0.825314082991099,
+                "sampling": 0.046089582989225164,
+                "strict_dem_construction": 0.007989750010892749
+              },
+              "pipeline_seconds": 1.7505895420035813,
+              "shots_per_second": 585.5170360648157,
+              "visible_batch_tensor_bytes_max": 30976,
+              "warmup": false
+            }
+          ],
+          "rss_whole_process_including_diagnostics_bytes": 247316480,
+          "source_identity_method": "exact git archive baseline or clean candidate checkout; controller verified",
+          "source_revision": "3a10eb650f35994f9a2c5dfafcb7cb5507f42f95",
+          "torch_threads": 1,
+          "versions": {
+            "pymatching": "2.4.0",
+            "stim": "1.16.0",
+            "torch": "2.13.0"
+          }
+        },
+        "status": "success"
+      },
+      {
+        "exit_code": 0,
+        "label": "candidate",
+        "pair": 2,
+        "report": {
+          "diagnostic_detector_events": 8061,
+          "diagnostic_shots": 1025,
+          "fingerprints": {
+            "detectors": "bf7ddcfa043f4467df61ecdce456ce2a3c90704ddda66c3f7dd41a889f4baf7b",
+            "observables": "add638ee334ecf76d69f82fab25cf89d7ecaba25bf9e7b70bef1543eaa9c01b6",
+            "predictions": "add638ee334ecf76d69f82fab25cf89d7ecaba25bf9e7b70bef1543eaa9c01b6",
+            "source_text": "adb7c8c6c4ae38899db8cd4e00aa9d2623a9e31a59ebedf387f34be51a59ddb0"
+          },
+          "label": "candidate",
+          "module_path": "/Users/baai/Documents/liuwei/FlagQuantum-qec-compatibility-roadmap/flagquantum/__init__.py",
+          "observations": [
+            {
+              "batches": 9,
+              "completed_shots": 1025,
+              "logical_failures": 0,
+              "phases_seconds": {
+                "count_reduction": 0.00011566601460799575,
+                "decoder_setup": 0.2206321670091711,
+                "decoding": 0.00184674997581169,
+                "memory_construction": 0.011704916978487745,
+                "native_export": 0.7932722499826923,
+                "sampler_compile": 0.7514998750120867,
+                "sampling": 0.021221790986601263,
+                "strict_dem_construction": 0.004968083027051762
+              },
+              "pipeline_seconds": 1.8053110829787329,
+              "shots_per_second": 567.7691837512941,
+              "visible_batch_tensor_bytes_max": 30976,
+              "warmup": true
+            },
+            {
+              "batches": 9,
+              "completed_shots": 1025,
+              "logical_failures": 0,
+              "phases_seconds": {
+                "count_reduction": 9.974904241971672e-05,
+                "decoder_setup": 0.00280362501507625,
+                "decoding": 0.0016827899671625346,
+                "memory_construction": 0.01677945800474845,
+                "native_export": 0.7963450839743018,
+                "sampler_compile": 0.6959564159915317,
+                "sampling": 0.019599290972109884,
+                "strict_dem_construction": 0.004803749994607642
+              },
+              "pipeline_seconds": 1.5381108750007115,
+              "shots_per_second": 666.4018938163517,
+              "visible_batch_tensor_bytes_max": 30976,
+              "warmup": false
+            },
+            {
+              "batches": 9,
+              "completed_shots": 1025,
+              "logical_failures": 0,
+              "phases_seconds": {
+                "count_reduction": 0.00010699895210564137,
+                "decoder_setup": 0.004392125003505498,
+                "decoding": 0.001849999011028558,
+                "memory_construction": 0.010753874987130985,
+                "native_export": 0.9300301669863984,
+                "sampler_compile": 0.8056747499795165,
+                "sampling": 0.020284582977183163,
+                "strict_dem_construction": 0.005039833020418882
+              },
+              "pipeline_seconds": 1.7781730839924421,
+              "shots_per_second": 576.4343242102278,
+              "visible_batch_tensor_bytes_max": 30976,
+              "warmup": false
+            },
+            {
+              "batches": 9,
+              "completed_shots": 1025,
+              "logical_failures": 0,
+              "phases_seconds": {
+                "count_reduction": 0.00016845794743858278,
+                "decoder_setup": 0.004003125010058284,
+                "decoding": 0.002156833070330322,
+                "memory_construction": 0.010762625024653971,
+                "native_export": 0.7293312080146279,
+                "sampler_compile": 0.7781857919762842,
+                "sampling": 0.024775375932222232,
+                "strict_dem_construction": 0.005585874983808026
+              },
+              "pipeline_seconds": 1.5550186660257168,
+              "shots_per_second": 659.1560747110984,
+              "visible_batch_tensor_bytes_max": 30976,
+              "warmup": false
+            }
+          ],
+          "rss_whole_process_including_diagnostics_bytes": 247775232,
+          "source_identity_method": "exact git archive baseline or clean candidate checkout; controller verified",
+          "source_revision": "3a10eb650f35994f9a2c5dfafcb7cb5507f42f95",
+          "torch_threads": 1,
+          "versions": {
+            "pymatching": "2.4.0",
+            "stim": "1.16.0",
+            "torch": "2.13.0"
+          }
+        },
+        "status": "success"
+      },
+      {
+        "exit_code": 0,
+        "label": "baseline",
+        "pair": 2,
+        "report": {
+          "diagnostic_detector_events": 8061,
+          "diagnostic_shots": 1025,
+          "fingerprints": {
+            "detectors": "bf7ddcfa043f4467df61ecdce456ce2a3c90704ddda66c3f7dd41a889f4baf7b",
+            "observables": "add638ee334ecf76d69f82fab25cf89d7ecaba25bf9e7b70bef1543eaa9c01b6",
+            "predictions": "add638ee334ecf76d69f82fab25cf89d7ecaba25bf9e7b70bef1543eaa9c01b6",
+            "source_text": "adb7c8c6c4ae38899db8cd4e00aa9d2623a9e31a59ebedf387f34be51a59ddb0"
+          },
+          "label": "baseline",
+          "module_path": "/private/tmp/fq-qec-semantic-reference/flagquantum/__init__.py",
+          "observations": [
+            {
+              "batches": 9,
+              "completed_shots": 1025,
+              "logical_failures": 0,
+              "phases_seconds": {
+                "count_reduction": 0.0003617919865064323,
+                "decoder_setup": 0.15922916698036715,
+                "decoding": 0.003705290029756725,
+                "memory_construction": 0.010999999998603016,
+                "native_export": 0.894047292007599,
+                "sampler_compile": 0.8540773330023512,
+                "sampling": 0.04406878998270258,
+                "strict_dem_construction": 0.00527675001649186
+              },
+              "pipeline_seconds": 1.9718407090113033,
+              "shots_per_second": 519.8188653453368,
+              "visible_batch_tensor_bytes_max": 30976,
+              "warmup": true
+            },
+            {
+              "batches": 9,
+              "completed_shots": 1025,
+              "logical_failures": 0,
+              "phases_seconds": {
+                "count_reduction": 0.00012016698019579053,
+                "decoder_setup": 0.002654125011758879,
+                "decoding": 0.0017784590017981827,
+                "memory_construction": 0.014015458000358194,
+                "native_export": 0.9196014580084011,
+                "sampler_compile": 0.9049309999973048,
+                "sampling": 0.02298979106126353,
+                "strict_dem_construction": 0.005569625005591661
+              },
+              "pipeline_seconds": 1.8717073750158306,
+              "shots_per_second": 547.628338533063,
+              "visible_batch_tensor_bytes_max": 30976,
+              "warmup": false
+            },
+            {
+              "batches": 9,
+              "completed_shots": 1025,
+              "logical_failures": 0,
+              "phases_seconds": {
+                "count_reduction": 0.0001239160483237356,
+                "decoder_setup": 0.003934207983547822,
+                "decoding": 0.001990249991649762,
+                "memory_construction": 0.012740375008434057,
+                "native_export": 1.0764844170189463,
+                "sampler_compile": 1.0019407499930821,
+                "sampling": 0.02274254008079879,
+                "strict_dem_construction": 0.010312041995348409
+              },
+              "pipeline_seconds": 2.1303275829995982,
+              "shots_per_second": 481.1466594056644,
+              "visible_batch_tensor_bytes_max": 30976,
+              "warmup": false
+            },
+            {
+              "batches": 9,
+              "completed_shots": 1025,
+              "logical_failures": 0,
+              "phases_seconds": {
+                "count_reduction": 0.0002666670479811728,
+                "decoder_setup": 0.0027249160048086196,
+                "decoding": 0.002247416035970673,
+                "memory_construction": 0.014091958000790328,
+                "native_export": 1.007504582987167,
+                "sampler_compile": 1.0038187919999473,
+                "sampling": 0.028788541996618733,
+                "strict_dem_construction": 0.006782207987271249
+              },
+              "pipeline_seconds": 2.0663220419955906,
+              "shots_per_second": 496.05046027098774,
+              "visible_batch_tensor_bytes_max": 30976,
+              "warmup": false
+            }
+          ],
+          "rss_whole_process_including_diagnostics_bytes": 226410496,
+          "source_identity_method": "exact git archive baseline or clean candidate checkout; controller verified",
+          "source_revision": "677c5d47d67f1fc71274be672548d6a626334852",
+          "torch_threads": 1,
+          "versions": {
+            "pymatching": "2.4.0",
+            "stim": "1.16.0",
+            "torch": "2.13.0"
+          }
+        },
+        "status": "success"
+      },
+      {
+        "exit_code": 0,
+        "label": "baseline",
+        "pair": 3,
+        "report": {
+          "diagnostic_detector_events": 8061,
+          "diagnostic_shots": 1025,
+          "fingerprints": {
+            "detectors": "bf7ddcfa043f4467df61ecdce456ce2a3c90704ddda66c3f7dd41a889f4baf7b",
+            "observables": "add638ee334ecf76d69f82fab25cf89d7ecaba25bf9e7b70bef1543eaa9c01b6",
+            "predictions": "add638ee334ecf76d69f82fab25cf89d7ecaba25bf9e7b70bef1543eaa9c01b6",
+            "source_text": "adb7c8c6c4ae38899db8cd4e00aa9d2623a9e31a59ebedf387f34be51a59ddb0"
+          },
+          "label": "baseline",
+          "module_path": "/private/tmp/fq-qec-semantic-reference/flagquantum/__init__.py",
+          "observations": [
+            {
+              "batches": 9,
+              "completed_shots": 1025,
+              "logical_failures": 0,
+              "phases_seconds": {
+                "count_reduction": 0.00028208401636220515,
+                "decoder_setup": 0.2204349999956321,
+                "decoding": 0.002851166034815833,
+                "memory_construction": 0.011696790985297412,
+                "native_export": 0.9041670419974253,
+                "sampler_compile": 1.1401872079877649,
+                "sampling": 0.03173029000754468,
+                "strict_dem_construction": 0.005044040997745469
+              },
+              "pipeline_seconds": 2.3164824999985285,
+              "shots_per_second": 442.4812188309867,
+              "visible_batch_tensor_bytes_max": 30976,
+              "warmup": true
+            },
+            {
+              "batches": 9,
+              "completed_shots": 1025,
+              "logical_failures": 0,
+              "phases_seconds": {
+                "count_reduction": 0.0004938339989166707,
+                "decoder_setup": 0.0030346669955179095,
+                "decoding": 0.003720832959515974,
+                "memory_construction": 0.012027459015371278,
+                "native_export": 0.96144270899822,
+                "sampler_compile": 0.9149533750023693,
+                "sampling": 0.04371033207280561,
+                "strict_dem_construction": 0.004808208002941683
+              },
+              "pipeline_seconds": 1.9443274590012152,
+              "shots_per_second": 527.1745740434761,
+              "visible_batch_tensor_bytes_max": 30976,
+              "warmup": false
+            },
+            {
+              "batches": 9,
+              "completed_shots": 1025,
+              "logical_failures": 0,
+              "phases_seconds": {
+                "count_reduction": 0.0002676650183275342,
+                "decoder_setup": 0.006244874995900318,
+                "decoding": 0.0035705399641301483,
+                "memory_construction": 0.022039834002498537,
+                "native_export": 1.496597625024151,
+                "sampler_compile": 1.1647270419925917,
+                "sampling": 0.05154049998964183,
+                "strict_dem_construction": 0.007186792005086318
+              },
+              "pipeline_seconds": 2.7523548339959234,
+              "shots_per_second": 372.40837821476845,
+              "visible_batch_tensor_bytes_max": 30976,
+              "warmup": false
+            },
+            {
+              "batches": 9,
+              "completed_shots": 1025,
+              "logical_failures": 0,
+              "phases_seconds": {
+                "count_reduction": 0.00011270996765233576,
+                "decoder_setup": 0.00294025000766851,
+                "decoding": 0.001826501014875248,
+                "memory_construction": 0.019693957990966737,
+                "native_export": 1.1613000420038588,
+                "sampler_compile": 1.1242772919940762,
+                "sampling": 0.02164191598421894,
+                "strict_dem_construction": 0.009806041984120384
+              },
+              "pipeline_seconds": 2.3416592499997932,
+              "shots_per_second": 437.7238063138736,
+              "visible_batch_tensor_bytes_max": 30976,
+              "warmup": false
+            }
+          ],
+          "rss_whole_process_including_diagnostics_bytes": 247136256,
+          "source_identity_method": "exact git archive baseline or clean candidate checkout; controller verified",
+          "source_revision": "677c5d47d67f1fc71274be672548d6a626334852",
+          "torch_threads": 1,
+          "versions": {
+            "pymatching": "2.4.0",
+            "stim": "1.16.0",
+            "torch": "2.13.0"
+          }
+        },
+        "status": "success"
+      },
+      {
+        "exit_code": 0,
+        "label": "candidate",
+        "pair": 3,
+        "report": {
+          "diagnostic_detector_events": 8061,
+          "diagnostic_shots": 1025,
+          "fingerprints": {
+            "detectors": "bf7ddcfa043f4467df61ecdce456ce2a3c90704ddda66c3f7dd41a889f4baf7b",
+            "observables": "add638ee334ecf76d69f82fab25cf89d7ecaba25bf9e7b70bef1543eaa9c01b6",
+            "predictions": "add638ee334ecf76d69f82fab25cf89d7ecaba25bf9e7b70bef1543eaa9c01b6",
+            "source_text": "adb7c8c6c4ae38899db8cd4e00aa9d2623a9e31a59ebedf387f34be51a59ddb0"
+          },
+          "label": "candidate",
+          "module_path": "/Users/baai/Documents/liuwei/FlagQuantum-qec-compatibility-roadmap/flagquantum/__init__.py",
+          "observations": [
+            {
+              "batches": 9,
+              "completed_shots": 1025,
+              "logical_failures": 0,
+              "phases_seconds": {
+                "count_reduction": 0.00021608301904052496,
+                "decoder_setup": 0.1831383749959059,
+                "decoding": 0.002779335016384721,
+                "memory_construction": 0.011013374984031543,
+                "native_export": 0.7368552080006339,
+                "sampler_compile": 0.7136486660165247,
+                "sampling": 0.02775954204844311,
+                "strict_dem_construction": 0.0056461670028511435
+              },
+              "pipeline_seconds": 1.681133417005185,
+              "shots_per_second": 609.7077064983705,
+              "visible_batch_tensor_bytes_max": 30976,
+              "warmup": true
+            },
+            {
+              "batches": 9,
+              "completed_shots": 1025,
+              "logical_failures": 0,
+              "phases_seconds": {
+                "count_reduction": 0.00016608298756182194,
+                "decoder_setup": 0.0025679169921204448,
+                "decoding": 0.0022458750172518194,
+                "memory_construction": 0.010981500003254041,
+                "native_export": 0.8558185409929138,
+                "sampler_compile": 0.791048791987123,
+                "sampling": 0.024538957979530096,
+                "strict_dem_construction": 0.005525207991013303
+              },
+              "pipeline_seconds": 1.692939500004286,
+              "shots_per_second": 605.455776770171,
+              "visible_batch_tensor_bytes_max": 30976,
+              "warmup": false
+            },
+            {
+              "batches": 9,
+              "completed_shots": 1025,
+              "logical_failures": 0,
+              "phases_seconds": {
+                "count_reduction": 0.00016991503071039915,
+                "decoder_setup": 0.004658083984395489,
+                "decoding": 0.002230668003903702,
+                "memory_construction": 0.012967415997991338,
+                "native_export": 0.8982427919982001,
+                "sampler_compile": 0.9155925000086427,
+                "sampling": 0.02557945894659497,
+                "strict_dem_construction": 0.004796374996658415
+              },
+              "pipeline_seconds": 1.8642963749880437,
+              "shots_per_second": 549.8052851208133,
+              "visible_batch_tensor_bytes_max": 30976,
+              "warmup": false
+            },
+            {
+              "batches": 9,
+              "completed_shots": 1025,
+              "logical_failures": 0,
+              "phases_seconds": {
+                "count_reduction": 0.00015220895875245333,
+                "decoder_setup": 0.002583208988653496,
+                "decoding": 0.0021247500844765455,
+                "memory_construction": 0.013448208977933973,
+                "native_export": 0.8163873330049682,
+                "sampler_compile": 0.765824000001885,
+                "sampling": 0.027195792004931718,
+                "strict_dem_construction": 0.004901167005300522
+              },
+              "pipeline_seconds": 1.6326825839933008,
+              "shots_per_second": 627.8011476627632,
+              "visible_batch_tensor_bytes_max": 30976,
+              "warmup": false
+            }
+          ],
+          "rss_whole_process_including_diagnostics_bytes": 268075008,
+          "source_identity_method": "exact git archive baseline or clean candidate checkout; controller verified",
+          "source_revision": "3a10eb650f35994f9a2c5dfafcb7cb5507f42f95",
+          "torch_threads": 1,
+          "versions": {
+            "pymatching": "2.4.0",
+            "stim": "1.16.0",
+            "torch": "2.13.0"
+          }
+        },
+        "status": "success"
+      }
+    ]
+  },
+  "release_gate_allowed": false,
+  "scalability_claim_allowed": false,
+  "world_size": 1
+}

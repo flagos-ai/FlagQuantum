@@ -168,7 +168,7 @@ class ExecutionPlan:
     corresponding feature was in play.
     """
 
-    analysis: CircuitAnalysis
+    analysis: CircuitAnalysis | None
     layers: tuple[LayerPlan, ...]
     state_bytes: int
     recommended_mode: str
@@ -270,6 +270,25 @@ class ExecutionPlan:
         return calibrate_plan_cost(self, artifact)
 
     def summary(self) -> dict[str, Any]:
+        if self.analysis is None:
+            from ._ising_plan import braid_depth
+
+            depth = braid_depth(self)
+            analysis_fields = {
+                "depth": depth,
+                "n_wires": None,
+                "n_instructions": depth,
+                "two_qubit_gates": None,
+                "multi_qubit_gates": None,
+            }
+        else:
+            analysis_fields = {
+                "depth": self.analysis.depth,
+                "n_wires": self.analysis.n_qubits,
+                "n_instructions": self.analysis.n_instructions,
+                "two_qubit_gates": self.analysis.two_qubit_gates,
+                "multi_qubit_gates": self.analysis.multi_qubit_gates,
+            }
         is_distributed = self.world_size > 1
         distribution_semantics = (
             "sharded_across_ranks"
@@ -297,11 +316,7 @@ class ExecutionPlan:
             "scalability_blockers": blockers,
             "world_size": self.world_size,
             "state_bytes": self.state_bytes,
-            "depth": self.analysis.depth,
-            "n_wires": self.analysis.n_qubits,
-            "n_instructions": self.analysis.n_instructions,
-            "two_qubit_gates": self.analysis.two_qubit_gates,
-            "multi_qubit_gates": self.analysis.multi_qubit_gates,
+            **analysis_fields,
             "shardable_wires": self.shardable_wires,
             "runtime_config": dict(self.runtime_config or {}),
             "routing_plan": dict(self.routing_plan or {}),

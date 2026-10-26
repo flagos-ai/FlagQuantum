@@ -1,0 +1,3313 @@
+{
+  "source_revision": "03d7c7b9b292e806856a301fb547d336cd452953",
+  "base_commit": "dabc1050062fe97c466839434454b7bd379a9331",
+  "schema": "flagquantum.ftqc_stage_a.pilot.v1",
+  "non_release_evidence": true,
+  "scalability_claim_allowed": false,
+  "release_gate_allowed": false,
+  "performance_targets_enabled": false,
+  "controller_sha256": "7d74c6664468672b5ccbf2cd45ce0dcf2166b85d1784e7e17cac355e5858ea72",
+  "resource_budgets": {
+    "wall_total_seconds": 2700,
+    "construction_process_seconds": 300,
+    "sampling_process_seconds": 120,
+    "rss_sampled_stop_bytes": 2147483648,
+    "max_rss_sample_gap_seconds": 0.1,
+    "evidence_storage_bytes": 134217728,
+    "filesystem_free_before_start_bytes": 1202495488
+  },
+  "points": [
+    {
+      "label": "A1-d9",
+      "kind": "construction",
+      "shots": null,
+      "outer_role": "host_warmup",
+      "process": 0,
+      "wall_budget_seconds": 300,
+      "status": "completed",
+      "command": [
+        "<task-evidence>/pr826-main-install-py312/bin/python",
+        "benchmarks/qec_clifford_dem_construction.py",
+        "--distance",
+        "9",
+        "--rounds",
+        "3",
+        "--output",
+        "<task-evidence>/stage-a-observations-20261025/A1-d9-0/producer.json"
+      ],
+      "supervised_command": [
+        "<task-evidence>/pr826-main-install-py312/bin/python",
+        "tools/run_with_watchdog.py",
+        "--phase",
+        "A1-d9-0",
+        "--stall-seconds",
+        "300",
+        "--timeout-seconds",
+        "300",
+        "--rss-limit-bytes",
+        "2147483648",
+        "--diagnostics",
+        "<task-evidence>/stage-a-observations-20261025/A1-d9-0/supervisor",
+        "--",
+        "<task-evidence>/pr826-main-install-py312/bin/python",
+        "benchmarks/qec_clifford_dem_construction.py",
+        "--distance",
+        "9",
+        "--rounds",
+        "3",
+        "--output",
+        "<task-evidence>/stage-a-observations-20261025/A1-d9-0/producer.json"
+      ],
+      "external_process_seconds": 6.836652707992471,
+      "returncode": 0,
+      "watchdog": {
+        "schema": "flagquantum_watchdog_v1",
+        "phase": "A1-d9-0",
+        "reason": "completed",
+        "last_operation": "<task-evidence>/pr826-main-install-py312/bin/python benchmarks/qec_clifford_dem_construction.py --distance 9 --rounds 3 --output <task-evidence>/stage-a-observations-20261025/A1-d9-0/producer.json",
+        "elapsed_seconds": 6.765039624995552,
+        "cleanup_required": false,
+        "command_returncode": 0,
+        "termination_elapsed_seconds": 0.0,
+        "rss_limit_bytes": 2147483648,
+        "sampled_group_rss_max_bytes": 237715456,
+        "rss_sample_count": 275,
+        "rss_sample_gap_max_seconds": 0.043224124994594604,
+        "rss_max_allowed_gap_seconds": 0.1,
+        "hard_allocation_limit": false,
+        "rss_scope": "sum of owned process-group RSS; shared pages may be counted twice",
+        "rss_recent_samples_seconds_bytes": [
+          [
+            6.008149041997967,
+            211042304
+          ],
+          [
+            6.03224987500289,
+            211042304
+          ],
+          [
+            6.056240082994918,
+            211042304
+          ],
+          [
+            6.075778375001391,
+            211042304
+          ],
+          [
+            6.099818332993891,
+            211042304
+          ],
+          [
+            6.1203790419967845,
+            211042304
+          ],
+          [
+            6.14262908299861,
+            211042304
+          ],
+          [
+            6.166759792002267,
+            211042304
+          ],
+          [
+            6.190625417002593,
+            211042304
+          ],
+          [
+            6.214589082999737,
+            211042304
+          ],
+          [
+            6.239473666995764,
+            211042304
+          ],
+          [
+            6.262732499992126,
+            211042304
+          ],
+          [
+            6.284773708001012,
+            211042304
+          ],
+          [
+            6.309221457995591,
+            211042304
+          ],
+          [
+            6.33412283299549,
+            211042304
+          ],
+          [
+            6.358476207999047,
+            211042304
+          ],
+          [
+            6.383340416999999,
+            211042304
+          ],
+          [
+            6.4080618750012945,
+            211042304
+          ],
+          [
+            6.432388166998862,
+            211042304
+          ],
+          [
+            6.456733291997807,
+            211042304
+          ],
+          [
+            6.47636883299856,
+            211042304
+          ],
+          [
+            6.500633874995401,
+            211058688
+          ],
+          [
+            6.524794666998787,
+            211058688
+          ],
+          [
+            6.549088542000391,
+            211058688
+          ],
+          [
+            6.573589916995843,
+            211091456
+          ],
+          [
+            6.5981603330001235,
+            212336640
+          ],
+          [
+            6.618366499998956,
+            214859776
+          ],
+          [
+            6.64347137499135,
+            214859776
+          ],
+          [
+            6.668496750004124,
+            216006656
+          ],
+          [
+            6.693441708004684,
+            220971008
+          ],
+          [
+            6.7182511249993695,
+            230916096
+          ],
+          [
+            6.741763375001028,
+            237715456
+          ]
+        ]
+      },
+      "producer": {
+        "benchmark": "qec_clifford_dem_construction",
+        "source_revision": "03d7c7b9b292e806856a301fb547d336cd452953",
+        "platform": "macOS-27.0-arm64-arm-64bit",
+        "python": "3.12.14",
+        "torch": "2.14.1",
+        "machine": "arm64",
+        "logical_cpu_count": 10,
+        "torch_threads": 1,
+        "device": "cpu",
+        "world_size": 1,
+        "local_world_size": 1,
+        "node_count": 1,
+        "rank_ownership": {
+          "0": "whole_model"
+        },
+        "communication_bytes": 0,
+        "distribution_semantics": "single_process",
+        "scalability_claim_allowed": false,
+        "release_gate_allowed": false,
+        "non_release_evidence": true,
+        "benchmark_evidence_class": "local_non_release",
+        "scalability_blockers": [
+          "local_cpu_construction_not_release_scalability_evidence"
+        ],
+        "blockers": [
+          "local_cpu_construction_not_release_scalability_evidence"
+        ],
+        "distance": 9,
+        "rounds": 3,
+        "physical_qubits": 161,
+        "instructions": 1584,
+        "parities": 241,
+        "fault_locations": 1728,
+        "reverse_instruction_visits": 381744,
+        "fault_response_queries": 416448,
+        "model_errors_after_merge": 661,
+        "model_construction_seconds_with_tracemalloc": 5.422565749991918,
+        "peak_traced_python_bytes": 4630182,
+        "process_max_rss_before_bytes": 224313344,
+        "process_max_rss_after_bytes": 227655680
+      },
+      "producer_raw_sha256": "62fdcd7198416d3fa61e76e820cff77803078c275098fe06e957d9f660900d79"
+    },
+    {
+      "label": "A1-d9",
+      "kind": "construction",
+      "shots": null,
+      "outer_role": "measured",
+      "process": 1,
+      "wall_budget_seconds": 300,
+      "status": "completed",
+      "command": [
+        "<task-evidence>/pr826-main-install-py312/bin/python",
+        "benchmarks/qec_clifford_dem_construction.py",
+        "--distance",
+        "9",
+        "--rounds",
+        "3",
+        "--output",
+        "<task-evidence>/stage-a-observations-20261025/A1-d9-1/producer.json"
+      ],
+      "supervised_command": [
+        "<task-evidence>/pr826-main-install-py312/bin/python",
+        "tools/run_with_watchdog.py",
+        "--phase",
+        "A1-d9-1",
+        "--stall-seconds",
+        "300",
+        "--timeout-seconds",
+        "300",
+        "--rss-limit-bytes",
+        "2147483648",
+        "--diagnostics",
+        "<task-evidence>/stage-a-observations-20261025/A1-d9-1/supervisor",
+        "--",
+        "<task-evidence>/pr826-main-install-py312/bin/python",
+        "benchmarks/qec_clifford_dem_construction.py",
+        "--distance",
+        "9",
+        "--rounds",
+        "3",
+        "--output",
+        "<task-evidence>/stage-a-observations-20261025/A1-d9-1/producer.json"
+      ],
+      "external_process_seconds": 6.41619725000055,
+      "returncode": 0,
+      "watchdog": {
+        "schema": "flagquantum_watchdog_v1",
+        "phase": "A1-d9-1",
+        "reason": "completed",
+        "last_operation": "<task-evidence>/pr826-main-install-py312/bin/python benchmarks/qec_clifford_dem_construction.py --distance 9 --rounds 3 --output <task-evidence>/stage-a-observations-20261025/A1-d9-1/producer.json",
+        "elapsed_seconds": 6.359118916996522,
+        "cleanup_required": false,
+        "command_returncode": 0,
+        "termination_elapsed_seconds": 0.0,
+        "rss_limit_bytes": 2147483648,
+        "sampled_group_rss_max_bytes": 231784448,
+        "rss_sample_count": 251,
+        "rss_sample_gap_max_seconds": 0.05980562498734798,
+        "rss_max_allowed_gap_seconds": 0.1,
+        "hard_allocation_limit": false,
+        "rss_scope": "sum of owned process-group RSS; shared pages may be counted twice",
+        "rss_recent_samples_seconds_bytes": [
+          [
+            5.596215999990818,
+            161546240
+          ],
+          [
+            5.6183098329929635,
+            161546240
+          ],
+          [
+            5.638009125003009,
+            161546240
+          ],
+          [
+            5.662522416998399,
+            161546240
+          ],
+          [
+            5.686684957996476,
+            161546240
+          ],
+          [
+            5.710988374994486,
+            161546240
+          ],
+          [
+            5.735168624989456,
+            161546240
+          ],
+          [
+            5.759472291989368,
+            161546240
+          ],
+          [
+            5.784234374994412,
+            161546240
+          ],
+          [
+            5.808543124992866,
+            161546240
+          ],
+          [
+            5.833065667000483,
+            161546240
+          ],
+          [
+            5.857172124990029,
+            161546240
+          ],
+          [
+            5.877449583000271,
+            161546240
+          ],
+          [
+            5.902238249997026,
+            161546240
+          ],
+          [
+            5.927452874995652,
+            161546240
+          ],
+          [
+            5.951878499996383,
+            161546240
+          ],
+          [
+            5.976719250000315,
+            161546240
+          ],
+          [
+            6.0013924579980085,
+            161546240
+          ],
+          [
+            6.026065207988722,
+            161546240
+          ],
+          [
+            6.05112691699469,
+            161546240
+          ],
+          [
+            6.075334832989029,
+            161546240
+          ],
+          [
+            6.099876791995484,
+            161546240
+          ],
+          [
+            6.123903749990859,
+            161546240
+          ],
+          [
+            6.143833541995264,
+            161562624
+          ],
+          [
+            6.168190083000809,
+            161562624
+          ],
+          [
+            6.192245582991745,
+            161562624
+          ],
+          [
+            6.216397707990836,
+            162201600
+          ],
+          [
+            6.237436707990128,
+            164659200
+          ],
+          [
+            6.2625638749887,
+            184221696
+          ],
+          [
+            6.287764291992062,
+            186548224
+          ],
+          [
+            6.313309042001492,
+            187367424
+          ],
+          [
+            6.338814124988858,
+            231784448
+          ]
+        ]
+      },
+      "producer": {
+        "benchmark": "qec_clifford_dem_construction",
+        "source_revision": "03d7c7b9b292e806856a301fb547d336cd452953",
+        "platform": "macOS-27.0-arm64-arm-64bit",
+        "python": "3.12.14",
+        "torch": "2.14.1",
+        "machine": "arm64",
+        "logical_cpu_count": 10,
+        "torch_threads": 1,
+        "device": "cpu",
+        "world_size": 1,
+        "local_world_size": 1,
+        "node_count": 1,
+        "rank_ownership": {
+          "0": "whole_model"
+        },
+        "communication_bytes": 0,
+        "distribution_semantics": "single_process",
+        "scalability_claim_allowed": false,
+        "release_gate_allowed": false,
+        "non_release_evidence": true,
+        "benchmark_evidence_class": "local_non_release",
+        "scalability_blockers": [
+          "local_cpu_construction_not_release_scalability_evidence"
+        ],
+        "blockers": [
+          "local_cpu_construction_not_release_scalability_evidence"
+        ],
+        "distance": 9,
+        "rounds": 3,
+        "physical_qubits": 161,
+        "instructions": 1584,
+        "parities": 241,
+        "fault_locations": 1728,
+        "reverse_instruction_visits": 381744,
+        "fault_response_queries": 416448,
+        "model_errors_after_merge": 661,
+        "model_construction_seconds_with_tracemalloc": 5.525214250010322,
+        "peak_traced_python_bytes": 4630182,
+        "process_max_rss_before_bytes": 226361344,
+        "process_max_rss_after_bytes": 229998592
+      },
+      "producer_raw_sha256": "8cf50aacfcdcb4f723d69bb48d8cd500bde60c41ebc5d98f69991840525dbd6b"
+    },
+    {
+      "label": "A1-d9",
+      "kind": "construction",
+      "shots": null,
+      "outer_role": "measured",
+      "process": 2,
+      "wall_budget_seconds": 300,
+      "status": "completed",
+      "command": [
+        "<task-evidence>/pr826-main-install-py312/bin/python",
+        "benchmarks/qec_clifford_dem_construction.py",
+        "--distance",
+        "9",
+        "--rounds",
+        "3",
+        "--output",
+        "<task-evidence>/stage-a-observations-20261025/A1-d9-2/producer.json"
+      ],
+      "supervised_command": [
+        "<task-evidence>/pr826-main-install-py312/bin/python",
+        "tools/run_with_watchdog.py",
+        "--phase",
+        "A1-d9-2",
+        "--stall-seconds",
+        "300",
+        "--timeout-seconds",
+        "300",
+        "--rss-limit-bytes",
+        "2147483648",
+        "--diagnostics",
+        "<task-evidence>/stage-a-observations-20261025/A1-d9-2/supervisor",
+        "--",
+        "<task-evidence>/pr826-main-install-py312/bin/python",
+        "benchmarks/qec_clifford_dem_construction.py",
+        "--distance",
+        "9",
+        "--rounds",
+        "3",
+        "--output",
+        "<task-evidence>/stage-a-observations-20261025/A1-d9-2/producer.json"
+      ],
+      "external_process_seconds": 6.414757040998666,
+      "returncode": 0,
+      "watchdog": {
+        "schema": "flagquantum_watchdog_v1",
+        "phase": "A1-d9-2",
+        "reason": "completed",
+        "last_operation": "<task-evidence>/pr826-main-install-py312/bin/python benchmarks/qec_clifford_dem_construction.py --distance 9 --rounds 3 --output <task-evidence>/stage-a-observations-20261025/A1-d9-2/producer.json",
+        "elapsed_seconds": 6.3384199169959174,
+        "cleanup_required": false,
+        "command_returncode": 0,
+        "termination_elapsed_seconds": 0.0,
+        "rss_limit_bytes": 2147483648,
+        "sampled_group_rss_max_bytes": 231391232,
+        "rss_sample_count": 254,
+        "rss_sample_gap_max_seconds": 0.04182749999745283,
+        "rss_max_allowed_gap_seconds": 0.1,
+        "hard_allocation_limit": false,
+        "rss_scope": "sum of owned process-group RSS; shared pages may be counted twice",
+        "rss_recent_samples_seconds_bytes": [
+          [
+            5.578012750003836,
+            207503360
+          ],
+          [
+            5.600804375004373,
+            207503360
+          ],
+          [
+            5.625793999992311,
+            207503360
+          ],
+          [
+            5.650882792004268,
+            207503360
+          ],
+          [
+            5.67548791700392,
+            207503360
+          ],
+          [
+            5.699776209003176,
+            207503360
+          ],
+          [
+            5.724156750002294,
+            207503360
+          ],
+          [
+            5.7487918339902535,
+            207503360
+          ],
+          [
+            5.768080291993101,
+            207503360
+          ],
+          [
+            5.791226792003727,
+            207503360
+          ],
+          [
+            5.815712416995666,
+            207503360
+          ],
+          [
+            5.839836291997926,
+            207503360
+          ],
+          [
+            5.859443084002123,
+            207503360
+          ],
+          [
+            5.883637916995212,
+            207503360
+          ],
+          [
+            5.9075763750006445,
+            207503360
+          ],
+          [
+            5.931376541993814,
+            207503360
+          ],
+          [
+            5.9512549999926705,
+            207503360
+          ],
+          [
+            5.976028167002369,
+            207503360
+          ],
+          [
+            6.001369167002849,
+            207503360
+          ],
+          [
+            6.026301459001843,
+            207503360
+          ],
+          [
+            6.051378000003751,
+            207503360
+          ],
+          [
+            6.0715532089961926,
+            207503360
+          ],
+          [
+            6.093210499995621,
+            207503360
+          ],
+          [
+            6.118049583994434,
+            207503360
+          ],
+          [
+            6.1430319170031,
+            207519744
+          ],
+          [
+            6.167311999990488,
+            207519744
+          ],
+          [
+            6.190593167004408,
+            207519744
+          ],
+          [
+            6.215512041992042,
+            208896000
+          ],
+          [
+            6.240381249997881,
+            211615744
+          ],
+          [
+            6.265874417003943,
+            211632128
+          ],
+          [
+            6.291121374990325,
+            212697088
+          ],
+          [
+            6.316163041992695,
+            231391232
+          ]
+        ]
+      },
+      "producer": {
+        "benchmark": "qec_clifford_dem_construction",
+        "source_revision": "03d7c7b9b292e806856a301fb547d336cd452953",
+        "platform": "macOS-27.0-arm64-arm-64bit",
+        "python": "3.12.14",
+        "torch": "2.14.1",
+        "machine": "arm64",
+        "logical_cpu_count": 10,
+        "torch_threads": 1,
+        "device": "cpu",
+        "world_size": 1,
+        "local_world_size": 1,
+        "node_count": 1,
+        "rank_ownership": {
+          "0": "whole_model"
+        },
+        "communication_bytes": 0,
+        "distribution_semantics": "single_process",
+        "scalability_claim_allowed": false,
+        "release_gate_allowed": false,
+        "non_release_evidence": true,
+        "benchmark_evidence_class": "local_non_release",
+        "scalability_blockers": [
+          "local_cpu_construction_not_release_scalability_evidence"
+        ],
+        "blockers": [
+          "local_cpu_construction_not_release_scalability_evidence"
+        ],
+        "distance": 9,
+        "rounds": 3,
+        "physical_qubits": 161,
+        "instructions": 1584,
+        "parities": 241,
+        "fault_locations": 1728,
+        "reverse_instruction_visits": 381744,
+        "fault_response_queries": 416448,
+        "model_errors_after_merge": 661,
+        "model_construction_seconds_with_tracemalloc": 5.486174874997232,
+        "peak_traced_python_bytes": 4630182,
+        "process_max_rss_before_bytes": 226443264,
+        "process_max_rss_after_bytes": 230047744
+      },
+      "producer_raw_sha256": "6cc5063890e67d8f6a830ee0e6db943ba8a19d66d70a2adac067d99f6fd997aa"
+    },
+    {
+      "label": "A1-d9",
+      "kind": "construction",
+      "shots": null,
+      "outer_role": "measured",
+      "process": 3,
+      "wall_budget_seconds": 300,
+      "status": "completed",
+      "command": [
+        "<task-evidence>/pr826-main-install-py312/bin/python",
+        "benchmarks/qec_clifford_dem_construction.py",
+        "--distance",
+        "9",
+        "--rounds",
+        "3",
+        "--output",
+        "<task-evidence>/stage-a-observations-20261025/A1-d9-3/producer.json"
+      ],
+      "supervised_command": [
+        "<task-evidence>/pr826-main-install-py312/bin/python",
+        "tools/run_with_watchdog.py",
+        "--phase",
+        "A1-d9-3",
+        "--stall-seconds",
+        "300",
+        "--timeout-seconds",
+        "300",
+        "--rss-limit-bytes",
+        "2147483648",
+        "--diagnostics",
+        "<task-evidence>/stage-a-observations-20261025/A1-d9-3/supervisor",
+        "--",
+        "<task-evidence>/pr826-main-install-py312/bin/python",
+        "benchmarks/qec_clifford_dem_construction.py",
+        "--distance",
+        "9",
+        "--rounds",
+        "3",
+        "--output",
+        "<task-evidence>/stage-a-observations-20261025/A1-d9-3/producer.json"
+      ],
+      "external_process_seconds": 6.442893582992838,
+      "returncode": 0,
+      "watchdog": {
+        "schema": "flagquantum_watchdog_v1",
+        "phase": "A1-d9-3",
+        "reason": "completed",
+        "last_operation": "<task-evidence>/pr826-main-install-py312/bin/python benchmarks/qec_clifford_dem_construction.py --distance 9 --rounds 3 --output <task-evidence>/stage-a-observations-20261025/A1-d9-3/producer.json",
+        "elapsed_seconds": 6.369156042012037,
+        "cleanup_required": false,
+        "command_returncode": 0,
+        "termination_elapsed_seconds": 0.0,
+        "rss_limit_bytes": 2147483648,
+        "sampled_group_rss_max_bytes": 231915520,
+        "rss_sample_count": 262,
+        "rss_sample_gap_max_seconds": 0.03910912500577979,
+        "rss_max_allowed_gap_seconds": 0.1,
+        "hard_allocation_limit": false,
+        "rss_scope": "sum of owned process-group RSS; shared pages may be counted twice",
+        "rss_recent_samples_seconds_bytes": [
+          [
+            5.625996708011371,
+            203522048
+          ],
+          [
+            5.6506758330069715,
+            203522048
+          ],
+          [
+            5.675290750004933,
+            203522048
+          ],
+          [
+            5.699985125000239,
+            203522048
+          ],
+          [
+            5.7249922920018435,
+            203522048
+          ],
+          [
+            5.748969332998968,
+            203522048
+          ],
+          [
+            5.768766792010865,
+            203522048
+          ],
+          [
+            5.791459208005108,
+            203522048
+          ],
+          [
+            5.815378208004404,
+            203522048
+          ],
+          [
+            5.835555583005771,
+            203522048
+          ],
+          [
+            5.8598423750081565,
+            203522048
+          ],
+          [
+            5.883695708005689,
+            203522048
+          ],
+          [
+            5.907755583000835,
+            203522048
+          ],
+          [
+            5.927199666999513,
+            203522048
+          ],
+          [
+            5.951985000006971,
+            203522048
+          ],
+          [
+            5.972780125011923,
+            203522048
+          ],
+          [
+            5.997965000002296,
+            203522048
+          ],
+          [
+            6.0230660420056665,
+            203522048
+          ],
+          [
+            6.046761707999394,
+            203522048
+          ],
+          [
+            6.069726625006297,
+            203522048
+          ],
+          [
+            6.094943167001475,
+            203522048
+          ],
+          [
+            6.120455750002293,
+            203522048
+          ],
+          [
+            6.141187750006793,
+            203522048
+          ],
+          [
+            6.166124625000521,
+            203538432
+          ],
+          [
+            6.190825417012093,
+            203538432
+          ],
+          [
+            6.210811417011428,
+            203538432
+          ],
+          [
+            6.235528333010734,
+            203554816
+          ],
+          [
+            6.256048125011148,
+            204046336
+          ],
+          [
+            6.27806291700108,
+            207323136
+          ],
+          [
+            6.2982809170061955,
+            207355904
+          ],
+          [
+            6.319675250008004,
+            208453632
+          ],
+          [
+            6.344772374999593,
+            231915520
+          ]
+        ]
+      },
+      "producer": {
+        "benchmark": "qec_clifford_dem_construction",
+        "source_revision": "03d7c7b9b292e806856a301fb547d336cd452953",
+        "platform": "macOS-27.0-arm64-arm-64bit",
+        "python": "3.12.14",
+        "torch": "2.14.1",
+        "machine": "arm64",
+        "logical_cpu_count": 10,
+        "torch_threads": 1,
+        "device": "cpu",
+        "world_size": 1,
+        "local_world_size": 1,
+        "node_count": 1,
+        "rank_ownership": {
+          "0": "whole_model"
+        },
+        "communication_bytes": 0,
+        "distribution_semantics": "single_process",
+        "scalability_claim_allowed": false,
+        "release_gate_allowed": false,
+        "non_release_evidence": true,
+        "benchmark_evidence_class": "local_non_release",
+        "scalability_blockers": [
+          "local_cpu_construction_not_release_scalability_evidence"
+        ],
+        "blockers": [
+          "local_cpu_construction_not_release_scalability_evidence"
+        ],
+        "distance": 9,
+        "rounds": 3,
+        "physical_qubits": 161,
+        "instructions": 1584,
+        "parities": 241,
+        "fault_locations": 1728,
+        "reverse_instruction_visits": 381744,
+        "fault_response_queries": 416448,
+        "model_errors_after_merge": 661,
+        "model_construction_seconds_with_tracemalloc": 5.477116417008801,
+        "peak_traced_python_bytes": 4630182,
+        "process_max_rss_before_bytes": 207142912,
+        "process_max_rss_after_bytes": 212467712
+      },
+      "producer_raw_sha256": "f2c8efabaea6cb676c745c9fc852c25252a6a59352ce3ae9494d061743be4ee3"
+    },
+    {
+      "label": "A2-16384",
+      "kind": "sampling",
+      "shots": 16384,
+      "outer_role": "host_warmup",
+      "process": 0,
+      "wall_budget_seconds": 120,
+      "status": "completed",
+      "command": [
+        "<task-evidence>/pr826-main-install-py312/bin/python",
+        "-m",
+        "flagquantum.benchmarking",
+        "run",
+        "qec_memory_sampling",
+        "--shots",
+        "16384",
+        "--batch-size",
+        "32",
+        "--warmup",
+        "0",
+        "--iterations",
+        "1",
+        "--json-output",
+        "<task-evidence>/stage-a-observations-20261025/A2-16384-0/producer.json"
+      ],
+      "supervised_command": [
+        "<task-evidence>/pr826-main-install-py312/bin/python",
+        "tools/run_with_watchdog.py",
+        "--phase",
+        "A2-16384-0",
+        "--stall-seconds",
+        "120",
+        "--timeout-seconds",
+        "120",
+        "--rss-limit-bytes",
+        "2147483648",
+        "--diagnostics",
+        "<task-evidence>/stage-a-observations-20261025/A2-16384-0/supervisor",
+        "--",
+        "<task-evidence>/pr826-main-install-py312/bin/python",
+        "-m",
+        "flagquantum.benchmarking",
+        "run",
+        "qec_memory_sampling",
+        "--shots",
+        "16384",
+        "--batch-size",
+        "32",
+        "--warmup",
+        "0",
+        "--iterations",
+        "1",
+        "--json-output",
+        "<task-evidence>/stage-a-observations-20261025/A2-16384-0/producer.json"
+      ],
+      "external_process_seconds": 1.1629339170031017,
+      "returncode": 0,
+      "watchdog": {
+        "schema": "flagquantum_watchdog_v1",
+        "phase": "A2-16384-0",
+        "reason": "completed",
+        "last_operation": "<task-evidence>/pr826-main-install-py312/bin/python -m flagquantum.benchmarking run qec_memory_sampling --shots 16384 --batch-size 32 --warmup 0 --iterations 1 --json-output <task-evidence>/stage-a-observations-20261025/A2-16384-0/producer.json",
+        "elapsed_seconds": 1.0818528329982655,
+        "cleanup_required": false,
+        "command_returncode": 0,
+        "termination_elapsed_seconds": 0.0,
+        "rss_limit_bytes": 2147483648,
+        "sampled_group_rss_max_bytes": 269369344,
+        "rss_sample_count": 44,
+        "rss_sample_gap_max_seconds": 0.029102915999828838,
+        "rss_max_allowed_gap_seconds": 0.1,
+        "hard_allocation_limit": false,
+        "rss_scope": "sum of owned process-group RSS; shared pages may be counted twice",
+        "rss_recent_samples_seconds_bytes": [
+          [
+            0.2991027079988271,
+            180994048
+          ],
+          [
+            0.3238165829970967,
+            188268544
+          ],
+          [
+            0.3486097919958411,
+            191070208
+          ],
+          [
+            0.3765497080021305,
+            198885376
+          ],
+          [
+            0.4014149169961456,
+            202227712
+          ],
+          [
+            0.42676862500957213,
+            205193216
+          ],
+          [
+            0.44830408300913405,
+            208453632
+          ],
+          [
+            0.472773583009257,
+            214122496
+          ],
+          [
+            0.5000042500032578,
+            216514560
+          ],
+          [
+            0.5260004169977037,
+            218136576
+          ],
+          [
+            0.5507167920004576,
+            222887936
+          ],
+          [
+            0.5752415419992758,
+            227131392
+          ],
+          [
+            0.6001858750096289,
+            231325696
+          ],
+          [
+            0.6253327500016894,
+            234913792
+          ],
+          [
+            0.648780750008882,
+            239321088
+          ],
+          [
+            0.6739130830101203,
+            244006912
+          ],
+          [
+            0.7002389170083916,
+            249675776
+          ],
+          [
+            0.7241118329984602,
+            251674624
+          ],
+          [
+            0.7485584999958519,
+            254459904
+          ],
+          [
+            0.7720316670020111,
+            258555904
+          ],
+          [
+            0.7962812080077128,
+            258555904
+          ],
+          [
+            0.8196863330085762,
+            259391488
+          ],
+          [
+            0.8390854580065934,
+            259391488
+          ],
+          [
+            0.8637767500040354,
+            259391488
+          ],
+          [
+            0.888024875006522,
+            259391488
+          ],
+          [
+            0.908098833009717,
+            259817472
+          ],
+          [
+            0.9319364999973914,
+            259407872
+          ],
+          [
+            0.9571264170081122,
+            259751936
+          ],
+          [
+            0.9821040000097128,
+            259751936
+          ],
+          [
+            1.007351792010013,
+            259751936
+          ],
+          [
+            1.0326776669971878,
+            259751936
+          ],
+          [
+            1.0576147920073709,
+            269369344
+          ]
+        ]
+      },
+      "producer": {
+        "benchmark_evidence_class": "local_non_release",
+        "blockers": [
+          "local CPU observation; no hardware or capacity certification"
+        ],
+        "communication_bytes": 0,
+        "device": "cpu",
+        "distribution_semantics": "single_process",
+        "local_world_size": 1,
+        "logical_cpu_count": 10,
+        "machine": "arm64",
+        "methodology": {
+          "iterations": 1,
+          "pipeline_includes_handle_close": true,
+          "repetitions_are_independent_statistical_trials": false,
+          "seed_restarted_each_repetition": true,
+          "warmup": 0
+        },
+        "node_count": 1,
+        "non_release_evidence": true,
+        "observations": [
+          {
+            "batches": 512,
+            "completed_shots": 16384,
+            "detectors": 24,
+            "logical_failures": 60,
+            "observables": 1,
+            "phases_seconds": {
+              "count_reduction": 0.002303917906829156,
+              "decoder_setup": 0.189995833003195,
+              "decoding": 0.008866873846272938,
+              "dem_construction": 0.022001332996296696,
+              "memory_construction": 0.0006115410069469362,
+              "sampler_compile": 0.10447474999818951,
+              "sampling": 0.08326708803360816
+            },
+            "pipeline_seconds_excluding_imports_and_report_io": 0.4120267080143094,
+            "pipeline_shots_per_second": 39764.4125521858,
+            "visible_batch_tensor_bytes_max": 832,
+            "warmup": false
+          }
+        ],
+        "pipeline_median_seconds": 0.4120267080143094,
+        "platform": "macOS-27.0-arm64-arm-64bit",
+        "precision": "CPU int8 measurement records and bool logical predictions",
+        "process_max_rss_after_bytes": 259391488,
+        "process_max_rss_before_bytes": 216432640,
+        "python": "3.12.14",
+        "rank_ownership": {
+          "0": "whole_workload"
+        },
+        "release_gate_allowed": false,
+        "rss_available": true,
+        "runner": "qec_memory_sampling",
+        "scalability_claim_allowed": false,
+        "schema": "flagquantum.qec_memory_sampling.local_observations.v1",
+        "source_revision": "03d7c7b9b292e806856a301fb547d336cd452953",
+        "thread_environment": {
+          "MKL_NUM_THREADS": "1",
+          "OMP_NUM_THREADS": "1",
+          "OPENBLAS_NUM_THREADS": "1"
+        },
+        "torch_threads": 1,
+        "tracked_tree_clean": true,
+        "versions": {
+          "flagquantum_distribution": "0.4.0",
+          "flagquantum_source": "0.4.0",
+          "pymatching": "2.4.0",
+          "stim": "1.16.0",
+          "torch": "2.14.1"
+        },
+        "workload": {
+          "batch_size": 32,
+          "code": "RotatedSurfaceCode",
+          "distance": 3,
+          "noise": {
+            "data_flip": 0.005,
+            "measurement_flip": 0.009,
+            "phase_flip": 0.007
+          },
+          "readout_basis": "z",
+          "rounds": 3,
+          "seed": 53,
+          "shots": 16384
+        },
+        "world_size": 1
+      },
+      "producer_raw_sha256": "ca3b0c955436d6ed6aca5943f230b00264fec6b4e4d2bbc939810d4ed982b95d"
+    },
+    {
+      "label": "A2-16384",
+      "kind": "sampling",
+      "shots": 16384,
+      "outer_role": "measured",
+      "process": 1,
+      "wall_budget_seconds": 120,
+      "status": "completed",
+      "command": [
+        "<task-evidence>/pr826-main-install-py312/bin/python",
+        "-m",
+        "flagquantum.benchmarking",
+        "run",
+        "qec_memory_sampling",
+        "--shots",
+        "16384",
+        "--batch-size",
+        "32",
+        "--warmup",
+        "0",
+        "--iterations",
+        "1",
+        "--json-output",
+        "<task-evidence>/stage-a-observations-20261025/A2-16384-1/producer.json"
+      ],
+      "supervised_command": [
+        "<task-evidence>/pr826-main-install-py312/bin/python",
+        "tools/run_with_watchdog.py",
+        "--phase",
+        "A2-16384-1",
+        "--stall-seconds",
+        "120",
+        "--timeout-seconds",
+        "120",
+        "--rss-limit-bytes",
+        "2147483648",
+        "--diagnostics",
+        "<task-evidence>/stage-a-observations-20261025/A2-16384-1/supervisor",
+        "--",
+        "<task-evidence>/pr826-main-install-py312/bin/python",
+        "-m",
+        "flagquantum.benchmarking",
+        "run",
+        "qec_memory_sampling",
+        "--shots",
+        "16384",
+        "--batch-size",
+        "32",
+        "--warmup",
+        "0",
+        "--iterations",
+        "1",
+        "--json-output",
+        "<task-evidence>/stage-a-observations-20261025/A2-16384-1/producer.json"
+      ],
+      "external_process_seconds": 1.062840625003446,
+      "returncode": 0,
+      "watchdog": {
+        "schema": "flagquantum_watchdog_v1",
+        "phase": "A2-16384-1",
+        "reason": "completed",
+        "last_operation": "<task-evidence>/pr826-main-install-py312/bin/python -m flagquantum.benchmarking run qec_memory_sampling --shots 16384 --batch-size 32 --warmup 0 --iterations 1 --json-output <task-evidence>/stage-a-observations-20261025/A2-16384-1/producer.json",
+        "elapsed_seconds": 1.0170381250063656,
+        "cleanup_required": false,
+        "command_returncode": 0,
+        "termination_elapsed_seconds": 0.0,
+        "rss_limit_bytes": 2147483648,
+        "sampled_group_rss_max_bytes": 258162688,
+        "rss_sample_count": 39,
+        "rss_sample_gap_max_seconds": 0.03467516599630471,
+        "rss_max_allowed_gap_seconds": 0.1,
+        "hard_allocation_limit": false,
+        "rss_scope": "sum of owned process-group RSS; shared pages may be counted twice",
+        "rss_recent_samples_seconds_bytes": [
+          [
+            0.18366429200978018,
+            153190400
+          ],
+          [
+            0.20841558399843052,
+            162611200
+          ],
+          [
+            0.23319683400040958,
+            169279488
+          ],
+          [
+            0.2529991670016898,
+            174522368
+          ],
+          [
+            0.27788087500084657,
+            176914432
+          ],
+          [
+            0.2998780420020921,
+            185712640
+          ],
+          [
+            0.32526429199788254,
+            188973056
+          ],
+          [
+            0.35004800000751857,
+            195280896
+          ],
+          [
+            0.3706208340008743,
+            199507968
+          ],
+          [
+            0.39153649999934714,
+            202375168
+          ],
+          [
+            0.41602575000433717,
+            205586432
+          ],
+          [
+            0.4410818750038743,
+            211075072
+          ],
+          [
+            0.4661871249991236,
+            214974464
+          ],
+          [
+            0.4915880000044126,
+            216219648
+          ],
+          [
+            0.5166224999993574,
+            225296384
+          ],
+          [
+            0.5416030000051251,
+            234061824
+          ],
+          [
+            0.5666642090072855,
+            242679808
+          ],
+          [
+            0.600640917007695,
+            251002880
+          ],
+          [
+            0.6342850420041941,
+            251281408
+          ],
+          [
+            0.6643644590076292,
+            258162688
+          ],
+          [
+            0.6917231250117766,
+            258162688
+          ],
+          [
+            0.7221281250094762,
+            254115840
+          ],
+          [
+            0.7490915420057718,
+            245858304
+          ],
+          [
+            0.7815665840025758,
+            206962688
+          ],
+          [
+            0.8064564590022201,
+            207536128
+          ],
+          [
+            0.8282981670054141,
+            207503360
+          ],
+          [
+            0.8553573750104988,
+            220184576
+          ],
+          [
+            0.8822024170076475,
+            220233728
+          ],
+          [
+            0.909998834002181,
+            220495872
+          ],
+          [
+            0.9446739999984857,
+            222543872
+          ],
+          [
+            0.9681056670087855,
+            223199232
+          ],
+          [
+            0.9930115000024671,
+            252149760
+          ]
+        ]
+      },
+      "producer": {
+        "benchmark_evidence_class": "local_non_release",
+        "blockers": [
+          "local CPU observation; no hardware or capacity certification"
+        ],
+        "communication_bytes": 0,
+        "device": "cpu",
+        "distribution_semantics": "single_process",
+        "local_world_size": 1,
+        "logical_cpu_count": 10,
+        "machine": "arm64",
+        "methodology": {
+          "iterations": 1,
+          "pipeline_includes_handle_close": true,
+          "repetitions_are_independent_statistical_trials": false,
+          "seed_restarted_each_repetition": true,
+          "warmup": 0
+        },
+        "node_count": 1,
+        "non_release_evidence": true,
+        "observations": [
+          {
+            "batches": 512,
+            "completed_shots": 16384,
+            "detectors": 24,
+            "logical_failures": 60,
+            "observables": 1,
+            "phases_seconds": {
+              "count_reduction": 0.0018706961709540337,
+              "decoder_setup": 0.09901837501092814,
+              "decoding": 0.00874638395907823,
+              "dem_construction": 0.01958941700286232,
+              "memory_construction": 0.0005984590097796172,
+              "sampler_compile": 0.10099416600132827,
+              "sampling": 0.08744141503120773
+            },
+            "pipeline_seconds_excluding_imports_and_report_io": 0.3188113749929471,
+            "pipeline_shots_per_second": 51390.88904955934,
+            "visible_batch_tensor_bytes_max": 832,
+            "warmup": false
+          }
+        ],
+        "pipeline_median_seconds": 0.3188113749929471,
+        "platform": "macOS-27.0-arm64-arm-64bit",
+        "precision": "CPU int8 measurement records and bool logical predictions",
+        "process_max_rss_after_bytes": 258998272,
+        "process_max_rss_before_bytes": 216154112,
+        "python": "3.12.14",
+        "rank_ownership": {
+          "0": "whole_workload"
+        },
+        "release_gate_allowed": false,
+        "rss_available": true,
+        "runner": "qec_memory_sampling",
+        "scalability_claim_allowed": false,
+        "schema": "flagquantum.qec_memory_sampling.local_observations.v1",
+        "source_revision": "03d7c7b9b292e806856a301fb547d336cd452953",
+        "thread_environment": {
+          "MKL_NUM_THREADS": "1",
+          "OMP_NUM_THREADS": "1",
+          "OPENBLAS_NUM_THREADS": "1"
+        },
+        "torch_threads": 1,
+        "tracked_tree_clean": true,
+        "versions": {
+          "flagquantum_distribution": "0.4.0",
+          "flagquantum_source": "0.4.0",
+          "pymatching": "2.4.0",
+          "stim": "1.16.0",
+          "torch": "2.14.1"
+        },
+        "workload": {
+          "batch_size": 32,
+          "code": "RotatedSurfaceCode",
+          "distance": 3,
+          "noise": {
+            "data_flip": 0.005,
+            "measurement_flip": 0.009,
+            "phase_flip": 0.007
+          },
+          "readout_basis": "z",
+          "rounds": 3,
+          "seed": 53,
+          "shots": 16384
+        },
+        "world_size": 1
+      },
+      "producer_raw_sha256": "99af71c4207853dc2245e73a0b946ffcce5e98f2c86bf75944ef5a6466af568a"
+    },
+    {
+      "label": "A2-16384",
+      "kind": "sampling",
+      "shots": 16384,
+      "outer_role": "measured",
+      "process": 2,
+      "wall_budget_seconds": 120,
+      "status": "completed",
+      "command": [
+        "<task-evidence>/pr826-main-install-py312/bin/python",
+        "-m",
+        "flagquantum.benchmarking",
+        "run",
+        "qec_memory_sampling",
+        "--shots",
+        "16384",
+        "--batch-size",
+        "32",
+        "--warmup",
+        "0",
+        "--iterations",
+        "1",
+        "--json-output",
+        "<task-evidence>/stage-a-observations-20261025/A2-16384-2/producer.json"
+      ],
+      "supervised_command": [
+        "<task-evidence>/pr826-main-install-py312/bin/python",
+        "tools/run_with_watchdog.py",
+        "--phase",
+        "A2-16384-2",
+        "--stall-seconds",
+        "120",
+        "--timeout-seconds",
+        "120",
+        "--rss-limit-bytes",
+        "2147483648",
+        "--diagnostics",
+        "<task-evidence>/stage-a-observations-20261025/A2-16384-2/supervisor",
+        "--",
+        "<task-evidence>/pr826-main-install-py312/bin/python",
+        "-m",
+        "flagquantum.benchmarking",
+        "run",
+        "qec_memory_sampling",
+        "--shots",
+        "16384",
+        "--batch-size",
+        "32",
+        "--warmup",
+        "0",
+        "--iterations",
+        "1",
+        "--json-output",
+        "<task-evidence>/stage-a-observations-20261025/A2-16384-2/producer.json"
+      ],
+      "external_process_seconds": 1.0601794999965932,
+      "returncode": 0,
+      "watchdog": {
+        "schema": "flagquantum_watchdog_v1",
+        "phase": "A2-16384-2",
+        "reason": "completed",
+        "last_operation": "<task-evidence>/pr826-main-install-py312/bin/python -m flagquantum.benchmarking run qec_memory_sampling --shots 16384 --batch-size 32 --warmup 0 --iterations 1 --json-output <task-evidence>/stage-a-observations-20261025/A2-16384-2/producer.json",
+        "elapsed_seconds": 1.0079543750034645,
+        "cleanup_required": false,
+        "command_returncode": 0,
+        "termination_elapsed_seconds": 0.0,
+        "rss_limit_bytes": 2147483648,
+        "sampled_group_rss_max_bytes": 268500992,
+        "rss_sample_count": 39,
+        "rss_sample_gap_max_seconds": 0.03432812499522697,
+        "rss_max_allowed_gap_seconds": 0.1,
+        "hard_allocation_limit": false,
+        "rss_scope": "sum of owned process-group RSS; shared pages may be counted twice",
+        "rss_recent_samples_seconds_bytes": [
+          [
+            0.1927494589908747,
+            152125440
+          ],
+          [
+            0.2221669589926023,
+            157728768
+          ],
+          [
+            0.2524991249956656,
+            165462016
+          ],
+          [
+            0.2754500419978285,
+            171294720
+          ],
+          [
+            0.30215883399068844,
+            175964160
+          ],
+          [
+            0.3250525839976035,
+            181010432
+          ],
+          [
+            0.3504233339917846,
+            187793408
+          ],
+          [
+            0.3757571669993922,
+            190742528
+          ],
+          [
+            0.40082616699510254,
+            197558272
+          ],
+          [
+            0.4252298749925103,
+            201359360
+          ],
+          [
+            0.44998649999615736,
+            204587008
+          ],
+          [
+            0.47482883399061393,
+            208109568
+          ],
+          [
+            0.5010095420002472,
+            213598208
+          ],
+          [
+            0.5267677919910057,
+            216203264
+          ],
+          [
+            0.5552456250006799,
+            221462528
+          ],
+          [
+            0.5801797089952743,
+            231522304
+          ],
+          [
+            0.6054449590010336,
+            239583232
+          ],
+          [
+            0.6348221249936614,
+            250413056
+          ],
+          [
+            0.6589150419895304,
+            251625472
+          ],
+          [
+            0.6835986249934649,
+            256475136
+          ],
+          [
+            0.707884584000567,
+            258588672
+          ],
+          [
+            0.7323740419960814,
+            259424256
+          ],
+          [
+            0.7569093749916647,
+            259424256
+          ],
+          [
+            0.7812882919970434,
+            259424256
+          ],
+          [
+            0.8052976250037318,
+            259424256
+          ],
+          [
+            0.8345002499991097,
+            260571136
+          ],
+          [
+            0.8585595839977032,
+            259702784
+          ],
+          [
+            0.8841857919906033,
+            259817472
+          ],
+          [
+            0.9090990839904407,
+            259817472
+          ],
+          [
+            0.9323646669945447,
+            259817472
+          ],
+          [
+            0.958016584001598,
+            259817472
+          ],
+          [
+            0.9831878339900868,
+            268500992
+          ]
+        ]
+      },
+      "producer": {
+        "benchmark_evidence_class": "local_non_release",
+        "blockers": [
+          "local CPU observation; no hardware or capacity certification"
+        ],
+        "communication_bytes": 0,
+        "device": "cpu",
+        "distribution_semantics": "single_process",
+        "local_world_size": 1,
+        "logical_cpu_count": 10,
+        "machine": "arm64",
+        "methodology": {
+          "iterations": 1,
+          "pipeline_includes_handle_close": true,
+          "repetitions_are_independent_statistical_trials": false,
+          "seed_restarted_each_repetition": true,
+          "warmup": 0
+        },
+        "node_count": 1,
+        "non_release_evidence": true,
+        "observations": [
+          {
+            "batches": 512,
+            "completed_shots": 16384,
+            "detectors": 24,
+            "logical_failures": 60,
+            "observables": 1,
+            "phases_seconds": {
+              "count_reduction": 0.0017278060258831829,
+              "decoder_setup": 0.0987798329879297,
+              "decoding": 0.0081266710330965,
+              "dem_construction": 0.0193527079973137,
+              "memory_construction": 0.0005743750080000609,
+              "sampler_compile": 0.09360229200683534,
+              "sampling": 0.08253308210987598
+            },
+            "pipeline_seconds_excluding_imports_and_report_io": 0.305212166000274,
+            "pipeline_shots_per_second": 53680.691090096625,
+            "visible_batch_tensor_bytes_max": 832,
+            "warmup": false
+          }
+        ],
+        "pipeline_median_seconds": 0.305212166000274,
+        "platform": "macOS-27.0-arm64-arm-64bit",
+        "precision": "CPU int8 measurement records and bool logical predictions",
+        "process_max_rss_after_bytes": 259424256,
+        "process_max_rss_before_bytes": 216154112,
+        "python": "3.12.14",
+        "rank_ownership": {
+          "0": "whole_workload"
+        },
+        "release_gate_allowed": false,
+        "rss_available": true,
+        "runner": "qec_memory_sampling",
+        "scalability_claim_allowed": false,
+        "schema": "flagquantum.qec_memory_sampling.local_observations.v1",
+        "source_revision": "03d7c7b9b292e806856a301fb547d336cd452953",
+        "thread_environment": {
+          "MKL_NUM_THREADS": "1",
+          "OMP_NUM_THREADS": "1",
+          "OPENBLAS_NUM_THREADS": "1"
+        },
+        "torch_threads": 1,
+        "tracked_tree_clean": true,
+        "versions": {
+          "flagquantum_distribution": "0.4.0",
+          "flagquantum_source": "0.4.0",
+          "pymatching": "2.4.0",
+          "stim": "1.16.0",
+          "torch": "2.14.1"
+        },
+        "workload": {
+          "batch_size": 32,
+          "code": "RotatedSurfaceCode",
+          "distance": 3,
+          "noise": {
+            "data_flip": 0.005,
+            "measurement_flip": 0.009,
+            "phase_flip": 0.007
+          },
+          "readout_basis": "z",
+          "rounds": 3,
+          "seed": 53,
+          "shots": 16384
+        },
+        "world_size": 1
+      },
+      "producer_raw_sha256": "bb427dcb64e444cbdc3a538f80ee782fb41aaa39db30b0ceb9b68c4a03ad6ce2"
+    },
+    {
+      "label": "A2-16384",
+      "kind": "sampling",
+      "shots": 16384,
+      "outer_role": "measured",
+      "process": 3,
+      "wall_budget_seconds": 120,
+      "status": "completed",
+      "command": [
+        "<task-evidence>/pr826-main-install-py312/bin/python",
+        "-m",
+        "flagquantum.benchmarking",
+        "run",
+        "qec_memory_sampling",
+        "--shots",
+        "16384",
+        "--batch-size",
+        "32",
+        "--warmup",
+        "0",
+        "--iterations",
+        "1",
+        "--json-output",
+        "<task-evidence>/stage-a-observations-20261025/A2-16384-3/producer.json"
+      ],
+      "supervised_command": [
+        "<task-evidence>/pr826-main-install-py312/bin/python",
+        "tools/run_with_watchdog.py",
+        "--phase",
+        "A2-16384-3",
+        "--stall-seconds",
+        "120",
+        "--timeout-seconds",
+        "120",
+        "--rss-limit-bytes",
+        "2147483648",
+        "--diagnostics",
+        "<task-evidence>/stage-a-observations-20261025/A2-16384-3/supervisor",
+        "--",
+        "<task-evidence>/pr826-main-install-py312/bin/python",
+        "-m",
+        "flagquantum.benchmarking",
+        "run",
+        "qec_memory_sampling",
+        "--shots",
+        "16384",
+        "--batch-size",
+        "32",
+        "--warmup",
+        "0",
+        "--iterations",
+        "1",
+        "--json-output",
+        "<task-evidence>/stage-a-observations-20261025/A2-16384-3/producer.json"
+      ],
+      "external_process_seconds": 1.0496676250040764,
+      "returncode": 0,
+      "watchdog": {
+        "schema": "flagquantum_watchdog_v1",
+        "phase": "A2-16384-3",
+        "reason": "completed",
+        "last_operation": "<task-evidence>/pr826-main-install-py312/bin/python -m flagquantum.benchmarking run qec_memory_sampling --shots 16384 --batch-size 32 --warmup 0 --iterations 1 --json-output <task-evidence>/stage-a-observations-20261025/A2-16384-3/producer.json",
+        "elapsed_seconds": 0.9728630000026897,
+        "cleanup_required": false,
+        "command_returncode": 0,
+        "termination_elapsed_seconds": 0.0,
+        "rss_limit_bytes": 2147483648,
+        "sampled_group_rss_max_bytes": 269074432,
+        "rss_sample_count": 39,
+        "rss_sample_gap_max_seconds": 0.030262750005931593,
+        "rss_max_allowed_gap_seconds": 0.1,
+        "hard_allocation_limit": false,
+        "rss_scope": "sum of owned process-group RSS; shared pages may be counted twice",
+        "rss_recent_samples_seconds_bytes": [
+          [
+            0.18071912501181941,
+            153141248
+          ],
+          [
+            0.20580112500465475,
+            162414592
+          ],
+          [
+            0.2308117909997236,
+            169361408
+          ],
+          [
+            0.2557533330109436,
+            175308800
+          ],
+          [
+            0.2809550410020165,
+            178028544
+          ],
+          [
+            0.3061022080073599,
+            187367424
+          ],
+          [
+            0.3309693750052247,
+            190054400
+          ],
+          [
+            0.3561562910035718,
+            196853760
+          ],
+          [
+            0.37972000001173,
+            200409088
+          ],
+          [
+            0.4044075830024667,
+            203620352
+          ],
+          [
+            0.4306792499992298,
+            206995456
+          ],
+          [
+            0.45589770800143015,
+            212598784
+          ],
+          [
+            0.4813019580033142,
+            216268800
+          ],
+          [
+            0.5089961250050692,
+            218038272
+          ],
+          [
+            0.5313138330093352,
+            228311040
+          ],
+          [
+            0.5571792499977164,
+            236535808
+          ],
+          [
+            0.587442000003648,
+            245628928
+          ],
+          [
+            0.6128184580011293,
+            251379712
+          ],
+          [
+            0.6376405000046361,
+            254181376
+          ],
+          [
+            0.6637470830028178,
+            258228224
+          ],
+          [
+            0.687945291007054,
+            258244608
+          ],
+          [
+            0.7125188750069356,
+            259031040
+          ],
+          [
+            0.7367973330110544,
+            259031040
+          ],
+          [
+            0.761172416008776,
+            259031040
+          ],
+          [
+            0.7857603330048732,
+            259047424
+          ],
+          [
+            0.8111395830055699,
+            265388032
+          ],
+          [
+            0.8313897080079187,
+            259457024
+          ],
+          [
+            0.8569413750083186,
+            259457024
+          ],
+          [
+            0.877730791005888,
+            259457024
+          ],
+          [
+            0.8983762910065707,
+            259457024
+          ],
+          [
+            0.9239440410019597,
+            259457024
+          ],
+          [
+            0.9479797500098357,
+            269074432
+          ]
+        ]
+      },
+      "producer": {
+        "benchmark_evidence_class": "local_non_release",
+        "blockers": [
+          "local CPU observation; no hardware or capacity certification"
+        ],
+        "communication_bytes": 0,
+        "device": "cpu",
+        "distribution_semantics": "single_process",
+        "local_world_size": 1,
+        "logical_cpu_count": 10,
+        "machine": "arm64",
+        "methodology": {
+          "iterations": 1,
+          "pipeline_includes_handle_close": true,
+          "repetitions_are_independent_statistical_trials": false,
+          "seed_restarted_each_repetition": true,
+          "warmup": 0
+        },
+        "node_count": 1,
+        "non_release_evidence": true,
+        "observations": [
+          {
+            "batches": 512,
+            "completed_shots": 16384,
+            "detectors": 24,
+            "logical_failures": 60,
+            "observables": 1,
+            "phases_seconds": {
+              "count_reduction": 0.0017913972260430455,
+              "decoder_setup": 0.10093308400246315,
+              "decoding": 0.008081678897724487,
+              "dem_construction": 0.019001540989847854,
+              "memory_construction": 0.000908333997358568,
+              "sampler_compile": 0.09295712500170339,
+              "sampling": 0.08168047107756138
+            },
+            "pipeline_seconds_excluding_imports_and_report_io": 0.30584749999979977,
+            "pipeline_shots_per_second": 53569.18071918432,
+            "visible_batch_tensor_bytes_max": 832,
+            "warmup": false
+          }
+        ],
+        "pipeline_median_seconds": 0.30584749999979977,
+        "platform": "macOS-27.0-arm64-arm-64bit",
+        "precision": "CPU int8 measurement records and bool logical predictions",
+        "process_max_rss_after_bytes": 259031040,
+        "process_max_rss_before_bytes": 216203264,
+        "python": "3.12.14",
+        "rank_ownership": {
+          "0": "whole_workload"
+        },
+        "release_gate_allowed": false,
+        "rss_available": true,
+        "runner": "qec_memory_sampling",
+        "scalability_claim_allowed": false,
+        "schema": "flagquantum.qec_memory_sampling.local_observations.v1",
+        "source_revision": "03d7c7b9b292e806856a301fb547d336cd452953",
+        "thread_environment": {
+          "MKL_NUM_THREADS": "1",
+          "OMP_NUM_THREADS": "1",
+          "OPENBLAS_NUM_THREADS": "1"
+        },
+        "torch_threads": 1,
+        "tracked_tree_clean": true,
+        "versions": {
+          "flagquantum_distribution": "0.4.0",
+          "flagquantum_source": "0.4.0",
+          "pymatching": "2.4.0",
+          "stim": "1.16.0",
+          "torch": "2.14.1"
+        },
+        "workload": {
+          "batch_size": 32,
+          "code": "RotatedSurfaceCode",
+          "distance": 3,
+          "noise": {
+            "data_flip": 0.005,
+            "measurement_flip": 0.009,
+            "phase_flip": 0.007
+          },
+          "readout_basis": "z",
+          "rounds": 3,
+          "seed": 53,
+          "shots": 16384
+        },
+        "world_size": 1
+      },
+      "producer_raw_sha256": "ec8dea6972e2f59eb531d8e63e6df035839561174a466d175e334f5be15ec8f8"
+    },
+    {
+      "label": "A3-65536",
+      "kind": "sampling",
+      "shots": 65536,
+      "outer_role": "host_warmup",
+      "process": 0,
+      "wall_budget_seconds": 120,
+      "status": "completed",
+      "command": [
+        "<task-evidence>/pr826-main-install-py312/bin/python",
+        "-m",
+        "flagquantum.benchmarking",
+        "run",
+        "qec_memory_sampling",
+        "--shots",
+        "65536",
+        "--batch-size",
+        "32",
+        "--warmup",
+        "0",
+        "--iterations",
+        "1",
+        "--json-output",
+        "<task-evidence>/stage-a-observations-20261025/A3-65536-0/producer.json"
+      ],
+      "supervised_command": [
+        "<task-evidence>/pr826-main-install-py312/bin/python",
+        "tools/run_with_watchdog.py",
+        "--phase",
+        "A3-65536-0",
+        "--stall-seconds",
+        "120",
+        "--timeout-seconds",
+        "120",
+        "--rss-limit-bytes",
+        "2147483648",
+        "--diagnostics",
+        "<task-evidence>/stage-a-observations-20261025/A3-65536-0/supervisor",
+        "--",
+        "<task-evidence>/pr826-main-install-py312/bin/python",
+        "-m",
+        "flagquantum.benchmarking",
+        "run",
+        "qec_memory_sampling",
+        "--shots",
+        "65536",
+        "--batch-size",
+        "32",
+        "--warmup",
+        "0",
+        "--iterations",
+        "1",
+        "--json-output",
+        "<task-evidence>/stage-a-observations-20261025/A3-65536-0/producer.json"
+      ],
+      "external_process_seconds": 1.3378059580136323,
+      "returncode": 0,
+      "watchdog": {
+        "schema": "flagquantum_watchdog_v1",
+        "phase": "A3-65536-0",
+        "reason": "completed",
+        "last_operation": "<task-evidence>/pr826-main-install-py312/bin/python -m flagquantum.benchmarking run qec_memory_sampling --shots 65536 --batch-size 32 --warmup 0 --iterations 1 --json-output <task-evidence>/stage-a-observations-20261025/A3-65536-0/producer.json",
+        "elapsed_seconds": 1.2700374169944553,
+        "cleanup_required": false,
+        "command_returncode": 0,
+        "termination_elapsed_seconds": 0.0,
+        "rss_limit_bytes": 2147483648,
+        "sampled_group_rss_max_bytes": 269107200,
+        "rss_sample_count": 50,
+        "rss_sample_gap_max_seconds": 0.039292208006372675,
+        "rss_max_allowed_gap_seconds": 0.1,
+        "hard_allocation_limit": false,
+        "rss_scope": "sum of owned process-group RSS; shared pages may be counted twice",
+        "rss_recent_samples_seconds_bytes": [
+          [
+            0.46032629199908115,
+            213729280
+          ],
+          [
+            0.48502662499959115,
+            216383488
+          ],
+          [
+            0.5097605420014588,
+            220299264
+          ],
+          [
+            0.5352017919940408,
+            230686720
+          ],
+          [
+            0.5598095000023022,
+            237993984
+          ],
+          [
+            0.5849124170053983,
+            247496704
+          ],
+          [
+            0.6166370419960003,
+            251461632
+          ],
+          [
+            0.6422837499994785,
+            254230528
+          ],
+          [
+            0.6710317090037279,
+            258293760
+          ],
+          [
+            0.6924209999997402,
+            258441216
+          ],
+          [
+            0.717282958998112,
+            259096576
+          ],
+          [
+            0.745002541996655,
+            259096576
+          ],
+          [
+            0.7665740420052316,
+            259096576
+          ],
+          [
+            0.7919491670036223,
+            259096576
+          ],
+          [
+            0.8161204170028213,
+            259096576
+          ],
+          [
+            0.8377233339997474,
+            259096576
+          ],
+          [
+            0.8595317089930177,
+            259096576
+          ],
+          [
+            0.884534333992633,
+            259096576
+          ],
+          [
+            0.9093187499966007,
+            259096576
+          ],
+          [
+            0.9346443749964237,
+            259096576
+          ],
+          [
+            0.9592260839999653,
+            259096576
+          ],
+          [
+            0.9813237920025131,
+            259096576
+          ],
+          [
+            1.0063816670008237,
+            259096576
+          ],
+          [
+            1.0316460419999203,
+            259096576
+          ],
+          [
+            1.056655167005374,
+            259096576
+          ],
+          [
+            1.0816261669970118,
+            259129344
+          ],
+          [
+            1.1067017919995124,
+            260390912
+          ],
+          [
+            1.145994000005885,
+            259489792
+          ],
+          [
+            1.1717020840005716,
+            259489792
+          ],
+          [
+            1.1952949169935891,
+            259489792
+          ],
+          [
+            1.2184721670055296,
+            259489792
+          ],
+          [
+            1.2444984589965316,
+            269107200
+          ]
+        ]
+      },
+      "producer": {
+        "benchmark_evidence_class": "local_non_release",
+        "blockers": [
+          "local CPU observation; no hardware or capacity certification"
+        ],
+        "communication_bytes": 0,
+        "device": "cpu",
+        "distribution_semantics": "single_process",
+        "local_world_size": 1,
+        "logical_cpu_count": 10,
+        "machine": "arm64",
+        "methodology": {
+          "iterations": 1,
+          "pipeline_includes_handle_close": true,
+          "repetitions_are_independent_statistical_trials": false,
+          "seed_restarted_each_repetition": true,
+          "warmup": 0
+        },
+        "node_count": 1,
+        "non_release_evidence": true,
+        "observations": [
+          {
+            "batches": 2048,
+            "completed_shots": 65536,
+            "detectors": 24,
+            "logical_failures": 205,
+            "observables": 1,
+            "phases_seconds": {
+              "count_reduction": 0.006880595145048574,
+              "decoder_setup": 0.09540841699345037,
+              "decoding": 0.03242651383334305,
+              "dem_construction": 0.019179249997250736,
+              "memory_construction": 0.0005976660031592473,
+              "sampler_compile": 0.09786429200903513,
+              "sampling": 0.3328494997258531
+            },
+            "pipeline_seconds_excluding_imports_and_report_io": 0.5871384170022793,
+            "pipeline_shots_per_second": 111619.3355812137,
+            "visible_batch_tensor_bytes_max": 832,
+            "warmup": false
+          }
+        ],
+        "pipeline_median_seconds": 0.5871384170022793,
+        "platform": "macOS-27.0-arm64-arm-64bit",
+        "precision": "CPU int8 measurement records and bool logical predictions",
+        "process_max_rss_after_bytes": 259096576,
+        "process_max_rss_before_bytes": 216334336,
+        "python": "3.12.14",
+        "rank_ownership": {
+          "0": "whole_workload"
+        },
+        "release_gate_allowed": false,
+        "rss_available": true,
+        "runner": "qec_memory_sampling",
+        "scalability_claim_allowed": false,
+        "schema": "flagquantum.qec_memory_sampling.local_observations.v1",
+        "source_revision": "03d7c7b9b292e806856a301fb547d336cd452953",
+        "thread_environment": {
+          "MKL_NUM_THREADS": "1",
+          "OMP_NUM_THREADS": "1",
+          "OPENBLAS_NUM_THREADS": "1"
+        },
+        "torch_threads": 1,
+        "tracked_tree_clean": true,
+        "versions": {
+          "flagquantum_distribution": "0.4.0",
+          "flagquantum_source": "0.4.0",
+          "pymatching": "2.4.0",
+          "stim": "1.16.0",
+          "torch": "2.14.1"
+        },
+        "workload": {
+          "batch_size": 32,
+          "code": "RotatedSurfaceCode",
+          "distance": 3,
+          "noise": {
+            "data_flip": 0.005,
+            "measurement_flip": 0.009,
+            "phase_flip": 0.007
+          },
+          "readout_basis": "z",
+          "rounds": 3,
+          "seed": 53,
+          "shots": 65536
+        },
+        "world_size": 1
+      },
+      "producer_raw_sha256": "0d495f9e42852f8cb0c11c95bbe398f3a6d2b75cbde2623479490987be81975a"
+    },
+    {
+      "label": "A3-65536",
+      "kind": "sampling",
+      "shots": 65536,
+      "outer_role": "measured",
+      "process": 1,
+      "wall_budget_seconds": 120,
+      "status": "completed",
+      "command": [
+        "<task-evidence>/pr826-main-install-py312/bin/python",
+        "-m",
+        "flagquantum.benchmarking",
+        "run",
+        "qec_memory_sampling",
+        "--shots",
+        "65536",
+        "--batch-size",
+        "32",
+        "--warmup",
+        "0",
+        "--iterations",
+        "1",
+        "--json-output",
+        "<task-evidence>/stage-a-observations-20261025/A3-65536-1/producer.json"
+      ],
+      "supervised_command": [
+        "<task-evidence>/pr826-main-install-py312/bin/python",
+        "tools/run_with_watchdog.py",
+        "--phase",
+        "A3-65536-1",
+        "--stall-seconds",
+        "120",
+        "--timeout-seconds",
+        "120",
+        "--rss-limit-bytes",
+        "2147483648",
+        "--diagnostics",
+        "<task-evidence>/stage-a-observations-20261025/A3-65536-1/supervisor",
+        "--",
+        "<task-evidence>/pr826-main-install-py312/bin/python",
+        "-m",
+        "flagquantum.benchmarking",
+        "run",
+        "qec_memory_sampling",
+        "--shots",
+        "65536",
+        "--batch-size",
+        "32",
+        "--warmup",
+        "0",
+        "--iterations",
+        "1",
+        "--json-output",
+        "<task-evidence>/stage-a-observations-20261025/A3-65536-1/producer.json"
+      ],
+      "external_process_seconds": 1.3459969160030596,
+      "returncode": 0,
+      "watchdog": {
+        "schema": "flagquantum_watchdog_v1",
+        "phase": "A3-65536-1",
+        "reason": "completed",
+        "last_operation": "<task-evidence>/pr826-main-install-py312/bin/python -m flagquantum.benchmarking run qec_memory_sampling --shots 65536 --batch-size 32 --warmup 0 --iterations 1 --json-output <task-evidence>/stage-a-observations-20261025/A3-65536-1/producer.json",
+        "elapsed_seconds": 1.2663968749984633,
+        "cleanup_required": false,
+        "command_returncode": 0,
+        "termination_elapsed_seconds": 0.0,
+        "rss_limit_bytes": 2147483648,
+        "sampled_group_rss_max_bytes": 269074432,
+        "rss_sample_count": 52,
+        "rss_sample_gap_max_seconds": 0.029541457988671027,
+        "rss_max_allowed_gap_seconds": 0.1,
+        "hard_allocation_limit": false,
+        "rss_scope": "sum of owned process-group RSS; shared pages may be counted twice",
+        "rss_recent_samples_seconds_bytes": [
+          [
+            0.490997958011576,
+            215908352
+          ],
+          [
+            0.5160688330070116,
+            217448448
+          ],
+          [
+            0.5410953750106273,
+            227639296
+          ],
+          [
+            0.5618424999993294,
+            234045440
+          ],
+          [
+            0.5870546670048498,
+            243400704
+          ],
+          [
+            0.6079107500117971,
+            251232256
+          ],
+          [
+            0.6337132080079755,
+            251297792
+          ],
+          [
+            0.6588409579999279,
+            258195456
+          ],
+          [
+            0.6821868750121212,
+            258260992
+          ],
+          [
+            0.7066321250022156,
+            259080192
+          ],
+          [
+            0.7309523330040975,
+            259080192
+          ],
+          [
+            0.7553015419980511,
+            259080192
+          ],
+          [
+            0.7794581250054762,
+            259080192
+          ],
+          [
+            0.7988398330053315,
+            259080192
+          ],
+          [
+            0.8228535000089323,
+            259080192
+          ],
+          [
+            0.8470042500121053,
+            259080192
+          ],
+          [
+            0.8765457080007764,
+            259080192
+          ],
+          [
+            0.8989752080087783,
+            259080192
+          ],
+          [
+            0.92266045800352,
+            259080192
+          ],
+          [
+            0.9474957920028828,
+            259080192
+          ],
+          [
+            0.9690943330060691,
+            259080192
+          ],
+          [
+            0.9938257920002798,
+            259080192
+          ],
+          [
+            1.018596082998556,
+            259080192
+          ],
+          [
+            1.0433387080120156,
+            259080192
+          ],
+          [
+            1.0681082500086632,
+            259080192
+          ],
+          [
+            1.0909736250032438,
+            263421952
+          ],
+          [
+            1.115651208005147,
+            259604480
+          ],
+          [
+            1.1411751670093508,
+            259457024
+          ],
+          [
+            1.1666843749990221,
+            259457024
+          ],
+          [
+            1.1914505830063717,
+            259457024
+          ],
+          [
+            1.2168598749994999,
+            259457024
+          ],
+          [
+            1.241089875009493,
+            269074432
+          ]
+        ]
+      },
+      "producer": {
+        "benchmark_evidence_class": "local_non_release",
+        "blockers": [
+          "local CPU observation; no hardware or capacity certification"
+        ],
+        "communication_bytes": 0,
+        "device": "cpu",
+        "distribution_semantics": "single_process",
+        "local_world_size": 1,
+        "logical_cpu_count": 10,
+        "machine": "arm64",
+        "methodology": {
+          "iterations": 1,
+          "pipeline_includes_handle_close": true,
+          "repetitions_are_independent_statistical_trials": false,
+          "seed_restarted_each_repetition": true,
+          "warmup": 0
+        },
+        "node_count": 1,
+        "non_release_evidence": true,
+        "observations": [
+          {
+            "batches": 2048,
+            "completed_shots": 65536,
+            "detectors": 24,
+            "logical_failures": 205,
+            "observables": 1,
+            "phases_seconds": {
+              "count_reduction": 0.006862275826279074,
+              "decoder_setup": 0.09302679100073874,
+              "decoding": 0.03165878274012357,
+              "dem_construction": 0.01903587499691639,
+              "memory_construction": 0.0006060409941710532,
+              "sampler_compile": 0.09747558399976697,
+              "sampling": 0.3340512593276799
+            },
+            "pipeline_seconds_excluding_imports_and_report_io": 0.5846226249996107,
+            "pipeline_shots_per_second": 112099.6642920613,
+            "visible_batch_tensor_bytes_max": 832,
+            "warmup": false
+          }
+        ],
+        "pipeline_median_seconds": 0.5846226249996107,
+        "platform": "macOS-27.0-arm64-arm-64bit",
+        "precision": "CPU int8 measurement records and bool logical predictions",
+        "process_max_rss_after_bytes": 259080192,
+        "process_max_rss_before_bytes": 216252416,
+        "python": "3.12.14",
+        "rank_ownership": {
+          "0": "whole_workload"
+        },
+        "release_gate_allowed": false,
+        "rss_available": true,
+        "runner": "qec_memory_sampling",
+        "scalability_claim_allowed": false,
+        "schema": "flagquantum.qec_memory_sampling.local_observations.v1",
+        "source_revision": "03d7c7b9b292e806856a301fb547d336cd452953",
+        "thread_environment": {
+          "MKL_NUM_THREADS": "1",
+          "OMP_NUM_THREADS": "1",
+          "OPENBLAS_NUM_THREADS": "1"
+        },
+        "torch_threads": 1,
+        "tracked_tree_clean": true,
+        "versions": {
+          "flagquantum_distribution": "0.4.0",
+          "flagquantum_source": "0.4.0",
+          "pymatching": "2.4.0",
+          "stim": "1.16.0",
+          "torch": "2.14.1"
+        },
+        "workload": {
+          "batch_size": 32,
+          "code": "RotatedSurfaceCode",
+          "distance": 3,
+          "noise": {
+            "data_flip": 0.005,
+            "measurement_flip": 0.009,
+            "phase_flip": 0.007
+          },
+          "readout_basis": "z",
+          "rounds": 3,
+          "seed": 53,
+          "shots": 65536
+        },
+        "world_size": 1
+      },
+      "producer_raw_sha256": "7e7eb4202b3d4d68496212178f06a6c17cc9dd9d6857ee4f6038f416b0048945"
+    },
+    {
+      "label": "A3-65536",
+      "kind": "sampling",
+      "shots": 65536,
+      "outer_role": "measured",
+      "process": 2,
+      "wall_budget_seconds": 120,
+      "status": "completed",
+      "command": [
+        "<task-evidence>/pr826-main-install-py312/bin/python",
+        "-m",
+        "flagquantum.benchmarking",
+        "run",
+        "qec_memory_sampling",
+        "--shots",
+        "65536",
+        "--batch-size",
+        "32",
+        "--warmup",
+        "0",
+        "--iterations",
+        "1",
+        "--json-output",
+        "<task-evidence>/stage-a-observations-20261025/A3-65536-2/producer.json"
+      ],
+      "supervised_command": [
+        "<task-evidence>/pr826-main-install-py312/bin/python",
+        "tools/run_with_watchdog.py",
+        "--phase",
+        "A3-65536-2",
+        "--stall-seconds",
+        "120",
+        "--timeout-seconds",
+        "120",
+        "--rss-limit-bytes",
+        "2147483648",
+        "--diagnostics",
+        "<task-evidence>/stage-a-observations-20261025/A3-65536-2/supervisor",
+        "--",
+        "<task-evidence>/pr826-main-install-py312/bin/python",
+        "-m",
+        "flagquantum.benchmarking",
+        "run",
+        "qec_memory_sampling",
+        "--shots",
+        "65536",
+        "--batch-size",
+        "32",
+        "--warmup",
+        "0",
+        "--iterations",
+        "1",
+        "--json-output",
+        "<task-evidence>/stage-a-observations-20261025/A3-65536-2/producer.json"
+      ],
+      "external_process_seconds": 1.3879609580035321,
+      "returncode": 0,
+      "watchdog": {
+        "schema": "flagquantum_watchdog_v1",
+        "phase": "A3-65536-2",
+        "reason": "completed",
+        "last_operation": "<task-evidence>/pr826-main-install-py312/bin/python -m flagquantum.benchmarking run qec_memory_sampling --shots 65536 --batch-size 32 --warmup 0 --iterations 1 --json-output <task-evidence>/stage-a-observations-20261025/A3-65536-2/producer.json",
+        "elapsed_seconds": 1.2859516669996083,
+        "cleanup_required": false,
+        "command_returncode": 0,
+        "termination_elapsed_seconds": 0.0,
+        "rss_limit_bytes": 2147483648,
+        "sampled_group_rss_max_bytes": 268337152,
+        "rss_sample_count": 51,
+        "rss_sample_gap_max_seconds": 0.03319054200255778,
+        "rss_max_allowed_gap_seconds": 0.1,
+        "hard_allocation_limit": false,
+        "rss_scope": "sum of owned process-group RSS; shared pages may be counted twice",
+        "rss_recent_samples_seconds_bytes": [
+          [
+            0.5012652089935727,
+            214532096
+          ],
+          [
+            0.5264080420020036,
+            216662016
+          ],
+          [
+            0.5535432920005405,
+            223379456
+          ],
+          [
+            0.5832397920021322,
+            234045440
+          ],
+          [
+            0.6087180000031367,
+            241467392
+          ],
+          [
+            0.628911749998224,
+            249413632
+          ],
+          [
+            0.6543508339964319,
+            251658240
+          ],
+          [
+            0.6791832500020973,
+            254476288
+          ],
+          [
+            0.7044582920061657,
+            258506752
+          ],
+          [
+            0.7293913750036154,
+            259325952
+          ],
+          [
+            0.7531671670003561,
+            259325952
+          ],
+          [
+            0.7776572500006296,
+            259325952
+          ],
+          [
+            0.8020415420032805,
+            259325952
+          ],
+          [
+            0.8262942089932039,
+            259325952
+          ],
+          [
+            0.8502257499931147,
+            259325952
+          ],
+          [
+            0.8700820840022061,
+            259325952
+          ],
+          [
+            0.8941070000000764,
+            259325952
+          ],
+          [
+            0.9178812089958228,
+            259325952
+          ],
+          [
+            0.9419617090024985,
+            259325952
+          ],
+          [
+            0.9662520839920035,
+            259325952
+          ],
+          [
+            0.9865114589920267,
+            259325952
+          ],
+          [
+            1.010625833994709,
+            259325952
+          ],
+          [
+            1.035209459005273,
+            259325952
+          ],
+          [
+            1.0602456250053365,
+            259325952
+          ],
+          [
+            1.0852733749925392,
+            259325952
+          ],
+          [
+            1.1106417090049945,
+            260308992
+          ],
+          [
+            1.1357346669974504,
+            262930432
+          ],
+          [
+            1.161123084006249,
+            259702784
+          ],
+          [
+            1.1866509999963455,
+            259719168
+          ],
+          [
+            1.2110050000046613,
+            259719168
+          ],
+          [
+            1.2361354169988772,
+            259719168
+          ],
+          [
+            1.26135008399433,
+            268337152
+          ]
+        ]
+      },
+      "producer": {
+        "benchmark_evidence_class": "local_non_release",
+        "blockers": [
+          "local CPU observation; no hardware or capacity certification"
+        ],
+        "communication_bytes": 0,
+        "device": "cpu",
+        "distribution_semantics": "single_process",
+        "local_world_size": 1,
+        "logical_cpu_count": 10,
+        "machine": "arm64",
+        "methodology": {
+          "iterations": 1,
+          "pipeline_includes_handle_close": true,
+          "repetitions_are_independent_statistical_trials": false,
+          "seed_restarted_each_repetition": true,
+          "warmup": 0
+        },
+        "node_count": 1,
+        "non_release_evidence": true,
+        "observations": [
+          {
+            "batches": 2048,
+            "completed_shots": 65536,
+            "detectors": 24,
+            "logical_failures": 205,
+            "observables": 1,
+            "phases_seconds": {
+              "count_reduction": 0.0068191919854143634,
+              "decoder_setup": 0.09751249999681022,
+              "decoding": 0.03185493138153106,
+              "dem_construction": 0.01866229200095404,
+              "memory_construction": 0.0005897090013604611,
+              "sampler_compile": 0.09606104200065602,
+              "sampling": 0.3337562055239687
+            },
+            "pipeline_seconds_excluding_imports_and_report_io": 0.5871698330010986,
+            "pipeline_shots_per_second": 111613.36348810239,
+            "visible_batch_tensor_bytes_max": 832,
+            "warmup": false
+          }
+        ],
+        "pipeline_median_seconds": 0.5871698330010986,
+        "platform": "macOS-27.0-arm64-arm-64bit",
+        "precision": "CPU int8 measurement records and bool logical predictions",
+        "process_max_rss_after_bytes": 259325952,
+        "process_max_rss_before_bytes": 216612864,
+        "python": "3.12.14",
+        "rank_ownership": {
+          "0": "whole_workload"
+        },
+        "release_gate_allowed": false,
+        "rss_available": true,
+        "runner": "qec_memory_sampling",
+        "scalability_claim_allowed": false,
+        "schema": "flagquantum.qec_memory_sampling.local_observations.v1",
+        "source_revision": "03d7c7b9b292e806856a301fb547d336cd452953",
+        "thread_environment": {
+          "MKL_NUM_THREADS": "1",
+          "OMP_NUM_THREADS": "1",
+          "OPENBLAS_NUM_THREADS": "1"
+        },
+        "torch_threads": 1,
+        "tracked_tree_clean": true,
+        "versions": {
+          "flagquantum_distribution": "0.4.0",
+          "flagquantum_source": "0.4.0",
+          "pymatching": "2.4.0",
+          "stim": "1.16.0",
+          "torch": "2.14.1"
+        },
+        "workload": {
+          "batch_size": 32,
+          "code": "RotatedSurfaceCode",
+          "distance": 3,
+          "noise": {
+            "data_flip": 0.005,
+            "measurement_flip": 0.009,
+            "phase_flip": 0.007
+          },
+          "readout_basis": "z",
+          "rounds": 3,
+          "seed": 53,
+          "shots": 65536
+        },
+        "world_size": 1
+      },
+      "producer_raw_sha256": "c2d7f4e20e11da5d5c7a0ea98ce6769b65235e4446c6986727589c1c969dc912"
+    },
+    {
+      "label": "A3-65536",
+      "kind": "sampling",
+      "shots": 65536,
+      "outer_role": "measured",
+      "process": 3,
+      "wall_budget_seconds": 120,
+      "status": "completed",
+      "command": [
+        "<task-evidence>/pr826-main-install-py312/bin/python",
+        "-m",
+        "flagquantum.benchmarking",
+        "run",
+        "qec_memory_sampling",
+        "--shots",
+        "65536",
+        "--batch-size",
+        "32",
+        "--warmup",
+        "0",
+        "--iterations",
+        "1",
+        "--json-output",
+        "<task-evidence>/stage-a-observations-20261025/A3-65536-3/producer.json"
+      ],
+      "supervised_command": [
+        "<task-evidence>/pr826-main-install-py312/bin/python",
+        "tools/run_with_watchdog.py",
+        "--phase",
+        "A3-65536-3",
+        "--stall-seconds",
+        "120",
+        "--timeout-seconds",
+        "120",
+        "--rss-limit-bytes",
+        "2147483648",
+        "--diagnostics",
+        "<task-evidence>/stage-a-observations-20261025/A3-65536-3/supervisor",
+        "--",
+        "<task-evidence>/pr826-main-install-py312/bin/python",
+        "-m",
+        "flagquantum.benchmarking",
+        "run",
+        "qec_memory_sampling",
+        "--shots",
+        "65536",
+        "--batch-size",
+        "32",
+        "--warmup",
+        "0",
+        "--iterations",
+        "1",
+        "--json-output",
+        "<task-evidence>/stage-a-observations-20261025/A3-65536-3/producer.json"
+      ],
+      "external_process_seconds": 1.2944898330024444,
+      "returncode": 0,
+      "watchdog": {
+        "schema": "flagquantum_watchdog_v1",
+        "phase": "A3-65536-3",
+        "reason": "completed",
+        "last_operation": "<task-evidence>/pr826-main-install-py312/bin/python -m flagquantum.benchmarking run qec_memory_sampling --shots 65536 --batch-size 32 --warmup 0 --iterations 1 --json-output <task-evidence>/stage-a-observations-20261025/A3-65536-3/producer.json",
+        "elapsed_seconds": 1.2377365000138525,
+        "cleanup_required": false,
+        "command_returncode": 0,
+        "termination_elapsed_seconds": 0.0,
+        "rss_limit_bytes": 2147483648,
+        "sampled_group_rss_max_bytes": 268992512,
+        "rss_sample_count": 50,
+        "rss_sample_gap_max_seconds": 0.026506249996600673,
+        "rss_max_allowed_gap_seconds": 0.1,
+        "hard_allocation_limit": false,
+        "rss_scope": "sum of owned process-group RSS; shared pages may be counted twice",
+        "rss_recent_samples_seconds_bytes": [
+          [
+            0.46140983400982805,
+            213319680
+          ],
+          [
+            0.48687570900074206,
+            216285184
+          ],
+          [
+            0.5118045840063132,
+            221020160
+          ],
+          [
+            0.5365682090050541,
+            231243776
+          ],
+          [
+            0.5612079590064241,
+            239157248
+          ],
+          [
+            0.5861638750066049,
+            249217024
+          ],
+          [
+            0.611272000009194,
+            251281408
+          ],
+          [
+            0.6358753750100732,
+            256344064
+          ],
+          [
+            0.6607616670080461,
+            258179072
+          ],
+          [
+            0.6858777920133434,
+            259031040
+          ],
+          [
+            0.7106757090077735,
+            259031040
+          ],
+          [
+            0.735480750008719,
+            259031040
+          ],
+          [
+            0.7603443750122096,
+            259031040
+          ],
+          [
+            0.7850299590063514,
+            259031040
+          ],
+          [
+            0.8097233750013402,
+            259031040
+          ],
+          [
+            0.8348821250110632,
+            259031040
+          ],
+          [
+            0.8591655000054743,
+            259031040
+          ],
+          [
+            0.8836636670021107,
+            259031040
+          ],
+          [
+            0.9078147920081392,
+            259031040
+          ],
+          [
+            0.9279860420065233,
+            259031040
+          ],
+          [
+            0.9523456250026356,
+            259031040
+          ],
+          [
+            0.9768697090039495,
+            259031040
+          ],
+          [
+            1.0009809590119403,
+            259031040
+          ],
+          [
+            1.0250333750009304,
+            259031040
+          ],
+          [
+            1.0444997500017053,
+            259031040
+          ],
+          [
+            1.0691377090115566,
+            263012352
+          ],
+          [
+            1.0891763750114478,
+            259047424
+          ],
+          [
+            1.1146732500055805,
+            259375104
+          ],
+          [
+            1.1375390000030166,
+            259375104
+          ],
+          [
+            1.162878625007579,
+            259375104
+          ],
+          [
+            1.187776542006759,
+            259375104
+          ],
+          [
+            1.2127821250032866,
+            268992512
+          ]
+        ]
+      },
+      "producer": {
+        "benchmark_evidence_class": "local_non_release",
+        "blockers": [
+          "local CPU observation; no hardware or capacity certification"
+        ],
+        "communication_bytes": 0,
+        "device": "cpu",
+        "distribution_semantics": "single_process",
+        "local_world_size": 1,
+        "logical_cpu_count": 10,
+        "machine": "arm64",
+        "methodology": {
+          "iterations": 1,
+          "pipeline_includes_handle_close": true,
+          "repetitions_are_independent_statistical_trials": false,
+          "seed_restarted_each_repetition": true,
+          "warmup": 0
+        },
+        "node_count": 1,
+        "non_release_evidence": true,
+        "observations": [
+          {
+            "batches": 2048,
+            "completed_shots": 65536,
+            "detectors": 24,
+            "logical_failures": 205,
+            "observables": 1,
+            "phases_seconds": {
+              "count_reduction": 0.006869655873742886,
+              "decoder_setup": 0.08935162499255966,
+              "decoding": 0.03185513500648085,
+              "dem_construction": 0.018018333008512855,
+              "memory_construction": 0.0005987500044284388,
+              "sampler_compile": 0.09415616600017529,
+              "sampling": 0.3308563445316395
+            },
+            "pipeline_seconds_excluding_imports_and_report_io": 0.5735798749956302,
+            "pipeline_shots_per_second": 114257.84421132154,
+            "visible_batch_tensor_bytes_max": 832,
+            "warmup": false
+          }
+        ],
+        "pipeline_median_seconds": 0.5735798749956302,
+        "platform": "macOS-27.0-arm64-arm-64bit",
+        "precision": "CPU int8 measurement records and bool logical predictions",
+        "process_max_rss_after_bytes": 259031040,
+        "process_max_rss_before_bytes": 216236032,
+        "python": "3.12.14",
+        "rank_ownership": {
+          "0": "whole_workload"
+        },
+        "release_gate_allowed": false,
+        "rss_available": true,
+        "runner": "qec_memory_sampling",
+        "scalability_claim_allowed": false,
+        "schema": "flagquantum.qec_memory_sampling.local_observations.v1",
+        "source_revision": "03d7c7b9b292e806856a301fb547d336cd452953",
+        "thread_environment": {
+          "MKL_NUM_THREADS": "1",
+          "OMP_NUM_THREADS": "1",
+          "OPENBLAS_NUM_THREADS": "1"
+        },
+        "torch_threads": 1,
+        "tracked_tree_clean": true,
+        "versions": {
+          "flagquantum_distribution": "0.4.0",
+          "flagquantum_source": "0.4.0",
+          "pymatching": "2.4.0",
+          "stim": "1.16.0",
+          "torch": "2.14.1"
+        },
+        "workload": {
+          "batch_size": 32,
+          "code": "RotatedSurfaceCode",
+          "distance": 3,
+          "noise": {
+            "data_flip": 0.005,
+            "measurement_flip": 0.009,
+            "phase_flip": 0.007
+          },
+          "readout_basis": "z",
+          "rounds": 3,
+          "seed": 53,
+          "shots": 65536
+        },
+        "world_size": 1
+      },
+      "producer_raw_sha256": "fb1c83c9d9a019296632db51a42fe2bd8dfc6eb00f0b4ab4c5b21c975c867184"
+    }
+  ],
+  "campaign_elapsed_seconds": 35.85182929200528,
+  "retained_bytes_before_manifest_write": 175610,
+  "status": "completed",
+  "cpu_model": "Apple M5",
+  "cpu_identity": "Read-only host sysctl query during this campaign",
+  "source_runtime": "Python3.12.14/Torch2.14.1/Stim1.16.0/PyMatching2.4.0;freshcore runtime plus existing optional SDK overlay for source measurements",
+  "redaction": "Only hostname keys and local absolute path metadata replaced; all numerical fields unchanged.",
+  "external_process_seconds_scope": "Case launch through command completion, output validation and cleanup; not only bare OS child lifetime.",
+  "host_warmup_scope": "One separate host warm-up process per point; each sampling invocation uses internal warmup=0,iterations=1.",
+  "original_directory_bytes_at_validation": 175635,
+  "sampler_measurements_are_independent_trials": false,
+  "stage_b_enabled": false
+}

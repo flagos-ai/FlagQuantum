@@ -300,17 +300,18 @@ def test_cpu_pytest_tiers_use_sixteen_bounded_work_stealing_workers() -> None:
         assert "assert torch.version.cuda is None" in commands
         assert "python -m pip check" in commands
         steps = _steps("ci.yml", job)
-        torch_installation = next(
-            index
-            for index, step in enumerate(steps)
+        installer = next(
+            step
+            for step in steps
             if step.get("uses") == "./.github/actions/install-cpu-torch"
         )
-        package_installation = next(
-            index
-            for index, step in enumerate(steps)
+        assert installer["with"]["torch-spec"] == "torch>=2.13,<2.14"
+        project_install = next(
+            step
+            for step in steps
             if "python -m pip install --no-build-isolation" in step.get("run", "")
         )
-        assert torch_installation < package_installation
+        assert steps.index(installer) < steps.index(project_install)
         assert 'python -m venv "${RUNNER_TEMP}/venv-' in commands
         assert '>> "$GITHUB_PATH"' in commands
         assert 'test "$sha" = "$GITHUB_SHA"' in commands
@@ -517,7 +518,6 @@ def test_coverage_shards_are_combined_before_the_policy_is_enforced() -> None:
 def test_each_optional_compatibility_matrix_reuses_one_runner() -> None:
     jobs = _github_hosted_jobs("ci.yml")
     expected = {
-        "qiskit-optional": "2.0.* 2.5.*",
         "cirq-optional": "1.6.1 1.7.0",
         "braket-optional": "1.117.0 1.127.1",
         "cudaq-optional": "0.15.1 0.16.0.post1",

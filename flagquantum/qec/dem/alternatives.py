@@ -32,8 +32,6 @@ from typing import TYPE_CHECKING
 
 import torch
 
-from flagquantum.qec.codes._compat import _retain_module
-
 if TYPE_CHECKING:  # pragma: no cover - import cycle broken for typing only
     from flagquantum.qec.dem.model import DemError
 
@@ -72,8 +70,8 @@ def projected_ids(errors: Sequence[DemError]) -> tuple[int, ...] | None:
     stated and unstated ids still has a vector here: every mechanism without one
     is given an id no other mechanism holds, numbered above the stated ids.
     ``None`` is returned only when no mechanism states an id, which is the state
-    every construction route in this package produces and the state stim's text
-    always describes.
+    of independent construction routes and the state stim's text always
+    describes. Gate-bound mixtures instead retain their location groups.
 
     The values are opaque labels and the numbering is a normalization rather than
     part of the model, so two models that differ only in how their ids are
@@ -226,8 +224,8 @@ def sample_groups(
     The bits are written in place because the caller owns the two tensors and a
     group's members share them. This path is reached only by a model that has a
     group of alternatives; the id-free path draws a uniform per mechanism and is
-    kept as it was, because a model with no ids is the state every construction
-    route produces and its draws are pinned against the circuit simulator.
+    kept as it was for independent models, whose draws are pinned against the
+    circuit simulator. Gate-bound mixtures use the grouped path.
     """
 
     shots = int(detector_bits.shape[0])
@@ -247,15 +245,3 @@ def sample_groups(
                 detector_bits[:, index] ^= bits
             for index in member.observables:
                 observable_bits[:, index] ^= bits
-
-
-_retain_module(
-    "flagquantum.qec.dem_alternatives",
-    stated_ids,
-    projected_ids,
-    fault_groups,
-    alternative_groups,
-    require_groups_fit,
-    fold_marginals,
-    sample_groups,
-)

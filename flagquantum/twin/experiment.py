@@ -37,6 +37,14 @@ def _sha256(value: str) -> str:
     return hashlib.sha256(value.encode()).hexdigest()
 
 
+def _receipt_source_identity(handle: ProviderTaskHandle) -> Any:
+    """Return the logical source identity, with legacy-receipt compatibility."""
+
+    return handle.payload.get(
+        "source_qasm_sha256", handle.payload.get("submitted_qasm_sha256")
+    )
+
+
 def _payload_identity(payload: Mapping[str, Any]) -> str:
     encoded = json.dumps(
         payload, sort_keys=True, separators=(",", ":"), allow_nan=False
@@ -208,7 +216,7 @@ class TwinExperiment:
             raise TypeError("Quafu provider must return a ProviderTaskHandle.")
         if handle.provider != "quafu" or handle.backend_name != self.backend_name:
             raise RuntimeError("provider receipt identifies a different QPU target")
-        if handle.payload.get("submitted_qasm_sha256") != self.submitted_qasm_identity:
+        if _receipt_source_identity(handle) != self.submitted_qasm_identity:
             raise RuntimeError("provider receipt does not match the submitted QASM")
         if tuple(handle.payload.get("target_qubits", ())) != self.target_qubits:
             raise RuntimeError("provider receipt does not match the physical mapping")
@@ -230,7 +238,7 @@ class TwinExperiment:
             )
         if handle.provider != "quafu" or handle.backend_name != self.backend_name:
             raise RuntimeError("provider result identifies a different QPU target")
-        if handle.payload.get("submitted_qasm_sha256") != self.submitted_qasm_identity:
+        if _receipt_source_identity(handle) != self.submitted_qasm_identity:
             raise RuntimeError("provider result does not match the submitted QASM")
         if tuple(handle.payload.get("target_qubits", ())) != self.target_qubits:
             raise RuntimeError("provider result does not match the physical mapping")
@@ -250,6 +258,8 @@ class TwinExperiment:
         executed_qasm = metadata.get("transpiled")
         if not isinstance(executed_qasm, str) or not executed_qasm.strip():
             executed_qasm = metadata.get("circuit")
+        if not isinstance(executed_qasm, str) or not executed_qasm.strip():
+            executed_qasm = metadata.get("executed_qasm")
         if not isinstance(executed_qasm, str) or not executed_qasm.strip():
             executed_qasm = None
         executed_identity = None if executed_qasm is None else _sha256(executed_qasm)
@@ -287,6 +297,8 @@ class TwinExperiment:
         if report.provider != "quafu" or report.backend_name != self.backend_name:
             raise RuntimeError("hardware report identifies a different QPU target")
         executed_qasm = report.result_metadata.get("transpiled")
+        if not isinstance(executed_qasm, str) or not executed_qasm.strip():
+            executed_qasm = report.result_metadata.get("executed_qasm")
         if (
             not isinstance(executed_qasm, str)
             or not executed_qasm.strip()
@@ -303,11 +315,22 @@ class TwinExperiment:
                 "submitted QASM is not directly bound to the FlagQuantum circuit"
             )
         if not report.executed_program_matches_submission:
-            echoed_qasm = report.result_metadata.get("circuit")
-            if echoed_qasm != self.submitted_qasm:
-                raise RuntimeError(
-                    "provider transpilation is not bound to the frozen submission"
-                )
+            if report.result_metadata.get("quafu_protocol") == "quafu_sdk_v1":
+                if (
+                    report.result_metadata.get("source_qasm_sha256")
+                    != self.submitted_qasm_identity
+                    or report.result_metadata.get("submitted_qasm_sha256")
+                    != report.executed_qasm_identity
+                ):
+                    raise RuntimeError(
+                        "SDK physical program is not bound to the frozen submission"
+                    )
+            else:
+                echoed_qasm = report.result_metadata.get("circuit")
+                if echoed_qasm != self.submitted_qasm:
+                    raise RuntimeError(
+                        "provider transpilation is not bound to the frozen submission"
+                    )
             if not _provider_transpilation_preserves_mapping(
                 executed_qasm,
                 target_qubits=self.target_qubits,

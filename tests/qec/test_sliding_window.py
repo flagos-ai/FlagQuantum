@@ -5,8 +5,19 @@ from __future__ import annotations
 import pytest
 
 from flagquantum.errors import CapabilityError
-from flagquantum.qec.belief_propagation import BeliefPropagationDecoder
-from flagquantum.qec.chunks import (
+from flagquantum.qec.circuits.memory import build_memory_circuit
+from flagquantum.qec.codes import RepetitionCode, RotatedSurfaceCode
+from flagquantum.qec.decoders.belief_propagation import BeliefPropagationDecoder
+from flagquantum.qec.decoders.registry import AUTHORITY_NAME, BELIEF_PROPAGATION_NAME
+from flagquantum.qec.decoders.sliding_window import (
+    SlidingWindowDecoder,
+    SlidingWindowDecodeResult,
+    dem_chunks_to_d_sparse,
+    dem_chunks_to_o_sparse,
+    dem_chunks_to_pcm,
+)
+from flagquantum.qec.dem import DemError, DetectorErrorModel
+from flagquantum.qec.dem.chunks import (
     ChunkLayout,
     DemChunkSpec,
     DemChunksSpec,
@@ -15,18 +26,7 @@ from flagquantum.qec.chunks import (
     dem_chunks_from_spec,
     dem_close_all,
 )
-from flagquantum.qec.circuit import build_memory_circuit
-from flagquantum.qec.codes import RepetitionCode, RotatedSurfaceCode
-from flagquantum.qec.dem import DemError, DetectorErrorModel
 from flagquantum.qec.noise import PhenomenologicalNoise
-from flagquantum.qec.registry import AUTHORITY_NAME, BELIEF_PROPAGATION_NAME
-from flagquantum.qec.sliding_window import (
-    SlidingWindowDecoder,
-    SlidingWindowDecodeResult,
-    dem_chunks_to_d_sparse,
-    dem_chunks_to_o_sparse,
-    dem_chunks_to_pcm,
-)
 
 pytestmark = pytest.mark.unit
 

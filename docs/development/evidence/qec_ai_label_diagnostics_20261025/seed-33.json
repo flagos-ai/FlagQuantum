@@ -1,0 +1,4305 @@
+{
+  "seed": 33,
+  "sampler_seed": 9100033,
+  "diagnostic_shots": 4096,
+  "checkpoint_sha256": "19a0a0fae5f3637d997bc7be3536f86e544586409953d16aff922888425d15f9",
+  "model_state_sha256": "7dfb531d192d6f04773ee88dd5452349a6b821233a1aada01deea738ec67d2cc",
+  "latent_bytes_sha256": "c080fef9c806790e3867a19844963b5b85b75bfaff1b03f8ac91e2ae8967eee8",
+  "frozen_choice": {
+    "threshold": 1.0,
+    "temperature": 0.5,
+    "trials": [
+      {
+        "threshold": 0.5,
+        "logical_failures": 1
+      },
+      {
+        "threshold": 0.7,
+        "logical_failures": 1
+      },
+      {
+        "threshold": 0.9,
+        "logical_failures": 1
+      },
+      {
+        "threshold": 0.99,
+        "logical_failures": 1
+      },
+      {
+        "threshold": 1.0,
+        "logical_failures": 1
+      }
+    ]
+  },
+  "controls": {
+    "zero": {
+      "shots": 4096,
+      "latent_equal": 0,
+      "detector_equal": 0,
+      "detector_and_logical_equal": 0,
+      "detector_equal_logical_different": 0,
+      "latent_mismatch_bits": 60562
+    },
+    "raw_0.5": {
+      "shots": 4096,
+      "latent_equal": 0,
+      "detector_equal": 0,
+      "detector_and_logical_equal": 0,
+      "detector_equal_logical_different": 0,
+      "latent_mismatch_bits": 60562
+    },
+    "raw_0.9": {
+      "shots": 4096,
+      "latent_equal": 0,
+      "detector_equal": 0,
+      "detector_and_logical_equal": 0,
+      "detector_equal_logical_different": 0,
+      "latent_mismatch_bits": 60562
+    },
+    "frozen_calibrated": {
+      "shots": 4096,
+      "latent_equal": 0,
+      "detector_equal": 0,
+      "detector_and_logical_equal": 0,
+      "detector_equal_logical_different": 0,
+      "latent_mismatch_bits": 60562
+    }
+  },
+  "raw_loss": {
+    "total_labels": 48738304,
+    "positive_labels": 60562,
+    "negative_labels": 48677742,
+    "positive_bce_sum": 169509.4058772095,
+    "negative_bce_sum": 3137753.47763063,
+    "predicted_positive_labels": 0,
+    "mean_probability": 0.06242090187827201,
+    "brier_score": 0.004993830072051231
+  },
+  "calibrated_loss": {
+    "total_labels": 48738304,
+    "positive_labels": 60562,
+    "negative_labels": 48677742,
+    "positive_bce_sum": 331658.95955470466,
+    "negative_bce_sum": 215741.9599955207,
+    "predicted_positive_labels": 0,
+    "mean_probability": 0.004421887523551092,
+    "brier_score": 0.001251859650433791
+  },
+  "feature_summary": {
+    "groups": [
+      {
+        "features": [
+          0.0,
+          1.0,
+          -6.030552387237549
+        ],
+        "observations": 4010,
+        "positive_labels": 0,
+        "negative_labels": 4010,
+        "positive_fraction": 0.0,
+        "mean_logit": -2.6057231426239014,
+        "mean_probability": 0.06877099564707305,
+        "minimum_logit": -2.6057231426239014,
+        "maximum_logit": -2.6057231426239014,
+        "empirical_entropy_nats": 0.0
+      },
+      {
+        "features": [
+          0.0,
+          1.0,
+          -5.380190372467041
+        ],
+        "observations": 3983,
+        "positive_labels": 2,
+        "negative_labels": 3981,
+        "positive_fraction": 0.0005021340697966357,
+        "mean_logit": -2.576568841934204,
+        "mean_probability": 0.0706617187209192,
+        "minimum_logit": -2.576568841934204,
+        "maximum_logit": -2.576568841934204,
+        "empirical_entropy_nats": 0.004316541447930275
+      },
+      {
+        "features": [
+          0.0,
+          1.0,
+          -5.379920482635498
+        ],
+        "observations": 3978,
+        "positive_labels": 0,
+        "negative_labels": 3978,
+        "positive_fraction": 0.0,
+        "mean_logit": -2.576554775238037,
+        "mean_probability": 0.07066264246730798,
+        "minimum_logit": -2.576554775238037,
+        "maximum_logit": -2.576554775238037,
+        "empirical_entropy_nats": 0.0
+      },
+      {
+        "features": [
+          0.0,
+          1.0,
+          -5.337344169616699
+        ],
+        "observations": 4022,
+        "positive_labels": 1,
+        "negative_labels": 4021,
+        "positive_fraction": 0.0002486325211337643,
+        "mean_logit": -2.574314832687378,
+        "mean_probability": 0.07080987976073888,
+        "minimum_logit": -2.574314832687378,
+        "maximum_logit": -2.574314832687378,
+        "empirical_entropy_nats": 0.002312135813965123
+      },
+      {
+        "features": [
+          0.0,
+          1.0,
+          -5.2966508865356445
+        ],
+        "observations": 47068,
+        "positive_labels": 10,
+        "negative_labels": 47058,
+        "positive_fraction": 0.00021245857057873715,
+        "mean_logit": -2.572129964828491,
+        "mean_probability": 0.07095376985021591,
+        "minimum_logit": -2.572129964828491,
+        "maximum_logit": -2.572129964828491,
+        "empirical_entropy_nats": 0.0020091478953387816
+      },
+      {
+        "features": [
+          0.0,
+          1.0,
+          -5.219785690307617
+        ],
+        "observations": 51066,
+        "positive_labels": 7,
+        "negative_labels": 51059,
+        "positive_fraction": 0.0001370775075392629,
+        "mean_logit": -2.567880153656006,
+        "mean_probability": 0.07123442588161333,
+        "minimum_logit": -2.567880153656006,
+        "maximum_logit": -2.567880153656006,
+        "empirical_entropy_nats": 0.0013563676127432748
+      },
+      {
+        "features": [
+          0.0,
+          1.0,
+          -5.219481468200684
+        ],
+        "observations": 3976,
+        "positive_labels": 0,
+        "negative_labels": 3976,
+        "positive_fraction": 0.0,
+        "mean_logit": -2.5678627490997314,
+        "mean_probability": 0.07123557737708494,
+        "minimum_logit": -2.5678627490997314,
+        "maximum_logit": -2.5678627490997314,
+        "empirical_entropy_nats": 0.0
+      },
+      {
+        "features": [
+          0.0,
+          1.0,
+          -5.114278316497803
+        ],
+        "observations": 3969,
+        "positive_labels": 1,
+        "negative_labels": 3968,
+        "positive_fraction": 0.0002519526329050139,
+        "mean_logit": -2.561772584915161,
+        "mean_probability": 0.07163956281194678,
+        "minimum_logit": -2.561772584915161,
+        "maximum_logit": -2.561772584915161,
+        "empirical_entropy_nats": 0.002339668295763482
+      },
+      {
+        "features": [
+          0.0,
+          1.0,
+          -5.081538677215576
+        ],
+        "observations": 15742,
+        "positive_labels": 3,
+        "negative_labels": 15739,
+        "positive_fraction": 0.00019057298945496126,
+        "mean_logit": -2.559809446334839,
+        "mean_probability": 0.07177023577379708,
+        "minimum_logit": -2.559809446334839,
+        "maximum_logit": -2.559809446334839,
+        "empirical_entropy_nats": 0.0018229030613935912
+      },
+      {
+        "features": [
+          0.0,
+          1.0,
+          -5.019097328186035
+        ],
+        "observations": 11836,
+        "positive_labels": 3,
+        "negative_labels": 11833,
+        "positive_fraction": 0.00025346400811084827,
+        "mean_logit": -2.5559725761413574,
+        "mean_probability": 0.07202626562027248,
+        "minimum_logit": -2.5559725761413574,
+        "maximum_logit": -2.5559725761413574,
+        "empirical_entropy_nats": 0.002352187051910927
+      },
+      {
+        "features": [
+          0.0,
+          1.0,
+          -4.93237829208374
+        ],
+        "observations": 81170,
+        "positive_labels": 33,
+        "negative_labels": 81137,
+        "positive_fraction": 0.0004065541456203031,
+        "mean_logit": -2.550431966781616,
+        "mean_probability": 0.07239747080822724,
+        "minimum_logit": -2.550431966781616,
+        "maximum_logit": -2.550431966781616,
+        "empirical_entropy_nats": 0.0035807622817650166
+      },
+      {
+        "features": [
+          0.0,
+          1.0,
+          -4.932094573974609
+        ],
+        "observations": 15848,
+        "positive_labels": 3,
+        "negative_labels": 15845,
+        "positive_fraction": 0.00018929833417465926,
+        "mean_logit": -2.5504136085510254,
+        "mean_probability": 0.07239870368465362,
+        "minimum_logit": -2.5504136085510254,
+        "maximum_logit": -2.5504136085510254,
+        "empirical_entropy_nats": 0.001811981002884335
+      },
+      {
+        "features": [
+          0.0,
+          1.0,
+          -4.904598712921143
+        ],
+        "observations": 3959,
+        "positive_labels": 2,
+        "negative_labels": 3957,
+        "positive_fraction": 0.0005051780752715333,
+        "mean_logit": -2.548602819442749,
+        "mean_probability": 0.07252040528649781,
+        "minimum_logit": -2.548602819442749,
+        "maximum_logit": -2.548602819442749,
+        "empirical_entropy_nats": 0.0043396549305196545
+      },
+      {
+        "features": [
+          0.0,
+          1.0,
+          -4.8521928787231445
+        ],
+        "observations": 11585,
+        "positive_labels": 5,
+        "negative_labels": 11580,
+        "positive_fraction": 0.00043159257660768235,
+        "mean_logit": -2.5450778007507324,
+        "mean_probability": 0.07275785982810205,
+        "minimum_logit": -2.5450778007507324,
+        "maximum_logit": -2.5450778007507324,
+        "empirical_entropy_nats": 0.0037754910216193406
+      },
+      {
+        "features": [
+          0.0,
+          1.0,
+          -4.754429340362549
+        ],
+        "observations": 15887,
+        "positive_labels": 1,
+        "negative_labels": 15886,
+        "positive_fraction": 6.294454585510165e-05,
+        "mean_logit": -2.5382297039031982,
+        "mean_probability": 0.07322121475709607,
+        "minimum_logit": -2.5382297039031982,
+        "maximum_logit": -2.5382297039031982,
+        "empirical_entropy_nats": 0.0006718212985955019
+      },
+      {
+        "features": [
+          0.0,
+          1.0,
+          -4.73155403137207
+        ],
+        "observations": 278166,
+        "positive_labels": 128,
+        "negative_labels": 278038,
+        "positive_fraction": 0.00046015688473789035,
+        "mean_logit": -2.536573648452759,
+        "mean_probability": 0.07333367391912012,
+        "minimum_logit": -2.536573648452759,
+        "maximum_logit": -2.536573648452759,
+        "empirical_entropy_nats": 0.003995870303220961
+      },
+      {
+        "features": [
+          0.0,
+          1.0,
+          -4.731171607971191
+        ],
+        "observations": 11758,
+        "positive_labels": 4,
+        "negative_labels": 11754,
+        "positive_fraction": 0.0003401939105290015,
+        "mean_logit": -2.536545991897583,
+        "mean_probability": 0.07333555336590881,
+        "minimum_logit": -2.536545991897583,
+        "maximum_logit": -2.536545991897583,
+        "empirical_entropy_nats": 0.003056922830955984
+      },
+      {
+        "features": [
+          0.0,
+          1.0,
+          -4.709101676940918
+        ],
+        "observations": 11597,
+        "positive_labels": 4,
+        "negative_labels": 11593,
+        "positive_fraction": 0.00034491678882469606,
+        "mean_logit": -2.534928321838379,
+        "mean_probability": 0.07344556200226306,
+        "minimum_logit": -2.534928321838379,
+        "maximum_logit": -2.534928321838379,
+        "empirical_entropy_nats": 0.0030946054612782784
+      },
+      {
+        "features": [
+          0.0,
+          1.0,
+          -4.6869730949401855
+        ],
+        "observations": 46365,
+        "positive_labels": 16,
+        "negative_labels": 46349,
+        "positive_fraction": 0.00034508788957187536,
+        "mean_logit": -2.5332863330841064,
+        "mean_probability": 0.07355737978211602,
+        "minimum_logit": -2.5332863330841064,
+        "maximum_logit": -2.5332863330841064,
+        "empirical_entropy_nats": 0.0030959694104427827
+      },
+      {
+        "features": [
+          0.0,
+          1.0,
+          -4.686750888824463
+        ],
+        "observations": 3976,
+        "positive_labels": 0,
+        "negative_labels": 3976,
+        "positive_fraction": 0.0,
+        "mean_logit": -2.5332696437835693,
+        "mean_probability": 0.07355851711082824,
+        "minimum_logit": -2.5332696437835693,
+        "maximum_logit": -2.5332696437835693,
+        "empirical_entropy_nats": 0.0
+      },
+      {
+        "features": [
+          0.0,
+          1.0,
+          -4.665630340576172
+        ],
+        "observations": 11561,
+        "positive_labels": 10,
+        "negative_labels": 11551,
+        "positive_fraction": 0.0008649770781074302,
+        "mean_logit": -2.5316836833953857,
+        "mean_probability": 0.07366666972581756,
+        "minimum_logit": -2.5316836833953857,
+        "maximum_logit": -2.5316836833953857,
+        "empirical_entropy_nats": 0.006965119745169715
+      },
+      {
+        "features": [
+          0.0,
+          1.0,
+          -4.665489196777344
+        ],
+        "observations": 3848,
+        "positive_labels": 0,
+        "negative_labels": 3848,
+        "positive_fraction": 0.0,
+        "mean_logit": -2.531672716140747,
+        "mean_probability": 0.07366741813358349,
+        "minimum_logit": -2.531672716140747,
+        "maximum_logit": -2.531672716140747,
+        "empirical_entropy_nats": 0.0
+      },
+      {
+        "features": [
+          0.0,
+          1.0,
+          -4.644465923309326
+        ],
+        "observations": 46422,
+        "positive_labels": 24,
+        "negative_labels": 46398,
+        "positive_fraction": 0.0005169962517771747,
+        "mean_logit": -2.5300753116607666,
+        "mean_probability": 0.07377650012577687,
+        "minimum_logit": -2.5300753116607666,
+        "maximum_logit": -2.5300753116607666,
+        "empirical_entropy_nats": 0.004429218762178951
+      },
+      {
+        "features": [
+          0.0,
+          1.0,
+          -4.583595275878906
+        ],
+        "observations": 11756,
+        "positive_labels": 2,
+        "negative_labels": 11754,
+        "positive_fraction": 0.0001701258931609391,
+        "mean_logit": -2.5253419876098633,
+        "mean_probability": 0.0741005981057227,
+        "minimum_logit": -2.5253419876098633,
+        "maximum_logit": -2.5253419876098633,
+        "empirical_entropy_nats": 0.0016466292581163778
+      },
+      {
+        "features": [
+          0.0,
+          1.0,
+          -4.564448356628418
+        ],
+        "observations": 3881,
+        "positive_labels": 1,
+        "negative_labels": 3880,
+        "positive_fraction": 0.0002576655501159495,
+        "mean_logit": -2.5238192081451416,
+        "mean_probability": 0.07420514332984361,
+        "minimum_logit": -2.5238192081451416,
+        "maximum_logit": -2.5238192081451416,
+        "empirical_entropy_nats": 0.002386941326340419
+      },
+      {
+        "features": [
+          0.0,
+          1.0,
+          -4.545185089111328
+        ],
+        "observations": 15661,
+        "positive_labels": 11,
+        "negative_labels": 15650,
+        "positive_fraction": 0.0007023817125343209,
+        "mean_logit": -2.522270441055298,
+        "mean_probability": 0.07431161186766803,
+        "minimum_logit": -2.522270441055298,
+        "maximum_logit": -2.522270441055298,
+        "empirical_entropy_nats": 0.005802152165516583
+      },
+      {
+        "features": [
+          0.0,
+          1.0,
+          -4.545030117034912
+        ],
+        "observations": 3920,
+        "positive_labels": 1,
+        "negative_labels": 3919,
+        "positive_fraction": 0.00025510204081632655,
+        "mean_logit": -2.5222580432891846,
+        "mean_probability": 0.07431246470701414,
+        "minimum_logit": -2.5222580432891846,
+        "maximum_logit": -2.5222580432891846,
+        "empirical_entropy_nats": 0.0023657447374787095
+      },
+      {
+        "features": [
+          0.0,
+          1.0,
+          -4.4380316734313965
+        ],
+        "observations": 11798,
+        "positive_labels": 2,
+        "negative_labels": 11796,
+        "positive_fraction": 0.00016952025767079165,
+        "mean_logit": -2.513336181640625,
+        "mean_probability": 0.07492853636849171,
+        "minimum_logit": -2.513336181640625,
+        "maximum_logit": -2.513336181640625,
+        "empirical_entropy_nats": 0.0016413719883173951
+      },
+      {
+        "features": [
+          0.0,
+          1.0,
+          -4.281335830688477
+        ],
+        "observations": 3915,
+        "positive_labels": 3,
+        "negative_labels": 3912,
+        "positive_fraction": 0.0007662835249042146,
+        "mean_logit": -2.499222993850708,
+        "mean_probability": 0.07591266899477564,
+        "minimum_logit": -2.499222993850708,
+        "maximum_logit": -2.499222993850708,
+        "empirical_entropy_nats": 0.006263275923441958
+      },
+      {
+        "features": [
+          0.0,
+          1.0,
+          -4.211706638336182
+        ],
+        "observations": 11625,
+        "positive_labels": 10,
+        "negative_labels": 11615,
+        "positive_fraction": 0.0008602150537634409,
+        "mean_logit": -2.4925167560577393,
+        "mean_probability": 0.0763844511392702,
+        "minimum_logit": -2.4925167560577393,
+        "maximum_logit": -2.4925167560577393,
+        "empirical_entropy_nats": 0.006931525080906008
+      },
+      {
+        "features": [
+          0.0,
+          1.0,
+          -4.211463451385498
+        ],
+        "observations": 3918,
+        "positive_labels": 1,
+        "negative_labels": 3917,
+        "positive_fraction": 0.00025523226135783564,
+        "mean_logit": -2.492492914199829,
+        "mean_probability": 0.0763861331961575,
+        "minimum_logit": -2.492492914199829,
+        "maximum_logit": -2.492492914199829,
+        "empirical_entropy_nats": 0.0023668220958435863
+      },
+      {
+        "features": [
+          0.0,
+          1.0,
+          -4.171905994415283
+        ],
+        "observations": 3870,
+        "positive_labels": 2,
+        "negative_labels": 3868,
+        "positive_fraction": 0.0005167958656330749,
+        "mean_logit": -2.4885544776916504,
+        "mean_probability": 0.07666445897205222,
+        "minimum_logit": -2.4885544776916504,
+        "maximum_logit": -2.4885544776916504,
+        "empirical_entropy_nats": 0.004427702409822515
+      },
+      {
+        "features": [
+          0.0,
+          1.0,
+          -4.159106731414795
+        ],
+        "observations": 11554,
+        "positive_labels": 7,
+        "negative_labels": 11547,
+        "positive_fraction": 0.0006058507876060239,
+        "mean_logit": -2.48725962638855,
+        "mean_probability": 0.0767561678947925,
+        "minimum_logit": -2.48725962638855,
+        "maximum_logit": -2.48725962638855,
+        "empirical_entropy_nats": 0.005094341084030107
+      },
+      {
+        "features": [
+          0.0,
+          1.0,
+          -4.10905647277832
+        ],
+        "observations": 3888,
+        "positive_labels": 5,
+        "negative_labels": 3883,
+        "positive_fraction": 0.001286008230452675,
+        "mean_logit": -2.482097625732422,
+        "mean_probability": 0.07712277144476805,
+        "minimum_logit": -2.482097625732422,
+        "maximum_logit": -2.482097625732422,
+        "empirical_entropy_nats": 0.009845124708355756
+      },
+      {
+        "features": [
+          0.0,
+          2.0,
+          -8.516993522644043
+        ],
+        "observations": 155395,
+        "positive_labels": 0,
+        "negative_labels": 155395,
+        "positive_fraction": 0.0,
+        "mean_logit": -2.702723503112793,
+        "mean_probability": 0.06281283952133755,
+        "minimum_logit": -2.702723503112793,
+        "maximum_logit": -2.702723503112793,
+        "empirical_entropy_nats": 0.0
+      },
+      {
+        "features": [
+          0.0,
+          2.0,
+          -7.823845863342285
+        ],
+        "observations": 2904000,
+        "positive_labels": 6,
+        "negative_labels": 2903994,
+        "positive_fraction": 2.066115702479339e-06,
+        "mean_logit": -2.6953725814819336,
+        "mean_probability": 0.06324696226549018,
+        "minimum_logit": -2.6953725814819336,
+        "maximum_logit": -2.6953725814819336,
+        "empirical_entropy_nats": 2.9111237918678112e-05
+      },
+      {
+        "features": [
+          0.0,
+          2.0,
+          -7.823646068572998
+        ],
+        "observations": 7439,
+        "positive_labels": 0,
+        "negative_labels": 7439,
+        "positive_fraction": 0.0,
+        "mean_logit": -2.6953699588775635,
+        "mean_probability": 0.06324711764653267,
+        "minimum_logit": -2.6953699588775635,
+        "maximum_logit": -2.6953699588775635,
+        "empirical_entropy_nats": 0.0
+      },
+      {
+        "features": [
+          0.0,
+          2.0,
+          -7.418247699737549
+        ],
+        "observations": 638545,
+        "positive_labels": 1,
+        "negative_labels": 638544,
+        "positive_fraction": 1.566060340304912e-06,
+        "mean_logit": -2.6898114681243896,
+        "mean_probability": 0.06357724168997832,
+        "minimum_logit": -2.6898114681243896,
+        "maximum_logit": -2.6898114681243896,
+        "empirical_entropy_nats": 2.249950535455259e-05
+      },
+      {
+        "features": [
+          0.0,
+          2.0,
+          -7.130498886108398
+        ],
+        "observations": 52289,
+        "positive_labels": 0,
+        "negative_labels": 52289,
+        "positive_fraction": 0.0,
+        "mean_logit": -2.685180425643921,
+        "mean_probability": 0.0638535094882225,
+        "minimum_logit": -2.685180425643921,
+        "maximum_logit": -2.685180425643921,
+        "empirical_entropy_nats": 0.0
+      },
+      {
+        "features": [
+          0.0,
+          2.0,
+          -6.725100994110107
+        ],
+        "observations": 1258518,
+        "positive_labels": 3,
+        "negative_labels": 1258515,
+        "positive_fraction": 2.3837561322126502e-06,
+        "mean_logit": -2.6775166988372803,
+        "mean_probability": 0.06431315236212595,
+        "minimum_logit": -2.6775166988372803,
+        "maximum_logit": -2.6775166988372803,
+        "empirical_entropy_nats": 3.3245846103868505e-05
+      },
+      {
+        "features": [
+          0.0,
+          2.0,
+          -6.724767208099365
+        ],
+        "observations": 11479,
+        "positive_labels": 0,
+        "negative_labels": 11479,
+        "positive_fraction": 0.0,
+        "mean_logit": -2.6775100231170654,
+        "mean_probability": 0.06431355408791918,
+        "minimum_logit": -2.6775100231170654,
+        "maximum_logit": -2.6775100231170654,
+        "empirical_entropy_nats": 0.0
+      },
+      {
+        "features": [
+          0.0,
+          2.0,
+          -6.319413661956787
+        ],
+        "observations": 90247,
+        "positive_labels": 0,
+        "negative_labels": 90247,
+        "positive_fraction": 0.0,
+        "mean_logit": -2.668257236480713,
+        "mean_probability": 0.06487261174629522,
+        "minimum_logit": -2.668257236480713,
+        "maximum_logit": -2.668257236480713,
+        "empirical_entropy_nats": 0.0
+      },
+      {
+        "features": [
+          0.0,
+          2.0,
+          -6.318678379058838
+        ],
+        "observations": 63575,
+        "positive_labels": 1,
+        "negative_labels": 63574,
+        "positive_fraction": 1.57294534014943e-05,
+        "mean_logit": -2.668238878250122,
+        "mean_probability": 0.06487372544175599,
+        "minimum_logit": -2.668238878250122,
+        "maximum_logit": -2.668238878250122,
+        "empirical_entropy_nats": 0.00018969670036212953
+      },
+      {
+        "features": [
+          0.0,
+          2.0,
+          -6.213427543640137
+        ],
+        "observations": 365891,
+        "positive_labels": 7,
+        "negative_labels": 365884,
+        "positive_fraction": 1.9131380657080933e-05,
+        "mean_logit": -2.6655325889587402,
+        "mean_probability": 0.06503809627950373,
+        "minimum_logit": -2.6655325889587402,
+        "maximum_logit": -2.6655325889587402,
+        "empirical_entropy_nats": 0.00022697797232808746
+      },
+      {
+        "features": [
+          0.0,
+          2.0,
+          -6.118626117706299
+        ],
+        "observations": 15307,
+        "positive_labels": 0,
+        "negative_labels": 15307,
+        "positive_fraction": 0.0,
+        "mean_logit": -2.662975788116455,
+        "mean_probability": 0.06519374360128813,
+        "minimum_logit": -2.662975788116455,
+        "maximum_logit": -2.662975788116455,
+        "empirical_entropy_nats": 0.0
+      },
+      {
+        "features": [
+          0.0,
+          2.0,
+          -6.031103134155273
+        ],
+        "observations": 11289,
+        "positive_labels": 0,
+        "negative_labels": 11289,
+        "positive_fraction": 0.0,
+        "mean_logit": -2.6605095863342285,
+        "mean_probability": 0.06534420388274256,
+        "minimum_logit": -2.6605095863342285,
+        "maximum_logit": -2.6605095863342285,
+        "empirical_entropy_nats": 0.0
+      },
+      {
+        "features": [
+          0.0,
+          2.0,
+          -6.030552387237549
+        ],
+        "observations": 126211,
+        "positive_labels": 0,
+        "negative_labels": 126211,
+        "positive_fraction": 0.0,
+        "mean_logit": -2.660494089126587,
+        "mean_probability": 0.06534515037083077,
+        "minimum_logit": -2.660494089126587,
+        "maximum_logit": -2.660494089126587,
+        "empirical_entropy_nats": 0.0
+      },
+      {
+        "features": [
+          0.0,
+          2.0,
+          -5.951106071472168
+        ],
+        "observations": 19130,
+        "positive_labels": 0,
+        "negative_labels": 19130,
+        "positive_fraction": 0.0,
+        "mean_logit": -2.6581623554229736,
+        "mean_probability": 0.06548770579905107,
+        "minimum_logit": -2.6581623554229736,
+        "maximum_logit": -2.6581623554229736,
+        "empirical_entropy_nats": 0.0
+      },
+      {
+        "features": [
+          0.0,
+          2.0,
+          -5.876621246337891
+        ],
+        "observations": 107093,
+        "positive_labels": 1,
+        "negative_labels": 107092,
+        "positive_fraction": 9.337678466379688e-06,
+        "mean_logit": -2.6558926105499268,
+        "mean_probability": 0.06562674913506988,
+        "minimum_logit": -2.6558926105499268,
+        "maximum_logit": -2.6558926105499268,
+        "empirical_entropy_nats": 0.00011748151817550098
+      },
+      {
+        "features": [
+          0.0,
+          2.0,
+          -5.876593112945557
+        ],
+        "observations": 1623834,
+        "positive_labels": 24,
+        "negative_labels": 1623810,
+        "positive_fraction": 1.4779835869922665e-05,
+        "mean_logit": -2.6558916568756104,
+        "mean_probability": 0.06562680761430072,
+        "minimum_logit": -2.6558916568756104,
+        "maximum_logit": -2.6558916568756104,
+        "empirical_entropy_nats": 0.0001791647080787058
+      },
+      {
+        "features": [
+          0.0,
+          2.0,
+          -5.876478672027588
+        ],
+        "observations": 124154,
+        "positive_labels": 1,
+        "negative_labels": 124153,
+        "positive_fraction": 8.054512943602301e-06,
+        "mean_logit": -2.655888319015503,
+        "mean_probability": 0.06562701229193206,
+        "minimum_logit": -2.655888319015503,
+        "maximum_logit": -2.655888319015503,
+        "empirical_entropy_nats": 0.0001025281020526106
+      },
+      {
+        "features": [
+          0.0,
+          2.0,
+          -5.682168960571289
+        ],
+        "observations": 19461,
+        "positive_labels": 1,
+        "negative_labels": 19460,
+        "positive_fraction": 5.138482092389908e-05,
+        "mean_logit": -2.649557113647461,
+        "mean_probability": 0.06601631179998739,
+        "minimum_logit": -2.649557113647461,
+        "maximum_logit": -2.649557113647461,
+        "empirical_entropy_nats": 0.0005588686115323275
+      },
+      {
+        "features": [
+          0.0,
+          2.0,
+          -5.625578880310059
+        ],
+        "observations": 1249267,
+        "positive_labels": 51,
+        "negative_labels": 1249216,
+        "positive_fraction": 4.0823939157922206e-05,
+        "mean_logit": -2.6475942134857178,
+        "mean_probability": 0.06613744375841003,
+        "minimum_logit": -2.6475942134857178,
+        "maximum_logit": -2.6475942134857178,
+        "empirical_entropy_nats": 0.00045339971047635234
+      },
+      {
+        "features": [
+          0.0,
+          2.0,
+          -5.62544584274292
+        ],
+        "observations": 123853,
+        "positive_labels": 0,
+        "negative_labels": 123853,
+        "positive_fraction": 0.0,
+        "mean_logit": -2.6475894451141357,
+        "mean_probability": 0.06613773826931009,
+        "minimum_logit": -2.6475894451141357,
+        "maximum_logit": -2.6475894451141357,
+        "empirical_entropy_nats": 0.0
+      },
+      {
+        "features": [
+          0.0,
+          2.0,
+          -5.57154655456543
+        ],
+        "observations": 14622,
+        "positive_labels": 0,
+        "negative_labels": 14622,
+        "positive_fraction": 0.0,
+        "mean_logit": -2.6456663608551025,
+        "mean_probability": 0.06625661390441104,
+        "minimum_logit": -2.6456663608551025,
+        "maximum_logit": -2.6456663608551025,
+        "empirical_entropy_nats": 0.0
+      },
+      {
+        "features": [
+          0.0,
+          2.0,
+          -5.5710930824279785
+        ],
+        "observations": 48733,
+        "positive_labels": 1,
+        "negative_labels": 48732,
+        "positive_fraction": 2.0519976196827612e-05,
+        "mean_logit": -2.6456501483917236,
+        "mean_probability": 0.06625761692266713,
+        "minimum_logit": -2.6456501483917236,
+        "maximum_logit": -2.6456501483917236,
+        "empirical_entropy_nats": 0.00024201468076257885
+      },
+      {
+        "features": [
+          0.0,
+          2.0,
+          -5.471149921417236
+        ],
+        "observations": 355705,
+        "positive_labels": 11,
+        "negative_labels": 355694,
+        "positive_fraction": 3.092450204523411e-05,
+        "mean_logit": -2.641939163208008,
+        "mean_probability": 0.06648757634741273,
+        "minimum_logit": -2.641939163208008,
+        "maximum_logit": -2.641939163208008,
+        "empirical_entropy_nats": 0.00035204287000070944
+      },
+      {
+        "features": [
+          0.0,
+          2.0,
+          -5.470759391784668
+        ],
+        "observations": 3846,
+        "positive_labels": 0,
+        "negative_labels": 3846,
+        "positive_fraction": 0.0,
+        "mean_logit": -2.6419241428375244,
+        "mean_probability": 0.06648850862249485,
+        "minimum_logit": -2.6419241428375244,
+        "maximum_logit": -2.6419241428375244,
+        "empirical_entropy_nats": 0.0
+      },
+      {
+        "features": [
+          0.0,
+          2.0,
+          -5.424600124359131
+        ],
+        "observations": 3753,
+        "positive_labels": 0,
+        "negative_labels": 3753,
+        "positive_fraction": 0.0,
+        "mean_logit": -2.640143871307373,
+        "mean_probability": 0.06659909145145282,
+        "minimum_logit": -2.640143871307373,
+        "maximum_logit": -2.640143871307373,
+        "empirical_entropy_nats": 0.0
+      },
+      {
+        "features": [
+          0.0,
+          2.0,
+          -5.424299716949463
+        ],
+        "observations": 120629,
+        "positive_labels": 2,
+        "negative_labels": 120627,
+        "positive_fraction": 1.6579761085642756e-05,
+        "mean_logit": -2.640132188796997,
+        "mean_probability": 0.06659981768264392,
+        "minimum_logit": -2.640132188796997,
+        "maximum_logit": -2.640132188796997,
+        "empirical_entropy_nats": 0.0001990784890569754
+      },
+      {
+        "features": [
+          0.0,
+          2.0,
+          -5.379920482635498
+        ],
+        "observations": 44866,
+        "positive_labels": 2,
+        "negative_labels": 44864,
+        "positive_fraction": 4.457718539651406e-05,
+        "mean_logit": -2.638378858566284,
+        "mean_probability": 0.06670889505674865,
+        "minimum_logit": -2.638378858566284,
+        "maximum_logit": -2.638378858566284,
+        "empirical_entropy_nats": 0.0004911632897556908
+      },
+      {
+        "features": [
+          0.0,
+          2.0,
+          -5.337686061859131
+        ],
+        "observations": 11253,
+        "positive_labels": 1,
+        "negative_labels": 11252,
+        "positive_fraction": 8.88651915044877e-05,
+        "mean_logit": -2.636672258377075,
+        "mean_probability": 0.0668152245680185,
+        "minimum_logit": -2.636672258377075,
+        "maximum_logit": -2.636672258377075,
+        "empirical_entropy_nats": 0.0009178304100984641
+      },
+      {
+        "features": [
+          0.0,
+          2.0,
+          -5.337427616119385
+        ],
+        "observations": 105490,
+        "positive_labels": 1,
+        "negative_labels": 105489,
+        "positive_fraction": 9.479571523367144e-06,
+        "mean_logit": -2.6366617679595947,
+        "mean_probability": 0.06681587865848874,
+        "minimum_logit": -2.6366617679595947,
+        "maximum_logit": -2.6366617679595947,
+        "empirical_entropy_nats": 0.00011912377192980487
+      },
+      {
+        "features": [
+          0.0,
+          2.0,
+          -5.3374104499816895
+        ],
+        "observations": 3726,
+        "positive_labels": 0,
+        "negative_labels": 3726,
+        "positive_fraction": 0.0,
+        "mean_logit": -2.6366608142852783,
+        "mean_probability": 0.06681593812155498,
+        "minimum_logit": -2.6366608142852783,
+        "maximum_logit": -2.6366608142852783,
+        "empirical_entropy_nats": 0.0
+      },
+      {
+        "features": [
+          0.0,
+          2.0,
+          -5.337344169616699
+        ],
+        "observations": 11791,
+        "positive_labels": 0,
+        "negative_labels": 11791,
+        "positive_fraction": 0.0,
+        "mean_logit": -2.636658191680908,
+        "mean_probability": 0.06681610164523669,
+        "minimum_logit": -2.636658191680908,
+        "maximum_logit": -2.636658191680908,
+        "empirical_entropy_nats": 0.0
+      },
+      {
+        "features": [
+          0.0,
+          2.0,
+          -5.2574872970581055
+        ],
+        "observations": 1649814,
+        "positive_labels": 38,
+        "negative_labels": 1649776,
+        "positive_fraction": 2.303289946624286e-05,
+        "mean_logit": -2.6333231925964355,
+        "mean_probability": 0.06702434519146522,
+        "minimum_logit": -2.6333231925964355,
+        "maximum_logit": -2.6333231925964355,
+        "empirical_entropy_nats": 0.0002689914539259828
+      },
+      {
+        "features": [
+          0.0,
+          2.0,
+          -5.219726085662842
+        ],
+        "observations": 3751,
+        "positive_labels": 0,
+        "negative_labels": 3751,
+        "positive_fraction": 0.0,
+        "mean_logit": -2.631695508956909,
+        "mean_probability": 0.06712619939782039,
+        "minimum_logit": -2.631695508956909,
+        "maximum_logit": -2.631695508956909,
+        "empirical_entropy_nats": 0.0
+      },
+      {
+        "features": [
+          0.0,
+          2.0,
+          -5.219481468200684
+        ],
+        "observations": 11584,
+        "positive_labels": 0,
+        "negative_labels": 11584,
+        "positive_fraction": 0.0,
+        "mean_logit": -2.6316850185394287,
+        "mean_probability": 0.0671268563136075,
+        "minimum_logit": -2.6316850185394287,
+        "maximum_logit": -2.6316850185394287,
+        "empirical_entropy_nats": 0.0
+      },
+      {
+        "features": [
+          0.0,
+          2.0,
+          -5.1483540534973145
+        ],
+        "observations": 105656,
+        "positive_labels": 3,
+        "negative_labels": 105653,
+        "positive_fraction": 2.839403346710078e-05,
+        "mean_logit": -2.628526449203491,
+        "mean_probability": 0.06732491922207524,
+        "minimum_logit": -2.628526449203491,
+        "maximum_logit": -2.628526449203491,
+        "empirical_entropy_nats": 0.0003256601800249231
+      },
+      {
+        "features": [
+          0.0,
+          2.0,
+          -5.114485263824463
+        ],
+        "observations": 15163,
+        "positive_labels": 0,
+        "negative_labels": 15163,
+        "positive_fraction": 0.0,
+        "mean_logit": -2.626978635787964,
+        "mean_probability": 0.06742217505974434,
+        "minimum_logit": -2.626978635787964,
+        "maximum_logit": -2.626978635787964,
+        "empirical_entropy_nats": 0.0
+      },
+      {
+        "features": [
+          0.0,
+          2.0,
+          -4.731171607971191
+        ],
+        "observations": 442102,
+        "positive_labels": 7,
+        "negative_labels": 442095,
+        "positive_fraction": 1.5833450199275282e-05,
+        "mean_logit": -2.607232093811035,
+        "mean_probability": 0.06867442293903371,
+        "minimum_logit": -2.607232093811035,
+        "maximum_logit": -2.607232093811035,
+        "empirical_entropy_nats": 0.00019084655772857168
+      },
+      {
+        "features": [
+          0.0,
+          2.0,
+          -4.644220352172852
+        ],
+        "observations": 15599,
+        "positive_labels": 0,
+        "negative_labels": 15599,
+        "positive_fraction": 0.0,
+        "mean_logit": -2.602104425430298,
+        "mean_probability": 0.06900310584367908,
+        "minimum_logit": -2.602104425430298,
+        "maximum_logit": -2.602104425430298,
+        "empirical_entropy_nats": 0.0
+      },
+      {
+        "features": [
+          0.0,
+          3.0,
+          -8.516993522644043
+        ],
+        "observations": 3154300,
+        "positive_labels": 0,
+        "negative_labels": 3154300,
+        "positive_fraction": 0.0,
+        "mean_logit": -2.724893569946289,
+        "mean_probability": 0.06152032620828265,
+        "minimum_logit": -2.724893569946289,
+        "maximum_logit": -2.724893569946289,
+        "empirical_entropy_nats": 0.0
+      },
+      {
+        "features": [
+          0.0,
+          3.0,
+          -7.823646068572998
+        ],
+        "observations": 21625,
+        "positive_labels": 0,
+        "negative_labels": 21625,
+        "positive_fraction": 0.0,
+        "mean_logit": -2.717759132385254,
+        "mean_probability": 0.06193352793669516,
+        "minimum_logit": -2.717759132385254,
+        "maximum_logit": -2.717759132385254,
+        "empirical_entropy_nats": 0.0
+      },
+      {
+        "features": [
+          0.0,
+          3.0,
+          -7.418247699737549
+        ],
+        "observations": 1985659,
+        "positive_labels": 2,
+        "negative_labels": 1985657,
+        "positive_fraction": 1.0072222874118868e-06,
+        "mean_logit": -2.7122244834899902,
+        "mean_probability": 0.06225585935735418,
+        "minimum_logit": -2.7122244834899902,
+        "maximum_logit": -2.7122244834899902,
+        "empirical_entropy_nats": 1.4915263620551304e-05
+      },
+      {
+        "features": [
+          0.0,
+          3.0,
+          -7.130599021911621
+        ],
+        "observations": 14106,
+        "positive_labels": 0,
+        "negative_labels": 14106,
+        "positive_fraction": 0.0,
+        "mean_logit": -2.707582712173462,
+        "mean_probability": 0.06252739753243854,
+        "minimum_logit": -2.707582712173462,
+        "maximum_logit": -2.707582712173462,
+        "empirical_entropy_nats": 0.0
+      },
+      {
+        "features": [
+          0.0,
+          3.0,
+          -7.130498886108398
+        ],
+        "observations": 477289,
+        "positive_labels": 0,
+        "negative_labels": 477289,
+        "positive_fraction": 0.0,
+        "mean_logit": -2.7075812816619873,
+        "mean_probability": 0.0625274813858142,
+        "minimum_logit": -2.7075812816619873,
+        "maximum_logit": -2.7075812816619873,
+        "empirical_entropy_nats": 0.0
+      },
+      {
+        "features": [
+          0.0,
+          3.0,
+          -6.725034236907959
+        ],
+        "observations": 14498,
+        "positive_labels": 0,
+        "negative_labels": 14498,
+        "positive_fraction": 0.0,
+        "mean_logit": -2.699880838394165,
+        "mean_probability": 0.06298038787695925,
+        "minimum_logit": -2.699880838394165,
+        "maximum_logit": -2.699880838394165,
+        "empirical_entropy_nats": 0.0
+      },
+      {
+        "features": [
+          0.0,
+          3.0,
+          -6.437151908874512
+        ],
+        "observations": 103313,
+        "positive_labels": 0,
+        "negative_labels": 103313,
+        "positive_fraction": 0.0,
+        "mean_logit": -2.693470001220703,
+        "mean_probability": 0.06335977773817136,
+        "minimum_logit": -2.693470001220703,
+        "maximum_logit": -2.693470001220703,
+        "empirical_entropy_nats": 0.0
+      },
+      {
+        "features": [
+          0.0,
+          3.0,
+          -6.436375141143799
+        ],
+        "observations": 350080,
+        "positive_labels": 0,
+        "negative_labels": 350080,
+        "positive_fraction": 0.0,
+        "mean_logit": -2.6934516429901123,
+        "mean_probability": 0.06336086722190831,
+        "minimum_logit": -2.6934516429901123,
+        "maximum_logit": -2.6934516429901123,
+        "empirical_entropy_nats": 0.0
+      },
+      {
+        "features": [
+          0.0,
+          3.0,
+          -6.318678379058838
+        ],
+        "observations": 14664,
+        "positive_labels": 0,
+        "negative_labels": 14664,
+        "positive_fraction": 0.0,
+        "mean_logit": -2.6905739307403564,
+        "mean_probability": 0.0635318634459965,
+        "minimum_logit": -2.6905739307403564,
+        "maximum_logit": -2.6905739307403564,
+        "empirical_entropy_nats": 0.0
+      },
+      {
+        "features": [
+          0.0,
+          3.0,
+          -6.030552387237549
+        ],
+        "observations": 78310,
+        "positive_labels": 0,
+        "negative_labels": 78310,
+        "positive_fraction": 0.0,
+        "mean_logit": -2.6828219890594482,
+        "mean_probability": 0.0639946330543757,
+        "minimum_logit": -2.6828219890594482,
+        "maximum_logit": -2.6828219890594482,
+        "empirical_entropy_nats": 0.0
+      },
+      {
+        "features": [
+          0.0,
+          3.0,
+          -5.876593112945557
+        ],
+        "observations": 350765,
+        "positive_labels": 1,
+        "negative_labels": 350764,
+        "positive_fraction": 2.850911578977378e-06,
+        "mean_logit": -2.6782219409942627,
+        "mean_probability": 0.06427072606331242,
+        "minimum_logit": -2.6782219409942627,
+        "maximum_logit": -2.6782219409942627,
+        "empirical_entropy_nats": 3.925098096188514e-05
+      },
+      {
+        "features": [
+          0.0,
+          3.0,
+          -5.682168960571289
+        ],
+        "observations": 26335,
+        "positive_labels": 0,
+        "negative_labels": 26335,
+        "positive_fraction": 0.0,
+        "mean_logit": -2.671893835067749,
+        "mean_probability": 0.06465234934469907,
+        "minimum_logit": -2.671893835067749,
+        "maximum_logit": -2.671893835067749,
+        "empirical_entropy_nats": 0.0
+      },
+      {
+        "features": [
+          0.0,
+          3.0,
+          -5.5710930824279785
+        ],
+        "observations": 340762,
+        "positive_labels": 1,
+        "negative_labels": 340761,
+        "positive_fraction": 2.9345995152041602e-06,
+        "mean_logit": -2.6679913997650146,
+        "mean_probability": 0.0648887403718298,
+        "minimum_logit": -2.6679913997650146,
+        "maximum_logit": -2.6679913997650146,
+        "empirical_entropy_nats": 4.0318281082021586e-05
+      },
+      {
+        "features": [
+          0.0,
+          3.0,
+          -5.424600124359131
+        ],
+        "observations": 10757,
+        "positive_labels": 0,
+        "negative_labels": 10757,
+        "positive_fraction": 0.0,
+        "mean_logit": -2.662490129470825,
+        "mean_probability": 0.06522334759919615,
+        "minimum_logit": -2.662490129470825,
+        "maximum_logit": -2.662490129470825,
+        "empirical_entropy_nats": 0.0
+      },
+      {
+        "features": [
+          0.0,
+          4.0,
+          -8.516993522644043
+        ],
+        "observations": 12912174,
+        "positive_labels": 0,
+        "negative_labels": 12912174,
+        "positive_fraction": 0.0,
+        "mean_logit": -2.7357914447784424,
+        "mean_probability": 0.06089412960689794,
+        "minimum_logit": -2.7357914447784424,
+        "maximum_logit": -2.7357914447784424,
+        "empirical_entropy_nats": 0.0
+      },
+      {
+        "features": [
+          0.0,
+          4.0,
+          -7.823845863342285
+        ],
+        "observations": 2670677,
+        "positive_labels": 1,
+        "negative_labels": 2670676,
+        "positive_fraction": 3.7443689371646215e-07,
+        "mean_logit": -2.7262675762176514,
+        "mean_probability": 0.06144104494259848,
+        "minimum_logit": -2.7262675762176514,
+        "maximum_logit": -2.7262675762176514,
+        "empirical_entropy_nats": 5.915295024096881e-06
+      },
+      {
+        "features": [
+          0.0,
+          4.0,
+          -7.418247699737549
+        ],
+        "observations": 5159624,
+        "positive_labels": 2,
+        "negative_labels": 5159622,
+        "positive_fraction": 3.8762514477799155e-07,
+        "mean_logit": -2.719203233718872,
+        "mean_probability": 0.06184968193186537,
+        "minimum_logit": -2.719203233718872,
+        "maximum_logit": -2.719203233718872,
+        "empirical_entropy_nats": 6.110223106262445e-06
+      },
+      {
+        "features": [
+          0.0,
+          4.0,
+          -6.030552387237549
+        ],
+        "observations": 174940,
+        "positive_labels": 0,
+        "negative_labels": 174940,
+        "positive_fraction": 0.0,
+        "mean_logit": -2.683974504470825,
+        "mean_probability": 0.06392563284539571,
+        "minimum_logit": -2.683974504470825,
+        "maximum_logit": -2.683974504470825,
+        "empirical_entropy_nats": 0.0
+      },
+      {
+        "features": [
+          0.0,
+          4.0,
+          -5.876593112945557
+        ],
+        "observations": 1163629,
+        "positive_labels": 1,
+        "negative_labels": 1163628,
+        "positive_fraction": 8.593804382668359e-07,
+        "mean_logit": -2.6786091327667236,
+        "mean_probability": 0.06424744427835874,
+        "minimum_logit": -2.6786091327667236,
+        "maximum_logit": -2.6786091327667236,
+        "empirical_entropy_nats": 1.2862393166770602e-05
+      },
+      {
+        "features": [
+          1.0,
+          1.0,
+          -6.030552387237549
+        ],
+        "observations": 86,
+        "positive_labels": 6,
+        "negative_labels": 80,
+        "positive_fraction": 0.06976744186046512,
+        "mean_logit": -2.683713436126709,
+        "mean_probability": 0.0639412567308506,
+        "minimum_logit": -2.683713436126709,
+        "maximum_logit": -2.683713436126709,
+        "empirical_entropy_nats": 0.2530369754479396
+      },
+      {
+        "features": [
+          1.0,
+          1.0,
+          -5.380190372467041
+        ],
+        "observations": 113,
+        "positive_labels": 23,
+        "negative_labels": 90,
+        "positive_fraction": 0.20353982300884957,
+        "mean_logit": -2.6653425693511963,
+        "mean_probability": 0.06504965197390254,
+        "minimum_logit": -2.6653425693511963,
+        "maximum_logit": -2.6653425693511963,
+        "empirical_entropy_nats": 0.5052706744991167
+      },
+      {
+        "features": [
+          1.0,
+          1.0,
+          -5.379920482635498
+        ],
+        "observations": 118,
+        "positive_labels": 15,
+        "negative_labels": 103,
+        "positive_fraction": 0.1271186440677966,
+        "mean_logit": -2.6653335094451904,
+        "mean_probability": 0.06505020298320177,
+        "minimum_logit": -2.6653335094451904,
+        "maximum_logit": -2.6653335094451904,
+        "empirical_entropy_nats": 0.38087243120985426
+      },
+      {
+        "features": [
+          1.0,
+          1.0,
+          -5.337344169616699
+        ],
+        "observations": 74,
+        "positive_labels": 16,
+        "negative_labels": 58,
+        "positive_fraction": 0.21621621621621623,
+        "mean_logit": -2.663851022720337,
+        "mean_probability": 0.06514042401879977,
+        "minimum_logit": -2.663851022720337,
+        "maximum_logit": -2.663851022720337,
+        "empirical_entropy_nats": 0.5220770639132397
+      },
+      {
+        "features": [
+          1.0,
+          1.0,
+          -5.2966508865356445
+        ],
+        "observations": 2084,
+        "positive_labels": 271,
+        "negative_labels": 1813,
+        "positive_fraction": 0.1300383877159309,
+        "mean_logit": -2.6623964309692383,
+        "mean_probability": 0.06522906056046782,
+        "minimum_logit": -2.6623964309692383,
+        "maximum_logit": -2.6623964309692383,
+        "empirical_entropy_nats": 0.38645967323940733
+      },
+      {
+        "features": [
+          1.0,
+          1.0,
+          -5.219785690307617
+        ],
+        "observations": 2182,
+        "positive_labels": 257,
+        "negative_labels": 1925,
+        "positive_fraction": 0.11778185151237397,
+        "mean_logit": -2.6595427989959717,
+        "mean_probability": 0.06540327459836372,
+        "minimum_logit": -2.6595427989959717,
+        "maximum_logit": -2.6595427989959717,
+        "empirical_entropy_nats": 0.36248206384594955
+      },
+      {
+        "features": [
+          1.0,
+          1.0,
+          -5.219481468200684
+        ],
+        "observations": 120,
+        "positive_labels": 22,
+        "negative_labels": 98,
+        "positive_fraction": 0.18333333333333332,
+        "mean_logit": -2.659531354904175,
+        "mean_probability": 0.06540397412980778,
+        "minimum_logit": -2.659531354904175,
+        "maximum_logit": -2.659531354904175,
+        "empirical_entropy_nats": 0.4764105187520543
+      },
+      {
+        "features": [
+          1.0,
+          1.0,
+          -5.114278316497803
+        ],
+        "observations": 127,
+        "positive_labels": 19,
+        "negative_labels": 108,
+        "positive_fraction": 0.14960629921259844,
+        "mean_logit": -2.6553893089294434,
+        "mean_probability": 0.06565761827748745,
+        "minimum_logit": -2.6553893089294434,
+        "maximum_logit": -2.6553893089294434,
+        "empirical_entropy_nats": 0.4220255657217559
+      },
+      {
+        "features": [
+          1.0,
+          1.0,
+          -5.081538677215576
+        ],
+        "observations": 642,
+        "positive_labels": 114,
+        "negative_labels": 528,
+        "positive_fraction": 0.17757009345794392,
+        "mean_logit": -2.6540415287017822,
+        "mean_probability": 0.06574034855825693,
+        "minimum_logit": -2.6540415287017822,
+        "maximum_logit": -2.6540415287017822,
+        "empirical_entropy_nats": 0.4676888318614899
+      },
+      {
+        "features": [
+          1.0,
+          1.0,
+          -5.019097328186035
+        ],
+        "observations": 452,
+        "positive_labels": 76,
+        "negative_labels": 376,
+        "positive_fraction": 0.168141592920354,
+        "mean_logit": -2.651390314102173,
+        "mean_probability": 0.06590336992184201,
+        "minimum_logit": -2.651390314102173,
+        "maximum_logit": -2.651390314102173,
+        "empirical_entropy_nats": 0.4529271980261217
+      },
+      {
+        "features": [
+          1.0,
+          1.0,
+          -4.93237829208374
+        ],
+        "observations": 4846,
+        "positive_labels": 594,
+        "negative_labels": 4252,
+        "positive_fraction": 0.12257531985142385,
+        "mean_logit": -2.6475234031677246,
+        "mean_probability": 0.06614181737044326,
+        "minimum_logit": -2.6475234031677246,
+        "maximum_logit": -2.6475234031677246,
+        "empirical_entropy_nats": 0.3720249253357883
+      },
+      {
+        "features": [
+          1.0,
+          1.0,
+          -4.932094573974609
+        ],
+        "observations": 536,
+        "positive_labels": 104,
+        "negative_labels": 432,
+        "positive_fraction": 0.19402985074626866,
+        "mean_logit": -2.6475107669830322,
+        "mean_probability": 0.06614259787491963,
+        "minimum_logit": -2.6475107669830322,
+        "maximum_logit": -2.6475107669830322,
+        "empirical_entropy_nats": 0.49201381101080494
+      },
+      {
+        "features": [
+          1.0,
+          1.0,
+          -4.904598712921143
+        ],
+        "observations": 137,
+        "positive_labels": 23,
+        "negative_labels": 114,
+        "positive_fraction": 0.1678832116788321,
+        "mean_logit": -2.646237373352051,
+        "mean_probability": 0.06622129600807627,
+        "minimum_logit": -2.646237373352051,
+        "maximum_logit": -2.646237373352051,
+        "empirical_entropy_nats": 0.4525138449278116
+      },
+      {
+        "features": [
+          1.0,
+          1.0,
+          -4.8521928787231445
+        ],
+        "observations": 703,
+        "positive_labels": 86,
+        "negative_labels": 617,
+        "positive_fraction": 0.12233285917496443,
+        "mean_logit": -2.6437456607818604,
+        "mean_probability": 0.06637554027156982,
+        "minimum_logit": -2.6437456607818604,
+        "maximum_logit": -2.6437456607818604,
+        "empirical_entropy_nats": 0.3715474249153222
+      },
+      {
+        "features": [
+          1.0,
+          1.0,
+          -4.754429340362549
+        ],
+        "observations": 497,
+        "positive_labels": 151,
+        "negative_labels": 346,
+        "positive_fraction": 0.3038229376257545,
+        "mean_logit": -2.63885760307312,
+        "mean_probability": 0.0666790951715783,
+        "minimum_logit": -2.63885760307312,
+        "maximum_logit": -2.63885760307312,
+        "empirical_entropy_nats": 0.6140687554144835
+      },
+      {
+        "features": [
+          1.0,
+          1.0,
+          -4.73155403137207
+        ],
+        "observations": 16746,
+        "positive_labels": 2472,
+        "negative_labels": 14274,
+        "positive_fraction": 0.14761734145467575,
+        "mean_logit": -2.637666940689087,
+        "mean_probability": 0.06675323189717376,
+        "minimum_logit": -2.637666940689087,
+        "maximum_logit": -2.637666940689087,
+        "empirical_entropy_nats": 0.418553764907608
+      },
+      {
+        "features": [
+          1.0,
+          1.0,
+          -4.731171607971191
+        ],
+        "observations": 530,
+        "positive_labels": 105,
+        "negative_labels": 425,
+        "positive_fraction": 0.19811320754716982,
+        "mean_logit": -2.6376469135284424,
+        "mean_probability": 0.06675447954479095,
+        "minimum_logit": -2.6376469135284424,
+        "maximum_logit": -2.6376469135284424,
+        "empirical_entropy_nats": 0.49777562247179563
+      },
+      {
+        "features": [
+          1.0,
+          1.0,
+          -4.709101676940918
+        ],
+        "observations": 691,
+        "positive_labels": 112,
+        "negative_labels": 579,
+        "positive_fraction": 0.16208393632416787,
+        "mean_logit": -2.6364800930023193,
+        "mean_probability": 0.06682720725919528,
+        "minimum_logit": -2.6364800930023193,
+        "maximum_logit": -2.6364800930023193,
+        "empirical_entropy_nats": 0.44310942130773523
+      },
+      {
+        "features": [
+          1.0,
+          1.0,
+          -4.6869730949401855
+        ],
+        "observations": 2787,
+        "positive_labels": 416,
+        "negative_labels": 2371,
+        "positive_fraction": 0.14926444205238606,
+        "mean_logit": -2.6352930068969727,
+        "mean_probability": 0.0669012736066941,
+        "minimum_logit": -2.6352930068969727,
+        "maximum_logit": -2.6352930068969727,
+        "empirical_entropy_nats": 0.42143106360331095
+      },
+      {
+        "features": [
+          1.0,
+          1.0,
+          -4.686750888824463
+        ],
+        "observations": 120,
+        "positive_labels": 42,
+        "negative_labels": 78,
+        "positive_fraction": 0.35,
+        "mean_logit": -2.6352808475494385,
+        "mean_probability": 0.06690203266395821,
+        "minimum_logit": -2.6352808475494385,
+        "maximum_logit": -2.6352808475494385,
+        "empirical_entropy_nats": 0.6474466390346325
+      },
+      {
+        "features": [
+          1.0,
+          1.0,
+          -4.665630340576172
+        ],
+        "observations": 727,
+        "positive_labels": 82,
+        "negative_labels": 645,
+        "positive_fraction": 0.11279229711141678,
+        "mean_logit": -2.6341307163238525,
+        "mean_probability": 0.06697386670317608,
+        "minimum_logit": -2.6341307163238525,
+        "maximum_logit": -2.6341307163238525,
+        "empirical_entropy_nats": 0.3523137779338742
+      },
+      {
+        "features": [
+          1.0,
+          1.0,
+          -4.665489196777344
+        ],
+        "observations": 248,
+        "positive_labels": 36,
+        "negative_labels": 212,
+        "positive_fraction": 0.14516129032258066,
+        "mean_logit": -2.6341230869293213,
+        "mean_probability": 0.06697434345316321,
+        "minimum_logit": -2.6341230869293213,
+        "maximum_logit": -2.6341230869293213,
+        "empirical_entropy_nats": 0.41422321384689104
+      },
+      {
+        "features": [
+          1.0,
+          1.0,
+          -4.644465923309326
+        ],
+        "observations": 2730,
+        "positive_labels": 449,
+        "negative_labels": 2281,
+        "positive_fraction": 0.16446886446886447,
+        "mean_logit": -2.6329615116119385,
+        "mean_probability": 0.06704696539860751,
+        "minimum_logit": -2.6329615116119385,
+        "maximum_logit": -2.6329615116119385,
+        "empirical_entropy_nats": 0.4470065319053932
+      },
+      {
+        "features": [
+          1.0,
+          1.0,
+          -4.583595275878906
+        ],
+        "observations": 532,
+        "positive_labels": 132,
+        "negative_labels": 400,
+        "positive_fraction": 0.24812030075187969,
+        "mean_logit": -2.6295034885406494,
+        "mean_probability": 0.06726359462911737,
+        "minimum_logit": -2.6295034885406494,
+        "maximum_logit": -2.6295034885406494,
+        "empirical_entropy_nats": 0.5602606460623327
+      },
+      {
+        "features": [
+          1.0,
+          1.0,
+          -4.564448356628418
+        ],
+        "observations": 215,
+        "positive_labels": 30,
+        "negative_labels": 185,
+        "positive_fraction": 0.13953488372093023,
+        "mean_logit": -2.6283857822418213,
+        "mean_probability": 0.06733375255815206,
+        "minimum_logit": -2.6283857822418213,
+        "maximum_logit": -2.6283857822418213,
+        "empirical_entropy_nats": 0.4041182649213616
+      },
+      {
+        "features": [
+          1.0,
+          1.0,
+          -4.545185089111328
+        ],
+        "observations": 723,
+        "positive_labels": 170,
+        "negative_labels": 553,
+        "positive_fraction": 0.2351313969571231,
+        "mean_logit": -2.6272459030151367,
+        "mean_probability": 0.06740537219462577,
+        "minimum_logit": -2.6272459030151367,
+        "maximum_logit": -2.6272459030151367,
+        "empirical_entropy_nats": 0.5454027088248841
+      },
+      {
+        "features": [
+          1.0,
+          1.0,
+          -4.545030117034912
+        ],
+        "observations": 176,
+        "positive_labels": 36,
+        "negative_labels": 140,
+        "positive_fraction": 0.20454545454545456,
+        "mean_logit": -2.627236843109131,
+        "mean_probability": 0.06740594171965442,
+        "minimum_logit": -2.627236843109131,
+        "maximum_logit": -2.627236843109131,
+        "empirical_entropy_nats": 0.506639557823819
+      },
+      {
+        "features": [
+          1.0,
+          1.0,
+          -4.4380316734313965
+        ],
+        "observations": 490,
+        "positive_labels": 140,
+        "negative_labels": 350,
+        "positive_fraction": 0.2857142857142857,
+        "mean_logit": -2.620623826980591,
+        "mean_probability": 0.06782284278839666,
+        "minimum_logit": -2.620623826980591,
+        "maximum_logit": -2.620623826980591,
+        "empirical_entropy_nats": 0.5982695885852573
+      },
+      {
+        "features": [
+          1.0,
+          1.0,
+          -4.281335830688477
+        ],
+        "observations": 181,
+        "positive_labels": 54,
+        "negative_labels": 127,
+        "positive_fraction": 0.2983425414364641,
+        "mean_logit": -2.610006809234619,
+        "mean_probability": 0.06849716925774385,
+        "minimum_logit": -2.610006809234619,
+        "maximum_logit": -2.610006809234619,
+        "empirical_entropy_nats": 0.6094533931734948
+      },
+      {
+        "features": [
+          1.0,
+          1.0,
+          -4.211706638336182
+        ],
+        "observations": 663,
+        "positive_labels": 168,
+        "negative_labels": 495,
+        "positive_fraction": 0.25339366515837103,
+        "mean_logit": -2.604900598526001,
+        "mean_probability": 0.06882369133104005,
+        "minimum_logit": -2.604900598526001,
+        "maximum_logit": -2.604900598526001,
+        "empirical_entropy_nats": 0.5660328468808109
+      },
+      {
+        "features": [
+          1.0,
+          1.0,
+          -4.211463451385498
+        ],
+        "observations": 178,
+        "positive_labels": 67,
+        "negative_labels": 111,
+        "positive_fraction": 0.37640449438202245,
+        "mean_logit": -2.6048824787139893,
+        "mean_probability": 0.06882485258433908,
+        "minimum_logit": -2.6048824787139893,
+        "maximum_logit": -2.6048824787139893,
+        "empirical_entropy_nats": 0.6622764837479065
+      },
+      {
+        "features": [
+          1.0,
+          1.0,
+          -4.171905994415283
+        ],
+        "observations": 226,
+        "positive_labels": 61,
+        "negative_labels": 165,
+        "positive_fraction": 0.26991150442477874,
+        "mean_logit": -2.6018667221069336,
+        "mean_probability": 0.06901837786839239,
+        "minimum_logit": -2.6018667221069336,
+        "maximum_logit": -2.6018667221069336,
+        "empirical_entropy_nats": 0.5831708005635788
+      },
+      {
+        "features": [
+          1.0,
+          1.0,
+          -4.159106731414795
+        ],
+        "observations": 734,
+        "positive_labels": 180,
+        "negative_labels": 554,
+        "positive_fraction": 0.2452316076294278,
+        "mean_logit": -2.600872755050659,
+        "mean_probability": 0.06908227242992486,
+        "minimum_logit": -2.600872755050659,
+        "maximum_logit": -2.600872755050659,
+        "empirical_entropy_nats": 0.5570356367640618
+      },
+      {
+        "features": [
+          1.0,
+          1.0,
+          -4.10905647277832
+        ],
+        "observations": 208,
+        "positive_labels": 55,
+        "negative_labels": 153,
+        "positive_fraction": 0.2644230769230769,
+        "mean_logit": -2.596897602081299,
+        "mean_probability": 0.06933835248650977,
+        "minimum_logit": -2.596897602081299,
+        "maximum_logit": -2.596897602081299,
+        "empirical_entropy_nats": 0.5776326606588731
+      },
+      {
+        "features": [
+          1.0,
+          2.0,
+          -8.516993522644043
+        ],
+        "observations": 15186,
+        "positive_labels": 2,
+        "negative_labels": 15184,
+        "positive_fraction": 0.00013170025023047545,
+        "mean_logit": -2.7400901317596436,
+        "mean_probability": 0.06064876826133254,
+        "minimum_logit": -2.7400901317596436,
+        "maximum_logit": -2.7400901317596436,
+        "empirical_entropy_nats": 0.0013084309490579617
+      },
+      {
+        "features": [
+          1.0,
+          2.0,
+          -7.823845863342285
+        ],
+        "observations": 322331,
+        "positive_labels": 142,
+        "negative_labels": 322189,
+        "positive_fraction": 0.0004405409346293096,
+        "mean_logit": -2.737971544265747,
+        "mean_probability": 0.06076957764459472,
+        "minimum_logit": -2.737971544265747,
+        "maximum_logit": -2.737971544265747,
+        "empirical_entropy_nats": 0.003844727121728731
+      },
+      {
+        "features": [
+          1.0,
+          2.0,
+          -7.823646068572998
+        ],
+        "observations": 679,
+        "positive_labels": 0,
+        "negative_labels": 679,
+        "positive_fraction": 0.0,
+        "mean_logit": -2.7379703521728516,
+        "mean_probability": 0.060769645685281565,
+        "minimum_logit": -2.7379703521728516,
+        "maximum_logit": -2.7379703521728516,
+        "empirical_entropy_nats": 0.0
+      },
+      {
+        "features": [
+          1.0,
+          2.0,
+          -7.418247699737549
+        ],
+        "observations": 59169,
+        "positive_labels": 41,
+        "negative_labels": 59128,
+        "positive_fraction": 0.0006929304196454224,
+        "mean_logit": -2.735790967941284,
+        "mean_probability": 0.060894156875470354,
+        "minimum_logit": -2.735790967941284,
+        "maximum_logit": -2.735790967941284,
+        "empirical_entropy_nats": 0.005733468731046274
+      },
+      {
+        "features": [
+          1.0,
+          2.0,
+          -7.130498886108398
+        ],
+        "observations": 4626,
+        "positive_labels": 4,
+        "negative_labels": 4622,
+        "positive_fraction": 0.0008646779074794639,
+        "mean_logit": -2.7337162494659424,
+        "mean_probability": 0.06101290999162898,
+        "minimum_logit": -2.7337162494659424,
+        "maximum_logit": -2.7337162494659424,
+        "empirical_entropy_nats": 0.006963009959405566
+      },
+      {
+        "features": [
+          1.0,
+          2.0,
+          -6.725100994110107
+        ],
+        "observations": 138550,
+        "positive_labels": 147,
+        "negative_labels": 138403,
+        "positive_fraction": 0.0010609888127029953,
+        "mean_logit": -2.7298977375030518,
+        "mean_probability": 0.061232040878345315,
+        "minimum_logit": -2.7298977375030518,
+        "maximum_logit": -2.7298977375030518,
+        "empirical_entropy_nats": 0.008326664903387689
+      },
+      {
+        "features": [
+          1.0,
+          2.0,
+          -6.724767208099365
+        ],
+        "observations": 788,
+        "positive_labels": 1,
+        "negative_labels": 787,
+        "positive_fraction": 0.0012690355329949238,
+        "mean_logit": -2.7298941612243652,
+        "mean_probability": 0.061232246452744714,
+        "minimum_logit": -2.7298941612243652,
+        "maximum_logit": -2.7298941612243652,
+        "empirical_entropy_nats": 0.009732060029838084
+      },
+      {
+        "features": [
+          1.0,
+          2.0,
+          -6.319413661956787
+        ],
+        "observations": 7673,
+        "positive_labels": 14,
+        "negative_labels": 7659,
+        "positive_fraction": 0.0018245796950345367,
+        "mean_logit": -2.7248034477233887,
+        "mean_probability": 0.06152552967234027,
+        "minimum_logit": -2.7248034477233887,
+        "maximum_logit": -2.7248034477233887,
+        "empirical_entropy_nats": 0.013329453783791865
+      },
+      {
+        "features": [
+          1.0,
+          2.0,
+          -6.318678379058838
+        ],
+        "observations": 5549,
+        "positive_labels": 9,
+        "negative_labels": 5540,
+        "positive_fraction": 0.0016219138583528565,
+        "mean_logit": -2.724792957305908,
+        "mean_probability": 0.06152613539328864,
+        "minimum_logit": -2.724792957305908,
+        "maximum_logit": -2.724792957305908,
+        "empirical_entropy_nats": 0.012040013215973082
+      },
+      {
+        "features": [
+          1.0,
+          2.0,
+          -6.213427543640137
+        ],
+        "observations": 33204,
+        "positive_labels": 64,
+        "negative_labels": 33140,
+        "positive_fraction": 0.0019274786170340923,
+        "mean_logit": -2.723224401473999,
+        "mean_probability": 0.0616167671733482,
+        "minimum_logit": -2.723224401473999,
+        "maximum_logit": -2.723224401473999,
+        "empirical_entropy_nats": 0.013975334416795406
+      },
+      {
+        "features": [
+          1.0,
+          2.0,
+          -6.118626117706299
+        ],
+        "observations": 989,
+        "positive_labels": 1,
+        "negative_labels": 988,
+        "positive_fraction": 0.0010111223458038423,
+        "mean_logit": -2.721714496612549,
+        "mean_probability": 0.061704127894547704,
+        "minimum_logit": -2.721714496612549,
+        "maximum_logit": -2.721714496612549,
+        "empirical_entropy_nats": 0.007984012740110092
+      },
+      {
+        "features": [
+          1.0,
+          2.0,
+          -6.031103134155273
+        ],
+        "observations": 929,
+        "positive_labels": 2,
+        "negative_labels": 927,
+        "positive_fraction": 0.002152852529601722,
+        "mean_logit": -2.720233201980591,
+        "mean_probability": 0.06178994570879819,
+        "minimum_logit": -2.720233201980591,
+        "maximum_logit": -2.720233201980591,
+        "empirical_entropy_nats": 0.01537111810267854
+      },
+      {
+        "features": [
+          1.0,
+          2.0,
+          -6.030552387237549
+        ],
+        "observations": 8162,
+        "positive_labels": 19,
+        "negative_labels": 8143,
+        "positive_fraction": 0.002327860818426856,
+        "mean_logit": -2.7202236652374268,
+        "mean_probability": 0.06179049857469053,
+        "minimum_logit": -2.7202236652374268,
+        "maximum_logit": -2.7202236652374268,
+        "empirical_entropy_nats": 0.01643851670441643
+      },
+      {
+        "features": [
+          1.0,
+          2.0,
+          -5.951106071472168
+        ],
+        "observations": 1241,
+        "positive_labels": 0,
+        "negative_labels": 1241,
+        "positive_fraction": 0.0,
+        "mean_logit": -2.7188029289245605,
+        "mean_probability": 0.06187291341117928,
+        "minimum_logit": -2.7188029289245605,
+        "maximum_logit": -2.7188029289245605,
+        "empirical_entropy_nats": 0.0
+      },
+      {
+        "features": [
+          1.0,
+          2.0,
+          -5.876621246337891
+        ],
+        "observations": 6676,
+        "positive_labels": 18,
+        "negative_labels": 6658,
+        "positive_fraction": 0.0026962252846015576,
+        "mean_logit": -2.7174015045166016,
+        "mean_probability": 0.06195430857231485,
+        "minimum_logit": -2.7174015045166016,
+        "maximum_logit": -2.7174015045166016,
+        "empirical_entropy_nats": 0.018643193172264504
+      },
+      {
+        "features": [
+          1.0,
+          2.0,
+          -5.876593112945557
+        ],
+        "observations": 169222,
+        "positive_labels": 444,
+        "negative_labels": 168778,
+        "positive_fraction": 0.002623772322747633,
+        "mean_logit": -2.7174007892608643,
+        "mean_probability": 0.06195435014011147,
+        "minimum_logit": -2.7174007892608643,
+        "maximum_logit": -2.7174007892608643,
+        "empirical_entropy_nats": 0.018213779176949642
+      },
+      {
+        "features": [
+          1.0,
+          2.0,
+          -5.876478672027588
+        ],
+        "observations": 6476,
+        "positive_labels": 21,
+        "negative_labels": 6455,
+        "positive_fraction": 0.0032427424336009883,
+        "mean_logit": -2.7173988819122314,
+        "mean_probability": 0.061954460987692556,
+        "minimum_logit": -2.7173988819122314,
+        "maximum_logit": -2.7173988819122314,
+        "empirical_entropy_nats": 0.02182272510182051
+      },
+      {
+        "features": [
+          1.0,
+          2.0,
+          -5.682168960571289
+        ],
+        "observations": 875,
+        "positive_labels": 1,
+        "negative_labels": 874,
+        "positive_fraction": 0.001142857142857143,
+        "mean_logit": -2.713402271270752,
+        "mean_probability": 0.06218713546729422,
+        "minimum_logit": -2.713402271270752,
+        "maximum_logit": -2.713402271270752,
+        "empirical_entropy_nats": 0.008884173988542438
+      },
+      {
+        "features": [
+          1.0,
+          2.0,
+          -5.625578880310059
+        ],
+        "observations": 123240,
+        "positive_labels": 452,
+        "negative_labels": 122788,
+        "positive_fraction": 0.003667640376501136,
+        "mean_logit": -2.712139368057251,
+        "mean_probability": 0.06226082858717787,
+        "minimum_logit": -2.712139368057251,
+        "maximum_logit": -2.712139368057251,
+        "empirical_entropy_nats": 0.02422979194580268
+      },
+      {
+        "features": [
+          1.0,
+          2.0,
+          -5.62544584274292
+        ],
+        "observations": 6489,
+        "positive_labels": 29,
+        "negative_labels": 6460,
+        "positive_fraction": 0.0044691015564801975,
+        "mean_logit": -2.7121360301971436,
+        "mean_probability": 0.062261023466482025,
+        "minimum_logit": -2.7121360301971436,
+        "maximum_logit": -2.7121360301971436,
+        "empirical_entropy_nats": 0.028639477566653002
+      },
+      {
+        "features": [
+          1.0,
+          2.0,
+          -5.57154655456543
+        ],
+        "observations": 1591,
+        "positive_labels": 4,
+        "negative_labels": 1587,
+        "positive_fraction": 0.00251414204902577,
+        "mean_logit": -2.710888624191284,
+        "mean_probability": 0.06233389253257803,
+        "minimum_logit": -2.710888624191284,
+        "maximum_logit": -2.710888624191284,
+        "empirical_entropy_nats": 0.01756018992176502
+      },
+      {
+        "features": [
+          1.0,
+          2.0,
+          -5.5710930824279785
+        ],
+        "observations": 3892,
+        "positive_labels": 19,
+        "negative_labels": 3873,
+        "positive_fraction": 0.004881808838643371,
+        "mean_logit": -2.7108776569366455,
+        "mean_probability": 0.06233453355390373,
+        "minimum_logit": -2.7108776569366455,
+        "maximum_logit": -2.7108776569366455,
+        "empirical_entropy_nats": 0.030852029029226208
+      },
+      {
+        "features": [
+          1.0,
+          2.0,
+          -5.471149921417236
+        ],
+        "observations": 29368,
+        "positive_labels": 121,
+        "negative_labels": 29247,
+        "positive_fraction": 0.0041201307545627895,
+        "mean_logit": -2.708442449569702,
+        "mean_probability": 0.06247702063511131,
+        "minimum_logit": -2.708442449569702,
+        "maximum_logit": -2.708442449569702,
+        "empirical_entropy_nats": 0.02673885538588725
+      },
+      {
+        "features": [
+          1.0,
+          2.0,
+          -5.470759391784668
+        ],
+        "observations": 206,
+        "positive_labels": 1,
+        "negative_labels": 205,
+        "positive_fraction": 0.0048543689320388345,
+        "mean_logit": -2.708432912826538,
+        "mean_probability": 0.06247757923922729,
+        "minimum_logit": -2.708432912826538,
+        "maximum_logit": -2.708432912826538,
+        "empirical_entropy_nats": 0.030706043918835073
+      },
+      {
+        "features": [
+          1.0,
+          2.0,
+          -5.424600124359131
+        ],
+        "observations": 308,
+        "positive_labels": 2,
+        "negative_labels": 306,
+        "positive_fraction": 0.006493506493506494,
+        "mean_logit": -2.7072525024414062,
+        "mean_probability": 0.06254675647111595,
+        "minimum_logit": -2.7072525024414062,
+        "maximum_logit": -2.7072525024414062,
+        "empirical_entropy_nats": 0.03917986232893679
+      },
+      {
+        "features": [
+          1.0,
+          2.0,
+          -5.424299716949463
+        ],
+        "observations": 9421,
+        "positive_labels": 42,
+        "negative_labels": 9379,
+        "positive_fraction": 0.004458125464388069,
+        "mean_logit": -2.707244873046875,
+        "mean_probability": 0.06254720381956125,
+        "minimum_logit": -2.707244873046875,
+        "maximum_logit": -2.707244873046875,
+        "empirical_entropy_nats": 0.028580126288320063
+      },
+      {
+        "features": [
+          1.0,
+          2.0,
+          -5.379920482635498
+        ],
+        "observations": 3701,
+        "positive_labels": 20,
+        "negative_labels": 3681,
+        "positive_fraction": 0.0054039448797622265,
+        "mean_logit": -2.7060749530792236,
+        "mean_probability": 0.06261583725438137,
+        "minimum_logit": -2.7060749530792236,
+        "maximum_logit": -2.7060749530792236,
+        "empirical_entropy_nats": 0.03360129265655409
+      },
+      {
+        "features": [
+          1.0,
+          2.0,
+          -5.337686061859131
+        ],
+        "observations": 906,
+        "positive_labels": 4,
+        "negative_labels": 902,
+        "positive_fraction": 0.004415011037527594,
+        "mean_logit": -2.7049293518066406,
+        "mean_probability": 0.0626831121308879,
+        "minimum_logit": -2.7049293518066406,
+        "maximum_logit": -2.7049293518066406,
+        "empirical_entropy_nats": 0.028346729286946107
+      },
+      {
+        "features": [
+          1.0,
+          2.0,
+          -5.337427616119385
+        ],
+        "observations": 7995,
+        "positive_labels": 26,
+        "negative_labels": 7969,
+        "positive_fraction": 0.0032520325203252032,
+        "mean_logit": -2.7049224376678467,
+        "mean_probability": 0.06268351836500928,
+        "minimum_logit": -2.7049224376678467,
+        "maximum_logit": -2.7049224376678467,
+        "empirical_entropy_nats": 0.02187592619673335
+      },
+      {
+        "features": [
+          1.0,
+          2.0,
+          -5.3374104499816895
+        ],
+        "observations": 314,
+        "positive_labels": 1,
+        "negative_labels": 313,
+        "positive_fraction": 0.0031847133757961785,
+        "mean_logit": -2.7049217224121094,
+        "mean_probability": 0.06268356038936884,
+        "minimum_logit": -2.7049217224121094,
+        "maximum_logit": -2.7049217224121094,
+        "empirical_entropy_nats": 0.021489805529056053
+      },
+      {
+        "features": [
+          1.0,
+          2.0,
+          -5.337344169616699
+        ],
+        "observations": 442,
+        "positive_labels": 1,
+        "negative_labels": 441,
+        "positive_fraction": 0.0022624434389140274,
+        "mean_logit": -2.7049200534820557,
+        "mean_probability": 0.06268365844631035,
+        "minimum_logit": -2.7049200534820557,
+        "maximum_logit": -2.7049200534820557,
+        "empirical_entropy_nats": 0.01604112625855993
+      },
+      {
+        "features": [
+          1.0,
+          2.0,
+          -5.2574872970581055
+        ],
+        "observations": 168954,
+        "positive_labels": 859,
+        "negative_labels": 168095,
+        "positive_fraction": 0.00508422410833718,
+        "mean_logit": -2.7026631832122803,
+        "mean_probability": 0.06281639048988971,
+        "minimum_logit": -2.7026631832122803,
+        "maximum_logit": -2.7026631832122803,
+        "empirical_entropy_nats": 0.03192418084122823
+      },
+      {
+        "features": [
+          1.0,
+          2.0,
+          -5.219726085662842
+        ],
+        "observations": 294,
+        "positive_labels": 2,
+        "negative_labels": 292,
+        "positive_fraction": 0.006802721088435374,
+        "mean_logit": -2.7015533447265625,
+        "mean_probability": 0.06288175893738317,
+        "minimum_logit": -2.7015533447265625,
+        "maximum_logit": -2.7015533447265625,
+        "empirical_entropy_nats": 0.040728050932361336
+      },
+      {
+        "features": [
+          1.0,
+          2.0,
+          -5.219481468200684
+        ],
+        "observations": 591,
+        "positive_labels": 4,
+        "negative_labels": 587,
+        "positive_fraction": 0.00676818950930626,
+        "mean_logit": -2.7015459537506104,
+        "mean_probability": 0.06288219447158512,
+        "minimum_logit": -2.7015459537506104,
+        "maximum_logit": -2.7015459537506104,
+        "empirical_entropy_nats": 0.04055587073338724
+      },
+      {
+        "features": [
+          1.0,
+          2.0,
+          -5.1483540534973145
+        ],
+        "observations": 8130,
+        "positive_labels": 46,
+        "negative_labels": 8084,
+        "positive_fraction": 0.005658056580565805,
+        "mean_logit": -2.6993770599365234,
+        "mean_probability": 0.06301012433381513,
+        "minimum_logit": -2.6993770599365234,
+        "maximum_logit": -2.6993770599365234,
+        "empirical_entropy_nats": 0.034920622342278614
+      },
+      {
+        "features": [
+          1.0,
+          2.0,
+          -5.114485263824463
+        ],
+        "observations": 1107,
+        "positive_labels": 3,
+        "negative_labels": 1104,
+        "positive_fraction": 0.0027100271002710027,
+        "mean_logit": -2.6983072757720947,
+        "mean_probability": 0.0630733137629549,
+        "minimum_logit": -2.6983072757720947,
+        "maximum_logit": -2.6983072757720947,
+        "empirical_entropy_nats": 0.018724770744682793
+      },
+      {
+        "features": [
+          1.0,
+          2.0,
+          -4.731171607971191
+        ],
+        "observations": 28283,
+        "positive_labels": 255,
+        "negative_labels": 28028,
+        "positive_fraction": 0.009016016688470106,
+        "mean_logit": -2.684302568435669,
+        "mean_probability": 0.06390600458600332,
+        "minimum_logit": -2.684302568435669,
+        "maximum_logit": -2.684302568435669,
+        "empirical_entropy_nats": 0.051429442192187515
+      },
+      {
+        "features": [
+          1.0,
+          2.0,
+          -4.644220352172852
+        ],
+        "observations": 610,
+        "positive_labels": 4,
+        "negative_labels": 606,
+        "positive_fraction": 0.006557377049180328,
+        "mean_logit": -2.680572271347046,
+        "mean_probability": 0.06412952186959113,
+        "minimum_logit": -2.680572271347046,
+        "maximum_logit": -2.680572271347046,
+        "empirical_entropy_nats": 0.039500844048530506
+      },
+      {
+        "features": [
+          1.0,
+          3.0,
+          -8.516993522644043
+        ],
+        "observations": 410980,
+        "positive_labels": 16,
+        "negative_labels": 410964,
+        "positive_fraction": 3.893133485814395e-05,
+        "mean_logit": -2.7561075687408447,
+        "mean_probability": 0.05974264297586279,
+        "minimum_logit": -2.7561075687408447,
+        "maximum_logit": -2.7561075687408447,
+        "empirical_entropy_nats": 0.00043422810423218803
+      },
+      {
+        "features": [
+          1.0,
+          3.0,
+          -7.823646068572998
+        ],
+        "observations": 2531,
+        "positive_labels": 0,
+        "negative_labels": 2531,
+        "positive_fraction": 0.0,
+        "mean_logit": -2.7529752254486084,
+        "mean_probability": 0.0599188403738982,
+        "minimum_logit": -2.7529752254486084,
+        "maximum_logit": -2.7529752254486084,
+        "empirical_entropy_nats": 0.0
+      },
+      {
+        "features": [
+          1.0,
+          3.0,
+          -7.418247699737549
+        ],
+        "observations": 248789,
+        "positive_labels": 26,
+        "negative_labels": 248763,
+        "positive_fraction": 0.00010450622816925186,
+        "mean_logit": -2.750002145767212,
+        "mean_probability": 0.06008652898924617,
+        "minimum_logit": -2.750002145767212,
+        "maximum_logit": -2.750002145767212,
+        "empirical_entropy_nats": 0.0010624324326078537
+      },
+      {
+        "features": [
+          1.0,
+          3.0,
+          -7.130599021911621
+        ],
+        "observations": 1862,
+        "positive_labels": 0,
+        "negative_labels": 1862,
+        "positive_fraction": 0.0,
+        "mean_logit": -2.7472898960113525,
+        "mean_probability": 0.060239889269416286,
+        "minimum_logit": -2.7472898960113525,
+        "maximum_logit": -2.7472898960113525,
+        "empirical_entropy_nats": 0.0
+      },
+      {
+        "features": [
+          1.0,
+          3.0,
+          -7.130498886108398
+        ],
+        "observations": 46279,
+        "positive_labels": 12,
+        "negative_labels": 46267,
+        "positive_fraction": 0.00025929687331186933,
+        "mean_logit": -2.747288942337036,
+        "mean_probability": 0.06023994325793805,
+        "minimum_logit": -2.747288942337036,
+        "maximum_logit": -2.747288942337036,
+        "empirical_entropy_nats": 0.002400416758539217
+      },
+      {
+        "features": [
+          1.0,
+          3.0,
+          -6.725034236907959
+        ],
+        "observations": 1526,
+        "positive_labels": 0,
+        "negative_labels": 1526,
+        "positive_fraction": 0.0,
+        "mean_logit": -2.7424890995025635,
+        "mean_probability": 0.06051224184399976,
+        "minimum_logit": -2.7424890995025635,
+        "maximum_logit": -2.7424890995025635,
+        "empirical_entropy_nats": 0.0
+      },
+      {
+        "features": [
+          1.0,
+          3.0,
+          -6.437151908874512
+        ],
+        "observations": 9858,
+        "positive_labels": 2,
+        "negative_labels": 9856,
+        "positive_fraction": 0.0002028809089064719,
+        "mean_logit": -2.738285541534424,
+        "mean_probability": 0.06075165820830486,
+        "minimum_logit": -2.738285541534424,
+        "maximum_logit": -2.738285541534424,
+        "empirical_entropy_nats": 0.0019279346641083621
+      },
+      {
+        "features": [
+          1.0,
+          3.0,
+          -6.436375141143799
+        ],
+        "observations": 43462,
+        "positive_labels": 13,
+        "negative_labels": 43449,
+        "positive_fraction": 0.00029911186783857164,
+        "mean_logit": -2.7382733821868896,
+        "mean_probability": 0.06075235203525409,
+        "minimum_logit": -2.7382733821868896,
+        "maximum_logit": -2.7382733821868896,
+        "empirical_entropy_nats": 0.0027262680840508674
+      },
+      {
+        "features": [
+          1.0,
+          3.0,
+          -6.318678379058838
+        ],
+        "observations": 1421,
+        "positive_labels": 0,
+        "negative_labels": 1421,
+        "positive_fraction": 0.0,
+        "mean_logit": -2.7363388538360596,
+        "mean_probability": 0.06086283297730594,
+        "minimum_logit": -2.7363388538360596,
+        "maximum_logit": -2.7363388538360596,
+        "empirical_entropy_nats": 0.0
+      },
+      {
+        "features": [
+          1.0,
+          3.0,
+          -6.030552387237549
+        ],
+        "observations": 6230,
+        "positive_labels": 3,
+        "negative_labels": 6227,
+        "positive_fraction": 0.0004815409309791332,
+        "mean_logit": -2.7310094833374023,
+        "mean_probability": 0.06116816591516545,
+        "minimum_logit": -2.7310094833374023,
+        "maximum_logit": -2.7310094833374023,
+        "empirical_entropy_nats": 0.004159684677684581
+      },
+      {
+        "features": [
+          1.0,
+          3.0,
+          -5.876593112945557
+        ],
+        "observations": 41213,
+        "positive_labels": 21,
+        "negative_labels": 41192,
+        "positive_fraction": 0.000509547958168539,
+        "mean_logit": -2.727778434753418,
+        "mean_probability": 0.061353977416960234,
+        "minimum_logit": -2.727778434753418,
+        "maximum_logit": -2.727778434753418,
+        "empirical_entropy_nats": 0.004372803898182202
+      },
+      {
+        "features": [
+          1.0,
+          3.0,
+          -5.682168960571289
+        ],
+        "observations": 1869,
+        "positive_labels": 1,
+        "negative_labels": 1868,
+        "positive_fraction": 0.0005350454788657035,
+        "mean_logit": -2.7232649326324463,
+        "mean_probability": 0.06161442369768474,
+        "minimum_logit": -2.7232649326324463,
+        "maximum_logit": -2.7232649326324463,
+        "empirical_entropy_nats": 0.00456548487800486
+      },
+      {
+        "features": [
+          1.0,
+          3.0,
+          -5.5710930824279785
+        ],
+        "observations": 39012,
+        "positive_labels": 23,
+        "negative_labels": 38989,
+        "positive_fraction": 0.0005895621859940531,
+        "mean_logit": -2.720446825027466,
+        "mean_probability": 0.06177756272380501,
+        "minimum_logit": -2.720446825027466,
+        "maximum_logit": -2.720446825027466,
+        "empirical_entropy_nats": 0.004973449626981643
+      },
+      {
+        "features": [
+          1.0,
+          3.0,
+          -5.424600124359131
+        ],
+        "observations": 1223,
+        "positive_labels": 3,
+        "negative_labels": 1220,
+        "positive_fraction": 0.0024529844644317253,
+        "mean_logit": -2.7164347171783447,
+        "mean_probability": 0.06201051815862388,
+        "minimum_logit": -2.7164347171783447,
+        "maximum_logit": -2.7164347171783447,
+        "empirical_entropy_nats": 0.017193513534013674
+      },
+      {
+        "features": [
+          1.0,
+          4.0,
+          -8.516993522644043
+        ],
+        "observations": 2213295,
+        "positive_labels": 19,
+        "negative_labels": 2213276,
+        "positive_fraction": 8.584486026489916e-06,
+        "mean_logit": -2.762913227081299,
+        "mean_probability": 0.05936148910220841,
+        "minimum_logit": -2.762913227081299,
+        "maximum_logit": -2.762913227081299,
+        "empirical_entropy_nats": 0.00010872723391901121
+      },
+      {
+        "features": [
+          1.0,
+          4.0,
+          -7.823845863342285
+        ],
+        "observations": 450505,
+        "positive_labels": 6,
+        "negative_labels": 450499,
+        "positive_fraction": 1.3318387143316944e-05,
+        "mean_logit": -2.756439447402954,
+        "mean_probability": 0.05972400292696127,
+        "minimum_logit": -2.756439447402954,
+        "maximum_logit": -2.756439447402954,
+        "empirical_entropy_nats": 0.0001628353735425385
+      },
+      {
+        "features": [
+          1.0,
+          4.0,
+          -7.418247699737549
+        ],
+        "observations": 841093,
+        "positive_labels": 13,
+        "negative_labels": 841080,
+        "positive_fraction": 1.54560791731711e-05,
+        "mean_logit": -2.751317262649536,
+        "mean_probability": 0.060012299222094494,
+        "minimum_logit": -2.751317262649536,
+        "maximum_logit": -2.751317262649536,
+        "empirical_entropy_nats": 0.00018667080285916145
+      },
+      {
+        "features": [
+          1.0,
+          4.0,
+          -6.030552387237549
+        ],
+        "observations": 19409,
+        "positive_labels": 0,
+        "negative_labels": 19409,
+        "positive_fraction": 0.0,
+        "mean_logit": -2.7242255210876465,
+        "mean_probability": 0.06155890769380965,
+        "minimum_logit": -2.7242255210876465,
+        "maximum_logit": -2.7242255210876465,
+        "empirical_entropy_nats": 0.0
+      },
+      {
+        "features": [
+          1.0,
+          4.0,
+          -5.876593112945557
+        ],
+        "observations": 182486,
+        "positive_labels": 16,
+        "negative_labels": 182470,
+        "positive_fraction": 8.76779588571178e-05,
+        "mean_logit": -2.719999074935913,
+        "mean_probability": 0.06180351990234073,
+        "minimum_logit": -2.719999074935913,
+        "maximum_logit": -2.719999074935913,
+        "empirical_entropy_nats": 0.000906747579473088
+      },
+      {
+        "features": [
+          2.0,
+          2.0,
+          -8.516993522644043
+        ],
+        "observations": 1451,
+        "positive_labels": 36,
+        "negative_labels": 1415,
+        "positive_fraction": 0.024810475534114404,
+        "mean_logit": -2.7595221996307373,
+        "mean_probability": 0.05955111945210952,
+        "minimum_logit": -2.7595221996307373,
+        "maximum_logit": -2.7595221996307373,
+        "empirical_entropy_nats": 0.11621177594149093
+      },
+      {
+        "features": [
+          2.0,
+          2.0,
+          -7.823845863342285
+        ],
+        "observations": 13605,
+        "positive_labels": 1149,
+        "negative_labels": 12456,
+        "positive_fraction": 0.0844542447629548,
+        "mean_logit": -2.759796142578125,
+        "mean_probability": 0.05953577918763544,
+        "minimum_logit": -2.759796142578125,
+        "maximum_logit": -2.759796142578125,
+        "empirical_entropy_nats": 0.2895156205832754
+      },
+      {
+        "features": [
+          2.0,
+          2.0,
+          -7.823646068572998
+        ],
+        "observations": 74,
+        "positive_labels": 3,
+        "negative_labels": 71,
+        "positive_fraction": 0.04054054054054054,
+        "mean_logit": -2.759795904159546,
+        "mean_probability": 0.05953579253699578,
+        "minimum_logit": -2.759795904159546,
+        "maximum_logit": -2.759795904159546,
+        "empirical_entropy_nats": 0.16965822650230863
+      },
+      {
+        "features": [
+          2.0,
+          2.0,
+          -7.418247699737549
+        ],
+        "observations": 2702,
+        "positive_labels": 357,
+        "negative_labels": 2345,
+        "positive_fraction": 0.13212435233160622,
+        "mean_logit": -2.759093999862671,
+        "mean_probability": 0.059575105210818276,
+        "minimum_logit": -2.759093999862671,
+        "maximum_logit": -2.759093999862671,
+        "empirical_entropy_nats": 0.3904051533240592
+      },
+      {
+        "features": [
+          2.0,
+          2.0,
+          -7.130498886108398
+        ],
+        "observations": 429,
+        "positive_labels": 48,
+        "negative_labels": 381,
+        "positive_fraction": 0.11188811188811189,
+        "mean_logit": -2.7580926418304443,
+        "mean_probability": 0.05963123195635841,
+        "minimum_logit": -2.7580926418304443,
+        "maximum_logit": -2.7580926418304443,
+        "empirical_entropy_nats": 0.35044477336425983
+      },
+      {
+        "features": [
+          2.0,
+          2.0,
+          -6.725100994110107
+        ],
+        "observations": 7860,
+        "positive_labels": 1569,
+        "negative_labels": 6291,
+        "positive_fraction": 0.19961832061068702,
+        "mean_logit": -2.7558014392852783,
+        "mean_probability": 0.05975984164429304,
+        "minimum_logit": -2.7558014392852783,
+        "maximum_logit": -2.7558014392852783,
+        "empirical_entropy_nats": 0.4998728480882415
+      },
+      {
+        "features": [
+          2.0,
+          2.0,
+          -6.724767208099365
+        ],
+        "observations": 21,
+        "positive_labels": 9,
+        "negative_labels": 12,
+        "positive_fraction": 0.42857142857142855,
+        "mean_logit": -2.755798816680908,
+        "mean_probability": 0.05975998900493887,
+        "minimum_logit": -2.755798816680908,
+        "maximum_logit": -2.755798816680908,
+        "empirical_entropy_nats": 0.6829081047004716
+      },
+      {
+        "features": [
+          2.0,
+          2.0,
+          -6.319413661956787
+        ],
+        "observations": 384,
+        "positive_labels": 157,
+        "negative_labels": 227,
+        "positive_fraction": 0.4088541666666667,
+        "mean_logit": -2.7522146701812744,
+        "mean_probability": 0.059961695708624536,
+        "minimum_logit": -2.7522146701812744,
+        "maximum_logit": -2.7522146701812744,
+        "empirical_entropy_nats": 0.6764387885044905
+      },
+      {
+        "features": [
+          2.0,
+          2.0,
+          -6.318678379058838
+        ],
+        "observations": 508,
+        "positive_labels": 107,
+        "negative_labels": 401,
+        "positive_fraction": 0.2106299212598425,
+        "mean_logit": -2.752206802368164,
+        "mean_probability": 0.05996213918960133,
+        "minimum_logit": -2.752206802368164,
+        "maximum_logit": -2.752206802368164,
+        "empirical_entropy_nats": 0.5147900742765956
+      },
+      {
+        "features": [
+          2.0,
+          2.0,
+          -6.213427543640137
+        ],
+        "observations": 2313,
+        "positive_labels": 686,
+        "negative_labels": 1627,
+        "positive_fraction": 0.2965845222654561,
+        "mean_logit": -2.7510199546813965,
+        "mean_probability": 0.06002907280337313,
+        "minimum_logit": -2.7510199546813965,
+        "maximum_logit": -2.7510199546813965,
+        "empirical_entropy_nats": 0.6079425394189308
+      },
+      {
+        "features": [
+          2.0,
+          2.0,
+          -6.118626117706299
+        ],
+        "observations": 88,
+        "positive_labels": 32,
+        "negative_labels": 56,
+        "positive_fraction": 0.36363636363636365,
+        "mean_logit": -2.749847650527954,
+        "mean_probability": 0.06009525487673786,
+        "minimum_logit": -2.749847650527954,
+        "maximum_logit": -2.749847650527954,
+        "empirical_entropy_nats": 0.6554817739013927
+      },
+      {
+        "features": [
+          2.0,
+          2.0,
+          -6.031103134155273
+        ],
+        "observations": 70,
+        "positive_labels": 30,
+        "negative_labels": 40,
+        "positive_fraction": 0.42857142857142855,
+        "mean_logit": -2.748673439025879,
+        "mean_probability": 0.06016161309137613,
+        "minimum_logit": -2.748673439025879,
+        "maximum_logit": -2.748673439025879,
+        "empirical_entropy_nats": 0.6829081047004716
+      },
+      {
+        "features": [
+          2.0,
+          2.0,
+          -6.030552387237549
+        ],
+        "observations": 795,
+        "positive_labels": 300,
+        "negative_labels": 495,
+        "positive_fraction": 0.37735849056603776,
+        "mean_logit": -2.7486655712127686,
+        "mean_probability": 0.06016205795632605,
+        "minimum_logit": -2.7486655712127686,
+        "maximum_logit": -2.7486655712127686,
+        "empirical_entropy_nats": 0.6627561588450714
+      },
+      {
+        "features": [
+          2.0,
+          2.0,
+          -5.951106071472168
+        ],
+        "observations": 109,
+        "positive_labels": 44,
+        "negative_labels": 65,
+        "positive_fraction": 0.4036697247706422,
+        "mean_logit": -2.7475178241729736,
+        "mean_probability": 0.06022698731126664,
+        "minimum_logit": -2.7475178241729736,
+        "maximum_logit": -2.7475178241729736,
+        "empirical_entropy_nats": 0.6744715846546492
+      },
+      {
+        "features": [
+          2.0,
+          2.0,
+          -5.876621246337891
+        ],
+        "observations": 919,
+        "positive_labels": 309,
+        "negative_labels": 610,
+        "positive_fraction": 0.33623503808487487,
+        "mean_logit": -2.7463672161102295,
+        "mean_probability": 0.06029214434202566,
+        "minimum_logit": -2.7463672161102295,
+        "maximum_logit": -2.7463672161102295,
+        "empirical_entropy_nats": 0.6385065593159797
+      },
+      {
+        "features": [
+          2.0,
+          2.0,
+          -5.876593112945557
+        ],
+        "observations": 13280,
+        "positive_labels": 4634,
+        "negative_labels": 8646,
+        "positive_fraction": 0.3489457831325301,
+        "mean_logit": -2.7463667392730713,
+        "mean_probability": 0.06029217135819497,
+        "minimum_logit": -2.7463667392730713,
+        "maximum_logit": -2.7463667392730713,
+        "empirical_entropy_nats": 0.646791593746385
+      },
+      {
+        "features": [
+          2.0,
+          2.0,
+          -5.876478672027588
+        ],
+        "observations": 442,
+        "positive_labels": 369,
+        "negative_labels": 73,
+        "positive_fraction": 0.834841628959276,
+        "mean_logit": -2.7463648319244385,
+        "mean_probability": 0.06029227942298557,
+        "minimum_logit": -2.7463648319244385,
+        "maximum_logit": -2.7463648319244385,
+        "empirical_entropy_nats": 0.44812549100351917
+      },
+      {
+        "features": [
+          2.0,
+          2.0,
+          -5.682168960571289
+        ],
+        "observations": 144,
+        "positive_labels": 68,
+        "negative_labels": 76,
+        "positive_fraction": 0.4722222222222222,
+        "mean_logit": -2.742995500564575,
+        "mean_probability": 0.06048345909156166,
+        "minimum_logit": -2.742995500564575,
+        "maximum_logit": -2.742995500564575,
+        "empirical_entropy_nats": 0.6916031758694977
+      },
+      {
+        "features": [
+          2.0,
+          2.0,
+          -5.625578880310059
+        ],
+        "observations": 16037,
+        "positive_labels": 4541,
+        "negative_labels": 11496,
+        "positive_fraction": 0.28315769782378253,
+        "mean_logit": -2.7419066429138184,
+        "mean_probability": 0.060545363275945646,
+        "minimum_logit": -2.7419066429138184,
+        "maximum_logit": -2.7419066429138184,
+        "empirical_entropy_nats": 0.5959109684277051
+      },
+      {
+        "features": [
+          2.0,
+          2.0,
+          -5.62544584274292
+        ],
+        "observations": 730,
+        "positive_labels": 475,
+        "negative_labels": 255,
+        "positive_fraction": 0.6506849315068494,
+        "mean_logit": -2.7419040203094482,
+        "mean_probability": 0.06054551244886359,
+        "minimum_logit": -2.7419040203094482,
+        "maximum_logit": -2.7419040203094482,
+        "empirical_entropy_nats": 0.6470216082083913
+      },
+      {
+        "features": [
+          2.0,
+          2.0,
+          -5.57154655456543
+        ],
+        "observations": 171,
+        "positive_labels": 60,
+        "negative_labels": 111,
+        "positive_fraction": 0.3508771929824561,
+        "mean_logit": -2.7408180236816406,
+        "mean_probability": 0.060607313157287755,
+        "minimum_logit": -2.7408180236816406,
+        "maximum_logit": -2.7408180236816406,
+        "empirical_entropy_nats": 0.6479879653974252
+      },
+      {
+        "features": [
+          2.0,
+          2.0,
+          -5.5710930824279785
+        ],
+        "observations": 623,
+        "positive_labels": 194,
+        "negative_labels": 429,
+        "positive_fraction": 0.3113964686998395,
+        "mean_logit": -2.7408087253570557,
+        "mean_probability": 0.06060784255088331,
+        "minimum_logit": -2.7408087253570557,
+        "maximum_logit": -2.7408087253570557,
+        "empirical_entropy_nats": 0.6202134512458721
+      },
+      {
+        "features": [
+          2.0,
+          2.0,
+          -5.471149921417236
+        ],
+        "observations": 4047,
+        "positive_labels": 1411,
+        "negative_labels": 2636,
+        "positive_fraction": 0.34865332344946875,
+        "mean_logit": -2.7386624813079834,
+        "mean_probability": 0.06073015324858797,
+        "minimum_logit": -2.7386624813079834,
+        "maximum_logit": -2.7386624813079834,
+        "empirical_entropy_nats": 0.64660900528482
+      },
+      {
+        "features": [
+          2.0,
+          2.0,
+          -5.470759391784668
+        ],
+        "observations": 44,
+        "positive_labels": 26,
+        "negative_labels": 18,
+        "positive_fraction": 0.5909090909090909,
+        "mean_logit": -2.7386538982391357,
+        "mean_probability": 0.060730642845861965,
+        "minimum_logit": -2.7386538982391357,
+        "maximum_logit": -2.7386538982391357,
+        "empirical_entropy_nats": 0.6765259604934999
+      },
+      {
+        "features": [
+          2.0,
+          2.0,
+          -5.424600124359131
+        ],
+        "observations": 35,
+        "positive_labels": 11,
+        "negative_labels": 24,
+        "positive_fraction": 0.3142857142857143,
+        "mean_logit": -2.7376015186309814,
+        "mean_probability": 0.06079070089593587,
+        "minimum_logit": -2.7376015186309814,
+        "maximum_logit": -2.7376015186309814,
+        "empirical_entropy_nats": 0.6224869206570487
+      },
+      {
+        "features": [
+          2.0,
+          2.0,
+          -5.424299716949463
+        ],
+        "observations": 1022,
+        "positive_labels": 540,
+        "negative_labels": 482,
+        "positive_fraction": 0.5283757338551859,
+        "mean_logit": -2.7375948429107666,
+        "mean_probability": 0.06079108204857804,
+        "minimum_logit": -2.7375948429107666,
+        "maximum_logit": -2.7375948429107666,
+        "empirical_entropy_nats": 0.6915359504760938
+      },
+      {
+        "features": [
+          2.0,
+          2.0,
+          -5.379920482635498
+        ],
+        "observations": 585,
+        "positive_labels": 218,
+        "negative_labels": 367,
+        "positive_fraction": 0.37264957264957266,
+        "mean_logit": -2.7365448474884033,
+        "mean_probability": 0.06085105974417169,
+        "minimum_logit": -2.7365448474884033,
+        "maximum_logit": -2.7365448474884033,
+        "empirical_entropy_nats": 0.6603507841138245
+      },
+      {
+        "features": [
+          2.0,
+          2.0,
+          -5.337686061859131
+        ],
+        "observations": 129,
+        "positive_labels": 56,
+        "negative_labels": 73,
+        "positive_fraction": 0.43410852713178294,
+        "mean_logit": -2.7355101108551025,
+        "mean_probability": 0.06091021996613165,
+        "minimum_logit": -2.7355101108551025,
+        "maximum_logit": -2.7355101108551025,
+        "empirical_entropy_nats": 0.6844384982763938
+      },
+      {
+        "features": [
+          2.0,
+          2.0,
+          -5.337427616119385
+        ],
+        "observations": 1203,
+        "positive_labels": 567,
+        "negative_labels": 636,
+        "positive_fraction": 0.4713216957605985,
+        "mean_logit": -2.735503911972046,
+        "mean_probability": 0.06091057454423083,
+        "minimum_logit": -2.735503911972046,
+        "maximum_logit": -2.735503911972046,
+        "empirical_entropy_nats": 0.6915013872149506
+      },
+      {
+        "features": [
+          2.0,
+          2.0,
+          -5.3374104499816895
+        ],
+        "observations": 56,
+        "positive_labels": 20,
+        "negative_labels": 36,
+        "positive_fraction": 0.35714285714285715,
+        "mean_logit": -2.7355034351348877,
+        "mean_probability": 0.060910601819549236,
+        "minimum_logit": -2.7355034351348877,
+        "maximum_logit": -2.7355034351348877,
+        "empirical_entropy_nats": 0.651756561172653
+      },
+      {
+        "features": [
+          2.0,
+          2.0,
+          -5.337344169616699
+        ],
+        "observations": 55,
+        "positive_labels": 51,
+        "negative_labels": 4,
+        "positive_fraction": 0.9272727272727272,
+        "mean_logit": -2.735501766204834,
+        "mean_probability": 0.060910697283253414,
+        "minimum_logit": -2.735501766204834,
+        "maximum_logit": -2.735501766204834,
+        "empirical_entropy_nats": 0.26063709953392233
+      },
+      {
+        "features": [
+          2.0,
+          2.0,
+          -5.2574872970581055
+        ],
+        "observations": 16240,
+        "positive_labels": 8642,
+        "negative_labels": 7598,
+        "positive_fraction": 0.5321428571428571,
+        "mean_logit": -2.7334461212158203,
+        "mean_probability": 0.0610283875647992,
+        "minimum_logit": -2.7334461212158203,
+        "maximum_logit": -2.7334461212158203,
+        "empirical_entropy_nats": 0.6910794284363059
+      },
+      {
+        "features": [
+          2.0,
+          2.0,
+          -5.219726085662842
+        ],
+        "observations": 51,
+        "positive_labels": 23,
+        "negative_labels": 28,
+        "positive_fraction": 0.45098039215686275,
+        "mean_logit": -2.7324273586273193,
+        "mean_probability": 0.06108679277242696,
+        "minimum_logit": -2.7324273586273193,
+        "maximum_logit": -2.7324273586273193,
+        "empirical_entropy_nats": 0.6883336081894993
+      },
+      {
+        "features": [
+          2.0,
+          2.0,
+          -5.219481468200684
+        ],
+        "observations": 113,
+        "positive_labels": 69,
+        "negative_labels": 44,
+        "positive_fraction": 0.6106194690265486,
+        "mean_logit": -2.7324206829071045,
+        "mean_probability": 0.06108717566079374,
+        "minimum_logit": -2.7324206829071045,
+        "maximum_logit": -2.7324206829071045,
+        "empirical_entropy_nats": 0.6684701841139832
+      },
+      {
+        "features": [
+          2.0,
+          2.0,
+          -5.1483540534973145
+        ],
+        "observations": 902,
+        "positive_labels": 643,
+        "negative_labels": 259,
+        "positive_fraction": 0.7128603104212861,
+        "mean_logit": -2.7304160594940186,
+        "mean_probability": 0.06120225311730502,
+        "minimum_logit": -2.7304160594940186,
+        "maximum_logit": -2.7304160594940186,
+        "empirical_entropy_nats": 0.5995707000349413
+      },
+      {
+        "features": [
+          2.0,
+          2.0,
+          -5.114485263824463
+        ],
+        "observations": 114,
+        "positive_labels": 78,
+        "negative_labels": 36,
+        "positive_fraction": 0.6842105263157895,
+        "mean_logit": -2.7294204235076904,
+        "mean_probability": 0.06125948391194492,
+        "minimum_logit": -2.7294204235076904,
+        "maximum_logit": -2.7294204235076904,
+        "empirical_entropy_nats": 0.6236548495681085
+      },
+      {
+        "features": [
+          2.0,
+          2.0,
+          -4.731171607971191
+        ],
+        "observations": 4751,
+        "positive_labels": 3994,
+        "negative_labels": 757,
+        "positive_fraction": 0.8406651231319722,
+        "mean_logit": -2.7160942554473877,
+        "mean_probability": 0.062030324141244646,
+        "minimum_logit": -2.7160942554473877,
+        "maximum_logit": -2.7160942554473877,
+        "empirical_entropy_nats": 0.4385653059077515
+      },
+      {
+        "features": [
+          2.0,
+          2.0,
+          -4.644220352172852
+        ],
+        "observations": 175,
+        "positive_labels": 170,
+        "negative_labels": 5,
+        "positive_fraction": 0.9714285714285714,
+        "mean_logit": -2.712475061416626,
+        "mean_probability": 0.06224123220562462,
+        "minimum_logit": -2.712475061416626,
+        "maximum_logit": -2.712475061416626,
+        "empirical_entropy_nats": 0.12974069471942837
+      },
+      {
+        "features": [
+          2.0,
+          3.0,
+          -8.516993522644043
+        ],
+        "observations": 65957,
+        "positive_labels": 84,
+        "negative_labels": 65873,
+        "positive_fraction": 0.0012735570144184847,
+        "mean_logit": -2.7736589908599854,
+        "mean_probability": 0.05876430375639786,
+        "minimum_logit": -2.7736589908599854,
+        "maximum_logit": -2.7736589908599854,
+        "empirical_entropy_nats": 0.00976220224445081
+      },
+      {
+        "features": [
+          2.0,
+          3.0,
+          -7.823646068572998
+        ],
+        "observations": 405,
+        "positive_labels": 1,
+        "negative_labels": 404,
+        "positive_fraction": 0.0024691358024691358,
+        "mean_logit": -2.772364854812622,
+        "mean_probability": 0.05883592468034238,
+        "minimum_logit": -2.772364854812622,
+        "maximum_logit": -2.772364854812622,
+        "empirical_entropy_nats": 0.01729049748603388
+      },
+      {
+        "features": [
+          2.0,
+          3.0,
+          -7.418247699737549
+        ],
+        "observations": 42944,
+        "positive_labels": 137,
+        "negative_labels": 42807,
+        "positive_fraction": 0.0031902011922503725,
+        "mean_logit": -2.770522356033325,
+        "mean_probability": 0.058938034654925475,
+        "minimum_logit": -2.770522356033325,
+        "maximum_logit": -2.770522356033325,
+        "empirical_entropy_nats": 0.021521334896849237
+      },
+      {
+        "features": [
+          2.0,
+          3.0,
+          -7.130599021911621
+        ],
+        "observations": 340,
+        "positive_labels": 5,
+        "negative_labels": 335,
+        "positive_fraction": 0.014705882352941176,
+        "mean_logit": -2.7686336040496826,
+        "mean_probability": 0.05904288035350935,
+        "minimum_logit": -2.7686336040496826,
+        "maximum_logit": -2.7686336040496826,
+        "empirical_entropy_nats": 0.07664880077618426
+      },
+      {
+        "features": [
+          2.0,
+          3.0,
+          -7.130498886108398
+        ],
+        "observations": 12226,
+        "positive_labels": 40,
+        "negative_labels": 12186,
+        "positive_fraction": 0.0032717160150498937,
+        "mean_logit": -2.768632650375366,
+        "mean_probability": 0.05904293333664269,
+        "minimum_logit": -2.768632650375366,
+        "maximum_logit": -2.768632650375366,
+        "empirical_entropy_nats": 0.02198855884679246
+      },
+      {
+        "features": [
+          2.0,
+          3.0,
+          -6.725034236907959
+        ],
+        "observations": 329,
+        "positive_labels": 2,
+        "negative_labels": 327,
+        "positive_fraction": 0.0060790273556231,
+        "mean_logit": -2.7650158405303955,
+        "mean_probability": 0.05924419271493786,
+        "minimum_logit": -2.7650158405303955,
+        "maximum_logit": -2.7650158405303955,
+        "empirical_entropy_nats": 0.037081245462874175
+      },
+      {
+        "features": [
+          2.0,
+          3.0,
+          -6.437151908874512
+        ],
+        "observations": 1337,
+        "positive_labels": 15,
+        "negative_labels": 1322,
+        "positive_fraction": 0.011219147344801795,
+        "mean_logit": -2.761662721633911,
+        "mean_probability": 0.05943135294093972,
+        "minimum_logit": -2.761662721633911,
+        "maximum_logit": -2.761662721633911,
+        "empirical_entropy_nats": 0.06153144396753023
+      },
+      {
+        "features": [
+          2.0,
+          3.0,
+          -6.436375141143799
+        ],
+        "observations": 6964,
+        "positive_labels": 67,
+        "negative_labels": 6897,
+        "positive_fraction": 0.009620907524411257,
+        "mean_logit": -2.761652708053589,
+        "mean_probability": 0.05943191269521155,
+        "minimum_logit": -2.761652708053589,
+        "maximum_logit": -2.761652708053589,
+        "empirical_entropy_nats": 0.05425220830697535
+      },
+      {
+        "features": [
+          2.0,
+          3.0,
+          -6.318678379058838
+        ],
+        "observations": 256,
+        "positive_labels": 3,
+        "negative_labels": 253,
+        "positive_fraction": 0.01171875,
+        "mean_logit": -2.7600667476654053,
+        "mean_probability": 0.05952062947089559,
+        "minimum_logit": -2.7600667476654053,
+        "maximum_logit": -2.7600667476654053,
+        "empirical_entropy_nats": 0.06375800106523846
+      },
+      {
+        "features": [
+          2.0,
+          3.0,
+          -6.030552387237549
+        ],
+        "observations": 1217,
+        "positive_labels": 18,
+        "negative_labels": 1199,
+        "positive_fraction": 0.014790468364831553,
+        "mean_logit": -2.755589723587036,
+        "mean_probability": 0.059771738762439686,
+        "minimum_logit": -2.755589723587036,
+        "maximum_logit": -2.755589723587036,
+        "empirical_entropy_nats": 0.07700421252728022
+      },
+      {
+        "features": [
+          2.0,
+          3.0,
+          -5.876593112945557
+        ],
+        "observations": 8157,
+        "positive_labels": 110,
+        "negative_labels": 8047,
+        "positive_fraction": 0.013485350006129704,
+        "mean_logit": -2.7528116703033447,
+        "mean_probability": 0.05992805386497217,
+        "minimum_logit": -2.7528116703033447,
+        "maximum_logit": -2.7528116703033447,
+        "empirical_entropy_nats": 0.07146396953656217
+      },
+      {
+        "features": [
+          2.0,
+          3.0,
+          -5.682168960571289
+        ],
+        "observations": 375,
+        "positive_labels": 1,
+        "negative_labels": 374,
+        "positive_fraction": 0.0026666666666666666,
+        "mean_logit": -2.748866081237793,
+        "mean_probability": 0.060150721601058145,
+        "minimum_logit": -2.748866081237793,
+        "maximum_logit": -2.748866081237793,
+        "empirical_entropy_nats": 0.01846824401565097
+      },
+      {
+        "features": [
+          2.0,
+          3.0,
+          -5.5710930824279785
+        ],
+        "observations": 7511,
+        "positive_labels": 154,
+        "negative_labels": 7357,
+        "positive_fraction": 0.02050326188257223,
+        "mean_logit": -2.7463696002960205,
+        "mean_probability": 0.0602920092613489,
+        "minimum_logit": -2.7463696002960205,
+        "maximum_logit": -2.7463696002960205,
+        "empirical_entropy_nats": 0.09999130948479112
+      },
+      {
+        "features": [
+          2.0,
+          3.0,
+          -5.424600124359131
+        ],
+        "observations": 249,
+        "positive_labels": 5,
+        "negative_labels": 244,
+        "positive_fraction": 0.020080321285140562,
+        "mean_logit": -2.7427780628204346,
+        "mean_probability": 0.060495816217983396,
+        "minimum_logit": -2.7427780628204346,
+        "maximum_logit": -2.7427780628204346,
+        "empirical_entropy_nats": 0.09835154492369655
+      },
+      {
+        "features": [
+          2.0,
+          4.0,
+          -8.516993522644043
+        ],
+        "observations": 460562,
+        "positive_labels": 94,
+        "negative_labels": 460468,
+        "positive_fraction": 0.00020409847099847579,
+        "mean_logit": -2.77929949760437,
+        "mean_probability": 0.058453096702406324,
+        "minimum_logit": -2.77929949760437,
+        "maximum_logit": -2.77929949760437,
+        "empirical_entropy_nats": 0.0019382835683415083
+      },
+      {
+        "features": [
+          2.0,
+          4.0,
+          -7.823845863342285
+        ],
+        "observations": 103209,
+        "positive_labels": 45,
+        "negative_labels": 103164,
+        "positive_fraction": 0.0004360084876318926,
+        "mean_logit": -2.774230480194092,
+        "mean_probability": 0.058732702044939834,
+        "minimum_logit": -2.774230480194092,
+        "maximum_logit": -2.774230480194092,
+        "empirical_entropy_nats": 0.003809681195749413
+      },
+      {
+        "features": [
+          2.0,
+          4.0,
+          -7.418247699737549
+        ],
+        "observations": 187227,
+        "positive_labels": 110,
+        "negative_labels": 187117,
+        "positive_fraction": 0.0005875220988425815,
+        "mean_logit": -2.7699694633483887,
+        "mean_probability": 0.05896870796350164,
+        "minimum_logit": -2.7699694633483887,
+        "maximum_logit": -2.7699694633483887,
+        "empirical_entropy_nats": 0.004958276940241545
+      },
+      {
+        "features": [
+          2.0,
+          4.0,
+          -6.030552387237549
+        ],
+        "observations": 5267,
+        "positive_labels": 13,
+        "negative_labels": 5254,
+        "positive_fraction": 0.002468198215302829,
+        "mean_logit": -2.7462079524993896,
+        "mean_probability": 0.060301168372620284,
+        "minimum_logit": -2.7462079524993896,
+        "maximum_logit": -2.7462079524993896,
+        "empirical_entropy_nats": 0.017284870457989855
+      },
+      {
+        "features": [
+          2.0,
+          4.0,
+          -5.876593112945557
+        ],
+        "observations": 47998,
+        "positive_labels": 132,
+        "negative_labels": 47866,
+        "positive_fraction": 0.0027501145881078377,
+        "mean_logit": -2.742420196533203,
+        "mean_probability": 0.06051615913159958,
+        "minimum_logit": -2.742420196533203,
+        "maximum_logit": -2.742420196533203,
+        "empirical_entropy_nats": 0.018961315100392583
+      },
+      {
+        "features": [
+          3.0,
+          3.0,
+          -8.516993522644043
+        ],
+        "observations": 6011,
+        "positive_labels": 625,
+        "negative_labels": 5386,
+        "positive_fraction": 0.10397604391948095,
+        "mean_logit": -2.7853500843048096,
+        "mean_probability": 0.05812098289719749,
+        "minimum_logit": -2.7853500843048096,
+        "maximum_logit": -2.7853500843048096,
+        "empirical_entropy_nats": 0.3337324217607744
+      },
+      {
+        "features": [
+          3.0,
+          3.0,
+          -7.823646068572998
+        ],
+        "observations": 15,
+        "positive_labels": 6,
+        "negative_labels": 9,
+        "positive_fraction": 0.4,
+        "mean_logit": -2.784559965133667,
+        "mean_probability": 0.05816425144343141,
+        "minimum_logit": -2.784559965133667,
+        "maximum_logit": -2.784559965133667,
+        "empirical_entropy_nats": 0.6730116670092565
+      },
+      {
+        "features": [
+          3.0,
+          3.0,
+          -7.418247699737549
+        ],
+        "observations": 4080,
+        "positive_labels": 1236,
+        "negative_labels": 2844,
+        "positive_fraction": 0.3029411764705882,
+        "mean_logit": -2.78283953666687,
+        "mean_probability": 0.05825857020281483,
+        "minimum_logit": -2.78283953666687,
+        "maximum_logit": -2.78283953666687,
+        "empirical_entropy_nats": 0.6133357963258583
+      },
+      {
+        "features": [
+          3.0,
+          3.0,
+          -7.130599021911621
+        ],
+        "observations": 76,
+        "positive_labels": 14,
+        "negative_labels": 62,
+        "positive_fraction": 0.18421052631578946,
+        "mean_logit": -2.7809107303619385,
+        "mean_probability": 0.058364483422870435,
+        "minimum_logit": -2.7809107303619385,
+        "maximum_logit": -2.7809107303619385,
+        "empirical_entropy_nats": 0.47771841282041927
+      },
+      {
+        "features": [
+          3.0,
+          3.0,
+          -7.130498886108398
+        ],
+        "observations": 782,
+        "positive_labels": 348,
+        "negative_labels": 434,
+        "positive_fraction": 0.44501278772378516,
+        "mean_logit": -2.7809102535247803,
+        "mean_probability": 0.058364509628926114,
+        "minimum_logit": -2.7809102535247803,
+        "maximum_logit": -2.7809102535247803,
+        "empirical_entropy_nats": 0.6870877446871362
+      },
+      {
+        "features": [
+          3.0,
+          3.0,
+          -6.725034236907959
+        ],
+        "observations": 31,
+        "positive_labels": 20,
+        "negative_labels": 11,
+        "positive_fraction": 0.6451612903225806,
+        "mean_logit": -2.776977300643921,
+        "mean_probability": 0.05858103302888184,
+        "minimum_logit": -2.776977300643921,
+        "maximum_logit": -2.776977300643921,
+        "empirical_entropy_nats": 0.650390640876698
+      },
+      {
+        "features": [
+          3.0,
+          3.0,
+          -6.437151908874512
+        ],
+        "observations": 180,
+        "positive_labels": 146,
+        "negative_labels": 34,
+        "positive_fraction": 0.8111111111111111,
+        "mean_logit": -2.7731473445892334,
+        "mean_probability": 0.05879260984383125,
+        "minimum_logit": -2.7731473445892334,
+        "maximum_logit": -2.7731473445892334,
+        "empirical_entropy_nats": 0.4846078252992848
+      },
+      {
+        "features": [
+          3.0,
+          3.0,
+          -6.436375141143799
+        ],
+        "observations": 902,
+        "positive_labels": 564,
+        "negative_labels": 338,
+        "positive_fraction": 0.6252771618625277,
+        "mean_logit": -2.7731354236602783,
+        "mean_probability": 0.05879326950428893,
+        "minimum_logit": -2.7731354236602783,
+        "maximum_logit": -2.7731354236602783,
+        "empirical_entropy_nats": 0.6614214928806219
+      },
+      {
+        "features": [
+          3.0,
+          3.0,
+          -6.318678379058838
+        ],
+        "observations": 43,
+        "positive_labels": 34,
+        "negative_labels": 9,
+        "positive_fraction": 0.7906976744186046,
+        "mean_logit": -2.771278142929077,
+        "mean_probability": 0.05889612940257425,
+        "minimum_logit": -2.771278142929077,
+        "maximum_logit": -2.771278142929077,
+        "empirical_entropy_nats": 0.5130308358569238
+      },
+      {
+        "features": [
+          3.0,
+          3.0,
+          -6.030552387237549
+        ],
+        "observations": 259,
+        "positive_labels": 206,
+        "negative_labels": 53,
+        "positive_fraction": 0.7953667953667953,
+        "mean_logit": -2.7659120559692383,
+        "mean_probability": 0.05919426248475419,
+        "minimum_logit": -2.7659120559692383,
+        "maximum_logit": -2.7659120559692383,
+        "empirical_entropy_nats": 0.5067587096187804
+      },
+      {
+        "features": [
+          3.0,
+          3.0,
+          -5.876593112945557
+        ],
+        "observations": 1273,
+        "positive_labels": 1008,
+        "negative_labels": 265,
+        "positive_fraction": 0.7918303220738413,
+        "mean_logit": -2.762510061264038,
+        "mean_probability": 0.059384004954891906,
+        "minimum_logit": -2.762510061264038,
+        "maximum_logit": -2.762510061264038,
+        "empirical_entropy_nats": 0.5115215120635234
+      },
+      {
+        "features": [
+          3.0,
+          3.0,
+          -5.682168960571289
+        ],
+        "observations": 93,
+        "positive_labels": 86,
+        "negative_labels": 7,
+        "positive_fraction": 0.9247311827956989,
+        "mean_logit": -2.75760817527771,
+        "mean_probability": 0.05965840438350235,
+        "minimum_logit": -2.75760817527771,
+        "maximum_logit": -2.75760817527771,
+        "empirical_entropy_nats": 0.2670592940006877
+      },
+      {
+        "features": [
+          3.0,
+          3.0,
+          -5.5710930824279785
+        ],
+        "observations": 1835,
+        "positive_labels": 1318,
+        "negative_labels": 517,
+        "positive_fraction": 0.7182561307901907,
+        "mean_logit": -2.754474401473999,
+        "mean_probability": 0.05983444962117385,
+        "minimum_logit": -2.754474401473999,
+        "maximum_logit": -2.754474401473999,
+        "empirical_entropy_nats": 0.5945928021381692
+      },
+      {
+        "features": [
+          3.0,
+          3.0,
+          -5.424600124359131
+        ],
+        "observations": 59,
+        "positive_labels": 47,
+        "negative_labels": 12,
+        "positive_fraction": 0.7966101694915254,
+        "mean_logit": -2.749936819076538,
+        "mean_probability": 0.06009021849447515,
+        "minimum_logit": -2.749936819076538,
+        "maximum_logit": -2.749936819076538,
+        "empirical_entropy_nats": 0.5050659680103168
+      },
+      {
+        "features": [
+          3.0,
+          4.0,
+          -8.516993522644043
+        ],
+        "observations": 79384,
+        "positive_labels": 419,
+        "negative_labels": 78965,
+        "positive_fraction": 0.00527814169102086,
+        "mean_logit": -2.791046380996704,
+        "mean_probability": 0.057809934674415926,
+        "minimum_logit": -2.791046380996704,
+        "maximum_logit": -2.791046380996704,
+        "empirical_entropy_nats": 0.03294371913333002
+      },
+      {
+        "features": [
+          3.0,
+          4.0,
+          -7.823845863342285
+        ],
+        "observations": 13858,
+        "positive_labels": 172,
+        "negative_labels": 13686,
+        "positive_fraction": 0.012411603405974888,
+        "mean_logit": -2.7864573001861572,
+        "mean_probability": 0.058060400297567746,
+        "minimum_logit": -2.7864573001861572,
+        "maximum_logit": -2.7864573001861572,
+        "empirical_entropy_nats": 0.06681031880074777
+      },
+      {
+        "features": [
+          3.0,
+          4.0,
+          -7.418247699737549
+        ],
+        "observations": 41238,
+        "positive_labels": 497,
+        "negative_labels": 40741,
+        "positive_fraction": 0.012051990882196034,
+        "mean_logit": -2.782374858856201,
+        "mean_probability": 0.05828406975660277,
+        "minimum_logit": -2.782374858856201,
+        "maximum_logit": -2.782374858856201,
+        "empirical_entropy_nats": 0.06523110011486907
+      },
+      {
+        "features": [
+          3.0,
+          4.0,
+          -6.030552387237549
+        ],
+        "observations": 627,
+        "positive_labels": 44,
+        "negative_labels": 583,
+        "positive_fraction": 0.07017543859649122,
+        "mean_logit": -2.7578232288360596,
+        "mean_probability": 0.0596463411762923,
+        "minimum_logit": -2.7578232288360596,
+        "maximum_logit": -2.7578232288360596,
+        "empirical_entropy_nats": 0.25409251585661996
+      },
+      {
+        "features": [
+          3.0,
+          4.0,
+          -5.876593112945557
+        ],
+        "observations": 7334,
+        "positive_labels": 553,
+        "negative_labels": 6781,
+        "positive_fraction": 0.07540223616034906,
+        "mean_logit": -2.753718137741089,
+        "mean_probability": 0.05987700686368476,
+        "minimum_logit": -2.753718137741089,
+        "maximum_logit": -2.753718137741089,
+        "empirical_entropy_nats": 0.26739383926380683
+      },
+      {
+        "features": [
+          4.0,
+          4.0,
+          -8.516993522644043
+        ],
+        "observations": 5881,
+        "positive_labels": 2620,
+        "negative_labels": 3261,
+        "positive_fraction": 0.44550246556708045,
+        "mean_logit": -2.799867630004883,
+        "mean_probability": 0.05733132934301505,
+        "minimum_logit": -2.799867630004883,
+        "maximum_logit": -2.799867630004883,
+        "empirical_entropy_nats": 0.6871954007433358
+      },
+      {
+        "features": [
+          4.0,
+          4.0,
+          -7.823845863342285
+        ],
+        "observations": 1687,
+        "positive_labels": 1038,
+        "negative_labels": 649,
+        "positive_fraction": 0.6152934202726734,
+        "mean_logit": -2.794512987136841,
+        "mean_probability": 0.05762140494372878,
+        "minimum_logit": -2.794512987136841,
+        "maximum_logit": -2.794512987136841,
+        "empirical_entropy_nats": 0.6663212868800703
+      },
+      {
+        "features": [
+          4.0,
+          4.0,
+          -7.418247699737549
+        ],
+        "observations": 4930,
+        "positive_labels": 3133,
+        "negative_labels": 1797,
+        "positive_fraction": 0.6354969574036511,
+        "mean_logit": -2.7894835472106934,
+        "mean_probability": 0.0578951178710549,
+        "minimum_logit": -2.7894835472106934,
+        "maximum_logit": -2.7894835472106934,
+        "empirical_entropy_nats": 0.655965158699358
+      },
+      {
+        "features": [
+          4.0,
+          4.0,
+          -6.030552387237549
+        ],
+        "observations": 461,
+        "positive_labels": 438,
+        "negative_labels": 23,
+        "positive_fraction": 0.9501084598698482,
+        "mean_logit": -2.7560150623321533,
+        "mean_probability": 0.05974783959251075,
+        "minimum_logit": -2.7560150623321533,
+        "maximum_logit": -2.7560150623321533,
+        "empirical_entropy_nats": 0.19819576596572913
+      },
+      {
+        "features": [
+          4.0,
+          4.0,
+          -5.876593112945557
+        ],
+        "observations": 3481,
+        "positive_labels": 3203,
+        "negative_labels": 278,
+        "positive_fraction": 0.9201378914105143,
+        "mean_logit": -2.7501585483551025,
+        "mean_probability": 0.060077696582826474,
+        "minimum_logit": -2.7501585483551025,
+        "maximum_logit": -2.7501585483551025,
+        "empirical_entropy_nats": 0.27843246385161957
+      }
+    ],
+    "observations": 48738304,
+    "singleton_groups": 0,
+    "mixed_label_groups": 219,
+    "mixed_label_observations": 30640982,
+    "empirical_conditional_bce": 0.0025950136631610063
+  }
+}

@@ -10,7 +10,9 @@
     "amendment_record": "docs/api-changes/FQ-VN-ENTROPY-OUTPUT-20261101.md",
     "matrix_expectation_approved_at": "2026-10-21",
     "matrix_expectation_proposal": "docs/development/API_CHANGE_PROPOSAL_080_MATRIX_EXPECTATION_OUTPUTS.md",
-    "matrix_expectation_record": "docs/api-changes/FQ-MATRIX-EXPECTATION-OUTPUTS-20261021.md"
+    "matrix_expectation_record": "docs/api-changes/FQ-MATRIX-EXPECTATION-OUTPUTS-20261021.md",
+    "native_ising_proposal": "docs/development/API_CHANGE_PROPOSAL_085_ISING_BRAID_PROGRAMS.md",
+    "native_ising_record": "docs/api-changes/FQ-ISING-BRAID-PROGRAMS-20261023.md"
   },
   "root_additions": [
     "I",
@@ -31,8 +33,8 @@
     "ObservableNode"
   ],
   "signatures": {
-    "run": "(program_or_plan: 'Circuit | CircuitIR | ExecutionPlan', *, options: 'ExecutionOptions | None' = None, outputs: 'OutputRequest | Sequence[OutputRequest] | None' = None, noise_model: 'NoiseModel | None' = None, compiler: 'str | None' = None, target: 'str | None' = None, target_qubits: 'Sequence[int] | None' = None, shots: 'int | None' = None, name: 'str | None' = None) -> 'ExecutionResult'",
-    "plan": "(program: 'Circuit | CircuitIR', *, options: 'ExecutionOptions | None' = None, outputs: 'OutputRequest | Sequence[OutputRequest] | None' = None, noise_model: 'NoiseModel | None' = None) -> 'ExecutionPlan'",
+    "run": "(program_or_plan: 'Circuit | CircuitIR | ExecutionPlan | IsingBraidProgram | LindbladPlan', *, options: 'ExecutionOptions | None' = None, outputs: 'OutputRequest | Sequence[OutputRequest] | None' = None, noise_model: 'NoiseModel | None' = None, compiler: 'str | None' = None, target: 'str | None' = None, target_qubits: 'Sequence[int] | None' = None, shots: 'int | None' = None, name: 'str | None' = None) -> 'ExecutionResult'",
+    "plan": "(program: 'Circuit | CircuitIR | IsingBraidProgram', *, options: 'ExecutionOptions | None' = None, outputs: 'OutputRequest | Sequence[OutputRequest] | None' = None, noise_model: 'NoiseModel | None' = None) -> 'ExecutionPlan'",
     "expectation": "(observable: 'Observable | torch.Tensor', *, name: 'str | None' = None) -> 'OutputRequest'",
     "probabilities": "(qubits: 'Iterable[int] | int | None | Omitted' = OMITTED, *, name: 'str | None' = None, wires: 'Iterable[int] | int | None | Omitted' = OMITTED) -> 'OutputRequest'",
     "samples": "(qubits: 'Iterable[int] | int | Observable | None | Omitted' = OMITTED, *, name: 'str | None' = None, wires: 'Iterable[int] | int | Observable | None | Omitted' = OMITTED) -> 'OutputRequest'",

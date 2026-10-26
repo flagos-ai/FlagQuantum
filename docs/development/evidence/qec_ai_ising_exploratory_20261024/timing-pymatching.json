@@ -1,0 +1,27 @@
+{
+  "path": "pymatching",
+  "timings": [
+    {
+      "batch_size": 1,
+      "warmup": 3,
+      "repetitions": 32,
+      "p50_block_us": 30.375,
+      "p95_block_us": 181.084,
+      "p99_block_us": 256.833,
+      "shots_per_second": 15782.018756929292
+    },
+    {
+      "batch_size": 32,
+      "warmup": 3,
+      "repetitions": 32,
+      "p50_block_us": 25.292,
+      "p95_block_us": 42.292,
+      "p99_block_us": 47.542,
+      "shots_per_second": 1189660.1800755155
+    }
+  ],
+  "isolated_process_peak_rss_bytes": 255213568,
+  "memory_scope": "whole_worker_including_imports_active_model_and_graph_not_training",
+  "manifest_sha256": "ce32721505464b9488b61f3310f57de9d4c7df01ac9058bf78765f5845a4a838",
+  "smoke": false
+}

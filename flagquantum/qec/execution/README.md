@@ -10,24 +10,27 @@ execution, core IR, noise channels and the optional stabilizer sampler.
 - `repetition.py`: the original repetition-memory source and feedback controller.
 - `sampling.py`: lowering plans, noise placement, measurement records and sampled
   detection/observable parity. It shares lowering with `signatures.py` and keeps
-  sampler draws, location order and seed handling unchanged.
+  existing one-shot draws, location order and seed handling unchanged.
+  `compile_memory_sampler` prepares a separate reusable stream: lowering,
+  placement and Simulation compilation happen once; immutable parity-column
+  tuples are retained instead of the caller's memory/noise records. Each draw
+  returns the existing `DemSample` and retains no sample buffers.
 - `context.py`: declaration-to-DEM and per-basis measurement maps, without shot
   execution. It consumes declarations and DEMs; declarations never import it.
 - `signatures.py`: source injection, exact lowering, forced reference execution
-  and the existing shared fault vocabulary. DEM construction consumes these
+  and the existing shared fault vocabulary. Gate-bound signatures now compose
+  a private Simulation-owned Clifford parity primitive with the detector and
+  observable layouts, without executing an amplitude store. The original forced
+  execution remains the independent small-system test reference. DEM construction consumes these
   functions/constants without a reverse import, avoiding a module cycle.
 - `noise_sweep.py`: the existing finite-shot loop over repetition execution.
 
-The historical flat `repetition`, `sampling`, `context`, `circuit` and
-`dem_construction` imports resolve to the same moved objects. Their defining
-metadata and own methods/accessors retain the old modules for pickle and
-caller-owned `torch.load(weights_only=True)` allowlists. Existing private helper
-aliases remain reachable too. No library-managed allowlist or custom reducer is
-introduced. Source tools should follow physical owners rather than use a retained
-class `__module__` as its physical filename. The eager QEC root facade is unchanged.
-
-Core owns these aliases. No removal release is approved; removing an old import
-or pickle path requires a separate approved deprecation and migration proposal.
+The approved 0.4.0 retirement removes flat execution imports and their pickle
+lookups. Use the root exports or the owning modules above. Definitions and own
+methods now use canonical metadata; `run_repetition_memory_noise_sweep` keeps
+its surviving `qec.noise` identity. Caller-owned `weights_only=True` allowlists
+must use current objects when loading new canonical checkpoints. No library
+allowlist or custom reducer restores retired lookups. The eager root is unchanged.
 
 The shortest complete user workflow is:
 
@@ -52,6 +55,48 @@ python -m pytest tests/qec/test_restructure_compatibility.py tests/qec/test_rest
 
 The trusted pre-004 fixture protects exact source/layout/map results, matrix-vs-
 circuit DEM semantics, forced signatures, raw samples, detected parities, feedback
-results and historical Python identifiers. Raw seeded sample equality is scoped
+results and all surviving Python identifiers; retired identifiers are refused. Raw seeded sample equality is scoped
 to its recorded Stim version and machine architecture; the unchanged independent
 statistical/reference tests cover other supported sampling environments.
+
+## Repeated batches
+
+```python
+from flagquantum.qec import (
+    PhenomenologicalNoise, RepetitionCode, build_memory_circuit,
+    compile_memory_sampler,
+)
+
+memory = build_memory_circuit(RepetitionCode(distance=3), rounds=3)
+with compile_memory_sampler(memory, noise=PhenomenologicalNoise(), seed=53) as sampler:
+    for _ in range(2):
+        batch = sampler.sample(shots=32)
+        assert batch.detectors.shape == (32, 8)
+        assert not batch.detectors.any() and not batch.observables.any()
+```
+
+The handle belongs to its creator process and thread. Context exit releases the
+prepared numerical stream even on an exception; `close()` is owner-idempotent.
+Sampling after close or from another owner raises `RuntimeError`. Invalid shot
+counts do not advance the stream. Execution/parity failure closes it before
+propagating the original error. Live handles cannot be copied or pickled.
+Create separate handles and assign seeds explicitly in separate workers.
+
+A fixed seed reproduces an identical sequence of sample calls within one engine
+version and machine instruction set. Different batching is not a promise of
+identical bits. `PYTHONPATH=. python examples/qec/stim_pymatching_baseline.py`
+uses this stream with the optional PyMatching batch adapter, including a final
+partial chunk. Configuration changes require constructing a new handle.
+
+Run `python -m pytest tests/qec/test_memory_sampler.py tests/team/simulation/test_prepared_stabilizer_sampling.py -q`
+for lifecycle, numerical seam and replacement checks. The approved additive
+surface is recorded in `contracts/qec-memory-sampler-v1.json`; historical
+restructuring fixtures remain unchanged.
+
+Gate-bound one-/two-qubit Pauli mixtures are placed as complete channels using
+the locations shared with DEM assembly. Branches at one location are exclusive;
+different locations remain independent. The prior X/Z channel reconstruction
+and seeded instruction stream are preserved. See
+[QEC-FUNCTIONAL-004](../../../docs/development/QEC_FUNCTIONAL_004.md) and run
+`PYTHONPATH=. python examples/qec/correlated_circuit_noise.py` for the core-only
+declared-model example; physical circuit sampling uses the existing Stim extra.

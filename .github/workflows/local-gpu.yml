@@ -24,27 +24,35 @@ jobs:
   prepare-source:
     outputs:
       artifact-key: ${{ steps.pack-source.outputs.artifact-key }}
-    runs-on: ubuntu-latest
+    runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'flagquantum-a100-cpu' || 'ubuntu-latest' }}
     timeout-minutes: 5
     permissions:
       contents: read
     concurrency:
-      group: flagquantum-gh-${{ github.event.pull_request.number || github.ref_name }}-cpucore-3.12
+      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('a100-cpu-{0}-prepare-source-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-${{ github.event.pull_request.number || github.ref_name }}-cpucore-3.12
       queue: max
     steps:
+      - name: Clear sparse checkout state from a previous job
+        run: |
+          if [ -d .git ]; then
+            git sparse-checkout disable
+            rm -f .git/info/sparse-checkout
+            git config --local --unset core.sparseCheckout || true
+          fi
       - uses: actions/checkout@v4
         with:
+          persist-credentials: false
           fetch-depth: 16
       - name: Pack the exact commit and its complete tree for the A800 runners
         id: pack-source
         run: |
           set -o pipefail
           echo "artifact-key=${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}" >> "$GITHUB_OUTPUT"
-          mkdir -p "$RUNNER_TEMP/ci-source"
+          mkdir "$RUNNER_TEMP/ci-source"
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
           git rev-parse HEAD > "$RUNNER_TEMP/ci-source/source.sha"
           git rev-list --objects --no-walk HEAD | git pack-objects --stdout > "$RUNNER_TEMP/ci-source/source.pack"
-          mkdir -p "$RUNNER_TEMP/ci-source-incremental"
+          mkdir "$RUNNER_TEMP/ci-source-incremental"
           cp "$RUNNER_TEMP/ci-source/source.sha" "$RUNNER_TEMP/ci-source-incremental/source.sha"
           base="$(git rev-list --first-parent --max-count=9 HEAD | tail -n 1)"
           {
@@ -129,14 +137,14 @@ jobs:
           set -o pipefail
           CUDA_VISIBLE_DEVICES=0 python -c "import torch; assert torch.cuda.device_count() == 1"
           CUDA_VISIBLE_DEVICES=0 python tools/run_with_watchdog.py --phase one-gpu-correctness --stall-seconds 180 --timeout-seconds 600 --diagnostics hardware-run/watchdog-one-gpu-correctness -- python tests/distributed/correctness_hardware.py 2>&1 | tee hardware-run/one-gpu-correctness.json
-          CUDA_VISIBLE_DEVICES=0 python tools/run_with_watchdog.py --phase one-gpu-tests --stall-seconds 180 --timeout-seconds 600 --diagnostics hardware-run/watchdog-one-gpu-tests -- python -m pytest tests/test_statevector_triton_gates.py -q -rs 2>&1 | tee hardware-run/one-gpu.log
+          CUDA_VISIBLE_DEVICES=0 python tools/run_with_watchdog.py --phase one-gpu-tests --stall-seconds 180 --timeout-seconds 600 --diagnostics hardware-run/watchdog-one-gpu-tests -- python -m pytest tests/test_statevector_triton_gates.py tests/qec/test_ising_comparison.py::test_real_cuda_complete_hyperedge_correction_and_timing -q -rs 2>&1 | tee hardware-run/one-gpu.log
           CUDA_VISIBLE_DEVICES=0 python tools/run_with_watchdog.py --phase one-gpu-benchmark --stall-seconds 240 --timeout-seconds 900 --diagnostics hardware-run/watchdog-one-gpu-benchmark -- python benchmarks/continuous_performance.py --mode local-gpu --backend pytorch --warmup 10 --repetitions 30 --inner-loops 20 --output hardware-run/one-gpu-performance.json
           python tools/evaluate_performance_artifact.py --write hardware-run/one-gpu-performance.json
       - if: always()
         run: >-
           python tools/hardware_run_manifest.py
           --output hardware-run/one-gpu.json
-          --command 'CUDA_VISIBLE_DEVICES=0 python -m pytest tests/test_statevector_triton_gates.py -q -rs'
+          --command 'CUDA_VISIBLE_DEVICES=0 python -m pytest tests/test_statevector_triton_gates.py tests/qec/test_ising_comparison.py::test_real_cuda_complete_hyperedge_correction_and_timing -q -rs'
           --world-size 1
           --evidence-scope one_gpu_local
           --log hardware-run/one-gpu.log

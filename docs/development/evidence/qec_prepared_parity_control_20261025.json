@@ -1,0 +1,327 @@
+{
+  "schema": "flagquantum.qec_prepared_parity_control.observations.v1",
+  "source_revision": "29605a979d66d95809eca785bb81bdd5b57bdc20",
+  "protocol": {
+    "schema": "flagquantum.qec_prepared_parity_control.protocol.v1",
+    "declared_at_utc": "2026-10-25T08:39:10.383588+00:00",
+    "source_revision": "29605a979d66d95809eca785bb81bdd5b57bdc20",
+    "observer_sha256": "3912bca3244e740c6d698848e3cbcf78e688a7504e39a590f4f26a5d62e5253c",
+    "controller_sha256": "41b0771ffa229c6fb5915082eb9e05483bce4703e90eba5d95bcea69ec153e71",
+    "image": "sha256:9465e1fca0a8c22af1b2ee657c8a6ee7e9f9f8e74d873b0add84b274da58b9e2",
+    "host_gpu": {
+      "host_a": 0,
+      "host_b": 2
+    },
+    "workload": {
+      "distance": 9,
+      "basis": "x",
+      "rounds": 3,
+      "shots": 65537,
+      "batch_sizes": [
+        128,
+        4096,
+        65536
+      ],
+      "seed": 53,
+      "noise": [
+        0.005,
+        0.007,
+        0.009
+      ]
+    },
+    "order_per_batch": [
+      "cpu",
+      "prepared_cpu",
+      "gpu",
+      "prepared_cpu",
+      "gpu",
+      "cpu",
+      "gpu",
+      "cpu",
+      "prepared_cpu"
+    ],
+    "warmup": 1,
+    "measured_repeats": 3,
+    "threads": 1,
+    "cpu_quota": 2,
+    "memory_cap_gib": 4,
+    "per_process_seconds": 60,
+    "per_host_seconds": 900,
+    "mode_definitions": {
+      "cpu": "Unchanged public native sampler; parity indices rebuilt each call.",
+      "prepared_cpu": "Private research control: prebuild CPU indices once, convert engine record once for both layouts, same byte gather/reduce as GPU control.",
+      "gpu": "Identical prepared control on CUDA; blocking pageable record H2D and detector/observable D2H before same CPU PyMatching decode/reduction."
+    },
+    "correctness": "Independent CPU and CUDA XOR witnesses include empty/duplicate and255/256/257/513 products. Every full-shot diagnostic batch compared to original CPU function; source/strictDEM/D/O/prediction hashes compared within each host/batch/mode.",
+    "measurement": "Loop includes original CPU engine sample, parity conversion, CPU decode and reduction; preparation separately recorded and added to loop. Imports/CUDAcontext/setup metadata and independent diagnostics excluded equally for all modes.",
+    "availability": "Preflight no selected-GPU compute process, freeVRAM>70000MiB and util0; wait at most10s for residual utilization to reach0, immediately stop if a foreign compute process exists. No remapping/resource cancellation.",
+    "public_metadata_policy": "Publish timing, hashes, environment and reproducible sources using hostA/hostB labels. Keep raw host/GPU UUID and SSH identities in private evidence; disclose redactions, retain private archive transfer SHA256.",
+    "limits": [
+      "Fresh study; do not pool or multiply previous medians/ratios. No posthoc seed/budget/extra sampling.",
+      "1warmup3measured repeats per process, nine rows per mode/host/batch if complete; repeated seeded runs are not independent statistical trials.",
+      "Descriptive medians only; no new performance threshold or significance claim.",
+      "Shared hosts and preflight availability are not exclusive reservations.",
+      "Both prepared modes also share a single record byte conversion; stock-vs-prepared difference is preparation and conversion reuse, not isolated index timing.",
+      "No pinned/overlap/fused-kernel tuning, new public API/backend/default/schema/seed/noise/SDK or production implementation.",
+      "No GPU stabilizer/matching, threshold/distance/capacity/multicard or release claim.",
+      "CUDA allocatedbytes excludes driver/context; RSS wholeprocess imports/warmup/diagnostics, not phasepeak.",
+      "Original execution law and nominal-decimal Kraus limitation unchanged."
+    ]
+  },
+  "review": {
+    "source_revision": "29605a979d66d95809eca785bb81bdd5b57bdc20",
+    "coverage": {
+      "host_a": {
+        "completed_processes": 14,
+        "planned_processes": 27,
+        "complete": false,
+        "elapsed_seconds": 264.15019075758755
+      },
+      "host_b": {
+        "completed_processes": 27,
+        "planned_processes": 27,
+        "complete": true,
+        "elapsed_seconds": 506.9297748208046
+      }
+    },
+    "complete_two_host_matrix": false,
+    "summary": [
+      {
+        "host_label": "host_a",
+        "batch_size": 128,
+        "measured_rows": {
+          "cpu": 9,
+          "prepared_cpu": 9,
+          "gpu": 9
+        },
+        "complete_three_mode_pair": true,
+        "diagnostic_hash_variants": 1,
+        "cpu": {
+          "sample_decode_seconds": 0.7459949292242527,
+          "prepare_seconds": 2.0595237724483013,
+          "prepare_plus_loop_seconds": 2.797113237902522,
+          "cuda_peak_allocated_bytes": 0,
+          "process_max_rss_bytes": 1023483904
+        },
+        "prepared_cpu": {
+          "sample_decode_seconds": 0.6516604162752628,
+          "prepare_seconds": 2.066639045253396,
+          "prepare_plus_loop_seconds": 2.7187924459576607,
+          "cuda_peak_allocated_bytes": 0,
+          "process_max_rss_bytes": 1023418368
+        },
+        "gpu": {
+          "sample_decode_seconds": 0.6278019361197948,
+          "prepare_seconds": 2.0763056688010693,
+          "prepare_plus_loop_seconds": 2.7024319395422935,
+          "cuda_peak_allocated_bytes": 143360,
+          "process_max_rss_bytes": 1023180800
+        },
+        "stock_over_prepared_cpu_loop": 1.1447602318523253,
+        "prepared_cpu_over_gpu_loop": 1.0380031962037712,
+        "stock_over_prepared_cpu_total": 1.0288071978651072,
+        "prepared_cpu_over_gpu_total": 1.0060539938771365
+      },
+      {
+        "host_label": "host_a",
+        "batch_size": 4096,
+        "measured_rows": {
+          "cpu": 3,
+          "prepared_cpu": 6,
+          "gpu": 6
+        },
+        "complete_three_mode_pair": false,
+        "diagnostic_hash_variants": 1,
+        "disposition": "Incomplete scheduled mode counts; no timing summary or speed ratio."
+      },
+      {
+        "host_label": "host_a",
+        "batch_size": 65536,
+        "measured_rows": {
+          "cpu": 0,
+          "prepared_cpu": 0,
+          "gpu": 0
+        },
+        "complete_three_mode_pair": false,
+        "diagnostic_hash_variants": 0,
+        "disposition": "Incomplete scheduled mode counts; no timing summary or speed ratio."
+      },
+      {
+        "host_label": "host_b",
+        "batch_size": 128,
+        "measured_rows": {
+          "cpu": 9,
+          "prepared_cpu": 9,
+          "gpu": 9
+        },
+        "complete_three_mode_pair": true,
+        "diagnostic_hash_variants": 1,
+        "cpu": {
+          "sample_decode_seconds": 0.7525260243564844,
+          "prepare_seconds": 2.100557819008827,
+          "prepare_plus_loop_seconds": 2.859815366566181,
+          "cuda_peak_allocated_bytes": 0,
+          "process_max_rss_bytes": 1022935040
+        },
+        "prepared_cpu": {
+          "sample_decode_seconds": 0.6621652245521545,
+          "prepare_seconds": 2.1506580654531717,
+          "prepare_plus_loop_seconds": 2.810284124687314,
+          "cuda_peak_allocated_bytes": 0,
+          "process_max_rss_bytes": 1023270912
+        },
+        "gpu": {
+          "sample_decode_seconds": 0.6246907878667116,
+          "prepare_seconds": 2.1520599108189344,
+          "prepare_plus_loop_seconds": 2.776784725487232,
+          "cuda_peak_allocated_bytes": 143360,
+          "process_max_rss_bytes": 1023090688
+        },
+        "stock_over_prepared_cpu_loop": 1.1364626175671548,
+        "prepared_cpu_over_gpu_loop": 1.059988777509296,
+        "stock_over_prepared_cpu_total": 1.017624994371122,
+        "prepared_cpu_over_gpu_total": 1.0120640966123882
+      },
+      {
+        "host_label": "host_b",
+        "batch_size": 4096,
+        "measured_rows": {
+          "cpu": 9,
+          "prepared_cpu": 9,
+          "gpu": 9
+        },
+        "complete_three_mode_pair": true,
+        "diagnostic_hash_variants": 1,
+        "cpu": {
+          "sample_decode_seconds": 0.6577130258083344,
+          "prepare_seconds": 2.1327090729027987,
+          "prepare_plus_loop_seconds": 2.7783201579004526,
+          "cuda_peak_allocated_bytes": 0,
+          "process_max_rss_bytes": 1046278144
+        },
+        "prepared_cpu": {
+          "sample_decode_seconds": 0.6422878243029118,
+          "prepare_seconds": 2.172960178926587,
+          "prepare_plus_loop_seconds": 2.8173184916377068,
+          "cuda_peak_allocated_bytes": 0,
+          "process_max_rss_bytes": 1046245376
+        },
+        "gpu": {
+          "sample_decode_seconds": 0.46610623598098755,
+          "prepare_seconds": 2.1185024864971638,
+          "prepare_plus_loop_seconds": 2.570530066266656,
+          "cuda_peak_allocated_bytes": 4273664,
+          "process_max_rss_bytes": 1046167552
+        },
+        "stock_over_prepared_cpu_loop": 1.0240160266499896,
+        "prepared_cpu_over_gpu_loop": 1.377985906906233,
+        "stock_over_prepared_cpu_total": 0.9861576410856607,
+        "prepared_cpu_over_gpu_total": 1.09600682311002
+      },
+      {
+        "host_label": "host_b",
+        "batch_size": 65536,
+        "measured_rows": {
+          "cpu": 9,
+          "prepared_cpu": 9,
+          "gpu": 9
+        },
+        "complete_three_mode_pair": true,
+        "diagnostic_hash_variants": 1,
+        "cpu": {
+          "sample_decode_seconds": 0.8408956713974476,
+          "prepare_seconds": 2.1017865389585495,
+          "prepare_plus_loop_seconds": 2.9525601360946894,
+          "cuda_peak_allocated_bytes": 0,
+          "process_max_rss_bytes": 1261535232
+        },
+        "prepared_cpu": {
+          "sample_decode_seconds": 0.8065880034118891,
+          "prepare_seconds": 2.1459703855216503,
+          "prepare_plus_loop_seconds": 2.951853157952428,
+          "cuda_peak_allocated_bytes": 0,
+          "process_max_rss_bytes": 1260601344
+        },
+        "gpu": {
+          "sample_decode_seconds": 0.632542073726654,
+          "prepare_seconds": 2.1838871221989393,
+          "prepare_plus_loop_seconds": 2.8112259954214096,
+          "cuda_peak_allocated_bytes": 69281280,
+          "process_max_rss_bytes": 1260634112
+        },
+        "stock_over_prepared_cpu_loop": 1.0425343147188355,
+        "prepared_cpu_over_gpu_loop": 1.2751531272217744,
+        "stock_over_prepared_cpu_total": 1.0002395031542666,
+        "prepared_cpu_over_gpu_total": 1.0500234284828238
+      }
+    ]
+  },
+  "raw_files": [
+    {
+      "path": "qec_prepared_parity_control_20261025_host_a.json",
+      "sha256": "d675ebb93de6d3ce3d51ffade9390f0a5117438316b0b0e560b500d7348ec781"
+    },
+    {
+      "path": "qec_prepared_parity_control_20261025_host_b.json",
+      "sha256": "eb967d7a8565a1d1ab2c064ed16da36de96166d6d208179662bbf41e63166324"
+    }
+  ],
+  "privacy": "Public labels host_a/host_b replace physical host identifiers. GPU UUIDs, SSH aliases and container identifiers remain private. Original transfer archive SHA256 retained; numerical observations/warmups/hashes unmodified.",
+  "reproduction": {
+    "observer_source": "\"\"\"Private matched prepared-index CPU/GPU observer; not an installed backend.\"\"\"\n\nimport hashlib\nimport importlib.metadata\nimport json\nimport os\nimport resource\nimport sys\nimport time\nfrom collections import defaultdict\n\nsys.path.insert(0, \"/task/source\")\nimport torch\nimport flagquantum\nfrom flagquantum.qec import (\n    DemSample,\n    DetectorErrorModel,\n    Pauli,\n    PhenomenologicalNoise,\n    PyMatchingDecoder,\n    RotatedSurfaceCode,\n    build_memory_circuit,\n    compile_memory_sampler,\n)\nfrom flagquantum.qec.adapters.stim import memory_to_stim_text, stim_circuit_to_dem_text\nfrom flagquantum.qec.execution.sampling import _parity_bits\n\nassert flagquantum.__file__.startswith(\"/task/source/flagquantum/\")\ntorch.set_num_threads(1)\nmode, batch_text = sys.argv[1:]\nbatch = int(batch_text)\nassert mode in (\"cpu\", \"prepared_cpu\", \"gpu\") and batch in (128, 4096, 65536)\nassert torch.cuda.is_available() and torch.cuda.device_count() == 1\ndevice = torch.device(\"cuda:0\" if mode == \"gpu\" else \"cpu\")\n\n\ndef groups_for(columns, target_device):\n    groups = defaultdict(list)\n    for index, parity in enumerate(columns):\n        if parity:\n            groups[len(parity)].append((index, parity))\n    return len(columns), [\n        (\n            torch.tensor([i for i, _ in group], device=target_device),\n            torch.tensor([p for _, p in group], device=target_device),\n        )\n        for group in groups.values()\n    ]\n\n\ndef device_parity(record, layout):\n    width, groups = layout\n    output = torch.zeros(\n        (record.shape[0], width), dtype=torch.int8, device=record.device\n    )\n    for outputs, sources in groups:\n        output[:, outputs] = (\n            record[:, sources]\n            .sum(dim=2, dtype=torch.uint8)\n            .bitwise_and_(1)\n            .to(torch.int8)\n        )\n    return output\n\n\ndef convert(record, layouts):\n    # Matched controls convert once for both layouts and reuse index tensors.\n    # For CUDA this includes blocking pageable H2D/D2H inside the loop.\n    # CPU uses identical grouping/reduction on CPU, with no device transfers.\n    prepared_record = record.to(device=device, dtype=torch.uint8)\n    return DemSample(\n        detectors=device_parity(prepared_record, layouts[0]).cpu(),\n        observables=device_parity(prepared_record, layouts[1]).cpu(),\n    )\n\n\n# Independent CPU XOR oracle includes empty/duplicate/byte-overflow products.\ncolumns = (\n    (),\n    (0, 0),\n    (0, 1, 2),\n    *(tuple(i % 7 for i in range(width)) for width in (255, 256, 257, 513)),\n)\nrecord = (torch.arange(35 * 7).reshape(35, 7) % 3 == 0).to(torch.int64)\noracle = torch.zeros((35, len(columns)), dtype=torch.int8)\nfor index, parity in enumerate(columns):\n    for column in parity:\n        oracle[:, index] ^= record[:, column].to(torch.int8)\nfor test_device in (torch.device(\"cpu\"), torch.device(\"cuda:0\")):\n    assert torch.equal(\n        device_parity(\n            record.to(test_device, dtype=torch.uint8), groups_for(columns, test_device)\n        ).cpu(),\n        oracle,\n    )\nprint(\n    json.dumps(\n        {\n            \"kind\": \"metadata\",\n            \"source_revision\": os.environ[\"FQ_SOURCE_REVISION\"],\n            \"source_path\": flagquantum.__file__,\n            \"mode\": mode,\n            \"batch_size\": batch,\n            \"gpu\": torch.cuda.get_device_name(),\n            \"cuda\": torch.version.cuda,\n            \"compute_device\": str(device),\n            \"indices_prepared_once\": mode != \"cpu\",\n            \"prepared_controls_share_one_record_conversion\": True,\n            \"versions\": {\n                n: importlib.metadata.version(n)\n                for n in (\"torch\", \"stim\", \"pymatching\", \"numpy\")\n            },\n            \"torch_threads\": torch.get_num_threads(),\n            \"independent_oracle_passed\": True,\n            \"world_size\": 1,\n            \"local_world_size\": 1,\n            \"node_count\": 1,\n            \"distribution_semantics\": \"single_device_fast_path\",\n            \"rank_ownership\": {\"0\": \"whole workload\"},\n            \"scalability_claim_allowed\": False,\n            \"non_release_evidence\": True,\n        }\n    ),\n    flush=True,\n)\n\nfor repeat in range(4):\n    prepare_start = time.perf_counter()\n    code = RotatedSurfaceCode(9)\n    memory = build_memory_circuit(\n        code, rounds=3, product=Pauli(x_qubits=code.data_qubits)\n    )\n    noise = PhenomenologicalNoise(\n        data_flip=0.005, phase_flip=0.007, measurement_flip=0.009\n    )\n    source = memory_to_stim_text(memory, noise=noise)\n    dem_text = stim_circuit_to_dem_text(source)\n    model = DetectorErrorModel.from_stim_text(dem_text)\n    decoder = PyMatchingDecoder.from_detector_error_model(\n        model.merge_duplicate_mechanisms()\n    )\n    with compile_memory_sampler(memory, noise=noise, seed=53) as sampler:\n        layouts = (\n            (\n                groups_for(sampler._detector_columns, device),\n                groups_for(sampler._observable_columns, device),\n            )\n            if mode != \"cpu\"\n            else None\n        )\n        torch.cuda.synchronize()\n        prepared_seconds = time.perf_counter() - prepare_start\n        completed = failures = events = 0\n        torch.cuda.reset_peak_memory_stats()\n        started = time.perf_counter()\n        while completed < 65537:\n            count = min(batch, 65537 - completed)\n            if mode == \"cpu\":\n                sample = sampler.sample(shots=count)\n            else:\n                sample = convert(sampler._open_sampler().sample(shots=count), layouts)\n            predicted = decoder.decode_batch(sample.detectors)\n            events += int(sample.detectors.sum())\n            failures += int((predicted != sample.observables).any(dim=1).sum())\n            completed += count\n        torch.cuda.synchronize()\n        seconds = time.perf_counter() - started\n        peak = torch.cuda.max_memory_allocated()\n    print(\n        json.dumps(\n            {\n                \"kind\": \"observation\",\n                \"repeat\": repeat,\n                \"warmup\": repeat == 0,\n                \"sample_decode_seconds\": seconds,\n                \"prepare_seconds\": prepared_seconds,\n                \"prepare_plus_loop_seconds\": prepared_seconds + seconds,\n                \"completed_shots\": completed,\n                \"detector_events\": events,\n                \"logical_failures\": failures,\n                \"cuda_peak_allocated_bytes\": peak,\n                \"process_max_rss_bytes\": resource.getrusage(\n                    resource.RUSAGE_SELF\n                ).ru_maxrss\n                * 1024,\n            }\n        ),\n        flush=True,\n    )\n\n# Separate full-shot diagnostics, excluded from all timing rows, compare actual\n# engine records against the unchanged CPU implementation on every batch.\nhashes = [hashlib.sha256() for _ in range(3)]\ncompleted = 0\nwith compile_memory_sampler(memory, noise=noise, seed=53) as sampler:\n    layouts = (\n        groups_for(sampler._detector_columns, device),\n        groups_for(sampler._observable_columns, device),\n    )\n    while completed < 65537:\n        count = min(batch, 65537 - completed)\n        record = sampler._open_sampler().sample(shots=count)\n        expected = DemSample(\n            detectors=_parity_bits(sampler._detector_columns, record),\n            observables=_parity_bits(sampler._observable_columns, record),\n        )\n        actual = convert(record, layouts) if mode != \"cpu\" else expected\n        assert torch.equal(actual.detectors, expected.detectors)\n        assert torch.equal(actual.observables, expected.observables)\n        predictions = decoder.decode_batch(actual.detectors)\n        for h, tensor in zip(\n            hashes, (actual.detectors, actual.observables, predictions)\n        ):\n            h.update(tensor.numpy().tobytes())\n        completed += count\nprint(\n    json.dumps(\n        {\n            \"kind\": \"diagnostics\",\n            \"completed_shots\": completed,\n            \"cpu_equal_every_batch\": True,\n            \"sha256\": dict(\n                source=hashlib.sha256(source.encode()).hexdigest(),\n                dem=hashlib.sha256(dem_text.encode()).hexdigest(),\n                detectors=hashes[0].hexdigest(),\n                observables=hashes[1].hexdigest(),\n                predictions=hashes[2].hexdigest(),\n            ),\n        }\n    ),\n    flush=True,\n)\n",
+    "controller_source": "import hashlib\nimport json\nimport signal\nimport subprocess\nimport sys\nimport time\nimport uuid\nfrom pathlib import Path\n\nhost = sys.argv[1]\npayload = json.load(sys.stdin)\nprotocol = payload[\"protocol\"]\np = Path(\"/tmp/fq-qec-prepared-parity-study-20261025-\" + host)\np.mkdir(mode=0o700, exist_ok=False)\n(p / \"observer.py\").write_text(payload[\"observer\"])\n(p / \"protocol.json\").write_text(json.dumps(protocol, indent=2))\nassert (\n    hashlib.sha256((p / \"observer.py\").read_bytes()).hexdigest()\n    == protocol[\"observer_sha256\"]\n)\nsource = Path(\"/tmp/fq-qec-prepared-parity-source-20261025-\" + host) / \"source\"\nnonce = uuid.uuid4().hex\nactive = None\ngpu = protocol[\"host_gpu\"][host]\n\n\ndef verify():\n    def git(*args):\n        return subprocess.check_output(\n            [\"git\", *args], cwd=source, text=True, timeout=10\n        ).strip()\n\n    assert git(\"rev-parse\", \"HEAD\") == protocol[\"source_revision\"]\n    assert not git(\"status\", \"--porcelain\")\n    return {\"source_revision\": git(\"rev-parse\", \"HEAD\"), \"tracked_tree_clean\": True}\n\n\ndef check_available():\n    state = subprocess.check_output(\n        [\n            \"nvidia-smi\",\n            \"-i\",\n            str(gpu),\n            \"--query-gpu=uuid,memory.free,utilization.gpu\",\n            \"--format=csv,noheader,nounits\",\n        ],\n        text=True,\n        timeout=10,\n    ).strip()\n    gpu_uuid, free, utilization = [x.strip() for x in state.split(\",\")]\n    apps = subprocess.check_output(\n        [\"nvidia-smi\", \"--query-compute-apps=gpu_uuid,pid\", \"--format=csv,noheader\"],\n        text=True,\n        timeout=10,\n    )\n    assert (\n        gpu_uuid not in apps\n    ), \"Selected GPU has another compute process; stop without interfering\"\n    assert int(free) > 70000, state\n    return {\n        \"uuid\": gpu_uuid,\n        \"free_mib\": int(free),\n        \"utilization_percent\": int(utilization),\n    }\n\n\ndef available():\n    states = []\n    for attempt in range(11):\n        state = check_available()\n        states.append(state)\n        if state[\"utilization_percent\"] == 0:\n            return dict(state, idle_wait_observations=states)\n        time.sleep(1)\n    raise AssertionError((\"GPU not idle after bounded wait\", states))\n\n\ndef cleanup(name):\n    v = subprocess.run(\n        [\n            \"docker\",\n            \"inspect\",\n            name,\n            \"--format\",\n            '{{index .Config.Labels \"codex.qec.preparedparity\"}}',\n        ],\n        capture_output=True,\n        text=True,\n        timeout=10,\n    )\n    if v.returncode == 0:\n        assert v.stdout.strip() == nonce\n        subprocess.run(\n            [\"docker\", \"rm\", \"-f\", name], capture_output=True, timeout=10, check=True\n        )\n    else:\n        assert \"no such\" in v.stderr.lower(), v.stderr\n\n\ndef stop(sig, frame):\n    if active:\n        cleanup(active)\n    raise SystemExit(128 + sig)\n\n\nsignal.signal(signal.SIGTERM, stop)\nsignal.signal(signal.SIGINT, stop)\nrecords = []\nstarted = time.monotonic()\nfor batch in protocol[\"workload\"][\"batch_sizes\"]:\n    for index, mode in enumerate(protocol[\"order_per_batch\"]):\n        assert (\n            time.monotonic() - started + 60 < 900\n        ), \"Predeclared host budget exhausted\"\n        before = verify()\n        device_state = available()\n        label = f\"b{batch}-{index}-{mode}\"\n        name = \"fq-qec-prepared-parity-\" + nonce + \"-\" + label\n        active = name\n        args = [\n            \"docker\",\n            \"run\",\n            \"--rm\",\n            \"--pull=never\",\n            \"--name\",\n            name,\n            \"--label\",\n            \"codex.qec.preparedparity=\" + nonce,\n            \"--network=none\",\n            \"--read-only\",\n            \"--tmpfs\",\n            \"/tmp:rw,size=256m\",\n            \"--memory=4g\",\n            \"--cpus=2\",\n            \"--pids-limit=128\",\n            \"--gpus\",\n            \"device=\" + str(gpu),\n            \"-v\",\n            str(source) + \":/task/source:ro\",\n            \"-v\",\n            \"/tmp/fq-qec-shot-scaling-20261025-\" + host + \"/deps:/task/deps:ro\",\n            \"-v\",\n            str(p / \"observer.py\") + \":/task/observer.py:ro\",\n            \"-w\",\n            \"/tmp\",\n        ]\n        for key, value in {\n            \"HOME\": \"/tmp\",\n            \"PYTHONPATH\": \"/task/source:/task/deps\",\n            \"PYTHONDONTWRITEBYTECODE\": \"1\",\n            \"OMP_NUM_THREADS\": \"1\",\n            \"MKL_NUM_THREADS\": \"1\",\n            \"OPENBLAS_NUM_THREADS\": \"1\",\n            \"MPLCONFIGDIR\": \"/tmp/mpl\",\n            \"FQ_SOURCE_REVISION\": protocol[\"source_revision\"],\n        }.items():\n            args += [\"-e\", key + \"=\" + value]\n        args += [\n            \"--entrypoint\",\n            \"python3\",\n            protocol[\"image\"],\n            \"/task/observer.py\",\n            mode,\n            str(batch),\n        ]\n        r = {\n            \"case\": label,\n            \"mode\": mode,\n            \"batch_size\": batch,\n            \"source_before\": before,\n            \"gpu_preflight\": device_state,\n            \"container\": name,\n        }\n        try:\n            with (p / (label + \".jsonl\")).open(\"w\") as out, (\n                p / (label + \".stderr.log\")\n            ).open(\"w\") as err:\n                v = subprocess.run(args, stdout=out, stderr=err, timeout=60)\n            r.update(\n                exit=v.returncode, status=\"complete\" if v.returncode == 0 else \"failed\"\n            )\n        except subprocess.TimeoutExpired:\n            r.update(exit=124, status=\"timeout\")\n        finally:\n            cleanup(name)\n            active = None\n        r[\"source_after\"] = verify()\n        records.append(r)\n        (p / \"controller-results.json\").write_text(\n            json.dumps(\n                {\"records\": records, \"elapsed_seconds\": time.monotonic() - started},\n                indent=2,\n            )\n        )\n        print(json.dumps(r), flush=True)\n        assert (\n            r[\"status\"] == \"complete\"\n        ), \"Preserve failing cell and stop; no automatic scientific retry\"\n        rows = [\n            json.loads(x) for x in (p / (label + \".jsonl\")).read_text().splitlines()\n        ]\n        assert len(rows) == 6 and rows[-1][\"completed_shots\"] == 65537\nresult = {\n    \"records\": records,\n    \"elapsed_seconds\": time.monotonic() - started,\n    \"complete\": len(records) == 27,\n}\n(p / \"controller-results.json\").write_text(json.dumps(result, indent=2))\nprint(json.dumps(result), flush=True)\n"
+  },
+  "limits": [
+    "Fresh study; do not pool or multiply previous medians/ratios. No posthoc seed/budget/extra sampling.",
+    "1warmup3measured repeats per process, nine rows per mode/host/batch if complete; repeated seeded runs are not independent statistical trials.",
+    "Descriptive medians only; no new performance threshold or significance claim.",
+    "Shared hosts and preflight availability are not exclusive reservations.",
+    "Both prepared modes also share a single record byte conversion; stock-vs-prepared difference is preparation and conversion reuse, not isolated index timing.",
+    "No pinned/overlap/fused-kernel tuning, new public API/backend/default/schema/seed/noise/SDK or production implementation.",
+    "No GPU stabilizer/matching, threshold/distance/capacity/multicard or release claim.",
+    "CUDA allocatedbytes excludes driver/context; RSS wholeprocess imports/warmup/diagnostics, not phasepeak.",
+    "Original execution law and nominal-decimal Kraus limitation unchanged."
+  ],
+  "outcomes": {
+    "host_a": "14 of27 processes complete; remaining13 not started after a foreign compute process appeared before batch4096 process5. No remapping, retry or additional sample.",
+    "host_b": "27 of27 complete in506.9297748208046seconds; original perprocess60/host900second budgets satisfied.",
+    "complete_two_host_matrix": false,
+    "all_scheduled_processes": 54,
+    "completed_processes": 41,
+    "correctness": "All completed processes passed independent CPU and CUDA XOR witnesses and full-shot same-record parity equivalence; diagnostic hashes and event/logical counts match within each observed host/batch."
+  },
+  "host_hardware": {
+    "host_a": {
+      "Architecture": "x86_64",
+      "CPU(s)": "128",
+      "Model name": "Intel(R) Xeon(R) Platinum 8358 CPU @ 2.60GHz",
+      "Thread(s) per core": "2",
+      "Core(s) per socket": "32",
+      "Socket(s)": "2"
+    },
+    "host_b": {
+      "Architecture": "x86_64",
+      "CPU(s)": "128",
+      "Model name": "Intel(R) Xeon(R) Platinum 8358 CPU @ 2.60GHz",
+      "Thread(s) per core": "2",
+      "Core(s) per socket": "32",
+      "Socket(s)": "2"
+    }
+  },
+  "local_validation": {
+    "real_sdk": "149 passed in25.38s",
+    "default": "Exactmain production unchanged:11347pass85skip5fail5sandboxGlooerrors241.35s. Four nativefusion failures and missingFTQCcommit evidence-history failure; retained original log, no green default claim.",
+    "history_resolution": "29 actual recent ancestry headers SHA-verified imported; evidence gate passed afterward. No other-team evidence/policy/assertions changed.",
+    "owned_cleanup": {
+      "host_a": {
+        "checked_owned_containers": 14,
+        "remaining_owned_containers": 0
+      },
+      "host_b": {
+        "checked_owned_containers": 27,
+        "remaining_owned_containers": 0
+      }
+    },
+    "public_example": "native17 0 / exported_stim17 0 under macOSarm64/Python3.12.14/Torch2.13/Stim1.16/PyMatching2.4"
+  }
+}

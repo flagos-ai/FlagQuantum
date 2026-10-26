@@ -1,7 +1,7 @@
 """Unit coverage for the belief-propagation decoder with ordered statistics.
 
 Three references the decoder does not share code with decide whether the tests
-below mean anything. The first is the matcher in :mod:`flagquantum.qec.matching`:
+below mean anything. The first is the matcher in :mod:`flagquantum.qec.decoders.matching`:
 wherever the model is graphlike both decoders read the same syndrome, and where
 the matcher refuses a hyperedge the belief-propagation decoder is the only one
 that answers. The second is brute force over the model's own mechanism sets,
@@ -28,18 +28,18 @@ from pathlib import Path
 
 import pytest
 
+import flagquantum.qec.decoders.bposd as bposd_module
 from flagquantum.errors import CapabilityError
-from flagquantum.qec import bposd as bposd_module
-from flagquantum.qec.bposd import (
+from flagquantum.qec.circuits.memory import build_memory_circuit
+from flagquantum.qec.codes import RepetitionCode, SteaneCode
+from flagquantum.qec.codes.surface.rotated import RotatedSurfaceCode
+from flagquantum.qec.decoders.bposd import (
     BeliefPropagationOsdDecoder,
     BeliefPropagationOsdDecodeResult,
 )
-from flagquantum.qec.circuit import build_memory_circuit
-from flagquantum.qec.codes import RepetitionCode, SteaneCode
+from flagquantum.qec.decoders.matching import MinimumWeightMatchingDecoder
 from flagquantum.qec.dem import DemError, DetectorErrorModel
-from flagquantum.qec.matching import MinimumWeightMatchingDecoder
 from flagquantum.qec.noise import PhenomenologicalNoise
-from flagquantum.qec.surface import RotatedSurfaceCode
 
 pytestmark = pytest.mark.unit
 
@@ -720,7 +720,7 @@ def test_the_module_is_reachable_from_a_fresh_interpreter() -> None:
     code = (
         "import flagquantum.qec as qec\n"
         "assert 'BeliefPropagationOsdDecoder' in qec.__all__\n"
-        "assert qec.BeliefPropagationOsdDecoder.__module__ == 'flagquantum.qec.bposd'\n"
+        "assert qec.BeliefPropagationOsdDecoder.__module__ == 'flagquantum.qec.decoders.bposd'\n"
     )
     completed = subprocess.run(
         [sys.executable, "-c", code],
@@ -752,8 +752,7 @@ def test_the_decoder_is_reached_by_name_once_the_graph_moved_to_the_sub_protocol
     plain name also accepts a ``DecodingGraph`` when a caller already has one.
     """
 
-    from flagquantum.qec.decoding_graph import DecodingGraph
-    from flagquantum.qec.registry import (
+    from flagquantum.qec.decoders.registry import (
         AUTHORITY_NAME,
         BELIEF_PROPAGATION_NAME,
         BELIEF_PROPAGATION_OSD_NAME,
@@ -765,6 +764,7 @@ def test_the_decoder_is_reached_by_name_once_the_graph_moved_to_the_sub_protocol
         get_decoder,
         register_decoder,
     )
+    from flagquantum.qec.dem.graph import DecodingGraph
 
     model = _memory_model(RepetitionCode(distance=3), rounds=2)
     matcher = MinimumWeightMatchingDecoder.from_detector_error_model(model)

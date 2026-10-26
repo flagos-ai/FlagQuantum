@@ -757,9 +757,16 @@ def from_engine_qir(n_qubits: int, qir: Sequence[Mapping[str, Any]]) -> CircuitI
 def _reject_native_circuit_input(program: Any) -> None:
     """Keep native-program refusal in Core for circuit workflow consumers."""
     from ...errors import CapabilityError
+    from ..ising import IsingBraidProgram
     from ..rydberg import RydbergProgram
     from .program.model import ProgramRecord
-    from .program.physical import is_physical_record
+    from .program.physical import IsingContext, is_physical_record
+
+    if isinstance(program, IsingBraidProgram) or (
+        isinstance(program, ProgramRecord)
+        and isinstance(program.physical_context, IsingContext)
+    ):
+        raise CapabilityError("native Ising braids cannot execute as circuits")
 
     if isinstance(program, RydbergProgram) or (
         isinstance(program, ProgramRecord) and is_physical_record(program)

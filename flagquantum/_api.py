@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
+import sys
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import replace
 from importlib import import_module
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 from torch import Tensor
 
@@ -14,7 +15,9 @@ if TYPE_CHECKING:
 
     from .circuit import Circuit
     from .core.ir import CircuitIR
+    from .core.ising import IsingBraidProgram
     from .gradients import GradientResult
+    from .lindblad import LindbladPlan
     from .noise import NoiseModel
     from .observables import OutputRequest
     from .runtime.execution_plan import ExecutionPlan
@@ -59,7 +62,7 @@ def compile(
         resolved_target = {
             "provider": "quafu",
             "backend": backend,
-            "chip_info": provider.fetch_chip_info(backend),
+            "chip_info": provider._qsteed_chip_info(backend),
         }
         if target_qubits is not None:
             resolved_target["target_qubits"] = target_qubits
@@ -85,7 +88,9 @@ def compile(
 
 
 def run(
-    program_or_plan: Circuit | CircuitIR | ExecutionPlan,
+    program_or_plan: (
+        Circuit | CircuitIR | ExecutionPlan | IsingBraidProgram | LindbladPlan
+    ),
     *,
     options: ExecutionOptions | None = None,
     outputs: OutputRequest | Sequence[OutputRequest] | None = None,
@@ -113,8 +118,57 @@ def run(
         torch.Size([8, 2])
     """
 
-    import_module(".core.ir", __package__)._reject_native_circuit_input(program_or_plan)
+    # A created LindbladPlan has already loaded its module. Keep ordinary
+    # circuit execution free of an eager dynamics import.
+    dynamics = sys.modules.get("flagquantum.lindblad._plan")
+    if dynamics is not None and isinstance(program_or_plan, dynamics.LindbladPlan):
+        if any(
+            value is not None
+            for value in (
+                options,
+                outputs,
+                noise_model,
+                compiler,
+                target,
+                target_qubits,
+                shots,
+                name,
+            )
+        ):
+            raise TypeError("a sealed LindbladPlan does not accept execution overrides")
+        from .runtime._rydberg_presence import execute_presence_plan
+
+        return execute_presence_plan(program_or_plan)
+
+    from .core.ising import IsingBraidProgram
     from .runtime.execution_plan import ExecutionPlan
+
+    if isinstance(program_or_plan, IsingBraidProgram) or (
+        isinstance(program_or_plan, ExecutionPlan) and program_or_plan.analysis is None
+    ):
+        from .errors import CapabilityError
+        from .runtime.execution import run as run_local
+
+        if any(
+            value is not None
+            for value in (compiler, target, target_qubits, shots, name)
+        ):
+            raise CapabilityError(
+                "native Ising execution has no remote or direct-shot route"
+            )
+        if isinstance(program_or_plan, ExecutionPlan):
+            if outputs is not None:
+                raise TypeError("outputs must be None when executing an ExecutionPlan")
+            return run_local(program_or_plan, options=options, noise_model=noise_model)
+        if noise_model is not None:
+            raise CapabilityError("native Ising execution has no noise-model route")
+        from .runtime._ising_plan import plan_ising
+
+        return run_local(plan_ising(program_or_plan, options=options, outputs=outputs))
+    # The module-presence test above excludes every LindbladPlan without importing
+    # dynamics on the ordinary circuit path; express that lazy narrowing for typing.
+    program_or_plan = cast("Circuit | CircuitIR | ExecutionPlan", program_or_plan)
+    import_module(".core.ir", __package__)._reject_native_circuit_input(program_or_plan)
 
     remote_requested = (
         compiler is not None or target is not None or target_qubits is not None
@@ -181,6 +235,25 @@ def run(
             measurements=measurements,
             noise_model=noise_model,
         )
+
+    dynamic_circuit_type = import_module(
+        ".runtime.dynamic.circuit", __package__
+    ).DynamicCircuit
+    if isinstance(program_or_plan, dynamic_circuit_type):
+        dynamic_ir = import_module(".core.ir", __package__).ensure_circuit_ir(
+            program_or_plan
+        )
+        classical_control = import_module(".core.classical_control", __package__)
+        has_dynamic_semantics = any(
+            classical_control.is_classical_control_instruction(instruction)
+            for instruction in dynamic_ir.instructions
+        )
+        if has_dynamic_semantics:
+            preflight = import_module(".runtime.dynamic.remote_preflight", __package__)
+            preflight.require_dynamic_remote_preflight(
+                program_or_plan,
+                target=target,
+            )
 
     provider_name, separator, _ = (target or "").partition(":")
     if target is not None and separator == ":" and provider_name.lower() == "jiuding":
@@ -470,7 +543,7 @@ def vjp(
 
 
 def plan(
-    program: Circuit | CircuitIR,
+    program: Circuit | CircuitIR | IsingBraidProgram,
     *,
     options: ExecutionOptions | None = None,
     outputs: OutputRequest | Sequence[OutputRequest] | None = None,
@@ -484,6 +557,16 @@ def plan(
         'statevector'
     """
 
+    from .core.ising import IsingBraidProgram
+
+    if isinstance(program, IsingBraidProgram):
+        if noise_model is not None:
+            from .errors import CapabilityError
+
+            raise CapabilityError("native Ising planning has no noise-model route")
+        from .runtime._ising_plan import plan_ising
+
+        return plan_ising(program, options=options, outputs=outputs)
     ir = import_module(".core.ir", __package__).ensure_circuit_ir(program)
     measurements = import_module(".observables", __package__).lower_outputs(
         outputs,

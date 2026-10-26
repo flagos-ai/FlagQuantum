@@ -49,12 +49,8 @@ def main():
         ),
     )
     args = parser.parse_args()
-    # Only the timeout fault needs a deliberately short collective deadline.
-    # Checkpoint/lease tests must tolerate normal shared-runner scheduling delays.
-    collective_timeout = 3 if args.mode == "collective_timeout" else 30
-    dist.init_process_group(
-        "gloo", timeout=datetime.timedelta(seconds=collective_timeout)
-    )
+    # Setup and checkpoint I/O must tolerate shared-runner scheduling delays.
+    dist.init_process_group("gloo", timeout=datetime.timedelta(seconds=30))
     rank = dist.get_rank()
     root = Path(os.environ.get("FQ_TEST_CHECKPOINT", tempfile.mkdtemp()))
     theta = torch.tensor(0.2, requires_grad=True)
@@ -94,9 +90,12 @@ def main():
     if args.mode == "cuda_oom" and rank == 0:
         raise torch.OutOfMemoryError("injected CUDA OOM")
     if args.mode == "collective_timeout":
+        # Arm the short deadline only after both ranks finish checkpoint setup.
+        fault_group = dist.new_group(timeout=datetime.timedelta(seconds=3))
+        print("collective_timeout_armed", flush=True)
         if rank == 0:
             time.sleep(5)
-        dist.barrier()
+        dist.barrier(group=fault_group)
     if args.mode == "generation" and rank == 0:
         path = committed_rank_path(root, rank)
         payload = torch.load(path, weights_only=False)

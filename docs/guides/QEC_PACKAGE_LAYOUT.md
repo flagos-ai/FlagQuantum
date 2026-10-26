@@ -1,128 +1,139 @@
-# QEC package layout and compatibility
+# QEC package layout and 0.4.0 migration
 
-Use the existing `flagquantum.qec` imports for codes, memory experiments, detector
-models and decoders. The package keeps its 108 ordered public exports, original
-signatures/defaults, numerical behavior and code/decoder registration policy.
-The responsibility split changes where contributors edit implementations.
+Use `flagquantum.qec` for codes, memory experiments, detector models and
+decoders. Its 108 ordered exports, signatures/defaults, numerical behavior and
+code/decoder registration policy remain unchanged. The approved **0.4.0**
+retirement removes 23 historical flat modules and their pickle lookup paths.
+[Proposal #757](../development/API_CHANGE_PROPOSAL_085_QEC_HISTORICAL_IMPORT_RETIREMENT.md)
+and the [amended contract](../development/QEC_RETIREMENT_CONTRACT.md) record the
+explicit approval, including the decision to keep one `RotatedSurfaceCode`.
+This source version targets 0.4.0; it does not publish a release.
 
 ## Find the implementation
 
 ```text
 flagquantum/qec/
   codes/                 code records, matrices, families and the code registry
-    surface/             registered rotated, independent frame and ZXXZ records
+    surface/             one registered rotated class and the ZXXZ family
   circuits/              memory source and measurement/detector declarations
   dem/                   model, text, mechanisms, IR realization, chunks and graph
   decoders/              repetition, matching, BP, BPOSD, windows and one registry
   execution/             lowering, sampling, feedback, signatures and composition
   adapters/              optional PyMatching import/translation
+  pauli.py               shared Pauli representation
+  gf2.py                 shared binary algebra
+  logical.py             shared logical-product records
+  noise.py               shared noise records and retained lazy sweep exports
+  types.py               shared syndrome/event/result records
+  __init__.py            unchanged ordered public API
 ```
 
-`pauli.py`, `gf2.py`, `logical.py`, `types.py` and the record portion of `noise.py`
-remain shared leaves. They are active responsibilities, not unfinished moves.
-Core owns QEC. Each responsibility directory has a README describing allowed
-dependencies, exclusions, public entry points and a ten-minute edit/test path.
+The root now has six Python files, and the complete QEC tree has 50 Python
+files. Shared leaves are active implementations. Core owns QEC; each
+responsibility directory has a README with allowed dependencies, exclusions,
+entry points and a short edit/test path.
 
-At the accepted mainline merge, the QEC root still contains 29 Python files:
-23 historical import facades, five retained implementation leaves and the root
-API facade. The historical facades contain no own class/function definitions.
-Their objects live in the responsibility packages below. The
-[mainline acceptance record](../development/QEC_RESTRUCTURE_ACCEPTANCE.md) lists
-the remaining files, their purposes and post-merge evidence. Removing historical
-imports is a separate compatibility change, outside this structural delivery.
+## Replace historical imports
 
-| Existing import or responsibility | Physical owner |
+Root imports such as `from flagquantum.qec import CssCode` continue to work.
+For module imports, replace the prefix in this table. The machine-readable
+[contract](../../contracts/qec-historical-import-retirement-v0.4.json) is the
+exact removal list.
+
+| Removed `flagquantum.qec` module | Canonical replacement under `flagquantum.qec` |
 | --- | --- |
-| `qec.codes` protocols/checks | `codes/checks.py` |
-| Root / `qec.dem_matrices.CssCodeMatrices` matrix record | `codes/matrices.py` |
-| Registered `qec.RotatedSurfaceCode` / `qec.codes.RotatedSurfaceCode` | `codes/surface/rotated.py` |
-| Independent `qec.surface.RotatedSurfaceCode` | `codes/surface/_rotated_frame.py` |
-| Other code families | Named modules under `codes/`; ZXXZ under `codes/surface/` |
-| `qec.circuit` memory declarations | `circuits/memory.py` |
-| `qec.dem` model, rates, sampling and merge rules | `dem/model.py` |
-| `dem_text`, `dem_alternatives`, `dem_matrices` | `dem/text.py`, `dem/alternatives.py`, `dem/matrices.py` |
-| `dem_construction` analytic mechanisms | `dem/construction.py` |
-| `dem_circuit`, `chunks`, `decoding_graph` | `dem/circuit.py`, `dem/chunks.py`, `dem/graph.py` |
-| Former `qec.decoders` repetition protocols/algorithms | `decoders/repetition.py` |
-| `matching`, `belief_propagation`, `bposd`, `sliding_window` | Corresponding modules under `decoders/` |
-| `qec.registry` DEM decoder registration | `decoders/registry.py` |
-| `qec.repetition`, `qec.sampling`, `qec.context` | `execution/repetition.py`, `execution/sampling.py`, `execution/context.py` |
-| Noise sweep and forced-signature execution helpers | `execution/noise_sweep.py`, `execution/signatures.py` |
-| `qec.adapters` PyMatching boundary | `adapters/pymatching.py` |
+| `belief_propagation` | `decoders.belief_propagation` |
+| `bicycle` | `codes.bicycle` |
+| `bposd` | `decoders.bposd` |
+| `chunks` | `dem.chunks` |
+| `circuit` | `circuits.memory` |
+| `context` | `execution.context` |
+| `css_code` | `codes.css` |
+| `decoding_graph` | `dem.graph` |
+| `dem_alternatives` | `dem.alternatives` |
+| `dem_circuit` | `dem.circuit` |
+| `dem_construction` | `dem.construction`; execution helpers in `execution.signatures` |
+| `dem_matrices` | `codes.matrices` for `CssCodeMatrices` / `css_code_matrices`; `dem.matrices` for DEM mechanisms |
+| `dem_text` | `dem.text` |
+| `floquet` | `codes.floquet` |
+| `matching` | `decoders.matching` |
+| `qldpc` | `codes.qldpc` |
+| `reed_muller` | `codes.reed_muller` |
+| `registry` | `decoders.registry` |
+| `repetition` | `execution.repetition`; decoders in `decoders.repetition`; records in `types` |
+| `sampling` | `execution.sampling` |
+| `sliding_window` | `decoders.sliding_window` |
+| `subsystem` | `codes.subsystem` |
+| `surface` | `codes.surface.rotated` for the registered `RotatedSurfaceCode`; `codes.surface.zxxz` for `ZxxzSurfaceCode` |
 
-The code registry remains authoritative in `codes/__init__.py`; the decoder table
-is authoritative in `decoders/registry.py`. Existing root and historical imports
-refer to those objects. Do not create a second registry or merge the repetition
-and DEM decoder protocols into a new public concept.
+There is one `RotatedSurfaceCode`, the original registered class defined in
+`codes/surface/rotated.py`. Root, `qec.codes`, `codes.surface` and
+`get_code("rotated_surface", ...)` return that class. The duplicate
+`_rotated_frame.py` implementation is removed; no public `rotated_frame` module
+is added. ZXXZ uses the existing rotated lattice helpers. Checks, logicals,
+measurement order and numerical results remain protected by the original tests.
 
-## Old imports, identity and serialized objects
+The code registry remains in `codes/__init__.py`; the decoder registry remains
+in `decoders/registry.py`. Plugins must update retired module imports, then use
+the same public registration functions. Duplicate rejection, explicit plugin
+replacement, lazy default registration and existing keys remain unchanged.
 
-The two `RotatedSurfaceCode` classes remain independent. Root/code-registry imports
-select the registered family; `flagquantum.qec.surface` retains the independent
-frame record. Their check layouts can agree while their class identities differ.
+## Serialized objects and inspection
 
-Former flat modules and the `codes`, `dem`, `decoders` and `adapters` initializers
-retain explicit aliases. These aliases are required by public imports, old pickle
-identifiers, caller-owned safe-global lists and existing plugins. They contain no
-replacement algorithm/class and no new reducer. The metadata helper retains
-original class/function/method module and qualified names. The registry TypeVar
-and returned registration decorator also retain their old modules.
+Pickles referring to the 23 removed modules now fail lookup. This includes the
+old independent surface class, old ZXXZ surface path, matrix records and moved
+execution/decoder globals. There is no alias module, custom reducer, import hook
+or compatibility unpickler. Before upgrading, load affected trusted artifacts
+with the pre-retirement installation and export the domain data needed to
+reconstruct them through supported APIs. New canonical checkpoints round-trip,
+including tensor records, caller-owned PyTorch safe-global lists and in-progress
+streaming state. Arbitrary old pickle conversion is outside this change.
 
-The existing eager root bootstrap remains eager. Pure code/circuit/model paths
-have explicit dependency boundaries after that bootstrap; this split does not
-promise a cold root import without execution infrastructure. Optional PyMatching
-still imports only when selected. Its existing missing-extra error and native
-graph pickle limitation remain unchanged.
+Surviving `qec.codes`, `qec.dem`, `qec.decoders`, `qec.adapters`, `qec.noise` and
+shared-record identifiers retain metadata and compatibility. In particular,
+the registered rotated class still pickles as `flagquantum.qec.codes`.
+`codes/_compat.py` remains only for those surviving identities. Source inspection
+and private instrumentation should target the physical owner; a retained
+`__module__` need not name the defining source file.
 
-Source filenames change. Converting a module file to a package also changes its
-normal filesystem/package metadata (`__file__`, `__path__`, `__package__`). Public
-import identifiers and retained class/method pickle metadata stay stable.
-Source-inspection tools should use a handwritten
-method's code filename or the physical owner in the table, rather than assuming
-retained `__module__` names a defining source file. Private global replacement
-must target the implementation owner; public registration functions and ordinary
-mutations of the shared table retain their established behavior.
-
-Core owns all compatibility paths and `codes/_compat.py`. They are explicitly
-frozen for this refactor. No removal release is approved. Removal requires a
-separately approved API/deprecation proposal, plugin analysis and serialized
-artifact migration plan before a target release can be assigned. Existing
-references justify retaining these files; no speculative cleanup removes them.
+The eager root bootstrap is unchanged. Code/circuit/model boundaries are tested
+after bootstrap; this change makes no cold-root-import infrastructure claim.
+PyMatching remains optional and imports only when selected. Its existing
+missing-extra error and native graph pickle limitation remain unchanged.
 
 ## Run a user workflow
 
-The core-only [installed import example](../../examples/qec/installed_imports.py)
-checks public exports, both surface pickle paths, decoding and the noiseless
-memory sweep. Run it in this checkout with:
+From an installed distribution, or with `PYTHONPATH=.` in this checkout:
 
 ```bash
-PYTHONPATH=. python examples/qec/installed_imports.py
+python examples/qec/installed_imports.py
 ```
 
 Expected output:
 
 ```text
 Public exports: 108
-Independent rotated classes: True
+Registered class: True
 Code pickle path: flagquantum.qec.codes
-Frame pickle path: flagquantum.qec.surface
 Correction: (0,)
 Logical error rate: 0.0
 ```
 
-The [DEM example](../../examples/qec/dem_model_and_chunks.py) needs no SDK and
-reports exact rates `[0.3125, 0.25]` and a successfully closed chunk. The
-[decoder example](../../examples/qec/decoder_registry_and_pickle.py) needs no SDK
-and compares three algorithms while retaining matcher pickle identity. The
-[memory sampler](../../examples/qec/memory_layout_and_sampling.py) requires the
-declared `stim` extra. Selecting `get_decoder("pymatching", model)` requires the
-declared `pymatching` extra.
+The [code-family example](../../examples/qec/code_family_imports.py) checks root,
+package and owner class identity, equal layouts, pickle identity and Steane
+counts `7 6 2`. The [DEM example](../../examples/qec/dem_model_and_chunks.py)
+reports rates `[0.3125, 0.25]` and a closed chunk. The
+[decoder example](../../examples/qec/decoder_registry_and_pickle.py) compares
+three algorithms and round-trips a canonical matching decoder. These require
+no optional SDK. The [memory sampler](../../examples/qec/memory_layout_and_sampling.py)
+requires `stim`; selecting `get_decoder("pymatching", model)` requires
+`pymatching`.
 
-## Verify an installed distribution
-
-Build in a fresh artifact directory with the declared isolated build dependencies:
+## Verify source and installed distributions
 
 ```bash
+PYTHONPATH=. python tools/check_qec_retirement.py --phase retired
+PYTHONPATH=. python -m pytest tests/api_contract/test_qec_retirement_contract.py tests/qec -q
 artifact_dir="$(mktemp -d)"
 uv build --sdist --out-dir "$artifact_dir"
 uv build --wheel "$artifact_dir"/flagquantum-*.tar.gz --out-dir "$artifact_dir"
@@ -132,24 +143,23 @@ uv pip install --python "$check_dir/venv/bin/python" "$artifact_dir"/flagquantum
 uv pip check --python "$check_dir/venv/bin/python"
 ```
 
-Run the example by its absolute path while the working directory is outside the
-checkout, with `PYTHONPATH` unset. Verify `flagquantum.qec.__file__` points inside
-the new environment's `site-packages`; otherwise the checkout can conceal a
-missing wheel module. Optional profiles install neither SDK, Stim only,
-PyMatching only or both. Test each supported Python minor, 3.10 through 3.12.
+The gate must print `QEC retirement contract passed: retired, 23 modules, 108 exports`.
+The former `prepare` phase now exits 1 with exact missing-module diagnostics.
+All original 15 restructuring fixture files remain byte-identical. Historical
+compound pickles containing retired names must fail; surviving objects extracted
+using the pre-retirement installation have separate provenance in
+[retirement_fixtures](../../tests/qec/retirement_fixtures/README.md). Original
+JSON oracles still check numerical, source/layout, sampling and feedback results.
 
-The closure checks compare all QEC Python members of the sdist and wheel with
-the committed source bytes, load trusted old pickle/checkpoint fixtures, resume
-streaming state and run public examples. They also check dependency consistency
-and native extension availability. The original Stim-only sampling case runs
-when Stim is installed; missing-SDK refusals are checked in absence profiles.
+Run installed examples by absolute path outside the checkout with `PYTHONPATH`
+unset. Verify QEC imports from the environment's `site-packages`. Check all
+supported Python minors, 3.10–3.12, with core/Stim/PyMatching/both profiles,
+including native extension availability, dependency consistency, exact
+source/wheel/sdist QEC membership and retired import refusals. Required complete
+CI and GPU checks must pass at the reviewed PR head; local CPU evidence makes
+no GPU scalability claim. No change to or merge of #731 is included.
 
-The migration's implementation batches and evidence are recorded in
-[001](../development/QEC_RESTRUCTURE_001.md),
-[002](../development/QEC_RESTRUCTURE_002.md),
-[003](../development/QEC_RESTRUCTURE_003.md),
-[004](../development/QEC_RESTRUCTURE_004.md),
-[005](../development/QEC_RESTRUCTURE_005.md),
-[006](../development/QEC_RESTRUCTURE_006.md) and
-[007](../development/QEC_RESTRUCTURE_007.md). Exact-head CI results belong to each
-PR. Local CPU installation checks make no new GPU scalability claim.
+The original structural delivery records
+[001](../development/QEC_RESTRUCTURE_001.md)–[007](../development/QEC_RESTRUCTURE_007.md)
+and [mainline acceptance](../development/QEC_RESTRUCTURE_ACCEPTANCE.md) describe
+the pre-retirement compatibility boundary and retain their historical evidence.

@@ -12,6 +12,10 @@ from enum import Enum
 from pathlib import Path
 
 import pytest
+from _retirement import (
+    RETIRED,
+    resolve,
+)
 
 import flagquantum.qec as qec
 
@@ -65,41 +69,64 @@ def _describe(value: object) -> dict[str, object]:
 
 def test_top_level_exports_and_signatures_match_pre_migration_baseline() -> None:
     baseline = json.loads(_FIXTURE.read_text())
-    assert list(qec.__all__) == baseline["exports"]
+    # Proposal 087 adds one reviewed method without rewriting historical evidence.
+    contract = json.loads(
+        (
+            Path(__file__).parents[2] / "contracts/qec-batch-prediction-v1.json"
+        ).read_text()
+    )
+    sampler_contract = json.loads(
+        (Path(__file__).parents[2] / "contracts/qec-memory-sampler-v1.json").read_text()
+    )
+    assert list(qec.__all__) == (
+        baseline["exports"] + sampler_contract["appended_exports"]
+    )
     for name, expected in baseline["api"].items():
+        if name in contract["additive_methods"]:
+            expected = {
+                **expected,
+                "methods": {
+                    **expected["methods"],
+                    **contract["additive_methods"][name],
+                },
+            }
         assert _describe(getattr(qec, name)) == expected, name
 
 
-def test_old_import_paths_resolve_to_the_same_public_objects() -> None:
+def test_imports_follow_the_approved_retirement_boundary() -> None:
     baseline = json.loads(_FIXTURE.read_text())
     for name, path in baseline["origins"].items():
-        module_name, attribute = path.rsplit(".", 1)
-        assert getattr(qec, name).__module__ == module_name
-        assert getattr(importlib.import_module(module_name), attribute) is getattr(
-            qec, name
-        )
-    # Historical aliases and the independent surface class are used by callers.
+        assert _resolve_current(path) is getattr(qec, name)
+    for module in RETIRED:
+        with pytest.raises(ModuleNotFoundError) as caught:
+            importlib.import_module(module)
+        assert caught.value.name == module
     from flagquantum.qec.codes import CssCode
-    from flagquantum.qec.dem_construction import CssCodeMatrices
-    from flagquantum.qec.surface import RotatedSurfaceCode
 
     assert CssCode is qec.CssCode
-    assert CssCodeMatrices is qec.CssCodeMatrices
-    assert RotatedSurfaceCode is not qec.RotatedSurfaceCode
-    assert RotatedSurfaceCode(3).checks == qec.RotatedSurfaceCode(3).checks
-    assert RotatedSurfaceCode(3) != qec.RotatedSurfaceCode(3)
 
 
-def test_trusted_pre_migration_pickles_load_and_keep_class_identity() -> None:
+def _resolve_current(path: str) -> object:
+    return resolve(path)
+
+
+def test_original_pickle_payloads_keep_surviving_identifiers_and_refuse_retired_paths() -> (
+    None
+):
     baseline = json.loads(_FIXTURE.read_text())
     for name, payload in baseline["pickles"].items():
-        # These are repository-owned protocol-4 fixtures, never external input.
-        restored = pickle.loads(base64.b64decode(payload))
         module_name, attribute = name.rsplit(".", 1)
-        assert type(restored) is getattr(
-            importlib.import_module(module_name), attribute
-        )
-        assert pickle.dumps(restored, protocol=4) == base64.b64decode(payload)
+        data = base64.b64decode(payload)
+        if module_name in RETIRED:
+            with pytest.raises(ModuleNotFoundError) as caught:
+                pickle.loads(data)
+            assert caught.value.name == module_name
+        else:
+            restored = pickle.loads(data)
+            assert type(restored) is getattr(
+                importlib.import_module(module_name), attribute
+            )
+            assert pickle.dumps(restored, protocol=4) == data
 
 
 def test_registry_names_and_factory_identity_are_preserved() -> None:
@@ -150,7 +177,8 @@ def test_existing_user_feedback_workflow(mode: str) -> None:
 def test_plugins_share_registries_across_old_and_top_level_imports(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    from flagquantum.qec import codes, registry
+    from flagquantum.qec import codes
+    from flagquantum.qec.decoders import registry
     from flagquantum.qec.decoders import registry as registry_owner
 
     monkeypatch.setattr(codes, "_CODES", dict(codes._CODES))
@@ -181,9 +209,13 @@ def test_plugins_share_registries_across_old_and_top_level_imports(
     )
 
 
-def test_module_level_public_apis_match_pre_migration_baseline() -> None:
+def test_surviving_module_public_apis_match_pre_migration_baseline() -> None:
     baseline = json.loads(_FIXTURE.read_text())
     for module_name, expected in baseline["module_api"].items():
+        if module_name in RETIRED:
+            with pytest.raises(ModuleNotFoundError):
+                importlib.import_module(module_name)
+            continue
         module = importlib.import_module(module_name)
         assert list(getattr(module, "__all__", ())) == expected["exports"]
         for name, root_name in expected["root_aliases"].items():
@@ -204,3 +236,9 @@ def test_seeded_dem_numerical_baseline() -> None:
     assert sample.observables.tolist() == baseline["observables"]
     assert model.detector_rates().tolist() == [0.3125, 0.25]
     assert model.observable_rates().tolist() == [0.125]
+
+
+def test_surviving_objects_from_old_compound_pickles_keep_their_state() -> None:
+    from _retirement import assert_surviving_objects
+
+    assert_surviving_objects()
