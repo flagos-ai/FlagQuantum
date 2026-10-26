@@ -1,6 +1,6 @@
 # M3 next scenario: a spin and mode in a fixed thermal bath
 
-Status: **all five decisions explicitly approved by the user on 2026-10-26**.
+Status: **all five decisions approved on 2026-10-26; implementation #897 accepted**.
 Approval permits independent acceptance followed by existing-interface example
 and integration-test composition. It grants no public API/production change or
 PR merge; each PR still needs its own conditional merge authorization.
@@ -188,7 +188,7 @@ or library production implementation is authorized. Update the existing
 M3 inventory to accepted only after independently authorized delivery and actual
 post-merge smoke, retaining all remaining M3/M4 and device boundaries.
 
-## Implementation progress awaiting acceptance
+## Accepted implementation evidence
 
 The independent scalar reference first passed all five analytic cutoff cases.
 Its source and all acceptance-function ASTs were captured before the example
@@ -229,6 +229,16 @@ have zero failures/errors. The first default attempt retained 16,048 passed,
 D-bracket notation as a link to rho. Equivalent D_L notation corrected only the
 Markdown equation, and the unchanged hygiene test then passed. Original negative
 logs/XML remain preserved. Public APIs, scientific code and frozen budgets did
-not change. Latest complete remote CI/GPU and the actual remote three-Python
-matrix remain required before readiness. Local Python 3.11 is not claimed.
-No merge permission follows from these local results.
+not change. Latest head `bf9afadc8cca81b5f0d7ae48462f32e2df7e71a1` then passed
+complete CI `40277142842` and GPU `40277142859` (attempt 1), including all 54
+standard CI jobs and the actual remote Python 3.10/3.11/3.12 matrix. All 60
+checks completed with 57 success and only the original three manual-pool skips.
+The final progress-doc commit retained identical physical source/test blobs.
+Local Python 3.11 is not claimed.
+
+[#897](https://github.com/flagos-ai/FlagQuantum/pull/897) was externally merged by
+FlagQuantum as `5ee74364cdbab17d1f0bebbee253bf400b467800` on 2026-10-26.
+Main smoke `40279655585`
+succeeded on the merge commit; this is only smoke, not full main CI or hardware
+validation. This accepted slice grants no future PR merges or additional
+protected capability, and does not declare all M3/M4 gates complete.
