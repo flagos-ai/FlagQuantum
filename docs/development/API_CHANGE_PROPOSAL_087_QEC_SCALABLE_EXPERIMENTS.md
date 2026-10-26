@@ -127,6 +127,11 @@ only today's protocol must still register and decode unchanged.
 
 ## Decision C: Fixed-shot memory experiment
 
+The owner requested proceeding with the three recommended design choices to
+prepare a [complete contract draft](QEC_FUNCTIONAL_007_EXPERIMENT_CONTRACT.md).
+The final signature, source path, result, exceptions and support matrix remain
+subject to implementation approval. No production API is activated.
+
 A [concrete design refinement](QEC_FUNCTIONAL_007_EXPERIMENT_DESIGN.md) is now
 available for review. It proposes a required explicit batch size, default-only
 initial decoder configuration and caller-owned evidence without a persistence

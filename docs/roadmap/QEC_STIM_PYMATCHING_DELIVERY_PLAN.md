@@ -140,11 +140,14 @@ numbered sequence.
    on 2026-10-26 and authorized verification/delivery. Do not request this
    approval again. Preserve all five concrete types, complete records and
    decoder-specific validation/refusals. The implementation has no speed claim.
-2. **Decision C / FUNCTIONAL-007 is design-only.** The [concrete design review](../development/QEC_FUNCTIONAL_007_EXPERIMENT_DESIGN.md) proposes an explicit batch size, default-only decoder configuration and caller-owned evidence without a persistence schema. These remain owner-review choices, not approved implementation. The owner asked to refine its
-   options, configuration/result, batching and persistence boundaries, while
-   explicitly deferring implementation. A separate concrete design review must
-   precede any approval of a final public experiment signature/result. Neither
-   005 approval nor successful example statistics authorizes C implementation.
+2. **Decision C / FUNCTIONAL-007 remains design-only.** Following the
+   [delivered design review](../development/QEC_FUNCTIONAL_007_EXPERIMENT_DESIGN.md),
+   the owner requested proceeding with the three recommended choices to prepare
+   the [complete contract draft](../development/QEC_FUNCTIONAL_007_EXPERIMENT_CONTRACT.md).
+   Required explicit batch size, default-only decoder selection and caller-owned
+   evidence without persistence now guide that draft. The complete typed
+   signature, result, strict source path and exception/support tables still need
+   implementation approval. Neither B approval nor design delivery activates C.
 3. Adaptive stopping/threshold analysis, subsystem/Floquet protocols, hardware
    studies and changes to noise numerics are **later separate decisions**. They
    are not prerequisites for the current approved conformance slice; do not
@@ -670,3 +673,26 @@ Planning estimate: two QEC/PyTorch contributors, roughly 4-6 weeks for A-I,
 including review time. The bridge and circuit-level noise are the largest
 uncertainties. Unrelated repository CI repairs and new numerical kernels are
 outside that estimate.
+
+## Decision C contract preparation after design delivery
+
+[#912](https://github.com/flagos-ai/FlagQuantum/pull/912) delivered the design
+review as merge `b9b4f51963a4ab85e9253b3d070e798423082ee8`. Exact-head full CI
+`40289425554` passed all 54 jobs; GPU `40289425526` attempt 3 passed three jobs
+with three original optional skips. All 60 checks were 57 success / 3 original
+skips. Its exact merge Main smoke `40300707460` succeeded; that is not full
+main CI. Earlier GPU variance failures remain preserved; thresholds were not
+changed. The owner specifically authorized cancelling one blocked Scheduled
+hardware run to release the shared queue; no general cancellation permission
+follows.
+
+The owner then requested proceeding with the recommended three choices:
+required explicit batch size, default-only registered decoder selection and
+caller-owned evidence without initial persistence. The
+[complete C/007 contract draft](../development/QEC_FUNCTIONAL_007_EXPERIMENT_CONTRACT.md)
+now makes the signature, result, strict actual-law source path, support and
+exception tables concrete for review. This is document preparation, not
+approval of the complete contract or implementation. Older design-choice
+wording above records the #912 publication snapshot. Decision B/005 remains
+complete; C implementation, adaptive stopping, threshold fitting and persistence
+remain deferred. No new experiment, performance study or hardware run was done.

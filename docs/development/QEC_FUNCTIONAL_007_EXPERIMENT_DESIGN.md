@@ -13,6 +13,14 @@ experiment). It adds no production module, callable, result type, schema, numeri
 helper or experiment run. Permission to merge this design document is not implementation
 approval.
 
+## Concrete contract follow-up
+
+The owner requested proceeding with the three recommended design choices. The
+[complete contract draft](QEC_FUNCTIONAL_007_EXPERIMENT_CONTRACT.md) now states
+the typed signature, ordered result, strict source path, support and exception
+tables for final review. This records contract preparation, not implementation
+approval. The following sections preserve the original #912 design context.
+
 ## Proposed initial scope and signature
 
 One synchronous fixed-shot memory experiment, actual original-circuit sampling, CPU bit
@@ -145,24 +153,12 @@ These are future conformance requirements, not evidence that the proposed API ex
 that any experiment has run. They authorize no new hardware, statistical sampling study
 or performance claim.
 
-## Remaining owner review before implementation
+## Final contract review before implementation
 
-Review the required batch_size keyword, default-only initial decoder configuration and
-the caller-owned evidence/persistence exclusion. Then approve or amend the final
-concrete signature/result/exception/support contract. The user's current instruction
-expressly defers implementation, even if all design checks pass. Decision B and its
-bound-conformance predecessor are already delivered; this design review creates no new
-implementation authority.
-
-The owner decisions are separate from permission to review or merge this document:
-
-1. Accept or amend required explicit `batch_size`, with no inferred default.
-2. Accept or amend initial registered-name selection with constructor defaults
-   only; nondefault algorithm configuration remains available through existing
-   lower-level calls.
-3. Accept caller-owned configuration evidence and no initial persistence
-   schema, or require a concrete minimal configuration addition before approval.
-
-After these decisions, complete and approve the final typed signature, result/exception
-table and supported input matrix. Until then, the action is continued design review
-only.
+The owner has requested proceeding with the recommended required explicit
+`batch_size`, default-only registered-name selection, and caller-owned evidence
+without an initial persistence schema. These choices now guide the
+[complete contract draft](QEC_FUNCTIONAL_007_EXPERIMENT_CONTRACT.md), including
+its typed signature, ordered result, strict source path and exception/support
+tables. The owner must still approve or amend that complete contract before
+implementation. Design delivery and this follow-up do not activate the API.
