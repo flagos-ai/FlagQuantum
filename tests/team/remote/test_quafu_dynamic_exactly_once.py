@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from collections.abc import Mapping
 from dataclasses import replace
+from types import SimpleNamespace
 from typing import Any
 
 import pytest
@@ -16,6 +16,7 @@ from flagquantum.deployment.dynamic_sealing import (
 )
 from flagquantum.deployment.routing_evidence import stable_payload_sha256
 from flagquantum.dynamic import DynamicCircuit
+from flagquantum.remote.qpu._quafu_sdk import _QuafuSdkAdapter
 from flagquantum.remote.qpu.quafu_dynamic_submission import (
     _normalize_quafu_dynamic_mock_result,
     _submit_quafu_dynamic_once,
@@ -62,71 +63,77 @@ def _sealed_package() -> DeploymentPackage:
     return _validate_dynamic_remote_package_seal(package)
 
 
-class _Transport:
-    def __init__(self, response: Mapping[str, Any] | Exception) -> None:
+class _Client:
+    def __init__(self, response: Any | Exception) -> None:
         self.response = response
-        self.posts: list[tuple[str, Mapping[str, Any], Mapping[str, str], float]] = []
+        self.submissions: list[tuple[str, dict[str, Any]]] = []
 
-    def post_json(
-        self,
-        path: str,
-        payload: Mapping[str, Any],
-        headers: Mapping[str, str],
-        timeout: float,
-    ) -> Mapping[str, Any]:
-        self.posts.append((path, payload, headers, timeout))
+    def submit(self, qasm: str, **kwargs: Any) -> Any:
+        self.submissions.append((qasm, kwargs))
         if isinstance(self.response, Exception):
             raise self.response
         return self.response
 
 
-def test_one_attempt_creates_one_post_bound_to_the_package() -> None:
+def _adapter(response: Any | Exception) -> tuple[_QuafuSdkAdapter, _Client]:
+    client = _Client(response)
+    return _QuafuSdkAdapter.for_submission(client=client), client
+
+
+def test_one_attempt_creates_one_sdk_submission_bound_to_the_package() -> None:
     package = _sealed_package()
-    transport = _Transport({"job_id": "mock-job-1"})
+    adapter, client = _adapter(SimpleNamespace(id="mock-job-1", n_tasks=1))
 
-    handle = _submit_quafu_dynamic_once(package, transport=transport)
+    handle = _submit_quafu_dynamic_once(package, adapter=adapter)
 
-    assert len(transport.posts) == 1
-    path, payload, headers, timeout = transport.posts[0]
-    assert path == "/jobs"
-    assert headers == {}
-    assert timeout == 0.0
-    assert payload["client_ref"] == (
-        "fq-dynamic-" + package.metadata["dynamic_remote_package_seal_sha256"]
-    )
+    assert len(client.submissions) == 1
+    qasm, options = client.submissions[0]
+    assert qasm == package.qasm
+    assert options == {
+        "target": "Baihua",
+        "shots": 1024,
+        "compiler": "none",
+        "name": (
+            "fq-dynamic-" + package.metadata["dynamic_remote_package_seal_sha256"]
+        ),
+    }
     assert handle.task_id == "mock-job-1"
+    assert handle.payload["quafu_protocol"] == "quafu_sdk_v1"
     assert handle.payload["target_snapshot_id"] == "2" * 64
     assert handle.payload["calibration_id"] == "fixture-calibration-1"
 
 
 @pytest.mark.parametrize(
-    "response, message",
+    "response",
     (
-        (TimeoutError("response lost"), "quafu_dynamic_submission_ambiguous"),
-        ({"accepted": True}, "missing_job_id"),
+        TimeoutError("response lost"),
+        SimpleNamespace(id=None, n_tasks=1),
     ),
 )
 def test_ambiguous_submission_is_never_retried_or_sent_to_legacy(
-    response: Mapping[str, Any] | Exception,
-    message: str,
+    response: Any | Exception,
 ) -> None:
-    transport = _Transport(response)
+    adapter, client = _adapter(response)
 
-    with pytest.raises(RuntimeError, match=message):
-        _submit_quafu_dynamic_once(_sealed_package(), transport=transport)
+    with pytest.raises(RuntimeError, match="quafu_dynamic_submission_ambiguous"):
+        _submit_quafu_dynamic_once(_sealed_package(), adapter=adapter)
 
-    assert len(transport.posts) == 1
-    assert transport.posts[0][0] == "/jobs"
+    assert len(client.submissions) == 1
 
 
 def test_mock_result_preserves_identity_shots_and_bit_order() -> None:
-    handle = _submit_quafu_dynamic_once(
-        _sealed_package(), transport=_Transport({"job_id": "mock-job-1"})
-    )
+    adapter, _ = _adapter(SimpleNamespace(id="mock-job-1", n_tasks=1))
+    handle = _submit_quafu_dynamic_once(_sealed_package(), adapter=adapter)
 
     result = _normalize_quafu_dynamic_mock_result(
         handle,
-        {"counts": [{"00": 768, "01": 256}], "bit_order": "msb_left"},
+        {
+            "counts": {"00": 768, "01": 256},
+            "bit_order": "msb_left",
+            "shots_returned": 1024,
+            "n_clbits": 2,
+            "measurements": None,
+        },
     )
 
     assert result.counts == {"00": 768, "01": 256}
@@ -140,24 +147,33 @@ def test_mock_result_preserves_identity_shots_and_bit_order() -> None:
 @pytest.mark.parametrize(
     "response, blocker",
     (
-        ({"counts": [{"0": 1024}]}, "bit_order"),
-        ({"counts": [{"0": 1024}], "bit_order": "msb_left"}, "bit_width"),
+        ({"counts": {"00": 1024}}, "bit_order"),
         (
             {
-                "counts": [{"0": 1024}],
+                "counts": {"0": 1024},
                 "bit_order": "msb_left",
-                "mid_circuit_measurements": [],
+                "shots_returned": 1024,
+                "n_clbits": 1,
+            },
+            "bit_width",
+        ),
+        (
+            {
+                "counts": {"00": 1024},
+                "bit_order": "msb_left",
+                "shots_returned": 1024,
+                "n_clbits": 2,
+                "measurements": [],
             },
             "mid_circuit_data",
         ),
     ),
 )
 def test_unconfirmed_result_fields_fail_closed(
-    response: Mapping[str, Any], blocker: str
+    response: dict[str, Any], blocker: str
 ) -> None:
-    handle = _submit_quafu_dynamic_once(
-        _sealed_package(), transport=_Transport({"job_id": "mock-job-1"})
-    )
+    adapter, _ = _adapter(SimpleNamespace(id="mock-job-1", n_tasks=1))
+    handle = _submit_quafu_dynamic_once(_sealed_package(), adapter=adapter)
 
     with pytest.raises(RuntimeError, match=blocker):
         _normalize_quafu_dynamic_mock_result(handle, response)

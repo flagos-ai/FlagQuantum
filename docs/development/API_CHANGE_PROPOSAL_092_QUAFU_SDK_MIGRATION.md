@@ -277,6 +277,35 @@ noise bridge. The old SQC status discovery, Task API device/calibration reads,
 and token verification method are removed rather than retained as test-only
 alternate behavior.
 
+### Dynamic mock contract convergence
+
+After the static lifecycle cutover, the private API Change 090 dynamic
+submission proof also uses the injected SDK adapter instead of retaining a
+parallel `task_api_v1` mock. The proof submits the sealed physical program once
+with `compiler="none"`, records `quafu_sdk_v1`, and normalizes the SDK-shaped
+result fields without importing credentials or contacting Quafu.
+
+This does not activate remote DynamicCircuit execution. The stable user path
+still fails closed before provider construction until authoritative Quafu
+evidence confirms a dynamic program format and its semantics:
+
+```python
+import flagquantum as fq
+from flagquantum.dynamic import DynamicCircuit
+from flagquantum.errors import CapabilityError
+
+circuit = DynamicCircuit(2).measure(0, classical_bit=0)
+circuit.conditional("x", 1, classical_bit=0)
+
+try:
+    fq.run(circuit, target="quafu:Baihua", shots=1024)
+except CapabilityError as error:
+    assert "dynamic_remote_preflight_failed" in str(error)
+```
+
+Expected result: no SDK client is created, no credential is read, and no task
+is submitted.
+
 ```python
 from flagquantum.remote import QuafuProvider
 

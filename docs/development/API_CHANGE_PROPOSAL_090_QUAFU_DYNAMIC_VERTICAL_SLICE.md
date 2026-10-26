@@ -198,6 +198,33 @@ program dialect. After the physical-program contract lands, the remaining
 format gate is `quafu_dynamic_program_format_unconfirmed` until authoritative
 Quafu evidence establishes the accepted dynamic syntax and semantics.
 
+The post-migration Batch D contract now exercises that exact SDK boundary with
+an injected in-memory client. It makes one `Client.submit(...,
+compiler="none")` call, binds the sealed-package identity into the submitted
+job name, records `quafu_sdk_v1`, and never falls back after an ambiguous SDK
+failure. Its mock result shape is also the SDK-normalized shape: counts,
+`bit_order`, `n_clbits`, and returned shots must all agree with the sealed
+package, while unconfirmed mid-circuit measurement data remains refused. This
+is transport convergence only. The stable user workflow continues to fail
+closed before provider construction because no authoritative Quafu dynamic
+program format has been confirmed:
+
+```python
+import flagquantum as fq
+from flagquantum.dynamic import DynamicCircuit
+from flagquantum.errors import CapabilityError
+
+circuit = DynamicCircuit(2).measure(0, classical_bit=0)
+circuit.conditional("x", 1, classical_bit=0)
+
+try:
+    fq.run(circuit, target="quafu:Baihua", shots=1024)
+except CapabilityError as error:
+    assert "dynamic_remote_preflight_failed" in str(error)
+```
+
+Expected result: no SDK client is created and no task is submitted.
+
 Stages 1 through 5 must use fixtures or mocks. This proposal authorizes no
 provider SDK import during preflight, credential access, network request, live
 discovery, task submission, charging, or hardware-support claim.
@@ -222,8 +249,8 @@ discovery, task submission, charging, or hardware-support claim.
 - [ ] The same snapshot identity survives preflight and post-routing rematch.
 - [ ] Quafu legality validates the exact routed artifact without network access.
 - [ ] Package sealing happens only after every credential-free gate succeeds.
-- [ ] A mocked execution attempt creates at most one task and never falls back.
-- [ ] The result retains the complete identity chain and confirmed bit ordering.
+- [x] A mocked SDK execution attempt creates at most one task and never falls back.
+- [x] The mock result retains the complete identity chain and enforces the fixture-declared bit order.
 - [ ] `fq.run` remains the only stable user entry.
 - [ ] No live support claim or request occurs without separate authorization.
 
