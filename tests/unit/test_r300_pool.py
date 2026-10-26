@@ -143,3 +143,43 @@ def test_completed_batch_does_not_start_an_unselected_batch() -> None:
             member["state"] = "qualified"
     assert any(member["state"] == "candidate" for member in pool["members"])
     assert qualification_targets(pool, 4) == []
+
+
+def test_manual_network_retest_targets_previous_failures_without_admission(
+    tmp_path: Path,
+) -> None:
+    import json
+    import os
+    import subprocess
+
+    import yaml
+
+    root = Path(__file__).resolve().parents[2]
+    workflow = yaml.safe_load(
+        (root / ".github/workflows/r300-validation.yml").read_text()
+    )
+    prepare = workflow["jobs"]["prepare-source"]
+    selector = next(step for step in prepare["steps"] if step.get("id") == "pool")
+    output = tmp_path / "outputs"
+    registry = (root / "tools/ci/r300_pool.json").read_bytes()
+    subprocess.run(
+        ["bash", "-e", "-c", selector["run"]],
+        cwd=root,
+        env={**os.environ, "DIAGNOSE_NETWORK": "true", "GITHUB_OUTPUT": str(output)},
+        check=True,
+        timeout=5,
+    )
+    key, value = output.read_text().strip().split("=", 1)
+    assert key == "qualification-targets"
+    assert json.loads(value) == [
+        f"flagcicd-r300-cpu{n}" for n in ("03", "04", "05", "16")
+    ]
+    assert (root / "tools/ci/r300_pool.json").read_bytes() == registry
+    assert "!inputs.diagnose_network" in workflow["jobs"]["resources"]["if"]
+    assert "!inputs.diagnose_network" in workflow["jobs"]["cpu-workload"]["if"]
+    qualification = workflow["jobs"]["pool-qualification"]
+    assert "inputs.diagnose_network" in qualification["if"]
+    probe = qualification["steps"][0]
+    assert probe["if"] == "inputs.diagnose_network"
+    assert probe["timeout-minutes"] == 8
+    assert qualification["steps"][1]["uses"].startswith("actions/download-artifact@")

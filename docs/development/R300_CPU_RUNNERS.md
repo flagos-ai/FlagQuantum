@@ -225,3 +225,23 @@ Admission sequence:
 Rollback removes the shared selector from the affected deployment values and
 restores individually qualified job targets. Until operator access and the
 admission workflow are verified, no shared pool or new CPU migration is claimed.
+
+## Manual network and cold-start retest
+
+Run the previously used 03/04/05 targets and previously failing 16 without
+changing PR routing or pool admission:
+
+```bash
+gh workflow run r300-validation.yml --repo flagos-ai/FlagQuantum \
+  --ref ci/r300-unified-pool -f diagnose_network=true
+```
+
+The diagnostic records three DNS/TLS/HTTP samples for GitHub and the Tsinghua
+Ubuntu mirror, exact-commit archive timing, proxy presence without values,
+cgroup pressure, and selected image/resource metadata from the runner's own Pod.
+Namespace-scoped controller metadata uses only existing GET permissions. A 403
+leaves ARC version/configuration unconfirmed; it never changes RBAC or reads
+Secret objects. Artifact transfer, bounded checkout fallback, signed Ubuntu
+bootstrap, CPU Torch install and native tests then run unchanged. Network samples
+alone cannot prove packet loss, an egress rate limit, or the health of every set.
+Repeated end-to-end success is required before considering PR scheduling again.
