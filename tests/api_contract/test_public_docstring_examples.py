@@ -104,6 +104,7 @@ from flagquantum.qec.adapters.stim import (
     memory_to_stim_text,
     stim_circuit_to_dem_text,
 )
+from flagquantum.qec.decoders.batch import decode_batch
 from flagquantum.runtime import planner
 from flagquantum.runtime.executors.statevector import gather_distributed_statevector
 from flagquantum.simulation.lindblad import evolve_density_matrix
@@ -235,6 +236,7 @@ ENTRIES = (
     compile_stim_sampler,
     coupler_hardware_efficient_ansatz,
     create_molecular_hamiltonian,
+    decode_batch,
     exponential_pauli_operator,
     double_excitation,
     estimate_logical_resources,

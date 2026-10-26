@@ -75,16 +75,22 @@ operator law, RNG scope and every stage's verification. These are closed
 candidate decisions on the retained evidence, not claims that further gains are
 impossible. Do not resample completed studies to search for a favorable result.
 
-The next selected small slice is **conformance of existing nested-repeat
-instruction bounds**, under the already approved bridge contract. It adds no
-accepted grammar, API, numerical policy or dependency. Its delivery is still
-subject to the current-head CI/GPU and normal merge gates.
+The approved nested-repeat bound conformance slice merged in
+[#896](https://github.com/flagos-ai/FlagQuantum/pull/896) as
+`b88bffb1cc45910800f50e9312c80162fde1aea3`. Its complete CI `40274844573`
+(all 54 jobs), GPU `40274844586` (three successful jobs and three original
+optional skips), all 60 checks and exact-merge Main smoke `40276610613`
+succeeded. It changes no production grammar, numerical policy or dependency.
 
-Broader QEC-FUNCTIONAL-005 full-result batch decoding and Decision C remain
-unapproved. Their state is tracked in the [functional development plan](QEC_FUNCTIONAL_DEVELOPMENT_PLAN.md);
-the three recent private optimizations do not implement those pending contracts
-or complete the long-term roadmap. No overall completion percentage is assigned
-to this evolving scope.
+The API owner explicitly approved the complete FUNCTIONAL-005 / Decision B
+contract on 2026-10-26. This change implements the sparse independent-shot
+operation with complete existing records for five certified decoder types and
+its conformance coverage. Final exact-head CI/GPU, actual install artifacts,
+normal merge and exact-main acceptance remain delivery gates, recorded in the
+implementation PR. The existing logical-only Tensor method is unchanged and
+no speed claim follows. Decision C is authorized for design refinement only;
+its public experiment implementation remains explicitly deferred. No overall
+completion percentage is assigned to this evolving scope.
 
 ## Remaining compatibility and functional gaps
 
@@ -96,10 +102,10 @@ numbered sequence.
 | Area | Actual state | Next permitted action and acceptance |
 | --- | --- | --- |
 | Phase-one native/external compatibility, A-I | Accepted through #822; three approved bridge functions and four actual optional-install profiles are delivered. | Maintain these contracts. Recheck affected paths when their implementation/dependencies change; do not repeat the original install or sampling studies merely to fill a progress row. |
-| Nested bridge expansion limits | Approved behavior exists; explicit nested-product, exact-limit and aggregate-repeat regression coverage is being added. | Test symbolic 2-by-3 and 1000-by-1000 counts; refuse 1001-by-1001 and separate over-budget blocks before SDK analysis/compilation. Inspect each repeat body once; no sampled shots or expanded million-instruction allocation. This is conformance coverage, not a claimed production defect or capacity result. |
+| Nested bridge expansion limits | Approved behavior exists; explicit nested-product, exact-limit and aggregate-repeat regression coverage was delivered in #896. | Test symbolic 2-by-3 and 1000-by-1000 counts; refuse 1001-by-1001 and separate over-budget blocks before SDK analysis/compilation. Inspect each repeat body once; no sampled shots or expanded million-instruction allocation. This is conformance coverage, not a claimed production defect or capacity result. |
 | FUNCTIONAL-001/002/003/004 | Acceptance/proposals, Clifford propagation and correlated Pauli faults delivered in #774/#776/#779/#789. | Preserve their independent mechanism, exclusivity and numerical evidence. No second code registry, Surface class, DEM owner or propagation engine. |
 | Schedule/feedback Groups A-E | The finite approved matrix and mainline acceptance are already delivered in #837. | Do not reimplement it or promote it to generic Surface feedback, general frames or FTQC execution. |
-| FUNCTIONAL-005 | Full-result independent-shot cross-decoder operation is absent and its concrete contract is unapproved. | Owner Decision B below is required before implementation. Complete-record equality, validation/iterator consumption and existing decoder-specific duplicate/refusal behavior are the acceptance targets. |
+| FUNCTIONAL-005 | Complete contract approved 2026-10-26; the reference implementation and conformance accompany this change. | Preserve complete-record equality, input prevalidation/iterator consumption and existing duplicate/refusal behavior. Require actual five-type SDK qualification and delivery gates; no speed claim. |
 | FUNCTIONAL-006 | Logical-only CPU Tensor PyMatching batch decoding is approved and implemented. | Do not mistake it for full correction records. Further full-result optimization depends on 005 and must preserve edges/weights/convergence fields; no current implementation is selected. |
 | FUNCTIONAL-007 | Compiled circuit sampling and fixed-shot example counts/Wilson intervals exist; a general public experiment result/entry does not. | Refine and approve Decision C before a new public experiment API. Preserve source sampling, fixed denominator, tail batches, all logicals and all-or-error failure handling. |
 | FUNCTIONAL-008/009 | Threshold workflow and broader resource/accuracy tranche remain pending their dependencies/contracts. | No threshold fit, adaptive stopping or distance-scaled quality claim follows from the existing small fixed-round examples. |
@@ -109,26 +115,23 @@ numbered sequence.
 
 ### Decisions for the API owner
 
-1. **Decision B / FUNCTIONAL-005:** approve, amend or defer the complete
-   [independent-shot batch contract](../development/QEC_FUNCTIONAL_005_BATCH_CONTRACT.md).
-   Its one new import returns existing complete single-shot records for the five
-   listed concrete decoder types, refuses stateful/unknown plugins, retains
-   per-decoder duplicate semantics and makes no speed claim. Approval of the
-   already shipped Tensor-only PyMatching method does not answer this decision.
-2. **Decision C / FUNCTIONAL-007:** decide whether a general public fixed-shot
-   experiment is the next contract priority after 005. The
-   [current proposal](../development/API_CHANGE_PROPOSAL_087_QEC_SCALABLE_EXPERIMENTS.md#decision-c-fixed-shot-memory-experiment)
-   still requires concrete decoder-option, configuration/result and persistence
-   boundaries before requesting implementation approval. Do not treat a priority
-   choice as approval of unfinished signatures or schemas.
+1. **Decision B / FUNCTIONAL-005 is approved.** The owner explicitly approved
+   the complete [independent-shot contract](../development/QEC_FUNCTIONAL_005_BATCH_CONTRACT.md)
+   on 2026-10-26 and authorized verification/delivery. Do not request this
+   approval again. Preserve all five concrete types, complete records and
+   decoder-specific validation/refusals. The implementation has no speed claim.
+2. **Decision C / FUNCTIONAL-007 is design-only.** The owner asked to refine its
+   options, configuration/result, batching and persistence boundaries, while
+   explicitly deferring implementation. A separate concrete design review must
+   precede any approval of a final public experiment signature/result. Neither
+   005 approval nor successful example statistics authorizes C implementation.
 3. Adaptive stopping/threshold analysis, subsystem/Floquet protocols, hardware
    studies and changes to noise numerics are **later separate decisions**. They
    are not prerequisites for the current approved conformance slice; do not
    bundle them into Decision B or ask for blanket approval.
 
-No owner decision is needed for preserving and testing the already approved
-nested-repeat bound. Finish that independent work while Decisions B/C remain
-separate. No overall completion percentage is assigned to this evolving scope.
+The nested-repeat work is delivered. Decision B is approved and is now the
+implementation priority; Decision C remains a separate design review. No overall completion percentage is assigned to this evolving scope.
 
 ## Expected code structure after compatibility delivery
 
@@ -311,7 +314,7 @@ evidence and is not substituted for these five current-head reports.
 
 | Exit concern | Delivered evidence and scope | Remaining boundary |
 | --- | --- | --- |
-| B/C: lifecycle and evaluation | #784/#788; `test_memory_sampler.py`, `test_fixed_shot_statistics.py`; one compiled stream, explicit close, tail batches, any-logical-bit failure and fixed-shot Wilson intervals. | Generic library experiment API and sparse full-result batch remain unapproved. |
+| B/C: lifecycle and evaluation | #784/#788; `test_memory_sampler.py`, `test_fixed_shot_statistics.py`; one compiled stream, explicit close, tail batches, any-logical-bit failure and fixed-shot Wilson intervals. | At phase-one acceptance these contracts were unapproved. Current Decision B approval above supersedes the sparse batch boundary; C implementation remains deferred. |
 | D: code families | #792; `test_surface_batch_evidence.py`; Repetition and Surface X/Z, d=3/5/7 forced faults and bounded d=9/13/17 examples. | Fixed three rounds and 35 shots establish no distance trend, threshold or GPU benefit. |
 | E: two entrances | #806/#813; `test_stim_experiment_bridge.py`, `test_noise_law_bridge_evidence.py`; original-source sampling, reference normalization, shape, coordinates, repeat/control, strict refusal and cleanup/replacement boundaries. | No arbitrary reverse compiler or approximate DEM conversion. |
 | F/G/H: noise and numerical authority | Approved contract 088 plus the [noise support inventory](../reference/QEC_STIM_NOISE_SUPPORT.md); gate placement, categorical Pauli alternatives, target order, Cartesian joint law and independent executed-law detector/logical/selected-joint comparisons. | Nominal decimal versus finite-precision executed-law comparisons still fail at `1e-12`; no factory/default/operator change is delivered. |
@@ -407,7 +410,7 @@ The existing `PYTHONPATH=. python examples/qec/memory_layout_and_sampling.py`
 workflow remains available with the Stim extra; it exercises measurement
 layouts, sampling and feedback.
 
-## Immediate action: reconcile final acceptance
+## Historical phase-one action: reconcile final acceptance
 
 Work D and the expected structure are on main through #792; the explicitly
 approved [bridge proposal](../development/QEC_STIM_EXPERIMENT_BRIDGE_PROPOSAL.md)
@@ -415,9 +418,9 @@ is implemented by #806. The executed-law correction is merged through #813, the 
 #815, and actual installed-user acceptance through #819. The current slice
 reconciles the approved numerical authority, delivered evidence and remaining
 final normal delivery gate. Actual-main full CI/GPU at bd69 succeeded.
-This record changes no API, factory or scientific tolerance. Do not activate
-the separate unapproved QEC-FUNCTIONAL-005 sparse
-batch contract or broader functional proposal Decisions B/C.
+This historical phase-one record changed no API, factory or scientific tolerance
+and did not approve the then-proposed 005 or Decision C. The later explicit
+Decision B approval and implementation are recorded above; C remains design-only.
 
 [PR #788](https://github.com/flagos-ai/FlagQuantum/pull/788) merged as
 `47db63d6dd243e5a2fc498440a0a660858eb06a2`. Its final head `9daf326b`

@@ -2,16 +2,17 @@
 
 ## Status and decision scope
 
-**Decision A approved by the API owner on 2026-10-24; B and C remain proposed
-and unapproved.** After being asked explicitly to approve Decision A for
-QEC-FUNCTIONAL-003, the owner replied `approve` (translated) in the delivery chat.
-This authorizes the private Clifford fault-signature implementation and its
-verification, not B/C activation or a new public Simulation boundary.
+**Decision A was approved on 2026-10-24. Decision B's complete
+[FUNCTIONAL-005 contract](QEC_FUNCTIONAL_005_BATCH_CONTRACT.md) was explicitly
+approved by the API owner on 2026-10-26 (Asia/Shanghai). Decision C is authorized
+for design refinement only; implementation remains explicitly deferred.**
 
-The user approved the functional delivery
-sequence and requested execution on 2026-10-24. That authorizes this proposal,
-not implementation of the B/C public surfaces below. QEC maintainers own it.
-This approval record changes no protected snapshot, frozen fixture or registry.
+The earlier roadmap/proposal approvals did not activate B/C. The later explicit
+Decision B approval now authorizes its complete independent-shot contract and
+verification, including five concrete decoder types and full existing result
+records. It does not authorize Decision C, new Simulation boundaries or changes
+to frozen fixtures, root exports or decoder registration policy. QEC maintainers
+own the implementation; exact-head delivery gates remain separate.
 
 This is QEC-FUNCTIONAL-002 from the
 [functional roadmap PR #774](https://github.com/flagos-ai/FlagQuantum/pull/774). Review the
@@ -84,7 +85,7 @@ non-Pauli-to-Pauli approximation or a shared Noise contract change.
 
 ## Decision B: Additive batch operation
 
-Proposed canonical entry point, pending approval:
+Approved canonical entry point:
 
 ```python
 from flagquantum.qec.decoders.batch import decode_batch

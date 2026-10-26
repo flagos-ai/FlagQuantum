@@ -1,13 +1,17 @@
 # QEC-FUNCTIONAL-005: Independent-shot batch decoding contract
 
-## Decision requested
+## Approval and implementation scope
 
 This document makes Decision B of
 [Proposal 087](API_CHANGE_PROPOSAL_087_QEC_SCALABLE_EXPERIMENTS.md#decision-b-additive-batch-operation)
 concrete against main `4be2375eff47c112ce8d8e24f8206ed5592130d8`.
-**Implementation remains unapproved.** Preparing this document, passing CI or
-merging documentation does not authorize activation. The API owner must
-explicitly approve this complete contract before a separate implementation PR.
+**The API owner explicitly approved this complete contract on 2026-10-26
+(Asia/Shanghai)** in the delivery chat: approve Decision B / 005 and validate
+and deliver according to the contract. This authorizes the operation below;
+Decision C remains design-only and must not be implemented. The accompanying
+reference implementation reuses each decoder's existing single-shot operation
+and owning input validator. Current-head validation, normal merge and exact-main
+acceptance remain separate gates.
 Core owns decoder behavior; Integration reviews the additive public operation.
 Target: unreleased development version 0.4.0, subject to release policy.
 
@@ -28,14 +32,14 @@ approve the generic batch or public experiment contracts.
 | Surface | Carrier | Result and present status |
 | --- | --- | --- |
 | `PyMatchingDecoder.decode_batch` | CPU binary Tensor `[B, D]` | CPU bool logical predictions `[B, L]`; approved and implemented on main. |
-| Proposed `qec.decoders.batch.decode_batch` | Iterable of sparse per-shot detector-index iterables | Tuple of complete existing single-shot result records; Decision B remains unapproved. |
+| Approved `qec.decoders.batch.decode_batch` | Iterable of sparse per-shot detector-index iterables | Tuple of complete existing single-shot result records; Decision B approved on 2026-10-26; implementation accompanies this record. |
 | Proposed public memory experiment | Separate configuration/result contract | Decision C remains unapproved. Existing example statistics are not this public API. |
 
 The native PyMatching batch method returns no selected correction edges or their
 weights. A wrapper must not manufacture those fields, drop them or call the
 native method merely because its name matches the proposed operation.
 
-## Proposed public operation
+## Approved public operation
 
 The sole new canonical import is:
 
@@ -43,7 +47,7 @@ The sole new canonical import is:
 from flagquantum.qec.decoders.batch import decode_batch
 ```
 
-Proposed common signature:
+Approved common signature:
 
 ```python
 def decode_batch(
@@ -145,8 +149,8 @@ The implementation PR must provide separately named conformance tests covering:
 
 ## Runnable current-user baseline
 
-The proposed import above does not exist on main yet. This current public
-workflow is runnable with core Torch only, using an installed distribution or
+The existing single-shot workflow below remains runnable with core Torch only,
+using an installed distribution or
 `PYTHONPATH=.` from a source checkout:
 
 ```python
@@ -175,3 +179,46 @@ belief_propagation_osd ((), (0,))
 The implementation must add a runnable example for the actual approved import
 and preserve these results. This proposal neither implements the new function
 nor relabels the existing native Tensor method as a full-record operation.
+
+## Implementation and verification
+
+The sole new module is `flagquantum.qec.decoders.batch`. It uses exact concrete
+type admission, snapshots finite outer/row iterables once, rejects Tensor
+carriers explicitly, validates the complete input through the existing owning
+helpers, and calls the original `decode` in row order. It returns the untouched
+complete records, not reconstructed wrappers. No root/parent export, result
+schema, decoder registration, numerical kernel, new dependency or speed claim
+is added. Existing factory/decode capability refusals and algorithm options stay
+with their owners.
+
+The new conformance suite exercises core algorithms without optional SDKs and
+adds the real PyMatching type when installed. Absence is tested as the existing
+dependency refusal, not a replacement decoder. Core and SDK counts are reported
+separately; five-type qualification requires the actual SDK profile. Cases pin
+complete records and independently stated logical answers, once-only generators,
+late invalid input with zero decode calls, input isolation, differing duplicates,
+empty batches, unknown subclasses/plugins, an already consumed stateful stream,
+algorithmic failure after a valid row, ties/near ties, hyperedges, finite budgets
+and nonconvergence. The existing exclusive-model constructor refusal is retained;
+no error ids are stripped. A trap prevents use of the logical-only PyMatching
+Tensor method for these complete records.
+
+The new runnable [five-decoder example](../../examples/qec/independent_batch_decoding.py)
+requires `python -m pip install -e '.[pymatching]'`, CPU only. Stim is not needed
+for this example's existing owned DEM text reader. Its complete code also appears
+in the implementation PR, with exact observed output. Each line ends in
+`((), (0,), (0,))`; the five names are minimum_weight_matching,
+sliding_window_matching, belief_propagation, belief_propagation_osd and pymatching.
+The operation is registered in the existing public-docstring execution list;
+the module-coverage assertion is unchanged. Local focused validation passed
+83 conformance cases with the real SDK and 68 in core, plus the public doctest
+runner. Twelve source/wheel/sdist installation profiles passed across core,
+Stim-only, PyMatching-only and combined environments. These local native builds
+used the existing Torch 2.13 runtime and do not certify the Torch 2.10 build floor.
+The bounded local default run was incomplete. Its new doctest-registration
+failure was corrected; four native-fusion expectation failures reproduced on
+the exact unmodified main baseline `b88bffb1cc45910800f50e9312c80162fde1aea3`
+with matching worker/thread settings. Local default is not reported green.
+Actual source/install/wheel/sdist and current-head CI/GPU acceptance is recorded
+in that PR's delivery record. No future merge SHA is inserted recursively into
+this source document.

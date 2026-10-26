@@ -161,6 +161,11 @@ These examples do not use that alias:
 - [`qec/installed_imports.py`](qec/installed_imports.py) checks existing QEC
   exports, one registered rotated-class pickle path, decoding and a noiseless
   memory sweep; run it outside the checkout to verify an installed wheel.
+- [`qec/independent_batch_decoding.py`](qec/independent_batch_decoding.py)
+  compares complete sparse-shot batch records with direct single-shot decoding
+  across five certified concrete decoders. Requires the PyMatching extra; this
+  operation retains correction fields and is separate from logical-only Tensor
+  batch predictions. It makes no speed claim.
 - [`qec/circuit_noise_dem.py`](qec/circuit_noise_dem.py) builds and samples a
   distance-five circuit-location surface-code DEM without a dense statevector
   or optional SDK; the physical circuit has 49 qubits.
