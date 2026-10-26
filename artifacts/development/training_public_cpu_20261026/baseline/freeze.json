@@ -1,0 +1,246 @@
+{
+  "classical_initial_parameters": [
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+  ],
+  "data_sha256": "a813c402822afcdbbf801ef16d2b0fe08147411724670c45920c3bad6709fd39",
+  "hostname": "redacted",
+  "initial_parameters": {
+    "classifier": {
+      "11": [
+        0.07376294517619426,
+        0.1945929152496269,
+        -0.06995416095669134,
+        -0.1302297379923535,
+        1.0,
+        0.0
+      ],
+      "29": [
+        0.11473960826458939,
+        -0.014166508566190374,
+        0.047425324503966804,
+        0.008759791307705631,
+        1.0,
+        0.0
+      ],
+      "47": [
+        -0.146243081283759,
+        0.07523222950499078,
+        -0.1717293022009191,
+        0.05756789344039109,
+        1.0,
+        0.0
+      ]
+    },
+    "heisenberg": {
+      "11": [
+        0.005567596918589989,
+        -0.03747229033792921,
+        0.029213905636083976,
+        -0.010628959904323984,
+        -0.005604846819228353,
+        -0.011069848054859627,
+        0.010157691702985585,
+        0.01077275659624943,
+        -0.011827380764838863,
+        0.01811415045445207,
+        -0.005901813577445402,
+        0.0029418510402279157,
+        -0.0010652291299209989,
+        -0.014209730372384906,
+        -0.0023722203650638624,
+        0.023753780406574502,
+        -0.010501454203628526,
+        -0.0005051805559574691,
+        0.028889961052671175,
+        -0.03990701904163101,
+        -0.0038438970630579297,
+        0.02413290600878719,
+        0.028235409292556933,
+        0.017353696082857976,
+        0.004956232606473637,
+        -0.0046683483282074145
+      ],
+      "29": [
+        -0.008272490647441448,
+        -0.02290848480734073,
+        -0.004130841480796566,
+        0.003425836403058385,
+        -0.011391394947554409,
+        0.027971784874283256,
+        -0.006302590253003436,
+        0.019301525491018802,
+        0.05549174479142011,
+        0.0031362446681555156,
+        -0.010195202089351142,
+        -0.009138925531085846,
+        -0.024058372773805622,
+        0.053778136332752226,
+        -0.0033806877785283406,
+        -0.009844393417341658,
+        -0.007485245781558172,
+        0.009036100309590997,
+        -0.03664080731002874,
+        0.025392867716724707,
+        0.008613362207478967,
+        -0.047904226901475264,
+        0.015624547471338339,
+        0.0030553365504633503,
+        0.013687901607931641,
+        0.03663661665544773
+      ],
+      "47": [
+        0.02005249910648635,
+        0.021293968530265675,
+        -0.0030748556479266898,
+        0.016393368664075886,
+        0.004516617172036542,
+        -0.007261673107731693,
+        -0.009542052554713387,
+        0.006766059585818084,
+        -0.006304361479228772,
+        0.025068785200293313,
+        -0.01283557257112658,
+        -0.001164867356169187,
+        -0.023421461899465926,
+        0.0006304941545900805,
+        0.019493875880692554,
+        0.0019072105914748666,
+        0.031341144232223936,
+        0.00018873246047528794,
+        0.0236978390189497,
+        -0.018955770172916917,
+        -0.03138879567404759,
+        0.033272260956121,
+        0.013278515818590802,
+        0.0009742289405264192,
+        0.0040435011143833835,
+        -0.004393168361380457
+      ]
+    }
+  },
+  "platform": "macOS-27.0-arm64-arm-64bit",
+  "protocol": {
+    "adam": {
+      "betas": [
+        0.9,
+        0.999
+      ],
+      "eps": 1e-08,
+      "weight_decay": 0.0
+    },
+    "amplitude_dtype": "complex128",
+    "case_timeout_seconds": 240,
+    "checkpoint_step": 30,
+    "classifier": {
+      "classical_control": "six_parameter_quadratic_logistic",
+      "data_seed": 20261026,
+      "encoding_scale": 1.4,
+      "feature_distribution": "uniform[-1,1]^2",
+      "label_rule": "x0*x1>0",
+      "learning_rate": 0.12,
+      "optimizer": "Adam",
+      "parameter_count": 6,
+      "quantum_initial_std": 0.1,
+      "qubits": 2,
+      "readout_initial_bias": 0.0,
+      "readout_initial_scale": 1.0,
+      "split_sizes": [
+        64,
+        32,
+        32
+      ],
+      "target_validation_accuracy": 0.8
+    },
+    "device": "cpu",
+    "engines": [
+      "flagquantum",
+      "flagquantum_torch_module",
+      "flagquantum_jax_module",
+      "flagquantum_jax_kernel",
+      "tensorcircuit_jax"
+    ],
+    "execution_semantics": "single_device_fast_path",
+    "heisenberg": {
+      "anisotropy": 1.0,
+      "depth": 2,
+      "field": 0.0,
+      "initial_state": "dimer_singlet",
+      "initial_std": 0.02,
+      "learning_rate": 0.03,
+      "optimizer": "Adam",
+      "parameterization": "bond_resolved_phase",
+      "qubits": 4,
+      "target_relative_energy_error": 0.01
+    },
+    "include_classical_control": false,
+    "installation": {
+      "distribution": "editable_source_build",
+      "interpretation": "extension availability is not proof every gate uses a native kernel",
+      "require_loadable_native_cpu_extension": true
+    },
+    "methodology": {
+      "batching": "serial_per_example_for_all_engines",
+      "failure_policy": "retain_failure_or_timeout_without_infinite_speedup",
+      "jit": "enabled_for_all_jax_routes; flagquantum_eager_retained_as_control",
+      "memory": "process_peak_rss_includes_imports_warmup_and_replay",
+      "scope": "same_CPU_tasks_execution_strategy_diagnostic_not_global_ranking",
+      "selection": "fixed_steps_no_checkpoint_selection_from_test_outcomes",
+      "shots": null,
+      "test": "one_final_assessment_after_fixed_step_training",
+      "validation": "after_every_update_included_in_time_to_target"
+    },
+    "parameter_dtype": "float64",
+    "parity": {
+      "checkpoint_atol": 1e-10,
+      "finite_difference_step": 1e-05,
+      "gradient_atol": 2e-06,
+      "value_atol": 1e-09
+    },
+    "protocol_id": "cpu_training_installed_diagnostic_20261026",
+    "schema": "flagquantum.training_comparison_protocol.v1",
+    "seeds": [
+      11,
+      29,
+      47
+    ],
+    "steps": 60,
+    "threads": 1,
+    "torch_default_dtype": "float64",
+    "warmup_calls": 1
+  },
+  "python": "3.12.14",
+  "runner": "training_comparison",
+  "scalability_claim_allowed": false,
+  "schema": "flagquantum.training_comparison.v1",
+  "smoke": false,
+  "source": {
+    "code_version": "c8a4eb038dbd2c9624a5af3a55d62f197bd07a51",
+    "dirty": false,
+    "installation": {
+      "distribution_version": "0.4.0",
+      "native_cpu_adjoint_available": true,
+      "native_cpu_extension_sha256": "a7b5f80e48a1c387e6020d8b8f0e8d6951659ab4079a456963c3b5a32d8f551c"
+    },
+    "producer_sha256": {
+      "benchmarks/training_comparison.py": "22d50808a43016245497e4134ad09007605f54eb2494e9669029aabbf2253da6",
+      "benchmarks/training_engines.py": "ca3f49678f2ec97e2fde0ddbb1658291b6114f988c5300b7253e54376f6d307c",
+      "benchmarks/training_workloads.py": "7c797a3214221d3d858e12d3852cfb7a191689b0dad9dc227a395dd983777235"
+    },
+    "protocol_sha256": "02f15449c3f5aaf8ebb34151aaaadb196ea8cffa01602bd6ee5d73882ba190a0",
+    "versions": {
+      "jax": "0.10.2",
+      "jaxlib": "0.10.2",
+      "numpy": "2.5.4",
+      "pennylane": "0.45.1",
+      "pennylane-lightning": "0.45.0",
+      "tensorcircuit-ng": "1.10.0",
+      "torch": "2.14.1"
+    }
+  },
+  "world_size": 1
+}

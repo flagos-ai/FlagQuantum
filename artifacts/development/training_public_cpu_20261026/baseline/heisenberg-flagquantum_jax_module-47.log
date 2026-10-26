@@ -1,0 +1,7 @@
+{"task": "heisenberg", "engine": "flagquantum_jax_module", "seed": 47, "step": 1, "score": 0.07597466846721938}
+{"task": "heisenberg", "engine": "flagquantum_jax_module", "seed": 47, "step": 10, "score": 0.00864701895216968}
+{"task": "heisenberg", "engine": "flagquantum_jax_module", "seed": 47, "step": 20, "score": 0.006025247057495856}
+{"task": "heisenberg", "engine": "flagquantum_jax_module", "seed": 47, "step": 30, "score": 0.0010271819643490688}
+{"task": "heisenberg", "engine": "flagquantum_jax_module", "seed": 47, "step": 40, "score": 0.000643638064206947}
+{"task": "heisenberg", "engine": "flagquantum_jax_module", "seed": 47, "step": 50, "score": 0.00032233614514705616}
+{"task": "heisenberg", "engine": "flagquantum_jax_module", "seed": 47, "step": 60, "score": 0.0001330346881571645}
