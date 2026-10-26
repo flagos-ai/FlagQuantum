@@ -6,9 +6,10 @@ It changes no API, schema, capability declaration, maturity level or approval.
 An accepted reference scenario is not certification of a hardware technology or
 of all M3/M4 exit gates. The original inventory inspected main
 `4be2375eff47c112ce8d8e24f8206ed5592130d8`. This update inspects main
-`05bca74d08ac905f4ccdbb03235f2a478b2f89b7` on 2026-10-26, including
+`5ee74364cdbab17d1f0bebbee253bf400b467800` on 2026-10-26, including
 approved 089/091 implementations and the accepted 092 Core, Simulation and
-Runtime stages and the independently accepted three-level relaxation scenario.
+Runtime stages and the independently accepted three-level relaxation and
+fixed thermal-bath spin-mode scenarios.
 Historical design reviews and approval records remain historical.
 
 ## Executable evidence by user scenario
@@ -18,7 +19,7 @@ Historical design reviews and approval records remain historical.
 | Circuit training and deployment packaging | `train_parameterized_circuit_then_deploy` | [Golden path](../../tests/integration/test_train_then_deploy_golden_path.py), [metrics/RNG regressions](../../tests/unit/test_train_deploy_error_metrics.py); [#771](https://github.com/flagos-ai/FlagQuantum/pull/771) separates variational error from finite-shot error and retains small exported angles. | The in-memory provider is local contract execution, not evidence of a submitted cloud job or a QPU measurement. |
 | Driven three-level superconducting model | `driven_three_level`; `driven_three_level_relaxation` | [Full density, all eight control derivatives, pulse order and refinement](../../tests/integration/test_driven_three_level.py); [#787](https://github.com/flagos-ai/FlagQuantum/pull/787); [fixed cascade, analytic coherence, independent full density and training/replay](../../tests/integration/test_driven_three_level_relaxation.py); [#886](https://github.com/flagos-ai/FlagQuantum/pull/886). | Closed or fixed zero-temperature two-channel relaxation in a finite rotating-frame qutrit; no calibrated device, pulse emission, heating, gate-fidelity or higher-level truncation certification. |
 | Moving neutral-atom pair | `train_rydberg_controls --steps 40 --intervals 128 --shots 4096`; `visualize_rydberg_transport` | [Native source/dynamics](../../tests/unit/test_native_rydberg_dynamics.py), [training, loss, explicit observed flags and conditioning](../../tests/integration/test_rydberg_control_training.py), [commanded-path view](../../tests/integration/test_rydberg_transport_visualization.py), [intermediate presence consumers](../../tests/unit/test_rydberg_presence_contract.py), [sealed trajectory workflow](../../tests/integration/test_rydberg_presence_execution.py); [#879](https://github.com/flagos-ai/FlagQuantum/pull/879); [#707](https://github.com/flagos-ai/FlagQuantum/pull/707)/[#714](https://github.com/flagos-ai/FlagQuantum/pull/714)/[#715](https://github.com/flagos-ai/FlagQuantum/pull/715)/[#738](https://github.com/flagos-ai/FlagQuantum/pull/738). | One/two-actor imposed paths and declared Markov loss; one seeded CPU presence observation; no feedback, inferred trap activity, motional heating, species calibration or hardware execution. |
-| Spin coupled to a motional mode | `spin_mode_convergence` | [Complex Rabi blocks, total excitation, finite-mode dark top, analytic gradient and replay](../../tests/integration/test_spin_mode_convergence.py); [#782](https://github.com/flagos-ai/FlagQuantum/pull/782). | Resonant lossless rotating-wave model and explicit finite thermal conditioning; no ion-trap pulse frontend, heating or hardware calibration. |
+| Spin coupled to a motional mode | `spin_mode_convergence`; `spin_mode_thermal_bath` | [Complex Rabi blocks, total excitation, finite-mode dark top, analytic gradient and replay](../../tests/integration/test_spin_mode_convergence.py); [#782](https://github.com/flagos-ai/FlagQuantum/pull/782); [fixed bath, scalar finite densities, analytic bounds, gradients and replay](../../tests/integration/test_spin_mode_thermal_bath.py); [#897](https://github.com/flagos-ai/FlagQuantum/pull/897). | Resonant rotating-wave exchange, lossless or with a fixed local oscillator bath and explicit finite thermal conditioning/top boundary; no ion-trap pulse frontend, calibrated heating, global Gibbs or infinite coupled-density certification. |
 | Two-mode photonic interference | `boson_interference` | [Closed attenuation/HOM density, cutoff embedding, unconditional QND counts and back-action](../../tests/integration/test_boson_interference.py); [#741](https://github.com/flagos-ai/FlagQuantum/pull/741). | Finite Fock reference; no Gaussian backend, optical-program frontend, destructive detector or photonic hardware submission. |
 | Small anyon braiding and fusion | `ising_braid_execution`; `ising_fusion_measurement` | [Unchanged physical contract consumers](../../tests/unit/test_ising_braid_contract.py), [native execution/replay](../../tests/integration/test_ising_braid_execution.py), [fusion coherence and QND workflow](../../tests/integration/test_ising_fusion_measurement.py); [#769](https://github.com/flagos-ai/FlagQuantum/pull/769)/[#778](https://github.com/flagos-ai/FlagQuantum/pull/778); [unread continuation/replay](../../tests/unit/test_ising_unread_contract.py), [native 1.2 admission](../../tests/unit/test_ising_unread_runtime.py), [old-byte compatibility](../../tests/unit/test_ising_unread_compatibility.py); [#809](https://github.com/flagos-ai/FlagQuantum/pull/809); [sampled conditional consumers](../../tests/unit/test_ising_sampled_contract.py), [native 1.3 admission/refusals](../../tests/unit/test_ising_sampled_runtime.py), [saved trajectory workflow](../../tests/integration/test_ising_sampled_execution.py); [#838](https://github.com/flagos-ai/FlagQuantum/pull/838). | Exactly four sigma anyons, total vacuum and fixed gauge; CPU ideal braids with zero/one unread channel or one explicitly seeded sampled first-pair QND observation. No multi-shot native batch, feedback, other sectors, continuous gradients, universal braid set or Majorana-device claim. |
 
@@ -60,22 +61,45 @@ route support. None is a distributed capacity or performance acceptance result.
 No new framework, solver, binder, result envelope, registry, evidence schema or
 capability catalog is needed to express this inventory.
 
-## Approved spin-mode thermal bath awaiting acceptance
+## Accepted fixed thermal-bath spin-mode scenario
 
-The next spin-mode thermal-bath slice has its own
-[approved contract and independent budgets](M3_SPIN_MODE_THERMAL_BATH_CONTRACT_REVIEW.md).
-Its example and 24 new integration cases are implemented through existing APIs;
-29 focused new/unchanged lossless cases passed locally on Python 3.10/3.12.
-Independent finite densities, gradients, bath-only analytic bounds and cutoff
-stability retain separate acceptance criteria. At code-identical head
-`ed557965c5d1dae93a862b77495f999503240257`, complete local default verification
-passed 16,049 cases/224 skipped and integration passed 2,539/177 skipped, both
-with zero XML failures/errors. A first-run Markdown-equation link failure was
-corrected without changing physical code or thresholds; its negative evidence
-is retained. Latest complete remote CI/GPU, the actual three-Python matrix and
-a separate PR merge grant remain outstanding. The accepted table still describes the merged lossless
-spin-mode scenario until that delivery is independently accepted. No new library
-production, public API, calibrated-heating or full M3/M4 claim is made.
+The user approved all five decisions in the
+[thermal-bath contract](M3_SPIN_MODE_THERMAL_BATH_CONTRACT_REVIEW.md) before
+independent acceptance and implementation. [#897](https://github.com/flagos-ai/FlagQuantum/pull/897)
+adds the example and 24 integration cases using existing numeric Lindblad
+planning, boson operators, fixed collapse rates, gradients and numeric replay.
+The original lossless example/tests and all library production/API/schema
+surfaces are unchanged. Six scalar reference-function ASTs were captured before
+the example and remain unchanged; six consumers received only import sorting.
+
+Latest head `bf9afadc8cca81b5f0d7ae48462f32e2df7e71a1` passed complete CI
+`40277142842` and GPU `40277142859`, both on attempt 1. All 54 standard CI jobs,
+including the actual remote Python 3.10/3.11/3.12 matrix, succeeded. All 60
+applicable checks completed: 57 success and the original three manual-pool
+skips under their existing rules. The PR was externally merged by FlagQuantum
+as `5ee74364cdbab17d1f0bebbee253bf400b467800` on 2026-10-26. Main smoke `40279655585`
+then succeeded on that merge commit; it is only smoke, not full main CI or a
+release/device validation.
+
+Complete local default verification passed 16,049 cases/224 skipped (412.16s)
+and integration passed 2,539/177 skipped (193.38s), both XML reports with zero
+failures/errors, at `ed557965c5d1dae93a862b77495f999503240257`. The final commit
+changed only progress prose, retaining identical example/test/library blobs.
+A first full default attempt had one Markdown-equation link failure alongside
+16,048 passed/224 skipped; equivalent D_L notation corrected only the document,
+and a full rerun passed without changing physics, assertions or thresholds.
+Original negative logs/XML are retained. Local Python 3.10/3.12 each passed 29
+focused cases; no local Python 3.11 installation is claimed.
+
+Maximum complete-density error was 2.48e-14 and gradient error 4.12e-12, within
+unchanged 1e-10 and 1e-9 budgets. The N=9/11 spin and occupation differences
+were 3.76e-6 and 1.23e-5, while N=11 top occupation stayed below 1.04e-6.
+The exact finite moment correction and bath-only infinite-mean bound are
+separate from coupled cutoff stability; neither certifies the coupled infinite
+density. The 40-step finite-model objective decreased from 0.0160018399 to
+0.0000712776 with exact detached JSON replay in the admitted local environment.
+No calibrated ion-trap heating, global Gibbs state, physical-parameter recovery,
+capability promotion or full M3/M4 completion follows.
 
 ## Accepted driven three-level relaxation scenario
 

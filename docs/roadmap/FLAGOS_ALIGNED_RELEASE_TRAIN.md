@@ -368,21 +368,22 @@ The accepted slice covers a finite phenomenological cascade, not calibrated
 hardware, gate fidelity, higher-level truncation or all M3/M4 gates. The existing
 closed-model reference remains unchanged.
 
-The next separately approved slice is a
-[fixed local thermal bath for the existing spin-mode CPU model](../development/M3_SPIN_MODE_THERMAL_BATH_CONTRACT_REVIEW.md).
-Implementation now composes existing boson operators, mixed-dimension Lindblad
-planning, fixed upward/downward jumps, gradients and numeric replay. Independent
-acceptance was frozen before the example; the 24 new and five unchanged lossless
-cases passed focused Python 3.10/3.12 verification. Complete local default
-verification passed 16,049 cases/224 skipped and integration passed
-2,539/177 skipped, with zero XML failures/errors at code-identical head
-`ed557965c5d1dae93a862b77495f999503240257`. Latest complete remote CI/GPU,
-the actual remote three-Python matrix and independent PR merge authorization
-are still pending. The finite
-blocked-top model, bath-only analytic bound and coupled cutoff stability are
-explicit and do not establish calibrated ion-trap heating, infinite-dimensional
-accuracy or full M3/M4 completion. Public APIs and library production code do
-not change.
+The separately approved
+[fixed local thermal bath for the spin-mode CPU model](../development/M3_SPIN_MODE_THERMAL_BATH_CONTRACT_REVIEW.md)
+is accepted through [#897](https://github.com/flagos-ai/FlagQuantum/pull/897).
+It composes existing boson operators, mixed-dimension Lindblad planning, fixed
+upward/downward jumps, gradients and detached numeric replay. Independent
+acceptance was frozen before the example; the original lossless reference,
+library production code and public APIs remain unchanged. Latest complete CI
+`40277142842`, GPU `40277142859` and the remote Python 3.10/3.11/3.12 matrix
+succeeded at `bf9afadc8cca81b5f0d7ae48462f32e2df7e71a1`. The actual external
+merge is `5ee74364cdbab17d1f0bebbee253bf400b467800`; Main smoke `40279655585`
+succeeded, as a smoke check only. Local default verification passed 16,049
+cases/224 skipped and integration passed 2,539/177 skipped with zero XML
+failures/errors at code-identical `ed557965c5d1dae93a862b77495f999503240257`.
+The finite blocked-top model, bath-only analytic bound and coupled cutoff
+stability remain explicit. This does not establish calibrated ion-trap heating,
+a global Gibbs state, infinite-dimensional accuracy or full M3/M4 completion.
 
 | Scenario | Shared capability under test | Additional acceptance |
 | --- | --- | --- |
