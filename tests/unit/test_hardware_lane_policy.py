@@ -354,7 +354,7 @@ def test_the_self_hosted_detector_recognises_a_known_self_hosted_job() -> None:
     # The discovery assertion above covers which workflows are reachable, not
     # whether a self-hosted job can be seen at all.
     self_hosted = _jobs(WORKFLOWS / "local-gpu.yml")["one-gpu-local"]
-    github_hosted = _jobs(WORKFLOWS / "ci.yml")["prepare-source"]
+    github_hosted = _jobs(WORKFLOWS / "ci.yml")["package"]
 
     assert _is_self_hosted(self_hosted)
     assert not _is_self_hosted(github_hosted)

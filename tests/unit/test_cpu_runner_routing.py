@@ -73,7 +73,7 @@ def test_pool_validation_covers_every_cpu_slot_and_eight_gpu_ranks() -> None:
 
 def test_trusted_cpu_jobs_and_matrix_legs_do_not_share_hosted_buckets() -> None:
     groups: set[str] = set()
-    for workflow in ("ci.yml", "pre-commit.yaml"):
+    for workflow_index, workflow in enumerate(("ci.yml", "pre-commit.yaml")):
         jobs = yaml.safe_load((WORKFLOWS / workflow).read_text())["jobs"]
         for name, job in jobs.items():
             if not any(
@@ -99,7 +99,8 @@ def test_trusted_cpu_jobs_and_matrix_legs_do_not_share_hosted_buckets() -> None:
                 dict(zip(matrix, values, strict=True))
                 for values in product(*matrix.values())
             ]
-            for run_id in (100, 101):
+            # GitHub run IDs are globally unique, including across workflows.
+            for run_id in (100 + 2 * workflow_index, 101 + 2 * workflow_index):
                 for index, row in enumerate(rows):
                     group = template.replace(
                         selector, f"a100-cpu-{run_id}-{name}-{index}"
@@ -271,3 +272,45 @@ def test_core_cpu_downloads_use_the_bounded_shared_mirror_policy(job: str) -> No
         "/root/liuwei/fq-ci-bootstrap/cpu-wheels" in step.get("run", "")
         for step in steps
     )
+
+
+@pytest.mark.parametrize(
+    "workflow,name",
+    [
+        ("ci.yml", "pre-commit"),
+        ("ci.yml", "prepare-source"),
+        ("local-gpu.yml", "prepare-source"),
+        ("main-smoke.yml", "installed-wheel-smoke"),
+    ],
+)
+def test_linux_prerequisites_keep_forks_off_private_cpu_runners(
+    workflow: str, name: str
+) -> None:
+    document = yaml.safe_load((WORKFLOWS / workflow).read_text())
+    job = document["jobs"][name]
+    route = (
+        "${{ (github.event_name != 'pull_request' || "
+        "github.event.pull_request.head.repo.full_name == github.repository) "
+        "&& 'flagquantum-a100-cpu' || 'ubuntu-latest' }}"
+    )
+    assert job["runs-on"] == route
+    assert "pull_request_target" not in document.get("on", document.get(True, {}))
+    assert "github.run_id" in job["concurrency"]["group"]
+    assert job["concurrency"]["queue"] == "max"
+    assert not job.get("continue-on-error", False)
+    assert job["timeout-minutes"] <= 15
+    steps = job["steps"]
+    checkout = next(
+        index
+        for index, step in enumerate(steps)
+        if str(step.get("uses", "")).startswith("actions/checkout@")
+    )
+    assert steps[checkout]["with"]["persist-credentials"] is False
+    clearing = "\n".join(step.get("run", "") for step in steps[:checkout])
+    assert "git sparse-checkout disable" in clearing
+    assert "rm -f .git/info/sparse-checkout" in clearing
+    assert "git config --local --unset core.sparseCheckout" in clearing
+    for index, step in enumerate(steps):
+        if str(step.get("uses", "")).startswith("actions/setup-python@"):
+            assert "cache" not in step.get("with", {})
+            assert steps[index + 1]["uses"] == "./.github/actions/isolated-python"
