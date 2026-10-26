@@ -240,11 +240,20 @@ def run(
         ".runtime.dynamic.circuit", __package__
     ).DynamicCircuit
     if isinstance(program_or_plan, dynamic_circuit_type):
-        preflight = import_module(".runtime.dynamic.remote_preflight", __package__)
-        preflight.require_dynamic_remote_preflight(
-            program_or_plan,
-            target=target,
+        dynamic_ir = import_module(".core.ir", __package__).ensure_circuit_ir(
+            program_or_plan
         )
+        classical_control = import_module(".core.classical_control", __package__)
+        has_dynamic_semantics = any(
+            classical_control.is_classical_control_instruction(instruction)
+            for instruction in dynamic_ir.instructions
+        )
+        if has_dynamic_semantics:
+            preflight = import_module(".runtime.dynamic.remote_preflight", __package__)
+            preflight.require_dynamic_remote_preflight(
+                program_or_plan,
+                target=target,
+            )
 
     provider_name, separator, _ = (target or "").partition(":")
     if target is not None and separator == ":" and provider_name.lower() == "jiuding":
