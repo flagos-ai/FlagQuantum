@@ -83,14 +83,34 @@ optional skips), all 60 checks and exact-merge Main smoke `40276610613`
 succeeded. It changes no production grammar, numerical policy or dependency.
 
 The API owner explicitly approved the complete FUNCTIONAL-005 / Decision B
-contract on 2026-10-26. This change implements the sparse independent-shot
-operation with complete existing records for five certified decoder types and
-its conformance coverage. Final exact-head CI/GPU, actual install artifacts,
-normal merge and exact-main acceptance remain delivery gates, recorded in the
-implementation PR. The existing logical-only Tensor method is unchanged and
-no speed claim follows. Decision C is authorized for design refinement only;
-its public experiment implementation remains explicitly deferred. No overall
-completion percentage is assigned to this evolving scope.
+contract on 2026-10-26. Its implementation merged through
+[#904](https://github.com/flagos-ai/FlagQuantum/pull/904) as
+`92f5269caa126cd4220e7612a5d2207c644e6fd3`, with reviewed head
+`3ff5fca2de51b18ee1f2cb88e7fbd5fa96dee029`. The complete head CI
+`40280575633` succeeded in all 54 jobs; GPU `40280575629` succeeded with
+three successful jobs and three original optional skips. All 60 checks
+succeeded or retained those original skips. Exact-merge Main smoke
+`40283856972` succeeded. Development-container publishing `40283856979`
+was cancelled with all four matrix jobs cancelled; its cause is not established,
+and overall publishing is not called successful or retriggered.
+
+The canonical sparse batch operation preserves complete existing records for
+all five certified decoder types, prevalidates finite input before decoding,
+and retains decoder-specific duplicate/refusal behavior. Local verification
+passed 83 new real-SDK cases, 68 core cases, 328 related cases and 12 actual
+source/wheel/sdist install profiles. The public-docstring runner plus new suite
+passed 85 cases with SDKs and 70 in core. Its existing coverage assertion was
+unchanged. The bounded local default remained incomplete: its new doctest
+registration failure was fixed, while four native-fusion expectation failures
+reproduced on exact unmodified baseline
+`b88bffb1cc45910800f50e9312c80162fde1aea3`. Local default is not relabelled
+green. Local artifact builds used existing Torch 2.13 and do not certify the
+Torch 2.10 floor; complete reviewed-head CI is recorded separately. The existing
+logical-only Tensor method is unchanged and no speed claim follows.
+
+Decision C is authorized for design refinement only; its public experiment
+implementation remains explicitly deferred. No overall completion percentage
+is assigned to this evolving scope.
 
 ## Remaining compatibility and functional gaps
 
@@ -105,7 +125,7 @@ numbered sequence.
 | Nested bridge expansion limits | Approved behavior exists; explicit nested-product, exact-limit and aggregate-repeat regression coverage was delivered in #896. | Test symbolic 2-by-3 and 1000-by-1000 counts; refuse 1001-by-1001 and separate over-budget blocks before SDK analysis/compilation. Inspect each repeat body once; no sampled shots or expanded million-instruction allocation. This is conformance coverage, not a claimed production defect or capacity result. |
 | FUNCTIONAL-001/002/003/004 | Acceptance/proposals, Clifford propagation and correlated Pauli faults delivered in #774/#776/#779/#789. | Preserve their independent mechanism, exclusivity and numerical evidence. No second code registry, Surface class, DEM owner or propagation engine. |
 | Schedule/feedback Groups A-E | The finite approved matrix and mainline acceptance are already delivered in #837. | Do not reimplement it or promote it to generic Surface feedback, general frames or FTQC execution. |
-| FUNCTIONAL-005 | Complete contract approved 2026-10-26; the reference implementation and conformance accompany this change. | Preserve complete-record equality, input prevalidation/iterator consumption and existing duplicate/refusal behavior. Require actual five-type SDK qualification and delivery gates; no speed claim. |
+| FUNCTIONAL-005 | Complete contract approved 2026-10-26; implemented and accepted through #904 as recorded above. | Preserve complete-record equality, input prevalidation/iterator consumption and existing duplicate/refusal behavior. Actual five-type SDK qualification and reviewed-head delivery gates passed; maintain those contracts when affected paths change. No speed claim. |
 | FUNCTIONAL-006 | Logical-only CPU Tensor PyMatching batch decoding is approved and implemented. | Do not mistake it for full correction records. Further full-result optimization depends on 005 and must preserve edges/weights/convergence fields; no current implementation is selected. |
 | FUNCTIONAL-007 | Compiled circuit sampling and fixed-shot example counts/Wilson intervals exist; a general public experiment result/entry does not. | Refine and approve Decision C before a new public experiment API. Preserve source sampling, fixed denominator, tail batches, all logicals and all-or-error failure handling. |
 | FUNCTIONAL-008/009 | Threshold workflow and broader resource/accuracy tranche remain pending their dependencies/contracts. | No threshold fit, adaptive stopping or distance-scaled quality claim follows from the existing small fixed-round examples. |
@@ -130,8 +150,9 @@ numbered sequence.
    are not prerequisites for the current approved conformance slice; do not
    bundle them into Decision B or ask for blanket approval.
 
-The nested-repeat work is delivered. Decision B is approved and is now the
-implementation priority; Decision C remains a separate design review. No overall completion percentage is assigned to this evolving scope.
+The nested-repeat work and Decision B are delivered. Decision C remains a
+separate design review, with implementation deferred. No overall completion
+percentage is assigned to this evolving scope.
 
 ## Expected code structure after compatibility delivery
 
