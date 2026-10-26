@@ -122,6 +122,37 @@ The history artifact is canonical, credential-free, and written once with
 private permissions. Loading validates its nested drift records and derived
 summaries without fetching calibration or restoring the source Twin models.
 
+Apply application-owned freshness thresholds to a current Twin and its saved
+histories without contacting a provider:
+
+```python
+from datetime import datetime, timedelta, timezone
+
+policy = fq.twin.TwinFreshnessPolicy(
+    maximum_calibration_age=timedelta(hours=4),
+    maximum_validation_age=timedelta(hours=8),
+    maximum_readout_tv_drift=0.02,
+    maximum_verified_tv_error_bound=0.10,
+)
+assessment = policy.assess(
+    current_twin,
+    calibration_history=calibration_history,
+    validation_history=validation_history,
+    as_of=datetime.now(timezone.utc),
+)
+
+print(assessment.status)
+print(assessment.reasons)
+print(assessment.next_refresh_at)
+```
+
+`current_under_policy` means only that every caller-selected threshold passes.
+`refresh_due`, `insufficient_evidence`, and `incompatible_history` fail closed
+with reason tokens. The assessment does not fetch calibration, submit a job,
+refresh or promote a model, or authorize routing. Validation age is the age of
+the calibration snapshot associated with the latest validation series; current
+v1 evidence does not contain an authoritative provider result-completion time.
+
 The shortest identity-bound validation path lets FlagQuantum emit the submitted
 OpenQASM directly from the circuit. OpenQASM emission adds measurement of every
 circuit qubit, so no measurement operation is added to the `Circuit` itself:

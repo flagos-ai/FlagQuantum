@@ -16,6 +16,10 @@ in `simulation`, `noise`, and `remote/qpu` respectively.
 - `TwinCalibrationHistory`: cumulative and adjacent drift across chronological
   comparable Twin snapshots;
 - `TwinExperiment`: a prediction bound to the exact program submitted;
+- `TwinFreshnessPolicy`: caller-selected age, drift, and verified-bound
+  thresholds evaluated without provider I/O;
+- `TwinFreshnessAssessment`: immutable status, source evidence, ages, deadline,
+  and deterministic reason tokens for one policy evaluation;
 - `TwinHardwareReport`: a result bound to its experiment and remote task;
 - `TwinSubmission`: a persistable binding of an experiment to its original task;
 - `TwinSnapshot`: immutable calibration and model identity;
@@ -101,6 +105,32 @@ The history persistence functions use canonical JSON and mode-0600 creation.
 They permit an identical repeated write but refuse to replace different or
 invalid content. Loading reconstructs and validates every nested public drift
 record; it does not reconstruct the source models or contact a provider.
+
+Evaluate whether that frozen evidence is still current under explicit
+application requirements:
+
+```python
+from datetime import datetime, timedelta, timezone
+
+policy = fq.twin.TwinFreshnessPolicy(
+    maximum_calibration_age=timedelta(hours=4),
+    maximum_readout_tv_drift=0.02,
+    maximum_verified_tv_error_bound=0.10,
+)
+assessment = policy.assess(
+    current_twin,
+    calibration_history=calibration_history,
+    validation_history=validation_history,
+    as_of=datetime.now(timezone.utc),
+)
+```
+
+The framework validates identity, target, mapping, chronology, and requested
+evidence fields, but supplies no default threshold. An assessment is an offline
+fact under the supplied policy, not a trust certificate, refresh action,
+promotion decision, or routing authorization. `maximum_validation_age` uses the
+validated calibration snapshot time because v1 validation artifacts do not
+carry an authoritative hardware result-completion timestamp.
 
 For hardware validation, freeze the prediction and submitted program before
 submission. Remote polling remains the provider's responsibility:

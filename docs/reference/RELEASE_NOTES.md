@@ -17,6 +17,11 @@ Benchmark claims require audited artifacts and are not inferred from this file.
 
 ## Unreleased
 
+- Add caller-configured, offline QPU Twin evidence-freshness assessment. Age,
+  calibration drift, and verified TV-error thresholds return explicit current,
+  refresh-due, insufficient-evidence, or incompatible-history outcomes without
+  provider I/O, model mutation, promotion, or routing authority.
+
 - Make experimental dynamic backend assessment consume the same fail-closed
   requirement/snapshot matcher as stable remote `fq.run(...)`. A coarse
   `supports_dynamic_circuits=True` profile can still describe experimental

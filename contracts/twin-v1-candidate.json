@@ -87,6 +87,9 @@
     "TwinEvidenceStatus",
     "TwinEvolutionHistory",
     "TwinExperiment",
+    "TwinFreshnessAssessment",
+    "TwinFreshnessPolicy",
+    "TwinFreshnessStatus",
     "TwinGateDurationDrift",
     "TwinHardwareReport",
     "TwinPrediction",
@@ -184,6 +187,8 @@
     "TwinEvidenceReport": "(status: 'TwinEvidenceStatus', prediction: 'TwinPrediction | None', evidence_envelope_identity: 'str | None', evidence_identity: 'str | None', exact_circuit_verified: 'bool', structurally_supported: 'bool', tv_error_bound: 'float | None', confidence_level: 'float | None', reasons: 'tuple[str, ...]', schema: 'str' = 'flagquantum.twin_evidence_report.v1') -> None",
     "TwinEvolutionHistory": "(calibration_history: 'TwinCalibrationHistory', validation_history: 'TwinValidationHistory', schema: 'str' = 'flagquantum.twin_evolution_history.v1') -> None",
     "TwinExperiment": "(snapshot_identity: 'str', prediction: 'TwinPrediction', name: 'str', backend_name: 'str', target_qubits: 'tuple[int, ...]', submitted_qasm: 'str', submitted_qasm_identity: 'str', shots: 'int', schema: 'str' = 'flagquantum.twin_experiment.v1') -> None",
+    "TwinFreshnessAssessment": "(status: 'TwinFreshnessStatus', snapshot_identity: 'str', evaluated_at: 'str', calibration_age_seconds: 'float', validation_snapshot_age_seconds: 'float | None', next_refresh_at: 'str | None', calibration_drift: 'TwinCalibrationDrift | None', validation_series: 'TwinValidationSeries | None', reasons: 'tuple[str, ...]') -> None",
+    "TwinFreshnessPolicy": "(maximum_calibration_age: 'timedelta | None' = None, maximum_validation_age: 'timedelta | None' = None, maximum_relative_t1_drift: 'float | None' = None, maximum_relative_t2_drift: 'float | None' = None, maximum_readout_tv_drift: 'float | None' = None, maximum_relative_gate_duration_drift: 'float | None' = None, maximum_verified_tv_error_bound: 'float | None' = None) -> None",
     "TwinHardwareReport": "(experiment_identity: 'str', provider: 'str', backend_name: 'str', task_id: 'str', submitted_qasm_identity: 'str', executed_qasm_identity: 'str | None', counts: 'Mapping[str, int]', validation: 'TwinValidationReport', result_metadata: 'Mapping[str, Any]', schema: 'str' = 'flagquantum.twin_hardware_report.v1') -> None",
     "TwinGateDurationDrift": "(gate_name: 'str', physical_qubits: 'tuple[int, ...] | None', reference_duration_seconds: 'float', current_duration_seconds: 'float', absolute_duration_delta_seconds: 'float', relative_duration_delta: 'float | None', schema: 'str' = 'flagquantum.twin_gate_duration_drift.v1') -> None",
     "TwinPrediction": "(snapshot_identity: 'str', circuit_identity: 'str', n_wires: 'int', ideal_probabilities: 'tuple[float, ...]', twin_probabilities: 'tuple[float, ...]', total_variation_from_ideal: 'float', schema: 'str' = 'flagquantum.twin_prediction.v1') -> None",
@@ -243,6 +248,7 @@
     "TwinExperiment.validate_result": "(self, result: 'DeploymentResult', *, receipt: 'ProviderTaskHandle') -> 'TwinHardwareReport'",
     "TwinExperiment.evidence_from_report": "(self, report: 'TwinHardwareReport', *, circuit: 'Any', confidence_level: 'float' = 0.95) -> 'TwinEvidenceEnvelope'",
     "TwinExperiment.validation_series": "(self, reports: 'Sequence[TwinHardwareReport]', *, circuit: 'Any', confidence_level: 'float' = 0.95) -> 'TwinValidationSeries'",
+    "TwinFreshnessPolicy.assess": "(self, twin: 'QPUDigitalTwin', *, calibration_history: 'TwinCalibrationHistory | None' = None, validation_history: 'TwinValidationHistory | None' = None, as_of: 'datetime') -> 'TwinFreshnessAssessment'",
     "TwinHardwareReport.to_dict": "(self) -> 'dict[str, Any]'",
     "TwinGateDurationDrift.to_dict": "(self) -> 'dict[str, Any]'",
     "TwinPrediction.compare_counts": "(self, counts: 'Mapping[str, int]', *, reverse_bits: 'bool' = False) -> 'TwinValidationReport'",
@@ -388,6 +394,26 @@
       "confidence_level",
       "reasons",
       "schema"
+    ],
+    "TwinFreshnessAssessment": [
+      "status",
+      "snapshot_identity",
+      "evaluated_at",
+      "calibration_age_seconds",
+      "validation_snapshot_age_seconds",
+      "next_refresh_at",
+      "calibration_drift",
+      "validation_series",
+      "reasons"
+    ],
+    "TwinFreshnessPolicy": [
+      "maximum_calibration_age",
+      "maximum_validation_age",
+      "maximum_relative_t1_drift",
+      "maximum_relative_t2_drift",
+      "maximum_readout_tv_drift",
+      "maximum_relative_gate_duration_drift",
+      "maximum_verified_tv_error_bound"
     ],
     "TwinEvolutionHistory": [
       "calibration_history",
@@ -908,6 +934,12 @@
       "within_evidence_envelope",
       "unverified",
       "out_of_scope"
+    ],
+    "TwinFreshnessStatus": [
+      "current_under_policy",
+      "refresh_due",
+      "insufficient_evidence",
+      "incompatible_history"
     ],
     "TwinRegionCoverageStatus": [
       "covered",

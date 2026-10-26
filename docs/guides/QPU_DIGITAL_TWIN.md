@@ -1257,6 +1257,48 @@ Agreement and bounds apply to classical measurement distributions for the
 fixed suite only; they are neither quantum-state fidelity nor evidence for an
 arbitrary circuit on the same region.
 
+### Decide when saved evidence needs review
+
+FlagQuantum does not choose a universal trust window. An application can state
+its own thresholds and evaluate the current frozen Twin deterministically:
+
+```python
+from datetime import datetime, timedelta, timezone
+
+policy = fq.twin.TwinFreshnessPolicy(
+    maximum_calibration_age=timedelta(hours=4),
+    maximum_validation_age=timedelta(hours=8),
+    maximum_relative_t1_drift=0.20,
+    maximum_relative_t2_drift=0.20,
+    maximum_readout_tv_drift=0.02,
+    maximum_relative_gate_duration_drift=0.10,
+    maximum_verified_tv_error_bound=0.10,
+)
+assessment = policy.assess(
+    current_twin,
+    calibration_history=calibration_history,
+    validation_history=validation_history,
+    as_of=datetime.now(timezone.utc),
+)
+
+if assessment.status != "current_under_policy":
+    print(assessment.status, assessment.reasons)
+```
+
+The four outcomes are `current_under_policy`, `refresh_due`,
+`insufficient_evidence`, and `incompatible_history`. Stronger blockers take
+precedence so missing or mismatched evidence cannot be hidden by a passing age
+threshold. `next_refresh_at` is the earliest configured age deadline, or the
+evaluation time when an age threshold is already exceeded.
+
+The validation age is specifically the age of the calibration snapshot that
+was validated. It is not hardware task age or result-ingestion age because the
+v1 validation contract contains no authoritative completion timestamp. This
+operation remains offline: it does not collect calibration, submit or retry a
+task, mutate or promote a model, route a workload, or authorize hardware use.
+The complete command-line example is
+[`examples/twin_evidence_freshness.py`](../../examples/twin_evidence_freshness.py).
+
 - `exact_circuit_verified`: later hardware verified this exact circuit.
 - `within_evidence_envelope`: the circuit is structurally in scope and an
   externally supplied estimated bound exists.

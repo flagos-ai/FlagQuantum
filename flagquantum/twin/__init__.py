@@ -39,6 +39,11 @@ from .evidence import (
 from .evolution import TwinEvolutionHistory, align_histories
 from .experiment import TwinExperiment, TwinHardwareReport
 from .factory import from_noise_model, from_quafu_chip_info
+from .freshness import (
+    TwinFreshnessAssessment,
+    TwinFreshnessPolicy,
+    TwinFreshnessStatus,
+)
 from .history import (
     TwinCalibrationHistory,
     build_calibration_history,
@@ -193,6 +198,9 @@ __all__ = (
     "TwinEvidenceStatus",
     "TwinEvolutionHistory",
     "TwinExperiment",
+    "TwinFreshnessAssessment",
+    "TwinFreshnessPolicy",
+    "TwinFreshnessStatus",
     "TwinGateDurationDrift",
     "TwinHardwareReport",
     "TwinPrediction",
