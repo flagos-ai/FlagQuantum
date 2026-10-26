@@ -341,11 +341,30 @@ truncation, gradient and sampling budgets. It includes the merged driven
 three-level (#787), thermal spin-mode (#782) and native fusion-observation
 (#778), unread continuation (#809) and single sampled continuation (#838)
 slices. These are bounded CPU references, not full M3/M4 or hardware
-certification. The next bounded review targets one intermediate atom-presence
-instrument on the existing native Rydberg schedule, with explicit identity,
-physical loss versus observed flags and post-observation continuation. It must
-reuse existing IR, binding, Liouvillian, integrators and result authorities;
-this inventory approves no new protected interface or feedback implementation.
+certification. The separately approved proposal 092 now adds one intermediate
+atom-presence instrument on the existing native Rydberg schedule and a single
+seeded CPU conditional continuation. Core #869, Simulation #875 and Runtime
+[#879](https://github.com/flagos-ai/FlagQuantum/pull/879) reuse existing IR,
+full-grid binding, Liouvillian, integrators, private sampling and canonical result
+authorities. The [accepted trajectory evidence and public workflow](../api-changes/FQ-RYDBERG-PRESENCE-TRAJECTORY-20261025.md)
+retain atom identity, distinguish physical loss from no-flag detection, and keep
+post-observation and forward time rows explicit. Multi-event trajectories,
+feedback, heating, calibration and device execution remain separate decisions;
+this inventory approves no additional protected interface or M4 claim.
+
+The user approved the next bounded
+[driven three-level relaxation contract](../development/M3_NEXT_SCENARIO_CONTRACT_REVIEW.md)
+on 2026-10-26. Its example and independent integration acceptance are implemented
+in draft [#886](https://github.com/flagos-ai/FlagQuantum/pull/886), reusing existing
+numeric Lindblad planning, fixed collapse rates, interval bindings, autograd and
+results without changing public APIs or library production code. Local default
+verification passed 16,017 cases (224 skipped) and integration passed 2,515
+(177 skipped), both with zero XML failures/errors. The implementation head
+`5f27e41b7b8b912d82f7880446b2d41f14db21bb` has a successful complete GPU gate;
+its complete standard CI is still pending at this progress update. This is
+implementation progress awaiting remote acceptance and an independent PR merge
+grant, not an accepted scenario or M3 completion. The existing closed-model
+reference remains unchanged.
 
 | Scenario | Shared capability under test | Additional acceptance |
 | --- | --- | --- |

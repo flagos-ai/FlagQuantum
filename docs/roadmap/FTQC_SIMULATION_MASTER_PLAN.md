@@ -683,17 +683,36 @@ checks, fresh 834-member core installation and installed runnable user examples.
 Its focused source check passed 68 tests without skips, including 23 new finite
 reference checks and original retirement contracts. No pilot campaign was rerun.
 
-### FTS-11B finite dynamic coherent-reference conformance under review
+### FTS-11B finite dynamic coherent-reference conformance delivered
 
 The [three-case finite proposal](../development/FTQC_DYNAMIC_COHERENT_REFERENCE_PROPOSAL.md)
 received specific human approval on 2026-10-26 for private Born weights,
 conditional normalization, record-preserving reset and coherent measurement
 continuation. Proposal mainebc2 completed all admission gates: 54 CI jobs,
 required GPUs, real installation checks, fresh core and installed user examples.
-The private test implementation is under review: 20 four-amplitude projected
+The private test implementation is delivered: 20 four-amplitude projected
 Clifford terms and three existing public density calls per module verification,
 with the separately approved complex128 atol=1e-12/rtol=0. It retains the static
 qualification and independently checks direct-T matrices and analytic answers.
 It does not qualify trajectory sampling, create a branch API/engine, or activate
 a collection budget.
 R04/R05, FTS-10/11 and the system-level milestones remain partial.
+
+Conformance mainc95e passed 54 CI jobs, required GPUs, real QEC installation,
+fresh 836-member core and installed user examples. Its focused source check
+passed 95 tests without skips, including the 17 new E-H checks, existing static
+and dynamic references, and original retirement contracts. Both original study
+campaigns remain unchanged; no new collection was run.
+
+### FTS-11C finite trajectory Born-conformance proposal
+
+The [Runtime/reference boundary proposal](../development/FTQC_TRAJECTORY_BORN_CONFORMANCE_PROPOSAL.md)
+requests separate I-L approval for three current dynamic programs, real
+multinomial inputs, controlled positive-branch coverage and stable result
+projection. The proposed cap is 19 existing local calls and 82 trajectories per
+module verification, with atol=1e-12/rtol=0 and no empirical-frequency threshold.
+It distinguishes natural draws from controlled coverage and does not certify
+RNG quality, a production decomposition or efficient large-scale sampling.
+No proposed observation hook or conformance implementation has run yet; E-H and
+the pilot budgets do not approve this new boundary or matrix. R04/R05, FTS-10/11
+and FTS-02/09/R01-R15 remain partial.

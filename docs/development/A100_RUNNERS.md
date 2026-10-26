@@ -50,6 +50,65 @@ index.
 Only CPU registrations receive this label. Keep A100 validation slot labels and
 A800 dedicated labels: those jobs depend on their original host environments.
 
+## Linux prerequisites without hosted capacity
+
+For same-repository pull requests and trusted push/manual runs, the CI source
+producer, GPU source producer, source-hygiene check and installed-wheel main
+smoke use `flagquantum-a100-cpu`. This pool already supplies private Unix
+accounts, workspaces, temporary directories and tool caches, and the Git
+transport needed for checkout. The general pool includes hosts whose HTTPS Git
+route is unreliable, so source checkout is not routed to that broader pool.
+Fork pull requests retain the existing GitHub-hosted route; no
+`pull_request_target` execution or broader runner access is introduced.
+
+Each migrated job clears inherited sparse-checkout state before checkout and
+removes the checkout credential afterwards. Python jobs reuse the existing
+private-environment action, without the shared setup-python pip cache. Source
+producers refuse an existing staging directory, verify `HEAD == GITHUB_SHA`,
+and retain full/incremental packs and run-attempt artifact identities. Consumers
+still verify digests and exact revisions. Job timeouts, source-hygiene hooks,
+installed-wheel/native-extension assertions and required single/two-GPU checks
+remain enforced. Main smoke retains its Torch 2.10 floor and runs outside the
+source checkout. Trusted concurrency groups include the workflow run identity;
+fork fallback retains its hosted capacity buckets.
+
+This removes the hosted source-preparation dependency for trusted CPU/GPU
+fan-out. Full CI still includes hosted CUDA-Q preparation, Ubuntu 22.04 GCC 11
+package certification, Linux wheel containers, macOS and Windows. Their
+platform/dependency contracts are retained, so hosted congestion can still delay
+complete CI. Existing queued runs keep the workflow revision with which they
+started; changing routing does not migrate or restart those runs.
+
+A current public CPU workflow can be checked after installation by saving this
+as `/tmp/flagquantum_cpu_example.py` and running
+`python /tmp/flagquantum_cpu_example.py`. Requirements are supported Python and
+core FlagQuantum with CPU PyTorch; no optional SDK, GPU or credentials. From the
+checkout use `PYTHONPATH=. python /tmp/flagquantum_cpu_example.py`.
+
+```python
+import flagquantum as fq
+
+result = fq.run(
+    fq.Circuit(2).h(0).cx(0, 1),
+    outputs=fq.samples([0, 1]),
+    shots=32,
+)
+assert result.samples is not None and result.samples.shape == (1, 32, 2)
+assert bool((result.samples[..., 0] == result.samples[..., 1]).all())
+print("Bell sample invariant: True")
+```
+
+Expected stdout:
+
+```text
+Bell sample invariant: True
+```
+
+This user example checks the unchanged CPU workflow. The routing and isolation
+claims additionally require exact-head CI, real source-artifact round trips,
+installed-wheel smoke and required GPU validation; the example alone does not
+certify runner isolation or performance.
+
 ## Validate the deployed pool
 
 Run this existing manually dispatched workflow against the revision to validate:

@@ -33,7 +33,7 @@ def test_presence_candidate_rejects_unapproved_expansion(change: str) -> None:
     if change == "version":
         extension["lindblad_plan_version"] = "1.9"
     elif change == "implemented":
-        extension["production_implemented"] = True
+        extension["production_implemented"] = False
     elif change == "stage":
         extension["delivery_stage"] = "implemented"
     elif change == "result":
