@@ -343,3 +343,24 @@ TLS/hostname checks and archive signatures remain enabled. No system proxy,
 cluster permission, or persistent APT configuration is changed. Stability rounds
 must be restarted on this routing revision; earlier degraded network samples do
 not count toward three healthy consecutive rounds.
+
+### Qualification stopped on runner allocation
+
+[Run 40279427511](https://github.com/flagos-ai/FlagQuantum/actions/runs/40279427511)
+used revision `14a45945565902ebbbe0cecc3284c5b8d59556df` with the scoped
+Tsinghua direct paths. Hosted source preparation succeeded. The cpu05 and cpu16
+jobs remained queued without an assigned runner for more than the bounded
+15-minute wait; their cancelled job records have empty runner names. Cpu03 and
+cpu04 received runners, but this incomplete round cannot qualify the batch. The
+orchestrator requested cancellation of this run and stopped before dispatching
+rounds two or three. No healthy complete round was recorded.
+
+PR scheduling remains paused and this PR remains draft. This result demonstrates
+a runner-allocation blocker, not a CPU hardware failure or proof that the network
+repair succeeded. An existing ARC operator must inspect listener/controller
+health, scale-set capacity and pending Pod scheduling for cpu05 and cpu16.
+Previously observed external proxy CONNECT and source-transfer failures still
+need operator investigation; a cancelled qualification does not clear them.
+After allocation and transport are repaired, repeat three complete same-revision
+cold-install/native rounds before attempting the intended SDK acceptance jobs.
+There is no automatic retry loop while operator access is unavailable.
