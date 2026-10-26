@@ -1,6 +1,7 @@
 # QEC Stim and PyMatching delivery plan
 
-Status: phase-one acceptance record, 2026-10-24. Core owns QEC composition and adapters;
+Status: phase one accepted; continuing compatibility/performance delivery,
+updated 2026-10-26 (Asia/Shanghai). Core owns QEC composition and adapters;
 Simulation owns numerical execution; Runtime owns execution policy and lifecycle.
 This document orders work and records the delivery authorization below. It does
 not approve new public APIs or declare proposed modules implemented.
@@ -35,6 +36,40 @@ approval under `PUBLIC_API_PROTECTION.md`. This delivery authorization is not
 approval of proposal 087 Decision C or an unspecified Stim bridge contract.
 Prepare reviewable proposals and complete independent work before requesting
 such a decision; do not request routine implementation or merge approval again.
+
+## Continuing delivery progress — 2026-10-26
+
+Phase-one compatibility acceptance and the subsequent private CPU preparation
+changes are delivered. The long-running roadmap remains active: a merged small
+slice does not mean the broader functional roadmap or performance work is done.
+The following is the current progress ledger; the earlier acceptance records
+and original incomplete studies below remain historical evidence.
+
+| Scope | Delivered change | Current acceptance state |
+| --- | --- | --- |
+| First performance tranche: #825, #830, #840, #842, #853, #861, #867 | Bounded compatibility/preparation studies and private sampling, semantic-preparation and lowering improvements; see the [baseline](../development/QEC_COMPATIBILITY_PERFORMANCE_BASELINE.md), [GPU feasibility](../development/QEC_GPU_PARITY_FEASIBILITY.md) and [matched prepared-CPU control](../development/QEC_PREPARED_PARITY_CONTROL.md). | Completed. The original incomplete grids remain incomplete; they do not establish a general GPU benefit, capacity claim or complete distance matrix. |
+| [#872](https://github.com/flagos-ai/FlagQuantum/pull/872) | Prepare CPU parity indices once per live sampler and share one byte conversion per draw; [implementation and bounded evidence](../development/QEC_PREPARED_CPU_PARITY.md). | Merged as `58c98a0cb282cb1857b4614d4fc6299dd8bec440`. Complete head CI `40207427072` and GPU `40207427031` succeeded. Merge Main smoke `40209372637` and development-container publishing `40209372875` succeeded. |
+| [#877](https://github.com/flagos-ai/FlagQuantum/pull/877) | Reuse channel-factory calculations within one program construction, with fresh operator clones at every location; [implementation and bounded evidence](../development/QEC_NOISE_CHANNEL_TEMPLATES.md). | Merged as `329dd0203532a182a740892e4f884efbda41f5d2`. Complete head CI `40251868248` and GPU `40251868262` attempt 2 succeeded. Merge Main smoke `40257459145` succeeded. Container publishing `40257459136` was cancelled: CPU full succeeded, three other matrix jobs were cancelled; publishing is not called successful. |
+| [#885](https://github.com/flagos-ai/FlagQuantum/pull/885) | Remove the repeated sorted-item list while encoding frozen hybrid attributes, preserving canonical JSON bytes and semantic hashes; [Compiler-owned implementation and limits](../development/HYBRID_CANONICAL_ENCODING.md). | Merged as `2f59b4ff6d6ac937e9c9202411cbe188aabe30a7`. Complete head CI `40261269948` (54 successful jobs) and GPU `40261269944` succeeded; all 60 checks succeeded or had their original skips. Merge-specific [Main smoke `40263032238`](https://github.com/flagos-ai/FlagQuantum/actions/runs/40263032238) completed successfully and [container publishing `40263032317`](https://github.com/flagos-ai/FlagQuantum/actions/runs/40263032317) is queued at this update. Post-merge acceptance remains open. |
+
+Main smoke is not complete main CI. Local default failures and incomplete runs
+are retained in the linked slice records and are not relabelled as green because
+remote CI succeeded. No old profile, paired study or incomplete grid was rerun
+to update this ledger, and no new timing or memory-capacity result is claimed
+for #885.
+
+The immediate next action is to record the actual #885 container-publishing outcome.
+The next implementation is not selected: audit the remaining dictionary/list,
+JSON-string and UTF-8-byte materialization first, and admit a small Compiler-owned
+change only if canonical bytes, SHA256 and per-stage verification remain exact.
+There is no authorization here for global caches, skipped verification, new
+hardware experiments or additional private raw-data publication.
+
+Broader QEC-FUNCTIONAL-005 full-result batch decoding and Decision C remain
+unapproved. Their state is tracked in the [functional development plan](QEC_FUNCTIONAL_DEVELOPMENT_PLAN.md);
+the three recent private optimizations do not implement those pending contracts
+or complete the long-term roadmap. No overall completion percentage is assigned
+to this evolving scope.
 
 ## Expected code structure after compatibility delivery
 

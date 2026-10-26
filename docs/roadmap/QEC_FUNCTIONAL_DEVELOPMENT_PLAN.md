@@ -110,6 +110,12 @@ normalization remain candidate work, not capabilities implied by this plan.
 
 ## Progress
 
+The separate continuing compatibility/performance deliveries are summarized in
+the [Stim/PyMatching progress ledger](QEC_STIM_PYMATCHING_DELIVERY_PLAN.md#continuing-delivery-progress--2026-10-26).
+As of 2026-10-26, #872, #877 and #885 are merged; #885's merge-specific Main smoke
+succeeded and its container-publishing outcome is still pending. These private optimizations
+do not activate 005, Decision C or the later functional tranches below.
+
 | ID | State | Evidence |
 | --- | --- | --- |
 | 001 | Merged in [#774](https://github.com/flagos-ai/FlagQuantum/pull/774) | [Post-retirement mainline acceptance](../development/QEC_RETIREMENT_MAINLINE_ACCEPTANCE.md): main and PR full CI/GPU checks passed; old clean merged QEC worktrees and branches were cleaned. |
