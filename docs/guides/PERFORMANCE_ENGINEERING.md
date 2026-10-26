@@ -68,6 +68,14 @@ provides frozen CPU, JAX and installed-native diagnostics. Outstanding public
 training-path performance gaps are tracked in
 [#918](https://github.com/flagos-ai/FlagQuantum/issues/918).
 
+The [Module execution implementation plan](../development/MODULE_TRAINING_EXECUTION_PLAN.md)
+defines the ordered work and its executable circuit-family matrix. The JAX
+executor respects current Torch derivative demand: use `torch.no_grad()` or
+`torch.inference_mode()` for validation and inference to avoid computing unused
+derivatives. `model.eval()` alone retains autograd semantics. Different derivative
+demands can incur separate first-call JIT costs, so include those in end-to-end
+training measurements.
+
 Implementation histories, failed experiments, and superseded engineering
 measurements belong in the external evidence archive. This guide retains only
 the practices required to produce reviewable current evidence.

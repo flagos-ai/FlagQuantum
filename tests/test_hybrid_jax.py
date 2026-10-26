@@ -23,6 +23,103 @@ pytestmark = [
 ]
 
 
+@pytest.mark.parametrize("jit", [False, True])
+def test_derivative_demand_tracks_grad_mode_and_trainable_arguments(
+    jit: bool, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    def build(parameters: Any, features: Any) -> fq.Circuit:
+        return fq.Circuit(1).ry(0, parameters[0] * features[0] + parameters[1])
+
+    parameters = torch.tensor([0.3, -0.2], dtype=torch.float64)
+    features = torch.tensor([0.7], dtype=torch.float64)
+    kernel = compile_quantum_kernel(
+        build,
+        parameters,
+        n_qubits=1,
+        accepts_inputs=True,
+        jit=jit,
+        compute_dtype="complex128",
+    )
+    calls: list[str] = []
+    for name in (
+        "_value",
+        "_value_and_grad",
+        "_parameter_value_and_grad",
+        "_input_value_and_grad",
+    ):
+        original = getattr(kernel, name)
+
+        def record(*args: Any, _name: str = name, _function: Any = original) -> Any:
+            calls.append(_name)
+            return _function(*args)
+
+        monkeypatch.setattr(kernel, name, record)
+
+    # One reusable kernel must survive changing derivative demand and values.
+    for parameter_grad, input_grad in (
+        (True, True),
+        (False, True),
+        (True, False),
+        (False, False),
+        (True, True),
+    ):
+        parameters.requires_grad_(parameter_grad)
+        features.requires_grad_(input_grad)
+        value = kernel(parameters, features)
+        reference = (parameters[0] * features[0] + parameters[1]).cos()
+        torch.testing.assert_close(value, reference, atol=1e-12, rtol=1e-12)
+        selected = tuple(
+            tensor for tensor in (parameters, features) if tensor.requires_grad
+        )
+        if selected:
+            actual = torch.autograd.grad(1.7 * value, selected)
+            expected = torch.autograd.grad(1.7 * reference, selected)
+            for gradient, oracle in zip(actual, expected, strict=True):
+                torch.testing.assert_close(gradient, oracle, atol=1e-12, rtol=1e-12)
+        else:
+            assert not value.requires_grad
+        with torch.no_grad():
+            parameters.add_(0.03)
+            features.add_(0.02)
+    assert calls == [
+        "_value_and_grad",
+        "_input_value_and_grad",
+        "_parameter_value_and_grad",
+        "_value",
+        "_value_and_grad",
+    ]
+
+    for context in (torch.no_grad(), torch.inference_mode()):
+        with context:
+            value = kernel(parameters, features)
+            reference = (parameters[0] * features[0] + parameters[1]).cos()
+            assert not value.requires_grad
+            torch.testing.assert_close(value, reference, atol=1e-12, rtol=1e-12)
+    assert calls[-2:] == ["_value", "_value"]
+
+
+def test_value_only_preserves_multidimensional_parameter_batches() -> None:
+    def build(parameters: Any) -> fq.Circuit:
+        return fq.Circuit(1).ry(0, parameters[0])
+
+    kernel = compile_quantum_kernel(
+        build, torch.zeros(1), n_qubits=1, compute_dtype="complex128"
+    )
+    parameters = torch.linspace(0.1, 0.6, 6, dtype=torch.float64).reshape(2, 3, 1)
+    parameters.requires_grad_()
+    differentiable = kernel(parameters)
+    with torch.no_grad():
+        inference = kernel(parameters)
+    assert inference.shape == (2, 3)
+    torch.testing.assert_close(inference, parameters[..., 0].cos())
+    torch.testing.assert_close(inference, differentiable)
+    torch.testing.assert_close(
+        torch.autograd.grad(differentiable.sum(), parameters)[0], -parameters.sin()
+    )
+    with torch.no_grad(), pytest.raises(ValueError, match="parameter shape must end"):
+        kernel(torch.zeros(2, 3, 2))
+
+
 def test_cpu_bridge_keeps_cpu_placement_when_jax_defaults_to_an_accelerator(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

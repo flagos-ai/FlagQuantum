@@ -39,6 +39,12 @@ BENCHMARK_CATALOG = (
         ("step time", "memory slope"),
     ),
     BenchmarkSpec(
+        "training_step",
+        "public Module derivative demand: python -m benchmarks.module_execution_matrix",
+        "Torch route parity and analytic derivative-demand tests",
+        ("context-first call", "public/kernel overhead", "default/best route cost"),
+    ),
+    BenchmarkSpec(
         "communication",
         "rank-owned shard collectives",
         "global checksum",

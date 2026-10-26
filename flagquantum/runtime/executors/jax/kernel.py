@@ -44,6 +44,7 @@ TorchCircuitBuilder = Callable[..., Any]
 
 
 class _JAXAutogradContext(Protocol):
+    needs_parameter_gradient: bool
     needs_input_gradient: bool
 
     @property
@@ -63,7 +64,7 @@ def _torch_to_jax(parameters: torch.Tensor) -> Any:
         torch.float32,
         torch.float64,
     }:
-        default_device = jax.config.jax_default_device
+        default_device = getattr(jax.config, "jax_default_device")
         cpu_default = (default_device is None and jax.default_backend() == "cpu") or (
             default_device is not None and default_device.platform == "cpu"
         )
@@ -86,26 +87,34 @@ class _TorchJAXQuantumFunction(torch.autograd.Function):
         kernel: JAXQuantumKernel,
     ) -> torch.Tensor:
         jax_params = _torch_to_jax(params)
+        ctx.needs_parameter_gradient = params.requires_grad
+        torch_grad = None
         if kernel.accepts_inputs:
             jax_inputs = _torch_to_jax(input_values)
             if input_values.requires_grad:
-                value, (param_grad, input_grad) = kernel._value_and_grad(
-                    jax_params, jax_inputs
-                )
+                if params.requires_grad:
+                    value, (param_grad, input_grad) = kernel._value_and_grad(
+                        jax_params, jax_inputs
+                    )
+                    torch_grad = _jax_to_torch(param_grad, like=params)
+                else:
+                    value, input_grad = kernel._input_value_and_grad(
+                        jax_params, jax_inputs
+                    )
                 torch_input_grad = _jax_to_torch(input_grad, like=input_values)
             else:
                 value, param_grad = kernel._parameter_value_and_grad(
                     jax_params, jax_inputs
                 )
+                torch_grad = _jax_to_torch(param_grad, like=params)
                 torch_input_grad = None
         else:
             value, param_grad = kernel._value_and_grad(jax_params)
+            torch_grad = _jax_to_torch(param_grad, like=params)
             torch_input_grad = None
-        torch_grad = _jax_to_torch(param_grad, like=params)
-        if torch_input_grad is None:
-            ctx.save_for_backward(torch_grad)
-        else:
-            ctx.save_for_backward(torch_grad, torch_input_grad)
+        ctx.save_for_backward(
+            *(grad for grad in (torch_grad, torch_input_grad) if grad is not None)
+        )
         ctx.needs_input_gradient = torch_input_grad is not None
         return _jax_to_torch(value, like=params)
 
@@ -113,15 +122,17 @@ class _TorchJAXQuantumFunction(torch.autograd.Function):
     @once_differentiable
     def backward(
         ctx: _JAXAutogradContext, grad_output: torch.Tensor
-    ) -> tuple[torch.Tensor, torch.Tensor | None, None]:
-        grad = ctx.saved_tensors[0]
-        scale_shape = tuple(grad_output.shape) + (1,) * max(
-            0, grad.ndim - grad_output.ndim
-        )
-        parameter_vjp = grad_output.reshape(scale_shape) * grad
+    ) -> tuple[torch.Tensor | None, torch.Tensor | None, None]:
+        parameter_vjp = None
+        if ctx.needs_parameter_gradient:
+            grad = ctx.saved_tensors[0]
+            scale_shape = tuple(grad_output.shape) + (1,) * max(
+                0, grad.ndim - grad_output.ndim
+            )
+            parameter_vjp = grad_output.reshape(scale_shape) * grad
         if not ctx.needs_input_gradient:
             return parameter_vjp, None, None
-        input_grad = ctx.saved_tensors[1]
+        input_grad = ctx.saved_tensors[int(ctx.needs_parameter_gradient)]
         input_scale_shape = tuple(grad_output.shape) + (1,) * max(
             0, input_grad.ndim - grad_output.ndim
         )
@@ -157,12 +168,17 @@ class JAXQuantumKernel:
             update_config: Callable[[str, bool], None] = jax.config.update
             update_config("jax_enable_x64", True)
         self._value_and_grad = self._build_value_and_grad()
+        self._value = self._compile(self._jax_loss)
         if self.accepts_inputs:
             import jax
 
             parameter_gradient = jax.value_and_grad(self._jax_loss, argnums=0)
             self._parameter_value_and_grad = (
                 jax.jit(parameter_gradient) if self.jit else parameter_gradient
+            )
+            input_gradient = jax.value_and_grad(self._jax_loss, argnums=1)
+            self._input_value_and_grad = (
+                jax.jit(input_gradient) if self.jit else input_gradient
             )
         else:
             self._parameter_value_and_grad = self._value_and_grad
@@ -178,6 +194,13 @@ class JAXQuantumKernel:
             )
 
         input_tensor = inputs if inputs is not None else parameters.new_empty(0)
+        if not torch.is_grad_enabled() or not (
+            parameters.requires_grad or input_tensor.requires_grad
+        ):
+            arguments: tuple[Any, ...] = (_torch_to_jax(parameters),)
+            if self.accepts_inputs:
+                arguments += (_torch_to_jax(input_tensor),)
+            return _jax_to_torch(self._value(*arguments), like=parameters)
         apply: Callable[[torch.Tensor, torch.Tensor, JAXQuantumKernel], object] = (
             _TorchJAXQuantumFunction.apply
         )
@@ -239,14 +262,20 @@ class JAXQuantumKernel:
     def _build_value_and_grad(self) -> Any:
         import jax
 
-        base_value_and_grad = jax.value_and_grad(
-            self._jax_loss, argnums=(0, 1) if self.accepts_inputs else 0
+        return self._compile(
+            jax.value_and_grad(
+                self._jax_loss, argnums=(0, 1) if self.accepts_inputs else 0
+            )
         )
-        value_and_grad = base_value_and_grad
+
+    def _compile(self, function: Any) -> Any:
+        import jax
+
+        compiled = function
         if self.parameter_shape is not None and not self.accepts_inputs:
             parameter_shape = tuple(int(dim) for dim in self.parameter_shape)
 
-            def value_and_grad_with_optional_batch(parameters: Any) -> Any:
+            def with_optional_batch(parameters: Any) -> Any:
                 shape = tuple(parameters.shape)
                 batch_ndim = len(shape) - len(parameter_shape)
                 if batch_ndim < 0 or shape[batch_ndim:] != parameter_shape:
@@ -254,16 +283,18 @@ class JAXQuantumKernel:
                         f"parameter shape must end with {parameter_shape}; got {shape}"
                     )
                 if batch_ndim == 0:
-                    return base_value_and_grad(parameters)
+                    return function(parameters)
                 batch_shape = shape[:batch_ndim]
                 flat = parameters.reshape((prod(batch_shape),) + parameter_shape)
-                values, grads = jax.vmap(base_value_and_grad)(flat)
-                return values.reshape(batch_shape), grads.reshape(parameters.shape)
+                result = jax.vmap(function)(flat)
+                return jax.tree_util.tree_map(
+                    lambda value: value.reshape(batch_shape + value.shape[1:]), result
+                )
 
-            value_and_grad = value_and_grad_with_optional_batch
+            compiled = with_optional_batch
         if self.jit:
-            value_and_grad = jax.jit(value_and_grad)
-        return value_and_grad
+            compiled = jax.jit(compiled)
+        return compiled
 
     def _jax_loss(self, parameters: Any, inputs: Any | None = None) -> Any:
         import jax.numpy as jnp
