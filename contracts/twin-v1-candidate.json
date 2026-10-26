@@ -71,6 +71,7 @@
     "prepare_region_candidate_holdout",
     "prepare_region_holdout_study",
     "prepare_region_validation_suite",
+    "prepare_probe_refresh",
     "release_region_candidate",
     "TwinCalibrationDrift",
     "TwinCalibrationHistory",
@@ -93,6 +94,7 @@
     "TwinGateDurationDrift",
     "TwinHardwareReport",
     "TwinPrediction",
+    "TwinProbeRefreshPlan",
     "TwinQubitCalibrationDrift",
     "TwinRegionCoverage",
     "TwinRegionCoverageStatus",
@@ -155,6 +157,7 @@
     "prepare_candidate_suite": "(incumbent: 'QPUDigitalTwin', candidate: 'QPUDigitalTwin', circuits: 'Sequence[Any]', *, name: 'str', shots: 'int') -> 'TwinCandidateSuite'",
     "prepare_region_candidate_holdout": "(incumbent: 'TwinRegionModel', candidate: 'TwinRegionModel', reference_circuits: 'Sequence[Any]', holdout_circuits: 'Sequence[Any]', *, physical_qubits: 'Sequence[int]', name: 'str', shots: 'int') -> 'TwinRegionCandidateHoldoutStudy'",
     "prepare_region_validation_suite": "(region_twin: 'TwinRegionModel', circuits: 'Sequence[Any]', *, physical_qubits: 'Sequence[int]', name: 'str', shots: 'int', repetitions: 'int' = 2) -> 'TwinRegionValidationSuite'",
+    "prepare_probe_refresh": "(release: 'TwinRegionRelease', candidate_circuits: 'Sequence[Any]', *, calibration_history: 'TwinCalibrationHistory | None' = None, validation_history: 'TwinValidationHistory | TwinRegionValidationHistory | None' = None, maximum_tasks: 'int', shots: 'int') -> 'TwinProbeRefreshPlan'",
     "build_region_validation_history": "(observations: 'Sequence[tuple[TwinRegionModel, TwinRegionSuiteEvaluation]]') -> 'TwinRegionValidationHistory'",
     "build_region_holdout_history": "(observations: 'Sequence[tuple[TwinRegionModel, TwinRegionHoldoutEvaluation]]') -> 'TwinRegionHoldoutHistory'",
     "dump_region_holdout_history": "(history: 'TwinRegionHoldoutHistory', path: 'str | PathLike[str]') -> 'None'",
@@ -192,6 +195,7 @@
     "TwinHardwareReport": "(experiment_identity: 'str', provider: 'str', backend_name: 'str', task_id: 'str', submitted_qasm_identity: 'str', executed_qasm_identity: 'str | None', counts: 'Mapping[str, int]', validation: 'TwinValidationReport', result_metadata: 'Mapping[str, Any]', schema: 'str' = 'flagquantum.twin_hardware_report.v1') -> None",
     "TwinGateDurationDrift": "(gate_name: 'str', physical_qubits: 'tuple[int, ...] | None', reference_duration_seconds: 'float', current_duration_seconds: 'float', absolute_duration_delta_seconds: 'float', relative_duration_delta: 'float | None', schema: 'str' = 'flagquantum.twin_gate_duration_drift.v1') -> None",
     "TwinPrediction": "(snapshot_identity: 'str', circuit_identity: 'str', n_wires: 'int', ideal_probabilities: 'tuple[float, ...]', twin_probabilities: 'tuple[float, ...]', total_variation_from_ideal: 'float', schema: 'str' = 'flagquantum.twin_prediction.v1') -> None",
+    "TwinProbeRefreshPlan": "(release_identity: 'str', candidate_region_identity: 'str', candidate_snapshot_identity: 'str', target: 'str', physical_qubits: 'tuple[int, ...]', candidate_circuit_identities: 'tuple[str, ...]', selected_circuit_identities: 'tuple[str, ...]', unsupported_candidates: 'tuple[tuple[str, tuple[str, ...]], ...]', covered_directed_couplers: 'tuple[tuple[int, int], ...]', coverage_gaps: 'tuple[str, ...]', calibration_history_identity: 'str | None', validation_history_identity: 'str | None', shots: 'int', maximum_tasks: 'int', repetitions: 'int' = 2, schema: 'str' = 'flagquantum.twin_probe_refresh_plan.v1') -> None",
     "TwinQubitCalibrationDrift": "(physical_qubit: 'int', reference_t1_seconds: 'float', current_t1_seconds: 'float', relative_t1_delta: 'float', reference_t2_seconds: 'float', current_t2_seconds: 'float', relative_t2_delta: 'float', maximum_readout_row_tv_distance: 'float | None', schema: 'str' = 'flagquantum.twin_qubit_calibration_drift.v1') -> None",
     "TwinRegionCoverage": "(status: 'TwinRegionCoverageStatus', physical_qubits: 'tuple[int, ...]', required_directed_couplers: 'tuple[tuple[int, int], ...]', covered_qubits: 'tuple[int, ...]', covered_directed_couplers: 'tuple[tuple[int, int], ...]', missing_qubits: 'tuple[int, ...]', missing_directed_couplers: 'tuple[tuple[int, int], ...]', unsupported_operations: 'tuple[str, ...]', circuit_depth: 'int', maximum_circuit_depth: 'int', source_support_identities: 'tuple[str, ...]', reasons: 'tuple[str, ...]', tv_error_bound: 'None' = None, confidence_level: 'None' = None, schema: 'str' = 'flagquantum.twin_region_coverage.v1') -> None",
     "TwinRegionModel": "(region: 'TwinConnectedRegion', twin: 'QPUDigitalTwin', schema: 'str' = 'flagquantum.twin_region_model.v1') -> None",
@@ -253,6 +257,8 @@
     "TwinGateDurationDrift.to_dict": "(self) -> 'dict[str, Any]'",
     "TwinPrediction.compare_counts": "(self, counts: 'Mapping[str, int]', *, reverse_bits: 'bool' = False) -> 'TwinValidationReport'",
     "TwinPrediction.to_dict": "(self) -> 'dict[str, Any]'",
+    "TwinProbeRefreshPlan.prepare_suite": "(self, region_twin: 'TwinRegionModel', candidate_circuits: 'Sequence[Any]', *, name: 'str') -> 'TwinRegionValidationSuite'",
+    "TwinProbeRefreshPlan.to_dict": "(self) -> 'dict[str, Any]'",
     "TwinQubitCalibrationDrift.to_dict": "(self) -> 'dict[str, Any]'",
     "TwinRegionCoverage.to_dict": "(self) -> 'dict[str, Any]'",
     "TwinRegionModel.prepare_experiment": "(self, circuit: 'Any', *, physical_qubits: 'Sequence[int]', name: 'str', shots: 'int') -> 'TwinExperiment'",
@@ -459,6 +465,24 @@
       "ideal_probabilities",
       "twin_probabilities",
       "total_variation_from_ideal",
+      "schema"
+    ],
+    "TwinProbeRefreshPlan": [
+      "release_identity",
+      "candidate_region_identity",
+      "candidate_snapshot_identity",
+      "target",
+      "physical_qubits",
+      "candidate_circuit_identities",
+      "selected_circuit_identities",
+      "unsupported_candidates",
+      "covered_directed_couplers",
+      "coverage_gaps",
+      "calibration_history_identity",
+      "validation_history_identity",
+      "shots",
+      "maximum_tasks",
+      "repetitions",
       "schema"
     ],
     "TwinQubitCalibrationDrift": [
@@ -883,6 +907,11 @@
       "identity",
       "target",
       "verified_circuit_identities"
+    ],
+    "TwinProbeRefreshPlan": [
+      "identity",
+      "planned_shots",
+      "planned_task_count"
     ]
   },
   "public_schema_defaults": {
@@ -902,6 +931,7 @@
     "TwinHardwareReport": "flagquantum.twin_hardware_report.v1",
     "TwinGateDurationDrift": "flagquantum.twin_gate_duration_drift.v1",
     "TwinPrediction": "flagquantum.twin_prediction.v1",
+    "TwinProbeRefreshPlan": "flagquantum.twin_probe_refresh_plan.v1",
     "TwinQubitCalibrationDrift": "flagquantum.twin_qubit_calibration_drift.v1",
     "TwinRegionCoverage": "flagquantum.twin_region_coverage.v1",
     "TwinRegionModel": "flagquantum.twin_region_model.v1",

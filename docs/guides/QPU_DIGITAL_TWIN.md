@@ -318,6 +318,68 @@ The optional output is canonical private JSON. Loading it verifies its strict
 schema, nested series, all cross-observation invariants, and every derived
 metric; tampered summaries and destructive replacement are rejected.
 
+## Plan a bounded evidence refresh
+
+Select only from an application-owned circuit pool, with an explicit task and
+shot budget:
+
+```python
+import flagquantum as fq
+
+release = fq.twin.load_region_release("region-release.json")
+region_twin = fq.twin.load_region_twin("region-twin.json")
+calibration_history = fq.twin.load_calibration_history(
+    "calibration-history.json"
+)
+validation_history = fq.twin.load_region_validation_history(
+    "region-validation-history.json"
+)
+
+candidate_circuits = (
+    fq.Circuit(3).h(0).cx(0, 1).cx(1, 2),
+    fq.Circuit(3).x(2).cx(1, 2),
+    fq.Circuit(3).h(2).cx(0, 1),
+)
+plan = fq.twin.prepare_probe_refresh(
+    release,
+    candidate_circuits,
+    calibration_history=calibration_history,
+    validation_history=validation_history,
+    maximum_tasks=6,
+    shots=1024,
+)
+
+print(plan.selected_circuit_identities)
+print(plan.covered_directed_couplers)
+print(plan.unsupported_candidates)
+print(plan.coverage_gaps)
+print(plan.planned_task_count)
+
+suite = plan.prepare_suite(
+    region_twin,
+    candidate_circuits,
+    name="regional-refresh",
+)
+assert suite.planned_task_count == plan.planned_task_count
+```
+
+The release fixes the target and logical-to-physical mapping. Every candidate
+must therefore have the same width as `release.physical_qubits`. Structurally
+unsupported candidates are reported and never replaced. Two repetitions are
+frozen for each selection, so a task budget of six selects at most three
+circuits.
+
+Ranking prefers circuits missing from the exact release, then circuits missing
+from supplied validation history, overlap with the latest represented
+calibration drift, exercised directed couplers, and instruction count. Circuit
+identity breaks ties. These are deterministic evidence-gap facts, not proof of
+parameter identifiability, expected accuracy improvement, or causal drift.
+
+Planning and suite preparation are offline. The returned suite contains the
+existing frozen `TwinExperiment` objects but does not submit them. Provider
+construction, credentials, task submission, polling, retry, cancellation, and
+operator approval remain application responsibilities.
+
 To incorporate one newly validated calibration, extend the saved history
 immutably and write a new versioned artifact:
 
