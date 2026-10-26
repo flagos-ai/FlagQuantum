@@ -170,6 +170,8 @@ This catalog is generated from the machine-validated
 | Inspect external-backend provenance and fallback status | Qiskit Aer execution bridge | Experimental | [Read guide](../../docs/guides/QISKIT_AER_EXECUTION.md) |
 | Prototype mid-circuit measurement and feed-forward | Dynamic circuits and backend assessment | Experimental | [Read guide](../../docs/reference/API.md) |
 | Assess backend support before execution | Dynamic circuits and backend assessment | Experimental | [Read guide](../../docs/reference/API.md) |
+| Use one DynamicCircuit builder for static shot-based Quafu execution | DynamicCircuit terminal measurements on a static Quafu route | Development evidence | [Read guide](../../docs/reference/API.md) |
+| Preserve explicit terminal qubit-to-classical-bit mappings in counts | DynamicCircuit terminal measurements on a static Quafu route | Development evidence | [Read guide](../../docs/reference/API.md) |
 | Exercise a fixed-round QEC control workflow | Repetition-code memory experiment | Development evidence | [Read guide](../../flagquantum/qec/README.md) |
 | Inspect syndrome and detection-event records | Repetition-code memory experiment | Development evidence | [Read guide](../../flagquantum/qec/README.md) |
 | Prototype a decoder against a typed contract | Repetition-code memory experiment | Development evidence | [Read guide](../../flagquantum/qec/README.md) |
@@ -1720,6 +1722,20 @@ Execute dynamic circuits locally, including a disjunction of classical condition
 - **Start:** [quick-start guide](../../docs/reference/API.md)
 - **Documentation:** [guide](../../docs/reference/API.md)
 - **Known boundary:** DynamicCircuit construction and noiseless single-process execution through fq.plan and fq.run are stable under contracts/dynamic-circuit-v1.json and contracts/dynamic-execution-unified-run-v1.json. Stable execution requires a positive shot count, uses the local PyTorch CPU trajectory engine, returns ExecutionResult, preserves the effective ExecutionPlan identity, and refuses custom initial states because ExecutionPlan v1 does not serialize them. A DynamicCircuit sent to a remote fq.run target is now classified before compiler or provider dispatch and fails closed with the exact target plus ordered capability blockers unless a detailed device-scoped capability snapshot satisfies the API Change 086 matcher. No provider currently supplies that snapshot to the stable facade, so this guard is not a remote-QPU support claim and no remote DynamicCircuit task is admitted. Static remote circuits and local DynamicCircuit execution are unchanged. The native run_dynamic result, local dynamic noise, and backend assessment remain experimental. Local dynamic noise is limited to one-qubit bit-flip channels after matching executed gates and independent readout confusion on explicit measurements and final sampling; the stable fq.run path does not yet admit that subset. Other Kraus channels, correlated readout, device-profile timing noise, noisy gradients, and provider-noise execution fail closed. A condition is a conjunction of classical-bit tests or a disjunction of at least two such conjunctions, stated with classical_bit, conditions, or any_of; a conditioned measure or reset is refused by name because those operations project a qubit rather than apply a matrix. Conditions may read only bits written by earlier measurements; this is checked during construction, planning, and trajectory execution. Distributed statevector execution does not carry classical feedback and refuses dynamic programs with dynamic_conditional_execution_unsupported. OpenQASM 3 export writes the disjunction, while the one-bit Braket IQM and Qiskit condition paths refuse it. Routing, deployment packaging, dialect export and provider integration are internal workflows rather than public experimental APIs. Provider-neutral conformance passes locally and on Qiskit Aer, but no real IQM QPU task was used.
+
+### DynamicCircuit terminal measurements on a static Quafu route
+
+Normalize one full-register terminal measurement suffix into static Quafu service compilation while preserving the declared classical-bit permutation in returned counts.
+
+- **Maturity:** Development evidence
+- **Public API:** `flagquantum.dynamic.DynamicCircuit`, `flagquantum.run`
+- **Runtime modes:** `remote_static_terminal_counts_normalization`
+- **Hardware:** `quafu_service_compilation_offline_contract`
+- **Gradient support:** `unsupported`
+- **Distribution semantics:** `single_submission`
+- **Start:** [quick-start guide](../../docs/reference/API.md)
+- **Documentation:** [guide](../../docs/development/API_CHANGE_PROPOSAL_095_DYNAMIC_TERMINAL_MEASUREMENT_NORMALIZATION.md)
+- **Known boundary:** The stable fq.run signature admits a DynamicCircuit only when its dynamic suffix measures every logical qubit exactly once into every classical bit exactly once, outputs is absent or one full-register counts request, target is Quafu, and compiler is None so the maintained SDK uses service compilation. FlagQuantum submits only the unitary prefix through the established static route and projects normalized provider counts into the declared classical-bit order. This semantic equivalence is covered by offline SDK fixtures and is not a claim that a Quafu QPU supports dynamic circuits. Partial or repeated measurement, sparse classical registers, samples, expectations, reset, conditions, mid-circuit measurement, compiler='qsteed', and every other provider remain fail closed. No live credential, network, task, quota, latency, or QPU evidence is claimed.
 
 ### Extension SDK
 

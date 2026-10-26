@@ -44,6 +44,12 @@ def _disjunctive_clauses(
 class DynamicCircuit(Circuit):
     """Circuit builder for mid-circuit measurement and classical feedback."""
 
+    def x(self, qubit: int) -> DynamicCircuit:
+        """Append a Pauli-X gate and keep the dynamic builder type."""
+
+        self.gate("x", qubit)
+        return self
+
     def _append_dynamic(self, instruction: Instruction) -> DynamicCircuit:
         validate_classical_control(
             (*self._instructions, instruction),

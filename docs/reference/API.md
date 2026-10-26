@@ -928,6 +928,29 @@ remain experimental or internal. Custom initial states are refused because
 ExecutionPlan v1 does not serialize them. Provider-native state and diagnostic
 fields are not part of the stable result contract.
 
+### Terminal measurements on the static Quafu route
+
+A `DynamicCircuit` whose only dynamic operations are one final measurement of
+every qubit can use the existing static Quafu service-compilation path:
+
+```python
+from flagquantum.dynamic import DynamicCircuit
+
+circuit = DynamicCircuit(2).h(0).cx(0, 1)
+circuit.measure(1, classical_bit=0)
+circuit.measure(0, classical_bit=1)
+
+result = fq.run(circuit, target="quafu:Baihua", shots=1024)
+assert result.counts is not None
+```
+
+FlagQuantum removes the terminal measurement suffix before static submission
+and projects returned counts into the declared classical-bit order. This is a
+static semantic equivalence, not remote dynamic execution. V1 requires a
+bijective full-register measurement and `counts`; partial or repeated
+measurement, sparse classical registers, samples, expectations, reset,
+conditions, mid-circuit measurement, and `compiler="qsteed"` remain fail closed.
+
 ### Interoperability adapter contract
 
 External framework adapters implement one candidate-stable, framework-neutral
