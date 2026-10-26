@@ -1,6 +1,8 @@
-# API proposal: declared circuit batches through JAX Module execution
+# Declared JAX circuit batches: approved compatibility proposal
 
-Status: compatibility assessment under the already frozen Proposal 005. Parent:
+Status: explicitly approved by the user on 2026-10-26 ("Approve implementation
+according to this proposal"); compatibility assessment under frozen Proposal 005.
+Parent:
 #918; delivery: #929. The earlier additional-approval request was withdrawn after
 checking the authoritative contract. This is backend conformance to existing
 explicit Circuit.bsz/broadcast/autograd semantics, not a new API interpretation.
@@ -11,8 +13,9 @@ does not authorize automatic input-axis inference or a backend-default change.
 implementation changes when protected semantics stay unchanged. Proposal 005
 already states that builders/backends produce compatible broadcastable shapes
 and forbids implicit Cartesian batches; its forward/autograd and ownership rules
-remain authoritative. No new approval is claimed or required for conformance to
-those existing rules.
+remain authoritative. Conformance to those existing rules does not require a new
+API freeze;
+the user also explicitly approved this implementation scope.
 
 ## User outcome
 
@@ -132,6 +135,7 @@ release. Document the support extension and its limits in known limitations,
 the capability record and runnable examples; do not update frozen snapshots just
 to approve a change. Numerical execution/selection defaults remain unchanged.
 
-The existing approval remains Proposal 005; no successor API freeze or default
-change is introduced here. Automatic selection and implicit input-axis inference
+Proposal 005 remains the authoritative frozen contract; the explicit user
+approval covers this implementation proposal, not a successor API freeze or
+default change. Automatic selection and implicit input-axis inference
 still require their own approved proposals before implementation.

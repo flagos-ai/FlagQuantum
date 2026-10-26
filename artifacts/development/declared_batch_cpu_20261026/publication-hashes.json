@@ -1,0 +1,13 @@
+{
+  "original_sha256": "ad1358449233e0eea2be51ad21ce137fe46c5dfe1cbc0ebb70c4ffa49abce5fb",
+  "published_sha256": "ad1358449233e0eea2be51ad21ce137fe46c5dfe1cbc0ebb70c4ffa49abce5fb",
+  "sanitization": "tools.sanitize_public_evidence.sanitize_text; numeric values unchanged",
+  "pr_default_log": {
+    "original_sha256": "24dc98e8509f353c74e9f48b7762a8043080f00efb14054568f0e5339bd8ee17",
+    "published_sha256": "954965a2a2efe751057d5501c35542139d36f42ea7423257c77bfac4696b70f9"
+  },
+  "focused_log": {
+    "original_sha256": "ef07feba85078d266c2db72d4e5f8278c9a1d5fb080e3152c2080864ccbdc92b",
+    "published_sha256": "cd885b6f0a89242de140906dc7eebabc15d6791614e9d12e8b55828743eba00a"
+  }
+}

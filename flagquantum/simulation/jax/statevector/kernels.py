@@ -16,7 +16,7 @@ from ..primitives import (
 
 def jax_statevector_from_circuit(
     circuit: Any,
-    n_wires: int,
+    n_qubits: int,
     parameters: Any,
     *,
     matmul_precision: str | None = "highest",
@@ -30,23 +30,23 @@ def jax_statevector_from_circuit(
     if diagnostics is not None:
         diagnostics.update(
             algorithm="fused_gate_updates",
-            largest_intermediate_elements_per_entry=2**n_wires,
+            largest_intermediate_elements_per_entry=2**n_qubits,
         )
     # Tiny states favor fused elementwise updates over a contraction program.
-    if 2**n_wires >= 32 and not any(
+    if 2**n_qubits >= 32 and not any(
         item.metadata.get("is_channel") for item in instructions
     ):
         nodes, labels, _ = jax_circuit_tensor_nodes(
-            circuit, n_wires, matmul_precision=matmul_precision
+            circuit, n_qubits, matmul_precision=matmul_precision
         )
         operands: list[Any] = []
         for tensor, legs in nodes:
             operands.extend((tensor, legs))
         operands.append(tuple(labels))
         path, info = jnp.einsum_path(*operands, optimize="greedy")
-        direct_cost = sum(2 ** len(item.wires) for item in instructions) * 2**n_wires
+        direct_cost = sum(2 ** len(item.wires) for item in instructions) * 2**n_qubits
         peak = int(info.largest_intermediate)
-        if peak <= max(2**n_wires, 16) and info.opt_cost < direct_cost:
+        if peak <= max(2**n_qubits, 16) and info.opt_cost < direct_cost:
             if diagnostics is not None:
                 diagnostics.update(
                     algorithm="dense_output_contraction",
@@ -55,7 +55,7 @@ def jax_statevector_from_circuit(
             return jax_contract_tensor_nodes(
                 nodes, tuple(labels), matmul_precision, path=path
             ).reshape(-1)
-    state = jnp.zeros((2**n_wires,), dtype=_jax_complex_dtype()).at[0].set(1.0 + 0.0j)
+    state = jnp.zeros((2**n_qubits,), dtype=_jax_complex_dtype()).at[0].set(1.0 + 0.0j)
     pending_wire = None
     pending_matrix = None
     for instruction in instructions:
@@ -69,24 +69,24 @@ def jax_statevector_from_circuit(
                 continue
         if pending_wire is not None:
             state = _jax_apply_matrix(
-                state, pending_matrix, (pending_wire,), n_wires, matmul_precision
+                state, pending_matrix, (pending_wire,), n_qubits, matmul_precision
             )
             pending_wire, pending_matrix = None, None
         if len(wires) == 1:
             pending_wire, pending_matrix = wires[0], matrix
         elif instruction.name == "cx":
-            state = _jax_apply_cx_permutation(state, wires, n_wires)
+            state = _jax_apply_cx_permutation(state, wires, n_qubits)
         else:
             state = _jax_apply_matrix(
                 state,
                 _jax_instruction_matrix(instruction),
                 wires,
-                n_wires,
+                n_qubits,
                 matmul_precision,
             )
     if pending_wire is not None:
         state = _jax_apply_matrix(
-            state, pending_matrix, (pending_wire,), n_wires, matmul_precision
+            state, pending_matrix, (pending_wire,), n_qubits, matmul_precision
         )
     return state
 
