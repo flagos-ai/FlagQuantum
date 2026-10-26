@@ -1,6 +1,6 @@
 # API Change Proposal 093: Quafu Dynamic Format Activation
 
-**Status:** Proposed; implementation is not approved
+**Status:** Stage A approved and complete; current SDK contract is unsupported
 
 **Owner:** Remote, with Runtime and Deployment contract review
 
@@ -17,6 +17,14 @@ conditional semantics requested by the user.
 This proposal defines the evidence and review sequence. It does not authorize a
 network request, credential access, task submission, quota use, charging, or a
 claim that any Quafu backend supports dynamic circuits.
+
+The approved Stage A audit is recorded in
+[API Change 093: Quafu Dynamic Format Source Audit](API_CHANGE_093_QUAFU_DYNAMIC_FORMAT_AUDIT.md).
+Against `QUAFU-Quantum/quafu-sdk` version `0.2.7` at commit
+`b54c6e5dadde81e0bba8529a4e03523794fd97c7`, it reached the **unsupported by
+the current maintained SDK contract** outcome. Stable execution therefore
+remains fail closed. This source-scoped outcome makes no permanent hardware
+claim and may be revisited only against newer authoritative evidence.
 
 ## Current user behavior
 
@@ -184,14 +192,15 @@ No result is converted from one state to another by inference.
 
 ## Acceptance criteria
 
-- [ ] Stage A records exact maintained-source versions and locations.
-- [ ] Every program-format field is authoritative or explicitly missing.
-- [ ] Every device capability is scoped to one target and evidence window.
-- [ ] Existing snapshot, rematch, seal, and result authorities are reused.
-- [ ] Refusal remains side-effect free and deterministically ordered.
-- [ ] The PR implementing each stage includes the current public user example
+- [x] Stage A records exact maintained-source versions and locations.
+- [x] Every program-format field is authoritative or explicitly missing.
+- [x] Missing device capability evidence is explicit; no target support is
+      inferred.
+- [x] Existing snapshot, rematch, seal, and result authorities remain reused.
+- [x] Refusal remains side-effect free and deterministically ordered.
+- [x] The Stage A PR includes the current public user example
       and expected behavior.
-- [ ] No live request or support claim occurs without separate approval.
+- [x] No live request or support claim occurred.
 
 ## Approval requested
 
@@ -203,3 +212,7 @@ Approval authorizes Stage A only: a local, read-only audit of maintained Quafu
 SDK and service sources plus a gap record. It does not authorize credentials,
 network access, provider requests, task submission, charging, stable-facade
 activation, or a live-QPU support claim.
+
+**Approval recorded:** `approve API-CHANGE-093-QUAFU-DYNAMIC-FORMAT-ACTIVATION`
+from the API owner on 2026-10-26. The audit inspected the user-identified
+`QUAFU-Quantum/quafu-sdk` public repository only.
