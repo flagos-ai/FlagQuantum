@@ -245,3 +245,62 @@ Secret objects. Artifact transfer, bounded checkout fallback, signed Ubuntu
 bootstrap, CPU Torch install and native tests then run unchanged. Network samples
 alone cannot prove packet loss, an egress rate limit, or the health of every set.
 Repeated end-to-end success is required before considering PR scheduling again.
+
+## 2026-10-26 retest evidence
+
+[Manual diagnostic run 40270596949](https://github.com/flagos-ai/FlagQuantum/actions/runs/40270596949)
+completed successfully on commit `373539376c4a24cb086c3ee6a18aac07f65ba22f`.
+This is one end-to-end native CPU retest, not repeated SDK certification or pool
+admission. PR routing remains disconnected from R300.
+
+| Target | Job result | Artifact transfer | Signed Ubuntu bootstrap | CPU Torch install | Native/backend/smoke + policy tests |
+| --- | --- | --- | --- | --- | --- |
+| [cpu03](https://github.com/flagos-ai/FlagQuantum/actions/runs/40270596949/job/121402432982) | success | 30 s | 13 s | 282 s | 182 + 58 |
+| [cpu04](https://github.com/flagos-ai/FlagQuantum/actions/runs/40270596949/job/121402432834) | success | 53 s | 11 s | 281 s | 182 + 58 |
+| [cpu05](https://github.com/flagos-ai/FlagQuantum/actions/runs/40270596949/job/121402432805) | success | 58 s | 10 s | 144 s | 182 + 58 |
+| [cpu16](https://github.com/flagos-ai/FlagQuantum/actions/runs/40270596949/job/121402432810) | success | 55 s | 55 s | 270 s | 182 + 58 |
+
+The job result does not mean every informational network probe passed:
+
+- All four real source artifacts downloaded and matched the requested commit;
+  checkout fallback was skipped, so its historical five-minute failure path was
+  not exercised. All four signed Tsinghua Ubuntu bootstraps completed. The
+  83.4 MB package download took 3/3/5/48 seconds on 05/04/03/16 respectively.
+- All four GitHub/API/Tsinghua three-sample HTTP checks returned 200 and passed
+  TLS verification. CPU05's extra codeload archive probe nevertheless timed out
+  at 60 seconds with 19,027,203 of 20,502,280 bytes received. CPU04's same archive
+  finished in 17.76 seconds and CPU03's in 36.12 seconds.
+- CPU05's pip log explicitly reported `NameResolutionError` / temporary failure
+  resolving `mirrors.aliyun.com`. CPU03/04/16 exhausted the domestic CPU wheel
+  download's 180-second budget. Every target used the official CPU index
+  fallback and installed `torch==2.13.0+cpu`; none demonstrated a successful
+  domestic Torch download in this retest. The official 191.8 MB wheel transfer
+  reported 11-17 seconds.
+- HTTP/HTTPS proxy variables and NO_PROXY were configured. Values and credentials
+  were not logged. These observations do not prove a specific proxy defect,
+  egress rate limit, packet loss, or node contention; operator-side DNS, proxy,
+  traffic and node metrics are needed to distinguish those causes.
+
+All four own-Pod GETs succeeded in namespace `arc-runners`. They reported
+Kubernetes `v1.31.14`, Pod labels `helm.sh/chart=gha-rs-0.14.2` and
+`app.kubernetes.io/version=0.14.2`, and the same node
+`bm-ksyun-dx-zone1-d-r300-32g-10-30`. Those labels identify the runner scale set
+chart; they do not independently verify the running ARC controller version.
+Namespace deployment and autoscalingrunnerset GETs returned 403, without any
+permission change or Secret-object access.
+
+The init, runner and dind container resource objects were all `{}`: no explicit
+container CPU/memory requests or limits were visible. This does not establish
+that no ancestor or node constraint exists. The runner image was
+`harbor.baai.ac.cn/baai-infra/actions-runner:latest`, with observed digest
+`sha256:e275409999c37162649aa050ca573f03eab2eabcb3a1e7fcc47548de6b4f9690`.
+The dind image was `harbor.baai.ac.cn/baai-infra/docker:dind-ubuntu-v2.0`, digest
+`sha256:0a6d3520a3b1aca9ad3ffa2e04d9533ee8d5dc031813324f5e7ee64db5f4915d`.
+All four reported zero container restarts in that snapshot.
+
+Operators should first check DNS resolution and proxy/bypass routing for
+`mirrors.aliyun.com`, then compare large codeload and artifact transfers, and
+inspect shared-node resource metrics and explicit Pod budgets. No CPU hardware
+fault was established by this run. Keep PR scheduling paused until the download
+failures are repaired and repeated end-to-end runs, including intended SDK
+versions, succeed without relying on failed primary-path probes.
