@@ -707,12 +707,28 @@ campaigns remain unchanged; no new collection was run.
 ### FTS-11C finite trajectory Born-conformance proposal
 
 The [Runtime/reference boundary proposal](../development/FTQC_TRAJECTORY_BORN_CONFORMANCE_PROPOSAL.md)
-requests separate I-L approval for three current dynamic programs, real
+requested separate I-L approval for three current dynamic programs, real
 multinomial inputs, controlled positive-branch coverage and stable result
-projection. The proposed cap is 19 existing local calls and 82 trajectories per
+projection. The approved cap is 19 existing local calls and 82 trajectories per
 module verification, with atol=1e-12/rtol=0 and no empirical-frequency threshold.
 It distinguishes natural draws from controlled coverage and does not certify
 RNG quality, a production decomposition or efficient large-scale sampling.
-No proposed observation hook or conformance implementation has run yet; E-H and
-the pilot budgets do not approve this new boundary or matrix. R04/R05, FTS-10/11
-and FTS-02/09/R01-R15 remain partial.
+The user separately approved this boundary; E-H and pilot budgets alone did not
+authorize it. The finite implementation below does not complete R04/R05,
+FTS-10/11 or FTS-02/09/R01-R15.
+
+
+### FTS-11C finite trajectory Born-conformance implementation
+
+The user separately approved #884 I-L on 2026-10-26; #884 actual main fee4ad and
+entry-pool prerequisite #894 actual main a6ec8e completed full CI, required
+single/two-GPU, fresh installation and executable user-example acceptance.
+The private finite conformance module now observes existing E0/E1/E2 trajectories
+and reuses E-H references: six natural, ten controlled-positive and three stable
+calls, totaling nineteen calls/eighty-two trajectories with seed 53 and one CPU
+thread restored. Raw float64 Born vectors and complex128 conditional density/norm
+use the specifically approved atol=1e-12, rtol=0. Controlled branches are not
+random observations; no frequency/RNG or general sampling certificate is claimed.
+The implementation PR and its actual-main admission remain pending. R04/R05,
+FTS-10/11 selection/product sampling, FTS-02/09 and R01-R15 remain partial; no
+public API, engine, approximate policy or additional research budget is activated.
