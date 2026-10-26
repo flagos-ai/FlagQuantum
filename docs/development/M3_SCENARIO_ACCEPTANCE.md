@@ -59,6 +59,32 @@ route support. None is a distributed capacity or performance acceptance result.
 No new framework, solver, binder, result envelope, registry, evidence schema or
 capability catalog is needed to express this inventory.
 
+## Approved relaxation scenario awaiting acceptance
+
+On 2026-10-26 the user approved all five decisions in the
+[next-scenario contract](M3_NEXT_SCENARIO_CONTRACT_REVIEW.md). Draft
+[#886](https://github.com/flagos-ai/FlagQuantum/pull/886) implements the driven
+three-level fixed `2->1->0` relaxation example and independent integration tests
+through existing APIs. This pending work does not change the accepted scenario
+table above: that row still describes the merged closed model.
+
+At implementation head `5f27e41b7b8b912d82f7880446b2d41f14db21bb`, local default
+verification passed 16,017 cases/224 skipped and integration passed
+2,515/177 skipped, with zero XML failures/errors. Python 3.10 and 3.12 each passed
+the 20 new scenario cases plus four unchanged closed-model cases. Full-density
+maximum error was 1.89e-15 and the maximum eight-control gradient error was
+4.19e-13, within the unchanged 1e-10 and 1e-9 budgets. The 40-step training
+objective decreased from 0.87460332 to 0.09593434 and detached numeric JSON replay
+was exact on the local admitted environment. Four independent reference-function
+ASTs and both old closed-model file blobs remain unchanged.
+
+Complete GPU workflow `40262404897` succeeded. Complete standard CI
+`40262404865` remains pending at this progress update; remote three-Python matrix
+acceptance and a separate human merge grant are still required. Do not mark this
+slice accepted, promote capability maturity or declare M3/M4 complete on the
+basis of local results. No device calibration, gate-fidelity or higher-level
+truncation claim follows from this finite phenomenological model.
+
 ## Accepted native unread observation
 
 [Proposal 089](API_CHANGE_PROPOSAL_089_ISING_UNREAD_OBSERVATION.md) approved the
