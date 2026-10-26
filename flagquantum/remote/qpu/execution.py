@@ -25,6 +25,9 @@ from .quafu import QuafuProvider, _service_options
 if TYPE_CHECKING:
     from ...circuit import Circuit
     from ...core.ir import CircuitIR
+    from ...runtime.dynamic.terminal_measurement import (
+        TerminalMeasurementNormalization,
+    )
     from ...runtime.execution_plan import ExecutionPlan
 
 
@@ -47,6 +50,7 @@ def execute_quafu(
     shots: int,
     name: str | None,
     target_qubits: Sequence[int] | None = None,
+    terminal_measurement: TerminalMeasurementNormalization | None = None,
 ) -> ExecutionResult:
     """Submit one compiled circuit and normalize its Quafu result."""
 
@@ -77,6 +81,10 @@ def execute_quafu(
         QuafuProvider(reverse_result_bits=True) if compiler is None else QuafuProvider()
     )
     if output.kind == "expectation":
+        if terminal_measurement is not None:
+            raise ValueError(
+                "terminal measurement normalization supports counts output only"
+            )
         return _execute_expectation(
             compiled,
             provider=provider,
@@ -96,6 +104,7 @@ def execute_quafu(
         shots=shots,
         name=name,
         package_options=package_options,
+        terminal_measurement=terminal_measurement,
     )
 
 
@@ -358,6 +367,7 @@ def _execute_counts(
     shots: int,
     name: str | None,
     package_options: dict[str, Any],
+    terminal_measurement: TerminalMeasurementNormalization | None,
 ) -> ExecutionResult:
     if name is None:
         native = deploy_circuit(compiled, provider, shots=shots, **package_options)
@@ -379,6 +389,7 @@ def _execute_counts(
             ).get("target_qubits", ())
         ),
         name=name,
+        terminal_measurement=terminal_measurement,
     )
 
 
@@ -391,11 +402,20 @@ def counts_result(
     target: str,
     target_qubits: Sequence[int],
     name: str | None,
+    terminal_measurement: TerminalMeasurementNormalization | None = None,
 ) -> ExecutionResult:
     """Normalize one provider result for synchronous and detached jobs."""
+    source_counts = (
+        native.counts
+        if terminal_measurement is None
+        else terminal_measurement.project_counts(native.counts)
+    )
     counts: dict[str | int, int] = {
-        str(key): int(value) for key, value in native.counts.items()
+        str(key): int(value) for key, value in source_counts.items()
     }
+    normalization = (
+        None if terminal_measurement is None else terminal_measurement.summary()
+    )
     result = ExecutionResult(
         measurements=(
             MeasurementResult(
@@ -411,6 +431,11 @@ def counts_result(
                     "provider": native.handle.provider,
                     "backend": native.handle.backend_name,
                     "task_id": native.handle.task_id,
+                    **(
+                        {"terminal_measurement_normalization": normalization}
+                        if normalization is not None
+                        else {}
+                    ),
                 },
             ),
         ),
@@ -434,6 +459,11 @@ def counts_result(
             ),
             "name": name.strip() if name is not None else "flagquantum_job",
             "deployment": dict(native.metadata),
+            **(
+                {"terminal_measurement_normalization": normalization}
+                if normalization is not None
+                else {}
+            ),
         },
         runtime={"mode": "remote_qpu", "shots": native.shots},
     )

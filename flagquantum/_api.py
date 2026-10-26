@@ -236,6 +236,8 @@ def run(
             noise_model=noise_model,
         )
 
+    provider_name, separator, _ = (target or "").partition(":")
+    terminal_measurement: Any | None = None
     dynamic_circuit_type = import_module(
         ".runtime.dynamic.circuit", __package__
     ).DynamicCircuit
@@ -249,13 +251,35 @@ def run(
             for instruction in dynamic_ir.instructions
         )
         if has_dynamic_semantics:
-            preflight = import_module(".runtime.dynamic.remote_preflight", __package__)
-            preflight.require_dynamic_remote_preflight(
-                program_or_plan,
-                target=target,
-            )
+            if (
+                separator == ":"
+                and provider_name.lower() == "quafu"
+                and compiler is None
+            ):
+                terminal_module = import_module(
+                    ".runtime.dynamic.terminal_measurement", __package__
+                )
+                terminal_measurement = terminal_module.normalize_terminal_measurements(
+                    dynamic_ir,
+                    outputs=outputs,
+                )
+            if terminal_measurement is None:
+                preflight = import_module(
+                    ".runtime.dynamic.remote_preflight", __package__
+                )
+                preflight.require_dynamic_remote_preflight(
+                    program_or_plan,
+                    target=target,
+                )
+            else:
+                program_or_plan = terminal_measurement.unitary_ir
 
-    provider_name, separator, _ = (target or "").partition(":")
+    # The runtime-loaded DynamicCircuit check above obscures the earlier
+    # narrowing from static type checkers.  At this boundary, native Ising and
+    # Lindblad inputs have already returned or failed closed, while a dynamic
+    # program has either passed preflight or been normalized to CircuitIR.
+    remote_program = cast("Circuit | CircuitIR | ExecutionPlan", program_or_plan)
+
     if target is not None and separator == ":" and provider_name.lower() == "jiuding":
         from .remote.compute.execution import execute_jiuding
 
@@ -293,9 +317,9 @@ def run(
             )
         from .remote.qpu.execution import execute_azure, validate_azure_output
 
-        output = validate_azure_output(program_or_plan, outputs)
+        output = validate_azure_output(remote_program, outputs)
         source = import_module(".core.ir", __package__).ensure_circuit_ir(
-            program_or_plan
+            remote_program
         )
         return execute_azure(
             source,
@@ -328,20 +352,21 @@ def run(
     from .remote.qpu.execution import execute_quafu, validate_quafu_output
     from .remote.qpu.quafu import _validate_quafu_shots
 
-    output = validate_quafu_output(program_or_plan, outputs)
+    output = validate_quafu_output(remote_program, outputs)
     _validate_quafu_shots(target, shots)
     if compiler is None:
         return execute_quafu(
-            import_module(".core.ir", __package__).ensure_circuit_ir(program_or_plan),
+            import_module(".core.ir", __package__).ensure_circuit_ir(remote_program),
             output=output,
             compiler=None,
             target=target,
             shots=shots,
             name=name,
             target_qubits=target_qubits,
+            terminal_measurement=terminal_measurement,
         )
     compiled = compile(
-        program_or_plan,
+        remote_program,
         compiler=compiler,
         target=target,
         target_qubits=target_qubits,
@@ -353,6 +378,7 @@ def run(
         target=target,
         shots=shots,
         name=name,
+        terminal_measurement=terminal_measurement,
     )
 
 

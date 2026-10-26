@@ -113,8 +113,20 @@ normalization remain candidate work, not capabilities implied by this plan.
 The separate continuing compatibility/performance deliveries are summarized in
 the [Stim/PyMatching progress ledger](QEC_STIM_PYMATCHING_DELIVERY_PLAN.md#continuing-delivery-progress--2026-10-26).
 As of 2026-10-26, #872, #877 and #885 are merged; #885's merge-specific Main smoke
-succeeded and its container-publishing outcome is still pending. These private optimizations
-do not activate 005, Decision C or the later functional tranches below.
+and container publishing succeeded. The central progress correction #889 is
+merged with complete head CI/GPU and exact-merge Main smoke success. Main smoke
+is not full main CI. These private optimizations do not activate 005, Decision C
+or the later functional tranches below.
+
+The [remaining-gap inventory and owner decisions](QEC_STIM_PYMATCHING_DELIVERY_PLAN.md#remaining-compatibility-and-functional-gaps)
+separate delivered compatibility from unapproved functionality. The current
+approved small slice adds nested-repeat bridge-bound conformance tests; it
+changes no production behavior or API and is not yet recorded as delivered.
+The finite schedule/feedback Groups A-E matrix is already accepted through
+[#837](https://github.com/flagos-ai/FlagQuantum/pull/837), as recorded in its
+[approved conformance proposal](../development/QEC_SCHEDULE_FEEDBACK_CONFORMANCE_PROPOSAL.md).
+Every future implementation/performance delivery must update the central ledger
+and this entry point, preserving pending checks and scope boundaries.
 
 | ID | State | Evidence |
 | --- | --- | --- |
