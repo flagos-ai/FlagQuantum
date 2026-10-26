@@ -120,8 +120,10 @@ the complete 005 contract on 2026-10-26; C implementation remains deferred.
 
 The [remaining-gap inventory and owner decisions](QEC_STIM_PYMATCHING_DELIVERY_PLAN.md#remaining-compatibility-and-functional-gaps)
 separate delivered compatibility from unapproved functionality. Nested-repeat bridge-bound conformance is delivered in #896 with exact-main
-Main smoke success. The current change implements the separately approved 005
-contract; its complete head CI/GPU and merge acceptance remain delivery gates.
+Main smoke success. The separately approved 005 contract is delivered through
+[#904](https://github.com/flagos-ai/FlagQuantum/pull/904), with full reviewed-head
+CI/GPU and exact-merge Main smoke success. The central ledger records exact
+revisions, local verification limits and the cancelled container publication.
 The finite schedule/feedback Groups A-E matrix is already accepted through
 [#837](https://github.com/flagos-ai/FlagQuantum/pull/837), as recorded in its
 [approved conformance proposal](../development/QEC_SCHEDULE_FEEDBACK_CONFORMANCE_PROPOSAL.md).
@@ -134,7 +136,7 @@ and this entry point, preserving pending checks and scope boundaries.
 | 002 | Proposal merged in [#776](https://github.com/flagos-ai/FlagQuantum/pull/776) | Decision A explicitly approved by the API owner on 2026-10-24; Decision B complete contract approved 2026-10-26; C design-only. |
 | 003 | Merged in [#779](https://github.com/flagos-ai/FlagQuantum/pull/779) | [Implementation and resource evidence](../development/QEC_FUNCTIONAL_003.md); final PR head passed complete CI and single-/two-GPU checks. [Post-merge acceptance](../development/QEC_FUNCTIONAL_003_MAINLINE_ACCEPTANCE.md) records exact revisions, installations and checks. |
 | 004 | Merged in [#789](https://github.com/flagos-ai/FlagQuantum/pull/789) after explicit merge authorization | [Proposal 088](../development/API_CHANGE_PROPOSAL_088_QEC_CORRELATED_PAULI_FAULTS.md) specifies the channel grammar, exclusive distributions, compatibility and independent numerical acceptance. [Implementation](../development/QEC_FUNCTIONAL_004.md) covers exclusive circuit-noise construction and sampling; [post-merge acceptance](../development/QEC_FUNCTIONAL_004_MAINLINE_ACCEPTANCE.md) records exact main, fresh artifacts and checks. |
-| 005 | Complete contract approved 2026-10-26; implementation and conformance in this change | [Batch delivery contract](../development/QEC_FUNCTIONAL_005_BATCH_CONTRACT.md) preserves complete single-shot results, specifies the supported concrete types and differing duplicate semantics, and refuses unknown/stateful plugins. Exact-head full CI/GPU, source/install artifacts and normal delivery acceptance are required; no speed claim. |
+| 005 | Approved 2026-10-26; merged and accepted in [#904](https://github.com/flagos-ai/FlagQuantum/pull/904) | [Batch delivery contract](../development/QEC_FUNCTIONAL_005_BATCH_CONTRACT.md) preserves complete single-shot results, specifies the supported concrete types and differing duplicate semantics, and refuses unknown/stateful plugins. Actual five-type SDK and source/wheel/sdist installation profiles passed; full reviewed-head CI/GPU and exact-merge Main smoke succeeded. The central ledger preserves local default/build and container-publishing limits; no speed claim. |
 | 006 | Existing logical-only native batch path; broader optimization pending | The approved PyMatching Tensor operation already exists. Do not reimplement it or use it to invent full correction records; any further optimization must preserve the approved 005 result contract. |
 | 007 | Example statistics delivered; public experiment contract pending | #784 provides compiled sampling; #788 provides fixed-shot counts and Wilson intervals in the example. These do not activate Decision C or adaptive stopping. |
 | 008–009 | Pending respective contracts | No threshold, broad experiment API or performance claim follows from the partial deliveries above. |
