@@ -341,11 +341,16 @@ truncation, gradient and sampling budgets. It includes the merged driven
 three-level (#787), thermal spin-mode (#782) and native fusion-observation
 (#778), unread continuation (#809) and single sampled continuation (#838)
 slices. These are bounded CPU references, not full M3/M4 or hardware
-certification. The next bounded review targets one intermediate atom-presence
-instrument on the existing native Rydberg schedule, with explicit identity,
-physical loss versus observed flags and post-observation continuation. It must
-reuse existing IR, binding, Liouvillian, integrators and result authorities;
-this inventory approves no new protected interface or feedback implementation.
+certification. The separately approved proposal 092 now adds one intermediate
+atom-presence instrument on the existing native Rydberg schedule and a single
+seeded CPU conditional continuation. Core #869, Simulation #875 and Runtime
+[#879](https://github.com/flagos-ai/FlagQuantum/pull/879) reuse existing IR,
+full-grid binding, Liouvillian, integrators, private sampling and canonical result
+authorities. The [accepted trajectory evidence and public workflow](../api-changes/FQ-RYDBERG-PRESENCE-TRAJECTORY-20261025.md)
+retain atom identity, distinguish physical loss from no-flag detection, and keep
+post-observation and forward time rows explicit. Multi-event trajectories,
+feedback, heating, calibration and device execution remain separate decisions;
+this inventory approves no additional protected interface or M4 claim.
 
 | Scenario | Shared capability under test | Additional acceptance |
 | --- | --- | --- |

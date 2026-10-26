@@ -1,22 +1,28 @@
-# One native Rydberg presence trajectory: shared baseline
+# One native Rydberg presence trajectory: staged delivery
 
 The user explicitly approved all five decisions in
 [proposal 092](../development/API_CHANGE_PROPOSAL_092_RYDBERG_PRESENCE_TRAJECTORY.md)
 on 2026-10-25. Document PR #845 merged as
 `7bd873856c13275c140e4be622560ab008bea60f` after complete applicable CI/GPU.
 Each later PR requires its own conditional merge authorization. Baseline #854,
-Core #869 and Simulation #875 have landed separately. This Runtime change joins
+Core #869, Simulation #875 and Runtime #879 have landed separately. Runtime joins
 strict native source 1.4 to sampled LindbladPlan 1.8 and `fq.run(plan)`.
 It preserves the existing result classes and adds only the approved root input
-and result-plan type annotation.
+and result-plan type annotation. Runtime merged as
+`21b8e7f6e34a638e5120a0f4d7fff64fe196adb2` after complete CI `40255122443`
+(attempt 2), GPU `40255122490`, the three Python matrix jobs and every applicable
+check succeeded. Main smoke `40258387265` then succeeded. The local default and
+integration suites passed 15,995 and 2,481 cases respectively, with unchanged
+skip policy and zero XML failures/errors. The smoke result does not certify a
+full main CI, release, hardware path or all M3 gates.
 
 ## Replacement boundary
 
 The four factories in `tests/unit/test_rydberg_presence_contract.py` now select
 real RydbergProgram, Lindblad planning, root execution and Lindblad JSON reading.
-All independent physical consumers and oracle functions remain unchanged; their
-AST hashes were compared before and after replacement. The disposable test
-reference was deleted. Real source/version/options/environment tampering is
+All independent physical consumers and oracle functions remain unchanged.
+Their 29 AST hashes were compared before and after replacement. The disposable
+test reference was deleted. Real source/version/options/environment tampering is
 checked against the production reader, alongside original byte captures.
 
 Simulation owns full-schedule assembly, fixed Kraus actions, prefix evolution
@@ -56,11 +62,13 @@ plan bytes on the captured Darwin/arm64/Torch profile. Cross-host numerical
 results use the declared physics budget rather than decimal-string identity.
 The original evidence capture is never overwritten.
 
-True new-source/plan rehashed tampering, sealed options/environment admission,
-dense resource ceilings, deployment refusal and root dispatch must be tested
-against the real owning-domain implementations when those stages land. A test
-recipe cannot certify production readers. The independent consumers and old
-artifacts remain in place throughout Core, Simulation and Runtime delivery.
+Real source/plan rehashed tampering, sealed options/environment admission,
+dense resource ceilings and root dispatch are checked in
+[the Runtime tests](../../tests/unit/test_rydberg_presence_runtime.py).
+[Compatibility consumers](../../tests/unit/test_rydberg_presence_compatibility.py)
+retain old artifacts and refuse relabelled profiles. The independent physical
+consumers now select real Core construction, planning, execution and JSON
+reading through their four factories; the disposable reference is gone.
 
 ## Runnable public trajectory workflow
 
