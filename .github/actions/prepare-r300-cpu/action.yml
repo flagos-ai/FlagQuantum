@@ -5,6 +5,23 @@ runs:
   steps:
     - shell: bash
       run: |
+        # The two public Tsinghua hosts passed paired direct-path TLS/download probes.
+        # Preserve every existing exception and all proxy URLs for other destinations.
+        for proxy_list in NO_PROXY no_proxy; do
+          direct_hosts="${!proxy_list:-}"
+          case "$direct_hosts" in
+            *$'\n'*|*$'\r'*) echo '::error::Invalid multiline no-proxy configuration'; exit 1 ;;
+          esac
+          for public_host in mirrors.tuna.tsinghua.edu.cn pypi.tuna.tsinghua.edu.cn; do
+            case ",$direct_hosts," in
+              *",$public_host,"*) ;;
+              *) direct_hosts="${direct_hosts:+$direct_hosts,}$public_host" ;;
+            esac
+          done
+          printf '::add-mask::%s\n' "${direct_hosts//%/%25}"
+          export "$proxy_list=$direct_hosts"
+          printf '%s=%s\n' "$proxy_list" "$direct_hosts" >> "$GITHUB_ENV"
+        done
         . /etc/os-release
         test "$ID" = ubuntu && test "$VERSION_ID" = 24.04
         test "$(dpkg --print-architecture)" = amd64
@@ -16,10 +33,10 @@ runs:
         Components: main universe
         Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg
         SOURCES
-        apt_options=(-o "Dir::Etc::sourcelist=$apt_dir/ubuntu.sources" -o 'Dir::Etc::sourceparts=-' -o APT::Update::Error-Mode=any -o Acquire::Retries=1 -o Acquire::https::Timeout=30)
+        apt_options=(-o Acquire::https::Proxy::mirrors.tuna.tsinghua.edu.cn=DIRECT -o "Dir::Etc::sourcelist=$apt_dir/ubuntu.sources" -o 'Dir::Etc::sourceparts=-' -o APT::Update::Error-Mode=any -o Acquire::Retries=1 -o Acquire::https::Timeout=30)
         if ! sudo -n timeout --kill-after=10s 240s apt-get "${apt_options[@]}" update; then
           echo '::warning::Tsinghua Ubuntu mirror unavailable; retrying the configured Ubuntu sources.'
-          apt_options=(-o APT::Update::Error-Mode=any -o Acquire::Retries=1 -o Acquire::https::Timeout=30)
+          apt_options=(-o Acquire::https::Proxy::mirrors.tuna.tsinghua.edu.cn=DIRECT -o APT::Update::Error-Mode=any -o Acquire::Retries=1 -o Acquire::https::Timeout=30)
           sudo -n timeout --kill-after=10s 240s apt-get "${apt_options[@]}" update
         fi
         sudo -n timeout --kill-after=10s 240s apt-get "${apt_options[@]}" install -y --no-install-recommends build-essential python3.12 python3.12-venv python3.12-dev

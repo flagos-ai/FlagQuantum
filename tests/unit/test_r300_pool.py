@@ -206,3 +206,65 @@ def test_network_retest_cannot_claim_a_cached_torch_as_a_download() -> None:
     assert steps[installer]["env"]["FQ_CPU_WHEEL_CACHE"].startswith(
         "${{ runner.temp }}"
     )
+
+
+@pytest.mark.parametrize("bootstrap_kind", ["prepare", "probe"])
+@pytest.mark.parametrize("existing", ["", "localhost,.example.test"])
+def test_domestic_direct_routing_preserves_other_proxy_configuration(
+    tmp_path: Path, bootstrap_kind: str, existing: str
+) -> None:
+    import os
+    import subprocess
+
+    import yaml
+
+    root = Path(__file__).resolve().parents[2]
+    action = yaml.safe_load(
+        (root / ".github/actions/prepare-r300-cpu/action.yml").read_text()
+    )
+    if bootstrap_kind == "prepare":
+        script = action["runs"]["steps"][0]["run"].split(". /etc/os-release", 1)[0]
+    else:
+        workflow = yaml.safe_load(
+            (root / ".github/workflows/r300-validation.yml").read_text()
+        )
+        script = workflow["jobs"]["pool-qualification"]["steps"][0]["run"].split(
+            "printf 'UTC:", 1
+        )[0]
+    output = tmp_path / "env"
+    result = subprocess.run(
+        [
+            "bash",
+            "-eu",
+            "-c",
+            script
+            + script
+            + 'printf "RESULT=%s|%s|%s\\n" "$NO_PROXY" "$no_proxy" "$HTTPS_PROXY"',
+        ],
+        env={
+            **os.environ,
+            "GITHUB_ENV": str(output),
+            "NO_PROXY": existing,
+            "no_proxy": existing,
+            "HTTPS_PROXY": "http://proxy.example.test:3128",
+        },
+        check=True,
+        capture_output=True,
+        text=True,
+        timeout=5,
+    )
+    upper, lower, proxy = result.stdout.split("RESULT=", 1)[1].strip().split("|")
+    expected = ([existing] if existing else []) + [
+        "mirrors.tuna.tsinghua.edu.cn",
+        "pypi.tuna.tsinghua.edu.cn",
+    ]
+    assert upper == lower == ",".join(expected)
+    assert proxy == "http://proxy.example.test:3128"
+    assert {line.split("=", 1)[0] for line in output.read_text().splitlines()} == {
+        "NO_PROXY",
+        "no_proxy",
+    }
+    assert (
+        "Acquire::https::Proxy::mirrors.tuna.tsinghua.edu.cn=DIRECT"
+        in action["runs"]["steps"][0]["run"]
+    )

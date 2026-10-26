@@ -224,6 +224,23 @@ jobs:
         run: |
           set +e
           set -u
+          # The two public Tsinghua hosts passed paired direct-path TLS/download probes.
+          # Preserve every existing exception and all proxy URLs for other destinations.
+          for proxy_list in NO_PROXY no_proxy; do
+            direct_hosts="${!proxy_list:-}"
+            case "$direct_hosts" in
+              *$'\n'*|*$'\r'*) echo '::error::Invalid multiline no-proxy configuration'; exit 1 ;;
+            esac
+            for public_host in mirrors.tuna.tsinghua.edu.cn pypi.tuna.tsinghua.edu.cn; do
+              case ",$direct_hosts," in
+                *",$public_host,"*) ;;
+                *) direct_hosts="${direct_hosts:+$direct_hosts,}$public_host" ;;
+              esac
+            done
+            printf '::add-mask::%s\n' "${direct_hosts//%/%25}"
+            export "$proxy_list=$direct_hosts"
+            printf '%s=%s\n' "$proxy_list" "$direct_hosts" >> "$GITHUB_ENV"
+          done
           printf 'UTC: '; date -u +%FT%TZ
           printf 'Runner: %s\n' "$RUNNER_NAME"
           uname -a

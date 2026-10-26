@@ -325,3 +325,21 @@ Tsinghua Ubuntu bootstrap is unchanged. PR scheduling remains paused while three
 consecutive same-revision manual R300 runs are collected. Actual installer source,
 all download probes, exact source restoration and native test results must be
 reviewed; a cache hit does not demonstrate official wheel download health.
+
+### Tsinghua path comparison and bounded routing repair
+
+[Read-only paired probe 40277215490](https://github.com/flagos-ai/FlagQuantum/actions/runs/40277215490)
+compared the same public Ubuntu InRelease and PyPI pip index on cpu01. All six
+direct requests passed TLS verification and returned 200 in 0.11-1.18 seconds;
+configured-proxy requests took 2.08-7.01 seconds. The first official-wheel native
+round also recorded CONNECT timeouts through the configured proxy.
+
+The R300-only bootstrap now preserves existing `NO_PROXY`/`no_proxy` entries and
+adds exactly `mirrors.tuna.tsinghua.edu.cn` and `pypi.tuna.tsinghua.edu.cn`.
+GitHub and official PyTorch proxy routing remains unchanged. The signed Ubuntu
+bootstrap passes a per-invocation, per-host APT `DIRECT` option, supported by the
+[APT HTTPS transport](https://manpages.debian.org/bookworm/apt/apt-transport-https.1.en.html).
+TLS/hostname checks and archive signatures remain enabled. No system proxy,
+cluster permission, or persistent APT configuration is changed. Stability rounds
+must be restarted on this routing revision; earlier degraded network samples do
+not count toward three healthy consecutive rounds.
