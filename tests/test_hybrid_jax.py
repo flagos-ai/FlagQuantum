@@ -23,6 +23,52 @@ pytestmark = [
 ]
 
 
+@pytest.mark.parametrize("dtype", [torch.float32, torch.float64])
+def test_cpu_bridge_preserves_strided_input_gradients_and_parameter_updates(
+    dtype: torch.dtype,
+) -> None:
+    """CPU buffer conversion must preserve both VJPs and changing tensor values."""
+    parameters = torch.tensor([0.2, 9.0, 0.7, 8.0], dtype=dtype)[::2].requires_grad_()
+    features = torch.tensor([0.4, 7.0, -0.2, 6.0], dtype=dtype)[::2].requires_grad_()
+
+    def build(values: Any, inputs: Any) -> fq.Circuit:
+        circuit = fq.Circuit(2, dtype=torch.complex128)
+        circuit.ry(0, theta=values[0] + inputs[0] * values[1])
+        circuit.ry(1, theta=inputs[1])
+        return circuit
+
+    kernel = compile_quantum_kernel(
+        build,
+        parameters,
+        n_qubits=2,
+        observable="z_sum",
+        compute_dtype="complex128",
+        accepts_inputs=True,
+    )
+    tolerance = 1e-5 if dtype == torch.float32 else 1e-10
+    for _ in range(3):
+        value = kernel(parameters, features)
+        gradients = torch.autograd.grad(2.3 * value, (parameters, features))
+        angle = parameters[0] + features[0] * parameters[1]
+        reference = angle.cos() + features[1].cos()
+        expected_parameter = (
+            -2.3 * angle.sin() * torch.stack((torch.ones_like(angle), features[0]))
+        )
+        expected_input = -2.3 * torch.stack(
+            (parameters[1] * angle.sin(), features[1].sin())
+        )
+        torch.testing.assert_close(value, reference, atol=tolerance, rtol=tolerance)
+        torch.testing.assert_close(
+            gradients[0], expected_parameter, atol=tolerance, rtol=tolerance
+        )
+        torch.testing.assert_close(
+            gradients[1], expected_input, atol=tolerance, rtol=tolerance
+        )
+        with torch.no_grad():
+            parameters.add_(0.03)
+            features.mul_(0.9)
+
+
 def test_jax_quantum_kernel_torch_autograd_matches_statevector():
     params = torch.tensor([0.2, -0.1, 0.3], requires_grad=True)
     ref_params = params.detach().clone().requires_grad_(True)

@@ -55,6 +55,15 @@ class _JAXAutogradContext(Protocol):
 def _torch_to_jax(parameters: torch.Tensor) -> Any:
     import jax.dlpack
 
+    # CPU JIT accepts NumPy buffers directly. Going through JAX's DLPack device
+    # discovery on each small tensor costs more than these local circuits.
+    # Keep DLPack for accelerators and dtypes NumPy cannot represent.
+    if parameters.device.type == "cpu" and parameters.dtype in {
+        torch.float16,
+        torch.float32,
+        torch.float64,
+    }:
+        return parameters.detach().contiguous().numpy()
     return jax.dlpack.from_dlpack(parameters.detach().contiguous())
 
 
