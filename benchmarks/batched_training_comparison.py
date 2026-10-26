@@ -212,7 +212,7 @@ def worker(width: int, batch: int, depth: int, rotation: int = 0) -> dict[str, A
                 times.append((time.perf_counter() - started_block) / 20)
             record["process_peak_rss_bytes_through_route"] = resource.getrusage(
                 resource.RUSAGE_SELF
-            ).ru_maxrss
+            ).ru_maxrss * (1 if sys.platform == "darwin" else 1024)
             record["final_parameters"] = (
                 np.asarray(jp).tolist()
                 if "whole_jax" in route
@@ -262,6 +262,8 @@ def main() -> None:
         ).hexdigest(),
         producer_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
         platform=platform.platform(),
+        processor=platform.processor(),
+        logical_cpu_count=os.cpu_count(),
         python=sys.version,
         versions={
             name: importlib.metadata.version(name)
