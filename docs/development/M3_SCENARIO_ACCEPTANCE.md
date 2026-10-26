@@ -61,6 +61,25 @@ route support. None is a distributed capacity or performance acceptance result.
 No new framework, solver, binder, result envelope, registry, evidence schema or
 capability catalog is needed to express this inventory.
 
+## Approved absorptive terminal counting delivery pending acceptance
+
+The user approved all five decisions in the
+[absorptive photon-counting contract](M3_ABSORPTIVE_PHOTON_COUNTING_CONTRACT_REVIEW.md).
+The new `python -m examples.absorptive_photon_counting` composition uses existing
+numeric evolution, terminal sampling and finite SuperOperator actions. It resets
+the measured mode to vacuum in the same joint coordinates, retains all outcomes
+including zero and missed counts, and sums unresolved incoming-number alternatives
+incoherently. Independent scalar blocks distinguish this from the accepted QND
+reference. No library production code, public API or result type changes.
+
+Six scalar references and the consumer assertions were captured before the
+example. Focused new and unchanged photonic coverage passed 41 cases. Complete
+local default/integration verification, latest complete remote CI/GPU, remote
+three-Python coverage and this PR's independent merge authorization remain
+pending. The accepted scenario table above is unchanged. This finite reference
+adds no removed-mode result, physical detector calibration, event timing,
+feedback, Gaussian backend or full M3/M4 claim.
+
 ## Accepted fixed thermal-bath spin-mode scenario
 
 The user approved all five decisions in the
