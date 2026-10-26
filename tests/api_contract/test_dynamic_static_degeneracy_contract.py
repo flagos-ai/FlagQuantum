@@ -47,7 +47,7 @@ def test_static_dynamic_circuit_reuses_the_static_quafu_path(
 @pytest.mark.parametrize(
     "circuit",
     (
-        DynamicCircuit(1).x(0).measure(0, classical_bit=0),
+        DynamicCircuit(1).measure(0, classical_bit=0).x(0),
         DynamicCircuit(1).x(0).reset(0),
         DynamicCircuit(2)
         .measure(0, classical_bit=0)
