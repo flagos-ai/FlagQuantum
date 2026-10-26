@@ -368,6 +368,22 @@ The accepted slice covers a finite phenomenological cascade, not calibrated
 hardware, gate fidelity, higher-level truncation or all M3/M4 gates. The existing
 closed-model reference remains unchanged.
 
+The next separately approved slice is a
+[fixed local thermal bath for the existing spin-mode CPU model](../development/M3_SPIN_MODE_THERMAL_BATH_CONTRACT_REVIEW.md).
+Implementation now composes existing boson operators, mixed-dimension Lindblad
+planning, fixed upward/downward jumps, gradients and numeric replay. Independent
+acceptance was frozen before the example; the 24 new and five unchanged lossless
+cases passed focused Python 3.10/3.12 verification. Complete local default
+verification passed 16,049 cases/224 skipped and integration passed
+2,539/177 skipped, with zero XML failures/errors at code-identical head
+`ed557965c5d1dae93a862b77495f999503240257`. Latest complete remote CI/GPU,
+the actual remote three-Python matrix and independent PR merge authorization
+are still pending. The finite
+blocked-top model, bath-only analytic bound and coupled cutoff stability are
+explicit and do not establish calibrated ion-trap heating, infinite-dimensional
+accuracy or full M3/M4 completion. Public APIs and library production code do
+not change.
+
 | Scenario | Shared capability under test | Additional acceptance |
 | --- | --- | --- |
 | Existing variational circuit training | CircuitIR, Module, planning, gradients | Preserve current APIs and the local CPU fast path. |
