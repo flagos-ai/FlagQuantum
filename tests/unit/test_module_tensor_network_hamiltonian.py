@@ -1,10 +1,14 @@
 from __future__ import annotations
 
+from functools import partial
+
 import pytest
 import torch
 
 import flagquantum as fq
 from flagquantum.algorithms import Hamiltonian, pauli_term
+from flagquantum.errors import ExecutionError
+from flagquantum.simulation.tensor_network import observables
 from flagquantum.simulation.tensor_network.state import TensorNetworkState
 
 pytestmark = pytest.mark.unit
@@ -14,7 +18,7 @@ TARGET = 0.4
 
 
 def build(parameters: torch.Tensor) -> fq.Circuit:
-    """Build a three-wire ansatz with shared and nonlinear parameters."""
+    """Build a three-qubit ansatz with shared and nonlinear parameters."""
 
     circuit = fq.Circuit(3, dtype=torch.complex128)
     circuit.ry(0, parameters[0]).rx(1, parameters[1]).ry(1, parameters[1])
@@ -28,6 +32,17 @@ def build_batch(parameters: torch.Tensor) -> fq.Circuit:
     circuit = fq.Circuit(3, bsz=2, dtype=torch.complex128)
     circuit.ry(0, parameters[0]).rx(1, parameters[1]).ry(1, parameters[1])
     circuit.cx(0, 1).ry(2, parameters[0] * parameters[1]).cx(1, 2)
+    return circuit
+
+
+def build_width(width: int, parameters: torch.Tensor) -> fq.Circuit:
+    """Build a two-parameter ladder spanning ``width`` qubits."""
+
+    circuit = fq.Circuit(width, dtype=torch.complex128)
+    circuit.ry(0, parameters[0])
+    for wire in range(width - 1):
+        circuit.cx(wire, wire + 1)
+    circuit.rx(width - 1, parameters[1])
     return circuit
 
 
@@ -122,9 +137,201 @@ def test_tensor_network_hamiltonian_contracts_without_a_dense_state(
 
     assert result.runtime["mode"] == "tensor_network"
     assert result.runtime["full_state_materialized"] is False
-    assert result.runtime["observable_execution"] == "direct_expectation_contraction"
+    assert result.runtime["observable_execution"] == "hamiltonian_mpo_contraction"
     assert result.runtime["observable_peak_size"] is None
     assert result.metrics["observable_count"] == 5
+
+
+def many_term_hamiltonian(width: int) -> Hamiltonian:
+    """Return a Pauli sum whose term count is four times the circuit width."""
+
+    return Hamiltonian(
+        [pauli_term(-0.5, "Z", (wire,)) for wire in range(width)]
+        + [pauli_term(-0.7, "X", (wire,)) for wire in range(width)]
+        + [pauli_term(0.1, "ZZ", (wire, wire + 1)) for wire in range(width - 1)]
+        + [pauli_term(-0.2, "XX", (wire, wire + 1)) for wire in range(width - 1)]
+    )
+
+
+def test_tensor_network_hamiltonian_contracts_one_network_for_the_whole_sum(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A sum must not contract the shared state once per term."""
+
+    builds: list[int] = []
+    original_build = observables.build_tensor_network_hamiltonian_expectation
+
+    def counting_build(plan: object, hamiltonian: Hamiltonian) -> object:
+        builds.append(int(hamiltonian.n_terms))
+        return original_build(plan, hamiltonian)
+
+    def refuse_per_term(self: TensorNetworkState, **_: object) -> torch.Tensor:
+        raise AssertionError("a Pauli sum must not contract one term at a time")
+
+    monkeypatch.setattr(
+        observables, "build_tensor_network_hamiltonian_expectation", counting_build
+    )
+    monkeypatch.setattr(TensorNetworkState, "expectation_ps", refuse_per_term)
+
+    for width in (3, 6):
+        builds.clear()
+        value = fq.Module(
+            partial(build_width, width),
+            2,
+            init=INIT.clone(),
+            dtype=torch.float64,
+            hamiltonian=many_term_hamiltonian(width),
+            policy=fq.RuntimePolicy(
+                execution_options=fq.ExecutionOptions(
+                    mode="tensor_network",
+                    precision="complex128",
+                    allow_backend_fallback=False,
+                ),
+                observable="hamiltonian",
+                observable_qubits=tuple(range(width)),
+            ),
+        )()
+        value.sum().backward()
+        assert len(builds) == 1, (width, builds)
+
+
+def test_tensor_network_hamiltonian_agrees_with_statevector_on_many_terms() -> None:
+    width = 6
+
+    def builder(parameters: torch.Tensor) -> fq.Circuit:
+        return build_width(width, parameters)
+
+    def make(mode: str) -> fq.Module:
+        return fq.Module(
+            builder,
+            2,
+            init=INIT.clone(),
+            dtype=torch.float64,
+            hamiltonian=many_term_hamiltonian(width),
+            policy=fq.RuntimePolicy(
+                execution_options=fq.ExecutionOptions(
+                    mode=mode,
+                    precision="complex128",
+                    allow_backend_fallback=False,
+                ),
+                observable="hamiltonian",
+                observable_qubits=tuple(range(width)),
+            ),
+        )
+
+    reference = make("statevector")
+    loss = (reference() - TARGET) ** 2
+    loss.backward()
+    candidate = make("tensor_network")
+    other = (candidate() - TARGET) ** 2
+    other.backward()
+
+    assert candidate.hamiltonian is not None
+    assert candidate.hamiltonian.n_terms == 4 * width - 2
+    torch.testing.assert_close(other.detach(), loss.detach(), rtol=1e-11, atol=1e-11)
+    torch.testing.assert_close(
+        candidate.parameters_tensor.grad.detach(),
+        reference.parameters_tensor.grad.detach(),
+        rtol=1e-11,
+        atol=1e-11,
+    )
+
+
+def test_tensor_network_hamiltonian_refuses_a_qubit_outside_the_circuit() -> None:
+    """A term on a qubit the state does not have must refuse, not be dropped."""
+
+    from flagquantum.simulation.tensor_network.entrypoints import run_tensor_network
+
+    state = run_tensor_network(build(INIT), dense_observable_qubits=12)
+    hamiltonian = Hamiltonian([pauli_term(1.0, "Z", (0,)), pauli_term(5.0, "Z", (7,))])
+    with pytest.raises(ValueError, match="observable qubit index out of range"):
+        hamiltonian.expectation(state)
+
+    module_ = fq.Module(
+        build,
+        2,
+        init=INIT.clone(),
+        dtype=torch.float64,
+        hamiltonian=hamiltonian,
+        policy=fq.RuntimePolicy(
+            execution_options=fq.ExecutionOptions(
+                mode="tensor_network",
+                precision="complex128",
+                allow_backend_fallback=False,
+            ),
+            observable="hamiltonian",
+            observable_qubits=(0,),
+        ),
+    )
+    with pytest.raises(ExecutionError) as raised:
+        module_()
+    assert isinstance(raised.value.__cause__, ValueError)
+    assert "observable qubit index out of range" in str(raised.value.__cause__)
+
+
+def test_tensor_network_hamiltonian_includes_a_constant_term() -> None:
+    module_ = fq.Module(
+        build,
+        2,
+        init=INIT.clone(),
+        dtype=torch.float64,
+        hamiltonian=Hamiltonian(
+            [
+                pauli_term(0.25, "", ()),
+                pauli_term(0.7, "Z", (0,)),
+                pauli_term(-0.4, "X", (1,)),
+            ]
+        ),
+        policy=fq.RuntimePolicy(
+            execution_options=fq.ExecutionOptions(
+                mode="tensor_network",
+                precision="complex128",
+                allow_backend_fallback=False,
+            ),
+            observable="hamiltonian",
+            observable_qubits=(0, 1),
+        ),
+    )
+    shift = fq.Module(
+        build,
+        2,
+        init=INIT.clone(),
+        dtype=torch.float64,
+        hamiltonian=Hamiltonian(
+            [pauli_term(0.7, "Z", (0,)), pauli_term(-0.4, "X", (1,))]
+        ),
+        policy=fq.RuntimePolicy(
+            execution_options=fq.ExecutionOptions(
+                mode="tensor_network",
+                precision="complex128",
+                allow_backend_fallback=False,
+            ),
+            observable="hamiltonian",
+            observable_qubits=(0, 1),
+        ),
+    )
+    torch.testing.assert_close(
+        module_().detach(), shift().detach() + 0.25, rtol=1e-12, atol=1e-12
+    )
+
+
+def test_tensor_network_hamiltonian_honours_a_contraction_budget() -> None:
+    from flagquantum.simulation.tensor_network.entrypoints import run_tensor_network
+
+    circuit = build_width(4, INIT)
+    hamiltonian = many_term_hamiltonian(4)
+    unlimited = run_tensor_network(circuit, dense_observable_qubits=12)
+    bounded = run_tensor_network(
+        circuit, dense_observable_qubits=12, max_intermediate_bytes=1 << 16
+    )
+
+    torch.testing.assert_close(
+        hamiltonian.expectation(bounded),
+        hamiltonian.expectation(unlimited),
+        rtol=1e-12,
+        atol=1e-12,
+    )
+    assert bounded.summary()["observable_execution"] == "hamiltonian_mpo_contraction"
 
 
 def test_tensor_network_hamiltonian_supports_a_declared_batch() -> None:

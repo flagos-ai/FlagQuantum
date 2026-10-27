@@ -1,8 +1,8 @@
 """Measure a public ``fq.Module`` Hamiltonian energy on every representation.
 
-The tensor-network Module route answers a Hamiltonian observable by contracting
-one bra-operator-ket network per term. Two properties of that route are easy to
-misstate, so this producer measures them instead of asserting them.
+The tensor-network Module route answers a Hamiltonian observable without
+materializing a dense state and without contracting the shared state once per
+term. Both properties are easy to misstate, so this producer measures them.
 
 First, it must not materialize a dense state. The tensor-network state's own Z
 readout materializes one below its observable threshold, so an energy built from
@@ -19,8 +19,9 @@ as agreement.
 
 Cost is reported as measured elapsed time for the same circuit and term count on
 the statevector and tensor-network routes, with raw repeated samples, a median
-and a median absolute deviation. The tensor-network figure is one contraction per
-term and is not a fused or contract-once implementation; the payload says so.
+and a median absolute deviation. The term-count row holds the circuit fixed and
+records the operator network's node count beside its build and contract times,
+so an independence claim rests on a structure count as well as on a wall clock.
 
 Examples
 --------
@@ -57,6 +58,9 @@ import torch
 
 import flagquantum as fq
 from flagquantum.algorithms import Hamiltonian, pauli_term
+from flagquantum.simulation.tensor_network.observables import (
+    build_tensor_network_hamiltonian_expectation,
+)
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 MODES = ("statevector", "mps", "tensor_network")
@@ -97,18 +101,27 @@ def build_module(
     bsz: int = 1,
     dtype: torch.dtype = torch.float64,
     seed: int = 260720,
+    terms: int | None = None,
 ) -> fq.Module:
-    """Build a public Module for one representation and observable."""
+    """Build a public Module for one representation and observable.
+
+    ``terms`` shortens the transverse-field sum to its first ``terms`` entries,
+    which is how the term-count scaling row keeps the circuit fixed while the
+    observable grows.
+    """
 
     generator = torch.Generator().manual_seed(seed)
     initial = 0.1 * torch.randn(depth, width, 2, generator=generator)
     complex_dtype = torch.complex128 if dtype == torch.float64 else torch.complex64
+    hamiltonian = transverse_field_sum(width)
+    if terms is not None:
+        hamiltonian = Hamiltonian(hamiltonian.terms[:terms])
     return fq.Module(
         build_ansatz(width, depth, complex_dtype, bsz),
         initial.numel(),
         init=initial.reshape(-1).to(dtype),
         dtype=dtype,
-        hamiltonian=transverse_field_sum(width),
+        hamiltonian=hamiltonian,
         policy=fq.RuntimePolicy(
             execution_options=fq.ExecutionOptions(
                 mode=mode,
@@ -373,6 +386,60 @@ def cost(widths: tuple[int, ...], depth: int, repeats: int) -> list[dict[str, An
     return cells
 
 
+def term_scaling(width: int, depth: int, repeats: int) -> list[dict[str, Any]]:
+    """Hold the circuit fixed and grow the observable term count.
+
+    The sum is contracted as one operator network, so the cost of that network
+    does not depend on how many terms it carries. This row exists to show that
+    independence instead of asserting it: only ``terms`` changes across the
+    cells. Each cell records the end-to-end module forward, which is what a user
+    pays, and the operator network's own node count with its build and contract
+    times, which is where the independence is provable rather than inferred from
+    a wall clock.
+    """
+
+    from flagquantum.simulation.tensor_network.entrypoints import run_tensor_network
+
+    full = 2 * width
+    generator = torch.Generator().manual_seed(260720)
+    initial = 0.1 * torch.randn(depth, width, 2, generator=generator)
+    state = run_tensor_network(
+        build_ansatz(width, depth, torch.complex128)(initial.reshape(-1)),
+        dense_observable_qubits=12,
+    )
+    cells: list[dict[str, Any]] = []
+    for terms in (1, 2, 4, full):
+        hamiltonian = Hamiltonian(transverse_field_sum(width).terms[:terms])
+        build_seconds = timed(
+            lambda current=hamiltonian: build_tensor_network_hamiltonian_expectation(
+                state.plan, current
+            ),
+            repeats=repeats,
+        )
+        operator = build_tensor_network_hamiltonian_expectation(state.plan, hamiltonian)
+        contract_seconds = timed(
+            lambda current=operator: torch.real(current.contract()), repeats=repeats
+        )
+        module = build_module("tensor_network", width=width, depth=depth, terms=terms)
+        result = module.execute()
+        forward = timed(module, repeats=repeats)
+        cells.append(
+            {
+                "terms": terms,
+                "forward": summarize(forward),
+                "operator_nodes": len(operator.nodes),
+                "operator_build": summarize(build_seconds),
+                "operator_contract": summarize(contract_seconds),
+                "observable_execution": result.runtime.get("observable_execution"),
+                "full_state_materialized": result.runtime.get(
+                    "full_state_materialized"
+                ),
+                "energy": float(result.value.detach().reshape(-1)[0]),
+            }
+        )
+    return cells
+
+
 def git_revision(*arguments: str) -> str:
     """Return one git revision or an empty string when it is unavailable."""
 
@@ -401,8 +468,8 @@ def main() -> int:
         "artifact_class": "measured_local_run",
         "claim": (
             "a public fq.Module Hamiltonian energy runs on the tensor-network "
-            "representation by direct per-term contraction, without "
-            "materializing a dense state"
+            "representation by contracting the whole Pauli sum as one operator "
+            "network, without materializing a dense state"
         ),
         "distribution_semantics": "single_device_fast_path",
         "scalability_claim_allowed": False,
@@ -426,9 +493,13 @@ def main() -> int:
             arguments.depth, arguments.steps, checkpoint_step=2
         ),
         "cost": cost(tuple(arguments.widths), arguments.depth, arguments.repeats),
+        "term_count_scaling": term_scaling(
+            arguments.widths[-1], arguments.depth, arguments.repeats
+        ),
         "limitations": [
-            "one bra-operator-ket contraction per Hamiltonian term; terms are not "
-            "fused and the circuit is re-contracted for each term",
+            "the sum is one matrix-product operator over the state's own ket and "
+            "bra copies; its node count is independent of the term count, and "
+            "the per-term route this replaces was not retained as an option",
             "the tensor-network route reports no observable contraction peak; "
             "estimating it would repeat the path search that answered the call",
             "measured wall time on one CPU process, with no accelerator, "

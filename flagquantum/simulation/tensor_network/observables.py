@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections import OrderedDict
-from collections.abc import Mapping, Sequence
+from collections.abc import Iterable, Mapping, Sequence
 from typing import Any
 
 import torch
@@ -148,6 +148,21 @@ def _path(nodes: Sequence[TensorNetworkNode]) -> tuple[ContractionPathStep, ...]
     )
 
 
+def _require_observable_qubits(qubits: Iterable[int], n_qubits: int) -> None:
+    """Refuse an observable qubit the state does not have.
+
+    Each per-qubit loop covers ``range(n_qubits)``, so a qubit outside that range
+    addresses no leg of the network and is dropped rather than refused: the
+    contraction then returns the identity on that qubit, which is a finite value
+    belonging to a different operator than the caller named. The state's own
+    ``expectation_ps`` already refuses this; the plan builders are reachable
+    directly, so they refuse it too.
+    """
+
+    if any(qubit < 0 or qubit >= n_qubits for qubit in qubits):
+        raise ValueError("observable qubit index out of range")
+
+
 def build_tensor_network_expectation(
     plan_or_circuit: TensorNetworkContractionPlan | Any,
     *,
@@ -161,6 +176,7 @@ def build_tensor_network_expectation(
     x_set, y_set, z_set = set(x or ()), set(y or ()), set(z or ())
     if (x_set & y_set) or (x_set & z_set) or (y_set & z_set):
         raise ValueError("A qubit can appear in only one of x, y, or z.")
+    _require_observable_qubits(x_set | y_set | z_set, ket_plan.n_qubits)
 
     max_label = max(
         (label for node in ket_plan.nodes for label in node.labels), default=0
@@ -252,6 +268,9 @@ def build_tensor_network_hamiltonian_expectation(
     observable_qubits: set[int] = set()
     for term in terms:
         by_wire = {int(qubit): str(name).lower() for qubit, name in term.ops}
+        # A term naming a qubit the state does not have must refuse here rather
+        # than contribute its identity product to the sum.
+        _require_observable_qubits(by_wire, ket_plan.n_qubits)
         observable_qubits.update(by_wire)
         local_products.append(
             tuple(

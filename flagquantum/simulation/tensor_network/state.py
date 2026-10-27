@@ -304,6 +304,31 @@ class TensorNetworkState:
         self._last_observable_peak_size = None
         return value
 
+    def expectation_hamiltonian(self, hamiltonian: Any) -> torch.Tensor:
+        """Contract a Pauli sum against this state as one operator network.
+
+        A sum of ``N`` terms evaluated term by term repeats the same
+        self-contraction ``N`` times, because every term shares the ket and bra
+        copies of this state. Summing the terms into one matrix-product operator
+        instead leaves a network whose node count does not depend on ``N``, so a
+        long Pauli sum costs what a single term costs.
+
+        The operator is a separate contraction from the state one and has a peak
+        of its own, so a declared byte budget governs it too.
+        """
+
+        from .observables import build_tensor_network_hamiltonian_expectation
+
+        strategy, budget = self._observable_contraction()
+        plan = build_tensor_network_hamiltonian_expectation(self.plan, hamiltonian)
+        value = torch.real(
+            plan.contract(strategy=strategy, max_intermediate_bytes=budget)
+        )
+        self._last_observable_execution = "hamiltonian_mpo_contraction"
+        self._last_observable_program_cache_hit = False
+        self._last_observable_peak_size = None
+        return value
+
     def sample(
         self,
         shots: int = 1,
