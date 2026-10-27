@@ -6,10 +6,10 @@ It changes no API, schema, capability declaration, maturity level or approval.
 An accepted reference scenario is not certification of a hardware technology or
 of all M3/M4 exit gates. The original inventory inspected main
 `4be2375eff47c112ce8d8e24f8206ed5592130d8`. This update inspects main
-`5ee74364cdbab17d1f0bebbee253bf400b467800` on 2026-10-26, including
+`65fca3f7891848eaf4b97260c0b11d0ed9a92f12` on 2026-10-26, including
 approved 089/091 implementations and the accepted 092 Core, Simulation and
 Runtime stages and the independently accepted three-level relaxation and
-fixed thermal-bath spin-mode scenarios.
+fixed thermal-bath spin-mode and absorptive photon-counting scenarios.
 Historical design reviews and approval records remain historical.
 
 ## Executable evidence by user scenario
@@ -20,7 +20,7 @@ Historical design reviews and approval records remain historical.
 | Driven three-level superconducting model | `driven_three_level`; `driven_three_level_relaxation` | [Full density, all eight control derivatives, pulse order and refinement](../../tests/integration/test_driven_three_level.py); [#787](https://github.com/flagos-ai/FlagQuantum/pull/787); [fixed cascade, analytic coherence, independent full density and training/replay](../../tests/integration/test_driven_three_level_relaxation.py); [#886](https://github.com/flagos-ai/FlagQuantum/pull/886). | Closed or fixed zero-temperature two-channel relaxation in a finite rotating-frame qutrit; no calibrated device, pulse emission, heating, gate-fidelity or higher-level truncation certification. |
 | Moving neutral-atom pair | `train_rydberg_controls --steps 40 --intervals 128 --shots 4096`; `visualize_rydberg_transport` | [Native source/dynamics](../../tests/unit/test_native_rydberg_dynamics.py), [training, loss, explicit observed flags and conditioning](../../tests/integration/test_rydberg_control_training.py), [commanded-path view](../../tests/integration/test_rydberg_transport_visualization.py), [intermediate presence consumers](../../tests/unit/test_rydberg_presence_contract.py), [sealed trajectory workflow](../../tests/integration/test_rydberg_presence_execution.py); [#879](https://github.com/flagos-ai/FlagQuantum/pull/879); [#707](https://github.com/flagos-ai/FlagQuantum/pull/707)/[#714](https://github.com/flagos-ai/FlagQuantum/pull/714)/[#715](https://github.com/flagos-ai/FlagQuantum/pull/715)/[#738](https://github.com/flagos-ai/FlagQuantum/pull/738). | One/two-actor imposed paths and declared Markov loss; one seeded CPU presence observation; no feedback, inferred trap activity, motional heating, species calibration or hardware execution. |
 | Spin coupled to a motional mode | `spin_mode_convergence`; `spin_mode_thermal_bath` | [Complex Rabi blocks, total excitation, finite-mode dark top, analytic gradient and replay](../../tests/integration/test_spin_mode_convergence.py); [#782](https://github.com/flagos-ai/FlagQuantum/pull/782); [fixed bath, scalar finite densities, analytic bounds, gradients and replay](../../tests/integration/test_spin_mode_thermal_bath.py); [#897](https://github.com/flagos-ai/FlagQuantum/pull/897). | Resonant rotating-wave exchange, lossless or with a fixed local oscillator bath and explicit finite thermal conditioning/top boundary; no ion-trap pulse frontend, calibrated heating, global Gibbs or infinite coupled-density certification. |
-| Two-mode photonic interference | `boson_interference` | [Closed attenuation/HOM density, cutoff embedding, unconditional QND counts and back-action](../../tests/integration/test_boson_interference.py); [#741](https://github.com/flagos-ai/FlagQuantum/pull/741). | Finite Fock reference; no Gaussian backend, optical-program frontend, destructive detector or photonic hardware submission. |
+| Two-mode photonic interference | `boson_interference`; `absorptive_photon_counting` | [Closed attenuation/HOM density, cutoff embedding and QND counts](../../tests/integration/test_boson_interference.py); [#741](https://github.com/flagos-ai/FlagQuantum/pull/741); [absorptive full complex branches, missed counts, conditional/unread states and replay](../../tests/integration/test_absorptive_photon_counting.py); [#921](https://github.com/flagos-ai/FlagQuantum/pull/921). | Finite Fock QND or vacuum-reset counting reference; no Gaussian backend, optical-program frontend, detector timing/calibration or photonic hardware submission. |
 | Small anyon braiding and fusion | `ising_braid_execution`; `ising_fusion_measurement` | [Unchanged physical contract consumers](../../tests/unit/test_ising_braid_contract.py), [native execution/replay](../../tests/integration/test_ising_braid_execution.py), [fusion coherence and QND workflow](../../tests/integration/test_ising_fusion_measurement.py); [#769](https://github.com/flagos-ai/FlagQuantum/pull/769)/[#778](https://github.com/flagos-ai/FlagQuantum/pull/778); [unread continuation/replay](../../tests/unit/test_ising_unread_contract.py), [native 1.2 admission](../../tests/unit/test_ising_unread_runtime.py), [old-byte compatibility](../../tests/unit/test_ising_unread_compatibility.py); [#809](https://github.com/flagos-ai/FlagQuantum/pull/809); [sampled conditional consumers](../../tests/unit/test_ising_sampled_contract.py), [native 1.3 admission/refusals](../../tests/unit/test_ising_sampled_runtime.py), [saved trajectory workflow](../../tests/integration/test_ising_sampled_execution.py); [#838](https://github.com/flagos-ai/FlagQuantum/pull/838). | Exactly four sigma anyons, total vacuum and fixed gauge; CPU ideal braids with zero/one unread channel or one explicitly seeded sampled first-pair QND observation. No multi-shot native batch, feedback, other sectors, continuous gradients, universal braid set or Majorana-device claim. |
 
 The neutral-atom row now includes one declared intermediate presence observation
@@ -28,6 +28,9 @@ and conditional continuation in its bounded CPU profile. It does not establish
 all roadmap event requirements, feedback or an observed hardware-loss record.
 The other rows likewise establish their named references rather than unrestricted
 route support. None is a distributed capacity or performance acceptance result.
+
+The [M3 exit-gate audit](M3_EXIT_GATE_AUDIT.md) maps each named bounded profile
+to the milestone stages and separates evidence gaps from later extensions/M4.
 
 ## What is actually shared
 
@@ -61,7 +64,7 @@ route support. None is a distributed capacity or performance acceptance result.
 No new framework, solver, binder, result envelope, registry, evidence schema or
 capability catalog is needed to express this inventory.
 
-## Approved absorptive terminal counting delivery pending acceptance
+## Accepted absorptive terminal counting scenario
 
 The user approved all five decisions in the
 [absorptive photon-counting contract](M3_ABSORPTIVE_PHOTON_COUNTING_CONTRACT_REVIEW.md).
@@ -77,7 +80,7 @@ Five reference ASTs remain unchanged; the sixth received an explicit tensor
 wrapper for the same complex witness assignment, verified bit-for-bit against
 the frozen inputs. Consumers received only import sorting and a typed reduction
 for the deliberate incorrect-map witness. No physical assertion or threshold
-changed; the accepted scenario table above remains unchanged.
+changed; the scenario table above now includes this accepted finite reference.
 
 Complete local default verification passed 16,148 cases/224 skipped
 (465.96s); integration passed 2,620/177 skipped (204.75s).
@@ -100,10 +103,22 @@ Maximum full evolved/branch density error was 7.50e-16, conditional density
 error 2.22e-15, unread error 7.50e-16 and completeness error 2.22e-16.
 The smallest independent positive branch weight was 0.1348608243; analytic zero
 branches were checked unnormalized. All original budgets remain unchanged.
-Latest-head remote CI/GPU/matrix evidence and the independent merge decision
-are tracked in the delivery PR. This scenario remains pending acceptance until
-its own authorized merge and successful main smoke. No local Python 3.11,
-physical detector or full M3/M4 certification is claimed.
+[#921](https://github.com/flagos-ai/FlagQuantum/pull/921) passed complete CI
+`40295642672` on attempt 3 (all 54 jobs), GPU `40295642686` on attempt 2,
+and the remote Python 3.10/3.11/3.12 matrix at head
+`84f15a6a99e7a36ab993989d1d6ae94e8c10ec74`. All 60 applicable checks completed:
+57 success and only the original three manual-pool skips. Its own explicit human
+grant preceded a normal fixed-head merge as
+`d15d681b88d6062e02b97317e53fbea5bafc7105`. Main smoke `40316383759` succeeded on
+that exact merge; it is smoke only, not full main CI, a release or device evidence.
+
+Original remote failures were Action archive/PyPI timeouts. One quality checkout
+stalled in `git fetch --unshallow` for about 27 minutes; the user separately
+authorized its termination and recovery of unsuccessful jobs. The targeted retry
+retained successful tests and GPU, and changed no code, physical assertion,
+security audit, workflow limit or repository protection. Original logs and
+annotations remain retained. No local Python 3.11, physical detector or full
+M3/M4 certification is claimed.
 
 ## Accepted fixed thermal-bath spin-mode scenario
 
