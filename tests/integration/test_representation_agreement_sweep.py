@@ -318,3 +318,247 @@ def test_deep_batched_ising_energy_agrees_with_independent_dense_reference(
         atol=tolerance,
         rtol=tolerance,
     )
+
+
+# --- gradient and state conformance (#899) -----------------------------------
+#
+# The energy spread above answers "do the representations report the same
+# number". A user who swaps representation mid-training needs three further
+# answers that the spread cannot give: whether the state, not only one
+# observable, agrees; whether the reported gradient is the gradient of the
+# computation that actually ran; and whether that gradient still points the way
+# the exact one does. These tests pin each separately because they fail
+# independently.
+
+
+def test_fidelity_is_one_where_no_weight_was_discarded() -> None:
+    """Exact cells must agree as states, not only as one expectation value.
+
+    A single Ising energy is a projection: two different states can report the
+    same number. Fidelity is the quantity that says the states agree.
+    """
+    cell = _cell(n_qubits=4, max_bond=exact_max_bond(4), gradients=True)
+
+    assert cell["mps_truncated"] is False
+    fidelity = cell["states"]["mps"]["fidelity_vs_statevector"]
+    network = cell["states"]["tensor_network"]["fidelity_vs_statevector"]
+    assert fidelity is not None and network is not None
+    assert fidelity > 1 - 1e-10, cell["states"]
+    assert network > 1 - 1e-10, cell["states"]
+
+
+def test_fidelity_separates_from_norm_drift() -> None:
+    """Fidelity is a normalized overlap, so it must not absorb a norm error.
+
+    An unnormalized state can be a pure rescaling: the physical state is
+    identical while the norm is wrong. Reporting one number for both would let a
+    norm bug read as an agreement failure, or vice versa.
+    """
+    reference = torch.tensor([[1.0, 0.0]], dtype=torch.complex128)
+    rescaled = reference * 2.0
+
+    conformed = sweep.state_conformance(rescaled, reference)
+
+    assert abs(conformed["fidelity_vs_statevector"] - 1.0) < 1e-12
+    assert abs(conformed["norm_drift"] - 1.0) < 1e-12
+
+
+def test_fidelity_falls_when_the_cap_actually_discards_weight() -> None:
+    """A truncated state is a different state and must be reported as one."""
+    cell = _cell(n_qubits=8, depth=8, max_bond=4, gradients=True)
+
+    assert cell["mps_truncated"] is True
+    fidelity = cell["states"]["mps"]["fidelity_vs_statevector"]
+    assert fidelity is not None
+    assert fidelity < 1 - 1e-6, cell["states"]
+
+
+def test_gradient_direction_is_reported_apart_from_its_magnitude() -> None:
+    """An optimizer follows direction; a curve fit does not settle whether it does.
+
+    A gradient can be wrong in scale, in direction, or in both. Cosine
+    similarity isolates the direction, so a purely rescaled gradient is visible
+    as a scale error rather than as a direction failure.
+    """
+    reference = torch.tensor([1.0, -2.0, 0.5])
+    rescaled = 3.0 * reference
+
+    conformed = sweep.gradient_conformance(rescaled, reference)
+
+    assert abs(conformed["cosine_similarity"] - 1.0) < 1e-12
+    assert abs(conformed["relative_l2_error"] - 2.0) < 1e-12
+
+    reversed_direction = sweep.gradient_conformance(-reference, reference)
+    assert abs(reversed_direction["cosine_similarity"] + 1.0) < 1e-12
+
+
+def test_gradients_agree_where_no_weight_was_discarded() -> None:
+    """The exact regime must agree in gradient, not only in energy.
+
+    Double precision is used because the claim is about the representation, and
+    at complex64 the float32 accumulation of the same arithmetic already
+    separates the paths by about 4e-7.
+    """
+    cell = _cell(
+        n_qubits=4,
+        max_bond=exact_max_bond(4),
+        dtype=torch.complex128,
+        gradients=True,
+    )
+
+    assert cell["mps_truncated"] is False
+    for mode in ("mps", "tensor_network"):
+        entry = cell["gradients"]["per_mode"][mode]
+        assert entry["relative_l2_error"] is not None
+        assert entry["relative_l2_error"] < 1e-10, (mode, entry)
+        assert entry["cosine_similarity"] > 1 - 1e-12, (mode, entry)
+
+
+def test_the_truncated_derivative_check_separates_exact_from_truncated_cells() -> None:
+    """The check must be able to fail, or its agreement would mean nothing.
+
+    This is the distinction the issue turns on, measured against the map that
+    actually ran rather than against the ideal circuit. Through a cap that does
+    not bite, autograd reproduces the derivative of its own forward pass to
+    within 1e-8 relative. Through a cap that does, the same check reports a
+    discrepancy of about 5e-2 relative.
+
+    That second number is a measured defect in the local MPS backward pass, not
+    an expected property of truncation: a bond cap changes the forward map by
+    about 1e-6 in energy here, so its true derivative is close to the exact one,
+    and a derivative of the truncated map would have to land near it too. It is
+    reported here and tracked separately; this test exists so the harness cannot
+    quietly record agreement it did not measure.
+    """
+    parameters = (
+        0.05 * torch.randn(6, 8, 2, generator=torch.Generator().manual_seed(11))
+    ).to(torch.float64)
+
+    exact = sweep.truncated_derivative_error(
+        parameters, structure="nearest_neighbour", n_qubits=8, max_bond=16
+    )
+    truncated = sweep.truncated_derivative_error(
+        parameters, structure="nearest_neighbour", n_qubits=8, max_bond=4
+    )
+
+    assert exact["checked"] >= 4
+    assert exact["max_relative_error"] < 1e-8, exact
+    assert truncated["max_relative_error"] > 1e-2, truncated
+
+
+def test_truncation_error_and_differentiation_error_are_reported_apart() -> None:
+    """Two different numbers: distance from the ideal, and from the map's own derivative.
+
+    A truncated simulator can report a gradient that is far from the ideal one
+    because the state is approximate, or because the backward pass differentiates
+    something other than the forward pass. Reporting one number for both would
+    let either hide behind the other.
+    """
+    parameters = (
+        0.05 * torch.randn(6, 8, 2, generator=torch.Generator().manual_seed(11))
+    ).to(torch.float64)
+
+    ideal = sweep.ideal_gradient(parameters, structure="nearest_neighbour", n_qubits=8)
+    approximate = sweep.truncated_gradient(
+        parameters, structure="nearest_neighbour", n_qubits=8, max_bond=4
+    )
+    distance_from_ideal = sweep.gradient_conformance(approximate, ideal)
+    distance_from_own_map = sweep.truncated_derivative_error(
+        parameters, structure="nearest_neighbour", n_qubits=8, max_bond=4
+    )
+
+    assert distance_from_ideal["relative_l2_error"] is not None
+    assert distance_from_ideal["relative_l2_error"] > 1e-3, distance_from_ideal
+    assert distance_from_own_map["max_relative_error"] > 1e-2, distance_from_own_map
+
+
+def test_dense_state_accessor_reads_every_representation() -> None:
+    """One accessor, so the fidelity path cannot silently skip a mode."""
+    from flagquantum.runtime import run_native
+
+    parameters = (
+        0.05 * torch.randn(2, 4, 2, generator=torch.Generator().manual_seed(260720))
+    ).to(torch.float64)
+    circuit = sweep.build_ansatz(parameters, "nearest_neighbour")
+
+    states = {
+        mode: sweep.dense_state(
+            run_native(
+                circuit, mode=mode, **({"max_bond": 16} if mode == "mps" else {})
+            )
+        )
+        for mode in MODES
+    }
+
+    for mode, state in states.items():
+        assert state.dtype == torch.complex128, mode
+        assert state.numel() == 2**4, mode
+    torch.testing.assert_close(states["mps"], states["statevector"])
+    torch.testing.assert_close(states["tensor_network"], states["statevector"])
+
+
+def test_a_mode_that_cannot_differentiate_is_reported_not_substituted(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A refused derivative is evidence, not a reason to quietly use another mode."""
+    import flagquantum.runtime as runtime
+
+    original = runtime.run_native
+
+    def refuse_tensor_network(*args: object, **kwargs: object) -> object:
+        if kwargs.get("mode") == "tensor_network":
+            raise RuntimeError("tensor-network derivative refused")
+        return original(*args, **kwargs)
+
+    monkeypatch.setattr(runtime, "run_native", refuse_tensor_network)
+    monkeypatch.setattr(sweep.fqr, "run_native", refuse_tensor_network)
+    cell = _cell(n_qubits=4, max_bond=exact_max_bond(4), gradients=True)
+
+    assert "tensor_network" in cell["failures"]
+    assert "tensor_network" in cell["gradients"]["unsupported"]
+    assert cell["gradients"]["per_mode"]["mps"]["relative_l2_error"] is not None
+
+
+def test_gradient_section_is_absent_unless_requested() -> None:
+    """The published precision artifact must not change shape under this work."""
+    cell = _cell(n_qubits=4, max_bond=exact_max_bond(4))
+
+    assert "gradients" not in cell
+    assert "states" not in cell
+
+
+def test_smoothness_probe_separates_a_truncating_map_from_a_jumping_one() -> None:
+    """A finite-difference comparison needs a derivative to compare against.
+
+    Slicing a bond decides which subspace is kept, and that decision can flip
+    inside a small interval. On the chain the truncated energy moves smoothly
+    with a parameter; on the all-to-all structure at the same cap it jumps by
+    order 0.1 per scan point, so no gradient exists there and no check can say
+    what autograd should have reported.
+    """
+    parameters = (
+        0.05 * torch.randn(2, 8, 2, generator=torch.Generator().manual_seed(260720))
+    ).to(torch.float64)
+
+    smooth = sweep.smoothness_probe(
+        parameters, structure="nearest_neighbour", n_qubits=8, max_bond=4
+    )
+    jumping = sweep.smoothness_probe(
+        parameters, structure="all_to_all", n_qubits=8, max_bond=4
+    )
+
+    assert smooth["smooth"] is True, smooth
+    assert smooth["largest_step_jump"] < 1e-2, smooth
+    assert jumping["smooth"] is False, jumping
+    assert jumping["largest_step_jump"] > 1e-1, jumping
+
+
+def test_a_smooth_truncating_cell_records_its_own_derivative_and_its_jump() -> None:
+    """The cell must carry both numbers, or neither can be read on its own."""
+    cell = _cell(n_qubits=8, depth=4, max_bond=4, gradients=True)
+
+    assert cell["mps_truncated"] is True
+    own_map = cell["gradients"]["mps_own_map"]
+    assert own_map["derivative"]["checked"] >= 4
+    assert own_map["smoothness"]["smooth"] is True
+    assert own_map["derivative"]["max_relative_error"] > 1e-3, own_map

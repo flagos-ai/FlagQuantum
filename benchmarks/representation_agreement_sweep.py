@@ -51,6 +51,7 @@ import platform
 import subprocess
 import sys
 import time
+from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
 
@@ -177,6 +178,340 @@ def energy(target: Any, n_qubits: int) -> torch.Tensor:
     )
 
 
+#: Observables a state conformance check reports beside the Ising energy. One
+#: expectation value is a projection, so a state comparison that used only the
+#: energy could not separate two states that happen to share it.
+CONFORMANCE_OBSERVABLES: dict[str, dict[str, tuple[int, ...]]] = {
+    "z:0": {"z": (0,)},
+    "x:1": {"x": (1,)},
+    "zz:0,1": {"z": (0, 1)},
+}
+
+
+def _measure_observable(
+    target: Any, n_qubits: int, observable: dict[str, tuple[int, ...]]
+) -> float | None:
+    """Return one Pauli-product expectation, or None when the width excludes it."""
+
+    if any(qubit >= n_qubits for qubits in observable.values() for qubit in qubits):
+        return None
+    return float(_expectation(target, n_qubits, **observable))
+
+
+def dense_state(target: Any) -> torch.Tensor:
+    """Return a representation's state as a dense ``(batch, amplitude)`` tensor.
+
+    The dense path hands back a tensor and the contracted paths hand back state
+    objects, so one accessor keeps a conformance comparison from silently
+    skipping the mode whose type it did not expect. Materializing here is the
+    point: this is a conformance check against the exact path at widths where a
+    dense state fits.
+    """
+
+    state = target if isinstance(target, torch.Tensor) else target.state()
+    return state.reshape(-1, state.shape[-1])
+
+
+def state_conformance(target: Any, reference: Any) -> dict[str, float]:
+    """Compare two states by normalized overlap, with norm error kept apart.
+
+    Fidelity is a *normalized* overlap, so a pure rescaling of a correct state
+    reports fidelity 1 and a separate norm drift of 1 rather than one blended
+    number. That separation is what lets a reader tell a norm bug from a state
+    that genuinely differs.
+    """
+
+    psi = dense_state(target).to(torch.complex128)
+    exact = dense_state(reference).to(torch.complex128)
+    if psi.shape != exact.shape:
+        raise ValueError(
+            f"states have incompatible shapes {tuple(psi.shape)} and "
+            f"{tuple(exact.shape)}"
+        )
+    overlap = (exact.conj() * psi).sum(dim=-1).abs().square()
+    denominator = exact.abs().square().sum(dim=-1) * psi.abs().square().sum(dim=-1)
+    fidelity = torch.where(
+        denominator > 0, overlap / denominator, torch.zeros_like(overlap)
+    )
+    norms = (
+        psi.abs().square().sum(dim=-1).sqrt() / exact.abs().square().sum(dim=-1).sqrt()
+    )
+    norm_drift = (norms - 1).abs()
+    return {
+        "fidelity_vs_statevector": float(fidelity.clamp(max=1.0).mean()),
+        "norm_drift": float(norm_drift.mean()),
+    }
+
+
+def gradient_conformance(
+    gradient: torch.Tensor, reference: torch.Tensor
+) -> dict[str, float | None]:
+    """Compare a gradient to a reference in scale and in direction.
+
+    An optimizer follows direction, so the two are reported apart: cosine
+    similarity isolates direction, and the relative L2 error is what a rescaled
+    but correctly directed gradient shows up in.
+    """
+
+    measured = gradient.detach().to(torch.float64).reshape(-1)
+    exact = reference.detach().to(torch.float64).reshape(-1)
+    if measured.shape != exact.shape:
+        raise ValueError(
+            f"gradients have incompatible shapes {tuple(measured.shape)} and "
+            f"{tuple(exact.shape)}"
+        )
+    scale = float(exact.norm())
+    difference = float((measured - exact).norm())
+    cosine = (
+        None
+        if scale == 0.0 or float(measured.norm()) == 0.0
+        else float(torch.dot(measured, exact) / (measured.norm() * exact.norm()))
+    )
+    return {
+        "relative_l2_error": None if scale == 0.0 else difference / scale,
+        "cosine_similarity": cosine,
+    }
+
+
+def _energy_gradient(
+    parameters: torch.Tensor,
+    *,
+    structure: str,
+    n_qubits: int,
+    mode: str,
+    max_bond: int | None = None,
+) -> torch.Tensor:
+    """Return ``d energy / d parameters`` through one representation."""
+
+    leaf = parameters.detach().clone().requires_grad_(True)
+    options = {"max_bond": max_bond} if mode == "mps" and max_bond is not None else {}
+    target = fqr.run_native(build_ansatz(leaf, structure), mode=mode, **options)
+    value = energy(target, n_qubits)
+    (gradient,) = torch.autograd.grad(value, leaf)
+    return gradient
+
+
+def ideal_gradient(
+    parameters: torch.Tensor, *, structure: str, n_qubits: int
+) -> torch.Tensor:
+    """Return the gradient the exact statevector path reports."""
+
+    return _energy_gradient(
+        parameters, structure=structure, n_qubits=n_qubits, mode="statevector"
+    )
+
+
+def truncated_gradient(
+    parameters: torch.Tensor, *, structure: str, n_qubits: int, max_bond: int
+) -> torch.Tensor:
+    """Return the gradient autograd reports for the *truncated* MPS computation."""
+
+    return _energy_gradient(
+        parameters,
+        structure=structure,
+        n_qubits=n_qubits,
+        mode="mps",
+        max_bond=max_bond,
+    )
+
+
+def truncated_derivative_error(
+    parameters: torch.Tensor,
+    *,
+    structure: str,
+    n_qubits: int,
+    max_bond: int,
+    step: float = 1e-5,
+    indices: Sequence[int] | None = None,
+    checks: int = 8,
+) -> dict[str, Any]:
+    """Compare autograd's truncated gradient with finite differences of the same map.
+
+    This answers a different question from "does the gradient match the ideal
+    circuit": it asks whether the derivative of the computation that actually
+    ran is the derivative of the computation that actually ran. Central finite
+    differences of that same truncated map settle it without consulting any
+    other representation, so the answer does not presuppose that the ideal
+    gradient is reachable.
+
+    ``max_relative_error`` divides each component's absolute error by the norm of
+    the autograd gradient, so a near-zero component cannot inflate it.
+    """
+
+    flat = parameters.detach().reshape(-1)
+    selected = (
+        tuple(indices)
+        if indices is not None
+        else tuple(range(0, flat.numel(), max(flat.numel() // checks, 1)))
+    )
+    approximate = truncated_gradient(
+        parameters, structure=structure, n_qubits=n_qubits, max_bond=max_bond
+    ).reshape(-1)
+    scale = float(approximate.norm())
+    errors: list[float] = []
+    for index in selected:
+        plus = flat.clone()
+        minus = flat.clone()
+        plus[index] += step
+        minus[index] -= step
+        with torch.no_grad():
+            forward = float(
+                energy(
+                    fqr.run_native(
+                        build_ansatz(plus.reshape(parameters.shape), structure),
+                        mode="mps",
+                        max_bond=max_bond,
+                    ),
+                    n_qubits,
+                )
+            )
+            backward = float(
+                energy(
+                    fqr.run_native(
+                        build_ansatz(minus.reshape(parameters.shape), structure),
+                        mode="mps",
+                        max_bond=max_bond,
+                    ),
+                    n_qubits,
+                )
+            )
+        differences = (forward - backward) / (2 * step)
+        errors.append(abs(differences - float(approximate[index])))
+    return {
+        "method": "central_finite_difference",
+        "step": step,
+        "indices": list(selected),
+        "checked": len(selected),
+        "max_abs_error": max(errors) if errors else 0.0,
+        "max_relative_error": (max(errors) / scale) if errors and scale else 0.0,
+    }
+
+
+def smoothness_probe(
+    parameters: torch.Tensor,
+    *,
+    structure: str,
+    n_qubits: int,
+    max_bond: int,
+    index: int = 2,
+    half_range: float = 0.05,
+    points: int = 7,
+) -> dict[str, Any]:
+    """Measure whether the truncated energy is locally smooth in one parameter.
+
+    A finite-difference comparison is only meaningful where the map is
+    differentiable. Slicing a bond decides which subspace is kept, and that
+    decision can flip inside a small interval, so the same measurement that says
+    "autograd disagrees with the difference" has to say whether a derivative
+    exists at all. ``largest_step_jump`` is the biggest change in energy between
+    consecutive scan points; a smooth cell moves by well under 1e-3 per point
+    here, while a cell whose truncation decision flips jumps by order 0.1.
+    """
+
+    flat = parameters.detach().reshape(-1)
+    base = float(flat[index])
+    energies: list[float] = []
+    bonds: list[int] = []
+    for offset in torch.linspace(-half_range, half_range, points).tolist():
+        shifted = flat.clone()
+        shifted[index] = base + offset
+        circuit = build_ansatz(shifted.reshape(parameters.shape), structure)
+        with torch.no_grad():
+            state = fqr.run_native(circuit, mode="mps", max_bond=max_bond)
+            energies.append(float(energy(state, n_qubits)))
+            bonds.append(int(max(state.bond_dims)))
+    jumps = [
+        abs(later - earlier)
+        for earlier, later in zip(energies, energies[1:], strict=False)
+    ]
+    return {
+        "index": index,
+        "half_range": half_range,
+        "points": points,
+        "largest_step_jump": max(jumps),
+        "bond_changed": len(set(bonds)) > 1,
+        "smooth": max(jumps) < 1e-2,
+        "energies": [round(value, 12) for value in energies],
+    }
+
+
+def gradient_section(
+    parameters: torch.Tensor,
+    *,
+    structure: str,
+    n_qubits: int,
+    max_bond: int,
+    modes: tuple[str, ...],
+    smoothness: bool = True,
+) -> dict[str, Any]:
+    """Measure state, observable and gradient conformance for one cell.
+
+    A mode that cannot produce a state or a derivative is recorded as
+    unsupported rather than dropped: substituting another representation for it
+    would report agreement that was never measured.
+    """
+
+    reference_target = fqr.run_native(
+        build_ansatz(parameters, structure), mode="statevector"
+    )
+    reference_state = dense_state(reference_target)
+    reference_gradient = ideal_gradient(
+        parameters, structure=structure, n_qubits=n_qubits
+    )
+    states: dict[str, dict[str, float]] = {}
+    observables: dict[str, dict[str, float | None]] = {}
+    per_mode: dict[str, dict[str, float | None]] = {}
+    unsupported: dict[str, str] = {}
+    for mode in modes:
+        try:
+            options = {"max_bond": max_bond} if mode == "mps" else {}
+            target = fqr.run_native(
+                build_ansatz(parameters, structure), mode=mode, **options
+            )
+            states[mode] = state_conformance(target, reference_state)
+            observables[mode] = {
+                label: _measure_observable(target, n_qubits, observable)
+                for label, observable in CONFORMANCE_OBSERVABLES.items()
+            }
+            gradient = _energy_gradient(
+                parameters,
+                structure=structure,
+                n_qubits=n_qubits,
+                mode=mode,
+                max_bond=max_bond,
+            )
+            per_mode[mode] = gradient_conformance(gradient, reference_gradient)
+        except Exception as exc:  # a refusal is recorded, never substituted
+            unsupported[mode] = f"{type(exc).__name__}: {str(exc).splitlines()[0]}"
+    section: dict[str, Any] = {
+        "reference": "statevector",
+        "states": states,
+        "observables": observables,
+        "per_mode": per_mode,
+        "unsupported": unsupported,
+    }
+    if "mps" in per_mode:
+        section["mps_own_map"] = {
+            "derivative": truncated_derivative_error(
+                parameters,
+                structure=structure,
+                n_qubits=n_qubits,
+                max_bond=max_bond,
+            ),
+            "smoothness": (
+                smoothness_probe(
+                    parameters,
+                    structure=structure,
+                    n_qubits=n_qubits,
+                    max_bond=max_bond,
+                )
+                if smoothness
+                else None
+            ),
+        }
+    return section
+
+
 def measure_cell(
     *,
     n_qubits: int,
@@ -187,12 +522,17 @@ def measure_cell(
     device: str,
     modes: tuple[str, ...] = MODES,
     dtype: torch.dtype = torch.complex64,
+    gradients: bool = False,
 ) -> dict[str, Any]:
     """Measure one grid cell: the same parameters through every representation.
 
     The parameters are drawn once per cell from a seeded generator and shared by
     every run, so a disagreement is a property of the representation rather than
     of a different starting point.
+
+    ``gradients=True`` adds the state, observable and parameter-gradient sections
+    of #899. It is off by default so the published precision artifacts keep the
+    shape they were measured in.
     """
     if dtype not in (torch.complex64, torch.complex128):
         raise ValueError("dtype must be torch.complex64 or torch.complex128")
@@ -291,6 +631,23 @@ def measure_cell(
         "spread_absolute": spread,
         "spread_relative": relative,
     }
+    if gradients:
+        section = gradient_section(
+            parameters,
+            structure=structure,
+            n_qubits=n_qubits,
+            max_bond=max_bond,
+            modes=modes,
+        )
+        cell["states"] = section["states"]
+        cell["observables"] = section["observables"]
+        cell["gradients"] = {
+            "reference": section["reference"],
+            "per_mode": section["per_mode"],
+            "unsupported": section["unsupported"],
+        }
+        if "mps_own_map" in section:
+            cell["gradients"]["mps_own_map"] = section["mps_own_map"]
     # A mode that raised is named with its error; a cell that measured every
     # requested mode carries no `failures` key at all. Recording an empty one in
     # every cell spends the benchmark-results ratchet budget on the absence of
@@ -389,6 +746,14 @@ def main() -> int:
     parser.add_argument(
         "--dtype", choices=("complex64", "complex128"), default="complex64"
     )
+    parser.add_argument(
+        "--gradients",
+        action="store_true",
+        help=(
+            "also record per-representation state fidelity, extra observables and "
+            "parameter gradients beside the energy spread"
+        ),
+    )
     parser.add_argument("--output", type=Path, required=True)
     arguments = parser.parse_args()
 
@@ -427,6 +792,7 @@ def main() -> int:
                         device=arguments.device,
                         modes=arguments.modes,
                         dtype=getattr(torch, arguments.dtype),
+                        gradients=arguments.gradients,
                     )
                     cells.append(cell)
                     print(
@@ -474,6 +840,7 @@ def main() -> int:
             "it shards no workload and is not distributed scalability evidence"
         ],
         "modes": list(arguments.modes),
+        "gradients_measured": bool(arguments.gradients),
         "grid": {
             "widths": list(arguments.widths),
             "depths": list(arguments.depths),
