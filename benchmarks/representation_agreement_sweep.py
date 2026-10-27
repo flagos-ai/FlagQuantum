@@ -387,6 +387,54 @@ def truncated_derivative_error(
     }
 
 
+def smoothness_probe(
+    parameters: torch.Tensor,
+    *,
+    structure: str,
+    n_qubits: int,
+    max_bond: int,
+    index: int = 2,
+    half_range: float = 0.05,
+    points: int = 7,
+) -> dict[str, Any]:
+    """Measure whether the truncated energy is locally smooth in one parameter.
+
+    A finite-difference comparison is only meaningful where the map is
+    differentiable. Slicing a bond decides which subspace is kept, and that
+    decision can flip inside a small interval, so the same measurement that says
+    "autograd disagrees with the difference" has to say whether a derivative
+    exists at all. ``largest_step_jump`` is the biggest change in energy between
+    consecutive scan points; a smooth cell moves by well under 1e-3 per point
+    here, while a cell whose truncation decision flips jumps by order 0.1.
+    """
+
+    flat = parameters.detach().reshape(-1)
+    base = float(flat[index])
+    energies: list[float] = []
+    bonds: list[int] = []
+    for offset in torch.linspace(-half_range, half_range, points).tolist():
+        shifted = flat.clone()
+        shifted[index] = base + offset
+        circuit = build_ansatz(shifted.reshape(parameters.shape), structure)
+        with torch.no_grad():
+            state = fqr.run_native(circuit, mode="mps", max_bond=max_bond)
+            energies.append(float(energy(state, n_qubits)))
+            bonds.append(int(max(state.bond_dims)))
+    jumps = [
+        abs(later - earlier)
+        for earlier, later in zip(energies, energies[1:], strict=False)
+    ]
+    return {
+        "index": index,
+        "half_range": half_range,
+        "points": points,
+        "largest_step_jump": max(jumps),
+        "bond_changed": len(set(bonds)) > 1,
+        "smooth": max(jumps) < 1e-2,
+        "energies": [round(value, 12) for value in energies],
+    }
+
+
 def gradient_section(
     parameters: torch.Tensor,
     *,
@@ -394,6 +442,7 @@ def gradient_section(
     n_qubits: int,
     max_bond: int,
     modes: tuple[str, ...],
+    smoothness: bool = True,
 ) -> dict[str, Any]:
     """Measure state, observable and gradient conformance for one cell.
 
@@ -434,13 +483,33 @@ def gradient_section(
             per_mode[mode] = gradient_conformance(gradient, reference_gradient)
         except Exception as exc:  # a refusal is recorded, never substituted
             unsupported[mode] = f"{type(exc).__name__}: {str(exc).splitlines()[0]}"
-    return {
+    section: dict[str, Any] = {
         "reference": "statevector",
         "states": states,
         "observables": observables,
         "per_mode": per_mode,
         "unsupported": unsupported,
     }
+    if "mps" in per_mode:
+        section["mps_own_map"] = {
+            "derivative": truncated_derivative_error(
+                parameters,
+                structure=structure,
+                n_qubits=n_qubits,
+                max_bond=max_bond,
+            ),
+            "smoothness": (
+                smoothness_probe(
+                    parameters,
+                    structure=structure,
+                    n_qubits=n_qubits,
+                    max_bond=max_bond,
+                )
+                if smoothness
+                else None
+            ),
+        }
+    return section
 
 
 def measure_cell(
@@ -577,6 +646,8 @@ def measure_cell(
             "per_mode": section["per_mode"],
             "unsupported": section["unsupported"],
         }
+        if "mps_own_map" in section:
+            cell["gradients"]["mps_own_map"] = section["mps_own_map"]
     # A mode that raised is named with its error; a cell that measured every
     # requested mode carries no `failures` key at all. Recording an empty one in
     # every cell spends the benchmark-results ratchet budget on the absence of

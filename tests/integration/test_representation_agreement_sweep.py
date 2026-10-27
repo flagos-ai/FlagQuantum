@@ -525,3 +525,40 @@ def test_gradient_section_is_absent_unless_requested() -> None:
 
     assert "gradients" not in cell
     assert "states" not in cell
+
+
+def test_smoothness_probe_separates_a_truncating_map_from_a_jumping_one() -> None:
+    """A finite-difference comparison needs a derivative to compare against.
+
+    Slicing a bond decides which subspace is kept, and that decision can flip
+    inside a small interval. On the chain the truncated energy moves smoothly
+    with a parameter; on the all-to-all structure at the same cap it jumps by
+    order 0.1 per scan point, so no gradient exists there and no check can say
+    what autograd should have reported.
+    """
+    parameters = (
+        0.05 * torch.randn(2, 8, 2, generator=torch.Generator().manual_seed(260720))
+    ).to(torch.float64)
+
+    smooth = sweep.smoothness_probe(
+        parameters, structure="nearest_neighbour", n_qubits=8, max_bond=4
+    )
+    jumping = sweep.smoothness_probe(
+        parameters, structure="all_to_all", n_qubits=8, max_bond=4
+    )
+
+    assert smooth["smooth"] is True, smooth
+    assert smooth["largest_step_jump"] < 1e-2, smooth
+    assert jumping["smooth"] is False, jumping
+    assert jumping["largest_step_jump"] > 1e-1, jumping
+
+
+def test_a_smooth_truncating_cell_records_its_own_derivative_and_its_jump() -> None:
+    """The cell must carry both numbers, or neither can be read on its own."""
+    cell = _cell(n_qubits=8, depth=4, max_bond=4, gradients=True)
+
+    assert cell["mps_truncated"] is True
+    own_map = cell["gradients"]["mps_own_map"]
+    assert own_map["derivative"]["checked"] >= 4
+    assert own_map["smoothness"]["smooth"] is True
+    assert own_map["derivative"]["max_relative_error"] > 1e-3, own_map
