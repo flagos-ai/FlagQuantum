@@ -137,7 +137,43 @@
             "cosine_similarity": 1.0000000000000002
           }
         },
-        "unsupported": {}
+        "unsupported": {},
+        "mps_own_map": {
+          "derivative": {
+            "method": "central_finite_difference",
+            "step": 1e-05,
+            "indices": [
+              0,
+              2,
+              4,
+              6,
+              8,
+              10,
+              12,
+              14
+            ],
+            "checked": 8,
+            "max_abs_error": 2.1061095922814133e-10,
+            "max_relative_error": 1.1890552981131594e-10
+          },
+          "smoothness": {
+            "index": 2,
+            "half_range": 0.05,
+            "points": 7,
+            "largest_step_jump": 0.0013242894198262078,
+            "bond_changed": false,
+            "smooth": true,
+            "energies": [
+              -2.73628179269,
+              -2.73760608211,
+              -2.73871520412,
+              -2.73960885087,
+              -2.740286774394,
+              -2.740748786121,
+              -2.740994757836
+            ]
+          }
+        }
       }
     },
     {
@@ -202,7 +238,43 @@
             "cosine_similarity": 1.0000000000000002
           }
         },
-        "unsupported": {}
+        "unsupported": {},
+        "mps_own_map": {
+          "derivative": {
+            "method": "central_finite_difference",
+            "step": 1e-05,
+            "indices": [
+              0,
+              2,
+              4,
+              6,
+              8,
+              10,
+              12,
+              14
+            ],
+            "checked": 8,
+            "max_abs_error": 2.1061095922814133e-10,
+            "max_relative_error": 1.1890552981131594e-10
+          },
+          "smoothness": {
+            "index": 2,
+            "half_range": 0.05,
+            "points": 7,
+            "largest_step_jump": 0.0013242894198262078,
+            "bond_changed": false,
+            "smooth": true,
+            "energies": [
+              -2.73628179269,
+              -2.73760608211,
+              -2.73871520412,
+              -2.73960885087,
+              -2.740286774394,
+              -2.740748786121,
+              -2.740994757836
+            ]
+          }
+        }
       }
     },
     {
@@ -267,7 +339,43 @@
             "cosine_similarity": 1.0000000000000002
           }
         },
-        "unsupported": {}
+        "unsupported": {},
+        "mps_own_map": {
+          "derivative": {
+            "method": "central_finite_difference",
+            "step": 1e-05,
+            "indices": [
+              0,
+              4,
+              8,
+              12,
+              16,
+              20,
+              24,
+              28
+            ],
+            "checked": 8,
+            "max_abs_error": 6.841173599836381e-10,
+            "max_relative_error": 3.3134194303977287e-10
+          },
+          "smoothness": {
+            "index": 2,
+            "half_range": 0.05,
+            "points": 7,
+            "largest_step_jump": 0.0006015633288307676,
+            "bond_changed": false,
+            "smooth": true,
+            "energies": [
+              -2.716989604051,
+              -2.717313788223,
+              -2.717452797188,
+              -2.717406592444,
+              -2.717175186778,
+              -2.716758644514,
+              -2.716157081185
+            ]
+          }
+        }
       }
     },
     {
@@ -332,7 +440,43 @@
             "cosine_similarity": 1.0000000000000002
           }
         },
-        "unsupported": {}
+        "unsupported": {},
+        "mps_own_map": {
+          "derivative": {
+            "method": "central_finite_difference",
+            "step": 1e-05,
+            "indices": [
+              0,
+              4,
+              8,
+              12,
+              16,
+              20,
+              24,
+              28
+            ],
+            "checked": 8,
+            "max_abs_error": 6.841173599836381e-10,
+            "max_relative_error": 3.3134194303977287e-10
+          },
+          "smoothness": {
+            "index": 2,
+            "half_range": 0.05,
+            "points": 7,
+            "largest_step_jump": 0.0006015633288307676,
+            "bond_changed": false,
+            "smooth": true,
+            "energies": [
+              -2.716989604051,
+              -2.717313788223,
+              -2.717452797188,
+              -2.717406592444,
+              -2.717175186778,
+              -2.716758644514,
+              -2.716157081185
+            ]
+          }
+        }
       }
     },
     {
@@ -397,7 +541,43 @@
             "cosine_similarity": 1.0
           }
         },
-        "unsupported": {}
+        "unsupported": {},
+        "mps_own_map": {
+          "derivative": {
+            "method": "central_finite_difference",
+            "step": 1e-05,
+            "indices": [
+              0,
+              4,
+              8,
+              12,
+              16,
+              20,
+              24,
+              28
+            ],
+            "checked": 8,
+            "max_abs_error": 6.72896890985264e-10,
+            "max_relative_error": 2.452493671443677e-10
+          },
+          "smoothness": {
+            "index": 2,
+            "half_range": 0.05,
+            "points": 7,
+            "largest_step_jump": 0.0010833056942924912,
+            "bond_changed": false,
+            "smooth": true,
+            "energies": [
+              -5.383706815883,
+              -5.384790121578,
+              -5.385699490128,
+              -5.386434669127,
+              -5.386995454579,
+              -5.387381690499,
+              -5.3875932697
+            ]
+          }
+        }
       }
     },
     {
@@ -462,7 +642,43 @@
             "cosine_similarity": 1.0
           }
         },
-        "unsupported": {}
+        "unsupported": {},
+        "mps_own_map": {
+          "derivative": {
+            "method": "central_finite_difference",
+            "step": 1e-05,
+            "indices": [
+              0,
+              4,
+              8,
+              12,
+              16,
+              20,
+              24,
+              28
+            ],
+            "checked": 8,
+            "max_abs_error": 6.72896890985264e-10,
+            "max_relative_error": 2.452493671443677e-10
+          },
+          "smoothness": {
+            "index": 2,
+            "half_range": 0.05,
+            "points": 7,
+            "largest_step_jump": 0.0010833056942924912,
+            "bond_changed": false,
+            "smooth": true,
+            "energies": [
+              -5.383706815883,
+              -5.384790121578,
+              -5.385699490128,
+              -5.386434669127,
+              -5.386995454579,
+              -5.387381690499,
+              -5.3875932697
+            ]
+          }
+        }
       }
     },
     {
@@ -527,7 +743,43 @@
             "cosine_similarity": 1.0
           }
         },
-        "unsupported": {}
+        "unsupported": {},
+        "mps_own_map": {
+          "derivative": {
+            "method": "central_finite_difference",
+            "step": 1e-05,
+            "indices": [
+              0,
+              8,
+              16,
+              24,
+              32,
+              40,
+              48,
+              56
+            ],
+            "checked": 8,
+            "max_abs_error": 0.16359817657690445,
+            "max_relative_error": 0.09311993626980863
+          },
+          "smoothness": {
+            "index": 2,
+            "half_range": 0.05,
+            "points": 7,
+            "largest_step_jump": 0.0017822324437171133,
+            "bond_changed": false,
+            "smooth": true,
+            "energies": [
+              -5.564235252014,
+              -5.566017484458,
+              -5.567606247277,
+              -5.569001087217,
+              -5.570201604734,
+              -5.57120745308,
+              -5.57201834003
+            ]
+          }
+        }
       }
     },
     {
@@ -592,7 +844,43 @@
             "cosine_similarity": 1.0
           }
         },
-        "unsupported": {}
+        "unsupported": {},
+        "mps_own_map": {
+          "derivative": {
+            "method": "central_finite_difference",
+            "step": 1e-05,
+            "indices": [
+              0,
+              8,
+              16,
+              24,
+              32,
+              40,
+              48,
+              56
+            ],
+            "checked": 8,
+            "max_abs_error": 1.2273173779359103e-09,
+            "max_relative_error": 4.3603233703316823e-10
+          },
+          "smoothness": {
+            "index": 2,
+            "half_range": 0.05,
+            "points": 7,
+            "largest_step_jump": 0.0017791663168580385,
+            "bond_changed": false,
+            "smooth": true,
+            "energies": [
+              -5.573055306305,
+              -5.574834472622,
+              -5.576418960106,
+              -5.577808328907,
+              -5.579002193532,
+              -5.580000221925,
+              -5.580802137165
+            ]
+          }
+        }
       }
     },
     {
@@ -657,7 +945,43 @@
             "cosine_similarity": 1.0
           }
         },
-        "unsupported": {}
+        "unsupported": {},
+        "mps_own_map": {
+          "derivative": {
+            "method": "central_finite_difference",
+            "step": 1e-05,
+            "indices": [
+              0,
+              6,
+              12,
+              18,
+              24,
+              30,
+              36,
+              42
+            ],
+            "checked": 8,
+            "max_abs_error": 2.440144700882607e-09,
+            "max_relative_error": 6.880273916425106e-10
+          },
+          "smoothness": {
+            "index": 2,
+            "half_range": 0.05,
+            "points": 7,
+            "largest_step_jump": 0.001029133635197077,
+            "bond_changed": false,
+            "smooth": true,
+            "energies": [
+              -7.793158553749,
+              -7.794187687384,
+              -7.795055245762,
+              -7.795760988076,
+              -7.796304718502,
+              -7.796686285798,
+              -7.796905584075
+            ]
+          }
+        }
       }
     },
     {
@@ -722,7 +1046,43 @@
             "cosine_similarity": 1.0
           }
         },
-        "unsupported": {}
+        "unsupported": {},
+        "mps_own_map": {
+          "derivative": {
+            "method": "central_finite_difference",
+            "step": 1e-05,
+            "indices": [
+              0,
+              6,
+              12,
+              18,
+              24,
+              30,
+              36,
+              42
+            ],
+            "checked": 8,
+            "max_abs_error": 2.440144700882607e-09,
+            "max_relative_error": 6.880273916425106e-10
+          },
+          "smoothness": {
+            "index": 2,
+            "half_range": 0.05,
+            "points": 7,
+            "largest_step_jump": 0.001029133635197077,
+            "bond_changed": false,
+            "smooth": true,
+            "energies": [
+              -7.793158553749,
+              -7.794187687384,
+              -7.795055245762,
+              -7.795760988076,
+              -7.796304718502,
+              -7.796686285798,
+              -7.796905584075
+            ]
+          }
+        }
       }
     },
     {
@@ -787,7 +1147,43 @@
             "cosine_similarity": 1.0
           }
         },
-        "unsupported": {}
+        "unsupported": {},
+        "mps_own_map": {
+          "derivative": {
+            "method": "central_finite_difference",
+            "step": 1e-05,
+            "indices": [
+              0,
+              12,
+              24,
+              36,
+              48,
+              60,
+              72,
+              84
+            ],
+            "checked": 8,
+            "max_abs_error": 1.0333145988068622,
+            "max_relative_error": 0.5695178125419833
+          },
+          "smoothness": {
+            "index": 2,
+            "half_range": 0.05,
+            "points": 7,
+            "largest_step_jump": 0.0017760786034148879,
+            "bond_changed": false,
+            "smooth": true,
+            "energies": [
+              -8.0515546514,
+              -8.053330730003,
+              -8.054957048375,
+              -8.056433157634,
+              -8.057758648617,
+              -8.058933150849,
+              -8.059956334437
+            ]
+          }
+        }
       }
     },
     {
@@ -852,7 +1248,43 @@
             "cosine_similarity": 1.0
           }
         },
-        "unsupported": {}
+        "unsupported": {},
+        "mps_own_map": {
+          "derivative": {
+            "method": "central_finite_difference",
+            "step": 1e-05,
+            "indices": [
+              0,
+              12,
+              24,
+              36,
+              48,
+              60,
+              72,
+              84
+            ],
+            "checked": 8,
+            "max_abs_error": 2.826998232730027e-09,
+            "max_relative_error": 7.812360294634838e-10
+          },
+          "smoothness": {
+            "index": 2,
+            "half_range": 0.05,
+            "points": 7,
+            "largest_step_jump": 0.0018068774036663626,
+            "bond_changed": false,
+            "smooth": true,
+            "energies": [
+              -8.113460882176,
+              -8.11526775958,
+              -8.116920147516,
+              -8.118417587261,
+              -8.119759663345,
+              -8.120946002503,
+              -8.121976275573
+            ]
+          }
+        }
       }
     },
     {
@@ -917,7 +1349,43 @@
             "cosine_similarity": 1.0
           }
         },
-        "unsupported": {}
+        "unsupported": {},
+        "mps_own_map": {
+          "derivative": {
+            "method": "central_finite_difference",
+            "step": 1e-05,
+            "indices": [
+              0,
+              2,
+              4,
+              6,
+              8,
+              10,
+              12,
+              14
+            ],
+            "checked": 8,
+            "max_abs_error": 5.135599445704742e-10,
+            "max_relative_error": 5.77828687720991e-10
+          },
+          "smoothness": {
+            "index": 2,
+            "half_range": 0.05,
+            "points": 7,
+            "largest_step_jump": 0.0012943181515248092,
+            "bond_changed": false,
+            "smooth": true,
+            "energies": [
+              -2.857863372248,
+              -2.859157690399,
+              -2.860237438449,
+              -2.861102316704,
+              -2.861752085178,
+              -2.862186563131,
+              -2.862405629987
+            ]
+          }
+        }
       }
     },
     {
@@ -982,7 +1450,43 @@
             "cosine_similarity": 1.0
           }
         },
-        "unsupported": {}
+        "unsupported": {},
+        "mps_own_map": {
+          "derivative": {
+            "method": "central_finite_difference",
+            "step": 1e-05,
+            "indices": [
+              0,
+              2,
+              4,
+              6,
+              8,
+              10,
+              12,
+              14
+            ],
+            "checked": 8,
+            "max_abs_error": 5.135599445704742e-10,
+            "max_relative_error": 5.77828687720991e-10
+          },
+          "smoothness": {
+            "index": 2,
+            "half_range": 0.05,
+            "points": 7,
+            "largest_step_jump": 0.0012943181515248092,
+            "bond_changed": false,
+            "smooth": true,
+            "energies": [
+              -2.857863372248,
+              -2.859157690399,
+              -2.860237438449,
+              -2.861102316704,
+              -2.861752085178,
+              -2.862186563131,
+              -2.862405629987
+            ]
+          }
+        }
       }
     },
     {
@@ -1047,7 +1551,43 @@
             "cosine_similarity": 1.0
           }
         },
-        "unsupported": {}
+        "unsupported": {},
+        "mps_own_map": {
+          "derivative": {
+            "method": "central_finite_difference",
+            "step": 1e-05,
+            "indices": [
+              0,
+              4,
+              8,
+              12,
+              16,
+              20,
+              24,
+              28
+            ],
+            "checked": 8,
+            "max_abs_error": 7.020382608580178e-10,
+            "max_relative_error": 3.3044357478602316e-10
+          },
+          "smoothness": {
+            "index": 2,
+            "half_range": 0.05,
+            "points": 7,
+            "largest_step_jump": 0.0006026357193902321,
+            "bond_changed": false,
+            "smooth": true,
+            "energies": [
+              -2.630856660131,
+              -2.631182821406,
+              -2.631323197996,
+              -2.63127775102,
+              -2.631046493053,
+              -2.63062948838,
+              -2.63002685266
+            ]
+          }
+        }
       }
     },
     {
@@ -1112,7 +1652,43 @@
             "cosine_similarity": 1.0
           }
         },
-        "unsupported": {}
+        "unsupported": {},
+        "mps_own_map": {
+          "derivative": {
+            "method": "central_finite_difference",
+            "step": 1e-05,
+            "indices": [
+              0,
+              4,
+              8,
+              12,
+              16,
+              20,
+              24,
+              28
+            ],
+            "checked": 8,
+            "max_abs_error": 7.020382608580178e-10,
+            "max_relative_error": 3.3044357478602316e-10
+          },
+          "smoothness": {
+            "index": 2,
+            "half_range": 0.05,
+            "points": 7,
+            "largest_step_jump": 0.0006026357193902321,
+            "bond_changed": false,
+            "smooth": true,
+            "energies": [
+              -2.630856660131,
+              -2.631182821406,
+              -2.631323197996,
+              -2.63127775102,
+              -2.631046493053,
+              -2.63062948838,
+              -2.63002685266
+            ]
+          }
+        }
       }
     },
     {
@@ -1177,7 +1753,43 @@
             "cosine_similarity": 0.9999999999999999
           }
         },
-        "unsupported": {}
+        "unsupported": {},
+        "mps_own_map": {
+          "derivative": {
+            "method": "central_finite_difference",
+            "step": 1e-05,
+            "indices": [
+              0,
+              4,
+              8,
+              12,
+              16,
+              20,
+              24,
+              28
+            ],
+            "checked": 8,
+            "max_abs_error": 29529.379139258373,
+            "max_relative_error": 223268.28056848663
+          },
+          "smoothness": {
+            "index": 2,
+            "half_range": 0.05,
+            "points": 7,
+            "largest_step_jump": 0.5073049604640607,
+            "bond_changed": false,
+            "smooth": false,
+            "energies": [
+              -4.81675819732,
+              -4.349341794871,
+              -4.32537250462,
+              -4.670189713589,
+              -4.659562149135,
+              -5.166867109599,
+              -4.969895409323
+            ]
+          }
+        }
       }
     },
     {
@@ -1242,7 +1854,43 @@
             "cosine_similarity": 0.9999999999999999
           }
         },
-        "unsupported": {}
+        "unsupported": {},
+        "mps_own_map": {
+          "derivative": {
+            "method": "central_finite_difference",
+            "step": 1e-05,
+            "indices": [
+              0,
+              4,
+              8,
+              12,
+              16,
+              20,
+              24,
+              28
+            ],
+            "checked": 8,
+            "max_abs_error": 4.526709711932808e-09,
+            "max_relative_error": 3.4486530882213644e-09
+          },
+          "smoothness": {
+            "index": 2,
+            "half_range": 0.05,
+            "points": 7,
+            "largest_step_jump": 0.0010827065533574043,
+            "bond_changed": false,
+            "smooth": true,
+            "energies": [
+              -5.458883391658,
+              -5.459966098211,
+              -5.460877771978,
+              -5.461618159911,
+              -5.462187056569,
+              -5.462584303711,
+              -5.462809791097
+            ]
+          }
+        }
       }
     },
     {
@@ -1307,7 +1955,43 @@
             "cosine_similarity": 0.9999999999999998
           }
         },
-        "unsupported": {}
+        "unsupported": {},
+        "mps_own_map": {
+          "derivative": {
+            "method": "central_finite_difference",
+            "step": 1e-05,
+            "indices": [
+              0,
+              8,
+              16,
+              24,
+              32,
+              40,
+              48,
+              56
+            ],
+            "checked": 8,
+            "max_abs_error": 15647.325309330063,
+            "max_relative_error": 22158.06199893274
+          },
+          "smoothness": {
+            "index": 2,
+            "half_range": 0.05,
+            "points": 7,
+            "largest_step_jump": 2.622955761387749,
+            "bond_changed": false,
+            "smooth": false,
+            "energies": [
+              -3.485291295745,
+              -4.051329720356,
+              -1.788257049602,
+              -4.41121281099,
+              -4.37326979508,
+              -4.693736205355,
+              -3.935123747877
+            ]
+          }
+        }
       }
     },
     {
@@ -1372,15 +2056,51 @@
             "cosine_similarity": 0.9999999999999998
           }
         },
-        "unsupported": {}
+        "unsupported": {},
+        "mps_own_map": {
+          "derivative": {
+            "method": "central_finite_difference",
+            "step": 1e-05,
+            "indices": [
+              0,
+              8,
+              16,
+              24,
+              32,
+              40,
+              48,
+              56
+            ],
+            "checked": 8,
+            "max_abs_error": 7.563619730532878e-09,
+            "max_relative_error": 3.872776315646421e-09
+          },
+          "smoothness": {
+            "index": 2,
+            "half_range": 0.05,
+            "points": 7,
+            "largest_step_jump": 0.0016015750101505688,
+            "bond_changed": false,
+            "smooth": true,
+            "energies": [
+              -5.523237043506,
+              -5.524838618516,
+              -5.526247310622,
+              -5.527462728785,
+              -5.52848453577,
+              -5.529312447374,
+              -5.529946233873
+            ]
+          }
+        }
       }
     }
   ],
-  "elapsed_seconds": 80.694,
+  "elapsed_seconds": 97.859,
   "command": "benchmarks/representation_agreement_sweep.py --gradients --dtype complex128 --widths 4,8,12 --depths 2,4 --max-bond 4,16 --structures nearest_neighbour,all_to_all --all-to-all-max-width 8 --output artifacts/development/representation_gradient_conformance_cpu_20261027/complex128.json",
   "python": "3.12.14",
   "torch": "2.14.1",
   "base_commit": "914e662ec7be501ea45b6a5ceb6aaf4b9e53fc55",
-  "source_commit": "b8cf16f5f66735d355674aa9e5b32d488f7693b8",
+  "source_commit": "27995d5b98973c4bea9290041792077c6b122a9b",
   "measuring_source_committed": true
 }
