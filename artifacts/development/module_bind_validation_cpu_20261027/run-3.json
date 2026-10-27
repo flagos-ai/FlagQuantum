@@ -1,0 +1,130 @@
+{
+  "schema": "flagquantum.module_bind_validation.v1",
+  "benchmark": "module_bind_validation",
+  "artifact_class": "measured_local_run",
+  "claim": "the bind-time finite-angle check costs a measured fraction of one public module forward, and refuses the values the canonical rule defers during tracing",
+  "distribution_semantics": "single_device_fast_path",
+  "scalability_claim_allowed": false,
+  "release_gate_allowed": false,
+  "non_release_evidence": true,
+  "benchmark_evidence_class": "local_non_release",
+  "scalability_blockers": [
+    "single-process CPU cost measurement of one validation step; it shards no workload and is not distributed or accelerator evidence"
+  ],
+  "method": "the same module is timed twice in one process: once as shipped, and once with Module._refuse_non_finite_bound_parameters replaced by a no-op, so the difference is the check rather than a different build",
+  "cells": [
+    {
+      "width": 2,
+      "depth": 1,
+      "mode": "statevector",
+      "gate_count": 5,
+      "with_validation": {
+        "block_medians_seconds": [
+          0.0001651,
+          0.0001622,
+          0.0001737,
+          0.000165,
+          0.0001632,
+          0.000168,
+          0.0001659
+        ],
+        "median_seconds": 0.0001651
+      },
+      "without_validation": {
+        "block_medians_seconds": [
+          0.0001599,
+          0.0001625,
+          0.0001629,
+          0.0001592,
+          0.0001644,
+          0.0001605,
+          0.0001621
+        ],
+        "median_seconds": 0.0001621
+      },
+      "overhead_seconds": 3e-06,
+      "overhead_fraction": 0.018372,
+      "nanoseconds_per_gate": 595.8
+    },
+    {
+      "width": 8,
+      "depth": 4,
+      "mode": "statevector",
+      "gate_count": 92,
+      "with_validation": {
+        "block_medians_seconds": [
+          0.0013358,
+          0.0013177,
+          0.0013169,
+          0.0013322,
+          0.0013707,
+          0.0013212,
+          0.0013274
+        ],
+        "median_seconds": 0.0013274
+      },
+      "without_validation": {
+        "block_medians_seconds": [
+          0.0012804,
+          0.001274,
+          0.0012948,
+          0.0012872,
+          0.0013025,
+          0.001274,
+          0.0012933
+        ],
+        "median_seconds": 0.0012872
+      },
+      "overhead_seconds": 4.01e-05,
+      "overhead_fraction": 0.031188,
+      "nanoseconds_per_gate": 436.4
+    },
+    {
+      "width": 12,
+      "depth": 4,
+      "mode": "statevector",
+      "gate_count": 140,
+      "with_validation": {
+        "block_medians_seconds": [
+          0.0018349,
+          0.0018185,
+          0.0018871,
+          0.0018391,
+          0.0018851,
+          0.0018161,
+          0.0018165
+        ],
+        "median_seconds": 0.0018349
+      },
+      "without_validation": {
+        "block_medians_seconds": [
+          0.0017661,
+          0.0018566,
+          0.0017942,
+          0.001775,
+          0.0017686,
+          0.0018651,
+          0.0017684
+        ],
+        "median_seconds": 0.001775
+      },
+      "overhead_seconds": 5.98e-05,
+      "overhead_fraction": 0.033708,
+      "nanoseconds_per_gate": 427.4
+    }
+  ],
+  "elapsed_seconds": 2.422,
+  "command": "benchmarks/module_bind_validation.py --output artifacts/development/module_bind_validation_cpu_20261027/run-3.json",
+  "threads": {
+    "OMP_NUM_THREADS": "1",
+    "MKL_NUM_THREADS": "1",
+    "OPENBLAS_NUM_THREADS": "1"
+  },
+  "python": "3.12.14",
+  "torch": "2.14.1",
+  "platform": "macOS-27.0-arm64-arm-64bit",
+  "device": "cpu",
+  "base_commit": "97b86c03dd92c012fb87d439e2116cff25a86ad0",
+  "source_commit": "2b5d4646b0fd499e1a1c263819e3d8da524d40e9",
+  "measuring_source_committed": true
+}
