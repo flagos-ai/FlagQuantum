@@ -118,21 +118,27 @@ def _product(values: Iterable[SupportsInt]) -> int:
     return prod(int(value) for value in values)
 
 
+def _require_label_dims(node: _Node, dims: dict[int, int]) -> None:
+    """Fold one node's labels into ``dims``, refusing an inconsistent shape."""
+
+    if len(node.labels) != len(node.tensor.shape):
+        raise ValueError(
+            f"Tensor-network node {node.name!r} has {len(node.labels)} labels "
+            f"for {len(node.tensor.shape)} dimensions."
+        )
+    for label, dim in zip(node.labels, node.tensor.shape, strict=True):
+        dim = int(dim)
+        if label in dims and dims[label] != dim:
+            raise ValueError(
+                f"Inconsistent dimension for tensor-network label {label}."
+            )
+        dims[label] = dim
+
+
 def _label_dims(nodes: Sequence[_Node]) -> dict[int, int]:
     dims: dict[int, int] = {}
     for node in nodes:
-        if len(node.labels) != len(node.tensor.shape):
-            raise ValueError(
-                f"Tensor-network node {node.name!r} has {len(node.labels)} labels "
-                f"for {len(node.tensor.shape)} dimensions."
-            )
-        for label, dim in zip(node.labels, node.tensor.shape, strict=True):
-            dim = int(dim)
-            if label in dims and dims[label] != dim:
-                raise ValueError(
-                    f"Inconsistent dimension for tensor-network label {label}."
-                )
-            dims[label] = dim
+        _require_label_dims(node, dims)
     return dims
 
 
@@ -142,6 +148,20 @@ def _label_counts(nodes: Sequence[_Node]) -> dict[int, int]:
         for label in node.labels:
             counts[label] = counts.get(label, 0) + 1
     return counts
+
+
+def _release_labels(counts: dict[int, int], labels: Sequence[int]) -> None:
+    """Remove one node's contribution from an incremental label census."""
+
+    for label in labels:
+        counts[label] = counts.get(label, 0) - 1
+
+
+def _acquire_labels(counts: dict[int, int], labels: Sequence[int]) -> None:
+    """Add one node's contribution to an incremental label census."""
+
+    for label in labels:
+        counts[label] = counts.get(label, 0) + 1
 
 
 def _pair_output_labels(
@@ -396,9 +416,13 @@ def _contract_nodes_greedy(
             )
         return staged_tensor, ()
     step_index = 0
+    # The label dimensions and the label census change only where this loop
+    # changes them, so both are derived once per call and then maintained. Deriving
+    # them from the active list on every step rescans the whole network per
+    # contraction, which makes an already-planned path quadratic in the node count.
+    dims = _label_dims(active)
+    counts = _label_counts(active)
     while len(active) > 1:
-        dims = _label_dims(active)
-        counts = _label_counts(active)
         if cached_path is not None:
             left_idx, right_idx, pair_outputs = cached_path[step_index]
             cost, intermediate, expected_outputs, _ = _estimate_pair(
@@ -466,9 +490,15 @@ def _contract_nodes_greedy(
             labels=pair_outputs,
             name=f"({left.name},{right.name})",
         )
+        # The same shape and dimension consistency the initial scan applies, now
+        # applied to the node this step produced rather than to the whole network.
+        _require_label_dims(new_node, dims)
         for idx in sorted((left_idx, right_idx), reverse=True):
             active.pop(idx)
         active.append(new_node)
+        _release_labels(counts, left.labels)
+        _release_labels(counts, right.labels)
+        _acquire_labels(counts, pair_outputs)
         step_index += 1
     if cached_path is None and random_state is None:
         _CONTRACTION_PATH_CACHE[path_key] = tuple(planned_path)
