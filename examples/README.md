@@ -171,6 +171,10 @@ These examples do not use that alias:
   across five certified concrete decoders. Requires the PyMatching extra; this
   operation retains correction fields and is separate from logical-only Tensor
   batch predictions. It makes no speed claim.
+- [`qec/memory_experiment.py`](qec/memory_experiment.py) composes the approved
+  fixed-shot experiment through its canonical QEC execution import. It uses one
+  original source and exact final partial batches with five default decoders;
+  install the Stim and PyMatching extras. Reports counts without a speed claim.
 - [`qec/circuit_noise_dem.py`](qec/circuit_noise_dem.py) builds and samples a
   distance-five circuit-location surface-code DEM without a dense statevector
   or optional SDK; the physical circuit has 49 qubits.

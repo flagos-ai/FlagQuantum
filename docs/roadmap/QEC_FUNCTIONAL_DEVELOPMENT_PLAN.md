@@ -138,7 +138,7 @@ and this entry point, preserving pending checks and scope boundaries.
 | 004 | Merged in [#789](https://github.com/flagos-ai/FlagQuantum/pull/789) after explicit merge authorization | [Proposal 088](../development/API_CHANGE_PROPOSAL_088_QEC_CORRELATED_PAULI_FAULTS.md) specifies the channel grammar, exclusive distributions, compatibility and independent numerical acceptance. [Implementation](../development/QEC_FUNCTIONAL_004.md) covers exclusive circuit-noise construction and sampling; [post-merge acceptance](../development/QEC_FUNCTIONAL_004_MAINLINE_ACCEPTANCE.md) records exact main, fresh artifacts and checks. |
 | 005 | Approved 2026-10-26; merged and accepted in [#904](https://github.com/flagos-ai/FlagQuantum/pull/904) | [Batch delivery contract](../development/QEC_FUNCTIONAL_005_BATCH_CONTRACT.md) preserves complete single-shot results, specifies the supported concrete types and differing duplicate semantics, and refuses unknown/stateful plugins. Actual five-type SDK and source/wheel/sdist installation profiles passed; full reviewed-head CI/GPU and exact-merge Main smoke succeeded. The central ledger preserves local default/build and container-publishing limits; no speed claim. |
 | 006 | Existing logical-only native batch path; broader optimization pending | The approved PyMatching Tensor operation already exists. Do not reimplement it or use it to invent full correction records; any further optimization must preserve the approved 005 result contract. |
-| 007 | Example statistics delivered; concrete public experiment design under review | [Decision C refinement](../development/QEC_FUNCTIONAL_007_EXPERIMENT_DESIGN.md) proposes explicit batch size, default-only decoder configuration and caller-owned evidence without persistence. #784/#788 sampling and fixed-shot counts/Wilson intervals do not activate this public API or adaptive stopping. Implementation remains deferred. |
+| 007 | Complete fixed-shot contract approved; implementation candidate under verification | [Decision C refinement](../development/QEC_FUNCTIONAL_007_EXPERIMENT_DESIGN.md) proposes explicit batch size, default-only decoder configuration and caller-owned evidence without persistence. #784/#788 sampling and fixed-shot counts/Wilson intervals do not activate this public API or adaptive stopping. Implementation remains deferred. |
 | 008–009 | Pending respective contracts | No threshold, broad experiment API or performance claim follows from the partial deliveries above. |
 | 010–012 | Candidate tranche | Separate contract review required. |
 
@@ -164,3 +164,24 @@ approval of the complete contract or implementation. Older design-choice
 wording above records the #912 publication snapshot. Decision B/005 remains
 complete; C implementation, adaptive stopping, threshold fitting and persistence
 remain deferred. No new experiment, performance study or hardware run was done.
+
+## Approved C/007 implementation candidate
+
+After the #924 contract artifact was delivered and its exact merge Main smoke
+`40314835571` succeeded, the owner explicitly approved the complete
+[C/007 contract](../development/QEC_FUNCTIONAL_007_EXPERIMENT_CONTRACT.md) for
+implementation, verification and delivery on 2026-10-26 (Asia/Shanghai).
+This supersedes earlier C design-only/deferred wording in historical progress
+snapshots above. B/005 remains delivered. Adaptive stopping, threshold analysis,
+nondefault decoder configuration and persistence remain separate decisions.
+
+The candidate adds only `MemoryExperimentResult` and `run_memory_experiment` in
+the canonical `qec.execution.experiments` module. It reuses original-source
+export/strict actual-law DEM/one compiled sampler, five default registered exact
+decoders through complete-record 005, exact final partial batches, all-logical
+counts and one shared private Wilson formula. No root or parent re-export,
+registry entry, dependency, channel law, RNG schedule or numerical tolerance is
+changed. Zero-noise PyMatching isolated-detector refusal remains explicit.
+Focused correctness and actual-SDK acceptance are in progress; exact-head full
+CI/GPU, reviews/rules, normal pinned merge and exact merge/Main smoke acceptance
+are still required. No performance, threshold, GPU or capacity claim is made.

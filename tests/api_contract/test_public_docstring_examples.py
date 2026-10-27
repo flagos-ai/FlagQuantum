@@ -105,6 +105,7 @@ from flagquantum.qec.adapters.stim import (
     stim_circuit_to_dem_text,
 )
 from flagquantum.qec.decoders.batch import decode_batch
+from flagquantum.qec.execution.experiments import run_memory_experiment
 from flagquantum.runtime import planner
 from flagquantum.runtime.executors.statevector import gather_distributed_statevector
 from flagquantum.simulation.lindblad import evolve_density_matrix
@@ -197,6 +198,7 @@ pytestmark = pytest.mark.unit
 # density matrix and entanglement-entropy reads, whose examples show the two
 # figures a caller takes from one run rather than a second execution.
 ENTRIES = (
+    run_memory_experiment,
     LatexFigure,
     ClassicalLayer,
     draw_latex,

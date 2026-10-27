@@ -1,9 +1,11 @@
 # QEC-FUNCTIONAL-007: Fixed-shot experiment design review
 
-Status: design refinement authorized on 2026-10-26; implementation explicitly deferred
-by the owner. This note is a concrete review draft, not an approved API or delivered
-capability. Decision B is separately approved and its complete-result batch operation
-must not be relabelled as this experiment service.
+Status: historical design review delivered in #912. The owner subsequently
+approved the [complete 007 contract](QEC_FUNCTIONAL_007_EXPERIMENT_CONTRACT.md)
+for implementation, verification and delivery on 2026-10-26. The implementation
+candidate is being verified; final delivery gates remain pending. The proposed
+shapes and design-only statements below preserve the earlier review context;
+the complete approved contract is the current authority.
 
 Decision B is delivered in [#904](https://github.com/flagos-ai/FlagQuantum/pull/904).
 Its [complete-result contract](QEC_FUNCTIONAL_005_BATCH_CONTRACT.md) remains a separate
