@@ -1,0 +1,113 @@
+{
+  "schema": "flagquantum.tn_cached_path_throughput.v1",
+  "benchmark": "tn_cached_path_throughput",
+  "artifact_class": "measured_local_run",
+  "claim": "a warm tensor-network contraction pays its label bookkeeping once per call rather than once per pair step",
+  "distribution_semantics": "single_device_fast_path",
+  "scalability_claim_allowed": false,
+  "release_gate_allowed": false,
+  "non_release_evidence": true,
+  "benchmark_evidence_class": "local_non_release",
+  "scalability_blockers": [
+    "single-process CPU measurement of one internal contraction path; it shards no workload and is not distributed or accelerator evidence"
+  ],
+  "workload": {
+    "network": "operator network for a transverse-field Pauli sum, ket and bra copies",
+    "hamiltonian": "Z on every qubit at -0.5, X on every qubit at -0.7",
+    "ansatz": "depth x (ry, rz on every qubit, cx chain)",
+    "dtype": "complex128 amplitudes",
+    "depth": 2,
+    "path": "greedy contraction order, warmed before timing"
+  },
+  "cells": [
+    {
+      "width": 8,
+      "nodes": 117,
+      "terms": 16,
+      "contraction_steps": 116,
+      "peak_size": 1152,
+      "value": -4.106326232521626,
+      "warm": {
+        "samples_seconds": [
+          0.001771,
+          0.001709,
+          0.001708,
+          0.001707,
+          0.001686,
+          0.001706,
+          0.001723,
+          0.001671,
+          0.001684
+        ],
+        "median_seconds": 0.001707,
+        "median_absolute_deviation_seconds": 1.5e-05,
+        "minimum_seconds": 0.001671
+      },
+      "seconds_per_pair_step": 1.4719e-05
+    },
+    {
+      "width": 12,
+      "nodes": 177,
+      "terms": 24,
+      "contraction_steps": 176,
+      "peak_size": 2176,
+      "value": -5.721513955374389,
+      "warm": {
+        "samples_seconds": [
+          0.002676,
+          0.002595,
+          0.002672,
+          0.002576,
+          0.002568,
+          0.002535,
+          0.00266,
+          0.002556,
+          0.002555
+        ],
+        "median_seconds": 0.002576,
+        "median_absolute_deviation_seconds": 2.1e-05,
+        "minimum_seconds": 0.002535
+      },
+      "seconds_per_pair_step": 1.4636e-05
+    },
+    {
+      "width": 14,
+      "nodes": 207,
+      "terms": 28,
+      "contraction_steps": 206,
+      "peak_size": 2688,
+      "value": -6.701911766096943,
+      "warm": {
+        "samples_seconds": [
+          0.00308,
+          0.003016,
+          0.003168,
+          0.003026,
+          0.003012,
+          0.003147,
+          0.003081,
+          0.002987,
+          0.003078
+        ],
+        "median_seconds": 0.003078,
+        "median_absolute_deviation_seconds": 6.3e-05,
+        "minimum_seconds": 0.002987
+      },
+      "seconds_per_pair_step": 1.4943e-05
+    }
+  ],
+  "elapsed_seconds": 7.319,
+  "command": "benchmarks/tn_cached_path_throughput.py --output artifacts/development/tn_cached_path_bookkeeping_cpu_20261027/run-1.json",
+  "threads": {
+    "OMP_NUM_THREADS": "1",
+    "MKL_NUM_THREADS": "1",
+    "OPENBLAS_NUM_THREADS": "1"
+  },
+  "python": "3.12.14",
+  "torch": "2.14.1",
+  "platform": "macOS-27.0-arm64-arm-64bit",
+  "device": "cpu",
+  "base_commit": "057424b5df734da9e14ca6e3400cdd93131d6cab",
+  "source_commit": "da8f27b43412fd1a36e0923423e0421ed89189f1",
+  "measuring_source_committed": true
+}
