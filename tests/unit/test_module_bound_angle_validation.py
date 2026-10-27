@@ -217,6 +217,32 @@ def test_a_hamiltonian_objective_refuses_before_it_reports_an_energy(
         init=torch.tensor([0.2], dtype=torch.float64),
         dtype=torch.float64,
         hamiltonian=Hamiltonian([pauli_term(coefficient, "Z", (0,))]),
+        policy=fq.RuntimePolicy(observable="hamiltonian"),
+    )
+    module()
+    _fill(module, float("nan"))
+
+    with pytest.raises(IRValidationError):
+        module()
+
+
+def test_the_issue_reproduction_refuses_on_the_jax_backend() -> None:
+    """The exact script from #925, which needs the optional JAX runtime.
+
+    Skips rather than silently passes when JAX is absent: the same refusal is
+    already covered on the default backend above, so an unavailable accelerator
+    leaves a gap in coverage rather than a green test that proved nothing.
+    """
+
+    pytest.importorskip("jax")
+    from flagquantum.algorithms import Hamiltonian, pauli_term
+
+    module = fq.Module(
+        _square_builder,
+        1,
+        init=torch.tensor([0.2], dtype=torch.float64),
+        dtype=torch.float64,
+        hamiltonian=Hamiltonian([pauli_term(0.0, "Z", (0,))]),
         policy=fq.RuntimePolicy(
             execution_options=fq.ExecutionOptions(backend="jax"),
             observable="hamiltonian",
