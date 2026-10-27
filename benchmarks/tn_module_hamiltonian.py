@@ -434,7 +434,42 @@ def term_scaling(width: int, depth: int, repeats: int) -> list[dict[str, Any]]:
                 "full_state_materialized": result.runtime.get(
                     "full_state_materialized"
                 ),
+                "observable_peak_size": result.runtime.get("observable_peak_size"),
                 "energy": float(result.value.detach().reshape(-1)[0]),
+            }
+        )
+    return cells
+
+
+def peak_scaling(widths: tuple[int, ...], depth: int) -> list[dict[str, Any]]:
+    """Record the operator contraction peak against the dense state it replaces.
+
+    The reason to pick this representation is capacity, not speed, so the peak is
+    the number that decides. A dense state holds ``2**width`` amplitudes; the
+    operator contraction holds a peak intermediate of its own, and whether that
+    peak is smaller is a measured question rather than an assumption.
+    """
+
+    from flagquantum.simulation.tensor_network.entrypoints import run_tensor_network
+
+    cells: list[dict[str, Any]] = []
+    for width in widths:
+        generator = torch.Generator().manual_seed(260720)
+        initial = 0.1 * torch.randn(depth, width, 2, generator=generator)
+        circuit = build_ansatz(width, depth, torch.complex128)(initial.reshape(-1))
+        state = run_tensor_network(circuit, dense_observable_qubits=12)
+        hamiltonian = transverse_field_sum(width)
+        state.expectation_hamiltonian(hamiltonian)
+        peak = state.summary()["observable_peak_size"]
+        cells.append(
+            {
+                "width": width,
+                "terms": 2 * width,
+                "dense_state_elements": 2**width,
+                "observable_peak_size": peak,
+                "peak_over_dense": (
+                    None if peak is None else round(peak / 2**width, 4)
+                ),
             }
         )
     return cells
@@ -455,6 +490,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--widths", type=int, nargs="+", default=[2, 4, 6, 8])
     parser.add_argument("--depth", type=int, default=2)
+    parser.add_argument("--peak-widths", type=int, nargs="+", default=[8, 10, 12, 14])
     parser.add_argument("--steps", type=int, default=6)
     parser.add_argument("--repeats", type=int, default=7)
     parser.add_argument("--output", type=Path, required=True)
@@ -493,6 +529,7 @@ def main() -> int:
             arguments.depth, arguments.steps, checkpoint_step=2
         ),
         "cost": cost(tuple(arguments.widths), arguments.depth, arguments.repeats),
+        "peak_scaling": peak_scaling(tuple(arguments.peak_widths), arguments.depth),
         "term_count_scaling": term_scaling(
             arguments.widths[-1], arguments.depth, arguments.repeats
         ),

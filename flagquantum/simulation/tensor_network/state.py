@@ -326,7 +326,13 @@ class TensorNetworkState:
         )
         self._last_observable_execution = "hamiltonian_mpo_contraction"
         self._last_observable_program_cache_hit = False
-        self._last_observable_peak_size = None
+        # The profile reuses the ordering the call just contracted, so it costs
+        # a fraction of a millisecond rather than a second path search. Under a
+        # declared budget the contraction is sliced and this unsliced figure
+        # would describe a network that did not run, so it is not reported.
+        self._last_observable_peak_size = (
+            None if budget is not None else plan.contraction_profile(strategy).peak_size
+        )
         return value
 
     def sample(

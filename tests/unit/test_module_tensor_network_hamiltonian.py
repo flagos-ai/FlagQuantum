@@ -138,8 +138,49 @@ def test_tensor_network_hamiltonian_contracts_without_a_dense_state(
     assert result.runtime["mode"] == "tensor_network"
     assert result.runtime["full_state_materialized"] is False
     assert result.runtime["observable_execution"] == "hamiltonian_mpo_contraction"
-    assert result.runtime["observable_peak_size"] is None
+    assert isinstance(result.runtime["observable_peak_size"], int)
+    assert result.runtime["observable_peak_size"] > 0
     assert result.metrics["observable_count"] == 5
+
+
+def test_tensor_network_hamiltonian_reports_the_observed_contraction_peak() -> None:
+    """The recorded peak must be the profile of the ordering that ran.
+
+    A caller choosing the tensor-network representation is choosing it for the
+    peak, so the number has to come from the operator network this call
+    contracted, not from the state network and not from a second ordering.
+    """
+
+    from flagquantum.simulation.tensor_network.entrypoints import run_tensor_network
+    from flagquantum.simulation.tensor_network.observables import (
+        build_tensor_network_hamiltonian_expectation,
+    )
+
+    hamiltonian = many_term_hamiltonian(4)
+    module_ = fq.Module(
+        partial(build_width, 4),
+        2,
+        init=INIT.clone(),
+        dtype=torch.float64,
+        hamiltonian=hamiltonian,
+        policy=fq.RuntimePolicy(
+            execution_options=fq.ExecutionOptions(
+                mode="tensor_network",
+                precision="complex128",
+                allow_backend_fallback=False,
+            ),
+            observable="hamiltonian",
+            observable_qubits=tuple(range(4)),
+        ),
+    )
+    result = module_.execute()
+
+    state = run_tensor_network(build_width(4, INIT), dense_observable_qubits=12)
+    reference = build_tensor_network_hamiltonian_expectation(
+        state.plan, hamiltonian
+    ).contraction_profile("greedy")
+
+    assert result.runtime["observable_peak_size"] == reference.peak_size
 
 
 def many_term_hamiltonian(width: int) -> Hamiltonian:
@@ -332,6 +373,9 @@ def test_tensor_network_hamiltonian_honours_a_contraction_budget() -> None:
         atol=1e-12,
     )
     assert bounded.summary()["observable_execution"] == "hamiltonian_mpo_contraction"
+    # The unsliced profile would describe a network that did not run.
+    assert isinstance(unlimited.summary()["observable_peak_size"], int)
+    assert bounded.summary()["observable_peak_size"] is None
 
 
 def test_tensor_network_hamiltonian_supports_a_declared_batch() -> None:
