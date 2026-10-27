@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
+
 import torch
 from torch.profiler import record_function
 
@@ -51,7 +53,14 @@ def _project_through_frozen_subspace(
 
     if config.truncated_gradient == "projected_stop_subspace":
         return torch.matmul(torch.conj(retained_u).transpose(-2, -1), matrix)
-    projected: torch.Tensor = _FrozenSubspaceProjection.apply(retained_u, matrix)
+    # Annotating the binding rather than calling ``.apply`` directly keeps this
+    # typed against torch builds whose stubs leave ``Function.apply`` untyped.
+    apply: Callable[[torch.Tensor, torch.Tensor], object] = (
+        _FrozenSubspaceProjection.apply
+    )
+    projected = apply(retained_u, matrix)
+    if not isinstance(projected, torch.Tensor):
+        raise TypeError("truncated-gradient projection must return a tensor")
     return projected
 
 
