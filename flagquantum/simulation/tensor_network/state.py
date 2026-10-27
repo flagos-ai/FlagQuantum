@@ -289,7 +289,7 @@ class TensorNetworkState:
         self._validate_observable_qubits(x_set | y_set | z_set)
 
         strategy, budget = self._observable_contraction()
-        return tensor_network_expectation_ps(
+        value = tensor_network_expectation_ps(
             self.plan,
             x=x,
             y=y,
@@ -297,6 +297,12 @@ class TensorNetworkState:
             strategy=strategy,
             max_peak_bytes=budget,
         )
+        self._last_observable_execution = "direct_expectation_contraction"
+        self._last_observable_program_cache_hit = False
+        # The bra-operator-ket peak would need a second path search to estimate,
+        # so this route reports no peak rather than the state-contraction one.
+        self._last_observable_peak_size = None
+        return value
 
     def sample(
         self,
