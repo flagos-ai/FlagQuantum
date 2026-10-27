@@ -772,15 +772,18 @@ R04 correctness evidence; FTS-10 selection and production integration remain ope
 ### FTS-10D bounded phase/overlap cost decision
 
 The [cost-study proposal](../development/FTQC_PHASE_OVERLAP_COST_STUDY_PROPOSAL.md)
-requests a new, unapproved observation boundary after M-P correctness admission.
+specifies a separately approved observation boundary after M-P correctness admission.
 It preserves the ten existing one-to-three-qubit descriptions and compares the
 private candidate with statevector/MPS/tensor-network full-probability outputs.
 Proposed maxima are 40 points, 160 workload starts plus one new monitor probe,
 416 state constructions, 3400 overlaps and 120 public executions, with serial
 one-thread CPU work and explicit phase/outer-wall/RSS/failure-stop provenance.
-No observer, probe, collection, production selection or larger domain is
-implemented or authorized here. The old 193 attempts and their failure remain
-immutable. A specific approval of matrix, numerical values, observer boundary
-and resource protocol is required before implementation; observer/controller
-review and actual-main admission precede collection. R01-R15, FTS-02/09/10/11
-and M2 remain partial.
+The finite matrix, numerical values, observer boundary and resource protocol
+were specifically approved on 2026-10-26. Proposal #931 actual-main admission
+passed full CI, required GPUs, smoke, real optional installations/evidence,
+fresh isolated 847-member package/core and installed examples. A private worker
+and serial controller are under separate review; no probe or observation has
+run. The old 193 attempts and their failure remain immutable. Observer/controller
+review and actual-main admission precede the one admitted collection. Production
+selection and a larger domain remain unapproved. R01-R15, FTS-02/09/10/11 and
+M2 remain partial.
