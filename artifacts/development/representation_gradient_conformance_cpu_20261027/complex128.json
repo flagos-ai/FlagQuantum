@@ -1,0 +1,1386 @@
+{
+  "schema": "flagquantum.representation_agreement_sweep.v1",
+  "benchmark": "representation_agreement_sweep",
+  "artifact_class": "measured_local_run",
+  "claim": "backend selection changes execution but not the result contract; this payload states the regime that was measured and the bound the spread held to inside it",
+  "distribution_semantics": "single_device_fast_path",
+  "scalability_claim_allowed": false,
+  "release_gate_allowed": false,
+  "non_release_evidence": true,
+  "benchmark_evidence_class": "local_non_release",
+  "scalability_blockers": [
+    "single-process CPU agreement measurement across representations; it shards no workload and is not distributed scalability evidence"
+  ],
+  "modes": [
+    "statevector",
+    "mps",
+    "tensor_network"
+  ],
+  "gradients_measured": true,
+  "grid": {
+    "widths": [
+      4,
+      8,
+      12
+    ],
+    "depths": [
+      2,
+      4
+    ],
+    "structures": [
+      "nearest_neighbour",
+      "all_to_all"
+    ],
+    "max_bond_cutoffs": [
+      4,
+      16
+    ]
+  },
+  "observable": "open-boundary transverse-field Ising, h=0.7",
+  "parameter_initialization": "0.05 * float32 randn, one seeded draw shared per cell; complex128 widens the same float32 angles exactly",
+  "seed": 260720,
+  "device": "cpu",
+  "dtype": "complex128",
+  "summary": {
+    "cells_total": 20,
+    "truncated": {
+      "cells": 4,
+      "max_spread_relative": 0.28199,
+      "max_spread_absolute": 1.55869,
+      "worst_cell": {
+        "n_qubits": 8,
+        "depth": 4,
+        "structure": "all_to_all",
+        "max_bond_cutoff": 4
+      }
+    },
+    "untruncated": {
+      "cells": 16,
+      "max_spread_relative": 1.10583e-14,
+      "max_spread_absolute": 6.03961e-14,
+      "worst_cell": {
+        "n_qubits": 8,
+        "depth": 2,
+        "structure": "all_to_all",
+        "max_bond_cutoff": 16
+      }
+    },
+    "incomplete_cells": []
+  },
+  "skipped_configurations": [
+    {
+      "structure": "all_to_all",
+      "n_qubits": 12,
+      "reason": "all-to-all tensor-network contraction exceeds the CPU budget above width 8"
+    }
+  ],
+  "cells": [
+    {
+      "n_qubits": 4,
+      "depth": 2,
+      "structure": "nearest_neighbour",
+      "max_bond_cutoff": 4,
+      "observed_max_bond": 4,
+      "headroom_max_bond": 4,
+      "mps_truncated": false,
+      "energies": {
+        "statevector": -2.7396088509579513,
+        "mps": -2.7396088509579464,
+        "tensor_network": -2.7396088509579517
+      },
+      "spread_absolute": 5.32907e-15,
+      "spread_relative": 1.94519e-15,
+      "states": {
+        "statevector": {
+          "fidelity_vs_statevector": 1.0,
+          "norm_drift": 0.0
+        },
+        "mps": {
+          "fidelity_vs_statevector": 0.9999999999999999,
+          "norm_drift": 1.1102230246251565e-15
+        },
+        "tensor_network": {
+          "fidelity_vs_statevector": 1.0,
+          "norm_drift": 2.220446049250313e-16
+        }
+      },
+      "observables": {
+        "statevector": {
+          "z:0": -0.025371800913038138,
+          "x:1": 0.9892632768216739,
+          "zz:0,1": 0.08430136977068275
+        },
+        "mps": {
+          "z:0": -0.025371800913038613,
+          "x:1": 0.9892632768216717,
+          "zz:0,1": 0.08430136977068278
+        },
+        "tensor_network": {
+          "z:0": -0.025371800913038117,
+          "x:1": 0.9892632768216739,
+          "zz:0,1": 0.08430136977068298
+        }
+      },
+      "gradients": {
+        "reference": "statevector",
+        "per_mode": {
+          "statevector": {
+            "relative_l2_error": 0.0,
+            "cosine_similarity": 1.0000000000000002
+          },
+          "mps": {
+            "relative_l2_error": 4.1179649565580235e-16,
+            "cosine_similarity": 1.0000000000000002
+          },
+          "tensor_network": {
+            "relative_l2_error": 5.17769912056349e-16,
+            "cosine_similarity": 1.0000000000000002
+          }
+        },
+        "unsupported": {}
+      }
+    },
+    {
+      "n_qubits": 4,
+      "depth": 2,
+      "structure": "nearest_neighbour",
+      "max_bond_cutoff": 16,
+      "observed_max_bond": 4,
+      "headroom_max_bond": 4,
+      "mps_truncated": false,
+      "energies": {
+        "statevector": -2.7396088509579513,
+        "mps": -2.7396088509579464,
+        "tensor_network": -2.7396088509579517
+      },
+      "spread_absolute": 5.32907e-15,
+      "spread_relative": 1.94519e-15,
+      "states": {
+        "statevector": {
+          "fidelity_vs_statevector": 1.0,
+          "norm_drift": 0.0
+        },
+        "mps": {
+          "fidelity_vs_statevector": 0.9999999999999999,
+          "norm_drift": 1.1102230246251565e-15
+        },
+        "tensor_network": {
+          "fidelity_vs_statevector": 1.0,
+          "norm_drift": 2.220446049250313e-16
+        }
+      },
+      "observables": {
+        "statevector": {
+          "z:0": -0.025371800913038138,
+          "x:1": 0.9892632768216739,
+          "zz:0,1": 0.08430136977068275
+        },
+        "mps": {
+          "z:0": -0.025371800913038613,
+          "x:1": 0.9892632768216717,
+          "zz:0,1": 0.08430136977068278
+        },
+        "tensor_network": {
+          "z:0": -0.025371800913038117,
+          "x:1": 0.9892632768216739,
+          "zz:0,1": 0.08430136977068298
+        }
+      },
+      "gradients": {
+        "reference": "statevector",
+        "per_mode": {
+          "statevector": {
+            "relative_l2_error": 0.0,
+            "cosine_similarity": 1.0000000000000002
+          },
+          "mps": {
+            "relative_l2_error": 4.1179649565580235e-16,
+            "cosine_similarity": 1.0000000000000002
+          },
+          "tensor_network": {
+            "relative_l2_error": 5.17769912056349e-16,
+            "cosine_similarity": 1.0000000000000002
+          }
+        },
+        "unsupported": {}
+      }
+    },
+    {
+      "n_qubits": 4,
+      "depth": 4,
+      "structure": "nearest_neighbour",
+      "max_bond_cutoff": 4,
+      "observed_max_bond": 4,
+      "headroom_max_bond": 4,
+      "mps_truncated": false,
+      "energies": {
+        "statevector": -2.717406592428641,
+        "mps": -2.7174065924286355,
+        "tensor_network": -2.7174065924286426
+      },
+      "spread_absolute": 7.10543e-15,
+      "spread_relative": 2.61478e-15,
+      "states": {
+        "statevector": {
+          "fidelity_vs_statevector": 1.0,
+          "norm_drift": 0.0
+        },
+        "mps": {
+          "fidelity_vs_statevector": 0.9999999999999998,
+          "norm_drift": 1.1102230246251565e-15
+        },
+        "tensor_network": {
+          "fidelity_vs_statevector": 0.9999999999999999,
+          "norm_drift": 2.220446049250313e-16
+        }
+      },
+      "observables": {
+        "statevector": {
+          "z:0": -0.013962175344267268,
+          "x:1": 0.9919208408633842,
+          "zz:0,1": -0.024298053312837513
+        },
+        "mps": {
+          "z:0": -0.013962175344267809,
+          "x:1": 0.991920840863382,
+          "zz:0,1": -0.024298053312836826
+        },
+        "tensor_network": {
+          "z:0": -0.013962175344267524,
+          "x:1": 0.9919208408633843,
+          "zz:0,1": -0.024298053312837214
+        }
+      },
+      "gradients": {
+        "reference": "statevector",
+        "per_mode": {
+          "statevector": {
+            "relative_l2_error": 0.0,
+            "cosine_similarity": 1.0
+          },
+          "mps": {
+            "relative_l2_error": 9.559204680961557e-16,
+            "cosine_similarity": 1.0
+          },
+          "tensor_network": {
+            "relative_l2_error": 1.19022896019709e-15,
+            "cosine_similarity": 1.0000000000000002
+          }
+        },
+        "unsupported": {}
+      }
+    },
+    {
+      "n_qubits": 4,
+      "depth": 4,
+      "structure": "nearest_neighbour",
+      "max_bond_cutoff": 16,
+      "observed_max_bond": 4,
+      "headroom_max_bond": 4,
+      "mps_truncated": false,
+      "energies": {
+        "statevector": -2.717406592428641,
+        "mps": -2.7174065924286355,
+        "tensor_network": -2.7174065924286426
+      },
+      "spread_absolute": 7.10543e-15,
+      "spread_relative": 2.61478e-15,
+      "states": {
+        "statevector": {
+          "fidelity_vs_statevector": 1.0,
+          "norm_drift": 0.0
+        },
+        "mps": {
+          "fidelity_vs_statevector": 0.9999999999999998,
+          "norm_drift": 1.1102230246251565e-15
+        },
+        "tensor_network": {
+          "fidelity_vs_statevector": 0.9999999999999999,
+          "norm_drift": 2.220446049250313e-16
+        }
+      },
+      "observables": {
+        "statevector": {
+          "z:0": -0.013962175344267268,
+          "x:1": 0.9919208408633842,
+          "zz:0,1": -0.024298053312837513
+        },
+        "mps": {
+          "z:0": -0.013962175344267809,
+          "x:1": 0.991920840863382,
+          "zz:0,1": -0.024298053312836826
+        },
+        "tensor_network": {
+          "z:0": -0.013962175344267524,
+          "x:1": 0.9919208408633843,
+          "zz:0,1": -0.024298053312837214
+        }
+      },
+      "gradients": {
+        "reference": "statevector",
+        "per_mode": {
+          "statevector": {
+            "relative_l2_error": 0.0,
+            "cosine_similarity": 1.0
+          },
+          "mps": {
+            "relative_l2_error": 9.559204680961557e-16,
+            "cosine_similarity": 1.0
+          },
+          "tensor_network": {
+            "relative_l2_error": 1.19022896019709e-15,
+            "cosine_similarity": 1.0000000000000002
+          }
+        },
+        "unsupported": {}
+      }
+    },
+    {
+      "n_qubits": 8,
+      "depth": 2,
+      "structure": "nearest_neighbour",
+      "max_bond_cutoff": 4,
+      "observed_max_bond": 4,
+      "headroom_max_bond": 4,
+      "mps_truncated": false,
+      "energies": {
+        "statevector": -5.386434669198964,
+        "mps": -5.386434669198961,
+        "tensor_network": -5.386434669198966
+      },
+      "spread_absolute": 5.32907e-15,
+      "spread_relative": 9.8935e-16,
+      "states": {
+        "statevector": {
+          "fidelity_vs_statevector": 1.0,
+          "norm_drift": 0.0
+        },
+        "mps": {
+          "fidelity_vs_statevector": 0.9999999999999999,
+          "norm_drift": 3.3306690738754696e-16
+        },
+        "tensor_network": {
+          "fidelity_vs_statevector": 1.0,
+          "norm_drift": 2.220446049250313e-16
+        }
+      },
+      "observables": {
+        "statevector": {
+          "z:0": -0.003752277959196859,
+          "x:1": 0.9949522647925155,
+          "zz:0,1": -0.06869258780679202
+        },
+        "mps": {
+          "z:0": -0.0037522779591972477,
+          "x:1": 0.9949522647925144,
+          "zz:0,1": -0.06869258780679167
+        },
+        "tensor_network": {
+          "z:0": -0.0037522779591970213,
+          "x:1": 0.9949522647925158,
+          "zz:0,1": -0.06869258780679202
+        }
+      },
+      "gradients": {
+        "reference": "statevector",
+        "per_mode": {
+          "statevector": {
+            "relative_l2_error": 0.0,
+            "cosine_similarity": 0.9999999999999999
+          },
+          "mps": {
+            "relative_l2_error": 1.4398015367238794e-15,
+            "cosine_similarity": 1.0
+          },
+          "tensor_network": {
+            "relative_l2_error": 1.0398773517607957e-15,
+            "cosine_similarity": 1.0
+          }
+        },
+        "unsupported": {}
+      }
+    },
+    {
+      "n_qubits": 8,
+      "depth": 2,
+      "structure": "nearest_neighbour",
+      "max_bond_cutoff": 16,
+      "observed_max_bond": 4,
+      "headroom_max_bond": 4,
+      "mps_truncated": false,
+      "energies": {
+        "statevector": -5.386434669198964,
+        "mps": -5.386434669198961,
+        "tensor_network": -5.386434669198966
+      },
+      "spread_absolute": 5.32907e-15,
+      "spread_relative": 9.8935e-16,
+      "states": {
+        "statevector": {
+          "fidelity_vs_statevector": 1.0,
+          "norm_drift": 0.0
+        },
+        "mps": {
+          "fidelity_vs_statevector": 0.9999999999999999,
+          "norm_drift": 3.3306690738754696e-16
+        },
+        "tensor_network": {
+          "fidelity_vs_statevector": 1.0,
+          "norm_drift": 2.220446049250313e-16
+        }
+      },
+      "observables": {
+        "statevector": {
+          "z:0": -0.003752277959196859,
+          "x:1": 0.9949522647925155,
+          "zz:0,1": -0.06869258780679202
+        },
+        "mps": {
+          "z:0": -0.0037522779591972477,
+          "x:1": 0.9949522647925144,
+          "zz:0,1": -0.06869258780679167
+        },
+        "tensor_network": {
+          "z:0": -0.0037522779591970213,
+          "x:1": 0.9949522647925158,
+          "zz:0,1": -0.06869258780679202
+        }
+      },
+      "gradients": {
+        "reference": "statevector",
+        "per_mode": {
+          "statevector": {
+            "relative_l2_error": 0.0,
+            "cosine_similarity": 0.9999999999999999
+          },
+          "mps": {
+            "relative_l2_error": 1.4398015367238794e-15,
+            "cosine_similarity": 1.0
+          },
+          "tensor_network": {
+            "relative_l2_error": 1.0398773517607957e-15,
+            "cosine_similarity": 1.0
+          }
+        },
+        "unsupported": {}
+      }
+    },
+    {
+      "n_qubits": 8,
+      "depth": 4,
+      "structure": "nearest_neighbour",
+      "max_bond_cutoff": 4,
+      "observed_max_bond": 4,
+      "headroom_max_bond": 8,
+      "mps_truncated": true,
+      "energies": {
+        "statevector": -5.577808329051574,
+        "mps": -5.569001087362569,
+        "tensor_network": -5.577808329051576
+      },
+      "spread_absolute": 0.00880724,
+      "spread_relative": 0.00157898,
+      "states": {
+        "statevector": {
+          "fidelity_vs_statevector": 1.0,
+          "norm_drift": 0.0
+        },
+        "mps": {
+          "fidelity_vs_statevector": 0.9932107220828224,
+          "norm_drift": 0.0034299998427209655
+        },
+        "tensor_network": {
+          "fidelity_vs_statevector": 1.0,
+          "norm_drift": 2.220446049250313e-16
+        }
+      },
+      "observables": {
+        "statevector": {
+          "z:0": -0.06863733545638034,
+          "x:1": 0.989306821091924,
+          "zz:0,1": 0.01037140886742928
+        },
+        "mps": {
+          "z:0": -0.06836357539398985,
+          "x:1": 0.9879389097307351,
+          "zz:0,1": 0.011713030685346976
+        },
+        "tensor_network": {
+          "z:0": -0.06863733545638037,
+          "x:1": 0.9893068210919241,
+          "zz:0,1": 0.010371408867429373
+        }
+      },
+      "gradients": {
+        "reference": "statevector",
+        "per_mode": {
+          "statevector": {
+            "relative_l2_error": 0.0,
+            "cosine_similarity": 1.0000000000000002
+          },
+          "mps": {
+            "relative_l2_error": 0.7325002051339851,
+            "cosine_similarity": 0.6833334969386091
+          },
+          "tensor_network": {
+            "relative_l2_error": 1.367807935670638e-15,
+            "cosine_similarity": 1.0
+          }
+        },
+        "unsupported": {}
+      }
+    },
+    {
+      "n_qubits": 8,
+      "depth": 4,
+      "structure": "nearest_neighbour",
+      "max_bond_cutoff": 16,
+      "observed_max_bond": 16,
+      "headroom_max_bond": 16,
+      "mps_truncated": false,
+      "energies": {
+        "statevector": -5.577808329051574,
+        "mps": -5.577808329051566,
+        "tensor_network": -5.577808329051576
+      },
+      "spread_absolute": 1.06581e-14,
+      "spread_relative": 1.91081e-15,
+      "states": {
+        "statevector": {
+          "fidelity_vs_statevector": 1.0,
+          "norm_drift": 0.0
+        },
+        "mps": {
+          "fidelity_vs_statevector": 0.9999999999999999,
+          "norm_drift": 6.661338147750939e-16
+        },
+        "tensor_network": {
+          "fidelity_vs_statevector": 1.0,
+          "norm_drift": 2.220446049250313e-16
+        }
+      },
+      "observables": {
+        "statevector": {
+          "z:0": -0.06863733545638034,
+          "x:1": 0.989306821091924,
+          "zz:0,1": 0.01037140886742928
+        },
+        "mps": {
+          "z:0": -0.06863733545638087,
+          "x:1": 0.9893068210919228,
+          "zz:0,1": 0.010371408867429628
+        },
+        "tensor_network": {
+          "z:0": -0.06863733545638037,
+          "x:1": 0.9893068210919241,
+          "zz:0,1": 0.010371408867429373
+        }
+      },
+      "gradients": {
+        "reference": "statevector",
+        "per_mode": {
+          "statevector": {
+            "relative_l2_error": 0.0,
+            "cosine_similarity": 1.0000000000000002
+          },
+          "mps": {
+            "relative_l2_error": 1.388097202932629e-15,
+            "cosine_similarity": 0.9999999999999999
+          },
+          "tensor_network": {
+            "relative_l2_error": 1.367807935670638e-15,
+            "cosine_similarity": 1.0
+          }
+        },
+        "unsupported": {}
+      }
+    },
+    {
+      "n_qubits": 12,
+      "depth": 2,
+      "structure": "nearest_neighbour",
+      "max_bond_cutoff": 4,
+      "observed_max_bond": 4,
+      "headroom_max_bond": 4,
+      "mps_truncated": false,
+      "energies": {
+        "statevector": -7.795760988145709,
+        "mps": -7.7957609881457035,
+        "tensor_network": -7.795760988145713
+      },
+      "spread_absolute": 9.76996e-15,
+      "spread_relative": 1.25324e-15,
+      "states": {
+        "statevector": {
+          "fidelity_vs_statevector": 1.0,
+          "norm_drift": 0.0
+        },
+        "mps": {
+          "fidelity_vs_statevector": 0.9999999999999998,
+          "norm_drift": 3.3306690738754696e-16
+        },
+        "tensor_network": {
+          "fidelity_vs_statevector": 0.9999999999999999,
+          "norm_drift": 2.220446049250313e-16
+        }
+      },
+      "observables": {
+        "statevector": {
+          "z:0": 0.002894833354277024,
+          "x:1": 0.9913409749639821,
+          "zz:0,1": -0.11068589642579338
+        },
+        "mps": {
+          "z:0": 0.002894833354276585,
+          "x:1": 0.9913409749639818,
+          "zz:0,1": -0.11068589642579316
+        },
+        "tensor_network": {
+          "z:0": 0.002894833354277016,
+          "x:1": 0.9913409749639825,
+          "zz:0,1": -0.1106858964257932
+        }
+      },
+      "gradients": {
+        "reference": "statevector",
+        "per_mode": {
+          "statevector": {
+            "relative_l2_error": 0.0,
+            "cosine_similarity": 1.0
+          },
+          "mps": {
+            "relative_l2_error": 2.0755315279685997e-15,
+            "cosine_similarity": 1.0000000000000002
+          },
+          "tensor_network": {
+            "relative_l2_error": 1.4408021218240216e-15,
+            "cosine_similarity": 1.0
+          }
+        },
+        "unsupported": {}
+      }
+    },
+    {
+      "n_qubits": 12,
+      "depth": 2,
+      "structure": "nearest_neighbour",
+      "max_bond_cutoff": 16,
+      "observed_max_bond": 4,
+      "headroom_max_bond": 4,
+      "mps_truncated": false,
+      "energies": {
+        "statevector": -7.795760988145709,
+        "mps": -7.7957609881457035,
+        "tensor_network": -7.795760988145713
+      },
+      "spread_absolute": 9.76996e-15,
+      "spread_relative": 1.25324e-15,
+      "states": {
+        "statevector": {
+          "fidelity_vs_statevector": 1.0,
+          "norm_drift": 0.0
+        },
+        "mps": {
+          "fidelity_vs_statevector": 0.9999999999999998,
+          "norm_drift": 3.3306690738754696e-16
+        },
+        "tensor_network": {
+          "fidelity_vs_statevector": 0.9999999999999999,
+          "norm_drift": 2.220446049250313e-16
+        }
+      },
+      "observables": {
+        "statevector": {
+          "z:0": 0.002894833354277024,
+          "x:1": 0.9913409749639821,
+          "zz:0,1": -0.11068589642579338
+        },
+        "mps": {
+          "z:0": 0.002894833354276585,
+          "x:1": 0.9913409749639818,
+          "zz:0,1": -0.11068589642579316
+        },
+        "tensor_network": {
+          "z:0": 0.002894833354277016,
+          "x:1": 0.9913409749639825,
+          "zz:0,1": -0.1106858964257932
+        }
+      },
+      "gradients": {
+        "reference": "statevector",
+        "per_mode": {
+          "statevector": {
+            "relative_l2_error": 0.0,
+            "cosine_similarity": 1.0
+          },
+          "mps": {
+            "relative_l2_error": 2.0755315279685997e-15,
+            "cosine_similarity": 1.0000000000000002
+          },
+          "tensor_network": {
+            "relative_l2_error": 1.4408021218240216e-15,
+            "cosine_similarity": 1.0
+          }
+        },
+        "unsupported": {}
+      }
+    },
+    {
+      "n_qubits": 12,
+      "depth": 4,
+      "structure": "nearest_neighbour",
+      "max_bond_cutoff": 4,
+      "observed_max_bond": 4,
+      "headroom_max_bond": 8,
+      "mps_truncated": true,
+      "energies": {
+        "statevector": -8.118417587419774,
+        "mps": -8.056433157790332,
+        "tensor_network": -8.118417587419778
+      },
+      "spread_absolute": 0.0619844,
+      "spread_relative": 0.00763504,
+      "states": {
+        "statevector": {
+          "fidelity_vs_statevector": 1.0,
+          "norm_drift": 0.0
+        },
+        "mps": {
+          "fidelity_vs_statevector": 0.9847774976192039,
+          "norm_drift": 0.007704328545388717
+        },
+        "tensor_network": {
+          "fidelity_vs_statevector": 1.0,
+          "norm_drift": 4.440892098500626e-16
+        }
+      },
+      "observables": {
+        "statevector": {
+          "z:0": 0.04174785747405511,
+          "x:1": 0.9683110434072812,
+          "zz:0,1": -0.111541811706798
+        },
+        "mps": {
+          "z:0": 0.04116733519820373,
+          "x:1": 0.9591817837782092,
+          "zz:0,1": -0.10910913262388855
+        },
+        "tensor_network": {
+          "z:0": 0.04174785747405517,
+          "x:1": 0.9683110434072819,
+          "zz:0,1": -0.11154181170679801
+        }
+      },
+      "gradients": {
+        "reference": "statevector",
+        "per_mode": {
+          "statevector": {
+            "relative_l2_error": 0.0,
+            "cosine_similarity": 0.9999999999999999
+          },
+          "mps": {
+            "relative_l2_error": 0.8557580991966283,
+            "cosine_similarity": 0.5176307575856147
+          },
+          "tensor_network": {
+            "relative_l2_error": 3.4349297141540082e-15,
+            "cosine_similarity": 1.0
+          }
+        },
+        "unsupported": {}
+      }
+    },
+    {
+      "n_qubits": 12,
+      "depth": 4,
+      "structure": "nearest_neighbour",
+      "max_bond_cutoff": 16,
+      "observed_max_bond": 16,
+      "headroom_max_bond": 16,
+      "mps_truncated": false,
+      "energies": {
+        "statevector": -8.118417587419774,
+        "mps": -8.118417587419742,
+        "tensor_network": -8.118417587419778
+      },
+      "spread_absolute": 3.55271e-14,
+      "spread_relative": 4.37612e-15,
+      "states": {
+        "statevector": {
+          "fidelity_vs_statevector": 1.0,
+          "norm_drift": 0.0
+        },
+        "mps": {
+          "fidelity_vs_statevector": 1.0,
+          "norm_drift": 1.9984014443252818e-15
+        },
+        "tensor_network": {
+          "fidelity_vs_statevector": 1.0,
+          "norm_drift": 4.440892098500626e-16
+        }
+      },
+      "observables": {
+        "statevector": {
+          "z:0": 0.04174785747405511,
+          "x:1": 0.9683110434072812,
+          "zz:0,1": -0.111541811706798
+        },
+        "mps": {
+          "z:0": 0.04174785747405461,
+          "x:1": 0.9683110434072775,
+          "zz:0,1": -0.11154181170679771
+        },
+        "tensor_network": {
+          "z:0": 0.04174785747405517,
+          "x:1": 0.9683110434072819,
+          "zz:0,1": -0.11154181170679801
+        }
+      },
+      "gradients": {
+        "reference": "statevector",
+        "per_mode": {
+          "statevector": {
+            "relative_l2_error": 0.0,
+            "cosine_similarity": 0.9999999999999999
+          },
+          "mps": {
+            "relative_l2_error": 2.751422876513298e-15,
+            "cosine_similarity": 0.9999999999999999
+          },
+          "tensor_network": {
+            "relative_l2_error": 3.4349297141540082e-15,
+            "cosine_similarity": 1.0
+          }
+        },
+        "unsupported": {}
+      }
+    },
+    {
+      "n_qubits": 4,
+      "depth": 2,
+      "structure": "all_to_all",
+      "max_bond_cutoff": 4,
+      "observed_max_bond": 4,
+      "headroom_max_bond": 4,
+      "mps_truncated": false,
+      "energies": {
+        "statevector": -2.861102316788385,
+        "mps": -2.861102316788396,
+        "tensor_network": -2.8611023167883856
+      },
+      "spread_absolute": 1.11022e-14,
+      "spread_relative": 3.8804e-15,
+      "states": {
+        "statevector": {
+          "fidelity_vs_statevector": 1.0,
+          "norm_drift": 0.0
+        },
+        "mps": {
+          "fidelity_vs_statevector": 1.0,
+          "norm_drift": 1.7763568394002505e-15
+        },
+        "tensor_network": {
+          "fidelity_vs_statevector": 1.0,
+          "norm_drift": 2.220446049250313e-16
+        }
+      },
+      "observables": {
+        "statevector": {
+          "z:0": -0.025353461739068217,
+          "x:1": 0.9884036543698576,
+          "zz:0,1": 0.08423791451519921
+        },
+        "mps": {
+          "z:0": -0.025353461739068203,
+          "x:1": 0.9884036543698607,
+          "zz:0,1": 0.08423791451520204
+        },
+        "tensor_network": {
+          "z:0": -0.02535346173906812,
+          "x:1": 0.9884036543698576,
+          "zz:0,1": 0.08423791451519938
+        }
+      },
+      "gradients": {
+        "reference": "statevector",
+        "per_mode": {
+          "statevector": {
+            "relative_l2_error": 0.0,
+            "cosine_similarity": 0.9999999999999999
+          },
+          "mps": {
+            "relative_l2_error": 1.0982812183720543e-15,
+            "cosine_similarity": 1.0
+          },
+          "tensor_network": {
+            "relative_l2_error": 1.0611546295894043e-15,
+            "cosine_similarity": 1.0
+          }
+        },
+        "unsupported": {}
+      }
+    },
+    {
+      "n_qubits": 4,
+      "depth": 2,
+      "structure": "all_to_all",
+      "max_bond_cutoff": 16,
+      "observed_max_bond": 4,
+      "headroom_max_bond": 4,
+      "mps_truncated": false,
+      "energies": {
+        "statevector": -2.861102316788385,
+        "mps": -2.861102316788396,
+        "tensor_network": -2.8611023167883856
+      },
+      "spread_absolute": 1.11022e-14,
+      "spread_relative": 3.8804e-15,
+      "states": {
+        "statevector": {
+          "fidelity_vs_statevector": 1.0,
+          "norm_drift": 0.0
+        },
+        "mps": {
+          "fidelity_vs_statevector": 1.0,
+          "norm_drift": 1.7763568394002505e-15
+        },
+        "tensor_network": {
+          "fidelity_vs_statevector": 1.0,
+          "norm_drift": 2.220446049250313e-16
+        }
+      },
+      "observables": {
+        "statevector": {
+          "z:0": -0.025353461739068217,
+          "x:1": 0.9884036543698576,
+          "zz:0,1": 0.08423791451519921
+        },
+        "mps": {
+          "z:0": -0.025353461739068203,
+          "x:1": 0.9884036543698607,
+          "zz:0,1": 0.08423791451520204
+        },
+        "tensor_network": {
+          "z:0": -0.02535346173906812,
+          "x:1": 0.9884036543698576,
+          "zz:0,1": 0.08423791451519938
+        }
+      },
+      "gradients": {
+        "reference": "statevector",
+        "per_mode": {
+          "statevector": {
+            "relative_l2_error": 0.0,
+            "cosine_similarity": 0.9999999999999999
+          },
+          "mps": {
+            "relative_l2_error": 1.0982812183720543e-15,
+            "cosine_similarity": 1.0
+          },
+          "tensor_network": {
+            "relative_l2_error": 1.0611546295894043e-15,
+            "cosine_similarity": 1.0
+          }
+        },
+        "unsupported": {}
+      }
+    },
+    {
+      "n_qubits": 4,
+      "depth": 4,
+      "structure": "all_to_all",
+      "max_bond_cutoff": 4,
+      "observed_max_bond": 4,
+      "headroom_max_bond": 4,
+      "mps_truncated": false,
+      "energies": {
+        "statevector": -2.631277751004392,
+        "mps": -2.6312777510044034,
+        "tensor_network": -2.6312777510043928
+      },
+      "spread_absolute": 1.15463e-14,
+      "spread_relative": 4.3881e-15,
+      "states": {
+        "statevector": {
+          "fidelity_vs_statevector": 1.0,
+          "norm_drift": 0.0
+        },
+        "mps": {
+          "fidelity_vs_statevector": 1.0,
+          "norm_drift": 1.1102230246251565e-15
+        },
+        "tensor_network": {
+          "fidelity_vs_statevector": 1.0,
+          "norm_drift": 2.220446049250313e-16
+        }
+      },
+      "observables": {
+        "statevector": {
+          "z:0": -0.013964840332880105,
+          "x:1": 0.9925485889333796,
+          "zz:0,1": -0.024274678130498238
+        },
+        "mps": {
+          "z:0": -0.013964840332879784,
+          "x:1": 0.9925485889333826,
+          "zz:0,1": -0.02427467813049518
+        },
+        "tensor_network": {
+          "z:0": -0.013964840332880007,
+          "x:1": 0.9925485889333798,
+          "zz:0,1": -0.024274678130497995
+        }
+      },
+      "gradients": {
+        "reference": "statevector",
+        "per_mode": {
+          "statevector": {
+            "relative_l2_error": 0.0,
+            "cosine_similarity": 1.0
+          },
+          "mps": {
+            "relative_l2_error": 6.042210189820804e-16,
+            "cosine_similarity": 1.0
+          },
+          "tensor_network": {
+            "relative_l2_error": 5.832503316508493e-16,
+            "cosine_similarity": 1.0
+          }
+        },
+        "unsupported": {}
+      }
+    },
+    {
+      "n_qubits": 4,
+      "depth": 4,
+      "structure": "all_to_all",
+      "max_bond_cutoff": 16,
+      "observed_max_bond": 4,
+      "headroom_max_bond": 4,
+      "mps_truncated": false,
+      "energies": {
+        "statevector": -2.631277751004392,
+        "mps": -2.6312777510044034,
+        "tensor_network": -2.6312777510043928
+      },
+      "spread_absolute": 1.15463e-14,
+      "spread_relative": 4.3881e-15,
+      "states": {
+        "statevector": {
+          "fidelity_vs_statevector": 1.0,
+          "norm_drift": 0.0
+        },
+        "mps": {
+          "fidelity_vs_statevector": 1.0,
+          "norm_drift": 1.1102230246251565e-15
+        },
+        "tensor_network": {
+          "fidelity_vs_statevector": 1.0,
+          "norm_drift": 2.220446049250313e-16
+        }
+      },
+      "observables": {
+        "statevector": {
+          "z:0": -0.013964840332880105,
+          "x:1": 0.9925485889333796,
+          "zz:0,1": -0.024274678130498238
+        },
+        "mps": {
+          "z:0": -0.013964840332879784,
+          "x:1": 0.9925485889333826,
+          "zz:0,1": -0.02427467813049518
+        },
+        "tensor_network": {
+          "z:0": -0.013964840332880007,
+          "x:1": 0.9925485889333798,
+          "zz:0,1": -0.024274678130497995
+        }
+      },
+      "gradients": {
+        "reference": "statevector",
+        "per_mode": {
+          "statevector": {
+            "relative_l2_error": 0.0,
+            "cosine_similarity": 1.0
+          },
+          "mps": {
+            "relative_l2_error": 6.042210189820804e-16,
+            "cosine_similarity": 1.0
+          },
+          "tensor_network": {
+            "relative_l2_error": 5.832503316508493e-16,
+            "cosine_similarity": 1.0
+          }
+        },
+        "unsupported": {}
+      }
+    },
+    {
+      "n_qubits": 8,
+      "depth": 2,
+      "structure": "all_to_all",
+      "max_bond_cutoff": 4,
+      "observed_max_bond": 4,
+      "headroom_max_bond": 8,
+      "mps_truncated": true,
+      "energies": {
+        "statevector": -5.461618159983908,
+        "mps": -4.626991607326758,
+        "tensor_network": -5.461618159983911
+      },
+      "spread_absolute": 0.834627,
+      "spread_relative": 0.152817,
+      "states": {
+        "statevector": {
+          "fidelity_vs_statevector": 1.0,
+          "norm_drift": 0.0
+        },
+        "mps": {
+          "fidelity_vs_statevector": 0.9159801892170873,
+          "norm_drift": 0.06004885789983627
+        },
+        "tensor_network": {
+          "fidelity_vs_statevector": 1.0,
+          "norm_drift": 2.220446049250313e-16
+        }
+      },
+      "observables": {
+        "statevector": {
+          "z:0": -0.0037794527465400685,
+          "x:1": 0.9821279265330273,
+          "zz:0,1": -0.06793754375926567
+        },
+        "mps": {
+          "z:0": -0.10338363777848963,
+          "x:1": 0.7703499332734808,
+          "zz:0,1": -0.2555913442693403
+        },
+        "tensor_network": {
+          "z:0": -0.003779452746540013,
+          "x:1": 0.9821279265330275,
+          "zz:0,1": -0.06793754375926557
+        }
+      },
+      "gradients": {
+        "reference": "statevector",
+        "per_mode": {
+          "statevector": {
+            "relative_l2_error": 0.0,
+            "cosine_similarity": 0.9999999999999998
+          },
+          "mps": {
+            "relative_l2_error": 1.0281738962509168,
+            "cosine_similarity": -0.23316819478278092
+          },
+          "tensor_network": {
+            "relative_l2_error": 1.4216936890899176e-15,
+            "cosine_similarity": 0.9999999999999999
+          }
+        },
+        "unsupported": {}
+      }
+    },
+    {
+      "n_qubits": 8,
+      "depth": 2,
+      "structure": "all_to_all",
+      "max_bond_cutoff": 16,
+      "observed_max_bond": 16,
+      "headroom_max_bond": 16,
+      "mps_truncated": false,
+      "energies": {
+        "statevector": -5.461618159983908,
+        "mps": -5.461618159983969,
+        "tensor_network": -5.461618159983911
+      },
+      "spread_absolute": 6.03961e-14,
+      "spread_relative": 1.10583e-14,
+      "states": {
+        "statevector": {
+          "fidelity_vs_statevector": 1.0,
+          "norm_drift": 0.0
+        },
+        "mps": {
+          "fidelity_vs_statevector": 1.0,
+          "norm_drift": 4.884981308350689e-15
+        },
+        "tensor_network": {
+          "fidelity_vs_statevector": 1.0,
+          "norm_drift": 2.220446049250313e-16
+        }
+      },
+      "observables": {
+        "statevector": {
+          "z:0": -0.0037794527465400685,
+          "x:1": 0.9821279265330273,
+          "zz:0,1": -0.06793754375926567
+        },
+        "mps": {
+          "z:0": -0.0037794527465400216,
+          "x:1": 0.9821279265330377,
+          "zz:0,1": -0.06793754375926492
+        },
+        "tensor_network": {
+          "z:0": -0.003779452746540013,
+          "x:1": 0.9821279265330275,
+          "zz:0,1": -0.06793754375926557
+        }
+      },
+      "gradients": {
+        "reference": "statevector",
+        "per_mode": {
+          "statevector": {
+            "relative_l2_error": 0.0,
+            "cosine_similarity": 0.9999999999999998
+          },
+          "mps": {
+            "relative_l2_error": 1.8309554591412268e-15,
+            "cosine_similarity": 0.9999999999999999
+          },
+          "tensor_network": {
+            "relative_l2_error": 1.4216936890899176e-15,
+            "cosine_similarity": 0.9999999999999999
+          }
+        },
+        "unsupported": {}
+      }
+    },
+    {
+      "n_qubits": 8,
+      "depth": 4,
+      "structure": "all_to_all",
+      "max_bond_cutoff": 4,
+      "observed_max_bond": 4,
+      "headroom_max_bond": 8,
+      "mps_truncated": true,
+      "energies": {
+        "statevector": -5.527462728909482,
+        "mps": -3.9687749311652305,
+        "tensor_network": -5.5274627289094855
+      },
+      "spread_absolute": 1.55869,
+      "spread_relative": 0.28199,
+      "states": {
+        "statevector": {
+          "fidelity_vs_statevector": 0.9999999999999998,
+          "norm_drift": 0.0
+        },
+        "mps": {
+          "fidelity_vs_statevector": 0.8750594258094483,
+          "norm_drift": 0.09904450304054668
+        },
+        "tensor_network": {
+          "fidelity_vs_statevector": 0.9999999999999999,
+          "norm_drift": 2.220446049250313e-16
+        }
+      },
+      "observables": {
+        "statevector": {
+          "z:0": -0.0677163648709424,
+          "x:1": 0.968582289907067,
+          "zz:0,1": 0.009008415207879927
+        },
+        "mps": {
+          "z:0": -0.1462235172379155,
+          "x:1": 0.6692198151103392,
+          "zz:0,1": -0.2970799539382869
+        },
+        "tensor_network": {
+          "z:0": -0.06771636487094232,
+          "x:1": 0.9685822899070674,
+          "zz:0,1": 0.00900841520787995
+        }
+      },
+      "gradients": {
+        "reference": "statevector",
+        "per_mode": {
+          "statevector": {
+            "relative_l2_error": 0.0,
+            "cosine_similarity": 0.9999999999999998
+          },
+          "mps": {
+            "relative_l2_error": 1.083197860857986,
+            "cosine_similarity": -0.05888025308130223
+          },
+          "tensor_network": {
+            "relative_l2_error": 1.8876750514442067e-15,
+            "cosine_similarity": 0.9999999999999998
+          }
+        },
+        "unsupported": {}
+      }
+    },
+    {
+      "n_qubits": 8,
+      "depth": 4,
+      "structure": "all_to_all",
+      "max_bond_cutoff": 16,
+      "observed_max_bond": 16,
+      "headroom_max_bond": 16,
+      "mps_truncated": false,
+      "energies": {
+        "statevector": -5.527462728909482,
+        "mps": -5.527462728909521,
+        "tensor_network": -5.5274627289094855
+      },
+      "spread_absolute": 3.90799e-14,
+      "spread_relative": 7.07012e-15,
+      "states": {
+        "statevector": {
+          "fidelity_vs_statevector": 0.9999999999999998,
+          "norm_drift": 0.0
+        },
+        "mps": {
+          "fidelity_vs_statevector": 0.9999999999999998,
+          "norm_drift": 3.3306690738754696e-15
+        },
+        "tensor_network": {
+          "fidelity_vs_statevector": 0.9999999999999999,
+          "norm_drift": 2.220446049250313e-16
+        }
+      },
+      "observables": {
+        "statevector": {
+          "z:0": -0.0677163648709424,
+          "x:1": 0.968582289907067,
+          "zz:0,1": 0.009008415207879927
+        },
+        "mps": {
+          "z:0": -0.06771636487094408,
+          "x:1": 0.9685822899070731,
+          "zz:0,1": 0.00900841520788366
+        },
+        "tensor_network": {
+          "z:0": -0.06771636487094232,
+          "x:1": 0.9685822899070674,
+          "zz:0,1": 0.00900841520787995
+        }
+      },
+      "gradients": {
+        "reference": "statevector",
+        "per_mode": {
+          "statevector": {
+            "relative_l2_error": 0.0,
+            "cosine_similarity": 0.9999999999999998
+          },
+          "mps": {
+            "relative_l2_error": 2.7203801746353737e-15,
+            "cosine_similarity": 0.9999999999999999
+          },
+          "tensor_network": {
+            "relative_l2_error": 1.8876750514442067e-15,
+            "cosine_similarity": 0.9999999999999998
+          }
+        },
+        "unsupported": {}
+      }
+    }
+  ],
+  "elapsed_seconds": 80.694,
+  "command": "benchmarks/representation_agreement_sweep.py --gradients --dtype complex128 --widths 4,8,12 --depths 2,4 --max-bond 4,16 --structures nearest_neighbour,all_to_all --all-to-all-max-width 8 --output artifacts/development/representation_gradient_conformance_cpu_20261027/complex128.json",
+  "python": "3.12.14",
+  "torch": "2.14.1",
+  "base_commit": "914e662ec7be501ea45b6a5ceb6aaf4b9e53fc55",
+  "source_commit": "b8cf16f5f66735d355674aa9e5b32d488f7693b8",
+  "measuring_source_committed": true
+}
