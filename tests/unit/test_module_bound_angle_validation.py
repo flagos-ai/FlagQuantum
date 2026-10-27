@@ -237,3 +237,32 @@ def test_a_normalized_state_is_a_finite_result_the_refusal_does_not_block() -> N
         with torch.no_grad():
             module.parameters_tensor.fill_(value)
         assert torch.isfinite(module()).all(), value
+
+
+def test_a_batched_angle_with_one_bad_element_is_refused() -> None:
+    """A declared batch shares one parameter, so one bad element is enough."""
+
+    def builder(parameters: torch.Tensor) -> fq.Circuit:
+        circuit = fq.Circuit(2, bsz=3, dtype=torch.complex128)
+        for qubit in range(2):
+            circuit.ry(qubit, parameters[0])
+        return circuit.cx(0, 1)
+
+    module = fq.Module(builder, 1, init=torch.tensor([0.2]), dtype=torch.float64)
+    assert module().shape == (3,)
+    _fill(module, float("inf"))
+
+    with pytest.raises(IRValidationError):
+        module()
+
+
+def test_one_bad_feature_in_a_feature_batch_is_refused() -> None:
+    def builder(parameters: torch.Tensor, features: torch.Tensor) -> fq.Circuit:
+        circuit = fq.Circuit(2, bsz=2, dtype=torch.complex128).rx(0, features)
+        return circuit.ry(1, parameters[0]).cx(0, 1)
+
+    module = fq.Module(builder, 1, init=torch.tensor([0.2]), dtype=torch.float64)
+    module(torch.tensor([0.1, 0.2], dtype=torch.float64))
+
+    with pytest.raises(IRValidationError):
+        module(torch.tensor([0.1, float("inf")], dtype=torch.float64))
