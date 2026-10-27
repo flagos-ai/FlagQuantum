@@ -90,6 +90,66 @@ visible: the widest is width 6, where one process measured `3.89` against `3.46`
 No crossover was measured. These are single-process wall times on one machine,
 not a cross-machine or accelerator comparison.
 
+The ratio in that table grows with width, and the section after the peak tables
+measures why and what removes it: these numbers are from this branch alone, and a
+pending contraction-loop fix raises them substantially without touching any of the
+numerics.
+
+## What a pending contraction-loop fix does to these numbers
+
+This branch's energy is one `plan.contract()` call, and that call executes a
+contraction path that is cached per network shape. A separate, unmerged change
+(`perf/tn-cached-path-bookkeeping`) makes that cached execution stop rescanning the
+whole network once per pair step. The tables below measure the two together,
+because a reader deciding whether this route is usable should see both.
+
+Method: `git checkout 2eb2d453ac954c27c10b262ed98fb3400239d309`, then
+`git merge 83f6e961f1fe9be1042570144783060210f923d2`, then run this producer
+unchanged. Three fresh processes, same machine and environment. The merge commit
+itself is not checked in and no revision for it is recorded, because neither
+branch contains it; the two revision above are both obtainable and are what
+reproduces the measurement.
+
+| Width | Terms | SV forward (ms) | TN forward, this branch (ms) | TN forward, merged (ms) | TN / SV, this branch | TN / SV, merged | Gain | Per-process TN / SV merged | TN forward+backward merged (ms) |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 2 | 4 | 0.423 | 0.850 | 0.691 | 1.95 | 1.66 | 1.23x | 1.66, 1.59, 1.70 | 1.257 |
+| 4 | 8 | 0.725 | 2.177 | 1.465 | 2.95 | 2.08 | 1.49x | 2.08, 2.12, 1.84 | 2.677 |
+| 6 | 12 | 1.098 | 3.832 | 2.291 | 3.49 | 2.06 | 1.67x | 2.02, 2.09, 2.06 | 4.075 |
+| 8 | 16 | 1.483 | 6.051 | 3.071 | 4.17 | 2.07 | 1.97x | 2.06, 2.09, 2.07 | 5.649 |
+
+The statevector column is from the merged campaign, so each ratio is computed
+within one campaign rather than across two: the two campaigns ran in different
+processes, and the statevector medians differ by up to 3% between them.
+
+Two properties of this table carry the claim.
+
+The **ratio stops growing**. Alone, this branch climbs `1.95 → 2.95 → 3.49 →
+4.17` with width. Merged, it sits at `1.66 → 2.08 → 2.06 → 2.07`, flat from width
+4. The growing part was the per-step rescan, whose cost rises with the node count
+the way the tensor work does not.
+
+The **gain rises with width**: `1.23x → 1.49x → 1.67x → 1.97x`. A constant
+speed-up would indicate a shaved overhead; a gain that grows with node count is
+what removing a quadratic term looks like.
+
+The term-count row shows the same effect at a fixed circuit, `1.92x` to `2.05x`
+across 1, 2, 4 and 16 terms.
+
+**The cold numbers do not move.** Width 8 first calls were `2.0601`, `2.0714`,
+`2.1136` s on this branch and `2.1094`, `2.1353`, `2.1654` s merged: the fix
+touches only the cached-execution path, so the path search that dominates a first
+call is untouched. The 340x gap between a first call and a steady-state call
+therefore survives.
+
+**Every measured property other than time is identical**, compared payload to
+payload rather than by eye: the cross-representation agreement, the closed-form
+check, the declared batch, the checkpoint recovery, the operator peaks and the
+peak-versus-dense table all compare equal between the two campaigns.
+
+This is conditional. Both branches are unmerged, the merged numbers describe the
+two commits above and nothing else, and if either branch changes before merge the
+measurement has to be repeated.
+
 ## The first call is much more expensive than every call after it
 
 The forward rows above are steady state: the contraction path for a network shape
