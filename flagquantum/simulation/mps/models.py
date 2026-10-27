@@ -41,12 +41,23 @@ class MpsSplitInfo(_MpsSplitInfoCore, total=False):
     singular_value_gap: float
 
 
+#: What a backward pass may do through a bond split that discarded weight.
+TruncatedGradient = Literal["refuse", "projected_stop_subspace"]
+
+
 @dataclass(frozen=True)
 class MPSConfig:
     max_bond: int | None = None
     cutoff: float = 0.0
     dense_observable_qubits: int = 12
     svd_driver: str | None = "gesvd"
+    #: What a backward pass may do when a bond split discarded weight. The split
+    #: keeps the retained subspace fixed and lets autograd differentiate
+    #: ``U_r^H A``; that equals the derivative of the forward map only when the
+    #: projector is the identity. ``"refuse"`` stops the backward rather than
+    #: returning a gradient that is not one, and
+    #: ``"projected_stop_subspace"`` authorizes the approximation.
+    truncated_gradient: TruncatedGradient = "refuse"
 
 
 if TYPE_CHECKING:

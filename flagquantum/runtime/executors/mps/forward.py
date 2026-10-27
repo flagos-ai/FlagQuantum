@@ -131,7 +131,18 @@ def execute_torch_distributed_mps_forward(
         bsz=bsz,
         rank=rank,
         world_size=world_size,
-        config=MPSConfig(max_bond=max_bond, cutoff=cutoff),
+        config=MPSConfig(
+            max_bond=max_bond,
+            cutoff=cutoff,
+            # The policy this executor already declares authorizes the rule: a
+            # split that discarded weight cannot serve an exact gradient, so
+            # `approximate` must be the only value that lets one through.
+            truncated_gradient=(
+                "projected_stop_subspace"
+                if truncation_gradient_policy == "approximate"
+                else "refuse"
+            ),
+        ),
         local_tensors=local_tensors,
         ownership=ownership,
     )

@@ -5,7 +5,55 @@ from __future__ import annotations
 import torch
 from torch.profiler import record_function
 
+from ...errors import CapabilityError
 from .models import MPSConfig, MpsSplitInfo
+
+_TRUNCATED_GRADIENT_REFUSAL = (
+    "a truncated MPS bond split cannot supply an exact gradient: the split keeps "
+    "the retained subspace fixed and differentiates U_r^H A with U_r held "
+    "constant, so the derivative of the forward map is missing the term by which "
+    "that subspace responds to the input. The recorded gradient is not a "
+    "derivative of the computation that ran. Reduce the truncation (raise "
+    "max_bond or lower cutoff) so the split keeps the full rank, or authorize that "
+    "approximate gradient explicitly with truncated_gradient='projected_stop_subspace' "
+    "and read gradient_exactness from the state summary."
+)
+
+
+class _FrozenSubspaceProjection(torch.autograd.Function):
+    """Return the frozen-subspace projection and refuse to differentiate it.
+
+    The forward is the arithmetic the truncated split already performs. The
+    backward is where the answer would be wrong, so the refusal lives there: a
+    caller who only needs a forward value keeps working, and one who asks for a
+    derivative is told the rule is not exact instead of being handed a number
+    that is not one.
+    """
+
+    @staticmethod
+    def forward(
+        ctx: object, retained_u: torch.Tensor, matrix: torch.Tensor
+    ) -> torch.Tensor:
+        return torch.matmul(torch.conj(retained_u).transpose(-2, -1), matrix)
+
+    @staticmethod
+    def backward(ctx: object, grad_output: torch.Tensor) -> tuple[None, None]:
+        raise CapabilityError(_TRUNCATED_GRADIENT_REFUSAL)
+
+
+def _project_through_frozen_subspace(
+    retained_u: torch.Tensor,
+    matrix: torch.Tensor,
+    *,
+    config: MPSConfig,
+) -> torch.Tensor:
+    """Apply the retained-subspace projection under the configured policy."""
+
+    if config.truncated_gradient == "projected_stop_subspace":
+        return torch.matmul(torch.conj(retained_u).transpose(-2, -1), matrix)
+    projected: torch.Tensor = _FrozenSubspaceProjection.apply(retained_u, matrix)
+    return projected
+
 
 _DENSE_Z_SUM_WEIGHT_CACHE: dict[
     tuple[int, tuple[int, ...], str, torch.dtype], torch.Tensor
@@ -175,8 +223,8 @@ def _split_pair_matrix(
             # factor remains differentiable with respect to the pair matrix.
             # This is a stable approximate gradient, not exact SVD autograd.
             u = u.detach()
-            projected = torch.matmul(
-                torch.conj(u).transpose(-2, -1), matrix[batch_index]
+            projected = _project_through_frozen_subspace(
+                u, matrix[batch_index], config=config
             )
             left_parts.append(u.reshape(left_dim, 2, rank))
             right_parts.append(projected.reshape(rank, 2, right_dim))
@@ -287,8 +335,8 @@ def _split_pair_matrix_bucket(
         retained_u = u[item, :, :, :rank]
         if matrices.requires_grad:
             retained_u = retained_u.detach()
-            projected = torch.matmul(
-                torch.conj(retained_u).transpose(-2, -1), matrices[item]
+            projected = _project_through_frozen_subspace(
+                retained_u, matrices[item], config=config
             )
             right = projected.reshape(matrices.shape[1], rank, 2, right_dim)
         else:

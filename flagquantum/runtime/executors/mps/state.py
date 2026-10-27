@@ -10,7 +10,7 @@ import torch
 import torch.distributed as dist
 
 from ....core.ir import CircuitIR
-from ....simulation.mps.models import MPSConfig
+from ....simulation.mps.models import MPSConfig, TruncatedGradient
 from ....simulation.mps.rank_local import tensor_nbytes as _tensor_nbytes
 from .errors import MPSFullMaterializationError, MPSReverseContractError
 
@@ -452,6 +452,7 @@ def initialize_reverse_mps_state(
     initial_bond_dimension: int,
     initial_mps_tensors: Mapping[int, torch.Tensor] | None,
     site_ownership: Sequence[Sequence[int]] | None,
+    truncated_gradient: TruncatedGradient = "refuse",
 ) -> ReverseMPSInitialization:
     """Resolve ownership and construct the rank-local initial MPS."""
 
@@ -504,7 +505,12 @@ def initialize_reverse_mps_state(
         batch_size,
         rank,
         world_size,
-        MPSConfig(max_bond=max_bond, cutoff=cutoff, svd_driver=svd_driver),
+        MPSConfig(
+            max_bond=max_bond,
+            cutoff=cutoff,
+            svd_driver=svd_driver,
+            truncated_gradient=truncated_gradient,
+        ),
         local_tensors,
         ownership,
     )
