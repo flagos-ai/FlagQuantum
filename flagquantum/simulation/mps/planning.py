@@ -20,6 +20,11 @@ from .one_site_dispatch import (
     _mps_two_site_rollout_enabled,
 )
 
+#: The truncation sources whose backward rule ``MPSConfig.truncated_gradient``
+#: actually governs, because they are the two call sites of
+#: ``factorization._project_through_frozen_subspace``.
+_TRUNCATED_GRADIENT_SOURCES = frozenset({"two_site", "two_site_bucket"})
+
 
 class MPSPlanningMixin(ABC):
     """State diagnostics and planning over a concrete MPS numerical implementation."""
@@ -291,9 +296,20 @@ class MPSPlanningMixin(ABC):
                     for record in self.truncation_records
                 )
                 else (
-                    "refused"
-                    if self.config.truncated_gradient == "refuse"
-                    else "approximate_projected_subspace"
+                    (
+                        "refused"
+                        if self.config.truncated_gradient == "refuse"
+                        else "approximate_projected_subspace"
+                    )
+                    if any(
+                        record.source in _TRUNCATED_GRADIENT_SOURCES
+                        for record in self.truncation_records
+                    )
+                    # A truncation this policy does not govern -- a facade built from
+                    # another executor's shards, the fixed-rank QR route, or the
+                    # statevector import -- is not something it can describe, so it
+                    # is not answered for.
+                    else "not_evaluated"
                 )
             ),
             "adaptive_suggested_max_bond": refinement.suggested_max_bond,

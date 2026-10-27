@@ -174,3 +174,55 @@ def test_the_policy_rejects_an_unknown_name() -> None:
             max_bond=TRUNCATING_CAP,
             truncated_gradient="exact",
         )
+
+
+def test_truncation_this_rule_did_not_produce_is_not_reported_as_refused() -> None:
+    """A state assembled from another executor's shards must not claim a refusal.
+
+    `_reconstruct_torch_mps_from_jax_rank_shards` builds an `MPSState` facade from
+    JAX rank shards and attaches their truncation records. No PyTorch split runs
+    there, so nothing is refused and nothing is approximate under this rule; the
+    field has to say it cannot speak for that truncation rather than borrow the
+    answer from a rule that never executed.
+    """
+
+    from flagquantum.simulation.mps.models import MPSTruncationRecord
+    from flagquantum.simulation.mps.state import MPSState
+
+    state = MPSState.zero(4, dtype=torch.complex128)
+    assert state.summary()["gradient_exactness"] == "exact"
+
+    state.truncation_records.append(
+        MPSTruncationRecord(
+            bond=1,
+            kept_rank=2,
+            original_rank=4,
+            discarded_weight=0.01,
+            max_bond=None,
+            cutoff=0.0,
+            source="jax_sharded_mps_two_site",
+        )
+    )
+    assert state.summary()["gradient_exactness"] == "not_evaluated"
+
+
+def test_a_fixed_rank_qr_truncation_is_not_claimed_as_either_exact_or_refused() -> None:
+    """That route chooses a rank deliberately and does not use this rule at all."""
+
+    from flagquantum.simulation.mps.models import MPSTruncationRecord
+    from flagquantum.simulation.mps.state import MPSState
+
+    state = MPSState.zero(4, dtype=torch.complex128)
+    state.svd_gradient_method = "fixed_rank_range_qr"
+    state.truncation_records.append(
+        MPSTruncationRecord(
+            bond=1,
+            kept_rank=2,
+            original_rank=4,
+            discarded_weight=float("nan"),
+            max_bond=None,
+            cutoff=0.0,
+            source="fixed_rank_range_qr_unmeasured",
+        )
+    )
+    assert state.summary()["gradient_exactness"] == "not_evaluated"
