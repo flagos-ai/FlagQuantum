@@ -22,8 +22,8 @@ shape beside the timing.
   `measuring_source_committed` is `False` in those payloads; the script source is
   identical to the committed one, which is what `git diff` of the two runs'
   `workload` blocks confirms.
-- **After**: `da8f27b43` (this branch), producer committed, so
-  `measuring_source_committed` is `True`.
+- **After**: `da8f27b43412fd1a36e0923423e0421ed89189f1` (this branch), with the
+  producer committed, so `measuring_source_committed` is `True` in those payloads.
 
 Both use three fresh processes per side, Python 3.12.14, PyTorch 2.14.1, macOS 27.0
 arm64, CPU, `OMP_NUM_THREADS=MKL_NUM_THREADS=OPENBLAS_NUM_THREADS=1`. Rows below
