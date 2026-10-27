@@ -480,14 +480,18 @@ def _qiskit_gates() -> dict[str, Any]:
 
     from qiskit.circuit.library import (  # type: ignore[import-not-found]
         CCXGate,
+        CHGate,
         CPhaseGate,
         CRXGate,
         CRYGate,
         CRZGate,
+        CSXGate,
         CSwapGate,
         CXGate,
         CYGate,
         CZGate,
+        DCXGate,
+        ECRGate,
         RXGate,
         RXXGate,
         RYGate,
@@ -502,10 +506,15 @@ def _qiskit_gates() -> dict[str, Any]:
 
     theta = _ANGLES["theta"]
     builders = {
+        "ch": CHGate,
+        "csx": CSXGate,
+        "csxdg": lambda: CSXGate().inverse(),
         "cx": CXGate,
         "cz": CZGate,
         "cy": CYGate,
         "swap": SwapGate,
+        "dcx": DCXGate,
+        "ecr": ECRGate,
         "iswap": iSwapGate,
         "iswapdg": lambda: iSwapGate().inverse(),
         "rzz": lambda: RZZGate(theta),

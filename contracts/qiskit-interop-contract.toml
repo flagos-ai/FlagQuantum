@@ -186,6 +186,36 @@ qiskit_parameters = []
 flagquantum_parameters = []
 
 [[operations]]
+qiskit = "ch"
+flagquantum = "ch"
+qiskit_parameters = []
+flagquantum_parameters = []
+
+[[operations]]
+qiskit = "csx"
+flagquantum = "csx"
+qiskit_parameters = []
+flagquantum_parameters = []
+
+[[operations]]
+qiskit = "csxdg"
+flagquantum = "csxdg"
+qiskit_parameters = []
+flagquantum_parameters = []
+
+[[operations]]
+qiskit = "dcx"
+flagquantum = "dcx"
+qiskit_parameters = []
+flagquantum_parameters = []
+
+[[operations]]
+qiskit = "ecr"
+flagquantum = "ecr"
+qiskit_parameters = []
+flagquantum_parameters = []
+
+[[operations]]
 qiskit = "crx"
 flagquantum = "crx"
 qiskit_parameters = ["theta"]

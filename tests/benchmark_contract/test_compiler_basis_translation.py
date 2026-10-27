@@ -36,11 +36,11 @@ pytestmark = pytest.mark.benchmark_contract
 #: cannot pass as "still reachable". The four closed bases agree with Qiskit
 #: exactly; `ion-trap-rz-rx-rzz` is the recorded gap.
 _NAME_REACH = {
-    "ibm-rz-sx-cx": 20,
-    "ibm-heron-cz": 20,
-    "rotational": 20,
+    "ibm-rz-sx-cx": 25,
+    "ibm-heron-cz": 25,
+    "rotational": 25,
     "ion-trap-rz-rx-rzz": 8,
-    "clifford-t": 9,
+    "clifford-t": 10,
 }
 
 #: The same reach split by arity, so the three-wire entries cannot be counted as
@@ -48,11 +48,11 @@ _NAME_REACH = {
 #: fifteen-gate `ccx` statement stops one rule short of it -- a table gap in the
 #: `tdg` direction that is recorded rather than papered over.
 _ARITY_REACH = {
-    "ibm-rz-sx-cx": {"1": 5, "2": 13, "3": 2},
-    "ibm-heron-cz": {"1": 5, "2": 13, "3": 2},
-    "rotational": {"1": 5, "2": 13, "3": 2},
+    "ibm-rz-sx-cx": {"1": 5, "2": 18, "3": 2},
+    "ibm-heron-cz": {"1": 5, "2": 18, "3": 2},
+    "rotational": {"1": 5, "2": 18, "3": 2},
     "ion-trap-rz-rx-rzz": {"1": 5, "2": 3, "3": 0},
-    "clifford-t": {"1": 3, "2": 6, "3": 0},
+    "clifford-t": {"1": 3, "2": 7, "3": 0},
 }
 
 #: The basis at this table's two-name entangler sink, and why it is *the* pinned
@@ -86,8 +86,8 @@ def test_the_table_is_the_size_it_claims_and_measured_entry_by_entry(
     assert payload["table_opcode_count"] == len(EQUIVALENCE_RULES)
     assert payload["table_opcodes"] == sorted(EQUIVALENCE_RULES)
     assert {row["opcode"] for row in payload["rules"]} == set(TABLE_OPCODES)
-    assert payload["table_opcode_count"] == 20
-    assert payload["exact_rule_count"] == 19
+    assert payload["table_opcode_count"] == 25
+    assert payload["exact_rule_count"] == 24
     assert payload["phase_carrying_rules"] == ["cphase"]
     assert set(_PHASE_CARRYING_RULES) == {"cphase"}
 

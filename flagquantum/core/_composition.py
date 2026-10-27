@@ -125,7 +125,11 @@ def inverted_instruction(instruction: Instruction) -> Instruction:
                 opcode, params = inverted
                 return Instruction(
                     name=opcode,
-                    wires=instruction.wires,
+                    wires=(
+                        tuple(reversed(instruction.wires))
+                        if schema.adjoint == "reverse_operands"
+                        else instruction.wires
+                    ),
                     params=params,
                     metadata=dict(instruction.metadata),
                 )

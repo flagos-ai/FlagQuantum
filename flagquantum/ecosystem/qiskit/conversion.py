@@ -586,7 +586,7 @@ def _condition_pairs(instruction: Instruction) -> tuple[tuple[int, int], ...]:
 def export_qiskit(program: Any, *, allow_lossy: bool = False) -> QiskitExportResult:
     """Convert FlagQuantum IR (or an object exposing ``to_ir``) to Qiskit."""
 
-    qiskit, circuit_module, _library_module = _qiskit_modules()
+    qiskit, circuit_module, library_module = _qiskit_modules()
     quantum_circuit_type = circuit_module.QuantumCircuit
     parameter_type = circuit_module.Parameter
     ir = ensure_circuit_ir(program)
@@ -668,6 +668,10 @@ def export_qiskit(program: Any, *, allow_lossy: bool = False) -> QiskitExportRes
             )
             return True
         schema = get_operator_schema(instruction.name)
+        if instruction.name == "csxdg" and schema is not None:
+            gate = library_module.CSXGate().inverse()
+            circuit.append(gate, list(instruction.wires))
+            return True
         method_name = _FLAGQUANTUM_TO_QISKIT.get(instruction.name, instruction.name)
         method = getattr(circuit, method_name, None)
         if schema is None or method is None:

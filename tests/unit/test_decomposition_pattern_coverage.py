@@ -196,15 +196,15 @@ def test_the_rule_table_is_narrower_than_the_opcode_vocabulary() -> None:
     drift under it.
     """
 
-    assert len(_UNITARY_OPCODES) == 33
-    assert len(EQUIVALENCE_RULES) == 20
+    assert len(_UNITARY_OPCODES) == 38
+    assert len(EQUIVALENCE_RULES) == 25
     assert set(_UNITARY_OPCODES) - set(EQUIVALENCE_RULES) == _UNNAMED_BY_RULES
 
 
 # --- what the table reaches into a tight basis ------------------------------
 
 
-def test_clifford_t_reaches_twelve_opcodes_and_refuses_twenty_one() -> None:
+def test_clifford_t_reaches_thirteen_opcodes_and_refuses_twenty_five() -> None:
     """The tight-basis partition, split by the kind of refusal that produced it.
 
     Eleven of the twenty-one refusals are opcodes the table *does* carry. Their
@@ -215,14 +215,15 @@ def test_clifford_t_reaches_twelve_opcodes_and_refuses_twenty_one() -> None:
     """
 
     converted, escaped, unnamed = _partition(_CLIFFORD_T)
-    assert len(converted) == 12
-    assert len(escaped) == 11
+    assert len(converted) == 13
+    assert len(escaped) == 15
     assert len(unnamed) == 10
 
     assert converted == {
         "cx",
         "cy",
         "cz",
+        "dcx",
         "h",
         "iswap",
         "iswapdg",
@@ -235,11 +236,15 @@ def test_clifford_t_reaches_twelve_opcodes_and_refuses_twenty_one() -> None:
     }
     assert escaped == {
         "ccx",
+        "ch",
         "cphase",
         "crx",
         "cry",
         "crz",
         "cswap",
+        "csx",
+        "csxdg",
+        "ecr",
         "rx",
         "rxx",
         "ry",
@@ -309,7 +314,7 @@ def test_a_rotation_and_an_entangler_reach_every_unitary_opcode() -> None:
     """
 
     converted, escaped, unnamed = _partition(_ROTATION_AND_ENTANGLER)
-    assert len(converted) == 33
+    assert len(converted) == 38
     assert escaped == set()
     assert unnamed == set()
     assert converted == set(_UNITARY_OPCODES)

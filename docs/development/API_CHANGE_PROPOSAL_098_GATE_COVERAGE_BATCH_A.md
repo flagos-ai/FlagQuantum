@@ -2,8 +2,8 @@
 
 ## Status
 
-**Implementation and adjoint-completeness amendment approved; Batch A1 is
-implemented and under review.**
+**Implementation and adjoint-completeness amendment approved; all four batches
+are implemented on `feat/gate-coverage-batch-b` and pending review.**
 
 The API owner approved the original five-name implementation scope with:
 
@@ -22,8 +22,8 @@ The API owner approved that amendment with:
 approve API-CHANGE-098-GATE-COVERAGE-BATCH-A-ADJOINT-AMENDMENT
 ```
 
-This document requests an additive Stable Core API change. It creates no gate,
-changes no runtime behavior, and makes no provider or QPU support claim.
+This document governs an additive Stable Core API change. Its implementation adds
+the approved local gate semantics while making no provider or QPU support claim.
 
 ## User outcome
 
@@ -46,8 +46,8 @@ dynamic = (
 )
 ```
 
-The example is a proposed API sketch and is not executable until implementation
-approval and merge.
+The example is executable on this implementation branch and becomes part of the
+documented public surface when the implementation merges.
 
 ## Scope
 
@@ -165,16 +165,16 @@ contracts merely to silence a failing test.
 
 ## Acceptance criteria
 
-- [ ] All seven canonical schemas are complete and registry validation passes.
-- [ ] `Circuit` and `DynamicCircuit` expose typed lowercase and uppercase methods.
-- [ ] Direct and decomposed operators agree under explicit qubit-order tests.
-- [ ] Local executors either pass conformance or fail closed by opcode and backend.
-- [ ] Compiler targets contain no assumed support cells.
-- [ ] Ecosystem round-trips preserve semantics where a corresponding gate exists.
-- [ ] Remote capability matching uses post-routing opcodes and remains fail closed.
-- [ ] API snapshots, reference documentation, and release notes are updated.
-- [ ] Every implementation PR contains a runnable user-facing example.
-- [ ] Existing gate and dynamic-circuit suites remain green.
+- [x] All seven canonical schemas are complete and registry validation passes.
+- [x] `Circuit` and `DynamicCircuit` expose typed lowercase and uppercase methods.
+- [x] Direct and decomposed operators agree under explicit qubit-order tests.
+- [x] Local executors either pass conformance or fail closed by opcode and backend.
+- [x] Compiler targets contain no assumed support cells.
+- [x] Ecosystem round-trips preserve semantics where a corresponding gate exists.
+- [x] Remote capability matching uses post-routing opcodes and remains fail closed.
+- [x] API snapshots, reference documentation, and release notes are updated.
+- [x] Every implementation PR contains a runnable user-facing example.
+- [x] Existing gate and dynamic-circuit suites remain green.
 
 ## Implementation approval requested
 

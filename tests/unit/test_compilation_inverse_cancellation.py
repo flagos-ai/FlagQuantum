@@ -54,6 +54,8 @@ _PAIRS = inverse_pairs()
 #: The pairs the schema declares today. Pinned so that a change to the declaration
 #: shows up as a changed reach figure rather than as a quietly different pass.
 _DECLARED = {
+    "csx": "csxdg",
+    "csxdg": "csx",
     "iswap": "iswapdg",
     "iswapdg": "iswap",
     "s": "sdg",
@@ -182,7 +184,7 @@ def test_the_candidate_set_is_exactly_the_declared_partner_pairs() -> None:
             derived[schema.opcode] = candidate
     assert dict(_PAIRS) == derived
     assert dict(_PAIRS) == _DECLARED
-    assert len(_PAIRS) == 8
+    assert len(_PAIRS) == 10
 
 
 def test_the_candidate_set_is_disjoint_from_the_self_inverse_pass() -> None:

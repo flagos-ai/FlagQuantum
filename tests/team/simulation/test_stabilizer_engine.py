@@ -77,6 +77,11 @@ GENERIC_GATES: dict[str, tuple[str, ...]] = {
     "swap": ("swap", 0, 1),
     "iswap": ("iswap", 0, 1),
     "iswapdg": ("iswapdg", 0, 1),
+    "ch": ("ch", 0, 1),
+    "csx": ("csx", 0, 1),
+    "csxdg": ("csxdg", 0, 1),
+    "dcx": ("dcx", 0, 1),
+    "ecr": ("ecr", 0, 1),
     "crx": ("crx", 0, 1, 0.3),
     "cry": ("cry", 0, 1, 0.3),
     "crz": ("crz", 0, 1, 0.3),
@@ -194,6 +199,8 @@ def test_every_non_channel_opcode_is_classified_by_pauli_normalization() -> None
         "swap",
         "iswap",
         "iswapdg",
+        "dcx",
+        "ecr",
     }
 
 

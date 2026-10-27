@@ -432,14 +432,17 @@ def _control_errors(contract: dict[str, Any]) -> list[str]:
                 f"{label}: the result is {composed_ir.n_wires} qubits wide, the contracted "
                 f"width is max(ctrl_qubits) + 1 = {expected_width}"
             )
-        # A route that returned its receiver would satisfy an equality of two routes only
-        # if both were equally wrong, so the expansion is required to have happened.
-        if len(composed_ir.instructions) <= len(
-            _hand_built(receiver_n_qubits, targets).to_ir().instructions
-        ):
+        # A native controlled partner can preserve instruction count. The semantic
+        # invariant is that every requested control participates in the result.
+        used_qubits = {
+            qubit
+            for instruction in composed_ir.instructions
+            for qubit in instruction.wires
+        }
+        if not set(ctrl_qubits).issubset(used_qubits):
             errors.append(
-                f"{label}: the controlled program is no larger than its receiver, so "
-                "nothing was controlled"
+                f"{label}: not every requested control qubit participates in the "
+                "controlled program"
             )
     return errors
 

@@ -640,7 +640,11 @@ def _qiskit_builder(name: str, params: dict[str, float]) -> Any:
     """
 
     from qiskit.circuit.library import (  # type: ignore[import-not-found]
+        CHGate,
         CPhaseGate,
+        CSXGate,
+        DCXGate,
+        ECRGate,
         IGate,
         PhaseGate,
         U1Gate,
@@ -674,6 +678,11 @@ def _qiskit_builder(name: str, params: dict[str, float]) -> Any:
         ),
     }
     two = {
+        "ch": lambda: CHGate(),
+        "csx": lambda: CSXGate(),
+        "csxdg": lambda: CSXGate().inverse(),
+        "dcx": lambda: DCXGate(),
+        "ecr": lambda: ECRGate(),
         "cphase": lambda: CPhaseGate(params.get("theta", 0.0)),
         "cu1": lambda: U1Gate(params.get("theta", 0.0)),
         "iswap": lambda: iSwapGate(),

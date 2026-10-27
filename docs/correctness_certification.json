@@ -21,6 +21,12 @@
     {
       "backend": "pytorch",
       "comparison": "numerical",
+      "operator": "ch",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "pytorch",
+      "comparison": "numerical",
       "operator": "cphase",
       "tolerance_version": "tolerance_v1"
     },
@@ -51,6 +57,18 @@
     {
       "backend": "pytorch",
       "comparison": "numerical",
+      "operator": "csx",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "pytorch",
+      "comparison": "numerical",
+      "operator": "csxdg",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "pytorch",
+      "comparison": "numerical",
       "operator": "cx",
       "tolerance_version": "tolerance_v1"
     },
@@ -69,7 +87,19 @@
     {
       "backend": "pytorch",
       "comparison": "numerical",
+      "operator": "dcx",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "pytorch",
+      "comparison": "numerical",
       "operator": "depolarizing",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "pytorch",
+      "comparison": "numerical",
+      "operator": "ecr",
       "tolerance_version": "tolerance_v1"
     },
     {
@@ -231,6 +261,12 @@
     {
       "backend": "jax",
       "comparison": "numerical",
+      "operator": "ch",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "jax",
+      "comparison": "numerical",
       "operator": "cphase",
       "tolerance_version": "tolerance_v1"
     },
@@ -261,6 +297,18 @@
     {
       "backend": "jax",
       "comparison": "numerical",
+      "operator": "csx",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "jax",
+      "comparison": "numerical",
+      "operator": "csxdg",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "jax",
+      "comparison": "numerical",
       "operator": "cx",
       "tolerance_version": "tolerance_v1"
     },
@@ -274,6 +322,18 @@
       "backend": "jax",
       "comparison": "numerical",
       "operator": "cz",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "jax",
+      "comparison": "numerical",
+      "operator": "dcx",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "jax",
+      "comparison": "numerical",
+      "operator": "ecr",
       "tolerance_version": "tolerance_v1"
     },
     {
@@ -429,6 +489,12 @@
     {
       "backend": "mps",
       "comparison": "numerical",
+      "operator": "ch",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "mps",
+      "comparison": "numerical",
       "operator": "cphase",
       "tolerance_version": "tolerance_v1"
     },
@@ -459,6 +525,18 @@
     {
       "backend": "mps",
       "comparison": "numerical",
+      "operator": "csx",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "mps",
+      "comparison": "numerical",
+      "operator": "csxdg",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "mps",
+      "comparison": "numerical",
       "operator": "cx",
       "tolerance_version": "tolerance_v1"
     },
@@ -472,6 +550,18 @@
       "backend": "mps",
       "comparison": "numerical",
       "operator": "cz",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "mps",
+      "comparison": "numerical",
+      "operator": "dcx",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "mps",
+      "comparison": "numerical",
+      "operator": "ecr",
       "tolerance_version": "tolerance_v1"
     },
     {
@@ -627,6 +717,12 @@
     {
       "backend": "tensor_network",
       "comparison": "numerical",
+      "operator": "ch",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "tensor_network",
+      "comparison": "numerical",
       "operator": "cphase",
       "tolerance_version": "tolerance_v1"
     },
@@ -657,6 +753,18 @@
     {
       "backend": "tensor_network",
       "comparison": "numerical",
+      "operator": "csx",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "tensor_network",
+      "comparison": "numerical",
+      "operator": "csxdg",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "tensor_network",
+      "comparison": "numerical",
       "operator": "cx",
       "tolerance_version": "tolerance_v1"
     },
@@ -670,6 +778,18 @@
       "backend": "tensor_network",
       "comparison": "numerical",
       "operator": "cz",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "tensor_network",
+      "comparison": "numerical",
+      "operator": "dcx",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "tensor_network",
+      "comparison": "numerical",
+      "operator": "ecr",
       "tolerance_version": "tolerance_v1"
     },
     {
@@ -825,6 +945,12 @@
     {
       "backend": "qasm",
       "comparison": "round_trip",
+      "operator": "ch",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "qasm",
+      "comparison": "round_trip",
       "operator": "cphase",
       "tolerance_version": "tolerance_v1"
     },
@@ -855,6 +981,18 @@
     {
       "backend": "qasm",
       "comparison": "round_trip",
+      "operator": "csx",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "qasm",
+      "comparison": "round_trip",
+      "operator": "csxdg",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "qasm",
+      "comparison": "round_trip",
       "operator": "cx",
       "tolerance_version": "tolerance_v1"
     },
@@ -868,6 +1006,18 @@
       "backend": "qasm",
       "comparison": "round_trip",
       "operator": "cz",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "qasm",
+      "comparison": "round_trip",
+      "operator": "dcx",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "qasm",
+      "comparison": "round_trip",
+      "operator": "ecr",
       "tolerance_version": "tolerance_v1"
     },
     {
@@ -1023,6 +1173,24 @@
     {
       "backend": "qcis",
       "comparison": "round_trip",
+      "operator": "ch",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "qcis",
+      "comparison": "round_trip",
+      "operator": "csx",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "qcis",
+      "comparison": "round_trip",
+      "operator": "csxdg",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "qcis",
+      "comparison": "round_trip",
       "operator": "cx",
       "tolerance_version": "tolerance_v1"
     },
@@ -1036,6 +1204,18 @@
       "backend": "qcis",
       "comparison": "round_trip",
       "operator": "cz",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "qcis",
+      "comparison": "round_trip",
+      "operator": "dcx",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "qcis",
+      "comparison": "round_trip",
+      "operator": "ecr",
       "tolerance_version": "tolerance_v1"
     },
     {
@@ -1191,6 +1371,12 @@
     {
       "backend": "qir",
       "comparison": "round_trip",
+      "operator": "ch",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "qir",
+      "comparison": "round_trip",
       "operator": "cphase",
       "tolerance_version": "tolerance_v1"
     },
@@ -1221,6 +1407,18 @@
     {
       "backend": "qir",
       "comparison": "round_trip",
+      "operator": "csx",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "qir",
+      "comparison": "round_trip",
+      "operator": "csxdg",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "qir",
+      "comparison": "round_trip",
       "operator": "cx",
       "tolerance_version": "tolerance_v1"
     },
@@ -1234,6 +1432,18 @@
       "backend": "qir",
       "comparison": "round_trip",
       "operator": "cz",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "qir",
+      "comparison": "round_trip",
+      "operator": "dcx",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "qir",
+      "comparison": "round_trip",
+      "operator": "ecr",
       "tolerance_version": "tolerance_v1"
     },
     {
@@ -1389,6 +1599,12 @@
     {
       "backend": "provider",
       "comparison": "round_trip",
+      "operator": "ch",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "provider",
+      "comparison": "round_trip",
       "operator": "cphase",
       "tolerance_version": "tolerance_v1"
     },
@@ -1419,6 +1635,18 @@
     {
       "backend": "provider",
       "comparison": "round_trip",
+      "operator": "csx",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "provider",
+      "comparison": "round_trip",
+      "operator": "csxdg",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "provider",
+      "comparison": "round_trip",
       "operator": "cx",
       "tolerance_version": "tolerance_v1"
     },
@@ -1432,6 +1660,18 @@
       "backend": "provider",
       "comparison": "round_trip",
       "operator": "cz",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "provider",
+      "comparison": "round_trip",
+      "operator": "dcx",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "provider",
+      "comparison": "round_trip",
+      "operator": "ecr",
       "tolerance_version": "tolerance_v1"
     },
     {

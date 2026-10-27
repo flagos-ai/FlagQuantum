@@ -93,7 +93,7 @@ def test_the_family_list_is_the_whole_declared_two_qubit_group() -> None:
     # A fold measured on a subset of the group cannot claim the group, and the
     # module asserts this at import time; pinning it here says which way it fails.
     assert set(_FAMILIES) == set(TWO_QUBIT_OPCODES)
-    assert len(_FAMILIES) == 13
+    assert len(_FAMILIES) == 18
 
 
 def test_every_closed_form_matches_the_runtime_gate_table() -> None:
@@ -578,6 +578,20 @@ def test_the_whole_program_statevector_is_unchanged_by_the_fold() -> None:
         worst = max(worst, float(torch.max(torch.abs(before - after)).item()))
         assert len(folded.instructions) <= len(source.instructions)
     assert worst < 1e-12, worst
+
+
+def test_a_routing_swap_remains_replayable_layout_evidence() -> None:
+    """An exact DCX fold must not consume a SWAP inserted by routing."""
+
+    source = CircuitIR(
+        2,
+        (
+            Instruction("swap", (0, 1), metadata={"routing_phase": "forward"}),
+            Instruction("cx", (0, 1)),
+        ),
+    )
+
+    assert collapse_two_qubit_blocks(source).instructions == source.instructions
 
 
 def test_the_whole_pipeline_agrees_with_the_pass_alone_on_the_declared_group() -> None:

@@ -449,7 +449,12 @@ def _identity_residual(opcode: str, partner: str, angles: list[float]) -> float:
             name, inverse_params = declared
             inverse = _local_matrix(Instruction(name, wires, params=inverse_params))
         else:
-            inverse = _local_matrix(Instruction(partner, wires))
+            inverse_wires = (
+                tuple(reversed(wires))
+                if schema.adjoint == "reverse_operands"
+                else wires
+            )
+            inverse = _local_matrix(Instruction(partner, inverse_wires))
         worst = max(worst, float((inverse @ gate - identity).abs().max()))
     return worst
 
