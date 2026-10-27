@@ -90,6 +90,32 @@ visible: the widest is width 6, where one process measured `3.89` against `3.46`
 No crossover was measured. These are single-process wall times on one machine,
 not a cross-machine or accelerator comparison.
 
+## The first call is much more expensive than every call after it
+
+The forward rows above are steady state: the contraction path for a network shape
+is cached, so only the first call on a new shape pays for the search. The payload
+records that first call separately as `cold_execute_seconds`, and it is two orders
+of magnitude larger at the widest shape. The rows below are process 1's recorded
+values, with the steady-state column repeated from that process for comparison:
+
+| Width | SV first `execute()` (s) | TN first `execute()` (s) | TN / SV first call | TN steady forward (ms) |
+| --- | --- | --- | --- | --- |
+| 2 | 0.0063 | 0.0226 | 3.6 | 0.850 |
+| 4 | 0.0114 | 0.2201 | 19.4 | 2.208 |
+| 6 | 0.0474 | 0.8162 | 17.2 | 3.832 |
+| 8 | 0.0196 | 2.0601 | 105.3 | 6.051 |
+
+All three processes agreed on the shape of this: width 8 first calls were `2.0601`,
+`2.0714` and `2.1136` s. One-off or short runs therefore see a very different
+ratio from a training loop, and quoting the steady-state figure alone would
+understate what a single evaluation costs. The statevector route has no comparable
+search: its first call is within about an order of magnitude of its steady state,
+while the tensor-network first call is roughly 340x its own steady state at width 8.
+
+This is a per-shape cache. A training loop over one circuit shape pays it once; a
+sweep that changes width, depth, term count or observable on every step pays it
+every step, and the steady-state table above does not describe that workload.
+
 ## The contraction peak is linear in width, not exponential
 
 The reason to select a contracted representation is capacity, so the peak of the
@@ -147,6 +173,15 @@ relies on.
   resident-memory measurement.
 - Gradient is first-order PyTorch autograd through the contraction. No adjoint,
   second-order, GPU, or distributed derivative was measured.
+- Of the orderings a caller can select on the 117-node operator network at width 8,
+  only the three greedy objectives are usable: `quality_greedy` returns in 0.032 s,
+  `greedy` and `memory_greedy` in about 0.70 s on a cold path cache, while `beam`
+  takes 35.2 s, `optimal` takes 69.2 s (and 7.1 s at width 4, 26.9 s at width 6),
+  `einsum` raises because the labels exceed torch's 52-subscript limit, and
+  `quality_multistart` raises because the expectation plan does not accept it. The
+  first four are pre-existing properties shared with `expectation_z` and
+  `expectation_ps`; `quality_multistart` is refused there too, on unmodified
+  `origin/main`. None is fixed here, and the default is `greedy`.
 - No claim is made about widths beyond 14, about accelerator execution, or about
   distributed contraction. The tensor-network energy is still slower than
   statevector wherever a dense state fits.
