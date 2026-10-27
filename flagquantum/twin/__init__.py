@@ -46,6 +46,12 @@ from .evolution_cycle import (
     load_evolution_cycle,
     prepare_evolution_cycle,
 )
+from .evolution_decision import (
+    TwinEvolutionDecision,
+    dump_evolution_decision,
+    load_evolution_decision,
+    record_evolution_decision,
+)
 from .experiment import TwinExperiment, TwinHardwareReport
 from .factory import from_noise_model, from_quafu_chip_info
 from .freshness import (
@@ -160,6 +166,7 @@ __all__ = (
     "dump_circuit_support",
     "dump_evidence",
     "dump_evolution_cycle",
+    "dump_evolution_decision",
     "dump_region_holdout_evaluation",
     "dump_region_candidate_holdout_evaluation",
     "dump_region_candidate_holdout_study",
@@ -180,6 +187,7 @@ __all__ = (
     "load_circuit_support",
     "load_evidence",
     "load_evolution_cycle",
+    "load_evolution_decision",
     "load_region_holdout_evaluation",
     "load_region_candidate_holdout_evaluation",
     "load_region_candidate_holdout_study",
@@ -201,6 +209,7 @@ __all__ = (
     "prepare_region_holdout_study",
     "prepare_region_validation_suite",
     "prepare_probe_refresh",
+    "record_evolution_decision",
     "release_region_candidate",
     "TwinCalibrationDrift",
     "TwinCalibrationHistory",
@@ -219,6 +228,7 @@ __all__ = (
     "TwinEvolutionHistory",
     "TwinEvolutionCycle",
     "TwinEvolutionCycleStage",
+    "TwinEvolutionDecision",
     "TwinEvolutionRecommendation",
     "TwinExperiment",
     "TwinFreshnessAssessment",

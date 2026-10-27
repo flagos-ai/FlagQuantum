@@ -1,4 +1,4 @@
-"""Run and resume one offline, recommendation-only Twin evolution cycle.
+"""Run, resume, and explicitly decide one offline Twin evolution cycle.
 
 The task receipts and counts in this executable are deterministic synthetic
 fixtures. Real applications obtain them through their explicit provider
@@ -147,11 +147,25 @@ def main() -> None:
     cycle = cycle.with_holdout_evaluation(evaluation)
     fq.twin.dump_evolution_cycle(cycle, "twin-evolution-complete.json")
 
+    # A recommendation has no effect until an application records its decision.
+    # This example deliberately retains the incumbent, showing that the operator
+    # decision remains distinct from the evidence recommendation.
+    decision = fq.twin.record_evolution_decision(
+        cycle,
+        decision="retain_incumbent",
+        decided_at="2026-08-15T11:00:00+08:00",
+        decision_authority="example-calibration-operator",
+    )
+    fq.twin.dump_evolution_decision(decision, "twin-evolution-decision.json")
+
     print("stage:", cycle.stage)
     print("holdout decision:", cycle.holdout_decision)
     print("recommended action:", cycle.recommended_action)
+    print("operator decision:", decision.decision)
+    print("followed recommendation:", decision.followed_recommendation)
     print("cycle identity:", cycle.identity)
-    print("recommendation only; no candidate was released")
+    print("decision identity:", decision.identity)
+    print("record only; no candidate was released or activated")
 
 
 if __name__ == "__main__":

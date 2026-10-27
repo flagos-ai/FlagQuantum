@@ -44,6 +44,9 @@ in `simulation`, `noise`, and `remote/qpu` respectively.
   holdout improvement is required and reference degradation vetoes an upgrade.
 - `TwinRegionRelease`: an explicit, immutable release manifest limited to the
   exact circuits in one improved regional candidate holdout evaluation.
+- `TwinEvolutionDecision`: an immutable application-authorized response to one
+  evolution-cycle recommendation, optionally bound to an already-created
+  matching regional release.
 
 ## Ten-minute path
 

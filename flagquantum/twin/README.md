@@ -600,6 +600,39 @@ can resume without resubmitting hardware work. The final value is only
 It never performs a provider operation, mutates a Twin, or crosses the existing
 explicit release boundary.
 
+Record the application's explicit decision separately from that advice:
+
+```python
+decision = fq.twin.record_evolution_decision(
+    cycle,
+    decision="retain_incumbent",
+    decided_at="2026-08-15T11:00:00+08:00",
+    decision_authority="calibration-operator",
+)
+fq.twin.dump_evolution_decision(decision, "twin-evolution-decision.json")
+```
+
+The record keeps the recommendation and decision as separate facts. Retaining
+the incumbent or collecting more evidence requires no release. Choosing
+`release_candidate` is allowed only after a completed improving holdout gate
+and requires an already-created `TwinRegionRelease` for the same candidate
+snapshot, target, and ordered physical mapping:
+
+```python
+decision = fq.twin.record_evolution_decision(
+    cycle,
+    decision="release_candidate",
+    decided_at="2026-08-15T11:00:00+08:00",
+    decision_authority="calibration-review-board",
+    release=release,
+)
+```
+
+This binds the decision to the release; it does not create the release, switch
+an active model, authorize routing, or contact a provider. The authority string
+is an application-owned audit identifier, not authentication performed by
+FlagQuantum.
+
 ## Inspect evidence for a prediction
 
 `predict()` always returns the numerical result of the frozen model. It does not
