@@ -367,7 +367,13 @@ class Module(torch.nn.Module):
         if len(dynamic_values) != len(self._builder_slots):
             raise ExecutionError("compiled builder parameter slot count changed")
         self._builder_bindings.bind(dynamic_values)
-        self._refuse_non_finite_bound_parameters(self._builder_bound_circuit)
+        if not self.policy.correctness_debug:
+            # `correctness_debug` owns non-finite diagnosis and reports it as
+            # `NonFiniteTrainingError` after the run, covering the value and the
+            # gradients as well as the parameters. Refusing here instead would
+            # take that documented category away from the policy that exists to
+            # produce it, without catching anything the policy misses.
+            self._refuse_non_finite_bound_parameters(self._builder_bound_circuit)
         # ``Circuit.state`` is the only value-dependent cache on this reusable
         # container. Instructions and their parameter maps stay immutable.
         self._builder_bound_circuit._invalidate_execution_cache(

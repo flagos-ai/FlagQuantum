@@ -186,9 +186,7 @@ def test_the_jax_backend_refuses_the_same_way() -> None:
         1,
         init=torch.tensor([0.2], dtype=torch.float64),
         dtype=torch.float64,
-        policy=fq.RuntimePolicy(
-            execution_options=fq.ExecutionOptions(backend="jax")
-        ),
+        policy=fq.RuntimePolicy(execution_options=fq.ExecutionOptions(backend="jax")),
     )
     module()
     _fill(module, float("nan"))
