@@ -26,6 +26,7 @@ from ..simulation.pauli import (
     pauli_product_operator,
     pauli_product_statevector_expectation,
 )
+from ..simulation.tensor_network.state import TensorNetworkState
 from .optimization import (
     HybridOptimizationResult,
     OptimizationStage,
@@ -110,8 +111,10 @@ class HamiltonianTerm:
             return -1
         return max(qubit for qubit, _ in self.ops)
 
-    def expectation(self, target: Circuit | MPSState | torch.Tensor) -> torch.Tensor:
-        """Evaluate this term on a circuit, MPS state, statevector, or density matrix."""
+    def expectation(
+        self, target: Circuit | MPSState | TensorNetworkState | torch.Tensor
+    ) -> torch.Tensor:
+        """Evaluate this term on a circuit, MPS, tensor-network, or dense state."""
 
         if isinstance(target, Circuit):
             base = (
@@ -139,6 +142,25 @@ class HamiltonianTerm:
                     y=[qubit for qubit, name in self.ops if name == "y"],
                     z=[qubit for qubit, name in self.ops if name == "z"],
                 )
+            )
+            coeff = _coefficient_tensor(
+                self.coefficient, dtype=base.dtype, device=base.device
+            )
+            return torch.real(coeff * base)
+
+        if isinstance(target, TensorNetworkState):
+            # Contract this term's bra-operator-ket network. The state's own
+            # `expectation_z` materializes a dense state below its observable
+            # threshold; a caller that selected the tensor-network representation
+            # must not be routed through that path for a Hamiltonian energy.
+            # `expectation_ps` also answers the empty product, so a constant term
+            # needs no special case. A sum of terms goes through
+            # `TensorNetworkState.expectation_hamiltonian` instead, which
+            # contracts the whole sum as one operator network.
+            base = target.expectation_ps(
+                x=[qubit for qubit, name in self.ops if name == "x"],
+                y=[qubit for qubit, name in self.ops if name == "y"],
+                z=[qubit for qubit, name in self.ops if name == "z"],
             )
             coeff = _coefficient_tensor(
                 self.coefficient, dtype=base.dtype, device=base.device
@@ -257,7 +279,7 @@ class Hamiltonian:
 
     def expectation(
         self,
-        target: Circuit | MPSState | torch.Tensor,
+        target: Circuit | MPSState | TensorNetworkState | torch.Tensor,
         *,
         differentiation: Literal["autograd", "adjoint"] = "autograd",
     ) -> torch.Tensor:
@@ -335,6 +357,8 @@ class Hamiltonian:
                     z_coefficients=z_coefficients,
                     zz_coefficients=zz_coefficients,
                 )
+        if isinstance(target, TensorNetworkState):
+            return target.expectation_hamiltonian(self)
         values = [term.expectation(target) for term in self.terms]
         total = values[0]
         for value in values[1:]:
