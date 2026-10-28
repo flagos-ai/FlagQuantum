@@ -78,10 +78,12 @@ in the GPU lanes. It keeps reusable wheel files in
 restore the private wheel directory through `actions/cache`. Neither path
 reuses an installed virtual environment.
 
-Wheel preparation reads the `cuda` extra from `pyproject.toml`, resolves its
-allowed versions and complete dependencies, and installs from the resulting
-local directory. Cached files remain candidates while the index can advertise
-updates. A mirror download gets 180 seconds before one official-PyPI fallback
+Wheel preparation reads the `cuda` extra from `pyproject.toml` and first resolves
+its complete dependency closure offline, against the private directory and the
+CPU pool's configured public wheel cache (`FQ_CPU_WHEEL_CACHE`). It reuses a
+compatible cached version; changing the requested range or clearing that cache
+can require a fresh resolution. An incomplete cache requires online resolution.
+A mirror download gets 180 seconds before one official-PyPI fallback
 with 300 seconds; an already selected official index is not retried as its own
 fallback. The job retains dependency checks and the original Triton test list.
 Both failed sources fail the job rather than bypassing kernel validation.
