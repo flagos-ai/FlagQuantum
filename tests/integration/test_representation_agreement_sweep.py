@@ -731,3 +731,28 @@ def test_a_degenerate_cut_is_reported_as_a_domain_boundary() -> None:
     cell = _cell(n_qubits=8, depth=8, max_bond=4, gradients=True)
     assert cell["schmidt"]["rank"] == 4
     assert cell["schmidt"]["min_gap"] is not None
+
+
+def test_the_payload_states_the_tolerances_its_claims_hold_to() -> None:
+    """A conformance artifact without its bounds is a table of numbers.
+
+    The two precisions cannot share one bound: float32 accumulation separates
+    the paths by about 4e-7 before any truncation happens, so a bound borrowed
+    from the double run would fail honest complex64 evidence and one borrowed
+    from the single run would pass a broken double run.
+    """
+    single = sweep.tolerances_for(torch.complex64)
+    double = sweep.tolerances_for(torch.complex128)
+
+    for tolerances in (single, double):
+        assert tolerances["oracle_relative"] > 0
+        assert tolerances["untruncated_state_fidelity_deficit"] > 0
+        assert tolerances["untruncated_gradient_relative"] > 0
+        # Truncated cells are reported, not asserted against a bound.
+        assert tolerances["truncated_gradient_relative"] is None
+
+    assert (
+        double["untruncated_gradient_relative"]
+        < single["untruncated_gradient_relative"]
+    )
+    assert double["oracle_relative"] < single["oracle_relative"]

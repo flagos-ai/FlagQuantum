@@ -41,6 +41,13 @@ Repeat the identical seeded angles with double-precision amplitudes::
 
     python benchmarks/representation_agreement_sweep.py --dtype complex128 \
         --output /tmp/agreement-complex128.json
+
+Measure state, observable and gradient conformance over several parameter
+draws, which is the corpus #899 asks for::
+
+    python benchmarks/representation_agreement_sweep.py --gradients \
+        --widths 4,8 --depths 2,4 --max-bond 4,16 --seeds 260720,260721,260722 \
+        --output /tmp/conformance.json
 """
 
 from __future__ import annotations
@@ -820,6 +827,40 @@ def measure_cell(
     return cell
 
 
+def tolerances_for(dtype: torch.dtype) -> dict[str, float | None]:
+    """Return the bounds this precision's conformance claims are read against.
+
+    The two precisions cannot share a bound. At complex64 the same arithmetic
+    in two representations already separates by about ``4e-7`` through float32
+    accumulation, so a double-precision bound would fail honest evidence, and a
+    single-precision bound applied to doubles would pass a broken run.
+
+    A truncated cell has no asserted bound: the distance from the exact gradient
+    is the quantity being measured, and a threshold on it would turn a
+    measurement of approximation into a pass/fail on an expected size of it.
+    """
+
+    # A truncated split is measured only through the retained-subspace rule,
+    # whose agreement with the derivative of its own forward map is the defect
+    # this harness reports; no bound is asserted on either quantity.
+    truncated_gradient_relative = None
+    if dtype == torch.complex128:
+        return {
+            "oracle_relative": 1e-9,
+            "untruncated_state_fidelity_deficit": 1e-10,
+            "untruncated_gradient_relative": 1e-10,
+            "truncated_gradient_relative": truncated_gradient_relative,
+        }
+    if dtype == torch.complex64:
+        return {
+            "oracle_relative": 1e-5,
+            "untruncated_state_fidelity_deficit": 1e-5,
+            "untruncated_gradient_relative": 1e-4,
+            "truncated_gradient_relative": truncated_gradient_relative,
+        }
+    raise ValueError(f"no conformance tolerance for {dtype}")
+
+
 def measure_grid(
     *,
     widths: Sequence[int],
@@ -1052,6 +1093,12 @@ def main() -> int:
         ],
         "modes": list(arguments.modes),
         "gradients_measured": bool(arguments.gradients),
+        # The bounds a reader has to check this payload's quantities against, so
+        # the artifact carries its own tolerances rather than requiring the
+        # README beside it.
+        "tolerances": tolerances_for(getattr(torch, arguments.dtype)),
+        "oracle_max_width": ORACLE_MAX_WIDTH,
+        "near_degenerate_gap": NEAR_DEGENERATE_GAP,
         "grid": {
             "widths": list(arguments.widths),
             "depths": list(arguments.depths),
