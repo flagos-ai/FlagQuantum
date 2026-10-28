@@ -1,0 +1,50 @@
+{
+  "method": "publish sanitized derivatives; original per-case files and logs remain unchanged",
+  "files": [
+    {
+      "file": "baseline/trial-1.json",
+      "original_sha256": "3bc5f1add5d4f10986d0989ee551bdfffe7ec87d30b492db02c3f91d8b0bafe1",
+      "published_sha256": "3bc5f1add5d4f10986d0989ee551bdfffe7ec87d30b492db02c3f91d8b0bafe1"
+    },
+    {
+      "file": "candidate/trial-1.json",
+      "original_sha256": "863271824a6f61e36fccc8286f6a75b1b77646524705a5728a2a253c14205822",
+      "published_sha256": "863271824a6f61e36fccc8286f6a75b1b77646524705a5728a2a253c14205822"
+    },
+    {
+      "file": "baseline/trial-2.json",
+      "original_sha256": "be24c2d56ed18d3674c99ff0008c25b278fb0698013ba021a982efa0fcf19078",
+      "published_sha256": "be24c2d56ed18d3674c99ff0008c25b278fb0698013ba021a982efa0fcf19078"
+    },
+    {
+      "file": "candidate/trial-2.json",
+      "original_sha256": "9d6b798494d040c7bfe21f8d6080293e7e8417e6297fa30fa4122f6361abdf05",
+      "published_sha256": "9d6b798494d040c7bfe21f8d6080293e7e8417e6297fa30fa4122f6361abdf05"
+    },
+    {
+      "file": "baseline/trial-3.json",
+      "original_sha256": "e1bd2d45ec6b96a2cd3adaf0a4ee5fcceeae6d5c37230a7d5641bb9bf71b55b8",
+      "published_sha256": "e1bd2d45ec6b96a2cd3adaf0a4ee5fcceeae6d5c37230a7d5641bb9bf71b55b8"
+    },
+    {
+      "file": "candidate/trial-3.json",
+      "original_sha256": "aeba4de1e38fdfd91f2edc08d3b4022c765128fa0b0a637cf082497f5c1275ff",
+      "published_sha256": "aeba4de1e38fdfd91f2edc08d3b4022c765128fa0b0a637cf082497f5c1275ff"
+    },
+    {
+      "file": "aggregate.json",
+      "original_sha256": "d86c0e4731e4862875a3b12bbd4d99feb913732de5c835db243a70403c3f28d8",
+      "published_sha256": "d86c0e4731e4862875a3b12bbd4d99feb913732de5c835db243a70403c3f28d8"
+    },
+    {
+      "file": "baseline_batching.py.txt",
+      "original_sha256": "19c8d1ba6564c51591c81c18bb24a5ce7e972d14804777e119bc73ebf39fcc9d",
+      "published_sha256": "19c8d1ba6564c51591c81c18bb24a5ce7e972d14804777e119bc73ebf39fcc9d"
+    },
+    {
+      "file": "baseline_worker.py.txt",
+      "original_sha256": "dd8f06c3fb06cf1d050516da1a27475add079654686ea8bd8efda7e9a6f30f72",
+      "published_sha256": "dd8f06c3fb06cf1d050516da1a27475add079654686ea8bd8efda7e9a6f30f72"
+    }
+  ]
+}

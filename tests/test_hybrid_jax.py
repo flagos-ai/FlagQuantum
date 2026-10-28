@@ -23,6 +23,172 @@ pytestmark = [
 ]
 
 
+@pytest.mark.parametrize("jit", [False, True])
+@pytest.mark.parametrize("mode", ["statevector", "mps", "tensor_network"])
+def test_derivative_demand_tracks_grad_mode_and_trainable_arguments(
+    jit: bool, mode: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    def build(parameters: Any, features: Any) -> fq.Circuit:
+        return fq.Circuit(1).ry(0, parameters[0] * features[0] + parameters[1])
+
+    parameters = torch.tensor([0.3, -0.2], dtype=torch.float64)
+    features = torch.tensor([0.7], dtype=torch.float64)
+    kernel = compile_quantum_kernel(
+        build,
+        parameters,
+        n_qubits=1,
+        accepts_inputs=True,
+        mode=mode,
+        jit=jit,
+        compute_dtype="complex128",
+    )
+    calls: list[str] = []
+    for name in (
+        "_value",
+        "_value_and_grad",
+        "_parameter_value_and_grad",
+        "_input_value_and_grad",
+    ):
+        original = getattr(kernel, name)
+
+        def record(*args: Any, _name: str = name, _function: Any = original) -> Any:
+            calls.append(_name)
+            return _function(*args)
+
+        monkeypatch.setattr(kernel, name, record)
+
+    # One reusable kernel must survive changing derivative demand and values.
+    for parameter_grad, input_grad in (
+        (True, True),
+        (False, True),
+        (True, False),
+        (False, False),
+        (True, True),
+    ):
+        parameters.requires_grad_(parameter_grad)
+        features.requires_grad_(input_grad)
+        value = kernel(parameters, features)
+        reference = (parameters[0] * features[0] + parameters[1]).cos()
+        torch.testing.assert_close(value, reference, atol=1e-12, rtol=1e-12)
+        selected = tuple(
+            tensor for tensor in (parameters, features) if tensor.requires_grad
+        )
+        if selected:
+            actual = torch.autograd.grad(1.7 * value, selected)
+            expected = torch.autograd.grad(1.7 * reference, selected)
+            for gradient, oracle in zip(actual, expected, strict=True):
+                torch.testing.assert_close(gradient, oracle, atol=1e-12, rtol=1e-12)
+        else:
+            assert not value.requires_grad
+        with torch.no_grad():
+            parameters.add_(0.03)
+            features.add_(0.02)
+    assert calls == [
+        "_value_and_grad",
+        "_input_value_and_grad",
+        "_parameter_value_and_grad",
+        "_value",
+        "_value_and_grad",
+    ]
+
+    for context in (torch.no_grad(), torch.inference_mode()):
+        with context:
+            value = kernel(parameters, features)
+            reference = (parameters[0] * features[0] + parameters[1]).cos()
+            assert not value.requires_grad
+            torch.testing.assert_close(value, reference, atol=1e-12, rtol=1e-12)
+    assert calls[-2:] == ["_value", "_value"]
+
+
+def test_value_only_preserves_multidimensional_parameter_batches() -> None:
+    def build(parameters: Any) -> fq.Circuit:
+        return fq.Circuit(1).ry(0, parameters[0])
+
+    kernel = compile_quantum_kernel(
+        build, torch.zeros(1), n_qubits=1, compute_dtype="complex128"
+    )
+    parameters = torch.linspace(0.1, 0.6, 6, dtype=torch.float64).reshape(2, 3, 1)
+    parameters.requires_grad_()
+    differentiable = kernel(parameters)
+    with torch.no_grad():
+        inference = kernel(parameters)
+    assert inference.shape == (2, 3)
+    torch.testing.assert_close(inference, parameters[..., 0].cos())
+    torch.testing.assert_close(inference, differentiable)
+    torch.testing.assert_close(
+        torch.autograd.grad(differentiable.sum(), parameters)[0], -parameters.sin()
+    )
+    with torch.no_grad(), pytest.raises(ValueError, match="parameter shape must end"):
+        kernel(torch.zeros(2, 3, 2))
+
+
+def test_cpu_bridge_keeps_cpu_placement_when_jax_defaults_to_an_accelerator(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import jax
+
+    from flagquantum.runtime.executors.jax.kernel import _torch_to_jax
+
+    # Exercise the placement decision without requiring a GPU in the CPU lane.
+    monkeypatch.setattr(jax, "default_backend", lambda: "gpu")
+    with jax.default_device(None):
+        converted = _torch_to_jax(torch.tensor([0.2], dtype=torch.float32))
+    assert converted.device.platform == "cpu"
+    torch.testing.assert_close(
+        torch.tensor(converted.__array__()), torch.tensor([0.2], dtype=torch.float32)
+    )
+
+
+@pytest.mark.parametrize("dtype", [torch.float32, torch.float64])
+def test_cpu_bridge_preserves_strided_input_gradients_and_parameter_updates(
+    dtype: torch.dtype,
+) -> None:
+    """CPU buffer conversion must preserve both VJPs and changing tensor values."""
+    parameters = torch.tensor([0.2, 9.0, 0.7, 8.0], dtype=dtype)[::2].requires_grad_()
+    features = torch.tensor([0.4, 7.0, -0.2, 6.0], dtype=dtype)[::2].requires_grad_()
+
+    def build(values: Any, inputs: Any) -> fq.Circuit:
+        circuit = fq.Circuit(2, dtype=torch.complex128)
+        circuit.ry(0, theta=values[0] + inputs[0] * values[1])
+        circuit.ry(1, theta=inputs[1])
+        return circuit
+
+    kernel = compile_quantum_kernel(
+        build,
+        parameters,
+        n_qubits=2,
+        observable="z_sum",
+        compute_dtype="complex128",
+        accepts_inputs=True,
+    )
+    tolerance = 1e-5 if dtype == torch.float32 else 1e-10
+    for train_input in (False, True, False):
+        features.requires_grad_(train_input)
+        value = kernel(parameters, features)
+        gradients = torch.autograd.grad(
+            2.3 * value, (parameters, features) if train_input else (parameters,)
+        )
+        angle = parameters[0] + features[0] * parameters[1]
+        reference = angle.cos() + features[1].cos()
+        expected_parameter = (
+            -2.3 * angle.sin() * torch.stack((torch.ones_like(angle), features[0]))
+        )
+        expected_input = -2.3 * torch.stack(
+            (parameters[1] * angle.sin(), features[1].sin())
+        )
+        torch.testing.assert_close(value, reference, atol=tolerance, rtol=tolerance)
+        torch.testing.assert_close(
+            gradients[0], expected_parameter, atol=tolerance, rtol=tolerance
+        )
+        if train_input:
+            torch.testing.assert_close(
+                gradients[1], expected_input, atol=tolerance, rtol=tolerance
+            )
+        with torch.no_grad():
+            parameters.add_(0.03)
+            features.mul_(0.9)
+
+
 def test_jax_quantum_kernel_torch_autograd_matches_statevector():
     params = torch.tensor([0.2, -0.1, 0.3], requires_grad=True)
     ref_params = params.detach().clone().requires_grad_(True)

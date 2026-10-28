@@ -203,3 +203,16 @@ authorized Fast checkpoint; there is no CPU fallback. This is an offline
 checkpoint comparison, not a production, TensorRT or real-time feedback claim.
 See the [protocol](../development/QEC_AI_ISING_COMPARISON.md) and
 [integration outcome](../development/QEC_AI_ISING_COMPARISON_RESULTS.md).
+
+## Optional JAX Module declared batches
+
+Explicit Circuit.bsz batches now use vectorized numerical execution and
+cotangent-weighted parameter/input VJPs for statevector, MPS and TN. Gate angles
+must be scalar, length one or length bsz. Builders own feature indexing; no batch
+axis is inferred. Higher-order differentiation remains unsupported. Vector
+backward recomputes the quantum value and has its own first-call compilation.
+The default Torch route is unchanged; optional JAX selection is explicit. This
+CPU conformance evidence does not establish GPU performance or a universal
+framework ranking. Statevector may contract a gate network to a dense state when
+the static operation estimate is lower and no intermediate exceeds the dense
+state size (or sixteen elements); its diagnostics expose the selected algorithm.

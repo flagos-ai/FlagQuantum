@@ -1,0 +1,39 @@
+============================= test session starts ==============================
+platform darwin -- Python 3.12.14, pytest-9.1.1, pluggy-1.7.0
+rootdir: <redacted-path>
+configfile: pytest.ini
+plugins: platformdirs-4.13.5
+collected 422 items
+
+tests/unit/test_census_wire_vocabulary.py .............................. [  7%]
+..............................                                           [ 14%]
+tests/unit/test_qubit_vocabulary_contract.py ........................... [ 20%]
+........................................................................ [ 37%]
+..............                                                           [ 40%]
+tests/api_contract/test_module_training_semantics.py .........           [ 43%]
+tests/unit/test_module_object_contracts.py ...                           [ 43%]
+tests/unit/test_module_runtime_contracts.py ............................ [ 50%]
+.........................                                                [ 56%]
+tests/unit/test_module_training_candidate.py .....                       [ 57%]
+tests/unit/test_public_api_candidate.py ............                     [ 60%]
+tests/unit/test_jax_statevector_kernels.py .......                       [ 62%]
+tests/unit/test_jax_mps_kernels.py ...                                   [ 62%]
+tests/unit/test_jax_tensor_network_contraction.py ..                     [ 63%]
+tests/benchmark_contract/test_module_execution_matrix.py ............... [ 66%]
+..                                                                       [ 67%]
+tests/unit/test_statevector_bound_rotation_regions.py .................. [ 71%]
+....                                                                     [ 72%]
+tests/unit/test_module_jax_declared_batch.py .......................     [ 77%]
+tests/unit/test_jax_tensor_network_kernels.py .......................... [ 84%]
+.......                                                                  [ 85%]
+tests/test_hybrid_jax.py ............................................... [ 96%]
+.....                                                                    [ 98%]
+tests/unit/test_jax_simulation_boundary.py ........                      [100%]
+
+=============================== warnings summary ===============================
+tests/unit/test_module_runtime_contracts.py::test_module_to_rejects_invalid_dtype_before_mutating_parameters
+  <redacted-path> UserWarning: Complex modules are a new feature under active development whose design may change, and some modules might not work as expected when using complex tensors as parameters or buffers. Please file an issue at https://github.com/pytorch/pytorch/issues/new?template=bug-report.yml if a complex module does not work as expected.
+    module.to(dtype=torch.complex64)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+================== 422 passed, 1 warning in 90.14s (0:01:30) ===================

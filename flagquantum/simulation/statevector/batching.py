@@ -351,6 +351,9 @@ def _rotation_region_angles(
 ) -> torch.Tensor | None:
     """Collect batched angles, or decline fusion when a parameter is unavailable."""
 
+    packed = _bound_scalar_rotation_angles(steps, state, parameter_bindings)
+    if packed is not None:
+        return packed
     regions: list[torch.Tensor] = []
     for step in steps:
         parameters = tuple(
@@ -364,6 +367,36 @@ def _rotation_region_angles(
             angles.append(parameter[:, 0])
         regions.append(torch.stack(angles, dim=-1))
     return torch.stack(regions, dim=0) if regions else None
+
+
+def _bound_scalar_rotation_angles(
+    steps: Sequence[_StatevectorFusedGateStep],
+    state: torch.Tensor,
+    bindings: tuple[torch.Tensor, ...] | None,
+) -> torch.Tensor | None:
+    """Pack compiled scalar slots once instead of materializing each gate column."""
+    if bindings is None or not steps:
+        return None
+    count = len(steps[0].instructions)
+    if not count:
+        return None
+    dtype = torch.float64 if state.dtype == torch.complex128 else torch.float32
+    device = state.device
+    values = []
+    for step in steps:
+        if len(step.instructions) != count:
+            return None
+        for instruction in step.instructions:
+            slots: tuple[int, ...] = getattr(instruction, "parameter_slots", ())
+            if len(slots) != 1 or slots[0] < 0:
+                return None
+            value = bindings[slots[0]]
+            if value.ndim != 0 or value.dtype != dtype or value.device != device:
+                return None
+            values.append(value)
+    return (
+        torch.stack(values).reshape(len(steps), 1, count).expand(-1, state.shape[0], -1)
+    )
 
 
 def _prepare_batched_rotation_matrices(

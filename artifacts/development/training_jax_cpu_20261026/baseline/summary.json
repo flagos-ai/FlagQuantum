@@ -1,0 +1,152 @@
+{
+  "benchmark_evidence_class": "comparison_non_release",
+  "cases": [
+    {
+      "case": "classifier-flagquantum-11",
+      "result": "classifier-flagquantum-11/result.json",
+      "status": "completed"
+    },
+    {
+      "case": "classifier-flagquantum-29",
+      "result": "classifier-flagquantum-29/result.json",
+      "status": "completed"
+    },
+    {
+      "case": "classifier-flagquantum-47",
+      "result": "classifier-flagquantum-47/result.json",
+      "status": "completed"
+    },
+    {
+      "case": "classifier-flagquantum_jax_module-11",
+      "result": "classifier-flagquantum_jax_module-11/result.json",
+      "status": "completed"
+    },
+    {
+      "case": "classifier-flagquantum_jax_module-29",
+      "result": "classifier-flagquantum_jax_module-29/result.json",
+      "status": "completed"
+    },
+    {
+      "case": "classifier-flagquantum_jax_module-47",
+      "result": "classifier-flagquantum_jax_module-47/result.json",
+      "status": "completed"
+    },
+    {
+      "case": "classifier-flagquantum_jax_kernel-11",
+      "result": "classifier-flagquantum_jax_kernel-11/result.json",
+      "status": "completed"
+    },
+    {
+      "case": "classifier-flagquantum_jax_kernel-29",
+      "result": "classifier-flagquantum_jax_kernel-29/result.json",
+      "status": "completed"
+    },
+    {
+      "case": "classifier-flagquantum_jax_kernel-47",
+      "result": "classifier-flagquantum_jax_kernel-47/result.json",
+      "status": "completed"
+    },
+    {
+      "case": "classifier-tensorcircuit_jax-11",
+      "result": "classifier-tensorcircuit_jax-11/result.json",
+      "status": "completed"
+    },
+    {
+      "case": "classifier-tensorcircuit_jax-29",
+      "result": "classifier-tensorcircuit_jax-29/result.json",
+      "status": "completed"
+    },
+    {
+      "case": "classifier-tensorcircuit_jax-47",
+      "result": "classifier-tensorcircuit_jax-47/result.json",
+      "status": "completed"
+    },
+    {
+      "case": "heisenberg-flagquantum-11",
+      "result": "heisenberg-flagquantum-11/result.json",
+      "status": "completed"
+    },
+    {
+      "case": "heisenberg-flagquantum-29",
+      "result": "heisenberg-flagquantum-29/result.json",
+      "status": "completed"
+    },
+    {
+      "case": "heisenberg-flagquantum-47",
+      "result": "heisenberg-flagquantum-47/result.json",
+      "status": "completed"
+    },
+    {
+      "case": "heisenberg-flagquantum_jax_module-11",
+      "result": "heisenberg-flagquantum_jax_module-11/result.json",
+      "status": "completed"
+    },
+    {
+      "case": "heisenberg-flagquantum_jax_module-29",
+      "result": "heisenberg-flagquantum_jax_module-29/result.json",
+      "status": "completed"
+    },
+    {
+      "case": "heisenberg-flagquantum_jax_module-47",
+      "result": "heisenberg-flagquantum_jax_module-47/result.json",
+      "status": "completed"
+    },
+    {
+      "case": "heisenberg-flagquantum_jax_kernel-11",
+      "result": "heisenberg-flagquantum_jax_kernel-11/result.json",
+      "status": "completed"
+    },
+    {
+      "case": "heisenberg-flagquantum_jax_kernel-29",
+      "result": "heisenberg-flagquantum_jax_kernel-29/result.json",
+      "status": "completed"
+    },
+    {
+      "case": "heisenberg-flagquantum_jax_kernel-47",
+      "result": "heisenberg-flagquantum_jax_kernel-47/result.json",
+      "status": "completed"
+    },
+    {
+      "case": "heisenberg-tensorcircuit_jax-11",
+      "result": "heisenberg-tensorcircuit_jax-11/result.json",
+      "status": "completed"
+    },
+    {
+      "case": "heisenberg-tensorcircuit_jax-29",
+      "result": "heisenberg-tensorcircuit_jax-29/result.json",
+      "status": "completed"
+    },
+    {
+      "case": "heisenberg-tensorcircuit_jax-47",
+      "result": "heisenberg-tensorcircuit_jax-47/result.json",
+      "status": "completed"
+    }
+  ],
+  "hostname": "redacted",
+  "platform": "macOS-27.0-arm64-arm-64bit",
+  "python": "3.12.14",
+  "runner": "training_comparison",
+  "scalability_claim_allowed": false,
+  "schema": "flagquantum.training_comparison.v1",
+  "smoke": false,
+  "source": {
+    "code_version": "3b18d75fc9e11464575249a65ee5708392b9866c",
+    "dirty": false,
+    "producer_sha256": {
+      "benchmarks/training_comparison.py": "654b0b5f0907bb8cb8f06b1f87c595260ef219cb3d363b04a45af34092ee8ff1",
+      "benchmarks/training_engines.py": "c3578d8d2b33da2b96a6e194421d61863de29dabbe6af1e31b37fe2b220bbf61",
+      "benchmarks/training_workloads.py": "7c797a3214221d3d858e12d3852cfb7a191689b0dad9dc227a395dd983777235"
+    },
+    "protocol_sha256": "258f5736f36988f3c3533ecad36d3498163a809d5c88eba12cfb2ea66eab01f7",
+    "versions": {
+      "jax": "0.10.2",
+      "jaxlib": "0.10.2",
+      "numpy": "2.5.4",
+      "pennylane": "0.45.1",
+      "pennylane-lightning": "0.45.0",
+      "tensorcircuit-ng": "1.10.0",
+      "torch": "2.14.1"
+    }
+  },
+  "world_size": 1
+}

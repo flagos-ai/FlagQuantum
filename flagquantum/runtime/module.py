@@ -26,7 +26,12 @@ from .builder_compilation import (
     BuilderBindings,
     CompiledInstruction,
     SlotParameterMapping,
+    _builder_tensor_inputs,
+    _refuse_non_finite_bound_parameters,
+    can_defer_ir_snapshot,
+    deferred_ir_snapshot,
     detached_ir_snapshot,
+    ir_snapshot_input_budget,
 )
 from .policy import RuntimePolicy
 from .result import ExecutionResult, normalize_execution_result
@@ -36,6 +41,7 @@ if TYPE_CHECKING:
     from ..algorithms import Hamiltonian
     from ..simulation.mps.state import MPSState
     from ..simulation.tensor_network.state import TensorNetworkState
+    from .executors.jax.kernel import JAXQuantumKernel
     from .executors.mps.production import (
         MPSAcceptanceGates,
         MPSCrossoverMeasurement,
@@ -164,7 +170,8 @@ class Module(torch.nn.Module):
         self.hamiltonian = hamiltonian
         self._state_process_group: Any | None = None
         self._parallel_plan: HybridParallelPlan | None = None
-        self._last_ir: CircuitIR | None = None
+        self._last_ir_snapshot: CircuitIR | None = None
+        self._last_ir_factory: Callable[[], CircuitIR] | None = None
         self._compiled_topology_signature: str | None = None
         self._compile_count = 0
         self._program_cache_hits = 0
@@ -176,8 +183,11 @@ class Module(torch.nn.Module):
         self._builder_slots: tuple[tuple[int, str], ...] = ()
         self._builder_compile_count = 0
         self._builder_cache_hits = 0
-        self._jax_kernel: Any | None = None
+        self._jax_kernel: JAXQuantumKernel | None = None
         self._jax_kernel_signature: tuple[Any, ...] | None = None
+        self._jax_ir_template: CircuitIR | None = None
+        self._jax_snapshot_replay_safe = False
+        self._jax_snapshot_budget = 512
         self._correctness_debug_hook_handle: tuple[RemovableHandle, ...] | None = None
         if precision is None:
             from .training_state import PrecisionPolicy
@@ -194,6 +204,18 @@ class Module(torch.nn.Module):
         precision.apply(self)
         self.precision = precision
         self._sync_correctness_debug_hook()
+
+    @property
+    def _last_ir(self) -> CircuitIR | None:
+        if self._last_ir_factory is not None:
+            snapshot = self._last_ir_factory()
+            self._last_ir = snapshot
+        return self._last_ir_snapshot
+
+    @_last_ir.setter
+    def _last_ir(self, value: CircuitIR | None) -> None:
+        self._last_ir_snapshot = value
+        self._last_ir_factory = None
 
     @staticmethod
     def _require_policy_precision(policy: RuntimePolicy, complex_dtype: str) -> None:
@@ -251,6 +273,7 @@ class Module(torch.nn.Module):
         self.policy = policy
         self._jax_kernel = None
         self._jax_kernel_signature = None
+        self._jax_ir_template = None
         self._sync_correctness_debug_hook()
 
     def _apply(
@@ -286,6 +309,7 @@ class Module(torch.nn.Module):
             )
         self._jax_kernel = None
         self._jax_kernel_signature = None
+        self._jax_ir_template = None
         object.__setattr__(self, "_builder_program", None)
         self._builder_program_signature = None
         self._builder_template = None
@@ -320,29 +344,10 @@ class Module(torch.nn.Module):
         self._require_program_precision(program)
         return program
 
-    def _builder_tensor_inputs(
-        self, parameters: Any, inputs: torch.Tensor | None
-    ) -> tuple[tuple[torch.Tensor, ...], tuple[str, ...], bool]:
-        if isinstance(parameters, (Mapping, torch.nn.ParameterDict)):
-            names = tuple(parameters)
-            tensors = tuple(parameters[name] for name in names)
-        else:
-            names = ()
-            tensors = (parameters,)
-        if not all(isinstance(tensor, torch.Tensor) for tensor in tensors):
-            raise TypeError("compiled circuit builder parameters must be tensors")
-        return (
-            tensors + (() if inputs is None else (inputs,)),
-            names,
-            inputs is not None,
-        )
-
     def _build_from_compiled_builder(
         self, inputs: torch.Tensor | None, parameters: Any
     ) -> Circuit | CircuitIR:
-        tensor_inputs, names, has_inputs = self._builder_tensor_inputs(
-            parameters, inputs
-        )
+        tensor_inputs, names, has_inputs = _builder_tensor_inputs(parameters, inputs)
         signature = tuple(
             (tuple(tensor.shape), tensor.dtype, tensor.device)
             for tensor in tensor_inputs
@@ -373,53 +378,13 @@ class Module(torch.nn.Module):
             # gradients as well as the parameters. Refusing here instead would
             # take that documented category away from the policy that exists to
             # produce it, without catching anything the policy misses.
-            self._refuse_non_finite_bound_parameters(self._builder_bound_circuit)
+            _refuse_non_finite_bound_parameters(self._builder_bound_circuit)
         # ``Circuit.state`` is the only value-dependent cache on this reusable
         # container. Instructions and their parameter maps stay immutable.
         self._builder_bound_circuit._invalidate_execution_cache(
             instructions_changed=False
         )
         return self._builder_bound_circuit
-
-    @staticmethod
-    def _refuse_non_finite_bound_parameters(circuit: Circuit) -> None:
-        """Apply the canonical angle domain to the values this call just bound.
-
-        A compiled builder is traced rather than executed, so its gates are
-        constructed from tracers and :func:`flagquantum.core.ir._normalize_angle`
-        defers the magnitude check: a tracer has no value yet. The values arrive
-        here, and without this the program completes with ``tensor([nan])`` while
-        the same circuit built directly refuses with ``IRValidationError``.
-
-        The type and dtype rules are static, so they already ran at trace time and
-        only the magnitude was deferred. This therefore asks one question -- is
-        each bound value finite -- in the cheapest form the value allows: a
-        scalar becomes a Python float, a batched angle asks its own tensor.
-        Grouping every value into one tensor first was measured slower than
-        either, because the grouping costs more than the check.
-
-        Anything that is not a real tensor goes through the canonical rule
-        unchanged, and every refusal is raised by that rule, so the domain and
-        the error contract stay Core's rather than becoming a second finite check
-        per simulator.
-        """
-
-        from math import isfinite
-
-        for instruction in circuit._instructions:
-            for parameter, value in instruction.params.items():
-                if isinstance(value, torch.Tensor) and value.is_floating_point():
-                    detached = value.detach()
-                    finite = (
-                        isfinite(float(detached))
-                        if detached.numel() == 1
-                        else bool(detached.isfinite().all())
-                    )
-                    if finite:
-                        continue
-                from ..core.ir import _normalize_angle
-
-                _normalize_angle(value, opcode=instruction.name, parameter=parameter)
 
     def _compile_builder_program(
         self,
@@ -544,23 +509,27 @@ class Module(torch.nn.Module):
         self._builder_slots = slots
         self._builder_compile_count += 1
 
+    @staticmethod
+    def _builder_accepts_inputs(builder: CircuitBuilder) -> bool:
+        return (
+            sum(
+                parameter.kind
+                in (
+                    inspect.Parameter.POSITIONAL_ONLY,
+                    inspect.Parameter.POSITIONAL_OR_KEYWORD,
+                )
+                for parameter in inspect.signature(builder).parameters.values()
+            )
+            >= 2
+        )
+
     def _invoke_circuit_builder(
         self, parameters: Any, inputs: torch.Tensor | None
     ) -> Circuit | CircuitIR:
         builder = self.circuit_builder
         if not callable(builder):
             raise TypeError("module circuit builder must be callable")
-        signature = inspect.signature(builder)
-        positional = tuple(
-            item
-            for item in signature.parameters.values()
-            if item.kind
-            in (
-                inspect.Parameter.POSITIONAL_ONLY,
-                inspect.Parameter.POSITIONAL_OR_KEYWORD,
-            )
-        )
-        if len(positional) >= 2:
+        if self._builder_accepts_inputs(builder):
             return builder(parameters, inputs)
         return builder(parameters)
 
@@ -795,6 +764,70 @@ class Module(torch.nn.Module):
             # Do not retain the current autograd graph between training steps.
             self._builder_bindings.clear()
 
+    def _jax_signature(
+        self,
+        selected_parameters: torch.Tensor,
+        inputs: torch.Tensor | None,
+    ) -> tuple[Any, ...]:
+        return (
+            tuple(selected_parameters.shape),
+            selected_parameters.dtype,
+            selected_parameters.device,
+            None if inputs is None else tuple(inputs.shape),
+            None if inputs is None else inputs.dtype,
+            None if inputs is None else inputs.device,
+            self.precision.complex_dtype,
+            self.policy,
+        )
+
+    def _jax_value(
+        self,
+        circuit: Circuit | CircuitIR,
+        selected_parameters: torch.Tensor | Mapping[str, torch.Tensor],
+        inputs: torch.Tensor | None,
+    ) -> torch.Tensor:
+        """Reuse the same validated JAX execution for tensor and result callers."""
+        qubits = self.policy.observable_qubits or (0,)
+        if self.policy.observable == "z" and len(qubits) > 1:
+            raise CapabilityError(
+                "JAX fq.Module does not yet support vector-valued Z "
+                "observables; use the PyTorch local fast path"
+            )
+        if isinstance(selected_parameters, Mapping):
+            raise CapabilityError(
+                "JAX execution of named parameter groups requires an "
+                "explicit flattening policy"
+            )
+        builder = self.circuit_builder
+        if not callable(builder):
+            raise TypeError("JAX module circuit builder must be callable")
+        accepts_inputs = self._builder_accepts_inputs(builder)
+        kernel_signature = self._jax_signature(selected_parameters, inputs)
+        if self._jax_kernel is None or self._jax_kernel_signature != kernel_signature:
+            from .executors.jax import compile_quantum_kernel
+
+            if not isinstance(circuit, Circuit):
+                raise TypeError("JAX module builder must return a Circuit")
+            self._jax_kernel = compile_quantum_kernel(
+                builder,
+                selected_parameters.detach(),
+                backend="jax",
+                interface="torch",
+                mode=self.policy.mode,
+                n_qubits=circuit.n_qubits,
+                observable=self.policy.observable,
+                observable_qubits=qubits,
+                hamiltonian=self.hamiltonian,
+                compute_dtype=self.precision.complex_dtype,
+                accepts_inputs=accepts_inputs,
+            )
+            self._jax_kernel._declared_batch_size = circuit.bsz
+            self._jax_kernel_signature = kernel_signature
+        value = self._jax_kernel(selected_parameters, inputs)
+        if value.ndim == 0:
+            value = value.reshape(1)
+        return value
+
     def _execute_impl(
         self,
         inputs: torch.Tensor | None = None,
@@ -818,68 +851,8 @@ class Module(torch.nn.Module):
         runtime: Mapping[str, Any]
         if requested_backend == "jax":
             try:
-                if self.policy.observable == "z" and len(qubits) > 1:
-                    raise CapabilityError(
-                        "JAX fq.Module does not yet support vector-valued Z "
-                        "observables; use the PyTorch local fast path"
-                    )
-                if isinstance(selected_parameters, Mapping):
-                    raise CapabilityError(
-                        "JAX execution of named parameter groups requires an "
-                        "explicit flattening policy"
-                    )
-                builder = self.circuit_builder
-                if not callable(builder):
-                    raise TypeError("JAX module circuit builder must be callable")
-                accepts_inputs = (
-                    len(
-                        tuple(
-                            item
-                            for item in inspect.signature(builder).parameters.values()
-                            if item.kind
-                            in (
-                                inspect.Parameter.POSITIONAL_ONLY,
-                                inspect.Parameter.POSITIONAL_OR_KEYWORD,
-                            )
-                        )
-                    )
-                    >= 2
-                )
-                kernel_signature = (
-                    tuple(selected_parameters.shape),
-                    selected_parameters.dtype,
-                    selected_parameters.device,
-                    None if inputs is None else tuple(inputs.shape),
-                    None if inputs is None else inputs.dtype,
-                    None if inputs is None else inputs.device,
-                    self.precision.complex_dtype,
-                    self.policy,
-                )
-                if (
-                    self._jax_kernel is None
-                    or self._jax_kernel_signature != kernel_signature
-                ):
-                    from .executors.jax import compile_quantum_kernel
-
-                    if not isinstance(circuit, Circuit):
-                        raise TypeError("JAX module builder must return a Circuit")
-                    self._jax_kernel = compile_quantum_kernel(
-                        builder,
-                        selected_parameters.detach(),
-                        backend="jax",
-                        interface="torch",
-                        mode=self.policy.mode,
-                        n_qubits=circuit.n_qubits,
-                        observable=self.policy.observable,
-                        observable_qubits=qubits,
-                        hamiltonian=self.hamiltonian,
-                        compute_dtype=self.precision.complex_dtype,
-                        accepts_inputs=accepts_inputs,
-                    )
-                    self._jax_kernel_signature = kernel_signature
-                value = self._jax_kernel(selected_parameters, inputs)
-                if value.ndim == 0:
-                    value = value.reshape(1)
+                value = self._jax_value(circuit, selected_parameters, inputs)
+                assert self._jax_kernel is not None
                 runtime = {**self._jax_kernel.summary(), **program_runtime}
                 return ExecutionResult(
                     value=value,
@@ -1075,12 +1048,80 @@ class Module(torch.nn.Module):
                 "tensor_network",
             }:
                 return self._forward_local_tensor(inputs, parameters)
+            if (
+                self.policy.backend == "jax"
+                and not self.policy.allow_backend_fallback
+                and not self.policy.correctness_debug
+            ):
+                return self._forward_jax_tensor(inputs, parameters)
             result = self.execute(inputs, parameters)
             return result.require_value()
         except (FlagQuantumError, TypeError):
             raise
         except Exception as error:
             raise ExecutionError("module forward execution failed") from error
+
+    def _forward_jax_tensor(
+        self,
+        inputs: torch.Tensor | None,
+        parameters: torch.Tensor | Mapping[str, torch.Tensor] | None,
+    ) -> torch.Tensor:
+        """Preserve training state without assembling an unused ExecutionResult."""
+        selected = self._owned_parameters() if parameters is None else parameters
+        try:
+            if (
+                isinstance(selected, torch.Tensor)
+                and self._jax_kernel is not None
+                and self._jax_kernel_signature == self._jax_signature(selected, inputs)
+                and self._jax_ir_template is not None
+                and self._jax_snapshot_replay_safe
+                and self._builder_program is not None
+                # Bound diagnostic copies by the consumed parameter slots.
+                and selected.numel() * selected.element_size()
+                + (0 if inputs is None else inputs.numel() * inputs.element_size())
+                <= self._jax_snapshot_budget
+            ):
+                # Rebinding validates the current angles even when IR snapshots
+                # are deferred and the JAX kernel can reuse its compiled trace.
+                self._build(inputs, selected)
+                tensors, _, _ = _builder_tensor_inputs(selected, inputs)
+                self._last_ir_snapshot = None
+                self._last_ir_factory = deferred_ir_snapshot(
+                    self._builder_program,
+                    self._jax_ir_template,
+                    tensors,
+                    len(self._builder_slots),
+                )
+                self._program_cache_hits += 1
+                try:
+                    value = self._jax_kernel(selected, inputs)
+                    return value.reshape(1) if value.ndim == 0 else value
+                except FlagQuantumError:
+                    raise
+                except Exception as error:
+                    raise ExecutionError("JAX module execution failed") from error
+            try:
+                circuit = self._build(inputs, selected)
+                ir = ensure_circuit_ir(circuit)
+                self._last_ir = detached_ir_snapshot(ir)
+                self._observe_topology(ir)
+                self._jax_ir_template = ir
+                self._jax_snapshot_replay_safe = can_defer_ir_snapshot(
+                    self._builder_program, ir
+                )
+                self._jax_snapshot_budget = ir_snapshot_input_budget(ir)
+            except (FlagQuantumError, TypeError):
+                raise
+            except Exception as error:
+                raise ExecutionError("module execution failed") from error
+            try:
+                return self._jax_value(circuit, selected, inputs)
+            except FlagQuantumError:
+                raise
+            except Exception as error:
+                raise ExecutionError("JAX module execution failed") from error
+        finally:
+            self._builder_bindings.clear()
 
     def _forward_local_tensor(
         self,

@@ -1,0 +1,7 @@
+{"task": "classifier", "engine": "classical", "seed": 11, "step": 1, "score": 0.53125}
+{"task": "classifier", "engine": "classical", "seed": 11, "step": 10, "score": 0.75}
+{"task": "classifier", "engine": "classical", "seed": 11, "step": 20, "score": 0.75}
+{"task": "classifier", "engine": "classical", "seed": 11, "step": 30, "score": 0.8125}
+{"task": "classifier", "engine": "classical", "seed": 11, "step": 40, "score": 0.8125}
+{"task": "classifier", "engine": "classical", "seed": 11, "step": 50, "score": 0.84375}
+{"task": "classifier", "engine": "classical", "seed": 11, "step": 60, "score": 0.875}

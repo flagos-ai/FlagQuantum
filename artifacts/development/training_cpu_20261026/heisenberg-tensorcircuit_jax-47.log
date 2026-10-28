@@ -1,0 +1,8 @@
+optax not installed, `optimizer` from jax backend cannot work
+{"task": "heisenberg", "engine": "tensorcircuit_jax", "seed": 47, "step": 1, "score": 0.07597466846721869}
+{"task": "heisenberg", "engine": "tensorcircuit_jax", "seed": 47, "step": 10, "score": 0.008647018952168718}
+{"task": "heisenberg", "engine": "tensorcircuit_jax", "seed": 47, "step": 20, "score": 0.006025247057495856}
+{"task": "heisenberg", "engine": "tensorcircuit_jax", "seed": 47, "step": 30, "score": 0.0010271819643483816}
+{"task": "heisenberg", "engine": "tensorcircuit_jax", "seed": 47, "step": 40, "score": 0.0006436380642070844}
+{"task": "heisenberg", "engine": "tensorcircuit_jax", "seed": 47, "step": 50, "score": 0.00032233614514664394}
+{"task": "heisenberg", "engine": "tensorcircuit_jax", "seed": 47, "step": 60, "score": 0.0001330346881557905}

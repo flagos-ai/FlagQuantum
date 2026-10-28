@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import io
 from dataclasses import replace
+from pathlib import Path
 
 import pytest
 import torch
@@ -708,3 +709,196 @@ def test_jax_module_supports_input_values_and_gradients() -> None:
         parameter_grad, expected_parameter_grad, atol=1e-5, rtol=1e-5
     )
     torch.testing.assert_close(input_grad, expected_input_grad, atol=1e-5, rtol=1e-5)
+
+
+@pytest.mark.parametrize("debug", [False, True])
+def test_jax_forward_matches_execute_through_optimizer_updates(debug: bool) -> None:
+    pytest.importorskip("jax")
+    policy = fq.RuntimePolicy(
+        execution_options=fq.ExecutionOptions(
+            backend="jax",
+            mode="statevector",
+            allow_backend_fallback=False,
+            precision="complex128",
+        ),
+        correctness_debug=debug,
+    )
+    fast = fq.Module(
+        build_circuit,
+        2,
+        init=torch.tensor([0.2, -0.3]),
+        dtype=torch.float64,
+        policy=policy,
+    )
+    detailed = fq.Module(
+        build_circuit,
+        2,
+        init=torch.tensor([0.2, -0.3]),
+        dtype=torch.float64,
+        policy=policy,
+    )
+    optimizers = [
+        torch.optim.Adam(module.parameters(), lr=0.03) for module in (fast, detailed)
+    ]
+    hashes = []
+    for step in range(3):
+        inputs = torch.tensor(
+            0.17 + 0.01 * step, dtype=torch.float64, requires_grad=True
+        )
+        reference_inputs = inputs.detach().clone().requires_grad_()
+        for optimizer in optimizers:
+            optimizer.zero_grad(set_to_none=True)
+        value = fast(inputs)
+        execution = detailed.execute(reference_inputs)
+        torch.testing.assert_close(
+            value, execution.require_value(), atol=1e-12, rtol=1e-12
+        )
+        value.square().sum().backward()
+        execution.require_value().square().sum().backward()
+        torch.testing.assert_close(
+            fast.parameters_tensor.grad,
+            detailed.parameters_tensor.grad,
+            atol=1e-12,
+            rtol=1e-12,
+        )
+        torch.testing.assert_close(
+            inputs.grad, reference_inputs.grad, atol=1e-12, rtol=1e-12
+        )
+        assert fast._last_ir is not None
+        assert fast._last_ir.content_hash == execution.provenance["ir_hash"]
+        hashes.append(fast._last_ir.content_hash)
+        for optimizer in optimizers:
+            optimizer.step()
+        torch.testing.assert_close(
+            fast.parameters_tensor, detailed.parameters_tensor, atol=1e-12, rtol=1e-12
+        )
+    assert len(set(hashes)) == 3
+
+
+def test_jax_checkpoint_keeps_consumed_inputs_after_inplace_updates(
+    tmp_path: Path,
+) -> None:
+    pytest.importorskip("jax")
+    policy = fq.RuntimePolicy(execution_options=fq.ExecutionOptions(backend="jax"))
+    module = fq.Module(
+        build_circuit,
+        2,
+        init=torch.tensor([0.2, -0.3]),
+        dtype=torch.float64,
+        policy=policy,
+    )
+    reference = fq.Module(
+        build_circuit,
+        2,
+        init=torch.tensor([0.2, -0.3]),
+        dtype=torch.float64,
+        policy=policy,
+    )
+    inputs = torch.tensor(0.17, dtype=torch.float64, requires_grad=True)
+    module(inputs).sum().backward()
+    module(inputs).sum().backward()
+    expected_hash = reference.execute(inputs).provenance["ir_hash"]
+    with torch.no_grad():
+        module.parameters_tensor.add_(0.3)
+        inputs.add_(0.4)
+    path = module.save_checkpoint(tmp_path / "module.pt", optimizer=None, seed=11)
+    saved = torch.load(path, weights_only=True)
+    assert saved["ir_hash"] == expected_hash
+    assert module._last_ir is not None
+    assert module._last_ir.content_hash == expected_hash
+
+
+def test_jax_deferred_snapshot_survives_precision_and_policy_changes() -> None:
+    pytest.importorskip("jax")
+    policy = fq.RuntimePolicy(execution_options=fq.ExecutionOptions(backend="jax"))
+    module = fq.Module(
+        build_circuit,
+        2,
+        init=torch.tensor([0.2, -0.3]),
+        dtype=torch.float64,
+        policy=policy,
+    )
+    reference = fq.Module(
+        build_circuit,
+        2,
+        init=torch.tensor([0.2, -0.3]),
+        dtype=torch.float64,
+        policy=policy,
+    )
+    inputs = torch.tensor(0.17, dtype=torch.float64)
+    module(inputs)
+    module(inputs)
+    expected_hash = reference.execute(inputs).provenance["ir_hash"]
+    with torch.no_grad():
+        module.parameters_tensor.add_(0.2)
+        inputs.add_(0.1)
+    module.to(dtype=torch.float32)
+    module.set_runtime_policy(fq.RuntimePolicy())
+    assert module._last_ir is not None
+    assert module._last_ir.content_hash == expected_hash
+    assert module._last_ir.dtype == "complex128"
+    assert torch.isfinite(module(inputs.float())).all()
+
+
+@pytest.mark.parametrize("inference", [False, True])
+def test_jax_validation_snapshot_retains_its_execution_context(inference: bool) -> None:
+    pytest.importorskip("jax")
+    policy = fq.RuntimePolicy(execution_options=fq.ExecutionOptions(backend="jax"))
+    module = fq.Module(
+        build_circuit,
+        2,
+        init=torch.tensor([0.2, -0.3]),
+        dtype=torch.float64,
+        policy=policy,
+    )
+    reference = fq.Module(
+        build_circuit,
+        2,
+        init=torch.tensor([0.2, -0.3]),
+        dtype=torch.float64,
+        policy=policy,
+    )
+    inputs = torch.tensor(0.17, dtype=torch.float64)
+    module(inputs)
+    reference(inputs)
+    with torch.inference_mode() if inference else torch.no_grad():
+        value = module(inputs)
+        execution = reference.execute(inputs)
+    torch.testing.assert_close(value, execution.require_value())
+    assert not value.requires_grad
+    assert module._last_ir is not None
+    assert module._last_ir.content_hash == execution.provenance["ir_hash"]
+
+
+def test_jax_snapshot_does_not_copy_a_large_unused_feature_buffer(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    pytest.importorskip("jax")
+
+    def build(parameters: torch.Tensor, features: torch.Tensor) -> fq.Circuit:
+        return fq.Circuit(1).ry(0, theta=parameters[0] + features[0])
+
+    module = fq.Module(
+        build,
+        1,
+        policy=fq.RuntimePolicy(execution_options=fq.ExecutionOptions(backend="jax")),
+    )
+    features = torch.zeros(4096)
+    module(features)
+    original_clone = torch.Tensor.clone
+
+    def clone(
+        value: torch.Tensor,
+        *,
+        memory_format: torch.memory_format = torch.preserve_format,
+    ) -> torch.Tensor:
+        assert (
+            value.numel() < features.numel()
+        ), "diagnostics copied the whole feature buffer"
+        return original_clone(value, memory_format=memory_format)
+
+    monkeypatch.setattr(torch.Tensor, "clone", clone)
+    value = module(features)
+    value.sum().backward()
+    assert module.parameters_tensor.grad is not None
+    assert module._last_ir is not None

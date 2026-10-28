@@ -1,0 +1,7 @@
+{"task": "heisenberg", "engine": "pennylane_backprop", "seed": 47, "step": 1, "score": 0.07597466846721883}
+{"task": "heisenberg", "engine": "pennylane_backprop", "seed": 47, "step": 10, "score": 0.008647018952170092}
+{"task": "heisenberg", "engine": "pennylane_backprop", "seed": 47, "step": 20, "score": 0.00602524705749668}
+{"task": "heisenberg", "engine": "pennylane_backprop", "seed": 47, "step": 30, "score": 0.0010271819643503054}
+{"task": "heisenberg", "engine": "pennylane_backprop", "seed": 47, "step": 40, "score": 0.0006436380642072219}
+{"task": "heisenberg", "engine": "pennylane_backprop", "seed": 47, "step": 50, "score": 0.00032233614514733095}
+{"task": "heisenberg", "engine": "pennylane_backprop", "seed": 47, "step": 60, "score": 0.0001330346881563401}

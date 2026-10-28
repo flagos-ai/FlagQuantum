@@ -1,0 +1,635 @@
+{
+  "redaction": "tools.sanitize_public_evidence.sanitize_text; infrastructure identifiers only; local originals retained unchanged",
+  "files": [
+    {
+      "file": "baseline/heisenberg-flagquantum_jax_kernel-47.log",
+      "original_sha256": "b333c56a0f0fb11463d0d368aad9ddcb53e9b3fed99209ec4205208a140911b3",
+      "published_sha256": "b333c56a0f0fb11463d0d368aad9ddcb53e9b3fed99209ec4205208a140911b3"
+    },
+    {
+      "file": "baseline/summary.json",
+      "original_sha256": "9ed4badcac240fd0b562c0e2abac4f43ee972fd553557c7acbdd75baa9a97ce2",
+      "published_sha256": "5e1f946f42a75316ba92746d83735616a8775a683e9e358a0976d1d98220f737"
+    },
+    {
+      "file": "baseline/heisenberg-flagquantum_torch_module-47.log",
+      "original_sha256": "53cac67115fdaa4b8e0bef983d128e42bb72ce302a0f0630b0767a02c2adfae9",
+      "published_sha256": "53cac67115fdaa4b8e0bef983d128e42bb72ce302a0f0630b0767a02c2adfae9"
+    },
+    {
+      "file": "baseline/heisenberg-tensorcircuit_jax-11.log",
+      "original_sha256": "7d0f988221429a3e564718f298470762abd59bed1b08a8690a9911b3d4109595",
+      "published_sha256": "7d0f988221429a3e564718f298470762abd59bed1b08a8690a9911b3d4109595"
+    },
+    {
+      "file": "baseline/classifier-flagquantum_jax_module-47.log",
+      "original_sha256": "d3d8bdca8cbf24ccd91340f9ef7c2f494ba375d37d53cdfaac0a3350e51a124f",
+      "published_sha256": "d3d8bdca8cbf24ccd91340f9ef7c2f494ba375d37d53cdfaac0a3350e51a124f"
+    },
+    {
+      "file": "baseline/heisenberg-tensorcircuit_jax-29.log",
+      "original_sha256": "fbc15d0efd712071bc23d7ebf1dc3cf62a27b37fd100d3717627c80100c912e7",
+      "published_sha256": "fbc15d0efd712071bc23d7ebf1dc3cf62a27b37fd100d3717627c80100c912e7"
+    },
+    {
+      "file": "baseline/classifier-flagquantum-11.log",
+      "original_sha256": "c5f252eb9a98412d0b6fde0448b2c4044e36f365d328fd4475e0cdbb1c0418d6",
+      "published_sha256": "c5f252eb9a98412d0b6fde0448b2c4044e36f365d328fd4475e0cdbb1c0418d6"
+    },
+    {
+      "file": "baseline/REPORT.md",
+      "original_sha256": "89b6d272881313b83503321e09715272ddf6f528ef4bb96a7affccca706b2dc2",
+      "published_sha256": "89b6d272881313b83503321e09715272ddf6f528ef4bb96a7affccca706b2dc2"
+    },
+    {
+      "file": "baseline/classifier-flagquantum_jax_kernel-29.log",
+      "original_sha256": "0322a4c8d501789f0161d9793f41b01b9856604abbcdac932b5c6e885385791b",
+      "published_sha256": "0322a4c8d501789f0161d9793f41b01b9856604abbcdac932b5c6e885385791b"
+    },
+    {
+      "file": "baseline/heisenberg-flagquantum-47.log",
+      "original_sha256": "8d1efe8c8d888b2a6a762dcf24d801de2dc43331ad0c07a85f8c0955b1b61f4d",
+      "published_sha256": "8d1efe8c8d888b2a6a762dcf24d801de2dc43331ad0c07a85f8c0955b1b61f4d"
+    },
+    {
+      "file": "baseline/heisenberg-flagquantum_jax_module-29.log",
+      "original_sha256": "66ed88d22678d7fd33f1834b69bc6b63a3c3d63603aec6e9045d33c092daa9fe",
+      "published_sha256": "66ed88d22678d7fd33f1834b69bc6b63a3c3d63603aec6e9045d33c092daa9fe"
+    },
+    {
+      "file": "baseline/classifier-flagquantum_torch_module-11.log",
+      "original_sha256": "ece667f45d7a4ac38a2e76136bc71a348a5119af383e8bde013e8054395bb70e",
+      "published_sha256": "ece667f45d7a4ac38a2e76136bc71a348a5119af383e8bde013e8054395bb70e"
+    },
+    {
+      "file": "baseline/classifier-flagquantum_torch_module-29.log",
+      "original_sha256": "88220b04ab1aa6e78bc1ddec2371db24beaa70a6527f3f0ad1bfa7d0df400df8",
+      "published_sha256": "88220b04ab1aa6e78bc1ddec2371db24beaa70a6527f3f0ad1bfa7d0df400df8"
+    },
+    {
+      "file": "baseline/classifier-tensorcircuit_jax-47.log",
+      "original_sha256": "8c8f6bd61de5243ee00087c5f47f91889e749d03a89c9b6fd2ccd9fa77c685ec",
+      "published_sha256": "8c8f6bd61de5243ee00087c5f47f91889e749d03a89c9b6fd2ccd9fa77c685ec"
+    },
+    {
+      "file": "baseline/heisenberg-flagquantum_jax_module-11.log",
+      "original_sha256": "7eca68580794d8febe3544dd5cc873688665f4ab6334b08c82570d140ab5a5c0",
+      "published_sha256": "7eca68580794d8febe3544dd5cc873688665f4ab6334b08c82570d140ab5a5c0"
+    },
+    {
+      "file": "baseline/classifier-flagquantum_jax_kernel-11.log",
+      "original_sha256": "75ac82971b001916c57cf50e3d234eeef6c22dec6fc92b556e8216e7ab2a61e8",
+      "published_sha256": "75ac82971b001916c57cf50e3d234eeef6c22dec6fc92b556e8216e7ab2a61e8"
+    },
+    {
+      "file": "baseline/classifier-flagquantum-29.log",
+      "original_sha256": "984e42567176aacf7939b2bdafa5859de3cc49facca52cb8341c7938f9386c8a",
+      "published_sha256": "984e42567176aacf7939b2bdafa5859de3cc49facca52cb8341c7938f9386c8a"
+    },
+    {
+      "file": "baseline/heisenberg-flagquantum_jax_kernel-11.log",
+      "original_sha256": "5e39cd924dbea0eee73ff3efc43d7fdda026064bc9e730292e0a724a75f294e0",
+      "published_sha256": "5e39cd924dbea0eee73ff3efc43d7fdda026064bc9e730292e0a724a75f294e0"
+    },
+    {
+      "file": "baseline/heisenberg-flagquantum_torch_module-11.log",
+      "original_sha256": "c46350f627d4a961e120e8d4c95b124a3fba33749e406c43996ca63e015e2fa0",
+      "published_sha256": "c46350f627d4a961e120e8d4c95b124a3fba33749e406c43996ca63e015e2fa0"
+    },
+    {
+      "file": "baseline/heisenberg-tensorcircuit_jax-47.log",
+      "original_sha256": "28e69b3f33b7d446f8a580c8ef3ad82054e15a9711c0cc6addbb41644aa39558",
+      "published_sha256": "28e69b3f33b7d446f8a580c8ef3ad82054e15a9711c0cc6addbb41644aa39558"
+    },
+    {
+      "file": "baseline/classifier-flagquantum_jax_module-11.log",
+      "original_sha256": "3b84d35e054d1abb2f85ae4ca8e328180a331ff6886f1324f4a149917121d94d",
+      "published_sha256": "3b84d35e054d1abb2f85ae4ca8e328180a331ff6886f1324f4a149917121d94d"
+    },
+    {
+      "file": "baseline/classifier-flagquantum_jax_module-29.log",
+      "original_sha256": "28f9d6ba92247232de17c922254a29613bcc7f61558ccd74703cbf71af3ed329",
+      "published_sha256": "28f9d6ba92247232de17c922254a29613bcc7f61558ccd74703cbf71af3ed329"
+    },
+    {
+      "file": "baseline/heisenberg-flagquantum_torch_module-29.log",
+      "original_sha256": "0d27a3e641078f7477230188f3a43fa1d88d864dfae173fe571b5c9322f92989",
+      "published_sha256": "0d27a3e641078f7477230188f3a43fa1d88d864dfae173fe571b5c9322f92989"
+    },
+    {
+      "file": "baseline/heisenberg-flagquantum_jax_kernel-29.log",
+      "original_sha256": "9e657f98c913d65c1fa30f8914ce14ce8690d4721bb174894c18b736f37e17f8",
+      "published_sha256": "9e657f98c913d65c1fa30f8914ce14ce8690d4721bb174894c18b736f37e17f8"
+    },
+    {
+      "file": "baseline/classifier-flagquantum-47.log",
+      "original_sha256": "7cc11ddaea1caa1741e8645e306f988283d3af66bbd87ca79fbc2f0584c8f3f5",
+      "published_sha256": "7cc11ddaea1caa1741e8645e306f988283d3af66bbd87ca79fbc2f0584c8f3f5"
+    },
+    {
+      "file": "baseline/heisenberg-flagquantum-11.log",
+      "original_sha256": "cc561b884921be213ee58a3a46e0f1e447951e339ab33a13cc54c84c55007ee1",
+      "published_sha256": "cc561b884921be213ee58a3a46e0f1e447951e339ab33a13cc54c84c55007ee1"
+    },
+    {
+      "file": "baseline/classifier-tensorcircuit_jax-29.log",
+      "original_sha256": "66d80b60a9c1c6f8680d5fe34752ee0c35b5a0ec5849b6640bb4e40554884b81",
+      "published_sha256": "66d80b60a9c1c6f8680d5fe34752ee0c35b5a0ec5849b6640bb4e40554884b81"
+    },
+    {
+      "file": "baseline/classifier-flagquantum_torch_module-47.log",
+      "original_sha256": "c4f197559b99db593ad98c5edd2a1b837ca8ae21c70b00346b9609d24268ff1f",
+      "published_sha256": "c4f197559b99db593ad98c5edd2a1b837ca8ae21c70b00346b9609d24268ff1f"
+    },
+    {
+      "file": "baseline/classifier-tensorcircuit_jax-11.log",
+      "original_sha256": "87356af1b29d83223fc75b11fa62ec2b3cc59d9f47fdbd985782019cf87b3f78",
+      "published_sha256": "87356af1b29d83223fc75b11fa62ec2b3cc59d9f47fdbd985782019cf87b3f78"
+    },
+    {
+      "file": "baseline/heisenberg-flagquantum_jax_module-47.log",
+      "original_sha256": "3461dd6d8604a3ab1a4b7175bc10b01397f99d8f9fa8b24d5213910170338a7b",
+      "published_sha256": "3461dd6d8604a3ab1a4b7175bc10b01397f99d8f9fa8b24d5213910170338a7b"
+    },
+    {
+      "file": "baseline/heisenberg-flagquantum-29.log",
+      "original_sha256": "956fe544918d107bb165aa33c402e70e55f0d5ffeafcde781e5028d56827b819",
+      "published_sha256": "956fe544918d107bb165aa33c402e70e55f0d5ffeafcde781e5028d56827b819"
+    },
+    {
+      "file": "baseline/freeze.json",
+      "original_sha256": "9cbbc82cf33fd554595463c2e815f8e1f8d5c647a11a22e6110f8926dae59341",
+      "published_sha256": "5d0a908352cea30994ceb491ec5e9e414ad010268c069f7f5f769a001656ccef"
+    },
+    {
+      "file": "baseline/classifier-flagquantum_jax_kernel-47.log",
+      "original_sha256": "fd7f937eab4e8e4a116e818ffbca640d7095f5920551ecbe7c781661830fc867",
+      "published_sha256": "fd7f937eab4e8e4a116e818ffbca640d7095f5920551ecbe7c781661830fc867"
+    },
+    {
+      "file": "baseline/classifier-flagquantum-47/result.json",
+      "original_sha256": "1ba4d03974943d7c4635c859346f121b95f7c6ebd91560e56fd75a88a3500564",
+      "published_sha256": "03e351dafdd75ab5ba2cf362a894d226851247e0052761cdc47c18d549090476"
+    },
+    {
+      "file": "baseline/heisenberg-flagquantum_torch_module-47/result.json",
+      "original_sha256": "c0d0bd1e522fb9d6df4264baf0a7e45d7e126707ef37c6d67ab5803efc874419",
+      "published_sha256": "7cc45aa57f9935052135d0508c9c74ca987018c4aa3509bdbcc419adb12e4cd4"
+    },
+    {
+      "file": "baseline/heisenberg-tensorcircuit_jax-47/result.json",
+      "original_sha256": "33559e19946903abbbf2e43467c459eea31eeff1a210db599720e4b5f68458a3",
+      "published_sha256": "55a324eb2a2155514667d952bc636292225d3b29ddbe293eaea3e90b8f4232e7"
+    },
+    {
+      "file": "baseline/heisenberg-flagquantum_jax_module-47/result.json",
+      "original_sha256": "34c1fee4c6f8d541e21f1a18d12ebe2398324b0ec2ff87b3a49495db1a37a775",
+      "published_sha256": "b5c3251d6c2b10a71a31f6be5f1b5ae7464b6be429d50eab6861b6e3f824de67"
+    },
+    {
+      "file": "baseline/classifier-flagquantum_jax_kernel-29/result.json",
+      "original_sha256": "76e03563b41284c793d6bc6af4e4dc9cb4122693fed293102a3a4e6b742ad2a1",
+      "published_sha256": "6142b5f524617116ecb0b63d846d4f24efd0859bcbaceeeaed3349e20bc848c2"
+    },
+    {
+      "file": "baseline/classifier-flagquantum_jax_kernel-11/result.json",
+      "original_sha256": "d3f75caf728802b3ca4125aec4090fb843b6bd31f91aed06d3b4ce0b62112b0d",
+      "published_sha256": "99298491175e58eed27d363d47db3f7fac3a9582515d48d9e652de68d0449386"
+    },
+    {
+      "file": "baseline/classifier-flagquantum_jax_module-47/result.json",
+      "original_sha256": "5b00bd48dc60fc4731834c04bff17e38a73d54497ecf4b6f59fa33cc92d060d0",
+      "published_sha256": "0985ddf248be88ac33a13432f9faf0ae06de529f28834bc37856931b7bd48fb4"
+    },
+    {
+      "file": "baseline/classifier-flagquantum_torch_module-47/result.json",
+      "original_sha256": "c0beb22300df2dc3e93246065cbcc9f7f243d01e6c9e316a816e6f6fefa13e4c",
+      "published_sha256": "dd5ba65ea9e9ee355e3827d889f25e72663ce7574fd4225678ad680283f5337d"
+    },
+    {
+      "file": "baseline/heisenberg-flagquantum_jax_kernel-11/result.json",
+      "original_sha256": "b991e77174df40542d1cb003eb9b9cdeaec17a330a688a315831b4e38ee787d2",
+      "published_sha256": "f28882d1652e148a29ce81d6e13251e0375ae76ff5ea43d372bcec0f75ce4d99"
+    },
+    {
+      "file": "baseline/heisenberg-flagquantum_jax_kernel-29/result.json",
+      "original_sha256": "036b54606053111bc566f6c1ac958ff733726f818855193e22196d1a6e432248",
+      "published_sha256": "f2849bb6a4748c611e2004392a71bc4f1dbee320ba8d2f103ae703411c113a31"
+    },
+    {
+      "file": "baseline/heisenberg-flagquantum-47/result.json",
+      "original_sha256": "f2d53c2c36198f98b8336a60af6e29d37d4360411020fa49b9a7f6d91ed4dbdc",
+      "published_sha256": "457331f04971fdfe476cfc96fa4af745e9e71951f1d9510ff199ffd3ce59955f"
+    },
+    {
+      "file": "baseline/classifier-tensorcircuit_jax-47/result.json",
+      "original_sha256": "14e5630d41b265804ae0db6ff4a82e801c0b47af1dadc3a7064974b942d0e50e",
+      "published_sha256": "582cb337aac4708fd5b9a4e1dc2e921dc58191c8a03b8eff2222f20553688705"
+    },
+    {
+      "file": "baseline/classifier-flagquantum-11/result.json",
+      "original_sha256": "796f1289bab50a53f82fa9d48ecb03bc305379e47e90baca4aa73ca8734b3fc1",
+      "published_sha256": "1dd8fd1fc3ddf6550d60b142d98b5c4789de3278a446f33e411540290c8a0574"
+    },
+    {
+      "file": "baseline/classifier-flagquantum-29/result.json",
+      "original_sha256": "d86a68198d517fc60686a1138d7b9b66217a589f7a01d5bff6674640836020e4",
+      "published_sha256": "18781fb2a94d88bfb0ef8de5c076fff6b68d7ae39fcc6eae975836906f1af388"
+    },
+    {
+      "file": "baseline/heisenberg-flagquantum_torch_module-29/result.json",
+      "original_sha256": "76b83b2494ae55b60725d3173badbe35db998f547f4265ee40eff751b9d64130",
+      "published_sha256": "0fe36b693299e6d1d7e104189dc8fafa9d31145b0262c6cc702ecdfc110e8a3f"
+    },
+    {
+      "file": "baseline/heisenberg-flagquantum_torch_module-11/result.json",
+      "original_sha256": "048c7df4485e5f7bbbf9d4cbcd3d986b9deed7d047c6458604526d469c524d80",
+      "published_sha256": "557628ae97fe8cbef9e75743d8a88734ef7b2f4e87b9589f0792b66aee2a80ea"
+    },
+    {
+      "file": "baseline/classifier-flagquantum_jax_kernel-47/result.json",
+      "original_sha256": "61b09ca267e1cd91c07c3eee00a4d1681971f086b58e4b2edb4d0a029d102ac8",
+      "published_sha256": "46d6ce97591abfc0ce9413bd127d3d18b8369b5771a8d4c7469184584a40f45e"
+    },
+    {
+      "file": "baseline/heisenberg-tensorcircuit_jax-11/result.json",
+      "original_sha256": "c9b0b21b0df98db1e9e79391fbdda8924eea6e5ae15ceb8f4961b84d19b55513",
+      "published_sha256": "5ab254932a1b384bbea2f9f87bff4d9d6cf8e0404c4dd0d305b84961d01f8c64"
+    },
+    {
+      "file": "baseline/heisenberg-tensorcircuit_jax-29/result.json",
+      "original_sha256": "028085d431fb5a3accceee935b58516ad3b72a8611f568258d207d855b6d5042",
+      "published_sha256": "031e24e9affa51b471b1a1b57703076d9637099c51b6535b0b426ec0d110a284"
+    },
+    {
+      "file": "baseline/heisenberg-flagquantum_jax_module-11/result.json",
+      "original_sha256": "8d03f0b758feff69c18173249e854d1e93c9da1f9ec0eca051ed88c230a555fb",
+      "published_sha256": "5d2dcb1724cab96c6bb1c268d42d45d614d29f0a92ef55ac75141953902e24cf"
+    },
+    {
+      "file": "baseline/heisenberg-flagquantum_jax_module-29/result.json",
+      "original_sha256": "b9dbfb2f1ee4c8dbab58d1807726957c80151ab407432a0aeb4240667bfc960a",
+      "published_sha256": "6a6025bf31cc810d6807653e629767e70da964b608fd75459ccc64ba0cf1ff60"
+    },
+    {
+      "file": "baseline/classifier-flagquantum_torch_module-29/result.json",
+      "original_sha256": "d97ab99e9db4b4a1fdf4254a4779ace68d4cb019012e9e1424f3555ae8881985",
+      "published_sha256": "b46430cb70dab2a173a89d4e3b51fa1c2389f1ab6edf2d0912576141c84f7807"
+    },
+    {
+      "file": "baseline/classifier-flagquantum_torch_module-11/result.json",
+      "original_sha256": "d21ce78ab228f8512f3ca7a259739c02d6e45168c5efe2e791afabf4ca46815c",
+      "published_sha256": "99866bc519540b4c657ab9a0b9bc9495a5eb9bda066b4f48c1d7542a3fb2775d"
+    },
+    {
+      "file": "baseline/heisenberg-flagquantum_jax_kernel-47/result.json",
+      "original_sha256": "01e68b77df09488f18bd48fcc6599e92770753dbebdeb6a4d75de7a967cf7989",
+      "published_sha256": "c4b23d0ee7312ae79802e3fd6873bf4358185549dc9fd22a771f08daf93fc13d"
+    },
+    {
+      "file": "baseline/classifier-flagquantum_jax_module-29/result.json",
+      "original_sha256": "6f1c3a022db2f8fa641c60eb9cbbf84d8d7ec4fb16fca61ac957a1ad6025372e",
+      "published_sha256": "99c693ac56b1b657fa3d2c4e27b229148562d2975c21b48f58a8cb6f32500305"
+    },
+    {
+      "file": "baseline/classifier-flagquantum_jax_module-11/result.json",
+      "original_sha256": "b16af585284bba9f89daf00223580d6ded413b77063deded70aa43eae99ebdf6",
+      "published_sha256": "3a81cced16c20a607489bb50cbeba71dace1f97c5d1d1d69e31136d911c6aa23"
+    },
+    {
+      "file": "baseline/classifier-tensorcircuit_jax-11/result.json",
+      "original_sha256": "52195bf4378b2f2c43e75f6f52c7d0478b1a677d32ceb4b03464dd0347b33fe5",
+      "published_sha256": "8217b42f88a63075468023958ebf33dc013bc3953dc0c0e0dbdf2d693780268a"
+    },
+    {
+      "file": "baseline/heisenberg-flagquantum-11/result.json",
+      "original_sha256": "76f0c787d5d436292291791190c33b20601c58cb82db21b1a452aa79a730720f",
+      "published_sha256": "0143bb0dc2eac3dd4f88facaa059d88b4bccc34044440d12db668c19f21fe686"
+    },
+    {
+      "file": "baseline/heisenberg-flagquantum-29/result.json",
+      "original_sha256": "021df86ed09f9a890af0d85773fc8ab71c6a5d2382cc8c90d726356a67cccb78",
+      "published_sha256": "4fde7bf6df686c1c7fd61d54ccc8e5cf570f4e2046911f6a18710ed53f1995fb"
+    },
+    {
+      "file": "baseline/classifier-tensorcircuit_jax-29/result.json",
+      "original_sha256": "889dec924973ed9dfce2fc9e0b3bc05a731102cc2b0f7bde6576c5d43daf016f",
+      "published_sha256": "2fc1b6353bde0fdfdf3e1fe5a663cf740e2de93984e41a539ae801ae9d9e6252"
+    },
+    {
+      "file": "optimized/heisenberg-flagquantum_jax_kernel-47.log",
+      "original_sha256": "b333c56a0f0fb11463d0d368aad9ddcb53e9b3fed99209ec4205208a140911b3",
+      "published_sha256": "b333c56a0f0fb11463d0d368aad9ddcb53e9b3fed99209ec4205208a140911b3"
+    },
+    {
+      "file": "optimized/summary.json",
+      "original_sha256": "f7bdca8171b880695ace2d56ddf1267cae4731583ba55c28cec2277d15fbd787",
+      "published_sha256": "9e3376a4c182ac5b80365532951f4a652dd93d39b87c9fb9ebbbd4ab9c76b9cb"
+    },
+    {
+      "file": "optimized/heisenberg-flagquantum_torch_module-47.log",
+      "original_sha256": "53cac67115fdaa4b8e0bef983d128e42bb72ce302a0f0630b0767a02c2adfae9",
+      "published_sha256": "53cac67115fdaa4b8e0bef983d128e42bb72ce302a0f0630b0767a02c2adfae9"
+    },
+    {
+      "file": "optimized/heisenberg-tensorcircuit_jax-11.log",
+      "original_sha256": "7d0f988221429a3e564718f298470762abd59bed1b08a8690a9911b3d4109595",
+      "published_sha256": "7d0f988221429a3e564718f298470762abd59bed1b08a8690a9911b3d4109595"
+    },
+    {
+      "file": "optimized/classifier-flagquantum_jax_module-47.log",
+      "original_sha256": "d3d8bdca8cbf24ccd91340f9ef7c2f494ba375d37d53cdfaac0a3350e51a124f",
+      "published_sha256": "d3d8bdca8cbf24ccd91340f9ef7c2f494ba375d37d53cdfaac0a3350e51a124f"
+    },
+    {
+      "file": "optimized/heisenberg-tensorcircuit_jax-29.log",
+      "original_sha256": "fbc15d0efd712071bc23d7ebf1dc3cf62a27b37fd100d3717627c80100c912e7",
+      "published_sha256": "fbc15d0efd712071bc23d7ebf1dc3cf62a27b37fd100d3717627c80100c912e7"
+    },
+    {
+      "file": "optimized/classifier-flagquantum-11.log",
+      "original_sha256": "c5f252eb9a98412d0b6fde0448b2c4044e36f365d328fd4475e0cdbb1c0418d6",
+      "published_sha256": "c5f252eb9a98412d0b6fde0448b2c4044e36f365d328fd4475e0cdbb1c0418d6"
+    },
+    {
+      "file": "optimized/REPORT.md",
+      "original_sha256": "2be36101cdf408a8d55787a08594f211e7f6b938c13dadf8181fc9419b0dae40",
+      "published_sha256": "2be36101cdf408a8d55787a08594f211e7f6b938c13dadf8181fc9419b0dae40"
+    },
+    {
+      "file": "optimized/classifier-flagquantum_jax_kernel-29.log",
+      "original_sha256": "0322a4c8d501789f0161d9793f41b01b9856604abbcdac932b5c6e885385791b",
+      "published_sha256": "0322a4c8d501789f0161d9793f41b01b9856604abbcdac932b5c6e885385791b"
+    },
+    {
+      "file": "optimized/heisenberg-flagquantum-47.log",
+      "original_sha256": "8d1efe8c8d888b2a6a762dcf24d801de2dc43331ad0c07a85f8c0955b1b61f4d",
+      "published_sha256": "8d1efe8c8d888b2a6a762dcf24d801de2dc43331ad0c07a85f8c0955b1b61f4d"
+    },
+    {
+      "file": "optimized/heisenberg-flagquantum_jax_module-29.log",
+      "original_sha256": "66ed88d22678d7fd33f1834b69bc6b63a3c3d63603aec6e9045d33c092daa9fe",
+      "published_sha256": "66ed88d22678d7fd33f1834b69bc6b63a3c3d63603aec6e9045d33c092daa9fe"
+    },
+    {
+      "file": "optimized/classifier-flagquantum_torch_module-11.log",
+      "original_sha256": "ece667f45d7a4ac38a2e76136bc71a348a5119af383e8bde013e8054395bb70e",
+      "published_sha256": "ece667f45d7a4ac38a2e76136bc71a348a5119af383e8bde013e8054395bb70e"
+    },
+    {
+      "file": "optimized/classifier-flagquantum_torch_module-29.log",
+      "original_sha256": "88220b04ab1aa6e78bc1ddec2371db24beaa70a6527f3f0ad1bfa7d0df400df8",
+      "published_sha256": "88220b04ab1aa6e78bc1ddec2371db24beaa70a6527f3f0ad1bfa7d0df400df8"
+    },
+    {
+      "file": "optimized/classifier-tensorcircuit_jax-47.log",
+      "original_sha256": "8c8f6bd61de5243ee00087c5f47f91889e749d03a89c9b6fd2ccd9fa77c685ec",
+      "published_sha256": "8c8f6bd61de5243ee00087c5f47f91889e749d03a89c9b6fd2ccd9fa77c685ec"
+    },
+    {
+      "file": "optimized/heisenberg-flagquantum_jax_module-11.log",
+      "original_sha256": "7eca68580794d8febe3544dd5cc873688665f4ab6334b08c82570d140ab5a5c0",
+      "published_sha256": "7eca68580794d8febe3544dd5cc873688665f4ab6334b08c82570d140ab5a5c0"
+    },
+    {
+      "file": "optimized/classifier-flagquantum_jax_kernel-11.log",
+      "original_sha256": "75ac82971b001916c57cf50e3d234eeef6c22dec6fc92b556e8216e7ab2a61e8",
+      "published_sha256": "75ac82971b001916c57cf50e3d234eeef6c22dec6fc92b556e8216e7ab2a61e8"
+    },
+    {
+      "file": "optimized/classifier-flagquantum-29.log",
+      "original_sha256": "984e42567176aacf7939b2bdafa5859de3cc49facca52cb8341c7938f9386c8a",
+      "published_sha256": "984e42567176aacf7939b2bdafa5859de3cc49facca52cb8341c7938f9386c8a"
+    },
+    {
+      "file": "optimized/heisenberg-flagquantum_jax_kernel-11.log",
+      "original_sha256": "5e39cd924dbea0eee73ff3efc43d7fdda026064bc9e730292e0a724a75f294e0",
+      "published_sha256": "5e39cd924dbea0eee73ff3efc43d7fdda026064bc9e730292e0a724a75f294e0"
+    },
+    {
+      "file": "optimized/heisenberg-flagquantum_torch_module-11.log",
+      "original_sha256": "c46350f627d4a961e120e8d4c95b124a3fba33749e406c43996ca63e015e2fa0",
+      "published_sha256": "c46350f627d4a961e120e8d4c95b124a3fba33749e406c43996ca63e015e2fa0"
+    },
+    {
+      "file": "optimized/heisenberg-tensorcircuit_jax-47.log",
+      "original_sha256": "28e69b3f33b7d446f8a580c8ef3ad82054e15a9711c0cc6addbb41644aa39558",
+      "published_sha256": "28e69b3f33b7d446f8a580c8ef3ad82054e15a9711c0cc6addbb41644aa39558"
+    },
+    {
+      "file": "optimized/classifier-flagquantum_jax_module-11.log",
+      "original_sha256": "3b84d35e054d1abb2f85ae4ca8e328180a331ff6886f1324f4a149917121d94d",
+      "published_sha256": "3b84d35e054d1abb2f85ae4ca8e328180a331ff6886f1324f4a149917121d94d"
+    },
+    {
+      "file": "optimized/classifier-flagquantum_jax_module-29.log",
+      "original_sha256": "28f9d6ba92247232de17c922254a29613bcc7f61558ccd74703cbf71af3ed329",
+      "published_sha256": "28f9d6ba92247232de17c922254a29613bcc7f61558ccd74703cbf71af3ed329"
+    },
+    {
+      "file": "optimized/heisenberg-flagquantum_torch_module-29.log",
+      "original_sha256": "0d27a3e641078f7477230188f3a43fa1d88d864dfae173fe571b5c9322f92989",
+      "published_sha256": "0d27a3e641078f7477230188f3a43fa1d88d864dfae173fe571b5c9322f92989"
+    },
+    {
+      "file": "optimized/heisenberg-flagquantum_jax_kernel-29.log",
+      "original_sha256": "9e657f98c913d65c1fa30f8914ce14ce8690d4721bb174894c18b736f37e17f8",
+      "published_sha256": "9e657f98c913d65c1fa30f8914ce14ce8690d4721bb174894c18b736f37e17f8"
+    },
+    {
+      "file": "optimized/classifier-flagquantum-47.log",
+      "original_sha256": "7cc11ddaea1caa1741e8645e306f988283d3af66bbd87ca79fbc2f0584c8f3f5",
+      "published_sha256": "7cc11ddaea1caa1741e8645e306f988283d3af66bbd87ca79fbc2f0584c8f3f5"
+    },
+    {
+      "file": "optimized/heisenberg-flagquantum-11.log",
+      "original_sha256": "cc561b884921be213ee58a3a46e0f1e447951e339ab33a13cc54c84c55007ee1",
+      "published_sha256": "cc561b884921be213ee58a3a46e0f1e447951e339ab33a13cc54c84c55007ee1"
+    },
+    {
+      "file": "optimized/classifier-tensorcircuit_jax-29.log",
+      "original_sha256": "66d80b60a9c1c6f8680d5fe34752ee0c35b5a0ec5849b6640bb4e40554884b81",
+      "published_sha256": "66d80b60a9c1c6f8680d5fe34752ee0c35b5a0ec5849b6640bb4e40554884b81"
+    },
+    {
+      "file": "optimized/classifier-flagquantum_torch_module-47.log",
+      "original_sha256": "c4f197559b99db593ad98c5edd2a1b837ca8ae21c70b00346b9609d24268ff1f",
+      "published_sha256": "c4f197559b99db593ad98c5edd2a1b837ca8ae21c70b00346b9609d24268ff1f"
+    },
+    {
+      "file": "optimized/classifier-tensorcircuit_jax-11.log",
+      "original_sha256": "87356af1b29d83223fc75b11fa62ec2b3cc59d9f47fdbd985782019cf87b3f78",
+      "published_sha256": "87356af1b29d83223fc75b11fa62ec2b3cc59d9f47fdbd985782019cf87b3f78"
+    },
+    {
+      "file": "optimized/heisenberg-flagquantum_jax_module-47.log",
+      "original_sha256": "3461dd6d8604a3ab1a4b7175bc10b01397f99d8f9fa8b24d5213910170338a7b",
+      "published_sha256": "3461dd6d8604a3ab1a4b7175bc10b01397f99d8f9fa8b24d5213910170338a7b"
+    },
+    {
+      "file": "optimized/heisenberg-flagquantum-29.log",
+      "original_sha256": "956fe544918d107bb165aa33c402e70e55f0d5ffeafcde781e5028d56827b819",
+      "published_sha256": "956fe544918d107bb165aa33c402e70e55f0d5ffeafcde781e5028d56827b819"
+    },
+    {
+      "file": "optimized/freeze.json",
+      "original_sha256": "dc4ac39b9163b0d6be4b049b4e4fb575ce0aa04856d1e15bca81924637cbc476",
+      "published_sha256": "c7b4fe6232edf36f58a1860739ad4dabb3c5dab1bca8fab143d6e69226d8849c"
+    },
+    {
+      "file": "optimized/classifier-flagquantum_jax_kernel-47.log",
+      "original_sha256": "fd7f937eab4e8e4a116e818ffbca640d7095f5920551ecbe7c781661830fc867",
+      "published_sha256": "fd7f937eab4e8e4a116e818ffbca640d7095f5920551ecbe7c781661830fc867"
+    },
+    {
+      "file": "optimized/classifier-flagquantum-47/result.json",
+      "original_sha256": "1eaab10738bfa11b3ef21549f37632e44f1e9bab3dd8294f3b1634be51c8603a",
+      "published_sha256": "87bd243d91e55033c7f306d4a5662c1c1af1bff7fbe07a7acb7632ec2dce5401"
+    },
+    {
+      "file": "optimized/heisenberg-flagquantum_torch_module-47/result.json",
+      "original_sha256": "e6c6d1cf0a15cd5db198f130762822338093414fde5664f9493ba76a3b2f1417",
+      "published_sha256": "e46f5fee9e24a1081355139b2f6dc1d3d808194ed052696cd8a481e2f08578a1"
+    },
+    {
+      "file": "optimized/heisenberg-tensorcircuit_jax-47/result.json",
+      "original_sha256": "b401e0c3910740c58b4d1d4e188da7037ebf4490d69aee335219e4b83365cf01",
+      "published_sha256": "3b4e892c8fe99432c8a49c29712b3203837c00daab522561da2e827d6b83b1c5"
+    },
+    {
+      "file": "optimized/heisenberg-flagquantum_jax_module-47/result.json",
+      "original_sha256": "801e729f4ff5f43f3d088b746737e95af239e0ffd58be5586cdfacd35fdac928",
+      "published_sha256": "67fddd98a503c46f46d074417fb718dbca1668577f15b4d1a224580facb64c72"
+    },
+    {
+      "file": "optimized/classifier-flagquantum_jax_kernel-29/result.json",
+      "original_sha256": "1868623df8ba4c8cf6cadbc4cc64afd61f01875144f38b4f66f2c8486bc7cc39",
+      "published_sha256": "ff186016fafdbe2397d107603367ae6e56b92ed15a82fd08b75a7098122d38a2"
+    },
+    {
+      "file": "optimized/classifier-flagquantum_jax_kernel-11/result.json",
+      "original_sha256": "db7b8fa1293e212d4fc97427be4c600d0dac8a5e6b4dfb136f06a283ff265715",
+      "published_sha256": "3bd9d6305890fc31939ed7ec9123c42e545eb6443016cf15947c4d9079e0549d"
+    },
+    {
+      "file": "optimized/classifier-flagquantum_jax_module-47/result.json",
+      "original_sha256": "632add14f37fbb834303f20fcbca89806966b22ec64190d344c9a4767dd84fb4",
+      "published_sha256": "efa3903690593a5abdef7247efded8fbc31a8d4fa32d1497b45fef6217934334"
+    },
+    {
+      "file": "optimized/classifier-flagquantum_torch_module-47/result.json",
+      "original_sha256": "1628cf883cd64dd239c33c9b275cabd99d9b5a04ba23c7ad82f97e3651b29ad3",
+      "published_sha256": "95d098e93325b6874fda2f1e760ec2def8adb05767a2e9aca31ec66268618678"
+    },
+    {
+      "file": "optimized/heisenberg-flagquantum_jax_kernel-11/result.json",
+      "original_sha256": "bc0614154c061628321bd3e4e9d7b33fbf194795da82f37f18f41b409e3cc4eb",
+      "published_sha256": "ab00c5d4c23cbc56cb891e9fcb280ebabdb2855711426a9a0e0421894015ca74"
+    },
+    {
+      "file": "optimized/heisenberg-flagquantum_jax_kernel-29/result.json",
+      "original_sha256": "5a21850209b2993b1333481efd6bbe887b65af27c79a0970f1780bbeb6e390c9",
+      "published_sha256": "d8d9f13f7e187c2ffdd71cae51a1e73b24a269dd7b180eec4ff2f20635ec0556"
+    },
+    {
+      "file": "optimized/heisenberg-flagquantum-47/result.json",
+      "original_sha256": "c09a1e4b98175ba4e4a2f08d7bfd8848b57ab706d2151594f3c266d99fbfe605",
+      "published_sha256": "c54853253e11927657ed21e8efcf384a8cc89b14dd6785fd83dfb9787a1c48fa"
+    },
+    {
+      "file": "optimized/classifier-tensorcircuit_jax-47/result.json",
+      "original_sha256": "494ad062a212c552019c49a076998093e19aa26794359d09faad35e8ee098f2e",
+      "published_sha256": "e89d5505a4cfc99f5296e08c07802eb8468736c52746f9dde144baa0d18e1667"
+    },
+    {
+      "file": "optimized/classifier-flagquantum-11/result.json",
+      "original_sha256": "350c30ff93b19a3784e11277aff6668a0babde47119b7f9b97199d1a3dbfbba9",
+      "published_sha256": "dc2ed0b0cc45048b15b627a08272a7f6a204d028c91dab205a667596bd6c9f96"
+    },
+    {
+      "file": "optimized/classifier-flagquantum-29/result.json",
+      "original_sha256": "b9a60694da5d059ede244041c5abccb4cf886c56b12d2057e897dc72a4d917fd",
+      "published_sha256": "d110652f4472974c6f530ee44331daa1864ace9c9c13165234d8803f61da12b2"
+    },
+    {
+      "file": "optimized/heisenberg-flagquantum_torch_module-29/result.json",
+      "original_sha256": "1681dd30db7aefd547c769aa5e2be5f8a22e1145af6f7dbc8f5b423fe16262c3",
+      "published_sha256": "37d7396b513b5f4ca72622f7f13dd974e4f05d5ec7a08d83d1f9583910695fd9"
+    },
+    {
+      "file": "optimized/heisenberg-flagquantum_torch_module-11/result.json",
+      "original_sha256": "b87731dac1ccfd5cef3f409afc816e1bf41778afb80202c8afada7f0ff02aa60",
+      "published_sha256": "8523d63c02ff5dc312d755f2c705411e33eba93e423780404d405aab223ed475"
+    },
+    {
+      "file": "optimized/classifier-flagquantum_jax_kernel-47/result.json",
+      "original_sha256": "4b1fd012bc9718c03fd58f3eab219f56525f112aeb0e8f1744fe614bba284a77",
+      "published_sha256": "495ba5d275bfddeff34e13a54fefa0425713bec8be8c5e62d91c5b064e54bc8d"
+    },
+    {
+      "file": "optimized/heisenberg-tensorcircuit_jax-11/result.json",
+      "original_sha256": "a3e5c01b2169697b8ac8e1f3c9815c8bddbd91e40e58e11abfed72702d2e7c60",
+      "published_sha256": "d521d9362f05cdf07a8056fa143d6cb3db26773fb554089939afa0dc834d07b2"
+    },
+    {
+      "file": "optimized/heisenberg-tensorcircuit_jax-29/result.json",
+      "original_sha256": "37e1bea72f33ba7071fe075c25a78f0f4f098a91a8480ac7d69671c20bf0ec6c",
+      "published_sha256": "35aaa62c4e49030f87eddfac0b70f72d4b2cc7bd3b78fcb991e33259c50920af"
+    },
+    {
+      "file": "optimized/heisenberg-flagquantum_jax_module-11/result.json",
+      "original_sha256": "3f3f5458520afe24a14672f08561f0ab7d4f20e2a893b9b261a70ca572c6fc79",
+      "published_sha256": "22844ddf250817f448246a08fef1581a9cfd39c8c092790ce0c463e4f9222346"
+    },
+    {
+      "file": "optimized/heisenberg-flagquantum_jax_module-29/result.json",
+      "original_sha256": "605e34f015ed55a07d4634c9d1fa33e14975693480f4c024a8dd4b1da4212354",
+      "published_sha256": "1f590f42b0150b2aadc0316ae15ba45c13c7e53f430c5513de5514810b2a689d"
+    },
+    {
+      "file": "optimized/classifier-flagquantum_torch_module-29/result.json",
+      "original_sha256": "f05951ffa3487c8e3f0da489d90a4513862a8ff3f44bae045bc9e323895a8b30",
+      "published_sha256": "7f0107dee7df5728d38e6a05f02351b51514ca24eca45bb7df35a6ddc7c2ba8d"
+    },
+    {
+      "file": "optimized/classifier-flagquantum_torch_module-11/result.json",
+      "original_sha256": "1d2e4c7b34a5863d9e5e3d211c03ad2aa0898cc5e3c44820712dcc8e750fb3ee",
+      "published_sha256": "bc29dc5964a178727aec3db321bebb77367073607a2b904388b556d40503578d"
+    },
+    {
+      "file": "optimized/heisenberg-flagquantum_jax_kernel-47/result.json",
+      "original_sha256": "93773230883997dcab2bdd3e0b24a65e3cd9cdfedaa335b2b54527049da9b270",
+      "published_sha256": "310ccfa03b6ca837147ceeb441cbd532fea6979de14b0d2313636f58c28afc77"
+    },
+    {
+      "file": "optimized/classifier-flagquantum_jax_module-29/result.json",
+      "original_sha256": "fbd630c1f99557df7b9ab56c949183b435653ddddb10bc5c97707516491b4696",
+      "published_sha256": "9619f07116f7c1388e4ca949dee21156906591890c3c03432637f930c745f5b7"
+    },
+    {
+      "file": "optimized/classifier-flagquantum_jax_module-11/result.json",
+      "original_sha256": "ce72c5e2a23a5d893c8353d283622f374227837c2d74516ef1e51f4cd32b6579",
+      "published_sha256": "5a4e7cc3f5d86397693a09f8c12930f900fddf5d3e03dfd6225bdace5df8ebbe"
+    },
+    {
+      "file": "optimized/classifier-tensorcircuit_jax-11/result.json",
+      "original_sha256": "88a42ce73ab2544267dd9c354846b7713b41b3da7b80655bcef870ef8be07391",
+      "published_sha256": "c36d75c894e22a52fda1358568de5b4c77c916654621280c555c3741cbd197cd"
+    },
+    {
+      "file": "optimized/heisenberg-flagquantum-11/result.json",
+      "original_sha256": "b002d5a6d824e199ef957e4a0c2603c665dd1c5ed05e530a90e725039caa081f",
+      "published_sha256": "7d912ade15c86da2368a818c2a19749917bc7342012e621e185b512661c6ef25"
+    },
+    {
+      "file": "optimized/heisenberg-flagquantum-29/result.json",
+      "original_sha256": "720cc00246cfaf847bf6edabd1a35523ff0a67296dc9c532989751c9a0db1d05",
+      "published_sha256": "e61d05b7ebf9f319028ef5f3903a9f7fec741d1804cbd6de468ad96c82c7a890"
+    },
+    {
+      "file": "optimized/classifier-tensorcircuit_jax-29/result.json",
+      "original_sha256": "84de6a4c6a89de2fd5da34bc15a0673322d739ba794061b838e3ac0ac323b74c",
+      "published_sha256": "343eb3f87c0964e9d88155fac9df399c5801796c6634085a8a672516dd401f34"
+    }
+  ]
+}

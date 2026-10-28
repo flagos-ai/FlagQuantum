@@ -177,7 +177,9 @@ def test_a_refused_forward_leaves_the_parameter_and_optimizer_untouched() -> Non
     assert torch.isfinite(module.parameters_tensor).all()
 
 
-def test_the_jax_backend_refuses_the_same_way() -> None:
+@pytest.mark.parametrize("mode", MODES)
+@pytest.mark.parametrize("value", [float("nan"), float("inf"), -float("inf"), 1e200])
+def test_the_jax_backend_refuses_the_same_way(mode: str, value: float) -> None:
     """The check belongs to the bind boundary, so no backend can skip it."""
 
     pytest.importorskip("jax")
@@ -186,10 +188,12 @@ def test_the_jax_backend_refuses_the_same_way() -> None:
         1,
         init=torch.tensor([0.2], dtype=torch.float64),
         dtype=torch.float64,
-        policy=fq.RuntimePolicy(execution_options=fq.ExecutionOptions(backend="jax")),
+        policy=fq.RuntimePolicy(
+            execution_options=fq.ExecutionOptions(backend="jax", mode=mode)
+        ),
     )
     module()
-    _fill(module, float("nan"))
+    _fill(module, value)
 
     with pytest.raises(IRValidationError):
         module()

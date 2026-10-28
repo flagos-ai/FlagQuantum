@@ -1,0 +1,7 @@
+{"task": "classifier", "engine": "flagquantum_jax_module", "seed": 29, "step": 1, "score": 0.46875}
+{"task": "classifier", "engine": "flagquantum_jax_module", "seed": 29, "step": 10, "score": 0.46875}
+{"task": "classifier", "engine": "flagquantum_jax_module", "seed": 29, "step": 20, "score": 0.75}
+{"task": "classifier", "engine": "flagquantum_jax_module", "seed": 29, "step": 30, "score": 0.875}
+{"task": "classifier", "engine": "flagquantum_jax_module", "seed": 29, "step": 40, "score": 0.875}
+{"task": "classifier", "engine": "flagquantum_jax_module", "seed": 29, "step": 50, "score": 0.90625}
+{"task": "classifier", "engine": "flagquantum_jax_module", "seed": 29, "step": 60, "score": 0.875}

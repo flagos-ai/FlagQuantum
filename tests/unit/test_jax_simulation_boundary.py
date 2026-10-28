@@ -41,7 +41,7 @@ pytestmark = pytest.mark.unit
 def test_runtime_reuses_simulation_owned_jax_gate_primitives():
     assert (
         kernel._jax_statevector_from_circuit
-        is jax_gate_primitives._jax_statevector_from_circuit
+        is jax_statevector.jax_statevector_from_circuit
     )
     assert (
         kernel._set_active_jax_compute_dtype

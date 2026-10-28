@@ -1,0 +1,7 @@
+{"task": "classifier", "engine": "pennylane_adjoint", "seed": 47, "step": 1, "score": 0.53125}
+{"task": "classifier", "engine": "pennylane_adjoint", "seed": 47, "step": 10, "score": 0.46875}
+{"task": "classifier", "engine": "pennylane_adjoint", "seed": 47, "step": 20, "score": 0.78125}
+{"task": "classifier", "engine": "pennylane_adjoint", "seed": 47, "step": 30, "score": 0.875}
+{"task": "classifier", "engine": "pennylane_adjoint", "seed": 47, "step": 40, "score": 0.90625}
+{"task": "classifier", "engine": "pennylane_adjoint", "seed": 47, "step": 50, "score": 0.875}
+{"task": "classifier", "engine": "pennylane_adjoint", "seed": 47, "step": 60, "score": 0.875}

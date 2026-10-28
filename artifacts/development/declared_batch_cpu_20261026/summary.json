@@ -1,0 +1,131 @@
+{
+  "source_commit": "5ea7e5de4bbacd4dad507e6d7ba82cf7f6c40703",
+  "rows": [
+    {
+      "width": 2,
+      "batch": 1,
+      "route_median_s": {
+        "fq_default": 0.00043352084976504556,
+        "fq_jax_statevector": 6.651875009993091e-05,
+        "fq_jax_tensor_network": 7.737289997749031e-05,
+        "tc_state_numpy": 0.00013723539996135514,
+        "tc_state_dlpack": 0.0002996396000526147,
+        "tc_mpo_numpy": 0.0001691541499894811,
+        "tc_mpo_dlpack": 0.00033368125004926694,
+        "tc_state_whole_jax": 1.6702100037946365e-05,
+        "tc_mpo_whole_jax": 2.5666649889899418e-05
+      },
+      "fq_best_explicit": "fq_jax_statevector",
+      "tc_best_hybrid": "tc_state_numpy",
+      "tc_best_whole": "tc_state_whole_jax",
+      "explicit_vs_hybrid_speedup": 2.0631085183528977,
+      "explicit_vs_whole_speedup": 0.25108860303079733,
+      "default_vs_hybrid_speedup": 0.3165600917135412
+    },
+    {
+      "width": 2,
+      "batch": 32,
+      "route_median_s": {
+        "fq_default": 0.00048398124999948777,
+        "fq_jax_statevector": 0.00012509375010267832,
+        "fq_jax_tensor_network": 0.0002059500002360437,
+        "tc_state_numpy": 0.0002343416497751605,
+        "tc_state_dlpack": 0.00039671039994573223,
+        "tc_mpo_numpy": 0.00029019579997111575,
+        "tc_mpo_dlpack": 0.00044264165007916744,
+        "tc_state_whole_jax": 5.723955000576097e-05,
+        "tc_mpo_whole_jax": 9.110415012401064e-05
+      },
+      "fq_best_explicit": "fq_jax_statevector",
+      "tc_best_hybrid": "tc_state_numpy",
+      "tc_best_whole": "tc_state_whole_jax",
+      "explicit_vs_hybrid_speedup": 1.8733282005120981,
+      "explicit_vs_whole_speedup": 0.45757321975540843,
+      "default_vs_hybrid_speedup": 0.48419571992801064
+    },
+    {
+      "width": 8,
+      "batch": 1,
+      "route_median_s": {
+        "fq_default": 0.001402941700143856,
+        "fq_jax_statevector": 0.00012981664986000396,
+        "fq_jax_tensor_network": 0.00016163750005944167,
+        "tc_state_numpy": 0.00025718959986988923,
+        "tc_state_dlpack": 0.00041160834989568685,
+        "tc_mpo_numpy": 0.00032969999992928936,
+        "tc_mpo_dlpack": 0.0004791416500665946,
+        "tc_state_whole_jax": 7.230415030790027e-05,
+        "tc_mpo_whole_jax": 0.00011989585000264924
+      },
+      "fq_best_explicit": "fq_jax_statevector",
+      "tc_best_hybrid": "tc_state_numpy",
+      "tc_best_whole": "tc_state_whole_jax",
+      "explicit_vs_hybrid_speedup": 1.9811757594056385,
+      "explicit_vs_whole_speedup": 0.5569713159742918,
+      "default_vs_hybrid_speedup": 0.1833216589424331
+    },
+    {
+      "width": 8,
+      "batch": 32,
+      "route_median_s": {
+        "fq_default": 0.002906560400151648,
+        "fq_jax_statevector": 0.0005129208500875392,
+        "fq_jax_tensor_network": 0.0008465312497719424,
+        "tc_state_numpy": 0.0006391124999936438,
+        "tc_state_dlpack": 0.0008100875002128305,
+        "tc_mpo_numpy": 0.0009559749996697064,
+        "tc_mpo_dlpack": 0.001105258349707583,
+        "tc_state_whole_jax": 0.00035341250004421453,
+        "tc_mpo_whole_jax": 0.0006044062502041925
+      },
+      "fq_best_explicit": "fq_jax_statevector",
+      "tc_best_hybrid": "tc_state_numpy",
+      "tc_best_whole": "tc_state_whole_jax",
+      "explicit_vs_hybrid_speedup": 1.2460255805248852,
+      "explicit_vs_whole_speedup": 0.6890195631234298,
+      "default_vs_hybrid_speedup": 0.21988619261457581
+    },
+    {
+      "width": 12,
+      "batch": 1,
+      "route_median_s": {
+        "fq_default": 0.0021817687502334593,
+        "fq_jax_statevector": 0.00020864789985353127,
+        "fq_jax_tensor_network": 0.00019326874971739016,
+        "tc_state_numpy": 0.00039154170008259825,
+        "tc_state_dlpack": 0.000533266700222157,
+        "tc_mpo_numpy": 0.00039323124983638993,
+        "tc_mpo_dlpack": 0.0005605645499599631,
+        "tc_state_whole_jax": 0.0001708583498839289,
+        "tc_mpo_whole_jax": 0.00017875625017040874
+      },
+      "fq_best_explicit": "fq_jax_tensor_network",
+      "tc_best_hybrid": "tc_state_numpy",
+      "tc_best_whole": "tc_state_whole_jax",
+      "explicit_vs_hybrid_speedup": 2.0258924459082777,
+      "explicit_vs_whole_speedup": 0.8840454037901566,
+      "default_vs_hybrid_speedup": 0.1794606784246504
+    },
+    {
+      "width": 12,
+      "batch": 32,
+      "route_median_s": {
+        "fq_default": 0.014505795799777843,
+        "fq_jax_statevector": 0.0022926749999896854,
+        "fq_jax_tensor_network": 0.00126891460022307,
+        "tc_state_numpy": 0.0020136937502684303,
+        "tc_state_dlpack": 0.0019951062498876127,
+        "tc_mpo_numpy": 0.001469685399933951,
+        "tc_mpo_dlpack": 0.0015685812501033069,
+        "tc_state_whole_jax": 0.0012318583500018575,
+        "tc_mpo_whole_jax": 0.0009321687499323162
+      },
+      "fq_best_explicit": "fq_jax_tensor_network",
+      "tc_best_hybrid": "tc_mpo_numpy",
+      "tc_best_whole": "tc_mpo_whole_jax",
+      "explicit_vs_hybrid_speedup": 1.1582224679860933,
+      "explicit_vs_whole_speedup": 0.7346189804802031,
+      "default_vs_hybrid_speedup": 0.10131711629061119
+    }
+  ]
+}

@@ -1,0 +1,197 @@
+{
+  "benchmark_evidence_class": "comparison_non_release",
+  "cases": [
+    {
+      "case": "classifier-flagquantum-11",
+      "result": "classifier-flagquantum-11/result.json",
+      "status": "completed"
+    },
+    {
+      "case": "classifier-flagquantum-29",
+      "result": "classifier-flagquantum-29/result.json",
+      "status": "completed"
+    },
+    {
+      "case": "classifier-flagquantum-47",
+      "result": "classifier-flagquantum-47/result.json",
+      "status": "completed"
+    },
+    {
+      "case": "classifier-pennylane_backprop-11",
+      "result": "classifier-pennylane_backprop-11/result.json",
+      "status": "completed"
+    },
+    {
+      "case": "classifier-pennylane_backprop-29",
+      "result": "classifier-pennylane_backprop-29/result.json",
+      "status": "completed"
+    },
+    {
+      "case": "classifier-pennylane_backprop-47",
+      "result": "classifier-pennylane_backprop-47/result.json",
+      "status": "completed"
+    },
+    {
+      "case": "classifier-pennylane_adjoint-11",
+      "result": "classifier-pennylane_adjoint-11/result.json",
+      "status": "completed"
+    },
+    {
+      "case": "classifier-pennylane_adjoint-29",
+      "result": "classifier-pennylane_adjoint-29/result.json",
+      "status": "completed"
+    },
+    {
+      "case": "classifier-pennylane_adjoint-47",
+      "result": "classifier-pennylane_adjoint-47/result.json",
+      "status": "completed"
+    },
+    {
+      "case": "classifier-tensorcircuit_torch-11",
+      "result": "classifier-tensorcircuit_torch-11/result.json",
+      "status": "completed"
+    },
+    {
+      "case": "classifier-tensorcircuit_torch-29",
+      "result": "classifier-tensorcircuit_torch-29/result.json",
+      "status": "completed"
+    },
+    {
+      "case": "classifier-tensorcircuit_torch-47",
+      "result": "classifier-tensorcircuit_torch-47/result.json",
+      "status": "completed"
+    },
+    {
+      "case": "classifier-tensorcircuit_jax-11",
+      "result": "classifier-tensorcircuit_jax-11/result.json",
+      "status": "completed"
+    },
+    {
+      "case": "classifier-tensorcircuit_jax-29",
+      "result": "classifier-tensorcircuit_jax-29/result.json",
+      "status": "completed"
+    },
+    {
+      "case": "classifier-tensorcircuit_jax-47",
+      "result": "classifier-tensorcircuit_jax-47/result.json",
+      "status": "completed"
+    },
+    {
+      "case": "classifier-classical-11",
+      "result": "classifier-classical-11/result.json",
+      "status": "completed"
+    },
+    {
+      "case": "classifier-classical-29",
+      "result": "classifier-classical-29/result.json",
+      "status": "completed"
+    },
+    {
+      "case": "classifier-classical-47",
+      "result": "classifier-classical-47/result.json",
+      "status": "completed"
+    },
+    {
+      "case": "heisenberg-flagquantum-11",
+      "result": "heisenberg-flagquantum-11/result.json",
+      "status": "completed"
+    },
+    {
+      "case": "heisenberg-flagquantum-29",
+      "result": "heisenberg-flagquantum-29/result.json",
+      "status": "completed"
+    },
+    {
+      "case": "heisenberg-flagquantum-47",
+      "result": "heisenberg-flagquantum-47/result.json",
+      "status": "completed"
+    },
+    {
+      "case": "heisenberg-pennylane_backprop-11",
+      "result": "heisenberg-pennylane_backprop-11/result.json",
+      "status": "completed"
+    },
+    {
+      "case": "heisenberg-pennylane_backprop-29",
+      "result": "heisenberg-pennylane_backprop-29/result.json",
+      "status": "completed"
+    },
+    {
+      "case": "heisenberg-pennylane_backprop-47",
+      "result": "heisenberg-pennylane_backprop-47/result.json",
+      "status": "completed"
+    },
+    {
+      "case": "heisenberg-pennylane_adjoint-11",
+      "result": "heisenberg-pennylane_adjoint-11/result.json",
+      "status": "completed"
+    },
+    {
+      "case": "heisenberg-pennylane_adjoint-29",
+      "result": "heisenberg-pennylane_adjoint-29/result.json",
+      "status": "completed"
+    },
+    {
+      "case": "heisenberg-pennylane_adjoint-47",
+      "result": "heisenberg-pennylane_adjoint-47/result.json",
+      "status": "completed"
+    },
+    {
+      "case": "heisenberg-tensorcircuit_torch-11",
+      "result": "heisenberg-tensorcircuit_torch-11/result.json",
+      "status": "completed"
+    },
+    {
+      "case": "heisenberg-tensorcircuit_torch-29",
+      "result": "heisenberg-tensorcircuit_torch-29/result.json",
+      "status": "completed"
+    },
+    {
+      "case": "heisenberg-tensorcircuit_torch-47",
+      "result": "heisenberg-tensorcircuit_torch-47/result.json",
+      "status": "completed"
+    },
+    {
+      "case": "heisenberg-tensorcircuit_jax-11",
+      "result": "heisenberg-tensorcircuit_jax-11/result.json",
+      "status": "completed"
+    },
+    {
+      "case": "heisenberg-tensorcircuit_jax-29",
+      "result": "heisenberg-tensorcircuit_jax-29/result.json",
+      "status": "completed"
+    },
+    {
+      "case": "heisenberg-tensorcircuit_jax-47",
+      "result": "heisenberg-tensorcircuit_jax-47/result.json",
+      "status": "completed"
+    }
+  ],
+  "hostname": "redacted",
+  "platform": "macOS-27.0-arm64-arm-64bit",
+  "python": "3.12.14",
+  "runner": "training_comparison",
+  "scalability_claim_allowed": false,
+  "schema": "flagquantum.training_comparison.v1",
+  "smoke": false,
+  "source": {
+    "code_version": "a6c634e9317d7f08cfa4053c6fbd712dabfdd99f",
+    "dirty": false,
+    "producer_sha256": {
+      "benchmarks/training_comparison.py": "bf1a87cd7606f879a6f122611386d2fd70b7ca592fcf2d2026bbaaff05042ade",
+      "benchmarks/training_engines.py": "67d8e5fe3bc716a0fab0a862bd2610381bb626812a801a8a715b7be662c8abcb",
+      "benchmarks/training_workloads.py": "7c797a3214221d3d858e12d3852cfb7a191689b0dad9dc227a395dd983777235"
+    },
+    "protocol_sha256": "5750e9cc054737447b2c16ea3b9dfa79934248294f5e058686c27b5c082e8d5e",
+    "versions": {
+      "jax": "0.10.2",
+      "jaxlib": "0.10.2",
+      "numpy": "2.5.4",
+      "pennylane": "0.45.1",
+      "pennylane-lightning": "0.45.0",
+      "tensorcircuit-ng": "1.10.0",
+      "torch": "2.14.1"
+    }
+  },
+  "world_size": 1
+}

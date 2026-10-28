@@ -1,0 +1,181 @@
+{
+  "purpose": "Public derivative of retained local originals; no numerical measurement or producer identity is changed.",
+  "redaction": "tools.sanitize_public_evidence.sanitize_text; hostname and infrastructure paths only",
+  "files": [
+    {
+      "file": "classifier-classical-11/result.json",
+      "original_sha256": "94264c76bbc151ec971a80a70027528c57279b51f17f93b5f4095e44ed6ca1b7",
+      "published_sha256": "f827b2ce7d7f55134677e18a4b63f6f55768c9aa95c7d001b64d72c20aa8af1f"
+    },
+    {
+      "file": "classifier-classical-29/result.json",
+      "original_sha256": "5008c85ef36354a1aa77054df5bf20a7efa8a83b2fc56865d1a6cb3fcc2313b9",
+      "published_sha256": "844993964a0dfade6b298100382b4309840de2295efa0249f64e36ad386177bc"
+    },
+    {
+      "file": "classifier-classical-47/result.json",
+      "original_sha256": "f9f7e901e47b68272b5366205070152d1dc595bd584194ee5f7967e433c0adeb",
+      "published_sha256": "3d52b1db2cd91717ed9204683e055fb62d7726f821028eb8a1e44758d521cf44"
+    },
+    {
+      "file": "classifier-flagquantum-11/result.json",
+      "original_sha256": "e2bb0a81eb48b237b8ac199c991114b5c37819b09ba6fb849a98af8af1536114",
+      "published_sha256": "d9352acc1e3f11c186725bae4d5b5b679ecc915a8719c67653eae1576dddeed6"
+    },
+    {
+      "file": "classifier-flagquantum-29/result.json",
+      "original_sha256": "44605c5d81e5f0d35610447b19bba371549d28471231a8b48264f0195d4f1b15",
+      "published_sha256": "6cb33504c88b41f3304be824ae81b8b25f46f89e39f50ebc295ea9c7cf4d6f88"
+    },
+    {
+      "file": "classifier-flagquantum-47/result.json",
+      "original_sha256": "b1a2b8d980555479cddb18b3313f78cadc662535f21ffb5ab1a527e69e14c6f4",
+      "published_sha256": "67f6b915545c95e52c59e76944144ef98ad41d21f95c1171f6ea48bf0f280891"
+    },
+    {
+      "file": "classifier-pennylane_adjoint-11/result.json",
+      "original_sha256": "355da5a44a643108f37c09b233d88379693fde5e47305df957f170fd4e56662c",
+      "published_sha256": "a9a3e0682ce6f210052cd06b808ced031b2f7d186f30ec7c8f33e3cae4beaf7c"
+    },
+    {
+      "file": "classifier-pennylane_adjoint-29/result.json",
+      "original_sha256": "69137554ced3e547f0f1a925889763fb568ed1baee74dc762005b9f85f50439f",
+      "published_sha256": "a92ecbf2f76ea2afc46b869df91a93e14881b77bc572e0d78097791bebaf3dc9"
+    },
+    {
+      "file": "classifier-pennylane_adjoint-47/result.json",
+      "original_sha256": "c1c64f8be6353679546b9da732f344641c00e8efde3ead65743d7f879415873b",
+      "published_sha256": "7b3a83f1946c6d4db3feec2d71c1a0aa2261a3283250a86551adbc667e2b1302"
+    },
+    {
+      "file": "classifier-pennylane_backprop-11/result.json",
+      "original_sha256": "d368af62530e790d7af080cfc893ef12e54cc6bb27de0967b38e7ab9af8a6f45",
+      "published_sha256": "1d386de075e47c91ca8f88fd432eca456a05b0c0dc616f72e6646ce2c25d1b4d"
+    },
+    {
+      "file": "classifier-pennylane_backprop-29/result.json",
+      "original_sha256": "18b8ed042a3461f1db7c51efabc16427d74cc788abf64fb71afcbbd2b78ff092",
+      "published_sha256": "e5ea01a650af75f953a617de1c416b3f5f659dbd78e15b1e8f053729d5b20539"
+    },
+    {
+      "file": "classifier-pennylane_backprop-47/result.json",
+      "original_sha256": "26c3ce5aec1f9db8c87333feb0bf47be281b1e957198f86ff81193941bcafe73",
+      "published_sha256": "25267cf08eea0ad81e4b87238d3784d073004100484992ba9d45110fa5b4cab4"
+    },
+    {
+      "file": "classifier-tensorcircuit_jax-11/result.json",
+      "original_sha256": "089d3b614f8a98ea1d6cfa858b449bd60e9ffe80da95c67ac29896fdd2bdbf80",
+      "published_sha256": "c5387f592b3584555c5e90d5dbce34563ad6820f186b6c9a2648042d1b84ff70"
+    },
+    {
+      "file": "classifier-tensorcircuit_jax-29/result.json",
+      "original_sha256": "0b6064a52a33166443c2d08aff6e2d19a10dd9537eea53ee6c782ddaf299d3d2",
+      "published_sha256": "41fb51634549477d38ae690aba259a1e44d7434a2fb43ddfd6f563ee813ca793"
+    },
+    {
+      "file": "classifier-tensorcircuit_jax-47/result.json",
+      "original_sha256": "58d807de4a562f8fbcbb4cdf82cba98ad59992662486d333f61eda0033e25b69",
+      "published_sha256": "7c0de8e1c10749a5c9a5fc067f164d343fdabaf170f513997dbb910ee3d896ca"
+    },
+    {
+      "file": "classifier-tensorcircuit_torch-11/result.json",
+      "original_sha256": "898e0b2dcf4ac3f1e30633dd416f640edebd4a15da69e7375e9ce6cc8e921cf3",
+      "published_sha256": "12f8c09e6dd34eb71e6ee398807ecfb32e54bf3696683f277b3b572f41be67e5"
+    },
+    {
+      "file": "classifier-tensorcircuit_torch-29/result.json",
+      "original_sha256": "5270dfe6e393e9bd08eef32731e34ab0ec98ca217162355fca4da1d45258622d",
+      "published_sha256": "ae4799c7aac1ca84337ac23e71d53deddc90242702114ae3ac0180b25a24d219"
+    },
+    {
+      "file": "classifier-tensorcircuit_torch-47/result.json",
+      "original_sha256": "1d9bf1a40681296d8cbd9c5a7af4a300490b0124bae2de64872862f3e2357274",
+      "published_sha256": "d6471087a1fbbfd17dd239c81d336c9695adf82716e538c47d6bd981e0e1c47b"
+    },
+    {
+      "file": "freeze.json",
+      "original_sha256": "f0216f87c8fef8349626eeb063a7b6996e9eff4cff6efbcc65cb8d6da16517fc",
+      "published_sha256": "04310cd455b8474a1544cfe3b594338800eb98dc7f33688f2171a091ba79cd37"
+    },
+    {
+      "file": "heisenberg-flagquantum-11/result.json",
+      "original_sha256": "1d668b5f3c92121ea49c4d335c37bfa887d888219bcc27e4a301a6cfd16946c7",
+      "published_sha256": "1af9347325dd2b4b3de15b792ddb8d6852a6dc74459536925354bb502dd64954"
+    },
+    {
+      "file": "heisenberg-flagquantum-29/result.json",
+      "original_sha256": "030e3ea606591a9ff2946e10b970c9c35288a413b5bf8c3d2d9ae4088c886216",
+      "published_sha256": "9d52d66c75fed3d05f64c440948bec6772c54f96a5ab93b51d3f7592d3164bf1"
+    },
+    {
+      "file": "heisenberg-flagquantum-47/result.json",
+      "original_sha256": "9942c79a7cfde2d0825cacf629ee247ca5cf9aa792adf4416e1bab8e0098febb",
+      "published_sha256": "dbadfbaff32f8487879f6c491a4e751ba69f2dc232a0c468d7ddd265e70a13c9"
+    },
+    {
+      "file": "heisenberg-pennylane_adjoint-11/result.json",
+      "original_sha256": "046b59a1392659d8c9090c5f1c5f308b85ffea767382be4be43bf81ea1dabef4",
+      "published_sha256": "ab70351cff008cf01de1c8009aae8f6178949774e39b566b276e07c3ed50c5f3"
+    },
+    {
+      "file": "heisenberg-pennylane_adjoint-29/result.json",
+      "original_sha256": "75a5bd915a4781f320fb8791273ef4cc9b98e541d086063552bb9b6b204c7edc",
+      "published_sha256": "48ee8ea0a3847b4a0704a8b83657b41d472968e14e5453de3a133a02cc184b27"
+    },
+    {
+      "file": "heisenberg-pennylane_adjoint-47/result.json",
+      "original_sha256": "854afefdee4bf2c631d7ed4574185313904fabc116ab986e3408d7495340544f",
+      "published_sha256": "5ea41a4be188b78263051ade4272a9d4a69cd8acfc35ad411eba74eb03ebd8b5"
+    },
+    {
+      "file": "heisenberg-pennylane_backprop-11/result.json",
+      "original_sha256": "1c479cb8aaedc7c3f280566c44913f0d1aca405df7b419a3856fba3e438d39ca",
+      "published_sha256": "4932e19ebbbd718c79287a53e1eb7d8409162702c8b7900d11761f00ca830cf4"
+    },
+    {
+      "file": "heisenberg-pennylane_backprop-29/result.json",
+      "original_sha256": "c6261ef55cae85677b071ca198a0a625ee07bbf32ada2c0e2f5a8cedb9c9e744",
+      "published_sha256": "a6f9872552d9583cdd6425acb3bf376361ac742e7b47a1ba1f5a60b743b7d918"
+    },
+    {
+      "file": "heisenberg-pennylane_backprop-47/result.json",
+      "original_sha256": "67665206661bae05f6f8456471c755ae7cc9b410d3233eb07dcec0af9d181c2f",
+      "published_sha256": "9311cc0c9f606cbdba4b6068ff2b71b026b89a33e586467f35c8018ac146098d"
+    },
+    {
+      "file": "heisenberg-tensorcircuit_jax-11/result.json",
+      "original_sha256": "376c666acfc52c2d0d8b1bb253b17915da94779ac5f08f7415b9a17d861e3dbe",
+      "published_sha256": "0dcf6b0d7cbed7b699652464029fb3e6eabbd01b0068eaf18402c5fab42824aa"
+    },
+    {
+      "file": "heisenberg-tensorcircuit_jax-29/result.json",
+      "original_sha256": "f3de4a621ffcd78d65c4867e32f88b28456eea6093f7cfba326f79d89fe3bfe2",
+      "published_sha256": "8c07f117d64d1a378023f33ad0a5fb3132f53c430f821bcebe60f101f805baeb"
+    },
+    {
+      "file": "heisenberg-tensorcircuit_jax-47/result.json",
+      "original_sha256": "6bf0503d9ade92783e9eda8f730fc06ac7bf44041de064fc8996065e97117099",
+      "published_sha256": "f1155f43c89e83d6d7fb1652ffbfd0acb187b438ab23a7881014c2a544bc053d"
+    },
+    {
+      "file": "heisenberg-tensorcircuit_torch-11/result.json",
+      "original_sha256": "0dd03eb041f4c9ff650ccade29327713d85cc8700b4da18e47657c0019befc24",
+      "published_sha256": "5dd6ae4adb407c06e3231a357fdb0a5beabfdf15c2c942aea5dab4ce93ba576c"
+    },
+    {
+      "file": "heisenberg-tensorcircuit_torch-29/result.json",
+      "original_sha256": "c12cf2b3098ce98bbfbf657820769303cf662cbe092c4ed39cd26e3d81757d40",
+      "published_sha256": "a5ec5241baab103c828e20ac39af88a09a0013dcc2687b19249717c3458045ed"
+    },
+    {
+      "file": "heisenberg-tensorcircuit_torch-47/result.json",
+      "original_sha256": "94a322ca9540b1443037a1f3cd76e2ad19ac868de6e4bdb4c08751051e6894c3",
+      "published_sha256": "49b65164b08857a892d413102f33cc09a1bd13c364796c09f80d02e016d82668"
+    },
+    {
+      "file": "summary.json",
+      "original_sha256": "040d543c31f3d6e7f8dd037fc0b694a419804d75fc5ae4181803d139248fec6e",
+      "published_sha256": "d0cfbb6ccc9614935ef61c5ead5b75f11e0b5b0fe8ddb33341bef16c908cde32"
+    }
+  ]
+}

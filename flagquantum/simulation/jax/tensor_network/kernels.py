@@ -6,49 +6,13 @@ from collections.abc import Iterable, Mapping
 from typing import Any
 
 from ..primitives import (
-    _jax_complex_dtype,
-    _jax_instruction_matrix,
     _jax_pauli_matrix,
     _jax_real_dtype,
+    jax_circuit_tensor_nodes,
+    jax_contract_tensor_nodes,
 )
 
 _JAX_EINSUM_CHARS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
-
-
-def jax_tensor_network_nodes_from_circuit(
-    circuit: Any,
-    n_qubits: int,
-    *,
-    start_label: int = 0,
-    conjugate: bool = False,
-) -> tuple[list[tuple[Any, tuple[int, ...]]], list[int], int]:
-    import jax.numpy as jnp
-
-    next_label = int(start_label)
-    current_labels = []
-    nodes: list[tuple[Any, tuple[int, ...]]] = []
-    zero = jnp.asarray([1.0 + 0.0j, 0.0 + 0.0j], dtype=_jax_complex_dtype())
-    for _qubit in range(int(n_qubits)):
-        label = next_label
-        next_label += 1
-        current_labels.append(label)
-        nodes.append((zero, (label,)))
-    for instruction in circuit.to_ir():
-        if instruction.metadata.get("is_channel"):
-            raise NotImplementedError(
-                "JAX tensor_network mode currently supports unitary circuit instructions."
-            )
-        qubits = tuple(int(qubit) for qubit in instruction.wires)
-        matrix = _jax_instruction_matrix(instruction).reshape((2,) * (2 * len(qubits)))
-        if conjugate:
-            matrix = jnp.conj(matrix)
-        input_labels = tuple(current_labels[qubit] for qubit in qubits)
-        output_labels = tuple(range(next_label, next_label + len(qubits)))
-        next_label += len(qubits)
-        for qubit, label in zip(qubits, output_labels, strict=True):
-            current_labels[qubit] = label
-        nodes.append((matrix, output_labels + input_labels))
-    return nodes, current_labels, next_label
 
 
 def jax_tensor_network_expectation_product_ops(
@@ -59,24 +23,26 @@ def jax_tensor_network_expectation_product_ops(
 ) -> Any:
     import jax.numpy as jnp
 
-    ket_nodes, ket_labels, next_label = jax_tensor_network_nodes_from_circuit(
+    ket_nodes, ket_labels, next_label = jax_circuit_tensor_nodes(
         circuit,
         n_qubits,
         start_label=0,
         conjugate=False,
+        matmul_precision=matmul_precision,
     )
-    bra_nodes, bra_labels, _next_label = jax_tensor_network_nodes_from_circuit(
+    bra_nodes, bra_labels, _next_label = jax_circuit_tensor_nodes(
         circuit,
         n_qubits,
         start_label=next_label,
         conjugate=True,
+        matmul_precision=matmul_precision,
     )
     identity = _jax_pauli_matrix("i")
     nodes = bra_nodes + ket_nodes
     for qubit in range(int(n_qubits)):
         op = ops.get(int(qubit), identity)
         nodes.append((op, (int(bra_labels[qubit]), int(ket_labels[qubit]))))
-    value = jax_contract_nodes_greedy(nodes, (), matmul_precision)
+    value = jax_contract_tensor_nodes(nodes, (), matmul_precision)
     return jnp.real(value.reshape(()))
 
 
@@ -110,8 +76,49 @@ def jax_tensor_network_z_sum(
 ) -> Any:
     import jax.numpy as jnp
 
-    values = jax_tensor_network_z_values(circuit, n_qubits, qubits, matmul_precision)
-    return jnp.sum(values)
+    selected = tuple(int(qubit) for qubit in qubits)
+    if not selected:
+        return jnp.zeros((), dtype=_jax_real_dtype())
+    if any(qubit < 0 or qubit >= n_qubits for qubit in selected):
+        return jnp.sum(
+            jax_tensor_network_z_values(circuit, n_qubits, selected, matmul_precision)
+        )
+    z = _jax_pauli_matrix("z")
+    if n_qubits == 1:
+        return jax_tensor_network_expectation_product_ops(
+            circuit, n_qubits, {0: len(selected) * z}, matmul_precision
+        )
+    ket, ket_labels, next_label = jax_circuit_tensor_nodes(
+        circuit, n_qubits, matmul_precision=matmul_precision
+    )
+    bra, bra_labels, next_label = jax_circuit_tensor_nodes(
+        circuit,
+        n_qubits,
+        start_label=next_label,
+        conjugate=True,
+        matmul_precision=matmul_precision,
+    )
+    nodes = bra + ket
+    identity = _jax_pauli_matrix("i")
+    zero = jnp.zeros_like(identity)
+    bonds = tuple(range(next_label, next_label + n_qubits - 1))
+    for qubit in range(n_qubits):
+        local = selected.count(qubit) * z
+        physical = (bra_labels[qubit], ket_labels[qubit])
+        if qubit == 0:
+            tensor = jnp.stack((local, identity))
+            labels: tuple[int, ...] = (bonds[0],) + physical
+        elif qubit == n_qubits - 1:
+            tensor = jnp.stack((identity, local))
+            labels = (bonds[-1],) + physical
+        else:
+            tensor = jnp.stack(
+                (jnp.stack((identity, zero)), jnp.stack((local, identity)))
+            )
+            labels = (bonds[qubit - 1], bonds[qubit]) + physical
+        nodes.append((tensor, labels))
+    # Bond dimension two represents sum_i Z_i without one network per term.
+    return jnp.real(jax_contract_tensor_nodes(nodes, (), matmul_precision).reshape(()))
 
 
 def jax_tensor_network_pauli_string_expectation(
@@ -204,59 +211,6 @@ def jax_slice_tensor_by_labels(
         tensor = jnp.take(tensor, int(value), axis=axis)
         remaining.pop(axis)
     return tensor, tuple(remaining)
-
-
-def jax_contract_nodes_greedy(
-    nodes: list[tuple[Any, tuple[int, ...]]],
-    output_labels: tuple[int, ...],
-    matmul_precision: str | None,
-) -> Any:
-    active = list(nodes)
-    final_outputs = set(output_labels)
-    while len(active) > 1:
-        counts: dict[int, int] = {}
-        for _tensor, labels in active:
-            for label in labels:
-                counts[label] = counts.get(label, 0) + 1
-        pair = None
-        for left_index in range(len(active)):
-            for right_index in range(left_index + 1, len(active)):
-                shared = set(active[left_index][1]) & set(active[right_index][1])
-                if shared:
-                    pair = (left_index, right_index)
-                    break
-            if pair is not None:
-                break
-        if pair is None:
-            pair = (0, 1)
-        left_index, right_index = pair
-        left_tensor, left_labels = active[left_index]
-        right_tensor, right_labels = active[right_index]
-        pair_counts = dict(counts)
-        for label in left_labels + right_labels:
-            pair_counts[label] -= 1
-        pair_outputs = tuple(
-            label
-            for label in tuple(dict.fromkeys(left_labels + right_labels))
-            if label in final_outputs or pair_counts.get(label, 0) > 0
-        )
-        tensor = _jax_einsum_by_labels(
-            left_tensor,
-            left_labels,
-            right_tensor,
-            right_labels,
-            pair_outputs,
-            matmul_precision,
-        )
-        for index in sorted((left_index, right_index), reverse=True):
-            active.pop(index)
-        active.append((tensor, pair_outputs))
-    final_tensor, final_labels = active[0]
-    if final_labels != tuple(output_labels):
-        final_tensor = _jax_einsum_reorder(
-            final_tensor, final_labels, output_labels, matmul_precision
-        )
-    return final_tensor
 
 
 def _jax_einsum_by_labels(

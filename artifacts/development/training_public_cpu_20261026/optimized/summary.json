@@ -1,0 +1,187 @@
+{
+  "benchmark_evidence_class": "comparison_non_release",
+  "cases": [
+    {
+      "case": "classifier-flagquantum-11",
+      "result": "classifier-flagquantum-11/result.json",
+      "status": "completed"
+    },
+    {
+      "case": "classifier-flagquantum-29",
+      "result": "classifier-flagquantum-29/result.json",
+      "status": "completed"
+    },
+    {
+      "case": "classifier-flagquantum-47",
+      "result": "classifier-flagquantum-47/result.json",
+      "status": "completed"
+    },
+    {
+      "case": "classifier-flagquantum_torch_module-11",
+      "result": "classifier-flagquantum_torch_module-11/result.json",
+      "status": "completed"
+    },
+    {
+      "case": "classifier-flagquantum_torch_module-29",
+      "result": "classifier-flagquantum_torch_module-29/result.json",
+      "status": "completed"
+    },
+    {
+      "case": "classifier-flagquantum_torch_module-47",
+      "result": "classifier-flagquantum_torch_module-47/result.json",
+      "status": "completed"
+    },
+    {
+      "case": "classifier-flagquantum_jax_module-11",
+      "result": "classifier-flagquantum_jax_module-11/result.json",
+      "status": "completed"
+    },
+    {
+      "case": "classifier-flagquantum_jax_module-29",
+      "result": "classifier-flagquantum_jax_module-29/result.json",
+      "status": "completed"
+    },
+    {
+      "case": "classifier-flagquantum_jax_module-47",
+      "result": "classifier-flagquantum_jax_module-47/result.json",
+      "status": "completed"
+    },
+    {
+      "case": "classifier-flagquantum_jax_kernel-11",
+      "result": "classifier-flagquantum_jax_kernel-11/result.json",
+      "status": "completed"
+    },
+    {
+      "case": "classifier-flagquantum_jax_kernel-29",
+      "result": "classifier-flagquantum_jax_kernel-29/result.json",
+      "status": "completed"
+    },
+    {
+      "case": "classifier-flagquantum_jax_kernel-47",
+      "result": "classifier-flagquantum_jax_kernel-47/result.json",
+      "status": "completed"
+    },
+    {
+      "case": "classifier-tensorcircuit_jax-11",
+      "result": "classifier-tensorcircuit_jax-11/result.json",
+      "status": "completed"
+    },
+    {
+      "case": "classifier-tensorcircuit_jax-29",
+      "result": "classifier-tensorcircuit_jax-29/result.json",
+      "status": "completed"
+    },
+    {
+      "case": "classifier-tensorcircuit_jax-47",
+      "result": "classifier-tensorcircuit_jax-47/result.json",
+      "status": "completed"
+    },
+    {
+      "case": "heisenberg-flagquantum-11",
+      "result": "heisenberg-flagquantum-11/result.json",
+      "status": "completed"
+    },
+    {
+      "case": "heisenberg-flagquantum-29",
+      "result": "heisenberg-flagquantum-29/result.json",
+      "status": "completed"
+    },
+    {
+      "case": "heisenberg-flagquantum-47",
+      "result": "heisenberg-flagquantum-47/result.json",
+      "status": "completed"
+    },
+    {
+      "case": "heisenberg-flagquantum_torch_module-11",
+      "result": "heisenberg-flagquantum_torch_module-11/result.json",
+      "status": "completed"
+    },
+    {
+      "case": "heisenberg-flagquantum_torch_module-29",
+      "result": "heisenberg-flagquantum_torch_module-29/result.json",
+      "status": "completed"
+    },
+    {
+      "case": "heisenberg-flagquantum_torch_module-47",
+      "result": "heisenberg-flagquantum_torch_module-47/result.json",
+      "status": "completed"
+    },
+    {
+      "case": "heisenberg-flagquantum_jax_module-11",
+      "result": "heisenberg-flagquantum_jax_module-11/result.json",
+      "status": "completed"
+    },
+    {
+      "case": "heisenberg-flagquantum_jax_module-29",
+      "result": "heisenberg-flagquantum_jax_module-29/result.json",
+      "status": "completed"
+    },
+    {
+      "case": "heisenberg-flagquantum_jax_module-47",
+      "result": "heisenberg-flagquantum_jax_module-47/result.json",
+      "status": "completed"
+    },
+    {
+      "case": "heisenberg-flagquantum_jax_kernel-11",
+      "result": "heisenberg-flagquantum_jax_kernel-11/result.json",
+      "status": "completed"
+    },
+    {
+      "case": "heisenberg-flagquantum_jax_kernel-29",
+      "result": "heisenberg-flagquantum_jax_kernel-29/result.json",
+      "status": "completed"
+    },
+    {
+      "case": "heisenberg-flagquantum_jax_kernel-47",
+      "result": "heisenberg-flagquantum_jax_kernel-47/result.json",
+      "status": "completed"
+    },
+    {
+      "case": "heisenberg-tensorcircuit_jax-11",
+      "result": "heisenberg-tensorcircuit_jax-11/result.json",
+      "status": "completed"
+    },
+    {
+      "case": "heisenberg-tensorcircuit_jax-29",
+      "result": "heisenberg-tensorcircuit_jax-29/result.json",
+      "status": "completed"
+    },
+    {
+      "case": "heisenberg-tensorcircuit_jax-47",
+      "result": "heisenberg-tensorcircuit_jax-47/result.json",
+      "status": "completed"
+    }
+  ],
+  "hostname": "redacted",
+  "platform": "macOS-27.0-arm64-arm-64bit",
+  "python": "3.12.14",
+  "runner": "training_comparison",
+  "scalability_claim_allowed": false,
+  "schema": "flagquantum.training_comparison.v1",
+  "smoke": false,
+  "source": {
+    "code_version": "c06cabd1ef3edb4453433e31f93e67de4af65945",
+    "dirty": false,
+    "installation": {
+      "distribution_version": "0.4.0",
+      "native_cpu_adjoint_available": true,
+      "native_cpu_extension_sha256": "a7b5f80e48a1c387e6020d8b8f0e8d6951659ab4079a456963c3b5a32d8f551c"
+    },
+    "producer_sha256": {
+      "benchmarks/training_comparison.py": "bd30a4afcb4b7631716b18901ab98255875567b2bbe20ea7740c3935acf9078d",
+      "benchmarks/training_engines.py": "ca3f49678f2ec97e2fde0ddbb1658291b6114f988c5300b7253e54376f6d307c",
+      "benchmarks/training_workloads.py": "7c797a3214221d3d858e12d3852cfb7a191689b0dad9dc227a395dd983777235"
+    },
+    "protocol_sha256": "02f15449c3f5aaf8ebb34151aaaadb196ea8cffa01602bd6ee5d73882ba190a0",
+    "versions": {
+      "jax": "0.10.2",
+      "jaxlib": "0.10.2",
+      "numpy": "2.5.4",
+      "pennylane": "0.45.1",
+      "pennylane-lightning": "0.45.0",
+      "tensorcircuit-ng": "1.10.0",
+      "torch": "2.14.1"
+    }
+  },
+  "world_size": 1
+}

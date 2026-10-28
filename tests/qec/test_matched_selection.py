@@ -822,6 +822,7 @@ def test_registered_explicit_path_factory_and_wrong_mode_refusal(
 def receipt_fixture(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
+    tf32_disabled: None,
     decisions: tuple[Path, Path, Path, Path, str],
 ) -> dict[str, Any]:
     # Every hardware/file boundary below is an explicit software fake. No CUDA
@@ -853,8 +854,6 @@ def receipt_fixture(
         "digest",
         lambda p: comparison.FAST_SHA256 if p == weight else digest(p),
     )
-    monkeypatch.setattr(torch.backends.cuda.matmul, "allow_tf32", False)
-    monkeypatch.setattr(torch.backends.cudnn, "allow_tf32", False)
     monkeypatch.setattr(torch, "are_deterministic_algorithms_enabled", lambda: True)
     calls: list[object] = []
 
@@ -1049,7 +1048,10 @@ def test_receipt_failure_has_no_success_and_refuses_retry(
         def failed(*args: Any, **kwargs: Any) -> list[old_parity.PathEvidence]:
             evidence = check(*args, **kwargs)
             if damage == "precision":
-                monkeypatch.setattr(torch.backends.cuda.matmul, "allow_tf32", True)
+                # Restored by the `tf32_disabled` fixture; assigning the flag
+                # directly is what torch supports, and monkeypatch cannot undo it
+                # under pytest 9.2.
+                torch.backends.cuda.matmul.allow_tf32 = True
             if damage == "extra":
                 (output / "extra.json").write_text("{}")
             if damage == "source":

@@ -5,6 +5,101 @@ from __future__ import annotations
 from collections.abc import Sequence
 from typing import Any
 
+from ..primitives import (
+    _jax_apply_matrix,
+    _jax_complex_dtype,
+    _jax_instruction_matrix,
+    jax_circuit_tensor_nodes,
+    jax_contract_tensor_nodes,
+)
+
+
+def jax_statevector_from_circuit(
+    circuit: Any,
+    n_qubits: int,
+    parameters: Any,
+    *,
+    matmul_precision: str | None = "highest",
+    diagnostics: dict[str, Any] | None = None,
+) -> Any:
+    """Apply static gates with local matrix fusion and exact CX permutations."""
+    import jax.numpy as jnp
+
+    del parameters
+    instructions = tuple(circuit.to_ir())
+    if diagnostics is not None:
+        diagnostics.update(
+            algorithm="fused_gate_updates",
+            largest_intermediate_elements_per_entry=2**n_qubits,
+        )
+    # Tiny states favor fused elementwise updates over a contraction program.
+    if 2**n_qubits >= 32 and not any(
+        item.metadata.get("is_channel") for item in instructions
+    ):
+        nodes, labels, _ = jax_circuit_tensor_nodes(
+            circuit, n_qubits, matmul_precision=matmul_precision
+        )
+        operands: list[Any] = []
+        for tensor, legs in nodes:
+            operands.extend((tensor, legs))
+        operands.append(tuple(labels))
+        path, info = jnp.einsum_path(*operands, optimize="greedy")
+        direct_cost = sum(2 ** len(item.wires) for item in instructions) * 2**n_qubits
+        peak = int(info.largest_intermediate)
+        if peak <= max(2**n_qubits, 16) and info.opt_cost < direct_cost:
+            if diagnostics is not None:
+                diagnostics.update(
+                    algorithm="dense_output_contraction",
+                    largest_intermediate_elements_per_entry=peak,
+                )
+            return jax_contract_tensor_nodes(
+                nodes, tuple(labels), matmul_precision, path=path
+            ).reshape(-1)
+    state = jnp.zeros((2**n_qubits,), dtype=_jax_complex_dtype()).at[0].set(1.0 + 0.0j)
+    pending_wire = None
+    pending_matrix = None
+    for instruction in instructions:
+        wires = tuple(int(wire) for wire in instruction.wires)
+        if len(wires) == 1:
+            matrix = _jax_instruction_matrix(instruction)
+            if pending_wire == wires[0] and pending_matrix is not None:
+                pending_matrix = jnp.matmul(
+                    matrix, pending_matrix, precision=matmul_precision
+                )
+                continue
+        if pending_wire is not None:
+            state = _jax_apply_matrix(
+                state, pending_matrix, (pending_wire,), n_qubits, matmul_precision
+            )
+            pending_wire, pending_matrix = None, None
+        if len(wires) == 1:
+            pending_wire, pending_matrix = wires[0], matrix
+        elif instruction.name == "cx":
+            state = _jax_apply_cx_permutation(state, wires, n_qubits)
+        else:
+            state = _jax_apply_matrix(
+                state,
+                _jax_instruction_matrix(instruction),
+                wires,
+                n_qubits,
+                matmul_precision,
+            )
+    if pending_wire is not None:
+        state = _jax_apply_matrix(
+            state, pending_matrix, (pending_wire,), n_qubits, matmul_precision
+        )
+    return state
+
+
+def _jax_apply_cx_permutation(state: Any, wires: tuple[int, ...], n_wires: int) -> Any:
+    import jax.numpy as jnp
+
+    permutation = wires + tuple(wire for wire in range(n_wires) if wire not in wires)
+    inverse = tuple(permutation.index(wire) for wire in range(n_wires))
+    rows = state.reshape((2,) * n_wires).transpose(permutation).reshape(4, -1)
+    swapped = jnp.stack((rows[0], rows[1], rows[3], rows[2]))
+    return swapped.reshape((2,) * n_wires).transpose(inverse).reshape(-1)
+
 
 def jax_basis_indices_for_qubits(
     global_indices: Any,
