@@ -70,6 +70,7 @@ class SyntheticPipeline(torch.nn.Module):
 def test_actual_stages_train_to_final_and_complete_shared_stream_without_stage_mocks(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
+    tf32_disabled: None,
 ) -> None:
     """Keep all six actual step2000 identities; reduce only synthetic sample sizes."""
     circuit = SyntheticCircuit()
@@ -153,8 +154,6 @@ def test_actual_stages_train_to_final_and_complete_shared_stream_without_stage_m
         )
 
     monkeypatch.setattr(comparison, "cuda_metadata", hardware)
-    monkeypatch.setattr(torch.backends.cuda.matmul, "allow_tf32", False)
-    monkeypatch.setattr(torch.backends.cudnn, "allow_tf32", False)
     monkeypatch.setattr(torch, "are_deterministic_algorithms_enabled", lambda: True)
     original_module_to, original_tensor_to = torch.nn.Module.to, torch.Tensor.to
 
