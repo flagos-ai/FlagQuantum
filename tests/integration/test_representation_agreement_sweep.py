@@ -562,3 +562,316 @@ def test_a_smooth_truncating_cell_records_its_own_derivative_and_its_jump() -> N
     assert own_map["derivative"]["checked"] >= 4
     assert own_map["smoothness"]["smooth"] is True
     assert own_map["derivative"]["max_relative_error"] > 1e-3, own_map
+
+
+#: The oracle below is the parameter-shift rule. It is exact for the rotation
+#: layers this workload is built from and independent of autograd, so agreement
+#: with the exact path's autograd gradient is a check on the derivative rather
+#: than a restatement of it. Bound is machine precision in double.
+ORACLE_RELATIVE_BOUND = 1e-9
+
+
+def test_a_cell_records_the_weight_a_biting_cap_discarded() -> None:
+    """An observed bond at the cap is not the same as discarded weight.
+
+    The cap can be reached without anything being thrown away, so a cell has to
+    record the weight the SVD actually dropped. Without it "truncated" is an
+    inference from bonds, and a reader cannot tell how much of the state was
+    lost.
+    """
+    exact = _cell(n_qubits=8, max_bond=exact_max_bond(8))
+
+    assert exact["mps_discarded_weight"] == 0.0
+    assert exact["mps_truncation_steps"] == 0
+
+    truncated = _cell(n_qubits=8, depth=8, max_bond=4)
+
+    assert truncated["mps_truncated"] is True
+    assert truncated["mps_discarded_weight"] > 0.0, truncated
+    assert truncated["mps_truncation_steps"] > 0, truncated
+    # The observed bonds are recorded per cut, not only their maximum.
+    assert max(truncated["mps_bond_dims"]) == truncated["observed_max_bond"]
+
+
+def test_the_recorded_weight_is_positive_exactly_where_the_cap_acted() -> None:
+    """Two independent determinations of truncation must agree.
+
+    The cell derives ``mps_truncated`` from the bond the unconstrained state
+    reaches, and the state records the weight each split discarded. They are
+    computed from different evidence, so a cell where one says the cap acted and
+    the other reports nothing is a defect in the record rather than a nuance.
+
+    The recorded weight is cumulative over the steps of the run, so it is not a
+    function of the cap that a reader may assume monotone: a narrower cap keeps
+    narrower intermediate states and can discard less in total. It answers
+    whether the cap acted and by how much at its worst step, not how much of the
+    final state was lost.
+    """
+    for cap in (2, 4, 8):
+        cell = _cell(n_qubits=8, depth=8, max_bond=cap)
+        assert cell["mps_truncated"] is True, cap
+        assert cell["mps_discarded_weight"] > 0.0, (cap, cell)
+        assert cell["mps_truncation_steps"] > 0, cap
+
+    exact = _cell(n_qubits=8, depth=8, max_bond=exact_max_bond(8))
+    assert exact["mps_truncated"] is False
+    assert exact["mps_discarded_weight"] == 0.0
+    assert exact["mps_truncation_steps"] == 0
+
+
+def test_each_cell_names_the_seed_that_drew_its_parameters() -> None:
+    """A grid cell is only reproducible with the draw that produced it."""
+    first = _cell(seed=260720)
+    second = _cell(seed=260721)
+
+    assert first["seed"] == 260720
+    assert second["seed"] == 260721
+    assert (
+        first["energies"]["statevector"] != second["energies"]["statevector"]
+    ), "two seeds must not describe the same parameters"
+
+
+def test_the_grid_keeps_every_seed_it_was_asked_for() -> None:
+    """Multiple seeds are one corpus, not one cell measured twice."""
+    cells, skipped = sweep.measure_grid(
+        widths=(4,),
+        depths=(2,),
+        structures=("nearest_neighbour",),
+        max_bonds=(4,),
+        seeds=(260720, 260721),
+    )
+
+    assert skipped == []
+    assert [cell["seed"] for cell in cells] == [260720, 260721]
+    assert len({cell["n_qubits"] for cell in cells}) == 1
+    assert len({cell["depth"] for cell in cells}) == 1
+    assert len({cell["max_bond_cutoff"] for cell in cells}) == 1
+    assert cells[0]["energies"] != cells[1]["energies"]
+
+
+def test_the_parameter_shift_oracle_reproduces_the_exact_gradient() -> None:
+    """The oracle has to be independent and exact, or it certifies nothing.
+
+    The parameter-shift rule is exact for these rotation layers and never runs
+    the backward pass, so it checks autograd against arithmetic rather than
+    against itself.
+    """
+    parameters = (
+        0.05 * torch.randn(2, 4, 2, generator=torch.Generator().manual_seed(260720))
+    ).to(torch.float64)
+
+    oracle = sweep.parameter_shift_gradient(
+        parameters, structure="nearest_neighbour", n_qubits=4
+    )
+    autograd = sweep.ideal_gradient(
+        parameters, structure="nearest_neighbour", n_qubits=4
+    )
+    conformance = sweep.gradient_conformance(oracle, autograd)
+
+    assert conformance["relative_l2_error"] is not None
+    assert conformance["relative_l2_error"] < ORACLE_RELATIVE_BOUND, conformance
+    assert conformance["cosine_similarity"] is not None
+    assert conformance["cosine_similarity"] > 1 - 1e-12, conformance
+
+
+def test_the_oracle_is_recorded_only_where_it_is_defined() -> None:
+    """The oracle differentiates the exact map, and only inside its width bound.
+
+    Reading its agreement as a statement about a truncated map would attribute
+    to truncation an error the oracle never measured, and running it at every
+    width would make the bounded corpus unaffordable. Both are recorded rather
+    than silently dropped.
+    """
+    small = _cell(n_qubits=4, max_bond=4, dtype=torch.complex128, gradients=True)
+    oracle = small["gradients"]["oracle"]
+
+    assert oracle["method"] == "parameter_shift"
+    assert oracle["applies_to"] == "statevector"
+    assert oracle["relative_l2_error"] < ORACLE_RELATIVE_BOUND, oracle
+    # It certifies the exact reference path only: it cannot speak for a
+    # representation whose map is the truncated one.
+    assert set(oracle["compares"]) == {"statevector"}
+    assert oracle["valid_domain"].startswith("exact"), oracle
+
+    wide = _cell(
+        n_qubits=12,
+        depth=2,
+        max_bond=16,
+        modes=("statevector", "mps"),
+        dtype=torch.complex128,
+        gradients=True,
+    )
+    skipped = wide["gradients"]["oracle"]
+
+    assert "relative_l2_error" not in skipped, skipped
+    assert skipped["skipped"].startswith("width 12"), skipped
+
+
+def test_a_degenerate_cut_is_reported_as_a_domain_boundary() -> None:
+    """Where the spectrum ties at the cut, the kept subspace is not unique.
+
+    A truncated SVD picks a subspace; if two singular values at the cut are
+    equal, that choice is arbitrary and the map has no derivative to reproduce.
+    That is a boundary of the measurement, not a result about a backend, so the
+    gap is recorded beside the gradient rather than left implicit.
+    """
+    tied = torch.tensor([0.5**0.5, 0.0, 0.0, 0.5**0.5], dtype=torch.complex128)
+    separated = torch.tensor([0.9**0.5, 0.0, 0.0, 0.1**0.5], dtype=torch.complex128)
+
+    degenerate = sweep.schmidt_gap(tied, rank=1)
+    split = sweep.schmidt_gap(separated, rank=1)
+
+    assert degenerate["near_degenerate"] is True, degenerate
+    assert degenerate["min_gap"] == pytest.approx(0.0, abs=1e-12)
+    assert split["near_degenerate"] is False, split
+    assert split["min_gap"] == pytest.approx(0.8, rel=1e-12)
+    # A cut the cap never reaches is not a truncation decision at all.
+    assert sweep.schmidt_gap(separated, rank=2)["min_gap"] is None
+
+    cell = _cell(n_qubits=8, depth=8, max_bond=4, gradients=True)
+    assert cell["schmidt"]["rank"] == 4
+    assert cell["schmidt"]["min_gap"] is not None
+
+
+def test_the_payload_states_the_tolerances_its_claims_hold_to() -> None:
+    """A conformance artifact without its bounds is a table of numbers.
+
+    The two precisions cannot share one bound: float32 accumulation separates
+    the paths by about 4e-7 before any truncation happens, so a bound borrowed
+    from the double run would fail honest complex64 evidence and one borrowed
+    from the single run would pass a broken double run.
+    """
+    single = sweep.tolerances_for(torch.complex64)
+    double = sweep.tolerances_for(torch.complex128)
+
+    for tolerances in (single, double):
+        assert tolerances["oracle_relative"] > 0
+        assert tolerances["untruncated_state_fidelity_deficit"] > 0
+        assert tolerances["untruncated_gradient_relative"] > 0
+        # Truncated cells are reported, not asserted against a bound.
+        assert tolerances["truncated_gradient_relative"] is None
+
+    assert (
+        double["untruncated_gradient_relative"]
+        < single["untruncated_gradient_relative"]
+    )
+    assert double["oracle_relative"] < single["oracle_relative"]
+
+
+def test_the_producer_refuses_to_seal_a_measurement_of_another_tree() -> None:
+    """``source_commit`` names this repository, so the code that ran must be it.
+
+    The first run of this corpus imported an installed ``flagquantum`` from
+    site-packages instead of the working tree, and every cell then raised on a
+    keyword this branch passes. The payload still recorded this repository's
+    revision, because the revision comes from ``git rev-parse`` rather than from
+    the interpreter. Reading that payload as evidence about this revision would
+    have been wrong in a way nothing in it disclosed.
+    """
+    import flagquantum
+
+    inside = sweep.package_record(sweep.REPO_ROOT / "flagquantum/__init__.py", "0.0.0")
+    outside = sweep.package_record(Path("/opt/somewhere/flagquantum/__init__.py"), None)
+
+    assert inside["from_repository"] is True
+    assert inside["path"] == "flagquantum/__init__.py"
+    assert outside["from_repository"] is False
+    assert outside["version"] is None
+
+    original = flagquantum.__file__
+    try:
+        flagquantum.__file__ = "/opt/somewhere/flagquantum/__init__.py"
+        with pytest.raises(RuntimeError, match="not this repository"):
+            sweep.require_repository_package()
+    finally:
+        flagquantum.__file__ = original
+
+
+CONFORMANCE_ARTIFACTS = (
+    Path(__file__).resolve().parents[2]
+    / "artifacts/development/representation_conformance_cpu_20261028"
+)
+
+
+@pytest.mark.parametrize("dtype", ["complex64", "complex128"])
+def test_the_recorded_conformance_corpus_holds_the_bounds_it_states(dtype: str) -> None:
+    """The checked-in payload is evidence only if it clears its own tolerances.
+
+    This is the regression check the artifact exists for: a later change to a
+    representation, a truncation rule or the harness has to keep every recorded
+    cell inside the bound the payload states, or the limitation text derived from
+    it is stale.
+    """
+    document = json.loads(
+        (CONFORMANCE_ARTIFACTS / f"{dtype}.json").read_text(encoding="utf-8")
+    )
+    tolerances = document["tolerances"]
+    cells = document["cells"]
+
+    assert document["imported_package"]["from_repository"] is True
+    assert document["measuring_source_committed"] is True
+    assert len(document["seeds"]) >= 2, document["seeds"]
+    assert len({cell["seed"] for cell in cells}) == len(document["seeds"])
+    assert document["summary"]["incomplete_cells"] == []
+    assert {cell["structure"] for cell in cells} == {"nearest_neighbour", "all_to_all"}
+    assert {cell["mps_truncated"] for cell in cells} == {True, False}
+
+    for cell in cells:
+        oracle = cell["gradients"]["oracle"]
+        assert oracle["applies_to"] == "statevector"
+        if "relative_l2_error" in oracle:
+            assert oracle["relative_l2_error"] < tolerances["oracle_relative"], cell
+        else:
+            assert oracle["skipped"].startswith("width"), cell
+        # A refusal is recorded, never substituted; this corpus records none.
+        assert cell["gradients"]["unsupported"] == {}, cell
+        # The own-map check is read only where its arithmetic can carry it.
+        domain = cell["gradients"]["mps_own_map"]["finite_difference_domain"]
+        if dtype == "complex64":
+            assert domain.startswith("not a check on autograd"), cell
+        else:
+            assert domain.startswith("valid"), cell
+
+        if cell["mps_truncated"] is False:
+            for mode in ("mps", "tensor_network"):
+                entry = cell["gradients"]["per_mode"][mode]
+                assert (
+                    entry["relative_l2_error"]
+                    < tolerances["untruncated_gradient_relative"]
+                ), (mode, cell)
+                deficit = 1.0 - cell["states"][mode]["fidelity_vs_statevector"]
+                assert deficit < tolerances["untruncated_state_fidelity_deficit"], (
+                    mode,
+                    cell,
+                )
+        else:
+            # The truncated regime is reported, not asserted; what must hold is
+            # that the numbers a reader needs to judge it are present.
+            assert cell["mps_discarded_weight"] > 0.0, cell
+            assert cell["schmidt"]["min_gap"] is not None, cell
+            assert cell["gradients"]["per_mode"]["mps"]["relative_l2_error"] is not None
+
+
+def test_the_own_map_check_states_the_precision_it_is_valid_at() -> None:
+    """A finite difference of a float32 energy is arithmetic, not a derivative.
+
+    Central differencing with step 1e-5 divides a difference of two float32
+    energies by 2e-5, so about six of the eight digits the difference carried
+    are subtracted away. The double-precision run keeps that check meaningful
+    (3.9e-09 when nothing is discarded); the single-precision run records up to
+    2.25 in cells where the cap did not act at all, which is the probe's own
+    noise and says nothing about the backward pass.
+    """
+    double = _cell(
+        n_qubits=4, max_bond=exact_max_bond(4), dtype=torch.complex128, gradients=True
+    )
+    single = _cell(
+        n_qubits=4, max_bond=exact_max_bond(4), dtype=torch.complex64, gradients=True
+    )
+
+    assert double["gradients"]["mps_own_map"]["finite_difference_domain"].startswith(
+        "valid"
+    )
+    assert single["gradients"]["mps_own_map"]["finite_difference_domain"].startswith(
+        "not a check on autograd"
+    )
