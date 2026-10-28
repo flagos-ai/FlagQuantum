@@ -284,7 +284,15 @@ def _energy_gradient(
     """Return ``d energy / d parameters`` through one representation."""
 
     leaf = parameters.detach().clone().requires_grad_(True)
-    options = {"max_bond": max_bond} if mode == "mps" and max_bond is not None else {}
+    options: dict[str, object] = (
+        {"max_bond": max_bond} if mode == "mps" and max_bond is not None else {}
+    )
+    if options:
+        # This sweep measures the retained-subspace rule itself: whether autograd
+        # through a truncated split reproduces the derivative of that split. The
+        # default refuses it precisely because the rule is not the derivative of
+        # the forward map, so measuring the difference requires asking for it.
+        options["truncated_gradient"] = "projected_stop_subspace"
     target = fqr.run_native(build_ansatz(leaf, structure), mode=mode, **options)
     value = energy(target, n_qubits)
     (gradient,) = torch.autograd.grad(value, leaf)
