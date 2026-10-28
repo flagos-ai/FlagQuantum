@@ -61,7 +61,12 @@ def test_primary_many_core_headlines_match_raw_measurements() -> None:
         for engine in case["engines"].values():
             assert engine["value_and_grad"]["sample_count"] == 7
 
-    assert observed == pytest.approx(expected)
+    # pytest 9.2 refuses a dict whose values are themselves sequences, so the
+    # comparison is made per workload. The key set is asserted first: with a
+    # per-key loop a missing workload would otherwise pass silently.
+    assert set(observed) == set(expected)
+    for name, expected_pair in expected.items():
+        assert observed[name] == pytest.approx(expected_pair)
     assert "**1.209x**" in document
     assert "**1.347x**" in document
     assert "**55.511x**" in document

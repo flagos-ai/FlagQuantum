@@ -63,7 +63,12 @@ def test_linux_gcc11_headlines_match_raw_measurements() -> None:
             assert case["correctness"]["passed"] is True
             assert case["stability"]["passed"] is True
 
-    assert observed == pytest.approx(expected)
+    # pytest 9.2 refuses a dict whose values are themselves sequences, so the
+    # comparison is made per cell. The key set is asserted first: with a per-key
+    # loop a missing cell would otherwise pass silently.
+    assert set(observed) == set(expected)
+    for key, expected_pair in expected.items():
+        assert observed[key] == pytest.approx(expected_pair)
     assert "**4.479x**" in document
     assert "**2.610x**" in document
     assert "**5.816x**" in document
