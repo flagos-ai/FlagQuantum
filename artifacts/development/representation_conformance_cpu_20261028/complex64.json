@@ -1,0 +1,6241 @@
+{
+  "schema": "flagquantum.representation_agreement_sweep.v1",
+  "benchmark": "representation_agreement_sweep",
+  "artifact_class": "measured_local_run",
+  "claim": "backend selection changes execution but not the result contract; this payload states the regime that was measured and the bound the spread held to inside it",
+  "distribution_semantics": "single_device_fast_path",
+  "scalability_claim_allowed": false,
+  "release_gate_allowed": false,
+  "non_release_evidence": true,
+  "benchmark_evidence_class": "local_non_release",
+  "scalability_blockers": [
+    "single-process CPU agreement measurement across representations; it shards no workload and is not distributed scalability evidence"
+  ],
+  "modes": [
+    "statevector",
+    "mps",
+    "tensor_network"
+  ],
+  "gradients_measured": true,
+  "imported_package": {
+    "path": "/Users/baai/Documents/liuwei/FlagQuantum-mps-placement/flagquantum/__init__.py",
+    "version": "0.4.0",
+    "from_repository": true
+  },
+  "tolerances": {
+    "oracle_relative": 1e-05,
+    "untruncated_state_fidelity_deficit": 1e-05,
+    "untruncated_gradient_relative": 0.0001,
+    "truncated_gradient_relative": null
+  },
+  "oracle_max_width": 8,
+  "near_degenerate_gap": 1e-09,
+  "grid": {
+    "widths": [
+      4,
+      8
+    ],
+    "depths": [
+      2,
+      4
+    ],
+    "structures": [
+      "nearest_neighbour",
+      "all_to_all"
+    ],
+    "max_bond_cutoffs": [
+      4,
+      16
+    ]
+  },
+  "observable": "open-boundary transverse-field Ising, h=0.7",
+  "parameter_initialization": "0.05 * float32 randn, one seeded draw shared per cell; complex128 widens the same float32 angles exactly",
+  "seed": 260720,
+  "seeds": [
+    260720,
+    260721,
+    260722
+  ],
+  "device": "cpu",
+  "dtype": "complex64",
+  "summary": {
+    "cells_total": 48,
+    "truncated": {
+      "cells": 9,
+      "max_spread_relative": 0.233785,
+      "max_spread_absolute": 1.26597,
+      "worst_cell": {
+        "n_qubits": 8,
+        "depth": 4,
+        "structure": "all_to_all",
+        "max_bond_cutoff": 4
+      }
+    },
+    "untruncated": {
+      "cells": 39,
+      "max_spread_relative": 4.10343e-06,
+      "max_spread_absolute": 2.24113e-05,
+      "worst_cell": {
+        "n_qubits": 8,
+        "depth": 2,
+        "structure": "all_to_all",
+        "max_bond_cutoff": 16
+      }
+    },
+    "incomplete_cells": []
+  },
+  "skipped_configurations": [],
+  "cells": [
+    {
+      "n_qubits": 4,
+      "depth": 2,
+      "structure": "nearest_neighbour",
+      "max_bond_cutoff": 4,
+      "seed": 260720,
+      "observed_max_bond": 4,
+      "mps_bond_dims": [
+        2,
+        4,
+        2
+      ],
+      "mps_discarded_weight": 0.0,
+      "mps_max_truncation_error": 0.0,
+      "mps_truncation_steps": 0,
+      "headroom_max_bond": 4,
+      "mps_truncated": false,
+      "energies": {
+        "statevector": -2.73960829,
+        "mps": -2.73960924,
+        "tensor_network": -2.73960829
+      },
+      "spread_absolute": 9.53674e-07,
+      "spread_relative": 3.48106e-07,
+      "states": {
+        "statevector": {
+          "fidelity_vs_statevector": 1.0,
+          "norm_drift": 0.0
+        },
+        "mps": {
+          "fidelity_vs_statevector": 0.9999999999999236,
+          "norm_drift": 2.209617098181127e-07
+        },
+        "tensor_network": {
+          "fidelity_vs_statevector": 0.9999999999999922,
+          "norm_drift": 4.099865447138029e-08
+        }
+      },
+      "observables": {
+        "statevector": {
+          "z:0": -0.0253717340528965,
+          "x:1": 0.9892630577087402,
+          "zz:0,1": 0.08430145680904388
+        },
+        "mps": {
+          "z:0": -0.02537190169095993,
+          "x:1": 0.9892635345458984,
+          "zz:0,1": 0.08430127799510956
+        },
+        "tensor_network": {
+          "z:0": -0.025371775031089783,
+          "x:1": 0.9892630577087402,
+          "zz:0,1": 0.08430136740207672
+        }
+      },
+      "gradients": {
+        "reference": "statevector",
+        "per_mode": {
+          "statevector": {
+            "relative_l2_error": 0.0,
+            "cosine_similarity": 0.9999999999999997
+          },
+          "mps": {
+            "relative_l2_error": 4.1030300778753096e-07,
+            "cosine_similarity": 0.9999999999999697
+          },
+          "tensor_network": {
+            "relative_l2_error": 2.515659495470369e-07,
+            "cosine_similarity": 0.9999999999999767
+          }
+        },
+        "unsupported": {},
+        "oracle": {
+          "method": "parameter_shift",
+          "applies_to": "statevector",
+          "valid_domain": "exact statevector map only: the rule is exact for the rotation layers, and it does not apply to a map whose bond truncation discarded weight",
+          "compares": [
+            "statevector"
+          ],
+          "relative_l2_error": 4.1910129481675737e-07,
+          "cosine_similarity": 0.9999999999999128
+        },
+        "mps_own_map": {
+          "derivative": {
+            "method": "central_finite_difference",
+            "step": 1e-05,
+            "indices": [
+              0,
+              2,
+              4,
+              6,
+              8,
+              10,
+              12,
+              14
+            ],
+            "checked": 8,
+            "max_abs_error": 0.2081974670290947,
+            "max_relative_error": 0.11754293764914654
+          },
+          "finite_difference_domain": "not a check on autograd below double precision: the difference of two float32 energies with a 1e-5 step loses about six digits, so this number is the probe's arithmetic rather than a statement about the backward pass",
+          "smoothness": {
+            "index": 2,
+            "half_range": 0.05,
+            "points": 7,
+            "largest_step_jump": 0.0013222694396972656,
+            "bond_changed": false,
+            "smooth": true,
+            "energies": [
+              -2.736280918121,
+              -2.737603187561,
+              -2.738718032837,
+              -2.739609241486,
+              -2.740285158157,
+              -2.740749120712,
+              -2.740994215012
+            ]
+          }
+        }
+      },
+      "schmidt": {
+        "rank": 4,
+        "min_gap": null,
+        "near_degenerate": null
+      }
+    },
+    {
+      "n_qubits": 4,
+      "depth": 2,
+      "structure": "nearest_neighbour",
+      "max_bond_cutoff": 4,
+      "seed": 260721,
+      "observed_max_bond": 4,
+      "mps_bond_dims": [
+        2,
+        4,
+        2
+      ],
+      "mps_discarded_weight": 0.0,
+      "mps_max_truncation_error": 0.0,
+      "mps_truncation_steps": 0,
+      "headroom_max_bond": 4,
+      "mps_truncated": false,
+      "energies": {
+        "statevector": -2.84729767,
+        "mps": -2.84729981,
+        "tensor_network": -2.84729767
+      },
+      "spread_absolute": 2.14577e-06,
+      "spread_relative": 7.53615e-07,
+      "states": {
+        "statevector": {
+          "fidelity_vs_statevector": 0.9999999999999998,
+          "norm_drift": 0.0
+        },
+        "mps": {
+          "fidelity_vs_statevector": 0.9999999999999638,
+          "norm_drift": 3.0149778762478263e-07
+        },
+        "tensor_network": {
+          "fidelity_vs_statevector": 0.9999999999999926,
+          "norm_drift": 5.037450523381892e-08
+        }
+      },
+      "observables": {
+        "statevector": {
+          "z:0": 0.05487976223230362,
+          "x:1": 0.9894288778305054,
+          "zz:0,1": -0.03658219426870346
+        },
+        "mps": {
+          "z:0": 0.05487995594739914,
+          "x:1": 0.9894295334815979,
+          "zz:0,1": -0.03658236190676689
+        },
+        "tensor_network": {
+          "z:0": 0.05487985908985138,
+          "x:1": 0.9894289970397949,
+          "zz:0,1": -0.036582157015800476
+        }
+      },
+      "gradients": {
+        "reference": "statevector",
+        "per_mode": {
+          "statevector": {
+            "relative_l2_error": 0.0,
+            "cosine_similarity": 0.9999999999999999
+          },
+          "mps": {
+            "relative_l2_error": 4.6438652465138775e-07,
+            "cosine_similarity": 0.9999999999998924
+          },
+          "tensor_network": {
+            "relative_l2_error": 3.6114876910707953e-07,
+            "cosine_similarity": 0.9999999999999352
+          }
+        },
+        "unsupported": {},
+        "oracle": {
+          "method": "parameter_shift",
+          "applies_to": "statevector",
+          "valid_domain": "exact statevector map only: the rule is exact for the rotation layers, and it does not apply to a map whose bond truncation discarded weight",
+          "compares": [
+            "statevector"
+          ],
+          "relative_l2_error": 3.71711659164892e-07,
+          "cosine_similarity": 0.9999999999999322
+        },
+        "mps_own_map": {
+          "derivative": {
+            "method": "central_finite_difference",
+            "step": 1e-05,
+            "indices": [
+              0,
+              2,
+              4,
+              6,
+              8,
+              10,
+              12,
+              14
+            ],
+            "checked": 8,
+            "max_abs_error": 0.10094643384218216,
+            "max_relative_error": 0.0597403259022196
+          },
+          "finite_difference_domain": "not a check on autograd below double precision: the difference of two float32 energies with a 1e-5 step loses about six digits, so this number is the probe's arithmetic rather than a statement about the backward pass",
+          "smoothness": {
+            "index": 2,
+            "half_range": 0.05,
+            "points": 7,
+            "largest_step_jump": 0.0013921260833740234,
+            "bond_changed": false,
+            "smooth": true,
+            "energies": [
+              -2.849279403687,
+              -2.848804712296,
+              -2.848144769669,
+              -2.847299814224,
+              -2.84627366066,
+              -2.845065593719,
+              -2.843673467636
+            ]
+          }
+        }
+      },
+      "schmidt": {
+        "rank": 4,
+        "min_gap": null,
+        "near_degenerate": null
+      }
+    },
+    {
+      "n_qubits": 4,
+      "depth": 2,
+      "structure": "nearest_neighbour",
+      "max_bond_cutoff": 4,
+      "seed": 260722,
+      "observed_max_bond": 4,
+      "mps_bond_dims": [
+        2,
+        4,
+        2
+      ],
+      "mps_discarded_weight": 0.0,
+      "mps_max_truncation_error": 0.0,
+      "mps_truncation_steps": 0,
+      "headroom_max_bond": 4,
+      "mps_truncated": false,
+      "energies": {
+        "statevector": -2.61420178,
+        "mps": -2.61420107,
+        "tensor_network": -2.61420155
+      },
+      "spread_absolute": 7.15256e-07,
+      "spread_relative": 2.73604e-07,
+      "states": {
+        "statevector": {
+          "fidelity_vs_statevector": 1.0,
+          "norm_drift": 0.0
+        },
+        "mps": {
+          "fidelity_vs_statevector": 0.9999999999999549,
+          "norm_drift": 2.793633084863245e-07
+        },
+        "tensor_network": {
+          "fidelity_vs_statevector": 0.999999999999988,
+          "norm_drift": 4.4294528045440984e-08
+        }
+      },
+      "observables": {
+        "statevector": {
+          "z:0": 0.055571358650922775,
+          "x:1": 0.9942792654037476,
+          "zz:0,1": -0.034262169152498245
+        },
+        "mps": {
+          "z:0": 0.05557125806808472,
+          "x:1": 0.9942787885665894,
+          "zz:0,1": -0.03426213935017586
+        },
+        "tensor_network": {
+          "z:0": 0.055571362376213074,
+          "x:1": 0.9942790865898132,
+          "zz:0,1": -0.03426216542720795
+        }
+      },
+      "gradients": {
+        "reference": "statevector",
+        "per_mode": {
+          "statevector": {
+            "relative_l2_error": 0.0,
+            "cosine_similarity": 1.0
+          },
+          "mps": {
+            "relative_l2_error": 3.442311232003544e-07,
+            "cosine_similarity": 0.9999999999999416
+          },
+          "tensor_network": {
+            "relative_l2_error": 3.2576992613914637e-07,
+            "cosine_similarity": 0.9999999999999885
+          }
+        },
+        "unsupported": {},
+        "oracle": {
+          "method": "parameter_shift",
+          "applies_to": "statevector",
+          "valid_domain": "exact statevector map only: the rule is exact for the rotation layers, and it does not apply to a map whose bond truncation discarded weight",
+          "compares": [
+            "statevector"
+          ],
+          "relative_l2_error": 3.8006557414517904e-07,
+          "cosine_similarity": 0.9999999999999292
+        },
+        "mps_own_map": {
+          "derivative": {
+            "method": "central_finite_difference",
+            "step": 1e-05,
+            "indices": [
+              0,
+              2,
+              4,
+              6,
+              8,
+              10,
+              12,
+              14
+            ],
+            "checked": 8,
+            "max_abs_error": 0.19854301586747167,
+            "max_relative_error": 0.10610853611399149
+          },
+          "finite_difference_domain": "not a check on autograd below double precision: the difference of two float32 energies with a 1e-5 step loses about six digits, so this number is the probe's arithmetic rather than a statement about the backward pass",
+          "smoothness": {
+            "index": 2,
+            "half_range": 0.05,
+            "points": 7,
+            "largest_step_jump": 0.0007874965667724609,
+            "bond_changed": false,
+            "smooth": true,
+            "energies": [
+              -2.612387895584,
+              -2.613175392151,
+              -2.613780498505,
+              -2.614201784134,
+              -2.614437580109,
+              -2.614493846893,
+              -2.614359140396
+            ]
+          }
+        }
+      },
+      "schmidt": {
+        "rank": 4,
+        "min_gap": null,
+        "near_degenerate": null
+      }
+    },
+    {
+      "n_qubits": 4,
+      "depth": 2,
+      "structure": "nearest_neighbour",
+      "max_bond_cutoff": 16,
+      "seed": 260720,
+      "observed_max_bond": 4,
+      "mps_bond_dims": [
+        2,
+        4,
+        2
+      ],
+      "mps_discarded_weight": 0.0,
+      "mps_max_truncation_error": 0.0,
+      "mps_truncation_steps": 0,
+      "headroom_max_bond": 4,
+      "mps_truncated": false,
+      "energies": {
+        "statevector": -2.73960829,
+        "mps": -2.73960924,
+        "tensor_network": -2.73960829
+      },
+      "spread_absolute": 9.53674e-07,
+      "spread_relative": 3.48106e-07,
+      "states": {
+        "statevector": {
+          "fidelity_vs_statevector": 1.0,
+          "norm_drift": 0.0
+        },
+        "mps": {
+          "fidelity_vs_statevector": 0.9999999999999236,
+          "norm_drift": 2.209617098181127e-07
+        },
+        "tensor_network": {
+          "fidelity_vs_statevector": 0.9999999999999922,
+          "norm_drift": 4.099865447138029e-08
+        }
+      },
+      "observables": {
+        "statevector": {
+          "z:0": -0.0253717340528965,
+          "x:1": 0.9892630577087402,
+          "zz:0,1": 0.08430145680904388
+        },
+        "mps": {
+          "z:0": -0.02537190169095993,
+          "x:1": 0.9892635345458984,
+          "zz:0,1": 0.08430127799510956
+        },
+        "tensor_network": {
+          "z:0": -0.025371775031089783,
+          "x:1": 0.9892630577087402,
+          "zz:0,1": 0.08430136740207672
+        }
+      },
+      "gradients": {
+        "reference": "statevector",
+        "per_mode": {
+          "statevector": {
+            "relative_l2_error": 0.0,
+            "cosine_similarity": 0.9999999999999997
+          },
+          "mps": {
+            "relative_l2_error": 4.1030300778753096e-07,
+            "cosine_similarity": 0.9999999999999697
+          },
+          "tensor_network": {
+            "relative_l2_error": 2.515659495470369e-07,
+            "cosine_similarity": 0.9999999999999767
+          }
+        },
+        "unsupported": {},
+        "oracle": {
+          "method": "parameter_shift",
+          "applies_to": "statevector",
+          "valid_domain": "exact statevector map only: the rule is exact for the rotation layers, and it does not apply to a map whose bond truncation discarded weight",
+          "compares": [
+            "statevector"
+          ],
+          "relative_l2_error": 4.1910129481675737e-07,
+          "cosine_similarity": 0.9999999999999128
+        },
+        "mps_own_map": {
+          "derivative": {
+            "method": "central_finite_difference",
+            "step": 1e-05,
+            "indices": [
+              0,
+              2,
+              4,
+              6,
+              8,
+              10,
+              12,
+              14
+            ],
+            "checked": 8,
+            "max_abs_error": 0.2081974670290947,
+            "max_relative_error": 0.11754293764914654
+          },
+          "finite_difference_domain": "not a check on autograd below double precision: the difference of two float32 energies with a 1e-5 step loses about six digits, so this number is the probe's arithmetic rather than a statement about the backward pass",
+          "smoothness": {
+            "index": 2,
+            "half_range": 0.05,
+            "points": 7,
+            "largest_step_jump": 0.0013222694396972656,
+            "bond_changed": false,
+            "smooth": true,
+            "energies": [
+              -2.736280918121,
+              -2.737603187561,
+              -2.738718032837,
+              -2.739609241486,
+              -2.740285158157,
+              -2.740749120712,
+              -2.740994215012
+            ]
+          }
+        }
+      },
+      "schmidt": {
+        "rank": 16,
+        "min_gap": null,
+        "near_degenerate": null
+      }
+    },
+    {
+      "n_qubits": 4,
+      "depth": 2,
+      "structure": "nearest_neighbour",
+      "max_bond_cutoff": 16,
+      "seed": 260721,
+      "observed_max_bond": 4,
+      "mps_bond_dims": [
+        2,
+        4,
+        2
+      ],
+      "mps_discarded_weight": 0.0,
+      "mps_max_truncation_error": 0.0,
+      "mps_truncation_steps": 0,
+      "headroom_max_bond": 4,
+      "mps_truncated": false,
+      "energies": {
+        "statevector": -2.84729767,
+        "mps": -2.84729981,
+        "tensor_network": -2.84729767
+      },
+      "spread_absolute": 2.14577e-06,
+      "spread_relative": 7.53615e-07,
+      "states": {
+        "statevector": {
+          "fidelity_vs_statevector": 0.9999999999999998,
+          "norm_drift": 0.0
+        },
+        "mps": {
+          "fidelity_vs_statevector": 0.9999999999999638,
+          "norm_drift": 3.0149778762478263e-07
+        },
+        "tensor_network": {
+          "fidelity_vs_statevector": 0.9999999999999926,
+          "norm_drift": 5.037450523381892e-08
+        }
+      },
+      "observables": {
+        "statevector": {
+          "z:0": 0.05487976223230362,
+          "x:1": 0.9894288778305054,
+          "zz:0,1": -0.03658219426870346
+        },
+        "mps": {
+          "z:0": 0.05487995594739914,
+          "x:1": 0.9894295334815979,
+          "zz:0,1": -0.03658236190676689
+        },
+        "tensor_network": {
+          "z:0": 0.05487985908985138,
+          "x:1": 0.9894289970397949,
+          "zz:0,1": -0.036582157015800476
+        }
+      },
+      "gradients": {
+        "reference": "statevector",
+        "per_mode": {
+          "statevector": {
+            "relative_l2_error": 0.0,
+            "cosine_similarity": 0.9999999999999999
+          },
+          "mps": {
+            "relative_l2_error": 4.6438652465138775e-07,
+            "cosine_similarity": 0.9999999999998924
+          },
+          "tensor_network": {
+            "relative_l2_error": 3.6114876910707953e-07,
+            "cosine_similarity": 0.9999999999999352
+          }
+        },
+        "unsupported": {},
+        "oracle": {
+          "method": "parameter_shift",
+          "applies_to": "statevector",
+          "valid_domain": "exact statevector map only: the rule is exact for the rotation layers, and it does not apply to a map whose bond truncation discarded weight",
+          "compares": [
+            "statevector"
+          ],
+          "relative_l2_error": 3.71711659164892e-07,
+          "cosine_similarity": 0.9999999999999322
+        },
+        "mps_own_map": {
+          "derivative": {
+            "method": "central_finite_difference",
+            "step": 1e-05,
+            "indices": [
+              0,
+              2,
+              4,
+              6,
+              8,
+              10,
+              12,
+              14
+            ],
+            "checked": 8,
+            "max_abs_error": 0.10094643384218216,
+            "max_relative_error": 0.0597403259022196
+          },
+          "finite_difference_domain": "not a check on autograd below double precision: the difference of two float32 energies with a 1e-5 step loses about six digits, so this number is the probe's arithmetic rather than a statement about the backward pass",
+          "smoothness": {
+            "index": 2,
+            "half_range": 0.05,
+            "points": 7,
+            "largest_step_jump": 0.0013921260833740234,
+            "bond_changed": false,
+            "smooth": true,
+            "energies": [
+              -2.849279403687,
+              -2.848804712296,
+              -2.848144769669,
+              -2.847299814224,
+              -2.84627366066,
+              -2.845065593719,
+              -2.843673467636
+            ]
+          }
+        }
+      },
+      "schmidt": {
+        "rank": 16,
+        "min_gap": null,
+        "near_degenerate": null
+      }
+    },
+    {
+      "n_qubits": 4,
+      "depth": 2,
+      "structure": "nearest_neighbour",
+      "max_bond_cutoff": 16,
+      "seed": 260722,
+      "observed_max_bond": 4,
+      "mps_bond_dims": [
+        2,
+        4,
+        2
+      ],
+      "mps_discarded_weight": 0.0,
+      "mps_max_truncation_error": 0.0,
+      "mps_truncation_steps": 0,
+      "headroom_max_bond": 4,
+      "mps_truncated": false,
+      "energies": {
+        "statevector": -2.61420178,
+        "mps": -2.61420107,
+        "tensor_network": -2.61420155
+      },
+      "spread_absolute": 7.15256e-07,
+      "spread_relative": 2.73604e-07,
+      "states": {
+        "statevector": {
+          "fidelity_vs_statevector": 1.0,
+          "norm_drift": 0.0
+        },
+        "mps": {
+          "fidelity_vs_statevector": 0.9999999999999549,
+          "norm_drift": 2.793633084863245e-07
+        },
+        "tensor_network": {
+          "fidelity_vs_statevector": 0.999999999999988,
+          "norm_drift": 4.4294528045440984e-08
+        }
+      },
+      "observables": {
+        "statevector": {
+          "z:0": 0.055571358650922775,
+          "x:1": 0.9942792654037476,
+          "zz:0,1": -0.034262169152498245
+        },
+        "mps": {
+          "z:0": 0.05557125806808472,
+          "x:1": 0.9942787885665894,
+          "zz:0,1": -0.03426213935017586
+        },
+        "tensor_network": {
+          "z:0": 0.055571362376213074,
+          "x:1": 0.9942790865898132,
+          "zz:0,1": -0.03426216542720795
+        }
+      },
+      "gradients": {
+        "reference": "statevector",
+        "per_mode": {
+          "statevector": {
+            "relative_l2_error": 0.0,
+            "cosine_similarity": 1.0
+          },
+          "mps": {
+            "relative_l2_error": 3.442311232003544e-07,
+            "cosine_similarity": 0.9999999999999416
+          },
+          "tensor_network": {
+            "relative_l2_error": 3.2576992613914637e-07,
+            "cosine_similarity": 0.9999999999999885
+          }
+        },
+        "unsupported": {},
+        "oracle": {
+          "method": "parameter_shift",
+          "applies_to": "statevector",
+          "valid_domain": "exact statevector map only: the rule is exact for the rotation layers, and it does not apply to a map whose bond truncation discarded weight",
+          "compares": [
+            "statevector"
+          ],
+          "relative_l2_error": 3.8006557414517904e-07,
+          "cosine_similarity": 0.9999999999999292
+        },
+        "mps_own_map": {
+          "derivative": {
+            "method": "central_finite_difference",
+            "step": 1e-05,
+            "indices": [
+              0,
+              2,
+              4,
+              6,
+              8,
+              10,
+              12,
+              14
+            ],
+            "checked": 8,
+            "max_abs_error": 0.19854301586747167,
+            "max_relative_error": 0.10610853611399149
+          },
+          "finite_difference_domain": "not a check on autograd below double precision: the difference of two float32 energies with a 1e-5 step loses about six digits, so this number is the probe's arithmetic rather than a statement about the backward pass",
+          "smoothness": {
+            "index": 2,
+            "half_range": 0.05,
+            "points": 7,
+            "largest_step_jump": 0.0007874965667724609,
+            "bond_changed": false,
+            "smooth": true,
+            "energies": [
+              -2.612387895584,
+              -2.613175392151,
+              -2.613780498505,
+              -2.614201784134,
+              -2.614437580109,
+              -2.614493846893,
+              -2.614359140396
+            ]
+          }
+        }
+      },
+      "schmidt": {
+        "rank": 16,
+        "min_gap": null,
+        "near_degenerate": null
+      }
+    },
+    {
+      "n_qubits": 4,
+      "depth": 4,
+      "structure": "nearest_neighbour",
+      "max_bond_cutoff": 4,
+      "seed": 260720,
+      "observed_max_bond": 4,
+      "mps_bond_dims": [
+        2,
+        4,
+        2
+      ],
+      "mps_discarded_weight": 0.0,
+      "mps_max_truncation_error": 0.0,
+      "mps_truncation_steps": 0,
+      "headroom_max_bond": 4,
+      "mps_truncated": false,
+      "energies": {
+        "statevector": -2.7174058,
+        "mps": -2.7174058,
+        "tensor_network": -2.71740651
+      },
+      "spread_absolute": 7.15256e-07,
+      "spread_relative": 2.63213e-07,
+      "states": {
+        "statevector": {
+          "fidelity_vs_statevector": 1.0,
+          "norm_drift": 0.0
+        },
+        "mps": {
+          "fidelity_vs_statevector": 0.9999999999999166,
+          "norm_drift": 1.2583775288455001e-07
+        },
+        "tensor_network": {
+          "fidelity_vs_statevector": 0.9999999999999754,
+          "norm_drift": 5.6442797990996496e-08
+        }
+      },
+      "observables": {
+        "statevector": {
+          "z:0": -0.013962078839540482,
+          "x:1": 0.9919206500053406,
+          "zz:0,1": -0.02429807558655739
+        },
+        "mps": {
+          "z:0": -0.013962332159280777,
+          "x:1": 0.9919204115867615,
+          "zz:0,1": -0.024297937750816345
+        },
+        "tensor_network": {
+          "z:0": -0.01396217942237854,
+          "x:1": 0.9919208288192749,
+          "zz:0,1": -0.024297937750816345
+        }
+      },
+      "gradients": {
+        "reference": "statevector",
+        "per_mode": {
+          "statevector": {
+            "relative_l2_error": 0.0,
+            "cosine_similarity": 1.0
+          },
+          "mps": {
+            "relative_l2_error": 4.722670468521616e-07,
+            "cosine_similarity": 0.9999999999999147
+          },
+          "tensor_network": {
+            "relative_l2_error": 3.694504371585929e-07,
+            "cosine_similarity": 0.9999999999999367
+          }
+        },
+        "unsupported": {},
+        "oracle": {
+          "method": "parameter_shift",
+          "applies_to": "statevector",
+          "valid_domain": "exact statevector map only: the rule is exact for the rotation layers, and it does not apply to a map whose bond truncation discarded weight",
+          "compares": [
+            "statevector"
+          ],
+          "relative_l2_error": 4.0928035536953606e-07,
+          "cosine_similarity": 0.9999999999999163
+        },
+        "mps_own_map": {
+          "derivative": {
+            "method": "central_finite_difference",
+            "step": 1e-05,
+            "indices": [
+              0,
+              4,
+              8,
+              12,
+              16,
+              20,
+              24,
+              28
+            ],
+            "checked": 8,
+            "max_abs_error": 0.19712436944246292,
+            "max_relative_error": 0.09547422486040293
+          },
+          "finite_difference_domain": "not a check on autograd below double precision: the difference of two float32 energies with a 1e-5 step loses about six digits, so this number is the probe's arithmetic rather than a statement about the backward pass",
+          "smoothness": {
+            "index": 2,
+            "half_range": 0.05,
+            "points": 7,
+            "largest_step_jump": 0.0006036758422851562,
+            "bond_changed": false,
+            "smooth": true,
+            "energies": [
+              -2.716988801956,
+              -2.717309951782,
+              -2.717455387115,
+              -2.717405796051,
+              -2.717174053192,
+              -2.716761112213,
+              -2.716157436371
+            ]
+          }
+        }
+      },
+      "schmidt": {
+        "rank": 4,
+        "min_gap": null,
+        "near_degenerate": null
+      }
+    },
+    {
+      "n_qubits": 4,
+      "depth": 4,
+      "structure": "nearest_neighbour",
+      "max_bond_cutoff": 4,
+      "seed": 260721,
+      "observed_max_bond": 4,
+      "mps_bond_dims": [
+        2,
+        4,
+        2
+      ],
+      "mps_discarded_weight": 0.0,
+      "mps_max_truncation_error": 0.0,
+      "mps_truncation_steps": 0,
+      "headroom_max_bond": 4,
+      "mps_truncated": false,
+      "energies": {
+        "statevector": -2.55524707,
+        "mps": -2.55524731,
+        "tensor_network": -2.55524731
+      },
+      "spread_absolute": 2.38419e-07,
+      "spread_relative": 9.33055e-08,
+      "states": {
+        "statevector": {
+          "fidelity_vs_statevector": 1.0,
+          "norm_drift": 0.0
+        },
+        "mps": {
+          "fidelity_vs_statevector": 0.9999999999999503,
+          "norm_drift": 3.146839522294442e-08
+        },
+        "tensor_network": {
+          "fidelity_vs_statevector": 0.999999999999986,
+          "norm_drift": 2.2762831397571404e-08
+        }
+      },
+      "observables": {
+        "statevector": {
+          "z:0": 0.04420805722475052,
+          "x:1": 0.9701651334762573,
+          "zz:0,1": -0.1712804138660431
+        },
+        "mps": {
+          "z:0": 0.04420807212591171,
+          "x:1": 0.9701651930809021,
+          "zz:0,1": -0.17128047347068787
+        },
+        "tensor_network": {
+          "z:0": 0.0442081093788147,
+          "x:1": 0.9701650738716125,
+          "zz:0,1": -0.1712804138660431
+        }
+      },
+      "gradients": {
+        "reference": "statevector",
+        "per_mode": {
+          "statevector": {
+            "relative_l2_error": 0.0,
+            "cosine_similarity": 0.9999999999999998
+          },
+          "mps": {
+            "relative_l2_error": 3.294684266732223e-07,
+            "cosine_similarity": 0.9999999999999529
+          },
+          "tensor_network": {
+            "relative_l2_error": 2.5898796464091234e-07,
+            "cosine_similarity": 0.9999999999999759
+          }
+        },
+        "unsupported": {},
+        "oracle": {
+          "method": "parameter_shift",
+          "applies_to": "statevector",
+          "valid_domain": "exact statevector map only: the rule is exact for the rotation layers, and it does not apply to a map whose bond truncation discarded weight",
+          "compares": [
+            "statevector"
+          ],
+          "relative_l2_error": 4.650923051983361e-07,
+          "cosine_similarity": 0.9999999999999052
+        },
+        "mps_own_map": {
+          "derivative": {
+            "method": "central_finite_difference",
+            "step": 1e-05,
+            "indices": [
+              0,
+              4,
+              8,
+              12,
+              16,
+              20,
+              24,
+              28
+            ],
+            "checked": 8,
+            "max_abs_error": 0.21644020825624466,
+            "max_relative_error": 0.09416759682063941
+          },
+          "finite_difference_domain": "not a check on autograd below double precision: the difference of two float32 energies with a 1e-5 step loses about six digits, so this number is the probe's arithmetic rather than a statement about the backward pass",
+          "smoothness": {
+            "index": 2,
+            "half_range": 0.05,
+            "points": 7,
+            "largest_step_jump": 0.0009286403656005859,
+            "bond_changed": false,
+            "smooth": true,
+            "energies": [
+              -2.55634355545,
+              -2.556121587753,
+              -2.555757045746,
+              -2.555247306824,
+              -2.554602146149,
+              -2.553812980652,
+              -2.552884340286
+            ]
+          }
+        }
+      },
+      "schmidt": {
+        "rank": 4,
+        "min_gap": null,
+        "near_degenerate": null
+      }
+    },
+    {
+      "n_qubits": 4,
+      "depth": 4,
+      "structure": "nearest_neighbour",
+      "max_bond_cutoff": 4,
+      "seed": 260722,
+      "observed_max_bond": 4,
+      "mps_bond_dims": [
+        2,
+        4,
+        2
+      ],
+      "mps_discarded_weight": 0.0,
+      "mps_max_truncation_error": 0.0,
+      "mps_truncation_steps": 0,
+      "headroom_max_bond": 4,
+      "mps_truncated": false,
+      "energies": {
+        "statevector": -2.78631091,
+        "mps": -2.786309,
+        "tensor_network": -2.78631067
+      },
+      "spread_absolute": 1.90735e-06,
+      "spread_relative": 6.84543e-07,
+      "states": {
+        "statevector": {
+          "fidelity_vs_statevector": 1.0,
+          "norm_drift": 0.0
+        },
+        "mps": {
+          "fidelity_vs_statevector": 0.9999999999998173,
+          "norm_drift": 4.1772184145028035e-07
+        },
+        "tensor_network": {
+          "fidelity_vs_statevector": 0.9999999999999667,
+          "norm_drift": 3.898301337290633e-08
+        }
+      },
+      "observables": {
+        "statevector": {
+          "z:0": -0.10448983311653137,
+          "x:1": 0.9830195903778076,
+          "zz:0,1": -0.0052435994148254395
+        },
+        "mps": {
+          "z:0": -0.10448954999446869,
+          "x:1": 0.9830189347267151,
+          "zz:0,1": -0.005244059022516012
+        },
+        "tensor_network": {
+          "z:0": -0.10448968410491943,
+          "x:1": 0.9830194711685181,
+          "zz:0,1": -0.005243703722953796
+        }
+      },
+      "gradients": {
+        "reference": "statevector",
+        "per_mode": {
+          "statevector": {
+            "relative_l2_error": 0.0,
+            "cosine_similarity": 1.0000000000000002
+          },
+          "mps": {
+            "relative_l2_error": 5.420932253691139e-07,
+            "cosine_similarity": 0.9999999999998543
+          },
+          "tensor_network": {
+            "relative_l2_error": 4.747708977231071e-07,
+            "cosine_similarity": 0.9999999999998913
+          }
+        },
+        "unsupported": {},
+        "oracle": {
+          "method": "parameter_shift",
+          "applies_to": "statevector",
+          "valid_domain": "exact statevector map only: the rule is exact for the rotation layers, and it does not apply to a map whose bond truncation discarded weight",
+          "compares": [
+            "statevector"
+          ],
+          "relative_l2_error": 5.655450314450036e-07,
+          "cosine_similarity": 0.9999999999998433
+        },
+        "mps_own_map": {
+          "derivative": {
+            "method": "central_finite_difference",
+            "step": 1e-05,
+            "indices": [
+              0,
+              4,
+              8,
+              12,
+              16,
+              20,
+              24,
+              28
+            ],
+            "checked": 8,
+            "max_abs_error": 0.16772936284542084,
+            "max_relative_error": 0.08560731927628741
+          },
+          "finite_difference_domain": "not a check on autograd below double precision: the difference of two float32 energies with a 1e-5 step loses about six digits, so this number is the probe's arithmetic rather than a statement about the backward pass",
+          "smoothness": {
+            "index": 2,
+            "half_range": 0.05,
+            "points": 7,
+            "largest_step_jump": 0.004354715347290039,
+            "bond_changed": false,
+            "smooth": true,
+            "energies": [
+              -2.773807048798,
+              -2.778161764145,
+              -2.782327413559,
+              -2.786309242249,
+              -2.790101051331,
+              -2.793704986572,
+              -2.7971098423
+            ]
+          }
+        }
+      },
+      "schmidt": {
+        "rank": 4,
+        "min_gap": null,
+        "near_degenerate": null
+      }
+    },
+    {
+      "n_qubits": 4,
+      "depth": 4,
+      "structure": "nearest_neighbour",
+      "max_bond_cutoff": 16,
+      "seed": 260720,
+      "observed_max_bond": 4,
+      "mps_bond_dims": [
+        2,
+        4,
+        2
+      ],
+      "mps_discarded_weight": 0.0,
+      "mps_max_truncation_error": 0.0,
+      "mps_truncation_steps": 0,
+      "headroom_max_bond": 4,
+      "mps_truncated": false,
+      "energies": {
+        "statevector": -2.7174058,
+        "mps": -2.7174058,
+        "tensor_network": -2.71740651
+      },
+      "spread_absolute": 7.15256e-07,
+      "spread_relative": 2.63213e-07,
+      "states": {
+        "statevector": {
+          "fidelity_vs_statevector": 1.0,
+          "norm_drift": 0.0
+        },
+        "mps": {
+          "fidelity_vs_statevector": 0.9999999999999166,
+          "norm_drift": 1.2583775288455001e-07
+        },
+        "tensor_network": {
+          "fidelity_vs_statevector": 0.9999999999999754,
+          "norm_drift": 5.6442797990996496e-08
+        }
+      },
+      "observables": {
+        "statevector": {
+          "z:0": -0.013962078839540482,
+          "x:1": 0.9919206500053406,
+          "zz:0,1": -0.02429807558655739
+        },
+        "mps": {
+          "z:0": -0.013962332159280777,
+          "x:1": 0.9919204115867615,
+          "zz:0,1": -0.024297937750816345
+        },
+        "tensor_network": {
+          "z:0": -0.01396217942237854,
+          "x:1": 0.9919208288192749,
+          "zz:0,1": -0.024297937750816345
+        }
+      },
+      "gradients": {
+        "reference": "statevector",
+        "per_mode": {
+          "statevector": {
+            "relative_l2_error": 0.0,
+            "cosine_similarity": 1.0
+          },
+          "mps": {
+            "relative_l2_error": 4.722670468521616e-07,
+            "cosine_similarity": 0.9999999999999147
+          },
+          "tensor_network": {
+            "relative_l2_error": 3.694504371585929e-07,
+            "cosine_similarity": 0.9999999999999367
+          }
+        },
+        "unsupported": {},
+        "oracle": {
+          "method": "parameter_shift",
+          "applies_to": "statevector",
+          "valid_domain": "exact statevector map only: the rule is exact for the rotation layers, and it does not apply to a map whose bond truncation discarded weight",
+          "compares": [
+            "statevector"
+          ],
+          "relative_l2_error": 4.0928035536953606e-07,
+          "cosine_similarity": 0.9999999999999163
+        },
+        "mps_own_map": {
+          "derivative": {
+            "method": "central_finite_difference",
+            "step": 1e-05,
+            "indices": [
+              0,
+              4,
+              8,
+              12,
+              16,
+              20,
+              24,
+              28
+            ],
+            "checked": 8,
+            "max_abs_error": 0.19712436944246292,
+            "max_relative_error": 0.09547422486040293
+          },
+          "finite_difference_domain": "not a check on autograd below double precision: the difference of two float32 energies with a 1e-5 step loses about six digits, so this number is the probe's arithmetic rather than a statement about the backward pass",
+          "smoothness": {
+            "index": 2,
+            "half_range": 0.05,
+            "points": 7,
+            "largest_step_jump": 0.0006036758422851562,
+            "bond_changed": false,
+            "smooth": true,
+            "energies": [
+              -2.716988801956,
+              -2.717309951782,
+              -2.717455387115,
+              -2.717405796051,
+              -2.717174053192,
+              -2.716761112213,
+              -2.716157436371
+            ]
+          }
+        }
+      },
+      "schmidt": {
+        "rank": 16,
+        "min_gap": null,
+        "near_degenerate": null
+      }
+    },
+    {
+      "n_qubits": 4,
+      "depth": 4,
+      "structure": "nearest_neighbour",
+      "max_bond_cutoff": 16,
+      "seed": 260721,
+      "observed_max_bond": 4,
+      "mps_bond_dims": [
+        2,
+        4,
+        2
+      ],
+      "mps_discarded_weight": 0.0,
+      "mps_max_truncation_error": 0.0,
+      "mps_truncation_steps": 0,
+      "headroom_max_bond": 4,
+      "mps_truncated": false,
+      "energies": {
+        "statevector": -2.55524707,
+        "mps": -2.55524731,
+        "tensor_network": -2.55524731
+      },
+      "spread_absolute": 2.38419e-07,
+      "spread_relative": 9.33055e-08,
+      "states": {
+        "statevector": {
+          "fidelity_vs_statevector": 1.0,
+          "norm_drift": 0.0
+        },
+        "mps": {
+          "fidelity_vs_statevector": 0.9999999999999503,
+          "norm_drift": 3.146839522294442e-08
+        },
+        "tensor_network": {
+          "fidelity_vs_statevector": 0.999999999999986,
+          "norm_drift": 2.2762831397571404e-08
+        }
+      },
+      "observables": {
+        "statevector": {
+          "z:0": 0.04420805722475052,
+          "x:1": 0.9701651334762573,
+          "zz:0,1": -0.1712804138660431
+        },
+        "mps": {
+          "z:0": 0.04420807212591171,
+          "x:1": 0.9701651930809021,
+          "zz:0,1": -0.17128047347068787
+        },
+        "tensor_network": {
+          "z:0": 0.0442081093788147,
+          "x:1": 0.9701650738716125,
+          "zz:0,1": -0.1712804138660431
+        }
+      },
+      "gradients": {
+        "reference": "statevector",
+        "per_mode": {
+          "statevector": {
+            "relative_l2_error": 0.0,
+            "cosine_similarity": 0.9999999999999998
+          },
+          "mps": {
+            "relative_l2_error": 3.294684266732223e-07,
+            "cosine_similarity": 0.9999999999999529
+          },
+          "tensor_network": {
+            "relative_l2_error": 2.5898796464091234e-07,
+            "cosine_similarity": 0.9999999999999759
+          }
+        },
+        "unsupported": {},
+        "oracle": {
+          "method": "parameter_shift",
+          "applies_to": "statevector",
+          "valid_domain": "exact statevector map only: the rule is exact for the rotation layers, and it does not apply to a map whose bond truncation discarded weight",
+          "compares": [
+            "statevector"
+          ],
+          "relative_l2_error": 4.650923051983361e-07,
+          "cosine_similarity": 0.9999999999999052
+        },
+        "mps_own_map": {
+          "derivative": {
+            "method": "central_finite_difference",
+            "step": 1e-05,
+            "indices": [
+              0,
+              4,
+              8,
+              12,
+              16,
+              20,
+              24,
+              28
+            ],
+            "checked": 8,
+            "max_abs_error": 0.21644020825624466,
+            "max_relative_error": 0.09416759682063941
+          },
+          "finite_difference_domain": "not a check on autograd below double precision: the difference of two float32 energies with a 1e-5 step loses about six digits, so this number is the probe's arithmetic rather than a statement about the backward pass",
+          "smoothness": {
+            "index": 2,
+            "half_range": 0.05,
+            "points": 7,
+            "largest_step_jump": 0.0009286403656005859,
+            "bond_changed": false,
+            "smooth": true,
+            "energies": [
+              -2.55634355545,
+              -2.556121587753,
+              -2.555757045746,
+              -2.555247306824,
+              -2.554602146149,
+              -2.553812980652,
+              -2.552884340286
+            ]
+          }
+        }
+      },
+      "schmidt": {
+        "rank": 16,
+        "min_gap": null,
+        "near_degenerate": null
+      }
+    },
+    {
+      "n_qubits": 4,
+      "depth": 4,
+      "structure": "nearest_neighbour",
+      "max_bond_cutoff": 16,
+      "seed": 260722,
+      "observed_max_bond": 4,
+      "mps_bond_dims": [
+        2,
+        4,
+        2
+      ],
+      "mps_discarded_weight": 0.0,
+      "mps_max_truncation_error": 0.0,
+      "mps_truncation_steps": 0,
+      "headroom_max_bond": 4,
+      "mps_truncated": false,
+      "energies": {
+        "statevector": -2.78631091,
+        "mps": -2.786309,
+        "tensor_network": -2.78631067
+      },
+      "spread_absolute": 1.90735e-06,
+      "spread_relative": 6.84543e-07,
+      "states": {
+        "statevector": {
+          "fidelity_vs_statevector": 1.0,
+          "norm_drift": 0.0
+        },
+        "mps": {
+          "fidelity_vs_statevector": 0.9999999999998173,
+          "norm_drift": 4.1772184145028035e-07
+        },
+        "tensor_network": {
+          "fidelity_vs_statevector": 0.9999999999999667,
+          "norm_drift": 3.898301337290633e-08
+        }
+      },
+      "observables": {
+        "statevector": {
+          "z:0": -0.10448983311653137,
+          "x:1": 0.9830195903778076,
+          "zz:0,1": -0.0052435994148254395
+        },
+        "mps": {
+          "z:0": -0.10448954999446869,
+          "x:1": 0.9830189347267151,
+          "zz:0,1": -0.005244059022516012
+        },
+        "tensor_network": {
+          "z:0": -0.10448968410491943,
+          "x:1": 0.9830194711685181,
+          "zz:0,1": -0.005243703722953796
+        }
+      },
+      "gradients": {
+        "reference": "statevector",
+        "per_mode": {
+          "statevector": {
+            "relative_l2_error": 0.0,
+            "cosine_similarity": 1.0000000000000002
+          },
+          "mps": {
+            "relative_l2_error": 5.420932253691139e-07,
+            "cosine_similarity": 0.9999999999998543
+          },
+          "tensor_network": {
+            "relative_l2_error": 4.747708977231071e-07,
+            "cosine_similarity": 0.9999999999998913
+          }
+        },
+        "unsupported": {},
+        "oracle": {
+          "method": "parameter_shift",
+          "applies_to": "statevector",
+          "valid_domain": "exact statevector map only: the rule is exact for the rotation layers, and it does not apply to a map whose bond truncation discarded weight",
+          "compares": [
+            "statevector"
+          ],
+          "relative_l2_error": 5.655450314450036e-07,
+          "cosine_similarity": 0.9999999999998433
+        },
+        "mps_own_map": {
+          "derivative": {
+            "method": "central_finite_difference",
+            "step": 1e-05,
+            "indices": [
+              0,
+              4,
+              8,
+              12,
+              16,
+              20,
+              24,
+              28
+            ],
+            "checked": 8,
+            "max_abs_error": 0.16772936284542084,
+            "max_relative_error": 0.08560731927628741
+          },
+          "finite_difference_domain": "not a check on autograd below double precision: the difference of two float32 energies with a 1e-5 step loses about six digits, so this number is the probe's arithmetic rather than a statement about the backward pass",
+          "smoothness": {
+            "index": 2,
+            "half_range": 0.05,
+            "points": 7,
+            "largest_step_jump": 0.004354715347290039,
+            "bond_changed": false,
+            "smooth": true,
+            "energies": [
+              -2.773807048798,
+              -2.778161764145,
+              -2.782327413559,
+              -2.786309242249,
+              -2.790101051331,
+              -2.793704986572,
+              -2.7971098423
+            ]
+          }
+        }
+      },
+      "schmidt": {
+        "rank": 16,
+        "min_gap": null,
+        "near_degenerate": null
+      }
+    },
+    {
+      "n_qubits": 8,
+      "depth": 2,
+      "structure": "nearest_neighbour",
+      "max_bond_cutoff": 4,
+      "seed": 260720,
+      "observed_max_bond": 4,
+      "mps_bond_dims": [
+        2,
+        4,
+        4,
+        4,
+        4,
+        4,
+        2
+      ],
+      "mps_discarded_weight": 0.0,
+      "mps_max_truncation_error": 0.0,
+      "mps_truncation_steps": 0,
+      "headroom_max_bond": 4,
+      "mps_truncated": false,
+      "energies": {
+        "statevector": -5.38643265,
+        "mps": -5.38643694,
+        "tensor_network": -5.38643265
+      },
+      "spread_absolute": 4.29153e-06,
+      "spread_relative": 7.9673e-07,
+      "states": {
+        "statevector": {
+          "fidelity_vs_statevector": 1.0,
+          "norm_drift": 0.0
+        },
+        "mps": {
+          "fidelity_vs_statevector": 0.9999999999998346,
+          "norm_drift": 3.477797199114008e-07
+        },
+        "tensor_network": {
+          "fidelity_vs_statevector": 0.9999999999999712,
+          "norm_drift": 1.752580791603009e-08
+        }
+      },
+      "observables": {
+        "statevector": {
+          "z:0": -0.003752291202545166,
+          "x:1": 0.9949519634246826,
+          "zz:0,1": -0.06869250535964966
+        },
+        "mps": {
+          "z:0": -0.0037525927182286978,
+          "x:1": 0.9949526786804199,
+          "zz:0,1": -0.06869242340326309
+        },
+        "tensor_network": {
+          "z:0": -0.0037523112259805202,
+          "x:1": 0.9949518442153931,
+          "zz:0,1": -0.06869252026081085
+        }
+      },
+      "gradients": {
+        "reference": "statevector",
+        "per_mode": {
+          "statevector": {
+            "relative_l2_error": 0.0,
+            "cosine_similarity": 1.0
+          },
+          "mps": {
+            "relative_l2_error": 5.700950330630899e-07,
+            "cosine_similarity": 0.9999999999998378
+          },
+          "tensor_network": {
+            "relative_l2_error": 3.018260313632679e-07,
+            "cosine_similarity": 0.9999999999999548
+          }
+        },
+        "unsupported": {},
+        "oracle": {
+          "method": "parameter_shift",
+          "applies_to": "statevector",
+          "valid_domain": "exact statevector map only: the rule is exact for the rotation layers, and it does not apply to a map whose bond truncation discarded weight",
+          "compares": [
+            "statevector"
+          ],
+          "relative_l2_error": 5.758764686704339e-07,
+          "cosine_similarity": 0.9999999999998375
+        },
+        "mps_own_map": {
+          "derivative": {
+            "method": "central_finite_difference",
+            "step": 1e-05,
+            "indices": [
+              0,
+              4,
+              8,
+              12,
+              16,
+              20,
+              24,
+              28
+            ],
+            "checked": 8,
+            "max_abs_error": 0.6425891873659566,
+            "max_relative_error": 0.23420326034759614
+          },
+          "finite_difference_domain": "not a check on autograd below double precision: the difference of two float32 energies with a 1e-5 step loses about six digits, so this number is the probe's arithmetic rather than a statement about the backward pass",
+          "smoothness": {
+            "index": 2,
+            "half_range": 0.05,
+            "points": 7,
+            "largest_step_jump": 0.0010766983032226562,
+            "bond_changed": false,
+            "smooth": true,
+            "energies": [
+              -5.383704662323,
+              -5.384781360626,
+              -5.385705471039,
+              -5.38643693924,
+              -5.386992931366,
+              -5.387379169464,
+              -5.387596607208
+            ]
+          }
+        }
+      },
+      "schmidt": {
+        "rank": 4,
+        "min_gap": 1.5629074790780781e-07,
+        "near_degenerate": false
+      }
+    },
+    {
+      "n_qubits": 8,
+      "depth": 2,
+      "structure": "nearest_neighbour",
+      "max_bond_cutoff": 4,
+      "seed": 260721,
+      "observed_max_bond": 4,
+      "mps_bond_dims": [
+        2,
+        4,
+        4,
+        4,
+        4,
+        4,
+        2
+      ],
+      "mps_discarded_weight": 0.0,
+      "mps_max_truncation_error": 0.0,
+      "mps_truncation_steps": 0,
+      "headroom_max_bond": 4,
+      "mps_truncated": false,
+      "energies": {
+        "statevector": -5.46577311,
+        "mps": -5.46577692,
+        "tensor_network": -5.46577358
+      },
+      "spread_absolute": 3.8147e-06,
+      "spread_relative": 6.97925e-07,
+      "states": {
+        "statevector": {
+          "fidelity_vs_statevector": 0.9999999999999996,
+          "norm_drift": 0.0
+        },
+        "mps": {
+          "fidelity_vs_statevector": 0.999999999999887,
+          "norm_drift": 4.263210873212131e-07
+        },
+        "tensor_network": {
+          "fidelity_vs_statevector": 0.999999999999976,
+          "norm_drift": 3.449520713516563e-08
+        }
+      },
+      "observables": {
+        "statevector": {
+          "z:0": 0.023878872394561768,
+          "x:1": 0.9900414943695068,
+          "zz:0,1": 0.00485105998814106
+        },
+        "mps": {
+          "z:0": 0.023879002779722214,
+          "x:1": 0.9900423288345337,
+          "zz:0,1": 0.004851119592785835
+        },
+        "tensor_network": {
+          "z:0": 0.023878900334239006,
+          "x:1": 0.9900414943695068,
+          "zz:0,1": 0.004851116798818111
+        }
+      },
+      "gradients": {
+        "reference": "statevector",
+        "per_mode": {
+          "statevector": {
+            "relative_l2_error": 0.0,
+            "cosine_similarity": 0.9999999999999999
+          },
+          "mps": {
+            "relative_l2_error": 6.310980898609875e-07,
+            "cosine_similarity": 0.9999999999998187
+          },
+          "tensor_network": {
+            "relative_l2_error": 4.5018670050692897e-07,
+            "cosine_similarity": 0.9999999999998991
+          }
+        },
+        "unsupported": {},
+        "oracle": {
+          "method": "parameter_shift",
+          "applies_to": "statevector",
+          "valid_domain": "exact statevector map only: the rule is exact for the rotation layers, and it does not apply to a map whose bond truncation discarded weight",
+          "compares": [
+            "statevector"
+          ],
+          "relative_l2_error": 6.884227213187512e-07,
+          "cosine_similarity": 0.9999999999997816
+        },
+        "mps_own_map": {
+          "derivative": {
+            "method": "central_finite_difference",
+            "step": 1e-05,
+            "indices": [
+              0,
+              4,
+              8,
+              12,
+              16,
+              20,
+              24,
+              28
+            ],
+            "checked": 8,
+            "max_abs_error": 0.4024922996759414,
+            "max_relative_error": 0.14895376237332852
+          },
+          "finite_difference_domain": "not a check on autograd below double precision: the difference of two float32 energies with a 1e-5 step loses about six digits, so this number is the probe's arithmetic rather than a statement about the backward pass",
+          "smoothness": {
+            "index": 2,
+            "half_range": 0.05,
+            "points": 7,
+            "largest_step_jump": 0.0013875961303710938,
+            "bond_changed": false,
+            "smooth": true,
+            "energies": [
+              -5.467586994171,
+              -5.467183589935,
+              -5.466578006744,
+              -5.465776920319,
+              -5.464778423309,
+              -5.46359205246,
+              -5.462204456329
+            ]
+          }
+        }
+      },
+      "schmidt": {
+        "rank": 4,
+        "min_gap": 1.2355149402232671e-08,
+        "near_degenerate": false
+      }
+    },
+    {
+      "n_qubits": 8,
+      "depth": 2,
+      "structure": "nearest_neighbour",
+      "max_bond_cutoff": 4,
+      "seed": 260722,
+      "observed_max_bond": 4,
+      "mps_bond_dims": [
+        2,
+        4,
+        4,
+        4,
+        4,
+        4,
+        2
+      ],
+      "mps_discarded_weight": 0.0,
+      "mps_max_truncation_error": 0.0,
+      "mps_truncation_steps": 0,
+      "headroom_max_bond": 4,
+      "mps_truncated": false,
+      "energies": {
+        "statevector": -5.56001186,
+        "mps": -5.56000757,
+        "tensor_network": -5.56001186
+      },
+      "spread_absolute": 4.29153e-06,
+      "spread_relative": 7.71857e-07,
+      "states": {
+        "statevector": {
+          "fidelity_vs_statevector": 1.0,
+          "norm_drift": 0.0
+        },
+        "mps": {
+          "fidelity_vs_statevector": 0.9999999999998574,
+          "norm_drift": 4.371049215912137e-07
+        },
+        "tensor_network": {
+          "fidelity_vs_statevector": 0.9999999999999725,
+          "norm_drift": 2.952264033240226e-08
+        }
+      },
+      "observables": {
+        "statevector": {
+          "z:0": -0.14079631865024567,
+          "x:1": 0.9936116933822632,
+          "zz:0,1": 0.05592586100101471
+        },
+        "mps": {
+          "z:0": -0.1407962292432785,
+          "x:1": 0.9936110973358154,
+          "zz:0,1": 0.05592596158385277
+        },
+        "tensor_network": {
+          "z:0": -0.14079631865024567,
+          "x:1": 0.9936116933822632,
+          "zz:0,1": 0.05592590197920799
+        }
+      },
+      "gradients": {
+        "reference": "statevector",
+        "per_mode": {
+          "statevector": {
+            "relative_l2_error": 0.0,
+            "cosine_similarity": 1.0000000000000002
+          },
+          "mps": {
+            "relative_l2_error": 5.785689247855031e-07,
+            "cosine_similarity": 0.9999999999998516
+          },
+          "tensor_network": {
+            "relative_l2_error": 4.0396985032831275e-07,
+            "cosine_similarity": 0.9999999999999186
+          }
+        },
+        "unsupported": {},
+        "oracle": {
+          "method": "parameter_shift",
+          "applies_to": "statevector",
+          "valid_domain": "exact statevector map only: the rule is exact for the rotation layers, and it does not apply to a map whose bond truncation discarded weight",
+          "compares": [
+            "statevector"
+          ],
+          "relative_l2_error": 7.498118718182937e-07,
+          "cosine_similarity": 0.9999999999997276
+        },
+        "mps_own_map": {
+          "derivative": {
+            "method": "central_finite_difference",
+            "step": 1e-05,
+            "indices": [
+              0,
+              4,
+              8,
+              12,
+              16,
+              20,
+              24,
+              28
+            ],
+            "checked": 8,
+            "max_abs_error": 0.2997914031147957,
+            "max_relative_error": 0.11307118745780342
+          },
+          "finite_difference_domain": "not a check on autograd below double precision: the difference of two float32 energies with a 1e-5 step loses about six digits, so this number is the probe's arithmetic rather than a statement about the backward pass",
+          "smoothness": {
+            "index": 2,
+            "half_range": 0.05,
+            "points": 7,
+            "largest_step_jump": 0.0009312629699707031,
+            "bond_changed": false,
+            "smooth": true,
+            "energies": [
+              -5.557836055756,
+              -5.558767318726,
+              -5.559486865997,
+              -5.560008049011,
+              -5.560313224792,
+              -5.56041765213,
+              -5.560303211212
+            ]
+          }
+        }
+      },
+      "schmidt": {
+        "rank": 4,
+        "min_gap": 5.08424427617617e-07,
+        "near_degenerate": false
+      }
+    },
+    {
+      "n_qubits": 8,
+      "depth": 2,
+      "structure": "nearest_neighbour",
+      "max_bond_cutoff": 16,
+      "seed": 260720,
+      "observed_max_bond": 4,
+      "mps_bond_dims": [
+        2,
+        4,
+        4,
+        4,
+        4,
+        4,
+        2
+      ],
+      "mps_discarded_weight": 0.0,
+      "mps_max_truncation_error": 0.0,
+      "mps_truncation_steps": 0,
+      "headroom_max_bond": 4,
+      "mps_truncated": false,
+      "energies": {
+        "statevector": -5.38643265,
+        "mps": -5.38643694,
+        "tensor_network": -5.38643265
+      },
+      "spread_absolute": 4.29153e-06,
+      "spread_relative": 7.9673e-07,
+      "states": {
+        "statevector": {
+          "fidelity_vs_statevector": 1.0,
+          "norm_drift": 0.0
+        },
+        "mps": {
+          "fidelity_vs_statevector": 0.9999999999998346,
+          "norm_drift": 3.477797199114008e-07
+        },
+        "tensor_network": {
+          "fidelity_vs_statevector": 0.9999999999999712,
+          "norm_drift": 1.752580791603009e-08
+        }
+      },
+      "observables": {
+        "statevector": {
+          "z:0": -0.003752291202545166,
+          "x:1": 0.9949519634246826,
+          "zz:0,1": -0.06869250535964966
+        },
+        "mps": {
+          "z:0": -0.0037525927182286978,
+          "x:1": 0.9949526786804199,
+          "zz:0,1": -0.06869242340326309
+        },
+        "tensor_network": {
+          "z:0": -0.0037523112259805202,
+          "x:1": 0.9949518442153931,
+          "zz:0,1": -0.06869252026081085
+        }
+      },
+      "gradients": {
+        "reference": "statevector",
+        "per_mode": {
+          "statevector": {
+            "relative_l2_error": 0.0,
+            "cosine_similarity": 1.0
+          },
+          "mps": {
+            "relative_l2_error": 5.700950330630899e-07,
+            "cosine_similarity": 0.9999999999998378
+          },
+          "tensor_network": {
+            "relative_l2_error": 3.018260313632679e-07,
+            "cosine_similarity": 0.9999999999999548
+          }
+        },
+        "unsupported": {},
+        "oracle": {
+          "method": "parameter_shift",
+          "applies_to": "statevector",
+          "valid_domain": "exact statevector map only: the rule is exact for the rotation layers, and it does not apply to a map whose bond truncation discarded weight",
+          "compares": [
+            "statevector"
+          ],
+          "relative_l2_error": 5.758764686704339e-07,
+          "cosine_similarity": 0.9999999999998375
+        },
+        "mps_own_map": {
+          "derivative": {
+            "method": "central_finite_difference",
+            "step": 1e-05,
+            "indices": [
+              0,
+              4,
+              8,
+              12,
+              16,
+              20,
+              24,
+              28
+            ],
+            "checked": 8,
+            "max_abs_error": 0.6425891873659566,
+            "max_relative_error": 0.23420326034759614
+          },
+          "finite_difference_domain": "not a check on autograd below double precision: the difference of two float32 energies with a 1e-5 step loses about six digits, so this number is the probe's arithmetic rather than a statement about the backward pass",
+          "smoothness": {
+            "index": 2,
+            "half_range": 0.05,
+            "points": 7,
+            "largest_step_jump": 0.0010766983032226562,
+            "bond_changed": false,
+            "smooth": true,
+            "energies": [
+              -5.383704662323,
+              -5.384781360626,
+              -5.385705471039,
+              -5.38643693924,
+              -5.386992931366,
+              -5.387379169464,
+              -5.387596607208
+            ]
+          }
+        }
+      },
+      "schmidt": {
+        "rank": 16,
+        "min_gap": null,
+        "near_degenerate": null
+      }
+    },
+    {
+      "n_qubits": 8,
+      "depth": 2,
+      "structure": "nearest_neighbour",
+      "max_bond_cutoff": 16,
+      "seed": 260721,
+      "observed_max_bond": 4,
+      "mps_bond_dims": [
+        2,
+        4,
+        4,
+        4,
+        4,
+        4,
+        2
+      ],
+      "mps_discarded_weight": 0.0,
+      "mps_max_truncation_error": 0.0,
+      "mps_truncation_steps": 0,
+      "headroom_max_bond": 4,
+      "mps_truncated": false,
+      "energies": {
+        "statevector": -5.46577311,
+        "mps": -5.46577692,
+        "tensor_network": -5.46577358
+      },
+      "spread_absolute": 3.8147e-06,
+      "spread_relative": 6.97925e-07,
+      "states": {
+        "statevector": {
+          "fidelity_vs_statevector": 0.9999999999999996,
+          "norm_drift": 0.0
+        },
+        "mps": {
+          "fidelity_vs_statevector": 0.999999999999887,
+          "norm_drift": 4.263210873212131e-07
+        },
+        "tensor_network": {
+          "fidelity_vs_statevector": 0.999999999999976,
+          "norm_drift": 3.449520713516563e-08
+        }
+      },
+      "observables": {
+        "statevector": {
+          "z:0": 0.023878872394561768,
+          "x:1": 0.9900414943695068,
+          "zz:0,1": 0.00485105998814106
+        },
+        "mps": {
+          "z:0": 0.023879002779722214,
+          "x:1": 0.9900423288345337,
+          "zz:0,1": 0.004851119592785835
+        },
+        "tensor_network": {
+          "z:0": 0.023878900334239006,
+          "x:1": 0.9900414943695068,
+          "zz:0,1": 0.004851116798818111
+        }
+      },
+      "gradients": {
+        "reference": "statevector",
+        "per_mode": {
+          "statevector": {
+            "relative_l2_error": 0.0,
+            "cosine_similarity": 0.9999999999999999
+          },
+          "mps": {
+            "relative_l2_error": 6.310980898609875e-07,
+            "cosine_similarity": 0.9999999999998187
+          },
+          "tensor_network": {
+            "relative_l2_error": 4.5018670050692897e-07,
+            "cosine_similarity": 0.9999999999998991
+          }
+        },
+        "unsupported": {},
+        "oracle": {
+          "method": "parameter_shift",
+          "applies_to": "statevector",
+          "valid_domain": "exact statevector map only: the rule is exact for the rotation layers, and it does not apply to a map whose bond truncation discarded weight",
+          "compares": [
+            "statevector"
+          ],
+          "relative_l2_error": 6.884227213187512e-07,
+          "cosine_similarity": 0.9999999999997816
+        },
+        "mps_own_map": {
+          "derivative": {
+            "method": "central_finite_difference",
+            "step": 1e-05,
+            "indices": [
+              0,
+              4,
+              8,
+              12,
+              16,
+              20,
+              24,
+              28
+            ],
+            "checked": 8,
+            "max_abs_error": 0.4024922996759414,
+            "max_relative_error": 0.14895376237332852
+          },
+          "finite_difference_domain": "not a check on autograd below double precision: the difference of two float32 energies with a 1e-5 step loses about six digits, so this number is the probe's arithmetic rather than a statement about the backward pass",
+          "smoothness": {
+            "index": 2,
+            "half_range": 0.05,
+            "points": 7,
+            "largest_step_jump": 0.0013875961303710938,
+            "bond_changed": false,
+            "smooth": true,
+            "energies": [
+              -5.467586994171,
+              -5.467183589935,
+              -5.466578006744,
+              -5.465776920319,
+              -5.464778423309,
+              -5.46359205246,
+              -5.462204456329
+            ]
+          }
+        }
+      },
+      "schmidt": {
+        "rank": 16,
+        "min_gap": null,
+        "near_degenerate": null
+      }
+    },
+    {
+      "n_qubits": 8,
+      "depth": 2,
+      "structure": "nearest_neighbour",
+      "max_bond_cutoff": 16,
+      "seed": 260722,
+      "observed_max_bond": 4,
+      "mps_bond_dims": [
+        2,
+        4,
+        4,
+        4,
+        4,
+        4,
+        2
+      ],
+      "mps_discarded_weight": 0.0,
+      "mps_max_truncation_error": 0.0,
+      "mps_truncation_steps": 0,
+      "headroom_max_bond": 4,
+      "mps_truncated": false,
+      "energies": {
+        "statevector": -5.56001186,
+        "mps": -5.56000757,
+        "tensor_network": -5.56001186
+      },
+      "spread_absolute": 4.29153e-06,
+      "spread_relative": 7.71857e-07,
+      "states": {
+        "statevector": {
+          "fidelity_vs_statevector": 1.0,
+          "norm_drift": 0.0
+        },
+        "mps": {
+          "fidelity_vs_statevector": 0.9999999999998574,
+          "norm_drift": 4.371049215912137e-07
+        },
+        "tensor_network": {
+          "fidelity_vs_statevector": 0.9999999999999725,
+          "norm_drift": 2.952264033240226e-08
+        }
+      },
+      "observables": {
+        "statevector": {
+          "z:0": -0.14079631865024567,
+          "x:1": 0.9936116933822632,
+          "zz:0,1": 0.05592586100101471
+        },
+        "mps": {
+          "z:0": -0.1407962292432785,
+          "x:1": 0.9936110973358154,
+          "zz:0,1": 0.05592596158385277
+        },
+        "tensor_network": {
+          "z:0": -0.14079631865024567,
+          "x:1": 0.9936116933822632,
+          "zz:0,1": 0.05592590197920799
+        }
+      },
+      "gradients": {
+        "reference": "statevector",
+        "per_mode": {
+          "statevector": {
+            "relative_l2_error": 0.0,
+            "cosine_similarity": 1.0000000000000002
+          },
+          "mps": {
+            "relative_l2_error": 5.785689247855031e-07,
+            "cosine_similarity": 0.9999999999998516
+          },
+          "tensor_network": {
+            "relative_l2_error": 4.0396985032831275e-07,
+            "cosine_similarity": 0.9999999999999186
+          }
+        },
+        "unsupported": {},
+        "oracle": {
+          "method": "parameter_shift",
+          "applies_to": "statevector",
+          "valid_domain": "exact statevector map only: the rule is exact for the rotation layers, and it does not apply to a map whose bond truncation discarded weight",
+          "compares": [
+            "statevector"
+          ],
+          "relative_l2_error": 7.498118718182937e-07,
+          "cosine_similarity": 0.9999999999997276
+        },
+        "mps_own_map": {
+          "derivative": {
+            "method": "central_finite_difference",
+            "step": 1e-05,
+            "indices": [
+              0,
+              4,
+              8,
+              12,
+              16,
+              20,
+              24,
+              28
+            ],
+            "checked": 8,
+            "max_abs_error": 0.2997914031147957,
+            "max_relative_error": 0.11307118745780342
+          },
+          "finite_difference_domain": "not a check on autograd below double precision: the difference of two float32 energies with a 1e-5 step loses about six digits, so this number is the probe's arithmetic rather than a statement about the backward pass",
+          "smoothness": {
+            "index": 2,
+            "half_range": 0.05,
+            "points": 7,
+            "largest_step_jump": 0.0009312629699707031,
+            "bond_changed": false,
+            "smooth": true,
+            "energies": [
+              -5.557836055756,
+              -5.558767318726,
+              -5.559486865997,
+              -5.560008049011,
+              -5.560313224792,
+              -5.56041765213,
+              -5.560303211212
+            ]
+          }
+        }
+      },
+      "schmidt": {
+        "rank": 16,
+        "min_gap": null,
+        "near_degenerate": null
+      }
+    },
+    {
+      "n_qubits": 8,
+      "depth": 4,
+      "structure": "nearest_neighbour",
+      "max_bond_cutoff": 4,
+      "seed": 260720,
+      "observed_max_bond": 4,
+      "mps_bond_dims": [
+        2,
+        4,
+        4,
+        4,
+        4,
+        4,
+        2
+      ],
+      "mps_discarded_weight": 0.12242156112915836,
+      "mps_max_truncation_error": 0.1090153381228447,
+      "mps_truncation_steps": 6,
+      "headroom_max_bond": 8,
+      "mps_truncated": true,
+      "energies": {
+        "statevector": -5.57780838,
+        "mps": -5.56901169,
+        "tensor_network": -5.57780886
+      },
+      "spread_absolute": 0.00879717,
+      "spread_relative": 0.00157717,
+      "states": {
+        "statevector": {
+          "fidelity_vs_statevector": 1.0,
+          "norm_drift": 0.0
+        },
+        "mps": {
+          "fidelity_vs_statevector": 0.9932107204748784,
+          "norm_drift": 0.0034290089551421987
+        },
+        "tensor_network": {
+          "fidelity_vs_statevector": 0.9999999999999143,
+          "norm_drift": 1.6177491124480525e-08
+        }
+      },
+      "observables": {
+        "statevector": {
+          "z:0": -0.06863738596439362,
+          "x:1": 0.9893068671226501,
+          "zz:0,1": 0.010371407493948936
+        },
+        "mps": {
+          "z:0": -0.06836436688899994,
+          "x:1": 0.9879410266876221,
+          "zz:0,1": 0.011713036336004734
+        },
+        "tensor_network": {
+          "z:0": -0.06863740086555481,
+          "x:1": 0.9893069267272949,
+          "zz:0,1": 0.010371503420174122
+        }
+      },
+      "gradients": {
+        "reference": "statevector",
+        "per_mode": {
+          "statevector": {
+            "relative_l2_error": 0.0,
+            "cosine_similarity": 0.9999999999999999
+          },
+          "mps": {
+            "relative_l2_error": 0.7325000741794053,
+            "cosine_similarity": 0.6833336299944486
+          },
+          "tensor_network": {
+            "relative_l2_error": 5.719974812788093e-07,
+            "cosine_similarity": 0.9999999999998365
+          }
+        },
+        "unsupported": {},
+        "oracle": {
+          "method": "parameter_shift",
+          "applies_to": "statevector",
+          "valid_domain": "exact statevector map only: the rule is exact for the rotation layers, and it does not apply to a map whose bond truncation discarded weight",
+          "compares": [
+            "statevector"
+          ],
+          "relative_l2_error": 8.178756033558773e-07,
+          "cosine_similarity": 0.9999999999996787
+        },
+        "mps_own_map": {
+          "derivative": {
+            "method": "central_finite_difference",
+            "step": 1e-05,
+            "indices": [
+              0,
+              8,
+              16,
+              24,
+              32,
+              40,
+              48,
+              56
+            ],
+            "checked": 8,
+            "max_abs_error": 0.5721530020236969,
+            "max_relative_error": 0.3256688127236164
+          },
+          "finite_difference_domain": "not a check on autograd below double precision: the difference of two float32 energies with a 1e-5 step loses about six digits, so this number is the probe's arithmetic rather than a statement about the backward pass",
+          "smoothness": {
+            "index": 2,
+            "half_range": 0.05,
+            "points": 7,
+            "largest_step_jump": 0.0017690658569335938,
+            "bond_changed": false,
+            "smooth": true,
+            "energies": [
+              -5.56423330307,
+              -5.566002368927,
+              -5.567626953125,
+              -5.569011688232,
+              -5.570188999176,
+              -5.571214675903,
+              -5.572025775909
+            ]
+          }
+        }
+      },
+      "schmidt": {
+        "rank": 4,
+        "min_gap": 2.7069516033427748e-05,
+        "near_degenerate": false
+      }
+    },
+    {
+      "n_qubits": 8,
+      "depth": 4,
+      "structure": "nearest_neighbour",
+      "max_bond_cutoff": 4,
+      "seed": 260721,
+      "observed_max_bond": 4,
+      "mps_bond_dims": [
+        2,
+        4,
+        4,
+        4,
+        4,
+        4,
+        2
+      ],
+      "mps_discarded_weight": 0.5340851200380712,
+      "mps_max_truncation_error": 0.5221551060676575,
+      "mps_truncation_steps": 6,
+      "headroom_max_bond": 8,
+      "mps_truncated": true,
+      "energies": {
+        "statevector": -5.34631062,
+        "mps": -5.33691597,
+        "tensor_network": -5.34631157
+      },
+      "spread_absolute": 0.0093956,
+      "spread_relative": 0.0017574,
+      "states": {
+        "statevector": {
+          "fidelity_vs_statevector": 1.0,
+          "norm_drift": 0.0
+        },
+        "mps": {
+          "fidelity_vs_statevector": 0.990351674624055,
+          "norm_drift": 0.004781651059390768
+        },
+        "tensor_network": {
+          "fidelity_vs_statevector": 0.9999999999999132,
+          "norm_drift": 8.780731808322173e-08
+        }
+      },
+      "observables": {
+        "statevector": {
+          "z:0": 0.005236633121967316,
+          "x:1": 0.9742043018341064,
+          "zz:0,1": -0.07635854184627533
+        },
+        "mps": {
+          "z:0": 0.005271358881145716,
+          "x:1": 0.9680126309394836,
+          "zz:0,1": -0.07554402202367783
+        },
+        "tensor_network": {
+          "z:0": 0.005236704368144274,
+          "x:1": 0.9742045402526855,
+          "zz:0,1": -0.07635845988988876
+        }
+      },
+      "gradients": {
+        "reference": "statevector",
+        "per_mode": {
+          "statevector": {
+            "relative_l2_error": 0.0,
+            "cosine_similarity": 0.9999999999999998
+          },
+          "mps": {
+            "relative_l2_error": 0.7389498837530623,
+            "cosine_similarity": 0.6744437034320274
+          },
+          "tensor_network": {
+            "relative_l2_error": 8.346269974276348e-07,
+            "cosine_similarity": 0.9999999999997106
+          }
+        },
+        "unsupported": {},
+        "oracle": {
+          "method": "parameter_shift",
+          "applies_to": "statevector",
+          "valid_domain": "exact statevector map only: the rule is exact for the rotation layers, and it does not apply to a map whose bond truncation discarded weight",
+          "compares": [
+            "statevector"
+          ],
+          "relative_l2_error": 9.00258662122299e-07,
+          "cosine_similarity": 0.999999999999602
+        },
+        "mps_own_map": {
+          "derivative": {
+            "method": "central_finite_difference",
+            "step": 1e-05,
+            "indices": [
+              0,
+              8,
+              16,
+              24,
+              32,
+              40,
+              48,
+              56
+            ],
+            "checked": 8,
+            "max_abs_error": 0.8361015319824219,
+            "max_relative_error": 0.4391268012472837
+          },
+          "finite_difference_domain": "not a check on autograd below double precision: the difference of two float32 energies with a 1e-5 step loses about six digits, so this number is the probe's arithmetic rather than a statement about the backward pass",
+          "smoothness": {
+            "index": 2,
+            "half_range": 0.05,
+            "points": 7,
+            "largest_step_jump": 0.0004787445068359375,
+            "bond_changed": false,
+            "smooth": true,
+            "energies": [
+              -5.336392402649,
+              -5.336759090424,
+              -5.336924552917,
+              -5.336915969849,
+              -5.336765766144,
+              -5.336461544037,
+              -5.33598279953
+            ]
+          }
+        }
+      },
+      "schmidt": {
+        "rank": 4,
+        "min_gap": 0.0001420120906960187,
+        "near_degenerate": false
+      }
+    },
+    {
+      "n_qubits": 8,
+      "depth": 4,
+      "structure": "nearest_neighbour",
+      "max_bond_cutoff": 4,
+      "seed": 260722,
+      "observed_max_bond": 4,
+      "mps_bond_dims": [
+        2,
+        4,
+        4,
+        4,
+        4,
+        4,
+        2
+      ],
+      "mps_discarded_weight": 0.480025825323537,
+      "mps_max_truncation_error": 0.4618496000766754,
+      "mps_truncation_steps": 6,
+      "headroom_max_bond": 8,
+      "mps_truncated": true,
+      "energies": {
+        "statevector": -5.50084591,
+        "mps": -5.49435902,
+        "tensor_network": -5.50084686
+      },
+      "spread_absolute": 0.00648785,
+      "spread_relative": 0.00117943,
+      "states": {
+        "statevector": {
+          "fidelity_vs_statevector": 1.0,
+          "norm_drift": 0.0
+        },
+        "mps": {
+          "fidelity_vs_statevector": 0.9942300586231685,
+          "norm_drift": 0.0028602716954527763
+        },
+        "tensor_network": {
+          "fidelity_vs_statevector": 0.9999999999999079,
+          "norm_drift": 6.198214408392744e-08
+        }
+      },
+      "observables": {
+        "statevector": {
+          "z:0": -0.03873293474316597,
+          "x:1": 0.9786824584007263,
+          "zz:0,1": 0.07822456955909729
+        },
+        "mps": {
+          "z:0": -0.038640812039375305,
+          "x:1": 0.978557825088501,
+          "zz:0,1": 0.07814817875623703
+        },
+        "tensor_network": {
+          "z:0": -0.03873293101787567,
+          "x:1": 0.9786825776100159,
+          "zz:0,1": 0.07822474837303162
+        }
+      },
+      "gradients": {
+        "reference": "statevector",
+        "per_mode": {
+          "statevector": {
+            "relative_l2_error": 0.0,
+            "cosine_similarity": 1.0
+          },
+          "mps": {
+            "relative_l2_error": 0.6752921194369688,
+            "cosine_similarity": 0.7389815984435913
+          },
+          "tensor_network": {
+            "relative_l2_error": 7.843620078819403e-07,
+            "cosine_similarity": 0.9999999999997674
+          }
+        },
+        "unsupported": {},
+        "oracle": {
+          "method": "parameter_shift",
+          "applies_to": "statevector",
+          "valid_domain": "exact statevector map only: the rule is exact for the rotation layers, and it does not apply to a map whose bond truncation discarded weight",
+          "compares": [
+            "statevector"
+          ],
+          "relative_l2_error": 1.0262230436736524e-06,
+          "cosine_similarity": 0.9999999999994987
+        },
+        "mps_own_map": {
+          "derivative": {
+            "method": "central_finite_difference",
+            "step": 1e-05,
+            "indices": [
+              0,
+              8,
+              16,
+              24,
+              32,
+              40,
+              48,
+              56
+            ],
+            "checked": 8,
+            "max_abs_error": 0.45328772440552706,
+            "max_relative_error": 0.23420840162571277
+          },
+          "finite_difference_domain": "not a check on autograd below double precision: the difference of two float32 energies with a 1e-5 step loses about six digits, so this number is the probe's arithmetic rather than a statement about the backward pass",
+          "smoothness": {
+            "index": 2,
+            "half_range": 0.05,
+            "points": 7,
+            "largest_step_jump": 0.0009737014770507812,
+            "bond_changed": false,
+            "smooth": true,
+            "energies": [
+              -5.492045402527,
+              -5.493019104004,
+              -5.493777275085,
+              -5.494343280792,
+              -5.494702339172,
+              -5.49485206604,
+              -5.494777202606
+            ]
+          }
+        }
+      },
+      "schmidt": {
+        "rank": 4,
+        "min_gap": 2.365962557223213e-05,
+        "near_degenerate": false
+      }
+    },
+    {
+      "n_qubits": 8,
+      "depth": 4,
+      "structure": "nearest_neighbour",
+      "max_bond_cutoff": 16,
+      "seed": 260720,
+      "observed_max_bond": 16,
+      "mps_bond_dims": [
+        2,
+        4,
+        8,
+        16,
+        8,
+        4,
+        2
+      ],
+      "mps_discarded_weight": 0.0,
+      "mps_max_truncation_error": 0.0,
+      "mps_truncation_steps": 0,
+      "headroom_max_bond": 16,
+      "mps_truncated": false,
+      "energies": {
+        "statevector": -5.57780838,
+        "mps": -5.57782173,
+        "tensor_network": -5.57780886
+      },
+      "spread_absolute": 1.33514e-05,
+      "spread_relative": 2.39367e-06,
+      "states": {
+        "statevector": {
+          "fidelity_vs_statevector": 1.0,
+          "norm_drift": 0.0
+        },
+        "mps": {
+          "fidelity_vs_statevector": 0.9999999999995828,
+          "norm_drift": 1.057671424664619e-06
+        },
+        "tensor_network": {
+          "fidelity_vs_statevector": 0.9999999999999143,
+          "norm_drift": 1.6177491124480525e-08
+        }
+      },
+      "observables": {
+        "statevector": {
+          "z:0": -0.06863738596439362,
+          "x:1": 0.9893068671226501,
+          "zz:0,1": 0.010371407493948936
+        },
+        "mps": {
+          "z:0": -0.06863785535097122,
+          "x:1": 0.9893091917037964,
+          "zz:0,1": 0.01037164218723774
+        },
+        "tensor_network": {
+          "z:0": -0.06863740086555481,
+          "x:1": 0.9893069267272949,
+          "zz:0,1": 0.010371503420174122
+        }
+      },
+      "gradients": {
+        "reference": "statevector",
+        "per_mode": {
+          "statevector": {
+            "relative_l2_error": 0.0,
+            "cosine_similarity": 0.9999999999999999
+          },
+          "mps": {
+            "relative_l2_error": 7.985189970358288e-07,
+            "cosine_similarity": 0.9999999999996835
+          },
+          "tensor_network": {
+            "relative_l2_error": 5.719974812788093e-07,
+            "cosine_similarity": 0.9999999999998365
+          }
+        },
+        "unsupported": {},
+        "oracle": {
+          "method": "parameter_shift",
+          "applies_to": "statevector",
+          "valid_domain": "exact statevector map only: the rule is exact for the rotation layers, and it does not apply to a map whose bond truncation discarded weight",
+          "compares": [
+            "statevector"
+          ],
+          "relative_l2_error": 8.178756033558773e-07,
+          "cosine_similarity": 0.9999999999996787
+        },
+        "mps_own_map": {
+          "derivative": {
+            "method": "central_finite_difference",
+            "step": 1e-05,
+            "indices": [
+              0,
+              8,
+              16,
+              24,
+              32,
+              40,
+              48,
+              56
+            ],
+            "checked": 8,
+            "max_abs_error": 0.525067213922739,
+            "max_relative_error": 0.18654201422317399
+          },
+          "finite_difference_domain": "not a check on autograd below double precision: the difference of two float32 energies with a 1e-5 step loses about six digits, so this number is the probe's arithmetic rather than a statement about the backward pass",
+          "smoothness": {
+            "index": 2,
+            "half_range": 0.05,
+            "points": 7,
+            "largest_step_jump": 0.0017695426940917969,
+            "bond_changed": false,
+            "smooth": true,
+            "energies": [
+              -5.57306098938,
+              -5.574830532074,
+              -5.576424121857,
+              -5.577821731567,
+              -5.579000473022,
+              -5.579994678497,
+              -5.580809116364
+            ]
+          }
+        }
+      },
+      "schmidt": {
+        "rank": 16,
+        "min_gap": null,
+        "near_degenerate": null
+      }
+    },
+    {
+      "n_qubits": 8,
+      "depth": 4,
+      "structure": "nearest_neighbour",
+      "max_bond_cutoff": 16,
+      "seed": 260721,
+      "observed_max_bond": 16,
+      "mps_bond_dims": [
+        2,
+        4,
+        8,
+        16,
+        8,
+        4,
+        2
+      ],
+      "mps_discarded_weight": 0.0,
+      "mps_max_truncation_error": 0.0,
+      "mps_truncation_steps": 0,
+      "headroom_max_bond": 16,
+      "mps_truncated": false,
+      "energies": {
+        "statevector": -5.34631062,
+        "mps": -5.34631872,
+        "tensor_network": -5.34631157
+      },
+      "spread_absolute": 8.10623e-06,
+      "spread_relative": 1.51623e-06,
+      "states": {
+        "statevector": {
+          "fidelity_vs_statevector": 1.0,
+          "norm_drift": 0.0
+        },
+        "mps": {
+          "fidelity_vs_statevector": 0.9999999999997118,
+          "norm_drift": 7.646221262813668e-07
+        },
+        "tensor_network": {
+          "fidelity_vs_statevector": 0.9999999999999132,
+          "norm_drift": 8.780731808322173e-08
+        }
+      },
+      "observables": {
+        "statevector": {
+          "z:0": 0.005236633121967316,
+          "x:1": 0.9742043018341064,
+          "zz:0,1": -0.07635854184627533
+        },
+        "mps": {
+          "z:0": 0.00523660471662879,
+          "x:1": 0.974205732345581,
+          "zz:0,1": -0.07635848224163055
+        },
+        "tensor_network": {
+          "z:0": 0.005236704368144274,
+          "x:1": 0.9742045402526855,
+          "zz:0,1": -0.07635845988988876
+        }
+      },
+      "gradients": {
+        "reference": "statevector",
+        "per_mode": {
+          "statevector": {
+            "relative_l2_error": 0.0,
+            "cosine_similarity": 0.9999999999999998
+          },
+          "mps": {
+            "relative_l2_error": 8.518021456456473e-07,
+            "cosine_similarity": 0.9999999999997204
+          },
+          "tensor_network": {
+            "relative_l2_error": 8.346269974276348e-07,
+            "cosine_similarity": 0.9999999999997106
+          }
+        },
+        "unsupported": {},
+        "oracle": {
+          "method": "parameter_shift",
+          "applies_to": "statevector",
+          "valid_domain": "exact statevector map only: the rule is exact for the rotation layers, and it does not apply to a map whose bond truncation discarded weight",
+          "compares": [
+            "statevector"
+          ],
+          "relative_l2_error": 9.00258662122299e-07,
+          "cosine_similarity": 0.999999999999602
+        },
+        "mps_own_map": {
+          "derivative": {
+            "method": "central_finite_difference",
+            "step": 1e-05,
+            "indices": [
+              0,
+              8,
+              16,
+              24,
+              32,
+              40,
+              48,
+              56
+            ],
+            "checked": 8,
+            "max_abs_error": 0.40036381781101227,
+            "max_relative_error": 0.13543575109788408
+          },
+          "finite_difference_domain": "not a check on autograd below double precision: the difference of two float32 energies with a 1e-5 step loses about six digits, so this number is the probe's arithmetic rather than a statement about the backward pass",
+          "smoothness": {
+            "index": 2,
+            "half_range": 0.05,
+            "points": 7,
+            "largest_step_jump": 0.00052642822265625,
+            "bond_changed": false,
+            "smooth": true,
+            "energies": [
+              -5.345855236053,
+              -5.346189022064,
+              -5.346339225769,
+              -5.346318721771,
+              -5.346126556396,
+              -5.345770359039,
+              -5.345243930817
+            ]
+          }
+        }
+      },
+      "schmidt": {
+        "rank": 16,
+        "min_gap": null,
+        "near_degenerate": null
+      }
+    },
+    {
+      "n_qubits": 8,
+      "depth": 4,
+      "structure": "nearest_neighbour",
+      "max_bond_cutoff": 16,
+      "seed": 260722,
+      "observed_max_bond": 16,
+      "mps_bond_dims": [
+        2,
+        4,
+        8,
+        16,
+        8,
+        4,
+        2
+      ],
+      "mps_discarded_weight": 0.0,
+      "mps_max_truncation_error": 0.0,
+      "mps_truncation_steps": 0,
+      "headroom_max_bond": 16,
+      "mps_truncated": false,
+      "energies": {
+        "statevector": -5.50084591,
+        "mps": -5.50083399,
+        "tensor_network": -5.50084686
+      },
+      "spread_absolute": 1.28746e-05,
+      "spread_relative": 2.34048e-06,
+      "states": {
+        "statevector": {
+          "fidelity_vs_statevector": 1.0,
+          "norm_drift": 0.0
+        },
+        "mps": {
+          "fidelity_vs_statevector": 0.999999999999762,
+          "norm_drift": 1.1137051206810966e-06
+        },
+        "tensor_network": {
+          "fidelity_vs_statevector": 0.9999999999999079,
+          "norm_drift": 6.198214408392744e-08
+        }
+      },
+      "observables": {
+        "statevector": {
+          "z:0": -0.03873293474316597,
+          "x:1": 0.9786824584007263,
+          "zz:0,1": 0.07822456955909729
+        },
+        "mps": {
+          "z:0": -0.03873294219374657,
+          "x:1": 0.9786800742149353,
+          "zz:0,1": 0.07822469621896744
+        },
+        "tensor_network": {
+          "z:0": -0.03873293101787567,
+          "x:1": 0.9786825776100159,
+          "zz:0,1": 0.07822474837303162
+        }
+      },
+      "gradients": {
+        "reference": "statevector",
+        "per_mode": {
+          "statevector": {
+            "relative_l2_error": 0.0,
+            "cosine_similarity": 1.0
+          },
+          "mps": {
+            "relative_l2_error": 7.876924275392694e-07,
+            "cosine_similarity": 0.9999999999996954
+          },
+          "tensor_network": {
+            "relative_l2_error": 7.843620078819403e-07,
+            "cosine_similarity": 0.9999999999997674
+          }
+        },
+        "unsupported": {},
+        "oracle": {
+          "method": "parameter_shift",
+          "applies_to": "statevector",
+          "valid_domain": "exact statevector map only: the rule is exact for the rotation layers, and it does not apply to a map whose bond truncation discarded weight",
+          "compares": [
+            "statevector"
+          ],
+          "relative_l2_error": 1.0262230436736524e-06,
+          "cosine_similarity": 0.9999999999994987
+        },
+        "mps_own_map": {
+          "derivative": {
+            "method": "central_finite_difference",
+            "step": 1e-05,
+            "indices": [
+              0,
+              8,
+              16,
+              24,
+              32,
+              40,
+              48,
+              56
+            ],
+            "checked": 8,
+            "max_abs_error": 0.33236794546246523,
+            "max_relative_error": 0.11901126032516345
+          },
+          "finite_difference_domain": "not a check on autograd below double precision: the difference of two float32 energies with a 1e-5 step loses about six digits, so this number is the probe's arithmetic rather than a statement about the backward pass",
+          "smoothness": {
+            "index": 2,
+            "half_range": 0.05,
+            "points": 7,
+            "largest_step_jump": 0.0007634162902832031,
+            "bond_changed": false,
+            "smooth": true,
+            "energies": [
+              -5.499199390411,
+              -5.499962806702,
+              -5.500500202179,
+              -5.500837802887,
+              -5.500962257385,
+              -5.500888347626,
+              -5.500584602356
+            ]
+          }
+        }
+      },
+      "schmidt": {
+        "rank": 16,
+        "min_gap": null,
+        "near_degenerate": null
+      }
+    },
+    {
+      "n_qubits": 4,
+      "depth": 2,
+      "structure": "all_to_all",
+      "max_bond_cutoff": 4,
+      "seed": 260720,
+      "observed_max_bond": 4,
+      "mps_bond_dims": [
+        2,
+        4,
+        2
+      ],
+      "mps_discarded_weight": 0.0,
+      "mps_max_truncation_error": 0.0,
+      "mps_truncation_steps": 0,
+      "headroom_max_bond": 4,
+      "mps_truncated": false,
+      "energies": {
+        "statevector": -2.86110115,
+        "mps": -2.8611002,
+        "tensor_network": -2.8611021
+      },
+      "spread_absolute": 1.90735e-06,
+      "spread_relative": 6.66648e-07,
+      "states": {
+        "statevector": {
+          "fidelity_vs_statevector": 1.0,
+          "norm_drift": 0.0
+        },
+        "mps": {
+          "fidelity_vs_statevector": 0.999999999999723,
+          "norm_drift": 2.8321157852229106e-07
+        },
+        "tensor_network": {
+          "fidelity_vs_statevector": 0.9999999999999917,
+          "norm_drift": 6.105509853249202e-08
+        }
+      },
+      "observables": {
+        "statevector": {
+          "z:0": -0.02535342425107956,
+          "x:1": 0.9884034395217896,
+          "zz:0,1": 0.08423785120248795
+        },
+        "mps": {
+          "z:0": -0.02535395510494709,
+          "x:1": 0.9884026646614075,
+          "zz:0,1": 0.08423837274312973
+        },
+        "tensor_network": {
+          "z:0": -0.025353431701660156,
+          "x:1": 0.9884034395217896,
+          "zz:0,1": 0.08423793315887451
+        }
+      },
+      "gradients": {
+        "reference": "statevector",
+        "per_mode": {
+          "statevector": {
+            "relative_l2_error": 0.0,
+            "cosine_similarity": 0.9999999999999999
+          },
+          "mps": {
+            "relative_l2_error": 7.480161463360553e-07,
+            "cosine_similarity": 0.9999999999997345
+          },
+          "tensor_network": {
+            "relative_l2_error": 6.962546969181422e-07,
+            "cosine_similarity": 0.9999999999997581
+          }
+        },
+        "unsupported": {},
+        "oracle": {
+          "method": "parameter_shift",
+          "applies_to": "statevector",
+          "valid_domain": "exact statevector map only: the rule is exact for the rotation layers, and it does not apply to a map whose bond truncation discarded weight",
+          "compares": [
+            "statevector"
+          ],
+          "relative_l2_error": 7.423638101916867e-07,
+          "cosine_similarity": 0.9999999999997439
+        },
+        "mps_own_map": {
+          "derivative": {
+            "method": "central_finite_difference",
+            "step": 1e-05,
+            "indices": [
+              0,
+              2,
+              4,
+              6,
+              8,
+              10,
+              12,
+              14
+            ],
+            "checked": 8,
+            "max_abs_error": 0.2762575149536133,
+            "max_relative_error": 0.31082938657357495
+          },
+          "finite_difference_domain": "not a check on autograd below double precision: the difference of two float32 energies with a 1e-5 step loses about six digits, so this number is the probe's arithmetic rather than a statement about the backward pass",
+          "smoothness": {
+            "index": 2,
+            "half_range": 0.05,
+            "points": 7,
+            "largest_step_jump": 0.0012879371643066406,
+            "bond_changed": false,
+            "smooth": true,
+            "energies": [
+              -2.857865333557,
+              -2.859153270721,
+              -2.860238552094,
+              -2.861100196838,
+              -2.861745119095,
+              -2.862193107605,
+              -2.862408876419
+            ]
+          }
+        }
+      },
+      "schmidt": {
+        "rank": 4,
+        "min_gap": null,
+        "near_degenerate": null
+      }
+    },
+    {
+      "n_qubits": 4,
+      "depth": 2,
+      "structure": "all_to_all",
+      "max_bond_cutoff": 4,
+      "seed": 260721,
+      "observed_max_bond": 4,
+      "mps_bond_dims": [
+        2,
+        4,
+        2
+      ],
+      "mps_discarded_weight": 0.0,
+      "mps_max_truncation_error": 0.0,
+      "mps_truncation_steps": 0,
+      "headroom_max_bond": 4,
+      "mps_truncated": false,
+      "energies": {
+        "statevector": -2.74769783,
+        "mps": -2.74769759,
+        "tensor_network": -2.74769855
+      },
+      "spread_absolute": 9.53674e-07,
+      "spread_relative": 3.47081e-07,
+      "states": {
+        "statevector": {
+          "fidelity_vs_statevector": 1.0,
+          "norm_drift": 0.0
+        },
+        "mps": {
+          "fidelity_vs_statevector": 0.9999999999997313,
+          "norm_drift": 1.0975365449805707e-07
+        },
+        "tensor_network": {
+          "fidelity_vs_statevector": 0.9999999999999843,
+          "norm_drift": 1.878512789765807e-08
+        }
+      },
+      "observables": {
+        "statevector": {
+          "z:0": 0.054903432726860046,
+          "x:1": 0.9894713163375854,
+          "zz:0,1": -0.03647085279226303
+        },
+        "mps": {
+          "z:0": 0.054903335869312286,
+          "x:1": 0.9894711971282959,
+          "zz:0,1": -0.036470651626586914
+        },
+        "tensor_network": {
+          "z:0": 0.05490345507860184,
+          "x:1": 0.989471435546875,
+          "zz:0,1": -0.03647074103355408
+        }
+      },
+      "gradients": {
+        "reference": "statevector",
+        "per_mode": {
+          "statevector": {
+            "relative_l2_error": 0.0,
+            "cosine_similarity": 1.0
+          },
+          "mps": {
+            "relative_l2_error": 5.635575476233194e-07,
+            "cosine_similarity": 0.9999999999998475
+          },
+          "tensor_network": {
+            "relative_l2_error": 5.610742526505555e-07,
+            "cosine_similarity": 0.9999999999998443
+          }
+        },
+        "unsupported": {},
+        "oracle": {
+          "method": "parameter_shift",
+          "applies_to": "statevector",
+          "valid_domain": "exact statevector map only: the rule is exact for the rotation layers, and it does not apply to a map whose bond truncation discarded weight",
+          "compares": [
+            "statevector"
+          ],
+          "relative_l2_error": 6.976593810099893e-07,
+          "cosine_similarity": 0.9999999999997726
+        },
+        "mps_own_map": {
+          "derivative": {
+            "method": "central_finite_difference",
+            "step": 1e-05,
+            "indices": [
+              0,
+              2,
+              4,
+              6,
+              8,
+              10,
+              12,
+              14
+            ],
+            "checked": 8,
+            "max_abs_error": 0.2516754548996687,
+            "max_relative_error": 0.232668165292505
+          },
+          "finite_difference_domain": "not a check on autograd below double precision: the difference of two float32 energies with a 1e-5 step loses about six digits, so this number is the probe's arithmetic rather than a statement about the backward pass",
+          "smoothness": {
+            "index": 2,
+            "half_range": 0.05,
+            "points": 7,
+            "largest_step_jump": 0.0013196468353271484,
+            "bond_changed": false,
+            "smooth": true,
+            "energies": [
+              -2.74946308136,
+              -2.749057292938,
+              -2.748467206955,
+              -2.747697591782,
+              -2.746747493744,
+              -2.745615005493,
+              -2.744295358658
+            ]
+          }
+        }
+      },
+      "schmidt": {
+        "rank": 4,
+        "min_gap": null,
+        "near_degenerate": null
+      }
+    },
+    {
+      "n_qubits": 4,
+      "depth": 2,
+      "structure": "all_to_all",
+      "max_bond_cutoff": 4,
+      "seed": 260722,
+      "observed_max_bond": 4,
+      "mps_bond_dims": [
+        2,
+        4,
+        2
+      ],
+      "mps_discarded_weight": 0.0,
+      "mps_max_truncation_error": 0.0,
+      "mps_truncation_steps": 0,
+      "headroom_max_bond": 4,
+      "mps_truncated": false,
+      "energies": {
+        "statevector": -2.74203873,
+        "mps": -2.74203539,
+        "tensor_network": -2.74203873
+      },
+      "spread_absolute": 3.33786e-06,
+      "spread_relative": 1.21729e-06,
+      "states": {
+        "statevector": {
+          "fidelity_vs_statevector": 0.9999999999999998,
+          "norm_drift": 0.0
+        },
+        "mps": {
+          "fidelity_vs_statevector": 0.9999999999994468,
+          "norm_drift": 6.7888139410055e-07
+        },
+        "tensor_network": {
+          "fidelity_vs_statevector": 0.9999999999999887,
+          "norm_drift": 9.330909489513317e-09
+        }
+      },
+      "observables": {
+        "statevector": {
+          "z:0": 0.05540938302874565,
+          "x:1": 0.9908316135406494,
+          "zz:0,1": -0.03422972932457924
+        },
+        "mps": {
+          "z:0": 0.055408697575330734,
+          "x:1": 0.9908301830291748,
+          "zz:0,1": -0.03422913700342178
+        },
+        "tensor_network": {
+          "z:0": 0.055409327149391174,
+          "x:1": 0.9908316135406494,
+          "zz:0,1": -0.03422969579696655
+        }
+      },
+      "gradients": {
+        "reference": "statevector",
+        "per_mode": {
+          "statevector": {
+            "relative_l2_error": 0.0,
+            "cosine_similarity": 1.0000000000000002
+          },
+          "mps": {
+            "relative_l2_error": 3.792186718208368e-07,
+            "cosine_similarity": 0.9999999999999359
+          },
+          "tensor_network": {
+            "relative_l2_error": 4.0759893493429277e-07,
+            "cosine_similarity": 0.9999999999999276
+          }
+        },
+        "unsupported": {},
+        "oracle": {
+          "method": "parameter_shift",
+          "applies_to": "statevector",
+          "valid_domain": "exact statevector map only: the rule is exact for the rotation layers, and it does not apply to a map whose bond truncation discarded weight",
+          "compares": [
+            "statevector"
+          ],
+          "relative_l2_error": 5.83307972040869e-07,
+          "cosine_similarity": 0.9999999999998314
+        },
+        "mps_own_map": {
+          "derivative": {
+            "method": "central_finite_difference",
+            "step": 1e-05,
+            "indices": [
+              0,
+              2,
+              4,
+              6,
+              8,
+              10,
+              12,
+              14
+            ],
+            "checked": 8,
+            "max_abs_error": 0.22774579375982282,
+            "max_relative_error": 0.22605995285147631
+          },
+          "finite_difference_domain": "not a check on autograd below double precision: the difference of two float32 energies with a 1e-5 step loses about six digits, so this number is the probe's arithmetic rather than a statement about the backward pass",
+          "smoothness": {
+            "index": 2,
+            "half_range": 0.05,
+            "points": 7,
+            "largest_step_jump": 0.0008738040924072266,
+            "bond_changed": false,
+            "smooth": true,
+            "energies": [
+              -2.739960670471,
+              -2.740834474564,
+              -2.741524934769,
+              -2.742038726807,
+              -2.74236369133,
+              -2.742509841919,
+              -2.742464542389
+            ]
+          }
+        }
+      },
+      "schmidt": {
+        "rank": 4,
+        "min_gap": null,
+        "near_degenerate": null
+      }
+    },
+    {
+      "n_qubits": 4,
+      "depth": 2,
+      "structure": "all_to_all",
+      "max_bond_cutoff": 16,
+      "seed": 260720,
+      "observed_max_bond": 4,
+      "mps_bond_dims": [
+        2,
+        4,
+        2
+      ],
+      "mps_discarded_weight": 0.0,
+      "mps_max_truncation_error": 0.0,
+      "mps_truncation_steps": 0,
+      "headroom_max_bond": 4,
+      "mps_truncated": false,
+      "energies": {
+        "statevector": -2.86110115,
+        "mps": -2.8611002,
+        "tensor_network": -2.8611021
+      },
+      "spread_absolute": 1.90735e-06,
+      "spread_relative": 6.66648e-07,
+      "states": {
+        "statevector": {
+          "fidelity_vs_statevector": 1.0,
+          "norm_drift": 0.0
+        },
+        "mps": {
+          "fidelity_vs_statevector": 0.999999999999723,
+          "norm_drift": 2.8321157852229106e-07
+        },
+        "tensor_network": {
+          "fidelity_vs_statevector": 0.9999999999999917,
+          "norm_drift": 6.105509853249202e-08
+        }
+      },
+      "observables": {
+        "statevector": {
+          "z:0": -0.02535342425107956,
+          "x:1": 0.9884034395217896,
+          "zz:0,1": 0.08423785120248795
+        },
+        "mps": {
+          "z:0": -0.02535395510494709,
+          "x:1": 0.9884026646614075,
+          "zz:0,1": 0.08423837274312973
+        },
+        "tensor_network": {
+          "z:0": -0.025353431701660156,
+          "x:1": 0.9884034395217896,
+          "zz:0,1": 0.08423793315887451
+        }
+      },
+      "gradients": {
+        "reference": "statevector",
+        "per_mode": {
+          "statevector": {
+            "relative_l2_error": 0.0,
+            "cosine_similarity": 0.9999999999999999
+          },
+          "mps": {
+            "relative_l2_error": 7.480161463360553e-07,
+            "cosine_similarity": 0.9999999999997345
+          },
+          "tensor_network": {
+            "relative_l2_error": 6.962546969181422e-07,
+            "cosine_similarity": 0.9999999999997581
+          }
+        },
+        "unsupported": {},
+        "oracle": {
+          "method": "parameter_shift",
+          "applies_to": "statevector",
+          "valid_domain": "exact statevector map only: the rule is exact for the rotation layers, and it does not apply to a map whose bond truncation discarded weight",
+          "compares": [
+            "statevector"
+          ],
+          "relative_l2_error": 7.423638101916867e-07,
+          "cosine_similarity": 0.9999999999997439
+        },
+        "mps_own_map": {
+          "derivative": {
+            "method": "central_finite_difference",
+            "step": 1e-05,
+            "indices": [
+              0,
+              2,
+              4,
+              6,
+              8,
+              10,
+              12,
+              14
+            ],
+            "checked": 8,
+            "max_abs_error": 0.2762575149536133,
+            "max_relative_error": 0.31082938657357495
+          },
+          "finite_difference_domain": "not a check on autograd below double precision: the difference of two float32 energies with a 1e-5 step loses about six digits, so this number is the probe's arithmetic rather than a statement about the backward pass",
+          "smoothness": {
+            "index": 2,
+            "half_range": 0.05,
+            "points": 7,
+            "largest_step_jump": 0.0012879371643066406,
+            "bond_changed": false,
+            "smooth": true,
+            "energies": [
+              -2.857865333557,
+              -2.859153270721,
+              -2.860238552094,
+              -2.861100196838,
+              -2.861745119095,
+              -2.862193107605,
+              -2.862408876419
+            ]
+          }
+        }
+      },
+      "schmidt": {
+        "rank": 16,
+        "min_gap": null,
+        "near_degenerate": null
+      }
+    },
+    {
+      "n_qubits": 4,
+      "depth": 2,
+      "structure": "all_to_all",
+      "max_bond_cutoff": 16,
+      "seed": 260721,
+      "observed_max_bond": 4,
+      "mps_bond_dims": [
+        2,
+        4,
+        2
+      ],
+      "mps_discarded_weight": 0.0,
+      "mps_max_truncation_error": 0.0,
+      "mps_truncation_steps": 0,
+      "headroom_max_bond": 4,
+      "mps_truncated": false,
+      "energies": {
+        "statevector": -2.74769783,
+        "mps": -2.74769759,
+        "tensor_network": -2.74769855
+      },
+      "spread_absolute": 9.53674e-07,
+      "spread_relative": 3.47081e-07,
+      "states": {
+        "statevector": {
+          "fidelity_vs_statevector": 1.0,
+          "norm_drift": 0.0
+        },
+        "mps": {
+          "fidelity_vs_statevector": 0.9999999999997313,
+          "norm_drift": 1.0975365449805707e-07
+        },
+        "tensor_network": {
+          "fidelity_vs_statevector": 0.9999999999999843,
+          "norm_drift": 1.878512789765807e-08
+        }
+      },
+      "observables": {
+        "statevector": {
+          "z:0": 0.054903432726860046,
+          "x:1": 0.9894713163375854,
+          "zz:0,1": -0.03647085279226303
+        },
+        "mps": {
+          "z:0": 0.054903335869312286,
+          "x:1": 0.9894711971282959,
+          "zz:0,1": -0.036470651626586914
+        },
+        "tensor_network": {
+          "z:0": 0.05490345507860184,
+          "x:1": 0.989471435546875,
+          "zz:0,1": -0.03647074103355408
+        }
+      },
+      "gradients": {
+        "reference": "statevector",
+        "per_mode": {
+          "statevector": {
+            "relative_l2_error": 0.0,
+            "cosine_similarity": 1.0
+          },
+          "mps": {
+            "relative_l2_error": 5.635575476233194e-07,
+            "cosine_similarity": 0.9999999999998475
+          },
+          "tensor_network": {
+            "relative_l2_error": 5.610742526505555e-07,
+            "cosine_similarity": 0.9999999999998443
+          }
+        },
+        "unsupported": {},
+        "oracle": {
+          "method": "parameter_shift",
+          "applies_to": "statevector",
+          "valid_domain": "exact statevector map only: the rule is exact for the rotation layers, and it does not apply to a map whose bond truncation discarded weight",
+          "compares": [
+            "statevector"
+          ],
+          "relative_l2_error": 6.976593810099893e-07,
+          "cosine_similarity": 0.9999999999997726
+        },
+        "mps_own_map": {
+          "derivative": {
+            "method": "central_finite_difference",
+            "step": 1e-05,
+            "indices": [
+              0,
+              2,
+              4,
+              6,
+              8,
+              10,
+              12,
+              14
+            ],
+            "checked": 8,
+            "max_abs_error": 0.2516754548996687,
+            "max_relative_error": 0.232668165292505
+          },
+          "finite_difference_domain": "not a check on autograd below double precision: the difference of two float32 energies with a 1e-5 step loses about six digits, so this number is the probe's arithmetic rather than a statement about the backward pass",
+          "smoothness": {
+            "index": 2,
+            "half_range": 0.05,
+            "points": 7,
+            "largest_step_jump": 0.0013196468353271484,
+            "bond_changed": false,
+            "smooth": true,
+            "energies": [
+              -2.74946308136,
+              -2.749057292938,
+              -2.748467206955,
+              -2.747697591782,
+              -2.746747493744,
+              -2.745615005493,
+              -2.744295358658
+            ]
+          }
+        }
+      },
+      "schmidt": {
+        "rank": 16,
+        "min_gap": null,
+        "near_degenerate": null
+      }
+    },
+    {
+      "n_qubits": 4,
+      "depth": 2,
+      "structure": "all_to_all",
+      "max_bond_cutoff": 16,
+      "seed": 260722,
+      "observed_max_bond": 4,
+      "mps_bond_dims": [
+        2,
+        4,
+        2
+      ],
+      "mps_discarded_weight": 0.0,
+      "mps_max_truncation_error": 0.0,
+      "mps_truncation_steps": 0,
+      "headroom_max_bond": 4,
+      "mps_truncated": false,
+      "energies": {
+        "statevector": -2.74203873,
+        "mps": -2.74203539,
+        "tensor_network": -2.74203873
+      },
+      "spread_absolute": 3.33786e-06,
+      "spread_relative": 1.21729e-06,
+      "states": {
+        "statevector": {
+          "fidelity_vs_statevector": 0.9999999999999998,
+          "norm_drift": 0.0
+        },
+        "mps": {
+          "fidelity_vs_statevector": 0.9999999999994468,
+          "norm_drift": 6.7888139410055e-07
+        },
+        "tensor_network": {
+          "fidelity_vs_statevector": 0.9999999999999887,
+          "norm_drift": 9.330909489513317e-09
+        }
+      },
+      "observables": {
+        "statevector": {
+          "z:0": 0.05540938302874565,
+          "x:1": 0.9908316135406494,
+          "zz:0,1": -0.03422972932457924
+        },
+        "mps": {
+          "z:0": 0.055408697575330734,
+          "x:1": 0.9908301830291748,
+          "zz:0,1": -0.03422913700342178
+        },
+        "tensor_network": {
+          "z:0": 0.055409327149391174,
+          "x:1": 0.9908316135406494,
+          "zz:0,1": -0.03422969579696655
+        }
+      },
+      "gradients": {
+        "reference": "statevector",
+        "per_mode": {
+          "statevector": {
+            "relative_l2_error": 0.0,
+            "cosine_similarity": 1.0000000000000002
+          },
+          "mps": {
+            "relative_l2_error": 3.792186718208368e-07,
+            "cosine_similarity": 0.9999999999999359
+          },
+          "tensor_network": {
+            "relative_l2_error": 4.0759893493429277e-07,
+            "cosine_similarity": 0.9999999999999276
+          }
+        },
+        "unsupported": {},
+        "oracle": {
+          "method": "parameter_shift",
+          "applies_to": "statevector",
+          "valid_domain": "exact statevector map only: the rule is exact for the rotation layers, and it does not apply to a map whose bond truncation discarded weight",
+          "compares": [
+            "statevector"
+          ],
+          "relative_l2_error": 5.83307972040869e-07,
+          "cosine_similarity": 0.9999999999998314
+        },
+        "mps_own_map": {
+          "derivative": {
+            "method": "central_finite_difference",
+            "step": 1e-05,
+            "indices": [
+              0,
+              2,
+              4,
+              6,
+              8,
+              10,
+              12,
+              14
+            ],
+            "checked": 8,
+            "max_abs_error": 0.22774579375982282,
+            "max_relative_error": 0.22605995285147631
+          },
+          "finite_difference_domain": "not a check on autograd below double precision: the difference of two float32 energies with a 1e-5 step loses about six digits, so this number is the probe's arithmetic rather than a statement about the backward pass",
+          "smoothness": {
+            "index": 2,
+            "half_range": 0.05,
+            "points": 7,
+            "largest_step_jump": 0.0008738040924072266,
+            "bond_changed": false,
+            "smooth": true,
+            "energies": [
+              -2.739960670471,
+              -2.740834474564,
+              -2.741524934769,
+              -2.742038726807,
+              -2.74236369133,
+              -2.742509841919,
+              -2.742464542389
+            ]
+          }
+        }
+      },
+      "schmidt": {
+        "rank": 16,
+        "min_gap": null,
+        "near_degenerate": null
+      }
+    },
+    {
+      "n_qubits": 4,
+      "depth": 4,
+      "structure": "all_to_all",
+      "max_bond_cutoff": 4,
+      "seed": 260720,
+      "observed_max_bond": 4,
+      "mps_bond_dims": [
+        2,
+        4,
+        2
+      ],
+      "mps_discarded_weight": 0.0,
+      "mps_max_truncation_error": 0.0,
+      "mps_truncation_steps": 0,
+      "headroom_max_bond": 4,
+      "mps_truncated": false,
+      "energies": {
+        "statevector": -2.63127708,
+        "mps": -2.63127494,
+        "tensor_network": -2.6312778
+      },
+      "spread_absolute": 2.86102e-06,
+      "spread_relative": 1.08731e-06,
+      "states": {
+        "statevector": {
+          "fidelity_vs_statevector": 1.0,
+          "norm_drift": 0.0
+        },
+        "mps": {
+          "fidelity_vs_statevector": 0.9999999999992225,
+          "norm_drift": 6.854444621895439e-07
+        },
+        "tensor_network": {
+          "fidelity_vs_statevector": 0.9999999999999761,
+          "norm_drift": 6.674523533867216e-08
+        }
+      },
+      "observables": {
+        "statevector": {
+          "z:0": -0.013964731246232986,
+          "x:1": 0.9925483465194702,
+          "zz:0,1": -0.024274777621030807
+        },
+        "mps": {
+          "z:0": -0.01396532915532589,
+          "x:1": 0.9925472140312195,
+          "zz:0,1": -0.02427375130355358
+        },
+        "tensor_network": {
+          "z:0": -0.013964742422103882,
+          "x:1": 0.9925484657287598,
+          "zz:0,1": -0.024274617433547974
+        }
+      },
+      "gradients": {
+        "reference": "statevector",
+        "per_mode": {
+          "statevector": {
+            "relative_l2_error": 0.0,
+            "cosine_similarity": 1.0000000000000002
+          },
+          "mps": {
+            "relative_l2_error": 8.83094375921548e-07,
+            "cosine_similarity": 0.999999999999721
+          },
+          "tensor_network": {
+            "relative_l2_error": 5.654343253315532e-07,
+            "cosine_similarity": 0.9999999999998614
+          }
+        },
+        "unsupported": {},
+        "oracle": {
+          "method": "parameter_shift",
+          "applies_to": "statevector",
+          "valid_domain": "exact statevector map only: the rule is exact for the rotation layers, and it does not apply to a map whose bond truncation discarded weight",
+          "compares": [
+            "statevector"
+          ],
+          "relative_l2_error": 5.737556174612953e-07,
+          "cosine_similarity": 0.9999999999998359
+        },
+        "mps_own_map": {
+          "derivative": {
+            "method": "central_finite_difference",
+            "step": 1e-05,
+            "indices": [
+              0,
+              4,
+              8,
+              12,
+              16,
+              20,
+              24,
+              28
+            ],
+            "checked": 8,
+            "max_abs_error": 0.36349722463637585,
+            "max_relative_error": 0.1710950847358791
+          },
+          "finite_difference_domain": "not a check on autograd below double precision: the difference of two float32 energies with a 1e-5 step loses about six digits, so this number is the probe's arithmetic rather than a statement about the backward pass",
+          "smoothness": {
+            "index": 2,
+            "half_range": 0.05,
+            "points": 7,
+            "largest_step_jump": 0.0006005764007568359,
+            "bond_changed": false,
+            "smooth": true,
+            "energies": [
+              -2.630858182907,
+              -2.631181001663,
+              -2.631318569183,
+              -2.631274938583,
+              -2.631035804749,
+              -2.630631446838,
+              -2.630030870438
+            ]
+          }
+        }
+      },
+      "schmidt": {
+        "rank": 4,
+        "min_gap": null,
+        "near_degenerate": null
+      }
+    },
+    {
+      "n_qubits": 4,
+      "depth": 4,
+      "structure": "all_to_all",
+      "max_bond_cutoff": 4,
+      "seed": 260721,
+      "observed_max_bond": 4,
+      "mps_bond_dims": [
+        2,
+        4,
+        2
+      ],
+      "mps_discarded_weight": 0.0,
+      "mps_max_truncation_error": 0.0,
+      "mps_truncation_steps": 0,
+      "headroom_max_bond": 4,
+      "mps_truncated": false,
+      "energies": {
+        "statevector": -2.67873502,
+        "mps": -2.67873621,
+        "tensor_network": -2.67873526
+      },
+      "spread_absolute": 1.19209e-06,
+      "spread_relative": 4.45021e-07,
+      "states": {
+        "statevector": {
+          "fidelity_vs_statevector": 1.0,
+          "norm_drift": 0.0
+        },
+        "mps": {
+          "fidelity_vs_statevector": 0.9999999999996647,
+          "norm_drift": 1.5737347003330626e-07
+        },
+        "tensor_network": {
+          "fidelity_vs_statevector": 0.9999999999999551,
+          "norm_drift": 2.0506279785337256e-08
+        }
+      },
+      "observables": {
+        "statevector": {
+          "z:0": 0.044380687177181244,
+          "x:1": 0.966533899307251,
+          "zz:0,1": -0.1712181717157364
+        },
+        "mps": {
+          "z:0": 0.04438056796789169,
+          "x:1": 0.9665343761444092,
+          "zz:0,1": -0.17121805250644684
+        },
+        "tensor_network": {
+          "z:0": 0.0443807989358902,
+          "x:1": 0.9665338397026062,
+          "zz:0,1": -0.17121805250644684
+        }
+      },
+      "gradients": {
+        "reference": "statevector",
+        "per_mode": {
+          "statevector": {
+            "relative_l2_error": 0.0,
+            "cosine_similarity": 1.0
+          },
+          "mps": {
+            "relative_l2_error": 2.66140057715236e-07,
+            "cosine_similarity": 0.9999999999999654
+          },
+          "tensor_network": {
+            "relative_l2_error": 3.9449515190647214e-07,
+            "cosine_similarity": 0.9999999999999266
+          }
+        },
+        "unsupported": {},
+        "oracle": {
+          "method": "parameter_shift",
+          "applies_to": "statevector",
+          "valid_domain": "exact statevector map only: the rule is exact for the rotation layers, and it does not apply to a map whose bond truncation discarded weight",
+          "compares": [
+            "statevector"
+          ],
+          "relative_l2_error": 6.043725634260711e-07,
+          "cosine_similarity": 0.9999999999998184
+        },
+        "mps_own_map": {
+          "derivative": {
+            "method": "central_finite_difference",
+            "step": 1e-05,
+            "indices": [
+              0,
+              4,
+              8,
+              12,
+              16,
+              20,
+              24,
+              28
+            ],
+            "checked": 8,
+            "max_abs_error": 0.6184804439544676,
+            "max_relative_error": 0.2910775759534292
+          },
+          "finite_difference_domain": "not a check on autograd below double precision: the difference of two float32 energies with a 1e-5 step loses about six digits, so this number is the probe's arithmetic rather than a statement about the backward pass",
+          "smoothness": {
+            "index": 2,
+            "half_range": 0.05,
+            "points": 7,
+            "largest_step_jump": 0.000982046127319336,
+            "bond_changed": false,
+            "smooth": true,
+            "energies": [
+              -2.679964780807,
+              -2.679699897766,
+              -2.679286241531,
+              -2.678736209869,
+              -2.678038835526,
+              -2.677200317383,
+              -2.676218271255
+            ]
+          }
+        }
+      },
+      "schmidt": {
+        "rank": 4,
+        "min_gap": null,
+        "near_degenerate": null
+      }
+    },
+    {
+      "n_qubits": 4,
+      "depth": 4,
+      "structure": "all_to_all",
+      "max_bond_cutoff": 4,
+      "seed": 260722,
+      "observed_max_bond": 4,
+      "mps_bond_dims": [
+        2,
+        4,
+        2
+      ],
+      "mps_discarded_weight": 0.0,
+      "mps_max_truncation_error": 0.0,
+      "mps_truncation_steps": 0,
+      "headroom_max_bond": 4,
+      "mps_truncated": false,
+      "energies": {
+        "statevector": -2.63072824,
+        "mps": -2.63072848,
+        "tensor_network": -2.63072824
+      },
+      "spread_absolute": 2.38419e-07,
+      "spread_relative": 9.06284e-08,
+      "states": {
+        "statevector": {
+          "fidelity_vs_statevector": 1.0,
+          "norm_drift": 0.0
+        },
+        "mps": {
+          "fidelity_vs_statevector": 0.9999999999993066,
+          "norm_drift": 8.564984899095407e-08
+        },
+        "tensor_network": {
+          "fidelity_vs_statevector": 0.9999999999999514,
+          "norm_drift": 8.555857022862767e-09
+        }
+      },
+      "observables": {
+        "statevector": {
+          "z:0": -0.10377334803342819,
+          "x:1": 0.9844187498092651,
+          "zz:0,1": -0.004791513085365295
+        },
+        "mps": {
+          "z:0": -0.10377334803342819,
+          "x:1": 0.9844188690185547,
+          "zz:0,1": -0.004791393876075745
+        },
+        "tensor_network": {
+          "z:0": -0.10377346724271774,
+          "x:1": 0.9844186902046204,
+          "zz:0,1": -0.004791423678398132
+        }
+      },
+      "gradients": {
+        "reference": "statevector",
+        "per_mode": {
+          "statevector": {
+            "relative_l2_error": 0.0,
+            "cosine_similarity": 1.0000000000000002
+          },
+          "mps": {
+            "relative_l2_error": 5.596741545150126e-07,
+            "cosine_similarity": 0.999999999999889
+          },
+          "tensor_network": {
+            "relative_l2_error": 3.9284466690102394e-07,
+            "cosine_similarity": 0.999999999999927
+          }
+        },
+        "unsupported": {},
+        "oracle": {
+          "method": "parameter_shift",
+          "applies_to": "statevector",
+          "valid_domain": "exact statevector map only: the rule is exact for the rotation layers, and it does not apply to a map whose bond truncation discarded weight",
+          "compares": [
+            "statevector"
+          ],
+          "relative_l2_error": 4.958285441833926e-07,
+          "cosine_similarity": 0.9999999999998789
+        },
+        "mps_own_map": {
+          "derivative": {
+            "method": "central_finite_difference",
+            "step": 1e-05,
+            "indices": [
+              0,
+              4,
+              8,
+              12,
+              16,
+              20,
+              24,
+              28
+            ],
+            "checked": 8,
+            "max_abs_error": 0.27728521823883057,
+            "max_relative_error": 0.13184839784071356
+          },
+          "finite_difference_domain": "not a check on autograd below double precision: the difference of two float32 energies with a 1e-5 step loses about six digits, so this number is the probe's arithmetic rather than a statement about the backward pass",
+          "smoothness": {
+            "index": 2,
+            "half_range": 0.05,
+            "points": 7,
+            "largest_step_jump": 0.004738807678222656,
+            "bond_changed": false,
+            "smooth": true,
+            "energies": [
+              -2.617060661316,
+              -2.621799468994,
+              -2.626351833344,
+              -2.630724906921,
+              -2.634907007217,
+              -2.638899564743,
+              -2.642691612244
+            ]
+          }
+        }
+      },
+      "schmidt": {
+        "rank": 4,
+        "min_gap": null,
+        "near_degenerate": null
+      }
+    },
+    {
+      "n_qubits": 4,
+      "depth": 4,
+      "structure": "all_to_all",
+      "max_bond_cutoff": 16,
+      "seed": 260720,
+      "observed_max_bond": 4,
+      "mps_bond_dims": [
+        2,
+        4,
+        2
+      ],
+      "mps_discarded_weight": 0.0,
+      "mps_max_truncation_error": 0.0,
+      "mps_truncation_steps": 0,
+      "headroom_max_bond": 4,
+      "mps_truncated": false,
+      "energies": {
+        "statevector": -2.63127708,
+        "mps": -2.63127494,
+        "tensor_network": -2.6312778
+      },
+      "spread_absolute": 2.86102e-06,
+      "spread_relative": 1.08731e-06,
+      "states": {
+        "statevector": {
+          "fidelity_vs_statevector": 1.0,
+          "norm_drift": 0.0
+        },
+        "mps": {
+          "fidelity_vs_statevector": 0.9999999999992225,
+          "norm_drift": 6.854444621895439e-07
+        },
+        "tensor_network": {
+          "fidelity_vs_statevector": 0.9999999999999761,
+          "norm_drift": 6.674523533867216e-08
+        }
+      },
+      "observables": {
+        "statevector": {
+          "z:0": -0.013964731246232986,
+          "x:1": 0.9925483465194702,
+          "zz:0,1": -0.024274777621030807
+        },
+        "mps": {
+          "z:0": -0.01396532915532589,
+          "x:1": 0.9925472140312195,
+          "zz:0,1": -0.02427375130355358
+        },
+        "tensor_network": {
+          "z:0": -0.013964742422103882,
+          "x:1": 0.9925484657287598,
+          "zz:0,1": -0.024274617433547974
+        }
+      },
+      "gradients": {
+        "reference": "statevector",
+        "per_mode": {
+          "statevector": {
+            "relative_l2_error": 0.0,
+            "cosine_similarity": 1.0000000000000002
+          },
+          "mps": {
+            "relative_l2_error": 8.83094375921548e-07,
+            "cosine_similarity": 0.999999999999721
+          },
+          "tensor_network": {
+            "relative_l2_error": 5.654343253315532e-07,
+            "cosine_similarity": 0.9999999999998614
+          }
+        },
+        "unsupported": {},
+        "oracle": {
+          "method": "parameter_shift",
+          "applies_to": "statevector",
+          "valid_domain": "exact statevector map only: the rule is exact for the rotation layers, and it does not apply to a map whose bond truncation discarded weight",
+          "compares": [
+            "statevector"
+          ],
+          "relative_l2_error": 5.737556174612953e-07,
+          "cosine_similarity": 0.9999999999998359
+        },
+        "mps_own_map": {
+          "derivative": {
+            "method": "central_finite_difference",
+            "step": 1e-05,
+            "indices": [
+              0,
+              4,
+              8,
+              12,
+              16,
+              20,
+              24,
+              28
+            ],
+            "checked": 8,
+            "max_abs_error": 0.36349722463637585,
+            "max_relative_error": 0.1710950847358791
+          },
+          "finite_difference_domain": "not a check on autograd below double precision: the difference of two float32 energies with a 1e-5 step loses about six digits, so this number is the probe's arithmetic rather than a statement about the backward pass",
+          "smoothness": {
+            "index": 2,
+            "half_range": 0.05,
+            "points": 7,
+            "largest_step_jump": 0.0006005764007568359,
+            "bond_changed": false,
+            "smooth": true,
+            "energies": [
+              -2.630858182907,
+              -2.631181001663,
+              -2.631318569183,
+              -2.631274938583,
+              -2.631035804749,
+              -2.630631446838,
+              -2.630030870438
+            ]
+          }
+        }
+      },
+      "schmidt": {
+        "rank": 16,
+        "min_gap": null,
+        "near_degenerate": null
+      }
+    },
+    {
+      "n_qubits": 4,
+      "depth": 4,
+      "structure": "all_to_all",
+      "max_bond_cutoff": 16,
+      "seed": 260721,
+      "observed_max_bond": 4,
+      "mps_bond_dims": [
+        2,
+        4,
+        2
+      ],
+      "mps_discarded_weight": 0.0,
+      "mps_max_truncation_error": 0.0,
+      "mps_truncation_steps": 0,
+      "headroom_max_bond": 4,
+      "mps_truncated": false,
+      "energies": {
+        "statevector": -2.67873502,
+        "mps": -2.67873621,
+        "tensor_network": -2.67873526
+      },
+      "spread_absolute": 1.19209e-06,
+      "spread_relative": 4.45021e-07,
+      "states": {
+        "statevector": {
+          "fidelity_vs_statevector": 1.0,
+          "norm_drift": 0.0
+        },
+        "mps": {
+          "fidelity_vs_statevector": 0.9999999999996647,
+          "norm_drift": 1.5737347003330626e-07
+        },
+        "tensor_network": {
+          "fidelity_vs_statevector": 0.9999999999999551,
+          "norm_drift": 2.0506279785337256e-08
+        }
+      },
+      "observables": {
+        "statevector": {
+          "z:0": 0.044380687177181244,
+          "x:1": 0.966533899307251,
+          "zz:0,1": -0.1712181717157364
+        },
+        "mps": {
+          "z:0": 0.04438056796789169,
+          "x:1": 0.9665343761444092,
+          "zz:0,1": -0.17121805250644684
+        },
+        "tensor_network": {
+          "z:0": 0.0443807989358902,
+          "x:1": 0.9665338397026062,
+          "zz:0,1": -0.17121805250644684
+        }
+      },
+      "gradients": {
+        "reference": "statevector",
+        "per_mode": {
+          "statevector": {
+            "relative_l2_error": 0.0,
+            "cosine_similarity": 1.0
+          },
+          "mps": {
+            "relative_l2_error": 2.66140057715236e-07,
+            "cosine_similarity": 0.9999999999999654
+          },
+          "tensor_network": {
+            "relative_l2_error": 3.9449515190647214e-07,
+            "cosine_similarity": 0.9999999999999266
+          }
+        },
+        "unsupported": {},
+        "oracle": {
+          "method": "parameter_shift",
+          "applies_to": "statevector",
+          "valid_domain": "exact statevector map only: the rule is exact for the rotation layers, and it does not apply to a map whose bond truncation discarded weight",
+          "compares": [
+            "statevector"
+          ],
+          "relative_l2_error": 6.043725634260711e-07,
+          "cosine_similarity": 0.9999999999998184
+        },
+        "mps_own_map": {
+          "derivative": {
+            "method": "central_finite_difference",
+            "step": 1e-05,
+            "indices": [
+              0,
+              4,
+              8,
+              12,
+              16,
+              20,
+              24,
+              28
+            ],
+            "checked": 8,
+            "max_abs_error": 0.6184804439544676,
+            "max_relative_error": 0.2910775759534292
+          },
+          "finite_difference_domain": "not a check on autograd below double precision: the difference of two float32 energies with a 1e-5 step loses about six digits, so this number is the probe's arithmetic rather than a statement about the backward pass",
+          "smoothness": {
+            "index": 2,
+            "half_range": 0.05,
+            "points": 7,
+            "largest_step_jump": 0.000982046127319336,
+            "bond_changed": false,
+            "smooth": true,
+            "energies": [
+              -2.679964780807,
+              -2.679699897766,
+              -2.679286241531,
+              -2.678736209869,
+              -2.678038835526,
+              -2.677200317383,
+              -2.676218271255
+            ]
+          }
+        }
+      },
+      "schmidt": {
+        "rank": 16,
+        "min_gap": null,
+        "near_degenerate": null
+      }
+    },
+    {
+      "n_qubits": 4,
+      "depth": 4,
+      "structure": "all_to_all",
+      "max_bond_cutoff": 16,
+      "seed": 260722,
+      "observed_max_bond": 4,
+      "mps_bond_dims": [
+        2,
+        4,
+        2
+      ],
+      "mps_discarded_weight": 0.0,
+      "mps_max_truncation_error": 0.0,
+      "mps_truncation_steps": 0,
+      "headroom_max_bond": 4,
+      "mps_truncated": false,
+      "energies": {
+        "statevector": -2.63072824,
+        "mps": -2.63072848,
+        "tensor_network": -2.63072824
+      },
+      "spread_absolute": 2.38419e-07,
+      "spread_relative": 9.06284e-08,
+      "states": {
+        "statevector": {
+          "fidelity_vs_statevector": 1.0,
+          "norm_drift": 0.0
+        },
+        "mps": {
+          "fidelity_vs_statevector": 0.9999999999993066,
+          "norm_drift": 8.564984899095407e-08
+        },
+        "tensor_network": {
+          "fidelity_vs_statevector": 0.9999999999999514,
+          "norm_drift": 8.555857022862767e-09
+        }
+      },
+      "observables": {
+        "statevector": {
+          "z:0": -0.10377334803342819,
+          "x:1": 0.9844187498092651,
+          "zz:0,1": -0.004791513085365295
+        },
+        "mps": {
+          "z:0": -0.10377334803342819,
+          "x:1": 0.9844188690185547,
+          "zz:0,1": -0.004791393876075745
+        },
+        "tensor_network": {
+          "z:0": -0.10377346724271774,
+          "x:1": 0.9844186902046204,
+          "zz:0,1": -0.004791423678398132
+        }
+      },
+      "gradients": {
+        "reference": "statevector",
+        "per_mode": {
+          "statevector": {
+            "relative_l2_error": 0.0,
+            "cosine_similarity": 1.0000000000000002
+          },
+          "mps": {
+            "relative_l2_error": 5.596741545150126e-07,
+            "cosine_similarity": 0.999999999999889
+          },
+          "tensor_network": {
+            "relative_l2_error": 3.9284466690102394e-07,
+            "cosine_similarity": 0.999999999999927
+          }
+        },
+        "unsupported": {},
+        "oracle": {
+          "method": "parameter_shift",
+          "applies_to": "statevector",
+          "valid_domain": "exact statevector map only: the rule is exact for the rotation layers, and it does not apply to a map whose bond truncation discarded weight",
+          "compares": [
+            "statevector"
+          ],
+          "relative_l2_error": 4.958285441833926e-07,
+          "cosine_similarity": 0.9999999999998789
+        },
+        "mps_own_map": {
+          "derivative": {
+            "method": "central_finite_difference",
+            "step": 1e-05,
+            "indices": [
+              0,
+              4,
+              8,
+              12,
+              16,
+              20,
+              24,
+              28
+            ],
+            "checked": 8,
+            "max_abs_error": 0.27728521823883057,
+            "max_relative_error": 0.13184839784071356
+          },
+          "finite_difference_domain": "not a check on autograd below double precision: the difference of two float32 energies with a 1e-5 step loses about six digits, so this number is the probe's arithmetic rather than a statement about the backward pass",
+          "smoothness": {
+            "index": 2,
+            "half_range": 0.05,
+            "points": 7,
+            "largest_step_jump": 0.004738807678222656,
+            "bond_changed": false,
+            "smooth": true,
+            "energies": [
+              -2.617060661316,
+              -2.621799468994,
+              -2.626351833344,
+              -2.630724906921,
+              -2.634907007217,
+              -2.638899564743,
+              -2.642691612244
+            ]
+          }
+        }
+      },
+      "schmidt": {
+        "rank": 16,
+        "min_gap": null,
+        "near_degenerate": null
+      }
+    },
+    {
+      "n_qubits": 8,
+      "depth": 2,
+      "structure": "all_to_all",
+      "max_bond_cutoff": 4,
+      "seed": 260720,
+      "observed_max_bond": 4,
+      "mps_bond_dims": [
+        2,
+        4,
+        4,
+        4,
+        4,
+        4,
+        2
+      ],
+      "mps_discarded_weight": 6.726163453045785,
+      "mps_max_truncation_error": 0.4412390887737274,
+      "mps_truncation_steps": 148,
+      "headroom_max_bond": 8,
+      "mps_truncated": true,
+      "energies": {
+        "statevector": -5.46161604,
+        "mps": -4.50480986,
+        "tensor_network": -5.46161652
+      },
+      "spread_absolute": 0.956807,
+      "spread_relative": 0.175187,
+      "states": {
+        "statevector": {
+          "fidelity_vs_statevector": 1.0,
+          "norm_drift": 0.0
+        },
+        "mps": {
+          "fidelity_vs_statevector": 0.8181013466381194,
+          "norm_drift": 0.059355890432994385
+        },
+        "tensor_network": {
+          "fidelity_vs_statevector": 0.9999999999999695,
+          "norm_drift": 2.774934015903341e-08
+        }
+      },
+      "observables": {
+        "statevector": {
+          "z:0": -0.0037794969975948334,
+          "x:1": 0.9821275472640991,
+          "zz:0,1": -0.0679374486207962
+        },
+        "mps": {
+          "z:0": -0.5951654314994812,
+          "x:1": 0.8226397633552551,
+          "zz:0,1": 0.08826851099729538
+        },
+        "tensor_network": {
+          "z:0": -0.0037794411182403564,
+          "x:1": 0.9821276068687439,
+          "zz:0,1": -0.0679374560713768
+        }
+      },
+      "gradients": {
+        "reference": "statevector",
+        "per_mode": {
+          "statevector": {
+            "relative_l2_error": 0.0,
+            "cosine_similarity": 1.0
+          },
+          "mps": {
+            "relative_l2_error": 0.9973755772591132,
+            "cosine_similarity": 0.10038515153832077
+          },
+          "tensor_network": {
+            "relative_l2_error": 8.340687929979003e-07,
+            "cosine_similarity": 0.9999999999996546
+          }
+        },
+        "unsupported": {},
+        "oracle": {
+          "method": "parameter_shift",
+          "applies_to": "statevector",
+          "valid_domain": "exact statevector map only: the rule is exact for the rotation layers, and it does not apply to a map whose bond truncation discarded weight",
+          "compares": [
+            "statevector"
+          ],
+          "relative_l2_error": 1.5396794655856701e-06,
+          "cosine_similarity": 0.9999999999989279
+        },
+        "mps_own_map": {
+          "derivative": {
+            "method": "central_finite_difference",
+            "step": 1e-05,
+            "indices": [
+              0,
+              4,
+              8,
+              12,
+              16,
+              20,
+              24,
+              28
+            ],
+            "checked": 8,
+            "max_abs_error": 10038.219943009317,
+            "max_relative_error": 247900.355714811
+          },
+          "finite_difference_domain": "not a check on autograd below double precision: the difference of two float32 energies with a 1e-5 step loses about six digits, so this number is the probe's arithmetic rather than a statement about the backward pass",
+          "smoothness": {
+            "index": 2,
+            "half_range": 0.05,
+            "points": 7,
+            "largest_step_jump": 0.8586010932922363,
+            "bond_changed": false,
+            "smooth": false,
+            "energies": [
+              -5.337620735168,
+              -5.430223464966,
+              -5.196900367737,
+              -4.504809856415,
+              -5.363410949707,
+              -5.243495941162,
+              -5.222135066986
+            ]
+          }
+        }
+      },
+      "schmidt": {
+        "rank": 4,
+        "min_gap": 0.00044728727796790275,
+        "near_degenerate": false
+      }
+    },
+    {
+      "n_qubits": 8,
+      "depth": 2,
+      "structure": "all_to_all",
+      "max_bond_cutoff": 4,
+      "seed": 260721,
+      "observed_max_bond": 4,
+      "mps_bond_dims": [
+        2,
+        4,
+        4,
+        4,
+        4,
+        4,
+        2
+      ],
+      "mps_discarded_weight": 5.441300063269801,
+      "mps_max_truncation_error": 0.4776642918586731,
+      "mps_truncation_steps": 148,
+      "headroom_max_bond": 8,
+      "mps_truncated": true,
+      "energies": {
+        "statevector": -5.51698017,
+        "mps": -5.32882881,
+        "tensor_network": -5.51698112
+      },
+      "spread_absolute": 0.188152,
+      "spread_relative": 0.0341042,
+      "states": {
+        "statevector": {
+          "fidelity_vs_statevector": 1.0,
+          "norm_drift": 0.0
+        },
+        "mps": {
+          "fidelity_vs_statevector": 0.9705519397016582,
+          "norm_drift": 0.018794742301291523
+        },
+        "tensor_network": {
+          "fidelity_vs_statevector": 0.9999999999999691,
+          "norm_drift": 1.628144719045821e-08
+        }
+      },
+      "observables": {
+        "statevector": {
+          "z:0": 0.024281486868858337,
+          "x:1": 0.9729835987091064,
+          "zz:0,1": 0.004810958169400692
+        },
+        "mps": {
+          "z:0": 0.13675536215305328,
+          "x:1": 0.950534462928772,
+          "zz:0,1": -0.007633732631802559
+        },
+        "tensor_network": {
+          "z:0": 0.02428153157234192,
+          "x:1": 0.9729834198951721,
+          "zz:0,1": 0.004810966085642576
+        }
+      },
+      "gradients": {
+        "reference": "statevector",
+        "per_mode": {
+          "statevector": {
+            "relative_l2_error": 0.0,
+            "cosine_similarity": 1.0
+          },
+          "mps": {
+            "relative_l2_error": 0.9999185865644484,
+            "cosine_similarity": 0.05147002264014052
+          },
+          "tensor_network": {
+            "relative_l2_error": 1.2375057116961737e-06,
+            "cosine_similarity": 0.9999999999992463
+          }
+        },
+        "unsupported": {},
+        "oracle": {
+          "method": "parameter_shift",
+          "applies_to": "statevector",
+          "valid_domain": "exact statevector map only: the rule is exact for the rotation layers, and it does not apply to a map whose bond truncation discarded weight",
+          "compares": [
+            "statevector"
+          ],
+          "relative_l2_error": 1.3579047897041879e-06,
+          "cosine_similarity": 0.9999999999991239
+        },
+        "mps_own_map": {
+          "derivative": {
+            "method": "central_finite_difference",
+            "step": 1e-05,
+            "indices": [
+              0,
+              4,
+              8,
+              12,
+              16,
+              20,
+              24,
+              28
+            ],
+            "checked": 8,
+            "max_abs_error": 49646.83644022978,
+            "max_relative_error": 408958.7531904958
+          },
+          "finite_difference_domain": "not a check on autograd below double precision: the difference of two float32 energies with a 1e-5 step loses about six digits, so this number is the probe's arithmetic rather than a statement about the backward pass",
+          "smoothness": {
+            "index": 2,
+            "half_range": 0.05,
+            "points": 7,
+            "largest_step_jump": 0.5795121192932129,
+            "bond_changed": false,
+            "smooth": false,
+            "energies": [
+              -5.265267372131,
+              -5.500911712646,
+              -4.921399593353,
+              -5.328828811646,
+              -5.499879360199,
+              -5.49031162262,
+              -5.523280143738
+            ]
+          }
+        }
+      },
+      "schmidt": {
+        "rank": 4,
+        "min_gap": 0.00018427806289571784,
+        "near_degenerate": false
+      }
+    },
+    {
+      "n_qubits": 8,
+      "depth": 2,
+      "structure": "all_to_all",
+      "max_bond_cutoff": 4,
+      "seed": 260722,
+      "observed_max_bond": 4,
+      "mps_bond_dims": [
+        2,
+        4,
+        4,
+        4,
+        4,
+        4,
+        2
+      ],
+      "mps_discarded_weight": 6.3803206143600315,
+      "mps_max_truncation_error": 0.876865565776825,
+      "mps_truncation_steps": 148,
+      "headroom_max_bond": 8,
+      "mps_truncated": true,
+      "energies": {
+        "statevector": -5.57731819,
+        "mps": -4.93655682,
+        "tensor_network": -5.57731915
+      },
+      "spread_absolute": 0.640762,
+      "spread_relative": 0.114887,
+      "states": {
+        "statevector": {
+          "fidelity_vs_statevector": 1.0,
+          "norm_drift": 0.0
+        },
+        "mps": {
+          "fidelity_vs_statevector": 0.9637592164158713,
+          "norm_drift": 0.05624669385147407
+        },
+        "tensor_network": {
+          "fidelity_vs_statevector": 0.9999999999999691,
+          "norm_drift": 5.807278191660714e-08
+        }
+      },
+      "observables": {
+        "statevector": {
+          "z:0": -0.1391066312789917,
+          "x:1": 0.9801313877105713,
+          "zz:0,1": 0.055370695888996124
+        },
+        "mps": {
+          "z:0": -0.1955508291721344,
+          "x:1": 0.8584645986557007,
+          "zz:0,1": 0.0929824709892273
+        },
+        "tensor_network": {
+          "z:0": -0.1391066163778305,
+          "x:1": 0.9801315069198608,
+          "zz:0,1": 0.055370744317770004
+        }
+      },
+      "gradients": {
+        "reference": "statevector",
+        "per_mode": {
+          "statevector": {
+            "relative_l2_error": 0.0,
+            "cosine_similarity": 1.0
+          },
+          "mps": {
+            "relative_l2_error": 0.9932816896802255,
+            "cosine_similarity": 0.1269256981073212
+          },
+          "tensor_network": {
+            "relative_l2_error": 9.469172927321803e-07,
+            "cosine_similarity": 0.9999999999995606
+          }
+        },
+        "unsupported": {},
+        "oracle": {
+          "method": "parameter_shift",
+          "applies_to": "statevector",
+          "valid_domain": "exact statevector map only: the rule is exact for the rotation layers, and it does not apply to a map whose bond truncation discarded weight",
+          "compares": [
+            "statevector"
+          ],
+          "relative_l2_error": 1.6740305756606031e-06,
+          "cosine_similarity": 0.999999999998641
+        },
+        "mps_own_map": {
+          "derivative": {
+            "method": "central_finite_difference",
+            "step": 1e-05,
+            "indices": [
+              0,
+              4,
+              8,
+              12,
+              16,
+              20,
+              24,
+              28
+            ],
+            "checked": 8,
+            "max_abs_error": 23560.428318625545,
+            "max_relative_error": 119185.44071748479
+          },
+          "finite_difference_domain": "not a check on autograd below double precision: the difference of two float32 energies with a 1e-5 step loses about six digits, so this number is the probe's arithmetic rather than a statement about the backward pass",
+          "smoothness": {
+            "index": 2,
+            "half_range": 0.05,
+            "points": 7,
+            "largest_step_jump": 1.250648021697998,
+            "bond_changed": false,
+            "smooth": false,
+            "energies": [
+              -5.256711006165,
+              -5.211276531219,
+              -5.560827732086,
+              -5.576382160187,
+              -4.325734138489,
+              -5.550276756287,
+              -5.381224155426
+            ]
+          }
+        }
+      },
+      "schmidt": {
+        "rank": 4,
+        "min_gap": 0.0009603479277711609,
+        "near_degenerate": false
+      }
+    },
+    {
+      "n_qubits": 8,
+      "depth": 2,
+      "structure": "all_to_all",
+      "max_bond_cutoff": 16,
+      "seed": 260720,
+      "observed_max_bond": 16,
+      "mps_bond_dims": [
+        2,
+        4,
+        8,
+        16,
+        8,
+        4,
+        2
+      ],
+      "mps_discarded_weight": 0.0,
+      "mps_max_truncation_error": 0.0,
+      "mps_truncation_steps": 0,
+      "headroom_max_bond": 16,
+      "mps_truncated": false,
+      "energies": {
+        "statevector": -5.46161604,
+        "mps": -5.46163845,
+        "tensor_network": -5.46161652
+      },
+      "spread_absolute": 2.24113e-05,
+      "spread_relative": 4.10343e-06,
+      "states": {
+        "statevector": {
+          "fidelity_vs_statevector": 1.0,
+          "norm_drift": 0.0
+        },
+        "mps": {
+          "fidelity_vs_statevector": 0.9999999999982883,
+          "norm_drift": 2.0851465254434487e-06
+        },
+        "tensor_network": {
+          "fidelity_vs_statevector": 0.9999999999999695,
+          "norm_drift": 2.774934015903341e-08
+        }
+      },
+      "observables": {
+        "statevector": {
+          "z:0": -0.0037794969975948334,
+          "x:1": 0.9821275472640991,
+          "zz:0,1": -0.0679374486207962
+        },
+        "mps": {
+          "z:0": -0.0037799482233822346,
+          "x:1": 0.9821316003799438,
+          "zz:0,1": -0.06793799996376038
+        },
+        "tensor_network": {
+          "z:0": -0.0037794411182403564,
+          "x:1": 0.9821276068687439,
+          "zz:0,1": -0.0679374560713768
+        }
+      },
+      "gradients": {
+        "reference": "statevector",
+        "per_mode": {
+          "statevector": {
+            "relative_l2_error": 0.0,
+            "cosine_similarity": 1.0
+          },
+          "mps": {
+            "relative_l2_error": 2.2544708551283077e-06,
+            "cosine_similarity": 0.9999999999992509
+          },
+          "tensor_network": {
+            "relative_l2_error": 8.340687929979003e-07,
+            "cosine_similarity": 0.9999999999996546
+          }
+        },
+        "unsupported": {},
+        "oracle": {
+          "method": "parameter_shift",
+          "applies_to": "statevector",
+          "valid_domain": "exact statevector map only: the rule is exact for the rotation layers, and it does not apply to a map whose bond truncation discarded weight",
+          "compares": [
+            "statevector"
+          ],
+          "relative_l2_error": 1.5396794655856701e-06,
+          "cosine_similarity": 0.9999999999989279
+        },
+        "mps_own_map": {
+          "derivative": {
+            "method": "central_finite_difference",
+            "step": 1e-05,
+            "indices": [
+              0,
+              4,
+              8,
+              12,
+              16,
+              20,
+              24,
+              28
+            ],
+            "checked": 8,
+            "max_abs_error": 1.4623117744922636,
+            "max_relative_error": 1.1140584215044813
+          },
+          "finite_difference_domain": "not a check on autograd below double precision: the difference of two float32 energies with a 1e-5 step loses about six digits, so this number is the probe's arithmetic rather than a statement about the backward pass",
+          "smoothness": {
+            "index": 2,
+            "half_range": 0.05,
+            "points": 7,
+            "largest_step_jump": 0.001079559326171875,
+            "bond_changed": false,
+            "smooth": true,
+            "energies": [
+              -5.458885669708,
+              -5.459965229034,
+              -5.460870742798,
+              -5.461638450623,
+              -5.462195396423,
+              -5.462563991547,
+              -5.462804794312
+            ]
+          }
+        }
+      },
+      "schmidt": {
+        "rank": 16,
+        "min_gap": null,
+        "near_degenerate": null
+      }
+    },
+    {
+      "n_qubits": 8,
+      "depth": 2,
+      "structure": "all_to_all",
+      "max_bond_cutoff": 16,
+      "seed": 260721,
+      "observed_max_bond": 16,
+      "mps_bond_dims": [
+        2,
+        4,
+        8,
+        16,
+        8,
+        4,
+        2
+      ],
+      "mps_discarded_weight": 0.0,
+      "mps_max_truncation_error": 0.0,
+      "mps_truncation_steps": 0,
+      "headroom_max_bond": 16,
+      "mps_truncated": false,
+      "energies": {
+        "statevector": -5.51698017,
+        "mps": -5.51698637,
+        "tensor_network": -5.51698112
+      },
+      "spread_absolute": 6.19888e-06,
+      "spread_relative": 1.1236e-06,
+      "states": {
+        "statevector": {
+          "fidelity_vs_statevector": 1.0,
+          "norm_drift": 0.0
+        },
+        "mps": {
+          "fidelity_vs_statevector": 0.9999999999979929,
+          "norm_drift": 7.458823825245986e-07
+        },
+        "tensor_network": {
+          "fidelity_vs_statevector": 0.9999999999999691,
+          "norm_drift": 1.628144719045821e-08
+        }
+      },
+      "observables": {
+        "statevector": {
+          "z:0": 0.024281486868858337,
+          "x:1": 0.9729835987091064,
+          "zz:0,1": 0.004810958169400692
+        },
+        "mps": {
+          "z:0": 0.02428153157234192,
+          "x:1": 0.9729849100112915,
+          "zz:0,1": 0.0048104142770171165
+        },
+        "tensor_network": {
+          "z:0": 0.02428153157234192,
+          "x:1": 0.9729834198951721,
+          "zz:0,1": 0.004810966085642576
+        }
+      },
+      "gradients": {
+        "reference": "statevector",
+        "per_mode": {
+          "statevector": {
+            "relative_l2_error": 0.0,
+            "cosine_similarity": 1.0
+          },
+          "mps": {
+            "relative_l2_error": 2.766236237358533e-06,
+            "cosine_similarity": 0.999999999996949
+          },
+          "tensor_network": {
+            "relative_l2_error": 1.2375057116961737e-06,
+            "cosine_similarity": 0.9999999999992463
+          }
+        },
+        "unsupported": {},
+        "oracle": {
+          "method": "parameter_shift",
+          "applies_to": "statevector",
+          "valid_domain": "exact statevector map only: the rule is exact for the rotation layers, and it does not apply to a map whose bond truncation discarded weight",
+          "compares": [
+            "statevector"
+          ],
+          "relative_l2_error": 1.3579047897041879e-06,
+          "cosine_similarity": 0.9999999999991239
+        },
+        "mps_own_map": {
+          "derivative": {
+            "method": "central_finite_difference",
+            "step": 1e-05,
+            "indices": [
+              0,
+              4,
+              8,
+              12,
+              16,
+              20,
+              24,
+              28
+            ],
+            "checked": 8,
+            "max_abs_error": 1.4974521398544312,
+            "max_relative_error": 1.2499523862309538
+          },
+          "finite_difference_domain": "not a check on autograd below double precision: the difference of two float32 energies with a 1e-5 step loses about six digits, so this number is the probe's arithmetic rather than a statement about the backward pass",
+          "smoothness": {
+            "index": 2,
+            "half_range": 0.05,
+            "points": 7,
+            "largest_step_jump": 0.0013184547424316406,
+            "bond_changed": false,
+            "smooth": true,
+            "energies": [
+              -5.518549442291,
+              -5.518178462982,
+              -5.517689228058,
+              -5.516986370087,
+              -5.516078948975,
+              -5.515006065369,
+              -5.513687610626
+            ]
+          }
+        }
+      },
+      "schmidt": {
+        "rank": 16,
+        "min_gap": null,
+        "near_degenerate": null
+      }
+    },
+    {
+      "n_qubits": 8,
+      "depth": 2,
+      "structure": "all_to_all",
+      "max_bond_cutoff": 16,
+      "seed": 260722,
+      "observed_max_bond": 16,
+      "mps_bond_dims": [
+        2,
+        4,
+        8,
+        16,
+        8,
+        4,
+        2
+      ],
+      "mps_discarded_weight": 0.0,
+      "mps_max_truncation_error": 0.0,
+      "mps_truncation_steps": 0,
+      "headroom_max_bond": 16,
+      "mps_truncated": false,
+      "energies": {
+        "statevector": -5.57731819,
+        "mps": -5.57733345,
+        "tensor_network": -5.57731915
+      },
+      "spread_absolute": 1.52588e-05,
+      "spread_relative": 2.73586e-06,
+      "states": {
+        "statevector": {
+          "fidelity_vs_statevector": 1.0,
+          "norm_drift": 0.0
+        },
+        "mps": {
+          "fidelity_vs_statevector": 0.9999999999978706,
+          "norm_drift": 1.1419857299799219e-06
+        },
+        "tensor_network": {
+          "fidelity_vs_statevector": 0.9999999999999691,
+          "norm_drift": 5.807278191660714e-08
+        }
+      },
+      "observables": {
+        "statevector": {
+          "z:0": -0.1391066312789917,
+          "x:1": 0.9801313877105713,
+          "zz:0,1": 0.055370695888996124
+        },
+        "mps": {
+          "z:0": -0.13910748064517975,
+          "x:1": 0.9801337122917175,
+          "zz:0,1": 0.05537176877260208
+        },
+        "tensor_network": {
+          "z:0": -0.1391066163778305,
+          "x:1": 0.9801315069198608,
+          "zz:0,1": 0.055370744317770004
+        }
+      },
+      "gradients": {
+        "reference": "statevector",
+        "per_mode": {
+          "statevector": {
+            "relative_l2_error": 0.0,
+            "cosine_similarity": 1.0
+          },
+          "mps": {
+            "relative_l2_error": 1.947774392824809e-06,
+            "cosine_similarity": 0.9999999999989946
+          },
+          "tensor_network": {
+            "relative_l2_error": 9.469172927321803e-07,
+            "cosine_similarity": 0.9999999999995606
+          }
+        },
+        "unsupported": {},
+        "oracle": {
+          "method": "parameter_shift",
+          "applies_to": "statevector",
+          "valid_domain": "exact statevector map only: the rule is exact for the rotation layers, and it does not apply to a map whose bond truncation discarded weight",
+          "compares": [
+            "statevector"
+          ],
+          "relative_l2_error": 1.6740305756606031e-06,
+          "cosine_similarity": 0.999999999998641
+        },
+        "mps_own_map": {
+          "derivative": {
+            "method": "central_finite_difference",
+            "step": 1e-05,
+            "indices": [
+              0,
+              4,
+              8,
+              12,
+              16,
+              20,
+              24,
+              28
+            ],
+            "checked": 8,
+            "max_abs_error": 2.4826574698090553,
+            "max_relative_error": 2.248906385538435
+          },
+          "finite_difference_domain": "not a check on autograd below double precision: the difference of two float32 energies with a 1e-5 step loses about six digits, so this number is the probe's arithmetic rather than a statement about the backward pass",
+          "smoothness": {
+            "index": 2,
+            "half_range": 0.05,
+            "points": 7,
+            "largest_step_jump": 0.0008931159973144531,
+            "bond_changed": false,
+            "smooth": true,
+            "energies": [
+              -5.575202941895,
+              -5.576096057892,
+              -5.576810836792,
+              -5.577323913574,
+              -5.577590465546,
+              -5.577712059021,
+              -5.577575206757
+            ]
+          }
+        }
+      },
+      "schmidt": {
+        "rank": 16,
+        "min_gap": null,
+        "near_degenerate": null
+      }
+    },
+    {
+      "n_qubits": 8,
+      "depth": 4,
+      "structure": "all_to_all",
+      "max_bond_cutoff": 4,
+      "seed": 260720,
+      "observed_max_bond": 4,
+      "mps_bond_dims": [
+        2,
+        4,
+        4,
+        4,
+        4,
+        4,
+        2
+      ],
+      "mps_discarded_weight": 9.317223323088738,
+      "mps_max_truncation_error": 0.4412390887737274,
+      "mps_truncation_steps": 308,
+      "headroom_max_bond": 8,
+      "mps_truncated": true,
+      "energies": {
+        "statevector": -5.52746344,
+        "mps": -4.27866411,
+        "tensor_network": -5.52746248
+      },
+      "spread_absolute": 1.2488,
+      "spread_relative": 0.225926,
+      "states": {
+        "statevector": {
+          "fidelity_vs_statevector": 0.9999999999999996,
+          "norm_drift": 0.0
+        },
+        "mps": {
+          "fidelity_vs_statevector": 0.6757523944611109,
+          "norm_drift": 0.11688916929374682
+        },
+        "tensor_network": {
+          "fidelity_vs_statevector": 0.9999999999999105,
+          "norm_drift": 1.0586951981750303e-08
+        }
+      },
+      "observables": {
+        "statevector": {
+          "z:0": -0.06771641224622726,
+          "x:1": 0.9685823321342468,
+          "zz:0,1": 0.009008440189063549
+        },
+        "mps": {
+          "z:0": -0.7022618055343628,
+          "x:1": 0.7281786799430847,
+          "zz:0,1": 0.1466669738292694
+        },
+        "tensor_network": {
+          "z:0": -0.06771638989448547,
+          "x:1": 0.9685823917388916,
+          "zz:0,1": 0.009008470922708511
+        }
+      },
+      "gradients": {
+        "reference": "statevector",
+        "per_mode": {
+          "statevector": {
+            "relative_l2_error": 0.0,
+            "cosine_similarity": 1.0
+          },
+          "mps": {
+            "relative_l2_error": 0.9995054141615977,
+            "cosine_similarity": 0.06872960908373149
+          },
+          "tensor_network": {
+            "relative_l2_error": 8.955860957676052e-07,
+            "cosine_similarity": 0.9999999999996013
+          }
+        },
+        "unsupported": {},
+        "oracle": {
+          "method": "parameter_shift",
+          "applies_to": "statevector",
+          "valid_domain": "exact statevector map only: the rule is exact for the rotation layers, and it does not apply to a map whose bond truncation discarded weight",
+          "compares": [
+            "statevector"
+          ],
+          "relative_l2_error": 1.191887067895199e-06,
+          "cosine_similarity": 0.99999999999929
+        },
+        "mps_own_map": {
+          "derivative": {
+            "method": "central_finite_difference",
+            "step": 1e-05,
+            "indices": [
+              0,
+              8,
+              16,
+              24,
+              32,
+              40,
+              48,
+              56
+            ],
+            "checked": 8,
+            "max_abs_error": 44416.03038004693,
+            "max_relative_error": 175151.68711405652
+          },
+          "finite_difference_domain": "not a check on autograd below double precision: the difference of two float32 energies with a 1e-5 step loses about six digits, so this number is the probe's arithmetic rather than a statement about the backward pass",
+          "smoothness": {
+            "index": 2,
+            "half_range": 0.05,
+            "points": 7,
+            "largest_step_jump": 1.1185240745544434,
+            "bond_changed": false,
+            "smooth": false,
+            "energies": [
+              -4.463739395142,
+              -5.273846149445,
+              -4.749125957489,
+              -4.278664112091,
+              -4.931824207306,
+              -5.287625789642,
+              -4.169101715088
+            ]
+          }
+        }
+      },
+      "schmidt": {
+        "rank": 4,
+        "min_gap": 6.283772989176296e-05,
+        "near_degenerate": false
+      }
+    },
+    {
+      "n_qubits": 8,
+      "depth": 4,
+      "structure": "all_to_all",
+      "max_bond_cutoff": 4,
+      "seed": 260721,
+      "observed_max_bond": 4,
+      "mps_bond_dims": [
+        2,
+        4,
+        4,
+        4,
+        4,
+        4,
+        2
+      ],
+      "mps_discarded_weight": 11.53062477125391,
+      "mps_max_truncation_error": 0.4776642918586731,
+      "mps_truncation_steps": 308,
+      "headroom_max_bond": 8,
+      "mps_truncated": true,
+      "energies": {
+        "statevector": -5.41510725,
+        "mps": -4.14913607,
+        "tensor_network": -5.41510677
+      },
+      "spread_absolute": 1.26597,
+      "spread_relative": 0.233785,
+      "states": {
+        "statevector": {
+          "fidelity_vs_statevector": 1.0,
+          "norm_drift": 0.0
+        },
+        "mps": {
+          "fidelity_vs_statevector": 0.8430080730069923,
+          "norm_drift": 0.11622172765326721
+        },
+        "tensor_network": {
+          "fidelity_vs_statevector": 0.9999999999999067,
+          "norm_drift": 2.128817278013173e-08
+        }
+      },
+      "observables": {
+        "statevector": {
+          "z:0": 0.006586723029613495,
+          "x:1": 0.952207088470459,
+          "zz:0,1": -0.07382257282733917
+        },
+        "mps": {
+          "z:0": 0.4621976315975189,
+          "x:1": 0.7400824427604675,
+          "zz:0,1": -0.04613267257809639
+        },
+        "tensor_network": {
+          "z:0": 0.006586775183677673,
+          "x:1": 0.952207088470459,
+          "zz:0,1": -0.07382256537675858
+        }
+      },
+      "gradients": {
+        "reference": "statevector",
+        "per_mode": {
+          "statevector": {
+            "relative_l2_error": 0.0,
+            "cosine_similarity": 1.0
+          },
+          "mps": {
+            "relative_l2_error": 0.9850015039031773,
+            "cosine_similarity": 0.17279768105265578
+          },
+          "tensor_network": {
+            "relative_l2_error": 1.1309681230099888e-06,
+            "cosine_similarity": 0.9999999999994116
+          }
+        },
+        "unsupported": {},
+        "oracle": {
+          "method": "parameter_shift",
+          "applies_to": "statevector",
+          "valid_domain": "exact statevector map only: the rule is exact for the rotation layers, and it does not apply to a map whose bond truncation discarded weight",
+          "compares": [
+            "statevector"
+          ],
+          "relative_l2_error": 1.3516399001640392e-06,
+          "cosine_similarity": 0.9999999999990912
+        },
+        "mps_own_map": {
+          "derivative": {
+            "method": "central_finite_difference",
+            "step": 1e-05,
+            "indices": [
+              0,
+              8,
+              16,
+              24,
+              32,
+              40,
+              48,
+              56
+            ],
+            "checked": 8,
+            "max_abs_error": 49099.54596071876,
+            "max_relative_error": 140658.06473553006
+          },
+          "finite_difference_domain": "not a check on autograd below double precision: the difference of two float32 energies with a 1e-5 step loses about six digits, so this number is the probe's arithmetic rather than a statement about the backward pass",
+          "smoothness": {
+            "index": 2,
+            "half_range": 0.05,
+            "points": 7,
+            "largest_step_jump": 1.7746715545654297,
+            "bond_changed": false,
+            "smooth": false,
+            "energies": [
+              -4.82136964798,
+              -5.2268242836,
+              -3.452152729034,
+              -4.149136066437,
+              -5.290410518646,
+              -4.260406017303,
+              -5.067522525787
+            ]
+          }
+        }
+      },
+      "schmidt": {
+        "rank": 4,
+        "min_gap": 8.717981963811969e-05,
+        "near_degenerate": false
+      }
+    },
+    {
+      "n_qubits": 8,
+      "depth": 4,
+      "structure": "all_to_all",
+      "max_bond_cutoff": 4,
+      "seed": 260722,
+      "observed_max_bond": 4,
+      "mps_bond_dims": [
+        2,
+        4,
+        4,
+        4,
+        4,
+        4,
+        2
+      ],
+      "mps_discarded_weight": 9.845985113672,
+      "mps_max_truncation_error": 0.876865565776825,
+      "mps_truncation_steps": 308,
+      "headroom_max_bond": 8,
+      "mps_truncated": true,
+      "energies": {
+        "statevector": -5.46086407,
+        "mps": -4.39536095,
+        "tensor_network": -5.46086502
+      },
+      "spread_absolute": 1.0655,
+      "spread_relative": 0.195116,
+      "states": {
+        "statevector": {
+          "fidelity_vs_statevector": 1.0,
+          "norm_drift": 0.0
+        },
+        "mps": {
+          "fidelity_vs_statevector": 0.8782224060196164,
+          "norm_drift": 0.10477857767257526
+        },
+        "tensor_network": {
+          "fidelity_vs_statevector": 0.9999999999999198,
+          "norm_drift": 6.454763390451035e-08
+        }
+      },
+      "observables": {
+        "statevector": {
+          "z:0": -0.03841220587491989,
+          "x:1": 0.9678118824958801,
+          "zz:0,1": 0.07741599529981613
+        },
+        "mps": {
+          "z:0": 0.09454888850450516,
+          "x:1": 0.675690233707428,
+          "zz:0,1": -0.012564988806843758
+        },
+        "tensor_network": {
+          "z:0": -0.03841222822666168,
+          "x:1": 0.9678119421005249,
+          "zz:0,1": 0.07741610705852509
+        }
+      },
+      "gradients": {
+        "reference": "statevector",
+        "per_mode": {
+          "statevector": {
+            "relative_l2_error": 0.0,
+            "cosine_similarity": 1.0000000000000004
+          },
+          "mps": {
+            "relative_l2_error": 0.9474569526703122,
+            "cosine_similarity": 0.35739845152774724
+          },
+          "tensor_network": {
+            "relative_l2_error": 9.370692469387108e-07,
+            "cosine_similarity": 0.9999999999996094
+          }
+        },
+        "unsupported": {},
+        "oracle": {
+          "method": "parameter_shift",
+          "applies_to": "statevector",
+          "valid_domain": "exact statevector map only: the rule is exact for the rotation layers, and it does not apply to a map whose bond truncation discarded weight",
+          "compares": [
+            "statevector"
+          ],
+          "relative_l2_error": 1.0558289590821292e-06,
+          "cosine_similarity": 0.9999999999994453
+        },
+        "mps_own_map": {
+          "derivative": {
+            "method": "central_finite_difference",
+            "step": 1e-05,
+            "indices": [
+              0,
+              8,
+              16,
+              24,
+              32,
+              40,
+              48,
+              56
+            ],
+            "checked": 8,
+            "max_abs_error": 40368.97375028627,
+            "max_relative_error": 95322.54018830802
+          },
+          "finite_difference_domain": "not a check on autograd below double precision: the difference of two float32 energies with a 1e-5 step loses about six digits, so this number is the probe's arithmetic rather than a statement about the backward pass",
+          "smoothness": {
+            "index": 2,
+            "half_range": 0.05,
+            "points": 7,
+            "largest_step_jump": 1.8444428443908691,
+            "bond_changed": false,
+            "smooth": false,
+            "energies": [
+              -4.100038528442,
+              -4.574395656586,
+              -5.569113731384,
+              -5.517534255981,
+              -3.673091411591,
+              -4.440587997437,
+              -4.275979995728
+            ]
+          }
+        }
+      },
+      "schmidt": {
+        "rank": 4,
+        "min_gap": 0.00010637140087490539,
+        "near_degenerate": false
+      }
+    },
+    {
+      "n_qubits": 8,
+      "depth": 4,
+      "structure": "all_to_all",
+      "max_bond_cutoff": 16,
+      "seed": 260720,
+      "observed_max_bond": 16,
+      "mps_bond_dims": [
+        2,
+        4,
+        8,
+        16,
+        8,
+        4,
+        2
+      ],
+      "mps_discarded_weight": 0.0,
+      "mps_max_truncation_error": 0.0,
+      "mps_truncation_steps": 0,
+      "headroom_max_bond": 16,
+      "mps_truncated": false,
+      "energies": {
+        "statevector": -5.52746344,
+        "mps": -5.5274744,
+        "tensor_network": -5.52746248
+      },
+      "spread_absolute": 1.19209e-05,
+      "spread_relative": 2.15667e-06,
+      "states": {
+        "statevector": {
+          "fidelity_vs_statevector": 0.9999999999999996,
+          "norm_drift": 0.0
+        },
+        "mps": {
+          "fidelity_vs_statevector": 0.9999999999946756,
+          "norm_drift": 1.046413988570194e-06
+        },
+        "tensor_network": {
+          "fidelity_vs_statevector": 0.9999999999999105,
+          "norm_drift": 1.0586951981750303e-08
+        }
+      },
+      "observables": {
+        "statevector": {
+          "z:0": -0.06771641224622726,
+          "x:1": 0.9685823321342468,
+          "zz:0,1": 0.009008440189063549
+        },
+        "mps": {
+          "z:0": -0.06771723926067352,
+          "x:1": 0.9685846567153931,
+          "zz:0,1": 0.009007611311972141
+        },
+        "tensor_network": {
+          "z:0": -0.06771638989448547,
+          "x:1": 0.9685823917388916,
+          "zz:0,1": 0.009008470922708511
+        }
+      },
+      "gradients": {
+        "reference": "statevector",
+        "per_mode": {
+          "statevector": {
+            "relative_l2_error": 0.0,
+            "cosine_similarity": 1.0
+          },
+          "mps": {
+            "relative_l2_error": 3.5509033108299916e-06,
+            "cosine_similarity": 0.9999999999992569
+          },
+          "tensor_network": {
+            "relative_l2_error": 8.955860957676052e-07,
+            "cosine_similarity": 0.9999999999996013
+          }
+        },
+        "unsupported": {},
+        "oracle": {
+          "method": "parameter_shift",
+          "applies_to": "statevector",
+          "valid_domain": "exact statevector map only: the rule is exact for the rotation layers, and it does not apply to a map whose bond truncation discarded weight",
+          "compares": [
+            "statevector"
+          ],
+          "relative_l2_error": 1.191887067895199e-06,
+          "cosine_similarity": 0.99999999999929
+        },
+        "mps_own_map": {
+          "derivative": {
+            "method": "central_finite_difference",
+            "step": 1e-05,
+            "indices": [
+              0,
+              8,
+              16,
+              24,
+              32,
+              40,
+              48,
+              56
+            ],
+            "checked": 8,
+            "max_abs_error": 2.0208926498889923,
+            "max_relative_error": 1.034754698549791
+          },
+          "finite_difference_domain": "not a check on autograd below double precision: the difference of two float32 energies with a 1e-5 step loses about six digits, so this number is the probe's arithmetic rather than a statement about the backward pass",
+          "smoothness": {
+            "index": 2,
+            "half_range": 0.05,
+            "points": 7,
+            "largest_step_jump": 0.0016584396362304688,
+            "bond_changed": false,
+            "smooth": true,
+            "energies": [
+              -5.523218631744,
+              -5.524877071381,
+              -5.526230812073,
+              -5.527474403381,
+              -5.528482913971,
+              -5.529258728027,
+              -5.529942512512
+            ]
+          }
+        }
+      },
+      "schmidt": {
+        "rank": 16,
+        "min_gap": null,
+        "near_degenerate": null
+      }
+    },
+    {
+      "n_qubits": 8,
+      "depth": 4,
+      "structure": "all_to_all",
+      "max_bond_cutoff": 16,
+      "seed": 260721,
+      "observed_max_bond": 16,
+      "mps_bond_dims": [
+        2,
+        4,
+        8,
+        16,
+        8,
+        4,
+        2
+      ],
+      "mps_discarded_weight": 0.0,
+      "mps_max_truncation_error": 0.0,
+      "mps_truncation_steps": 0,
+      "headroom_max_bond": 16,
+      "mps_truncated": false,
+      "energies": {
+        "statevector": -5.41510725,
+        "mps": -5.41509867,
+        "tensor_network": -5.41510677
+      },
+      "spread_absolute": 8.58307e-06,
+      "spread_relative": 1.58502e-06,
+      "states": {
+        "statevector": {
+          "fidelity_vs_statevector": 1.0,
+          "norm_drift": 0.0
+        },
+        "mps": {
+          "fidelity_vs_statevector": 0.9999999999952984,
+          "norm_drift": 5.653254149251552e-07
+        },
+        "tensor_network": {
+          "fidelity_vs_statevector": 0.9999999999999067,
+          "norm_drift": 2.128817278013173e-08
+        }
+      },
+      "observables": {
+        "statevector": {
+          "z:0": 0.006586723029613495,
+          "x:1": 0.952207088470459,
+          "zz:0,1": -0.07382257282733917
+        },
+        "mps": {
+          "z:0": 0.006586709525436163,
+          "x:1": 0.9522057771682739,
+          "zz:0,1": -0.07382330298423767
+        },
+        "tensor_network": {
+          "z:0": 0.006586775183677673,
+          "x:1": 0.952207088470459,
+          "zz:0,1": -0.07382256537675858
+        }
+      },
+      "gradients": {
+        "reference": "statevector",
+        "per_mode": {
+          "statevector": {
+            "relative_l2_error": 0.0,
+            "cosine_similarity": 1.0
+          },
+          "mps": {
+            "relative_l2_error": 3.6087582041830735e-06,
+            "cosine_similarity": 0.9999999999992484
+          },
+          "tensor_network": {
+            "relative_l2_error": 1.1309681230099888e-06,
+            "cosine_similarity": 0.9999999999994116
+          }
+        },
+        "unsupported": {},
+        "oracle": {
+          "method": "parameter_shift",
+          "applies_to": "statevector",
+          "valid_domain": "exact statevector map only: the rule is exact for the rotation layers, and it does not apply to a map whose bond truncation discarded weight",
+          "compares": [
+            "statevector"
+          ],
+          "relative_l2_error": 1.3516399001640392e-06,
+          "cosine_similarity": 0.9999999999990912
+        },
+        "mps_own_map": {
+          "derivative": {
+            "method": "central_finite_difference",
+            "step": 1e-05,
+            "indices": [
+              0,
+              8,
+              16,
+              24,
+              32,
+              40,
+              48,
+              56
+            ],
+            "checked": 8,
+            "max_abs_error": 1.385879039764404,
+            "max_relative_error": 0.64901184429159
+          },
+          "finite_difference_domain": "not a check on autograd below double precision: the difference of two float32 energies with a 1e-5 step loses about six digits, so this number is the probe's arithmetic rather than a statement about the backward pass",
+          "smoothness": {
+            "index": 2,
+            "half_range": 0.05,
+            "points": 7,
+            "largest_step_jump": 0.0004143714904785156,
+            "bond_changed": false,
+            "smooth": true,
+            "energies": [
+              -5.414140224457,
+              -5.414554595947,
+              -5.414942741394,
+              -5.415098667145,
+              -5.415130138397,
+              -5.414987564087,
+              -5.414613723755
+            ]
+          }
+        }
+      },
+      "schmidt": {
+        "rank": 16,
+        "min_gap": null,
+        "near_degenerate": null
+      }
+    },
+    {
+      "n_qubits": 8,
+      "depth": 4,
+      "structure": "all_to_all",
+      "max_bond_cutoff": 16,
+      "seed": 260722,
+      "observed_max_bond": 16,
+      "mps_bond_dims": [
+        2,
+        4,
+        8,
+        16,
+        8,
+        4,
+        2
+      ],
+      "mps_discarded_weight": 0.0,
+      "mps_max_truncation_error": 0.0,
+      "mps_truncation_steps": 0,
+      "headroom_max_bond": 16,
+      "mps_truncated": false,
+      "energies": {
+        "statevector": -5.46086407,
+        "mps": -5.4608798,
+        "tensor_network": -5.46086502
+      },
+      "spread_absolute": 1.57356e-05,
+      "spread_relative": 2.88153e-06,
+      "states": {
+        "statevector": {
+          "fidelity_vs_statevector": 1.0,
+          "norm_drift": 0.0
+        },
+        "mps": {
+          "fidelity_vs_statevector": 0.9999999999959939,
+          "norm_drift": 1.3189914496170019e-06
+        },
+        "tensor_network": {
+          "fidelity_vs_statevector": 0.9999999999999198,
+          "norm_drift": 6.454763390451035e-08
+        }
+      },
+      "observables": {
+        "statevector": {
+          "z:0": -0.03841220587491989,
+          "x:1": 0.9678118824958801,
+          "zz:0,1": 0.07741599529981613
+        },
+        "mps": {
+          "z:0": -0.03841247409582138,
+          "x:1": 0.9678143858909607,
+          "zz:0,1": 0.07741722464561462
+        },
+        "tensor_network": {
+          "z:0": -0.03841222822666168,
+          "x:1": 0.9678119421005249,
+          "zz:0,1": 0.07741610705852509
+        }
+      },
+      "gradients": {
+        "reference": "statevector",
+        "per_mode": {
+          "statevector": {
+            "relative_l2_error": 0.0,
+            "cosine_similarity": 1.0000000000000004
+          },
+          "mps": {
+            "relative_l2_error": 2.9680133725216258e-06,
+            "cosine_similarity": 0.9999999999991751
+          },
+          "tensor_network": {
+            "relative_l2_error": 9.370692469387108e-07,
+            "cosine_similarity": 0.9999999999996094
+          }
+        },
+        "unsupported": {},
+        "oracle": {
+          "method": "parameter_shift",
+          "applies_to": "statevector",
+          "valid_domain": "exact statevector map only: the rule is exact for the rotation layers, and it does not apply to a map whose bond truncation discarded weight",
+          "compares": [
+            "statevector"
+          ],
+          "relative_l2_error": 1.0558289590821292e-06,
+          "cosine_similarity": 0.9999999999994453
+        },
+        "mps_own_map": {
+          "derivative": {
+            "method": "central_finite_difference",
+            "step": 1e-05,
+            "indices": [
+              0,
+              8,
+              16,
+              24,
+              32,
+              40,
+              48,
+              56
+            ],
+            "checked": 8,
+            "max_abs_error": 4.263088598847389,
+            "max_relative_error": 1.993129048735588
+          },
+          "finite_difference_domain": "not a check on autograd below double precision: the difference of two float32 energies with a 1e-5 step loses about six digits, so this number is the probe's arithmetic rather than a statement about the backward pass",
+          "smoothness": {
+            "index": 2,
+            "half_range": 0.05,
+            "points": 7,
+            "largest_step_jump": 0.0005221366882324219,
+            "bond_changed": false,
+            "smooth": true,
+            "energies": [
+              -5.459820270538,
+              -5.460342407227,
+              -5.460705280304,
+              -5.460861206055,
+              -5.460782051086,
+              -5.460515022278,
+              -5.460059165955
+            ]
+          }
+        }
+      },
+      "schmidt": {
+        "rank": 16,
+        "min_gap": null,
+        "near_degenerate": null
+      }
+    }
+  ],
+  "elapsed_seconds": 94.062,
+  "command": "benchmarks/representation_agreement_sweep.py --gradients --widths 4,8 --depths 2,4 --max-bond 4,16 --structures nearest_neighbour,all_to_all --all-to-all-max-width 8 --seeds 260720,260721,260722 --dtype complex64 --output artifacts/development/representation_conformance_cpu_20261028/complex64.json",
+  "python": "3.12.14",
+  "torch": "2.13.0",
+  "base_commit": "3594b02dfec813de2444dec2ced6186381893ef5",
+  "source_commit": "91c7fdd9b6bee2f04e99d956e98bd766ba4913ab",
+  "measuring_source_committed": true
+}
