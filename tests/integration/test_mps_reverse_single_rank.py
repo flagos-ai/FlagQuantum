@@ -11,7 +11,7 @@ it is not distributed scalability evidence.
 
 from __future__ import annotations
 
-import socket
+from collections.abc import Iterator
 
 import pytest
 import torch
@@ -27,24 +27,21 @@ pytestmark = pytest.mark.integration
 OBSERVABLE_WIRES = (1, 2)
 
 
-def _free_port() -> int:
-    with socket.socket() as probe:
-        probe.bind(("127.0.0.1", 0))
-        return int(probe.getsockname()[1])
-
-
 @pytest.fixture(scope="module")
-def single_rank_group() -> None:
+def single_rank_group(tmp_path_factory: pytest.TempPathFactory) -> Iterator[None]:
     dist = pytest.importorskip("torch.distributed")
     if not dist.is_available() or not dist.is_gloo_available():
         pytest.skip("a gloo process group is unavailable")
     if dist.is_initialized():
         pytest.skip("another process group owns this interpreter")
+    # One rank needs no TCP rendezvous; a unique file avoids the bind/close race
+    # between concurrently running CI workers sharing a host network namespace.
+    rendezvous = tmp_path_factory.mktemp("gloo") / "rendezvous"
     dist.init_process_group(
         backend="gloo",
         world_size=1,
         rank=0,
-        init_method=f"tcp://127.0.0.1:{_free_port()}",
+        init_method=rendezvous.as_uri(),
     )
     try:
         yield
