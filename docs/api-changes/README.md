@@ -57,6 +57,7 @@ process.
 - [Zero-noise extrapolation as a native capability](FQ-ERROR-MITIGATION-ZNE-20261002.md)
 - [A native SPSA optimizer for objectives with no gradient](FQ-SPSA-OPTIMIZER-20261002.md)
 - [A global phase on the program](FQ-IR-GLOBAL-PHASE-20261006.md)
+- [Composable synthesis and the first native Qmod slice (proposed)](FQ-SYNTH-20261028.md)
 - [The optimization-level parameter on the compiler entry points](FQ-COMPILER-OPTIMIZATION-LEVEL-20261006.md)
 - [Core-lane dependency discipline for optional imports and `tomllib`](FQ-CORE-LANE-DEPENDENCIES-20261025.md)
 
