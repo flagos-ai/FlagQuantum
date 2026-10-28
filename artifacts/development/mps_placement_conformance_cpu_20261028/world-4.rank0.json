@@ -1,0 +1,84 @@
+{
+  "schema": "flagquantum.mps_placement_conformance.v1",
+  "n_qubits": 10,
+  "seed": 20261028,
+  "world_size": 4,
+  "rank": 0,
+  "backend": "gloo",
+  "device": "cpu",
+  "arms": [
+    {
+      "max_bond": 64,
+      "gradient_policy": "exact",
+      "sharded_value": 0.9936173625070481,
+      "sharded_gradient": [
+        0.13801594102209755,
+        0.11293371359053628,
+        2.0816681711721685e-17
+      ],
+      "rank": 0,
+      "distribution_semantics": "sharded_across_ranks",
+      "world_size": 4,
+      "local_world_size": 4,
+      "node_count": 1,
+      "discarded_weight": 0.0,
+      "svd_factorization_count": 0,
+      "qr_factorization_count": 26,
+      "gradient_accuracy": "exact",
+      "replicated_autograd": false,
+      "full_mps_reconstruction": false,
+      "saved_tensor_bytes": 5536,
+      "reverse_tape_records": 37,
+      "blockers": [],
+      "unsharded_value": 0.9936173625070476,
+      "unsharded_gradient": [
+        0.1380159410220975,
+        0.11293371359053624,
+        -2.7755575615628914e-17
+      ],
+      "value_relative_error": 5.586773472958922e-16,
+      "gradient": {
+        "relative_l2_error": 4.749558837601826e-16,
+        "cosine_similarity": 1.0
+      },
+      "truncated": false
+    },
+    {
+      "max_bond": 2,
+      "gradient_policy": "approximate",
+      "sharded_value": 0.9926553291054739,
+      "sharded_gradient": [
+        0.13800044839769093,
+        0.1375252697092011,
+        -0.00023128808408386103
+      ],
+      "rank": 0,
+      "distribution_semantics": "sharded_across_ranks",
+      "world_size": 4,
+      "local_world_size": 4,
+      "node_count": 1,
+      "discarded_weight": 0.0009600649976543819,
+      "svd_factorization_count": 7,
+      "qr_factorization_count": 19,
+      "gradient_accuracy": "approximate",
+      "replicated_autograd": false,
+      "full_mps_reconstruction": false,
+      "saved_tensor_bytes": 928,
+      "reverse_tape_records": 37,
+      "blockers": [],
+      "unsharded_value": 0.9926553291054737,
+      "unsharded_gradient": [
+        0.13800044839769088,
+        0.13752526970920106,
+        -0.0002312880840838194
+      ],
+      "value_relative_error": 2.236875161141034e-16,
+      "gradient": {
+        "relative_l2_error": 3.835934163525631e-16,
+        "cosine_similarity": 1.0
+      },
+      "truncated": true
+    }
+  ],
+  "claim_boundary": "single-host CPU placement semantics; not capacity, speed, accelerator or scalability evidence"
+}
