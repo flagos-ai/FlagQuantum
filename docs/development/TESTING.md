@@ -238,6 +238,38 @@ This runs `smoke or unit`. It must stay fast, local, and free of torchrun, GPU,
 benchmark generation, or distributed setup. The baseline must not require torchrun, process groups, benchmark execution,
 GPU hardware, or distributed setup.
 
+### Attributing A Failure To A Change
+
+CI here runs on pull requests only, so a run reports every failure in the tree,
+including ones `main` already had. Nothing in the check output separates the two,
+and re-running the same identifiers against a pristine base by hand is the only
+way to tell whether a change broke something.
+
+`tools/partition_failures_against_base.py` performs that comparison:
+
+```bash
+python -m pytest -m "smoke or unit" -q --junitxml=/tmp/head.xml
+python tools/partition_failures_against_base.py \
+    --head-report /tmp/head.xml --base origin/main
+```
+
+It runs exactly the failing identifiers against the extracted tree at `--base`
+and reports three lists: failures this change introduced, failures that were
+already there, and failures it fixed. Exit status is `0` when nothing was
+introduced, `1` when something was, and `2` when the comparison could not be
+made.
+
+Status `2` is the important one. A base revision that cannot be extracted, a base
+run that produces no report, or a base interpreter that imports `flagquantum`
+from an installed location rather than the extracted tree all report as
+unattributable instead of returning an empty "introduced" list. A virtualenv that
+already has the package installed shadows an extracted tree unless the search
+path is arranged, and a comparison against the installed copy answers a different
+question than the one asked.
+
+The tool reports; it does not suppress. It cannot make a check pass, and no
+failure it names is thereby allowed.
+
 ### Local API And Runtime Work
 
 Use this tier for changes touching `fq.Circuit`, backend selection, runtime
