@@ -637,12 +637,27 @@ def gradient_section(
         "schmidt": schmidt_gap(reference_state, max_bond),
     }
     if "mps" in per_mode:
+        # A central difference of a float32 energy divides two nearly equal
+        # values by 2e-5, which spends about six of the digits the difference
+        # carried. At complex64 that noise, not the backward pass, is what the
+        # check reports, so the cell says which precision the number is read at.
+        double_precision = parameters.dtype == torch.float64
         section["mps_own_map"] = {
             "derivative": truncated_derivative_error(
                 parameters,
                 structure=structure,
                 n_qubits=n_qubits,
                 max_bond=max_bond,
+            ),
+            "finite_difference_domain": (
+                "valid: double-precision energies and a 1e-5 step"
+                if double_precision
+                else (
+                    "not a check on autograd below double precision: the "
+                    "difference of two float32 energies with a 1e-5 step loses "
+                    "about six digits, so this number is the probe's arithmetic "
+                    "rather than a statement about the backward pass"
+                )
             ),
             "smoothness": (
                 smoothness_probe(
@@ -827,7 +842,18 @@ def measure_cell(
     return cell
 
 
-def require_repository_package() -> dict[str, Any]:
+def package_record(path: Path, version: str | None) -> dict[str, Any]:
+    """Describe where the imported package lives, relative to this checkout."""
+
+    resolved = path.resolve()
+    return {
+        "path": str(resolved),
+        "version": version,
+        "from_repository": REPO_ROOT.resolve() in resolved.parents,
+    }
+
+
+def require_repository_package(module: Any = fq) -> dict[str, Any]:
     """Refuse to measure unless the imported ``flagquantum`` is this tree.
 
     ``source_commit`` is read from this repository's ``git`` state, not from the
@@ -840,18 +866,19 @@ def require_repository_package() -> dict[str, Any]:
     Failing closed keeps the payload's own revision claim answerable.
     """
 
-    path = Path(fq.__file__).resolve()
-    record = {
-        "path": str(path),
-        "version": getattr(fq, "__version__", None),
-        "from_repository": REPO_ROOT.resolve() in path.parents,
-    }
+    location = getattr(module, "__file__", None)
+    if location is None:
+        raise RuntimeError(
+            "the imported flagquantum has no source location, so this payload "
+            "cannot claim this repository's revision"
+        )
+    record = package_record(Path(location), getattr(module, "__version__", None))
     if not record["from_repository"]:
         raise RuntimeError(
-            f"the imported flagquantum is {path}, which is not this repository "
-            f"({REPO_ROOT.resolve()}); a payload that names this repository's "
-            "revision would then describe another tree -- run with this "
-            "checkout on sys.path, for example PYTHONPATH=<checkout>"
+            f"the imported flagquantum is {record['path']}, which is not this "
+            f"repository ({REPO_ROOT.resolve()}); a payload that names this "
+            "repository's revision would then describe another tree -- run with "
+            "this checkout on sys.path, for example PYTHONPATH=<checkout>"
         )
     return record
 

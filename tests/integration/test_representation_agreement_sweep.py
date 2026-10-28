@@ -770,11 +770,13 @@ def test_the_producer_refuses_to_seal_a_measurement_of_another_tree() -> None:
     """
     import flagquantum
 
-    record = sweep.require_repository_package()
+    inside = sweep.package_record(sweep.REPO_ROOT / "flagquantum/__init__.py", "0.0.0")
+    outside = sweep.package_record(Path("/opt/somewhere/flagquantum/__init__.py"), None)
 
-    assert record["from_repository"] is True
-    assert record["path"].endswith("flagquantum/__init__.py")
-    assert Path(record["path"]).resolve().is_relative_to(sweep.REPO_ROOT.resolve())
+    assert inside["from_repository"] is True
+    assert inside["path"].endswith("flagquantum/__init__.py")
+    assert outside["from_repository"] is False
+    assert outside["version"] is None
 
     original = flagquantum.__file__
     try:
@@ -783,3 +785,93 @@ def test_the_producer_refuses_to_seal_a_measurement_of_another_tree() -> None:
             sweep.require_repository_package()
     finally:
         flagquantum.__file__ = original
+
+
+CONFORMANCE_ARTIFACTS = (
+    Path(__file__).resolve().parents[2]
+    / "artifacts/development/representation_conformance_cpu_20261028"
+)
+
+
+@pytest.mark.parametrize("dtype", ["complex64", "complex128"])
+def test_the_recorded_conformance_corpus_holds_the_bounds_it_states(dtype: str) -> None:
+    """The checked-in payload is evidence only if it clears its own tolerances.
+
+    This is the regression check the artifact exists for: a later change to a
+    representation, a truncation rule or the harness has to keep every recorded
+    cell inside the bound the payload states, or the limitation text derived from
+    it is stale.
+    """
+    document = json.loads(
+        (CONFORMANCE_ARTIFACTS / f"{dtype}.json").read_text(encoding="utf-8")
+    )
+    tolerances = document["tolerances"]
+    cells = document["cells"]
+
+    assert document["imported_package"]["from_repository"] is True
+    assert document["measuring_source_committed"] is True
+    assert len(document["seeds"]) >= 2, document["seeds"]
+    assert len({cell["seed"] for cell in cells}) == len(document["seeds"])
+    assert document["summary"]["incomplete_cells"] == []
+    assert {cell["structure"] for cell in cells} == {"nearest_neighbour", "all_to_all"}
+    assert {cell["mps_truncated"] for cell in cells} == {True, False}
+
+    for cell in cells:
+        oracle = cell["gradients"]["oracle"]
+        assert oracle["applies_to"] == "statevector"
+        if "relative_l2_error" in oracle:
+            assert oracle["relative_l2_error"] < tolerances["oracle_relative"], cell
+        else:
+            assert oracle["skipped"].startswith("width"), cell
+        # A refusal is recorded, never substituted; this corpus records none.
+        assert cell["gradients"]["unsupported"] == {}, cell
+        # The own-map check is read only where its arithmetic can carry it.
+        domain = cell["gradients"]["mps_own_map"]["finite_difference_domain"]
+        if dtype == "complex64":
+            assert domain.startswith("not a check on autograd"), cell
+        else:
+            assert domain.startswith("valid"), cell
+
+        if cell["mps_truncated"] is False:
+            for mode in ("mps", "tensor_network"):
+                entry = cell["gradients"]["per_mode"][mode]
+                assert (
+                    entry["relative_l2_error"]
+                    < tolerances["untruncated_gradient_relative"]
+                ), (mode, cell)
+                deficit = 1.0 - cell["states"][mode]["fidelity_vs_statevector"]
+                assert deficit < tolerances["untruncated_state_fidelity_deficit"], (
+                    mode,
+                    cell,
+                )
+        else:
+            # The truncated regime is reported, not asserted; what must hold is
+            # that the numbers a reader needs to judge it are present.
+            assert cell["mps_discarded_weight"] > 0.0, cell
+            assert cell["schmidt"]["min_gap"] is not None, cell
+            assert cell["gradients"]["per_mode"]["mps"]["relative_l2_error"] is not None
+
+
+def test_the_own_map_check_states_the_precision_it_is_valid_at() -> None:
+    """A finite difference of a float32 energy is arithmetic, not a derivative.
+
+    Central differencing with step 1e-5 divides a difference of two float32
+    energies by 2e-5, so about six of the eight digits the difference carried
+    are subtracted away. The double-precision run keeps that check meaningful
+    (3.9e-09 when nothing is discarded); the single-precision run records up to
+    2.25 in cells where the cap did not act at all, which is the probe's own
+    noise and says nothing about the backward pass.
+    """
+    double = _cell(
+        n_qubits=4, max_bond=exact_max_bond(4), dtype=torch.complex128, gradients=True
+    )
+    single = _cell(
+        n_qubits=4, max_bond=exact_max_bond(4), dtype=torch.complex64, gradients=True
+    )
+
+    assert double["gradients"]["mps_own_map"]["finite_difference_domain"].startswith(
+        "valid"
+    )
+    assert single["gradients"]["mps_own_map"]["finite_difference_domain"].startswith(
+        "not a check on autograd"
+    )
