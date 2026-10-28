@@ -7,10 +7,10 @@ checks that do not run the backward pass. It is a conformance measurement on
 CPU, not a capability promotion.
 
 Payloads `complex64.json` and `complex128.json` were produced from source commit
-`91c7fdd9b6bee2f04e99d956e98bd766ba4913ab` (base `origin/main`
+`f2cdfbfefce333a707fd3857a38855faa4722e6b` (base `origin/main`
 `3594b02dfec813de2444dec2ced6186381893ef5`), by the producer committed in that
 revision. Environment: Python 3.12.14, PyTorch 2.13.0, CPU, one thread per
-process, 93.953 s (complex128) and 94.062 s (complex64) for 48 cells each.
+process, 94.734 s (complex128) and 88.047 s (complex64) for 48 cells each.
 
 Reproduce, from the checkout — the `PYTHONPATH` is not decoration:
 

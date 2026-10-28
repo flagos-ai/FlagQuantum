@@ -18,7 +18,7 @@
   ],
   "gradients_measured": true,
   "imported_package": {
-    "path": "/Users/baai/Documents/liuwei/FlagQuantum-mps-placement/flagquantum/__init__.py",
+    "path": "flagquantum/__init__.py",
     "version": "0.4.0",
     "from_repository": true
   },
@@ -6231,11 +6231,11 @@
       }
     }
   ],
-  "elapsed_seconds": 94.062,
+  "elapsed_seconds": 88.047,
   "command": "benchmarks/representation_agreement_sweep.py --gradients --widths 4,8 --depths 2,4 --max-bond 4,16 --structures nearest_neighbour,all_to_all --all-to-all-max-width 8 --seeds 260720,260721,260722 --dtype complex64 --output artifacts/development/representation_conformance_cpu_20261028/complex64.json",
   "python": "3.12.14",
   "torch": "2.13.0",
   "base_commit": "3594b02dfec813de2444dec2ced6186381893ef5",
-  "source_commit": "91c7fdd9b6bee2f04e99d956e98bd766ba4913ab",
+  "source_commit": "f2cdfbfefce333a707fd3857a38855faa4722e6b",
   "measuring_source_committed": true
 }
