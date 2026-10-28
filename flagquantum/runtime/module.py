@@ -1138,6 +1138,9 @@ class Module(torch.nn.Module):
                 + (0 if inputs is None else inputs.numel() * inputs.element_size())
                 <= self._jax_snapshot_budget
             ):
+                # Rebinding validates the current angles even when IR snapshots
+                # are deferred and the JAX kernel can reuse its compiled trace.
+                self._build(inputs, selected)
                 tensors, _, _ = self._builder_tensor_inputs(selected, inputs)
                 self._last_ir_snapshot = None
                 self._last_ir_factory = deferred_ir_snapshot(
@@ -1146,7 +1149,6 @@ class Module(torch.nn.Module):
                     tensors,
                     len(self._builder_slots),
                 )
-                self._builder_cache_hits += 1
                 self._program_cache_hits += 1
                 try:
                     value = self._jax_kernel(selected, inputs)
