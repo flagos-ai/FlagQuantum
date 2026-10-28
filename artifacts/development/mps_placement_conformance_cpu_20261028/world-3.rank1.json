@@ -1,0 +1,60 @@
+{
+  "schema": "flagquantum.mps_placement_conformance.v1",
+  "n_qubits": 8,
+  "seed": 20261028,
+  "world_size": 3,
+  "rank": 1,
+  "backend": "gloo",
+  "device": "cpu",
+  "arms": [
+    {
+      "max_bond": 64,
+      "gradient_policy": "exact",
+      "sharded_value": 0.9936173625070484,
+      "sharded_gradient": [
+        0.13801594102209763,
+        0.1129337135905363,
+        -1.3877787807814457e-17
+      ],
+      "rank": 1,
+      "distribution_semantics": "sharded_across_ranks",
+      "world_size": 3,
+      "local_world_size": 3,
+      "node_count": 1,
+      "discarded_weight": 0.0,
+      "svd_factorization_count": 0,
+      "qr_factorization_count": 20,
+      "gradient_accuracy": "exact",
+      "replicated_autograd": false,
+      "full_mps_reconstruction": false,
+      "saved_tensor_bytes": 12416,
+      "reverse_tape_records": 29,
+      "blockers": []
+    },
+    {
+      "max_bond": 2,
+      "gradient_policy": "approximate",
+      "sharded_value": 0.9931018376777332,
+      "sharded_gradient": [
+        0.1381323759126969,
+        0.11789198745007967,
+        -9.520427230541584e-05
+      ],
+      "rank": 1,
+      "distribution_semantics": "sharded_across_ranks",
+      "world_size": 3,
+      "local_world_size": 3,
+      "node_count": 1,
+      "discarded_weight": 0.0006349257113169671,
+      "svd_factorization_count": 5,
+      "qr_factorization_count": 15,
+      "gradient_accuracy": "approximate",
+      "replicated_autograd": false,
+      "full_mps_reconstruction": false,
+      "saved_tensor_bytes": 2048,
+      "reverse_tape_records": 29,
+      "blockers": []
+    }
+  ],
+  "claim_boundary": "single-host CPU placement semantics; not capacity, speed, accelerator or scalability evidence"
+}
