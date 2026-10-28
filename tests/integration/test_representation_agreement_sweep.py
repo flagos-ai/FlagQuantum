@@ -774,7 +774,7 @@ def test_the_producer_refuses_to_seal_a_measurement_of_another_tree() -> None:
     outside = sweep.package_record(Path("/opt/somewhere/flagquantum/__init__.py"), None)
 
     assert inside["from_repository"] is True
-    assert inside["path"].endswith("flagquantum/__init__.py")
+    assert inside["path"] == "flagquantum/__init__.py"
     assert outside["from_repository"] is False
     assert outside["version"] is None
 

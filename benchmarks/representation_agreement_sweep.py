@@ -843,13 +843,20 @@ def measure_cell(
 
 
 def package_record(path: Path, version: str | None) -> dict[str, Any]:
-    """Describe where the imported package lives, relative to this checkout."""
+    """Describe where the imported package lives, relative to this checkout.
+
+    A package inside this tree is named by its repository-relative path: the
+    absolute one would carry the producing host's home directory into a public
+    artifact, and the record only has to say which tree ran.
+    """
 
     resolved = path.resolve()
+    root = REPO_ROOT.resolve()
+    inside = root in resolved.parents
     return {
-        "path": str(resolved),
+        "path": str(resolved.relative_to(root)) if inside else str(resolved),
         "version": version,
-        "from_repository": REPO_ROOT.resolve() in resolved.parents,
+        "from_repository": inside,
     }
 
 
