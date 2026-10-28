@@ -1070,3 +1070,14 @@ path = "docs/development/evidence/qec_ai_ising_a800_20261025"
 value = "ea7c1bb3b823fc6a38472d0d95974b6d01932288"
 origin = "external_dependency"
 repository = "NVIDIA/Ising-Decoding"
+
+
+# Measured on 2026-10-28: the MPS placement report cites its original
+# producer revision, which no current branch or tag reaches. Three fresh
+# repositories fetched the exact commit successfully from the public remote.
+[[artifact]]
+path = "artifacts/development/mps_placement_conformance_cpu_20261028/README.md"
+
+[[artifact.revision]]
+value = "4f91e4bbc8762d928193c44e0e350e8321cb4727"
+origin = "unreferenced_object"
