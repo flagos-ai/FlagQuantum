@@ -756,3 +756,30 @@ def test_the_payload_states_the_tolerances_its_claims_hold_to() -> None:
         < single["untruncated_gradient_relative"]
     )
     assert double["oracle_relative"] < single["oracle_relative"]
+
+
+def test_the_producer_refuses_to_seal_a_measurement_of_another_tree() -> None:
+    """``source_commit`` names this repository, so the code that ran must be it.
+
+    The first run of this corpus imported an installed ``flagquantum`` from
+    site-packages instead of the working tree, and every cell then raised on a
+    keyword this branch passes. The payload still recorded this repository's
+    revision, because the revision comes from ``git rev-parse`` rather than from
+    the interpreter. Reading that payload as evidence about this revision would
+    have been wrong in a way nothing in it disclosed.
+    """
+    import flagquantum
+
+    record = sweep.require_repository_package()
+
+    assert record["from_repository"] is True
+    assert record["path"].endswith("flagquantum/__init__.py")
+    assert Path(record["path"]).resolve().is_relative_to(sweep.REPO_ROOT.resolve())
+
+    original = flagquantum.__file__
+    try:
+        flagquantum.__file__ = "/opt/somewhere/flagquantum/__init__.py"
+        with pytest.raises(RuntimeError, match="not this repository"):
+            sweep.require_repository_package()
+    finally:
+        flagquantum.__file__ = original

@@ -827,6 +827,35 @@ def measure_cell(
     return cell
 
 
+def require_repository_package() -> dict[str, Any]:
+    """Refuse to measure unless the imported ``flagquantum`` is this tree.
+
+    ``source_commit`` is read from this repository's ``git`` state, not from the
+    interpreter, so a run that imported an installed package would seal a
+    measurement of one codebase under another's revision. That happened once
+    while this corpus was being built, and nothing in the payload said so: every
+    cell recorded a refused derivative, which reads as a property of the
+    representation rather than as the wrong program being executed.
+
+    Failing closed keeps the payload's own revision claim answerable.
+    """
+
+    path = Path(fq.__file__).resolve()
+    record = {
+        "path": str(path),
+        "version": getattr(fq, "__version__", None),
+        "from_repository": REPO_ROOT.resolve() in path.parents,
+    }
+    if not record["from_repository"]:
+        raise RuntimeError(
+            f"the imported flagquantum is {path}, which is not this repository "
+            f"({REPO_ROOT.resolve()}); a payload that names this repository's "
+            "revision would then describe another tree -- run with this "
+            "checkout on sys.path, for example PYTHONPATH=<checkout>"
+        )
+    return record
+
+
 def tolerances_for(dtype: torch.dtype) -> dict[str, float | None]:
     """Return the bounds this precision's conformance claims are read against.
 
@@ -1052,6 +1081,7 @@ def main() -> int:
     arguments = parser.parse_args()
 
     started = time.perf_counter()
+    package = require_repository_package()
     cells, skipped = measure_grid(
         widths=arguments.widths,
         depths=arguments.depths,
@@ -1093,6 +1123,9 @@ def main() -> int:
         ],
         "modes": list(arguments.modes),
         "gradients_measured": bool(arguments.gradients),
+        # Which installed package produced these numbers. `source_commit` comes
+        # from git, so this is the field that ties the measurement to it.
+        "imported_package": package,
         # The bounds a reader has to check this payload's quantities against, so
         # the artifact carries its own tolerances rather than requiring the
         # README beside it.
