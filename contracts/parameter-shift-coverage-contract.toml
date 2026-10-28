@@ -227,6 +227,62 @@ admitted = false
 refusal_reason = "constant_outside_protocol_scope"
 
 [[opcode]]
+name = "iswap"
+declared_parameters = []
+declared_frequencies = []
+evaluation_pairs = 0
+admitted = false
+refusal_reason = "constant_outside_protocol_scope"
+
+[[opcode]]
+name = "iswapdg"
+declared_parameters = []
+declared_frequencies = []
+evaluation_pairs = 0
+admitted = false
+refusal_reason = "constant_outside_protocol_scope"
+
+[[opcode]]
+name = "ch"
+declared_parameters = []
+declared_frequencies = []
+evaluation_pairs = 0
+admitted = false
+refusal_reason = "constant_outside_protocol_scope"
+
+[[opcode]]
+name = "csx"
+declared_parameters = []
+declared_frequencies = []
+evaluation_pairs = 0
+admitted = false
+refusal_reason = "constant_outside_protocol_scope"
+
+[[opcode]]
+name = "csxdg"
+declared_parameters = []
+declared_frequencies = []
+evaluation_pairs = 0
+admitted = false
+refusal_reason = "constant_outside_protocol_scope"
+
+[[opcode]]
+name = "dcx"
+declared_parameters = []
+declared_frequencies = []
+evaluation_pairs = 0
+admitted = false
+refusal_reason = "constant_outside_protocol_scope"
+
+[[opcode]]
+name = "ecr"
+declared_parameters = []
+declared_frequencies = []
+evaluation_pairs = 0
+admitted = false
+refusal_reason = "constant_outside_protocol_scope"
+
+[[opcode]]
 name = "phase"
 declared_parameters = ["theta"]
 declared_frequencies = [[1.0]]

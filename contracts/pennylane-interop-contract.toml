@@ -20,7 +20,7 @@ measurements = "execution_plan_not_in_ir"
 loss_policy = "fail_closed_unless_allow_lossy_true"
 
 [unsupported]
-flagquantum_opcodes = ["sdg", "tdg", "sxdg", "u1", "u2", "u3", "bit_flip", "phase_flip", "depolarizing", "amplitude_damping"]
+flagquantum_opcodes = ["sdg", "tdg", "sxdg", "u1", "u2", "u3", "iswap", "iswapdg", "ch", "csx", "csxdg", "dcx", "ecr", "bit_flip", "phase_flip", "depolarizing", "amplitude_damping"]
 issue_codes = ["complex_gate_parameter", "execution_requests_not_represented", "finite_shots_not_represented", "idle_wire_extent_not_represented", "measurements_not_represented", "parameter_arity_mismatch", "symbolic_parameter_not_supported", "trainable_parameter_not_supported", "unsupported_operation", "unsupported_parameter_value", "wire_labels_flattened"]
 
 [verification]

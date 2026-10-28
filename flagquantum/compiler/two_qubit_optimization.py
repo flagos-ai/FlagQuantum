@@ -113,6 +113,13 @@ _FAMILIES: tuple[str, ...] = (
     "cy",
     "cz",
     "swap",
+    "iswap",
+    "iswapdg",
+    "ch",
+    "csx",
+    "csxdg",
+    "dcx",
+    "ecr",
     "crx",
     "cry",
     "crz",
@@ -189,6 +196,45 @@ def _fixed_matrix(opcode: str) -> Matrix:
             [0.0, 0.0, 1.0, 0.0],
             [0.0, 1.0, 0.0, 0.0],
             [0.0, 0.0, 0.0, 1.0],
+        ]
+    if opcode in {"iswap", "iswapdg"}:
+        phase = 1.0j if opcode == "iswap" else -1.0j
+        return [
+            [1.0, 0.0, 0.0, 0.0],
+            [0.0, 0.0, phase, 0.0],
+            [0.0, phase, 0.0, 0.0],
+            [0.0, 0.0, 0.0, 1.0],
+        ]
+    if opcode == "ch":
+        root = math.sqrt(0.5)
+        return [
+            [1.0, 0.0, 0.0, 0.0],
+            [0.0, 1.0, 0.0, 0.0],
+            [0.0, 0.0, root, root],
+            [0.0, 0.0, root, -root],
+        ]
+    if opcode in {"csx", "csxdg"}:
+        sign = 1.0 if opcode == "csx" else -1.0
+        return [
+            [1.0, 0.0, 0.0, 0.0],
+            [0.0, 1.0, 0.0, 0.0],
+            [0.0, 0.0, 0.5 + sign * 0.5j, 0.5 - sign * 0.5j],
+            [0.0, 0.0, 0.5 - sign * 0.5j, 0.5 + sign * 0.5j],
+        ]
+    if opcode == "dcx":
+        return [
+            [1.0, 0.0, 0.0, 0.0],
+            [0.0, 0.0, 1.0, 0.0],
+            [0.0, 0.0, 0.0, 1.0],
+            [0.0, 1.0, 0.0, 0.0],
+        ]
+    if opcode == "ecr":
+        root = math.sqrt(0.5)
+        return [
+            [0.0, 0.0, root, 1.0j * root],
+            [0.0, 0.0, 1.0j * root, root],
+            [root, -1.0j * root, 0.0, 0.0],
+            [-1.0j * root, root, 0.0, 0.0],
         ]
     raise AssertionError(f"{opcode!r} is not a parameter-free family")
 
@@ -449,6 +495,10 @@ def _is_foldable(instruction: Instruction) -> bool:
     but `h(0)` alone does not say whether it belongs to `(0, 1)` or `(0, 2)`.
     """
 
+    # Routing SWAPs are also layout evidence. Folding one into a named unitary
+    # preserves amplitudes but destroys the replayable logical-layout transition.
+    if instruction.metadata.get("routing_phase") is not None:
+        return False
     if len(instruction.wires) != 2:
         return False
     if (

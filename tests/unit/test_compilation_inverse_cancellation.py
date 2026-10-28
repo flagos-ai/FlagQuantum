@@ -53,7 +53,18 @@ _PAIRS = inverse_pairs()
 
 #: The pairs the schema declares today. Pinned so that a change to the declaration
 #: shows up as a changed reach figure rather than as a quietly different pass.
-_DECLARED = {"s": "sdg", "sdg": "s", "t": "tdg", "tdg": "t", "sx": "sxdg", "sxdg": "sx"}
+_DECLARED = {
+    "csx": "csxdg",
+    "csxdg": "csx",
+    "iswap": "iswapdg",
+    "iswapdg": "iswap",
+    "s": "sdg",
+    "sdg": "s",
+    "t": "tdg",
+    "tdg": "t",
+    "sx": "sxdg",
+    "sxdg": "sx",
+}
 
 #: Opcodes whose `adjoint` is a rule over an angle rather than a partner opcode. The
 #: pass declines all of them, because their product is the identity only at one
@@ -147,11 +158,13 @@ def test_every_declared_pair_cancels_however_it_is_ordered(
     """
 
     for order in ((opcode, partner), (partner, opcode)):
-        ir = CircuitIR(1, tuple(Instruction(name, (0,)) for name in order))
+        arity = OPERATOR_SCHEMAS[opcode].arity
+        wires = tuple(range(arity))
+        ir = CircuitIR(arity, tuple(Instruction(name, wires) for name in order))
         assert _names(merge_inverse_pairs(ir)) == []
         assert _names(optimize(ir)) == []
         assert torch.allclose(
-            _state(optimize(ir)), _state(CircuitIR(1, ())), atol=_ATOL, rtol=0
+            _state(optimize(ir)), _state(CircuitIR(arity, ())), atol=_ATOL, rtol=0
         )
 
 
@@ -171,7 +184,7 @@ def test_the_candidate_set_is_exactly_the_declared_partner_pairs() -> None:
             derived[schema.opcode] = candidate
     assert dict(_PAIRS) == derived
     assert dict(_PAIRS) == _DECLARED
-    assert len(_PAIRS) == 6
+    assert len(_PAIRS) == 10
 
 
 def test_the_candidate_set_is_disjoint_from_the_self_inverse_pass() -> None:
@@ -200,15 +213,20 @@ def test_each_pair_really_does_multiply_to_the_identity() -> None:
     about this pairing rather than about the tolerance.
     """
 
-    identity = torch.eye(2, dtype=torch.complex128)
+    identities = {
+        arity: torch.eye(2**arity, dtype=torch.complex128) for arity in (1, 2)
+    }
     for opcode, partner in _PAIRS.items():
-        first = _matrix(Instruction(opcode, (0,)))
-        second = _matrix(Instruction(partner, (0,)))
+        arity = OPERATOR_SCHEMAS[opcode].arity
+        wires = tuple(range(arity))
+        identity = identities[arity]
+        first = _matrix(Instruction(opcode, wires))
+        second = _matrix(Instruction(partner, wires))
         assert torch.allclose(second @ first, identity, atol=_ATOL, rtol=0), opcode
         assert torch.allclose(first @ second, identity, atol=_ATOL, rtol=0), opcode
 
     mismatched = _matrix(Instruction("t", (0,))) @ _matrix(Instruction("s", (0,)))
-    assert not torch.allclose(mismatched, identity, atol=_ATOL, rtol=0)
+    assert not torch.allclose(mismatched, identities[1], atol=_ATOL, rtol=0)
 
 
 def test_the_module_holds_no_opcode_table_of_its_own() -> None:
@@ -514,7 +532,8 @@ def test_a_lone_member_gains_no_reach_from_this_pass() -> None:
     """One member of a pair is not a pair."""
 
     for opcode in _PAIRS:
-        ir = CircuitIR(1, (Instruction(opcode, (0,)),))
+        arity = OPERATOR_SCHEMAS[opcode].arity
+        ir = CircuitIR(arity, (Instruction(opcode, tuple(range(arity))),))
         assert merge_inverse_pairs(ir) is ir
         assert _names(optimize(ir)) == [opcode]
 
@@ -608,13 +627,15 @@ def test_random_runs_of_the_declared_pairs_preserve_the_state() -> None:
     opcodes = sorted(_PAIRS)
     shrank = 0
     for _ in range(120):
-        ir = CircuitIR(
-            2,
-            tuple(
-                Instruction(seed.choice(opcodes), (seed.randrange(2),))
-                for _ in range(seed.randrange(1, 10))
-            ),
-        )
+        instructions = []
+        for _ in range(seed.randrange(1, 10)):
+            opcode = seed.choice(opcodes)
+            arity = OPERATOR_SCHEMAS[opcode].arity
+            wires = (
+                (seed.randrange(2),) if arity == 1 else seed.choice(((0, 1), (1, 0)))
+            )
+            instructions.append(Instruction(opcode, wires))
+        ir = CircuitIR(2, tuple(instructions))
         optimized = optimize(ir)
         assert len(optimized) <= len(ir)
         assert torch.allclose(_state(optimized), _state(ir), atol=_ATOL, rtol=0)

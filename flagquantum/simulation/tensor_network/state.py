@@ -289,7 +289,7 @@ class TensorNetworkState:
         self._validate_observable_qubits(x_set | y_set | z_set)
 
         strategy, budget = self._observable_contraction()
-        return tensor_network_expectation_ps(
+        value = tensor_network_expectation_ps(
             self.plan,
             x=x,
             y=y,
@@ -297,6 +297,43 @@ class TensorNetworkState:
             strategy=strategy,
             max_peak_bytes=budget,
         )
+        self._last_observable_execution = "direct_expectation_contraction"
+        self._last_observable_program_cache_hit = False
+        # The bra-operator-ket peak would need a second path search to estimate,
+        # so this route reports no peak rather than the state-contraction one.
+        self._last_observable_peak_size = None
+        return value
+
+    def expectation_hamiltonian(self, hamiltonian: Any) -> torch.Tensor:
+        """Contract a Pauli sum against this state as one operator network.
+
+        A sum of ``N`` terms evaluated term by term repeats the same
+        self-contraction ``N`` times, because every term shares the ket and bra
+        copies of this state. Summing the terms into one matrix-product operator
+        instead leaves a network whose node count does not depend on ``N``, so a
+        long Pauli sum costs what a single term costs.
+
+        The operator is a separate contraction from the state one and has a peak
+        of its own, so a declared byte budget governs it too.
+        """
+
+        from .observables import build_tensor_network_hamiltonian_expectation
+
+        strategy, budget = self._observable_contraction()
+        plan = build_tensor_network_hamiltonian_expectation(self.plan, hamiltonian)
+        value = torch.real(
+            plan.contract(strategy=strategy, max_intermediate_bytes=budget)
+        )
+        self._last_observable_execution = "hamiltonian_mpo_contraction"
+        self._last_observable_program_cache_hit = False
+        # The profile reuses the ordering the call just contracted, so it costs
+        # a fraction of a millisecond rather than a second path search. Under a
+        # declared budget the contraction is sliced and this unsliced figure
+        # would describe a network that did not run, so it is not reported.
+        self._last_observable_peak_size = (
+            None if budget is not None else plan.contraction_profile(strategy).peak_size
+        )
+        return value
 
     def sample(
         self,

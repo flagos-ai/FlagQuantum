@@ -179,6 +179,8 @@ exclude = ["tests*", "docs*", "scripts*", "examples*"]
 
 [tool.setuptools.package-data]
 flagquantum = [
+    "py.typed",
+    "core/*.pyi",
     "drawer/tex/*.sty",
     "drawer/tex/*.tex",
     "drawer/tex/*.md",

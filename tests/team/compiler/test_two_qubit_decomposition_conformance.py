@@ -477,7 +477,7 @@ def _bumped(matrix: torch.Tensor, eps: float, row: int = 0, column: int = 0):
     return bumped
 
 
-def test_the_declared_arity_two_group_is_the_eleven_names_the_schema_table_holds() -> (
+def test_the_declared_arity_two_group_is_the_eighteen_names_the_schema_table_holds() -> (
     None
 ):
     """The named vocabulary the split criterion is stated against.
@@ -489,19 +489,26 @@ def test_the_declared_arity_two_group_is_the_eleven_names_the_schema_table_holds
     """
 
     assert _DECLARED_TWO_WIRE == (
+        "ch",
         "cphase",
         "crx",
         "cry",
         "crz",
+        "csx",
+        "csxdg",
         "cx",
         "cy",
         "cz",
+        "dcx",
+        "ecr",
+        "iswap",
+        "iswapdg",
         "rxx",
         "ryy",
         "rzz",
         "swap",
     )
-    assert len(_DECLARED_TWO_WIRE) == 11
+    assert len(_DECLARED_TWO_WIRE) == 18
 
 
 def test_a_declared_opcode_is_never_a_split_candidate_even_with_its_own_matrix() -> (
@@ -511,7 +518,7 @@ def test_a_declared_opcode_is_never_a_split_candidate_even_with_its_own_matrix()
 
     The rule is exact-equality over the schema table, so the control is the same
     matrix handed to two opcodes: an undeclared one, which the criterion accepts, and
-    each of the eleven declared ones, which it must refuse. Without the first arm a
+    each of the eighteen declared ones, which it must refuse. Without the first arm a
     criterion that refused everything would pass.
     """
 
@@ -533,7 +540,7 @@ def test_a_declared_opcode_is_never_a_split_candidate_even_with_its_own_matrix()
             )
             assert _split_instruction(carried) is None
             refused += 1
-    assert refused == 11 * 3
+    assert refused == 18 * 3
 
 
 def test_the_entangler_roster_is_exactly_the_supercontrolled_set() -> None:
@@ -557,7 +564,20 @@ def test_the_entangler_roster_is_exactly_the_supercontrolled_set() -> None:
     absent = [
         name for name in _DECLARED_TWO_WIRE if name not in SUPERCONTROLLED_ENTANGLERS
     ]
-    assert absent == ["cphase", "crx", "cry", "crz", "swap"]
+    assert absent == [
+        "ch",
+        "cphase",
+        "crx",
+        "cry",
+        "crz",
+        "csx",
+        "csxdg",
+        "dcx",
+        "ecr",
+        "iswap",
+        "iswapdg",
+        "swap",
+    ]
     for name in absent:
         with pytest.raises(ValueError):
             _BasisDecomposer(name)
@@ -1256,8 +1276,9 @@ def test_the_named_route_reaches_the_declared_group_and_the_sparse_one_does_not(
 ):
     """Basis reach, measured through the consumer for every declared opcode.
 
-    A basis publishing an entangler reaches every declared arity-2 unitary -- 11 of
-    11 for both `cx` bases measured, one of them naming no `sx` at all -- while an
+    A basis publishing `x`, `sx`, `rz`, and `cx` reaches every declared arity-2
+    unitary. The smaller Clifford-plus-rotation spelling without `x` and `sx`
+    reaches the fourteen names its registered rules can express. An
     `rzz` basis reaches only the three rotation entanglers, because `rzz` is not a
     universal entangler and the basis publishes no single-qubit set that spans the
     gap. The sparse arms are the control for the wide ones: without them, a matcher
@@ -1290,7 +1311,9 @@ def test_the_named_route_reaches_the_declared_group_and_the_sparse_one_does_not(
         reach[label] = reached
 
     assert reach["x,sx,rz,cx"] == list(_DECLARED_TWO_WIRE)
-    assert reach["h,s,rz,cx"] == list(_DECLARED_TWO_WIRE)
+    assert reach["h,s,rz,cx"] == [
+        name for name in _DECLARED_TWO_WIRE if name not in {"ch", "csx", "csxdg", "ecr"}
+    ]
     assert reach["x,sx,rz,rzz"] == ["rxx", "ryy", "rzz"]
     assert reach["x,sx,rz"] == []
 

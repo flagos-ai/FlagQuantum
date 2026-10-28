@@ -274,10 +274,12 @@ def test_a_controlled_program_has_the_hand_built_ir():
         # The width comes from the controls, which are added rather than taken from the
         # receiver, so it is one past the highest control qubit.
         assert composed_ir.n_wires == max(ctrl_qubits) + 1, label
-        # And something was actually controlled: a route that returned its receiver would
-        # still agree with a twin that also returned its receiver.
-        receiver = _hand_built(int(row["n_qubits"]), tuple(row["qubits"])).to_ir()
-        assert len(composed_ir.instructions) > len(receiver.instructions), label
+        # Every added control participates in the result. Some native controlled
+        # partners preserve instruction count, so growth is not the semantic test.
+        used_qubits = {
+            qubit for item in composed_ir.instructions for qubit in item.wires
+        }
+        assert set(ctrl_qubits).issubset(used_qubits), label
 
 
 def test_the_control_placements_in_the_contract_are_well_formed():

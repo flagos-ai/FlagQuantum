@@ -106,8 +106,12 @@ CLIFFORD_OPCODES = frozenset(
         "cx",
         "cy",
         "cz",
+        "dcx",
+        "ecr",
         "h",
         "i",
+        "iswap",
+        "iswapdg",
         "s",
         "sdg",
         "swap",
@@ -134,7 +138,7 @@ CLIFFORD_OPCODES = frozenset(
 # declared channels partition the whole schema, so the classification cannot
 # silently fall behind a new opcode: an opcode no family here names is refused.
 
-DECOMPOSITION_OPCODES = frozenset({"ccx", "cswap"})
+DECOMPOSITION_OPCODES = frozenset({"ccx", "ch", "cswap", "csx", "csxdg"})
 # The compound operations whose Clifford+T form is a decomposition's answer.
 #
 # Refused rather than counted, and refused by name, because the T-count of a

@@ -13,14 +13,14 @@ rule by rule and basis by basis:
 
 * Per rule, the identity's declared leaves against the leaves it actually emits
   on a ``rz``/``sx``/``cx`` target, and whether the emitted program is *exactly*
-  the source or only equal up to one global phase. Seventeen of the eighteen
+  the source or only equal up to one global phase. Nineteen of the twenty
   entries are exact; ``cphase`` is not, because turning a controlled rotation
   into a controlled phase leaves a phase behind and CircuitIR cannot record it.
   The table stores the shortest statement of each identity rather than its
   closure, so most rules emit more than they declare: ``cry`` declares three
   leaves and emits seven, and ``cswap`` declares a ``ccx`` that expands to
   fifteen.
-* Per basis, how many of the eighteen table opcodes reach it by name, split by
+* Per basis, how many of the twenty table opcodes reach it by name, split by
   arity so the one-wire, two-wire and three-wire reaches can be read apart. The
   number is not the two-qubit reach -- a `cx` basis reaches five two-qubit opcodes
   on the table alone and the rest through the Euler synthesis, which
@@ -35,9 +35,11 @@ rule by rule and basis by basis:
   Both forms are measured here rather than asserted.
 * The one cross-framework number: Qiskit's own ``BasisTranslator`` over the
   standard equivalence library, on the same named gates into the same target
-  bases. Four of the five bases agree opcode for opcode. The fifth, an
-  ``rzz``-only rotating-frame basis, is a recorded gap and not a claim of
-  parity: Qiskit reaches every name there, this table reaches eight. The
+  bases. Differences are recorded in both directions because either library
+  may gain an identity first. The ``rzz``-only rotating-frame basis is a
+  recorded gap and not a claim of parity: Qiskit reaches more names there,
+  while this table reaches eight. Conversely, this table's exact iSWAP
+  identities can reach bases where an installed Qiskit library refuses them. The
   table routes every entangling rule down to a *sink* of ``cx`` or ``cz`` -- the
   two names are each other's rule, so a basis that publishes neither cannot
   build either -- and that basis publishes only a parametrized ``rzz``. Qiskit's
@@ -478,14 +480,18 @@ def _qiskit_gates() -> dict[str, Any]:
 
     from qiskit.circuit.library import (  # type: ignore[import-not-found]
         CCXGate,
+        CHGate,
         CPhaseGate,
         CRXGate,
         CRYGate,
         CRZGate,
+        CSXGate,
         CSwapGate,
         CXGate,
         CYGate,
         CZGate,
+        DCXGate,
+        ECRGate,
         RXGate,
         RXXGate,
         RYGate,
@@ -495,14 +501,22 @@ def _qiskit_gates() -> dict[str, Any]:
         SwapGate,
         XGate,
         ZGate,
+        iSwapGate,
     )
 
     theta = _ANGLES["theta"]
     builders = {
+        "ch": CHGate,
+        "csx": CSXGate,
+        "csxdg": lambda: CSXGate().inverse(),
         "cx": CXGate,
         "cz": CZGate,
         "cy": CYGate,
         "swap": SwapGate,
+        "dcx": DCXGate,
+        "ecr": ECRGate,
+        "iswap": iSwapGate,
+        "iswapdg": lambda: iSwapGate().inverse(),
         "rzz": lambda: RZZGate(theta),
         "crz": lambda: CRZGate(theta),
         "cphase": lambda: CPhaseGate(theta),
@@ -538,17 +552,16 @@ def _qiskit_anchor(
     disagreement: Qiskit's equivalence library may introduce a constant or a
     halved angle, and the table here may not.
 
-    The disagreements are split by what they are evidence about. This table's
+    The disagreements are split by direction and by what they are evidence
+    about. This table's
     own sink is a property of the rules below and holds on every lane: every
     entangling rule composes down to ``cx`` or ``cz``, so a target publishing
-    neither reaches fewer names here than in Qiskit's library. Anything beyond
-    that sink is the *installed* lane's library reaching where this table
-    refuses by name, so it is reported -- as ``qiskit_version`` and as the
-    measured rows -- rather than asserted as a count. Asserting it would pin
-    the reading to the instrument, and this anchor was read on more than one
-    lane: 1.2.4 and 2.0.x report no disagreement beyond the sink, 2.5.x reports
-    ``clifford-t`` because that library gained a multi-controlled
-    decomposition needing no ``tdg``.
+    neither reaches fewer names here than in Qiskit's library. Beyond that
+    sink, either library may have an identity the other one does not. Those
+    directional differences are reported as ``qiskit_only`` and ``port_only``
+    instead of assuming that every future disagreement must point in one
+    direction. That assumption stopped being true when this table gained exact
+    iSWAP identities before Qiskit's standard equivalence library did.
     """
 
     try:
@@ -620,6 +633,12 @@ def _qiskit_anchor(
                 "count_agrees": len(reached) == ours[basis.label]["reached_count"],
                 "opcode_agrees": sorted(reached)
                 == sorted(ours[basis.label]["reached_leaf_counts"]),
+                "qiskit_only": sorted(
+                    set(reached) - set(ours[basis.label]["reached_leaf_counts"])
+                ),
+                "port_only": sorted(
+                    set(ours[basis.label]["reached_leaf_counts"]) - set(reached)
+                ),
                 # Non-empty as well as equal: a basis where neither port reaches
                 # either opcode agrees vacuously, and that is not a comparison.
                 "multi_controlled_entanglers_agree": bool(multi_controlled)
@@ -641,19 +660,26 @@ def _qiskit_anchor(
         if not {"cx", "cz"} & set(row["target_basis"])
     )
     disagreeing = sorted(
-        label for label, row in by_label.items() if not row["count_agrees"]
+        label for label, row in by_label.items() if not row["opcode_agrees"]
     )
     assert sink_gap, sorted(by_label)
     assert set(sink_gap) <= set(disagreeing), (sink_gap, disagreeing)
     for label in sink_gap:
         row = by_label[label]
         assert row["reached_count"] > row["port_reached_count"], row
-    for label in sorted(set(disagreeing) - set(sink_gap)):
-        refusals = ours[label]["refused"]
-        assert refusals, (label, refusals)
-        assert all(
-            "requires unsupported native gate" in reason for reason in refusals.values()
-        ), (label, refusals)
+    for label in disagreeing:
+        row = by_label[label]
+        assert row["qiskit_only"] or row["port_only"], row
+        for opcode in row["qiskit_only"]:
+            reason = ours[label]["refused"].get(opcode)
+            assert reason is not None, (label, opcode, ours[label]["refused"])
+            assert "requires unsupported native gate" in reason, (
+                label,
+                opcode,
+                reason,
+            )
+        for opcode in row["port_only"]:
+            assert opcode in row["refused"], (label, opcode, row["refused"])
     # The multi-controlled entangler comparison is only the same quantity where
     # both ports reach both opcodes. Asserting that set rather than trusting the
     # equality keeps an all-refused run from reporting agreement with itself.
@@ -684,7 +710,7 @@ def _qiskit_anchor(
         "sink_gap_bases": sink_gap,
         "count_agreement_count": sum(1 for row in rows if row["count_agrees"]),
         "opcode_agreement_count": sum(1 for row in rows if row["opcode_agrees"]),
-        "disagreements": [row["label"] for row in rows if not row["count_agrees"]],
+        "disagreements": [row["label"] for row in rows if not row["opcode_agrees"]],
         "multi_controlled": sorted(_MULTI_CONTROLLED),
         "multi_controlled_compared_bases": both_reached,
         "multi_controlled_agreement_count": sum(

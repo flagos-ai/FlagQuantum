@@ -106,6 +106,52 @@ def _instruction_lines(instruction: Instruction, *, version: float) -> list[str]
         return [_gate("p" if version == 3.0 else "u1", instruction.wires, parameters)]
     if opcode == "cphase":
         return [_gate("cp" if version == 3.0 else "cu1", instruction.wires, parameters)]
+    if opcode in {"iswap", "iswapdg"}:
+        left, right = instruction.wires
+        phase = "s" if opcode == "iswap" else "sdg"
+        return [
+            _gate("cz", (left, right)),
+            _gate("swap", (left, right)),
+            _gate(phase, (left,)),
+            _gate(phase, (right,)),
+        ]
+    if opcode == "ch":
+        control, target = instruction.wires
+        return [
+            _gate("s", (target,)),
+            _gate("h", (target,)),
+            _gate("t", (target,)),
+            _gate("cx", (control, target)),
+            _gate("tdg", (target,)),
+            _gate("h", (target,)),
+            _gate("sdg", (target,)),
+        ]
+    if opcode in {"csx", "csxdg"}:
+        control, target = instruction.wires
+        angle = repr(math.pi / 2 if opcode == "csx" else -math.pi / 2)
+        phase_name = "cp" if version == 3.0 else "cu1"
+        return [
+            _gate("h", (target,)),
+            _gate(phase_name, (control, target), f"({angle})"),
+            _gate("h", (target,)),
+        ]
+    if opcode == "dcx":
+        left, right = instruction.wires
+        return [_gate("cx", (left, right)), _gate("cx", (right, left))]
+    if opcode == "ecr":
+        left, right = instruction.wires
+        return [
+            _gate("s", (left,)),
+            *(
+                [_gate("sx", (right,))]
+                if version == 3.0
+                else [_gate("h", (right,)), _gate("s", (right,)), _gate("h", (right,))]
+            ),
+            _gate("cx", (left, right)),
+            _gate("tdg", (left,)),
+            _gate("x", (left,)),
+            _gate("tdg", (left,)),
+        ]
     if opcode == "sx":
         if version == 3.0:
             return [_gate("sx", instruction.wires)]

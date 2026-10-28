@@ -101,6 +101,66 @@ def test_twin_v1_contract_is_formally_frozen() -> None:
         "insufficient_evidence",
         "incompatible_history",
     ]
+    assert contract["public_schema_defaults"]["TwinProbeRefreshPlan"] == (
+        "flagquantum.twin_probe_refresh_plan.v1"
+    )
+    assert contract["public_schema_defaults"]["TwinProbeBank"] == (
+        "flagquantum.twin_probe_bank.v2"
+    )
+    assert contract["public_schema_defaults"]["TwinParameterEstimate"] == (
+        "flagquantum.twin_parameter_estimate.v1"
+    )
+    assert contract["public_schema_defaults"]["TwinCandidateFit"] == (
+        "flagquantum.twin_candidate_fit.v1"
+    )
+    assert contract["public_schema_defaults"]["TwinEvolutionCycle"] == (
+        "flagquantum.twin_evolution_cycle.v1"
+    )
+    assert contract["public_schema_defaults"]["TwinEvolutionDecision"] == (
+        "flagquantum.twin_evolution_decision.v1"
+    )
+    assert contract["public_literal_values"]["TwinEvolutionCycleStage"] == [
+        "prepared",
+        "parameter_estimated",
+        "candidate_fitted",
+        "holdout_evaluated",
+    ]
+    assert contract["public_literal_values"]["TwinEvolutionRecommendation"] == [
+        "retain_incumbent",
+        "collect_more_evidence",
+        "release_candidate",
+    ]
+    assert contract["public_literal_values"]["TwinProbeBankStatus"] == [
+        "identifiable",
+        "underdetermined",
+    ]
+
+
+def test_evolution_decision_is_an_audit_record_without_execution_authority() -> None:
+    fields = {field.name for field in dataclasses.fields(fq.twin.TwinEvolutionDecision)}
+
+    assert fq.twin.TwinEvolutionDecision.__dataclass_params__.frozen is True
+    assert fields == {
+        "cycle_identity",
+        "recommended_action",
+        "decision",
+        "decided_at",
+        "decision_authority",
+        "target",
+        "physical_qubits",
+        "incumbent_snapshot_identity",
+        "candidate_snapshot_identity",
+        "holdout_evaluation_identity",
+        "release_identity",
+        "released_region_identity",
+        "schema",
+    }
+    assert not fields & {
+        "active_model",
+        "routing_authorized",
+        "provider",
+        "credentials",
+    }
 
 
 def test_release_assessment_vocabulary_stays_minimal_and_frozen() -> None:
@@ -186,6 +246,165 @@ def test_freshness_vocabulary_is_policy_qualified_and_non_authoritative() -> Non
         "routing_authorized",
         "promotion_authorized",
         "refresh_started",
+    }
+
+
+def test_probe_refresh_plan_is_bounded_and_has_no_execution_authority() -> None:
+    fields = {field.name for field in dataclasses.fields(fq.twin.TwinProbeRefreshPlan)}
+
+    assert fq.twin.TwinProbeRefreshPlan.__dataclass_params__.frozen is True
+    assert fields == {
+        "release_identity",
+        "candidate_region_identity",
+        "candidate_snapshot_identity",
+        "target",
+        "physical_qubits",
+        "candidate_circuit_identities",
+        "selected_circuit_identities",
+        "unsupported_candidates",
+        "covered_directed_couplers",
+        "coverage_gaps",
+        "calibration_history_identity",
+        "validation_history_identity",
+        "shots",
+        "maximum_tasks",
+        "repetitions",
+        "schema",
+    }
+    assert not fields & {
+        "provider",
+        "submission",
+        "routing_authorized",
+        "retry_policy",
+    }
+
+
+def test_probe_bank_is_rank_qualified_and_has_no_estimation_authority() -> None:
+    fields = {field.name for field in dataclasses.fields(fq.twin.TwinProbeBank)}
+
+    assert set(get_args(fq.twin.TwinProbeBankStatus)) == {
+        "identifiable",
+        "underdetermined",
+    }
+    assert fq.twin.TwinProbeBank.__dataclass_params__.frozen is True
+    assert fields == {
+        "target",
+        "physical_qubits",
+        "directed_couplers",
+        "probe_circuit_identities",
+        "parameter_family",
+        "parameter_names",
+        "probe_parameter_names",
+        "design_row_labels",
+        "ideal_row_probabilities",
+        "design_matrix",
+        "matrix_rank",
+        "identifiable_parameters",
+        "unidentified_parameters",
+        "identifiability_status",
+        "schema",
+    }
+    assert not fields & {
+        "parameter_values",
+        "confidence_intervals",
+        "submission",
+        "routing_authorized",
+    }
+
+
+def test_parameter_estimate_is_bounded_and_has_no_mutation_authority() -> None:
+    fields = {field.name for field in dataclasses.fields(fq.twin.TwinParameterEstimate)}
+
+    assert fq.twin.TwinParameterEstimate.__dataclass_params__.frozen is True
+    assert fields == {
+        "probe_bank_identity",
+        "target",
+        "physical_qubits",
+        "parameter_family",
+        "parameter_values",
+        "confidence_intervals",
+        "identifiability_status",
+        "unidentified_parameters",
+        "boundary_parameters",
+        "hardware_report_identities",
+        "task_ids",
+        "snapshot_identity",
+        "shots_by_probe",
+        "observed_row_total_variations",
+        "fitted_row_total_variations",
+        "row_finite_shot_radii",
+        "residual_root_mean_square",
+        "maximum_absolute_residual",
+        "goodness_of_fit",
+        "confidence_level",
+        "assumptions",
+        "schema",
+    }
+    assert not fields & {
+        "twin",
+        "candidate",
+        "submission",
+        "promotion",
+        "routing_authorized",
+    }
+
+
+def test_fitted_candidate_records_provenance_without_execution_authority() -> None:
+    fields = {field.name for field in dataclasses.fields(fq.twin.TwinCandidateFit)}
+    candidate_fields = {
+        field.name for field in dataclasses.fields(fq.twin.TwinFittedCandidate)
+    }
+
+    assert fq.twin.TwinCandidateFit.__dataclass_params__.frozen is True
+    assert fq.twin.TwinFittedCandidate.__dataclass_params__.frozen is True
+    assert fields == {
+        "incumbent_snapshot_identity",
+        "parameter_estimate_identity",
+        "probe_bank_identity",
+        "parameter_family",
+        "fitted_parameters",
+        "retained_parameters",
+        "unidentified_parameters",
+        "schema",
+    }
+    assert candidate_fields == {"snapshot", "noise_model", "fit"}
+    assert not fields & {
+        "provider",
+        "submission",
+        "promotion",
+        "routing_authorized",
+        "retry_policy",
+    }
+
+
+def test_evolution_cycle_is_reference_only_and_non_authoritative() -> None:
+    fields = {field.name for field in dataclasses.fields(fq.twin.TwinEvolutionCycle)}
+
+    assert fq.twin.TwinEvolutionCycle.__dataclass_params__.frozen is True
+    assert fields == {
+        "incumbent_snapshot_identity",
+        "freshness_identity",
+        "freshness_status",
+        "probe_plan_identity",
+        "target",
+        "physical_qubits",
+        "stage",
+        "parameter_estimate_identity",
+        "probe_bank_identity",
+        "candidate_snapshot_identity",
+        "candidate_fit_identity",
+        "holdout_evaluation_identity",
+        "holdout_suite_identity",
+        "holdout_decision",
+        "recommended_action",
+        "schema",
+    }
+    assert not fields & {
+        "provider",
+        "submission",
+        "promotion_authorized",
+        "routing_authorized",
+        "retry_policy",
     }
 
 

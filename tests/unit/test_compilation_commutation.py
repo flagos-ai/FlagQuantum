@@ -132,7 +132,7 @@ def _pairs() -> list[tuple[Instruction, Instruction]]:
 def test_every_rule_that_says_yes_is_true_against_the_runtime_matrices() -> None:
     """No answer of "yes" may be wrong, over every opcode pair and placement.
 
-    This is the test the module's docstring promises. It sweeps all 31 declared
+    This is the test the module's docstring promises. It sweeps all 38 declared
     arity-one and arity-two unitaries in both roles across disjoint, single-shared,
     and identical placements, which is every way two of them can meet in a
     three-qubit register. A false "yes" here is a wrong program, not a missed
@@ -140,7 +140,7 @@ def test_every_rule_that_says_yes_is_true_against_the_runtime_matrices() -> None
     """
 
     pairs = _pairs()
-    assert len(pairs) == 5776
+    assert len(pairs) == 8100
     claimed = [
         (left, right)
         for left, right in pairs
@@ -163,9 +163,9 @@ def test_the_rule_source_is_worth_shipping_over_the_true_commuting_set() -> None
     """Measure the fail-closed direction instead of leaving it unstated.
 
     A rule source that answered "no" to everything would pass the test above, so
-    this one measures what it actually recovers. Of the 3826 pairs of declared
+    this one measures what it actually recovers. Of the 4650 pairs of declared
     arity-one and arity-two unitaries that really do commute in the placements
-    swept above, 3602 are answered and 224 are declined. Every decline is listed
+    swept above, 4128 are answered and 522 are declined. Every decline is listed
     below with the number of (placement, role) combinations it accounts for, so a
     regression that widens or narrows the gap fails here instead of passing
     silently.
@@ -192,9 +192,9 @@ def test_the_rule_source_is_worth_shipping_over_the_true_commuting_set() -> None
     truth = [(left, right) for left, right in pairs if _commutes_exactly(left, right)]
     answered = [(left, right) for left, right in truth if commute(left, right)]
     declined = [(left, right) for left, right in truth if not commute(left, right)]
-    assert len(truth) == 3826
-    assert len(answered) == 3602
-    assert len(declined) == 224
+    assert len(truth) == 4650
+    assert len(answered) == 4128
+    assert len(declined) == 522
     assert len(answered) + len(declined) == len(truth)
 
     counts = collections.Counter(
@@ -211,6 +211,69 @@ def test_the_rule_source_is_worth_shipping_over_the_true_commuting_set() -> None
 #: operators commute, with the number of placements that reach it. The three
 #: families are described in the test docstring above.
 _DECLINED_GAP: dict[tuple[str, str], int] = {
+    # Exact commutations introduced with the Batch B controlled and echoed gates.
+    ("ch", "cphase"): 2,
+    ("ch", "crz"): 2,
+    ("ch", "cz"): 2,
+    ("ch", "h"): 4,
+    ("ch", "i"): 8,
+    ("ch", "phase"): 4,
+    ("ch", "rz"): 4,
+    ("ch", "rzz"): 2,
+    ("ch", "s"): 4,
+    ("ch", "sdg"): 4,
+    ("ch", "t"): 4,
+    ("ch", "tdg"): 4,
+    ("ch", "u1"): 4,
+    ("ch", "z"): 4,
+    ("cphase", "csx"): 2,
+    ("cphase", "csxdg"): 2,
+    ("crx", "csx"): 4,
+    ("crx", "csxdg"): 4,
+    ("crz", "csx"): 2,
+    ("crz", "csxdg"): 2,
+    ("csx", "csxdg"): 4,
+    ("csx", "cx"): 4,
+    ("csx", "cz"): 2,
+    ("csx", "i"): 8,
+    ("csx", "phase"): 4,
+    ("csx", "rx"): 4,
+    ("csx", "rxx"): 2,
+    ("csx", "rz"): 4,
+    ("csx", "rzz"): 2,
+    ("csx", "s"): 4,
+    ("csx", "sdg"): 4,
+    ("csx", "sx"): 4,
+    ("csx", "sxdg"): 4,
+    ("csx", "t"): 4,
+    ("csx", "tdg"): 4,
+    ("csx", "u1"): 4,
+    ("csx", "x"): 4,
+    ("csx", "z"): 4,
+    ("csxdg", "cx"): 4,
+    ("csxdg", "cz"): 2,
+    ("csxdg", "i"): 8,
+    ("csxdg", "phase"): 4,
+    ("csxdg", "rx"): 4,
+    ("csxdg", "rxx"): 2,
+    ("csxdg", "rz"): 4,
+    ("csxdg", "rzz"): 2,
+    ("csxdg", "s"): 4,
+    ("csxdg", "sdg"): 4,
+    ("csxdg", "sx"): 4,
+    ("csxdg", "sxdg"): 4,
+    ("csxdg", "t"): 4,
+    ("csxdg", "tdg"): 4,
+    ("csxdg", "u1"): 4,
+    ("csxdg", "x"): 4,
+    ("csxdg", "z"): 4,
+    ("dcx", "i"): 8,
+    ("ecr", "i"): 8,
+    ("ecr", "rx"): 4,
+    ("ecr", "rxx"): 2,
+    ("ecr", "sx"): 4,
+    ("ecr", "sxdg"): 4,
+    ("ecr", "x"): 4,
     # A controlled operator against a diagonal or exchange-symmetric operator: the
     # diagonal factors out of the control's `|a><a|` terms.
     ("cx", "cz"): 2,
@@ -233,6 +296,10 @@ _DECLINED_GAP: dict[tuple[str, str], int] = {
     ("cphase", "cy"): 2,
     ("cphase", "crx"): 2,
     ("cphase", "cry"): 2,
+    ("cphase", "iswap"): 4,
+    ("cphase", "iswapdg"): 4,
+    ("cz", "iswap"): 4,
+    ("cz", "iswapdg"): 4,
     # A single-qubit Pauli or Pauli-span gate against a two-qubit Pauli-span
     # entangler with an overlapping wire.
     ("rx", "rxx"): 8,
@@ -248,6 +315,16 @@ _DECLINED_GAP: dict[tuple[str, str], int] = {
     ("sx", "sxdg"): 6,
     ("sx", "x"): 6,
     ("sxdg", "x"): 6,
+    # The iSWAP pair commutes with itself and with symmetric Pauli interactions
+    # on the same pair; the generic rule source still declines those cases. Its
+    # shared exchange-symmetry rule now answers the SWAP pair directly.
+    ("iswap", "iswapdg"): 4,
+    ("iswap", "rxx"): 4,
+    ("iswap", "ryy"): 4,
+    ("iswap", "rzz"): 4,
+    ("iswapdg", "rxx"): 4,
+    ("iswapdg", "ryy"): 4,
+    ("iswapdg", "rzz"): 4,
     # The identity gate against anything at all.
     ("crx", "i"): 4,
     ("cry", "i"): 4,
@@ -259,6 +336,8 @@ _DECLINED_GAP: dict[tuple[str, str], int] = {
     ("i", "ry"): 6,
     ("i", "ryy"): 8,
     ("i", "swap"): 8,
+    ("i", "iswap"): 8,
+    ("i", "iswapdg"): 8,
     ("i", "sx"): 6,
     ("i", "sxdg"): 6,
     ("i", "u2"): 6,
@@ -471,7 +550,7 @@ def test_the_rule_source_carries_no_import_of_the_simulation_layer() -> None:
         "..core.operator_schema",
     ]
     # The reach of the rule source, as a fact rather than as a guess.
-    assert len(_RULE_OPCODES) == 28
+    assert len(_RULE_OPCODES) == 30
 
 
 def _circuit(*instructions: Instruction) -> CircuitIR:

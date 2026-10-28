@@ -37,6 +37,7 @@ authorization = [
     "docs/api-changes/FQ-CIRCUIT-POWER-20261021.md",
     "docs/api-changes/FQ-CIRCUIT-CONTROL-20261022.md",
     "docs/api-changes/FQ-CIRCUIT-CONTROL-OPERAND-20261022.md",
+    "docs/development/API_CHANGE_PROPOSAL_098_GATE_COVERAGE_BATCH_A.md",
 ]
 
 [scope]
@@ -88,7 +89,7 @@ receiver_role = "an instruction sequence, not a program entry point"
 returns = "new_circuit"
 receiver_is_mutated = false
 instruction_order = "reversed"
-instruction_qubits = "unchanged"
+instruction_qubits = "unchanged except reverse_operands reverses the gate operands"
 instruction_order_within_gate = "unchanged"
 # The current attribute names, not the deprecated `n_wires` alias for `n_qubits`.
 preserves = ["n_qubits", "bsz", "device", "dtype"]
@@ -100,6 +101,7 @@ declared_opcode_rules = [
     "negate_parameters",
     "adjoint_u2_angles",
     "adjoint_u3_angles",
+    "reverse_operands",
     "matrix_adjoint",
     "not_applicable",
 ]
@@ -226,9 +228,11 @@ declared_opcode_rules = [
     "rzz_ladder",
     "rxx_ladder",
     "ryy_ladder",
+    "iswap_ladder",
     "not_available",
 ]
 absence_rule = "not_available"
+unitary_absence_opcodes = ["dcx", "ecr"]
 # The many-to-one shortcut table read when exactly one control is added. Its pairs are
 # verified against the registry by the operator schema's own consistency check, so a pair
 # that stops being parameter-compatible is a failure there rather than here.
@@ -315,10 +319,10 @@ contract = "tests/unit/test_circuit_composition_contract.py"
 expansion_tests = { "Circuit.compose" = "test_compose_expands_to_the_hand_built_program", "Circuit.adjoint" = "test_adjoint_expands_to_the_hand_built_inverse", "Circuit.power" = "test_power_expands_to_the_hand_built_repetition", "Circuit.control" = "test_control_expands_to_the_hand_built_ladder" }
 # Registering an opcode changes this census. It is the measurement behind the
 # `reachable = false` row below, so it is recorded as evidence rather than assumed.
-opcode_census = "31 of 35 registered opcodes invert; the 4 refusals are the noise channels"
+opcode_census = "38 of 42 registered opcodes invert; the 4 refusals are the noise channels"
 # The same shape of measurement for `power`: the census is the rule split, and it is
 # the declaration the rewrite reads. Counted from `OPERATOR_SCHEMAS`, not assumed.
-power_census = "12 of 35 registered opcodes take the closed form; the other 23 repeat"
+power_census = "12 of 42 registered opcodes take the closed form; the other 30 repeat"
 # A closed-form rewrite is only valid where the exponent is in fact an integer, so the
 # contract names both. The refusal is a `TypeError` rather than a `ValueError` because the
 # argument is the wrong kind of value, which is the same class the circuit's own count
@@ -328,7 +332,7 @@ exponent_type_refusal = "TypeError"
 # and the four opcodes that declare none are exactly the noise channels, which the
 # channel refusal reaches first. That is what makes the "no controlled form" row below
 # unreachable from a well-formed program.
-control_census = "31 of 35 registered opcodes declare a controlled form; the 4 refusals are the noise channels"
+control_census = "36 of 42 registered opcodes declare a controlled form; the 6 refusals are 4 noise channels plus dcx and ecr"
 
 [[refusals]]
 entry_point = "compose"
@@ -640,10 +644,10 @@ message_source = "flagquantum/core/_composition.py"
 # with no matrix, and one with a matrix takes the refusal above -- so the reachable
 # spelling is the second, through an opcode that declares `not_available` while carrying
 # no `is_channel` metadata. `from_ir` and a hand-built instruction both produce one; the
-# noise channels are the only opcodes that declare `not_available`, which is why the
+# noise channels plus `dcx` and `ecr` declare `not_available`, which is why the
 # census above is the measurement behind this row.
 reachable = true
-trigger = "a noise-channel opcode recorded without its is_channel metadata"
+trigger = "dcx or ecr, or a noise-channel opcode recorded without its is_channel metadata"
 
 [[refusals]]
 entry_point = "power"

@@ -16,6 +16,7 @@ from typing import Any
 #:                          inverse of ``U2(phi, lbd)`` in this gate's angle convention.
 #: ``adjoint_u3_angles``    ``theta -> -theta``, ``phi -> -lbd`` and ``lbd -> -phi``,
 #:                          which is the inverse of ``U3(theta, phi, lbd)``.
+#: ``reverse_operands``     the opcode is its own inverse with the qubit order reversed.
 #: ``matrix_adjoint``       the declaration alone does not determine the inverse; the
 #:                          concrete matrix is required.
 #: ``not_applicable``       the opcode is not invertible (a noise channel).
@@ -28,6 +29,7 @@ ADJOINT_RULES: tuple[str, ...] = (
     "negate_parameters",
     "adjoint_u2_angles",
     "adjoint_u3_angles",
+    "reverse_operands",
     "matrix_adjoint",
     "not_applicable",
 )
@@ -88,6 +90,8 @@ POWER_RULES: tuple[str, ...] = (
 #: ``rzz_ladder``            ``RZZ`` as ``CX RZ CX``.
 #: ``rxx_ladder``            ``RXX`` as ``(H x H) RZZ (H x H)``.
 #: ``ryy_ladder``            ``RYY`` as ``(S H x S H) RZZ (S H x S H)^dagger``.
+#: ``iswap_ladder``          ``iSWAP`` as local ``S`` phases around ``SWAP CZ``;
+#:                           ``iSWAPdg`` uses the inverse local phases.
 #: ``not_available``         the opcode has no controlled form this IR can express.
 CONTROL_RULES: tuple[str, ...] = (
     "identity",
@@ -104,6 +108,7 @@ CONTROL_RULES: tuple[str, ...] = (
     "rzz_ladder",
     "rxx_ladder",
     "ryy_ladder",
+    "iswap_ladder",
     "not_available",
 )
 
@@ -448,6 +453,53 @@ _SCHEMAS = (
     _unitary("cz", 2, adjoint="self_inverse", control="diagonal_ladder"),
     _unitary("swap", 2, adjoint="self_inverse", control="swap_ladder"),
     _unitary(
+        "iswap",
+        2,
+        adjoint="iswapdg",
+        decomposition=("s", "swap", "cz"),
+        control="iswap_ladder",
+    ),
+    _unitary(
+        "iswapdg",
+        2,
+        adjoint="iswap",
+        decomposition=("sdg", "swap", "cz"),
+        control="iswap_ladder",
+    ),
+    _unitary(
+        "ch",
+        2,
+        adjoint="self_inverse",
+        decomposition=("s", "h", "t", "cx", "tdg", "h", "sdg"),
+        control="ry_conjugated_ladder",
+    ),
+    _unitary(
+        "csx",
+        2,
+        adjoint="csxdg",
+        decomposition=("h", "t", "cx", "tdg"),
+        control="x_conjugated_ladder",
+    ),
+    _unitary(
+        "csxdg",
+        2,
+        adjoint="csx",
+        decomposition=("h", "tdg", "cx", "t"),
+        control="x_conjugated_ladder",
+    ),
+    _unitary(
+        "dcx",
+        2,
+        adjoint="reverse_operands",
+        decomposition=("cx", "cx"),
+    ),
+    _unitary(
+        "ecr",
+        2,
+        adjoint="self_inverse",
+        decomposition=("s", "h", "cx", "x", "tdg"),
+    ),
+    _unitary(
         "crx",
         2,
         parameters=("theta",),
@@ -550,6 +602,9 @@ CONTROL_PARTNERS: Mapping[str, str] = MappingProxyType(
         "u1": "cphase",
         "swap": "cswap",
         "cx": "ccx",
+        "h": "ch",
+        "sx": "csx",
+        "sxdg": "csxdg",
     }
 )
 
@@ -651,7 +706,8 @@ def inverse_operator(
     """Return the opcode and parameters that invert one use of ``schema``.
 
     The inverse replaces one gate inside a larger product, so it is a single gate of
-    the same arity applied to the same qubits, never a decomposition.
+    the same arity, never a decomposition. The caller applies ``reverse_operands``
+    to the instruction qubit tuple for the one ordered gate whose inverse swaps operands.
 
     ``None`` means the schema's ``adjoint`` declaration does not determine an inverse
     on its own: ``matrix_adjoint`` needs the concrete matrix, and ``not_applicable``
@@ -672,6 +728,8 @@ def inverse_operator(
     """
 
     if schema.adjoint == "self_inverse":
+        return schema.opcode, dict(params)
+    if schema.adjoint == "reverse_operands":
         return schema.opcode, dict(params)
     if schema.adjoint == "negate_parameters":
         return schema.opcode, {

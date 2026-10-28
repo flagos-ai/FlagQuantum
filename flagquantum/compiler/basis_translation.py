@@ -162,6 +162,114 @@ def _swap_to_cx(instruction: Instruction) -> tuple[Instruction, ...]:
     )
 
 
+def _iswap_to_fixed_basis(instruction: Instruction) -> tuple[Instruction, ...]:
+    """``iSWAP = (S x S) SWAP CZ`` in the registered qubit order."""
+
+    left, right = instruction.wires
+    metadata = instruction.metadata
+    return (
+        _gate("cz", (left, right), metadata),
+        _gate("swap", (left, right), metadata),
+        _gate("s", (left,), metadata),
+        _gate("s", (right,), metadata),
+    )
+
+
+def _iswapdg_to_fixed_basis(instruction: Instruction) -> tuple[Instruction, ...]:
+    """``iSWAPdg = (Sdg x Sdg) SWAP CZ`` in the registered qubit order."""
+
+    left, right = instruction.wires
+    metadata = instruction.metadata
+    return (
+        _gate("cz", (left, right), metadata),
+        _gate("swap", (left, right), metadata),
+        _gate("sdg", (left,), metadata),
+        _gate("sdg", (right,), metadata),
+    )
+
+
+def _ch_to_fixed_basis(instruction: Instruction) -> tuple[Instruction, ...]:
+    """Controlled-H in the exact Clifford+T form used by Qiskit."""
+
+    control, target = instruction.wires
+    metadata = instruction.metadata
+    return (
+        _gate("s", (target,), metadata),
+        _gate("h", (target,), metadata),
+        _gate("t", (target,), metadata),
+        _gate("cx", (control, target), metadata),
+        _gate("tdg", (target,), metadata),
+        _gate("h", (target,), metadata),
+        _gate("sdg", (target,), metadata),
+    )
+
+
+def _csx_to_fixed_basis(instruction: Instruction) -> tuple[Instruction, ...]:
+    """Controlled-SX in an operator-exact Clifford+T form."""
+
+    control, target = instruction.wires
+    metadata = instruction.metadata
+    return (
+        _gate("h", (target,), metadata),
+        _gate("t", (target,), metadata),
+        _gate("cx", (control, target), metadata),
+        _gate("tdg", (target,), metadata),
+        _gate("cx", (control, target), metadata),
+        _gate("t", (control,), metadata),
+        _gate("h", (target,), metadata),
+    )
+
+
+def _csxdg_to_fixed_basis(instruction: Instruction) -> tuple[Instruction, ...]:
+    """Controlled-SXdg in an operator-exact Clifford+T form."""
+
+    control, target = instruction.wires
+    metadata = instruction.metadata
+    return (
+        _gate("h", (target,), metadata),
+        _gate("tdg", (target,), metadata),
+        _gate("cx", (control, target), metadata),
+        _gate("t", (target,), metadata),
+        _gate("cx", (control, target), metadata),
+        _gate("tdg", (control,), metadata),
+        _gate("h", (target,), metadata),
+    )
+
+
+def _dcx_to_fixed_basis(instruction: Instruction) -> tuple[Instruction, ...]:
+    """Double-CX in declared operand order."""
+
+    left, right = instruction.wires
+    metadata = instruction.metadata
+    return (
+        _gate("cx", (left, right), metadata),
+        _gate("cx", (right, left), metadata),
+    )
+
+
+def _ecr_to_fixed_basis(instruction: Instruction) -> tuple[Instruction, ...]:
+    """ECR with an explicit exact global-phase correction.
+
+    Qiskit's standard ``S, SX, CX, X`` form declares global phase ``7*pi/4``.
+    Appending ``X Tdg X Tdg`` contributes ``exp(-i*pi/4) I`` on the first
+    operand; the adjacent X pair cancels in the sequence below, keeping the
+    IR-level rewrite both operator-exact and compact.
+    """
+
+    left, right = instruction.wires
+    metadata = instruction.metadata
+    return (
+        _gate("s", (left,), metadata),
+        _gate("h", (right,), metadata),
+        _gate("s", (right,), metadata),
+        _gate("h", (right,), metadata),
+        _gate("cx", (left, right), metadata),
+        _gate("tdg", (left,), metadata),
+        _gate("x", (left,), metadata),
+        _gate("tdg", (left,), metadata),
+    )
+
+
 def _rzz_to_cx(instruction: Instruction) -> tuple[Instruction, ...]:
     """`RZZ(theta) = CX RZ(theta) CX`, rotating the target qubit."""
 
@@ -391,6 +499,13 @@ EQUIVALENCE_RULES: Mapping[str, tuple[EquivalenceRule, ...]] = MappingProxyType(
         "cz": (EquivalenceRule("cz", _cz_to_cx),),
         "cy": (EquivalenceRule("cy", _cy_to_cx),),
         "swap": (EquivalenceRule("swap", _swap_to_cx),),
+        "iswap": (EquivalenceRule("iswap", _iswap_to_fixed_basis),),
+        "iswapdg": (EquivalenceRule("iswapdg", _iswapdg_to_fixed_basis),),
+        "ch": (EquivalenceRule("ch", _ch_to_fixed_basis),),
+        "csx": (EquivalenceRule("csx", _csx_to_fixed_basis),),
+        "csxdg": (EquivalenceRule("csxdg", _csxdg_to_fixed_basis),),
+        "dcx": (EquivalenceRule("dcx", _dcx_to_fixed_basis),),
+        "ecr": (EquivalenceRule("ecr", _ecr_to_fixed_basis),),
         "rzz": (EquivalenceRule("rzz", _rzz_to_cx),),
         "crz": (EquivalenceRule("crz", _crz_to_cx),),
         "cphase": (EquivalenceRule("cphase", _cphase_to_cx),),

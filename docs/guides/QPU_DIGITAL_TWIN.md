@@ -318,6 +318,234 @@ The optional output is canonical private JSON. Loading it verifies its strict
 schema, nested series, all cross-observation invariants, and every derived
 metric; tampered summaries and destructive replacement are rejected.
 
+## Plan a bounded evidence refresh
+
+Select only from an application-owned circuit pool, with an explicit task and
+shot budget:
+
+```python
+import flagquantum as fq
+
+release = fq.twin.load_region_release("region-release.json")
+region_twin = fq.twin.load_region_twin("region-twin.json")
+calibration_history = fq.twin.load_calibration_history(
+    "calibration-history.json"
+)
+validation_history = fq.twin.load_region_validation_history(
+    "region-validation-history.json"
+)
+
+candidate_circuits = (
+    fq.Circuit(3).h(0).cx(0, 1).cx(1, 2),
+    fq.Circuit(3).x(2).cx(1, 2),
+    fq.Circuit(3).h(2).cx(0, 1),
+)
+plan = fq.twin.prepare_probe_refresh(
+    release,
+    candidate_circuits,
+    calibration_history=calibration_history,
+    validation_history=validation_history,
+    maximum_tasks=6,
+    shots=1024,
+)
+
+print(plan.selected_circuit_identities)
+print(plan.covered_directed_couplers)
+print(plan.unsupported_candidates)
+print(plan.coverage_gaps)
+print(plan.planned_task_count)
+
+suite = plan.prepare_suite(
+    region_twin,
+    candidate_circuits,
+    name="regional-refresh",
+)
+assert suite.planned_task_count == plan.planned_task_count
+```
+
+The release fixes the target and logical-to-physical mapping. Every candidate
+must therefore have the same width as `release.physical_qubits`. Structurally
+unsupported candidates are reported and never replaced. Two repetitions are
+frozen for each selection, so a task budget of six selects at most three
+circuits.
+
+Ranking prefers circuits missing from the exact release, then circuits missing
+from supplied validation history, overlap with the latest represented
+calibration drift, exercised directed couplers, and instruction count. Circuit
+identity breaks ties. These are deterministic evidence-gap facts, not proof of
+parameter identifiability, expected accuracy improvement, or causal drift.
+
+Planning and suite preparation are offline. The returned suite contains the
+existing frozen `TwinExperiment` objects but does not submit them. Provider
+construction, credentials, task submission, polling, retry, cancellation, and
+operator approval remain application responsibilities.
+
+## Check whether a probe design is identifiable
+
+Probe count is not an identifiability test. Freeze the circuit identities,
+physical mapping, represented local parameters, and explicit design matrix:
+
+```python
+import flagquantum as fq
+
+probe_circuits = (
+    fq.Circuit(2).cx(0, 1),
+    fq.Circuit(2).h(0).cx(0, 1),
+    fq.Circuit(2).h(1).cx(0, 1),
+)
+bank = fq.twin.prepare_probe_bank(
+    target="quafu:Shenglian",
+    physical_qubits=(20, 27),
+    probes=probe_circuits,
+    parameter_family="local_pauli_readout",
+)
+
+print(bank.identifiability_status)
+print(bank.parameter_names)
+print(bank.unidentified_parameters)
+print(bank.matrix_rank)
+```
+
+`identifiable` means this declared local design has full column rank.
+`underdetermined` names the parameters that cannot be separated and must not be
+estimated from this bank. Adding repeated or structurally equivalent probes
+does not manufacture rank.
+
+The first parameter family covers per-qubit readout bit-flip and single-qubit
+Pauli burdens plus a two-qubit Pauli burden for every exercised directed
+coupler. Its integer coefficients are structural operation-incidence terms;
+they are not fitted noise rates or a physical response Jacobian. Bank creation
+is offline and provides no submission, fitting, promotion, or routing authority.
+
+## Estimate bounded local parameters
+
+After distinct hardware tasks from the same frozen probes have passed
+`TwinExperiment.validate_result(...)`, estimate the declared local burdens
+without modifying the Twin:
+
+```python
+estimate = fq.twin.estimate_probe_parameters(
+    bank,
+    hardware_reports,
+    confidence_level=0.95,
+)
+
+print(estimate.parameter_values)
+print(estimate.confidence_intervals)
+print(estimate.identifiability_status)
+print(estimate.goodness_of_fit)
+```
+
+The executable synthetic example shows the complete offline workflow:
+
+```bash
+python examples/twin_parameter_estimation.py
+```
+
+Real `hardware_reports` must come from separate provider tasks validated
+against experiments prepared from this bank's exact target, ordered physical
+mapping, probes, and one calibration snapshot. Reused task identities,
+incomplete counts, a changed mapping, or an underdetermined bank fail closed.
+
+The estimates are bounded coefficients in the declared
+`local_pauli_readout` linear model. Confidence intervals propagate a
+simultaneous Bonferroni finite-shot TV bound through the frozen design matrix;
+they do not describe quantum-state amplitudes, state fidelity, arbitrary
+circuit accuracy, or model probability. `goodness_of_fit` is the descriptive
+score `max(0, 1 - row TV RMSE)`. Estimation grants no submission, Twin mutation,
+promotion, routing, or hardware-control authority.
+
+## Build a candidate from the bounded fit
+
+Candidate construction is a separate offline step:
+
+```python
+candidate = fq.twin.fit_candidate(
+    incumbent,
+    estimate,
+    captured_at="2026-08-15T10:30:00+08:00",
+)
+
+print(candidate.fit.parameter_estimate_identity)
+print(candidate.fit.fitted_parameters)
+print(candidate.fit.retained_parameters)
+fq.twin.dump_twin(candidate, "twin-candidate.json")
+```
+
+The candidate has a new snapshot identity and leaves the incumbent unchanged.
+Its provenance binds the incumbent snapshot, probe bank, complete estimate,
+fitted values and intervals, retained calibration fields, and unidentified
+names. The restricted TV burdens become symmetric readout flips and local
+depolarizing channels; unrepresentable values fail closed instead of being
+clipped.
+
+Run the complete synthetic estimate-to-candidate example with:
+
+```bash
+python examples/twin_candidate_fit.py
+```
+
+The resulting `TwinFittedCandidate` is accepted by existing candidate-suite
+and holdout APIs, but it has no execution or promotion authority. Prospective
+hardware validation remains a later explicit workflow.
+
+## Resume a complete evolution cycle
+
+Applications can record the prospective refresh sequence as small immutable
+states rather than copying the underlying evidence:
+
+```python
+cycle = fq.twin.prepare_evolution_cycle(
+    incumbent=incumbent,
+    freshness=freshness,
+    probe_plan=plan,
+)
+cycle = cycle.with_parameter_estimate(estimate)
+fq.twin.dump_evolution_cycle(cycle, "twin-evolution-estimated.json")
+
+# Resume later without collecting or submitting the same probes again.
+cycle = fq.twin.load_evolution_cycle("twin-evolution-estimated.json")
+cycle = cycle.with_candidate(candidate)
+cycle = cycle.with_holdout_evaluation(evaluation)
+
+print(cycle.stage)
+print(cycle.recommended_action)
+```
+
+The record binds each source artifact by deterministic identity and permits no
+skipped or repeated transition. `release_candidate` is recommendation-only;
+the explicit release API remains the sole release boundary. The cycle itself
+has no provider, task, retry, routing, notification, promotion, or hardware
+control operation.
+
+After review, record the operator's decision as a separate immutable fact:
+
+```python
+decision = fq.twin.record_evolution_decision(
+    cycle,
+    decision="retain_incumbent",
+    decided_at="2026-08-15T11:00:00+08:00",
+    decision_authority="calibration-operator",
+)
+fq.twin.dump_evolution_decision(decision, "twin-evolution-decision.json")
+
+print(decision.recommended_action)
+print(decision.decision)
+print(decision.followed_recommendation)
+```
+
+An operator may conservatively retain the incumbent or request more evidence
+even when the cycle recommends release. A `release_candidate` decision cannot
+override a closed evidence gate and must include a previously created
+`TwinRegionRelease` matching the cycle's candidate snapshot, target, and
+ordered mapping. Recording the decision still does not activate that release
+or authorize workload routing. `decision_authority` is an opaque application
+audit identifier; authentication and access control remain outside Twin.
+
+Run `python examples/twin_evolution_cycle.py` for a complete synthetic,
+offline example that persists, resumes, and records an explicit retain
+decision after parameter estimation.
+
 To incorporate one newly validated calibration, extend the saved history
 immutably and write a new versioned artifact:
 
@@ -1324,8 +1552,9 @@ The public `fq.twin` v1 API, `flagquantum.qpu_digital_twin.v1`,
 `flagquantum.twin_region_holdout_history.v1`, and
 `flagquantum.twin_region_holdout_evolution.v1`,
 `flagquantum.twin_region_candidate_holdout_study.v1`, and
-`flagquantum.twin_region_candidate_holdout_evaluation.v1` are frozen compatibility
-contracts.
+`flagquantum.twin_region_candidate_holdout_evaluation.v1`,
+`flagquantum.twin_evolution_cycle.v1`, and
+`flagquantum.twin_evolution_decision.v1` are frozen compatibility contracts.
 Compatible capabilities may be added, but existing v1 names, signatures,
 fields, status meanings, and serialized meanings will not change without a
 versioned replacement or the documented deprecation process.

@@ -35,7 +35,16 @@ def test_shared_rank_preserves_each_samples_cutoff(
         dtype=torch.float64,
     )
     matrix = torch.diag_embed(spectra).requires_grad_(requires_grad)
-    config = MPSConfig(cutoff=0.05, max_bond=max_bond)
+    # This cell characterizes the rule a truncated split applies to its retained
+    # subspace, which is an approximation of the derivative rather than the
+    # derivative (see tests/unit/test_mps_truncated_gradient_policy.py). Ask for
+    # it explicitly so the assertion below records an authorized rule instead of
+    # relying on a silent default.
+    config = MPSConfig(
+        cutoff=0.05,
+        max_bond=max_bond,
+        truncated_gradient="projected_stop_subspace",
+    )
     if bucketed:
         # Each bond chooses its own rank, while samples share a rank per bond.
         low_rank_bond = matrix[:1].expand_as(matrix)

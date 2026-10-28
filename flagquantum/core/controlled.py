@@ -55,6 +55,7 @@ from .operator_schema import (
     MAX_LADDER_LEVEL,
     OperatorSchema,
     control_ladder_level,
+    get_operator_schema,
 )
 
 __all__ = ["controlled_instructions"]
@@ -99,6 +100,9 @@ _LADDER_ANGLE: Mapping[str, float] = {
     "cy": _PI,
     "cz": _PI,
     "ccx": _PI,
+    "ch": _PI,
+    "csx": _PI / 2,
+    "csxdg": -_PI / 2,
 }
 
 
@@ -248,7 +252,40 @@ def _dispatch(
     if rule in {"rzz_ladder", "rxx_ladder", "ryy_ladder"}:
         _rotation_pair(rule, level, controls, target, params["theta"], out)
         return
+    if rule == "iswap_ladder":
+        _controlled_iswap(schema, controls, target, out)
+        return
     raise ValueError(f"opcode {schema.opcode!r} declares unknown control rule {rule!r}")
+
+
+def _controlled_iswap(
+    schema: OperatorSchema,
+    controls: tuple[int, ...],
+    target: int,
+    out: list[Instruction],
+) -> None:
+    """Control the exact local-phase decomposition of iSWAP or its adjoint."""
+
+    added_controls = controls[:-1]
+    left = controls[-1]
+    phase_opcode = "s" if schema.opcode == "iswap" else "sdg"
+    components = (
+        Instruction("cz", (left, target)),
+        Instruction("swap", (left, target)),
+        Instruction(phase_opcode, (left,)),
+        Instruction(phase_opcode, (target,)),
+    )
+    for component in components:
+        component_schema = get_operator_schema(component.name)
+        assert component_schema is not None
+        expansion = controlled_instructions(
+            component_schema,
+            component.params,
+            component.wires,
+            added_controls,
+        )
+        assert expansion is not None
+        out.extend(expansion)
 
 
 def _rotation_pair(

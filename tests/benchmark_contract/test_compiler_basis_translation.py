@@ -36,11 +36,11 @@ pytestmark = pytest.mark.benchmark_contract
 #: cannot pass as "still reachable". The four closed bases agree with Qiskit
 #: exactly; `ion-trap-rz-rx-rzz` is the recorded gap.
 _NAME_REACH = {
-    "ibm-rz-sx-cx": 18,
-    "ibm-heron-cz": 18,
-    "rotational": 18,
+    "ibm-rz-sx-cx": 25,
+    "ibm-heron-cz": 25,
+    "rotational": 25,
     "ion-trap-rz-rx-rzz": 8,
-    "clifford-t": 7,
+    "clifford-t": 10,
 }
 
 #: The same reach split by arity, so the three-wire entries cannot be counted as
@@ -48,11 +48,11 @@ _NAME_REACH = {
 #: fifteen-gate `ccx` statement stops one rule short of it -- a table gap in the
 #: `tdg` direction that is recorded rather than papered over.
 _ARITY_REACH = {
-    "ibm-rz-sx-cx": {"1": 5, "2": 11, "3": 2},
-    "ibm-heron-cz": {"1": 5, "2": 11, "3": 2},
-    "rotational": {"1": 5, "2": 11, "3": 2},
+    "ibm-rz-sx-cx": {"1": 5, "2": 18, "3": 2},
+    "ibm-heron-cz": {"1": 5, "2": 18, "3": 2},
+    "rotational": {"1": 5, "2": 18, "3": 2},
     "ion-trap-rz-rx-rzz": {"1": 5, "2": 3, "3": 0},
-    "clifford-t": {"1": 3, "2": 4, "3": 0},
+    "clifford-t": {"1": 3, "2": 7, "3": 0},
 }
 
 #: The basis at this table's two-name entangler sink, and why it is *the* pinned
@@ -86,8 +86,8 @@ def test_the_table_is_the_size_it_claims_and_measured_entry_by_entry(
     assert payload["table_opcode_count"] == len(EQUIVALENCE_RULES)
     assert payload["table_opcodes"] == sorted(EQUIVALENCE_RULES)
     assert {row["opcode"] for row in payload["rules"]} == set(TABLE_OPCODES)
-    assert payload["table_opcode_count"] == 18
-    assert payload["exact_rule_count"] == 17
+    assert payload["table_opcode_count"] == 25
+    assert payload["exact_rule_count"] == 24
     assert payload["phase_carrying_rules"] == ["cphase"]
     assert set(_PHASE_CARRYING_RULES) == {"cphase"}
 
@@ -281,7 +281,7 @@ def test_a_basis_without_cx_or_cz_reaches_only_what_needs_no_entangler_sink(
     assert named <= {"cx", "cz"}, named
 
 
-def test_the_qiskit_anchor_reports_agreement_and_the_one_disagreement(
+def test_the_qiskit_anchor_reports_directional_disagreements(
     payload: dict,
 ) -> None:
     """The sink is pinned; the installed library's own share is attributed.
@@ -309,7 +309,10 @@ def test_the_qiskit_anchor_reports_agreement_and_the_one_disagreement(
     assert set(anchor["sink_gap_bases"]) <= set(anchor["disagreements"])
     rows = {row["label"]: row for row in anchor["rows"]}
     assert rows[_RECORDED_GAP]["count_agrees"] is False
-    assert rows[_RECORDED_GAP]["reached_count"] == len(TABLE_OPCODES)
+    assert (
+        rows[_RECORDED_GAP]["reached_count"] > rows[_RECORDED_GAP]["port_reached_count"]
+    )
+    assert rows[_RECORDED_GAP]["qiskit_only"], rows[_RECORDED_GAP]
     # The mechanism is measured, not asserted: Qiskit reaches the gap basis by
     # writing angles the source never carried, and this table may not.
     gap = rows[_RECORDED_GAP]["introduced_angles"]
@@ -317,19 +320,22 @@ def test_the_qiskit_anchor_reports_agreement_and_the_one_disagreement(
     flat = sorted({value for values in gap.values() for value in values})
     assert any(abs(value - 1.5707963267948966) < 1e-9 for value in flat), flat
     assert rows[_RECORDED_GAP]["introduced_angle_opcode_count"] >= 8
-    # Beyond the sink, the disagreement has to be this table refusing a name the
-    # basis cannot express. That is what makes it a comparison rather than two
-    # ports measuring different quantities, and it holds on every lane.
-    port_multi_controlled = {
-        row["label"]: row for row in payload["multi_controlled_name_reach"]
-    }
+    # Beyond the sink, either library may lead: installed Qiskit versions can
+    # gain identities independently, and this table now carries exact iSWAP
+    # identities that some standard Qiskit equivalence libraries do not. Every
+    # difference must therefore name both its direction and the corresponding
+    # refusal instead of assuming one fixed direction.
+    port_rows = {row["label"]: row for row in payload["name_reach"]}
     beyond = sorted(set(anchor["disagreements"]) - set(anchor["sink_gap_bases"]))
     for label in beyond:
-        assert rows[label]["count_agrees"] is False, label
-        refusals = port_multi_controlled[label]["refused"]
-        assert refusals, (label, refusals)
-        for error in refusals.values():
+        row = rows[label]
+        assert row["opcode_agrees"] is False, label
+        assert row["qiskit_only"] or row["port_only"], row
+        for opcode in row["qiskit_only"]:
+            error = port_rows[label]["refused"][opcode]
             assert "requires unsupported native gate" in error, (label, error)
+        for opcode in row["port_only"]:
+            assert opcode in row["refused"], (label, opcode, row["refused"])
 
 
 def test_the_qiskit_anchor_agrees_on_the_multi_controlled_entangler_counts(

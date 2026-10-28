@@ -54,6 +54,7 @@ PACKAGE_ROOT_FILES = {
     "errors.py",
     "gradients.py",
     "models.py",
+    "py.typed",
     "training.py",
     "version.py",
 }

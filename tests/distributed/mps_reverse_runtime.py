@@ -112,7 +112,14 @@ def main() -> None:
         assert approximate_summary["discarded_weight"] > 0
         if rank == 0:
             local_theta = torch.tensor(0.41, device=device, requires_grad=True)
-            local = run_mps(workload(world, local_theta), max_bond=1)
+            # The reference below is the truncated rule this leg compares the
+            # distributed approximate policy against, so it asks for that rule
+            # explicitly rather than relying on a silent default.
+            local = run_mps(
+                workload(world, local_theta),
+                max_bond=1,
+                truncated_gradient="projected_stop_subspace",
+            )
             local_loss = local.expectation_ps(z=wires).mean()
             local_loss.backward()
             torch.testing.assert_close(

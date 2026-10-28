@@ -159,7 +159,9 @@ _QISKIT_DIAGONAL = frozenset(
 )
 
 
-def _circuit(instructions: tuple[Instruction, ...], width: int = _REGISTER_WIDTH) -> CircuitIR:
+def _circuit(
+    instructions: tuple[Instruction, ...], width: int = _REGISTER_WIDTH
+) -> CircuitIR:
     return CircuitIR(width, instructions, dtype=_DTYPE)
 
 
@@ -225,7 +227,9 @@ def _signature(ir: CircuitIR) -> tuple[Any, ...]:
     )
 
 
-def _matrix(name: str, wires: tuple[int, ...], params: dict[str, float]) -> torch.Tensor:
+def _matrix(
+    name: str, wires: tuple[int, ...], params: dict[str, float]
+) -> torch.Tensor:
     from flagquantum.simulation.gate_matrix import gate_matrix
 
     width = 2 ** len(wires)
@@ -432,7 +436,10 @@ def _exact_outcome_distribution(ir: CircuitIR) -> dict[tuple[int, ...], float]:
     for instruction in ir.instructions:
         if instruction.name == "measure":
             ordered.append(
-                (instruction.wires[0], int(instruction.metadata.get("classical_bit", 0)))
+                (
+                    instruction.wires[0],
+                    int(instruction.metadata.get("classical_bit", 0)),
+                )
             )
     ordered.sort(key=lambda pair: pair[1])
 
@@ -440,9 +447,7 @@ def _exact_outcome_distribution(ir: CircuitIR) -> dict[tuple[int, ...], float]:
     distribution: dict[tuple[int, ...], float] = {}
     for index, probability in enumerate(probabilities):
         # Wire 0 is the most significant bit of the basis index.
-        key = tuple(
-            (index >> (width - 1 - wire)) & 1 for wire, _ in ordered
-        )
+        key = tuple((index >> (width - 1 - wire)) & 1 for wire, _ in ordered)
         distribution[key] = distribution.get(key, 0.0) + probability
     return dict(sorted(distribution.items()))
 
@@ -513,13 +518,13 @@ def _shape_programs() -> list[tuple[str, CircuitIR, str, int]]:
     whether the removal would have been invisible.
     """
 
-    candidates = [
-        (name, (0,)) for name in _SINGLE_QUBIT_UNITARIES
-    ] + [(name, (0, 1)) for name in _TWO_WIRE_UNITARIES]
+    candidates = [(name, (0,)) for name in _SINGLE_QUBIT_UNITARIES] + [
+        (name, (0, 1)) for name in _TWO_WIRE_UNITARIES
+    ]
 
     rows: list[tuple[str, CircuitIR, str, int]] = []
     for name, wires in candidates:
-        params = {key: _ANGLE for key in _params_for(name, _GENERIC)}
+        params = dict.fromkeys(_params_for(name, _GENERIC), _ANGLE)
         candidate = Instruction(name, wires, params=params)
         index = len(wires) and (3 if len(wires) == 2 else 1)
         assert index, name
@@ -635,12 +640,17 @@ def _qiskit_builder(name: str, params: dict[str, float]) -> Any:
     """
 
     from qiskit.circuit.library import (  # type: ignore[import-not-found]
+        CHGate,
         CPhaseGate,
+        CSXGate,
+        DCXGate,
+        ECRGate,
         IGate,
         PhaseGate,
         U1Gate,
         U2Gate,
         U3Gate,
+        iSwapGate,
     )
 
     single = {
@@ -668,8 +678,15 @@ def _qiskit_builder(name: str, params: dict[str, float]) -> Any:
         ),
     }
     two = {
+        "ch": lambda: CHGate(),
+        "csx": lambda: CSXGate(),
+        "csxdg": lambda: CSXGate().inverse(),
+        "dcx": lambda: DCXGate(),
+        "ecr": lambda: ECRGate(),
         "cphase": lambda: CPhaseGate(params.get("theta", 0.0)),
         "cu1": lambda: U1Gate(params.get("theta", 0.0)),
+        "iswap": lambda: iSwapGate(),
+        "iswapdg": lambda: iSwapGate().inverse(),
     }
     if name in two:
         return two[name]()
@@ -689,14 +706,19 @@ def _to_qiskit(ir: CircuitIR) -> Any:
         targets = [qubits[index] for index in instruction.wires]
         if instruction.name == "measure":
             classical = int(instruction.metadata.get("classical_bit", 0))
-            if "conditions" in instruction.metadata or "condition_clauses" in instruction.metadata:
+            if (
+                "conditions" in instruction.metadata
+                or "condition_clauses" in instruction.metadata
+            ):
                 # Qiskit expresses a conditional measurement as an `IfElseOp`, which its
                 # pass does not look through. Building it is the honest anchor.
                 from qiskit.circuit import IfElseOp
 
                 body = QuantumCircuit(qubits, bits)
                 body.measure(targets[0], bits[classical])
-                condition = next(iter(instruction.metadata.get("conditions", ((0, 1),))))
+                condition = next(
+                    iter(instruction.metadata.get("conditions", ((0, 1),)))
+                )
                 # The body is built over this circuit's own registers, so the operation
                 # spans all of them and `append` must be handed all of them; passing the
                 # operand qubits alone is rejected as a width mismatch.
@@ -846,9 +868,9 @@ def shape_table() -> dict[str, Any]:
         assert instruction.name == candidate, (label, instruction.name)
         # The candidate's opcode appears exactly once, so a count difference is
         # attributable and the truth column is about this instruction and no other.
-        assert sum(
-            1 for item in program.instructions if item.name == candidate
-        ) == 1, label
+        assert (
+            sum(1 for item in program.instructions if item.name == candidate) == 1
+        ), label
 
         # Every other gate in the program is non-diagonal, so the pass can only be
         # removing the candidate. Without this the length difference would silently
@@ -1035,16 +1057,33 @@ def execution_control() -> dict[str, Any]:
         return (_gate("h", (0,)), _gate("cx", (0, 1)))
 
     tolerated = _worst_distribution_difference(
-        _exact_outcome_distribution(_circuit((*bell(), _gate("rzz", (0, 1), theta=_ANGLE), _measure(0, 0), _measure(1, 1)))),
-        _exact_outcome_distribution(_circuit((*bell(), _measure(0, 0), _measure(1, 1)))),
+        _exact_outcome_distribution(
+            _circuit(
+                (
+                    *bell(),
+                    _gate("rzz", (0, 1), theta=_ANGLE),
+                    _measure(0, 0),
+                    _measure(1, 1),
+                )
+            )
+        ),
+        _exact_outcome_distribution(
+            _circuit((*bell(), _measure(0, 0), _measure(1, 1)))
+        ),
     )
     caught = _worst_distribution_difference(
-        _exact_outcome_distribution(_circuit((_gate("h", (0,)), _gate("ry", (0,), theta=1.8), _measure(0, 0)))),
+        _exact_outcome_distribution(
+            _circuit((_gate("h", (0,)), _gate("ry", (0,), theta=1.8), _measure(0, 0)))
+        ),
         _exact_outcome_distribution(_circuit((_gate("h", (0,)), _measure(0, 0)))),
     )
     entangled_caught = _worst_distribution_difference(
-        _exact_outcome_distribution(_circuit((*bell(), _measure(0, 0), _measure(1, 1)))),
-        _exact_outcome_distribution(_circuit((_gate("h", (0,)), _measure(0, 0), _measure(1, 1)))),
+        _exact_outcome_distribution(
+            _circuit((*bell(), _measure(0, 0), _measure(1, 1)))
+        ),
+        _exact_outcome_distribution(
+            _circuit((_gate("h", (0,)), _measure(0, 0), _measure(1, 1)))
+        ),
     )
     return {
         "deleting_a_diagonal_gate_that_commutes_with_the_measurement": tolerated,
@@ -1130,7 +1169,11 @@ def pipeline_delta() -> list[dict[str, Any]]:
 def _population_terminal(seed: random.Random) -> CircuitIR:
     wires = [seed.randrange(_REGISTER_WIDTH) for _ in range(3)]
     opcode = seed.choice(("z", "s", "t", "sdg", "tdg", "rz", "phase", "u1", "i"))
-    params = {"theta": seed.choice((0.0, 0.3, -0.7))} if opcode in {"rz", "phase", "u1"} else {}
+    params = (
+        {"theta": seed.choice((0.0, 0.3, -0.7))}
+        if opcode in {"rz", "phase", "u1"}
+        else {}
+    )
     return _circuit(
         (
             *(_gate("h", (wire,)) for wire in wires),
@@ -1143,7 +1186,9 @@ def _population_terminal(seed: random.Random) -> CircuitIR:
 def _population_behind_a_hadamard(seed: random.Random) -> CircuitIR:
     wire = seed.randrange(_REGISTER_WIDTH)
     opcode = seed.choice(("z", "t", "rz", "phase", "u1", "s"))
-    params = {"theta": seed.choice((0.0, 0.4))} if opcode in {"rz", "phase", "u1"} else {}
+    params = (
+        {"theta": seed.choice((0.0, 0.4))} if opcode in {"rz", "phase", "u1"} else {}
+    )
     return _circuit(
         (
             _gate("h", (wire,)),
@@ -1160,7 +1205,11 @@ def _population_zero_polar(seed: random.Random) -> CircuitIR:
     params = {key: seed.choice((0.3, -0.9)) for key in schema.parameters}
     params["theta"] = 0.0
     return _circuit(
-        (_gate("h", (wire,)), Instruction(opcode, (wire,), params=params), _measure(wire))
+        (
+            _gate("h", (wire,)),
+            Instruction(opcode, (wire,), params=params),
+            _measure(wire),
+        )
     )
 
 
@@ -1215,7 +1264,9 @@ def _population_mixed_with_mid_circuit_measures(seed: random.Random) -> CircuitI
     return _mixed_instructions(seed, mid_circuit_measures=True)
 
 
-def _mixed_instructions(seed: random.Random, *, mid_circuit_measures: bool) -> CircuitIR:
+def _mixed_instructions(
+    seed: random.Random, *, mid_circuit_measures: bool
+) -> CircuitIR:
     instructions: list[Instruction] = []
     written: list[int] = []
     for _ in range(seed.randint(2, 14)):

@@ -65,6 +65,11 @@ These examples do not use that alias:
   explicit presence and finite-Fock instruments through the CPU Runtime API.
 - [`terminal_instrument_reference.py`](terminal_instrument_reference.py) uses
   existing SuperOperator maps and illustrative Torch draws for proposal 083.
+- [`absorptive_photon_counting.py`](absorptive_photon_counting.py) uses existing
+  Lindblad evolution, square vacuum-reset Kraus branches and terminal sampling
+  for a finite absorptive counting reference. Run
+  `python -m examples.absorptive_photon_counting`; it retains measured-mode vacuum
+  coordinates and makes no detector-event or hardware claim.
 - [`boson_interference.py`](boson_interference.py) — it uses the existing
   `flagquantum.lindblad` namespace and boson algebra for two-photon interference
   and loss with explicit mode truncations. Run `python -m examples.boson_interference`.
@@ -166,6 +171,10 @@ These examples do not use that alias:
   across five certified concrete decoders. Requires the PyMatching extra; this
   operation retains correction fields and is separate from logical-only Tensor
   batch predictions. It makes no speed claim.
+- [`qec/memory_experiment.py`](qec/memory_experiment.py) composes the approved
+  fixed-shot experiment through its canonical QEC execution import. It uses one
+  original source and exact final partial batches with five default decoders;
+  install the Stim and PyMatching extras. Reports counts without a speed claim.
 - [`qec/circuit_noise_dem.py`](qec/circuit_noise_dem.py) builds and samples a
   distance-five circuit-location surface-code DEM without a dense statevector
   or optional SDK; the physical circuit has 49 qubits.

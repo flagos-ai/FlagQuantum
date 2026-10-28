@@ -209,7 +209,12 @@ def _state(program: CircuitIR) -> torch.Tensor:
 def _is_inserted_swap(instruction: Instruction) -> bool:
     """Return whether the router inserted this SWAP rather than the program."""
 
-    return instruction.metadata.get("routing_phase") is not None
+    # Post-routing synthesis may preserve provenance on a non-SWAP replacement;
+    # only a surviving SWAP still changes the replayed logical layout.
+    return (
+        instruction.name == "swap"
+        and instruction.metadata.get("routing_phase") is not None
+    )
 
 
 def _emitted_source_indices(routed: CircuitIR) -> list[int | None]:

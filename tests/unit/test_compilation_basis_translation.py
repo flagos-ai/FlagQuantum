@@ -210,7 +210,7 @@ def _legalize(program: CircuitIR, *opcodes: str):
 def test_the_table_covers_every_opcode_it_claims_and_no_non_unitary_one() -> None:
     # Non-vacuity: the checks below iterate the table, so it has to be the size
     # it claims, and a channel must not have crept into it.
-    assert len(EQUIVALENCE_RULES) == 18
+    assert len(EQUIVALENCE_RULES) == 25
     for opcode, rules in EQUIVALENCE_RULES.items():
         assert rules, opcode
         schema = OPERATOR_SCHEMAS[opcode]
@@ -226,7 +226,7 @@ def test_the_table_covers_every_opcode_it_claims_and_no_non_unitary_one() -> Non
 def test_every_rule_reproduces_its_source_through_the_runtime() -> None:
     """The gate matrices are the only authority a rule can be checked against.
 
-    Seventeen of the eighteen entries are exact and `cphase` is not, which is
+    Nineteen of the twenty entries are exact and `cphase` is not, which is
     asserted in both directions: a rule that started carrying a phase fails the
     exact branch, and `cphase` losing its phase fails the inexact branch. The two
     arity-3 entries are covered here like any other, which is the point of
@@ -235,7 +235,7 @@ def test_every_rule_reproduces_its_source_through_the_runtime() -> None:
 
     exact = sorted(set(EQUIVALENCE_RULES) - _PHASE_CARRYING_RULES)
     # Non-vacuity: both branches below have to have something in them.
-    assert len(exact) == 17
+    assert len(exact) == 24
     assert len(_PHASE_CARRYING_RULES) == 1
     assert exact == sorted(set(EQUIVALENCE_RULES) - {"cphase"})
     for opcode in sorted(EQUIVALENCE_RULES):
@@ -425,11 +425,11 @@ def test_every_declared_two_qubit_unitary_has_a_rule_or_is_named_native() -> Non
     A claim that a target reaches the group is only meaningful if the group is
     every declared two-qubit unitary, so the size is asserted rather than
     assumed, and each member is checked to be either native or carried by a rule.
-    The table covers all eleven, `cx` included: a `cz` basis needs the `cx` rule
+    The table covers all thirteen, `cx` included: a `cz` basis needs the `cx` rule
     even though a `cx` basis does not.
     """
 
-    assert len(_TWO_QUBIT_UNITARIES) == 11
+    assert len(_TWO_QUBIT_UNITARIES) == 18
     assert set(EQUIVALENCE_RULES) >= set(_TWO_QUBIT_UNITARIES)
     can_run = _can_run("rz", "sx", "cx")
     for name in _TWO_QUBIT_UNITARIES:

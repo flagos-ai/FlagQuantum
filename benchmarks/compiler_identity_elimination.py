@@ -353,7 +353,7 @@ def classification_census() -> dict[str, Any]:
     are counted separately from the two-wire ones because only the first kind is
     decided by the new predicate.
 
-    The grid is `31 opcodes * 5 angle points`, and the points only enter through an
+    The grid is `33 opcodes * 5 angle points`, and the points only enter through an
     opcode's declared parameters: the 18 single-qubit opcodes split into 7 that carry a
     polar angle, `u2`, and 10 with no parameter at all, and the two-wire opcodes are
     mostly parameter-free. So a row whose opcode has no parameter is the same program at
@@ -1377,6 +1377,9 @@ def _to_qiskit(name: str, wires: tuple[int, ...], params: dict[str, float]) -> A
         "u1": library.PhaseGate,
         "u2": library.U2Gate,
         "u3": library.U3Gate,
+        "ch": library.CHGate,
+        "csx": library.CSXGate,
+        "csxdg": lambda: library.CSXGate().inverse(),
         "cx": library.CXGate,
         "cy": library.CYGate,
         "cz": library.CZGate,
@@ -1388,6 +1391,10 @@ def _to_qiskit(name: str, wires: tuple[int, ...], params: dict[str, float]) -> A
         "ryy": library.RYYGate,
         "rzz": library.RZZGate,
         "cphase": library.CPhaseGate,
+        "dcx": library.DCXGate,
+        "ecr": library.ECRGate,
+        "iswap": library.iSwapGate,
+        "iswapdg": lambda: library.iSwapGate().inverse(),
         "ccx": library.CCXGate,
         "cswap": library.CSwapGate,
     }

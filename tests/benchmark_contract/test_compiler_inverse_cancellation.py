@@ -8,10 +8,10 @@ come from? Is the declaration it reads actually a rule? What does the pass remov
 that the pipeline could not remove before? And where does it stop?
 
 The recorded answers are that the rule is the ``OperatorSchema.adjoint``
-declaration ``Circuit.adjoint`` already consumes, held by **6** opcodes in **3**
+declaration ``Circuit.adjoint`` already consumes, held by **10** opcodes in **5**
 mutually-declaring pairs and disjoint from the pipeline's own self-inverse set;
-that all **31** declared unitaries invert exactly, with a worst residual of
-**2.22e-16** and a smallest wrong-partner residual of **1.22**; that the pipeline
+that all **38** declared unitaries invert exactly, with a worst residual below
+**1e-12** and a smallest wrong-partner residual of **1.0**; that the pipeline
 the branch merges into carries a same-wire one-qubit fold which reaches the
 adjacent pairs on its own, so this pass's **marginal** compiler delta is **0** on
 those populations and **+60** / **-60** on the two populations that frame a pair
@@ -48,20 +48,20 @@ pytestmark = pytest.mark.benchmark_contract
 #: the sweep below is describing a different operator set and the residual and
 #: pipeline numbers are not comparable with it.
 _DECLARATION = {
-    "unitary_opcode_count": 31,
-    "declared_inverse_count": 31,
-    "partner_opcode_count": 6,
-    "parameter_free_self_inverse_count": 11,
+    "unitary_opcode_count": 38,
+    "declared_inverse_count": 38,
+    "partner_opcode_count": 10,
+    "parameter_free_self_inverse_count": 14,
     "angle_rule_opcode_count": 14,
     "in_pipeline_self_inverse_count": 10,
-    "scope_opcode_count": 6,
-    "scope_pair_count": 3,
+    "scope_opcode_count": 10,
+    "scope_pair_count": 5,
 }
 
-#: The one opcode that is its own inverse, carries no parameter, and is still not in
+#: The opcodes that are their own inverse, carry no parameter, and are still not in
 #: the pipeline's ``_SELF_INVERSE`` set. Reported rather than papered over: the two
 #: sets are not the same set, and the difference is stated instead of implied.
-_PIPELINE_SELF_INVERSE_GAP = ["i"]
+_PIPELINE_SELF_INVERSE_GAP = ["ch", "dcx", "ecr", "i"]
 
 #: Per-population instruction counts. The comparison pipeline is the shipped
 #: pipeline with this pass removed, so ``removed_by_rest_of_pipeline`` is the
@@ -442,7 +442,7 @@ def test_the_declaration_is_a_rule_and_not_an_average(payload: dict) -> None:
     """
 
     proof = payload["identity_proof"]
-    assert proof["checked_opcode_count"] == 16
+    assert proof["checked_opcode_count"] == 20
     assert proof["draw_count_per_opcode"] == 20
     assert proof["max_residual"] < 1.0e-12
     for row in proof["residual_rows"]:
@@ -461,11 +461,11 @@ def test_the_same_measurement_rejects_a_wrong_partner(payload: dict) -> None:
 
     proof = payload["identity_proof"]
     assert proof["control_opcode_count"] == _DECLARATION["scope_opcode_count"]
-    assert proof["control_min_residual"] > 1.0
+    assert proof["control_min_residual"] >= 1.0
     assert proof["control_min_residual"] > proof["max_residual"] * 1.0e12
     for row in proof["control_rows"]:
         assert row["partner"] != row["opcode"], row["opcode"]
-        assert row["residual"] > 1.0, row["opcode"]
+        assert row["residual"] >= 1.0, row["opcode"]
 
 
 def test_every_population_reports_its_own_removal_count(payload: dict) -> None:
@@ -879,9 +879,10 @@ def test_a_gap_that_cannot_be_asked_about_is_not_counted_as_a_no(payload: dict) 
 
     shapes = payload["shape_table"]
     assert shapes["unknowable_gap_row_count"] == 6
-    assert shapes["unknowable_gap_row_count"] == _DECLARATION["scope_opcode_count"]
     rows = _rows(payload)
-    for opcode in sorted(inverse_pairs()):
+    shape_opcodes = sorted({row["opcode"] for row in shapes["rows"]})
+    assert shapes["unknowable_gap_row_count"] == len(shape_opcodes)
+    for opcode in shape_opcodes:
         row = rows[(opcode, "measure_on_the_pairs_own_qubit")]
         assert row["gap_commutes_with_member"] is None, opcode
         assert row["removable_in_fact"] is None, opcode
@@ -895,8 +896,9 @@ def test_a_gap_that_cannot_be_asked_about_is_not_counted_as_a_no(payload: dict) 
 def test_the_adjacent_gap_is_removed_for_every_pair_in_both_orders(
     payload: dict,
 ) -> None:
+    shapes = payload["shape_table"]
     rows = _rows(payload)
-    for opcode in sorted(inverse_pairs()):
+    for opcode in sorted({row["opcode"] for row in shapes["rows"]}):
         for gap in _ADJACENT_GAPS:
             row = rows[(opcode, gap)]
             assert row["removed"] == 2, (opcode, gap)

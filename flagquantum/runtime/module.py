@@ -37,6 +37,8 @@ from .result_adapters import LiveRuntimeSummary
 
 if TYPE_CHECKING:
     from ..algorithms import Hamiltonian
+    from ..simulation.mps.state import MPSState
+    from ..simulation.tensor_network.state import TensorNetworkState
     from .executors.jax.kernel import JAXQuantumKernel
     from .executors.mps.production import (
         MPSAcceptanceGates,
@@ -387,12 +389,59 @@ class Module(torch.nn.Module):
         if len(dynamic_values) != len(self._builder_slots):
             raise ExecutionError("compiled builder parameter slot count changed")
         self._builder_bindings.bind(dynamic_values)
+        if not self.policy.correctness_debug:
+            # `correctness_debug` owns non-finite diagnosis and reports it as
+            # `NonFiniteTrainingError` after the run, covering the value and the
+            # gradients as well as the parameters. Refusing here instead would
+            # take that documented category away from the policy that exists to
+            # produce it, without catching anything the policy misses.
+            self._refuse_non_finite_bound_parameters(self._builder_bound_circuit)
         # ``Circuit.state`` is the only value-dependent cache on this reusable
         # container. Instructions and their parameter maps stay immutable.
         self._builder_bound_circuit._invalidate_execution_cache(
             instructions_changed=False
         )
         return self._builder_bound_circuit
+
+    @staticmethod
+    def _refuse_non_finite_bound_parameters(circuit: Circuit) -> None:
+        """Apply the canonical angle domain to the values this call just bound.
+
+        A compiled builder is traced rather than executed, so its gates are
+        constructed from tracers and :func:`flagquantum.core.ir._normalize_angle`
+        defers the magnitude check: a tracer has no value yet. The values arrive
+        here, and without this the program completes with ``tensor([nan])`` while
+        the same circuit built directly refuses with ``IRValidationError``.
+
+        The type and dtype rules are static, so they already ran at trace time and
+        only the magnitude was deferred. This therefore asks one question -- is
+        each bound value finite -- in the cheapest form the value allows: a
+        scalar becomes a Python float, a batched angle asks its own tensor.
+        Grouping every value into one tensor first was measured slower than
+        either, because the grouping costs more than the check.
+
+        Anything that is not a real tensor goes through the canonical rule
+        unchanged, and every refusal is raised by that rule, so the domain and
+        the error contract stay Core's rather than becoming a second finite check
+        per simulator.
+        """
+
+        from math import isfinite
+
+        for instruction in circuit._instructions:
+            for parameter, value in instruction.params.items():
+                if isinstance(value, torch.Tensor) and value.is_floating_point():
+                    detached = value.detach()
+                    finite = (
+                        isfinite(float(detached))
+                        if detached.numel() == 1
+                        else bool(detached.isfinite().all())
+                    )
+                    if finite:
+                        continue
+                from ..core.ir import _normalize_angle
+
+                _normalize_angle(value, opcode=instruction.name, parameter=parameter)
 
     def _compile_builder_program(
         self,
@@ -930,7 +979,7 @@ class Module(torch.nn.Module):
                     **program_runtime,
                     **getattr(circuit, "_last_statevector_runtime", {}),
                 }
-                values = circuit.expectation_z(qubits)
+                observed: Circuit | MPSState | TensorNetworkState = circuit
                 executor = "pytorch_native_module_v1"
             elif self.policy.mode == "mps":
                 from ..simulation.mps.entrypoints import run_mps
@@ -941,8 +990,8 @@ class Module(torch.nn.Module):
                     max_bond=None,
                     cutoff=0.0,
                 )
-                values = backend_state.expectation_z(qubits)
                 program_runtime = {**program_runtime, **backend_state.summary()}
+                observed = backend_state
                 executor = "pytorch_native_mps"
             elif self.policy.mode == "tensor_network":
                 from ..simulation.tensor_network.entrypoints import run_tensor_network
@@ -951,29 +1000,31 @@ class Module(torch.nn.Module):
                 tensor_network_state = run_tensor_network(
                     circuit, dense_observable_qubits=12
                 )
-                values = tensor_network_state.expectation_z(qubits)
+                observed = tensor_network_state
                 executor = "pytorch_native_tensor_network"
             else:
                 raise ExecutionError(f"unhandled fq.Module mode {self.policy.mode!r}")
             if self.policy.observable == "hamiltonian":
-                if self.policy.mode not in {"statevector", "mps"}:
-                    raise CapabilityError(
-                        f"{self.policy.mode} Module does not yet support Hamiltonian "
-                        "observables without explicit term execution"
-                    )
                 if self.hamiltonian is None:
                     raise ValidationError(
                         "hamiltonian observable requires a Hamiltonian"
                     )
-                value = self.hamiltonian.expectation(
-                    circuit if self.policy.mode == "statevector" else backend_state
-                )
+                value = self.hamiltonian.expectation(observed)
             else:
+                values = observed.expectation_z(qubits)
                 value = (
                     values.sum(dim=-1)
                     if self.policy.observable == "z_sum"
                     else values if len(qubits) > 1 else values[..., 0]
                 )
+            if self.policy.mode == "tensor_network":
+                # Snapshot after the observable runs, so the recorded execution
+                # mode and materialization flag describe the contraction that
+                # actually answered this call.
+                program_runtime = {
+                    **program_runtime,
+                    **tensor_network_state.summary(),
+                }
             runtime = {
                 "executor": executor,
                 "backend": selected_backend,
@@ -1145,42 +1196,37 @@ class Module(torch.nn.Module):
                 )
             self._last_ir = detached_ir_snapshot(ensure_circuit_ir(circuit))
             qubits = self.policy.observable_qubits or (0,)
-            backend_state: Any = None
+            # A Hamiltonian energy is evaluated on the simulated object, so the
+            # Z readout only runs for the observables that are defined by it.
+            observed: Circuit | MPSState | TensorNetworkState
             if self.policy.mode == "statevector":
                 circuit.state(refresh=True)
-                values = circuit.expectation_z(qubits)
+                observed = circuit
             elif self.policy.mode == "mps":
                 from ..simulation.mps.entrypoints import run_mps
 
-                backend_state = run_mps(
+                observed = run_mps(
                     circuit,
                     max_bond=None,
                     cutoff=0.0,
                 )
-                values = backend_state.expectation_z(qubits)
             else:
                 from ..simulation.tensor_network.entrypoints import run_tensor_network
 
-                backend_state = run_tensor_network(circuit, dense_observable_qubits=12)
-                values = backend_state.expectation_z(qubits)
+                observed = run_tensor_network(circuit, dense_observable_qubits=12)
 
             if self.policy.observable == "hamiltonian":
-                if self.policy.mode == "tensor_network":
-                    raise CapabilityError(
-                        "tensor_network Module does not yet support Hamiltonian "
-                        "observables without explicit term execution"
-                    )
                 if self.hamiltonian is None:
                     raise ValidationError(
                         "hamiltonian observable requires a Hamiltonian"
                     )
-                value = self.hamiltonian.expectation(
-                    circuit if self.policy.mode == "statevector" else backend_state
-                )
-            elif self.policy.observable == "z_sum":
-                value = values.sum(dim=-1)
+                value = self.hamiltonian.expectation(observed)
             else:
-                value = values if len(qubits) > 1 else values[..., 0]
+                values = observed.expectation_z(qubits)
+                if self.policy.observable == "z_sum":
+                    value = values.sum(dim=-1)
+                else:
+                    value = values if len(qubits) > 1 else values[..., 0]
 
             if self.policy.correctness_debug:
                 from .training_state import assert_finite_training

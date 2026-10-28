@@ -2,7 +2,8 @@
 
 ## Status
 
-**Proposal and implementation approved on 2026-10-26.**
+**Proposal and implementation approved on 2026-10-26; implementation merged in
+PR #892 and the local performance closure is recorded.**
 
 The API owner authorized preparation of this proposal with:
 
@@ -216,3 +217,13 @@ charging, another provider integration, or a live-QPU support claim.
 ```text
 approve API-CHANGE-095-DYNAMIC-TERMINAL-MEASUREMENT-NORMALIZATION-IMPLEMENTATION
 ```
+
+## Closure evidence
+
+PR #892 merged Batches A-C without changing the public API snapshot. The
+maintained local performance runner and its measured budget are documented in
+[`API_CHANGE_IMPLEMENTATION_095_DYNAMIC_TERMINAL_MEASUREMENT_PERFORMANCE_BUDGET.md`](API_CHANGE_IMPLEMENTATION_095_DYNAMIC_TERMINAL_MEASUREMENT_PERFORMANCE_BUDGET.md).
+
+API Change 095 is complete at the V1 boundary. Qsteed physical mapping, partial
+measurement, sparse classical registers, samples, and genuine remote dynamic
+execution require separate contracts.

@@ -19,7 +19,7 @@ The recorded answers are that the pass reads
 the triple -- so the pass function holds **0** opcode string literals and imports
 nothing but the module that supplies the triple; that the fold is ``4*pi`` and not
 ``2*pi`` because a half turn is *minus* the identity, a sign ``CircuitIR`` has no
-field to record and ``optimize`` is required not to introduce; that on the ``31``
+field to record and ``optimize`` is required not to introduce; that on the ``38``
 declared unitaries measured at five angle points the rule reaches **36** rows where
 the rule it replaces reached **19**, never claims an identity the runtime matrix
 denies, and *declines* **10** rows the matrix does make the identity -- every one of
@@ -29,7 +29,7 @@ have run, with the worst outcome-distribution movement **2.78e-16** against a
 control that moves **3.95e-02**; and that the Qiskit anchor -- which does not exist
 in 1.2.4 and is measured on a certified lane that has it -- disagrees with the rule
 on **17** rows, every one of them a row where the matrix is minus the identity, and
-agrees with the phase-blind column on all **155**.
+agrees with the phase-blind column on all **190**.
 
 These tests hold that evidence in place. They fail if the rule stops being read from
 the declaration, if the fold is narrowed back to ``2*pi``, if a row the matrix makes
@@ -126,12 +126,12 @@ _RULE = {
 #: single-qubit opcodes take no parameter at all, so the grid re-runs the same program
 #: at every angle point. ``distinct_row_count`` is the number to quote.
 _CENSUS = {
-    "opcode_count": 31,
+    "opcode_count": 38,
     "single_qubit_opcode_count": 18,
-    "row_count": 155,
+    "row_count": 190,
     "single_qubit_row_count": 90,
-    "multi_wire_row_count": 65,
-    "distinct_row_count": 72,
+    "multi_wire_row_count": 100,
+    "distinct_row_count": 79,
     "measured_removed_count": 46,
     "measured_removed_single_qubit_count": 24,
     "measured_removed_up_to_phase_count": 53,
@@ -380,7 +380,7 @@ _DELTA = {
 _ANCHOR = {
     "pass_name": "RemoveIdentityEquivalent",
     "present_in_qiskit_1_2_4": False,
-    "row_count": 155,
+    "row_count": 190,
     "removed_count": 53,
     "disagreement_with_the_rule_count": 17,
     "agrees_with_the_up_to_phase_column_on_every_row": True,
@@ -425,7 +425,7 @@ def test_the_grid_is_the_declared_census(payload: dict) -> None:
         census["single_qubit_opcode_count"]
         + len(_RULE["declared_multi_wire_rotations"])
         + len(_RULE["non_unitary_channels"])
-        + 2  # `ccx` and `cswap`
+        + 9  # fixed multi-wire opcodes outside the rotation and channel groups
     )
     assert (
         census["single_qubit_row_count"] + census["multi_wire_row_count"]

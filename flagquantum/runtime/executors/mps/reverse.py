@@ -209,6 +209,12 @@ def execute_torch_distributed_mps_reverse(
         initial_bond_dimension=initial_bond_dimension,
         initial_mps_tensors=initial_mps_tensors,
         site_ownership=site_ownership,
+        # The executor's own declared policy is the authorization: `exact`
+        # refuses a gradient the split cannot supply, `approximate` authorizes
+        # the frozen-subspace rule and reports it as approximate.
+        truncated_gradient=(
+            "refuse" if gradient_policy == "exact" else "projected_stop_subspace"
+        ),
     )
     state = initialization.state
     local_tensors = state.local_tensors

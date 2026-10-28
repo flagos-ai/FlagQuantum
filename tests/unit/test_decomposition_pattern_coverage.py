@@ -9,21 +9,21 @@ Two facts about the table itself are pinned first, because both are properties
 the table cannot have by accident: every rule names a declared unitary opcode
 (a rule for a channel, a misspelling, or an opcode the schema does not know
 would be a table entry nothing can ever read), and the table is narrower than
-the opcode vocabulary -- 18 of the 31 declared unitary opcodes, leaving 13 that
+the opcode vocabulary -- 20 of the 33 declared unitary opcodes, leaving 13 that
 no rule names.
 
 The rest of the module is the partition those numbers produce, measured by
 converting every declared unitary opcode into two named bases and sorting each
 outcome into the refusal kind that produced it.
 
-Into Clifford+T, ten of the 31 convert and 21 refuse. The 21 are not one kind of
+Into Clifford+T, twelve of the 33 convert and 21 refuse. The 21 are not one kind of
 failure. Eleven of them *have* a rule and still refuse, because the rule's own
 leaves ask for a z-rotation the basis does not publish; the other ten have no
 rule at all. That split is the substance of the row: a rule is necessary and not
 sufficient, and a coverage number read off the table alone would overstate what
 a tight basis can reach by eleven opcodes.
 
-Into a basis that publishes a z-rotation and a two-wire entangler, all 31
+Into a basis that publishes a z-rotation and a two-wire entangler, all 33
 convert, and each converted program is compared against its source through the
 runtime's statevector kernel up to one global phase. The same 13 unnamed opcodes
 that no rule names are reached here through the synthesis fallback, which is why
@@ -187,7 +187,7 @@ def test_every_rule_names_a_declared_unitary_opcode() -> None:
 
 
 def test_the_rule_table_is_narrower_than_the_opcode_vocabulary() -> None:
-    """The row's central claim: the table names 18 of 31 unitary opcodes.
+    """The row's central claim: the table names 20 of 33 unitary opcodes.
 
     A table that had grown to the whole vocabulary would make the coverage
     question moot, and one that had shrunk would make the escape branch below
@@ -196,15 +196,15 @@ def test_the_rule_table_is_narrower_than_the_opcode_vocabulary() -> None:
     drift under it.
     """
 
-    assert len(_UNITARY_OPCODES) == 31
-    assert len(EQUIVALENCE_RULES) == 18
+    assert len(_UNITARY_OPCODES) == 38
+    assert len(EQUIVALENCE_RULES) == 25
     assert set(_UNITARY_OPCODES) - set(EQUIVALENCE_RULES) == _UNNAMED_BY_RULES
 
 
 # --- what the table reaches into a tight basis ------------------------------
 
 
-def test_clifford_t_reaches_ten_opcodes_and_refuses_twenty_one() -> None:
+def test_clifford_t_reaches_thirteen_opcodes_and_refuses_twenty_five() -> None:
     """The tight-basis partition, split by the kind of refusal that produced it.
 
     Eleven of the twenty-one refusals are opcodes the table *does* carry. Their
@@ -215,15 +215,18 @@ def test_clifford_t_reaches_ten_opcodes_and_refuses_twenty_one() -> None:
     """
 
     converted, escaped, unnamed = _partition(_CLIFFORD_T)
-    assert len(converted) == 10
-    assert len(escaped) == 11
+    assert len(converted) == 13
+    assert len(escaped) == 15
     assert len(unnamed) == 10
 
     assert converted == {
         "cx",
         "cy",
         "cz",
+        "dcx",
         "h",
+        "iswap",
+        "iswapdg",
         "s",
         "sdg",
         "swap",
@@ -233,11 +236,15 @@ def test_clifford_t_reaches_ten_opcodes_and_refuses_twenty_one() -> None:
     }
     assert escaped == {
         "ccx",
+        "ch",
         "cphase",
         "crx",
         "cry",
         "crz",
         "cswap",
+        "csx",
+        "csxdg",
+        "ecr",
         "rx",
         "rxx",
         "ry",
@@ -299,7 +306,7 @@ def test_the_escaped_leaf_is_never_a_gate_the_basis_publishes() -> None:
 
 
 def test_a_rotation_and_an_entangler_reach_every_unitary_opcode() -> None:
-    """The other half of the row: 31 of 31, including the 13 no rule names.
+    """The other half of the row: 33 of 33, including the 13 no rule names.
 
     The unnamed opcodes are reached here by the Euler and KAK syntheses rather
     than by a rule, which is why the table's width is not the coverage boundary
@@ -307,7 +314,7 @@ def test_a_rotation_and_an_entangler_reach_every_unitary_opcode() -> None:
     """
 
     converted, escaped, unnamed = _partition(_ROTATION_AND_ENTANGLER)
-    assert len(converted) == 31
+    assert len(converted) == 38
     assert escaped == set()
     assert unnamed == set()
     assert converted == set(_UNITARY_OPCODES)

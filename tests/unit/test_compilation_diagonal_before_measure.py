@@ -50,7 +50,7 @@ from flagquantum.compiler.optimization_levels import (
     DEFAULT_OPTIMIZATION_LEVEL,
     OPTIMIZATION_LEVEL_STAGES,
 )
-from flagquantum.core.ir import CircuitIR, Instruction, IRValidationError
+from flagquantum.core.ir import CircuitIR, Instruction
 from flagquantum.core.operator_schema import (
     OPERATOR_SCHEMAS,
     canonical_opcode,
@@ -212,7 +212,7 @@ def test_the_declared_two_wire_set_equals_the_measured_one() -> None:
         if _measured_diagonal(name, (0, 1), _angles_for(name, _GENERIC))
     }
 
-    assert len(_TWO_WIRE_UNITARIES) == 11
+    assert len(_TWO_WIRE_UNITARIES) == 18
     assert measured == {"cz", "cphase", "crz", "rzz"}
     assert measured == set(_DIAGONAL_TWO_WIRE)
 
@@ -225,14 +225,13 @@ def test_an_opcode_the_euler_table_is_silent_about_is_declined() -> None:
     )
     assert not is_diagonal_one_qubit(Instruction("ccx", (0, 1, 2)))
     # `measure` and `reset` are not declared opcodes, so the schema lookup is the
-    # refusal and no name list is consulted. `ecr` is not declared either, so the IR
-    # refuses to build it at all.
+    # refusal and no name list is consulted. ECR is declared but non-diagonal, so it
+    # is retained rather than refused.
     assert get_operator_schema("measure") is None
     assert not is_diagonal_one_qubit(_measure(0))
     assert not is_diagonal_one_qubit(_reset(0))
     assert canonical_opcode("measure") == "measure"
-    with pytest.raises(IRValidationError):
-        Instruction("ecr", (0, 1))
+    assert not is_diagonal_one_qubit(Instruction("ecr", (0, 1)))
 
 
 def test_a_diagonal_gate_the_measurements_read_out_is_removed() -> None:

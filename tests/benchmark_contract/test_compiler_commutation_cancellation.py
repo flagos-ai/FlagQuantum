@@ -6,7 +6,7 @@ arity-one and arity-two unitary group does the rule source in
 pass built on it remove that the pipeline could not remove before? And where does
 a diagonal rotation sit inside a controlled gate without changing it?
 
-The recorded answers are that the rule source decides **3602** of the **3826**
+The recorded answers are that the rule source decides **4128** of the **4650**
 pairs that really do commute and never says "yes" to a pair that does not; that
 the pass removes **495** instructions on a chain of 40 six-gate circuits over
 **708** the legacy pipeline leaves, while the pipeline's reach on a rotation
@@ -56,11 +56,11 @@ pytestmark = pytest.mark.benchmark_contract
 #: a measurement: if it moves, the sweep below is measuring something else and the
 #: other three numbers are not comparable with it.
 _SWEEP = {
-    "pair_count": 5776,
-    "true_commuting_pair_count": 3826,
-    "answered_pair_count": 3602,
-    "declined_pair_count": 224,
-    "rule_opcode_count": 28,
+    "pair_count": 8100,
+    "true_commuting_pair_count": 4650,
+    "answered_pair_count": 4128,
+    "declined_pair_count": 522,
+    "rule_opcode_count": 30,
 }
 
 #: Per-population instruction counts after each pipeline. `removed_by_legacy` is

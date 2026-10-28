@@ -1,0 +1,699 @@
+{
+  "schema": "flagquantum.tn_module_hamiltonian.v1",
+  "benchmark": "tn_module_hamiltonian",
+  "artifact_class": "measured_local_run",
+  "claim": "a public fq.Module Hamiltonian energy runs on the tensor-network representation by contracting the whole Pauli sum as one operator network, without materializing a dense state",
+  "distribution_semantics": "single_device_fast_path",
+  "scalability_claim_allowed": false,
+  "release_gate_allowed": false,
+  "non_release_evidence": true,
+  "benchmark_evidence_class": "local_non_release",
+  "scalability_blockers": [
+    "single-process CPU correctness and cost measurement; it shards no workload and is not distributed or accelerator evidence"
+  ],
+  "workload": {
+    "ansatz": "depth x (ry, rz on every wire, cx chain), shared parameters",
+    "hamiltonian": "Z on every wire at -0.5, X on every wire at -0.7",
+    "dtype": "complex128 amplitudes, float64 parameters",
+    "depth": 2
+  },
+  "closed_form_check": {
+    "theta": 0.7,
+    "analytic_value": 1.0869510309033341,
+    "measured_value": 1.086951030903334,
+    "value_abs_error": 2.220446049250313e-16,
+    "analytic_gradient": -0.26179659359544677,
+    "measured_gradient": -0.2617965935954468,
+    "gradient_abs_error": 5.551115123125783e-17
+  },
+  "representation_agreement": {
+    "representations": {
+      "statevector": {
+        "energy": -1.3788423308910158,
+        "loss": 3.1642800381697826,
+        "parameter_gradient": [
+          0.3811161633011046,
+          1.4848276389468255e-05,
+          2.676400552327961,
+          0.004301265312456265,
+          2.396523964184207,
+          -0.041802016657644284,
+          -0.49774634916859023,
+          0.0009934107847171258,
+          -0.15962583957135051,
+          0.0015759902736717383,
+          2.756077562884848,
+          -0.03688895380007442
+        ],
+        "runtime_observable_execution": null,
+        "runtime_full_state_materialized": null,
+        "runtime_observable_peak_size": null,
+        "metrics_observable_count": 6
+      },
+      "mps": {
+        "energy": -1.378842330891016,
+        "loss": 3.1642800381697826,
+        "parameter_gradient": [
+          0.38111616330110476,
+          1.4848276389523577e-05,
+          2.676400552327961,
+          0.004301265312456346,
+          2.396523964184207,
+          -0.041802016657644166,
+          -0.4977463491685901,
+          0.0009934107847171586,
+          -0.15962583957135051,
+          0.0015759902736716836,
+          2.756077562884848,
+          -0.03688895380007442
+        ],
+        "runtime_observable_execution": null,
+        "runtime_full_state_materialized": null,
+        "runtime_observable_peak_size": null,
+        "metrics_observable_count": 6
+      },
+      "tensor_network": {
+        "energy": -1.378842330891016,
+        "loss": 3.1642800381697826,
+        "parameter_gradient": [
+          0.381116163301105,
+          1.4848276389574372e-05,
+          2.676400552327961,
+          0.004301265312456406,
+          2.396523964184209,
+          -0.04180201665764413,
+          -0.49774634916859023,
+          0.0009934107847172184,
+          -0.15962583957135068,
+          0.0015759902736717955,
+          2.7560775628848493,
+          -0.03688895380007438
+        ],
+        "runtime_observable_execution": "hamiltonian_mpo_contraction",
+        "runtime_full_state_materialized": false,
+        "runtime_observable_peak_size": 40,
+        "metrics_observable_count": 6
+      }
+    },
+    "maximum_disagreement": {
+      "mps": {
+        "energy_abs_error": 2.220446049250313e-16,
+        "gradient_max_abs_error": 1.6653345369377348e-16
+      },
+      "tensor_network": {
+        "energy_abs_error": 2.220446049250313e-16,
+        "gradient_max_abs_error": 2.220446049250313e-15
+      }
+    }
+  },
+  "declared_batch": {
+    "batch_size": 4,
+    "single_value": -1.378842330891016,
+    "batched_values": [
+      -1.3788423308910163,
+      -1.3788423308910163,
+      -1.3788423308910163,
+      -1.3788423308910163
+    ],
+    "maximum_abs_error": 2.220446049250313e-16,
+    "shared_parameters": true
+  },
+  "training_and_checkpoint_recovery": {
+    "optimizer": "Adam(lr=0.05)",
+    "steps": 6,
+    "checkpoint_step": 2,
+    "losses_before_checkpoint": [
+      3.1642800381697826,
+      2.7085190872545573
+    ],
+    "losses_after_checkpoint_uninterrupted": [
+      2.2540171219298504,
+      1.8187110324717348,
+      1.4160304137531468,
+      1.0551892005667298
+    ],
+    "losses_after_checkpoint_resumed": [
+      2.2540171219298504,
+      1.8187110324717348,
+      1.4160304137531468,
+      1.0551892005667298
+    ],
+    "maximum_loss_abs_error": 0.0,
+    "maximum_parameter_abs_error": 0.0,
+    "restored_step": 2
+  },
+  "cost": [
+    {
+      "width": 2,
+      "depth": 2,
+      "hamiltonian_terms": 4,
+      "routes": {
+        "statevector": {
+          "cold_execute_seconds": 0.006309,
+          "forward": {
+            "samples_seconds": [
+              0.00047,
+              0.000441,
+              0.000437,
+              0.00042,
+              0.000435,
+              0.000414,
+              0.000409
+            ],
+            "median_seconds": 0.000435,
+            "median_absolute_deviation_seconds": 1.5e-05
+          },
+          "forward_and_backward": {
+            "samples_seconds": [
+              0.000897,
+              0.000859,
+              0.000841,
+              0.000841,
+              0.000838,
+              0.00083,
+              0.000835
+            ],
+            "median_seconds": 0.000841,
+            "median_absolute_deviation_seconds": 6e-06
+          },
+          "observable_execution": null,
+          "full_state_materialized": null,
+          "observable_peak_size": null,
+          "observable_count": 4
+        },
+        "tensor_network": {
+          "cold_execute_seconds": 0.022647,
+          "forward": {
+            "samples_seconds": [
+              0.000947,
+              0.000875,
+              0.00085,
+              0.000848,
+              0.000851,
+              0.00084,
+              0.000828
+            ],
+            "median_seconds": 0.00085,
+            "median_absolute_deviation_seconds": 9e-06
+          },
+          "forward_and_backward": {
+            "samples_seconds": [
+              0.001484,
+              0.001489,
+              0.001404,
+              0.001402,
+              0.00139,
+              0.001362,
+              0.001378
+            ],
+            "median_seconds": 0.001402,
+            "median_absolute_deviation_seconds": 2.4e-05
+          },
+          "observable_execution": "hamiltonian_mpo_contraction",
+          "full_state_materialized": false,
+          "observable_peak_size": 12,
+          "observable_count": 4
+        }
+      },
+      "tensor_network_z_sum_readout": {
+        "observable_execution": "dense_state",
+        "full_state_materialized": true
+      },
+      "tensor_network_over_statevector_forward_ratio": 1.954
+    },
+    {
+      "width": 4,
+      "depth": 2,
+      "hamiltonian_terms": 8,
+      "routes": {
+        "statevector": {
+          "cold_execute_seconds": 0.011364,
+          "forward": {
+            "samples_seconds": [
+              0.000857,
+              0.00077,
+              0.00074,
+              0.000734,
+              0.000724,
+              0.000729,
+              0.000751
+            ],
+            "median_seconds": 0.00074,
+            "median_absolute_deviation_seconds": 1.1e-05
+          },
+          "forward_and_backward": {
+            "samples_seconds": [
+              0.001739,
+              0.001625,
+              0.001575,
+              0.001571,
+              0.001585,
+              0.001641,
+              0.00162
+            ],
+            "median_seconds": 0.00162,
+            "median_absolute_deviation_seconds": 3.4e-05
+          },
+          "observable_execution": null,
+          "full_state_materialized": null,
+          "observable_peak_size": null,
+          "observable_count": 8
+        },
+        "tensor_network": {
+          "cold_execute_seconds": 0.220128,
+          "forward": {
+            "samples_seconds": [
+              0.002501,
+              0.002259,
+              0.002139,
+              0.002097,
+              0.002059,
+              0.002208,
+              0.002296
+            ],
+            "median_seconds": 0.002208,
+            "median_absolute_deviation_seconds": 8.8e-05
+          },
+          "forward_and_backward": {
+            "samples_seconds": [
+              0.003447,
+              0.003426,
+              0.003391,
+              0.00337,
+              0.003354,
+              0.003328,
+              0.003283
+            ],
+            "median_seconds": 0.00337,
+            "median_absolute_deviation_seconds": 4.2e-05
+          },
+          "observable_execution": "hamiltonian_mpo_contraction",
+          "full_state_materialized": false,
+          "observable_peak_size": 80,
+          "observable_count": 8
+        }
+      },
+      "tensor_network_z_sum_readout": {
+        "observable_execution": "dense_state",
+        "full_state_materialized": true
+      },
+      "tensor_network_over_statevector_forward_ratio": 2.9838
+    },
+    {
+      "width": 6,
+      "depth": 2,
+      "hamiltonian_terms": 12,
+      "routes": {
+        "statevector": {
+          "cold_execute_seconds": 0.047421,
+          "forward": {
+            "samples_seconds": [
+              0.001922,
+              0.001295,
+              0.001122,
+              0.001109,
+              0.001085,
+              0.001093,
+              0.001102
+            ],
+            "median_seconds": 0.001109,
+            "median_absolute_deviation_seconds": 1.5e-05
+          },
+          "forward_and_backward": {
+            "samples_seconds": [
+              0.002418,
+              0.002317,
+              0.002386,
+              0.002798,
+              0.002399,
+              0.002362,
+              0.002354
+            ],
+            "median_seconds": 0.002386,
+            "median_absolute_deviation_seconds": 3.2e-05
+          },
+          "observable_execution": null,
+          "full_state_materialized": null,
+          "observable_peak_size": null,
+          "observable_count": 12
+        },
+        "tensor_network": {
+          "cold_execute_seconds": 0.816227,
+          "forward": {
+            "samples_seconds": [
+              0.004159,
+              0.003795,
+              0.0039,
+              0.003921,
+              0.003832,
+              0.003814,
+              0.003813
+            ],
+            "median_seconds": 0.003832,
+            "median_absolute_deviation_seconds": 3.7e-05
+          },
+          "forward_and_backward": {
+            "samples_seconds": [
+              0.005813,
+              0.005664,
+              0.005564,
+              0.005532,
+              0.005744,
+              0.005757,
+              0.005682
+            ],
+            "median_seconds": 0.005682,
+            "median_absolute_deviation_seconds": 7.5e-05
+          },
+          "observable_execution": "hamiltonian_mpo_contraction",
+          "full_state_materialized": false,
+          "observable_peak_size": 288,
+          "observable_count": 12
+        }
+      },
+      "tensor_network_z_sum_readout": {
+        "observable_execution": "dense_state",
+        "full_state_materialized": true
+      },
+      "tensor_network_over_statevector_forward_ratio": 3.4554
+    },
+    {
+      "width": 8,
+      "depth": 2,
+      "hamiltonian_terms": 16,
+      "routes": {
+        "statevector": {
+          "cold_execute_seconds": 0.019557,
+          "forward": {
+            "samples_seconds": [
+              0.001609,
+              0.001446,
+              0.001428,
+              0.001443,
+              0.001419,
+              0.001487,
+              0.001454
+            ],
+            "median_seconds": 0.001446,
+            "median_absolute_deviation_seconds": 1.7e-05
+          },
+          "forward_and_backward": {
+            "samples_seconds": [
+              0.003148,
+              0.003092,
+              0.003062,
+              0.003066,
+              0.003057,
+              0.003126,
+              0.003229
+            ],
+            "median_seconds": 0.003092,
+            "median_absolute_deviation_seconds": 3.3e-05
+          },
+          "observable_execution": null,
+          "full_state_materialized": null,
+          "observable_peak_size": null,
+          "observable_count": 16
+        },
+        "tensor_network": {
+          "cold_execute_seconds": 2.060051,
+          "forward": {
+            "samples_seconds": [
+              0.006437,
+              0.006179,
+              0.006059,
+              0.005978,
+              0.006051,
+              0.005983,
+              0.006021
+            ],
+            "median_seconds": 0.006051,
+            "median_absolute_deviation_seconds": 6.8e-05
+          },
+          "forward_and_backward": {
+            "samples_seconds": [
+              0.008558,
+              0.00844,
+              0.008382,
+              0.008341,
+              0.008507,
+              0.008533,
+              0.008562
+            ],
+            "median_seconds": 0.008507,
+            "median_absolute_deviation_seconds": 5.5e-05
+          },
+          "observable_execution": "hamiltonian_mpo_contraction",
+          "full_state_materialized": false,
+          "observable_peak_size": 1152,
+          "observable_count": 16
+        }
+      },
+      "tensor_network_z_sum_readout": {
+        "observable_execution": "dense_state",
+        "full_state_materialized": true
+      },
+      "tensor_network_over_statevector_forward_ratio": 4.1846
+    }
+  ],
+  "peak_scaling": [
+    {
+      "width": 8,
+      "terms": 16,
+      "dense_state_elements": 256,
+      "observable_peak_size": 1152,
+      "peak_over_dense": 4.5
+    },
+    {
+      "width": 10,
+      "terms": 20,
+      "dense_state_elements": 1024,
+      "observable_peak_size": 1664,
+      "peak_over_dense": 1.625
+    },
+    {
+      "width": 12,
+      "terms": 24,
+      "dense_state_elements": 4096,
+      "observable_peak_size": 2176,
+      "peak_over_dense": 0.5312
+    },
+    {
+      "width": 14,
+      "terms": 28,
+      "dense_state_elements": 16384,
+      "observable_peak_size": 2688,
+      "peak_over_dense": 0.1641
+    }
+  ],
+  "term_count_scaling": [
+    {
+      "terms": 1,
+      "forward": {
+        "samples_seconds": [
+          0.006129,
+          0.005829,
+          0.005797,
+          0.006038,
+          0.006008,
+          0.005913,
+          0.00579
+        ],
+        "median_seconds": 0.005913,
+        "median_absolute_deviation_seconds": 0.000115
+      },
+      "operator_nodes": 117,
+      "operator_build": {
+        "samples_seconds": [
+          0.000401,
+          0.000152,
+          0.000141,
+          0.000131,
+          0.000143,
+          0.000133,
+          0.00013
+        ],
+        "median_seconds": 0.000141,
+        "median_absolute_deviation_seconds": 1e-05
+      },
+      "operator_contract": {
+        "samples_seconds": [
+          0.673026,
+          0.004653,
+          0.004588,
+          0.004688,
+          0.004587,
+          0.004535,
+          0.004536
+        ],
+        "median_seconds": 0.004588,
+        "median_absolute_deviation_seconds": 5.3e-05
+      },
+      "observable_execution": "hamiltonian_mpo_contraction",
+      "full_state_materialized": false,
+      "observable_peak_size": 64,
+      "energy": -0.49995302025888844
+    },
+    {
+      "terms": 2,
+      "forward": {
+        "samples_seconds": [
+          0.006254,
+          0.006186,
+          0.00596,
+          0.005914,
+          0.006042,
+          0.005935,
+          0.00593
+        ],
+        "median_seconds": 0.00596,
+        "median_absolute_deviation_seconds": 4.6e-05
+      },
+      "operator_nodes": 117,
+      "operator_build": {
+        "samples_seconds": [
+          0.000351,
+          0.00014,
+          0.000133,
+          0.000131,
+          0.000131,
+          0.000133,
+          0.00013
+        ],
+        "median_seconds": 0.000133,
+        "median_absolute_deviation_seconds": 2e-06
+      },
+      "operator_contract": {
+        "samples_seconds": [
+          0.709599,
+          0.004885,
+          0.004807,
+          0.004892,
+          0.004759,
+          0.004612,
+          0.004552
+        ],
+        "median_seconds": 0.004807,
+        "median_absolute_deviation_seconds": 8.5e-05
+      },
+      "observable_execution": "hamiltonian_mpo_contraction",
+      "full_state_materialized": false,
+      "observable_peak_size": 128,
+      "energy": -0.9926436160314922
+    },
+    {
+      "terms": 4,
+      "forward": {
+        "samples_seconds": [
+          0.006087,
+          0.006279,
+          0.006,
+          0.005985,
+          0.005957,
+          0.005907,
+          0.005854
+        ],
+        "median_seconds": 0.005985,
+        "median_absolute_deviation_seconds": 7.8e-05
+      },
+      "operator_nodes": 117,
+      "operator_build": {
+        "samples_seconds": [
+          0.000366,
+          0.000144,
+          0.000139,
+          0.000138,
+          0.000136,
+          0.000136,
+          0.000135
+        ],
+        "median_seconds": 0.000138,
+        "median_absolute_deviation_seconds": 2e-06
+      },
+      "operator_contract": {
+        "samples_seconds": [
+          0.678716,
+          0.00465,
+          0.004632,
+          0.004586,
+          0.004721,
+          0.004689,
+          0.004841
+        ],
+        "median_seconds": 0.004689,
+        "median_absolute_deviation_seconds": 5.6e-05
+      },
+      "observable_execution": "hamiltonian_mpo_contraction",
+      "full_state_materialized": false,
+      "observable_peak_size": 512,
+      "energy": -1.9791037757812946
+    },
+    {
+      "terms": 16,
+      "forward": {
+        "samples_seconds": [
+          0.005939,
+          0.006077,
+          0.006316,
+          0.00607,
+          0.006049,
+          0.005899,
+          0.006029
+        ],
+        "median_seconds": 0.006049,
+        "median_absolute_deviation_seconds": 2.8e-05
+      },
+      "operator_nodes": 117,
+      "operator_build": {
+        "samples_seconds": [
+          0.000184,
+          0.000162,
+          0.000158,
+          0.000157,
+          0.000162,
+          0.000156,
+          0.000159
+        ],
+        "median_seconds": 0.000159,
+        "median_absolute_deviation_seconds": 2e-06
+      },
+      "operator_contract": {
+        "samples_seconds": [
+          0.004693,
+          0.004842,
+          0.004788,
+          0.004792,
+          0.004714,
+          0.004702,
+          0.004692
+        ],
+        "median_seconds": 0.004714,
+        "median_absolute_deviation_seconds": 2.3e-05
+      },
+      "observable_execution": "hamiltonian_mpo_contraction",
+      "full_state_materialized": false,
+      "observable_peak_size": 1152,
+      "energy": -4.106326232521626
+    }
+  ],
+  "limitations": [
+    "the sum is one matrix-product operator over the state's own ket and bra copies; its node count is independent of the term count, and the per-term route this replaces was not retained as an option",
+    "the tensor-network route reports no observable contraction peak; estimating it would repeat the path search that answered the call",
+    "measured wall time on one CPU process, with no accelerator, distributed, memory, or time-to-target claim",
+    "gradients are first-order PyTorch autograd through the contraction"
+  ],
+  "elapsed_seconds": 32.526,
+  "command": "benchmarks/tn_module_hamiltonian.py --output artifacts/development/tn_module_hamiltonian_cpu_20261027/run-1.json",
+  "threads": {
+    "OMP_NUM_THREADS": "1",
+    "MKL_NUM_THREADS": "1",
+    "OPENBLAS_NUM_THREADS": "1"
+  },
+  "python": "3.12.14",
+  "torch": "2.14.1",
+  "platform": "macOS-27.0-arm64-arm-64bit",
+  "device": "cpu",
+  "base_commit": "057424b5df734da9e14ca6e3400cdd93131d6cab",
+  "source_commit": "a915e19ee63b293ce0d551134eff4dc7188113fa",
+  "measuring_source_committed": true
+}

@@ -222,3 +222,17 @@ with matching worker/thread settings. Local default is not reported green.
 Actual source/install/wheel/sdist and current-head CI/GPU acceptance is recorded
 in that PR's delivery record. No future merge SHA is inserted recursively into
 this source document.
+## Delivery acceptance
+
+The reference implementation merged through
+[#904](https://github.com/flagos-ai/FlagQuantum/pull/904) as
+`92f5269caa126cd4220e7612a5d2207c644e6fd3`, from reviewed head
+`3ff5fca2de51b18ee1f2cb88e7fbd5fa96dee029`. Complete head CI `40280575633`
+succeeded in all 54 jobs; GPU `40280575629` succeeded with three successful jobs
+and three original optional skips. All 60 checks succeeded or retained those
+skips. Exact-merge Main smoke `40283856972` succeeded; it is not complete main CI.
+Development-container publishing `40283856979` was cancelled, with all four
+matrix jobs cancelled and no established cause. It was not retriggered and is
+not reported successful. The [central progress ledger](../roadmap/QEC_STIM_PYMATCHING_DELIVERY_PLAN.md)
+retains these boundaries and the remaining functional work. Decision C stays
+design-only; this completed batch contract does not authorize that implementation.

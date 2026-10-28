@@ -12,6 +12,7 @@ Policies and workflows for changing, testing, and releasing FlagQuantum.
 - [Multi-team handoff template](TEAM_HANDOFF_TEMPLATE.md)
 - [Public API protection](PUBLIC_API_PROTECTION.md)
 - [Stable Core API change proposal](API_CHANGE_PROPOSAL_001_STABLE_CORE.md)
+- [Gate Coverage Batch A proposal](API_CHANGE_PROPOSAL_098_GATE_COVERAGE_BATCH_A.md)
 - [Dependency policy](DEPENDENCY_POLICY.md)
 - [Version and release policy](RELEASE_POLICY.md)
 - [Git history recovery](GIT_HISTORY_RECOVERY.md)

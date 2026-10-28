@@ -195,6 +195,51 @@ def _calls(instruction: Instruction) -> tuple[_QisCall, ...]:
             _cnot(control, target),
             _one("s__body", target),
         )
+    if opcode in {"iswap", "iswapdg"}:
+        left, right = wires
+        phase_call = "s__body" if opcode == "iswap" else "s__adj"
+        return (
+            _QisCall("cz__body", (left, right)),
+            _QisCall("swap__body", (left, right)),
+            _one(phase_call, left),
+            _one(phase_call, right),
+        )
+    if opcode == "ch":
+        control, target = wires
+        return (
+            _one("s__body", target),
+            _one("h__body", target),
+            _one("t__body", target),
+            _cnot(control, target),
+            _one("t__adj", target),
+            _one("h__body", target),
+            _one("s__adj", target),
+        )
+    if opcode in {"csx", "csxdg"}:
+        control, target = wires
+        theta = math.pi / 2 if opcode == "csx" else -math.pi / 2
+        return (
+            _one("h__body", target),
+            _rz(control, theta / 2),
+            _rz(target, theta / 2),
+            *_rzz(control, target, -theta / 2),
+            _one("h__body", target),
+        )
+    if opcode == "dcx":
+        left, right = wires
+        return (_cnot(left, right), _cnot(right, left))
+    if opcode == "ecr":
+        left, right = wires
+        return (
+            _one("s__body", left),
+            _one("h__body", right),
+            _one("s__body", right),
+            _one("h__body", right),
+            _cnot(left, right),
+            _one("t__adj", left),
+            _one("x__body", left),
+            _one("t__adj", left),
+        )
     if opcode == "cswap":
         first, second, third = wires
         return (

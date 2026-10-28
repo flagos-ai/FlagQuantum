@@ -27,6 +27,8 @@ qiskit_features = [
     "custom_unitary_above_three_qubits",
 ]
 flagquantum_opcodes = [
+    "iswap",
+    "iswapdg",
     "u1",
     "u2",
     "bit_flip",
@@ -180,6 +182,36 @@ flagquantum_parameters = []
 [[operations]]
 qiskit = "swap"
 flagquantum = "swap"
+qiskit_parameters = []
+flagquantum_parameters = []
+
+[[operations]]
+qiskit = "ch"
+flagquantum = "ch"
+qiskit_parameters = []
+flagquantum_parameters = []
+
+[[operations]]
+qiskit = "csx"
+flagquantum = "csx"
+qiskit_parameters = []
+flagquantum_parameters = []
+
+[[operations]]
+qiskit = "csxdg"
+flagquantum = "csxdg"
+qiskit_parameters = []
+flagquantum_parameters = []
+
+[[operations]]
+qiskit = "dcx"
+flagquantum = "dcx"
+qiskit_parameters = []
+flagquantum_parameters = []
+
+[[operations]]
+qiskit = "ecr"
+flagquantum = "ecr"
 qiskit_parameters = []
 flagquantum_parameters = []
 

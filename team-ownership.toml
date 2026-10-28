@@ -12,6 +12,9 @@ protected_paths = [
     "pyproject.toml",
     "flagquantum/__init__.py",
     "flagquantum/_api.py",
+    # PEP 561 package marker: changing its presence changes distribution typing
+    # semantics, so it is governed with the other release-level package files.
+    "flagquantum/py.typed",
     "flagquantum/core/_artifacts.py",
     # FlagQuantum IR is the single source of truth. It was a flat module until
     # the Phase 4 activation split it into a package whose `__init__.py` is the

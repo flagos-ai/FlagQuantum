@@ -3,16 +3,23 @@
     "jax": {
       "supported": [
         "ccx",
+        "ch",
         "cphase",
         "crx",
         "cry",
         "crz",
         "cswap",
+        "csx",
+        "csxdg",
         "cx",
         "cy",
         "cz",
+        "dcx",
+        "ecr",
         "h",
         "i",
+        "iswap",
+        "iswapdg",
         "phase",
         "rx",
         "rxx",
@@ -44,16 +51,23 @@
     "mps": {
       "supported": [
         "ccx",
+        "ch",
         "cphase",
         "crx",
         "cry",
         "crz",
         "cswap",
+        "csx",
+        "csxdg",
         "cx",
         "cy",
         "cz",
+        "dcx",
+        "ecr",
         "h",
         "i",
+        "iswap",
+        "iswapdg",
         "phase",
         "rx",
         "rxx",
@@ -85,16 +99,23 @@
     "provider": {
       "supported": [
         "ccx",
+        "ch",
         "cphase",
         "crx",
         "cry",
         "crz",
         "cswap",
+        "csx",
+        "csxdg",
         "cx",
         "cy",
         "cz",
+        "dcx",
+        "ecr",
         "h",
         "i",
+        "iswap",
+        "iswapdg",
         "phase",
         "rx",
         "rxx",
@@ -128,17 +149,24 @@
         "amplitude_damping",
         "bit_flip",
         "ccx",
+        "ch",
         "cphase",
         "crx",
         "cry",
         "crz",
         "cswap",
+        "csx",
+        "csxdg",
         "cx",
         "cy",
         "cz",
+        "dcx",
         "depolarizing",
+        "ecr",
         "h",
         "i",
+        "iswap",
+        "iswapdg",
         "phase",
         "phase_flip",
         "rx",
@@ -166,16 +194,23 @@
     "qasm": {
       "supported": [
         "ccx",
+        "ch",
         "cphase",
         "crx",
         "cry",
         "crz",
         "cswap",
+        "csx",
+        "csxdg",
         "cx",
         "cy",
         "cz",
+        "dcx",
+        "ecr",
         "h",
         "i",
+        "iswap",
+        "iswapdg",
         "phase",
         "rx",
         "rxx",
@@ -207,11 +242,18 @@
     "qcis": {
       "supported": [
         "ccx",
+        "ch",
+        "csx",
+        "csxdg",
         "cx",
         "cy",
         "cz",
+        "dcx",
+        "ecr",
         "h",
         "i",
+        "iswap",
+        "iswapdg",
         "phase",
         "rx",
         "rxx",
@@ -248,16 +290,23 @@
     "qir": {
       "supported": [
         "ccx",
+        "ch",
         "cphase",
         "crx",
         "cry",
         "crz",
         "cswap",
+        "csx",
+        "csxdg",
         "cx",
         "cy",
         "cz",
+        "dcx",
+        "ecr",
         "h",
         "i",
+        "iswap",
+        "iswapdg",
         "phase",
         "rx",
         "rxx",
@@ -289,16 +338,23 @@
     "tensor_network": {
       "supported": [
         "ccx",
+        "ch",
         "cphase",
         "crx",
         "cry",
         "crz",
         "cswap",
+        "csx",
+        "csxdg",
         "cx",
         "cy",
         "cz",
+        "dcx",
+        "ecr",
         "h",
         "i",
+        "iswap",
+        "iswapdg",
         "phase",
         "rx",
         "rxx",
@@ -832,6 +888,188 @@
         "complex128"
       ],
       "opcode": "swap",
+      "parameter_frequencies": [],
+      "parameters": [],
+      "power": "repeat_instruction",
+      "qubit_convention": [
+        "control_or_left",
+        "target_or_right"
+      ],
+      "semantic_kind": "unitary"
+    },
+    {
+      "adjoint": "iswapdg",
+      "aliases": [],
+      "arity": 2,
+      "control": "iswap_ladder",
+      "decomposition": [
+        "s",
+        "swap",
+        "cz"
+      ],
+      "differentiable": false,
+      "dtype_policy": [
+        "complex64",
+        "complex128"
+      ],
+      "opcode": "iswap",
+      "parameter_frequencies": [],
+      "parameters": [],
+      "power": "repeat_instruction",
+      "qubit_convention": [
+        "control_or_left",
+        "target_or_right"
+      ],
+      "semantic_kind": "unitary"
+    },
+    {
+      "adjoint": "iswap",
+      "aliases": [],
+      "arity": 2,
+      "control": "iswap_ladder",
+      "decomposition": [
+        "sdg",
+        "swap",
+        "cz"
+      ],
+      "differentiable": false,
+      "dtype_policy": [
+        "complex64",
+        "complex128"
+      ],
+      "opcode": "iswapdg",
+      "parameter_frequencies": [],
+      "parameters": [],
+      "power": "repeat_instruction",
+      "qubit_convention": [
+        "control_or_left",
+        "target_or_right"
+      ],
+      "semantic_kind": "unitary"
+    },
+    {
+      "adjoint": "self_inverse",
+      "aliases": [],
+      "arity": 2,
+      "control": "ry_conjugated_ladder",
+      "decomposition": [
+        "s",
+        "h",
+        "t",
+        "cx",
+        "tdg",
+        "h",
+        "sdg"
+      ],
+      "differentiable": false,
+      "dtype_policy": [
+        "complex64",
+        "complex128"
+      ],
+      "opcode": "ch",
+      "parameter_frequencies": [],
+      "parameters": [],
+      "power": "repeat_instruction",
+      "qubit_convention": [
+        "control_or_left",
+        "target_or_right"
+      ],
+      "semantic_kind": "unitary"
+    },
+    {
+      "adjoint": "csxdg",
+      "aliases": [],
+      "arity": 2,
+      "control": "x_conjugated_ladder",
+      "decomposition": [
+        "h",
+        "t",
+        "cx",
+        "tdg"
+      ],
+      "differentiable": false,
+      "dtype_policy": [
+        "complex64",
+        "complex128"
+      ],
+      "opcode": "csx",
+      "parameter_frequencies": [],
+      "parameters": [],
+      "power": "repeat_instruction",
+      "qubit_convention": [
+        "control_or_left",
+        "target_or_right"
+      ],
+      "semantic_kind": "unitary"
+    },
+    {
+      "adjoint": "csx",
+      "aliases": [],
+      "arity": 2,
+      "control": "x_conjugated_ladder",
+      "decomposition": [
+        "h",
+        "tdg",
+        "cx",
+        "t"
+      ],
+      "differentiable": false,
+      "dtype_policy": [
+        "complex64",
+        "complex128"
+      ],
+      "opcode": "csxdg",
+      "parameter_frequencies": [],
+      "parameters": [],
+      "power": "repeat_instruction",
+      "qubit_convention": [
+        "control_or_left",
+        "target_or_right"
+      ],
+      "semantic_kind": "unitary"
+    },
+    {
+      "adjoint": "reverse_operands",
+      "aliases": [],
+      "arity": 2,
+      "control": "not_available",
+      "decomposition": [
+        "cx",
+        "cx"
+      ],
+      "differentiable": false,
+      "dtype_policy": [
+        "complex64",
+        "complex128"
+      ],
+      "opcode": "dcx",
+      "parameter_frequencies": [],
+      "parameters": [],
+      "power": "repeat_instruction",
+      "qubit_convention": [
+        "control_or_left",
+        "target_or_right"
+      ],
+      "semantic_kind": "unitary"
+    },
+    {
+      "adjoint": "self_inverse",
+      "aliases": [],
+      "arity": 2,
+      "control": "not_available",
+      "decomposition": [
+        "s",
+        "h",
+        "cx",
+        "x",
+        "tdg"
+      ],
+      "differentiable": false,
+      "dtype_policy": [
+        "complex64",
+        "complex128"
+      ],
+      "opcode": "ecr",
       "parameter_frequencies": [],
       "parameters": [],
       "power": "repeat_instruction",

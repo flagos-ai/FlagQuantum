@@ -166,6 +166,57 @@ def _decompose(
             + _cx(qubits[1], qubits[0])
             + _cx(qubits[0], qubits[1])
         )
+    if name in {"iswap", "iswapdg"}:
+        phase = "s" if name == "iswap" else "sdg"
+        return (
+            _decompose("cz", qubits, {})
+            + _decompose("swap", qubits, {})
+            + _decompose(phase, (qubits[0],), {})
+            + _decompose(phase, (qubits[1],), {})
+        )
+    if name == "ch":
+        control, target = qubits
+        return (
+            _decompose("s", (target,), {})
+            + _decompose("h", (target,), {})
+            + _decompose("t", (target,), {})
+            + _decompose("cx", (control, target), {})
+            + _decompose("tdg", (target,), {})
+            + _decompose("h", (target,), {})
+            + _decompose("sdg", (target,), {})
+        )
+    if name in {"csx", "csxdg"}:
+        control, target = qubits
+        theta = math.pi / 2 if name == "csx" else -math.pi / 2
+        return (
+            _decompose("h", (target,), {})
+            + _decompose("cphase", (control, target), {"theta": theta})
+            + _decompose("h", (target,), {})
+        )
+    if name == "dcx":
+        left, right = qubits
+        return _decompose("cx", (left, right), {}) + _decompose("cx", (right, left), {})
+    if name == "cphase":
+        (theta,) = _param(params, "theta")
+        half = theta / 2
+        control, target = qubits
+        return (
+            _decompose("rz", (target,), {"theta": half})
+            + _decompose("cx", (control, target), {})
+            + _decompose("rz", (target,), {"theta": -half})
+            + _decompose("cx", (control, target), {})
+            + _decompose("rz", (control,), {"theta": half})
+        )
+    if name == "ecr":
+        left, right = qubits
+        return (
+            _decompose("s", (left,), {})
+            + _decompose("sx", (right,), {})
+            + _decompose("cx", (left, right), {})
+            + _decompose("tdg", (left,), {})
+            + _decompose("x", (left,), {})
+            + _decompose("tdg", (left,), {})
+        )
     if name == "rzz":
         (theta,) = _param(params, "theta")
         return (

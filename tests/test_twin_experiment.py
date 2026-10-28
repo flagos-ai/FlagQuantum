@@ -135,6 +135,7 @@ def test_experiment_binds_prediction_program_receipt_and_result():
     assert report.to_dict()["validation_scope"] == "retrospective_diagnostic"
     assert report.to_dict()["executed_program_matches_submission"] is True
     assert report.validation.shots == 1024
+    assert report.result_metadata["target_qubits"] == [3, 4]
     assert len(report.identity) == 64
 
 
@@ -566,6 +567,15 @@ def test_experiment_rejects_receipt_from_another_physical_mapping():
 
     result = _result(experiment)
     result.handle.payload["target_qubits"] = [4, 3]
+    with pytest.raises(RuntimeError, match="physical mapping"):
+        experiment.validate_result(result, receipt=result.handle)
+
+
+def test_experiment_rejects_provider_metadata_from_another_physical_mapping():
+    experiment = _experiment()
+    result = _result(experiment)
+    result.metadata["target_qubits"] = [4, 3]
+
     with pytest.raises(RuntimeError, match="physical mapping"):
         experiment.validate_result(result, receipt=result.handle)
 

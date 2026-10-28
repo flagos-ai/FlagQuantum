@@ -153,6 +153,41 @@ refresh or promote a model, or authorize routing. Validation age is the age of
 the calibration snapshot associated with the latest validation series; current
 v1 evidence does not contain an authoritative provider result-completion time.
 
+Freeze the next bounded regional observation from circuits supplied by the
+application:
+
+```python
+plan = fq.twin.prepare_probe_refresh(
+    release,
+    candidate_circuits,
+    calibration_history=calibration_history,
+    validation_history=validation_history,
+    maximum_tasks=12,
+    shots=1024,
+)
+print(plan.selected_circuit_identities)
+print(plan.unsupported_candidates)
+print(plan.coverage_gaps)
+print(plan.planned_task_count)
+
+suite = plan.prepare_suite(
+    released_region_twin,
+    candidate_circuits,
+    name="regional-refresh",
+)
+```
+
+The planner never invents a probe. It prioritizes structurally covered
+candidate circuits using exact-release coverage, supplied validation history,
+and overlap with observed interval drift, then freezes two repetitions per
+selection. Ranking is an evidence-gap heuristic, not a claim that a circuit is
+informative enough to identify model parameters or improve accuracy.
+
+Both calls are offline. `prepare_suite()` reuses the existing
+`TwinRegionValidationSuite` path and still does not submit its experiments.
+Unsupported candidates remain visible with the region's refusal reasons, and
+the planned task count never exceeds `maximum_tasks`.
+
 The shortest identity-bound validation path lets FlagQuantum emit the submitted
 OpenQASM directly from the circuit. OpenQASM emission adds measurement of every
 circuit qubit, so no measurement operation is added to the `Circuit` itself:
@@ -419,6 +454,184 @@ an idempotent save of the same series, and refuses to replace different or
 invalid content. The artifact is an offline summary rather than a signed
 provider receipt. FlagQuantum does not publish it or assign application access
 policy.
+
+## Freeze an identifiable probe bank
+
+Use a probe bank to distinguish structural circuit coverage from parameter
+identifiability:
+
+```python
+import flagquantum as fq
+
+probe_circuits = (
+    fq.Circuit(2).cx(0, 1),
+    fq.Circuit(2).h(0).cx(0, 1),
+    fq.Circuit(2).h(1).cx(0, 1),
+)
+bank = fq.twin.prepare_probe_bank(
+    target="quafu:Shenglian",
+    physical_qubits=(20, 27),
+    probes=probe_circuits,
+    parameter_family="local_pauli_readout",
+)
+
+print(bank.identifiability_status)
+print(bank.parameter_names)
+print(bank.unidentified_parameters)
+assert bank.matrix_rank == len(bank.parameter_names)
+```
+
+The bank binds the canonical target, ordered mapping, exercised directed
+couplers, probe identities, declared local parameter names, and complete design
+matrix. Exact rank determines the status; neither probe count nor a fixed
+number of calibration states is treated as proof. An `underdetermined` bank
+retains the missing parameter names but authorizes no estimates.
+
+`local_pauli_readout` is a restricted structural operation-incidence model for
+per-qubit readout and single-qubit burdens plus per-coupler two-qubit burdens.
+It is not a fitted physical model, hardware evidence, state fidelity, or QPU
+execution authority.
+
+## Estimate bounded local parameters
+
+Fit the frozen structural model only after distinct hardware tasks for the
+same bank have passed `TwinExperiment.validate_result(...)`:
+
+```python
+estimate = fq.twin.estimate_probe_parameters(
+    bank,
+    hardware_reports,
+    confidence_level=0.95,
+)
+
+print(estimate.parameter_values)
+print(estimate.confidence_intervals)
+print(estimate.identifiability_status)
+print(estimate.goodness_of_fit)
+```
+
+Run the complete synthetic example with:
+
+```bash
+python examples/twin_parameter_estimation.py
+```
+
+The estimator pools repeated reports by frozen probe identity, computes
+observed Z/ZZ marginal TV distances from the bank's ideal distributions, and
+solves the full-rank linear design. Its simultaneous intervals use a
+Bonferroni finite-shot TV bound propagated through the exact left inverse.
+
+Reports must bind the same target, ordered physical mapping, bank probes, and
+snapshot. Duplicate tasks, invalid counts, changed bindings, missing probes,
+or an underdetermined bank are rejected. Values are local model burdens rather
+than quantum-state amplitudes or fidelities; `goodness_of_fit` is descriptive,
+not a confidence or model probability. The result never mutates or promotes a
+Twin and provides no submission, routing, or hardware-control authority.
+
+## Fit an immutable candidate
+
+Turn a bounded estimate into a later candidate without changing the incumbent:
+
+```python
+candidate = fq.twin.fit_candidate(
+    incumbent,
+    estimate,
+    captured_at="2026-08-15T10:30:00+08:00",
+)
+
+print(candidate.fit.fitted_parameters)
+print(candidate.fit.retained_parameters)
+assert candidate.snapshot.identity != incumbent.snapshot.identity
+
+fq.twin.dump_twin(candidate, "twin-candidate.json")
+candidate = fq.twin.load_twin("twin-candidate.json")
+```
+
+Run the complete synthetic workflow with:
+
+```bash
+python examples/twin_candidate_fit.py
+```
+
+The candidate keeps the incumbent target, mapping, lifetimes, excited
+population, and gate durations. It replaces the declared local readout and
+Pauli burdens, records the estimate and probe-bank identities, and requires a
+later timezone-aware capture time. Readout burden becomes symmetric bit-flip
+error; one- and two-qubit TV burdens are converted to representable
+depolarizing probabilities. Values outside those channel ranges fail closed.
+
+`TwinFittedCandidate` is still a `QPUDigitalTwin`, so existing candidate-suite
+and holdout preparation accepts it. Construction remains offline: no provider
+is contacted and no task, retry, routing decision, promotion, or release is
+created. A later prospective holdout must still establish whether the candidate
+improves on the incumbent.
+
+## Record a human-gated evolution cycle
+
+Bind the existing freshness, probe, fit, and prospective holdout artifacts
+without copying their evidence payloads:
+
+```python
+cycle = fq.twin.prepare_evolution_cycle(
+    incumbent=incumbent,
+    freshness=freshness,
+    probe_plan=plan,
+)
+cycle = cycle.with_parameter_estimate(estimate)
+fq.twin.dump_evolution_cycle(cycle, "twin-evolution-estimated.json")
+
+cycle = fq.twin.load_evolution_cycle("twin-evolution-estimated.json")
+cycle = cycle.with_candidate(candidate)
+cycle = cycle.with_holdout_evaluation(evaluation)
+print(cycle.recommended_action)
+```
+
+Run the complete offline example with:
+
+```bash
+python examples/twin_evolution_cycle.py
+```
+
+The only legal order is freshness and plan → parameter estimate → fitted
+candidate → fixed holdout evaluation. Every state is immutable and references
+the authoritative source artifacts by identity, so an interrupted application
+can resume without resubmitting hardware work. The final value is only
+`retain_incumbent`, `collect_more_evidence`, or `release_candidate` advice.
+It never performs a provider operation, mutates a Twin, or crosses the existing
+explicit release boundary.
+
+Record the application's explicit decision separately from that advice:
+
+```python
+decision = fq.twin.record_evolution_decision(
+    cycle,
+    decision="retain_incumbent",
+    decided_at="2026-08-15T11:00:00+08:00",
+    decision_authority="calibration-operator",
+)
+fq.twin.dump_evolution_decision(decision, "twin-evolution-decision.json")
+```
+
+The record keeps the recommendation and decision as separate facts. Retaining
+the incumbent or collecting more evidence requires no release. Choosing
+`release_candidate` is allowed only after a completed improving holdout gate
+and requires an already-created `TwinRegionRelease` for the same candidate
+snapshot, target, and ordered physical mapping:
+
+```python
+decision = fq.twin.record_evolution_decision(
+    cycle,
+    decision="release_candidate",
+    decided_at="2026-08-15T11:00:00+08:00",
+    decision_authority="calibration-review-board",
+    release=release,
+)
+```
+
+This binds the decision to the release; it does not create the release, switch
+an active model, authorize routing, or contact a provider. The authority string
+is an application-owned audit identifier, not authentication performed by
+FlagQuantum.
 
 ## Inspect evidence for a prediction
 

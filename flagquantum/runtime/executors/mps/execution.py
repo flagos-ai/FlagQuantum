@@ -23,6 +23,7 @@ from ....simulation.mps.models import (
     MPSAdaptiveBondPlan,
     MPSConfig,
     MPSTruncationRecord,
+    TruncatedGradient,
 )
 from ....simulation.mps.rank_local import (
     apply_one_mps_tensor as _apply_one_mps_tensor,
@@ -350,9 +351,14 @@ def _initial_mps(
     dtype: torch.dtype | None = None,
     max_bond: int | None = None,
     cutoff: float = 0.0,
+    truncated_gradient: TruncatedGradient = "refuse",
 ) -> MPSState:
     ir = _as_ir(circuit_or_ir)
-    config = MPSConfig(max_bond=max_bond, cutoff=cutoff)
+    config = MPSConfig(
+        max_bond=max_bond,
+        cutoff=cutoff,
+        truncated_gradient=truncated_gradient,
+    )
     if (
         hasattr(circuit_or_ir, "initial_state")
         and getattr(circuit_or_ir, "_inputs", None) is not None
@@ -835,6 +841,7 @@ def _run_mps_site_sharded_local(
     cutoff: float = 0.0,
     boundary_transport: str = "auto",
     strict_sharded: bool = False,
+    truncated_gradient: TruncatedGradient = "refuse",
     **_: Any,
 ) -> tuple[MPSState, _MPSExecutionStats]:
     """Run a single-process MPS development simulator with rank-owned tensors."""
@@ -847,6 +854,7 @@ def _run_mps_site_sharded_local(
         dtype=dtype,
         max_bond=max_bond,
         cutoff=cutoff,
+        truncated_gradient=truncated_gradient,
     )
     shards = _mps_shards(ir.n_wires, world_size)
     rank_tensors = _rank_tensors_from_mps(seed_mps, shards)
@@ -1037,6 +1045,7 @@ def _run_mps_site_sharded_sync(
     max_bond: int | None = None,
     cutoff: float = 0.0,
     boundary_transport: str = "auto",
+    truncated_gradient: TruncatedGradient = "refuse",
     **_: Any,
 ) -> tuple[MPSState, _MPSExecutionStats]:
     ir = _as_ir(circuit_or_ir)
@@ -1047,6 +1056,7 @@ def _run_mps_site_sharded_sync(
         dtype=dtype,
         max_bond=max_bond,
         cutoff=cutoff,
+        truncated_gradient=truncated_gradient,
     )
     shards = _mps_shards(ir.n_wires, world_size)
     local_sharded = ShardedMPSState(

@@ -17,6 +17,33 @@ Benchmark claims require audited artifacts and are not inferred from this file.
 
 ## Unreleased
 
+- Complete API Change 098 with typed `ch`, `csx`, `csxdg`, `dcx`, and
+  `ecr` methods on both `Circuit` and `DynamicCircuit`. Each gate has a
+  canonical matrix, closed adjoint behavior, exact basis lowering, static
+  exporter behavior, IR round-trip coverage, and an explicit ecosystem support
+  boundary. This does not claim native provider or QPU support.
+
+- Add typed `iswap` and `iswapdg` methods to both `Circuit` and
+  `DynamicCircuit`. The pair has exact dense semantics, closes under
+  `adjoint()`, lowers through the existing fixed basis for OpenQASM, QIR, and
+  QCIS, participates in compilation and optimization, and fails closed in
+  ecosystem adapters that do not yet declare a mapping. This does not claim
+  native provider or QPU support.
+
+- Make every schema-installed fluent gate visible to static type checkers on both
+  `Circuit` and `DynamicCircuit`. Gate chains now retain the concrete builder
+  type, including aliases and uppercase compatibility spellings, without
+  changing runtime installation, signatures, validation, or execution support.
+  Distributions include the declaration stub and PEP 561 marker.
+
+- Admit a full-register terminal-measurement subset of `DynamicCircuit` through
+  the existing static Quafu `fq.run(...)` route. Preserve declared
+  qubit-to-classical-bit permutations in returned counts, retain inspectable
+  normalization identity, and keep partial, repeated, mid-circuit, reset,
+  conditional, samples, expectation, and Qsteed physical paths fail closed.
+  Add a local CPU benchmark for normalization and counts projection; it performs
+  no provider, credential, network, task, quota, or QPU work.
+
 - Add caller-configured, offline QPU Twin evidence-freshness assessment. Age,
   calibration drift, and verified TV-error thresholds return explicit current,
   refresh-due, insufficient-evidence, or incompatible-history outcomes without

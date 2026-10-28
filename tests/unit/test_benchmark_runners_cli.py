@@ -96,6 +96,7 @@ def test_runner_registry_is_lazy_and_sorted() -> None:
         "cpu_performance_gate",
         "differentiable_simulator_corpus",
         "dynamic_remote_preflight",
+        "dynamic_terminal_measurement",
         "dynamic_unified_run",
         "environment_probe",
         "ftqc_exact_reference",

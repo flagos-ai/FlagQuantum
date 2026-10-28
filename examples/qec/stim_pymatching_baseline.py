@@ -11,10 +11,8 @@ from __future__ import annotations
 import argparse
 import json
 import logging
-import math
 import platform
 from importlib.metadata import version
-from statistics import NormalDist
 from typing import Literal, TypedDict
 
 import torch
@@ -32,10 +30,10 @@ from flagquantum.qec import (
     build_memory_circuit,
     compile_memory_sampler,
 )
+from flagquantum.qec.execution.experiments import _wilson_interval
 
 _LOGGER = logging.getLogger(__name__)
 _CONFIDENCE_LEVEL = 0.95
-_NORMAL_QUANTILE = NormalDist().inv_cdf((1 + _CONFIDENCE_LEVEL) / 2)
 
 
 class _NoiseSettings(TypedDict):
@@ -81,37 +79,6 @@ class _BaselineReport(TypedDict):
 class _SurfaceReport(_BaselineReport):
     readout_basis: str
     logical_support: list[int]
-
-
-def _wilson_interval(failures: int, shots: int) -> tuple[float, float]:
-    """Two-sided 95% score interval without continuity correction.
-
-    Formula: https://www.itl.nist.gov/div898/handbook/prc/section2/prc241.htm
-    Zero completed shots have no defined estimate or interval.
-    """
-    for name, value in (("failures", failures), ("shots", shots)):
-        if isinstance(value, bool) or not isinstance(value, int):
-            raise TypeError(f"{name} must be an integer")
-    if shots <= 0 or not 0 <= failures <= shots:
-        raise ValueError(
-            "an interval requires positive shots and 0 <= failures <= shots"
-        )
-    proportion = failures / shots
-    squared_quantile = _NORMAL_QUANTILE**2
-    denominator = 1 + squared_quantile / shots
-    center = (proportion + squared_quantile / (2 * shots)) / denominator
-    half_width = (
-        _NORMAL_QUANTILE
-        * math.sqrt(
-            proportion * (1 - proportion) / shots + squared_quantile / (4 * shots**2)
-        )
-        / denominator
-    )
-    # The mathematical endpoints are exact at all-success/all-failure counts;
-    # subtracting rounded center/width values can otherwise exclude 0 or 1.
-    lower = 0.0 if failures == 0 else max(0.0, center - half_width)
-    upper = 1.0 if failures == shots else min(1.0, center + half_width)
-    return lower, upper
 
 
 def _logical_failure_counts(

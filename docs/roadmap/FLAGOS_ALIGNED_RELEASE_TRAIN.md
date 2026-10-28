@@ -385,6 +385,28 @@ The finite blocked-top model, bath-only analytic bound and coupled cutoff
 stability remain explicit. This does not establish calibrated ion-trap heating,
 a global Gibbs state, infinite-dimensional accuracy or full M3/M4 completion.
 
+The user-approved
+[absorptive terminal photon-counting slice](../development/M3_ABSORPTIVE_PHOTON_COUNTING_CONTRACT_REVIEW.md)
+is accepted through [#921](https://github.com/flagos-ai/FlagQuantum/pull/921).
+It composes the existing finite-Fock evolution, square vacuum-reset Kraus actions
+and terminal sampler; the QND reference and library/public API remain unchanged.
+At head `84f15a6a99e7a36ab993989d1d6ae94e8c10ec74`, complete CI `40295642672`
+(attempt 3, all 54 jobs), GPU `40295642686` (attempt 2) and the remote three-Python
+matrix succeeded. All 60 checks completed with 57 success and three original
+manual-pool skips. Its independent human grant preceded normal merge
+`d15d681b88d6062e02b97317e53fbea5bafc7105`; exact-merge main smoke `40316383759`
+succeeded, as smoke only. Local default passed 16,148/224 skipped and integration
+2,620/177 skipped, with zero XML failures/errors and identical tested code blobs.
+Network interruptions and the separately authorized stalled-checkout recovery
+are recorded in [M3 acceptance](../development/M3_SCENARIO_ACCEPTANCE.md#accepted-absorptive-terminal-counting-scenario).
+No physics budget, audit or CI protection was weakened.
+
+The [M3 exit-gate audit](../development/M3_EXIT_GATE_AUDIT.md) now maps the six
+bounded reference profiles to input, admission, planning, execution, outputs,
+diagnostics and examples. It is an evidence inventory for review, not a milestone
+promotion. Candidate extensions and M4 device/performance requirements are listed
+separately; no new scenario implementation or protected contract is approved.
+
 | Scenario | Shared capability under test | Additional acceptance |
 | --- | --- | --- |
 | Existing variational circuit training | CircuitIR, Module, planning, gradients | Preserve current APIs and the local CPU fast path. |

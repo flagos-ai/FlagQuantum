@@ -256,8 +256,8 @@ print(len(program.to_ir().instructions))
 The qubits of each instruction are unchanged, because the inverse of a gate acts on the
 same qubits in the same order. What inverts a gate is declared once, per opcode, in
 `flagquantum/core/operator_schema.py`, and read from there: a self-inverse gate is kept,
-an angle is negated, and `s`/`t`/`sx` become `sdg`/`tdg`/`sxdg`. 31 of the 35 registered
-opcodes invert this way.
+an angle is negated, and named inverse pairs such as `s`/`sdg` and
+`iswap`/`iswapdg` are exchanged. 38 of the 42 registered opcodes invert this way.
 
 A custom operation is inverted through its own matrix rather than through an opcode rule,
 because that matrix is what executes. The four opcodes that do not invert are the noise
@@ -274,7 +274,7 @@ print([item.name for item in fq.Circuit(1).any(0, matrix=gate).adjoint().to_ir()
 
 channels = [schema for schema in fq.core.OPERATOR_SCHEMAS.values() if schema.semantic_kind == "channel"]
 print(len(fq.core.OPERATOR_SCHEMAS), len(channels))
-# 35 4  -- registered opcodes, and the four that cannot be inverted by a rule
+# 42 4  -- registered opcodes, and the four that cannot be inverted by a rule
 ```
 
 Three further refusals cover instructions whose inverse does not exist as a fixed gate at

@@ -6,6 +6,7 @@ from .candidate import (
     TwinCandidateTrial,
     prepare_candidate_trial,
 )
+from .candidate_fit import TwinCandidateFit, TwinFittedCandidate, fit_candidate
 from .candidate_submission import (
     TwinCandidateSubmission,
     dump_candidate_submission,
@@ -37,6 +38,20 @@ from .evidence import (
     load_evidence,
 )
 from .evolution import TwinEvolutionHistory, align_histories
+from .evolution_cycle import (
+    TwinEvolutionCycle,
+    TwinEvolutionCycleStage,
+    TwinEvolutionRecommendation,
+    dump_evolution_cycle,
+    load_evolution_cycle,
+    prepare_evolution_cycle,
+)
+from .evolution_decision import (
+    TwinEvolutionDecision,
+    dump_evolution_decision,
+    load_evolution_decision,
+    record_evolution_decision,
+)
 from .experiment import TwinExperiment, TwinHardwareReport
 from .factory import from_noise_model, from_quafu_chip_info
 from .freshness import (
@@ -51,8 +66,11 @@ from .history import (
     load_calibration_history,
 )
 from .model import QPUDigitalTwin, TwinSnapshot
+from .parameter_estimation import TwinParameterEstimate, estimate_probe_parameters
 from .persistence import dump_twin, load_twin
 from .prediction import TwinPrediction
+from .probe_bank import TwinProbeBank, TwinProbeBankStatus, prepare_probe_bank
+from .probe_refresh import TwinProbeRefreshPlan, prepare_probe_refresh
 from .region import (
     TwinConnectedRegion,
     TwinRegionCoverage,
@@ -141,11 +159,14 @@ __all__ = (
     "compose_region_twin",
     "from_noise_model",
     "from_quafu_chip_info",
+    "fit_candidate",
     "dump_calibration_history",
     "dump_candidate_submission",
     "dump_candidate_suite",
     "dump_circuit_support",
     "dump_evidence",
+    "dump_evolution_cycle",
+    "dump_evolution_decision",
     "dump_region_holdout_evaluation",
     "dump_region_candidate_holdout_evaluation",
     "dump_region_candidate_holdout_study",
@@ -159,11 +180,14 @@ __all__ = (
     "dump_twin",
     "dump_validation_history",
     "dump_validation_series",
+    "estimate_probe_parameters",
     "load_calibration_history",
     "load_candidate_submission",
     "load_candidate_suite",
     "load_circuit_support",
     "load_evidence",
+    "load_evolution_cycle",
+    "load_evolution_decision",
     "load_region_holdout_evaluation",
     "load_region_candidate_holdout_evaluation",
     "load_region_candidate_holdout_study",
@@ -179,14 +203,19 @@ __all__ = (
     "load_validation_series",
     "prepare_candidate_trial",
     "prepare_candidate_suite",
+    "prepare_evolution_cycle",
+    "prepare_probe_bank",
     "prepare_region_candidate_holdout",
     "prepare_region_holdout_study",
     "prepare_region_validation_suite",
+    "prepare_probe_refresh",
+    "record_evolution_decision",
     "release_region_candidate",
     "TwinCalibrationDrift",
     "TwinCalibrationHistory",
     "TwinCandidateDecision",
     "TwinCandidateEvaluation",
+    "TwinCandidateFit",
     "TwinCandidateSubmission",
     "TwinCandidateSuite",
     "TwinCandidateSuiteEvaluation",
@@ -197,13 +226,22 @@ __all__ = (
     "TwinEvidenceReport",
     "TwinEvidenceStatus",
     "TwinEvolutionHistory",
+    "TwinEvolutionCycle",
+    "TwinEvolutionCycleStage",
+    "TwinEvolutionDecision",
+    "TwinEvolutionRecommendation",
     "TwinExperiment",
     "TwinFreshnessAssessment",
     "TwinFreshnessPolicy",
     "TwinFreshnessStatus",
+    "TwinFittedCandidate",
     "TwinGateDurationDrift",
     "TwinHardwareReport",
+    "TwinParameterEstimate",
     "TwinPrediction",
+    "TwinProbeBank",
+    "TwinProbeBankStatus",
+    "TwinProbeRefreshPlan",
     "TwinQubitCalibrationDrift",
     "TwinRegionCoverage",
     "TwinRegionCoverageStatus",

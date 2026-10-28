@@ -729,6 +729,61 @@ calls, totaling nineteen calls/eighty-two trajectories with seed 53 and one CPU
 thread restored. Raw float64 Born vectors and complex128 conditional density/norm
 use the specifically approved atol=1e-12, rtol=0. Controlled branches are not
 random observations; no frequency/RNG or general sampling certificate is claimed.
-The implementation PR and its actual-main admission remain pending. R04/R05,
-FTS-10/11 selection/product sampling, FTS-02/09 and R01-R15 remain partial; no
-public API, engine, approximate policy or additional research budget is activated.
+Implementation PR #898 and its actual-main admission are complete, as recorded
+in the FTS-10C entry below. R04/R05, FTS-10/11 selection/product sampling,
+FTS-02/09 and R01-R15 remain partial; no public API, engine, approximate policy
+or additional research budget is activated.
+
+### FTS-10C phase/overlap feasibility decision
+
+I-L PR #898 completed actual-main admission at
+`44fb9c6a6779a746780b5b96fcaaa2cb99ce7f2d`: full CI all 54 jobs, required
+source/single/two GPU, main smoke, real QEC optional installation/evidence,
+fresh isolated 838-member package/core and installed public examples passed.
+Source-focused acceptance passed 118 tests with zero skips, using developer
+Torch 2.13 and an existing SDK overlay; fresh core used Torch 2.14.1 without
+that overlay. This closes only finite I-L correctness under the prior approval.
+
+The next [phase/overlap feasibility proposal](../development/FTQC_PHASE_OVERLAP_FEASIBILITY_PROPOSAL.md)
+reviews the missing compact complex-phase representation and pre-selection
+evidence. Its M-P request is limited to a private Simulation research prototype,
+64 candidate states, 850 complex-overlap queries and ten existing public exact
+executions per module verification, with proposed complex128/float64
+atol=1e-12/rtol=0. The human separately approved this finite M-P scope; #922 delivered it after
+#911 actual-main admission. Prior A-D/E-H/I-L approval, document
+merge and green CI did not admit it. No collection, production engine,
+public phase guarantee or method selection follows. FTS-02/09/10/11 and R01-R15
+remain partial. Independent QEC #904 and remote normalization work are reused
+under their own contracts, not claimed as this proposal's implementation.
+
+The separately approved M-P implementation now supplies one private CH-mask
+prototype and finite conformance: 64 retained states, 850 captured overlaps,
+ten existing public calls, 41 new checks. Combined local contracts passed 159
+checks with zero skips (developer Torch 2.13/existing SDK overlay). The compact
+state and inverse-word overlap replay have no production route, export,
+dependency, dense fallback, sample or collection. Actual-main admission at
+`82143b09dea21bf565c51a2e7f3f3c1496ec9dbf` passed all 54 CI jobs, required
+source/single/two GPU, smoke, real QEC optional installation/evidence, fresh
+845-member isolated package/core and installed public examples. Actual-main
+focused contracts passed 159 checks with zero skips on the developer profile;
+fresh core used Python 3.12.14/Torch 2.14.1 without an SDK overlay. This is finite
+R04 correctness evidence; FTS-10 selection and production integration remain open.
+
+### FTS-10D bounded phase/overlap cost decision
+
+The [cost-study proposal](../development/FTQC_PHASE_OVERLAP_COST_STUDY_PROPOSAL.md)
+specifies a separately approved observation boundary after M-P correctness admission.
+It preserves the ten existing one-to-three-qubit descriptions and compares the
+private candidate with statevector/MPS/tensor-network full-probability outputs.
+Proposed maxima are 40 points, 160 workload starts plus one new monitor probe,
+416 state constructions, 3400 overlaps and 120 public executions, with serial
+one-thread CPU work and explicit phase/outer-wall/RSS/failure-stop provenance.
+The finite matrix, numerical values, observer boundary and resource protocol
+were specifically approved on 2026-10-26. Proposal #931 actual-main admission
+passed full CI, required GPUs, smoke, real optional installations/evidence,
+fresh isolated 847-member package/core and installed examples. A private worker
+and serial controller are under separate review; no probe or observation has
+run. The old 193 attempts and their failure remain immutable. Observer/controller
+review and actual-main admission precede the one admitted collection. Production
+selection and a larger domain remain unapproved. R01-R15, FTS-02/09/10/11 and
+M2 remain partial.

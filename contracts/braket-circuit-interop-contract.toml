@@ -26,7 +26,7 @@ measurements = "execution_plan_not_in_static_circuit_ir"
 loss_policy = "fail_closed_unless_allow_lossy_true"
 
 [unsupported]
-flagquantum_opcodes = ["u1", "u2", "crx", "cry", "crz", "bit_flip", "phase_flip", "depolarizing", "amplitude_damping"]
+flagquantum_opcodes = ["u1", "u2", "crx", "cry", "crz", "iswap", "iswapdg", "ch", "csx", "csxdg", "dcx", "ecr", "bit_flip", "phase_flip", "depolarizing", "amplitude_damping"]
 braket_features = ["compiler_directives", "free_parameters", "gate_calibrations", "global_phase", "measurement_instructions", "noise_instructions", "pulse_gates", "result_types", "verbatim_boxes"]
 issue_codes = ["gate_calibration_not_represented", "measurement_not_represented", "non_finite_parameter", "non_real_parameter", "result_type_not_represented", "symbolic_parameter_not_supported", "unsupported_instruction", "unsupported_operation", "wire_extent_not_represented"]
 

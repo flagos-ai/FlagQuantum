@@ -40,14 +40,13 @@ ROOT = Path(__file__).resolve().parents[2]
 #: multiple of `pi/2` would let several wrong ladders agree with the right one.
 _ANGLE = {"theta": 0.37, "phi": 0.61, "lbd": -0.23}
 
-#: The registered opcodes that are unitary and therefore have a controlled form, keyed by
-#: opcode with their arity and parameters. Derived from the registry rather than tabulated,
-#: so a new unitary opcode is exercised here without an edit -- and the count is asserted
-#: so that a registry change is visible rather than silently skipped.
+#: The registered unitary opcodes with a declared controlled form, keyed by opcode with
+#: their arity and parameters. Derived from the registry rather than tabulated, so a new
+#: controllable opcode is exercised here without an edit.
 _UNITARY_OPCODES: dict[str, tuple[int, dict[str, float]]] = {
     opcode: (schema.arity, {name: _ANGLE[name] for name in schema.parameters})
     for opcode, schema in OPERATOR_SCHEMAS.items()
-    if schema.unitary and schema.opcode == opcode
+    if schema.unitary and schema.opcode == opcode and schema.control != "not_available"
 }
 
 #: The control counts every numeric test is measured at. `1` reaches the registered
@@ -478,13 +477,13 @@ def test_the_declaration_covers_every_registered_opcode() -> None:
     rules = {opcode: schema.control for opcode, schema in OPERATOR_SCHEMAS.items()}
     assert set(rules.values()) <= set(CONTROL_RULES)
     assert all(rules.values())
-    assert len(OPERATOR_SCHEMAS) == 35
-    # The opcodes with no controlled form are exactly the noise channels, which is a
-    # statement about the registry rather than a list maintained here.
+    assert len(OPERATOR_SCHEMAS) == 42
+    # Channels and the two ordered Batch B gates intentionally fail closed: neither
+    # has an exact controlled form declared by the schema.
     assert {opcode for opcode, rule in rules.items() if rule == "not_available"} == {
         opcode for opcode, schema in OPERATOR_SCHEMAS.items() if schema.channel
-    }
-    assert len(_UNITARY_OPCODES) == 31
+    } | {"dcx", "ecr"}
+    assert len(_UNITARY_OPCODES) == 36
 
 
 def test_the_ladder_level_is_arity_aware() -> None:

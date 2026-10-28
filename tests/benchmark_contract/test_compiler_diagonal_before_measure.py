@@ -14,9 +14,9 @@ rather than a matrix read at run time -- the pass module holds exactly **8** str
 literals and imports neither a matrix source nor the operator schema; that on seven
 seeded populations the pass removes **316** instructions alone and **158** more once
 its own count is taken after the other passes, every removal checked against an
-exact outcome distribution; that on **196** shape rows it removes **26**, declines
-**170**, and of the **81** it declined that were invisible in fact, **42** were
-declined behind a condition and **39** because a later instruction stands on the
+exact outcome distribution; that on **212** shape rows it removes **26**, declines
+**186**, and of the **93** it declined that were invisible in fact, **46** were
+declined behind a condition and **47** because a later instruction stands on the
 candidate's wire -- with **0** removals that were not invisible; and that the Qiskit
 anchor disagrees on exactly **6** rows, all three of them the class-membership facts
 its opcode list cannot express.
@@ -167,26 +167,26 @@ _DELTA = {
 #: from each other because they are different limits and one total would let either
 #: hide behind the other.
 _SHAPE_CENSUS = {
-    "row_count": 196,
-    "candidate_count": 29,
+    "row_count": 252,
+    "candidate_count": 36,
     "gap_count": 8,
     "one_wire_row_count": 108,
-    "two_wire_row_count": 88,
+    "two_wire_row_count": 144,
     "removed_count": 26,
     "removed_one_wire_row_count": 18,
     "removed_two_wire_row_count": 8,
-    "declined_count": 170,
-    "declined_but_removable_count": 81,
-    "declined_but_removable_behind_a_condition_count": 42,
-    "declined_but_removable_blocked_by_a_later_instruction_count": 39,
+    "declined_count": 226,
+    "declined_but_removable_count": 98,
+    "declined_but_removable_behind_a_condition_count": 46,
+    "declined_but_removable_blocked_by_a_later_instruction_count": 52,
     "removed_but_not_removable_count": 0,
-    "measured_row_count": 156,
+    "measured_row_count": 198,
     # The last two are read under the whole fixed-point loop and not under this pass
     # alone, so another pass landing on main may move them: the commutation pass that
     # merged as this round was prepared moved both by one row. They are re-measured
     # rather than kept. Every other number above is this pass's own.
-    "pipeline_only_row_count": 75,
-    "removed_in_the_pipeline_count": 101,
+    "pipeline_only_row_count": 94,
+    "removed_in_the_pipeline_count": 120,
 }
 
 #: (removed_by_the_pass, candidate_is_diagonal, removable_in_fact,
@@ -201,9 +201,9 @@ _SHAPE_CENSUS = {
 #: differently on purpose.
 #:
 #: ``only_one_of_its_wires_is_measured`` is where the reach is largest and the reason
-#: is not a condition: every one of the eleven two-wire candidates is invisible in
+#: is not a condition: every one of the eighteen two-wire candidates is invisible in
 #: fact there, because only the untouched wire and the control's wire are read, and
-#: the pass declines all eleven because it requires a measurement after every wire of
+#: the pass declines all eighteen because it requires a measurement after every wire of
 #: the candidate.
 _SPOT_ROWS = {
     "z|nothing_between": (True, True, True, True),
@@ -249,7 +249,7 @@ _FORMS = {
 _ANCHOR = {
     "available": True,
     "pass_name": "RemoveDiagonalGatesBeforeMeasure",
-    "row_count": 196,
+    "row_count": 252,
     "removed_count": 20,
     "disagreement_count": 6,
 }
@@ -561,7 +561,7 @@ def test_the_pass_removes_every_diagonal_candidate_that_a_measurement_follows(
 
     assert removed == diagonal
     assert len(removed) == 26
-    assert len(rows) == 58
+    assert len(rows) == 72
 
 
 def test_the_form_table_is_not_a_single_verdict(payload: dict) -> None:

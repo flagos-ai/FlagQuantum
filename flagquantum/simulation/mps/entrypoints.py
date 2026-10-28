@@ -9,9 +9,11 @@ import torch
 
 from ...core.ir import CircuitIR, ensure_circuit_ir
 from .local import run_local_mps
-from .models import MPSAdaptiveRunResult, MPSConfig
+from .models import MPSAdaptiveRunResult, MPSConfig, TruncatedGradient
 from .noisy import run_local_noisy_mps_trajectory
 from .state import MPSState
+
+_TRUNCATED_GRADIENT_POLICIES = frozenset({"refuse", "projected_stop_subspace"})
 
 
 def run_mps(
@@ -24,8 +26,21 @@ def run_mps(
     cutoff: float = 0.0,
     fuse_single_qubit: bool = True,
     dense_observable_qubits: int = 12,
+    truncated_gradient: TruncatedGradient = "refuse",
 ) -> MPSState:
-    """Execute FlagQuantum IR with the native MPS backend."""
+    """Execute FlagQuantum IR with the native MPS backend.
+
+    ``truncated_gradient`` governs what a backward pass may do when a bond split
+    discarded weight. The default refuses, because the frozen-subspace rule the
+    split applies is not the derivative of the forward map once it truncates;
+    ``"projected_stop_subspace"`` authorizes that approximation explicitly.
+    """
+
+    if truncated_gradient not in _TRUNCATED_GRADIENT_POLICIES:
+        raise ValueError(
+            "truncated_gradient must be 'refuse' or 'projected_stop_subspace', "
+            f"got {truncated_gradient!r}"
+        )
 
     if hasattr(circuit_or_ir, "to_ir"):
         ir = ensure_circuit_ir(circuit_or_ir)
@@ -38,6 +53,7 @@ def run_mps(
                     max_bond=max_bond,
                     cutoff=cutoff,
                     dense_observable_qubits=dense_observable_qubits,
+                    truncated_gradient=truncated_gradient,
                 ),
             )
         else:
@@ -50,6 +66,7 @@ def run_mps(
                     max_bond=max_bond,
                     cutoff=cutoff,
                     dense_observable_qubits=dense_observable_qubits,
+                    truncated_gradient=truncated_gradient,
                 ),
             )
     elif isinstance(circuit_or_ir, CircuitIR):
@@ -63,6 +80,7 @@ def run_mps(
                 max_bond=max_bond,
                 cutoff=cutoff,
                 dense_observable_qubits=dense_observable_qubits,
+                truncated_gradient=truncated_gradient,
             ),
         )
     else:
@@ -98,6 +116,7 @@ def run_mps_adaptive(
     bsz: int = 1,
     device: torch.device | str = "cpu",
     dtype: torch.dtype | None = None,
+    truncated_gradient: TruncatedGradient = "refuse",
 ) -> MPSAdaptiveRunResult:
     """Run MPS with one adaptive rerun driven by observed truncation hotspots."""
 
@@ -108,6 +127,7 @@ def run_mps_adaptive(
         dtype=dtype,
         max_bond=initial_max_bond,
         cutoff=cutoff,
+        truncated_gradient=truncated_gradient,
     )
     initial_plan = initial.adaptive_bond_plan(
         global_error_budget=global_error_budget,

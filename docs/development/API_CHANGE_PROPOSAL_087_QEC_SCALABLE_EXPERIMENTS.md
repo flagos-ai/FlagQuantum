@@ -4,13 +4,14 @@
 
 **Decision A was approved on 2026-10-24. Decision B's complete
 [FUNCTIONAL-005 contract](QEC_FUNCTIONAL_005_BATCH_CONTRACT.md) was explicitly
-approved by the API owner on 2026-10-26 (Asia/Shanghai). Decision C is authorized
-for design refinement only; implementation remains explicitly deferred.**
+approved by the API owner on 2026-10-26 (Asia/Shanghai). Decision C's complete
+[007 contract](QEC_FUNCTIONAL_007_EXPERIMENT_CONTRACT.md) was explicitly approved
+for implementation, verification and delivery on the same date.**
 
 The earlier roadmap/proposal approvals did not activate B/C. The later explicit
 Decision B approval now authorizes its complete independent-shot contract and
 verification, including five concrete decoder types and full existing result
-records. It does not authorize Decision C, new Simulation boundaries or changes
+records. Decision C has its separate complete-contract approval; neither decision authorizes new Simulation boundaries or changes
 to frozen fixtures, root exports or decoder registration policy. QEC maintainers
 own the implementation; exact-head delivery gates remain separate.
 
@@ -127,6 +128,18 @@ only today's protocol must still register and decode unchanged.
 
 ## Decision C: Fixed-shot memory experiment
 
+The owner requested proceeding with the three recommended design choices to
+prepare a [complete contract draft](QEC_FUNCTIONAL_007_EXPERIMENT_CONTRACT.md).
+The final signature, source path, result, exceptions and support matrix remain
+subject to implementation approval. No production API is activated.
+
+A [concrete design refinement](QEC_FUNCTIONAL_007_EXPERIMENT_DESIGN.md) is now
+available for review. It proposes a required explicit batch size, default-only
+initial decoder configuration and caller-owned evidence without a persistence
+schema. These refinements and the complete exception/support contract require
+owner approval before implementation. The earlier signature below remains
+historical proposal context, not an implemented or approved API.
+
 Proposed canonical entry point, pending approval:
 
 ```python
@@ -193,7 +206,8 @@ implicitly approved by a roadmap row.
 
 ## Executable current-user baseline
 
-The new signatures above are proposed and are not runnable on current main.
+Decision B is implemented through #904; its contract links its runnable
+five-decoder example. Decision C remains a proposal and is not runnable.
 The following existing example is runnable and remains the compatibility gate:
 
 ```bash
@@ -229,3 +243,16 @@ this proposal does not present pseudocode as an implemented capability.
 
 Merging this document records a proposal; it does not itself constitute the API
 owner's approval, activate implementation, or authorize a release.
+
+## C/007 implementation approval and candidate
+
+Following #924 contract delivery and successful exact-merge Main smoke, the owner
+explicitly approved the complete C/007 contract and its implementation,
+verification and delivery. The candidate now composes the existing strict Stim
+bridge, complete-record 005 operation and shared private Wilson formula in
+`flagquantum.qec.execution.experiments`. Earlier design-only/deferred statements
+in this proposal describe the publication history, not the current approval.
+No root/parent export, registry change, default option, numerical tolerance,
+Simulation boundary, dependency or persistence schema is added. Adaptive stopping
+and threshold fitting still require separate decisions. Final delivery gates
+remain pending; see the [central ledger](../roadmap/QEC_STIM_PYMATCHING_DELIVERY_PLAN.md).

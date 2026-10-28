@@ -25,7 +25,7 @@ measurements = "rejected_from_static_unitary_export_v1"
 loss_policy = "fail_closed_without_lossy_export"
 
 [unsupported]
-flagquantum_opcodes = ["i", "sdg", "tdg", "sx", "sxdg", "phase", "u1", "u2", "u3", "cy", "crx", "cry", "crz", "cphase", "rxx", "ryy", "rzz", "ccx", "cswap", "bit_flip", "phase_flip", "depolarizing", "amplitude_damping"]
+flagquantum_opcodes = ["i", "sdg", "tdg", "sx", "sxdg", "phase", "u1", "u2", "u3", "cy", "crx", "cry", "crz", "cphase", "rxx", "ryy", "rzz", "iswap", "iswapdg", "ch", "csx", "csxdg", "dcx", "ecr", "ccx", "cswap", "bit_flip", "phase_flip", "depolarizing", "amplitude_damping"]
 cudaq_features = ["arbitrary_kernel_import", "classical_control_flow", "decorated_kernel_import", "kernel_arguments", "kernel_composition", "measurements", "noise_channels", "qudit_operations", "remote_or_hardware_execution", "state_initialization", "symbolic_parameters"]
 issue_codes = ["measurement_not_supported", "non_finite_parameter", "non_real_parameter", "reverse_conversion_not_supported", "symbolic_parameter_not_supported", "unsupported_operation"]
 

@@ -22,6 +22,7 @@ from flagquantum.ecosystem.qiskit import (
 
 qiskit = pytest.importorskip("qiskit")
 from qiskit import QuantumCircuit  # noqa: E402
+from qiskit.circuit.library import CSXGate  # noqa: E402
 from qiskit.quantum_info import Statevector  # noqa: E402
 
 pytestmark = [pytest.mark.integration, pytest.mark.qiskit]
@@ -68,7 +69,12 @@ def test_every_contract_operation_converts_in_both_directions() -> None:
         qiskit_circuit.h(0)
         qiskit_circuit.ry(0.231, 1)
         qiskit_circuit.x(2)
-        getattr(qiskit_circuit, operation["qiskit"])(*parameters, *wires)
+        if operation["qiskit"] == "csxdg":
+            # Qiskit names the inverse gate ``csxdg`` but exposes it through a
+            # gate object rather than a QuantumCircuit convenience method.
+            qiskit_circuit.append(CSXGate().inverse(), wires)
+        else:
+            getattr(qiskit_circuit, operation["qiskit"])(*parameters, *wires)
         imported = from_qiskit(qiskit_circuit)
         assert imported.instructions[-1].name == operation["flagquantum"]
         assert tuple(imported.instructions[-1].params) == tuple(

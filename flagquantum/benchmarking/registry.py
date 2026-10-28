@@ -121,6 +121,19 @@ _RUNNERS: dict[str, RunnerSpec] = {
             "--json-output results/dynamic-remote-preflight.json"
         ),
     ),
+    "dynamic_terminal_measurement": RunnerSpec(
+        name="dynamic_terminal_measurement",
+        module="flagquantum.benchmarking.dynamic_terminal_measurement",
+        attribute="main",
+        category="runtime",
+        summary="Measure terminal-measurement normalization and counts projection.",
+        hardware="CPU only",
+        example=(
+            "flagquantum-benchmark run dynamic_terminal_measurement "
+            "--widths 2 32 128 --count-entries 64 --iterations 101 "
+            "--json-output results/dynamic-terminal-measurement.json"
+        ),
+    ),
     "statevector_local": RunnerSpec(
         name="statevector_local",
         module="flagquantum.benchmarking.statevector_local",

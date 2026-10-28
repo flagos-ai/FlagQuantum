@@ -1,33 +1,25 @@
 """Clifford stabilizer sampling backed by the optional Stim engine.
 
 A stabilizer circuit conjugates a Pauli group instead of evolving an amplitude
-vector, so its state is a tableau whose size grows quadratically with the qubit
-count rather than exponentially. That is the whole reason a stabilizer regime
-exists: circuits made only of Clifford gates reach qubit counts no amplitude
-store can hold, and they answer exactly the question a fault-tolerance workflow
-asks -- what do the measurements read out.
-
+vector, so its tableau grows quadratically with the qubit count rather than
+exponentially. Clifford circuits therefore reach qubit counts no amplitude store
+can hold while answering what a fault-tolerance workflow measures.
 What this module owns
 ---------------------
 One conversion and four entry points:
 
-- translating validated FlagQuantum IR into the engine's circuit form, refusing
-  every instruction this engine cannot represent,
-- sampling measurement outcomes for a requested qubit list,
+- translating validated FlagQuantum IR while refusing unsupported instructions,
+- sampling outcomes for a requested qubit list,
 - expanding a Pauli string through the circuit and reading it against the zero
-  state, which is the stabilizer-basis readout a planned expectation request is
-  served with,
-- sampling every measurement a Clifford program records when that program
-  carries positioned noise channels, and
-- surveying what that sampling route makes of a program, without running it, so
-  a caller can decide between the stabilizer regime and a dense one before
-  spending a dense state on the question.
+  state for stabilizer-basis expectation requests,
+- sampling measurements recorded by a Clifford program with positioned noise, and
+- surveying that route without running it, so a caller can choose between the
+  stabilizer and dense regimes before allocating a dense state.
 
 The positioned-noise entry point exists because a detector error model is defined
-between syndrome rounds rather than at a named gate: quantum error correction
-places its data error at a round boundary and its measurement error immediately
-before one check's readout, and the program is the only place that says where
-those positions are. It is deliberately not reachable from the planned stabilizer
+between syndrome rounds rather than at a named gate: the program locates data
+errors at round boundaries and measurement errors before check readout. It is
+deliberately not reachable from the planned stabilizer
 mode, which refuses a channel outright. The readout is reachable from it, and is
 the one entry point here that needs no external engine at all: expanding a Pauli
 through a Clifford circuit is Pauli algebra, not tableau simulation.
@@ -103,6 +95,7 @@ from ...core.ir import CircuitIR, MeasurementNode, ensure_circuit_ir
 from ...core.operator_schema import canonical_opcode, get_operator_schema
 from ...errors import CapabilityError, FlagQuantumError, ValidationError
 from ...noise import KrausChannel
+from ._gate_expansions import GATE_EXPANSIONS, expand_gate
 from ._validation import _pauli_letters, _validate_seed, _validate_shots
 
 # FlagQuantum opcode -> engine gate name. Only Clifford gates appear here, and
@@ -129,10 +122,12 @@ _GATE_NAMES: dict[str, str] = {
     "cy": "CY",
     "cz": "CZ",
     "swap": "SWAP",
+    "iswap": "ISWAP",
+    "iswapdg": "ISWAP_DAG",
 }
 
 # The opcodes this engine executes, as canonical FlagQuantum gate names.
-CLIFFORD_GATE_NAMES = frozenset(_GATE_NAMES)
+CLIFFORD_GATE_NAMES = frozenset((*_GATE_NAMES, *GATE_EXPANSIONS))
 
 _CLIFFORD_SET_TEXT = ", ".join(sorted(CLIFFORD_GATE_NAMES))
 
@@ -351,13 +346,19 @@ def _clifford_instructions(ir: CircuitIR) -> tuple[tuple[str, tuple[int, ...]], 
                 "here would return samples from a different circuit"
             )
         gate = _GATE_NAMES.get(opcode)
-        if gate is None:
+        if gate is not None:
+            translated.append((gate, tuple(int(qubit) for qubit in instruction.wires)))
+            continue
+        expansion = expand_gate(
+            opcode, tuple(int(qubit) for qubit in instruction.wires)
+        )
+        if expansion is None:
             raise CapabilityError(
                 f"instruction {index} {opcode!r} is not a Clifford gate; "
                 f"stabilizer sampling accepts {_CLIFFORD_SET_TEXT} and fails "
                 "closed rather than approximating"
             )
-        translated.append((gate, tuple(int(qubit) for qubit in instruction.wires)))
+        translated.extend(expansion)
     return tuple(translated)
 
 
@@ -795,6 +796,9 @@ def _instruction_operations(
     gate = _GATE_NAMES.get(opcode)
     if gate is not None:
         return ((gate, wires, None),)
+    expansion = expand_gate(opcode, wires)
+    if expansion is not None:
+        return tuple((name, targets, None) for name, targets in expansion)
     if opcode == _MEASURE_OPCODE or opcode == _RESET_OPCODE:
         if len(wires) != 1:
             raise CapabilityError(

@@ -85,7 +85,9 @@ _ISING_ENTANGLER = frozenset({"rxx", "ryy", "rzz"})
 #: and `rxx`, `ryy`, and `rzz` by being Ising entanglers, both of which are separate
 #: rules above. `crx`, `cry`, and `crz` are absent, because a controlled rotation is
 #: not exchange-symmetric and `swap` does not commute with one.
-_WIRE_EXCHANGE_SYMMETRIC = frozenset({"cz", "cphase", *sorted(_ISING_ENTANGLER)})
+_WIRE_EXCHANGE_SYMMETRIC = frozenset(
+    {"cz", "cphase", "iswap", "iswapdg", *sorted(_ISING_ENTANGLER)}
+)
 
 #: Two families of controlled opcodes that each act as the identity on the
 #: control's `|0>` branch and as a Pauli-family operator on its `|1>` branch, so

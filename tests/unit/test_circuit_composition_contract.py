@@ -447,7 +447,9 @@ def test_declared_adjoint_rules_are_the_operator_schema_vocabulary() -> None:
     assert list(ADJOINT_RULES) == adjoint["declared_opcode_rules"]
     assert adjoint["receiver_is_mutated"] is False
     assert adjoint["instruction_order"] == "reversed"
-    assert adjoint["instruction_qubits"] == "unchanged"
+    assert adjoint["instruction_qubits"] == (
+        "unchanged except reverse_operands reverses the gate operands"
+    )
     signature = inspect.signature(fq.Circuit.adjoint)
     assert list(signature.parameters) == ["self"]
     # The contract names the preserved attributes, so a rename must reach it. Only the
@@ -480,7 +482,9 @@ def test_the_adjoint_flags_hold_on_a_measured_inversion() -> None:
         (0,),
     ]
     assert adjoint["instruction_order"] == "reversed"
-    assert adjoint["instruction_qubits"] == "unchanged"
+    assert adjoint["instruction_qubits"] == (
+        "unchanged except reverse_operands reverses the gate operands"
+    )
 
     # `instruction_order_within_gate` is about the order of a gate's own qubits, which
     # is not reversed: only the order of the instructions is.
@@ -728,7 +732,8 @@ def test_declared_control_rules_are_the_operator_schema_vocabulary() -> None:
     assert "Circuit.control" not in _contract()["scope"]["not_provided"]
 
     # Every declared rule is spoken by at least one opcode, and the only rule that is an
-    # absence rather than a form is the one the four channels declare.
+    # absence rather than a form is used by the channels and the two explicitly
+    # contracted fixed gates whose further-controlled form is unavailable.
     used = {schema.control for schema in OPERATOR_SCHEMAS.values()}
     assert set(CONTROL_RULES) <= used
     undeclared = sorted(
@@ -736,7 +741,12 @@ def test_declared_control_rules_are_the_operator_schema_vocabulary() -> None:
         for name, schema in OPERATOR_SCHEMAS.items()
         if schema.opcode == name and schema.control == control["absence_rule"]
     )
-    assert all(OPERATOR_SCHEMAS[name].semantic_kind == "channel" for name in undeclared)
+    channels = {
+        name
+        for name, schema in OPERATOR_SCHEMAS.items()
+        if schema.opcode == name and schema.semantic_kind == "channel"
+    }
+    assert set(undeclared) == channels | set(control["unitary_absence_opcodes"])
 
 
 def test_the_control_flags_hold_on_a_measured_control() -> None:
@@ -1143,7 +1153,7 @@ def test_the_opcode_census_supports_the_unreachable_adjoint_rows() -> None:
 
     census = _contract()["verification"]["opcode_census"]
     assert len(inverted) + len(channels) == len(OPERATOR_SCHEMAS)
-    assert len(inverted) == 31 and len(channels) == 4, (inverted, channels)
+    assert len(inverted) == 38 and len(channels) == 4, (inverted, channels)
     assert channels == sorted(
         name
         for name, schema in OPERATOR_SCHEMAS.items()
@@ -1174,7 +1184,7 @@ def test_the_power_census_is_the_declared_rule_split() -> None:
     assert closed
     assert repeated
     assert len(closed) + len(repeated) == len(OPERATOR_SCHEMAS)
-    assert len(closed) == 12 and len(repeated) == 23, (closed, repeated)
+    assert len(closed) == 12 and len(repeated) == 30, (closed, repeated)
     # Every rule is one of the two declared names, so a third rule cannot appear without
     # this failing rather than quietly taking a default.
     assert set(rules.values()) <= set(POWER_RULES)

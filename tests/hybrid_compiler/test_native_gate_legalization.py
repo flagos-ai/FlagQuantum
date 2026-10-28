@@ -480,7 +480,7 @@ def _two_qubit_group() -> tuple[Instruction, ...]:
 def test_a_z_rotation_sx_and_cx_basis_reaches_the_whole_two_qubit_group() -> None:
     """Every declared two-qubit unitary reaches a `rz`/`sx`/`cx` target.
 
-    Before KAK synthesis this basis legalized 1 of the 11 declared two-qubit
+    Before KAK synthesis this basis legalized 1 of the declared two-qubit
     unitary opcodes, and only when the source carried no matrix at all.
     """
 
@@ -490,18 +490,26 @@ def test_a_z_rotation_sx_and_cx_basis_reaches_the_whole_two_qubit_group() -> Non
         source,
         snapshot=_z_sx_snapshot({"name": "cx", "parameters": ()}),
         evaluated_at=_NOW,
+        max_added_operations=512,
     )
 
-    # Non-vacuity: 11 declared arity-2 unitaries, one of which is `cx` itself.
-    assert len(group) == 11
+    # Non-vacuity: 18 declared arity-2 unitaries, one of which is `cx` itself.
+    assert len(group) == 18
     assert {item.name for item in group} == {
+        "ch",
         "cphase",
         "crx",
         "cry",
         "crz",
+        "csx",
+        "csxdg",
         "cx",
         "cy",
         "cz",
+        "dcx",
+        "ecr",
+        "iswap",
+        "iswapdg",
         "rxx",
         "ryy",
         "rzz",
@@ -514,25 +522,32 @@ def test_a_z_rotation_sx_and_cx_basis_reaches_the_whole_two_qubit_group() -> Non
 
     # The pinned entangler cost of each source opcode. `cx`, `cz`, and `cy` are
     # controlled gates, locally equivalent to the entangler; `swap` is the most
-    # expensive point in the chamber; the remaining seven are controllizations
-    # of a rotation.
+    # expensive point in the chamber; the remaining gates have their pinned
+    # exact synthesis costs recorded below.
     per_opcode = {
         item.source_opcode: sum(1 for name in item.replacement_opcodes if name == "cx")
         for item in result.decompositions
     }
     assert per_opcode == {
+        "ch": 1,
         "cphase": 2,
         "crx": 2,
         "cry": 2,
         "crz": 2,
+        "csx": 2,
+        "csxdg": 2,
         "cy": 1,
         "cz": 1,
+        "dcx": 2,
+        "ecr": 1,
+        "iswap": 2,
+        "iswapdg": 2,
         "rxx": 2,
         "ryy": 2,
         "rzz": 2,
         "swap": 3,
     }
-    assert sum(per_opcode.values()) == 19
+    assert sum(per_opcode.values()) == 31
 
 
 def test_the_two_qubit_legalized_state_matches_up_to_one_global_phase() -> None:
@@ -649,7 +664,7 @@ def test_a_target_whose_only_two_qubit_gate_is_a_rotation_reaches_the_group() ->
 
     This is the basis W8-03 opens. It publishes no controlled gate at all, so
     before the entangler table carried the interaction rotations it legalized one
-    of the eleven declared two-qubit unitaries. The rotation is applied at pi/2,
+    declared two-qubit unitary. The rotation is applied at pi/2,
     which is the only angle at which the family sits on its supercontrolled Weyl
     point.
     """
@@ -663,9 +678,14 @@ def test_a_target_whose_only_two_qubit_gate_is_a_rotation_reaches_the_group() ->
     )
     group = _two_qubit_group()
     source = CircuitIR(2, group, dtype="complex128")
-    result = legalize_native_gates(source, snapshot=rotation_only, evaluated_at=_NOW)
+    result = legalize_native_gates(
+        source,
+        snapshot=rotation_only,
+        evaluated_at=_NOW,
+        max_added_operations=512,
+    )
 
-    assert len(group) == 11
+    assert len(group) == 18
     # Non-vacuity: this basis really has no controlled gate and no `sx`.
     assert {item.name for item in result.program.instructions} <= {"rz", "rx", "rzz"}
     assert "cx" not in {item.name for item in result.program.instructions}
@@ -678,23 +698,29 @@ def test_a_target_whose_only_two_qubit_gate_is_a_rotation_reaches_the_group() ->
         for item in result.decompositions
     }
     assert per_opcode == {
+        "ch": 1,
         "cphase": 2,
         "crx": 2,
         "cry": 2,
         "crz": 2,
+        "csx": 2,
+        "csxdg": 2,
         "cx": 1,
         "cy": 1,
         "cz": 1,
+        "dcx": 2,
+        "ecr": 1,
+        "iswap": 2,
+        "iswapdg": 2,
         "rxx": 2,
         "ryy": 2,
         "swap": 3,
     }
-    # One fewer than the 20 the whole group costs over an entangler the basis has
-    # to synthesize: `rzz` is native here, so it is kept instead of decomposed and
-    # produces no record at all. The count above is therefore over ten opcodes,
-    # which is why it is pinned as a literal rather than derived from the sum.
-    assert sum(per_opcode.values()) == 18
-    assert len(result.decompositions) == 10
+    # One fewer than the 31 entanglers required when `rzz` also needs synthesis:
+    # `rzz` is native here, so it is kept instead of decomposed and produces no
+    # record at all. Pin the literal to keep the native-basis cost auditable.
+    assert sum(per_opcode.values()) == 30
+    assert len(result.decompositions) == 17
 
     # Every entangler the synthesis emits carries the pi/2 angle, and every other
     # gate it emits is a rotation the target published. `rzz` is dropped from the
@@ -705,6 +731,7 @@ def test_a_target_whose_only_two_qubit_gate_is_a_rotation_reaches_the_group() ->
         CircuitIR(2, without_rzz, dtype="complex128"),
         snapshot=rotation_only,
         evaluated_at=_NOW,
+        max_added_operations=512,
     )
     entanglers = 0
     for instruction in synthesized.program.instructions:
@@ -715,7 +742,7 @@ def test_a_target_whose_only_two_qubit_gate_is_a_rotation_reaches_the_group() ->
             assert instruction.name in {"rz", "rx"}
         assert instruction.matrix is None
         assert len(instruction.wires) == 1 or instruction.name == "rzz"
-    assert entanglers == sum(per_opcode.values()) == 18
+    assert entanglers == sum(per_opcode.values()) == 30
 
 
 def test_a_rotation_entangler_is_preferred_only_when_no_cheaper_one_exists() -> None:
@@ -738,6 +765,7 @@ def test_a_rotation_entangler_is_preferred_only_when_no_cheaper_one_exists() -> 
         CircuitIR(2, _two_qubit_group(), dtype="complex128"),
         snapshot=both,
         evaluated_at=_NOW,
+        max_added_operations=512,
     )
     emitted = {
         name for item in result.decompositions for name in item.replacement_opcodes
@@ -798,15 +826,15 @@ def _named_two_qubit_group() -> tuple[Instruction, ...]:
 def test_a_z_rotation_sx_and_cx_basis_reaches_the_named_two_qubit_group() -> None:
     """Every declared two-qubit unitary reaches a `rz`/`sx`/`cx` target by name.
 
-    Before the equivalence table this basis legalized 2 of the 11 named
+    Before the equivalence table this basis legalized 2 of the named
     two-qubit opcodes -- `cx` itself, and `swap` through a hand-written rule --
-    and refused the other nine, because turning a named gate into the entangler
+    and refused the other eleven, because turning a named gate into the entangler
     basis through KAK would have needed a matrix from `flagquantum.simulation`.
     """
 
     group = _named_two_qubit_group()
     # Non-vacuity: this is a claim about the whole group, not a chosen subset.
-    assert len(group) == 11
+    assert len(group) == 18
     assert all(item.matrix is None for item in group)
     result = legalize_native_gates(
         CircuitIR(2, group, dtype="complex128"),
@@ -815,14 +843,21 @@ def test_a_z_rotation_sx_and_cx_basis_reaches_the_named_two_qubit_group() -> Non
         ),
         evaluated_at=_NOW,
     )
-    assert len(result.decompositions) == 10
+    assert len(result.decompositions) == 17
     assert {item.source_opcode for item in result.decompositions} == {
+        "ch",
         "cphase",
         "crx",
         "cry",
         "crz",
+        "csx",
+        "csxdg",
         "cy",
         "cz",
+        "dcx",
+        "ecr",
+        "iswap",
+        "iswapdg",
         "rxx",
         "ryy",
         "rzz",
@@ -830,14 +865,20 @@ def test_a_z_rotation_sx_and_cx_basis_reaches_the_named_two_qubit_group() -> Non
     }
     # No leaf may be a gate the basis never published, and nothing may survive
     # with a matrix attached, which would mean the table was bypassed.
-    assert {item.name for item in result.program.instructions} <= {"rz", "sx", "cx"}
+    assert {item.name for item in result.program.instructions} <= {
+        "rz",
+        "sx",
+        "x",
+        "cx",
+    }
     assert all(item.matrix is None for item in result.program.instructions)
 
 
 def test_every_named_two_qubit_translation_reproduces_its_state() -> None:
     """The strongest check available: run both sides and compare the states.
 
-    Thirteen of the table's entries are exact and `cphase` is not, so the
+    The table's entries are exact up to the explicitly recorded `cphase` global
+    phase, so the
     comparison is up to one global phase for all of them. A mixed two-wire
     program is used rather than the bare gate, because a single gate on `|00>`
     would not exercise the entangling phase the equivalence is about.
@@ -871,14 +912,14 @@ def test_every_named_two_qubit_translation_reproduces_its_state() -> None:
 
 
 def test_a_basis_without_a_z_rotation_reaches_only_the_identities() -> None:
-    """`clifford-t` publishes `h`, `s`, `t` and `cx`, so four names get through.
+    """`clifford-t` publishes `h`, `s`, `t` and `cx`, so seven names get through.
 
     `cx` is native, `swap` is three `cx`, `cz` is a `cx` under two `h`, and `cy`
     is `sdg cx s` whose `sdg` is `s s s`. Every other name needs a z-rotation to
     build an interaction rotation from, and the refusal has to name a gate that
     is really missing rather than the source opcode.
 
-    Qiskit's `BasisTranslator` reaches these same four names into this same
+    Qiskit's `BasisTranslator` reaches these same six names into this same
     basis, and reaches `cy` through the same three-`s` expansion of `sdg`; see
     `benchmarks/compiler_basis_translation.py` for the measured comparison.
     """
@@ -905,8 +946,8 @@ def test_a_basis_without_a_z_rotation_reaches_only_the_identities() -> None:
             missing[item.name] = str(error)
             continue
         reached.append(item.name)
-    assert sorted(reached) == ["cx", "cy", "cz", "swap"]
-    assert len(missing) == 7
+    assert sorted(reached) == ["cx", "cy", "cz", "dcx", "iswap", "iswapdg", "swap"]
+    assert len(missing) == 11
     # A failure names the native gate the target is missing, not the source gate.
     assert all("requires unsupported native gate" in text for text in missing.values())
 
