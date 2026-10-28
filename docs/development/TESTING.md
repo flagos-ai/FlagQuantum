@@ -73,7 +73,9 @@ clearer:
 ## Triton CPU-lane setup
 
 The `triton-optional` job runs CPU-side kernel validation; device tests remain
-in the GPU lanes. It keeps reusable wheel files in
+in the GPU lanes. Trusted runs require the registered `flagquantum-mc550-cpu`
+label as well as `flagquantum-cpu`: the generic label also exists on legacy
+hosts without the same wheel directories and network path. It keeps reusable wheel files in
 `$HOME/.cache/fq-triton-wheels/py312` on self-hosted runners. Hosted runners
 restore the private wheel directory through `actions/cache`. Neither path
 reuses an installed virtual environment.

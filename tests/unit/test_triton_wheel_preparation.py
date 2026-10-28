@@ -196,6 +196,7 @@ def test_workflow_prepares_wheels_before_installing_the_project() -> None:
     ]
     assert job["timeout-minutes"] == 15
     assert '"flagquantum-cpu"' in job["runs-on"]
+    assert '"flagquantum-mc550-cpu"' in job["runs-on"]
     assert '["ubuntu-latest"]' in job["runs-on"]
     steps = job["steps"]
     preparation = next(
