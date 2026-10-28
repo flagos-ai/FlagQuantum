@@ -11,7 +11,7 @@ it is not distributed scalability evidence.
 
 from __future__ import annotations
 
-import socket
+from collections.abc import Iterator
 
 import pytest
 import torch
@@ -27,14 +27,8 @@ pytestmark = pytest.mark.integration
 OBSERVABLE_WIRES = (1, 2)
 
 
-def _free_port() -> int:
-    with socket.socket() as probe:
-        probe.bind(("127.0.0.1", 0))
-        return int(probe.getsockname()[1])
-
-
 @pytest.fixture(scope="module")
-def single_rank_group() -> None:
+def single_rank_group() -> Iterator[None]:
     dist = pytest.importorskip("torch.distributed")
     if not dist.is_available() or not dist.is_gloo_available():
         pytest.skip("a gloo process group is unavailable")
@@ -44,7 +38,8 @@ def single_rank_group() -> None:
         backend="gloo",
         world_size=1,
         rank=0,
-        init_method=f"tcp://127.0.0.1:{_free_port()}",
+        # A single rank needs no TCP rendezvous or unreserved free-port probe.
+        store=dist.HashStore(),
     )
     try:
         yield
