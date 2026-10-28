@@ -28,18 +28,20 @@ OBSERVABLE_WIRES = (1, 2)
 
 
 @pytest.fixture(scope="module")
-def single_rank_group() -> Iterator[None]:
+def single_rank_group(tmp_path_factory: pytest.TempPathFactory) -> Iterator[None]:
     dist = pytest.importorskip("torch.distributed")
     if not dist.is_available() or not dist.is_gloo_available():
         pytest.skip("a gloo process group is unavailable")
     if dist.is_initialized():
         pytest.skip("another process group owns this interpreter")
+    # One rank needs no TCP rendezvous; a unique file avoids the bind/close race
+    # between concurrently running CI workers sharing a host network namespace.
+    rendezvous = tmp_path_factory.mktemp("gloo") / "rendezvous"
     dist.init_process_group(
         backend="gloo",
         world_size=1,
         rank=0,
-        # A single rank needs no TCP rendezvous or unreserved free-port probe.
-        store=dist.HashStore(),
+        init_method=rendezvous.as_uri(),
     )
     try:
         yield
