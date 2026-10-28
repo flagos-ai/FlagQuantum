@@ -241,6 +241,8 @@ _SHORT_REVISION_PATTERN = re.compile(
 #: an artifact.
 REVISION_FIELD_NAMES = (
     "base_commit",
+    "baseline_kernel_revision",
+    "baseline_rotation_revision",
     "benchmark_driver_commit",
     "commit",
     "flagquantum_large_state_source_revision",
