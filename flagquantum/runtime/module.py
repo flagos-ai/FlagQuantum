@@ -26,6 +26,8 @@ from .builder_compilation import (
     BuilderBindings,
     CompiledInstruction,
     SlotParameterMapping,
+    _builder_tensor_inputs,
+    _refuse_non_finite_bound_parameters,
     can_defer_ir_snapshot,
     deferred_ir_snapshot,
     detached_ir_snapshot,
@@ -342,29 +344,10 @@ class Module(torch.nn.Module):
         self._require_program_precision(program)
         return program
 
-    def _builder_tensor_inputs(
-        self, parameters: Any, inputs: torch.Tensor | None
-    ) -> tuple[tuple[torch.Tensor, ...], tuple[str, ...], bool]:
-        if isinstance(parameters, (Mapping, torch.nn.ParameterDict)):
-            names = tuple(parameters)
-            tensors = tuple(parameters[name] for name in names)
-        else:
-            names = ()
-            tensors = (parameters,)
-        if not all(isinstance(tensor, torch.Tensor) for tensor in tensors):
-            raise TypeError("compiled circuit builder parameters must be tensors")
-        return (
-            tensors + (() if inputs is None else (inputs,)),
-            names,
-            inputs is not None,
-        )
-
     def _build_from_compiled_builder(
         self, inputs: torch.Tensor | None, parameters: Any
     ) -> Circuit | CircuitIR:
-        tensor_inputs, names, has_inputs = self._builder_tensor_inputs(
-            parameters, inputs
-        )
+        tensor_inputs, names, has_inputs = _builder_tensor_inputs(parameters, inputs)
         signature = tuple(
             (tuple(tensor.shape), tensor.dtype, tensor.device)
             for tensor in tensor_inputs
@@ -395,53 +378,13 @@ class Module(torch.nn.Module):
             # gradients as well as the parameters. Refusing here instead would
             # take that documented category away from the policy that exists to
             # produce it, without catching anything the policy misses.
-            self._refuse_non_finite_bound_parameters(self._builder_bound_circuit)
+            _refuse_non_finite_bound_parameters(self._builder_bound_circuit)
         # ``Circuit.state`` is the only value-dependent cache on this reusable
         # container. Instructions and their parameter maps stay immutable.
         self._builder_bound_circuit._invalidate_execution_cache(
             instructions_changed=False
         )
         return self._builder_bound_circuit
-
-    @staticmethod
-    def _refuse_non_finite_bound_parameters(circuit: Circuit) -> None:
-        """Apply the canonical angle domain to the values this call just bound.
-
-        A compiled builder is traced rather than executed, so its gates are
-        constructed from tracers and :func:`flagquantum.core.ir._normalize_angle`
-        defers the magnitude check: a tracer has no value yet. The values arrive
-        here, and without this the program completes with ``tensor([nan])`` while
-        the same circuit built directly refuses with ``IRValidationError``.
-
-        The type and dtype rules are static, so they already ran at trace time and
-        only the magnitude was deferred. This therefore asks one question -- is
-        each bound value finite -- in the cheapest form the value allows: a
-        scalar becomes a Python float, a batched angle asks its own tensor.
-        Grouping every value into one tensor first was measured slower than
-        either, because the grouping costs more than the check.
-
-        Anything that is not a real tensor goes through the canonical rule
-        unchanged, and every refusal is raised by that rule, so the domain and
-        the error contract stay Core's rather than becoming a second finite check
-        per simulator.
-        """
-
-        from math import isfinite
-
-        for instruction in circuit._instructions:
-            for parameter, value in instruction.params.items():
-                if isinstance(value, torch.Tensor) and value.is_floating_point():
-                    detached = value.detach()
-                    finite = (
-                        isfinite(float(detached))
-                        if detached.numel() == 1
-                        else bool(detached.isfinite().all())
-                    )
-                    if finite:
-                        continue
-                from ..core.ir import _normalize_angle
-
-                _normalize_angle(value, opcode=instruction.name, parameter=parameter)
 
     def _compile_builder_program(
         self,
@@ -1141,7 +1084,7 @@ class Module(torch.nn.Module):
                 # Rebinding validates the current angles even when IR snapshots
                 # are deferred and the JAX kernel can reuse its compiled trace.
                 self._build(inputs, selected)
-                tensors, _, _ = self._builder_tensor_inputs(selected, inputs)
+                tensors, _, _ = _builder_tensor_inputs(selected, inputs)
                 self._last_ir_snapshot = None
                 self._last_ir_factory = deferred_ir_snapshot(
                     self._builder_program,

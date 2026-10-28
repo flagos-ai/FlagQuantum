@@ -5,12 +5,15 @@ from __future__ import annotations
 from collections.abc import Callable, Iterator, Mapping
 from contextvars import ContextVar
 from dataclasses import dataclass, field, replace
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import torch
 
 from ..core.ir import CircuitIR, Instruction
 from ..core.parameters import ParameterExpression
+
+if TYPE_CHECKING:
+    from ..circuit import Circuit
 
 
 class BuilderBindings:
@@ -226,3 +229,61 @@ __all__ = (
     "SlotParameterMapping",
     "detached_ir_snapshot",
 )
+
+
+def _builder_tensor_inputs(
+    parameters: Any, inputs: torch.Tensor | None
+) -> tuple[tuple[torch.Tensor, ...], tuple[str, ...], bool]:
+    if isinstance(parameters, (Mapping, torch.nn.ParameterDict)):
+        names = tuple(parameters)
+        tensors = tuple(parameters[name] for name in names)
+    else:
+        names = ()
+        tensors = (parameters,)
+    if not all(isinstance(tensor, torch.Tensor) for tensor in tensors):
+        raise TypeError("compiled circuit builder parameters must be tensors")
+    return (
+        tensors + (() if inputs is None else (inputs,)),
+        names,
+        inputs is not None,
+    )
+
+
+def _refuse_non_finite_bound_parameters(circuit: Circuit) -> None:
+    """Apply the canonical angle domain to the values this call just bound.
+
+    A compiled builder is traced rather than executed, so its gates are
+    constructed from tracers and :func:`flagquantum.core.ir._normalize_angle`
+    defers the magnitude check: a tracer has no value yet. The values arrive
+    here, and without this the program completes with ``tensor([nan])`` while
+    the same circuit built directly refuses with ``IRValidationError``.
+
+    The type and dtype rules are static, so they already ran at trace time and
+    only the magnitude was deferred. This therefore asks one question -- is
+    each bound value finite -- in the cheapest form the value allows: a
+    scalar becomes a Python float, a batched angle asks its own tensor.
+    Grouping every value into one tensor first was measured slower than
+    either, because the grouping costs more than the check.
+
+    Anything that is not a real tensor goes through the canonical rule
+    unchanged, and every refusal is raised by that rule, so the domain and
+    the error contract stay Core's rather than becoming a second finite check
+    per simulator.
+    """
+
+    from math import isfinite
+
+    for instruction in circuit._instructions:
+        for parameter, value in instruction.params.items():
+            if isinstance(value, torch.Tensor) and value.is_floating_point():
+                detached = value.detach()
+                finite = (
+                    isfinite(float(detached))
+                    if detached.numel() == 1
+                    else bool(detached.isfinite().all())
+                )
+                if finite:
+                    continue
+            from ..core.ir import _normalize_angle
+
+            _normalize_angle(value, opcode=instruction.name, parameter=parameter)
