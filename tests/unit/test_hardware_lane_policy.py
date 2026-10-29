@@ -30,6 +30,10 @@ ACCELERATOR_GROUP = "flagquantum-accelerator"
 
 A800_CPU_ROUTE = '${{ fromJSON((github.event_name != \'pull_request\' || github.event.pull_request.head.repo.full_name == github.repository) && \'["self-hosted","linux","x64","flagquantum-cpu"]\' || \'["ubuntu-latest"]\') }}'
 
+MC550_CPU_ROUTE = A800_CPU_ROUTE.replace(
+    '"flagquantum-cpu"]', '"flagquantum-cpu","flagquantum-mc550-cpu"]'
+)
+
 TRUSTED_CPU_ROUTE = (
     "${{ (github.event_name != 'pull_request' || "
     "github.event.pull_request.head.repo.full_name == github.repository) "
@@ -165,7 +169,13 @@ def _allows_untrusted_code(job: dict[str, object], reaching: frozenset[str]) -> 
     return not (
         reaching == frozenset({"pull_request"})
         and job.get("runs-on")
-        in (TRUSTED_CPU_ROUTE, ENTRY_CPU_ROUTE, PORTABLE_CPU_ROUTE, A800_CPU_ROUTE)
+        in (
+            TRUSTED_CPU_ROUTE,
+            ENTRY_CPU_ROUTE,
+            PORTABLE_CPU_ROUTE,
+            A800_CPU_ROUTE,
+            MC550_CPU_ROUTE,
+        )
     )
 
 
@@ -380,21 +390,26 @@ def test_trigger_parsing_reads_both_ways_a_workflow_can_spell_on(
     assert _triggers(scalar) == frozenset({"push"})
 
 
-def test_cpu_route_rejects_missing_guards_and_other_untrusted_events() -> None:
-    guarded = {"runs-on": TRUSTED_CPU_ROUTE}
+@pytest.mark.parametrize("route", [TRUSTED_CPU_ROUTE, MC550_CPU_ROUTE])
+def test_cpu_route_rejects_missing_guards_and_other_untrusted_events(
+    route: str,
+) -> None:
+    guarded = {"runs-on": route}
     assert _is_self_hosted(guarded)
     assert not _allows_untrusted_code(guarded, frozenset({"pull_request"}))
     for event in ("pull_request_target", "workflow_run"):
         assert _allows_untrusted_code(guarded, frozenset({event}))
-    for route in (
+    for unguarded in (
         "flagquantum-a100-cpu",
         "${{ 'flagquantum-a100-cpu' }}",
-        TRUSTED_CPU_ROUTE.replace(
+        route.replace(
             "github.event.pull_request.head.repo.full_name == github.repository",
             "true",
         ),
     ):
-        assert _allows_untrusted_code({"runs-on": route}, frozenset({"pull_request"}))
+        assert _allows_untrusted_code(
+            {"runs-on": unguarded}, frozenset({"pull_request"})
+        )
 
 
 def test_dedicated_cpu_lanes_keep_fork_code_on_hosted_runners() -> None:
@@ -403,3 +418,7 @@ def test_dedicated_cpu_lanes_keep_fork_code_on_hosted_runners() -> None:
         assert jobs[name]["runs-on"] == A800_CPU_ROUTE
         assert _is_self_hosted(jobs[name])
         assert not _allows_untrusted_code(jobs[name], frozenset({"pull_request"}))
+    triton = jobs["triton-optional"]
+    assert triton["runs-on"] == MC550_CPU_ROUTE
+    assert _is_self_hosted(triton)
+    assert not _allows_untrusted_code(triton, frozenset({"pull_request"}))
