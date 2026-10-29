@@ -8,9 +8,9 @@ import torch
 
 import flagquantum as fq
 from examples.algorithms.synthesis_trial import polynomial, pressure
+from flagquantum import synth
 from flagquantum.core.ir import Instruction
 from flagquantum.runtime.execution_plan import ExecutionPlan
-from flagquantum.services import _synthesis as synth
 from flagquantum.services import _synthesis_readout as readout
 
 pytestmark = pytest.mark.integration
@@ -42,7 +42,7 @@ def test_high_level_inputs_and_names_need_no_gates_maps_or_decoding(
         topology=topology,
         objective=objective,
     )
-    result = fq.run(program.execution)
+    result = fq.run(program)
     observed = program.probabilities(result, registers=("y", "result", "x"))
     expected = (
         {(y, pressure(x, y), x): 0.25 for x in range(2) for y in range(2)}
@@ -77,9 +77,9 @@ def test_final_constraints_change_schedule_without_user_selecting_one() -> None:
     assert narrow.report["candidate"] == "recompute"
     assert shallow.report["candidate"] == "retain"
     for program in (narrow, shallow):
-        assert sum(
-            program.probabilities(fq.run(program.execution)).values()
-        ) == pytest.approx(1.0)
+        assert sum(program.probabilities(fq.run(program)).values()) == pytest.approx(
+            1.0
+        )
 
 
 def test_every_user_repair_is_a_real_complete_retry() -> None:
@@ -90,9 +90,9 @@ def test_every_user_repair_is_a_real_complete_retry() -> None:
     assert "not a global lower bound" in str(error)
     for repair in error.repairs:
         program = _program(**repair)
-        assert sum(
-            program.probabilities(fq.run(program.execution)).values()
-        ) == pytest.approx(1.0)
+        assert sum(program.probabilities(fq.run(program)).values()) == pytest.approx(
+            1.0
+        )
         with pytest.raises(TypeError):
             repair["max_qubits"] = 100
 
@@ -126,7 +126,7 @@ def test_synthesis_plans_once_and_execution_property_and_reading_do_not_replan(
     program = _program()
     assert len(calls) == 1
     monkeypatch.undo()
-    result = fq.run(program.execution)
+    result = fq.run(program)
     monkeypatch.setattr(api, "plan", forbidden)
     monkeypatch.setattr(fq, "plan", forbidden)
     monkeypatch.setattr(fq, "run", forbidden)
@@ -137,7 +137,7 @@ def test_synthesis_plans_once_and_execution_property_and_reading_do_not_replan(
 
 def test_reader_budget_precedes_norm_scan_and_marginal_allocation(monkeypatch) -> None:
     program = _program(topology="line")
-    result = fq.run(program.execution)
+    result = fq.run(program)
 
     def forbidden(*args, **kwargs):
         raise AssertionError("read budget must precede state scanning/allocation")
@@ -181,13 +181,15 @@ def test_changed_options_same_size_program_and_logical_bindings_are_refused() ->
             program.probabilities(fq.run(source, options=controls))
     altered = replace(program, registers={"result": (0, 1)})
     with pytest.raises(ValueError, match="registers changed"):
-        altered.probabilities(fq.run(program.execution))
+        altered.probabilities(fq.run(program))
 
 
 def test_compiler_prediction_is_bound_to_actual_runtime_even_if_fake_claims_success(
     monkeypatch,
 ) -> None:
-    original = synth.select_arithmetic
+    from flagquantum.services import synthesis as workflow
+
+    original = workflow.select_arithmetic
 
     def wrong_prediction(*args, **kwargs):
         selection = original(*args, **kwargs)
@@ -204,7 +206,7 @@ def test_compiler_prediction_is_bound_to_actual_runtime_even_if_fake_claims_succ
         target.validate()
         return replace(selection, selected=replace(row, target=target))
 
-    monkeypatch.setattr(synth, "select_arithmetic", wrong_prediction)
+    monkeypatch.setattr(workflow, "select_arithmetic", wrong_prediction)
     with pytest.raises(ValueError, match="execution identity"):
         _program()
 
@@ -237,7 +239,7 @@ def test_physical_port_substitution_and_mutated_compiler_stages_are_refused() ->
         registers={"x": (2,), "y": (1,), "result": (0, 3)},
     )
     with pytest.raises(ValueError, match="named ports"):
-        replace(program, _checked=forged).probabilities(fq.run(program.execution))
+        replace(program, _checked=forged).probabilities(fq.run(program))
     program.selection.selected.target.stages[0][1].metadata["stale"] = True
     with pytest.raises(ValueError, match="circuit changed"):
         _ = program.execution
@@ -251,7 +253,7 @@ def test_routed_filtering_reports_omitted_mass_and_never_renormalizes() -> None:
         preparation_map={"x": (0,), "y": (1,)},
         topology="line",
     )
-    observed = program.probabilities(fq.run(program.execution), threshold=0.05)
+    observed = program.probabilities(fq.run(program), threshold=0.05)
     assert dict(observed) == pytest.approx({(0,): math.cos(0.2) ** 2}, abs=1e-10)
     assert observed.diagnostics["omitted_probability"] == pytest.approx(
         math.sin(0.2) ** 2, abs=1e-10
@@ -273,7 +275,7 @@ def test_bound_preparation_gradient_survives_single_user_product(
         preparation_map={"x": (0,), "y": (1,)},
         topology=topology,
     )
-    result = fq.run(program.execution)
+    result = fq.run(program)
     marginal = program.probabilities(result)
     assert marginal[(1,)] == pytest.approx(math.sin(theta / 2) ** 2, abs=1e-10)
     state = result.statevector().reshape(-1)

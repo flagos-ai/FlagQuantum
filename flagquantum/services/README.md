@@ -4,17 +4,24 @@ Services contains small, reusable application workflows that add behavior beyond
 one stable FlagQuantum API call, such as capability aggregation, execution
 preflight, and deployment preflight.
 
-The private `_synthesis` workflow composes Compiler capture and CS06-B finite
+The `synthesis` workflow composes Compiler capture and CS06-B finite
 selection with CS06-A actual execution checks and bounded named reading.
 Synthesis plans the selected program once, but never executes. Run the existing
-plan with `fq.run(program.execution)`, then use `program.probabilities(result)`.
+bound product with `fq.run(program)`, then use `program.probabilities(result)`.
 No user-managed schedule, physical mapping or bit decoding is needed. This is
-not a stable Services export or a public `flagquantum.synth` API.
+the single implementation behind the maintained `flagquantum.synth` facade,
+currently an unreleased candidate awaiting independent developer trial records.
+The private `_synthesis` module was moved, not wrapped; live callers use the
+public facade. Runtime and Compiler gain no reverse dependency on this workflow.
 Start with [the executable workflow](../../examples/algorithms/synthesis_trial.py)
 and `tests/integration/test_synthesis_python_trial.py`. Supported syntax,
 input/output semantics, preparation composition and limitations are in the
 [CS06-C delivery record](../../docs/roadmap/CS06_USER_WORKFLOW_DELIVERY.md)
 and [private contract](../../docs/api-changes/FQ-SYNTH-CS06-C-20261029.md).
+The [run admission record](../../docs/api-changes/FQ-SYNTH-RUN-IMPLEMENTATION-20261029.md)
+supersedes its private-entry limitation for this implementation branch. Candidate
+scope and exact exports are in the
+[governed contract](../../contracts/synthesis-program-run-v1-candidate.json).
 `tests/integration/test_synthesis_user_workflow.py` covers the new end-to-end
 paths. Final ceilings remain flat synthesis arguments; ConstructionBudget is
 separate. SynthesisError exposes checked candidate reports and flat repair

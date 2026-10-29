@@ -1,4 +1,4 @@
-"""Private constrained synthesis: high-level arithmetic, named preparation and named output.
+"""Constrained synthesis: high-level arithmetic, named preparation and named output.
 
 Run from the repository root with PYTHONPATH=. No gate design, physical mapping
 or bitstring decoding is needed in either ordinary workflow.
@@ -7,7 +7,7 @@ or bitstring decoding is needed in either ordinary workflow.
 import math
 
 import flagquantum as fq
-from flagquantum.services import _synthesis as synth
+from flagquantum import synth
 
 
 def polynomial(x: int, y: int) -> int:
@@ -28,7 +28,7 @@ def pressure(x: int, y: int) -> int:
 
 def main() -> None:
     print(
-        "premise: private CPU trial with source-retaining Python and unsigned "
+        "premise: unreleased CPU synthesis profile with source-retaining Python and unsigned "
         "arithmetic; finite checked candidates, no optimality guarantee.\n"
     )
     inputs = {"x": synth.UInt(2), "y": synth.UInt(2)}
@@ -39,7 +39,7 @@ def main() -> None:
         max_qubits=18,
     )
     observed = basis.probabilities(
-        fq.run(basis.execution),
+        fq.run(basis),
         registers=("x", "y", "result"),
     )
     assert set(observed) == {(3, 2, 11)}
@@ -52,7 +52,7 @@ def main() -> None:
         max_qubits=18,
     )
     joint = coherent.probabilities(
-        fq.run(coherent.execution),
+        fq.run(coherent),
         registers=("x", "y", "result"),
     )
     expected = {(x, y, x * x + y) for x in range(4) for y in range(4)}
@@ -73,9 +73,7 @@ def main() -> None:
         max_qubits=9,
         topology="line",
     )
-    line = routed.probabilities(
-        fq.run(routed.execution), registers=("x", "y", "result")
-    )
+    line = routed.probabilities(fq.run(routed), registers=("x", "y", "result"))
     assert set(line) == {(x, y, pressure(x, y)) for x in range(2) for y in range(2)}
     assert all(math.isclose(p, 0.25, abs_tol=1e-10) for p in line.values())
     print("line:", dict(line))

@@ -324,7 +324,10 @@ PREMISE_PHRASES: dict[str, tuple[str, ...]] = {
         "compiler's own Toffoli rule",
         "Only the inputs the ancilla contract names",
     ),
-    "synthesis_trial": ("private CPU trial", "finite checked candidates"),
+    "synthesis_trial": (
+        "unreleased CPU synthesis profile",
+        "finite checked candidates",
+    ),
 }
 
 

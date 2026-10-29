@@ -154,13 +154,13 @@ What they show:
   every input rather than described, the T-cost read from the compiler's own
   Toffoli rule, and the conversion bound shown to be a bound the caller can raise.
 
-- [`synthesis_trial.py`](synthesis_trial.py): the private Services Python trial
+- [`synthesis_trial.py`](synthesis_trial.py): the maintained synthesis candidate
   synthesizes `x*x+y` with named basis and uniform input preparation, executes
-  its checked existing ExecutionPlan, and reads named UInt tuples without
+  its checked bound Program, and reads named UInt tuples without
   user-written gates, physical indices or bitstring decoding. It also executes
   a constrained line-topology example. Finite candidate selection and exact
-  local CPU statevectors are supported; no optimality or stable public synth
-  namespace is claimed.
+  local CPU statevectors are supported. There is no optimality claim; independent
+  developer trials and final release review remain pending.
 
 ## These scripts use the subpackage surface
 
