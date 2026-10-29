@@ -17,6 +17,14 @@ Benchmark claims require audited artifacts and are not inferred from this file.
 
 ## Unreleased
 
+- Add the maintained `flagquantum.synth` implementation candidate and
+  `fq.run(program)` for its factory-created Program. The normal high-level path
+  uses named preparation and `program.probabilities(result)`; the root facade
+  validates and executes the existing bound plan without replanning. Execution
+  overrides are rejected. The initial exact CPU arithmetic/line-profile scope
+  is unchanged; independent user trials and final release review remain pending.
+  No Program/.fq serialization, general Qmod or hardware capability is implied.
+
 - Add `fq.save` and `fq.load` for portable `.fqx` experiment archives containing
   CircuitIR and optional recorded numeric results. I/O never executes the
   program; loading restores detached CPU data and historical execution metadata.

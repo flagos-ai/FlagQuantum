@@ -10,6 +10,14 @@ compatibility guarantee. Historical internal root exports were removed before
 the first public alpha; users import maintained extensions from their explicit
 domain namespaces.
 
+The unreleased maintained `flagquantum.synth` extension and its narrow
+`fq.run(Program)` admission are recorded in
+[`synthesis-program-run-v1-candidate.json`](../../contracts/synthesis-program-run-v1-candidate.json).
+Its seven domain symbols are not root exports. Services owns their single
+implementation; Runtime continues to execute an existing ExecutionPlan. This
+implementation candidate does not claim completed independent user trials,
+release approval, Program serialization or broader backend/Qmod support.
+
 Modules below `flagquantum.runtime`, implementation helpers prefixed with
 an underscore, and symbols absent from the stable/experimental snapshots are
 internal APIs.

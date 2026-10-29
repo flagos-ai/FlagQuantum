@@ -30,6 +30,9 @@ This catalog is generated from the machine-validated
 | Synthesize a one-qubit or two-qubit unitary into a target basis | Target-basis gate and state-preparation synthesis | Development evidence | [Run example](../../examples/compiler_synthesis.py) |
 | Prepare a state from its amplitude vector in a target basis | Target-basis gate and state-preparation synthesis | Development evidence | [Run example](../../examples/compiler_synthesis.py) |
 | Find out whether a target basis can carry a program at all | Target-basis gate and state-preparation synthesis | Development evidence | [Run example](../../examples/compiler_synthesis.py) |
+| Write unsigned arithmetic without designing gates or workspace | Constrained coherent integer synthesis | Development evidence | [Run example](../../examples/algorithms/synthesis_trial.py) |
+| Compare retained and recomputed workspace under a qubit budget | Constrained coherent integer synthesis | Development evidence | [Run example](../../examples/algorithms/synthesis_trial.py) |
+| Run a checked synthesis Program and read named probabilities | Constrained coherent integer synthesis | Development evidence | [Run example](../../examples/algorithms/synthesis_trial.py) |
 | Inspect a circuit diagram in a terminal | Circuit drawing | Experimental | [Read guide](../../flagquantum/drawer/README.md) |
 | Render a figure for a document or notebook | Circuit drawing | Experimental | [Read guide](../../flagquantum/drawer/README.md) |
 | Check a program's wiring and gate order by eye | Circuit drawing | Experimental | [Read guide](../../flagquantum/drawer/README.md) |
@@ -425,6 +428,20 @@ Spell gates and states a target cannot express in the gates that target publishe
 - **Start:** [quick example](../../examples/compiler_synthesis.py)
 - **Documentation:** [guide](../../flagquantum/compiler/README.md)
 - **Known boundary:** In-process target-basis rewriting of one FlagQuantum IR v1 program on CPU; it never executes a program, chooses a target, or certifies hardware behavior, and no performance, fidelity, or hardware claim is made. The synthesis entry points are deliberately not stable flagquantum.compiler exports: synthesize_one_qubit, synthesize_two_qubit and synthesize_state_preparation are reached by module path, and only legalize_native_gates applies them as a whole-program pass. A synthesized rewrite equals its source only up to one global phase, which FlagQuantum IR has no field to record, so every entry point refuses rather than approximating. The refusals are per entry point rather than uniform: synthesize_one_qubit declines z_rotation='u3' and pulse_opcode='ry' while it does accept z_rotation='phase' for a single gate, and the state-preparation ladder declines 'phase' and 'u1' at the same keyword because a ladder needs an entrywise-exact rz. synthesize_two_qubit declines any entangler outside the supercontrolled table, 'ecr' among them, and it is handed a matrix rather than an instruction because the matrix of a named two-qubit gate belongs to flagquantum.simulation, which this layer must not import; it holds only the three parameter-free entangler matrices and the closed form of the rotation family, so a named two-qubit opcode reaches it only after the equivalence table has rewritten it or has reported the gate the target is missing. That table declares eighteen identities from named opcodes to named opcodes and composes them recursively, because a named gate carries no matrix on this layer; an entry that is not itself exact therefore does not stay exact under further expansion, and cphase drops a global phase. For ccx the table's T-form was measured against Qiskit's MCXGrayCode statement and kept: the Gray-code form declares seven leaves against fifteen but costs eight two-qubit gates on the interaction basis against six, and its further expansion runs through cphase, the one table entry that is not exact. Multi-controlled decomposition above three controls is unsupported: FlagQuantum IR declares no arity above three, Qiskit builds MCXGrayCode from an ancilla chain only from five controls, and the V-chain and recursive forms that do cover four controls and above use fewer entanglers than Gray code but need caller-supplied ancillas the IR does not model. The one-qubit angle form and the two-qubit block form are exact only to the working precision of their own arithmetic, and a rewrite whose leaves leave the native set is reported as the opcode the target is missing rather than as the shortest near miss. Synthesis is single-process CPU work with no distributed, multi-device, pulse-level, calibration-aware, or noise-aware path.
+
+### Constrained coherent integer synthesis
+
+Construct a checked reversible arithmetic circuit from a bounded Python integer computation, then execute and read named registers through the existing runtime.
+
+- **Maturity:** Development evidence
+- **Public API:** `flagquantum.synth.synthesize`, `flagquantum.synth.Program.probabilities`, `fq.run`
+- **Runtime modes:** `statevector`
+- **Hardware:** `cpu`
+- **Gradient support:** `bound_scalar_preparation_pytorch_autograd`
+- **Distribution semantics:** `single_device_fast_path`
+- **Start:** [quick example](../../examples/algorithms/synthesis_trial.py)
+- **Documentation:** [guide](../../flagquantum/synth/README.md)
+- **Known boundary:** Unreleased unsigned-integer CPU profile with bounded Python syntax, known input preparations and finite checked candidates; no arbitrary Python, Qmod compatibility, Program/.fq serialization, noise, measurements, directed or allocated-layout admission, or optimality guarantee. A Program executes its checked plan and refuses execution overrides; changed constraints require resynthesis. Two independent developer trials and release review remain pending.
 
 ### Circuit drawing
 
