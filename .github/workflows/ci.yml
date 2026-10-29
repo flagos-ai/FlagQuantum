@@ -1946,6 +1946,7 @@ jobs:
 
   supply-chain:
     needs: prepare-source
+    timeout-minutes: 20
     runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'flagquantum-cpu-general' || 'ubuntu-latest' }}
     concurrency:
       group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('a100-cpu-{0}-supply-chain-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-${{ github.event.pull_request.number || github.ref_name }}-light-c
@@ -2008,12 +2009,15 @@ jobs:
           python -m pip install --no-build-isolation -e '.[dev]'
           pip-audit bandit cyclonedx-bom
       - name: Audit installed dependencies
+        timeout-minutes: 8
         # Snapshot the installed environment and remove only PEP 440 local build
         # suffixes such as PyTorch's `+cpu`. `--disable-pip --no-deps` prevents
         # the audit from resolving or downloading a different environment.
         run: |
           python tools/write_audit_requirements.py audit-requirements.txt
-          pip-audit --strict --disable-pip --no-deps --requirement audit-requirements.txt
+          # Vulnerability queries contact PyPI directly, even on mirror-backed
+          # runners. Allow slow responses while bounding the complete audit step.
+          pip-audit --strict --disable-pip --no-deps --requirement audit-requirements.txt --timeout 60
       - name: Static security analysis
         run: bandit -q -lll -r flagquantum -x flagquantum/testing
       - name: Generate CycloneDX SBOM
