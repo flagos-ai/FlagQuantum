@@ -13,6 +13,7 @@ from typing import NoReturn
 
 from .._hybrid.model import INDEX, HybridProgram, IRType, Operation, ValueId
 from .._hybrid.verifier import Diagnostic, HybridVerificationError
+from .ranges import unsigned_width
 
 _ATTRIBUTES = MappingProxyType(
     {
@@ -223,7 +224,7 @@ def verify_construction(
                     f"unsupported operation {operation.name!r}",
                     operation,
                 )
-            if max(1, bound.bit_length()) > width:
+            if unsigned_width(bound) > width:
                 _fail(
                     "width.overflow",
                     f"result width {width} cannot hold upper bound {bound}",
