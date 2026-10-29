@@ -216,3 +216,13 @@ CPU conformance evidence does not establish GPU performance or a universal
 framework ranking. Statevector may contract a gate network to a dense state when
 the static operation estimate is lower and no intermediate exceeds the dense
 state size (or sixteen elements); its diagnostics expose the selected algorithm.
+
+## Portable experiment archives
+
+`fq.save` / `fq.load` use `.fqx` for CircuitIR and optional numeric results with
+retained static version-1.0 plans. Loaded tensors are detached CPU data; recorded
+plans are inspection data, never execution authority. Native/planless, dynamic,
+Ising and dynamics results, opaque handles, autograd/optimizer checkpoints and
+automatic Web publication are not supported by this format version. Files are
+bounded to 256 members, 16 MiB per JSON member, 64 MiB per tensor and 256 MiB
+total uncompressed data. See [experiment files](EXPERIMENT_FILES.md).

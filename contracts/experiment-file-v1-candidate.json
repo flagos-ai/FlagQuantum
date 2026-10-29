@@ -3,10 +3,13 @@
   "status": "implementation_authorized_pending_pr_review",
   "implementation_authorized": true,
   "authorization_record": "docs/api-changes/FQ-EXPERIMENT-FILES-20261029.md",
-  "root_additions": ["save", "load"],
+  "root_additions": [
+    "save",
+    "load"
+  ],
   "root_removals": [],
   "signatures": {
-    "save": "(path: 'str | os.PathLike[str]', program: 'Circuit | CircuitIR | ExecutionPlan', *, result: 'ExecutionResult | None' = None, overwrite: 'bool' = False) -> 'None'",
+    "save": "(path: 'str | os.PathLike[str]', program: 'Circuit | CircuitIR | ExecutionPlan | Experiment', *, result: 'ExecutionResult | None' = None, overwrite: 'bool' = False) -> 'None'",
     "load": "(path: 'str | os.PathLike[str]') -> 'Experiment'"
   },
   "format": {
@@ -15,8 +18,14 @@
     "schema": "flagquantum.experiment",
     "version": "1.0",
     "container": "zip",
-    "required_members": ["manifest.json", "circuit.json"],
-    "optional_members": ["result.json", "arrays/NNNN.bin"],
+    "required_members": [
+      "manifest.json",
+      "circuit.json"
+    ],
+    "optional_members": [
+      "result.json",
+      "arrays/NNNN.bin"
+    ],
     "max_members": 256,
     "max_json_bytes": 16777216,
     "max_tensor_bytes": 67108864,
@@ -29,6 +38,7 @@
     "no_pickle_or_code_execution": true,
     "existing_ir_and_plan_serialization_unchanged": true,
     "existing_destination_requires_explicit_overwrite": true,
-    "loaded_tensors_are_owned_detached_cpu_data": true
+    "loaded_tensors_are_owned_detached_cpu_data": true,
+    "historical_plans_are_data_not_execution_authority": true
   }
 }

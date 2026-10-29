@@ -14,6 +14,7 @@ tests, and rendered in the
 
 | Task | Primary interface | Result |
 | --- | --- | --- |
+| Save or inspect a recorded experiment | [`fq.save`, `fq.load`](EXPERIMENT_FILES.md) | Portable `.fqx` program and optional recorded numeric result |
 | Draw or export a circuit | `Circuit.draw(format="text"/"mpl"/"latex")` | Text, Matplotlib figure/axes, or lazy LaTeX figure |
 | Describe classical layers and shapes | `flagquantum.drawer.ClassicalLayer` | Immutable, batch-free shape declarations |
 | Draw an explicit hybrid architecture | `flagquantum.drawer.draw_hybrid` | Shape checks, trainability, overview/detail panels and Notebook display |

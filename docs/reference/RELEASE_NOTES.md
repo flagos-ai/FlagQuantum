@@ -17,6 +17,13 @@ Benchmark claims require audited artifacts and are not inferred from this file.
 
 ## Unreleased
 
+- Add `fq.save` and `fq.load` for portable `.fqx` experiment archives containing
+  CircuitIR and optional recorded numeric results. I/O never executes the
+  program; loading restores detached CPU data and historical execution metadata.
+  Version 1.0 supports retained static execution plans, bounded data-only ZIP
+  archives, corruption checks, and atomic writes with explicit overwrite. See
+  [experiment files](EXPERIMENT_FILES.md) for limits and excluded workflows.
+
 - Complete API Change 098 with typed `ch`, `csx`, `csxdg`, `dcx`, and
   `ecr` methods on both `Circuit` and `DynamicCircuit`. Each gate has a
   canonical matrix, closed adjoint behavior, exact basis lowering, static

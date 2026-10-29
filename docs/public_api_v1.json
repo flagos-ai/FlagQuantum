@@ -33,11 +33,13 @@
     "gradient",
     "jacobian",
     "jvp",
+    "load",
     "plan",
     "probabilities",
     "restore_job",
     "run",
     "samples",
+    "save",
     "submit",
     "train",
     "twin",
@@ -85,7 +87,9 @@
     "train": "tests/api_contract/test_module_training_semantics.py::test_train_is_a_minimal_caller_owned_optimizer_loop",
     "twin": "tests/test_twin.py::test_twin_namespace_is_small_and_domain_named",
     "vjp": "tests/test_vector_derivatives.py::test_the_vector_jacobian_product_is_the_cotangent_applied_to_the_jacobian",
-    "vn_entropy": "tests/unit/test_vn_entropy_output_contract.py::test_a_user_asks_for_an_entropy_of_a_named_subsystem"
+    "vn_entropy": "tests/unit/test_vn_entropy_output_contract.py::test_a_user_asks_for_an_entropy_of_a_named_subsystem",
+    "save": "tests/api_contract/test_experiment_files.py::test_bell_save_load_is_data_only",
+    "load": "tests/api_contract/test_experiment_files.py::test_bell_save_load_is_data_only"
   },
   "experimental_stability": "none"
 }

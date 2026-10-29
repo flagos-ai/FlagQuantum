@@ -20,8 +20,9 @@ importing a Web-specific module. The same file can be inspected by CLI, Web and
 notebooks. `save` writes this experiment; `load` reads it without computing,
 submitting, selecting a backend, executing code or drawing new samples. These two
 infrastructure-neutral operations belong at the `import flagquantum as fq` face.
-The return type is `flagquantum.runtime.experiment.Experiment`, a frozen pair of
-an existing `CircuitIR` and an optional existing `ExecutionResult`, not a second IR.
+The return type is `flagquantum.runtime.experiment.Experiment`, a frozen record of
+an existing `CircuitIR`, an optional existing `ExecutionResult`, and historical
+execution data, not a second IR.
 
 ```python
 fq.save(path, program, *, result=None, overwrite=False) -> None
@@ -29,7 +30,9 @@ fq.load(path) -> Experiment
 ```
 
 `path` is a local `str` or `os.PathLike[str]`. `program` accepts Circuit, CircuitIR
-or a static CircuitIR ExecutionPlan. A saved result requires its retained static
+or a static CircuitIR ExecutionPlan, or an Experiment previously returned by
+`load`. Saving an Experiment preserves its recorded execution data; the separate
+`result` argument must be omitted. A saved result requires its retained static
 ExecutionPlan. Planless/provider/native-opaque results fail explicitly in 1.0.
 An execution plan input must match the result's plan identity. A circuit/IR input
 must match the retained executed program, ignoring only runtime configuration
@@ -55,6 +58,9 @@ executed program. Mutated programs and mismatched result plans are rejected.
 - `circuit.json` is the existing CircuitIR 1.0 serialization, unchanged.
 - `result.json` retains its actual static ExecutionPlan, measurement order,
   qubit order, shots, dtype/shape, numeric values, accuracy and diagnostics.
+- Loaded `result.plan` is `None`; `experiment.execution_plan` exposes a fresh
+  dictionary of historical plan data. Loading does not turn an old plan into
+  execution authority or weaken live plan identity checks.
 - Loaded tensors are detached owned CPU data, preserving dtype and shape. An
   experiment is not an autograd, optimizer or distributed-process checkpoint.
 - `save` requires `.fqx` (case-insensitive), refuses an existing destination by
