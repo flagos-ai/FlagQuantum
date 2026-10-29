@@ -362,7 +362,9 @@ def _validate_plan_identity(
     fingerprints: Mapping[str, Any],
     environment: Mapping[str, Any],
     decision: Mapping[str, Any],
+    compiler_identity: Mapping[str, str] | None = None,
 ) -> None:
+    compiler = _compiler_identity() if compiler_identity is None else compiler_identity
     if isinstance(program, CircuitIR):
         program_fingerprint = program.content_hash
     else:
@@ -373,7 +375,7 @@ def _validate_plan_identity(
         "program": program_fingerprint,
         "options": canonical_hash(resolved),
         "environment": canonical_hash(environment),
-        "compiler": canonical_hash(_compiler_identity()),
+        "compiler": canonical_hash(compiler),
     }
     reasons = {
         "program": "program_fingerprint_mismatch",
@@ -396,7 +398,7 @@ def _validate_plan_identity(
             "environment_incompatible",
             "environment requirements disagree with the execution decision",
         )
-    if values["identity"] != _identity(values, compiler=_compiler_identity()):
+    if values["identity"] != _identity(values, compiler=compiler):
         raise ExecutionPlanContractError(
             "identity_mismatch", "ExecutionPlan identity does not match its payload"
         )
@@ -418,6 +420,13 @@ def validate_plan_payload(payload: Mapping[str, Any]) -> dict[str, Any]:
             decision or extension record is missing, unknown, or inconsistent
             with the schema, or if the program cannot be read back.
     """
+    return _validate_plan_payload(payload, compiler_identity=_compiler_identity())
+
+
+def _validate_plan_payload(
+    payload: Mapping[str, Any], *, compiler_identity: Mapping[str, str]
+) -> dict[str, Any]:
+    """Validate a historical data snapshot without authorizing its execution."""
     if not isinstance(payload, Mapping):
         raise TypeError("execution plan payload must be a mapping")
     values = dict(payload)
@@ -465,6 +474,7 @@ def validate_plan_payload(payload: Mapping[str, Any]) -> dict[str, Any]:
         fingerprints=fingerprints,
         environment=environment,
         decision=decision,
+        compiler_identity=compiler_identity,
     )
     normalized: object = json.loads(canonical_json(values))
     if not isinstance(normalized, dict):

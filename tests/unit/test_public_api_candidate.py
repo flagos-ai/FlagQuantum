@@ -102,6 +102,9 @@ def test_candidate_classifies_every_historical_stable_export_exactly_once() -> N
     openqasm_import_contract = _load(OPENQASM_IMPORT)
     if openqasm_import_contract["implementation_authorized"] is True:
         authorized_additions.update(openqasm_import_contract["root_additions"])
+    experiment = _load(ROOT / "contracts" / "experiment-file-v1-candidate.json")
+    if experiment["implementation_authorized"] is True:
+        authorized_additions.update(experiment["root_additions"])
     assert set(classified) == set(exports) | authorized_additions
 
 
@@ -207,13 +210,13 @@ def test_candidate_stable_core_stays_within_reviewed_root_budget() -> None:
     assert openqasm_import_contract["implementation_authorized"] is True
     assert set(openqasm_import_contract["root_additions"]) == {"from_openqasm"}
     assert set(openqasm_import_contract["root_additions"]) <= final_core
-    # Three authorized slices met in this tree. `main` moved this count to 37 with
-    # the `density_matrix` root export and to 40 with the three vector derivatives,
-    # and this branch adds the `vn_entropy` root export authorized under the
-    # measurement-parity grant. The increments compose to 36 + 1 + 3 + 1, so the
-    # merged tree must read 41. The literal stays because a root export that does
-    # not update this test is exactly the change rule 8 requires a human to see.
-    assert len(final_core) == 41
+    experiment = _load(ROOT / "contracts/experiment-file-v1-candidate.json")
+    assert experiment["implementation_authorized"] is True
+    assert set(experiment["root_additions"]) == {"save", "load"}
+    assert set(experiment["root_additions"]) <= final_core
+    # The experiment-file proposal explicitly authorizes two additions to the
+    # previous 41-export budget. Keep this literal as an API-review tripwire.
+    assert len(final_core) == 43
     assert len(final_core) <= rules["root_export_budget"]
     assert {"Circuit", "Module", "ExecutionOptions", "ExecutionPlan"} <= final_core
     assert {"plan", "run", "train", "ExecutionResult", "TrainingResult"} <= final_core

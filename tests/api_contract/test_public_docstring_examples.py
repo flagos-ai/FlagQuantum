@@ -198,6 +198,8 @@ pytestmark = pytest.mark.unit
 # density matrix and entanglement-entropy reads, whose examples show the two
 # figures a caller takes from one run rather than a second execution.
 ENTRIES = (
+    fq.save,
+    fq.load,
     run_memory_experiment,
     LatexFigure,
     ClassicalLayer,

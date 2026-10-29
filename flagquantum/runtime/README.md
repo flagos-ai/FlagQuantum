@@ -110,3 +110,12 @@ old Lindblad profiles remain outside root execution. See
 [the approved delivery record](../../docs/api-changes/FQ-RYDBERG-PRESENCE-TRAJECTORY-20261025.md)
 for a complete example and axes. Run the presence contract, compatibility and
 runtime unit tests when modifying this path.
+
+## Experiment files
+
+`fq.save(path, program, result=result)` and `fq.load(path)` persist CircuitIR and
+recorded numeric results as `.fqx` experiments without executing a program.
+`experiment.py` owns archive validation and result binding; `_experiment_codec.py`
+owns bounded JSON and tensor encoding. Historical plans remain data; existing
+live execution-plan validation is unchanged. See the [format reference](../../docs/reference/EXPERIMENT_FILES.md)
+and [CPU example](../../examples/save_experiment.py).

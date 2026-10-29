@@ -42,6 +42,8 @@ __all__ = (
     "plan",
     "probabilities",
     "run",
+    "save",
+    "load",
     "submit",
     "restore_job",
     "samples",
@@ -57,6 +59,8 @@ __all__ = (
 def __getattr__(name: str) -> Any:
     if name in {"experimental", "twin"}:
         return import_module(f".{name}", __name__)
+    if name in {"save", "load"}:
+        return getattr(import_module(".runtime.experiment", __name__), name)
     if name == "Circuit":
         return getattr(import_module(".circuit", __name__), name)
     if name in {

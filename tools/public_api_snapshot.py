@@ -42,6 +42,7 @@ OBSERVABLE_OUTPUTS_CONTRACT = (
 TWIN_CONTRACT = ROOT / "contracts" / "twin-v1-candidate.json"
 GRADIENT_CONTRACT = ROOT / "contracts" / "gradient-api-v1-candidate.json"
 OPENQASM_IMPORT_CONTRACT = ROOT / "contracts" / "openqasm-import-v1-candidate.json"
+EXPERIMENT_CONTRACT = ROOT / "contracts" / "experiment-file-v1-candidate.json"
 ADDRESS = re.compile(r"0x[0-9a-fA-F]+")
 
 
@@ -210,6 +211,7 @@ def validate() -> tuple[str, ...]:
     openqasm_import_contract = json.loads(
         OPENQASM_IMPORT_CONTRACT.read_text(encoding="utf-8")
     )
+    experiment_contract = json.loads(EXPERIMENT_CONTRACT.read_text(encoding="utf-8"))
     actual = generate()
     names = actual["stable_exports"]
     assert isinstance(names, list)
@@ -265,6 +267,8 @@ def validate() -> tuple[str, ...]:
     if openqasm_import_contract.get("implementation_authorized") is True:
         authorized_changes.update(openqasm_import_contract.get("root_additions", ()))
         authorized_changes.update(openqasm_import_contract.get("root_removals", ()))
+    if experiment_contract.get("implementation_authorized") is True:
+        authorized_changes.update(experiment_contract["root_additions"])
     missing = sorted(set(names) - set(historical_exports) - authorized_changes)
     if missing:
         return (
@@ -316,6 +320,8 @@ def validate() -> tuple[str, ...]:
         expected_signatures.update(
             extension_protocol_contract.get("root_signatures", {})
         )
+    if experiment_contract.get("implementation_authorized") is True:
+        expected_signatures.update(experiment_contract["signatures"])
     expected_signatures.update(observable_outputs_contract.get("signatures", {}))
     if observable_outputs_contract["rules"].get(
         "tensor_request_equality_by_object_identity"
@@ -430,6 +436,8 @@ def _validate_authorized_execution_options(
         "jvp": fq.jvp,
         "probabilities": fq.probabilities,
         "samples": fq.samples,
+        "save": fq.save,
+        "load": fq.load,
         "train": fq.train,
         "vjp": fq.vjp,
         "vn_entropy": fq.vn_entropy,
