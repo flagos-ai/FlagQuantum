@@ -111,6 +111,22 @@ CPU/CUDA wheel. Avoid `--upgrade`/`--upgrade-strategy eager` when retaining a
 managed runtime. The `invertible` extra still requires PyTorch 2.13.x and is not
 a vendor-runtime installation shortcut.
 
+**Huawei Ascend 910C — experimental support through Torch-FL:** Single-device
+split-FP32 statevector simulation, Pauli expectations, explicit parameter-shift
+gradients, and an explicit SGD training loop have been validated on real 910C
+hardware. The tested environment requires the Torch-FL precision and operator
+fixes pinned in the [910C installation and validation guide](docs/guides/ASCEND_910C.md).
+
+```console
+python examples/ascend_910c_training.py --device flagos:0
+```
+
+The example keeps quantum state, gradients, and parameter updates on `flagos:0`
+and learns an analytic objective in 64 steps. This support uses the existing
+`experimental.numerics` interfaces. Native complex statevector execution,
+`fq.Module` autograd, MPS, tensor networks, and distributed execution on Ascend
+remain outside this validated scope.
+
 To build a CPU or GPU environment with QSteed and optional JAX, follow the
 [container guide](docker/dev/README.md).
 

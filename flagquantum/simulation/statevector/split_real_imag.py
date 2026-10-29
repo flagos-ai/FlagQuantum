@@ -230,9 +230,9 @@ def apply_gate_pair(
     """Apply one split-complex gate matrix to a flat statevector."""
 
     qubits = tuple(int(qubit) for qubit in qubits)
-    # Consecutive untouched wires are one axis. A two-wire gate therefore
+    # Consecutive untouched qubits are one axis. A two-qubit gate therefore
     # needs at most five axes, even on a large register. Materializing an
-    # n-wire permuted view otherwise exceeds some accelerators' copy rank.
+    # n-qubit permuted view otherwise exceeds some accelerators' copy rank.
     logical_shape: list[int] = []
     wire_axes: dict[int, int] = {}
     cursor = 0

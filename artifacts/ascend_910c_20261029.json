@@ -1,0 +1,294 @@
+{
+  "schema": "flagquantum_ascend_910c_support_evidence_v1",
+  "date": "2026-10-29",
+  "timezone": "Asia/Shanghai",
+  "commit": "56507b4f260add7263d9f8672a1cf79d52ca6f72",
+  "source": {
+    "revision": "56507b4f260add7263d9f8672a1cf79d52ca6f72",
+    "runtime_file_sha256": "c6de5836e7ee3a9678bce4b7f1285b4b1513be8c9e07c7562f8cbde8e15e620f",
+    "torch_fl_revision": "704e2822d3bdbbebfe2b78a62b434d5972babc67",
+    "torch_fl_equivalent_test_tree_revision": "dda9e99e269680a079a1a0ec83100d109e26c137",
+    "torch_fl_tree_equivalence": "identical Git tree, commit message normalized for repository policy",
+    "followup_changes": "The support branch replaces wire terminology in comments only; the numerical AST is identical to the recorded runtime revision and measured wheel.",
+    "runtime_ast_sha256": "176f14b9c902c86b107f7392075a4eb862073ddc19a54c497f1af3729ebebdd0"
+  },
+  "environment": {
+    "physical_device": "Huawei Ascend 910C",
+    "reported_soc": "Ascend910_9382",
+    "architecture": "aarch64",
+    "python": "3.11.15",
+    "torch": "2.10.0+cpu",
+    "torch_fl": "2.10.0+cann9.0.0, source fix required",
+    "flagtree": "0.7.0+ascend3.5",
+    "flag_gems": "5.4.0",
+    "flagcx": "0.14.0+cann9.0.0",
+    "cann": "9.0.0",
+    "driver": "25.5.0",
+    "pyyaml": "6.0.1",
+    "numpy": "2.4.4",
+    "sqlalchemy": "2.0.48",
+    "matmul_precision": "highest",
+    "routing_overrides": {}
+  },
+  "wheel_sha256": {
+    "flagquantum": "89b742b49f474b7c4c5b0a5f34f886220cc1f84c2b4e02e48bc78553788c7670",
+    "torch_fl": "e35b764f4604caa7597cc34a8ff32bfeaed01513017e853caccd4f4979801d9d",
+    "flagtree": "bf3e8d213359ea03426a503b293db576480ca564c3b673eec9d6c1a476060915",
+    "flag_gems": "09cb175e29f4fdfc78b87df46c4500d5a9b451e12cd64dda9a7d669f522bf5e5"
+  },
+  "scope": {
+    "maturity": "experimental",
+    "distribution_semantics": "single_device_fast_path",
+    "batch_size": 1,
+    "representation": "split_real_imag_float32",
+    "supported_workflows": [
+      "built-in gate forward",
+      "Pauli Hamiltonian expectation",
+      "direct named scalar parameter-shift gradients",
+      "explicit device-resident SGD"
+    ],
+    "unsupported_workflows": [
+      "ordinary complex statevector",
+      "fq.Module native autograd",
+      "MPS",
+      "tensor_network",
+      "distributed",
+      "certified high precision",
+      "general optimizer integration"
+    ]
+  },
+  "conformance": {
+    "availability": {
+      "available": true,
+      "count": 1,
+      "name": "API not exposed"
+    },
+    "p0": {
+      "device": "flagos:0",
+      "provider": "torch_fl",
+      "cases": [
+        {
+          "depth": 8,
+          "max_abs_error": 1.0238573439002359e-07,
+          "norm_drift": 1.1252856790822108e-07,
+          "state_infidelity": 2.220446049250313e-15,
+          "passed": true
+        },
+        {
+          "depth": 32,
+          "max_abs_error": 5.075694338601036e-07,
+          "norm_drift": 7.543593366632351e-07,
+          "state_infidelity": 6.772360450213455e-14,
+          "passed": true
+        },
+        {
+          "depth": 128,
+          "max_abs_error": 6.703393089125708e-07,
+          "norm_drift": 2.0036447478943842e-07,
+          "state_infidelity": 1.5047962875769372e-12,
+          "passed": true
+        }
+      ],
+      "passed": true,
+      "operator_profile": "split_real_imag_statevector_p0",
+      "operator_profile_hash": "408c86ead15dc9744740aefe028bd996b16a6b47ea9fb0ae590b28072fb0ed42",
+      "hardware_certification": false,
+      "schema": "flagquantum_split_real_imag_conformance_v1"
+    },
+    "p1": {
+      "device": "flagos:0",
+      "provider": "torch_fl",
+      "cases": [
+        {
+          "depth": 8,
+          "seed": 0,
+          "expectation_abs_error": 6.303248939465433e-08,
+          "expectation_rel_error": 2.0271852697795553e-07,
+          "gradient_relative_error": 7.587339981072569e-07,
+          "gradient_cosine_similarity": 0.9999999999999528,
+          "norm_drift": 2.384185791015625e-07,
+          "passed": true
+        },
+        {
+          "depth": 8,
+          "seed": 7,
+          "expectation_abs_error": 4.0452064442586533e-07,
+          "expectation_rel_error": 1.3167191280804806e-06,
+          "gradient_relative_error": 9.890987860272643e-07,
+          "gradient_cosine_similarity": 0.9999999999999557,
+          "norm_drift": 6.556510925292969e-07,
+          "passed": true
+        },
+        {
+          "depth": 32,
+          "seed": 0,
+          "expectation_abs_error": 2.816431678431819e-07,
+          "expectation_rel_error": 1.0281085731511664e-06,
+          "gradient_relative_error": 1.570680623668089e-06,
+          "gradient_cosine_similarity": 0.9999999999999032,
+          "norm_drift": 9.5367431640625e-07,
+          "passed": true
+        },
+        {
+          "depth": 32,
+          "seed": 7,
+          "expectation_abs_error": 5.198589965726974e-07,
+          "expectation_rel_error": 2.211038894885539e-06,
+          "gradient_relative_error": 2.5295783347630656e-06,
+          "gradient_cosine_similarity": 0.9999999999998946,
+          "norm_drift": 1.1324882507324219e-06,
+          "passed": true
+        },
+        {
+          "depth": 128,
+          "seed": 0,
+          "expectation_abs_error": 6.329839928598258e-08,
+          "expectation_rel_error": 7.80003502115153e-07,
+          "gradient_relative_error": 9.72598677638349e-07,
+          "gradient_cosine_similarity": 0.9999999999999755,
+          "norm_drift": 6.556510925292969e-07,
+          "passed": true
+        },
+        {
+          "depth": 128,
+          "seed": 7,
+          "expectation_abs_error": 6.124294532061647e-07,
+          "expectation_rel_error": 3.62055829453022e-06,
+          "gradient_relative_error": 6.146267915450938e-06,
+          "gradient_cosine_similarity": 0.9999999999978259,
+          "norm_drift": 2.1457672119140625e-06,
+          "passed": true
+        }
+      ],
+      "passed": true,
+      "operator_profile": "split_real_imag_statevector_p1",
+      "operator_profile_hash": "1cdcb61eed56855abd704dbdef5a1ccf846abd8906c2b45fc3ab00d5c563cb54",
+      "hardware_certification": false,
+      "schema": "flagquantum_split_real_imag_training_conformance_v1"
+    }
+  },
+  "forward_register_widths": {
+    "cases": [
+      {
+        "qubits": 3,
+        "gate_count": 11,
+        "amplitudes": 8,
+        "max_abs_error": 4.557175890494257e-08,
+        "norm_drift": 1.5468844360988498e-07,
+        "device": "flagos:0"
+      },
+      {
+        "qubits": 8,
+        "gate_count": 31,
+        "amplitudes": 256,
+        "max_abs_error": 3.8093589253522594e-08,
+        "norm_drift": 4.0148498836600766e-07,
+        "device": "flagos:0"
+      },
+      {
+        "qubits": 12,
+        "gate_count": 47,
+        "amplitudes": 4096,
+        "max_abs_error": 2.810402230389561e-08,
+        "norm_drift": 8.601123351326123e-07,
+        "device": "flagos:0"
+      },
+      {
+        "qubits": 16,
+        "gate_count": 63,
+        "amplitudes": 65536,
+        "max_abs_error": 1.2100632782233744e-08,
+        "norm_drift": 7.85444016049297e-07,
+        "device": "flagos:0"
+      },
+      {
+        "qubits": 20,
+        "gate_count": 79,
+        "amplitudes": 1048576,
+        "max_abs_error": 6.069362466930154e-09,
+        "norm_drift": 8.137713872757857e-07,
+        "device": "flagos:0"
+      }
+    ],
+    "maximum_qubits_tested": 20,
+    "capacity_limit_claim_allowed": false
+  },
+  "analytic_sgd": {
+    "device": "flagos:0",
+    "final_angle": 3.1415765285491943,
+    "final_expectation": -1.0,
+    "gradient_device": "flagos:0",
+    "initial_expectation": 0.9689124217106447,
+    "maximum_gradient_absolute_error": 1.3969838619232178e-07,
+    "optimizer": "explicit_sgd",
+    "state_device": "flagos:0",
+    "steps": 64
+  },
+  "verification": {
+    "flagquantum_cpu_and_910c_selected": "127 passed, 2 deselected; native CUDA cases excluded on this Ascend process",
+    "torch_fl_device_regressions": "34 passed",
+    "torch_fl_strict_fp32": "2 passed, 174 deselected",
+    "torch_fl_focused_units": "88 passed",
+    "torch_fl_unit_baseline": "45 failed, 1910 passed, 169 skipped, 6 errors",
+    "torch_fl_unit_patched": "45 failed, 1911 passed, 169 skipped, 6 errors",
+    "torch_fl_new_failure_node_ids_after_route_snapshot_fix": [],
+    "full_suite_limitations": "Default regression is not fully green. Fifteen original failures reproduce on unmodified FlagQuantum; the Torch-FL minimal-container full unit suite has the same 45 failed and 6 error node IDs on base and patch.",
+    "flagquantum_default_smoke_unit_initial": "20 failed, 16527 passed, 657 skipped",
+    "flagquantum_unmodified_base_failed_node_rerun": "15 failed, 5 passed; same environment, base 4763937d3cc060212cf45d2c9ac6d7cf482ca940",
+    "flagquantum_policy_fixes": "183 passed; all five newly introduced policy failures addressed without changing contracts",
+    "flagquantum_original_failed_nodes_after_fixes": "15 failed, 5 passed; remaining failure node IDs exactly match unmodified base",
+    "flagquantum_new_failure_node_ids_after_fixes": [],
+    "flagquantum_remaining_baseline_failure_node_ids": [
+      "tests/team/simulation/test_controlled_phase_graph.py::test_product_state_qft_uses_hadamard_phase_fusion",
+      "tests/team/simulation/test_controlled_phase_graph.py::test_qft_hadamard_phase_fusion_matches_graph_path_and_reduces_passes[dtype0]",
+      "tests/team/simulation/test_controlled_phase_graph.py::test_qft_hadamard_phase_fusion_matches_graph_path_and_reduces_passes[dtype1]",
+      "tests/team/simulation/test_statevector_ops_numerics.py::test_cpu_single_qubit_preallocated_output_is_bitwise_rollback_safe[dtype1]",
+      "tests/team/simulation/test_statevector_ops_numerics.py::test_native_fused_rotation_layer_only_promotes_terminal_regions",
+      "tests/unit/test_native_cpu_adjoint.py::test_compact_cx_runtime_threshold_and_rollback",
+      "tests/unit/test_opcode_gradient_exactness_contract.py::test_the_checked_in_contract_is_accepted",
+      "tests/unit/test_operators_superoperator.py::test_kraus_returns_one_operator_per_non_zero_choi_eigenvalue",
+      "tests/unit/test_operators_superoperator.py::test_the_complete_positivity_tolerance_is_relative_to_the_choi_scale",
+      "tests/unit/test_pec_error_mitigation.py::test_a_channel_with_no_inverse_is_refused_by_name",
+      "tests/unit/test_statevector_batch_chunking.py::test_chunked_native_layer_initializes_final_slices_directly[dtype0]",
+      "tests/unit/test_statevector_batch_chunking.py::test_chunked_native_layer_initializes_final_slices_directly[dtype1]",
+      "tests/unit/test_statevector_batch_chunking.py::test_chunked_static_clifford_layer_initializes_final_slices_directly[dtype0]",
+      "tests/unit/test_statevector_batch_chunking.py::test_chunked_static_clifford_layer_initializes_final_slices_directly[dtype1]",
+      "tests/unit/test_variational_solvers.py::test_the_spsa_cost_sequence_is_a_record_and_not_a_descent"
+    ]
+  },
+  "route_observations": {
+    "diagnostic_logging": "FLAGOS_LOG=fallback",
+    "cpu_fallback_log_lines": {
+      "ascend-910c-supported-p0p1.log": 0,
+      "ascend-910c-training.log": 0,
+      "ascend-910c-capacity-final.log": 0
+    },
+    "provider_internal_route_audited": false,
+    "scalar_diagnostics_transferred_to_cpu_explicitly": true
+  },
+  "raw_log_sha256": {
+    "ascend-910c-supported-p0p1.log": "cbbfe16477eb409a3bfd54d25499e2c1de4d8d0795715ba1d63060361cc5914b",
+    "ascend-910c-training.log": "cc471aad77bb99ab4270e412bd1c18a412e826bc94a6c763793173e80f3d0242",
+    "ascend-910c-capacity-final.log": "8ce4760b53b2e2062dc6f5fc89c77d4aa14836be20ee63b0bf8fdf3838cb6e3c",
+    "flagquantum-910c-selected-final.log": "b1fdbd3b0d6439aca75833f58b95790cf9183b7953c4dbb00d2e612d1df3cf7e",
+    "torchfl-device-regressions.log": "fdbb374938a88a0b0a49429cc31c9222d6a1332dc34875268d20efb2309f353a",
+    "torchfl-strict-fp32.log": "d8b316cb36b4be61404824dbca69abfa23efe57a6631759909935315f5d48484",
+    "torchfl-focused-units-final.log": "0dc9ffecba491d674eb7aaae9b7eccd6290b0f628616d46769f7d141512ecaeb",
+    "torchfl-unit-baseline.log": "83c653e0d66122e20f63fb4a3bc64dda6359844a2b1276eba08357c79b6d9f4a",
+    "torchfl-unit-suite-postfix.log": "45c876fe53c02d82b16b8fb6f1a63f38fda54d7577c37b3514338116025d7637",
+    "flagquantum-pr-default-parallel.log": "3c3e1b0292a2e61be79976919581a01dbb16c43dfb0ec8c77ff2abef4462a458",
+    "fq-failure-baseline.log": "7238acbf455e8249624b2cbc2f4ba9dd5dd4d1219ffd2e7d3b35a4963a8cb9f8",
+    "fq-policy-fixes-tests.log": "e5fd5222b7c1b3d850fc5aa1cfd485716c4ba374913cf2e30e00099312ade182",
+    "fq-failures-after-fixes.log": "42c4904e443626206f0ab40811b71cf2cb0fa6f4daa6b50601ea511ba06b9d0a"
+  },
+  "claims": {
+    "single_device_correctness_evidence": true,
+    "hardware_certification": false,
+    "production_claim_allowed": false,
+    "performance_claim_allowed": false,
+    "scalability_claim_allowed": false,
+    "flagcx_collectives_validated": false,
+    "high_precision_certification": false
+  },
+  "dependency_pull_request": "https://github.com/flagos-ai/Torch-FL/pull/683"
+}

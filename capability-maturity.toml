@@ -606,15 +606,17 @@ category = "simulation_and_training"
 user_goals = ["Evaluate statevector forward execution on FP32-only PyTorch devices", "Validate Torch-FL flagos logical-device residency", "Compare split FP32 numerical error with a CPU complex128 reference"]
 public_apis = ["experimental.numerics.execute_split_real_imag_statevector"]
 runtime_modes = ["split_real_imag_statevector_p0"]
-hardware = ["cpu", "single_cuda_reference", "device_generic_pytorch"]
+hardware = ["cpu", "single_cuda_reference", "device_generic_pytorch", "ascend_910c_torch_fl"]
 gradient_support = "unsupported"
 distribution_semantics = "single_device_fast_path"
 quick_start = "docs/reference/SPLIT_REAL_IMAG_STATEVECTOR_P0.md"
 documentation = "docs/reference/SPLIT_REAL_IMAG_STATEVECTOR_P0.md"
 level = "experimental"
 owner = "numerical trust maintainers"
-limitations = "Explicit experimental forward-only executor for a bounded built-in gate set using separate FP32 real and imaginary tensors. It is not selected by the default runtime. Custom matrices, gradients, optimizer steps, sampling and observables APIs, compiled execution, distributed execution, Double-Single storage, provider-internal route auditing, domestic-hardware certification, performance, and production use remain unsupported. CUDA or CUDA-backed flagos evidence is portability evidence only."
+limitations = "Explicit experimental forward-only executor for a bounded built-in gate set using separate FP32 real and imaginary tensors. It is not selected by the default runtime. Custom matrices, gradients, optimizer steps, sampling and observables APIs, compiled execution, distributed execution, Double-Single storage, provider-internal route auditing, domestic-hardware certification, performance, and production use remain unsupported. Ascend 910C single-device FP32 forward correctness is measured with a pinned patched Torch-FL build; see docs/guides/ASCEND_910C.md. This does not certify other representations, autograd, high precision, performance, or distributed execution. CUDA-backed flagos evidence remains portability evidence only."
 focused_tests = "tests/test_split_real_imag_conformance.py"
+
+hardware_evidence = "artifacts/ascend_910c_20261029.json"
 
 [capabilities.split_real_imag_statevector_p1]
 title = "Split real/imag FP32 observable and parameter-shift P1"
@@ -623,15 +625,17 @@ category = "simulation_and_training"
 user_goals = ["Evaluate Pauli expectation values on FP32-only PyTorch devices", "Compute explicit parameter-shift gradients for named rotation parameters", "Compare training primitives with a CPU complex128 reference"]
 public_apis = ["experimental.numerics.execute_split_real_imag_expectation", "experimental.numerics.parameter_shift_split_real_imag_gradient"]
 runtime_modes = ["split_real_imag_statevector_p1"]
-hardware = ["cpu", "single_cuda_reference", "device_generic_pytorch"]
+hardware = ["cpu", "single_cuda_reference", "device_generic_pytorch", "ascend_910c_torch_fl"]
 gradient_support = "parameter_shift_experimental"
 distribution_semantics = "single_device_fast_path"
 quick_start = "docs/reference/SPLIT_REAL_IMAG_STATEVECTOR_P1.md"
 documentation = "docs/reference/SPLIT_REAL_IMAG_STATEVECTOR_P1.md"
 level = "experimental"
 owner = "numerical trust maintainers"
-limitations = "Explicit experimental batch-one Pauli expectation and occurrence-wise two-term parameter-shift gradients for direct named scalar parameters on RX, RY, RZ, RXX, RYY, and RZZ. It is not native autograd and provides no optimizer integration. Parameter expressions, trainable coefficients, custom matrices or states, sampling, compilation, distributed execution, automatic runtime selection, performance, convergence, provider-internal route auditing, and domestic-hardware certification remain unsupported. CUDA or CUDA-backed flagos evidence is portability evidence only."
+limitations = "Explicit experimental batch-one Pauli expectation and occurrence-wise two-term parameter-shift gradients for direct named scalar parameters on RX, RY, RZ, RXX, RYY, and RZZ. It is not native autograd and provides no optimizer integration. Parameter expressions, trainable coefficients, custom matrices or states, sampling, compilation, distributed execution, automatic runtime selection, performance, convergence, provider-internal route auditing, and domestic-hardware certification remain unsupported. Ascend 910C single-device FP32 correctness and explicit parameter-shift SGD are measured with a pinned patched Torch-FL build; see docs/guides/ASCEND_910C.md. This does not certify other representations, autograd, high precision, performance, or distributed execution. CUDA-backed flagos evidence remains portability evidence only."
 focused_tests = "tests/test_split_real_imag_training_conformance.py"
+
+hardware_evidence = "artifacts/ascend_910c_20261029.json"
 
 [capabilities.split_real_imag_statevector_p2_precision]
 title = "Selective Double-Single split statevector precision P2"

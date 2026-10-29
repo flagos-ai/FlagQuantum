@@ -576,12 +576,12 @@ Execute a bounded forward-only statevector using two device-resident float32 ten
 - **Maturity:** Experimental
 - **Public API:** `fq.experimental.numerics.execute_split_real_imag_statevector`
 - **Runtime modes:** `split_real_imag_statevector_p0`
-- **Hardware:** `cpu`, `single_cuda_reference`, `device_generic_pytorch`
+- **Hardware:** `cpu`, `single_cuda_reference`, `device_generic_pytorch`, `ascend_910c_torch_fl`
 - **Gradient support:** `unsupported`
 - **Distribution semantics:** `single_device_fast_path`
 - **Start:** [quick-start guide](../../docs/reference/SPLIT_REAL_IMAG_STATEVECTOR_P0.md)
 - **Documentation:** [guide](../../docs/reference/SPLIT_REAL_IMAG_STATEVECTOR_P0.md)
-- **Known boundary:** Explicit experimental forward-only executor for a bounded built-in gate set using separate FP32 real and imaginary tensors. It is not selected by the default runtime. Custom matrices, gradients, optimizer steps, sampling and observables APIs, compiled execution, distributed execution, Double-Single storage, provider-internal route auditing, domestic-hardware certification, performance, and production use remain unsupported. CUDA or CUDA-backed flagos evidence is portability evidence only.
+- **Known boundary:** Explicit experimental forward-only executor for a bounded built-in gate set using separate FP32 real and imaginary tensors. It is not selected by the default runtime. Custom matrices, gradients, optimizer steps, sampling and observables APIs, compiled execution, distributed execution, Double-Single storage, provider-internal route auditing, domestic-hardware certification, performance, and production use remain unsupported. Ascend 910C single-device FP32 forward correctness is measured with a pinned patched Torch-FL build; see docs/guides/ASCEND_910C.md. This does not certify other representations, autograd, high precision, performance, or distributed execution. CUDA-backed flagos evidence remains portability evidence only.
 
 ### Split real/imag FP32 observable and parameter-shift P1
 
@@ -590,12 +590,12 @@ Evaluate bounded Pauli Hamiltonians and explicit parameter-shift gradients using
 - **Maturity:** Experimental
 - **Public API:** `fq.experimental.numerics.execute_split_real_imag_expectation`, `fq.experimental.numerics.parameter_shift_split_real_imag_gradient`
 - **Runtime modes:** `split_real_imag_statevector_p1`
-- **Hardware:** `cpu`, `single_cuda_reference`, `device_generic_pytorch`
+- **Hardware:** `cpu`, `single_cuda_reference`, `device_generic_pytorch`, `ascend_910c_torch_fl`
 - **Gradient support:** `parameter_shift_experimental`
 - **Distribution semantics:** `single_device_fast_path`
 - **Start:** [quick-start guide](../../docs/reference/SPLIT_REAL_IMAG_STATEVECTOR_P1.md)
 - **Documentation:** [guide](../../docs/reference/SPLIT_REAL_IMAG_STATEVECTOR_P1.md)
-- **Known boundary:** Explicit experimental batch-one Pauli expectation and occurrence-wise two-term parameter-shift gradients for direct named scalar parameters on RX, RY, RZ, RXX, RYY, and RZZ. It is not native autograd and provides no optimizer integration. Parameter expressions, trainable coefficients, custom matrices or states, sampling, compilation, distributed execution, automatic runtime selection, performance, convergence, provider-internal route auditing, and domestic-hardware certification remain unsupported. CUDA or CUDA-backed flagos evidence is portability evidence only.
+- **Known boundary:** Explicit experimental batch-one Pauli expectation and occurrence-wise two-term parameter-shift gradients for direct named scalar parameters on RX, RY, RZ, RXX, RYY, and RZZ. It is not native autograd and provides no optimizer integration. Parameter expressions, trainable coefficients, custom matrices or states, sampling, compilation, distributed execution, automatic runtime selection, performance, convergence, provider-internal route auditing, and domestic-hardware certification remain unsupported. Ascend 910C single-device FP32 correctness and explicit parameter-shift SGD are measured with a pinned patched Torch-FL build; see docs/guides/ASCEND_910C.md. This does not certify other representations, autograd, high precision, performance, or distributed execution. CUDA-backed flagos evidence remains portability evidence only.
 
 ### Selective Double-Single split statevector precision P2
 
