@@ -1,4 +1,4 @@
-"""Private CS-04 trial: high-level arithmetic, named preparation and named output.
+"""Private constrained synthesis: high-level arithmetic, named preparation and named output.
 
 Run from the repository root with PYTHONPATH=. No gate design, physical mapping
 or bitstring decoding is needed in either ordinary workflow.
@@ -19,19 +19,17 @@ def declared_polynomial(x: int, y: int) -> int:
     return x**2 + y
 
 
+def pressure(x: int, y: int) -> int:
+    t = x * y
+    a = t * x
+    u = a * y
+    return t + u
+
+
 def main() -> None:
     print(
         "premise: private CPU trial with source-retaining Python and unsigned "
-        "arithmetic; one conservative candidate, no optimality guarantee.\n"
-    )
-    options = fq.ExecutionOptions(
-        mode="statevector",
-        backend="torch",
-        device="cpu",
-        precision="complex128",
-        require_gradients=False,
-        allow_approximate=False,
-        allow_backend_fallback=False,
+        "arithmetic; finite checked candidates, no optimality guarantee.\n"
     )
     inputs = {"x": synth.UInt(2), "y": synth.UInt(2)}
     basis = synth.synthesize(
@@ -40,8 +38,8 @@ def main() -> None:
         input_state=synth.InputState.basis(x=3, y=2),
         max_qubits=18,
     )
-    observed = basis.read_distribution(
-        fq.run(basis.circuit, options=options),
+    observed = basis.probabilities(
+        fq.run(basis.execution),
         registers=("x", "y", "result"),
     )
     assert set(observed) == {(3, 2, 11)}
@@ -53,8 +51,8 @@ def main() -> None:
         input_state=synth.InputState.uniform(),
         max_qubits=18,
     )
-    joint = coherent.read_distribution(
-        fq.run(coherent.circuit, options=options),
+    joint = coherent.probabilities(
+        fq.run(coherent.execution),
         registers=("x", "y", "result"),
     )
     expected = {(x, y, x * x + y) for x in range(4) for y in range(4)}
@@ -68,6 +66,19 @@ def main() -> None:
         max_qubits=18,
     )
     assert declared.circuit.instructions == coherent.circuit.instructions
+    routed = synth.synthesize(
+        pressure,
+        inputs={"x": synth.UInt(1), "y": synth.UInt(1)},
+        input_state=synth.InputState.uniform(),
+        max_qubits=9,
+        topology="line",
+    )
+    line = routed.probabilities(
+        fq.run(routed.execution), registers=("x", "y", "result")
+    )
+    assert set(line) == {(x, y, pressure(x, y)) for x in range(2) for y in range(2)}
+    assert all(math.isclose(p, 0.25, abs_tol=1e-10) for p in line.values())
+    print("line:", dict(line))
     print("basis:", dict(observed))
     print("uniform:", dict(joint))
     print("logical resources:", coherent.report["resources"])

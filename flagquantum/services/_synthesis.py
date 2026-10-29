@@ -1,29 +1,54 @@
-"""Private CS-04 workflow trial; no public exports or compatibility guarantee."""
+"""Private constrained synthesis workflow; no stable public namespace."""
 
 from __future__ import annotations
 
-from collections.abc import Mapping, Sequence
-from dataclasses import dataclass, replace
+import inspect
+from collections.abc import Iterable, Mapping, Sequence
+from dataclasses import dataclass, field, replace
 from types import MappingProxyType
 from typing import Literal, TypedDict
 
-from ..compiler import ResourceEstimate, estimate_resources, schedule_layers
-from ..compiler import compile as compile_program
-from ..compiler._construction.frontend_python import Definition, capture
+from ..compiler import ResourceEstimate, estimate_resources
+from ..compiler._construction.constraints import CircuitLimits
+from ..compiler._construction.frontend_python import (
+    Definition,
+    _QuantumFunction,
+    capture,
+)
 from ..compiler._construction.frontend_python import qfunc as qfunc
-from ..compiler._construction.lowering import lower_arithmetic
-from ..compiler._construction.profile import _positive_integer, uint_type
+from ..compiler._construction.profile import uint_type
+from ..compiler._construction.selection import (
+    Constraints,
+    ConstructionBudget,
+    Selection,
+    select_arithmetic,
+)
+from ..compiler._construction.target import Target
 from ..compiler._hybrid.model import SourceLocation
 from ..compiler._hybrid.verifier import Diagnostic, HybridVerificationError
+from ..compiler.basis_conversion import require_basis
+from ..compiler.coupling import CouplingMap
 from ..core.ir import CircuitIR, Instruction
 from ..core.operator_schema import get_operator_schema
 from ..core.parameters import parameter_names_in_value
 from ..runtime.dynamic._conditions import instruction_is_dynamic
+from ..runtime.execution_plan import ExecutionPlan
+from ..runtime.execution_plan_contract import plan_execution_program
+from ..runtime.options import ExecutionOptions
 from ..runtime.result import ExecutionResult
+from ._synthesis_execution import CheckedExecution, inspect_execution
 from ._synthesis_readout import Distribution
-from ._synthesis_readout import read_distribution as _read_distribution
+from ._synthesis_readout import probabilities as _probabilities
 
-__all__ = ("InputState", "Program", "UInt", "qfunc", "synthesize")
+__all__ = (
+    "ConstructionBudget",
+    "InputState",
+    "Program",
+    "SynthesisError",
+    "UInt",
+    "qfunc",
+    "synthesize",
+)
 
 
 class _Report(TypedDict):
@@ -31,7 +56,7 @@ class _Report(TypedDict):
     result_width: int
     input_state: str
     constants: Mapping[str, int]
-    max_qubits: int
+    max_qubits: int | None
     workspace_qubits: int
     candidate: str
     function: str
@@ -72,18 +97,106 @@ class InputState:
         return cls("uniform", MappingProxyType({}))
 
 
+class SynthesisError(HybridVerificationError):
+    """A failed finite search, including checked rows and executable repairs."""
+
+    def __init__(self, selection: Selection) -> None:
+        self.selection = selection
+        self.repairs = tuple(
+            MappingProxyType(
+                {
+                    "max_qubits": repair.constraints.limits.max_qubits,
+                    "max_operations": repair.constraints.limits.max_operations,
+                    "max_depth": repair.constraints.limits.max_depth,
+                    "max_workspace": repair.constraints.max_workspace,
+                }
+            )
+            for repair in selection.recoveries
+        )
+        super().__init__(
+            (
+                *selection.diagnostics,
+                *(d for row in selection.rows for d in row.diagnostics),
+                *(
+                    Diagnostic(
+                        "synthesis.recovery",
+                        f"retry one checked candidate with {dict(repair)}; not a global lower bound",
+                    )
+                    for repair in self.repairs
+                ),
+            )
+        )
+
+
 @dataclass(frozen=True)
 class Program:
-    """One trial product with existing IR, report and optional named reading."""
+    """One synthesis product; run execution, then read declared logical names."""
 
-    circuit: CircuitIR
-    arithmetic: CircuitIR
+    circuit: CircuitIR = field(repr=False)
+    arithmetic: CircuitIR = field(repr=False)
     report: Mapping[str, object]
     registers: Mapping[str, tuple[int, ...]]
-    _source_hash: str
-    _executable_hash: str
+    selection: Selection = field(repr=False)
+    _checked: CheckedExecution = field(repr=False)
 
-    def read_distribution(
+    def _validate(self) -> None:
+        row = self.selection.selected
+        if row is None or row.target is None:
+            raise ValueError("synthesis has no selected target")
+        try:
+            row.target.validate()
+        except ValueError as error:
+            raise ValueError(
+                "the synthesis circuit changed; synthesize again before reading or execution"
+            ) from error
+        if self.circuit.content_hash != row.target.submitted.content_hash:
+            raise ValueError("the synthesis circuit changed; synthesize again")
+        if dict(self.registers) != dict(self.selection.registers):
+            raise ValueError("logical registers changed; synthesize again")
+        physical = {
+            name: tuple(row.target.layout.physical_of(q) for q in ports)
+            for name, ports in self.registers.items()
+        }
+        if (
+            physical != dict(self._checked.registers)
+            or self._checked.coupling != row.target.coupling
+        ):
+            raise ValueError(
+                "execution layout or named ports differ from the selected target"
+            )
+        actual = plan_execution_program(self._checked.plan)
+        expected = replace(
+            row.target.executable,
+            metadata={
+                key: value
+                for key, value in row.target.executable.metadata.items()
+                if key != "runtime_config"
+            },
+        )
+        if actual.content_hash != expected.content_hash:
+            raise ValueError(
+                "execution identity differs from the selected Compiler product"
+            )
+        if (
+            self._checked.limits != self.selection.constraints.limits
+            or self._checked.basis != self.selection.target.basis
+        ):
+            raise ValueError("execution constraints or basis changed; synthesize again")
+        if self.selection.constraints.violations(
+            self._checked.resources,
+            row.arithmetic.peak_workspace if row.arithmetic is not None else 0,
+        ):
+            raise ValueError(
+                "selected candidate no longer satisfies synthesis constraints"
+            )
+
+    @property
+    def execution(self) -> ExecutionPlan:
+        """Existing checked plan for fq.run; accessing it performs no planning."""
+        self._validate()
+        return self._checked.plan
+
+    def probabilities(
         self,
         result: ExecutionResult,
         *,
@@ -93,13 +206,11 @@ class Program:
         max_amplitudes: int = 1 << 22,
         threshold: float = 1e-14,
     ) -> Distribution:
-        """Read a bounded exact marginal without executing or replanning."""
-        return _read_distribution(
+        """Read a bounded exact named marginal without execution or replanning."""
+        self._validate()
+        return _probabilities(
             result,
-            circuit=self.circuit,
-            source_hash=self._source_hash,
-            executable_hash=self._executable_hash,
-            mapping=self.registers,
+            checked=self._checked,
             registers=registers,
             max_bits=max_bits,
             max_keys=max_keys,
@@ -123,11 +234,12 @@ def _prepare(
         if (
             not isinstance(preparation, CircuitIR)
             or preparation.n_wires != input_count
+            or preparation.shape not in {(1 << input_count,), (1, 1 << input_count)}
             or preparation.measurements
             or preparation.observables
         ):
             raise ValueError(
-                "preparation must be unitary input-only CircuitIR without measurements or observables"
+                "preparation must be single-batch unitary input-only CircuitIR without measurements or observables"
             )
         if preparation_map is None or set(preparation_map) != set(inputs):
             raise ValueError("preparation_map must cover every named quantum input")
@@ -204,6 +316,10 @@ def _prepare(
     return tuple(prepared), state_name
 
 
+_DEFAULT_BUDGET = ConstructionBudget()
+_LINE_BASIS = ("x", "h", "s", "sdg", "t", "tdg", "ry", "rz", "cx", "u3", "swap")
+
+
 def synthesize(
     function: Definition,
     *,
@@ -211,23 +327,30 @@ def synthesize(
     input_state: InputState | None = None,
     constants: Mapping[str, int] | None = None,
     functions: Sequence[Definition] = (),
-    max_qubits: int = 256,
-    max_operations: int = 100_000,
+    max_qubits: int | None = 256,
+    max_operations: int | None = 100_000,
+    max_depth: int | None = None,
+    max_workspace: int | None = None,
+    construction_budget: ConstructionBudget = _DEFAULT_BUDGET,
+    objective: Literal["width", "depth"] = "width",
+    basis: Iterable[str] | None = None,
+    topology: Literal["line"] | None = None,
     preparation: CircuitIR | None = None,
     preparation_map: Mapping[str, Sequence[int]] | None = None,
 ) -> Program:
-    """Capture, infer and lower one conservative logical arithmetic candidate.
+    """Capture high-level arithmetic, select and check one exact CPU program.
 
-    Ordinary functions are the default trial entry. qfunc snapshots a definition
-    earlier but uses the same arithmetic semantics. Named preparation and existing
-    preparation IR are mutually exclusive. Target search is outside this trial.
+    Final ceilings are distinct from construction_budget. Synthesis plans once
+    through the existing Runtime API but never executes. Run program.execution
+    through fq.run and read actual probabilities by declared names.
     """
-    _positive_integer(max_qubits, "max_qubits")
-    _positive_integer(max_operations, "max_operations")
-    if max_qubits > 256 or max_operations > 100_000:
-        raise ValueError(
-            "construction safety caps are 256 qubits and 100000 operations"
-        )
+    constraints = Constraints(
+        CircuitLimits(max_qubits, max_operations, max_depth), max_workspace
+    )
+    if not isinstance(construction_budget, ConstructionBudget):
+        raise TypeError("construction_budget must be ConstructionBudget")
+    if topology not in {None, "line"}:
+        raise ValueError("the admitted topology profiles are logical (None) and line")
     if not isinstance(inputs, Mapping) or (
         constants is not None and not isinstance(constants, Mapping)
     ):
@@ -250,102 +373,103 @@ def synthesize(
         constants=constants,
         functions=functions,
     )
-    block = graph.body.blocks[0]
+    if isinstance(function, _QuantumFunction):
+        parameters = tuple(
+            arg.arg
+            for arg in (
+                *function.source.node.args.posonlyargs,
+                *function.source.node.args.args,
+            )
+        )
+    else:
+        parameters = tuple(inspect.signature(function).parameters)
+    names = tuple(name for name in parameters if name in inputs)
     mapping: dict[str, tuple[int, ...]] = {}
     position = 0
-    bindings = {}
-    for argument in block.arguments:
-        name = argument.id.scope
-        width = inputs[name].width
-        mapping[name] = tuple(range(position, position + width))
-        bindings[argument.id] = mapping[name]
-        position += width
-    result_width = block.operations[-1].operands[0].type.parameters[0]
-    assert isinstance(result_width, int)
-    mapping["result"] = tuple(range(position, position + result_width))
-    position += result_width
-    if position > max_qubits:
-        raise ValueError(
-            f"declared inputs and exact result need {position} qubits, exceeding max_qubits={max_qubits}"
-        )
+    for name in names:
+        mapping[name] = tuple(range(position, position + inputs[name].width))
+        position += inputs[name].width
     prepared, state_name = _prepare(
         inputs, mapping, input_state, preparation, preparation_map
     )
-    try:
-        arithmetic = lower_arithmetic(
-            (graph,),
-            bindings,
-            mapping["result"],
-            entry=graph.name,
-            n_qubits=max_qubits,
-            workspace=tuple(range(position, max_qubits)),
-            workspace_state="fresh_zero",
-            max_operations=max_operations,
-        )
-    except HybridVerificationError as error:
-        diagnostics = tuple(
-            Diagnostic(
-                d.code,
-                d.message
-                + (
-                    "; increase max_qubits for this conservative candidate; smaller UInt domains are valid only if they fit your inputs"
-                    if d.code == "construction.lowering.workspace"
-                    else (
-                        "; increase max_operations for this candidate"
-                        if d.code == "construction.lowering.operations"
-                        else ""
-                    )
-                ),
+    selected_basis = (
+        (_LINE_BASIS if topology == "line" else None)
+        if basis is None
+        else require_basis(basis)
+    )
+    target = Target(
+        basis=selected_basis,
+        couplings=(
+            tuple(
+                CouplingMap.line(n)
+                for n in range(position, construction_budget.qubits + 1)
             )
-            for d in error.diagnostics
-        )
-        raise HybridVerificationError(diagnostics) from error
-    # Unused trailing zero allocations never enter the circuit; retain every
-    # named input/output and every qubit actually touched by the candidate.
-    total = max(
-        position, max((max(i.wires) + 1 for i in arithmetic.instructions), default=0)
-    )
-    arithmetic = replace(arithmetic, n_wires=total, shape=())
-    circuit = replace(
-        arithmetic,
-        instructions=(*prepared, *arithmetic.instructions),
-        dtype="complex128",
-    )
-    compiled = compile_program(circuit)
-    if max(len(circuit.instructions), len(compiled.instructions)) > max_operations:
-        raise ValueError(
-            "preparation plus arithmetic exceeds max_operations; increase the budget or reduce the supported computation"
-        )
-    canonical = replace(
-        circuit,
-        instructions=tuple(i for layer in schedule_layers(compiled) for i in layer),
-    )
-    report: _Report = {
-        "input_widths": MappingProxyType(
-            {name: spec.width for name, spec in inputs.items()}
+            if topology == "line"
+            else ()
         ),
-        "result_width": result_width,
+        optimize=topology is None,
+        restore_layout=topology is None,
+    )
+    selection = select_arithmetic(
+        (graph,),
+        entry=graph.name,
+        input_names=names,
+        preparation=CircuitIR(position, prepared, dtype="complex128"),
+        constraints=constraints,
+        budget=construction_budget,
+        target=target,
+        objective=objective,
+    )
+    row = selection.selected
+    if row is None or row.target is None or row.arithmetic is None:
+        raise SynthesisError(selection)
+    from .._api import plan
+
+    options = ExecutionOptions(
+        mode="statevector",
+        backend="torch",
+        device="cpu",
+        precision="complex128",
+        require_gradients=False,
+        allow_approximate=False,
+        allow_backend_fallback=False,
+    )
+    execution = plan(row.target.submitted, options=options)
+    checked = inspect_execution(
+        execution,
+        limits=constraints.limits,
+        basis=target.basis,
+        coupling=row.target.coupling,
+        registers=selection.registers,
+    )
+    resources = checked.resources
+    block = graph.body.blocks[0]
+    report: _Report = {
+        "input_widths": MappingProxyType({name: inputs[name].width for name in names}),
+        "result_width": len(selection.registers["result"]),
         "input_state": state_name,
         "constants": MappingProxyType(dict(constants or {})),
         "max_qubits": max_qubits,
-        "workspace_qubits": total - position,
-        "candidate": "conservative_integer",
+        "workspace_qubits": row.arithmetic.peak_workspace,
+        "candidate": row.strategy,
         "function": graph.name,
         "source_locations": tuple(
             dict.fromkeys(
                 op.location for op in block.operations if op.location is not None
             )
         ),
-        "scope": "logical_default_compiled_preparation_and_arithmetic",
-        "resources": estimate_resources(compiled),
-        "source_resources": estimate_resources(circuit),
-        "arithmetic_resources": estimate_resources(arithmetic),
+        "scope": "actual_cpu_preparation_arithmetic_cleanup",
+        "resources": resources,
+        "source_resources": dict(row.stage_resources)["source"],
+        "arithmetic_resources": estimate_resources(row.arithmetic.circuit),
     }
-    return Program(
-        circuit,
-        arithmetic,
+    program = Program(
+        row.target.submitted,
+        row.arithmetic.circuit,
         MappingProxyType(report),
-        MappingProxyType(mapping),
-        circuit.content_hash,
-        canonical.content_hash,
+        selection.registers,
+        selection,
+        checked,
     )
+    program._validate()
+    return program
