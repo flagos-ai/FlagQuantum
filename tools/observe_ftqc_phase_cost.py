@@ -32,6 +32,43 @@ ROUTES = ("statevector", "mps", "tensor_network", "candidate")
 ATOL = 1e-12
 
 
+class ProbabilityValidationError(ValueError):
+    """Retain bounded diagnostics for a failed probability guard."""
+
+    def __init__(self, validation: dict[str, Any]) -> None:
+        super().__init__("require finite ordered CPU float64 probabilities")
+        self.validation = validation
+
+
+def probability_failure_snapshot(values: torch.Tensor, n: int) -> dict[str, Any]:
+    """Inspect only a failed output without transforming its probabilities."""
+    import torch
+
+    on_cpu = values.device.type == "cpu"
+    ordered = not values.is_complex()
+    return {
+        "shape": list(values.shape),
+        "dtype": str(values.dtype),
+        "device": str(values.device),
+        "checks": {
+            "expected_shape": values.shape == (1 << n,),
+            "float64": values.dtype == torch.float64,
+            "cpu": on_cpu,
+            "finite": bool(torch.isfinite(values).all()) if on_cpu else None,
+            "nonnegative": bool((values >= 0).all()) if on_cpu and ordered else None,
+        },
+        "element_count": values.numel(),
+        "values_repr": (
+            [repr(value) for value in values.reshape(-1)[:8].tolist()]
+            if on_cpu
+            else None
+        ),
+        "values_limit": 8,
+        "values_encoding": "Python scalar repr strings; nonfinite and complex values remain JSON-safe",
+        "scope": "post-failure inspection only; no clipping, normalization or retry",
+    }
+
+
 def description(name: str) -> tuple[int, Word]:
     if name not in CASES:
         raise ValueError("outside the approved ten descriptions")
@@ -357,7 +394,7 @@ def observe(name: str, route: str, provenance: dict[str, Any]) -> dict[str, Any]
             or not bool(torch.isfinite(values).all())
             or bool((values < 0).any())
         ):
-            raise ValueError("require finite ordered CPU float64 probabilities")
+            raise ProbabilityValidationError(probability_failure_snapshot(values, n))
         errors = {
             "probability_error": float((values - expected.abs().square()).abs().max()),
             "normalization_error": abs(float(values.sum()) - 1),
@@ -406,6 +443,14 @@ def main() -> int:
     started = time.perf_counter()
     try:
         data = observe(args.case, args.route, json.loads(args.provenance.read_text()))
+    except ProbabilityValidationError as error:
+        data = {
+            "case": args.case,
+            "route": args.route,
+            "status": "failed",
+            "diagnostic": f"{type(error).__name__}: {error}",
+            "probability_validation": error.validation,
+        }
     except Exception as error:  # Preserve one process-boundary failure, never retry.
         data = {
             "case": args.case,

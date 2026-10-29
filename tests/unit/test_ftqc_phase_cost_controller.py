@@ -459,3 +459,106 @@ def test_member_integrity_loop_cannot_replace_the_requested_case() -> None:
         if isinstance(node, ast.For):
             assigned = {n.id for n in ast.walk(node.target) if isinstance(n, ast.Name)}
             assert not assigned.intersection({"name", "route", "provenance"})
+
+
+@pytest.mark.parametrize(
+    ("case", "failed_check"),
+    [
+        ("shape", "expected_shape"),
+        ("dtype", "float64"),
+        ("nan", "finite"),
+        ("infinity", "finite"),
+        ("negative", "nonnegative"),
+    ],
+)
+def test_probability_failure_snapshot_preserves_rejected_values(
+    case: str, failed_check: str
+) -> None:
+    import torch
+
+    values = torch.tensor([0.0, 1.0], dtype=torch.float64)
+    if case == "shape":
+        values = values.reshape(1, 2)
+    elif case == "dtype":
+        values = values.float()
+    elif case == "nan":
+        values[0] = float("nan")
+    elif case == "infinity":
+        values[0] = float("inf")
+    elif case == "negative":
+        values[0] = -1e-16
+    original = values.clone()
+    snapshot = worker.probability_failure_snapshot(values, 1)
+    assert snapshot["checks"][failed_check] is False
+    assert snapshot["values_repr"] == [repr(v) for v in values.reshape(-1).tolist()]
+    assert snapshot["element_count"] == 2
+    assert json.loads(json.dumps(snapshot, allow_nan=False)) == snapshot
+    torch.testing.assert_close(values, original, rtol=0, atol=0, equal_nan=True)
+
+
+def test_probability_failure_snapshot_bounds_values_and_avoids_device_copy() -> None:
+    import torch
+
+    oversized = torch.arange(20, dtype=torch.float64)
+    snapshot = worker.probability_failure_snapshot(oversized, 3)
+    assert snapshot["element_count"] == 20
+    assert snapshot["values_repr"] == [repr(float(i)) for i in range(8)]
+    device_snapshot = worker.probability_failure_snapshot(
+        torch.empty(2, dtype=torch.float64, device="meta"), 1
+    )
+    assert device_snapshot["checks"]["cpu"] is False
+    assert device_snapshot["checks"]["finite"] is None
+    assert device_snapshot["checks"]["nonnegative"] is None
+    assert device_snapshot["values_repr"] is None
+    complex_snapshot = worker.probability_failure_snapshot(
+        torch.tensor([1j, 1 + 0j], dtype=torch.complex128), 1
+    )
+    assert complex_snapshot["checks"]["float64"] is False
+    assert complex_snapshot["checks"]["nonnegative"] is None
+    assert complex_snapshot["values_repr"] == ["1j", "(1+0j)"]
+    json.dumps(complex_snapshot, allow_nan=False)
+
+
+def test_probability_guard_failure_crosses_worker_boundary_without_execution(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    provenance = tmp_path / "provenance.json"
+    provenance.write_text("{}")
+    output = tmp_path / "producer.json"
+    validation = {"checks": {"nonnegative": False}, "values_repr": ["-1e-16"]}
+    calls: list[str] = []
+
+    def rejected(case: str, route: str, context: dict[str, Any]) -> dict[str, Any]:
+        calls.append(case)
+        assert route == "mps" and context == {}
+        raise worker.ProbabilityValidationError(validation)
+
+    monkeypatch.setattr(worker, "observe", rejected)
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "observer",
+            "--case",
+            "n2t1",
+            "--route",
+            "mps",
+            "--provenance",
+            str(provenance),
+            "--output",
+            str(output),
+        ],
+    )
+    assert worker.main() == 1
+    report = json.loads(output.read_text())
+    assert report["status"] == "failed"
+    assert report["probability_validation"] == validation
+    assert "require finite ordered CPU float64 probabilities" in report["diagnostic"]
+    assert calls == ["n2t1"]
+    assert output.with_name("report-io.json").exists()
+    assessed = controller.assess(
+        tmp_path,
+        {"status": "completed", "returncode": 1},
+        {"case": "n2t1", "route": "mps"},
+    )
+    assert assessed["status"] == "failed"
+    assert assessed["failure_domain"] == "producer"
