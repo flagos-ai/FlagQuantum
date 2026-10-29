@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import importlib
+import os
+
 import pytest
 import torch
 
@@ -99,15 +102,37 @@ def test_simulation_double_single_pauli_reduction_uses_split_tensors() -> None:
 
 
 @pytest.mark.parametrize("name", sorted(SPLIT_REAL_IMAG_SUPPORTED_GATES))
-def test_supported_gate_matches_complex128_reference(name: str) -> None:
-    circuit = Circuit(2, device="cpu", dtype=torch.complex128)
+@pytest.mark.parametrize("n_qubits", (2, 12))
+@pytest.mark.parametrize(
+    "device",
+    [
+        "cpu",
+        pytest.param(
+            "flagos:0",
+            marks=[
+                pytest.mark.gpu,
+                pytest.mark.distributed_accel,
+                pytest.mark.skipif(
+                    os.environ.get("FLAGQUANTUM_TEST_ASCEND_910C") != "1",
+                    reason="requires the documented Ascend 910C Torch-FL stack",
+                ),
+            ],
+        ),
+    ],
+)
+def test_supported_gate_matches_complex128_reference(
+    name: str, device: str, n_qubits: int
+) -> None:
+    if device.startswith("flagos"):
+        importlib.import_module("torch_fl")
+    circuit = Circuit(n_qubits, device="cpu", dtype=torch.complex128)
     circuit.h(0)
-    circuit.ry(1, theta=0.27)
-    wires = (0, 1) if name in _TWO_QUBIT else 1
+    circuit.ry(n_qubits - 1, theta=0.27)
+    wires = (n_qubits - 1, 0) if name in _TWO_QUBIT else n_qubits // 2
     circuit.gate(name, wires, **_PARAMS.get(name, {}))
 
     result = execute_split_real_imag_statevector(
-        circuit.to_ir(), device="cpu", preflight=False
+        circuit.to_ir(), device=device, preflight=device != "cpu"
     )
 
     torch.testing.assert_close(
@@ -115,7 +140,7 @@ def test_supported_gate_matches_complex128_reference(name: str) -> None:
     )
     assert result.real.dtype == torch.float32
     assert result.imag.dtype == torch.float32
-    assert result.real.device.type == "cpu"
+    assert result.real.device.type == torch.device(device).type
 
 
 def test_executor_does_not_materialize_complex_tensor(monkeypatch) -> None:
