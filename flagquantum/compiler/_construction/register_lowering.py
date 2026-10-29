@@ -13,7 +13,7 @@ from types import MappingProxyType
 from ...core.ir import CircuitIR, Instruction
 from .._hybrid.model import Block, HybridProgram, Operation, Region, Value, ValueId
 from .lowering import ArithmeticCandidate, Schedule, _copy, schedule_arithmetic
-from .profile import _fail, _positive_integer, uint_type
+from .profile import _fail, _positive_integer, _width, uint_type
 from .register_profile import register_ports, register_width, verify_register_program
 
 
@@ -103,7 +103,9 @@ def schedule_register_program(
             segment = schedule_arithmetic(
                 (*functions, wrapper),
                 {new.id: bindings[old.id] for old, new in replacements.items()},
-                bindings[destination.id],
+                # A fresh wider destination keeps its high bits zero; bind the
+                # full-width XOR evaluator to the matching low-weight slice.
+                bindings[destination.id][-_width(returned.type, n_qubits) :],
                 entry=name,
                 n_qubits=n_qubits,
                 workspace=tuple(range(position, n_qubits)),
