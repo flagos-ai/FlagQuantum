@@ -1,0 +1,53 @@
+{
+  "schema": "flagquantum.synthesis_run_admission_proposal",
+  "version": "1.0",
+  "status": "proposed",
+  "proposal": "docs/api-changes/FQ-SYNTH-RUN-ADMISSION-20261029.md",
+  "implementation_authorized": false,
+  "production_implemented": false,
+  "api_owner_approval": null,
+  "human_trial_records": [],
+  "classification": "single_device_fast_path",
+  "proposed_public_type": "flagquantum.synth.Program",
+  "proposed_type_owner": "flagquantum.services.synthesis.Program",
+  "root_annotation_alias": "SynthesisProgram",
+  "namespace_exports": [
+    "ConstructionBudget",
+    "InputState",
+    "Program",
+    "SynthesisError",
+    "UInt",
+    "qfunc",
+    "synthesize"
+  ],
+  "current_run_signature": "(program_or_plan: 'Circuit | CircuitIR | ExecutionPlan | IsingBraidProgram | LindbladPlan', *, options: 'ExecutionOptions | None' = None, outputs: 'OutputRequest | Sequence[OutputRequest] | None' = None, noise_model: 'NoiseModel | None' = None, compiler: 'str | None' = None, target: 'str | None' = None, target_qubits: 'Sequence[int] | None' = None, shots: 'int | None' = None, name: 'str | None' = None) -> 'ExecutionResult'",
+  "proposed_run_signature": "(program_or_plan: 'Circuit | CircuitIR | ExecutionPlan | IsingBraidProgram | LindbladPlan | SynthesisProgram', *, options: 'ExecutionOptions | None' = None, outputs: 'OutputRequest | Sequence[OutputRequest] | None' = None, noise_model: 'NoiseModel | None' = None, compiler: 'str | None' = None, target: 'str | None' = None, target_qubits: 'Sequence[int] | None' = None, shots: 'int | None' = None, name: 'str | None' = None) -> 'ExecutionResult'",
+  "non_none_overrides_rejected": [
+    "options",
+    "outputs",
+    "noise_model",
+    "compiler",
+    "target",
+    "target_qubits",
+    "shots",
+    "name"
+  ],
+  "execution_path": "existing checked Program execution -> existing ExecutionPlan -> existing Runtime",
+  "result_type": "flagquantum.runtime.result.ExecutionResult",
+  "result_plan_type": "flagquantum.runtime.execution_plan.ExecutionPlan",
+  "plan_schema_change": false,
+  "new_executor": false,
+  "generic_duck_typing": false,
+  "to_ir_coercion": false,
+  "ordinary_circuit_eager_import": false,
+  "required_before_activation": [
+    "api_owner_approval",
+    "independent_developer_trial_records",
+    "coordinated_public_contract_changes",
+    "new_head_ci"
+  ],
+  "proposal_only_tests": "tests/api_contract/test_synthesis_run_admission_proposal.py",
+  "subclasses_accepted": false,
+  "namespace_classification": "proposed_maintained_domain_extension",
+  "namespace_registered": false
+}
