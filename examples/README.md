@@ -1,5 +1,11 @@
 # FlagQuantum Examples
 
+[`synthesis_execution_contract.py`](synthesis_execution_contract.py) demonstrates
+the private CS06-A seam: `python -m examples.synthesis_execution_contract` rejects
+planning-induced basis drift, checks an actual routed plan and verifies its
+nonidentity output placement and complex phase. This expert plan example leaves
+the normal synthesis facade unchanged.
+
 [`synthesis_workspace.py`](synthesis_workspace.py) is the private CS-05 Compiler
 diagnostic: `python -m examples.synthesis_workspace` compares retained and
 cleanup/recompute workspace costs for one high-level source program and executes
