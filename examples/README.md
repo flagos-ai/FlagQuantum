@@ -1,5 +1,12 @@
 # FlagQuantum Examples
 
+[`synthesis_workspace.py`](synthesis_workspace.py) is the private CS-05 Compiler
+diagnostic: `python -m examples.synthesis_workspace` compares retained and
+cleanup/recompute workspace costs for one high-level source program and executes
+both small coherent blocks on the existing CPU path. This is an advanced explicit
+port example; the normal named CS-04 workflow is unchanged. It does not expose
+CS-06 constraint-based candidate selection.
+
 Runnable, copy-ready workflows for building and training quantum AI programs
 with the current FlagQuantum API.
 

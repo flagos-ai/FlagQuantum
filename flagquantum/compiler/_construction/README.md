@@ -49,9 +49,9 @@ The CS-01 boundary probes use existing Circuit/IR/runtime capabilities. They
 establish destination semantics independently of arithmetic lowering. Three-bit states
 pin the physical bit-order boundary. A Bell subsystem probe shows why omitting
 an output does not reclaim its entangled partner; it does not implement drop.
-Conservative arithmetic lowering requires explicit zero-workspace maps
-and operation budgets. Results are retained; only locally cleaned multiplier
-scratch is reused. Addition borrows the first operand, which its kernel restores.
+Arithmetic lowering requires explicit zero-workspace maps and operation budgets.
+The default `retain` schedule retains results and reuses only locally cleaned
+multiplier scratch. Addition borrows the first operand, which its kernel restores.
 It returns existing CircuitIR for Circuit composition and
 execution, including nonzero XOR targets. See the
 [CS-03 delivery record](../../../docs/roadmap/CS03_MULTIPLICATION_DELIVERY.md).
@@ -64,3 +64,20 @@ The [CS-04 workflow](../../../docs/roadmap/CS04_PYTHON_TRIAL_DELIVERY.md)
 composes this frontend from Services; Compiler still has no Circuit or Runtime
 dependency. Both ordinary functions and optional `qfunc` declarations lower to
 the existing verified construction profile, with source diagnostics.
+
+`lifetimes.py` records direct use sites and inverse dependencies after inlining
+calls into existing SSA. `lowering.py` uses one emitter for `retain` and
+`recompute`. The latter can clean operands between uses, restore missing
+dependencies before inverse computation and rebind regenerated kernels to their
+current qubits. Only inverse-cleaned allocations return to the zero pool.
+This is a deterministic heuristic, not a general free/drop operation or optimal
+pebbling. The private `schedule_arithmetic` diagnostic includes peak workspace
+and compute/cleanup events; `lower_arithmetic` still returns CircuitIR.
+
+Run `python -m examples.synthesis_workspace`, then
+`tests/team/compiler/test_construction_scheduling.py` and
+`tests/integration/test_construction_scheduling_execution.py` for the shortest
+CS-05 contributor path. The [delivery record](../../../docs/roadmap/CS05_WORKSPACE_SCHEDULING_DELIVERY.md)
+states measured costs and separates large structural checks from small real CPU
+phase tests. The [private boundary](../../../docs/api-changes/FQ-SYNTH-CS05-20261029.md)
+keeps automatic candidate selection and broader effects outside this change.
