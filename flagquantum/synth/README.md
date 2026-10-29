@@ -49,3 +49,8 @@ Tests: `tests/api_contract/test_synthesis_run_admission.py`,
 `tests/unit/test_synthesis_run_contract.py`, and the existing synthesis integration
 suite. See the [implementation admission](../../docs/api-changes/FQ-SYNTH-RUN-IMPLEMENTATION-20261029.md)
 and [contract](../../contracts/synthesis-program-run-v1-candidate.json).
+
+The [independent developer trial guide](../../docs/roadmap/SYNTH_DEVELOPER_TRIALS.md)
+provides tasks and an unfilled record template for the merged Python entry.
+The [CS07 source admission](../../docs/roadmap/CS07_SOURCE_ADMISSION.md) separately
+tracks original-file integrity and the still-unimplemented external frontend.
