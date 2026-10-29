@@ -4,6 +4,17 @@ Services contains small, reusable application workflows that add behavior beyond
 one stable FlagQuantum API call, such as capability aggregation, execution
 preflight, and deployment preflight.
 
+The private `_synthesis` CS-04 trial composes restricted Compiler capture and
+arithmetic lowering, explicit input preparation, existing resource estimation,
+and bounded named views of existing Runtime results. It does not execute during
+synthesis or add a numerical kernel. This trial uses the private construction
+seam described in its [boundary record](../../docs/api-changes/FQ-SYNTH-CS04-20261029.md);
+it is not a stable Services export or a public `flagquantum.synth` API.
+Start with [the executable workflow](../../examples/algorithms/synthesis_trial.py)
+and `tests/integration/test_synthesis_python_trial.py`. Supported syntax,
+result-identity checks, preparation composition and limitations are in the
+[delivery record](../../docs/roadmap/CS04_PYTHON_TRIAL_DELIVERY.md).
+
 Simple operations do not belong here. Call `flagquantum.compiler.optimize`,
 `fq.plan`, or `fq.run` directly. Do not add a service method that only forwards
 arguments, renames a result, or converts a protocol payload.

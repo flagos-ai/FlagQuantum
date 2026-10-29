@@ -5,8 +5,9 @@ It verifies coherent integer expression definitions and physical binding
 preconditions. Binding validation checks the complete definition graph before
 checking physical ports; an unchecked function cannot bypass profile verification.
 Arithmetic lowering emits existing Core gates through a shared pure arithmetic
-kernel. It does not capture Python, select candidates, run circuits or export a
-public `synth` API.
+kernel. `frontend_python.py` captures a restricted Python integer expression
+without running its body. This package does not select candidates, run circuits
+or export a public `synth` API.
 
 The same `IRType`, `ValueId`, `Value`, `Operation`, `Block`, `Region`, source
 location and `HybridProgram` are reused. `quantum.uint(width)` represents a
@@ -57,3 +58,9 @@ execution, including nonzero XOR targets. See the
 
 See the [CS-01 contract](../../../docs/api-changes/FQ-SYNTH-CS01-20261029.md)
 and [Classiq review](../../../docs/roadmap/CLASSIQ_SEMANTICS_REVIEW_20261029.md).
+
+For Python capture, run `tests/team/compiler/test_construction_python.py`.
+The [CS-04 workflow](../../../docs/roadmap/CS04_PYTHON_TRIAL_DELIVERY.md)
+composes this frontend from Services; Compiler still has no Circuit or Runtime
+dependency. Both ordinary functions and optional `qfunc` declarations lower to
+the existing verified construction profile, with source diagnostics.
