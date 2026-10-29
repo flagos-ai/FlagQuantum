@@ -1,4 +1,4 @@
-"""Private constrained synthesis workflow; no stable public namespace."""
+"""Constrained synthesis workflow composing Compiler and checked Runtime APIs."""
 
 from __future__ import annotations
 
@@ -338,11 +338,36 @@ def synthesize(
     preparation: CircuitIR | None = None,
     preparation_map: Mapping[str, Sequence[int]] | None = None,
 ) -> Program:
-    """Capture high-level arithmetic, select and check one exact CPU program.
+    """Synthesize high-level unsigned arithmetic for exact local CPU execution.
 
     Final ceilings are distinct from construction_budget. Synthesis plans once
-    through the existing Runtime API but never executes. Run program.execution
-    through fq.run and read actual probabilities by declared names.
+    but never executes. Pass the resulting Program to fq.run, then read actual
+    probabilities by declared names. The initial source-retaining Python profile
+    and target support are documented in flagquantum.synth/README.md.
+
+    Returns:
+        A factory-created Program with checked execution, circuit and report.
+
+    Raises:
+        SynthesisError: No fully checked candidate satisfies the request, or
+            construction/search is incomplete. Checked repair arguments, when
+            available, are attached to the error.
+
+    Examples:
+        Define the function in a source-retaining Python file::
+
+            import flagquantum as fq
+            from flagquantum import synth
+
+            def add(x: int, y: int) -> int:
+                return x + y
+
+            program = synth.synthesize(
+                add, inputs={"x": synth.UInt(1), "y": synth.UInt(1)},
+                input_state=synth.InputState.basis(x=1, y=1),
+            )
+            result = fq.run(program)
+            probabilities = program.probabilities(result)
     """
     constraints = Constraints(
         CircuitLimits(max_qubits, max_operations, max_depth), max_workspace

@@ -1,5 +1,11 @@
 # CS06-C ordinary synthesis workflow
 
+Historical CS06-C record: the later
+[Program run admission](SYNTH_PROGRAM_RUN_DELIVERY.md) supersedes its private
+entry/root-API limitations. The example below uses the current facade; the old
+private module was removed without a permanent alias. Earlier scope statements
+in this delivery describe CS06-C, not the subsequent admission change.
+
 The existing private Services entry now connects high-level Python arithmetic,
 finite constrained selection, a checked actual execution plan and named reading,
 including routed nonidentity layouts. It replaces the frozen CS04 conservative
@@ -11,7 +17,7 @@ dependencies and CI configuration are unchanged.
 
 ```python
 import flagquantum as fq
-from flagquantum.services import _synthesis as synth
+from flagquantum import synth
 
 def polynomial(x: int, y: int) -> int:
     return x * x + y
@@ -22,7 +28,7 @@ program = synth.synthesize(
     input_state=synth.InputState.basis(x=3, y=2),
     max_qubits=18,
 )
-result = fq.run(program.execution)
+result = fq.run(program)
 print(dict(program.probabilities(result, registers=("x", "y", "result"))))
 # {(3, 2, 11): 1.0}
 ```

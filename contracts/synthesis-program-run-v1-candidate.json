@@ -1,0 +1,61 @@
+{
+  "schema": "flagquantum.synthesis_program_run_admission",
+  "version": "1.0",
+  "status": "implemented_candidate_pending_trials",
+  "proposal": "docs/api-changes/FQ-SYNTH-RUN-ADMISSION-20261029.md",
+  "authorization_record": "docs/api-changes/FQ-SYNTH-RUN-IMPLEMENTATION-20261029.md",
+  "implementation_authorized": true,
+  "authorization_source": {
+    "kind": "explicit_human_user_instruction",
+    "request": "Merge PR #963 and proceed to the next step",
+    "proposal_merge": "8011f20300d7bf2f4b66ce6b15409fc8176d1224"
+  },
+  "release_authorized": false,
+  "human_trial_records": [],
+  "namespace": "flagquantum.synth",
+  "namespace_classification": "maintained_domain_extension_candidate",
+  "namespace_exports": [
+    "ConstructionBudget",
+    "InputState",
+    "Program",
+    "SynthesisError",
+    "UInt",
+    "qfunc",
+    "synthesize"
+  ],
+  "type_owner": "flagquantum.services.synthesis.Program",
+  "root_annotation_alias": "SynthesisProgram",
+  "run_signature": "(program_or_plan: 'Circuit | CircuitIR | ExecutionPlan | IsingBraidProgram | LindbladPlan | SynthesisProgram', *, options: 'ExecutionOptions | None' = None, outputs: 'OutputRequest | Sequence[OutputRequest] | None' = None, noise_model: 'NoiseModel | None' = None, compiler: 'str | None' = None, target: 'str | None' = None, target_qubits: 'Sequence[int] | None' = None, shots: 'int | None' = None, name: 'str | None' = None) -> 'ExecutionResult'",
+  "non_none_overrides_rejected": [
+    "options",
+    "outputs",
+    "noise_model",
+    "compiler",
+    "target",
+    "target_qubits",
+    "shots",
+    "name"
+  ],
+  "result_type": "flagquantum.runtime.result.ExecutionResult",
+  "result_plan_type": "flagquantum.runtime.execution_plan.ExecutionPlan",
+  "root_exports_added": [],
+  "plan_schema_change": false,
+  "new_executor": false,
+  "generic_duck_typing": false,
+  "to_ir_coercion": false,
+  "subclasses_accepted": false,
+  "ordinary_circuit_eager_import": false,
+  "program_constructor_public": false,
+  "program_methods": [
+    "probabilities"
+  ],
+  "program_properties": [
+    "circuit",
+    "report",
+    "execution"
+  ],
+  "scope": "exact_single_batch_cpu_torch_statevector",
+  "consumer_tests": "tests/api_contract/test_synthesis_run_admission.py",
+  "probabilities_signature": "(self, result: 'ExecutionResult', *, registers: 'Sequence[str]' = ('result',), max_bits: 'int' = 16, max_keys: 'int' = 65536, max_amplitudes: 'int' = 4194304, threshold: 'float' = 1e-14) -> 'Distribution'",
+  "synthesize_signature": "(function: 'Definition', *, inputs: 'Mapping[str, UInt]', input_state: 'InputState | None' = None, constants: 'Mapping[str, int] | None' = None, functions: 'Sequence[Definition]' = (), max_qubits: 'int | None' = 256, max_operations: 'int | None' = 100000, max_depth: 'int | None' = None, max_workspace: 'int | None' = None, construction_budget: 'ConstructionBudget' = ConstructionBudget(qubits=256, operations=100000, candidate_checks=2), objective: \"Literal['width', 'depth']\" = 'width', basis: 'Iterable[str] | None' = None, topology: \"Literal['line'] | None\" = None, preparation: 'CircuitIR | None' = None, preparation_map: 'Mapping[str, Sequence[int]] | None' = None) -> 'Program'"
+}
