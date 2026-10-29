@@ -64,7 +64,7 @@ def test_every_basis_input_uses_only_high_level_logic_and_named_readout() -> Non
                 input_state=synth.InputState.basis(x=x, y=y),
                 max_qubits=18,
             )
-            distribution = program.read_distribution(
+            distribution = program.probabilities(
                 fq.run(program.circuit, options=_options()),
                 registers=("x", "y", "result"),
             )
@@ -84,11 +84,11 @@ def test_uniform_joint_marginal_and_reordered_registers_read_real_probabilities(
         max_qubits=18,
     )
     result = fq.run(program.circuit, options=_options())
-    joint = program.read_distribution(result, registers=("y", "result", "x"))
+    joint = program.probabilities(result, registers=("y", "result", "x"))
     expected = {(y, x * x + y, x) for x in range(4) for y in range(4)}
     assert set(joint) == expected
     assert all(abs(joint[key] - 1 / 16) < 1e-10 for key in expected)
-    marginal = program.read_distribution(result)
+    marginal = program.probabilities(result)
     counts = Counter(x * x + y for x in range(4) for y in range(4))
     assert set(marginal) == {(value,) for value in counts}
     assert all(
@@ -118,9 +118,9 @@ def test_classical_configuration_and_named_helper_recovery() -> None:
         constants={"scale": 3},
         input_state=synth.InputState.basis(x=3),
     )
-    assert dict(
-        program.read_distribution(fq.run(program.circuit, options=_options()))
-    ) == {(9,): 1.0}
+    assert dict(program.probabilities(fq.run(program.circuit, options=_options()))) == {
+        (9,): 1.0
+    }
 
     def square(x: int) -> int:
         return x * x
@@ -136,7 +136,7 @@ def test_classical_configuration_and_named_helper_recovery() -> None:
         functions=(square,),
         input_state=synth.InputState.basis(x=3),
     )
-    assert dict(fixed.read_distribution(fq.run(fixed.circuit, options=_options()))) == {
+    assert dict(fixed.probabilities(fq.run(fixed.circuit, options=_options()))) == {
         (12,): 1.0
     }
 
@@ -145,9 +145,9 @@ def test_omitted_input_state_is_explicitly_reported_as_default_zero() -> None:
     program = synth.synthesize(identity, inputs={"x": synth.UInt(2)})
     assert program.report["input_state"] == "basis_default_zero"
     assert program.report["workspace_qubits"] == 0
-    assert dict(
-        program.read_distribution(fq.run(program.circuit, options=_options()))
-    ) == {(0,): 1.0}
+    assert dict(program.probabilities(fq.run(program.circuit, options=_options()))) == {
+        (0,): 1.0
+    }
 
 
 def test_wrong_same_size_execution_missing_plan_and_changed_source_are_refused() -> (
@@ -159,20 +159,20 @@ def test_wrong_same_size_execution_missing_plan_and_changed_source_are_refused()
         instructions=(*program.circuit.instructions, Instruction("x", (0,))),
     )
     with pytest.raises(ValueError, match="execution.identity"):
-        program.read_distribution(fq.run(other, options=_options()))
+        program.probabilities(fq.run(other, options=_options()))
     result = fq.run(program.circuit, options=_options())
     with pytest.raises(ValueError, match="plan"):
-        program.read_distribution(replace(result, plan=None))
+        program.probabilities(replace(result, plan=None))
     program.circuit.metadata["changed"] = True
     with pytest.raises(ValueError, match="circuit changed"):
-        program.read_distribution(result)
+        program.probabilities(result)
 
 
 def test_content_identity_survives_serialization_without_an_object_registry() -> None:
     program = _small()
     restored = CircuitIR.from_json(program.circuit.to_json())
     assert dict(
-        program.read_distribution(fq.run(restored, options=_options()))
+        program.probabilities(fq.run(restored, options=_options()))
     ) == pytest.approx({(0,): 0.5, (1,): 0.5})
 
 
@@ -185,7 +185,7 @@ def test_routed_recompiled_result_requires_explicit_revalidation() -> None:
     )
     assert any(g.name == "swap" for g in routed.instructions)
     with pytest.raises(ValueError, match="routing|identity"):
-        program.read_distribution(fq.run(routed, options=_options()))
+        program.probabilities(fq.run(routed, options=_options()))
 
 
 def test_reading_never_runs_replans_or_recompiles(
@@ -202,7 +202,7 @@ def test_reading_never_runs_replans_or_recompiles(
     monkeypatch.setattr(
         __import__("flagquantum._api", fromlist=["plan"]), "plan", forbidden
     )
-    assert len(program.read_distribution(result)) == 2
+    assert len(program.probabilities(result)) == 2
 
 
 @pytest.mark.parametrize(
@@ -219,7 +219,7 @@ def test_readout_limits_precede_marginal_allocation(
 
     monkeypatch.setattr(readout, "execute_measurements", forbidden)
     with pytest.raises(ValueError, match="readout budget"):
-        program.read_distribution(result, registers=("x", "result"), **limits)
+        program.probabilities(result, registers=("x", "result"), **limits)
 
 
 def test_filtering_reports_omitted_mass_without_renormalizing_or_editing_report() -> (
@@ -227,7 +227,7 @@ def test_filtering_reports_omitted_mass_without_renormalizing_or_editing_report(
 ):
     program = _small()
     report = dict(program.report)
-    observed = program.read_distribution(
+    observed = program.probabilities(
         fq.run(program.circuit, options=_options()), threshold=0.6
     )
     assert not observed
@@ -240,7 +240,7 @@ def test_invalid_named_readout_is_actionable(names: tuple[str, ...]) -> None:
     program = _small()
     result = fq.run(program.circuit, options=_options())
     with pytest.raises(ValueError, match="register names"):
-        program.read_distribution(result, registers=names)
+        program.probabilities(result, registers=names)
 
 
 @pytest.mark.parametrize(
@@ -286,7 +286,7 @@ def test_existing_preparation_ir_and_parameterized_circuit_composition() -> None
         preparation=preparation,
         preparation_map={"x": (1, 0)},
     )
-    observed = program.read_distribution(
+    observed = program.probabilities(
         fq.run(program.circuit, options=_options()), registers=("x", "result")
     )
     assert dict(observed) == pytest.approx({(0, 0): 0.5, (2, 2): 0.5})
@@ -337,15 +337,15 @@ def test_preparation_roles_and_symbolic_angles_are_not_silently_ignored() -> Non
 def test_reader_refuses_density_and_invalid_state_data() -> None:
     program = _small()
     with pytest.raises(ValueError, match="execution.profile"):
-        program.read_distribution(
+        program.probabilities(
             fq.run(program.circuit, options=_options("density_matrix"))
         )
     result = fq.run(program.circuit, options=_options())
     assert result.state is not None
     with pytest.raises(ValueError, match="not normalized"):
-        program.read_distribution(replace(result, state=result.state * 2))
+        program.probabilities(replace(result, state=result.state * 2))
     with pytest.raises(ValueError, match="dimensions"):
-        program.read_distribution(
+        program.probabilities(
             replace(result, state=torch.cat((result.state, result.state)))
         )
 
@@ -357,7 +357,7 @@ def test_partial_filtering_preserves_retained_probability() -> None:
         preparation=fq.Circuit(1).ry(0, 0.4).to_ir(),
         preparation_map={"x": (0,)},
     )
-    observed = program.read_distribution(
+    observed = program.probabilities(
         fq.run(program.circuit, options=_options()), threshold=0.05
     )
     assert set(observed) == {(0,)}
@@ -373,7 +373,7 @@ def test_named_reader_uses_supplied_state_data_instead_of_predicting_the_functio
     assert result.state is not None
     supplied = torch.zeros_like(result.state)
     supplied[..., 0] = 1
-    observed = program.read_distribution(replace(result, state=supplied))
+    observed = program.probabilities(replace(result, state=supplied))
     assert dict(observed) == {(0,): 1.0}
 
 
@@ -448,4 +448,4 @@ def test_invalid_read_limits_fail_before_state_reduction(
     program = _small()
     result = fq.run(program.circuit, options=_options())
     with pytest.raises(ValueError, match="positive|threshold"):
-        program.read_distribution(result, **limits)
+        program.probabilities(result, **limits)

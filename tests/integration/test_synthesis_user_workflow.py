@@ -43,7 +43,7 @@ def test_high_level_inputs_and_names_need_no_gates_maps_or_decoding(
         objective=objective,
     )
     result = fq.run(program.execution)
-    observed = program.read_distribution(result, registers=("y", "result", "x"))
+    observed = program.probabilities(result, registers=("y", "result", "x"))
     expected = (
         {(y, pressure(x, y), x): 0.25 for x in range(2) for y in range(2)}
         if state == "uniform"
@@ -78,7 +78,7 @@ def test_final_constraints_change_schedule_without_user_selecting_one() -> None:
     assert shallow.report["candidate"] == "retain"
     for program in (narrow, shallow):
         assert sum(
-            program.read_distribution(fq.run(program.execution)).values()
+            program.probabilities(fq.run(program.execution)).values()
         ) == pytest.approx(1.0)
 
 
@@ -91,7 +91,7 @@ def test_every_user_repair_is_a_real_complete_retry() -> None:
     for repair in error.repairs:
         program = _program(**repair)
         assert sum(
-            program.read_distribution(fq.run(program.execution)).values()
+            program.probabilities(fq.run(program.execution)).values()
         ) == pytest.approx(1.0)
         with pytest.raises(TypeError):
             repair["max_qubits"] = 100
@@ -132,7 +132,7 @@ def test_synthesis_plans_once_and_execution_property_and_reading_do_not_replan(
     monkeypatch.setattr(fq, "run", forbidden)
     monkeypatch.setattr(compiler, "compile", forbidden)
     assert program.execution is result.plan
-    assert len(program.read_distribution(result)) == 2
+    assert len(program.probabilities(result)) == 2
 
 
 def test_reader_budget_precedes_norm_scan_and_marginal_allocation(monkeypatch) -> None:
@@ -145,16 +145,14 @@ def test_reader_budget_precedes_norm_scan_and_marginal_allocation(monkeypatch) -
     monkeypatch.setattr(torch.linalg, "vector_norm", forbidden)
     monkeypatch.setattr(readout, "execute_measurements", forbidden)
     with pytest.raises(ValueError, match="readout budget"):
-        program.read_distribution(result, registers=("x", "y", "result"), max_keys=2)
+        program.probabilities(result, registers=("x", "y", "result"), max_keys=2)
 
 
 @pytest.mark.parametrize("topology", [None, "line"])
 def test_checked_plan_serialization_preserves_named_reading(topology) -> None:
     program = _program(topology=topology)
     restored = ExecutionPlan.from_json(program.execution.to_json())
-    observed = program.read_distribution(
-        fq.run(restored), registers=("x", "y", "result")
-    )
+    observed = program.probabilities(fq.run(restored), registers=("x", "y", "result"))
     assert dict(observed) == pytest.approx(
         {(x, y, pressure(x, y)): 0.25 for x in range(2) for y in range(2)}, abs=1e-10
     )
@@ -180,10 +178,10 @@ def test_changed_options_same_size_program_and_logical_bindings_are_refused() ->
         (program.circuit, replace(options, seed=17)),
     ):
         with pytest.raises(ValueError, match="execution.identity"):
-            program.read_distribution(fq.run(source, options=controls))
+            program.probabilities(fq.run(source, options=controls))
     altered = replace(program, registers={"result": (0, 1)})
     with pytest.raises(ValueError, match="registers changed"):
-        altered.read_distribution(fq.run(program.execution))
+        altered.probabilities(fq.run(program.execution))
 
 
 def test_compiler_prediction_is_bound_to_actual_runtime_even_if_fake_claims_success(
@@ -239,7 +237,7 @@ def test_physical_port_substitution_and_mutated_compiler_stages_are_refused() ->
         registers={"x": (2,), "y": (1,), "result": (0, 3)},
     )
     with pytest.raises(ValueError, match="named ports"):
-        replace(program, _checked=forged).read_distribution(fq.run(program.execution))
+        replace(program, _checked=forged).probabilities(fq.run(program.execution))
     program.selection.selected.target.stages[0][1].metadata["stale"] = True
     with pytest.raises(ValueError, match="circuit changed"):
         _ = program.execution
@@ -253,7 +251,7 @@ def test_routed_filtering_reports_omitted_mass_and_never_renormalizes() -> None:
         preparation_map={"x": (0,), "y": (1,)},
         topology="line",
     )
-    observed = program.read_distribution(fq.run(program.execution), threshold=0.05)
+    observed = program.probabilities(fq.run(program.execution), threshold=0.05)
     assert dict(observed) == pytest.approx({(0,): math.cos(0.2) ** 2}, abs=1e-10)
     assert observed.diagnostics["omitted_probability"] == pytest.approx(
         math.sin(0.2) ** 2, abs=1e-10
@@ -276,7 +274,7 @@ def test_bound_preparation_gradient_survives_single_user_product(
         topology=topology,
     )
     result = fq.run(program.execution)
-    marginal = program.read_distribution(result)
+    marginal = program.probabilities(result)
     assert marginal[(1,)] == pytest.approx(math.sin(theta / 2) ** 2, abs=1e-10)
     state = result.statevector().reshape(-1)
     indices = torch.arange(state.numel())

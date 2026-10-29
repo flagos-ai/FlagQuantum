@@ -7,7 +7,7 @@ preflight, and deployment preflight.
 The private `_synthesis` workflow composes Compiler capture and CS06-B finite
 selection with CS06-A actual execution checks and bounded named reading.
 Synthesis plans the selected program once, but never executes. Run the existing
-plan with `fq.run(program.execution)`, then use `program.read_distribution(result)`.
+plan with `fq.run(program.execution)`, then use `program.probabilities(result)`.
 No user-managed schedule, physical mapping or bit decoding is needed. This is
 not a stable Services export or a public `flagquantum.synth` API.
 Start with [the executable workflow](../../examples/algorithms/synthesis_trial.py)

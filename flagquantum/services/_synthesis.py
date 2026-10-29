@@ -38,7 +38,7 @@ from ..runtime.options import ExecutionOptions
 from ..runtime.result import ExecutionResult
 from ._synthesis_execution import CheckedExecution, inspect_execution
 from ._synthesis_readout import Distribution
-from ._synthesis_readout import read_distribution as _read_distribution
+from ._synthesis_readout import probabilities as _probabilities
 
 __all__ = (
     "ConstructionBudget",
@@ -196,7 +196,7 @@ class Program:
         self._validate()
         return self._checked.plan
 
-    def read_distribution(
+    def probabilities(
         self,
         result: ExecutionResult,
         *,
@@ -208,7 +208,7 @@ class Program:
     ) -> Distribution:
         """Read a bounded exact named marginal without execution or replanning."""
         self._validate()
-        return _read_distribution(
+        return _probabilities(
             result,
             checked=self._checked,
             registers=registers,

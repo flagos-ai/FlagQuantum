@@ -23,7 +23,7 @@ program = synth.synthesize(
     max_qubits=18,
 )
 result = fq.run(program.execution)
-print(dict(program.read_distribution(result, registers=("x", "y", "result"))))
+print(dict(program.probabilities(result, registers=("x", "y", "result"))))
 # {(3, 2, 11): 1.0}
 ```
 
@@ -125,6 +125,11 @@ compilation and execution while reading. Normal users do not build or manage
 ExecutionOptions, candidate records, evidence or topology tables.
 
 ## Actual probability reading and preserved budgets
+
+The method is `program.probabilities(result, registers=...)`. It returns the
+existing named-key probability mapping and its read diagnostics. The earlier
+private `read_distribution` spelling is removed; no alias or sampling method is
+added. The `fq.run(program)` design review remains separate from this rename.
 
 The sole named reader uses A's physical named ports, validates association with
 the same actual plan and reads the supplied result state. Selected-bit, possible

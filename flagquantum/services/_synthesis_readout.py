@@ -47,7 +47,7 @@ class Distribution(Mapping[tuple[int, ...], float]):
         return len(self._values)
 
 
-def read_distribution(
+def probabilities(
     result: ExecutionResult,
     *,
     checked: CheckedExecution,

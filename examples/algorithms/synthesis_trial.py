@@ -38,7 +38,7 @@ def main() -> None:
         input_state=synth.InputState.basis(x=3, y=2),
         max_qubits=18,
     )
-    observed = basis.read_distribution(
+    observed = basis.probabilities(
         fq.run(basis.execution),
         registers=("x", "y", "result"),
     )
@@ -51,7 +51,7 @@ def main() -> None:
         input_state=synth.InputState.uniform(),
         max_qubits=18,
     )
-    joint = coherent.read_distribution(
+    joint = coherent.probabilities(
         fq.run(coherent.execution),
         registers=("x", "y", "result"),
     )
@@ -73,7 +73,7 @@ def main() -> None:
         max_qubits=9,
         topology="line",
     )
-    line = routed.read_distribution(
+    line = routed.probabilities(
         fq.run(routed.execution), registers=("x", "y", "result")
     )
     assert set(line) == {(x, y, pressure(x, y)) for x in range(2) for y in range(2)}
