@@ -61,17 +61,11 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from ..circuit import Circuit
+from ..compiler._arithmetic_kernels import ripple_add
 
 __all__ = ["AdderQubits", "adder_circuit", "adder_qubits"]
 
 _MINIMUM_BITS = 1
-
-# ``MAJ(a, b, c)`` and its inverse, written over local qubit labels ``(a, b, c)``.
-# The two are exact inverses of each other and each is three operations: ``MAJ``
-# maps ``(a, b, c)`` to ``(a ^ c, b ^ c, maj(a, b, c))``, and ``UMA`` maps that
-# back. The local labels are resolved to circuit qubits per position.
-_MAJ = (("cx", (2, 0)), ("cx", (2, 1)), ("ccx", (0, 1, 2)))
-_UMA = (("ccx", (0, 1, 2)), ("cx", (2, 1)), ("cx", (2, 0)))
 
 
 @dataclass(frozen=True)
@@ -175,41 +169,11 @@ def adder_circuit(n_bits: int) -> Circuit:
     registers = adder_qubits(count)
     circuit = Circuit(registers.n_qubits)
 
-    # Position ``i`` carries bit weight ``2 ** i``, and qubit ``0`` is the most
-    # significant bit, so the least significant position is the highest qubit of
-    # each register. The sweep below runs least significant first; the sweep back
-    # is therefore the register order taken at face value.
-    for a_qubit, b_qubit in zip(
-        reversed(registers.a), reversed(registers.b), strict=True
+    for instruction in ripple_add(
+        registers.a, registers.b, registers.carry, registers.carry_out
     ):
-        _append(circuit, _MAJ, a_qubit, b_qubit, registers.carry)
-
-    # The carry out of the most significant position leaves the ripple here, and
-    # the ancilla takes the carries back down over the next sweep.
-    circuit.gate("cx", (registers.carry, registers.carry_out))
-
-    for a_qubit, b_qubit in zip(registers.a, registers.b, strict=True):
-        _append(circuit, _UMA, a_qubit, b_qubit, registers.carry)
-        # ``UMA`` restores both data qubits and leaves the carry into this
-        # position on the ancilla, which is the ``c_i`` the sum bit is missing.
-        circuit.gate("cx", (a_qubit, b_qubit))
-        circuit.gate("cx", (registers.carry, b_qubit))
-
+        circuit.gate(instruction.name, instruction.wires)
     return circuit
-
-
-def _append(
-    circuit: Circuit,
-    template: tuple[tuple[str, tuple[int, ...]], ...],
-    a: int,
-    b: int,
-    carry: int,
-) -> None:
-    """Append one gadget, resolving its local qubit labels to circuit qubits."""
-
-    local = (a, b, carry)
-    for opcode, labels in template:
-        circuit.gate(opcode, tuple(local[label] for label in labels))
 
 
 def _require_bit_count(n_bits: int) -> int:

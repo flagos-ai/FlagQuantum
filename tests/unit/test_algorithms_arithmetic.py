@@ -392,3 +392,26 @@ def test_the_default_operation_bound_is_reported_rather_than_hidden() -> None:
         adder_circuit(10), gates=CLIFFORD_T_BASIS, max_added_operations=1024
     )
     assert estimate_resources(raised.program).t_count == _TOFFOLI_T_COUNT * 2 * 10
+
+
+def test_public_wrapper_uses_the_replaceable_shared_kernel(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from flagquantum.algorithms import arithmetic
+    from flagquantum.compiler import _arithmetic_kernels
+    from flagquantum.core.ir import Instruction
+
+    assert arithmetic.ripple_add is _arithmetic_kernels.ripple_add
+    maps = []
+
+    def replacement(
+        a: tuple[int, ...], b: tuple[int, ...], carry: int, carry_out: int
+    ) -> tuple[Instruction, ...]:
+        maps.append((a, b, carry, carry_out))
+        return (Instruction("x", (a[-1],)),)
+
+    monkeypatch.setattr(arithmetic, "ripple_add", replacement)
+    circuit = arithmetic.adder_circuit(2)
+    assert maps == [((0, 1), (2, 3), 4, 5)]
+    assert circuit.n_qubits == 6
+    assert circuit.to_ir().instructions == (Instruction("x", (1,)),)
