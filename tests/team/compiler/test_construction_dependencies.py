@@ -12,7 +12,7 @@ pytestmark = pytest.mark.unit
 def test_construction_profile_has_no_execution_or_algorithm_imports() -> None:
     package = importlib.import_module("flagquantum.compiler._construction")
     root = Path(package.__file__).parent
-    for source in root.glob("*.py"):
+    for source in (*root.glob("*.py"), root.parent / "_arithmetic_kernels.py"):
         for node in ast.walk(ast.parse(source.read_text())):
             if isinstance(node, ast.ImportFrom):
                 module = node.module or ""

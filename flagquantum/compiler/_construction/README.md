@@ -4,8 +4,9 @@ Compiler owns this private profile of the existing `_hybrid.model` records.
 It verifies coherent integer expression definitions and physical binding
 preconditions. Binding validation checks the complete definition graph before
 checking physical ports; an unchecked function cannot bypass profile verification.
-It does not capture Python, synthesize gates, select candidates,
-run circuits or export a public `synth` API.
+Addition-only lowering emits existing Core gates through a shared pure arithmetic
+kernel. It does not capture Python, select candidates, run circuits or export a
+public `synth` API.
 
 The same `IRType`, `ValueId`, `Value`, `Operation`, `Block`, `Region`, source
 location and `HybridProgram` are reused. `quantum.uint(width)` represents a
@@ -25,10 +26,11 @@ qfunc/qperm effects, fresh assignment, truncating in-place XOR, wrapping additio
 bind, free/drop and within-apply need separate semantics; their names are not
 aliases for the full-width arithmetic evaluator.
 
-An eventual lowering must implement `z ^= f(inputs)` for every target bitstring
-with zero workspace, preserving phases and cleaning workspace. This code checks
-definitions and bindings; it does not establish that an arithmetic lowering
-exists. `fresh_zero` is an allocator obligation; `caller_asserted_zero` is a
+The lowering contract requires `z ^= f(inputs)` for every target bitstring
+with zero workspace, preserving phases and cleaning workspace. The verifier
+checks definitions and bindings; the separate addition-only lowering implements
+this permutation for constants, addition, calls and returns. Multiplication
+remains verifier-only. `fresh_zero` is an allocator obligation; `caller_asserted_zero` is a
 caller precondition. Neither is inferred from an external state.
 
 For a small change, edit the corresponding verifier, add an accepted/rejected
@@ -43,12 +45,14 @@ python tools/check_architecture.py
 python tools/check_dependency_policy.py
 ```
 
-The integration probes use existing Circuit/IR/runtime capabilities. They do
-not report arithmetic synthesis or Qmod import as implemented. Three-bit states
+The CS-01 boundary probes use existing Circuit/IR/runtime capabilities. They
+establish destination semantics independently of arithmetic lowering. Three-bit states
 pin the physical bit-order boundary. A Bell subsystem probe shows why omitting
 an output does not reclaim its entangled partner; it does not implement drop.
-The next step is CS-02's pure
-adder-kernel extraction and conservative lowering behind this boundary.
+CS-02's conservative retain-all lowering requires explicit zero-workspace maps
+and operation budgets. It returns existing CircuitIR for Circuit composition and
+execution, including nonzero XOR targets. See the
+[CS-02 delivery record](../../../docs/roadmap/CS02_ADDITION_DELIVERY.md).
 
 See the [CS-01 contract](../../../docs/api-changes/FQ-SYNTH-CS01-20261029.md)
 and [Classiq review](../../../docs/roadmap/CLASSIQ_SEMANTICS_REVIEW_20261029.md).
