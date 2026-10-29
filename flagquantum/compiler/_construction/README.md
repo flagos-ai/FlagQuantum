@@ -6,8 +6,8 @@ preconditions. Binding validation checks the complete definition graph before
 checking physical ports; an unchecked function cannot bypass profile verification.
 Arithmetic lowering emits existing Core gates through a shared pure arithmetic
 kernel. `frontend_python.py` captures a restricted Python integer expression
-without running its body. This package does not select candidates, run circuits
-or export a public `synth` API.
+without running its body. This package does not run circuits or export a public
+`synth` API. Its private CS06-B selector checks the two existing schedules.
 
 The same `IRType`, `ValueId`, `Value`, `Operation`, `Block`, `Region`, source
 location and `HybridProgram` are reused. `quantum.uint(width)` represents a
@@ -88,3 +88,20 @@ diagnostics and ResourceEstimate; it does not select candidates, plan execution
 or infer workspace ownership from CoreIR. Services consumes this record when
 checking a sealed Runtime plan. See the
 [CS06-A contract](../../../docs/api-changes/FQ-SYNTH-CS06-A-20261029.md).
+
+CS06-B `selection.py` enumerates the existing retain/recompute schedules, keeps
+their actual allocation histories, and ranks fully checked candidates. Final
+CircuitLimits and workspace ceilings are distinct from ConstructionBudget.
+`target.py` reuses basis conversion, compilation, routing, Layout and ASAP
+scheduling; it predicts normal Runtime instructions without importing Runtime.
+Each target stage retains its existing CoreIR content identity, and `validate()`
+rejects later mutations without compiling. Runtime confirmation still goes
+through CS06-A; C owns the single normal facade and named reading integration.
+
+Run `python -m examples.synthesis_selection` for the real constraint-driven
+phase/cleanup workflow, or `python -m examples.synthesis_selection_costs` for the
+complete static table and current manual comparison. Relevant tests are
+`tests/team/compiler/test_construction_selection.py` and
+`tests/integration/test_construction_selection_execution.py`. See the
+[contract](../../../docs/api-changes/FQ-SYNTH-CS06-B-20261029.md) and
+[delivery record](../../../docs/roadmap/CS06_CANDIDATE_SELECTION_DELIVERY.md).

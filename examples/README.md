@@ -1,5 +1,15 @@
 # FlagQuantum Examples
 
+Private constrained-synthesis contributor workflows:
+
+- [Candidate selection](synthesis_selection.py): run
+  `python -m examples.synthesis_selection` to select both schedules through
+  different final constraints, then check and execute their real Runtime plans.
+- [Complete static costs](synthesis_selection_costs.py): run
+  `python -m examples.synthesis_selection_costs` for both candidates of four
+  computation families at two widths and two targets, plus the manual baseline.
+  Larger rows are Compiler costs, not dense-state or hardware measurements.
+
 [`synthesis_execution_contract.py`](synthesis_execution_contract.py) demonstrates
 the private CS06-A seam: `python -m examples.synthesis_execution_contract` rejects
 planning-induced basis drift, checks an actual routed plan and verifies its

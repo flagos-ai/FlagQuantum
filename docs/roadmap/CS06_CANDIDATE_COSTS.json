@@ -1,0 +1,690 @@
+{
+  "kind": "private_cs06b_static_candidate_costs",
+  "recorded_at": "2026-10-29T10:05:24.001966+00:00",
+  "base_commit": "50d67ddd3b1a5853f1d7955d71279b4cebe7abec",
+  "command": "python -m examples.synthesis_selection_costs",
+  "scope": "full_arithmetic_and_cleanup_without_preparation; not hardware measurements",
+  "source_sha256": {
+    "flagquantum/compiler/_construction/selection.py": "f476bb2134416f348b9b41c1e3160143cee391e77942323ce22cace5742acd21",
+    "flagquantum/compiler/_construction/target.py": "5ad3a7404513019ab7e8114733882618afe5337ae0cef096a4da96f95de06519",
+    "examples/synthesis_selection.py": "fec4e4d1f0eb9df508f9a5e7a949bfd9234189f81cbd9b2f488dd932c8d5cb03",
+    "examples/synthesis_selection_costs.py": "7dcbdfe9df4d6fdde88359ac64e487e67670e602405dc5f5109ef1519b559e7c"
+  },
+  "rows": [
+    {
+      "function": "addition",
+      "inputs": {
+        "x": 1,
+        "y": 2
+      },
+      "target": "logical",
+      "strategy": "retain",
+      "workspace": 5,
+      "qubits": 11,
+      "used_qubits": 11,
+      "operations": 41,
+      "depth": 35,
+      "recomputations": 0,
+      "construction_seconds": 0.00024287500127684325,
+      "target_seconds": 0.00289054200402461,
+      "selected": true,
+      "feasible": true,
+      "executable_hash": "f9b157c0b5b38bef61cfba8cacb43ea9fbe563c9d2627c4111312e5104708c50"
+    },
+    {
+      "function": "addition",
+      "inputs": {
+        "x": 1,
+        "y": 2
+      },
+      "target": "logical",
+      "strategy": "recompute",
+      "workspace": 5,
+      "qubits": 11,
+      "used_qubits": 11,
+      "operations": 41,
+      "depth": 35,
+      "recomputations": 0,
+      "construction_seconds": 0.00018658299813978374,
+      "target_seconds": 0.0017856250051409006,
+      "selected": false,
+      "feasible": true,
+      "executable_hash": "f9b157c0b5b38bef61cfba8cacb43ea9fbe563c9d2627c4111312e5104708c50"
+    },
+    {
+      "function": "addition",
+      "inputs": {
+        "x": 2,
+        "y": 3
+      },
+      "target": "logical",
+      "strategy": "retain",
+      "workspace": 6,
+      "qubits": 15,
+      "used_qubits": 15,
+      "operations": 60,
+      "depth": 51,
+      "recomputations": 0,
+      "construction_seconds": 0.0001920829963637516,
+      "target_seconds": 0.0025203330005751923,
+      "selected": true,
+      "feasible": true,
+      "executable_hash": "df5a9a3df0e1831a94c9f7138ad86a5fae1f5ae76aa669c6cbad6167aefe6e47"
+    },
+    {
+      "function": "addition",
+      "inputs": {
+        "x": 2,
+        "y": 3
+      },
+      "target": "logical",
+      "strategy": "recompute",
+      "workspace": 6,
+      "qubits": 15,
+      "used_qubits": 15,
+      "operations": 60,
+      "depth": 51,
+      "recomputations": 0,
+      "construction_seconds": 0.00019720800628419966,
+      "target_seconds": 0.002304124995134771,
+      "selected": false,
+      "feasible": true,
+      "executable_hash": "df5a9a3df0e1831a94c9f7138ad86a5fae1f5ae76aa669c6cbad6167aefe6e47"
+    },
+    {
+      "function": "product",
+      "inputs": {
+        "x": 1,
+        "y": 1
+      },
+      "target": "logical",
+      "strategy": "retain",
+      "workspace": 2,
+      "qubits": 5,
+      "used_qubits": 5,
+      "operations": 5,
+      "depth": 5,
+      "recomputations": 0,
+      "construction_seconds": 0.0001153330085799098,
+      "target_seconds": 0.0004263339942554012,
+      "selected": true,
+      "feasible": true,
+      "executable_hash": "f5bd6ef915f759b78090070b76b9fdcfff7dcee59c01360b36e125058e3b8ed8"
+    },
+    {
+      "function": "product",
+      "inputs": {
+        "x": 1,
+        "y": 1
+      },
+      "target": "logical",
+      "strategy": "recompute",
+      "workspace": 2,
+      "qubits": 5,
+      "used_qubits": 5,
+      "operations": 5,
+      "depth": 5,
+      "recomputations": 0,
+      "construction_seconds": 0.0001463329972466454,
+      "target_seconds": 0.00040750000334810466,
+      "selected": false,
+      "feasible": true,
+      "executable_hash": "f5bd6ef915f759b78090070b76b9fdcfff7dcee59c01360b36e125058e3b8ed8"
+    },
+    {
+      "function": "product",
+      "inputs": {
+        "x": 2,
+        "y": 2
+      },
+      "target": "logical",
+      "strategy": "retain",
+      "workspace": 8,
+      "qubits": 16,
+      "used_qubits": 16,
+      "operations": 88,
+      "depth": 69,
+      "recomputations": 0,
+      "construction_seconds": 0.00023495798814110458,
+      "target_seconds": 0.004139791999477893,
+      "selected": true,
+      "feasible": true,
+      "executable_hash": "60203ed8a95670eae6009c13760cc4e6f4ab318c11709c254690bc8d23a947c6"
+    },
+    {
+      "function": "product",
+      "inputs": {
+        "x": 2,
+        "y": 2
+      },
+      "target": "logical",
+      "strategy": "recompute",
+      "workspace": 8,
+      "qubits": 16,
+      "used_qubits": 16,
+      "operations": 88,
+      "depth": 69,
+      "recomputations": 0,
+      "construction_seconds": 0.000264749993220903,
+      "target_seconds": 0.02261191599245649,
+      "selected": false,
+      "feasible": true,
+      "executable_hash": "60203ed8a95670eae6009c13760cc4e6f4ab318c11709c254690bc8d23a947c6"
+    },
+    {
+      "function": "polynomial",
+      "inputs": {
+        "x": 1,
+        "y": 1
+      },
+      "target": "logical",
+      "strategy": "retain",
+      "workspace": 4,
+      "qubits": 8,
+      "used_qubits": 8,
+      "operations": 28,
+      "depth": 25,
+      "recomputations": 0,
+      "construction_seconds": 0.00018787500448524952,
+      "target_seconds": 0.0011845830013044178,
+      "selected": true,
+      "feasible": true,
+      "executable_hash": "bcb849b907f42d97133bf8119a7d536250c1c7481e82d78e8aaafd0b58165985"
+    },
+    {
+      "function": "polynomial",
+      "inputs": {
+        "x": 1,
+        "y": 1
+      },
+      "target": "logical",
+      "strategy": "recompute",
+      "workspace": 4,
+      "qubits": 8,
+      "used_qubits": 8,
+      "operations": 28,
+      "depth": 25,
+      "recomputations": 0,
+      "construction_seconds": 0.00017354200826957822,
+      "target_seconds": 0.00114824999764096,
+      "selected": false,
+      "feasible": true,
+      "executable_hash": "bcb849b907f42d97133bf8119a7d536250c1c7481e82d78e8aaafd0b58165985"
+    },
+    {
+      "function": "polynomial",
+      "inputs": {
+        "x": 2,
+        "y": 2
+      },
+      "target": "logical",
+      "strategy": "retain",
+      "workspace": 10,
+      "qubits": 18,
+      "used_qubits": 18,
+      "operations": 162,
+      "depth": 123,
+      "recomputations": 0,
+      "construction_seconds": 0.00042529100028332323,
+      "target_seconds": 0.005670750004355796,
+      "selected": true,
+      "feasible": true,
+      "executable_hash": "9f5b94bf9de7bf965f6707cd283f088bb9a03f877dfc70af2ad7b8bebb9348bd"
+    },
+    {
+      "function": "polynomial",
+      "inputs": {
+        "x": 2,
+        "y": 2
+      },
+      "target": "logical",
+      "strategy": "recompute",
+      "workspace": 10,
+      "qubits": 18,
+      "used_qubits": 18,
+      "operations": 162,
+      "depth": 123,
+      "recomputations": 0,
+      "construction_seconds": 0.0004157920047873631,
+      "target_seconds": 0.005424083996331319,
+      "selected": false,
+      "feasible": true,
+      "executable_hash": "9f5b94bf9de7bf965f6707cd283f088bb9a03f877dfc70af2ad7b8bebb9348bd"
+    },
+    {
+      "function": "pressure",
+      "inputs": {
+        "x": 1,
+        "y": 1
+      },
+      "target": "logical",
+      "strategy": "retain",
+      "workspace": 6,
+      "qubits": 10,
+      "used_qubits": 10,
+      "operations": 40,
+      "depth": 35,
+      "recomputations": 0,
+      "construction_seconds": 0.0002843749971361831,
+      "target_seconds": 0.0014748340036021546,
+      "selected": false,
+      "feasible": true,
+      "executable_hash": "ac8ec6f81eb0fa2b385c18b4a8043a41a6e828b06ac66e9aac3655028f08f529"
+    },
+    {
+      "function": "pressure",
+      "inputs": {
+        "x": 1,
+        "y": 1
+      },
+      "target": "logical",
+      "strategy": "recompute",
+      "workspace": 5,
+      "qubits": 9,
+      "used_qubits": 9,
+      "operations": 58,
+      "depth": 54,
+      "recomputations": 3,
+      "construction_seconds": 0.00037045800127089024,
+      "target_seconds": 0.0018734159966697916,
+      "selected": true,
+      "feasible": true,
+      "executable_hash": "21af33f5a527dae782b9fae76385bca690c735371dc9eb5e74eb243a891de9ea"
+    },
+    {
+      "function": "pressure",
+      "inputs": {
+        "x": 2,
+        "y": 2
+      },
+      "target": "logical",
+      "strategy": "retain",
+      "workspace": 28,
+      "qubits": 39,
+      "used_qubits": 39,
+      "operations": 739,
+      "depth": 545,
+      "recomputations": 0,
+      "construction_seconds": 0.0015954169939504936,
+      "target_seconds": 0.02305974999035243,
+      "selected": false,
+      "feasible": true,
+      "executable_hash": "9fc5d7bbc94c647da55e408f4920f41d35a2c1f8c83e10e5063d505c08db089c"
+    },
+    {
+      "function": "pressure",
+      "inputs": {
+        "x": 2,
+        "y": 2
+      },
+      "target": "logical",
+      "strategy": "recompute",
+      "workspace": 23,
+      "qubits": 34,
+      "used_qubits": 34,
+      "operations": 1091,
+      "depth": 860,
+      "recomputations": 3,
+      "construction_seconds": 0.0021391670015873387,
+      "target_seconds": 0.032365582999773324,
+      "selected": true,
+      "feasible": true,
+      "executable_hash": "8cf5c7018b809ea2544cd64f229c498607181f3d25e85f1bb2eae18e7f4cc1c8"
+    },
+    {
+      "function": "polynomial",
+      "inputs": {
+        "x": 2,
+        "y": 2
+      },
+      "target": "logical",
+      "strategy": "manual",
+      "workspace": 10,
+      "qubits": 18,
+      "used_qubits": 18,
+      "operations": 222,
+      "depth": 201,
+      "construction_seconds": 0.0011880829988513142,
+      "target_seconds": 0.011494374994072132,
+      "executable_hash": "eb700698ab08bc207ffab0a2069519ec1b203d217fc58be5d5ba9d871fa92a2f"
+    },
+    {
+      "function": "addition",
+      "inputs": {
+        "x": 1,
+        "y": 2
+      },
+      "target": "named_basis",
+      "strategy": "retain",
+      "workspace": 5,
+      "qubits": 11,
+      "used_qubits": 11,
+      "operations": 145,
+      "depth": 107,
+      "recomputations": 0,
+      "construction_seconds": 0.00015695899492129683,
+      "target_seconds": 0.01302116599981673,
+      "selected": true,
+      "feasible": true,
+      "executable_hash": "bc8fca6320af9bdba72d17da9fb0f07f898d30e986a5024aed228bf7bf84d8e8"
+    },
+    {
+      "function": "addition",
+      "inputs": {
+        "x": 1,
+        "y": 2
+      },
+      "target": "named_basis",
+      "strategy": "recompute",
+      "workspace": 5,
+      "qubits": 11,
+      "used_qubits": 11,
+      "operations": 145,
+      "depth": 107,
+      "recomputations": 0,
+      "construction_seconds": 0.00017533398931846023,
+      "target_seconds": 0.012924833004944958,
+      "selected": false,
+      "feasible": true,
+      "executable_hash": "bc8fca6320af9bdba72d17da9fb0f07f898d30e986a5024aed228bf7bf84d8e8"
+    },
+    {
+      "function": "addition",
+      "inputs": {
+        "x": 2,
+        "y": 3
+      },
+      "target": "named_basis",
+      "strategy": "retain",
+      "workspace": 6,
+      "qubits": 15,
+      "used_qubits": 15,
+      "operations": 216,
+      "depth": 159,
+      "recomputations": 0,
+      "construction_seconds": 0.0001903749944176525,
+      "target_seconds": 0.019260041997767985,
+      "selected": true,
+      "feasible": true,
+      "executable_hash": "eda93999278c3c4dfb0a43c316b0728f6f1d0af719c0c6cb244c9076026872cf"
+    },
+    {
+      "function": "addition",
+      "inputs": {
+        "x": 2,
+        "y": 3
+      },
+      "target": "named_basis",
+      "strategy": "recompute",
+      "workspace": 6,
+      "qubits": 15,
+      "used_qubits": 15,
+      "operations": 216,
+      "depth": 159,
+      "recomputations": 0,
+      "construction_seconds": 0.00023862499801907688,
+      "target_seconds": 0.019915665994631127,
+      "selected": false,
+      "feasible": true,
+      "executable_hash": "eda93999278c3c4dfb0a43c316b0728f6f1d0af719c0c6cb244c9076026872cf"
+    },
+    {
+      "function": "product",
+      "inputs": {
+        "x": 1,
+        "y": 1
+      },
+      "target": "named_basis",
+      "strategy": "retain",
+      "workspace": 2,
+      "qubits": 5,
+      "used_qubits": 5,
+      "operations": 58,
+      "depth": 41,
+      "recomputations": 0,
+      "construction_seconds": 0.00012583300122059882,
+      "target_seconds": 0.005721374996937811,
+      "selected": true,
+      "feasible": true,
+      "executable_hash": "9860d2d586a6ba2121022e1b0da35a3dd4636bfbb812d5d1c7eb586ed5e1d3d1"
+    },
+    {
+      "function": "product",
+      "inputs": {
+        "x": 1,
+        "y": 1
+      },
+      "target": "named_basis",
+      "strategy": "recompute",
+      "workspace": 2,
+      "qubits": 5,
+      "used_qubits": 5,
+      "operations": 58,
+      "depth": 41,
+      "recomputations": 0,
+      "construction_seconds": 0.000131207998492755,
+      "target_seconds": 0.0056195419892901555,
+      "selected": false,
+      "feasible": true,
+      "executable_hash": "9860d2d586a6ba2121022e1b0da35a3dd4636bfbb812d5d1c7eb586ed5e1d3d1"
+    },
+    {
+      "function": "product",
+      "inputs": {
+        "x": 2,
+        "y": 2
+      },
+      "target": "named_basis",
+      "strategy": "retain",
+      "workspace": 8,
+      "qubits": 16,
+      "used_qubits": 16,
+      "operations": 677,
+      "depth": 461,
+      "recomputations": 0,
+      "construction_seconds": 0.00025879200256895274,
+      "target_seconds": 0.06157891599286813,
+      "selected": true,
+      "feasible": true,
+      "executable_hash": "5c4e43c3f71b6dd9466e37a434fec95f48ea4a423c360cd3ba270b3d58813966"
+    },
+    {
+      "function": "product",
+      "inputs": {
+        "x": 2,
+        "y": 2
+      },
+      "target": "named_basis",
+      "strategy": "recompute",
+      "workspace": 8,
+      "qubits": 16,
+      "used_qubits": 16,
+      "operations": 677,
+      "depth": 461,
+      "recomputations": 0,
+      "construction_seconds": 0.0002910830080509186,
+      "target_seconds": 0.06081016699317843,
+      "selected": false,
+      "feasible": true,
+      "executable_hash": "5c4e43c3f71b6dd9466e37a434fec95f48ea4a423c360cd3ba270b3d58813966"
+    },
+    {
+      "function": "polynomial",
+      "inputs": {
+        "x": 1,
+        "y": 1
+      },
+      "target": "named_basis",
+      "strategy": "retain",
+      "workspace": 4,
+      "qubits": 8,
+      "used_qubits": 8,
+      "operations": 80,
+      "depth": 61,
+      "recomputations": 0,
+      "construction_seconds": 0.0001989579905057326,
+      "target_seconds": 0.007453875005012378,
+      "selected": true,
+      "feasible": true,
+      "executable_hash": "ba5289463ef7eb899d803daf18d2d08f3ff32afcdc32f58e1e15c73643dc2e89"
+    },
+    {
+      "function": "polynomial",
+      "inputs": {
+        "x": 1,
+        "y": 1
+      },
+      "target": "named_basis",
+      "strategy": "recompute",
+      "workspace": 4,
+      "qubits": 8,
+      "used_qubits": 8,
+      "operations": 80,
+      "depth": 61,
+      "recomputations": 0,
+      "construction_seconds": 0.00022533400624524802,
+      "target_seconds": 0.008040999993681908,
+      "selected": false,
+      "feasible": true,
+      "executable_hash": "ba5289463ef7eb899d803daf18d2d08f3ff32afcdc32f58e1e15c73643dc2e89"
+    },
+    {
+      "function": "polynomial",
+      "inputs": {
+        "x": 2,
+        "y": 2
+      },
+      "target": "named_basis",
+      "strategy": "retain",
+      "workspace": 10,
+      "qubits": 18,
+      "used_qubits": 18,
+      "operations": 856,
+      "depth": 567,
+      "recomputations": 0,
+      "construction_seconds": 0.00045908300671726465,
+      "target_seconds": 0.10008166699844878,
+      "selected": true,
+      "feasible": true,
+      "executable_hash": "41c4c3b0def6c374f97ff9a89d36ad71747a27844fd587f302f81e18be87561f"
+    },
+    {
+      "function": "polynomial",
+      "inputs": {
+        "x": 2,
+        "y": 2
+      },
+      "target": "named_basis",
+      "strategy": "recompute",
+      "workspace": 10,
+      "qubits": 18,
+      "used_qubits": 18,
+      "operations": 856,
+      "depth": 567,
+      "recomputations": 0,
+      "construction_seconds": 0.0005045830039307475,
+      "target_seconds": 0.07570762500108685,
+      "selected": false,
+      "feasible": true,
+      "executable_hash": "41c4c3b0def6c374f97ff9a89d36ad71747a27844fd587f302f81e18be87561f"
+    },
+    {
+      "function": "pressure",
+      "inputs": {
+        "x": 1,
+        "y": 1
+      },
+      "target": "named_basis",
+      "strategy": "retain",
+      "workspace": 6,
+      "qubits": 10,
+      "used_qubits": 10,
+      "operations": 248,
+      "depth": 155,
+      "recomputations": 0,
+      "construction_seconds": 0.0003032910026377067,
+      "target_seconds": 0.022234459000173956,
+      "selected": false,
+      "feasible": true,
+      "executable_hash": "5be5c50ac5a9c99aef0af3bbc0c723b3a91d61d3e282e21a259ff6cf4a9fcce8"
+    },
+    {
+      "function": "pressure",
+      "inputs": {
+        "x": 1,
+        "y": 1
+      },
+      "target": "named_basis",
+      "strategy": "recompute",
+      "workspace": 5,
+      "qubits": 9,
+      "used_qubits": 9,
+      "operations": 417,
+      "depth": 279,
+      "recomputations": 3,
+      "construction_seconds": 0.00038433300505857915,
+      "target_seconds": 0.03707750000467058,
+      "selected": true,
+      "feasible": true,
+      "executable_hash": "dd679d8ea37975aaac520c3fa4c3f1324812a65cd3d2c80d2521bf2b484c4a3f"
+    },
+    {
+      "function": "pressure",
+      "inputs": {
+        "x": 2,
+        "y": 2
+      },
+      "target": "named_basis",
+      "strategy": "retain",
+      "workspace": 28,
+      "qubits": 39,
+      "used_qubits": 39,
+      "operations": 5041,
+      "depth": 3126,
+      "recomputations": 0,
+      "construction_seconds": 0.0014542080025421456,
+      "target_seconds": 0.5055698330106679,
+      "selected": false,
+      "feasible": true,
+      "executable_hash": "2860c92b49dfed9684693c56c656c46c9cc27452697955d39e3314f313342974"
+    },
+    {
+      "function": "pressure",
+      "inputs": {
+        "x": 2,
+        "y": 2
+      },
+      "target": "named_basis",
+      "strategy": "recompute",
+      "workspace": 23,
+      "qubits": 34,
+      "used_qubits": 34,
+      "operations": 7730,
+      "depth": 5077,
+      "recomputations": 3,
+      "construction_seconds": 0.002204707998316735,
+      "target_seconds": 0.9014685000001919,
+      "selected": true,
+      "feasible": true,
+      "executable_hash": "6394400b09cd7586467cc058151326d13886a12946c134929508c51c1deac7b3"
+    },
+    {
+      "function": "polynomial",
+      "inputs": {
+        "x": 2,
+        "y": 2
+      },
+      "target": "named_basis",
+      "strategy": "manual",
+      "workspace": 10,
+      "qubits": 18,
+      "used_qubits": 18,
+      "operations": 948,
+      "depth": 633,
+      "construction_seconds": 0.0013584999978775159,
+      "target_seconds": 0.08921762499085162,
+      "executable_hash": "7c7b3ccfb490db884be55ec4e885398725d6d27fe43d2e652c9ec99f28874498"
+    }
+  ],
+  "implementation_commit": "806ecc74e54c1fed5ab4725fc0f413c4c339b840"
+}
