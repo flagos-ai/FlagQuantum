@@ -81,3 +81,10 @@ CS-05 contributor path. The [delivery record](../../../docs/roadmap/CS05_WORKSPA
 states measured costs and separates large structural checks from small real CPU
 phase tests. The [private boundary](../../../docs/api-changes/FQ-SYNTH-CS05-20261029.md)
 keeps automatic candidate selection and broader effects outside this change.
+
+CS06-A adds `constraints.CircuitLimits`, the pure shared authority for final
+whole-program width, operation and depth ceilings. Its violations reuse existing
+diagnostics and ResourceEstimate; it does not select candidates, plan execution
+or infer workspace ownership from CoreIR. Services consumes this record when
+checking a sealed Runtime plan. See the
+[CS06-A contract](../../../docs/api-changes/FQ-SYNTH-CS06-A-20261029.md).

@@ -15,6 +15,19 @@ and `tests/integration/test_synthesis_python_trial.py`. Supported syntax,
 result-identity checks, preparation composition and limitations are in the
 [delivery record](../../docs/roadmap/CS04_PYTHON_TRIAL_DELIVERY.md).
 
+`_synthesis_execution` is the private CS06-A plan-checking seam. It combines
+existing sealed-plan validation, Compiler resource limits, basis membership,
+topology and replayed layout evidence. It neither plans nor executes and contains
+no numerical kernel. Start with
+`python -m examples.synthesis_execution_contract` and
+`tests/team/services/test_synthesis_plan_checks.py`, then the real scenarios in
+`tests/integration/test_synthesis_execution_contract.py`. The
+[contract](../../docs/api-changes/FQ-SYNTH-CS06-A-20261029.md) and
+[delivery record](../../docs/roadmap/CS06_EXECUTION_CONTRACT_DELIVERY.md) state the
+admitted profile and limits. The CS-04 checker is frozen until CS06-C replaces
+its hash-only admission; do not grow two independent validators or extend the
+public Services exports here.
+
 Simple operations do not belong here. Call `flagquantum.compiler.optimize`,
 `fq.plan`, or `fq.run` directly. Do not add a service method that only forwards
 arguments, renames a result, or converts a protocol payload.
