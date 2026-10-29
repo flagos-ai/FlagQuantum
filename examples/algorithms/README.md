@@ -1,7 +1,7 @@
 # Algorithm examples
 
 Runnable demonstrations of the Phase 2 algorithm units in
-`flagquantum.algorithms`, one per unit of that phase, plus a private CS-04
+`flagquantum.algorithms`, one per unit of that phase, plus a private constrained
 arithmetic synthesis workflow trial.
 [`docs/guides/ALGORITHMS.md`](../../docs/guides/ALGORITHMS.md) is the per-unit
 reference they follow, and the place each unit's advantage premise is recorded in
@@ -156,9 +156,11 @@ What they show:
 
 - [`synthesis_trial.py`](synthesis_trial.py): the private Services Python trial
   synthesizes `x*x+y` with named basis and uniform input preparation, executes
-  existing CircuitIR, and reads named UInt tuples without user-written gates,
-  physical indices or bitstring decoding. It uses one conservative candidate
-  and exact local CPU statevectors; it is not a stable public synth namespace.
+  its checked existing ExecutionPlan, and reads named UInt tuples without
+  user-written gates, physical indices or bitstring decoding. It also executes
+  a constrained line-topology example. Finite candidate selection and exact
+  local CPU statevectors are supported; no optimality or stable public synth
+  namespace is claimed.
 
 ## These scripts use the subpackage surface
 

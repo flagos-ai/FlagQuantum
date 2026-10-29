@@ -158,10 +158,10 @@ def test_wrong_same_size_execution_missing_plan_and_changed_source_are_refused()
         program.circuit,
         instructions=(*program.circuit.instructions, Instruction("x", (0,))),
     )
-    with pytest.raises(ValueError, match="execution identity"):
+    with pytest.raises(ValueError, match="execution.identity"):
         program.read_distribution(fq.run(other, options=_options()))
     result = fq.run(program.circuit, options=_options())
-    with pytest.raises(ValueError, match="execution plan"):
+    with pytest.raises(ValueError, match="plan"):
         program.read_distribution(replace(result, plan=None))
     program.circuit.metadata["changed"] = True
     with pytest.raises(ValueError, match="circuit changed"):
@@ -199,7 +199,9 @@ def test_reading_never_runs_replans_or_recompiles(
 
     monkeypatch.setattr(fq, "run", forbidden)
     monkeypatch.setattr(fq, "plan", forbidden)
-    monkeypatch.setattr(synth, "compile_program", forbidden)
+    monkeypatch.setattr(
+        __import__("flagquantum._api", fromlist=["plan"]), "plan", forbidden
+    )
     assert len(program.read_distribution(result)) == 2
 
 
@@ -260,7 +262,7 @@ def test_bad_preparation_names_and_ranges_are_rejected(state: synth.InputState) 
 
 
 def test_resource_failure_can_be_repaired_without_changing_the_function() -> None:
-    with pytest.raises(HybridVerificationError, match="increase max_qubits"):
+    with pytest.raises(HybridVerificationError, match="max_qubits"):
         synth.synthesize(
             polynomial, inputs={"x": synth.UInt(2), "y": synth.UInt(2)}, max_qubits=17
         )
@@ -268,7 +270,7 @@ def test_resource_failure_can_be_repaired_without_changing_the_function() -> Non
         polynomial, inputs={"x": synth.UInt(2), "y": synth.UInt(2)}, max_qubits=18
     )
     assert program.circuit.n_wires == 18
-    with pytest.raises(HybridVerificationError, match="increase max_operations"):
+    with pytest.raises(HybridVerificationError, match="max_operations"):
         synth.synthesize(
             polynomial,
             inputs={"x": synth.UInt(2), "y": synth.UInt(2)},
@@ -334,7 +336,7 @@ def test_preparation_roles_and_symbolic_angles_are_not_silently_ignored() -> Non
 
 def test_reader_refuses_density_and_invalid_state_data() -> None:
     program = _small()
-    with pytest.raises(ValueError, match="statevectors"):
+    with pytest.raises(ValueError, match="execution.profile"):
         program.read_distribution(
             fq.run(program.circuit, options=_options("density_matrix"))
         )
@@ -342,7 +344,7 @@ def test_reader_refuses_density_and_invalid_state_data() -> None:
     assert result.state is not None
     with pytest.raises(ValueError, match="not normalized"):
         program.read_distribution(replace(result, state=result.state * 2))
-    with pytest.raises(ValueError, match="matching size"):
+    with pytest.raises(ValueError, match="dimensions"):
         program.read_distribution(
             replace(result, state=torch.cat((result.state, result.state)))
         )
@@ -379,10 +381,9 @@ def test_synthesis_is_construction_without_implicit_runtime_execution(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     def forbidden(*args: object, **kwargs: object) -> None:
-        raise AssertionError("synthesis must not execute or plan a runtime")
+        raise AssertionError("synthesis must not execute a runtime")
 
     monkeypatch.setattr(fq, "run", forbidden)
-    monkeypatch.setattr(fq, "plan", forbidden)
     assert _small().report["result_width"] == 1
 
 
@@ -395,11 +396,13 @@ def test_structural_domains_reject_invalid_widths(width: Any) -> None:
 def test_workflow_limits_and_preparation_cost_are_enforced() -> None:
     options: dict[str, Any] = {"inputs": {"x": synth.UInt(1)}}
     for limits in ({"max_qubits": 257}, {"max_operations": 100001}):
-        with pytest.raises(ValueError, match="safety caps"):
-            synth.synthesize(identity, **options, **limits)
-    with pytest.raises(ValueError, match="exact result need"):
+        assert synth.synthesize(identity, **options, **limits).execution is not None
+    for limits in ({"qubits": 257}, {"operations": 100001}):
+        with pytest.raises(ValueError, match="construction budget"):
+            synth.ConstructionBudget(**limits)
+    with pytest.raises(ValueError, match="max_qubits"):
         synth.synthesize(identity, **options, max_qubits=1)
-    with pytest.raises(ValueError, match="preparation plus arithmetic"):
+    with pytest.raises(ValueError, match="max_operations"):
         synth.synthesize(
             identity,
             **options,

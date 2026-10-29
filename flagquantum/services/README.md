@@ -4,16 +4,22 @@ Services contains small, reusable application workflows that add behavior beyond
 one stable FlagQuantum API call, such as capability aggregation, execution
 preflight, and deployment preflight.
 
-The private `_synthesis` CS-04 trial composes restricted Compiler capture and
-arithmetic lowering, explicit input preparation, existing resource estimation,
-and bounded named views of existing Runtime results. It does not execute during
-synthesis or add a numerical kernel. This trial uses the private construction
-seam described in its [boundary record](../../docs/api-changes/FQ-SYNTH-CS04-20261029.md);
-it is not a stable Services export or a public `flagquantum.synth` API.
+The private `_synthesis` workflow composes Compiler capture and CS06-B finite
+selection with CS06-A actual execution checks and bounded named reading.
+Synthesis plans the selected program once, but never executes. Run the existing
+plan with `fq.run(program.execution)`, then use `program.read_distribution(result)`.
+No user-managed schedule, physical mapping or bit decoding is needed. This is
+not a stable Services export or a public `flagquantum.synth` API.
 Start with [the executable workflow](../../examples/algorithms/synthesis_trial.py)
 and `tests/integration/test_synthesis_python_trial.py`. Supported syntax,
-result-identity checks, preparation composition and limitations are in the
-[delivery record](../../docs/roadmap/CS04_PYTHON_TRIAL_DELIVERY.md).
+input/output semantics, preparation composition and limitations are in the
+[CS06-C delivery record](../../docs/roadmap/CS06_USER_WORKFLOW_DELIVERY.md)
+and [private contract](../../docs/api-changes/FQ-SYNTH-CS06-C-20261029.md).
+`tests/integration/test_synthesis_user_workflow.py` covers the new end-to-end
+paths. Final ceilings remain flat synthesis arguments; ConstructionBudget is
+separate. SynthesisError exposes checked candidate reports and flat repair
+arguments for explicit retry. No alternative constraints object can conflict
+with those ceilings.
 
 `_synthesis_execution` is the private CS06-A plan-checking seam. It combines
 existing sealed-plan validation, Compiler resource limits, basis membership,
@@ -24,9 +30,10 @@ no numerical kernel. Start with
 `tests/integration/test_synthesis_execution_contract.py`. The
 [contract](../../docs/api-changes/FQ-SYNTH-CS06-A-20261029.md) and
 [delivery record](../../docs/roadmap/CS06_EXECUTION_CONTRACT_DELIVERY.md) state the
-admitted profile and limits. The CS-04 checker is frozen until CS06-C replaces
-its hash-only admission; do not grow two independent validators or extend the
-public Services exports here.
+admitted profile and limits. CS06-C removed the CS04 hash-only admission and
+unconditional route refusal. `_synthesis_readout` now consumes only the same
+checked execution and its physical named ports; do not add a second independent
+validator or extend public Services exports here.
 
 Simple operations do not belong here. Call `flagquantum.compiler.optimize`,
 `fq.plan`, or `fq.run` directly. Do not add a service method that only forwards

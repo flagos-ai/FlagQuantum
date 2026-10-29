@@ -10,11 +10,10 @@ from typing import TypedDict
 
 import torch
 
-from ..core.ir import CircuitIR, MeasurementNode
-from ..runtime.execution_plan import ExecutionPlan
-from ..runtime.execution_plan_contract import plan_execution_program, plan_program
+from ..core.ir import MeasurementNode
 from ..runtime.measurements import execute_measurements
 from ..runtime.result import ExecutionResult
+from ._synthesis_execution import CheckedExecution
 
 
 class _ReadDiagnostics(TypedDict):
@@ -51,10 +50,7 @@ class Distribution(Mapping[tuple[int, ...], float]):
 def read_distribution(
     result: ExecutionResult,
     *,
-    circuit: CircuitIR,
-    source_hash: str,
-    executable_hash: str,
-    mapping: Mapping[str, tuple[int, ...]],
+    checked: CheckedExecution,
     registers: Sequence[str],
     max_bits: int,
     max_keys: int,
@@ -77,6 +73,7 @@ def read_distribution(
         or not 0 <= threshold < 1
     ):
         raise ValueError("threshold must be finite and between zero and one")
+    mapping = checked.registers
     if (
         not isinstance(registers, Sequence)
         or not registers
@@ -88,46 +85,9 @@ def read_distribution(
         raise ValueError(
             "select distinct declared register names, such as ('x', 'result')"
         )
-    if circuit.content_hash != source_hash:
-        raise ValueError(
-            "the synthesis circuit changed; synthesize again before named reading"
-        )
-    plan = result.plan
-    if not isinstance(plan, ExecutionPlan):
-        raise ValueError(
-            "named reading needs the execution plan from the matching fq.run result"
-        )
-    if (
-        plan.mode != "statevector"
-        or plan.backend not in {"torch", "pytorch"}
-        or plan.device != "cpu"
-        or plan.world_size != 1
-        or bool(plan.routing_plan)
-        or plan.noisy_execution_plan is not None
-    ):
-        raise ValueError(
-            "this trial reads exact local CPU statevectors without routing or noise; use existing result APIs for other modes"
-        )
-    if (
-        plan_program(plan).content_hash != executable_hash
-        or plan_execution_program(plan).content_hash != executable_hash
-    ):
-        raise ValueError(
-            "execution identity differs from this synthesis product; stale, composed or recompiled results need explicit revalidation"
-        )
+    resources = checked.verify_result(result)
     state = result.state
-    if (
-        not isinstance(state, torch.Tensor)
-        or state.device.type != "cpu"
-        or not state.is_complex()
-        or state.dtype not in {torch.complex64, torch.complex128}
-        or state.ndim not in {1, 2}
-        or state.shape[-1] != 1 << circuit.n_wires
-        or state.numel() != 1 << circuit.n_wires
-    ):
-        raise ValueError(
-            "named reading requires one materialized CPU statevector of the matching size"
-        )
+    assert isinstance(state, torch.Tensor)
     selected = tuple(q for name in registers for q in mapping[name])
     bits = len(selected)
     if bits > max_bits or 1 << bits > max_keys or state.numel() > max_amplitudes:
@@ -146,7 +106,7 @@ def read_distribution(
         measured = execute_measurements(
             state.reshape(1, -1),
             (MeasurementNode("probabilities", selected),),
-            n_qubits=circuit.n_wires,
+            n_qubits=resources.n_qubits,
         )
         marginal = measured[0].value
         if not isinstance(marginal, torch.Tensor):
