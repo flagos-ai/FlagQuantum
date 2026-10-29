@@ -482,6 +482,16 @@ def _validate_authorized_execution_plan(
             "native Rydberg presence admission differs from approved proposal 092"
         )
     approved_run_signature = "(program_or_plan: 'Circuit | CircuitIR | ExecutionPlan | IsingBraidProgram | LindbladPlan', *, options: 'ExecutionOptions | None' = None, outputs: 'OutputRequest | Sequence[OutputRequest] | None' = None, noise_model: 'NoiseModel | None' = None, compiler: 'str | None' = None, target: 'str | None' = None, target_qubits: 'Sequence[int] | None' = None, shots: 'int | None' = None, name: 'str | None' = None) -> 'ExecutionResult'"
+    synthesis = json.loads(
+        (ROOT / "contracts/synthesis-program-run-v1-candidate.json").read_text()
+    )
+    errors.extend(_validate_authorized_synthesis_run(synthesis))
+    if synthesis.get("implementation_authorized") is True:
+        # The old presence approval remains intact; only the separately reviewed
+        # synthesis input is added to the current aggregate root signature.
+        approved_run_signature = approved_run_signature.replace(
+            " | LindbladPlan'", " | LindbladPlan | SynthesisProgram'"
+        )
     if (
         str(inspect.signature(fq.run)) != approved_run_signature
         or contract["proposed_signatures"]["run"] != approved_run_signature
@@ -617,6 +627,125 @@ def _validate_authorized_execution_result(contract: dict[str, Any]) -> list[str]
             contract.get("terminal_instrument_sampling")
         )
     )
+    return errors
+
+
+def _validate_authorized_synthesis_run(contract: dict[str, Any]) -> list[str]:
+    """Protect the exact reviewed synthesis extension, not arbitrary input types."""
+    import flagquantum as fq
+    import flagquantum.synth as synth
+    from flagquantum.services import synthesis
+
+    errors: list[str] = []
+    proposal = json.loads(
+        (ROOT / "contracts/synthesis-program-run-admission-proposal.json").read_text()
+    )
+    exports = (
+        "ConstructionBudget",
+        "InputState",
+        "Program",
+        "SynthesisError",
+        "UInt",
+        "qfunc",
+        "synthesize",
+    )
+    expected = {
+        "schema": "flagquantum.synthesis_program_run_admission",
+        "version": "1.0",
+        "status": "implemented_candidate_pending_trials",
+        "proposal": "docs/api-changes/FQ-SYNTH-RUN-ADMISSION-20261029.md",
+        "authorization_record": "docs/api-changes/FQ-SYNTH-RUN-IMPLEMENTATION-20261029.md",
+        "implementation_authorized": True,
+        "release_authorized": False,
+        "human_trial_records": [],
+        "namespace": "flagquantum.synth",
+        "namespace_classification": "maintained_domain_extension_candidate",
+        "namespace_exports": list(exports),
+        "type_owner": "flagquantum.services.synthesis.Program",
+        "root_annotation_alias": "SynthesisProgram",
+        "authorization_source": {
+            "kind": "explicit_human_user_instruction",
+            "request": "Merge PR #963 and proceed to the next step",
+            "proposal_merge": "8011f20300d7bf2f4b66ce6b15409fc8176d1224",
+        },
+        "non_none_overrides_rejected": [
+            "options",
+            "outputs",
+            "noise_model",
+            "compiler",
+            "target",
+            "target_qubits",
+            "shots",
+            "name",
+        ],
+        "result_type": "flagquantum.runtime.result.ExecutionResult",
+        "result_plan_type": "flagquantum.runtime.execution_plan.ExecutionPlan",
+        "root_exports_added": [],
+        "plan_schema_change": False,
+        "new_executor": False,
+        "generic_duck_typing": False,
+        "to_ir_coercion": False,
+        "subclasses_accepted": False,
+        "ordinary_circuit_eager_import": False,
+        "program_constructor_public": False,
+        "program_methods": ["probabilities"],
+        "program_properties": ["circuit", "report", "execution"],
+        "scope": "exact_single_batch_cpu_torch_statevector",
+        "consumer_tests": "tests/api_contract/test_synthesis_run_admission.py",
+    }
+    signature_keys = {
+        "run_signature",
+        "probabilities_signature",
+        "synthesize_signature",
+    }
+    if set(contract) != set(expected) | signature_keys or any(
+        contract.get(key) != value for key, value in expected.items()
+    ):
+        errors.append(
+            "synthesis run admission differs from reviewed implementation scope"
+        )
+    if any(
+        type(contract.get(key)) is not bool
+        for key, value in expected.items()
+        if type(value) is bool
+    ):
+        errors.append("synthesis admission flags must be explicit booleans")
+    for key in ("proposal", "authorization_record"):
+        if (
+            not isinstance(contract.get(key), str)
+            or not (ROOT / contract[key]).is_file()
+        ):
+            errors.append("synthesis run approval record is missing")
+    expected_run = proposal["current_run_signature"].replace(
+        " | LindbladPlan'", " | LindbladPlan | SynthesisProgram'"
+    )
+    if (
+        proposal["proposed_run_signature"] != expected_run
+        or contract.get("run_signature") != expected_run
+        or str(inspect.signature(fq.run, eval_str=False)) != expected_run
+    ):
+        errors.append(
+            "synthesis run signature exceeds the approved single input addition"
+        )
+    if tuple(synth.__all__) != exports or tuple(synthesis.__all__) != exports:
+        errors.append("synthesis namespace exports differ from admission")
+    if any(
+        getattr(synth, name, None) is not getattr(synthesis, name, None)
+        for name in exports
+    ):
+        errors.append("synthesis facade must reuse the canonical Services symbols")
+    if synth.Program.__module__ != "flagquantum.services.synthesis" or hasattr(
+        synth.Program, "to_ir"
+    ):
+        errors.append("synthesis Program owner/coercion differs from admission")
+    if any(name in fq.__all__ for name in exports):
+        errors.append("synthesis feature symbols must not enter stable root exports")
+    for key, value in (
+        ("probabilities_signature", synth.Program.probabilities),
+        ("synthesize_signature", synth.synthesize),
+    ):
+        if contract.get(key) != str(inspect.signature(value, eval_str=False)):
+            errors.append(f"synthesis {key} differs from its candidate contract")
     return errors
 
 

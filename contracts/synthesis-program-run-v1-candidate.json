@@ -7,7 +7,7 @@
   "implementation_authorized": true,
   "authorization_source": {
     "kind": "explicit_human_user_instruction",
-    "request": "\u5408\u5165963\uff0c\u4e0b\u4e00\u6b65",
+    "request": "Merge PR #963 and proceed to the next step",
     "proposal_merge": "8011f20300d7bf2f4b66ce6b15409fc8176d1224"
   },
   "release_authorized": false,
@@ -55,5 +55,7 @@
     "execution"
   ],
   "scope": "exact_single_batch_cpu_torch_statevector",
-  "consumer_tests": "tests/api_contract/test_synthesis_run_admission.py"
+  "consumer_tests": "tests/api_contract/test_synthesis_run_admission.py",
+  "probabilities_signature": "(self, result: 'ExecutionResult', *, registers: 'Sequence[str]' = ('result',), max_bits: 'int' = 16, max_keys: 'int' = 65536, max_amplitudes: 'int' = 4194304, threshold: 'float' = 1e-14) -> 'Distribution'",
+  "synthesize_signature": "(function: 'Definition', *, inputs: 'Mapping[str, UInt]', input_state: 'InputState | None' = None, constants: 'Mapping[str, int] | None' = None, functions: 'Sequence[Definition]' = (), max_qubits: 'int | None' = 256, max_operations: 'int | None' = 100000, max_depth: 'int | None' = None, max_workspace: 'int | None' = None, construction_budget: 'ConstructionBudget' = ConstructionBudget(qubits=256, operations=100000, candidate_checks=2), objective: \"Literal['width', 'depth']\" = 'width', basis: 'Iterable[str] | None' = None, topology: \"Literal['line'] | None\" = None, preparation: 'CircuitIR | None' = None, preparation_map: 'Mapping[str, Sequence[int]] | None' = None) -> 'Program'"
 }

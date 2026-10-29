@@ -1,7 +1,8 @@
 # Synthesis Program run admission implementation authorization
 
-The human user explicitly requested "合入963，下一步" after being shown PR #963
+The human user explicitly requested merging PR #963 and continuing after being shown PR #963
 as the concrete fq.run(Program) contract requiring approval before implementation.
+The authorization record uses an English rendering of that instruction.
 That instruction authorizes implementing the merged scope on a review branch.
 Proposal merge: 8011f20300d7bf2f4b66ce6b15409fc8176d1224. This records the actual
 conversation direction, not an invented GitHub review or independent developer

@@ -23,6 +23,7 @@ if TYPE_CHECKING:
     from .runtime.execution_plan import ExecutionPlan
     from .runtime.options import ExecutionOptions
     from .runtime.result import ExecutionResult
+    from .synth import Program as SynthesisProgram
 
 
 def compile(
@@ -89,7 +90,12 @@ def compile(
 
 def run(
     program_or_plan: (
-        Circuit | CircuitIR | ExecutionPlan | IsingBraidProgram | LindbladPlan
+        Circuit
+        | CircuitIR
+        | ExecutionPlan
+        | IsingBraidProgram
+        | LindbladPlan
+        | SynthesisProgram
     ),
     *,
     options: ExecutionOptions | None = None,
@@ -117,6 +123,32 @@ def run(
         >>> fq.run(dynamic, shots=8).samples.shape
         torch.Size([8, 2])
     """
+
+    # A synthesis product has already loaded its canonical owner. Ordinary
+    # circuit execution must not import application services to identify it.
+    synthesis = sys.modules.get("flagquantum.services.synthesis")
+    if synthesis is not None and isinstance(program_or_plan, synthesis.Program):
+        if type(program_or_plan) is not synthesis.Program:
+            raise TypeError(
+                "only the canonical factory-created synthesis Program is admitted"
+            )
+        if any(
+            value is not None
+            for value in (
+                options,
+                outputs,
+                noise_model,
+                compiler,
+                target,
+                target_qubits,
+                shots,
+                name,
+            )
+        ):
+            raise TypeError(
+                "a synthesis Program does not accept execution overrides; synthesize again for changed constraints or targets"
+            )
+        program_or_plan = cast("SynthesisProgram", program_or_plan).execution
 
     # A created LindbladPlan has already loaded its module. Keep ordinary
     # circuit execution free of an eager dynamics import.
