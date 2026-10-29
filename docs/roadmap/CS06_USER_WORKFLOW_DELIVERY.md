@@ -194,3 +194,11 @@ compatibility and .fq artifact semantics remain later work.
 See the [private contract](../api-changes/FQ-SYNTH-CS06-C-20261029.md),
 [A boundary](CS06_EXECUTION_CONTRACT_DELIVERY.md) and
 [B candidate/cost evidence](CS06_CANDIDATE_SELECTION_DELIVERY.md).
+
+Probability-method rename verification: all 70 workflow cases plus the documented
+subprocess example passed (71 total), with both examples and tests migrated to
+`probabilities`. Whole-package strict mypy passed 865 files; format, architecture,
+public API baseline and documentation checks passed. Local smoke/unit again
+stopped at the same three native macOS QFT assertions: 4310 passed, 121 skipped,
+three failed, 193.51 seconds (`--maxfail=3`). This naming change does not alter
+the existing local limitation or replace fresh-head CI.
