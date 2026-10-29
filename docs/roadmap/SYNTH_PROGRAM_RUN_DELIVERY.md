@@ -143,3 +143,13 @@ See [namespace ownership and examples](../../flagquantum/synth/README.md),
 [implementation authorization](../api-changes/FQ-SYNTH-RUN-IMPLEMENTATION-20261029.md),
 [candidate contract](../../contracts/synthesis-program-run-v1-candidate.json) and
 [historical proposal](../api-changes/FQ-SYNTH-RUN-ADMISSION-20261029.md).
+
+## Merged baseline and follow-up
+
+PR #964 merged as `7bb7e39c330fd6ab19ab2d598c19f1d3f3b5f1aa` after all
+checks on its exact head completed: 57 successes and three configured skips.
+The current Python entry is available on main; this does not change the pending
+release/trial status. The [independent trial guide](SYNTH_DEVELOPER_TRIALS.md)
+contains tasks and a blank human record. [CS07-A](CS07_SOURCE_ADMISSION.md)
+restores source integrity and specifies the shared boundary; it introduces no
+production Qmod frontend or original-file execution claim.
