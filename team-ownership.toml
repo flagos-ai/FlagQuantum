@@ -185,6 +185,7 @@ branch = "refactor/vnext-team-agent-services"
 worktree = "FlagQuantum-vNext-agent"
 owns = [
     "flagquantum/services/**",
+    "flagquantum/synth/**",
 ]
 
 [teams.algorithms]

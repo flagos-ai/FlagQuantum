@@ -3,6 +3,7 @@ order = ["api", "deployment", "audit", "optional_kernels", "pytorch_runtime", "e
 
 [package_layout]
 allowed_top_level_directories = [
+    "synth",
     "services",
     "algorithms",
     "benchmarking",
