@@ -224,16 +224,22 @@ def test_external_zero_is_a_precondition_not_state_inspection(
     main = verify_construction(polynomial, entry="main")
     x, y = main.body.blocks[0].arguments
     verify_bindings(
-        main,
+        polynomial,
         {x.id: (0, 1), y.id: (2, 3)},
         (4, 5, 6, 7),
+        entry="main",
         n_wires=9,
         workspace=(8,),
         workspace_state=state,
     )
     with pytest.raises(HybridVerificationError, match="workspace.precondition"):
         verify_bindings(
-            main, {x.id: (0, 1), y.id: (2, 3)}, (4, 5, 6, 7), n_wires=9, workspace=(8,)
+            polynomial,
+            {x.id: (0, 1), y.id: (2, 3)},
+            (4, 5, 6, 7),
+            entry="main",
+            n_wires=9,
+            workspace=(8,),
         )
 
 
@@ -244,7 +250,13 @@ def test_input_ports_cannot_alias(
     main = verify_construction(polynomial, entry="main")
     x, y = main.body.blocks[0].arguments
     with pytest.raises(HybridVerificationError, match="binding.alias"):
-        verify_bindings(main, {x.id: (0, 1), y.id: other}, (4, 5, 6, 7), n_wires=8)
+        verify_bindings(
+            polynomial,
+            {x.id: (0, 1), y.id: other},
+            (4, 5, 6, 7),
+            entry="main",
+            n_wires=8,
+        )
 
 
 def test_output_and_workspace_cannot_overlap_input(
@@ -254,12 +266,13 @@ def test_output_and_workspace_cannot_overlap_input(
     x, y = main.body.blocks[0].arguments
     inputs = {x.id: (0, 1), y.id: (2, 3)}
     with pytest.raises(HybridVerificationError, match="binding.alias"):
-        verify_bindings(main, inputs, (0, 5, 6, 7), n_wires=9)
+        verify_bindings(polynomial, inputs, (0, 5, 6, 7), entry="main", n_wires=9)
     with pytest.raises(HybridVerificationError, match="binding.alias"):
         verify_bindings(
-            main,
+            polynomial,
             inputs,
             (4, 5, 6, 7),
+            entry="main",
             n_wires=9,
             workspace=(7,),
             workspace_state="fresh_zero",
@@ -272,11 +285,25 @@ def test_binding_count_and_wire_validation(
     main = verify_construction(polynomial, entry="main")
     x, y = main.body.blocks[0].arguments
     with pytest.raises(HybridVerificationError, match="binding.inputs"):
-        verify_bindings(main, {x.id: (0, 1)}, (4, 5, 6, 7), n_wires=8)
+        verify_bindings(
+            polynomial, {x.id: (0, 1)}, (4, 5, 6, 7), entry="main", n_wires=8
+        )
     with pytest.raises(HybridVerificationError, match="binding.width"):
-        verify_bindings(main, {x.id: (0,), y.id: (2, 3)}, (4, 5, 6, 7), n_wires=8)
+        verify_bindings(
+            polynomial,
+            {x.id: (0,), y.id: (2, 3)},
+            (4, 5, 6, 7),
+            entry="main",
+            n_wires=8,
+        )
     with pytest.raises(HybridVerificationError, match="binding.wire"):
-        verify_bindings(main, {x.id: (False, 1), y.id: (2, 3)}, (4, 5, 6, 7), n_wires=8)
+        verify_bindings(
+            polynomial,
+            {x.id: (False, 1), y.id: (2, 3)},
+            (4, 5, 6, 7),
+            entry="main",
+            n_wires=8,
+        )
 
 
 def test_repeated_calls_have_a_separate_expansion_budget() -> None:
@@ -398,9 +425,9 @@ def test_bindings_require_verified_function_and_matching_output(
     x, y = main.body.blocks[0].arguments
     inputs = {x.id: (0, 1), y.id: (2, 3)}
     with pytest.raises(HybridVerificationError, match="binding.width"):
-        verify_bindings(main, inputs, (4, 5, 6), n_wires=8)
-    with pytest.raises(HybridVerificationError, match="binding.function"):
-        verify_bindings(function("empty", (), ()), {}, (), n_wires=1)
+        verify_bindings(polynomial, inputs, (4, 5, 6), entry="main", n_wires=8)
+    with pytest.raises(HybridVerificationError, match="function.return"):
+        verify_bindings((function("empty", (), ()),), {}, (), entry="empty", n_wires=1)
     multi = HybridProgram("multi", Region((Block(), Block())))
-    with pytest.raises(HybridVerificationError, match="binding.function"):
-        verify_bindings(multi, {}, (), n_wires=1)
+    with pytest.raises(HybridVerificationError, match="function.blocks"):
+        verify_bindings((multi,), {}, (), entry="multi", n_wires=1)

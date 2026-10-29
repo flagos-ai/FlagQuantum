@@ -117,3 +117,27 @@ def test_full_core_block_preserves_angles_and_controlled_global_phase(
     torch.testing.assert_close(
         result.statevector().reshape(-1), reference, atol=1e-10, rtol=0
     )
+
+
+@pytest.mark.parametrize("wire,integer", [(2, 1), (0, 4)])
+def test_non_palindromic_integer_bit_order_boundary(
+    options: fq.ExecutionOptions, wire: int, integer: int
+) -> None:
+    # Physical-order sentinel for the future adapter, not a Qmod import test.
+    result = fq.run(fq.Circuit(3).x(wire), options=options)
+    assert int(result.statevector().reshape(-1).abs().argmax()) == integer
+
+
+def test_omitting_an_entangled_output_does_not_clean_or_reclaim_it(
+    options: fq.ExecutionOptions,
+) -> None:
+    # Establish the subsystem semantics behind the future drop contract using
+    # existing output selection. No drop operation is implemented here.
+    circuit = fq.Circuit(2).h(0).cx(0, 1)
+    result = fq.run(circuit, options=options, outputs=fq.density_matrix((0,)))
+    reduced = result.density_matrix.reshape(2, 2)
+    torch.testing.assert_close(
+        reduced, torch.eye(2, dtype=torch.complex128) / 2, atol=1e-12, rtol=0
+    )
+    assert result.plan.analysis.n_wires == 2
+    assert float(torch.trace(reduced @ reduced).real) == pytest.approx(0.5)

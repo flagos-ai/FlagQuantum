@@ -6,37 +6,31 @@ from collections.abc import Mapping, Sequence
 from typing import Literal
 
 from .._hybrid.model import HybridProgram, ValueId
-from .profile import _fail, _positive_integer, _width
+from .profile import _fail, _positive_integer, _width, verify_construction
 
 
 def verify_bindings(
-    function: HybridProgram,
+    functions: Sequence[HybridProgram],
     inputs: Mapping[ValueId, Sequence[int]],
     output: Sequence[int],
     *,
+    entry: str,
     n_wires: int,
     workspace: Sequence[int] = (),
     workspace_state: Literal[
         "fresh_zero", "caller_asserted_zero", "unknown"
     ] = "unknown",
 ) -> None:
-    """Check a verified entry's disjoint bindings, without inspecting quantum state.
+    """Verify the call graph and disjoint bindings without inspecting quantum state.
 
     Fresh workspace is an allocator obligation; caller-asserted zero is a
     precondition, not a compiler proof. An XOR target need not initially be zero.
     """
     _positive_integer(n_wires, "n_wires")
+    function = verify_construction(functions, entry=entry, max_width=n_wires)
     if workspace_state not in {"fresh_zero", "caller_asserted_zero", "unknown"}:
         _fail("workspace.state", "unknown workspace state declaration")
-    if len(function.body.blocks) != 1:
-        _fail("binding.function", "expected a verified single-block function")
     block = function.body.blocks[0]
-    if (
-        not block.operations
-        or block.operations[-1].name != "qint.return"
-        or len(block.operations[-1].operands) != 1
-    ):
-        _fail("binding.function", "expected a verified function with one result")
     if set(inputs) != {arg.id for arg in block.arguments}:
         _fail("binding.inputs", "input bindings must exactly cover entry arguments")
     groups = []
@@ -64,7 +58,7 @@ def verify_bindings(
                     f"physical wire {wire} occurs in overlapping bindings",
                 )
             used.add(wire)
-    if workspace and workspace_state == "unknown":
+    if len(workspace) > 0 and workspace_state == "unknown":
         _fail(
             "workspace.precondition", "workspace requires fresh or caller-asserted zero"
         )

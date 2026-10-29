@@ -8,10 +8,21 @@ This module neither emits arithmetic gates nor executes a program.
 from __future__ import annotations
 
 from collections.abc import Sequence
+from types import MappingProxyType
 from typing import NoReturn
 
 from .._hybrid.model import INDEX, HybridProgram, IRType, Operation, ValueId
 from .._hybrid.verifier import Diagnostic, HybridVerificationError
+
+_ATTRIBUTES = MappingProxyType(
+    {
+        "arith.constant": frozenset({"value"}),
+        "qint.add": frozenset(),
+        "qint.multiply": frozenset(),
+        "qint.call": frozenset({"callee"}),
+        "qint.return": frozenset(),
+    }
+)
 
 
 def uint_type(width: int) -> IRType:
@@ -109,6 +120,22 @@ def verify_construction(
         return_type: IRType | None = None
         return_bound = 0
         for index, operation in enumerate(block.operations):
+            expected_attributes = _ATTRIBUTES.get(operation.name)
+            if expected_attributes is None:
+                _fail(
+                    "operation.unsupported",
+                    f"unsupported operation {operation.name!r}",
+                    operation,
+                )
+            actual_attributes = set(operation.attributes)
+            if actual_attributes != expected_attributes:
+                _fail(
+                    "operation.attributes",
+                    f"{operation.name!r}: missing attributes "
+                    f"{sorted(expected_attributes - actual_attributes)}, "
+                    f"unsupported attributes {sorted(actual_attributes - expected_attributes)}",
+                    operation,
+                )
             if operation.regions:
                 _fail("operation.regions", "nested regions are unsupported", operation)
             operands = []
@@ -122,7 +149,6 @@ def verify_construction(
                     index != len(block.operations) - 1
                     or len(operands) != 1
                     or operation.results
-                    or operation.attributes
                 ):
                     _fail(
                         "function.return", "return requires one final value", operation
@@ -140,7 +166,6 @@ def verify_construction(
                 if (
                     operands
                     or result.type != INDEX
-                    or set(operation.attributes) != {"value"}
                     or isinstance(value, bool)
                     or not isinstance(value, int)
                     or value < 0
@@ -160,11 +185,7 @@ def verify_construction(
                 continue
             width = _width(result.type, max_width)
             if operation.name in {"qint.add", "qint.multiply"}:
-                if (
-                    len(operands) != 2
-                    or operation.attributes
-                    or all(item[0] == INDEX for item in operands)
-                ):
+                if len(operands) != 2 or all(item[0] == INDEX for item in operands):
                     _fail(
                         "arithmetic.signature",
                         "binary arithmetic requires a quantum operand",
@@ -174,11 +195,7 @@ def verify_construction(
                 bound = left + right if operation.name == "qint.add" else left * right
             elif operation.name == "qint.call":
                 callee = operation.attributes.get("callee")
-                if (
-                    set(operation.attributes) != {"callee"}
-                    or not isinstance(callee, str)
-                    or callee not in symbols
-                ):
+                if not isinstance(callee, str) or callee not in symbols:
                     _fail(
                         "function.callee", "call requires a known function", operation
                     )
