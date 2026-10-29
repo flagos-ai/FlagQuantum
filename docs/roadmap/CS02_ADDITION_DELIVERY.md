@@ -1,5 +1,11 @@
 # CS-02: shared addition kernel and conservative lowering
 
+Historical CS-02 delivery record, measured at commit `92e32478c`. The executable
+example tracks the current private `lower_arithmetic` entry. CS-03 extends it
+with multiplication and borrows the preserved first addend; the original CS-02
+operation counts below remain historical. See [CS-03](CS03_MULTIPLICATION_DELIVERY.md)
+for the current lowering and measured costs.
+
 CS-01 landed in PR #952 at main `8efd0c02f063456c9d893f01f7f3370e52d143c4`.
 This delivery follows revision six's private addition milestone. It adds no
 public synth namespace, export, schema, dependency or execution API.
@@ -19,7 +25,7 @@ public synth namespace, export, schema, dependency or execution API.
 - `_construction.ranges.unsigned_width` supplies the shared exact inclusive-bound
   width rule, including width one for zero. The existing verifier remains the
   authority for closed operation/type/SSA/call-graph checks and full-width bounds.
-- `_construction.lowering.lower_addition` verifies the complete graph and port
+- `_construction.lowering.lower_arithmetic` verifies the complete graph and port
   bindings, then handles constants, exact addition, direct acyclic calls and
   returns. Calls use fresh local SSA environments; repeated logical reads use
   separate computational-basis copies rather than duplicate gate controls.
@@ -44,7 +50,7 @@ retain-all schedule; it is not proof that no other implementation fits.
 Safety caps are 256 declared wires and 100,000 emitted operations. The operation
 budget includes computation, the final XOR copy and inverse computation. Existing
 graph budgets apply before emission. Failure returns no partial artifact.
-Multiplication has an explicit unsupported-lowering diagnostic. In-place source
+The CS-02 implementation rejected multiplication; CS-03 adds its lowering. In-place source
 addition, truncating XOR, roles/effects, free/drop, source capture, lifetime
 optimization and candidate selection remain later milestones. Three-bit 7+1
 cannot silently become three-bit wraparound arithmetic.
@@ -56,7 +62,7 @@ without presenting a future Python frontend as an available API:
 
 ```python
 import flagquantum as fq
-from flagquantum.compiler._construction.lowering import lower_addition
+from flagquantum.compiler._construction.lowering import lower_arithmetic
 from flagquantum.compiler._construction.profile import uint_type
 from flagquantum.compiler._hybrid.model import (
     Block, HybridProgram, Operation, Region, Value, ValueId,
@@ -69,7 +75,7 @@ main = HybridProgram("main", Region((Block((x, y), (
     Operation("qint.add", (x, y), (total,)),
     Operation("qint.return", (total,)),
 )),)))
-block = lower_addition(
+block = lower_arithmetic(
     (main,), {x.id: (0, 1), y.id: (2, 3)}, (4, 5, 6),
     entry="main", n_qubits=13, workspace=tuple(range(7, 13)),
     workspace_state="fresh_zero",

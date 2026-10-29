@@ -5,7 +5,7 @@ from dataclasses import replace
 import pytest
 
 from flagquantum.compiler._arithmetic_kernels import ripple_add
-from flagquantum.compiler._construction.lowering import lower_addition
+from flagquantum.compiler._construction.lowering import lower_arithmetic
 from flagquantum.compiler._construction.profile import uint_type
 from flagquantum.compiler._construction.ranges import unsigned_width
 from flagquantum.compiler._hybrid.model import (
@@ -48,8 +48,8 @@ def _lower(program: HybridProgram, *, extra: int = 0, **limits: int) -> CircuitI
     a, b = (int(v.type.parameters[0]) for v in args)
     out = int(program.body.blocks[0].operations[-1].operands[0].type.parameters[0])
     start = a + b + out
-    count = start + 2 * max(a, b) + 2 + extra
-    return lower_addition(
+    count = start + max(a, b) + max(0, b - a) + 2 + extra
+    return lower_arithmetic(
         (program,),
         {args[0].id: tuple(range(a)), args[1].id: tuple(range(a, a + b))},
         tuple(range(a + b, start)),
@@ -108,7 +108,7 @@ def test_calls_repeated_reads_constants_and_retained_intermediates() -> None:
         ),
     )
     # Six wires for double, eight for the final sum. Retain all until cleanup.
-    program = lower_addition(
+    program = lower_arithmetic(
         (double, main),
         {x.id: (0, 1)},
         (2, 3, 4, 5),
@@ -143,7 +143,7 @@ def test_constant_widths_do_not_truncate_and_zero_uses_one_bit(
     )
     start = 2 + width
     work = 2 * max(2, unsigned_width(constant)) + 2
-    program = lower_addition(
+    program = lower_arithmetic(
         (main,),
         {x.id: (1, 0)},
         tuple(range(2, start)),
@@ -171,7 +171,7 @@ def test_range_rejects_lossy_or_negative_bounds(bound: int) -> None:
         unsigned_width(bound)
 
 
-@pytest.mark.parametrize("budget", [1, 41, 44])
+@pytest.mark.parametrize("budget", [1, 37, 40])
 def test_operation_budget_includes_inverse_and_final_copy(budget: int) -> None:
     with pytest.raises(HybridVerificationError, match="lowering.operations"):
         _lower(_program(), max_operations=budget)
@@ -179,8 +179,8 @@ def test_operation_budget_includes_inverse_and_final_copy(budget: int) -> None:
 
 def test_exact_operation_budget_is_accepted() -> None:
     program = _lower(_program())
-    assert len(program.instructions) == 45
-    assert _lower(_program(), max_operations=45).instructions == program.instructions
+    assert len(program.instructions) == 41
+    assert _lower(_program(), max_operations=41).instructions == program.instructions
 
 
 def test_insufficient_workspace_reports_source_before_returning_ir() -> None:
@@ -194,12 +194,18 @@ def test_insufficient_workspace_reports_source_before_returning_ir() -> None:
         _lower(program, extra=-1)
 
 
-def test_multiplication_is_verified_but_not_lowered() -> None:
+def test_multiplication_is_lowered_by_the_same_entry() -> None:
     program = _program(out=4)
     block = program.body.blocks[0]
     multiply = replace(block.operations[0], name="qint.multiply")
-    with pytest.raises(HybridVerificationError, match="lowering.unsupported"):
-        _lower(_function("main", block.arguments, (multiply, block.operations[1])))
+    lowered = _lower(
+        _function("main", block.arguments, (multiply, block.operations[1])), extra=4
+    )
+    work = lowered.n_wires - 8
+    assert (
+        _image(lowered, ((3 << 2 | 2) << 4 | 5) << work)
+        == ((3 << 2 | 2) << 4 | (5 ^ 6)) << work
+    )
 
 
 @pytest.mark.parametrize("opcode", ["qint.inplace_add", "qint.inplace_xor"])
@@ -239,7 +245,7 @@ def test_safety_limits_fail_before_allocation(
     error: type[Exception],
 ) -> None:
     with pytest.raises(error):
-        lower_addition(
+        lower_arithmetic(
             (), {}, (), entry="main", n_qubits=n_wires, max_operations=budget
         )
 
@@ -248,7 +254,7 @@ def test_unknown_external_workspace_state_is_rejected_at_lowering_entry() -> Non
     program = _program()
     x, y = program.body.blocks[0].arguments
     with pytest.raises(HybridVerificationError, match="workspace.precondition"):
-        lower_addition(
+        lower_arithmetic(
             (program,),
             {x.id: (0, 1), y.id: (2, 3)},
             (4, 5, 6),
@@ -261,7 +267,7 @@ def test_unknown_external_workspace_state_is_rejected_at_lowering_entry() -> Non
 def test_identity_return_needs_no_workspace_and_is_an_xor_copy() -> None:
     x = _value("main", 0, 2)
     program = _function("main", (x,), (Operation("qint.return", (x,)),))
-    lowered = lower_addition(
+    lowered = lower_arithmetic(
         (program,),
         {x.id: (0, 1)},
         (2, 3),

@@ -4,7 +4,7 @@ import pytest
 import torch
 
 import flagquantum as fq
-from flagquantum.compiler._construction.lowering import lower_addition
+from flagquantum.compiler._construction.lowering import lower_arithmetic
 from flagquantum.compiler._construction.profile import uint_type
 from flagquantum.compiler._hybrid.model import (
     INDEX,
@@ -66,7 +66,7 @@ def test_all_16_pairs_all_8_targets_and_zero_workspace_on_real_cpu(
     options: fq.ExecutionOptions,
 ) -> None:
     main, x, y = _addition(2, 2, 3)
-    program = lower_addition(
+    program = lower_arithmetic(
         (main,),
         {x.id: (0, 1), y.id: (2, 3)},
         (4, 5, 6),
@@ -93,8 +93,8 @@ def test_all_16_pairs_all_8_targets_and_zero_workspace_on_real_cpu(
                 torch.testing.assert_close(state, expected, atol=1e-12, rtol=0)
     resources = estimate_resources(program)
     assert resources.n_qubits == 13
-    assert resources.n_operations == 45
-    assert resources.operation_counts == {"cx": 37, "ccx": 8}
+    assert resources.n_operations == 41
+    assert resources.operation_counts == {"cx": 33, "ccx": 8}
 
 
 def test_arbitrary_complex_entangled_inputs_and_permuted_maps_keep_exact_phase(
@@ -102,7 +102,7 @@ def test_arbitrary_complex_entangled_inputs_and_permuted_maps_keep_exact_phase(
 ) -> None:
     main, x, y = _addition(2, 2, 3)
     x_wires, y_wires, out = (0, 2), (1, 3), (6, 4, 5)
-    program = lower_addition(
+    program = lower_arithmetic(
         (main,),
         {x.id: x_wires, y.id: y_wires},
         out,
@@ -147,7 +147,7 @@ def test_unequal_widths_full_carry_and_inverse_on_real_cpu(
 ) -> None:
     main, x, y = _addition(a, b, 3)
     start = a + b + 3
-    program = lower_addition(
+    program = lower_arithmetic(
         (main,),
         {x.id: tuple(range(a)), y.id: tuple(range(a, a + b))},
         tuple(range(a + b, start)),
@@ -200,7 +200,7 @@ def test_constant_zero_and_repeated_read_composition_on_real_cpu(
             )
         ),
     )
-    program = lower_addition(
+    program = lower_arithmetic(
         (main,),
         {x.id: (0,)},
         (1, 2),
@@ -259,7 +259,7 @@ def test_composable_call_and_constant_addition_on_real_cpu(
             )
         ),
     )
-    program = lower_addition(
+    program = lower_arithmetic(
         (double, main),
         {x.id: (0,)},
         (1, 2),
