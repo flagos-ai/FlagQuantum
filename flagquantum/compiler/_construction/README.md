@@ -4,7 +4,7 @@ Compiler owns this private profile of the existing `_hybrid.model` records.
 It verifies coherent integer expression definitions and physical binding
 preconditions. Binding validation checks the complete definition graph before
 checking physical ports; an unchecked function cannot bypass profile verification.
-Addition-only lowering emits existing Core gates through a shared pure arithmetic
+Arithmetic lowering emits existing Core gates through a shared pure arithmetic
 kernel. It does not capture Python, select candidates, run circuits or export a
 public `synth` API.
 
@@ -28,9 +28,8 @@ aliases for the full-width arithmetic evaluator.
 
 The lowering contract requires `z ^= f(inputs)` for every target bitstring
 with zero workspace, preserving phases and cleaning workspace. The verifier
-checks definitions and bindings; the separate addition-only lowering implements
-this permutation for constants, addition, calls and returns. Multiplication
-remains verifier-only. `fresh_zero` is an allocator obligation; `caller_asserted_zero` is a
+checks definitions and bindings; arithmetic lowering implements this permutation
+for constants, addition, multiplication, calls and returns. `fresh_zero` is an allocator obligation; `caller_asserted_zero` is a
 caller precondition. Neither is inferred from an external state.
 
 For a small change, edit the corresponding verifier, add an accepted/rejected
@@ -49,10 +48,12 @@ The CS-01 boundary probes use existing Circuit/IR/runtime capabilities. They
 establish destination semantics independently of arithmetic lowering. Three-bit states
 pin the physical bit-order boundary. A Bell subsystem probe shows why omitting
 an output does not reclaim its entangled partner; it does not implement drop.
-CS-02's conservative retain-all lowering requires explicit zero-workspace maps
-and operation budgets. It returns existing CircuitIR for Circuit composition and
+Conservative arithmetic lowering requires explicit zero-workspace maps
+and operation budgets. Results are retained; only locally cleaned multiplier
+scratch is reused. Addition borrows the first operand, which its kernel restores.
+It returns existing CircuitIR for Circuit composition and
 execution, including nonzero XOR targets. See the
-[CS-02 delivery record](../../../docs/roadmap/CS02_ADDITION_DELIVERY.md).
+[CS-03 delivery record](../../../docs/roadmap/CS03_MULTIPLICATION_DELIVERY.md).
 
 See the [CS-01 contract](../../../docs/api-changes/FQ-SYNTH-CS01-20261029.md)
 and [Classiq review](../../../docs/roadmap/CLASSIQ_SEMANTICS_REVIEW_20261029.md).
