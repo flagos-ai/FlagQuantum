@@ -71,7 +71,7 @@ main = HybridProgram("main", Region((Block((x, y), (
 )),)))
 block = lower_addition(
     (main,), {x.id: (0, 1), y.id: (2, 3)}, (4, 5, 6),
-    entry="main", n_wires=13, workspace=tuple(range(7, 13)),
+    entry="main", n_qubits=13, workspace=tuple(range(7, 13)),
     workspace_state="fresh_zero",
 )
 # Prepare x=3, y=1; output and workspace start at zero.
@@ -136,3 +136,18 @@ statement/branch coverage of the shared kernel and construction package was 98%;
 the shared kernel and range helper were each 100%. This is not package-wide
 coverage. Final default-tier and remote CI status
 are recorded in the pull request; focused success does not certify those tiers.
+
+
+## CI vocabulary repair
+
+The initial PR CI rejected four new docstring tokens and one developer-example
+keyword under the existing qubit-vocabulary contract. The private lowering
+parameter and its callers now use `n_qubits`; the existing binding and Core IR
+fields are translated at their original boundaries. New docstrings use qubit
+terminology. No vocabulary ledger, exemption, stable schema or API snapshot was
+changed.
+
+After the fix, all **355** selected tests passed: the 182 CS-02/related regressions
+and all 173 vocabulary contract/census cases. The vocabulary gate, architecture,
+dependency, public API, Ruff, Black and strict mypy checks passed, and the updated
+documented example executed successfully. Final remote CI is recorded in PR #953.

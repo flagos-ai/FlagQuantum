@@ -71,7 +71,7 @@ def test_all_16_pairs_all_8_targets_and_zero_workspace_on_real_cpu(
         {x.id: (0, 1), y.id: (2, 3)},
         (4, 5, 6),
         entry="main",
-        n_wires=13,
+        n_qubits=13,
         workspace=tuple(range(7, 13)),
         workspace_state="fresh_zero",
     )
@@ -107,7 +107,7 @@ def test_arbitrary_complex_entangled_inputs_and_permuted_maps_keep_exact_phase(
         {x.id: x_wires, y.id: y_wires},
         out,
         entry="main",
-        n_wires=14,
+        n_qubits=14,
         workspace=(13, 12, 11, 10, 9, 8),
         workspace_state="caller_asserted_zero",
     )
@@ -152,7 +152,7 @@ def test_unequal_widths_full_carry_and_inverse_on_real_cpu(
         {x.id: tuple(range(a)), y.id: tuple(range(a, a + b))},
         tuple(range(a + b, start)),
         entry="main",
-        n_wires=start + 6,
+        n_qubits=start + 6,
         workspace=tuple(range(start, start + 6)),
         workspace_state="fresh_zero",
     )
@@ -205,7 +205,7 @@ def test_constant_zero_and_repeated_read_composition_on_real_cpu(
         {x.id: (0,)},
         (1, 2),
         entry="main",
-        n_wires=11,
+        n_qubits=11,
         workspace=tuple(range(3, 11)),
         workspace_state="fresh_zero",
     )
@@ -264,7 +264,7 @@ def test_composable_call_and_constant_addition_on_real_cpu(
         {x.id: (0,)},
         (1, 2),
         entry="main",
-        n_wires=13,
+        n_qubits=13,
         workspace=tuple(range(3, 13)),
         workspace_state="fresh_zero",
     )

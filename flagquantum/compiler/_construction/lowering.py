@@ -1,6 +1,6 @@
 """Conservative exact addition: compute, XOR-copy, then uncompute all workspace.
 
-Inputs and output are borrowed physical maps. Every supplied workspace wire must
+Inputs and output are borrowed physical maps. Every supplied workspace qubit must
 enter zero. All intermediates remain allocated until the reverse sweep; no
 lifetime optimizer, measurement, approximation or arbitrary gate inversion is
 used. Only X/CX/CCX are emitted, and each is exactly self-adjoint.
@@ -42,7 +42,7 @@ def lower_addition(
     output: Sequence[int],
     *,
     entry: str,
-    n_wires: int,
+    n_qubits: int,
     workspace: Sequence[int] = (),
     workspace_state: Literal[
         "fresh_zero", "caller_asserted_zero", "unknown"
@@ -51,20 +51,20 @@ def lower_addition(
 ) -> CircuitIR:
     """Lower verified constant/add/call definitions to existing Core IR.
 
-    Port widths follow declared types; internal wires may omit proven high zero
+    Port widths follow declared types; internal qubits may omit proven high zero
     bits. Workspace exhaustion or operation-budget failure returns no partial IR.
     External zero-state assertions remain caller preconditions, not state proofs.
     """
-    _positive_integer(n_wires, "n_wires")
+    _positive_integer(n_qubits, "n_qubits")
     _positive_integer(max_operations, "max_operations")
-    if n_wires > 256 or max_operations > 100_000:
-        _fail("lowering.budget", "safety caps are 256 wires and 100000 operations")
+    if n_qubits > 256 or max_operations > 100_000:
+        _fail("lowering.budget", "safety caps are 256 qubits and 100000 operations")
     verify_bindings(
         functions,
         inputs,
         output,
         entry=entry,
-        n_wires=n_wires,
+        n_wires=n_qubits,
         workspace=workspace,
         workspace_state=workspace_state,
     )
@@ -88,7 +88,7 @@ def lower_addition(
         if used + needed > len(available):
             _fail(
                 "lowering.workspace",
-                f"addition needs {needed} more zero wires; "
+                f"addition needs {needed} more zero qubits; "
                 f"{len(available) - used} remain (retain-all schedule)",
                 op,
             )
@@ -144,6 +144,6 @@ def lower_addition(
             block.operations[-1],
         )
     return CircuitIR(
-        n_wires=n_wires,
+        n_wires=n_qubits,
         instructions=(*forward, *copy, *reversed(forward)),
     )

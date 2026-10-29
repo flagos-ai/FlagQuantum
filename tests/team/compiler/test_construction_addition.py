@@ -54,7 +54,7 @@ def _lower(program: HybridProgram, *, extra: int = 0, **limits: int) -> CircuitI
         {args[0].id: tuple(range(a)), args[1].id: tuple(range(a, a + b))},
         tuple(range(a + b, start)),
         entry="main",
-        n_wires=count,
+        n_qubits=count,
         workspace=tuple(range(start, count)),
         workspace_state="fresh_zero",
         **limits,
@@ -113,7 +113,7 @@ def test_calls_repeated_reads_constants_and_retained_intermediates() -> None:
         {x.id: (0, 1)},
         (2, 3, 4, 5),
         entry="main",
-        n_wires=20,
+        n_qubits=20,
         workspace=tuple(range(6, 20)),
         workspace_state="fresh_zero",
     )
@@ -148,7 +148,7 @@ def test_constant_widths_do_not_truncate_and_zero_uses_one_bit(
         {x.id: (1, 0)},
         tuple(range(2, start)),
         entry="main",
-        n_wires=start + work,
+        n_qubits=start + work,
         workspace=tuple(range(start, start + work)),
         workspace_state="caller_asserted_zero",
     )
@@ -239,7 +239,9 @@ def test_safety_limits_fail_before_allocation(
     error: type[Exception],
 ) -> None:
     with pytest.raises(error):
-        lower_addition((), {}, (), entry="main", n_wires=n_wires, max_operations=budget)
+        lower_addition(
+            (), {}, (), entry="main", n_qubits=n_wires, max_operations=budget
+        )
 
 
 def test_unknown_external_workspace_state_is_rejected_at_lowering_entry() -> None:
@@ -251,7 +253,7 @@ def test_unknown_external_workspace_state_is_rejected_at_lowering_entry() -> Non
             {x.id: (0, 1), y.id: (2, 3)},
             (4, 5, 6),
             entry="main",
-            n_wires=13,
+            n_qubits=13,
             workspace=tuple(range(7, 13)),
         )
 
@@ -264,7 +266,7 @@ def test_identity_return_needs_no_workspace_and_is_an_xor_copy() -> None:
         {x.id: (0, 1)},
         (2, 3),
         entry="main",
-        n_wires=4,
+        n_qubits=4,
     )
     for a in range(4):
         for z in range(4):
