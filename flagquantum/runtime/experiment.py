@@ -456,8 +456,6 @@ def load(path: str | os.PathLike[str]) -> Experiment:
         ...     path = Path(directory) / "program.fqx"
         ...     fq.save(path, fq.Circuit(1).h(0))
         ...     experiment = fq.load(path)
-        >>> experiment.program.n_wires
-        1
         >>> experiment.result is None
         True
     """

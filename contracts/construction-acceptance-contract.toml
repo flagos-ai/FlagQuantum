@@ -40,7 +40,10 @@ ir_source = "flagquantum/core/ir.py"
 ir_version_effect = "none"
 root_export_effect = "none"
 measured_ir_version = "1.0"
-measured_root_export_count = 41
+# The experiment-file proposal adds only fq.save and fq.load to that reading.
+# See docs/api-changes/FQ-EXPERIMENT-FILES-20261029.md for user authorization;
+# the construction-family subject and its zero-export effect remain unchanged.
+measured_root_export_count = 43
 authorization_required = false
 authorization_reason = "acceptance measures existing behaviour; it adds no export, keyword, opcode, or serialized key"
 
