@@ -1,7 +1,8 @@
 # Algorithm examples
 
 Runnable demonstrations of the Phase 2 algorithm units in
-`flagquantum.algorithms`, one per unit of that phase.
+`flagquantum.algorithms`, one per unit of that phase, plus a private CS-04
+arithmetic synthesis workflow trial.
 [`docs/guides/ALGORITHMS.md`](../../docs/guides/ALGORITHMS.md) is the per-unit
 reference they follow, and the place each unit's advantage premise is recorded in
 full.
@@ -30,6 +31,7 @@ python -m examples.algorithms.block_encoding
 python -m examples.algorithms.linear_combination
 python -m examples.algorithms.logical_resources
 python -m examples.algorithms.arithmetic
+python -m examples.algorithms.synthesis_trial
 ```
 
 [`tests/test_algorithm_examples.py`](../../tests/test_algorithm_examples.py) runs
@@ -151,6 +153,12 @@ What they show:
   own state vector, the two ancillas' behaviour off the contract measured over
   every input rather than described, the T-cost read from the compiler's own
   Toffoli rule, and the conversion bound shown to be a bound the caller can raise.
+
+- [`synthesis_trial.py`](synthesis_trial.py): the private Services Python trial
+  synthesizes `x*x+y` with named basis and uniform input preparation, executes
+  existing CircuitIR, and reads named UInt tuples without user-written gates,
+  physical indices or bitstring decoding. It uses one conservative candidate
+  and exact local CPU statevectors; it is not a stable public synth namespace.
 
 ## These scripts use the subpackage surface
 

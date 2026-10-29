@@ -149,3 +149,10 @@ fusion-count failures, with 4193 passed and 121 skipped at that point. The local
 environment lacks the native CPU extension; these failures also occurred before
 CS-04. This is not a green default-suite claim. Fresh Linux PR CI is required;
 the preceding PR's results do not validate this branch.
+
+The first Linux run found one example-inventory omission, reported by both
+`cpu-runtime` and `coverage-shard (9, 1)`: the new script was not registered in
+the algorithm example runner or README index. The correction registers it and
+adds a subprocess scenario that checks the real basis and all sixteen coherent
+joint outputs plus the reported resources. The inventory guard remains intact;
+the script is executed in the same workflow as the existing examples.

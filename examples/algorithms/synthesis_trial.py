@@ -20,6 +20,10 @@ def declared_polynomial(x: int, y: int) -> int:
 
 
 def main() -> None:
+    print(
+        "premise: private CPU trial with source-retaining Python and unsigned "
+        "arithmetic; one conservative candidate, no optimality guarantee.\n"
+    )
     options = fq.ExecutionOptions(
         mode="statevector",
         backend="torch",

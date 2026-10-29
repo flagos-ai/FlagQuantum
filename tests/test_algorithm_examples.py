@@ -21,6 +21,7 @@ phrase was chosen and for what it leaves uncovered.
 
 from __future__ import annotations
 
+import ast
 import re
 import subprocess
 import sys
@@ -106,6 +107,7 @@ SCRIPTS = (
     "linear_combination",
     "logical_resources",
     "arithmetic",
+    "synthesis_trial",
 )
 
 # One or more phrases per script, each the load-bearing half of that unit's
@@ -322,6 +324,7 @@ PREMISE_PHRASES: dict[str, tuple[str, ...]] = {
         "compiler's own Toffoli rule",
         "Only the inputs the ancilla contract names",
     ),
+    "synthesis_trial": ("private CPU trial", "one conservative candidate"),
 }
 
 
@@ -1673,6 +1676,20 @@ def test_arithmetic_example_sums_and_hands_the_cost_to_the_compiler() -> None:
             assert "TypeError" in _labelled(output, f"{label}, {entry}"), label
     _assert_premise("arithmetic", output)
     assert "take away" in output
+
+
+def test_synthesis_trial_runs_basis_and_coherent_named_workflows() -> None:
+    output = _run("synthesis_trial")
+    basis = ast.literal_eval(_labelled(output, "basis"))
+    uniform = ast.literal_eval(_labelled(output, "uniform"))
+    assert basis == pytest.approx({(3, 2, 11): 1.0}, abs=1e-10)
+    expected = {(x, y, x * x + y): 1 / 16 for x in range(4) for y in range(4)}
+    assert uniform == pytest.approx(expected, abs=1e-10)
+    resources = _labelled(output, "logical resources")
+    assert "n_qubits=18" in resources
+    assert "n_operations=166" in resources
+    assert "depth=124" in resources
+    _assert_premise("synthesis_trial", output)
 
 
 def test_the_example_directory_is_covered_and_indexed() -> None:
