@@ -105,3 +105,46 @@ complete static table and current manual comparison. Relevant tests are
 `tests/integration/test_construction_selection_execution.py`. See the
 [contract](../../../docs/api-changes/FQ-SYNTH-CS06-B-20261029.md) and
 [delivery record](../../../docs/roadmap/CS06_CANDIDATE_SELECTION_DELIVERY.md).
+
+
+## Fresh register composition
+
+`register_profile.py` verifies a separate, private profile in the same
+HybridProgram model. `quantum.register(width)` denotes live storage;
+`quantum.uint(width)` still denotes an arithmetic expression. One linear
+QUANTUM_EFFECT argument orders operations. `qreg.declare` creates an uninitialized
+named output reference, `qreg.allocate` initializes it to zero, and
+`qreg.initialize` initializes it from a fitting unsigned literal. These require
+fresh storage. `qreg.gate` admits X/H/S/Z on a checked numeric bit index, where
+index zero has weight one. `qreg.compute` initializes a fresh destination from
+one existing verified expression function. `qreg.return` returns every declared
+output initialized, once and in declaration order. Roles, extra attributes,
+unknown operations and nested regions are rejected.
+
+`register_lowering.py` lowers that profile through the existing arithmetic
+scheduler. It cleans each arithmetic segment before subsequent register mutation
+and reuses only the resulting zero workspace tail. All output registers remain
+live. Repeated actual arguments use a qint.call wrapper with unique physical
+entry borrows; they are not cloned or bound to overlapping formal entry ports.
+The new private RegisterCandidate retains actual ArithmeticCandidate segment
+histories because a multi-output program has no single expression lifetime graph.
+It adds no serializer, executor or second validation authority.
+
+`select_register_program` and the existing `select_arithmetic` share one target,
+constraint, ranking and recovery consumer. Whole-register-program costs include
+initialization, ordered preparation and all arithmetic cleanup. The original
+Python arithmetic product retains its separate preparation/resource semantics.
+The fresh-register circuit assumes all-zero entry storage; this is an allocator
+precondition, not a proof about an externally supplied state.
+
+For a small change, edit the corresponding profile/lowering rule and run:
+
+```bash
+python -m pytest tests/team/compiler/test_construction_registers.py tests/integration/test_construction_register_execution.py -q
+python -m pytest tests/team/compiler/test_construction_selection.py tests/integration/test_synthesis_user_workflow.py -q
+```
+
+`tests/register_program_cases.py` is a test-only model producer. It is not a
+public builder or a Qmod parser. The current native Python synth API is unchanged;
+external native syntax and Services admission remain later milestones. See the
+[CS07-B delivery](../../../docs/roadmap/CS07_REGISTER_PROGRAM_DELIVERY.md).

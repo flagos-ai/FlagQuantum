@@ -1,13 +1,13 @@
 """Finite, deterministic selection over the two existing arithmetic schedules."""
 
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, field, replace
 from time import perf_counter
 from types import MappingProxyType
 from typing import Literal
 
 from ...core.classical_control import is_classical_control_instruction
-from ...core.ir import CircuitIR
+from ...core.ir import CircuitIR, Instruction
 from ...core.operator_schema import get_operator_schema
 from ...core.parameters import parameter_names_in_value
 from .._hybrid.model import HybridProgram
@@ -16,6 +16,8 @@ from ..resource_estimation import ResourceEstimate, estimate_resources
 from .constraints import CircuitLimits
 from .lowering import ArithmeticCandidate, Schedule, schedule_arithmetic
 from .profile import verify_construction
+from .register_lowering import RegisterCandidate, schedule_register_program
+from .register_profile import register_ports, verify_register_program
 from .target import Target, TargetError, TargetProduct, compile_target
 
 
@@ -68,7 +70,7 @@ class ConstructionBudget:
 class CandidateRow:
     strategy: Schedule
     source_identities: tuple[str, ...]
-    arithmetic: ArithmeticCandidate | None
+    arithmetic: ArithmeticCandidate | RegisterCandidate | None
     target: TargetProduct | None
     resources: ResourceEstimate | None
     stage_resources: tuple[tuple[str, ResourceEstimate], ...]
@@ -228,6 +230,88 @@ def select_arithmetic(
     identities = tuple(
         f.semantic_identity for f in sorted(functions, key=lambda f: f.name)
     )
+
+    def build(strategy: Schedule) -> ArithmeticCandidate:
+        arithmetic = schedule_arithmetic(
+            functions,
+            bindings,
+            mapping["result"],
+            entry=entry,
+            n_qubits=budget.qubits,
+            workspace=tuple(range(position, budget.qubits)),
+            workspace_state="fresh_zero",
+            max_operations=budget.operations,
+            scheduling=strategy,
+        )
+        return arithmetic
+
+    return _select_candidates(
+        build,
+        identities,
+        mapping,
+        position,
+        constraints,
+        budget,
+        target,
+        objective,
+        preparation=prepared,
+    )
+
+
+def select_register_program(
+    program: HybridProgram,
+    functions: Sequence[HybridProgram] = (),
+    *,
+    constraints: Constraints = _DEFAULT_CONSTRAINTS,
+    budget: ConstructionBudget = _DEFAULT_BUDGET,
+    target: Target = _DEFAULT_TARGET,
+    objective: Literal["width", "depth"] = "width",
+) -> Selection:
+    """Check complete fresh-register programs through the same candidate consumer."""
+    if (
+        not isinstance(constraints, Constraints)
+        or not isinstance(budget, ConstructionBudget)
+        or not isinstance(target, Target)
+    ):
+        raise TypeError("use Constraints, ConstructionBudget and Target records")
+    if objective not in {"width", "depth"}:
+        raise ValueError("objective must be width or depth")
+    # Keep capacity exhaustion in the selector's existing incomplete-search
+    # diagnostic rather than mistaking a resource budget for invalid semantics.
+    verify_register_program(program, functions)
+    mapping, _, position = register_ports(program)
+    identities = (
+        program.semantic_identity,
+        *(f.semantic_identity for f in sorted(functions, key=lambda f: f.name)),
+    )
+
+    def build(strategy: Schedule) -> RegisterCandidate:
+        return schedule_register_program(
+            program,
+            functions,
+            n_qubits=budget.qubits,
+            max_operations=budget.operations,
+            scheduling=strategy,
+        )
+
+    return _select_candidates(
+        build, identities, mapping, position, constraints, budget, target, objective
+    )
+
+
+def _select_candidates(
+    build: Callable[[Schedule], ArithmeticCandidate | RegisterCandidate],
+    identities: tuple[str, ...],
+    mapping: Mapping[str, tuple[int, ...]],
+    position: int,
+    constraints: Constraints,
+    budget: ConstructionBudget,
+    target: Target,
+    objective: Literal["width", "depth"],
+    *,
+    preparation: tuple[Instruction, ...] = (),
+) -> Selection:
+    """Share target checks, final costs, ranking and recovery across both builders."""
     rows: list[CandidateRow] = []
     complete = True
     for index, strategy in enumerate(_STRATEGIES):
@@ -247,17 +331,7 @@ def select_arithmetic(
             complete = False
         else:
             try:
-                arithmetic = schedule_arithmetic(
-                    functions,
-                    bindings,
-                    mapping["result"],
-                    entry=entry,
-                    n_qubits=budget.qubits,
-                    workspace=tuple(range(position, budget.qubits)),
-                    workspace_state="fresh_zero",
-                    max_operations=budget.operations,
-                    scheduling=strategy,
-                )
+                arithmetic = build(strategy)
                 # Contiguous fresh pool: trim unused trailing capacity, not costs.
                 circuit = replace(
                     arithmetic.circuit,
@@ -268,7 +342,7 @@ def select_arithmetic(
                 arithmetic = replace(arithmetic, circuit=circuit)
                 construction_seconds = perf_counter() - start
                 source = replace(
-                    circuit, instructions=(*prepared, *circuit.instructions)
+                    circuit, instructions=(*preparation, *circuit.instructions)
                 )
                 product = compile_target(source, target, budget.operations)
                 product.validate()
