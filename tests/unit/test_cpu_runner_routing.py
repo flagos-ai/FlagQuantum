@@ -147,7 +147,6 @@ def test_portable_cpu_work_uses_general_or_validated_scale_sets() -> None:
     portable = {
         "jax-optional",
         "azure-optional",
-        "triton-optional",
         "qiskit-optional",
         "qiskit-compat",
         "cirq-optional",
@@ -171,11 +170,16 @@ def test_portable_cpu_work_uses_general_or_validated_scale_sets() -> None:
                 str(step.get("uses", "")).startswith("actions/checkout@")
                 for step in job["steps"]
             ), f"{name} must not need A800's unavailable HTTPS checkout"
-    # Long suites use isolated A800 and MC550 services; environment checks
-    # above remain portable across the general pool.
-    for name in ("distributed-cpu-shard", "coverage-shard"):
+    # Long suites and cache-dependent Triton setup use the isolated CPU pool;
+    # the other portable environment checks stay on the general pool.
+    for name in ("distributed-cpu-shard", "coverage-shard", "triton-optional"):
         job = jobs[name]
-        assert '\'["self-hosted","linux","x64","flagquantum-cpu"]\'' in job["runs-on"]
+        labels = '["self-hosted","linux","x64","flagquantum-cpu"]'
+        if name == "triton-optional":
+            # The generic CPU label also exists on legacy A800 hosts without
+            # the provisioned MC550 wheel directories and network path.
+            labels = '["self-hosted","linux","x64","flagquantum-cpu","flagquantum-mc550-cpu"]'
+        assert f"'{labels}'" in job["runs-on"]
         assert "github.event_name != 'pull_request'" in job["runs-on"]
         assert "github.event.pull_request.head.repo.full_name == github.repository" in (
             job["runs-on"]

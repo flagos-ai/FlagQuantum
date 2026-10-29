@@ -859,9 +859,11 @@ jobs:
 
   triton-optional:
     needs: prepare-source
-    runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'flagquantum-cpu-general' || 'ubuntu-latest' }}
+    runs-on: >-
+      ${{ fromJSON((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","linux","x64","flagquantum-cpu","flagquantum-mc550-cpu"]' || '["ubuntu-latest"]') }}
+    timeout-minutes: 15
     concurrency:
-      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('a100-cpu-{0}-triton-optional-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-${{ github.event.pull_request.number || github.ref_name }}-light-b
+      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('self-hosted-{0}-triton-optional-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-${{ github.event.pull_request.number || github.ref_name }}-light-b
       queue: max
     steps:
       - uses: actions/download-artifact@v8.0.2
@@ -913,7 +915,25 @@ jobs:
           python-version: "3.12"
       - uses: ./.github/actions/isolated-python
       - uses: ./.github/actions/install-cpu-torch
+      - name: Select a private Triton wheel cache
+        run: |
+          if [ "$RUNNER_ENVIRONMENT" = self-hosted ]; then
+            directory="$HOME/.cache/fq-triton-wheels/py312"
+          else
+            directory="$RUNNER_TEMP/triton-wheels"
+          fi
+          mkdir -p "$directory"
+          echo "FQ_TRITON_WHEEL_DIRECTORY=$directory" >> "$GITHUB_ENV"
+      - uses: actions/cache@v4
+        if: runner.environment == 'github-hosted'
+        with:
+          path: ${{ env.FQ_TRITON_WHEEL_DIRECTORY }}
+          key: triton-wheels-${{ runner.os }}-${{ runner.arch }}-py312-${{ hashFiles('pyproject.toml', '.github/actions/prepare-triton-wheels/action.yml') }}
+      - uses: ./.github/actions/prepare-triton-wheels
+        timeout-minutes: 9
       - run: python -m pip install --no-build-isolation -e '.[dev,cuda]'
+        timeout-minutes: 4
+      - run: python -m pip check
       - name: Run the Triton kernels that do not need a device
         run: python -m pytest tests/test_statevector_triton_gates.py tests/unit/test_hva_forward_tangent_triton.py tests/unit/test_mps_two_site_triton.py tests/unit/test_real_imag_kernels.py tests/unit/test_single_qubit_loop_triton.py tests/unit/test_statevector_pauli_expectation_triton.py tests/unit/test_statevector_probabilities_triton.py tests/unit/test_statevector_triton.py tests/unit/test_triton_complex_bmm.py tests/unit/test_two_qubit_pauli_tangent_triton.py -m triton -q -rs
       - name: Retain resource limits and pytest timing reports

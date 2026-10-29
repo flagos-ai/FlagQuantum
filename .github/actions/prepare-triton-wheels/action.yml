@@ -1,0 +1,43 @@
+name: Prepare Triton wheels
+description: Reuse wheel bytes and bound mirror downloads before falling back to PyPI
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      run: |
+        set -euo pipefail
+        : "${FQ_TRITON_WHEEL_DIRECTORY:?Set the private Triton wheel directory}"
+        mkdir -p "$FQ_TRITON_WHEEL_DIRECTORY"
+        requirement_text="$(python -c 'import tomllib; print("\n".join(tomllib.load(open("pyproject.toml", "rb"))["project"]["optional-dependencies"]["cuda"]))')"
+        requirements=()
+        while IFS= read -r requirement; do
+          if [ -n "$requirement" ]; then
+            requirements+=("$requirement")
+          fi
+        done <<< "$requirement_text"
+        test "${#requirements[@]}" -gt 0
+        links=(--find-links "$FQ_TRITON_WHEEL_DIRECTORY")
+        public_cache="${FQ_TRITON_PUBLIC_WHEELS:-${FQ_CPU_WHEEL_CACHE:-/opt/flagquantum-runners/tools/public-wheels}}"
+        if [ "${RUNNER_ENVIRONMENT:-}" = self-hosted ] && [ -d "$public_cache" ]; then
+          links+=(--find-links "$public_cache")
+        fi
+        if timeout --kill-after=15s 30s python -m pip wheel \
+          --no-index --only-binary=:all: "${links[@]}" \
+          --wheel-dir "$FQ_TRITON_WHEEL_DIRECTORY" "${requirements[@]}"; then
+          echo "Using the complete compatible Triton wheel cache without network access"
+        else
+          index="${PIP_INDEX_URL:-https://pypi.org/simple}"
+          if ! timeout --kill-after=15s 180s python -m pip wheel \
+            --timeout 30 --retries 1 --only-binary=:all: --index-url "$index" "${links[@]}" \
+            --wheel-dir "$FQ_TRITON_WHEEL_DIRECTORY" "${requirements[@]}"; then
+            if [ "${index%/}" = https://pypi.org/simple ]; then
+              exit 1
+            fi
+            echo "::warning::Triton mirror download exceeded its budget or failed; trying official PyPI"
+            timeout --kill-after=15s 300s python -m pip wheel \
+              --timeout 30 --retries 1 --only-binary=:all: --index-url https://pypi.org/simple "${links[@]}" \
+              --wheel-dir "$FQ_TRITON_WHEEL_DIRECTORY" "${requirements[@]}"
+          fi
+        fi
+        python -m pip install --no-index --find-links "$FQ_TRITON_WHEEL_DIRECTORY" \
+          "${requirements[@]}"

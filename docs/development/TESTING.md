@@ -70,6 +70,31 @@ on pull-request CPU runners.
 Equivalent direct marker commands are available when a focused local run is
 clearer:
 
+## Triton CPU-lane setup
+
+The `triton-optional` job runs CPU-side kernel validation; device tests remain
+in the GPU lanes. Trusted runs require the registered `flagquantum-mc550-cpu`
+label as well as `flagquantum-cpu`: the generic label also exists on legacy
+hosts without the same wheel directories and network path. It keeps reusable wheel files in
+`$HOME/.cache/fq-triton-wheels/py312` on self-hosted runners. Hosted runners
+restore the private wheel directory through `actions/cache`. Neither path
+reuses an installed virtual environment.
+
+Wheel preparation reads the `cuda` extra from `pyproject.toml` and first resolves
+its complete dependency closure offline, against the private directory and the
+CPU pool's configured public wheel cache (`FQ_CPU_WHEEL_CACHE`). It reuses a
+compatible cached version; changing the requested range or clearing that cache
+can require a fresh resolution. An incomplete cache requires online resolution.
+A mirror download gets 180 seconds before one official-PyPI fallback
+with 300 seconds; an already selected official index is not retried as its own
+fallback. The job retains dependency checks and the original Triton test list.
+Both failed sources fail the job rather than bypassing kernel validation.
+
+In PR #949, a 285.7 MB Triton wheel took about 22 minutes to download from the
+domestic mirror, while the tests took 4.19 seconds. A subsequent cache-hit job
+completed in 2 minutes 25 seconds. Those are setup observations, not GPU kernel
+performance measurements or a guaranteed total time for the full CI workflow.
+
 ## Planned Marker Commands
 
 ```bash
