@@ -308,7 +308,9 @@
     "Infrastructure identifiers and home paths are redacted using tools/sanitize_public_evidence.py.",
     "The F3 open environment metadata gains an external Torch-FL revision origin annotation. Numerical fields and acceptance gates are unchanged.",
     "Text logs are deterministically gzip-compressed. Original and public digests are retained.",
-    "JUnit XML hostnames are redacted; individual case results and numerical fields are preserved."
+    "JUnit XML hostnames are redacted; individual case results and numerical fields are preserved.",
+    "Public JSON and XML copies use a final newline; raw numeric fields and original digests remain unchanged.",
+    "Host identifier lines in text logs are redacted in addition to JSON hostname fields."
   ],
   "reports": [
     {
@@ -384,7 +386,7 @@
     {
       "path": "development/ascend_910c_20261030/node0/full-reverse-stress-v56.log.gz",
       "raw_sha256": "e4d11df69c8f82c8f8b9968772ad25b7bf849019aa181ab1930c543dbdfd58e6",
-      "public_sha256": "bb9f55b6222aebaca49e0079be816c426e0d8f92238d82e3c07155717a2d04b8"
+      "public_sha256": "d5358ae7e4a6eeda661e0125fb5cb1de284dfadc0d4aca729f6b1087cb15b2cf"
     },
     {
       "path": "development/ascend_910c_20261030/node0/full-reverse-stress-v57.log.gz",
@@ -489,7 +491,7 @@
     {
       "path": "development/ascend_910c_20261030/reproducibility/full-flagcx-repro-summary-v70.json",
       "raw_sha256": "f1e19df1b13d4b6c9c90710bd9d50ca69abd90cfee363ee94131ce7f8e314854",
-      "public_sha256": "f1e19df1b13d4b6c9c90710bd9d50ca69abd90cfee363ee94131ce7f8e314854"
+      "public_sha256": "61ba22fd9e97da027aec976049f433d96a16a734cdd91b74e98a1963ccc3e697"
     },
     {
       "path": "development/ascend_910c_20261030/node1/full-fq-final-v75.log.gz",
@@ -524,7 +526,7 @@
     {
       "path": "development/ascend_910c_20261030/node1/full-fq-final-v75.xml",
       "raw_sha256": "92609d06836e8cb0ff8079c3d2f4ea7340e537284da48163d540d87e7766da07",
-      "public_sha256": "0f6534e94e8716c1fa2b9f56d8bdf1dcbed94db8471449d51b60481cf8953305"
+      "public_sha256": "6a14e4d68d8728af11013976db80c4f3dc74df97601a2d7ad76ab309a2418ddb"
     },
     {
       "path": "development/ascend_910c_20261030/fq-quality-final-v76.json",
