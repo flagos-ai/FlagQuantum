@@ -11,8 +11,6 @@
     "torch_fl_tree_equivalence": "identical Git tree, commit message normalized for repository policy",
     "followup_changes": "The support branch replaces wire terminology in comments only; the numerical AST is identical to the recorded runtime revision and measured wheel.",
     "runtime_ast_sha256": "176f14b9c902c86b107f7392075a4eb862073ddc19a54c497f1af3729ebebdd0",
-    "torch_fl_revision_origin": "external_dependency",
-    "torch_fl_source_revision_origin": "external_dependency",
     "torch_fl_repository": "https://github.com/flagos-ai/Torch-FL"
   },
   "environment": {

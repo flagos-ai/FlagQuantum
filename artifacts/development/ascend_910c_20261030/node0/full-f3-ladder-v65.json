@@ -20,7 +20,6 @@
     "steps": 3,
     "torch_fl_source_revision": "3aebd0c888789f35bb281435ddd44d5f1ff8cc55",
     "worker_failures": [],
-    "torch_fl_source_revision_origin": "external_dependency",
     "torch_fl_repository": "https://github.com/FlagQuantum/Torch-FL"
   },
   "flagcx_route_verified": false,

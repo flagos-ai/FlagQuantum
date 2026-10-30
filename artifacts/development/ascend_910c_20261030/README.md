@@ -11,8 +11,8 @@ functional scope; they are not performance or capacity evidence.
 The capability record identifies each producing source, dependency and wheel,
 with digests for both raw and public files. Public copies redact infrastructure
 identifiers and home paths. Text logs are gzip-compressed, and JUnit XML hostnames
-are redacted. Numerical results are preserved. The F3 open environment metadata
-adds an explicit external Torch-FL source-origin annotation.
+are redacted. Numerical results are preserved. External dependency origins are declared in the shared
+`evidence-revision-origins.toml` table.
 
 Full raw archives, checkpoints, wheels and intermediate build trees remain in
 the task evidence archive rather than this source repository. Earlier failed

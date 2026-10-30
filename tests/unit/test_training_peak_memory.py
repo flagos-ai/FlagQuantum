@@ -7,6 +7,8 @@ import torch
 
 from flagquantum.compute import _memory
 
+pytestmark = pytest.mark.unit
+
 
 def test_flagos_peak_is_read_before_reset_on_the_requested_device(
     monkeypatch: pytest.MonkeyPatch,

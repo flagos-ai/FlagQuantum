@@ -85,8 +85,11 @@ def _environment(device: str = "cpu") -> dict[str, object]:
 
 def validate_presence_options(payload: Mapping[str, Any]) -> None:
     """Check the sealed RNG build before source assembly or numerical work."""
+    options = payload.get("options")
+    if not isinstance(options, Mapping):
+        raise SerializationError("invalid presence options: expected a mapping")
     if payload.get("environment_requirements") != _environment(
-        payload.get("options", {}).get("device") or "cpu"
+        options.get("device") or "cpu"
     ):
         raise ExecutionPlanContractError(
             "environment_incompatible",

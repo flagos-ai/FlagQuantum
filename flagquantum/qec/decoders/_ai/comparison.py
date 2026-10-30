@@ -23,7 +23,7 @@ def on_device(correction: Correction, device: torch.device) -> Correction:
     """
     if device.type not in ("cpu", "cuda", "flagos"):
         raise ValueError(
-            "comparison supports only explicit CPU, CUDA or FlagOS devices"
+            "comparison supports only explicit CPU or CUDA devices, or FlagOS"
         )
 
     def run(bits: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:

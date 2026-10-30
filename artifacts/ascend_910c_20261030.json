@@ -6,7 +6,6 @@
     "revision": "55987ed85267b1d00cff05e0bb9ee3516632f563",
     "validation_driver_commit": "55987ed85267b1d00cff05e0bb9ee3516632f563",
     "torch_fl_source_revision": "3aebd0c888789f35bb281435ddd44d5f1ff8cc55",
-    "torch_fl_source_revision_origin": "external_dependency",
     "torch_fl_repository": "https://github.com/FlagQuantum/Torch-FL",
     "runtime_file_sha256": {
       "flagquantum/compute/_memory.py": "f7666a27b64ebac74eef4d85fdadf66f893046db9776f45056ecdda12b79e9ed",
@@ -97,7 +96,6 @@
     {
       "name": "FlagCX",
       "revision": "6fe36310fb5c9bd2396f531d7bf78c08fc792340",
-      "revision_origin": "external_dependency",
       "repository": "https://github.com/flagos-ai/FlagCX",
       "patch": "../docker/ascend/patches/flagcx-v0.14.1-flagos.patch",
       "patch_sha256": "071abaffefdc44783aac3d23e8124dc0dc46cf7168bc0558b9244d9df9e5c2ca"
@@ -105,7 +103,6 @@
     {
       "name": "nlohmann/json single header",
       "revision": "a0e9fb1e638cfbb5b8b556b7c51eaa81977bad48",
-      "revision_origin": "external_dependency",
       "repository": "https://github.com/nlohmann/json",
       "sha256": "44b4cba46af923a0f00bef52b6291d7d2ea37f32f5bafce4648a33e24c1ab874"
     }
@@ -306,11 +303,11 @@
   ],
   "public_evidence_transformations": [
     "Infrastructure identifiers and home paths are redacted using tools/sanitize_public_evidence.py.",
-    "The F3 open environment metadata gains an external Torch-FL revision origin annotation. Numerical fields and acceptance gates are unchanged.",
     "Text logs are deterministically gzip-compressed. Original and public digests are retained.",
     "JUnit XML hostnames are redacted; individual case results and numerical fields are preserved.",
     "Public JSON and XML copies use a final newline; raw numeric fields and original digests remain unchanged.",
-    "Host identifier lines in text logs are redacted in addition to JSON hostname fields."
+    "Host identifier lines in text logs are redacted in addition to JSON hostname fields.",
+    "External dependency origins use evidence-revision-origins.toml; the shared inline provenance vocabulary is preserved."
   ],
   "reports": [
     {
@@ -341,7 +338,7 @@
     {
       "path": "development/ascend_910c_20261030/node0/full-f3-ladder-v65.json",
       "raw_sha256": "ff921b00ae892abb6cd962e528c170b5ce8d3f6be0fb880f0c79e842f75771c2",
-      "public_sha256": "25d68bad59d357bd1a8ed8ec4751aca9e7e44983e52aaf4c0b0020aec96d7d65"
+      "public_sha256": "e960a87c4915282826d8043d52dfb7639897e1ff7005b6415e2c542401ecfb8f"
     },
     {
       "path": "development/ascend_910c_20261030/node0/full-multinode-statevector-v63-rank0.json",

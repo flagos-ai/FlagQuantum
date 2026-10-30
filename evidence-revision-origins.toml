@@ -1081,3 +1081,45 @@ path = "artifacts/development/mps_placement_conformance_cpu_20261028/README.md"
 [[artifact.revision]]
 value = "4f91e4bbc8762d928193c44e0e350e8321cb4727"
 origin = "unreferenced_object"
+
+# Ascend qualification records preserve dependency source identifiers. The
+# producer's pre-normalization Torch-FL commit shares the recorded Git tree with
+# the published precision-fix commit; the numerical evidence is unchanged.
+[[artifact]]
+path = "artifacts/ascend_910c_20261029.json"
+
+[[artifact.revision]]
+value = "704e2822d3bdbbebfe2b78a62b434d5972babc67"
+origin = "external_dependency"
+repository = "FlagQuantum/Torch-FL"
+
+[[artifact.revision]]
+value = "dda9e99e269680a079a1a0ec83100d109e26c137"
+origin = "external_dependency"
+repository = "FlagQuantum/Torch-FL"
+
+[[artifact]]
+path = "artifacts/ascend_910c_20261030.json"
+
+[[artifact.revision]]
+value = "3aebd0c888789f35bb281435ddd44d5f1ff8cc55"
+origin = "external_dependency"
+repository = "FlagQuantum/Torch-FL"
+
+[[artifact.revision]]
+value = "6fe36310fb5c9bd2396f531d7bf78c08fc792340"
+origin = "external_dependency"
+repository = "flagos-ai/FlagCX"
+
+[[artifact.revision]]
+value = "a0e9fb1e638cfbb5b8b556b7c51eaa81977bad48"
+origin = "external_dependency"
+repository = "nlohmann/json"
+
+[[artifact]]
+path = "artifacts/development/ascend_910c_20261030"
+
+[[artifact.revision]]
+value = "3aebd0c888789f35bb281435ddd44d5f1ff8cc55"
+origin = "external_dependency"
+repository = "FlagQuantum/Torch-FL"
