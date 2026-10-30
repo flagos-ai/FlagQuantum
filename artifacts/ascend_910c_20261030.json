@@ -3,8 +3,8 @@
   "date": "2026-10-30",
   "timezone": "Asia/Shanghai",
   "source": {
-    "revision": "dae8c8fdba33cd9cfff4d61847f6da697cba0215",
-    "validation_driver_commit": "3b7a20f0f993786e1bc34f2a63102850b3b124f7",
+    "revision": "55987ed85267b1d00cff05e0bb9ee3516632f563",
+    "validation_driver_commit": "55987ed85267b1d00cff05e0bb9ee3516632f563",
     "torch_fl_source_revision": "3aebd0c888789f35bb281435ddd44d5f1ff8cc55",
     "torch_fl_source_revision_origin": "external_dependency",
     "torch_fl_repository": "https://github.com/FlagQuantum/Torch-FL",
@@ -12,23 +12,24 @@
       "flagquantum/compute/_memory.py": "f7666a27b64ebac74eef4d85fdadf66f893046db9776f45056ecdda12b79e9ed",
       "flagquantum/gradients.py": "decfcaf060f8289c557ebb9b40e1867cdf5d8ef887b27ff0fec49ed44be0a029",
       "flagquantum/lindblad/__init__.py": "99fa44dee4b8cbef84b65dd56b3e8e2b3c15f273b0a8c42ec501eb8fd53f0500",
-      "flagquantum/lindblad/_native_plan.py": "dedd5bc245858efa44ef7035faf96b697abf85f8e20dcc3da58ddb6032761ce6",
+      "flagquantum/lindblad/_native_plan.py": "fd1c206e39b5996153fadc2a8357f2fcd399212a8d500584cb4d4fc9eafbbd79",
+      "flagquantum/lindblad/_plan.py": "2ef11a358618d301f0e5d4e764108b9419a939385b6e494774a5a762eb4278c4",
       "flagquantum/qec/decoders/_ai/comparison.py": "f673f38f12fb306e2c6dab2bff48405360f062a17c11b332bdfb343ce148a0f0",
       "flagquantum/qec/decoders/_ai/predecoder.py": "0502cf847db56271c260e25e7df39d16b5328af8f1ce5a58eb24d3a910c3335b",
       "flagquantum/qec/decoders/_ai/training.py": "9cfde16cb1add814b0e75ec417d1275c3858ef97bdfd2a74490ff0e797d756e5",
-      "flagquantum/runtime/_ising_plan.py": "f00537493abdc653bd9fabe09220b7ce934a7f5ed8e53909f54ebcafb69d69d0",
+      "flagquantum/runtime/_ising_plan.py": "f747b7b4ac3d256ed238252930ea38d02cac4e3f88e2ea781e15422ddc6c02db",
       "flagquantum/runtime/_rydberg_presence.py": "96959555b0e032666acdc2039dda81566741dcfc18325e16c2edd4fdc4f5ae3d",
       "flagquantum/runtime/_terminal_instruments.py": "ca3ffa59418c7861e431a4eef5868acc48feb3ded6906b0b9a3ab7102d26ec2b",
       "flagquantum/runtime/executors/mps/factorization.py": "e84a84fdfb60fdc8cec9ff93c613f369608aacd13d5f5a86300dc3cda1efa715",
       "flagquantum/runtime/executors/mps/training_engine.py": "b0ce1ead7c6b1be05560b2b312a1b9992e2b9cb15cf81ee148f5e9ef99046d3b",
       "flagquantum/runtime/executors/statevector/training.py": "7a5ad81051ff29efdd9c07140c25efba8626c1602bea7bdd712789c524b291bb",
-      "flagquantum/runtime/measurements.py": "1767a593048eafb6724b7be1c58632c1cd99d65ecdd77ca883c735d1aeff7857",
+      "flagquantum/runtime/measurements.py": "597c37cb82f6129b113ba180e60e47eb9e455945a5a823a07002ba1640822c32",
       "flagquantum/runtime/training_state.py": "35f17bdde63726e2221f58ac4e405c97793575988fedbb9607e8c19b4cc4b320",
       "flagquantum/simulation/ising_braid.py": "e5070d0069894b1c00685e30ef7f775621926b3d6ea1c5f82410f9f219c5fd08",
-      "flagquantum/simulation/lindblad.py": "aeed0721245ace88d6c40c3a589aa350cac2199dd21c22cc814ed796a95c57d4",
+      "flagquantum/simulation/lindblad.py": "2239434e05a91197bab73e8bd6b8b6ce61d8fd97f70794f4f8653a8761936f2c",
       "flagquantum/simulation/matrix_free_exponential.py": "a1a1059eaabbdb467a518cadd278d72604636f0d7e033235b92f7b029d3d8578",
       "flagquantum/simulation/matrix_free_linear_solve.py": "ab33b5d04ca37e64736fda3a53b8ba2e68d23dfec7b334696c5cf463cd026f6a",
-      "flagquantum/simulation/rydberg_model.py": "f2bbab74dbcf3c037ca0c2be258e6d18b8201c1e4754203bb28082991b5e944e",
+      "flagquantum/simulation/rydberg_model.py": "00e2c30556d73740408866fd7ea1745503feefa5609a0f5b17faf31a1a988858",
       "flagquantum/simulation/rydberg_presence.py": "939052d16c8b16c15ecdb5e508406e4aee710cd0519b6064dfe9e724636038d1"
     },
     "torch_fl_file_sha256": {
@@ -73,7 +74,8 @@
       "torch_fl/flagos/__init__.py": "b8b4696e328ffc3eeb344af69fe1b540652a5234fbc1d2dc42fef3d23564dcc7"
     },
     "repository": "https://github.com/flagos-ai/FlagQuantum",
-    "pull_request": "https://github.com/flagos-ai/FlagQuantum/pull/958"
+    "pull_request": "https://github.com/flagos-ai/FlagQuantum/pull/958",
+    "followup": "Device activation is owned by the domain/runtime boundary; Simulation consumes resolved generic Torch devices. Numerical kernels and distributed training code are unchanged. Cold-process replay and strict typing were verified."
   },
   "environment": {
     "physical_device": "Huawei Ascend 910C",
@@ -178,30 +180,29 @@
     "ascend_operator_integration": {
       "passed": 498,
       "warnings": 216,
-      "log": "ascend_910c_20261030/node0/full-provider-integration-v64.log.gz",
+      "log": "development/ascend_910c_20261030/node0/full-provider-integration-v64.log.gz",
       "intentional_cpu_fallback_test_included": true
     },
     "provider_unit": {
       "passed": 163,
       "warnings": 19,
-      "log": "ascend_910c_20261030/node0/full-provider-units-v62.log.gz"
+      "log": "development/ascend_910c_20261030/node0/full-provider-units-v62.log.gz"
     },
     "native_circuit_noise_tebd_qec_hardware": {
       "passed": 142,
-      "warnings": 330,
-      "log": "ascend_910c_20261030/node1/full-circuits-final-v67.log.gz",
+      "log": "development/ascend_910c_20261030/node1/full-fq-final-v75.log.gz",
       "tests": "tests/integration/test_ascend_circuit_workflows.py"
     },
     "native_dynamics_hardware": {
-      "passed": 23,
-      "warnings": 202,
-      "log": "ascend_910c_20261030/node1/full-dynamics-final-v60.log.gz",
+      "passed": 25,
+      "cold_process_plan_replay_cases": 2,
+      "log": "development/ascend_910c_20261030/node1/full-fq-final-v75.log.gz",
       "tests": "tests/integration/test_ascend_native_dynamics.py"
     },
     "changed_path_cpu_regressions": {
       "passed": 1332,
       "skipped": 3,
-      "log": "ascend_910c_20261030/fq-cpu-final-v69.log.gz"
+      "log": "development/ascend_910c_20261030/fq-cpu-final-v75.log.gz"
     },
     "public_api_snapshot": "passed",
     "code_generation": {
@@ -224,8 +225,9 @@
       ],
       "cases_per_world_size": 6,
       "gradient_distribution": "owner_sharded_reduce_scatter",
-      "report": "ascend_910c_20261030/node0/full-f3-ladder-v65.json",
-      "nonowner_gradients_zero": true
+      "report": "development/ascend_910c_20261030/node0/full-f3-ladder-v65.json",
+      "nonowner_gradients_zero": true,
+      "source_revision": "dae8c8fdba33cd9cfff4d61847f6da697cba0215"
     },
     "two_host": {
       "passed_on_both_ranks": true,
@@ -235,13 +237,30 @@
       "ddp_cases_per_rank": 2,
       "checkpoint_save_cases_per_rank": 8,
       "fresh_process_checkpoint_resume_cases_per_rank": 8,
-      "ddp_distribution_semantics": "data_parallel_replicated"
+      "ddp_distribution_semantics": "data_parallel_replicated",
+      "source_revision": "dae8c8fdba33cd9cfff4d61847f6da697cba0215"
     },
     "actual_cpu_fallback_messages_in_quantum_workflow_logs": 0,
     "repository_provenance_audit": {
       "all_diagnostics": 98,
       "ascend_diagnostics": 0,
       "status": "existing_unrelated_diagnostics"
+    },
+    "combined_native_workflows_hardware": {
+      "passed": 167,
+      "warnings": 293,
+      "seconds": 115.41,
+      "log": "development/ascend_910c_20261030/node1/full-fq-final-v75.log.gz",
+      "case_results": "development/ascend_910c_20261030/node1/full-fq-final-v75.xml"
+    },
+    "strict_package_typing": {
+      "checked_source_files": 862,
+      "status": "passed"
+    },
+    "architecture_boundaries": "passed",
+    "repository_checks": {
+      "passed": 10,
+      "report": "development/ascend_910c_20261030/fq-quality-final-v76.json"
     }
   },
   "regression_diagnostics": {
@@ -252,13 +271,13 @@
       "actual": 0.0,
       "expected": 0.8133989124821047,
       "gradients_correct": true,
-      "log": "ascend_910c_20261030/node0/full-reverse-stress-v56.log.gz"
+      "log": "development/ascend_910c_20261030/node0/full-reverse-stress-v56.log.gz"
     },
     "same_reverse_stress_after_fix": {
       "status": "passed",
       "iterations_per_rank": 20,
       "ranks": 8,
-      "log": "ascend_910c_20261030/node0/full-reverse-stress-v57.log.gz"
+      "log": "development/ascend_910c_20261030/node0/full-reverse-stress-v57.log.gz"
     },
     "fix": "Synchronize FP64 composite reduction payload ownership before each communication-stream broadcast; preserve final completed-Work synchronization."
   },
@@ -279,193 +298,238 @@
     {
       "node_label": "node1",
       "sha256": "fec45208b4360f08601dc053f52a4b0dd54df87af1d330e5b99040b1c0b8f142"
+    },
+    {
+      "node_label": "node1_final",
+      "sha256": "bfecafe0cc896f8be0827d6c9cdd39ac734152673e242ca529f7632afd2920be"
     }
   ],
   "public_evidence_transformations": [
     "Infrastructure identifiers and home paths are redacted using tools/sanitize_public_evidence.py.",
     "The F3 open environment metadata gains an external Torch-FL revision origin annotation. Numerical fields and acceptance gates are unchanged.",
-    "Text logs are deterministically gzip-compressed. Original and public digests are retained."
+    "Text logs are deterministically gzip-compressed. Original and public digests are retained.",
+    "JUnit XML hostnames are redacted; individual case results and numerical fields are preserved."
   ],
   "reports": [
     {
-      "path": "ascend_910c_20261030/node0/full-multinode-collective-v63-rank0.json",
+      "path": "development/ascend_910c_20261030/node0/full-multinode-collective-v63-rank0.json",
       "raw_sha256": "ae9aa9b7ab5e7841eae1c77c2c243c14ef13ade4cf68bad703e50777b9edda17",
       "public_sha256": "d9d07369075aebfb778a147f01bcddd302c6668a64ca7196a97313134a0187d2"
     },
     {
-      "path": "ascend_910c_20261030/node0/full-multinode-checkpoint-v60-save-rank0.json",
+      "path": "development/ascend_910c_20261030/node0/full-multinode-checkpoint-v60-save-rank0.json",
       "raw_sha256": "cf62291bac64224e6898fbd80ff0ed80e086e4be936751b50317b9ec82af9a9d",
       "public_sha256": "6abc5460182b810cffc2c300375cdbdf5ad3f0279406a930cf3def9820f12d5a"
     },
     {
-      "path": "ascend_910c_20261030/node0/full-multinode-ddp-v63-rank0.json",
+      "path": "development/ascend_910c_20261030/node0/full-multinode-ddp-v63-rank0.json",
       "raw_sha256": "93b5b1cdc671861fcb62a08509b9e260d0f54f5d6c36c549d2fde5ed86b78208",
       "public_sha256": "6a44e1d4ab710f21e420384f13e8321a8b7c063f2504512c92194f97008b66a9"
     },
     {
-      "path": "ascend_910c_20261030/node0/full-multinode-checkpoint-v60-resume-rank0.json",
+      "path": "development/ascend_910c_20261030/node0/full-multinode-checkpoint-v60-resume-rank0.json",
       "raw_sha256": "fc1a182431b8df70453e2557ce9a0bc293dabff9b91fa2e6bb727cbe85787928",
       "public_sha256": "e71a637103ecf859b52008cae664bd632789ee67b9bfeb113159b53da47942b8"
     },
     {
-      "path": "ascend_910c_20261030/node0/full-v62-generator-results.json",
+      "path": "development/ascend_910c_20261030/node0/full-v62-generator-results.json",
       "raw_sha256": "1eaf4d142cc4da9fa34890ad2fa0fdc42de9f91dd70568c00e5f526d41bb6b44",
       "public_sha256": "fe972aa8826d52a2f8dc371466d1182fcba7b160b281c8c7555386e4e0b5f2b0"
     },
     {
-      "path": "ascend_910c_20261030/node0/full-f3-ladder-v65.json",
+      "path": "development/ascend_910c_20261030/node0/full-f3-ladder-v65.json",
       "raw_sha256": "ff921b00ae892abb6cd962e528c170b5ce8d3f6be0fb880f0c79e842f75771c2",
       "public_sha256": "25d68bad59d357bd1a8ed8ec4751aca9e7e44983e52aaf4c0b0020aec96d7d65"
     },
     {
-      "path": "ascend_910c_20261030/node0/full-multinode-statevector-v63-rank0.json",
+      "path": "development/ascend_910c_20261030/node0/full-multinode-statevector-v63-rank0.json",
       "raw_sha256": "4dbdba90f0fe3e70ddc20d6935f928d36a05bb3a874b0ccc2598549da0d9a9cb",
       "public_sha256": "26fa1cd6abe78d366593bacc50b1faca69036399129e09387b825ed6c0ceb8bc"
     },
     {
-      "path": "ascend_910c_20261030/node0/full-multinode-modes-v63-rank0.json",
+      "path": "development/ascend_910c_20261030/node0/full-multinode-modes-v63-rank0.json",
       "raw_sha256": "45f2ab1ceee930ae5086f67c291d97d59cd7817dc36503d1982a25d5df379ae4",
       "public_sha256": "6f366460985f8cda811a0fa2d878768e22e48cf7616f4d58fba4f4592adc8b04"
     },
     {
-      "path": "ascend_910c_20261030/node0/full-provider-wheel-verification-v66.json",
+      "path": "development/ascend_910c_20261030/node0/full-provider-wheel-verification-v66.json",
       "raw_sha256": "dbde201711c0e45a1851a96c2e3974791be7bc138dab31b7301d460db86c9246",
       "public_sha256": "213e5befe1d29d090949db285176e79b80afd61943065e853b2d6dd8e80b5a7b"
     },
     {
-      "path": "ascend_910c_20261030/node0/full-f3-ladder-v65.log.gz",
+      "path": "development/ascend_910c_20261030/node0/full-f3-ladder-v65.log.gz",
       "raw_sha256": "3ce22f6a1a9e429a6f8a62503889e9726d485fb2863261f620832532b8a05b26",
       "public_sha256": "d05441994e7612b8ea8c75610ca6db84bac7721eefe22c82f26b1c126337c858"
     },
     {
-      "path": "ascend_910c_20261030/node0/full-provider-units-v62.log.gz",
+      "path": "development/ascend_910c_20261030/node0/full-provider-units-v62.log.gz",
       "raw_sha256": "0685ad07dae52b069e0c93ef937f28f1aa646c65d8c212775b5ff39cbc20e75b",
       "public_sha256": "4f664625f81d7e839bc42e227ee91151e940a2b523584ed5f98d8ca9161d4c83"
     },
     {
-      "path": "ascend_910c_20261030/node0/full-double-stress-v55.log.gz",
+      "path": "development/ascend_910c_20261030/node0/full-double-stress-v55.log.gz",
       "raw_sha256": "4a8ce87152cd7d5649f1daef6f1311b27b9affee8f461931104755208ae081b3",
       "public_sha256": "c75372b25232e59b44e24e3b5f3b0f91f0d8fc8a0077e9dd922f129e1f023f06"
     },
     {
-      "path": "ascend_910c_20261030/node0/full-provider-integration-v64.log.gz",
+      "path": "development/ascend_910c_20261030/node0/full-provider-integration-v64.log.gz",
       "raw_sha256": "eaed4b76d059fced1180f8d827fb3ce88fb6956a38eaa9d49b98b1662f18a97f",
       "public_sha256": "5cb794517d81ba713df0721ed05afb6cd45c276e167f23592f00fbb1bbefc247"
     },
     {
-      "path": "ascend_910c_20261030/node0/full-multinode-final-v63.log.gz",
+      "path": "development/ascend_910c_20261030/node0/full-multinode-final-v63.log.gz",
       "raw_sha256": "cf56ba7fed3d6c408d5bcff437ee37bd7460b41a09cd9e08a3069df331b9bb7e",
       "public_sha256": "34090775979b168b8b47d0a0df31da26dde7a16d11fcd71da6c21be844d775d3"
     },
     {
-      "path": "ascend_910c_20261030/node0/full-reverse-stress-v56.log.gz",
+      "path": "development/ascend_910c_20261030/node0/full-reverse-stress-v56.log.gz",
       "raw_sha256": "e4d11df69c8f82c8f8b9968772ad25b7bf849019aa181ab1930c543dbdfd58e6",
       "public_sha256": "bb9f55b6222aebaca49e0079be816c426e0d8f92238d82e3c07155717a2d04b8"
     },
     {
-      "path": "ascend_910c_20261030/node0/full-reverse-stress-v57.log.gz",
+      "path": "development/ascend_910c_20261030/node0/full-reverse-stress-v57.log.gz",
       "raw_sha256": "ba25e680f709dda4197799cbfe78ea82a86cb1c047aa72648feac72b6a359fd3",
       "public_sha256": "b400a8c5ae055bed191ab271ff0a4f124987946a9607f2018435c0cd8b0527e7"
     },
     {
-      "path": "ascend_910c_20261030/node1/full-multinode-checkpoint-v60-save-rank1.json",
+      "path": "development/ascend_910c_20261030/node1/full-multinode-checkpoint-v60-save-rank1.json",
       "raw_sha256": "1814e687b983534e43837f93029e9658bf391fe0afaab2d868ae893afa10bc48",
       "public_sha256": "aa0c96f52c97fe404ca15961a6ec3cb507435bdddd7ae8bdf4508794c2ae9223"
     },
     {
-      "path": "ascend_910c_20261030/node1/full-multinode-collective-v63-rank1.json",
+      "path": "development/ascend_910c_20261030/node1/full-multinode-collective-v63-rank1.json",
       "raw_sha256": "4bc54660ac3aa8451af27dcb5e6f1360644f3be2d56bd1f3bf7f55fd5f5af48b",
       "public_sha256": "dc4ef800f437fdcf329b20a148aafe06953034b92825503cc6cca64a3cee388b"
     },
     {
-      "path": "ascend_910c_20261030/node1/full-qec-v59.json",
+      "path": "development/ascend_910c_20261030/node1/full-qec-v59.json",
       "raw_sha256": "e2af768c09d3fe1ae8d58058e798d8f73d628f98c629c4a64f4d6561de5bc847",
       "public_sha256": "939ecd98a7961a3ba5646b8679b73137c497ce484d30cc0110428ceb545bca24"
     },
     {
-      "path": "ascend_910c_20261030/node1/full-multinode-ddp-v63-rank1.json",
+      "path": "development/ascend_910c_20261030/node1/full-multinode-ddp-v63-rank1.json",
       "raw_sha256": "7a23f4519ed7c5365cd5ebe7662f19a42e7716134c77c3c40d2ef1422c1a9ed3",
       "public_sha256": "06fa8304b4a771f436c15ae31a63e33ba334371c711baa748f38bb912f1bb853"
     },
     {
-      "path": "ascend_910c_20261030/node1/full-multinode-checkpoint-v60-resume-rank1.json",
+      "path": "development/ascend_910c_20261030/node1/full-multinode-checkpoint-v60-resume-rank1.json",
       "raw_sha256": "70e74145af60a1cb8c08d02668d00ad3341b95f050c5c78d7b8d994f8c120277",
       "public_sha256": "527349e1c7ff680b5faa2897ec0b42d03f09dd6597304c222568537f57180c6f"
     },
     {
-      "path": "ascend_910c_20261030/node1/full-multinode-modes-v63-rank1.json",
+      "path": "development/ascend_910c_20261030/node1/full-multinode-modes-v63-rank1.json",
       "raw_sha256": "57167414a643e5f540f512a3371dc57831836173e21c3c36c8f3d9fe049cd2d5",
       "public_sha256": "e11877ed8db3b3e02c420098a9f724bfb289c4e5c06d43bcce22ecfd9b0b4208"
     },
     {
-      "path": "ascend_910c_20261030/node1/full-multinode-statevector-v63-rank1.json",
+      "path": "development/ascend_910c_20261030/node1/full-multinode-statevector-v63-rank1.json",
       "raw_sha256": "6171cc81f03605f867dd563d4ce6eada9b199b98b6bd8757a4642248fefff600",
       "public_sha256": "d6b667541f3634ebc4593140d72fffdc6b879e62b59501aa1c75b4d1abc0ac47"
     },
     {
-      "path": "ascend_910c_20261030/node1/full-circuits-final-v67.log.gz",
+      "path": "development/ascend_910c_20261030/node1/full-circuits-final-v67.log.gz",
       "raw_sha256": "31442c31ce15b81a6e4b03ba1796136de9470a90d86aa2507284b170a292bb64",
       "public_sha256": "9f336bc0a03a39e13d73273d9a7d9c0f994969ffdc0ae59267ae7b62db1bf66b"
     },
     {
-      "path": "ascend_910c_20261030/node1/full-dynamics-final-v60.log.gz",
+      "path": "development/ascend_910c_20261030/node1/full-dynamics-final-v60.log.gz",
       "raw_sha256": "c7632f92f7c89ca95af2f7d9e399809271de534c497bf4dd476a9d0b0498530f",
       "public_sha256": "876a7a0754eb4a8968d2f8c0f385ff4d5012ad62d36d9d14c08b67c2461598ff"
     },
     {
-      "path": "ascend_910c_20261030/node1/full-multinode-final-v63.log.gz",
+      "path": "development/ascend_910c_20261030/node1/full-multinode-final-v63.log.gz",
       "raw_sha256": "a815d9a0846f52779c2b6b077707a49377af8fc8cdc8e30b3a66cce34832d672",
       "public_sha256": "0f336072af07b479330e9f384695acf703571ecbb3c6000ab89f8bb952c7bdd1"
     },
     {
-      "path": "ascend_910c_20261030/node1/full-qec-final-v59.log.gz",
+      "path": "development/ascend_910c_20261030/node1/full-qec-final-v59.log.gz",
       "raw_sha256": "6fc0db3125825420e28a8065bafc6e26b173850008b95e8c44222dbabf125214",
       "public_sha256": "0e3c4dbb2b34733a7cfa22aad1c0e9dc80cc8b307062dfc1c8255bc3a622332d"
     },
     {
-      "path": "ascend_910c_20261030/fq-cpu-final-v69.log.gz",
+      "path": "development/ascend_910c_20261030/fq-cpu-final-v69.log.gz",
       "raw_sha256": "404c2ad4d5291290b09a19b80193d1b15a85d001254f55371757cb819fea27c4",
       "public_sha256": "646b01aaefa88a15fcf19ac4c7d732ceb6a65c1187c938ab848e41dab17d61b2"
     },
     {
-      "path": "ascend_910c_20261030/fq-api-final-v69.log.gz",
+      "path": "development/ascend_910c_20261030/fq-api-final-v69.log.gz",
       "raw_sha256": "74a5c620dbabc33819be7ddfd5f28037b66387342a42e6a0709ef86889373ffb",
       "public_sha256": "b291dd0ccd4f85e1a03b8ea9fc4fb27eefda02565c2efdff445a277388d7d62e"
     },
     {
-      "path": "ascend_910c_20261030/torch-fl-910c-support-lint-v64.log.gz",
+      "path": "development/ascend_910c_20261030/torch-fl-910c-support-lint-v64.log.gz",
       "raw_sha256": "c0a8976836e2854946243a3870cd752228f5ac6bfb04c84d7b88b0b99862060f",
       "public_sha256": "29d19ca466ebf8706379511fec80d9f10b994084a3edb69c1733ec8ad54a180b"
     },
     {
-      "path": "ascend_910c_20261030/flagquantum-910c-support-lint-v64.log.gz",
+      "path": "development/ascend_910c_20261030/flagquantum-910c-support-lint-v64.log.gz",
       "raw_sha256": "9207e628258b09b051683f67f8e045655bbdae8e30835632f2dac31e7f5aa296",
       "public_sha256": "700f6154cdb550ca6fadb8c443a394e9f5b3f3f1c4f0ef4ff2cd3c001068880c"
     },
     {
-      "path": "ascend_910c_20261030/full-fq-base372-failures.log.gz",
+      "path": "development/ascend_910c_20261030/full-fq-base372-failures.log.gz",
       "raw_sha256": "20040325f7eb59fde42e8e7f68c93a49d3fb8d7a1b675dc405973bf20a2cde82",
       "public_sha256": "a358b97321f945c7029a09ed36deafac7584075e89977abd12a5ab3865bb119f"
     },
     {
-      "path": "ascend_910c_20261030/reproducibility/full-flagcx-repro-build-v69.log.gz",
+      "path": "development/ascend_910c_20261030/reproducibility/full-flagcx-repro-build-v69.log.gz",
       "raw_sha256": "9eaa7216fd82110eff814edc896f76012fc156073912a27b7bb2669b65aa16f6",
       "public_sha256": "0292d429eb126fc81d829e8e8ba68c75bb163d51b1de4937819c7177097c0808"
     },
     {
-      "path": "ascend_910c_20261030/reproducibility/full-flagcx-repro-functional-v70.log.gz",
+      "path": "development/ascend_910c_20261030/reproducibility/full-flagcx-repro-functional-v70.log.gz",
       "raw_sha256": "e84a9c9875c4bd720cfef90dfe3b3fd77e4083b1db3015a1bdb7c0a6b4f67b1a",
       "public_sha256": "9688a46301aa9c07c635f752d71b9ff6029fbbd34266e8c6a426b24061d38d92"
     },
     {
-      "path": "ascend_910c_20261030/reproducibility/full-flagcx-repro-readelf-v70.log.gz",
+      "path": "development/ascend_910c_20261030/reproducibility/full-flagcx-repro-readelf-v70.log.gz",
       "raw_sha256": "acb9a9978ee5fa0df593f5c0ca1b8c562c24d083eba56e0a0685743651f0803b",
       "public_sha256": "5cee8f3036ec2caa97ce1d6b58630f0692c631659c2514dd1f92cf1193cab5f6"
     },
     {
-      "path": "ascend_910c_20261030/reproducibility/full-flagcx-repro-summary-v70.json",
+      "path": "development/ascend_910c_20261030/reproducibility/full-flagcx-repro-summary-v70.json",
       "raw_sha256": "f1e19df1b13d4b6c9c90710bd9d50ca69abd90cfee363ee94131ce7f8e314854",
       "public_sha256": "f1e19df1b13d4b6c9c90710bd9d50ca69abd90cfee363ee94131ce7f8e314854"
+    },
+    {
+      "path": "development/ascend_910c_20261030/node1/full-fq-final-v75.log.gz",
+      "raw_sha256": "0b2cc8139a23b57a6ec9008130c32beedf2883b6a6085a43a63742e6e9ed145c",
+      "public_sha256": "80e5ab1555ebd6dc0a33f929563398a90b8fb2de77964d38fcaf1aab8d083e41"
+    },
+    {
+      "path": "development/ascend_910c_20261030/fq-cpu-final-v75.log.gz",
+      "raw_sha256": "4163882129a5018d1ada01c9b3f1c1dcb8bd975b4a666400f00e5f3e571bc250",
+      "public_sha256": "c7814221f3418e0617e1af585043b3ddf11462505b46f54b9fb5ebdf50ca4099"
+    },
+    {
+      "path": "development/ascend_910c_20261030/fq-api-final-v75.log.gz",
+      "raw_sha256": "74a5c620dbabc33819be7ddfd5f28037b66387342a42e6a0709ef86889373ffb",
+      "public_sha256": "b291dd0ccd4f85e1a03b8ea9fc4fb27eefda02565c2efdff445a277388d7d62e"
+    },
+    {
+      "path": "development/ascend_910c_20261030/fq-mypy-v74.log.gz",
+      "raw_sha256": "b83062c42384dc68975c2dbf8cacff21ce4437a4e9f8d568e46bae208c257ae8",
+      "public_sha256": "31193dca5756fb55821fddafdb4cf0eed82397f675dbf8a53aeddfe0269a77ba"
+    },
+    {
+      "path": "development/ascend_910c_20261030/check-language-v75.log.gz",
+      "raw_sha256": "9df2f06f80bcb5ddeab2c81c29c37f991ff00a33e440e286c87892024462cc59",
+      "public_sha256": "59c3c5b81acfa9de9c7c881d7272d59bb5da025b64615458bb7d016d2f92defe"
+    },
+    {
+      "path": "development/ascend_910c_20261030/mypy-ci-v75.log.gz",
+      "raw_sha256": "5d4b6d285b77932e3d08212c3b4974d0a803f98ec60408ac6ccf6a063fa6c19e",
+      "public_sha256": "fbf3271e9936bcd7c3c61efd402af72a192e11ed97248ef7bc8ba272519aa975"
+    },
+    {
+      "path": "development/ascend_910c_20261030/node1/full-fq-final-v75.xml",
+      "raw_sha256": "92609d06836e8cb0ff8079c3d2f4ea7340e537284da48163d540d87e7766da07",
+      "public_sha256": "0f6534e94e8716c1fa2b9f56d8bdf1dcbed94db8471449d51b60481cf8953305"
+    },
+    {
+      "path": "development/ascend_910c_20261030/fq-quality-final-v76.json",
+      "raw_sha256": "20ba46e173e3dda0ee2aefc2602595a9c312ab8df8f150540e866b409a442537",
+      "public_sha256": "20ba46e173e3dda0ee2aefc2602595a9c312ab8df8f150540e866b409a442537"
     }
   ],
   "reproducibility": {
@@ -484,6 +548,8 @@
       "plugin/torch/flagcx/include/event_flagcx.hpp": "db31a7fdf0b952160598918b05618a73964f0bb0f9736fb706230ff450bb76cd",
       "plugin/torch/flagcx/src/backend_flagcx.cpp": "c6b46a59441a74045a05bc508bbf19a9cd67a7be88b07d6e22cffda38a17c464"
     },
-    "patch_format_note": "Blank context markers were normalized for repository whitespace checks. Applying the normalized patch to a clean pinned checkout produced the identical three C++ files used for the rebuilt and tested wheel."
+    "patch_format_note": "Blank context markers were normalized for repository whitespace checks. Applying the normalized patch to a clean pinned checkout produced the identical three C++ files used for the rebuilt and tested wheel.",
+    "distributed_runtime_unchanged_by_followup": true,
+    "validation_driver_ast_sha256": "7e9e3c813b65ef1d445b1b653edbbae26f68a7c540e228e5728f957197528c79"
   }
 }

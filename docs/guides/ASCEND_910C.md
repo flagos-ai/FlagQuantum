@@ -38,7 +38,7 @@ capacity expansion or speedup.
 | Hardware | Huawei Ascend 910C, SoC `Ascend910_9382`, Linux aarch64 |
 | Python / PyTorch | 3.11.15 / 2.10.0+cpu |
 | CANN / host driver | 9.0.0 / 25.5.0 |
-| FlagQuantum implementation | `dae8c8fdba33cd9cfff4d61847f6da697cba0215` |
+| FlagQuantum implementation | `55987ed85267b1d00cff05e0bb9ee3516632f563` |
 | Torch-FL implementation | `3aebd0c888789f35bb281435ddd44d5f1ff8cc55` |
 | FlagTree / FlagGems | 0.7.0+ascend3.5 / 5.4.0, installed from published wheels |
 | FlagCX source | Official v0.14.1, `6fe36310fb5c9bd2396f531d7bf78c08fc792340`, with the checked-in Ascend/FlagOS patch |
