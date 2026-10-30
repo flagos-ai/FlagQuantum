@@ -84,7 +84,7 @@ def test_native_and_recorded_frontends_share_the_same_numerical_consumer(
 def test_ordered_native_phase_and_post_compute_mutation_are_coherent(
     objective: Literal["width", "depth"],
 ) -> None:
-    imported = _parse("""qfunc main(output flag:qbit, output n:qnum, output res:qnum) {
+    source = """qfunc main(output flag:qbit, output n:qnum, output res:qnum) {
       allocate(flag);
       H(flag);
       S(flag);
@@ -92,7 +92,8 @@ def test_ordered_native_phase_and_post_compute_mutation_are_coherent(
       hadamard_transform(n);
       res=flag*n;
       X(flag);
-    }""")
+    }"""
+    imported = _parse(source)
     selection = select_register_program(
         imported.program, imported.functions, objective=objective
     )
