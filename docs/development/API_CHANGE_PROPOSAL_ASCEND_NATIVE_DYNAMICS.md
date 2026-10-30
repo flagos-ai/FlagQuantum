@@ -2,7 +2,11 @@
 
 ## Status
 
-Approved by the repository owner on 2026-10-30 through explicit approval of this proposal in the task conversation. Implementation and hardware acceptance are in progress.
+Approved by the repository owner on 2026-10-30 through explicit approval of this
+proposal in the task conversation. Implementation is complete in
+`dae8c8fdba33cd9cfff4d61847f6da697cba0215`. The
+[hardware acceptance record](../../artifacts/ascend_910c_20261030.json) includes
+the dynamics, gradient, training, replay and RNG checks required below.
 
 ## Problem and affected interfaces
 

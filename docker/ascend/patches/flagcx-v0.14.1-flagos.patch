@@ -1,0 +1,142 @@
+diff --git a/plugin/torch/flagcx/include/backend_flagcx.hpp b/plugin/torch/flagcx/include/backend_flagcx.hpp
+index ee9660c..6883574 100644
+--- a/plugin/torch/flagcx/include/backend_flagcx.hpp
++++ b/plugin/torch/flagcx/include/backend_flagcx.hpp
+@@ -317,7 +317,12 @@ protected:
+   std::unordered_map<std::string, flagcxComm_t> pairComms_;
+   struct pairCoalesceCtx {
+     bool active = false;
+-    std::vector<std::pair<int, std::function<void()>>> pendingOps;
++    struct pendingPairOp {
++      int peer;
++      bool sending;
++      std::function<void()> run;
++    };
++    std::vector<pendingPairOp> pendingOps;
+   };
+   pairCoalesceCtx pairCoalesce_;
+   flagcxComm_t getOrCreatePairComm(int peer);
+diff --git a/plugin/torch/flagcx/include/event_flagcx.hpp b/plugin/torch/flagcx/include/event_flagcx.hpp
+index 2262c3d..cdb3c96 100644
+--- a/plugin/torch/flagcx/include/event_flagcx.hpp
++++ b/plugin/torch/flagcx/include/event_flagcx.hpp
+@@ -93,6 +93,7 @@ inline c10::Stream flagcxToC10Stream(flagcxStream_t stream, int device_id) {
+ class flagcxEvent {
+ public:
+   virtual ~flagcxEvent() = default;
++  virtual bool query() { return false; }
+ 
+   virtual void record(const int deviceId) = 0;
+   virtual void record(const flagcxStream_t &stream, const int deviceId) = 0;
+@@ -188,7 +189,7 @@ class flagcxCannEvent : public flagcxEvent {
+ public:
+ #ifdef FLAGCX_TORCH_BACKEND_FLAGOS
+   flagcxCannEvent() {
+-    TORCH_CHECK(aclrtCreateEventWithFlag(&event_, ACL_EVENT_TIME_LINE) ==
++    TORCH_CHECK(aclrtCreateEventWithFlag(&event_, ACL_EVENT_SYNC) ==
+                     ACL_SUCCESS,
+                 "aclrtCreateEventWithFlag failed");
+   }
+@@ -225,6 +226,13 @@ public:
+                 "aclrtStreamWaitEvent failed");
+   }
+ 
++  bool query() override {
++    aclrtEventRecordedStatus status;
++    TORCH_CHECK(aclrtQueryEventStatus(event_, &status) == ACL_SUCCESS,
++                "aclrtQueryEventStatus failed");
++    return status == ACL_EVENT_RECORDED_STATUS_COMPLETE;
++  }
++
+ private:
+   aclrtEvent event_ = nullptr;
+ #else
+diff --git a/plugin/torch/flagcx/src/backend_flagcx.cpp b/plugin/torch/flagcx/src/backend_flagcx.cpp
+index 4f4e34d..233fedc 100644
+--- a/plugin/torch/flagcx/src/backend_flagcx.cpp
++++ b/plugin/torch/flagcx/src/backend_flagcx.cpp
+@@ -321,12 +321,29 @@ void recordFlagcxTuneObject(const flagcxBackend::TuneObjectKey &key,
+ 
+ } // namespace
+ 
+-bool flagcxWork::isCompleted() { return future_->completed(); }
++bool flagcxWork::isCompleted() {
++#if defined(FLAGCX_TORCH_BACKEND_FLAGOS) && defined(USE_ASCEND_ADAPTOR)
++  int previousDevice = 0;
++  C10D_FLAGCX_CHECK(devHandle_->getDevice(&previousDevice), std::nullopt);
++  C10D_FLAGCX_CHECK(devHandle_->setDevice(deviceId_), std::nullopt);
++  bool complete = false;
++  try {
++    complete = event_->query();
++  } catch (...) {
++    devHandle_->setDevice(previousDevice);
++    throw;
++  }
++  C10D_FLAGCX_CHECK(devHandle_->setDevice(previousDevice), std::nullopt);
++  return complete;
++#else
++  return future_->completed();
++#endif
++}
+ 
+ bool flagcxWork::isSuccess() const { return future_->hasValue(); }
+ 
+ bool flagcxWork::wait(std::chrono::milliseconds /* unused */) {
+-#if defined(FLAGCX_TORCH_BACKEND_FLAGOS) && defined(USE_ENFLAME_ADAPTOR)
++#if defined(FLAGCX_TORCH_BACKEND_FLAGOS) && (defined(USE_ENFLAME_ADAPTOR) || defined(USE_ASCEND_ADAPTOR))
+   int previousDevice = 0;
+   C10D_FLAGCX_CHECK(devHandle_->getDevice(&previousDevice), std::nullopt);
+   C10D_FLAGCX_CHECK(devHandle_->setDevice(deviceId_), std::nullopt);
+@@ -347,7 +364,7 @@ bool flagcxWork::wait(std::chrono::milliseconds /* unused */) {
+ }
+ 
+ c10::intrusive_ptr<c10::ivalue::Future> flagcxWork::getFuture() {
+-#if defined(FLAGCX_TORCH_BACKEND_FLAGOS) && defined(USE_ENFLAME_ADAPTOR)
++#if defined(FLAGCX_TORCH_BACKEND_FLAGOS) && (defined(USE_ENFLAME_ADAPTOR) || defined(USE_ASCEND_ADAPTOR))
+   wait();
+ #endif
+   return future_;
+@@ -634,9 +651,22 @@ c10::intrusive_ptr<Work> flagcxBackend::endCoalescing() {
+     // Sort by peer ascending: canonical (min,max) order avoids deadlock.
+     std::stable_sort(
+         pairCoalesce_.pendingOps.begin(), pairCoalesce_.pendingOps.end(),
+-        [](const auto &a, const auto &b) { return a.first < b.first; });
+-    for (auto &kv : pairCoalesce_.pendingOps) {
+-      kv.second();
++        [this](const auto &a, const auto &b) {
++          if (a.peer != b.peer) {
++            return a.peer < b.peer;
++          }
++#if defined(FLAGCX_TORCH_BACKEND_FLAGOS) && defined(USE_ASCEND_ADAPTOR)
++          // HCCL send initializes the peer transport before returning. Opposite
++          // directions on the two peers avoid two send-first batches waiting
++          // for each other; stable ordering within each direction is retained.
++          if (a.sending != b.sending) {
++            return rank_ < a.peer ? a.sending : !a.sending;
++          }
++#endif
++          return false;
++        });
++    for (auto &operation : pairCoalesce_.pendingOps) {
++      operation.run();
+     }
+     pairCoalesce_.pendingOps.clear();
+     pairCoalesce_.active = false;
+@@ -1495,7 +1525,7 @@ c10::intrusive_ptr<Work> flagcxBackend::send(std::vector<at::Tensor> &tensors,
+                         std::nullopt);
+     };
+     if (pairCoalesce_.active) {
+-      pairCoalesce_.pendingOps.emplace_back(dstRank, std::move(doSend));
++      pairCoalesce_.pendingOps.push_back({dstRank, true, std::move(doSend)});
+       return nullptr;
+     }
+     doSend();
+@@ -1549,7 +1579,7 @@ c10::intrusive_ptr<Work> flagcxBackend::recv(std::vector<at::Tensor> &tensors,
+                         std::nullopt);
+     };
+     if (pairCoalesce_.active) {
+-      pairCoalesce_.pendingOps.emplace_back(srcRank, std::move(doRecv));
++      pairCoalesce_.pendingOps.push_back({srcRank, false, std::move(doRecv)});
+       return nullptr;
+     }
+     doRecv();

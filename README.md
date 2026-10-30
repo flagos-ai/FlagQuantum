@@ -103,6 +103,7 @@ vendor-provided PyTorch runtimes.
 | **Moore Threads MUSA** | Vendor PyTorch runtime |
 | **MetaX** | Vendor PyTorch runtime |
 | **Biren** | Vendor PyTorch runtime |
+| **Huawei Ascend 910C** | Torch-FL with the [pinned Ascend and FlagCX fixes](docs/guides/ASCEND_910C.md) |
 
 Keep the vendor runtime installed, then run `python -m pip install flagquantum`.
 The core requirement accepts `torch>=2.10,<2.15`, including local version labels
@@ -111,21 +112,25 @@ CPU/CUDA wheel. Avoid `--upgrade`/`--upgrade-strategy eager` when retaining a
 managed runtime. The `invertible` extra still requires PyTorch 2.13.x and is not
 a vendor-runtime installation shortcut.
 
-**Huawei Ascend 910C — experimental support through Torch-FL:** Single-device
-split-FP32 statevector simulation, Pauli expectations, explicit parameter-shift
-gradients, and an explicit SGD training loop have been validated on real 910C
-hardware. The tested environment requires the Torch-FL precision and operator
-fixes pinned in the [910C installation and validation guide](docs/guides/ASCEND_910C.md).
+**Huawei Ascend 910C support through Torch-FL:** Native complex64/complex128
+statevector, MPS, tensor-network and density-matrix execution, autograd and hybrid
+training, noise, TEBD, native dynamics and QEC predecoder training have hardware
+validation. Sharded statevector/MPS/TN training, two-host communication and
+checkpoint restart are also covered. Install the fixed source configuration in
+the [910C guide](docs/guides/ASCEND_910C.md); previously published wheels alone
+do not contain the required fixes.
 
 ```console
-python examples/ascend_910c_training.py --device flagos:0
+FLAGQUANTUM_TEST_ASCEND_910C=1 python -m pytest \
+  tests/integration/test_ascend_circuit_workflows.py \
+  tests/integration/test_ascend_native_dynamics.py -q
 ```
 
-The example keeps quantum state, gradients, and parameter updates on `flagos:0`
-and learns an analytic objective in 64 steps. This support uses the existing
-`experimental.numerics` interfaces. Native complex statevector execution,
-`fq.Module` autograd, MPS, tensor networks, and distributed execution on Ascend
-remain outside this validated scope.
+Quantum state, gradients and optimizer updates remain on `flagos`. The
+[acceptance record](artifacts/ascend_910c_20261030.json) states the measured
+functions and topology. This is hardware development support; production,
+performance and capacity certification remain outside the claim. Optional
+third-party runtimes retain their own hardware requirements.
 
 To build a CPU or GPU environment with QSteed and optional JAX, follow the
 [container guide](docker/dev/README.md).

@@ -1,0 +1,34 @@
+{
+  "rank": 0,
+  "device": "flagos:0",
+  "distribution_semantics": "data_parallel_replicated",
+  "scalability_claim_allowed": false,
+  "cases": {
+    "torch.float32": {
+      "status": "passed",
+      "losses": [
+        0.8599445819854736,
+        0.8557224273681641,
+        0.8510570526123047
+      ],
+      "cpu_losses": [
+        0.8599444627761841,
+        0.8557225465774536,
+        0.8510570526123047
+      ]
+    },
+    "torch.float64": {
+      "status": "passed",
+      "losses": [
+        0.8599444645345068,
+        0.8557224330544289,
+        0.8510570456564321
+      ],
+      "cpu_losses": [
+        0.8599444645345071,
+        0.8557224330544293,
+        0.8510570456564329
+      ]
+    }
+  }
+}

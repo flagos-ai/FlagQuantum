@@ -7,10 +7,13 @@
     "revision": "56507b4f260add7263d9f8672a1cf79d52ca6f72",
     "runtime_file_sha256": "c6de5836e7ee3a9678bce4b7f1285b4b1513be8c9e07c7562f8cbde8e15e620f",
     "torch_fl_revision": "704e2822d3bdbbebfe2b78a62b434d5972babc67",
-    "torch_fl_equivalent_test_tree_revision": "dda9e99e269680a079a1a0ec83100d109e26c137",
+    "torch_fl_source_revision": "dda9e99e269680a079a1a0ec83100d109e26c137",
     "torch_fl_tree_equivalence": "identical Git tree, commit message normalized for repository policy",
     "followup_changes": "The support branch replaces wire terminology in comments only; the numerical AST is identical to the recorded runtime revision and measured wheel.",
-    "runtime_ast_sha256": "176f14b9c902c86b107f7392075a4eb862073ddc19a54c497f1af3729ebebdd0"
+    "runtime_ast_sha256": "176f14b9c902c86b107f7392075a4eb862073ddc19a54c497f1af3729ebebdd0",
+    "torch_fl_revision_origin": "external_dependency",
+    "torch_fl_source_revision_origin": "external_dependency",
+    "torch_fl_repository": "https://github.com/flagos-ai/Torch-FL"
   },
   "environment": {
     "physical_device": "Huawei Ascend 910C",
