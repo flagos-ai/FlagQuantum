@@ -47,7 +47,9 @@ from __future__ import annotations
 import json
 import os
 import re
+import sqlite3
 import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -509,10 +511,61 @@ def test_coverage_shards_are_combined_before_the_policy_is_enforced() -> None:
         str(step.get("run", "")) for step in _steps("ci.yml", "coverage")
     )
     assert "needs.coverage-shard.result" in commands
+    download = next(
+        step
+        for step in _steps("ci.yml", "coverage")
+        if step.get("uses") == "actions/download-artifact@v8.0.2"
+    )
+    assert download["with"]["digest-mismatch"] == "error"
+    assert commands.index("rm -rf coverage-data") < commands.index("integrity_check")
+    assert commands.index("integrity_check") < commands.index(
+        "coverage combine coverage-data"
+    )
     assert "coverage combine coverage-data" in commands
     assert commands.index("coverage combine coverage-data") < commands.index(
         "tools/check_coverage.py"
     )
+
+
+@pytest.mark.parametrize("case", ["complete", "missing", "corrupt", "unexpected"])
+def test_coverage_download_validation_refuses_partial_or_corrupt_inputs(tmp_path, case):
+    directory = tmp_path / "coverage-data"
+    directory.mkdir()
+    for i in range(16):
+        with sqlite3.connect(directory / f".coverage.{i}") as connection:
+            connection.execute("CREATE TABLE sample (value INTEGER)")
+            connection.execute("INSERT INTO sample VALUES (1)")
+    if case == "missing":
+        (directory / ".coverage.2").unlink()
+    elif case == "corrupt":
+        (directory / ".coverage.2").write_bytes(b"truncated sqlite database")
+    elif case == "unexpected":
+        (directory / ".coverage.16").write_bytes(b"stale prior shard")
+    before = {p.name: p.read_bytes() for p in directory.iterdir()}
+    step = next(
+        step
+        for step in _steps("ci.yml", "coverage")
+        if step.get("name") == "Validate complete coverage inputs"
+    )
+    script = step["run"].split("<<'PY'\n", 1)[1].rsplit("\nPY", 1)[0]
+    result = subprocess.run(
+        [sys.executable, "-c", script],
+        cwd=tmp_path,
+        capture_output=True,
+        text=True,
+        timeout=10,
+    )
+    if case == "complete":
+        assert result.returncode == 0, result.stderr
+        assert "Validated all 16" in result.stdout
+    else:
+        assert result.returncode != 0
+        assert (
+            "invalid coverage input .coverage.2"
+            if case == "corrupt"
+            else "coverage inputs differ"
+        ) in result.stderr
+    assert {p.name: p.read_bytes() for p in directory.iterdir()} == before
 
 
 def test_each_optional_compatibility_matrix_reuses_one_runner() -> None:

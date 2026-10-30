@@ -1921,11 +1921,36 @@ jobs:
           python-version: "3.12"
       - uses: ./.github/actions/isolated-python
       - run: python -m pip install 'pytest-cov>=4.0.0,<8'
-      - uses: actions/download-artifact@v4
+      - name: Clear previous coverage inputs
+        run: rm -rf coverage-data
+      - uses: actions/download-artifact@v8.0.2
         with:
+          digest-mismatch: error
           pattern: coverage-shard-*-${{ github.sha }}
           path: coverage-data
           merge-multiple: true
+      - name: Validate complete coverage inputs
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import sqlite3
+
+          directory = Path("coverage-data")
+          expected = {f".coverage.{i}" for i in range(16)}
+          actual = {p.name for p in directory.iterdir()}
+          if actual != expected:
+              raise SystemExit(f"coverage inputs differ: missing={sorted(expected - actual)}, unexpected={sorted(actual - expected)}")
+          for name in sorted(expected):
+              path = directory / name
+              try:
+                  with sqlite3.connect(path.resolve().as_uri() + "?mode=ro", uri=True) as connection:
+                      result = connection.execute("PRAGMA integrity_check").fetchall()
+                      if result != [("ok",)]:
+                          raise ValueError(result)
+              except (sqlite3.Error, ValueError) as error:
+                  raise SystemExit(f"invalid coverage input {name}: {error}") from error
+          print("Validated all 16 coverage inputs")
+          PY
       - name: Combine coverage shards
         run: |
           python -m coverage combine coverage-data
