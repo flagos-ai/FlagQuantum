@@ -45,3 +45,14 @@ Framework-specific dependencies remain optional and isolated under their
 adapter package. Changes to the candidate-stable interop protocol, signatures,
 issue schema, or registry semantics require the public API change process;
 ordinary framework mappings should not extend that shared protocol.
+
+
+## Native construction source (private)
+
+`_qmod/` adapts a bounded, pinned native Qmod subset into verified Compiler
+construction records before gate-level IR exists. This private handoff differs
+from the public CoreIR adapter protocol; it does not extend that protocol or
+register another framework. Compiler retains lowering/selection and Runtime
+retains execution. See its [contributor guide](_qmod/README.md) and
+[separate compatibility counts](../../docs/roadmap/CS07_QMOD_PARSER_DELIVERY.md).
+No public native-source execution entry is admitted by this private work.

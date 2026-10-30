@@ -1,5 +1,9 @@
 # CS07-A source admission and current gaps
 
+Historical CS07-A record. For the implemented native frontend and current
+separate evidence counts, see [CS07-C](CS07_QMOD_PARSER_DELIVERY.md). Counts and
+gaps below describe this original contract milestone.
+
 Baseline: merged #964, `7bb7e39c330fd6ab19ab2d598c19f1d3f3b5f1aa`.
 This review-sized prerequisite restores retained source provenance and proves a
 shared arithmetic consumer seam. No production Qmod parser/adapter is added.
