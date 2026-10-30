@@ -2,6 +2,9 @@
 
 import importlib
 import os
+import subprocess
+import sys
+from pathlib import Path
 
 import pytest
 import torch
@@ -167,6 +170,68 @@ def rydberg(presence: bool = False, method: str = "runge-kutta") -> dict[str, ob
 )
 def test_ising_actions_sampling_and_replay(sampled: bool, dephase: bool) -> None:
     ising(sampled=sampled, dephase=dephase)
+
+
+@pytest.mark.parametrize("native", [False, True])
+def test_cold_plan_replay_activates_provider(native: bool, tmp_path: Path) -> None:
+    if native:
+        program = RydbergProgram(
+            atoms=(("a", "origin"),),
+            sites={"origin": (0.0, 0.0)},
+            length_unit="um",
+            time_unit="us",
+            c6=64.0,
+            loss_rate=0.1,
+            minimum_separation=1.0,
+            drive_channels=("laser",),
+        )
+        program.pulse(
+            ("a",),
+            start=0.0,
+            duration=0.1,
+            amplitude=0.8,
+            detuning=0.2,
+            phase=0.3,
+            channel="laser",
+        )
+        plan = fql.plan(
+            program,
+            program.basis_state(("g",)),
+            [0.0, 0.1],
+            options=fq.ExecutionOptions(device="flagos:0"),
+        )
+    else:
+        plan = fql.plan(
+            torch.tensor([[0.0, 0.2], [0.2, 0.0]], dtype=torch.complex128),
+            "0",
+            [0.0, 0.1],
+            options=fq.ExecutionOptions(device="flagos:0"),
+        )
+    plan_path, output_path = tmp_path / "plan.json", tmp_path / "populations.pt"
+    plan_path.write_text(plan.to_json())
+    expected = fql.run(plan).populations.cpu()
+    code = """
+import sys
+from pathlib import Path
+import torch
+import flagquantum.lindblad as fql
+assert 'torch_fl' not in sys.modules
+plan = fql.LindbladPlan.from_json(Path(sys.argv[1]).read_text())
+result = fql.run(plan)
+assert result.populations.device.type == 'flagos'
+torch.save(result.populations.cpu(), sys.argv[2])
+"""
+    completed = subprocess.run(
+        [sys.executable, "-c", code, str(plan_path), str(output_path)],
+        capture_output=True,
+        text=True,
+        timeout=120,
+    )
+    assert completed.returncode == 0, completed.stdout + completed.stderr
+    assert "[flagos cpu_fallback]" not in completed.stdout + completed.stderr
+    torch.testing.assert_close(
+        torch.load(output_path, weights_only=True), expected, atol=3e-10, rtol=3e-10
+    )
 
 
 @pytest.mark.parametrize("dtype", [torch.complex64, torch.complex128])

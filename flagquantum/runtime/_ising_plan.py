@@ -472,10 +472,11 @@ def execute_ising_plan(plan: ExecutionPlan) -> ExecutionResult:
     record = native_program_from_dict(_require_mapping("program", payload["program"]))
     from ..compute import resolve_platform_device
 
-    device = resolve_platform_device(payload["resolved_options"]["device"])
+    resolved = _require_mapping("resolved_options", payload["resolved_options"])
+    device = resolve_platform_device(resolved["device"])
     event = None
     if payload["version"] == "1.3":
-        seed = _require_mapping("resolved_options", payload["resolved_options"])["seed"]
+        seed = resolved["seed"]
         assert type(seed) is int
         state, event = _execute_pair_observation(record, seed=seed, device=device)
     else:

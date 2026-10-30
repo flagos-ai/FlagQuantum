@@ -40,6 +40,10 @@ def native_request(
     parameter_values: Any,
     allow_presence: bool = False,
 ) -> tuple[dict[str, Any], list[dict[str, float]] | None]:
+    if str(device).split(":", 1)[0] == "flagos":
+        from ..compute import resolve_platform_device
+
+        device = resolve_platform_device(device)
     for field, value in (
         ("n_qubits", n_qubits),
         ("basis_labels", basis_labels),

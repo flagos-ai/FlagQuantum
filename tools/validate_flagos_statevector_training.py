@@ -254,15 +254,17 @@ def _run_case(
     value_error = abs(float(probe.value.detach().cpu()) - probe_losses[0])
     gradient_error = _global_max(
         torch,
-        max(
-            abs(actual - expected)
-            for actual, expected, owner in zip(
-                actual_gradients, reference_gradients, owners, strict=True
+        (
+            max(
+                abs(actual - expected)
+                for actual, expected, owner in zip(
+                    actual_gradients, reference_gradients, owners, strict=True
+                )
+                if owner == context.rank
             )
-            if owner == context.rank
-        )
-        if context.rank in owners
-        else 0.0,
+            if context.rank in owners
+            else 0.0
+        ),
         context.device,
     )
     # An owner-sharded backward must leave every non-owner buffer zero. Across

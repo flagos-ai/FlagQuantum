@@ -327,7 +327,7 @@ def _generator(target: Any, metadata: dict[str, Any]) -> torch.Generator | None:
     if isinstance(target, TensorNetworkState) and target.plan.nodes:
         device = target.plan.nodes[0].tensor.device
     else:
-        device = getattr(target, "device", "cpu")
+        device = getattr(target, "device", torch.device("cpu"))
     generator = torch.Generator(device=torch.device(device))
     generator.manual_seed(int(seed))
     return generator

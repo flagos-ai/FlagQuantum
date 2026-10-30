@@ -164,9 +164,7 @@ def native_model(
             "dtype must be torch.complex64 or torch.complex128",
             "dtype",
         )
-    from ..compute import resolve_platform_device
-
-    device = resolve_platform_device(device)
+    device = torch.device(device)
     real_dtype = torch.float32 if dtype == torch.complex64 else torch.float64
     grid, boundaries = _grid(record, times, real_dtype=real_dtype)
     controls = tuple(
