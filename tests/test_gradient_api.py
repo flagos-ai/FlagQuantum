@@ -448,3 +448,25 @@ def test_gradient_is_a_root_export_and_the_result_type_is_not() -> None:
 
     result = fq.gradient(_value, _PARAMETERS)
     assert isinstance(result, GradientResult)
+
+
+@pytest.mark.parametrize("device", ["cpu", "cuda", "flagos"])
+def test_spsa_keeps_perturbations_and_accumulation_on_parameter_device(
+    device: str,
+) -> None:
+    runtime = getattr(torch, device, None)
+    if device != "cpu" and (runtime is None or not runtime.is_available()):
+        pytest.skip(f"{device} is unavailable")
+    parameters = torch.tensor([0.37], dtype=torch.float64, device=device)
+    result = fq.gradient(
+        lambda values: values.cos().sum(),
+        parameters,
+        method="spsa",
+        step=1e-4,
+        directions=2,
+        generator=torch.Generator().manual_seed(13),
+    )
+    assert result.gradient.device == parameters.device
+    torch.testing.assert_close(
+        result.gradient.cpu(), -parameters.cpu().sin(), atol=1e-7, rtol=1e-7
+    )

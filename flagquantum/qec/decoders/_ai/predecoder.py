@@ -1,4 +1,4 @@
-"""CPU research pre-decoder; private, independent graphlike DEMs only.
+"""Torch research pre-decoder; private, independent graphlike DEMs only.
 
 The shared network scores mechanisms from incident detector bits and their prior.
 This bounded M1 reference makes no accuracy, scaling or latency claim.
@@ -77,7 +77,12 @@ class Predecoder(nn.Module):
         """Draw a bounded training batch, preserving the latent mechanism vector."""
         _positive(shots, "shots")
         fired = (
-            torch.rand((shots, self.prior.numel()), generator=generator) < self.prior
+            torch.rand(
+                (shots, self.prior.numel()),
+                generator=generator,
+                device=self.prior.device,
+            )
+            < self.prior
         ).float()
         return TrainingBatch(
             DemSample(
@@ -139,7 +144,8 @@ class Predecoder(nn.Module):
         residual, prediction = self.correct(
             detectors, threshold=threshold, enabled=enabled, temperature=temperature
         )
-        for i, row in enumerate(residual):
+        # The global DEM decoder consumes host detector indices explicitly.
+        for i, row in enumerate(residual.cpu()):
             result = backend.decode(row.nonzero().flatten().tolist())
             for observable in result.observables:
                 prediction[i, observable] ^= 1

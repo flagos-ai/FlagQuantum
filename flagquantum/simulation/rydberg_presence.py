@@ -21,7 +21,11 @@ from .rydberg_model import native_model, native_record
 
 
 def _presence_model(
-    record: ProgramRecord, times: Any, *, parameter_values: Any = None
+    record: ProgramRecord,
+    times: Any,
+    *,
+    parameter_values: Any = None,
+    device: torch.device | str = "cpu",
 ) -> tuple[dict[str, Any], list[dict[str, float]] | None, int]:
     """Assemble the unchanged full control schedule; never restart its clock."""
     checked = native_record(record)
@@ -58,7 +62,7 @@ def _presence_model(
         controls,
         times,
         dtype=torch.complex128,
-        device="cpu",
+        device=device,
         parameter_values=parameter_values,
     )
     grid = numeric["times"]
@@ -74,7 +78,9 @@ def _presence_model(
     return numeric, bindings, matches[0]
 
 
-def _presence_operators(record: ProgramRecord) -> tuple[torch.Tensor, torch.Tensor]:
+def _presence_operators(
+    record: ProgramRecord, device: torch.device | str = "cpu"
+) -> tuple[torch.Tensor, torch.Tensor]:
     checked = native_record(record)
     if checked is None or not isinstance(checked.physical_context, RydbergContext):
         raise CapabilityError("presence operators require a native Rydberg source")
@@ -91,25 +97,29 @@ def _presence_operators(record: ProgramRecord) -> tuple[torch.Tensor, torch.Tens
     local = (
         torch.diag(
             torch.tensor(
-                [1, 1, math.sqrt(1 - observation.efficiency)], dtype=torch.complex128
+                [1, 1, math.sqrt(1 - observation.efficiency)],
+                dtype=torch.complex128,
+                device=device,
             )
         ),
         torch.diag(
             torch.tensor(
-                [0, 0, math.sqrt(observation.efficiency)], dtype=torch.complex128
+                [0, 0, math.sqrt(observation.efficiency)],
+                dtype=torch.complex128,
+                device=device,
             )
         ),
     )
     operators = []
     for operator in local:
-        full = torch.ones((1, 1), dtype=torch.complex128)
+        full = torch.ones((1, 1), dtype=torch.complex128, device=device)
         for atom, _ in checked.physical_context.atoms:
             full = torch.kron(
                 full,
                 (
                     operator
                     if atom == observation.atom
-                    else torch.eye(3, dtype=torch.complex128)
+                    else torch.eye(3, dtype=torch.complex128, device=device)
                 ),
             )
         operators.append(full)
@@ -134,7 +144,7 @@ def _presence_segment(
         **request,
         initial_state=initial,
         dtype=torch.complex128,
-        device="cpu",
+        device=initial.device,
         return_density_matrices=True,
         method=method,
         solve_tolerance=solve_tolerance,
@@ -157,7 +167,7 @@ def _rydberg_presence_prefix(
     if (
         initial.ndim != 2
         or initial.dtype != torch.complex128
-        or initial.device.type != "cpu"
+        or initial.device.type not in {"cpu", "flagos"}
         or initial.requires_grad
         or any(matrix.requires_grad for matrix in numeric["bound_hamiltonians"])
     ):
@@ -186,7 +196,7 @@ def _continue_rydberg_presence(
         not 0 < boundary < len(numeric["times"]) - 1
         or prefix.ndim != 3
         or prefix.dtype != torch.complex128
-        or prefix.device.type != "cpu"
+        or prefix.device.type not in {"cpu", "flagos"}
         or prefix.requires_grad
     ):
         raise ExecutionError("presence prefix must be a CPU complex128 trajectory")
@@ -206,7 +216,7 @@ def _continue_rydberg_presence(
     if matches != [boundary]:
         raise ExecutionError("presence continuation boundary differs from source time")
     _require_density_matrices(prefix, tolerance=1e-10)
-    operator = _presence_operators(record)[selected_index]
+    operator = _presence_operators(record, prefix.device)[selected_index]
     branch = SuperOperator.from_kraus((operator,)).apply(prefix[-1])
     probability = torch.trace(branch).real
     if not bool(torch.isfinite(probability)) or probability <= 0:

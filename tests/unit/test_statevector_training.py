@@ -26,7 +26,10 @@ def _circuit(theta_value=0.43, phi_value=-0.21):
     return circuit, (theta, phi)
 
 
-def test_cuda_memory_observation_uses_platform_provider(monkeypatch):
+@pytest.mark.parametrize("device_type", ["cuda", "privateuseone"])
+def test_accelerator_memory_observation_uses_platform_provider(
+    monkeypatch, device_type
+):
     platform = SimpleNamespace(
         memory_snapshot=lambda device: SimpleNamespace(allocated_bytes=4096)
     )
@@ -34,7 +37,7 @@ def test_cuda_memory_observation_uses_platform_provider(monkeypatch):
         "flagquantum.runtime.executors.statevector.training.get_platform_runtime",
         lambda device_type: platform,
     )
-    assert _memory_bytes(torch.device("cuda:0")) == 4096
+    assert _memory_bytes(torch.device(f"{device_type}:0")) == 4096
 
 
 @pytest.mark.parametrize("optimizer", ["sgd", "adam"])

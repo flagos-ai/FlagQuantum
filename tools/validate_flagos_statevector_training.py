@@ -238,11 +238,13 @@ def _run_case(
         steps=1 if name == "gradient_reference" else steps,
         lr=lr,
     )
+    owners = tuple(index % context.world_size for index in range(len(parameters)))
     probe = execute_torch_distributed_statevector_reverse(
         circuit,
         observable_qubit=n_wires - 1,
         checkpoint_policy=StatevectorCheckpointPolicy(strategy="interval", interval=3),
         device=context.device,
+        owners=owners,
     )
     probe.backward()
     probe_summary = probe.summary()
@@ -250,21 +252,42 @@ def _run_case(
         float(parameter.grad.detach().cpu()) for parameter in parameters
     )
     value_error = abs(float(probe.value.detach().cpu()) - probe_losses[0])
-    gradient_error = max(
-        abs(actual - expected)
-        for actual, expected in zip(actual_gradients, reference_gradients, strict=True)
+    gradient_error = _global_max(
+        torch,
+        max(
+            abs(actual - expected)
+            for actual, expected, owner in zip(
+                actual_gradients, reference_gradients, owners, strict=True
+            )
+            if owner == context.rank
+        )
+        if context.rank in owners
+        else 0.0,
+        context.device,
     )
-    rank_error = _rank_consistency(torch, actual_gradients, context)
+    # An owner-sharded backward must leave every non-owner buffer zero. Across
+    # ranks the owned buffers differ by design; comparing them for equality
+    # would test a replicated reduction instead of the production path.
+    rank_error = _global_max(
+        torch,
+        max(
+            (
+                abs(actual)
+                for actual, owner in zip(actual_gradients, owners, strict=True)
+                if owner != context.rank
+            ),
+            default=0.0,
+        ),
+        context.device,
+    )
     parameter_error = 0.0
     communication_count = int(probe_summary["backward_communication_count"])
     communication_bytes = int(probe_summary["backward_communication_bytes"])
     peak_memory = int(probe_summary["local_state_bytes"]) + int(
         probe_summary["peak_backward_scratch_bytes"]
     )
-    # The probe above runs the plain sharded reverse path, which all-reduces onto
-    # every rank. The trajectory below runs the production training path, which
-    # reduce-scatters each gradient onto its owner rank. The case records which
-    # of the two the run it names actually produced.
+    # Exercise the same owner-sharded reduction in the reference probe and the
+    # optimizer trajectories, so the profile describes one execution contract.
     trajectory_gradient_distribution = probe_summary["gradient_distribution"]
     if name != "gradient_reference":
         for parameter in parameters:
@@ -303,11 +326,11 @@ def _run_case(
             )
         if summary["optimizer_update_semantics"] != "sharded_across_ranks":
             raise AssertionError("optimizer owner routing was not sharded")
-        trajectory_gradient_distribution = summary["gradient_distribution"]
+        trajectory_gradient_distribution = summary["gradient_reduction_scheme"]
     passed = bool(
         probe_summary["parameter_gradient_ready"]
         and probe_summary["backward_distribution_semantics"] == "sharded_across_ranks"
-        and probe_summary["gradient_distribution"] == "replicated_after_all_reduce"
+        and probe_summary["gradient_distribution"] == "owner_sharded_reduce_scatter"
         and not probe_summary["backward_uses_full_state_replay"]
         and not probe_summary["full_state_materialization"]
         and probe_summary["rank_ownership"]["full_state_owned"] is False

@@ -84,10 +84,14 @@ def gmres(
             break
         residual_norm_tensor = torch.linalg.vector_norm(residual)
         basis = [residual / residual_norm_tensor]
-        hessenberg = torch.zeros((restart + 1, restart), dtype=_COEFFICIENT_DTYPE)
-        target = torch.zeros(restart + 1, dtype=_COEFFICIENT_DTYPE)
+        hessenberg = torch.zeros(
+            (restart + 1, restart), dtype=_COEFFICIENT_DTYPE, device=rhs.device
+        )
+        target = torch.zeros(restart + 1, dtype=_COEFFICIENT_DTYPE, device=rhs.device)
         target[0] = residual_norm_tensor
-        coefficients = torch.zeros((window, 1), dtype=_COEFFICIENT_DTYPE)
+        coefficients = torch.zeros(
+            (window, 1), dtype=_COEFFICIENT_DTYPE, device=rhs.device
+        )
         columns = 0
         for index in range(window):
             candidate = apply(basis[index])
@@ -107,13 +111,41 @@ def gmres(
             columns = index + 1
             iterations += 1
             columns_target = target[: columns + 1].unsqueeze(1)
-            # The small Hessenberg system lives on CPU. Pivoted QR can vary
+            # The small Hessenberg system shares the basis device. Pivoted QR can vary
             # between identical LAPACK calls, breaking serialized replay.
             # Rank-aware SVD avoids that pivot path without assuming full rank
             # at Krylov breakdown; it never materializes the physical operator.
-            approximation = torch.linalg.lstsq(
-                hessenberg[: columns + 1, :columns], columns_target, driver="gelsd"
-            ).solution
+            projected = hessenberg[: columns + 1, :columns]
+            if projected.device.type == "cpu":
+                approximation = torch.linalg.lstsq(
+                    projected, columns_target, driver="gelsd"
+                ).solution
+            else:
+                # Rank-aware SVD of the bounded projected system, on the same
+                # device as the Krylov basis. Match gelsd's default cutoff.
+                u, singular, vh = torch.linalg.svd(projected, full_matrices=False)
+                cutoff = (
+                    torch.finfo(singular.dtype).eps
+                    * max(projected.shape)
+                    * singular.max()
+                )
+                if bool((singular > cutoff).all()):
+                    # A nearly repeated singular spectrum has an ill-conditioned
+                    # SVD factor derivative even when the least-squares map is
+                    # smooth. Full-rank QR avoids that artificial sensitivity.
+                    q, r = torch.linalg.qr(projected, mode="reduced")
+                    approximation = torch.linalg.solve_triangular(
+                        r, q.mH @ columns_target, upper=True
+                    )
+                else:
+                    inverse = torch.where(
+                        singular > cutoff,
+                        singular.reciprocal(),
+                        torch.zeros_like(singular),
+                    )
+                    approximation = vh.mH @ (
+                        inverse.unsqueeze(-1) * (u.mH @ columns_target)
+                    )
             estimate = float(
                 torch.linalg.vector_norm(
                     columns_target - hessenberg[: columns + 1, :columns] @ approximation

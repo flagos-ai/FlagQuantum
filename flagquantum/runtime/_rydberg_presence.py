@@ -48,7 +48,7 @@ def _sampling_options(options: ExecutionOptions | None) -> ExecutionOptions:
     numeric = replace(options, shots=None, seed=None)
     device, dtype, batch, gradients = _execution_settings(numeric)
     if (
-        torch.device(device) != torch.device("cpu")
+        str(device).split(":", 1)[0] not in {"cpu", "flagos"}
         or dtype != torch.complex128
         or batch not in (None, 1)
         or gradients
@@ -69,11 +69,11 @@ def _trainable(value: object) -> bool:
     return False
 
 
-def _environment() -> dict[str, object]:
+def _environment(device: str = "cpu") -> dict[str, object]:
     return _environment_requirements(
         {
             "backend": "pytorch",
-            "device": "cpu",
+            "device": device,
             "precision": "complex128",
             "world_size": 1,
             "require_gradients": False,
@@ -85,7 +85,9 @@ def _environment() -> dict[str, object]:
 
 def validate_presence_options(payload: Mapping[str, Any]) -> None:
     """Check the sealed RNG build before source assembly or numerical work."""
-    if payload.get("environment_requirements") != _environment():
+    if payload.get("environment_requirements") != _environment(
+        payload.get("options", {}).get("device") or "cpu"
+    ):
         raise ExecutionPlanContractError(
             "environment_incompatible",
             "presence requires the captured Torch RNG build and CPU environment",
@@ -120,7 +122,7 @@ def check_presence_request(record: ProgramRecord, request: Mapping[str, Any]) ->
         )
     initial = torch.as_tensor(request["initial_state"])
     if (
-        initial.device.type != "cpu"
+        initial.device.type not in {"cpu", "flagos"}
         or initial.ndim not in (1, 2)
         or (initial.ndim == 2 and initial.shape[0] != initial.shape[1])
     ):
@@ -192,7 +194,7 @@ def build_presence_plan(
         times,
         allow_presence=True,
         dtype=torch.complex128,
-        device="cpu",
+        device=numeric_options.device or "cpu",
         **{
             key: settings[key]
             for key in (
@@ -208,7 +210,7 @@ def build_presence_plan(
         **numeric,
         initial_state=initial_state,
         observables=observables,
-        device="cpu",
+        device=numeric_options.device or "cpu",
         dtype=torch.complex128,
         batch_size=numeric_options.batch_size,
         require_gradients=False,
@@ -223,7 +225,7 @@ def build_presence_plan(
         program=native_program_to_dict(record),
         bindings=bindings,
         options=options.to_dict(),
-        environment_requirements=_environment(),
+        environment_requirements=_environment(numeric_options.device or "cpu"),
     )
     payload["identity"] = _identity(payload)
     # No caller graph or mutable tensor is retained by the sampled profile.
@@ -276,12 +278,12 @@ def execute_presence_plan(plan: LindbladPlan) -> ExecutionResult:
     )
     settings = {key: request[key] for key in ("method", "solve_tolerance")}
     prefix = _rydberg_presence_prefix(
-        numeric, request["initial_state"], boundary, **settings
+        numeric, request["initial_state"].to(request["device"]), boundary, **settings
     )
     branches: list[tuple[str, tuple[torch.Tensor, ...]]] = [
         (label, (operator,))
         for label, operator in zip(
-            ("no_flag", "flag"), _presence_operators(record), strict=True
+            ("no_flag", "flag"), _presence_operators(record, prefix.device), strict=True
         )
     ]
     weights, probabilities = _instrument_probabilities(
@@ -289,13 +291,15 @@ def execute_presence_plan(plan: LindbladPlan) -> ExecutionResult:
     )
     seed = payload["options"]["seed"]
     selected = _draw_probability_indices(
-        probabilities, 1, generator=torch.Generator(device="cpu").manual_seed(seed)
+        probabilities,
+        1,
+        generator=torch.Generator(device=prefix.device).manual_seed(seed),
     )
     if (
         not isinstance(selected, torch.Tensor)
         or selected.shape != (1, 1)
         or selected.dtype != torch.int64
-        or selected.device.type != "cpu"
+        or selected.device != prefix.device
     ):
         raise ExecutionError("presence draw must be one CPU int64 index")
     index = int(selected[0, 0])
@@ -304,7 +308,9 @@ def execute_presence_plan(plan: LindbladPlan) -> ExecutionResult:
     trajectory = _continue_rydberg_presence(record, numeric, prefix, index, **settings)
     records = []
     for i, (name, operator) in enumerate(request["observables"].items()):
-        value = torch.einsum("tij,ji->t", trajectory, operator).real
+        value = torch.einsum(
+            "tij,ji->t", trajectory, operator.to(trajectory.device)
+        ).real
         records.append(
             MeasurementResult(
                 "expectation",
@@ -337,7 +343,7 @@ def execute_presence_plan(plan: LindbladPlan) -> ExecutionResult:
             shots=1,
             metadata={
                 "outcome_labels": ["no_flag", "flag"],
-                "probabilities": weights.tolist(),
+                "probabilities": weights.detach().cpu().tolist(),
                 "probability_correction": float((probabilities - weights).abs().max()),
                 "atom_id": observation.atom,
                 "time_index": boundary,
@@ -355,7 +361,7 @@ def execute_presence_plan(plan: LindbladPlan) -> ExecutionResult:
         runtime={
             "mode": "density_matrix",
             "backend": "pytorch",
-            "device": "cpu",
+            "device": str(trajectory.device),
             "precision": "complex128",
             "world_size": 1,
             "is_distributed": False,

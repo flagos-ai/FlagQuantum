@@ -313,13 +313,15 @@ def _plan_density_matrix_evolution(
     resolved_solve_tolerance = _solve_tolerance(
         solve_tolerance, dtype=dtype, method=method
     )
-    resolved_device = torch.device(device)
-    if resolved_device.type != "cpu":
+    from ..compute import resolve_platform_device
+
+    if str(device).split(":", 1)[0] not in {"cpu", "flagos"}:
         raise _error(
             "unsupported_device",
             "continuous-time evolution currently supports CPU only",
             "device",
         )
+    resolved_device = resolve_platform_device(device)
     real_dtype = torch.float32 if dtype == torch.complex64 else torch.float64
     tolerance = 1e-5 if dtype == torch.complex64 else 1e-10
     dim = space.dimension
@@ -559,13 +561,15 @@ def _evolve_density_matrix(
     resolved_solve_tolerance = _solve_tolerance(
         solve_tolerance, dtype=dtype, method=method
     )
-    resolved_device = torch.device(device)
-    if resolved_device.type != "cpu":
+    from ..compute import resolve_platform_device
+
+    if str(device).split(":", 1)[0] not in {"cpu", "flagos"}:
         raise _error(
             "unsupported_device",
             "continuous-time evolution currently supports CPU only",
             "device",
         )
+    resolved_device = resolve_platform_device(device)
     real_dtype = torch.float32 if dtype == torch.complex64 else torch.float64
     validation_tolerance = 1e-5 if dtype == torch.complex64 else 1e-10
     population_tolerance = 2e-5 if dtype == torch.complex64 else 1e-9

@@ -1,4 +1,4 @@
-"""Private CPU training and exact optimizer/batch-stream checkpoint recovery."""
+"""Private device training and exact optimizer/batch-stream checkpoint recovery."""
 
 from __future__ import annotations
 
@@ -11,14 +11,14 @@ from flagquantum.qec.decoders._ai.predecoder import Predecoder, _positive
 
 
 class Trainer:
-    """CPU Adam training with exact batch-stream and optimizer resume."""
+    """Adam training with exact device batch-stream and optimizer resume."""
 
     def __init__(
         self, model: Predecoder, *, seed: int = 0, learning_rate: float = 0.001
     ) -> None:
         self.model = model
         self.optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
-        self.generator = torch.Generator().manual_seed(seed)
+        self.generator = torch.Generator(device=model.prior.device).manual_seed(seed)
         self.step = 0
 
     def train(self, steps: int, *, batch_size: int = 128) -> list[float]:
