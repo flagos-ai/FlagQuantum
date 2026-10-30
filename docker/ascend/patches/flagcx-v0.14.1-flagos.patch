@@ -25,7 +25,7 @@ index 2262c3d..cdb3c96 100644
  public:
    virtual ~flagcxEvent() = default;
 +  virtual bool query() { return false; }
- 
+
    virtual void record(const int deviceId) = 0;
    virtual void record(const flagcxStream_t &stream, const int deviceId) = 0;
 @@ -188,7 +189,7 @@ class flagcxCannEvent : public flagcxEvent {
@@ -40,7 +40,7 @@ index 2262c3d..cdb3c96 100644
 @@ -225,6 +226,13 @@ public:
                  "aclrtStreamWaitEvent failed");
    }
- 
+
 +  bool query() override {
 +    aclrtEventRecordedStatus status;
 +    TORCH_CHECK(aclrtQueryEventStatus(event_, &status) == ACL_SUCCESS,
@@ -56,9 +56,9 @@ index 4f4e34d..233fedc 100644
 --- a/plugin/torch/flagcx/src/backend_flagcx.cpp
 +++ b/plugin/torch/flagcx/src/backend_flagcx.cpp
 @@ -321,12 +321,29 @@ void recordFlagcxTuneObject(const flagcxBackend::TuneObjectKey &key,
- 
+
  } // namespace
- 
+
 -bool flagcxWork::isCompleted() { return future_->completed(); }
 +bool flagcxWork::isCompleted() {
 +#if defined(FLAGCX_TORCH_BACKEND_FLAGOS) && defined(USE_ASCEND_ADAPTOR)
@@ -78,9 +78,9 @@ index 4f4e34d..233fedc 100644
 +  return future_->completed();
 +#endif
 +}
- 
+
  bool flagcxWork::isSuccess() const { return future_->hasValue(); }
- 
+
  bool flagcxWork::wait(std::chrono::milliseconds /* unused */) {
 -#if defined(FLAGCX_TORCH_BACKEND_FLAGOS) && defined(USE_ENFLAME_ADAPTOR)
 +#if defined(FLAGCX_TORCH_BACKEND_FLAGOS) && (defined(USE_ENFLAME_ADAPTOR) || defined(USE_ASCEND_ADAPTOR))
@@ -89,7 +89,7 @@ index 4f4e34d..233fedc 100644
    C10D_FLAGCX_CHECK(devHandle_->setDevice(deviceId_), std::nullopt);
 @@ -347,7 +364,7 @@ bool flagcxWork::wait(std::chrono::milliseconds /* unused */) {
  }
- 
+
  c10::intrusive_ptr<c10::ivalue::Future> flagcxWork::getFuture() {
 -#if defined(FLAGCX_TORCH_BACKEND_FLAGOS) && defined(USE_ENFLAME_ADAPTOR)
 +#if defined(FLAGCX_TORCH_BACKEND_FLAGOS) && (defined(USE_ENFLAME_ADAPTOR) || defined(USE_ASCEND_ADAPTOR))

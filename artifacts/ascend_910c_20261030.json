@@ -98,7 +98,7 @@
       "revision_origin": "external_dependency",
       "repository": "https://github.com/flagos-ai/FlagCX",
       "patch": "../docker/ascend/patches/flagcx-v0.14.1-flagos.patch",
-      "patch_sha256": "5121a318d2b7c341828dc0668dc6783e33ec6cf3fd9da5a934eefdb94e50fa52"
+      "patch_sha256": "071abaffefdc44783aac3d23e8124dc0dc46cf7168bc0558b9244d9df9e5c2ca"
     },
     {
       "name": "nlohmann/json single header",
@@ -478,6 +478,12 @@
     "ranks": 2,
     "all_passed": true,
     "links_real_torch_npu": false,
-    "note": "Rebuilt wheel differs from the originally qualified binary because build paths and environment are recorded in the artifact; the patched source is fixed and both builds were executed."
+    "note": "Rebuilt wheel differs from the originally qualified binary because build paths and environment are recorded in the artifact; the patched source is fixed and both builds were executed.",
+    "patched_cpp_file_sha256": {
+      "plugin/torch/flagcx/include/backend_flagcx.hpp": "900cda38450eb9796923be871cfc1ff5449ec9f4afb07e2f3e65f1add8f1dd79",
+      "plugin/torch/flagcx/include/event_flagcx.hpp": "db31a7fdf0b952160598918b05618a73964f0bb0f9736fb706230ff450bb76cd",
+      "plugin/torch/flagcx/src/backend_flagcx.cpp": "c6b46a59441a74045a05bc508bbf19a9cd67a7be88b07d6e22cffda38a17c464"
+    },
+    "patch_format_note": "Blank context markers were normalized for repository whitespace checks. Applying the normalized patch to a clean pinned checkout produced the identical three C++ files used for the rebuilt and tested wheel."
   }
 }
