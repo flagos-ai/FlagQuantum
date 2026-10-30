@@ -1,5 +1,9 @@
 # CS07-C bounded native source parsing and adaptation
 
+Historical CS07-C evidence below is unchanged. The
+[CS07-D checked execution record](CS07_QMOD_EXECUTION_DELIVERY.md) supersedes
+its 1/3 execution count and pending Services-admission statements.
+
 Date: 2026-10-30. Baseline: merged #966,
 `8722d0fbb37d588d1f0ddf6da586c88acb0cae3d`. Before merge, its exact head
 `ffb2c6955b9f4723644c082c34ef6045ada32bb5` completed 57 successful checks and

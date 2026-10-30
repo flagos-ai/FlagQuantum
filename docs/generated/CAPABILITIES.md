@@ -33,8 +33,8 @@ This catalog is generated from the machine-validated
 | Write unsigned arithmetic without designing gates or workspace | Constrained coherent integer synthesis | Development evidence | [Run example](../../examples/algorithms/synthesis_trial.py) |
 | Compare retained and recomputed workspace under a qubit budget | Constrained coherent integer synthesis | Development evidence | [Run example](../../examples/algorithms/synthesis_trial.py) |
 | Run a checked synthesis Program and read named probabilities | Constrained coherent integer synthesis | Development evidence | [Run example](../../examples/algorithms/synthesis_trial.py) |
-| Inspect native-source adaptation into the shared construction model | Private native Qmod source adaptation | Development evidence | [Run example](../../tests/team/ecosystem/test_qmod_parser.py) |
-| Distinguish parsed, lowered and actually verified original-source evidence | Private native Qmod source adaptation | Development evidence | [Run example](../../tests/team/ecosystem/test_qmod_parser.py) |
+| Inspect native-source adaptation into the shared construction model | Private native Qmod adaptation and checked execution | Development evidence | [Run example](../../tests/team/ecosystem/test_qmod_parser.py) |
+| Distinguish parsed, lowered and actually verified original-source evidence | Private native Qmod adaptation and checked execution | Development evidence | [Run example](../../tests/team/ecosystem/test_qmod_parser.py) |
 | Inspect a circuit diagram in a terminal | Circuit drawing | Experimental | [Read guide](../../flagquantum/drawer/README.md) |
 | Render a figure for a document or notebook | Circuit drawing | Experimental | [Read guide](../../flagquantum/drawer/README.md) |
 | Check a program's wiring and gate order by eye | Circuit drawing | Experimental | [Read guide](../../flagquantum/drawer/README.md) |
@@ -1546,19 +1546,19 @@ Slice one logical tensor-network contraction across two hosts and keep gradient,
 
 ## Deployment and extension
 
-### Private native Qmod source adaptation
+### Private native Qmod adaptation and checked execution
 
-Translate a bounded pinned native Qmod subset into the verified Compiler construction profile, preserving source diagnostics, initialization and unsigned numeric significance.
+Translate a bounded pinned native Qmod subset into the verified Compiler construction profile and the existing checked Program, preserving source diagnostics, initialization, numeric significance and named CPU results.
 
 - **Maturity:** Development evidence
 - **Public API:** Not exposed; internal development evidence only
-- **Runtime modes:** `not_applicable`
+- **Runtime modes:** `statevector`
 - **Hardware:** `cpu`
 - **Gradient support:** `not_applicable`
-- **Distribution semantics:** `not_applicable`
+- **Distribution semantics:** `single_device_fast_path`
 - **Start:** [quick example](../../tests/team/ecosystem/test_qmod_parser.py)
 - **Documentation:** [guide](../../flagquantum/ecosystem/_qmod/README.md)
-- **Known boundary:** Private pinned-source subset only, with one main and fresh unsigned scalar outputs; no public source execution entry, Services admission, general standard library, arrays/views, Input/Const, free/drop or .fq support. Original corpus: 3/3 parsed and lowered, 1/3 executed and full-state verified; two larger originals have only static lowering evidence. Synthetic probes do not increase original counts. Source-version context is declared, not authenticated; retained manifests separately check original bytes. No release or hardware claim.
+- **Known boundary:** Private pinned-source subset only, with one main and fresh unsigned scalar outputs; no public source execution entry, general standard library, arrays/views, Input/Const, free/drop or .fq support. Original corpus: 3/3 parsed, lowered, executed and full-state verified at unchanged 1/23/24-qubit sizes on exact CPU complex128. Services reuses the same checked Program and named reader with an explicit state-memory ceiling; this is not a process peak-memory guarantee. Synthetic probes do not increase original counts. Source-version context is declared, not authenticated; retained manifests separately check original bytes. No all-corpus, release or hardware claim.
 
 ### Circuit packaging and cloud deployment
 
