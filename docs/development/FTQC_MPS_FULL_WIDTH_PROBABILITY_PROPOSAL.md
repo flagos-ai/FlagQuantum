@@ -1,8 +1,9 @@
 # Proposed bounded full-width MPS probability route
 
-Status: proposal only. Approval or merge of this document does not authorize
-implementation, production activation, numerical validation, or further research
-execution.
+Status: bounded implementation under review following separate scope approval.
+The documentation-only delivery in #977 did not activate the route. The current
+change implements only the domain below; actual-main admission remains a
+separate delivery gate. No further research execution is authorized.
 
 ## Evidence and the decision
 
@@ -31,7 +32,7 @@ questions are outside this proposal. The existing
 and [marginal boundary tests](../../tests/unit/test_measurements_marginal_reduction.py)
 remain authoritative until an implementation-specific review approves a change.
 
-## Proposed scope for a future implementation approval
+## Admitted implementation scope
 
 Only a noise-free exact native MPS output, CPU complex128, batch size one,
 one through three qubits, with a probability request naming every wire exactly
@@ -39,10 +40,14 @@ once, is eligible. Both natural and permuted full-wire order must be supported.
 The native exact configuration must retain cutoff zero, unlimited bond dimension
 and zero reported truncation. No approximate MPS, noise, GPU, arbitrary target,
 partial marginal, sample/count request, mixed basis or tensor-network route is
-included. The new internal helper must decline ineligible inputs before any
-amplitude contraction, leaving the existing measurement path reachable.
+included. The private Simulation helper declines ineligible inputs before any amplitude
+contraction, leaving the existing measurement path reachable. It first checks
+the native MPS norm without changing it: nonfinite norms or distance from one
+above the existing 1e-12 accuracy bound decline to the existing path. This
+conservative eligibility check preserves raw unnormalized-object behavior; it
+does not rescale an amplitude or probability.
 
-Simulation owns the calculation. Runtime would delegate only the eligible
+Simulation owns the calculation. Runtime delegates only the eligible
 analytic probability request to a private Simulation helper using its existing
 native MPS type boundary. No new public method, export, option, registry,
 serialized field or pickle identity is proposed. Existing public
@@ -71,12 +76,13 @@ at most eight existing amplitude calls; it does not justify an unbounded output
 allocation or a partial-marginal implementation with 2^n hidden work.
 
 No tensor in the result MPS is overwritten. Configuration, truncation records,
-route metadata, device and dtype must remain unchanged. Existing differentiation
+route metadata, device and dtype remain unchanged. Existing differentiation
 through amplitude contraction must be preserved: no detach, NumPy conversion or
-new factorization is allowed. This requirement is a future validation gate,
-not a claim that gradients have been tested here.
+new factorization is allowed. The focused contracts compare derivatives to analytic product-state values for
+one through three qubits, including every requested wire permutation. This is
+finite validation, not a general MPS-gradient certification.
 
-## Validation required only after implementation-specific approval
+## Required implementation validation
 
 - Fixed independent analytic cases with zero support, Bell correlations and
   phase-sensitive weights; permuted wire-order mappings and batch shape.
@@ -90,21 +96,22 @@ not a claim that gradients have been tested here.
 - Differentiation against an independent analytic derivative within the same
   bounded domain, with no QR or rank-threshold workaround.
 
-No such numerical tests have run. Existing tests and frozen fixtures must not be
+New bounded helper contracts and the unchanged marginal-reduction and observer
+contracts are validated together. Existing tests and frozen fixtures must not be
 rewritten to make the route pass. If an original test protects all non-dense
 measurement routes without distinguishing this explicitly requested full-width
 bounded route, identify that conflict for review before changing the assertion.
 
-## Separate approval boundaries
+## Delivery and research boundaries
 
-This change contains only this proposal and a factual
-[master ledger](../roadmap/FTQC_SIMULATION_MASTER_PLAN.md#fts-10d-bounded-phaseoverlap-cost-decision)
-update. Approval or merge of this documentation does not activate the numerical
-route. All current public outputs and production paths remain unchanged.
+The implementation change includes a private Simulation helper, narrow Runtime
+delegation, focused tests and this contract/ledger update. The native amplitude
+implementation and public API, exports, serialization and configuration remain
+unchanged. The strict observer and all historical raw evidence remain unchanged.
 
-Implementation, production route selection and the above numerical tests need
-separate explicit scope approval. Any later study probe, single-point retry or
-campaign restart also needs its own amendment. No hidden qualification workers
+Required reviewed-head CI/GPU and actual-main packaging/installation/example
+admission precede delivery. A later study probe, single-point retry or campaign
+restart still needs its own explicit amendment. No hidden qualification workers
 are included. Old and new failed raw trees remain immutable.
 
 ## Existing public user example for a documentation PR

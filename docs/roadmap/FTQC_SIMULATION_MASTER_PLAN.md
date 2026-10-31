@@ -800,7 +800,11 @@ resumed; the old 193 attempts remain separate and immutable. There is no
 complete three-repeat cost point or collection-completion claim.
 
 The [bounded full-width MPS probability proposal](../development/FTQC_MPS_FULL_WIDTH_PROBABILITY_PROPOSAL.md)
-describes a possible calculation change while retaining strict observer guards.
-It does not approve implementation, production activation, a new research probe
-or any restart. Production selection and a larger domain remain unapproved.
+defines the separately scoped implementation now under review: exact noise-free
+CPU complex128 MPS, batch size one, one through three qubits and all requested
+wires. It reuses native single-amplitude contractions without dense conversion,
+clipping or normalization and preserves every ineligible measurement path.
+Reviewed-head checks and actual-main delivery evidence are still required before
+calling that implementation delivered. No new study probe, retry or restart is
+authorized. Production selection and a larger domain remain unapproved.
 R01-R15, FTS-02/09/10/11 and M2 remain partial.

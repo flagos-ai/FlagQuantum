@@ -976,6 +976,15 @@ def _execute_analytic_measurement(
             log_base=metadata.get("fq_log_base"),
         )
 
+    if kind == "probabilities" and noise_model is None:
+        from ..simulation.mps.bounded_probabilities import (
+            _bounded_full_width_probabilities,
+        )
+
+        bounded = _bounded_full_width_probabilities(output, wires)
+        if bounded is not None:
+            return bounded
+
     probabilities = _joint_marginal_probabilities(
         output,
         wires,
