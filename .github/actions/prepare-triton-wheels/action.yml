@@ -8,7 +8,15 @@ runs:
         set -euo pipefail
         : "${FQ_TRITON_WHEEL_DIRECTORY:?Set the private Triton wheel directory}"
         mkdir -p "$FQ_TRITON_WHEEL_DIRECTORY"
-        requirement_text="$(python -c 'import tomllib; print("\n".join(tomllib.load(open("pyproject.toml", "rb"))["project"]["optional-dependencies"]["cuda"]))')"
+        requirement_text="$(python - <<'PYTHON'
+        try:
+            import tomllib
+        except ModuleNotFoundError:
+            import tomli as tomllib
+        with open("pyproject.toml", "rb") as stream:
+            print("\n".join(tomllib.load(stream)["project"]["optional-dependencies"]["cuda"]))
+        PYTHON
+        )"
         requirements=()
         while IFS= read -r requirement; do
           if [ -n "$requirement" ]; then
