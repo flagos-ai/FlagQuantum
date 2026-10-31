@@ -52,6 +52,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 
 from ...circuit import Circuit
+from ...compiler._arithmetic_kernels import comparison_xor
 from .types import Predicate
 
 __all__ = [
@@ -190,25 +191,10 @@ def append_comparator(
     flags = list(equality)
     _validate_comparator(left, right, target, flags, scratch)
 
-    circuit.gate("x", flags[0])
-    for index in range(len(left)):
-        _append_equality_step(
-            circuit, left[index], right[index], flags[index], flags[index + 1], scratch
-        )
-    for index in range(len(left)):
-        circuit.gate("x", right[index])
-        append_multi_controlled_x(
-            circuit,
-            [flags[index], left[index], right[index]],
-            target,
-            ancillas=[scratch],
-        )
-        circuit.gate("x", right[index])
-    for index in reversed(range(len(left))):
-        _append_equality_step(
-            circuit, left[index], right[index], flags[index], flags[index + 1], scratch
-        )
-    circuit.gate("x", flags[0])
+    for instruction in comparison_xor(
+        tuple(left), tuple(right), target, tuple(flags), scratch, operation="gt"
+    ):
+        circuit.gate(instruction.name, instruction.wires)
 
 
 def marked_states(predicate: Predicate, n_qubits: int) -> tuple[int, ...]:
@@ -407,41 +393,6 @@ def append_bit_oracle(
         append_multi_controlled_x(circuit, ordered, target, ancillas=spare)
         for qubit in zeros:
             circuit.gate("x", qubit)
-
-
-def _append_equality_step(
-    circuit: Circuit,
-    left: int,
-    right: int,
-    previous: int,
-    following: int,
-    scratch: int,
-) -> None:
-    """Fold one operand bit into the prefix-equality ladder, or undo one fold.
-
-    The body is the five-step unit the comparator runs in both directions. It borrows
-    ``scratch`` to hold "these two bits are equal", combines that with the flag above into
-    the next flag, and gives ``scratch`` back set to ``|0>``. It reads only ``previous``,
-    ``left``, ``right``, and ``scratch``, and writes only ``following`` and ``scratch``;
-    every gate in it is its own inverse, so running it again undoes the fold. That is why
-    the uncompute pass can be the same call in descending ``index``: the flag above is
-    still carrying its forward value at the moment the flag below is cleared.
-
-    Args:
-        circuit: The circuit to extend.
-        left: The left operand's bit for this position.
-        right: The right operand's bit for this position.
-        previous: The flag holding "the bits above this one are equal".
-        following: The flag to XOR with ``previous`` and the two bits' equality.
-        scratch: The qubit borrowed for the equality of the two bits.
-    """
-    circuit.gate("cx", (left, scratch))
-    circuit.gate("cx", (right, scratch))
-    circuit.gate("x", scratch)
-    circuit.gate("ccx", (previous, scratch, following))
-    circuit.gate("x", scratch)
-    circuit.gate("cx", (right, scratch))
-    circuit.gate("cx", (left, scratch))
 
 
 def _append_ladder(
