@@ -751,10 +751,14 @@ def _validate_authorized_synthesis_run(contract: dict[str, Any]) -> list[str]:
         (ROOT / "contracts/synthesis-qmod-v1-candidate.json").read_text()
     )
     errors.extend(_validate_authorized_synthesis_qmod(source_contract))
-    if contract.get("synthesize_signature") != source_contract.get(
+    phase_contract = json.loads(
+        (ROOT / "contracts/synthesis-phase-v1-candidate.json").read_text()
+    )
+    errors.extend(_validate_authorized_synthesis_phase(phase_contract))
+    if contract.get("synthesize_signature") != phase_contract.get(
         "synthesize_signature"
     ):
-        errors.append("synthesis source signature differs from its reviewed admission")
+        errors.append("synthesis signature differs from its reviewed phase admission")
     return errors
 
 
@@ -808,14 +812,90 @@ def _validate_authorized_synthesis_qmod(contract: Any) -> list[str]:
         errors.append("Qmod admission flags must be explicit booleans")
     if not (ROOT / expected["authorization_record"]).is_file():
         errors.append("Qmod source implementation authorization is missing")
-    if str(inspect.signature(synth.synthesize)) != expected["synthesize_signature"]:
-        errors.append("Qmod source signature exceeds approved admission")
+    phase_contract = json.loads(
+        (ROOT / "contracts/synthesis-phase-v1-candidate.json").read_text()
+    )
+    errors.extend(_validate_authorized_synthesis_phase(phase_contract))
+    phase_proposal = json.loads(
+        (ROOT / "contracts/synthesis-phase-admission-proposal.json").read_text()
+    )
+    if (
+        expected["synthesize_signature"]
+        != phase_proposal["current_synthesize_signature"]
+    ):
+        errors.append("Qmod source predecessor differs from reviewed phase baseline")
     if (
         str(inspect.signature(fq.run)) != proposal["unchanged_run_signature"]
         or str(inspect.signature(synth.Program.probabilities))
         != proposal["unchanged_probabilities_signature"]
     ):
         errors.append("Qmod admission must preserve run/read signatures")
+    return errors
+
+
+def _validate_authorized_synthesis_phase(contract: Any) -> list[str]:
+    """Protect only the explicit logical-CPU phase addition and its approval."""
+    import flagquantum as fq
+    from flagquantum import synth
+
+    path = ROOT / "contracts/synthesis-phase-admission-proposal.json"
+    reviewed_hash = "de672c8424ef52d1e8bcd3ad5e399c8644c5400726562281c1aac647c6f884c2"
+    if hashlib.sha256(path.read_bytes()).hexdigest() != reviewed_hash:
+        return ["reviewed predicate phase proposal changed"]
+    proposal = json.loads(path.read_text())
+    expected = {
+        "schema": "flagquantum.synthesis_phase_admission",
+        "version": "1.0",
+        "status": "implemented_candidate_pending_trials",
+        "proposal": "docs/api-changes/FQ-SYNTH-PREDICATE-PHASE-20261031.md",
+        "authorization_record": "docs/api-changes/FQ-SYNTH-PHASE-IMPLEMENTATION-20261031.md",
+        "authorization_source": {
+            "kind": "explicit_human_user_instruction",
+            "request": "do",
+            "context": "Implement the proposed output_mode public phase workflow after PR #974 merged",
+            "proposal_merge": "1afca2cbc9128f070b6637f75b2818e0f6b2ae61",
+        },
+        "proposal_contract_sha256": "de672c8424ef52d1e8bcd3ad5e399c8644c5400726562281c1aac647c6f884c2",
+        "implementation_authorized": True,
+        "production_implemented": True,
+        "release_authorized": False,
+        "human_trial_records": [],
+        "synthesize_signature": proposal["proposed_synthesize_signature"],
+        "namespace_exports": proposal["namespace_exports"],
+        "phase_scope": proposal["phase_scope"],
+        "native_source_modes": proposal["native_source_modes"],
+        "report_addition": proposal["report_addition"],
+        "value_scope": proposal["value_scope"],
+        "phase_report_scope": proposal["phase_report_scope"],
+        "phase_report_excludes": proposal["phase_report_excludes"],
+        "memory_behavior": proposal["memory_behavior"],
+        "new_public_types": [],
+        "new_executor": False,
+        "serialization_change": False,
+    }
+    errors = []
+    if not isinstance(contract, dict) or contract != expected:
+        errors.append("predicate phase admission differs from reviewed scope")
+    if not isinstance(contract, dict):
+        return errors
+    if any(
+        type(contract.get(key)) is not bool
+        for key, value in expected.items()
+        if type(value) is bool
+    ):
+        errors.append("phase admission flags must be explicit booleans")
+    if not (ROOT / expected["authorization_record"]).is_file():
+        errors.append("predicate phase implementation authorization is missing")
+    if str(inspect.signature(synth.synthesize)) != expected["synthesize_signature"]:
+        errors.append("predicate phase signature exceeds approved admission")
+    if list(synth.__all__) != expected["namespace_exports"]:
+        errors.append("predicate phase must preserve namespace exports")
+    if (
+        str(inspect.signature(fq.run)) != proposal["unchanged_run_signature"]
+        or str(inspect.signature(synth.Program.probabilities))
+        != proposal["unchanged_probabilities_signature"]
+    ):
+        errors.append("predicate phase must preserve run/read signatures")
     return errors
 
 
