@@ -49,7 +49,8 @@ def test_composition_is_one_bit_with_existing_opcodes_and_source_locations(
     }
     assert all(op.location and op.location.line == 2 for op in block.operations)
     analysis = analyze_lifetimes((graph,), entry=graph.name)
-    assert analysis.values[block.operations[-1].operands[0].id].upper_bound <= 1
+    returned = analysis.program.body.blocks[0].operations[-1].operands[0].id
+    assert analysis.values[returned].upper_bound <= 1
 
 
 @pytest.mark.parametrize(

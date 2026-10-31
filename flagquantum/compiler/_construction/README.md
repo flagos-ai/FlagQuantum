@@ -214,3 +214,36 @@ built from the unchanged value evaluator. Integration tests compare full states
 including control-zero references, true/false predicates, aliases, entanglement,
 interference, dirty-workspace probability and public resource ceilings. See the
 [controlled-predicate contract](../../../docs/api-changes/FQ-SYNTH-CONTROLLED-PREDICATE-20261031.md).
+
+## Static range loops and carried SSA values
+
+Python for statements use a fresh scoped index and builtin range with 1-3
+nonnegative classical integer arguments and a positive step. Iteration counts
+must resolve from constants, never quantum state. A capture expands at most
+256 iterations across helpers and sequential loops, with one active loop at a
+time. Existing AST/operation/width/helper budgets also apply.
+
+Locals initialized before the loop can be updated once per iteration; every
+update is a fresh SSA value. Input parameters and the induction variable remain
+read-only. Per-iteration temporary names are single-assignment and do not
+escape. Prior aliases keep their original value; outer assignments retain the
+existing single-binding rule. No runtime loop or new IR/schema is introduced.
+
+Empty ranges keep carried bindings unchanged. Their body is still checked once
+in an isolated environment; provisional operations and value IDs are rolled
+back so unsupported hidden calls cannot escape validation. Source helper names
+cannot be shadowed by numerical bindings. Structural/nesting/scope errors occur
+before lowering or planning; source body execution is never a fallback.
+
+Run python -m examples.synthesis_static_loop. Start changes with
+`tests/team/compiler/test_construction_static_loops.py` and then
+`tests/integration/test_synthesis_static_loops.py`. Acceptance compares complete
+looped/explicitly expanded computations, arbitrary XOR targets, complex states,
+external references, value/phase paths and clean workspace. Source operation
+counts or identical gate sequences are not substitutes for that equivalence.
+See the [loop contract](../../../docs/api-changes/FQ-SYNTH-STATIC-LOOPS-20261031.md).
+
+At capture completion, unused arith.constant definitions are omitted. Their
+compile-time values do not consume physical binding width or obstruct a terminal
+phase product. Quantum operations are retained. Value IDs may have gaps;
+lifetime analysis uses its own inlined program IDs, not original capture IDs.

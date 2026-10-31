@@ -81,7 +81,8 @@ result; parameters still use int/UInt declarations. Explicitly registered helper
 and optional qfunc use the same profile. Existing arithmetic can reuse a flag's
 0/1 encoding. One-bit conditions also compose with and/or/not; see below.
 Chained comparisons, !=/<=/>/>=, bitwise operators, bool parameters,
-True/False literals and Python if/loops remain unsupported. Native Qmod syntax
+True/False literals and Python if/while remain unsupported. Static range loops
+use the bounded profile below. Native Qmod syntax
 has not expanded.
 
 Run python -m examples.synthesis_predicate for basis and uniform workflows with
@@ -300,3 +301,63 @@ complex-state and interference acceptance does. Public phase remains logical
 CPU only. Generic unitary control, within-apply, arbitrary angles and routed
 phase remain separate work. See the
 [controlled-predicate delivery](../../docs/roadmap/SYNTH_CONTROLLED_PREDICATE_DELIVERY.md).
+
+## Static loops without manual expansion
+
+Use an explicit classical configuration for iteration counts:
+
+```python
+import flagquantum as fq
+from flagquantum import synth
+
+
+def weighted(x: int, y: int, steps: int) -> int:
+    total = x
+    for i in range(steps):
+        term = y * i
+        total = total + term
+    return total
+
+
+program = synth.synthesize(
+    weighted,
+    inputs={"x": synth.UInt(1), "y": synth.UInt(1)},
+    constants={"steps": 3},
+    input_state=synth.InputState.uniform(),
+    max_qubits=24,
+    memory_limit_bytes=256 * 1024**2,
+)
+result = fq.run(program)
+print(dict(program.probabilities(result, registers=("x", "y", "result"))))
+```
+
+This computes x+3*y, with (x,y,result) equal to (0,0,0), (0,1,3), (1,0,1)
+and (1,1,4), each with probability 1/4. Result width and temporary qubits are
+inferred. Quantum loop-carried values become fresh SSA values; input registers
+and prior aliases retain their original encoded values. Workspace cleanup,
+choice between retain/recompute, target checking and named decoding remain
+automatic. Run python -m examples.synthesis_static_loop for this sum and a
+loop-built one-bit predicate in phase mode.
+
+The supported loop is for name in range(...), with 1-3 nonnegative classical
+integer arguments and positive step. Bounds use constants and pure classical
+computations, never quantum values or known basis samples. Inputs and index
+are read-only. Initialize each carried local before the loop and assign it once
+per iteration with name = expression. New body locals and indices are scoped to
+the iteration. Outside loops the existing single-binding rule remains in force.
+
+There is one active loop, including helper expansion, and at most 256 expanded
+iterations per capture across helpers/sequential loops. Existing source-node,
+operation, width and construction budgets still apply. Nested/while loops,
+augmented assignments, break/continue, loop else, branches and body return remain
+unsupported. Empty loops preserve old bindings and validate their bodies before
+discarding provisional SSA; unsupported hidden calls cannot escape. Unused
+classical definitions are omitted at capture completion without deleting quantum
+operations, preserving zero-workspace phase masks despite loop scaffolding.
+
+This is compile-time unrolling through the existing graph and kernels. There is
+no runtime loop, new API, executor, type or native Qmod grammar. Costs depend on
+the generated graph; algebraic simplification and equality of looped/manual gate
+sequences are not promised. See the
+[static-loop delivery](../../docs/roadmap/SYNTH_STATIC_LOOPS_DELIVERY.md) for
+scope, measured resources and complete-state acceptance.

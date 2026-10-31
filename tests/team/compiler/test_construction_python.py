@@ -123,7 +123,7 @@ def _cell(source: str, filename: str = "<cs04-cached-cell>") -> Callable[..., ob
         ("a,b = x,y\nreturn a", "assignment"),
         ("x += y\nreturn x", "statement"),
         ("if x:\n    return y\nreturn x", "statement"),
-        ("for i in range(2):\n    x = x+y\nreturn x", "statement"),
+        ("for i in range(2):\n    x = x+y\nreturn x", "assignment"),
         ("return [x,y]", "syntax"),
     ],
 )

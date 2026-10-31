@@ -911,3 +911,12 @@ mask under a two-qubit, zero-workspace ceiling. No gates, physical indices,
 private helpers or decoding are required. Complete amplitude and interference
 acceptance checks the control-zero branch and exact relative phase; uniform
 probabilities alone do not establish that effect.
+
+[Static loop synthesis](synthesis_static_loop.py): run
+`python -m examples.synthesis_static_loop` to compile a weighted sum and a
+loop-carried predicate through the existing value/phase Program flow. Declare
+quantum UInt widths and classical steps separately; result widths, gates,
+workspace cleanup and named reading are automatic. Only bounded classical
+range loops are admitted; there is no data-dependent quantum loop or native
+source grammar expansion. Full amplitudes, not uniform probabilities alone,
+verify the phase effect.

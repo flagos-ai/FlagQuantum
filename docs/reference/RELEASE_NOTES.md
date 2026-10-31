@@ -17,6 +17,14 @@ Benchmark claims require audited artifacts and are not inferred from this file.
 
 ## Unreleased
 
+- Admit static for/range loops in the bounded Python synthesis profile. Classical
+  bounds unroll into existing SSA, with fresh carried values, read-only inputs,
+  scoped indices/temporaries and a 256-total-iteration safety cap. Empty loops
+  validate and discard provisional body IR; unused classical constants are
+  omitted without deleting quantum operations. Nested/data-dependent loops and
+  effects remain refused. Existing kernels, schedules, Program/run/read,
+  signatures and native Qmod grammar are unchanged.
+
 - Lower terminal one-bit quantum products in predicate phase mode directly to
   CZ, or Z for aliases, retaining both operands through the same selected prefix
   and its exact inverse. Product result/scratch allocation is omitted; a two-bit
