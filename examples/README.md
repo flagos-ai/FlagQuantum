@@ -887,8 +887,11 @@ are not a unitary-gate fidelity claim. Detached numeric plans replay exactly,
 but JSON does not preserve the training graph. All solvers, bindings, outputs
 and artifacts reuse the existing shared dynamics workflow.
 
-[Private phase construction](synthesis_phase_oracle.py):
-`python -m examples.synthesis_phase_oracle` runs the contributor Compiler-to-Program
-bridge and verifies complete phase/workspace amplitudes. It is private evidence;
-the public output_mode keyword is a proposal and the ordinary user entry remains
-the value/comparison workflow. Uniform probabilities alone cannot verify phase.
+[Predicate phase synthesis](synthesis_phase_oracle.py):
+`python -m examples.synthesis_phase_oracle` uses the public synthesize entry with
+output_mode="phase", a two-bit x*x+y<5 predicate, named uniform inputs and a
+qubit ceiling. It executes the existing Program and prints named probabilities
+and actual costs, with no private imports, gates, wire indices or decoding.
+Each input pair has probability 1/16; phase/workspace correctness is verified
+separately by complete amplitude and interference tests. Logical CPU only;
+native Qmod phase and explicit basis/topology are refused.

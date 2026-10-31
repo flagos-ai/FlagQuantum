@@ -1,4 +1,4 @@
-"""Review gates and current private evidence, not an implemented source API."""
+"""Retained source review gates and existing canonical consumer evidence."""
 
 import inspect
 import json

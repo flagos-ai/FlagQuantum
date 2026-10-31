@@ -884,6 +884,13 @@ def _validate_authorized_synthesis_phase(contract: Any) -> list[str]:
         if type(value) is bool
     ):
         errors.append("phase admission flags must be explicit booleans")
+    scope = contract.get("phase_scope")
+    if (
+        not isinstance(scope, dict)
+        or type(scope.get("visible_flag")) is not bool
+        or type(scope.get("return_width")) is not int
+    ):
+        errors.append("phase scope requires a Boolean flag and integer return width")
     if not (ROOT / expected["authorization_record"]).is_file():
         errors.append("predicate phase implementation authorization is missing")
     if str(inspect.signature(synth.synthesize)) != expected["synthesize_signature"]:

@@ -1,4 +1,4 @@
-"""Public phase input stays proposed while private Compiler evidence is real."""
+"""Historical phase review remains intact after separately authorized activation."""
 
 import inspect
 import json
@@ -32,9 +32,15 @@ def test_proposal_records_current_api_and_precise_pending_delta_without_fake_app
     assert PROPOSAL["release_authorized"] is False
     assert PROPOSAL["human_trial_records"] == []
     signature = str(inspect.signature(synth.synthesize))
-    assert signature == PROPOSAL["current_synthesize_signature"]
-    assert "output_mode" not in inspect.signature(synth.synthesize).parameters
-    assert PROPOSAL["proposed_synthesize_signature"] == signature.replace(
+    assert signature == PROPOSAL["proposed_synthesize_signature"]
+    active = json.loads(
+        (ROOT / "contracts/synthesis-phase-v1-candidate.json").read_text()
+    )
+    assert active["implementation_authorized"] is True
+    assert active["synthesize_signature"] == signature
+    assert PROPOSAL["proposed_synthesize_signature"] == PROPOSAL[
+        "current_synthesize_signature"
+    ].replace(
         ") -> 'Program'",
         ", output_mode: \"Literal['value', 'phase']\" = 'value') -> 'Program'",
     )
@@ -58,22 +64,16 @@ def test_proposal_records_current_api_and_precise_pending_delta_without_fake_app
     assert 'output_mode="phase"' in doc and "result = fq.run(program)" in doc
 
 
-@pytest.mark.parametrize("kind", ["python", "text", "file"])
-def test_public_phase_keyword_is_not_silently_implemented_or_dispatched(
-    kind, tmp_path, monkeypatch
-):
+@pytest.mark.parametrize("kind", ["text", "file"])
+def test_native_phase_remains_outside_the_public_admission(kind, tmp_path, monkeypatch):
     monkeypatch.setattr(
         _api,
         "plan",
-        lambda *a, **k: pytest.fail("public phase planned before admission"),
+        lambda *a, **k: pytest.fail("native phase planned outside admission"),
     )
-    value = {
-        "python": predicate,
-        "text": "qfunc main(output q:qbit){allocate(q);}",
-        "file": tmp_path / "absent.qmod",
-    }[kind]
-    with pytest.raises(TypeError, match="output_mode"):
-        synth.synthesize(value, output_mode="phase")
+    value = "invalid native text" if kind == "text" else tmp_path / "absent.qmod"
+    with pytest.raises(ValueError, match="Python definitions only"):
+        synth.synthesize(value, source_format="qmod", output_mode="phase")
 
 
 def test_private_phase_product_uses_the_canonical_program_owner_and_existing_run():

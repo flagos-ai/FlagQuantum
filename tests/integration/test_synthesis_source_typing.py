@@ -20,10 +20,12 @@ def polynomial(x: int) -> int:
     return x*x+1
 """
     if valid:
-        code += """synth.synthesize(polynomial, inputs={"x":synth.UInt(2)})
+        code += """synth.synthesize(polynomial, inputs={"x":synth.UInt(2)}, output_mode="value")
 synth.synthesize(function=polynomial, inputs={"x":synth.UInt(2)}, memory_limit_bytes=512)
 synth.synthesize(Path("source.qmod"))
-synth.synthesize("qfunc main(output q:qbit) { allocate(q); }", source_format="qmod")
+synth.synthesize("qfunc main(output q:qbit) { allocate(q); }", source_format="qmod", output_mode="value")
+synth.synthesize(polynomial, inputs={"x":synth.UInt(1)}, output_mode="phase")
+synth.synthesize(function=polynomial, inputs={"x":synth.UInt(1)}, output_mode="phase", basis=None, topology=None)
 """
     else:
         code += """synth.synthesize(polynomial)
@@ -31,6 +33,11 @@ synth.synthesize("text")
 synth.synthesize("text", source_format="qmod", inputs={"x":synth.UInt(1)})
 synth.synthesize(Path("source.qmod"), source_name="override")
 synth.synthesize(polynomial, inputs={"x":synth.UInt(1)}, source_format="qmod")
+synth.synthesize(polynomial, inputs={"x":synth.UInt(1)}, output_mode="phase", topology="line")
+synth.synthesize(polynomial, inputs={"x":synth.UInt(1)}, output_mode="phase", basis=("x", "z"))
+synth.synthesize("text", source_format="qmod", output_mode="phase")
+synth.synthesize(Path("source.qmod"), output_mode="phase")
+synth.synthesize(polynomial, inputs={"x":synth.UInt(1)}, output_mode="sign")
 """
     path = tmp_path / "typing_case.py"
     path.write_text(code)
@@ -50,4 +57,4 @@ synth.synthesize(polynomial, inputs={"x":synth.UInt(1)}, source_format="qmod")
         assert result == 0, stdout + stderr
     else:
         assert result == 1, stdout + stderr
-        assert stdout.count(": error:") == 5, stdout
+        assert stdout.count(": error:") == 10, stdout

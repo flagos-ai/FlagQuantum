@@ -37,6 +37,8 @@ def test_phase_implementation_has_separate_explicit_authorization():
     [
         "signature",
         "scope",
+        "scope_flag_type",
+        "scope_width_type",
         "source",
         "report",
         "memory",
@@ -58,6 +60,10 @@ def test_phase_contract_rejects_unreviewed_expansion(change):
         altered["synthesize_signature"] += "extra"
     elif change == "scope":
         altered["phase_scope"]["topology"] = "line"
+    elif change == "scope_flag_type":
+        altered["phase_scope"]["visible_flag"] = 0
+    elif change == "scope_width_type":
+        altered["phase_scope"]["return_width"] = True
     elif change == "source":
         altered["native_source_modes"].append("phase")
     elif change == "report":
