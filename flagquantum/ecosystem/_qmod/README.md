@@ -1,4 +1,12 @@
-# Private native Qmod source adaptation
+# Native Qmod source frontend
+
+The package and parser handoff stay private. The reviewed public workflow is
+`synth.synthesize(Path("source.qmod"))` or explicit Qmod text through the same
+entry. `source.py` owns bounded regular-file UTF-8 acquisition and converts
+native diagnostics to existing public InteropConversionError reports. It does
+no synthesis, planning, execution, SDK import or source evaluation. Literal
+strings are always text. Version context is checked before file I/O; descriptors
+are closed on every path. Ordinary file errors retain their OSError subclasses.
 
 Ecosystem owns lexical parsing, native syntax, symbol resolution and translation
 into the existing Compiler construction profile. This is private development
@@ -13,7 +21,7 @@ Classiq SDK/cloud integration. The public Python entry remains
 syntax records never leave the adapter. `adapter.py` converts to existing
 HybridProgram/Value/Operation/SourceLocation records and delegates semantic
 validation to Compiler. QmodImport is a private handoff containing the program,
-expression definitions, declared source-version context and inferred widths;
+expression definitions, source name, declared version context and inferred widths;
 the existing InteropImportResult expects already lowered CoreIR and cannot carry
 these construction definitions. This adds no public schema or generic IR.
 
@@ -25,7 +33,7 @@ semantic validator here.
 
 ```bash
 python tests/fixtures/classiq_qmod/verify_sources.py
-python -m pytest tests/team/ecosystem/test_qmod_parser.py tests/integration/test_qmod_parser_execution.py -q
+python -m pytest tests/team/ecosystem/test_qmod_parser.py tests/team/ecosystem/test_qmod_source.py tests/integration/test_qmod_parser_execution.py -q
 ```
 
 The first command verifies seven source/license digests. The tests retain the
