@@ -41,7 +41,11 @@ mode types/values fail before capture/planning. No public type or facade export.
 "value" preserves the present unsigned XOR result. "phase" requires a verified
 one-bit result, including existing comparison predicates and optional bool return
 annotations. Existing immutable inputs, constants/helpers and known preparation
-remain supported. There is no classical branch, measurement, arbitrary angle,
+remain supported on the native logical CPU target. Phase mode initially requires
+basis=None and topology=None; reject other requests before capture/planning.
+Use four overloads: Python value, Python phase (basis/topology None-only),
+explicit Qmod text value, and PathLike value. Python inputs remain required.
+There is no classical branch, measurement, arbitrary angle,
 controlled-block DSL or implicit integer truthiness.
 
 Both modes use the same complete Program factory and bound plan; execution
@@ -50,7 +54,9 @@ effective mode, with the existing fields retained. Value scope stays
 actual_cpu_preparation_arithmetic_cleanup; phase scope is
 actual_cpu_preparation_predicate_phase_cleanup. Workspace costs include all
 predicate temporaries. Preserve source_resources versus actual resources and
-the current effective memory limit/origin behavior.
+the current effective memory limit/origin behavior. Phase reports omit the
+pure value evaluator diagnostic arithmetic_resources; Program.arithmetic remains
+a private profile-specific diagnostic, not a new wrapper or public promise.
 
 Phase register_widths/registers include input names only. Named probability
 reading retains its exact signature and default ("result",); that default must
@@ -101,7 +107,8 @@ user entry.
   unequal input widths and exact inverse-prefix identity.
 - Repeated oracle application is identity on clean workspace. Interference
   converts a small oracle's sign into a different observed probability outcome.
-- Logical/line targets, exact controlled phase after target compilation,
+- Native logical targets and separate private line success/refusal evidence;
+  exact controlled-conjugation phase after target compilation,
   source/actual costs, all-zero workspace and final constraints/budget refusals.
 - Existing public signatures/exports, API baselines, value-mode and Qmod flows
   remain unchanged. Public phase calls are refused until separately authorized.
@@ -110,3 +117,20 @@ See contracts/synthesis-phase-admission-proposal.json for the exact proposed
 signature and pending status. Independent user trials remain 0/2 and release
 authorization remains false. General within-apply/control/invert and all-corpus
 compatibility require later separate admission.
+
+## Target admission finding
+
+The existing basis compiler documents projective paths (notably cphase) and the
+IR global-phase field remains unimplemented. A phase line profile keeps u3, rz,
+phase, z and cz native, with optimization disabled; preparation must use plain
+native instructions. Controlled conjugation applies control to the marker only,
+leaving the selected compute/inverse unchanged. It avoids projective cphase
+conversion caused by controlling every compute/cleanup gate separately.
+
+Private polynomial phase line execution passes full complex checks. Two-bit
+equality line construction is still explicitly refused by the existing routed
+SWAP-witness guard after normal Runtime optimization. The guard is retained and
+its refusal tested, not counted as a successful phase execution. Therefore the
+public proposal admits native logical CPU phase only. General line phase and
+projective target/control pipelines require separate routing/phase evidence
+work before admission; no claim of generic controlled Circuit legalization.

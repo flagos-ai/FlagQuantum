@@ -33,6 +33,8 @@ This catalog is generated from the machine-validated
 | Write unsigned arithmetic without designing gates or workspace | Constrained coherent integer synthesis | Development evidence | [Run example](../../examples/algorithms/synthesis_trial.py) |
 | Compare retained and recomputed workspace under a qubit budget | Constrained coherent integer synthesis | Development evidence | [Run example](../../examples/algorithms/synthesis_trial.py) |
 | Run a checked synthesis Program and read named probabilities | Constrained coherent integer synthesis | Development evidence | [Run example](../../examples/algorithms/synthesis_trial.py) |
+| Inspect exact predicate phase construction and clean workspace | Private coherent predicate phase construction | Development evidence | [Run example](../../examples/synthesis_phase_oracle.py) |
+| Distinguish private phase evidence from public API and target admission | Private coherent predicate phase construction | Development evidence | [Run example](../../examples/synthesis_phase_oracle.py) |
 | Run bounded local Qmod files or explicit source text | Bounded native Qmod source and checked execution | Development evidence | [Run example](../../examples/algorithms/synthesis_source_trial.py) |
 | Distinguish parsed, lowered and actually verified original-source evidence | Bounded native Qmod source and checked execution | Development evidence | [Run example](../../examples/algorithms/synthesis_source_trial.py) |
 | Inspect a circuit diagram in a terminal | Circuit drawing | Experimental | [Read guide](../../flagquantum/drawer/README.md) |
@@ -450,6 +452,20 @@ Construct a checked reversible arithmetic circuit from bounded Python unsigned a
 - **Start:** [quick example](../../examples/algorithms/synthesis_trial.py)
 - **Documentation:** [guide](../../flagquantum/synth/README.md)
 - **Known boundary:** Unreleased unsigned-integer CPU profile with bounded Python syntax including single ==/< comparisons, known input preparations and finite checked candidates; no arbitrary Python or Boolean control flow, general Qmod, Program/.fq serialization, noise, measurements, directed or allocated-layout admission, or optimality guarantee. A Program executes its checked plan and refuses execution overrides; changed constraints require resynthesis. Two independent developer trials and release review remain pending.
+
+### Private coherent predicate phase construction
+
+Construct an exact marked sign from a verified one-bit predicate through the shared Compiler schedules and existing checked Program.
+
+- **Maturity:** Development evidence
+- **Public API:** Not exposed; internal development evidence only
+- **Runtime modes:** `statevector`
+- **Hardware:** `cpu`
+- **Gradient support:** `not_applicable`
+- **Distribution semantics:** `single_device_fast_path`
+- **Start:** [quick example](../../examples/synthesis_phase_oracle.py)
+- **Documentation:** [guide](../../docs/roadmap/SYNTH_PHASE_ORACLE_DELIVERY.md)
+- **Known boundary:** Private Compiler evidence only; public output_mode is proposed and remains refused. Exact native logical CPU phase and controlled-marker conjugation are verified. Conservative line polynomial probes pass, but equality line is explicitly refused by the retained routed-SWAP witness guard; no general line, projective conversion or generic controlled-Circuit legalization claim. Zero workspace is a declared precondition, not an external-state proof. No Qmod phase, arbitrary angles, within-apply DSL, all-corpus or release admission. Independent trials remain 0/2.
 
 ### Circuit drawing
 

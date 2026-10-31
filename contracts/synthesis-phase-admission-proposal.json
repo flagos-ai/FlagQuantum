@@ -1,0 +1,96 @@
+{
+  "schema": "flagquantum.synthesis_phase_admission_proposal",
+  "version": "1.0",
+  "status": "proposed",
+  "proposal": "docs/api-changes/FQ-SYNTH-PREDICATE-PHASE-20261031.md",
+  "baseline": "d6df7bca0d5f68b760518af023f00f0669b66145",
+  "public_implementation_authorized": false,
+  "public_api_implemented": false,
+  "private_compiler_implemented": true,
+  "api_owner_approval": null,
+  "release_authorized": false,
+  "human_trial_records": [],
+  "namespace_exports": [
+    "ConstructionBudget",
+    "InputState",
+    "Program",
+    "SynthesisError",
+    "UInt",
+    "qfunc",
+    "synthesize"
+  ],
+  "new_public_types": [],
+  "new_executor": false,
+  "serialization_change": false,
+  "current_synthesize_signature": "(function: 'Definition | str | PathLike[str]', *, inputs: 'Mapping[str, UInt] | None' = None, input_state: 'InputState | None' = None, constants: 'Mapping[str, int] | None' = None, functions: 'Sequence[Definition]' = (), max_qubits: 'int | None' = 256, max_operations: 'int | None' = 100000, max_depth: 'int | None' = None, max_workspace: 'int | None' = None, construction_budget: 'ConstructionBudget' = ConstructionBudget(qubits=256, operations=100000, candidate_checks=2), objective: \"Literal['width', 'depth']\" = 'width', basis: 'Iterable[str] | None' = None, topology: \"Literal['line'] | None\" = None, preparation: 'CircuitIR | None' = None, preparation_map: 'Mapping[str, Sequence[int]] | None' = None, source_format: \"Literal['qmod'] | None\" = None, source_name: 'str | None' = None, source_version: 'str | None' = None, memory_limit_bytes: 'int | None' = None) -> 'Program'",
+  "proposed_synthesize_signature": "(function: 'Definition | str | PathLike[str]', *, inputs: 'Mapping[str, UInt] | None' = None, input_state: 'InputState | None' = None, constants: 'Mapping[str, int] | None' = None, functions: 'Sequence[Definition]' = (), max_qubits: 'int | None' = 256, max_operations: 'int | None' = 100000, max_depth: 'int | None' = None, max_workspace: 'int | None' = None, construction_budget: 'ConstructionBudget' = ConstructionBudget(qubits=256, operations=100000, candidate_checks=2), objective: \"Literal['width', 'depth']\" = 'width', basis: 'Iterable[str] | None' = None, topology: \"Literal['line'] | None\" = None, preparation: 'CircuitIR | None' = None, preparation_map: 'Mapping[str, Sequence[int]] | None' = None, source_format: \"Literal['qmod'] | None\" = None, source_name: 'str | None' = None, source_version: 'str | None' = None, memory_limit_bytes: 'int | None' = None, output_mode: \"Literal['value', 'phase']\" = 'value') -> 'Program'",
+  "unchanged_run_signature": "(program_or_plan: 'Circuit | CircuitIR | ExecutionPlan | IsingBraidProgram | LindbladPlan | SynthesisProgram', *, options: 'ExecutionOptions | None' = None, outputs: 'OutputRequest | Sequence[OutputRequest] | None' = None, noise_model: 'NoiseModel | None' = None, compiler: 'str | None' = None, target: 'str | None' = None, target_qubits: 'Sequence[int] | None' = None, shots: 'int | None' = None, name: 'str | None' = None) -> 'ExecutionResult'",
+  "unchanged_probabilities_signature": "(self, result: 'ExecutionResult', *, registers: 'Sequence[str]' = ('result',), max_bits: 'int' = 16, max_keys: 'int' = 65536, max_amplitudes: 'int' = 4194304, threshold: 'float' = 1e-14) -> 'Distribution'",
+  "keyword": {
+    "name": "output_mode",
+    "kind": "keyword_only",
+    "default": "value",
+    "values": [
+      "value",
+      "phase"
+    ]
+  },
+  "phase_scope": {
+    "input": "Python Definition only",
+    "return_width": 1,
+    "basis": null,
+    "topology": null,
+    "effect": "(-1)**predicate(inputs)",
+    "logical_registers": "inputs_only",
+    "visible_flag": false,
+    "default_reader": "unchanged_result_name_refusal",
+    "preparation": "outside_U",
+    "inverse": "literal_adjoint_of_selected_prefix"
+  },
+  "native_source_modes": [
+    "value"
+  ],
+  "refuse_before": "capture_source_acquisition_and_planning",
+  "report_addition": "output_mode",
+  "value_scope": "actual_cpu_preparation_arithmetic_cleanup",
+  "phase_report_scope": "actual_cpu_preparation_predicate_phase_cleanup",
+  "memory_behavior": "preserve_existing_input_profile_defaults_and_explicit_limits",
+  "not_admitted": [
+    "public_phase_keyword",
+    "general_line_phase",
+    "projective_basis_conversion",
+    "generic_controlled_Circuit_legalization",
+    "within_apply_DSL",
+    "arbitrary_phase_angles",
+    "Qmod_phase_mode"
+  ],
+  "phase_report_excludes": [
+    "arithmetic_resources"
+  ],
+  "proposed_overloads": [
+    {
+      "input": "Definition",
+      "output_mode": "value_default",
+      "inputs": "required",
+      "basis": "existing",
+      "topology": "existing"
+    },
+    {
+      "input": "Definition",
+      "output_mode": "phase_required",
+      "inputs": "required",
+      "basis": "None_only",
+      "topology": "None_only"
+    },
+    {
+      "input": "str",
+      "source_format": "qmod_required",
+      "output_mode": "value_default_only"
+    },
+    {
+      "input": "PathLike[str]",
+      "source_format": "qmod_or_none",
+      "output_mode": "value_default_only"
+    }
+  ]
+}
