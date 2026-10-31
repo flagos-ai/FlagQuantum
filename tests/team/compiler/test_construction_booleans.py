@@ -110,7 +110,7 @@ def test_multibit_and_nonbit_constants_refuse_with_operand_source_location(
         "0 and x.mutate()",
         "1 or True",
         "not False",
-        "0 and (x < x < 2)",
+        "0 and (x < x is x)",
     ],
 )
 def test_constants_do_not_hide_unsupported_source_by_host_short_circuit(

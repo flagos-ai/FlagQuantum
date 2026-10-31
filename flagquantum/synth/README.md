@@ -73,14 +73,16 @@ result = fq.run(program)
 print(dict(program.probabilities(result, registers=("x", "y", "result"))))
 ```
 
-Single == and < compare full unsigned values; unequal widths are zero extended.
+The six ==, !=, <, <=, > and >= relations compare full unsigned values;
+unequal widths are zero extended. Chained comparisons such as low<=x<=high
+combine adjacent pairs, capturing each middle expression only once.
 The logical result is one bit, displayed as integer 0/1 in named tuples. This
 computes a flag coherently alongside x/y; it does not measure a condition or
 enter Python control flow. Optional bool return annotations require a one-bit
 result; parameters still use int/UInt declarations. Explicitly registered helpers
 and optional qfunc use the same profile. Existing arithmetic can reuse a flag's
 0/1 encoding. One-bit conditions also compose with and/or/not; see below.
-Chained comparisons, !=/<=/>/>=, bitwise operators, bool parameters,
+Identity/membership tests, bitwise operators, bool parameters,
 True/False literals and Python if/while statements remain unsupported. Static range loops
 use the bounded profile below. Native Qmod syntax
 has not expanded.
@@ -412,3 +414,46 @@ Run `python -m examples.synthesis_conditional` for both numeric and phase
 examples. See the [delivery record](../../docs/roadmap/SYNTH_CONDITIONAL_EXPRESSION_DELIVERY.md)
 for independent references and measured costs. Trial/release, target and native
 Qmod restrictions retain their existing gates.
+
+## Intervals and exclusions
+
+Write ordinary unsigned comparisons, including chained bounds, in a retained
+Python source file:
+
+```python
+import flagquantum as fq
+from flagquantum import synth
+
+
+def allowed(x: int, low: int, high: int, excluded: int) -> bool:
+    return low <= x <= high and x != excluded
+
+
+program = synth.synthesize(
+    allowed,
+    inputs={"x": synth.UInt(3)},
+    constants={"low": 1, "high": 6, "excluded": 3},
+    input_state=synth.InputState.uniform(),
+    max_qubits=24,
+    memory_limit_bytes=256 * 1024**2,
+)
+result = fq.run(program)
+print(dict(program.probabilities(result, registers=("x", "result"))))
+print(program.report["resources"])
+```
+
+The marked values are 1, 2, 4, 5 and 6; each input/result pair has probability
+1/8. Users declare input widths, classical constants, preparation and budgets.
+The compiler handles comparator choice, one-bit Boolean composition, gates,
+physical maps and cleanup, and the Program reads named values. No decorator is
+required. Middle expressions in chains are captured once; all parts validate,
+even after a classically false pair. Source effects are not short-circuited or
+executed on the host. Bool literals/parameters, identity/membership and signed
+or fixed-point comparisons remain unsupported.
+
+Use `output_mode="phase"` in the same call to mark each accepted basis amplitude
+by -1, with only input registers returned. Run
+`python -m examples.synthesis_interval` for both modes and real costs. Uniform
+probabilities alone do not certify phase; acceptance compares full amplitudes
+including external reference entanglement and clean workspace. See the
+[delivery record](../../docs/roadmap/SYNTH_COMPARISON_CHAINS_DELIVERY.md).
