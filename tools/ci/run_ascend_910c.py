@@ -146,6 +146,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         FLAGCX_TORCH_BACKEND="flagos",
         FLAGOS_DIST_STAGED_GLOO="0",
         FLAGOS_LOG="fallback",
+        PYTHONUNBUFFERED="1",
     )
     environment["PYTHONPATH"] = os.pathsep.join(
         filter(None, (str(ROOT), environment.get("PYTHONPATH", "")))
