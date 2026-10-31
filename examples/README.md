@@ -886,3 +886,9 @@ The optimizer minimizes `(1-P1)**2 + 2*P2`; its improved population and leakage
 are not a unitary-gate fidelity claim. Detached numeric plans replay exactly,
 but JSON does not preserve the training graph. All solvers, bindings, outputs
 and artifacts reuse the existing shared dynamics workflow.
+
+[Private phase construction](synthesis_phase_oracle.py):
+`python -m examples.synthesis_phase_oracle` runs the contributor Compiler-to-Program
+bridge and verifies complete phase/workspace amplitudes. It is private evidence;
+the public output_mode keyword is a proposal and the ordinary user entry remains
+the value/comparison workflow. Uniform probabilities alone cannot verify phase.

@@ -29,6 +29,26 @@ class TargetError(ValueError):
 _DEFAULT_CONFIG = RuntimeConfig().with_overrides(complex_dtype="complex128")
 
 
+# Keep exact one-qubit phase compensation native. The admitted two-qubit
+# rewrites are the existing CCX/CZ/SWAP identities, not projective cphase/KAK.
+PHASE_BASIS = (
+    "x",
+    "h",
+    "s",
+    "sdg",
+    "t",
+    "tdg",
+    "ry",
+    "rz",
+    "cx",
+    "u3",
+    "swap",
+    "z",
+    "phase",
+    "cz",
+)
+
+
 @dataclass(frozen=True)
 class Target:
     """Explicit expert profiles by allocated width; never resize a device graph."""

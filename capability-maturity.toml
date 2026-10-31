@@ -100,6 +100,25 @@ focused_tests = "tests/team/compiler/test_construction_comparisons.py"
 integration_tests = "tests/integration/test_synthesis_comparisons.py"
 development_artifact = "docs/roadmap/SYNTH_COMPARISON_DELIVERY.md"
 
+[capabilities.predicate_phase_construction]
+title = "Private coherent predicate phase construction"
+summary = "Construct an exact marked sign from a verified one-bit predicate through the shared Compiler schedules and existing checked Program."
+category = "build_and_compile"
+user_goals = ["Inspect exact predicate phase construction and clean workspace", "Distinguish private phase evidence from public API and target admission"]
+public_apis = []
+runtime_modes = ["statevector"]
+hardware = ["cpu"]
+gradient_support = "not_applicable"
+distribution_semantics = "single_device_fast_path"
+quick_start = "examples/synthesis_phase_oracle.py"
+documentation = "docs/roadmap/SYNTH_PHASE_ORACLE_DELIVERY.md"
+level = "development_evidence"
+owner = "compiler and services maintainers"
+limitations = "Private Compiler evidence only; public output_mode is proposed and remains refused. Exact native logical CPU phase and controlled-marker conjugation are verified. Conservative line polynomial probes pass, but equality line is explicitly refused by the retained routed-SWAP witness guard; no general line, projective conversion or generic controlled-Circuit legalization claim. Zero workspace is a declared precondition, not an external-state proof. No Qmod phase, arbitrary angles, within-apply DSL, all-corpus or release admission. Independent trials remain 0/2."
+focused_tests = "tests/team/compiler/test_construction_phase.py"
+integration_tests = "tests/integration/test_synthesis_phase_oracle.py"
+development_artifact = "docs/roadmap/SYNTH_PHASE_ORACLE_DELIVERY.md"
+
 [capabilities.qmod_source_adaptation]
 title = "Bounded native Qmod source and checked execution"
 summary = "Translate a bounded pinned native Qmod subset into the verified Compiler construction profile and the existing checked Program, preserving source diagnostics, initialization, numeric significance and named CPU results."

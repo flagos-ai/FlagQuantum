@@ -8,6 +8,8 @@ from typing import Literal
 from .._hybrid.model import HybridProgram, ValueId
 from .profile import _fail, _positive_integer, _width, verify_construction
 
+OutputMode = Literal["value", "phase"]
+
 
 def verify_bindings(
     functions: Sequence[HybridProgram],
@@ -20,6 +22,7 @@ def verify_bindings(
     workspace_state: Literal[
         "fresh_zero", "caller_asserted_zero", "unknown"
     ] = "unknown",
+    output_mode: OutputMode = "value",
 ) -> None:
     """Verify the call graph and disjoint bindings without inspecting quantum state.
 
@@ -27,6 +30,8 @@ def verify_bindings(
     precondition, not a compiler proof. An XOR target need not initially be zero.
     """
     _positive_integer(n_wires, "n_wires")
+    if output_mode not in ("value", "phase"):
+        _fail("output.mode", "choose value or phase output mode")
     function = verify_construction(functions, entry=entry, max_width=n_wires)
     if workspace_state not in {"fresh_zero", "caller_asserted_zero", "unknown"}:
         _fail("workspace.state", "unknown workspace state declaration")
@@ -40,7 +45,13 @@ def verify_bindings(
             _fail("binding.width", f"binding width disagrees with {argument.id}")
         groups.append(wires)
     result_type = block.operations[-1].operands[0].type
-    if len(output) != _width(result_type, n_wires):
+    result_width = _width(result_type, n_wires)
+    if output_mode == "phase":
+        if result_width != 1:
+            _fail("phase.predicate", "phase output requires an exactly one-bit return")
+        if len(output) != 0:
+            _fail("binding.phase", "phase output has no value-result binding")
+    elif len(output) != result_width:
         _fail("binding.width", "output width disagrees with return type")
     groups.extend((tuple(output), tuple(workspace)))
     used: set[int] = set()

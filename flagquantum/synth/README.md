@@ -149,3 +149,12 @@ Run python -m examples.algorithms.synthesis_source_trial for the complete text
 workflow, or append a local .qmod path. Three unchanged originals have passed
 both public forms at 1/23/24 qubits. This is development evidence; independent
 trials remain 0/2 and release authorization remains false.
+
+## Phase construction status
+
+Compiler now has private predicate phase evidence; the proposed public
+output_mode="phase" keyword is not available yet. Current synthesize calls still
+produce value/comparison results. The [phase proposal and private delivery](../../docs/roadmap/SYNTH_PHASE_ORACLE_DELIVERY.md)
+include explicit future user code and actual contributor commands. The first
+public proposal is logical CPU only; general line phase and projective target
+conversion are not admitted by the private probes.

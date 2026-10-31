@@ -12,7 +12,7 @@ from typing import Literal
 from ...core.ir import CircuitIR, Instruction
 from .._arithmetic_kernels import comparison_xor, multiply_accumulate, ripple_add
 from .._hybrid.model import INDEX, HybridProgram, Operation, ValueId
-from .bindings import verify_bindings
+from .bindings import OutputMode, verify_bindings
 from .lifetimes import LifetimeAnalysis, analyze_lifetimes
 from .profile import _fail, _positive_integer
 from .ranges import unsigned_width
@@ -76,6 +76,7 @@ def schedule_arithmetic(
     ] = "unknown",
     max_operations: int = 100_000,
     scheduling: Schedule = "retain",
+    output_mode: OutputMode = "value",
 ) -> ArithmeticCandidate:
     """Emit one bounded candidate and its actual zero-pool allocation history.
 
@@ -98,6 +99,7 @@ def schedule_arithmetic(
         n_wires=n_qubits,
         workspace=workspace,
         workspace_state=workspace_state,
+        output_mode=output_mode,
     )
     analysis = analyze_lifetimes(functions, entry=entry)
     block = analysis.program.body.blocks[0]
@@ -274,12 +276,54 @@ def schedule_arithmetic(
             if not uses or uses[-1] <= position:
                 erase(key)
     ensure(returned)
-    emit(_copy(encoding(returned), tuple(output)), block.operations[-1])
-    # Restoration order is not dependency order. Clean descendants first so a
-    # still-live ancestor is not erased only to be rebuilt for the next inverse.
-    for key in reversed(definitions):
-        erase(key)
-    assert not active and not occupied
+    if output_mode == "phase":
+        predicate = encoding(returned)
+        assert not isinstance(predicate, int) and len(predicate) == 1
+        prefix = tuple(instructions)
+        forward_events = tuple(events)
+        if any(
+            gate.name not in {"x", "cx", "ccx"}
+            or gate.matrix is not None
+            or gate.params
+            or gate.metadata
+            for gate in prefix
+        ):
+            _fail(
+                "phase.adjoint",
+                "phase prefix requires admitted exact self-adjoint gates",
+            )
+        if 2 * len(forward_events) > 100_000:
+            _fail(
+                "lowering.schedule.budget",
+                "phase inverse exceeds schedule event budget",
+            )
+        emit((Instruction("z", predicate),), block.operations[-1])
+        # Invert the actual selected prefix, including its earlier cleanups and
+        # physical rebindings. Preparation is composed later, outside this U.
+        emit(reversed(prefix), block.operations[-1])
+        for event in reversed(forward_events):
+            action: Literal["compute", "uncompute"] = (
+                "uncompute" if event.action == "compute" else "compute"
+            )
+            events.append(
+                ScheduleEvent(
+                    action,
+                    event.value,
+                    event.allocation,
+                    event.scratch,
+                    event.live_workspace,
+                    event.operation_count,
+                )
+            )
+            if action == "compute":
+                counts[event.value] = counts.get(event.value, 0) + 1
+    else:
+        emit(_copy(encoding(returned), tuple(output)), block.operations[-1])
+        # Restoration order is not dependency order. Clean descendants first so a
+        # still-live ancestor is not erased only to be rebuilt for the next inverse.
+        for key in reversed(definitions):
+            erase(key)
+        assert not active and not occupied
     circuit = CircuitIR(n_wires=n_qubits, instructions=tuple(instructions))
     return ArithmeticCandidate(
         circuit,
@@ -304,8 +348,9 @@ def lower_arithmetic(
     ] = "unknown",
     max_operations: int = 100_000,
     scheduling: Schedule = "retain",
+    output_mode: OutputMode = "value",
 ) -> CircuitIR:
-    """Return existing CoreIR from the shared retained/recompute arithmetic emitter."""
+    """Return existing CoreIR from the shared value/phase construction emitter."""
     return schedule_arithmetic(
         functions,
         inputs,
@@ -316,4 +361,5 @@ def lower_arithmetic(
         workspace_state=workspace_state,
         max_operations=max_operations,
         scheduling=scheduling,
+        output_mode=output_mode,
     ).circuit
