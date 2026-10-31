@@ -781,9 +781,26 @@ one-thread CPU work and explicit phase/outer-wall/RSS/failure-stop provenance.
 The finite matrix, numerical values, observer boundary and resource protocol
 were specifically approved on 2026-10-26. Proposal #931 actual-main admission
 passed full CI, required GPUs, smoke, real optional installations/evidence,
-fresh isolated 847-member package/core and installed examples. A private worker
-and serial controller are under separate review; no probe or observation has
-run. The old 193 attempts and their failure remain immutable. Observer/controller
-review and actual-main admission precede the one admitted collection. Production
-selection and a larger domain remain unapproved. R01-R15, FTS-02/09/10/11 and
-M2 remain partial.
+fresh isolated 847-member package/core and installed examples. Observer/controller
+and failure-diagnostic delivery subsequently passed actual-main admission, most
+recently at `19b9e6ab727d5a82432d8283dc9790235c9ab7e0` after #973. That
+admission includes all 54 full-CI jobs, required source/single/two GPU, smoke,
+real QEC optional installations with retained evidence, a fresh isolated
+876-member package/core and installed public examples.
+
+The admitted collection stopped at its first probability-guard failure after
+one monitor probe and five workload starts. A separately approved single-point
+diagnostic consumed one additional probe and one `n2t1` MPS workload, then
+stopped on the strict nonnegative guard. The new producer retained two negative
+float64 entries, approximately -5.55e-17 and -8.33e-17; shape, CPU placement and
+finiteness passed. The original producer retained no values, so the new values
+do not establish that original failure's arithmetic cause. Cumulative usage is
+8/161: two probes and six workload starts. Neither failed run is relabeled or
+resumed; the old 193 attempts remain separate and immutable. There is no
+complete three-repeat cost point or collection-completion claim.
+
+The [bounded full-width MPS probability proposal](../development/FTQC_MPS_FULL_WIDTH_PROBABILITY_PROPOSAL.md)
+describes a possible calculation change while retaining strict observer guards.
+It does not approve implementation, production activation, a new research probe
+or any restart. Production selection and a larger domain remain unapproved.
+R01-R15, FTS-02/09/10/11 and M2 remain partial.
