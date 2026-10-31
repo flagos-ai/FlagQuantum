@@ -64,9 +64,23 @@ def test_ascend_dispatch_preserves_cuda_default_and_requires_its_own_runner() ->
     cuda = document["jobs"]["statevector-local-p0"]
     assert cuda["if"] == "${{ inputs.platform != 'ascend-910c' }}"
     native = document["jobs"]["ascend-910c-native"]
+    assert native["needs"] == "prepare-ascend-source"
     assert native["if"] == "${{ inputs.platform == 'ascend-910c' }}"
     assert "ascend-910c" in native["runs-on"]
     assert native["concurrency"]["group"] == "flagquantum-ascend-910c"
+    transfer = next(
+        step
+        for step in native["steps"]
+        if "actions/download-artifact@" in step.get("uses", "")
+    )
+    assert transfer["with"]["digest-mismatch"] == "error"
+    restore = next(
+        step["run"]
+        for step in native["steps"]
+        if step.get("name", "").startswith("Restore and verify")
+    )
+    assert 'test "$sha" = "$GITHUB_SHA"' in restore
+    assert 'test "$(git rev-parse HEAD)" = "$GITHUB_SHA"' in restore
     assert any(
         "tools/ci/run_ascend_910c.py" in step.get("run", "") for step in native["steps"]
     )

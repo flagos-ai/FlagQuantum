@@ -82,8 +82,34 @@ jobs:
           name: flagos-cuda-reference-${{ github.sha }}
           path: hardware-run/
 
+  prepare-ascend-source:
+    if: ${{ inputs.platform == 'ascend-910c' }}
+    runs-on: ubuntu-latest
+    concurrency:
+      group: flagquantum-gh-${{ github.ref_name }}-light-c
+      queue: max
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: Pack this exact hardware regression commit
+        run: |
+          set -o pipefail
+          mkdir -p "$RUNNER_TEMP/ascend-source"
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          git rev-parse HEAD > "$RUNNER_TEMP/ascend-source/source.sha"
+          git rev-list --objects --no-walk HEAD | git pack-objects --stdout > "$RUNNER_TEMP/ascend-source/source.pack"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: ascend-source
+          path: ${{ runner.temp }}/ascend-source/
+          retention-days: 1
+          compression-level: 0
+
   ascend-910c-native:
     if: ${{ inputs.platform == 'ascend-910c' }}
+    needs: prepare-ascend-source
     runs-on: [self-hosted, linux, ARM64, ascend-910c, flagquantum-ascend-910c]
     concurrency:
       group: flagquantum-ascend-910c
@@ -93,16 +119,28 @@ jobs:
       PYTHONPATH: ${{ github.workspace }}
       TORCH_DEVICE_BACKEND_AUTOLOAD: "0"
     steps:
-      - name: Clear a sparse checkout a previous job left in this clone
-        run: |
-          if [ -d .git ]; then
-            git sparse-checkout disable
-            rm -f .git/info/sparse-checkout
-            git config --local --unset core.sparseCheckout || true
-          fi
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
-          persist-credentials: false
+          digest-mismatch: error
+          name: ascend-source
+          path: ${{ runner.temp }}/ascend-source
+      - name: Restore and verify this run's exact source commit
+        run: |
+          sha="$(cat "$RUNNER_TEMP/ascend-source/source.sha")"
+          test "$sha" = "$GITHUB_SHA"
+          if [ ! -d .git ]; then
+            git init .
+          fi
+          git index-pack --stdin < "$RUNNER_TEMP/ascend-source/source.pack"
+          printf '%s\n' "$sha" >> .git/shallow
+          sort -u .git/shallow -o .git/shallow
+          git config --worktree core.sparseCheckout false
+          git config --worktree core.sparseCheckoutCone false
+          rm -f .git/info/sparse-checkout
+          git read-tree --empty
+          git checkout --force --detach "$sha"
+          git clean -ffdx
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
       - name: Install this checkout in the provisioned Python environment
         run: python -m pip install --no-deps --no-build-isolation -e .
       - name: Native circuit, training, QEC and dynamics regressions
