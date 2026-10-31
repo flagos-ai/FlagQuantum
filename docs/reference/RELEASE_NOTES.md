@@ -17,6 +17,14 @@ Benchmark claims require audited artifacts and are not inferred from this file.
 
 ## Unreleased
 
+- Admit pure conditional values (`a if predicate else b`) in unsigned Python
+  synthesis. One-bit guards remain coherent; branch widths use their maximum
+  range, and one-bit selections compose with existing phase mode. The existing
+  arithmetic schedules lower private SSA selection with X/CX/CCX and restore
+  workspace. Both branches validate before planning; statement if/else, general
+  unitary control and measurement feedback remain refused. Public signatures,
+  native Qmod grammar, execution and release gates are unchanged.
+
 - Admit static for/range loops in the bounded Python synthesis profile. Classical
   bounds unroll into existing SSA, with fresh carried values, read-only inputs,
   scoped indices/temporaries and a 256-total-iteration safety cap. Empty loops

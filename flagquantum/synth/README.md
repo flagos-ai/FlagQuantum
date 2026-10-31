@@ -81,7 +81,7 @@ result; parameters still use int/UInt declarations. Explicitly registered helper
 and optional qfunc use the same profile. Existing arithmetic can reuse a flag's
 0/1 encoding. One-bit conditions also compose with and/or/not; see below.
 Chained comparisons, !=/<=/>/>=, bitwise operators, bool parameters,
-True/False literals and Python if/while remain unsupported. Static range loops
+True/False literals and Python if/while statements remain unsupported. Static range loops
 use the bounded profile below. Native Qmod syntax
 has not expanded.
 
@@ -136,7 +136,7 @@ type, new executor, manual gates, physical indices or decoding is needed.
 
 Run python -m examples.synthesis_boolean_predicate for both modes. See the
 [Boolean delivery](../../docs/roadmap/SYNTH_BOOLEAN_PREDICATES_DELIVERY.md) for
-measured costs, exact evidence and refusals. Existing unsupported branching,
+measured costs, exact evidence and refusals. Existing unsupported statement branching,
 measurements, native grammar and independent trial/release gates remain in force.
 
 ## Local native source
@@ -361,3 +361,54 @@ the generated graph; algebraic simplification and equality of looped/manual gate
 sequences are not promised. See the
 [static-loop delivery](../../docs/roadmap/SYNTH_STATIC_LOOPS_DELIVERY.md) for
 scope, measured resources and complete-state acceptance.
+
+## Select values coherently
+
+Pure conditional expressions select an unsigned value for every input without
+measuring the predicate. For example, save this in a source-retaining file:
+
+```python
+import flagquantum as fq
+from flagquantum import synth
+
+
+def smaller(x: int, y: int) -> int:
+    return x if x < y else y
+
+
+program = synth.synthesize(
+    smaller,
+    inputs={"x": synth.UInt(2), "y": synth.UInt(2)},
+    input_state=synth.InputState.uniform(),
+    max_qubits=20,
+    memory_limit_bytes=64 * 1024**2,
+)
+result = fq.run(program)
+print(dict(program.probabilities(result, registers=("x", "y", "result"))))
+print(program.report["resources"])
+```
+
+Every `(x, y, min(x,y))` tuple has probability 1/16. Result width is two bits,
+with 11 total qubits, five workspace qubits, 98 operations and depth 80 including
+preparation. In this example both width/depth objectives select retain; these
+are measured candidate costs, not an optimality or performance guarantee.
+No decorator, gate sequence, physical map or decoding is required.
+
+A predicate must be a one-bit UInt value, an existing comparison/Boolean
+expression, or classical integer 0/1. Branches can be unsigned expressions,
+unequal widths or literals; values zero-extend without truncation. Both branches
+are validated, even if a classical guard picks only one. Already captured
+quantum branch work is conservatively retained and cleaned. Arbitrary Python
+side effects and short-circuit execution are unavailable.
+
+Nested selections, helpers, optional qfunc and static loop assignments compose.
+One-bit branches produce a one-bit result, so
+`return (x<y) if enable else (x==y)` can use `output_mode="phase"` with the
+existing exact CPU Program/run path. Complete amplitudes establish this phase;
+uniform probabilities alone cannot. Statement-level if/else, mutable quantum
+branches, generic controlled blocks and measurement feedback remain unsupported.
+
+Run `python -m examples.synthesis_conditional` for both numeric and phase
+examples. See the [delivery record](../../docs/roadmap/SYNTH_CONDITIONAL_EXPRESSION_DELIVERY.md)
+for independent references and measured costs. Trial/release, target and native
+Qmod restrictions retain their existing gates.

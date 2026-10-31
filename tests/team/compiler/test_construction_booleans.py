@@ -140,9 +140,7 @@ def test_helper_inlining_aliases_and_arithmetic_use_the_same_verified_graph() ->
     assert reused
 
 
-@pytest.mark.parametrize(
-    "expression", ["~x", "x & y", "x | y", "x ^ y", "x if y else 0"]
-)
+@pytest.mark.parametrize("expression", ["~x", "x & y", "x | y", "x ^ y"])
 def test_unadmitted_boolean_adjacent_syntax_is_still_refused(expression: str) -> None:
     with pytest.raises(HybridVerificationError, match="construction.python"):
         capture(_cell(f"def main(x,y):\n    return {expression}\n"), {"x": 1, "y": 1})
@@ -152,3 +150,12 @@ def test_boolean_expansion_and_nesting_are_bounded_before_lowering() -> None:
     for expression in [" or ".join(["x"] * 900), "not " * 66 + "x"]:
         with pytest.raises(HybridVerificationError, match="construction.python.budget"):
             capture(_cell(f"def main(x):\n    return {expression}\n"), {"x": 1})
+
+
+def test_conditional_value_is_admitted_without_widening_a_boolean_result() -> None:
+    graph = capture(
+        _cell("def main(x,y):\n    return x if y else 0\n"), {"x": 1, "y": 1}
+    )
+    assert graph.body.blocks[0].operations[-1].operands[0].type == uint_type(1)
+    assert any(op.name == "qint.select" for op in graph.body.blocks[0].operations)
+    assert verify_construction((graph,), entry=graph.name) is graph
