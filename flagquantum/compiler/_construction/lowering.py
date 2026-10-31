@@ -14,7 +14,7 @@ from .._arithmetic_kernels import comparison_xor, multiply_accumulate, ripple_ad
 from .._hybrid.model import INDEX, HybridProgram, Operation, ValueId
 from .bindings import OutputMode, verify_bindings
 from .lifetimes import LifetimeAnalysis, analyze_lifetimes
-from .profile import _fail, _positive_integer
+from .profile import _fail, _positive_integer, uint_type
 from .ranges import unsigned_width
 
 _WireValue = tuple[int, ...] | int
@@ -83,7 +83,9 @@ def schedule_arithmetic(
     Retain is the compatibility default. Recompute eagerly erases non-input
     operands between forward uses, restores missing dependencies before cleanup,
     and retains final-result dependencies through the XOR copy. It is not an
-    optimal pebbling search. External zero assertions remain caller obligations.
+    optimal pebbling search. A terminal one-bit phase product marks its live
+    operands directly, keeping both through the marker and exact prefix inverse.
+    External zero assertions remain caller obligations.
     """
     _positive_integer(n_qubits, "n_qubits")
     _positive_integer(max_operations, "max_operations")
@@ -114,6 +116,21 @@ def schedule_arithmetic(
     counts: dict[ValueId, int] = {}
     ensuring: set[ValueId] = set()
     returned = block.operations[-1].operands[0].id
+    final = block.operations[-2] if len(block.operations) > 1 else None
+    phase_product = (
+        final
+        if output_mode == "phase"
+        and final is not None
+        and final.name == "qint.multiply"
+        and final.results[0].id == returned
+        and all(operand.type == uint_type(1) for operand in final.operands)
+        else None
+    )
+    phase_operands = (
+        tuple(operand.id for operand in phase_product.operands)
+        if phase_product is not None
+        else (returned,)
+    )
 
     def allocate(count: int, op: Operation) -> tuple[int, ...]:
         nonlocal peak
@@ -266,7 +283,9 @@ def schedule_arithmetic(
 
     for position, op in enumerate(block.operations[:-1]):
         key = op.results[0].id
-        if op.name == "arith.constant":
+        if op.name == "arith.constant" or (
+            phase_product is not None and key == returned
+        ):
             continue
         ensure(key)
         if scheduling == "recompute" and key != returned:
@@ -275,10 +294,15 @@ def schedule_arithmetic(
             uses = analysis.values[key].uses
             if not uses or uses[-1] <= position:
                 erase(key)
-    ensure(returned)
+    for key in phase_operands:
+        ensure(key)
     if output_mode == "phase":
-        predicate = encoding(returned)
-        assert not isinstance(predicate, int) and len(predicate) == 1
+        marker_wires: list[int] = []
+        for key in phase_operands:
+            predicate = encoding(key)
+            assert not isinstance(predicate, int) and len(predicate) == 1
+            if predicate[0] not in marker_wires:
+                marker_wires.append(predicate[0])
         prefix = tuple(instructions)
         forward_events = tuple(events)
         if any(
@@ -297,7 +321,14 @@ def schedule_arithmetic(
                 "lowering.schedule.budget",
                 "phase inverse exceeds schedule event budget",
             )
-        emit((Instruction("z", predicate),), block.operations[-1])
+        emit(
+            (
+                Instruction(
+                    "z" if len(marker_wires) == 1 else "cz", tuple(marker_wires)
+                ),
+            ),
+            block.operations[-1],
+        )
         # Invert the actual selected prefix, including its earlier cleanups and
         # physical rebindings. Preparation is composed later, outside this U.
         emit(reversed(prefix), block.operations[-1])

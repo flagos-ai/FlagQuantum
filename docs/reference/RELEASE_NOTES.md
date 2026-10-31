@@ -17,6 +17,13 @@ Benchmark claims require audited artifacts and are not inferred from this file.
 
 ## Unreleased
 
+- Lower terminal one-bit quantum products in predicate phase mode directly to
+  CZ, or Z for aliases, retaining both operands through the same selected prefix
+  and its exact inverse. Product result/scratch allocation is omitted; a two-bit
+  mask now fits zero workspace. Existing value XOR, source grammar, public API,
+  target admission and release gates are unchanged. This is controlled-predicate
+  phase construction, with no generic unitary-control or within-apply API.
+
 - Compose one-bit Python synthesis predicates with and/or/not. Reuse existing
   multiplication/equality kernels, both workspace schedules and value/phase
   Program execution. Multi-bit truthiness and unsupported source hidden behind

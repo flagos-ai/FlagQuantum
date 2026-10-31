@@ -104,20 +104,20 @@ development_artifact = "docs/roadmap/SYNTH_BOOLEAN_PREDICATES_DELIVERY.md"
 title = "Coherent predicate phase synthesis"
 summary = "Construct an exact marked sign from a verified one-bit predicate through the shared Compiler schedules and existing checked Program."
 category = "build_and_compile"
-user_goals = ["Inspect exact predicate phase construction and clean workspace", "Mark a high-level predicate without writing gates or uncomputation"]
+user_goals = ["Inspect exact predicate phase construction and clean workspace", "Mark a high-level predicate without writing gates or uncomputation", "Fit a coherent one-bit control mask under a workspace ceiling"]
 public_apis = ["flagquantum.synth.synthesize", "flagquantum.synth.Program.probabilities", "run"]
 runtime_modes = ["statevector"]
 hardware = ["cpu"]
 gradient_support = "not_applicable"
 distribution_semantics = "single_device_fast_path"
-quick_start = "examples/synthesis_phase_oracle.py"
+quick_start = "examples/synthesis_controlled_predicate.py"
 documentation = "docs/roadmap/SYNTH_PUBLIC_PHASE_DELIVERY.md"
 level = "development_evidence"
 owner = "compiler and services maintainers"
-limitations = "Unreleased Python one-bit predicates admit output_mode=phase through the existing public Program/run/read flow on native logical CPU only, with no result flag. Wider returns, Qmod phase and explicit basis/topology are refused before source work where knowable. Exact phase and clean workspace are verified; controlled-marker conjugation remains private evidence only. Conservative line polynomial probes pass, but equality line is explicitly refused by the retained routed-SWAP witness guard; no general line, projective conversion or generic controlled-Circuit legalization claim. Zero workspace is a declared precondition, not an external-state proof. No Qmod phase, arbitrary angles, within-apply DSL, all-corpus or release admission. Independent trials remain 0/2."
-focused_tests = "tests/team/compiler/test_construction_phase.py"
-integration_tests = "tests/integration/test_synthesis_public_phase.py"
-development_artifact = "docs/roadmap/SYNTH_PUBLIC_PHASE_DELIVERY.md"
+limitations = "Unreleased Python one-bit predicates admit output_mode=phase through the existing public Program/run/read flow on native logical CPU only, with no result flag. Wider returns, Qmod phase and explicit basis/topology are refused before source work where knowable. Exact phase and clean workspace are verified; controlled one-bit predicates use the existing expression syntax with direct terminal-product phase markers; generic controlled-block legalization remains outside admission. Conservative line polynomial probes pass, but equality line is explicitly refused by the retained routed-SWAP witness guard; no general line, projective conversion or generic controlled-Circuit legalization claim. Zero workspace is a declared precondition, not an external-state proof. No Qmod phase, arbitrary angles, within-apply DSL, all-corpus or release admission. Independent trials remain 0/2."
+focused_tests = "tests/team/compiler/test_construction_controlled_phase.py"
+integration_tests = "tests/integration/test_synthesis_controlled_predicate.py"
+development_artifact = "docs/roadmap/SYNTH_CONTROLLED_PREDICATE_DELIVERY.md"
 
 [capabilities.qmod_source_adaptation]
 title = "Bounded native Qmod source and checked execution"

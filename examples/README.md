@@ -903,3 +903,11 @@ Named probabilities and actual costs require no gates, physical wires or
 bitstring decoding. Uniform probabilities alone do not certify phase; complete
 complex-state and interference acceptance supplies that evidence. Boolean
 operands are one-bit values; source is fully validated without host execution.
+
+[Controlled predicate phase](synthesis_controlled_predicate.py): run
+`python -m examples.synthesis_controlled_predicate` to mark enable and (x<y)
+with the existing public synthesis/Program/run flow, then demonstrate a two-input
+mask under a two-qubit, zero-workspace ceiling. No gates, physical indices,
+private helpers or decoding are required. Complete amplitude and interference
+acceptance checks the control-zero branch and exact relative phase; uniform
+probabilities alone do not establish that effect.
