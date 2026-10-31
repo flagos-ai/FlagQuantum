@@ -118,7 +118,7 @@ def _probe(expected_devices: int) -> None:
     for package in ("torch", "torch_fl", "flagcx", "flag_gems", "flagtree"):
         print(f"{package}={importlib.metadata.version(package)}", flush=True)
     print(f"logical_npu_count={expected_devices}", flush=True)
-    print(f"device_name={torch.flagos.get_device_name(0)}", flush=True)
+    print(f"native_device={x.device}", flush=True)
     print("native_complex128_gradient_probe=passed", flush=True)
 
 
