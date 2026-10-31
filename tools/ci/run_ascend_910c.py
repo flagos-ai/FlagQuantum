@@ -107,6 +107,14 @@ def _probe(expected_devices: int) -> None:
         value.cpu(), torch.tensor(0.3, dtype=torch.float64), atol=1e-12, rtol=0
     )
     torch.testing.assert_close(x.grad.cpu(), 2 * x.detach().cpu(), atol=1e-12, rtol=0)
+    print(f"python={platform.python_version()}", flush=True)
+    print(
+        f"container_image={os.environ.get('FLAGQUANTUM_FLAGOS_CONTAINER_IMAGE', 'unreported')}",
+        flush=True,
+    )
+    manifest = Path(sys.prefix) / "wheels.sha256"
+    if manifest.is_file():
+        print(manifest.read_text(encoding="utf-8"), end="", flush=True)
     for package in ("torch", "torch_fl", "flagcx", "flag_gems", "flagtree"):
         print(f"{package}={importlib.metadata.version(package)}", flush=True)
     print(f"logical_npu_count={expected_devices}", flush=True)
