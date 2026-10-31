@@ -179,3 +179,52 @@ Optional JAX accelerators, CUDA-specific external simulators and quantum-cloud
 providers retain their own backend requirements. This configuration does not
 translate those third-party runtimes to Ascend. Compilation, circuit drawing and
 other host-side utilities remain host operations.
+
+## Repeatable native regression
+
+The **FlagOS Hardware Regression** workflow has an explicit `ascend-910c`
+selection. Its default remains the existing CUDA reference lane. A maintainer
+can dispatch the Ascend selection on the revision being reviewed; it uses the
+dedicated `flagquantum-ascend-910c` runner and concurrency group. The workflow is
+manual so shared NPU resources are used only for an explicitly requested run.
+
+The provisioned Linux ARM64 environment must expose two logical NPU devices,
+declare `FLAGQUANTUM_ACCELERATOR_MODEL=Ascend910C`, and install Torch-FL and
+FlagCX wheels in its active Python environment. The initial lane uses the
+qualified candidate builds from [Torch-FL #690](https://github.com/flagos-ai/Torch-FL/pull/690)
+and [FlagCX #686](https://github.com/flagos-ai/FlagCX/pull/686). Official wheel
+qualification follows their upstream merge and publication; the immutable
+source pins above continue to identify the original acceptance.
+
+`docker/ascend/Dockerfile.ci` builds the runner environment from a qualified
+ARM64 CANN/PyTorch base. Supply a dedicated build directory containing
+`runner.tar.gz` (the official ARM64 runner), the two qualified wheels under
+`wheels/`, and their checked `wheels.sha256` manifest. The Dockerfile checks
+the runner archive and wheel digests, installs the providers in an independent
+virtual environment, and runs as UID/GID 1000. Register the runner after image
+construction; registration credentials belong to the running container rather
+than the image. The provisioner exposes only the reserved logical devices and
+mounts the host driver and firmware read-only.
+
+Run the same entry point locally from a clean checkout after installing this
+checkout in that environment:
+
+```bash
+python -m pip install --no-deps --no-build-isolation -e .
+FLAGQUANTUM_ACCELERATOR_MODEL=Ascend910C \
+  python tools/ci/run_ascend_910c.py \
+  --expected-devices 2 --output-dir /tmp/ascend-native-regression
+```
+
+Use a new output directory for each run. The entry point verifies the source
+identity, Python package locations, pure Torch-FL runtime and native complex128
+gradient execution. It runs the checked-in circuit, noise, QEC, dynamics,
+training and cold-process replay regressions under the existing watchdog.
+Every selected test must run successfully: an empty report, skipped case,
+failure or observed numerical CPU fallback fails the lane. Raw environment
+logs, the source revision, per-case JUnit results and watchdog diagnostics are
+retained as CI artifacts.
+
+This lane covers the single-device native workflows. The separate two-host
+acceptance and owner-sharded training ladder above cover distributed semantics;
+production capacity and performance promotion retain their existing gates.

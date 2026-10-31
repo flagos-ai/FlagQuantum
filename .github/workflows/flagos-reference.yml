@@ -1,10 +1,20 @@
-name: FlagOS CUDA Reference
+name: FlagOS Hardware Regression
 
 on:
   workflow_dispatch:
+    inputs:
+      platform:
+        description: Provisioned native hardware lane
+        type: choice
+        options: [cuda, ascend-910c]
+        default: cuda
+
+permissions:
+  contents: read
 
 jobs:
   statevector-local-p0:
+    if: ${{ inputs.platform != 'ascend-910c' }}
     runs-on: [self-hosted, linux, gpu, flagos-cuda-reference]
     # This job holds device 0, which the local gate benchmarks and the scheduled
     # lane sweeps, so it joins the same group. The label it waits on may name a
@@ -71,3 +81,39 @@ jobs:
         with:
           name: flagos-cuda-reference-${{ github.sha }}
           path: hardware-run/
+
+  ascend-910c-native:
+    if: ${{ inputs.platform == 'ascend-910c' }}
+    runs-on: [self-hosted, linux, ARM64, ascend-910c, flagquantum-ascend-910c]
+    concurrency:
+      group: flagquantum-ascend-910c
+      queue: max
+    timeout-minutes: 30
+    env:
+      PYTHONPATH: ${{ github.workspace }}
+      TORCH_DEVICE_BACKEND_AUTOLOAD: "0"
+    steps:
+      - name: Clear a sparse checkout a previous job left in this clone
+        run: |
+          if [ -d .git ]; then
+            git sparse-checkout disable
+            rm -f .git/info/sparse-checkout
+            git config --local --unset core.sparseCheckout || true
+          fi
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Install this checkout in the provisioned Python environment
+        run: python -m pip install --no-deps --no-build-isolation -e .
+      - name: Native circuit, training, QEC and dynamics regressions
+        run: >-
+          python tools/ci/run_ascend_910c.py
+          --output-dir "${RUNNER_TEMP}/ascend-910c"
+          --expected-devices 2
+      - name: Retain native environment, watchdog and per-case reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ascend-910c-${{ github.sha }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/ascend-910c/
+          retention-days: 14

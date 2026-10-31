@@ -1,0 +1,39 @@
+# The operator supplies the qualified ARM64 CANN/PyTorch image and wheel files.
+ARG BASE_IMAGE
+FROM ${BASE_IMAGE}
+
+USER root
+ARG PYTHON=python3.11
+ARG RUNNER_SHA256=628b4a7258487b80c1d3c221095a7ded349f5ae0175fd3dfab708d07428f041b
+COPY runner.tar.gz /tmp/runner.tar.gz
+COPY wheels/ /tmp/ascend-wheels/
+COPY wheels.sha256 /tmp/wheels.sha256
+RUN echo "${RUNNER_SHA256}  /tmp/runner.tar.gz" | sha256sum -c - \
+    && cd /tmp/ascend-wheels && sha256sum -c /tmp/wheels.sha256 \
+    && "${PYTHON}" -m venv --system-site-packages /opt/ascend-ci-env \
+    && /opt/ascend-ci-env/bin/python -m pip install --no-deps /tmp/ascend-wheels/*.whl \
+    && mkdir -p /opt/actions-runner /opt/action-cache /home/fqci/ascend/log \
+    && tar xzf /tmp/runner.tar.gz -C /opt/actions-runner \
+    && /opt/actions-runner/bin/Runner.Listener --version \
+    && (getent group 1000 || groupadd --gid 1000 fqci) \
+    && (getent passwd 1000 || useradd --uid 1000 --gid 1000 --home-dir /home/fqci --shell /bin/bash fqci) \
+    && chown -R 1000:1000 /opt/actions-runner /opt/ascend-ci-env /home/fqci \
+    && rm -rf /tmp/ascend-wheels /tmp/runner.tar.gz /tmp/wheels.sha256
+
+ENV PATH=/opt/ascend-ci-env/bin:${PATH} \
+    LD_LIBRARY_PATH=/opt/ascend-ci-env/lib/python3.11/site-packages/torch_fl/lib:${LD_LIBRARY_PATH} \
+    PYTHONPATH="" \
+    HOME=/home/fqci \
+    USER=fqci \
+    LOGNAME=fqci \
+    ASCEND_WORK_PATH=/home/fqci/ascend \
+    TORCH_DEVICE_BACKEND_AUTOLOAD=0 \
+    FLAGCX_TORCH_BACKEND=flagos \
+    FLAGOS_DIST_STAGED_GLOO=0 \
+    FLAGQUANTUM_ACCELERATOR_MODEL=Ascend910C \
+    ACTIONS_RUNNER_ACTION_ARCHIVE_CACHE=/opt/action-cache
+
+WORKDIR /opt/actions-runner
+USER 1000:1000
+ENTRYPOINT ["/opt/actions-runner/run.sh"]
+CMD []
