@@ -138,10 +138,16 @@ def seed_everything(
     )
 
 
-def _rng_state(seed: SeedContract) -> dict[str, Any]:
+def _rng_state(
+    seed: SeedContract, module: torch.nn.Module | None = None
+) -> dict[str, Any]:
     cuda_platform = get_platform_runtime("cuda")
     cuda_device = torch.cuda.current_device() if cuda_platform.is_available() else None
-    return {
+    # A provider may expose a CUDA compatibility API while keeping tensors on
+    # its own logical device. Preserve the native CUDA slot only for CUDA.
+    if cuda_device is not None and torch.device("cuda", cuda_device).type != "cuda":
+        cuda_device = None
+    result: dict[str, Any] = {
         "contract": seed.__dict__,
         "torch_cpu": torch.get_rng_state(),
         "torch_cuda": (
@@ -153,6 +159,20 @@ def _rng_state(seed: SeedContract) -> dict[str, Any]:
         "python": random.getstate(),
         "deterministic_algorithms": torch.are_deterministic_algorithms_enabled(),
     }
+    if module is not None:
+        devices = {
+            tensor.device
+            for tensor in (*module.parameters(), *module.buffers())
+            if tensor.device.type not in {"cpu", "cuda"}
+        }
+        if devices:
+            # Optional provider state lives inside the opaque RNG payload; the
+            # checkpoint metadata and legacy CPU/CUDA payload stay unchanged.
+            result["platform_rng"] = {
+                str(device): get_platform_runtime(device.type).rng_state(device)
+                for device in sorted(devices, key=str)
+            }
+    return result
 
 
 def _restore_rng(payload: Mapping[str, Any]) -> SeedContract:
@@ -165,6 +185,14 @@ def _restore_rng(payload: Mapping[str, Any]) -> SeedContract:
         cuda_platform.restore_rng_state(
             torch.device("cuda", torch.cuda.current_device()), cuda_state
         )
+    for name, state in payload.get("platform_rng", {}).items():
+        device_type = str(name).split(":", 1)[0]
+        platform = get_platform_runtime(device_type)
+        if not platform.is_available():
+            raise TrainingStateError(
+                f"checkpoint RNG platform {device_type!r} is unavailable"
+            )
+        platform.restore_rng_state(torch.device(name), state)
     torch.use_deterministic_algorithms(bool(payload["deterministic_algorithms"]))
     return contract
 
@@ -311,7 +339,7 @@ def save_training_checkpoint(
         "ir_version": getattr(ir, "version", IR_VERSION),
         "ir_hash": getattr(ir, "content_hash", ""),
         "workload_signature": _workload_signature(ir),
-        "seed_state": _rng_state(seed),
+        "seed_state": _rng_state(seed, module),
         "precision": precision.to_dict(),
         "topology": _topology(module),
     }
@@ -400,7 +428,7 @@ def _restore_training_checkpoint(
     )
     original_precision = getattr(owner, "precision", None)
     rollback_seed = SeedContract(0, 0, 0, (0, 0))
-    original_rng = _rng_state(rollback_seed)
+    original_rng = _rng_state(rollback_seed, module)
     try:
         precision.apply(module)
         setattr(owner, "precision", precision)

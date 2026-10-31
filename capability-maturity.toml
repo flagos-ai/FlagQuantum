@@ -644,15 +644,17 @@ category = "simulation_and_training"
 user_goals = ["Evaluate statevector forward execution on FP32-only PyTorch devices", "Validate Torch-FL flagos logical-device residency", "Compare split FP32 numerical error with a CPU complex128 reference"]
 public_apis = ["experimental.numerics.execute_split_real_imag_statevector"]
 runtime_modes = ["split_real_imag_statevector_p0"]
-hardware = ["cpu", "single_cuda_reference", "device_generic_pytorch"]
+hardware = ["cpu", "single_cuda_reference", "device_generic_pytorch", "ascend_910c_torch_fl"]
 gradient_support = "unsupported"
 distribution_semantics = "single_device_fast_path"
 quick_start = "docs/reference/SPLIT_REAL_IMAG_STATEVECTOR_P0.md"
 documentation = "docs/reference/SPLIT_REAL_IMAG_STATEVECTOR_P0.md"
 level = "experimental"
 owner = "numerical trust maintainers"
-limitations = "Explicit experimental forward-only executor for a bounded built-in gate set using separate FP32 real and imaginary tensors. It is not selected by the default runtime. Custom matrices, gradients, optimizer steps, sampling and observables APIs, compiled execution, distributed execution, Double-Single storage, provider-internal route auditing, domestic-hardware certification, performance, and production use remain unsupported. CUDA or CUDA-backed flagos evidence is portability evidence only."
+limitations = "Explicit experimental forward-only executor for a bounded built-in gate set using separate FP32 real and imaginary tensors. It is not selected by the default runtime. Custom matrices, gradients, optimizer steps, sampling and observables APIs, compiled execution, distributed execution, Double-Single storage, provider-internal route auditing, domestic-hardware certification, performance, and production use remain unsupported. Ascend 910C single-device FP32 forward correctness is measured with a pinned patched Torch-FL build; see docs/guides/ASCEND_910C.md. This does not certify other representations, autograd, high precision, performance, or distributed execution. CUDA-backed flagos evidence remains portability evidence only."
 focused_tests = "tests/test_split_real_imag_conformance.py"
+
+hardware_evidence = "artifacts/ascend_910c_20261029.json"
 
 [capabilities.split_real_imag_statevector_p1]
 title = "Split real/imag FP32 observable and parameter-shift P1"
@@ -661,15 +663,17 @@ category = "simulation_and_training"
 user_goals = ["Evaluate Pauli expectation values on FP32-only PyTorch devices", "Compute explicit parameter-shift gradients for named rotation parameters", "Compare training primitives with a CPU complex128 reference"]
 public_apis = ["experimental.numerics.execute_split_real_imag_expectation", "experimental.numerics.parameter_shift_split_real_imag_gradient"]
 runtime_modes = ["split_real_imag_statevector_p1"]
-hardware = ["cpu", "single_cuda_reference", "device_generic_pytorch"]
+hardware = ["cpu", "single_cuda_reference", "device_generic_pytorch", "ascend_910c_torch_fl"]
 gradient_support = "parameter_shift_experimental"
 distribution_semantics = "single_device_fast_path"
 quick_start = "docs/reference/SPLIT_REAL_IMAG_STATEVECTOR_P1.md"
 documentation = "docs/reference/SPLIT_REAL_IMAG_STATEVECTOR_P1.md"
 level = "experimental"
 owner = "numerical trust maintainers"
-limitations = "Explicit experimental batch-one Pauli expectation and occurrence-wise two-term parameter-shift gradients for direct named scalar parameters on RX, RY, RZ, RXX, RYY, and RZZ. It is not native autograd and provides no optimizer integration. Parameter expressions, trainable coefficients, custom matrices or states, sampling, compilation, distributed execution, automatic runtime selection, performance, convergence, provider-internal route auditing, and domestic-hardware certification remain unsupported. CUDA or CUDA-backed flagos evidence is portability evidence only."
+limitations = "Explicit experimental batch-one Pauli expectation and occurrence-wise two-term parameter-shift gradients for direct named scalar parameters on RX, RY, RZ, RXX, RYY, and RZZ. It is not native autograd and provides no optimizer integration. Parameter expressions, trainable coefficients, custom matrices or states, sampling, compilation, distributed execution, automatic runtime selection, performance, convergence, provider-internal route auditing, and domestic-hardware certification remain unsupported. Ascend 910C single-device FP32 correctness and explicit parameter-shift SGD are measured with a pinned patched Torch-FL build; see docs/guides/ASCEND_910C.md. This does not certify other representations, autograd, high precision, performance, or distributed execution. CUDA-backed flagos evidence remains portability evidence only."
 focused_tests = "tests/test_split_real_imag_training_conformance.py"
+
+hardware_evidence = "artifacts/ascend_910c_20261029.json"
 
 [capabilities.split_real_imag_statevector_p2_precision]
 title = "Selective Double-Single split statevector precision P2"
@@ -2198,3 +2202,41 @@ limitations = "A declared profile is not a device. The snapshot's target identit
 focused_tests = "tests/unit/test_local_target_emulation.py"
 integration_tests = "tests/integration/test_local_target_emulation.py"
 development_artifact = "flagquantum/remote/emulation.py"
+
+[capabilities.ascend_910c_torch_fl]
+title = "Huawei Ascend 910C native quantum workflows"
+summary = "Run native complex PyTorch simulation, gradients, hybrid training, noise, TEBD, native dynamics and QEC predecoder training on the fixed Ascend Torch-FL stack."
+category = "simulation_and_training"
+user_goals = ["Run quantum workflows on Huawei Ascend 910C", "Train native complex quantum models on Ascend", "Reproduce the pinned Ascend acceptance tests"]
+public_apis = ["Circuit", "Module", "run", "plan", "gradient", "flagquantum.lindblad.run"]
+runtime_modes = ["statevector", "mps", "tensor_network", "density_matrix", "native_dynamics", "qec_predecoder"]
+hardware = ["huawei_ascend_910c", "torch_fl_flagos", "cann_9_0_0"]
+gradient_support = "development_evidence_autograd_and_explicit_methods"
+distribution_semantics = "single_device_fast_path"
+quick_start = "docs/guides/ASCEND_910C.md"
+documentation = "docs/guides/ASCEND_910C.md"
+level = "development_evidence"
+owner = "FlagQuantum and Torch-FL integration maintainers"
+limitations = "Requires the exact source fixes and dependencies in the Ascend guide; published wheels alone are insufficient. The hardware record covers complex64/complex128 circuit workflows and the stated dynamics/QEC cases, with explicit CPU references, I/O and global QEC decoding boundaries. Optional JAX, CUDA-specific external simulators and quantum-cloud backends retain their own requirements. This is bounded hardware development evidence, not production, performance, capacity or hardware certification."
+focused_tests = "tests/integration/test_ascend_circuit_workflows.py"
+integration_tests = "tests/integration/test_ascend_native_dynamics.py"
+development_artifact = "artifacts/ascend_910c_20261030.json"
+
+[capabilities.ascend_910c_sharded_training]
+title = "Huawei Ascend 910C sharded quantum training"
+summary = "Run owner-sharded statevector, MPS and tensor-network training through pure FlagOS FlagCX, including two-host training and fresh-process checkpoint restart."
+category = "distributed_execution"
+user_goals = ["Validate sharded training on Ascend 910C", "Resume Ascend training across two hosts", "Audit communication and device memory statistics"]
+public_apis = ["flagquantum.experimental.distributed.train_distributed_statevector", "flagquantum.experimental.distributed.train_distributed_mps", "flagquantum.experimental.distributed.train_distributed_tensor_network"]
+runtime_modes = ["distributed_statevector", "distributed_mps", "distributed_tensor_network"]
+hardware = ["huawei_ascend_910c", "single_node_2_4_8_logical_npus", "two_nodes_one_logical_npu_per_host"]
+gradient_support = "development_evidence_owner_sharded_reduce_scatter"
+distribution_semantics = "sharded_across_ranks"
+quick_start = "docs/guides/ASCEND_910C.md"
+documentation = "docs/guides/ASCEND_910C.md"
+level = "development_evidence"
+owner = "FlagQuantum distributed runtime maintainers"
+limitations = "Requires pinned Torch-FL and patched pure FlagOS FlagCX builds. The statevector ladder covers 2/4/8 logical NPUs, corresponding to 1/2/4 physical 910C cards. Two-host tests use one logical NPU per host and shared LeoFS checkpoints. FP64 reductions use blocking lossless int64 broadcasts plus device arithmetic. Small correctness workloads and real owner-sharded updates do not establish capacity expansion, speedup, convergence, production support or release certification. DDP evidence is separately labeled data_parallel_replicated."
+focused_tests = "tests/unit/test_flagos_statevector_training_profile.py"
+integration_tests = "tools/validate_flagos_statevector_training.py"
+development_artifact = "artifacts/ascend_910c_20261030.json"

@@ -24,25 +24,29 @@ from ..operators import SuperOperator
 from .lindblad_request import _require_density_matrices
 
 
-def _fusion_matrices() -> tuple[torch.Tensor, torch.Tensor]:
+def _fusion_matrices(
+    device: torch.device | str = "cpu",
+) -> tuple[torch.Tensor, torch.Tensor]:
     """Return fresh F/R matrices in the reviewed Nayak Ising gauge."""
     fusion = torch.tensor(
-        [[1, 1], [1, -1]], dtype=torch.complex128, device="cpu"
+        [[1, 1], [1, -1]], dtype=torch.complex128, device=device
     ) / math.sqrt(2)
     exchange = torch.diag(
         torch.tensor(
             [cmath.exp(-1j * math.pi / 8), cmath.exp(3j * math.pi / 8)],
             dtype=torch.complex128,
-            device="cpu",
+            device=device,
         )
     )
     return fusion, exchange
 
 
-def _exchange_unitary(exchange: IsingExchange) -> torch.Tensor:
+def _exchange_unitary(
+    exchange: IsingExchange, device: torch.device | str = "cpu"
+) -> torch.Tensor:
     """Read one adjacent generator, retaining its complex global phase."""
     check_ising_exchange(exchange)
-    fusion, outer = _fusion_matrices()
+    fusion, outer = _fusion_matrices(device)
     forward = fusion.mH @ outer @ fusion if exchange.left == 1 else outer
     return forward.mH if exchange.clockwise else forward
 
@@ -59,15 +63,17 @@ def _ising_actions(record: ProgramRecord) -> tuple[IsingContext, tuple[Operation
     return context, record.functions[0].blocks[0].operations
 
 
-def _initial_density(context: IsingContext) -> torch.Tensor:
-    state = torch.zeros((2, 2), dtype=torch.complex128, device="cpu")
+def _initial_density(
+    context: IsingContext, device: torch.device | str = "cpu"
+) -> torch.Tensor:
+    state = torch.zeros((2, 2), dtype=torch.complex128, device=device)
     initial = 0 if context.initial_channel == "1" else 1
     state[initial, initial] = 1
     return state
 
 
-def _charge_projectors() -> tuple[torch.Tensor, ...]:
-    return torch.diag_embed(torch.eye(2, dtype=torch.complex128, device="cpu")).unbind(
+def _charge_projectors(device: torch.device | str = "cpu") -> tuple[torch.Tensor, ...]:
+    return torch.diag_embed(torch.eye(2, dtype=torch.complex128, device=device)).unbind(
         0
     )
 
@@ -77,13 +83,15 @@ def _apply_ising_actions(
 ) -> torch.Tensor:
     for operation in operations:
         if operation.opcode == "ising.dephase_pair":
-            state = SuperOperator.from_kraus(_charge_projectors()).apply(state)
+            state = SuperOperator.from_kraus(_charge_projectors(state.device)).apply(
+                state
+            )
             continue
         if operation.opcode == "ising.measure_pair":
             raise CapabilityError("sampled Ising actions require a selected outcome")
         exchange = operation.physical_data
         assert isinstance(exchange, IsingExchange)
-        unitary = _exchange_unitary(exchange)
+        unitary = _exchange_unitary(exchange, state.device)
         state = SuperOperator.left_right_multiply(unitary, unitary.mH).apply(state)
     return state
 
@@ -95,11 +103,15 @@ def _sampled_boundary(operations: tuple[Operation, ...]) -> int:
     raise CapabilityError("conditional Ising actions require a sampled observation")
 
 
-def _ising_sampled_prefix(record: ProgramRecord) -> torch.Tensor:
+def _ising_sampled_prefix(
+    record: ProgramRecord, device: torch.device | str = "cpu"
+) -> torch.Tensor:
     """Evolve to the sampled boundary without drawing or modifying any RNG."""
     context, operations = _ising_actions(record)
     boundary = _sampled_boundary(operations)
-    return _apply_ising_actions(_initial_density(context), operations[:boundary])
+    return _apply_ising_actions(
+        _initial_density(context, device), operations[:boundary]
+    )
 
 
 def _continue_ising_sampled(
@@ -118,7 +130,7 @@ def _continue_ising_sampled(
     if (
         prefix_density.shape != (2, 2)
         or prefix_density.dtype != torch.complex128
-        or prefix_density.device.type != "cpu"
+        or prefix_density.device.type not in {"cpu", "flagos"}
         or prefix_density.requires_grad
         or not bool(torch.isfinite(prefix_density).all())
     ):
@@ -129,19 +141,21 @@ def _continue_ising_sampled(
         _require_density_matrices(prefix_density, tolerance=1e-10)
     except ValidationError as error:
         raise ExecutionError("invalid Ising prefix density") from error
-    branch = SuperOperator.from_kraus((_charge_projectors()[selected_index],)).apply(
-        prefix_density
-    )
+    branch = SuperOperator.from_kraus(
+        (_charge_projectors(prefix_density.device)[selected_index],)
+    ).apply(prefix_density)
     probability = torch.trace(branch).real
     if not bool(torch.isfinite(probability)) or probability <= 0:
         raise ExecutionError("selected Ising branch must have a positive finite trace")
     return _apply_ising_actions(branch / probability, operations[boundary + 1 :])
 
 
-def evolve_ising_braid(record: ProgramRecord) -> torch.Tensor:
+def evolve_ising_braid(
+    record: ProgramRecord, *, device: torch.device | str = "cpu"
+) -> torch.Tensor:
     """Apply ordered braids and unread charge actions to the initial density.
 
-    Return one CPU complex128 (2, 2) density matrix in canonical fusion order.
+    Return one complex128 (2, 2) density matrix on the requested device in canonical fusion order.
     Runtime owns input admission, batching, planning, outputs and result evidence;
     this entry does not activate native execution through fq.plan or fq.run.
     """
@@ -150,4 +164,4 @@ def evolve_ising_braid(record: ProgramRecord) -> torch.Tensor:
         raise CapabilityError(
             "sampled Ising actions require a Runtime-selected outcome"
         )
-    return _apply_ising_actions(_initial_density(context), operations)
+    return _apply_ising_actions(_initial_density(context, device), operations)

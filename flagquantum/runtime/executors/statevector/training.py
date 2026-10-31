@@ -20,6 +20,7 @@ import torch
 import torch.distributed as dist
 
 from ....compute import get_platform_runtime, resolve_platform_device
+from ....compute._memory import _peak_allocated_memory
 from ....core.ir import ensure_circuit_ir
 from ....testing.watchdog import PhaseAwareWatchdog, ProgressSnapshot
 from ...distributed.context import resolve_local_world_size, resolve_node_count
@@ -186,7 +187,7 @@ class ShardedTrainingResult:
 
 
 def _memory_bytes(device: torch.device) -> int:
-    if device.type == "cuda":
+    if device.type != "cpu":
         memory = get_platform_runtime(device.type).memory_snapshot(device)
         return int(memory.allocated_bytes or 0)
     # Linux reports ru_maxrss in KiB. This is process-wide CPU resident memory,
@@ -681,8 +682,8 @@ class _ShardedTrainingSweep:
                 )
             _broadcast_parameters(self.parameters, self.owners)
 
-        if self.device.type == "cuda":
-            torch.cuda.reset_peak_memory_stats(self.device)
+        if self.device.type != "cpu":
+            _peak_allocated_memory(self.device, reset=True, platform=self.platform)
         self.progress: list[TrainingProgress] = []
         self.losses: list[float] = []
         self.checkpoint_files: list[str] = []
@@ -704,7 +705,7 @@ class _ShardedTrainingSweep:
     ) -> None:
         """Record one progress snapshot and let the watchdog observe it."""
 
-        if self.device.type == "cuda":
+        if self.device.type != "cpu":
             self.platform.synchronize(self.device)
         now = time.monotonic()
         snapshot = ProgressSnapshot(
@@ -730,8 +731,8 @@ class _ShardedTrainingSweep:
                 useful_work_launched=snapshot.useful_work_launched,
                 device=str(self.device),
                 device_activity=(
-                    "cuda_phase_synchronized"
-                    if self.device.type == "cuda"
+                    f"{self.device.type}_phase_synchronized"
+                    if self.device.type != "cpu"
                     else "cpu_operation_completed"
                 ),
                 topology=f"rank:{self.rank}/world:{self.world_size}",
@@ -883,8 +884,8 @@ class _ShardedTrainingSweep:
 
         self.emit(self.steps, "teardown", "training_complete", self.steps)
         peak_memory = (
-            int(torch.cuda.max_memory_allocated(self.device))
-            if self.device.type == "cuda"
+            _peak_allocated_memory(self.device, reset=False, platform=self.platform)
+            if self.device.type != "cpu"
             else max((item.memory_bytes for item in self.progress), default=0)
         )
         ownership = tuple(

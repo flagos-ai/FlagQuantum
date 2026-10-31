@@ -95,8 +95,10 @@ def exponential_action(
     if window < 1:
         return vector.clone(), float("inf")
     basis = [vector / norm_tensor]
-    hessenberg = torch.zeros((window + 1, window), dtype=_COEFFICIENT_DTYPE)
-    coefficients = torch.zeros(1, dtype=_COEFFICIENT_DTYPE)
+    hessenberg = torch.zeros(
+        (window + 1, window), dtype=_COEFFICIENT_DTYPE, device=vector.device
+    )
+    coefficients = torch.zeros(1, dtype=_COEFFICIENT_DTYPE, device=vector.device)
     relative = float("inf")
     closed = False
     for index in range(window):

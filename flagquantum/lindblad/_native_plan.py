@@ -40,6 +40,10 @@ def native_request(
     parameter_values: Any,
     allow_presence: bool = False,
 ) -> tuple[dict[str, Any], list[dict[str, float]] | None]:
+    if str(device).split(":", 1)[0] == "flagos":
+        from ..compute import resolve_platform_device
+
+        device = resolve_platform_device(device)
     for field, value in (
         ("n_qubits", n_qubits),
         ("basis_labels", basis_labels),
@@ -70,12 +74,15 @@ def native_request(
     ):
         if not allow_presence:
             raise CapabilityError("presence requires a sampled conditional trajectory")
-        if dtype != torch.complex128 or torch.device(device).type != "cpu":
+        if dtype != torch.complex128 or str(device).split(":", 1)[0] not in {
+            "cpu",
+            "flagos",
+        }:
             raise CapabilityError("presence dynamics requires CPU complex128")
         from ..simulation.rydberg_presence import _presence_model
 
         numeric, bindings, _ = _presence_model(
-            record, times, parameter_values=parameter_values
+            record, times, parameter_values=parameter_values, device=device
         )
         return numeric, bindings
     return native_model(
@@ -256,10 +263,17 @@ def validate_native_plan(payload: Mapping[str, Any]) -> None:
             )
             if len(captured) != len(numeric["bound_hamiltonians"]):
                 raise SerializationError("native interval count disagrees with source")
+            # Verify the bounded serialized source payload on host; the live
+            # Hamiltonians and evolution remain on the requested device.
             for actual, expected in zip(
                 captured, numeric["bound_hamiltonians"], strict=True
             ):
-                if not torch.allclose(actual, expected, atol=epsilon, rtol=epsilon):
+                if not torch.allclose(
+                    actual.detach().cpu(),
+                    expected.detach().cpu(),
+                    atol=epsilon,
+                    rtol=epsilon,
+                ):
                     raise SerializationError(
                         "native Hamiltonians disagree with source and bindings"
                     )
@@ -271,7 +285,12 @@ def validate_native_plan(payload: Mapping[str, Any]) -> None:
             ):
                 if not math.isclose(
                     rate, source_rate, abs_tol=epsilon, rel_tol=epsilon
-                ) or not torch.allclose(actual, expected, atol=epsilon, rtol=epsilon):
+                ) or not torch.allclose(
+                    actual.detach().cpu(),
+                    expected.detach().cpu(),
+                    atol=epsilon,
+                    rtol=epsilon,
+                ):
                     raise SerializationError("native loss model disagrees with source")
     except SerializationError:
         raise

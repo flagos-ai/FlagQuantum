@@ -21,8 +21,10 @@ def on_device(correction: Correction, device: torch.device) -> Correction:
     The caller places its model on the same device. Blocking CPU outputs include
     D2H completion before global matching; no accelerator fallback is permitted.
     """
-    if device.type not in ("cpu", "cuda"):
-        raise ValueError("comparison supports only explicit CPU or CUDA devices")
+    if device.type not in ("cpu", "cuda", "flagos"):
+        raise ValueError(
+            "comparison supports only explicit CPU or CUDA devices, or FlagOS"
+        )
 
     def run(bits: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         transferred = bits.to(device)

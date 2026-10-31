@@ -1,0 +1,2963 @@
+{
+  "rank": 0,
+  "device": "flagos:0",
+  "world_size": 2,
+  "local_world_size": 1,
+  "node_count": 2,
+  "cases": {
+    "mps_torch.complex64_sgd": {
+      "status": "passed",
+      "summary": {
+        "executor": "pytorch_native_sharded_mps_training_v1",
+        "distribution_semantics": "sharded_across_ranks",
+        "rank": 0,
+        "world_size": 2,
+        "local_world_size": 1,
+        "node_count": 2,
+        "optimizer": "sgd",
+        "completed_steps": 3,
+        "start_step": 0,
+        "losses": [
+          0.957393229007721,
+          0.955997884273529,
+          0.9544946551322937
+        ],
+        "optimizer_state_ownership_semantics": "sharded_across_ranks",
+        "optimizer_ownership": [
+          {
+            "parameter_index": 0,
+            "owner_rank": 0,
+            "optimizer_state_local": true,
+            "gradient_route": "bounded_dtype_owner_reduce",
+            "update_route": "owner_step_then_bounded_dtype_all_gather"
+          },
+          {
+            "parameter_index": 1,
+            "owner_rank": 1,
+            "optimizer_state_local": false,
+            "gradient_route": "bounded_dtype_owner_reduce",
+            "update_route": "owner_step_then_bounded_dtype_all_gather"
+          }
+        ],
+        "step_metrics": [
+          {
+            "step": 0,
+            "loss": 0.957393229007721,
+            "forward_seconds": 1.9904783414676785,
+            "reverse_seconds": 4.113761099986732,
+            "optimizer_seconds": 0.013196864165365696,
+            "end_to_end_seconds": 6.118391466327012,
+            "training_compute_seconds": 6.1175647005438805,
+            "diagnostics_seconds": 0.0008246852084994316,
+            "static_qr_metadata_records": 3,
+            "dynamic_metadata_broadcasts": 0,
+            "reverse_segment_cache_hit": false,
+            "gradient_bucket_cache_hit": false,
+            "layer_halo_message_count": 0,
+            "layer_halo_payload_bytes": 0,
+            "layer_halo_intra_node_bytes": 0,
+            "layer_halo_inter_node_bytes": 0,
+            "layer_halo_wait_seconds": 0.0,
+            "owned_site_work": 2,
+            "owned_bond_work": 2,
+            "boundary_exchanges": 1,
+            "svd_activity": 2,
+            "qr_activity": 0,
+            "peak_memory_bytes": 201358848,
+            "useful_work_completed": true,
+            "two_site_splits": 2,
+            "truncated_splits": 0,
+            "discarded_weight": 0.0,
+            "boundary_forward_exchanges": 1,
+            "boundary_reverse_exchanges": 1,
+            "boundary_bytes": 144,
+            "bond_updates": [
+              {
+                "operation_id": "56c5cffbb196271a",
+                "bond": 1,
+                "owner_ranks": [
+                  0,
+                  1
+                ],
+                "compute_owner": 0,
+                "original_rank": 2,
+                "kept_rank": 2,
+                "discarded_weight": 0.0,
+                "communication_peer": 1,
+                "communication_sequence": 5,
+                "input_shapes": [
+                  [
+                    1,
+                    2,
+                    2,
+                    1
+                  ],
+                  [
+                    1,
+                    1,
+                    2,
+                    1
+                  ]
+                ],
+                "output_shapes": [
+                  [
+                    1,
+                    2,
+                    2,
+                    2
+                  ],
+                  [
+                    1,
+                    2,
+                    2,
+                    1
+                  ]
+                ],
+                "payload_bytes": 144,
+                "forward_transport": "batched_isend_irecv",
+                "reverse_transport": "batched_isend_irecv"
+              }
+            ],
+            "allocated_memory_bytes": 25600,
+            "reserved_memory_bytes": 203423744,
+            "tape_memory_bytes": 496,
+            "optimizer_memory_bytes": 0,
+            "communication_buffer_bytes": 144,
+            "gradient_collective_count": 2,
+            "gradient_collective_bytes": 8,
+            "gradient_bucket_count": 2,
+            "gradient_bucket_fill_ratio": 1.52587890625e-07,
+            "reverse_tape_segments": 6,
+            "fused_reverse_segments": 2,
+            "reverse_autograd_grad_invocations": 3,
+            "reverse_python_dispatches": 6,
+            "qr_factorization_count": 3,
+            "svd_factorization_count": 0,
+            "objective_scan_pairs": 1,
+            "objective_scan_forward_messages": 1,
+            "objective_scan_reverse_messages": 1,
+            "objective_execution": "heisenberg_mpo_five_channel_scan",
+            "learning_rate": 0.02,
+            "largest_realized_bond": 2,
+            "forward_peak_memory_bytes": 43008,
+            "reverse_peak_memory_bytes": 201358848,
+            "optimizer_stage": "sgd",
+            "objective_evaluations": 1,
+            "parameter_gradients": [
+              [
+                0,
+                0.03620176017284393
+              ]
+            ],
+            "parameter_values": [
+              [
+                0,
+                0.3100000023841858
+              ]
+            ],
+            "optimizer_collective_count": 1,
+            "optimizer_collective_bytes": 8,
+            "lbfgs_history_length": 0,
+            "adjoint_tensor_bytes": 208,
+            "forward_tensor_bytes": 112,
+            "boundary_gradient_buffer_bytes": 48,
+            "canonicalization_temporary_bytes": 0,
+            "truncation_temporary_bytes": 0
+          },
+          {
+            "step": 1,
+            "loss": 0.955997884273529,
+            "forward_seconds": 0.3705357611179352,
+            "reverse_seconds": 0.09951388463377953,
+            "optimizer_seconds": 0.0019058939069509506,
+            "end_to_end_seconds": 0.4730553785338998,
+            "training_compute_seconds": 0.47206719405949116,
+            "diagnostics_seconds": 0.00098472461104393,
+            "static_qr_metadata_records": 3,
+            "dynamic_metadata_broadcasts": 0,
+            "reverse_segment_cache_hit": true,
+            "gradient_bucket_cache_hit": true,
+            "layer_halo_message_count": 0,
+            "layer_halo_payload_bytes": 0,
+            "layer_halo_intra_node_bytes": 0,
+            "layer_halo_inter_node_bytes": 0,
+            "layer_halo_wait_seconds": 0.0,
+            "owned_site_work": 2,
+            "owned_bond_work": 2,
+            "boundary_exchanges": 1,
+            "svd_activity": 2,
+            "qr_activity": 0,
+            "peak_memory_bytes": 201358848,
+            "useful_work_completed": true,
+            "two_site_splits": 2,
+            "truncated_splits": 0,
+            "discarded_weight": 0.0,
+            "boundary_forward_exchanges": 1,
+            "boundary_reverse_exchanges": 1,
+            "boundary_bytes": 144,
+            "bond_updates": [
+              {
+                "operation_id": "56c5cffbb196271a",
+                "bond": 1,
+                "owner_ranks": [
+                  0,
+                  1
+                ],
+                "compute_owner": 0,
+                "original_rank": 2,
+                "kept_rank": 2,
+                "discarded_weight": 0.0,
+                "communication_peer": 1,
+                "communication_sequence": 5,
+                "input_shapes": [
+                  [
+                    1,
+                    2,
+                    2,
+                    1
+                  ],
+                  [
+                    1,
+                    1,
+                    2,
+                    1
+                  ]
+                ],
+                "output_shapes": [
+                  [
+                    1,
+                    2,
+                    2,
+                    2
+                  ],
+                  [
+                    1,
+                    2,
+                    2,
+                    1
+                  ]
+                ],
+                "payload_bytes": 144,
+                "forward_transport": "batched_isend_irecv",
+                "reverse_transport": "batched_isend_irecv"
+              }
+            ],
+            "allocated_memory_bytes": 25600,
+            "reserved_memory_bytes": 203423744,
+            "tape_memory_bytes": 496,
+            "optimizer_memory_bytes": 0,
+            "communication_buffer_bytes": 144,
+            "gradient_collective_count": 2,
+            "gradient_collective_bytes": 8,
+            "gradient_bucket_count": 2,
+            "gradient_bucket_fill_ratio": 1.52587890625e-07,
+            "reverse_tape_segments": 6,
+            "fused_reverse_segments": 2,
+            "reverse_autograd_grad_invocations": 3,
+            "reverse_python_dispatches": 6,
+            "qr_factorization_count": 3,
+            "svd_factorization_count": 0,
+            "objective_scan_pairs": 1,
+            "objective_scan_forward_messages": 1,
+            "objective_scan_reverse_messages": 1,
+            "objective_execution": "heisenberg_mpo_five_channel_scan",
+            "learning_rate": 0.02,
+            "largest_realized_bond": 2,
+            "forward_peak_memory_bytes": 201358848,
+            "reverse_peak_memory_bytes": 39936,
+            "optimizer_stage": "sgd",
+            "objective_evaluations": 1,
+            "parameter_gradients": [
+              [
+                0,
+                0.0372692346572876
+              ]
+            ],
+            "parameter_values": [
+              [
+                0,
+                0.30927595496177673
+              ]
+            ],
+            "optimizer_collective_count": 1,
+            "optimizer_collective_bytes": 8,
+            "lbfgs_history_length": 0,
+            "adjoint_tensor_bytes": 208,
+            "forward_tensor_bytes": 112,
+            "boundary_gradient_buffer_bytes": 48,
+            "canonicalization_temporary_bytes": 0,
+            "truncation_temporary_bytes": 0
+          },
+          {
+            "step": 2,
+            "loss": 0.9544946551322937,
+            "forward_seconds": 0.3920343415811658,
+            "reverse_seconds": 0.10003799758851528,
+            "optimizer_seconds": 0.0017897794023156166,
+            "end_to_end_seconds": 0.4946978660300374,
+            "training_compute_seconds": 0.49397204350680113,
+            "diagnostics_seconds": 0.0007245922461152077,
+            "static_qr_metadata_records": 3,
+            "dynamic_metadata_broadcasts": 0,
+            "reverse_segment_cache_hit": true,
+            "gradient_bucket_cache_hit": true,
+            "layer_halo_message_count": 0,
+            "layer_halo_payload_bytes": 0,
+            "layer_halo_intra_node_bytes": 0,
+            "layer_halo_inter_node_bytes": 0,
+            "layer_halo_wait_seconds": 0.0,
+            "owned_site_work": 2,
+            "owned_bond_work": 2,
+            "boundary_exchanges": 1,
+            "svd_activity": 2,
+            "qr_activity": 0,
+            "peak_memory_bytes": 65536,
+            "useful_work_completed": true,
+            "two_site_splits": 2,
+            "truncated_splits": 0,
+            "discarded_weight": 0.0,
+            "boundary_forward_exchanges": 1,
+            "boundary_reverse_exchanges": 1,
+            "boundary_bytes": 144,
+            "bond_updates": [
+              {
+                "operation_id": "56c5cffbb196271a",
+                "bond": 1,
+                "owner_ranks": [
+                  0,
+                  1
+                ],
+                "compute_owner": 0,
+                "original_rank": 2,
+                "kept_rank": 2,
+                "discarded_weight": 0.0,
+                "communication_peer": 1,
+                "communication_sequence": 5,
+                "input_shapes": [
+                  [
+                    1,
+                    2,
+                    2,
+                    1
+                  ],
+                  [
+                    1,
+                    1,
+                    2,
+                    1
+                  ]
+                ],
+                "output_shapes": [
+                  [
+                    1,
+                    2,
+                    2,
+                    2
+                  ],
+                  [
+                    1,
+                    2,
+                    2,
+                    1
+                  ]
+                ],
+                "payload_bytes": 144,
+                "forward_transport": "batched_isend_irecv",
+                "reverse_transport": "batched_isend_irecv"
+              }
+            ],
+            "allocated_memory_bytes": 25600,
+            "reserved_memory_bytes": 203423744,
+            "tape_memory_bytes": 496,
+            "optimizer_memory_bytes": 0,
+            "communication_buffer_bytes": 144,
+            "gradient_collective_count": 2,
+            "gradient_collective_bytes": 8,
+            "gradient_bucket_count": 2,
+            "gradient_bucket_fill_ratio": 1.52587890625e-07,
+            "reverse_tape_segments": 6,
+            "fused_reverse_segments": 2,
+            "reverse_autograd_grad_invocations": 3,
+            "reverse_python_dispatches": 6,
+            "qr_factorization_count": 3,
+            "svd_factorization_count": 0,
+            "objective_scan_pairs": 1,
+            "objective_scan_forward_messages": 1,
+            "objective_scan_reverse_messages": 1,
+            "objective_execution": "heisenberg_mpo_five_channel_scan",
+            "learning_rate": 0.02,
+            "largest_realized_bond": 2,
+            "forward_peak_memory_bytes": 65536,
+            "reverse_peak_memory_bytes": 39936,
+            "optimizer_stage": "sgd",
+            "objective_evaluations": 1,
+            "parameter_gradients": [
+              [
+                0,
+                0.0383736789226532
+              ]
+            ],
+            "parameter_values": [
+              [
+                0,
+                0.3085305690765381
+              ]
+            ],
+            "optimizer_collective_count": 1,
+            "optimizer_collective_bytes": 8,
+            "lbfgs_history_length": 0,
+            "adjoint_tensor_bytes": 208,
+            "forward_tensor_bytes": 112,
+            "boundary_gradient_buffer_bytes": 48,
+            "canonicalization_temporary_bytes": 0,
+            "truncation_temporary_bytes": 0
+          }
+        ],
+        "memory_growth_bytes": 0,
+        "suspected_memory_leak": false,
+        "checkpoint_files": [],
+        "checkpoint_schema": "sharded_mps_training_checkpoint_v2",
+        "checkpoint_integrity": "sha256_atomic_file_and_metadata",
+        "checkpoint_commit_protocol": "immutable_rank_shards_atomic_manifest_v1",
+        "checkpoint_retention_generations": 2,
+        "checkpoint_pruned_files": [],
+        "checkpoint_write_seconds": 0.0,
+        "checkpoint_commit_seconds": 0.0,
+        "checkpoint_prune_seconds": 0.0,
+        "checkpoint_bytes_written": 0,
+        "checkpoint_retained_bytes": 0,
+        "checkpoint_free_space_reserve_bytes": 1073741824,
+        "checkpoint_min_free_bytes_observed": 0,
+        "checkpoint_estimated_generation_bytes": 0,
+        "checkpoint_storage_semantics": "shared_filesystem_verified",
+        "checkpoint_storage_probe_seconds": 0.0,
+        "checkpoint_overwrite_allowed": false,
+        "checkpoint_deserialization_policy": "torch_weights_only",
+        "checkpoint_writer_lease": "exclusive_atomic_file_v1",
+        "checkpoint_writer_lease_break_allowed": false,
+        "checkpoint_writer_lease_stale_seconds": 3600.0,
+        "checkpoint_writer_lease_heartbeat_count": 0,
+        "checkpoint_writer_lease_heartbeat_seconds": 0.0,
+        "checkpoint_contract_fingerprint": "509e623db1c9bcd465b3b5659f46e4db88c59c5925bb1400e9af54be4234c1df",
+        "memory_warmup_steps": 1,
+        "communication_setup_seconds": 0.5363003071397543,
+        "site_kernel_execution": "eager",
+        "site_kernel_selection_reason": "auto_cpu_eager_fast_path",
+        "site_ownership": [
+          [
+            0,
+            1
+          ],
+          [
+            2,
+            3
+          ]
+        ],
+        "site_ownership_policy": "balanced",
+        "communication_protocol": "batched_isend_irecv_packed_multi_tensor_envelope",
+        "communication_stream": "dedicated_cuda_stream",
+        "rank_useful_work": true,
+        "full_mps_materialization": false,
+        "speedup_gate_passed": false,
+        "capacity_gate_passed": false,
+        "correctness_gate_passed": true,
+        "scalability_claim_allowed": false,
+        "release_gate_allowed": false,
+        "blockers": [
+          "release_speedup_evidence_not_attached",
+          "release_capacity_evidence_not_attached",
+          "multi_gpu_scaling_report_not_attached"
+        ]
+      },
+      "cpu_losses": [
+        0.9573941230773926,
+        0.9559987783432007,
+        0.954495370388031
+      ],
+      "parameters": [
+        0.30776309967041016,
+        -0.18614859879016876
+      ]
+    },
+    "mps_torch.complex64_adam": {
+      "status": "passed",
+      "summary": {
+        "executor": "pytorch_native_sharded_mps_training_v1",
+        "distribution_semantics": "sharded_across_ranks",
+        "rank": 0,
+        "world_size": 2,
+        "local_world_size": 1,
+        "node_count": 2,
+        "optimizer": "adam",
+        "completed_steps": 3,
+        "start_step": 0,
+        "losses": [
+          0.957393229007721,
+          0.9510278701782227,
+          0.9437436461448669
+        ],
+        "optimizer_state_ownership_semantics": "sharded_across_ranks",
+        "optimizer_ownership": [
+          {
+            "parameter_index": 0,
+            "owner_rank": 0,
+            "optimizer_state_local": true,
+            "gradient_route": "bounded_dtype_owner_reduce",
+            "update_route": "owner_step_then_bounded_dtype_all_gather"
+          },
+          {
+            "parameter_index": 1,
+            "owner_rank": 1,
+            "optimizer_state_local": false,
+            "gradient_route": "bounded_dtype_owner_reduce",
+            "update_route": "owner_step_then_bounded_dtype_all_gather"
+          }
+        ],
+        "step_metrics": [
+          {
+            "step": 0,
+            "loss": 0.957393229007721,
+            "forward_seconds": 0.3699445044621825,
+            "reverse_seconds": 0.09790135268121958,
+            "optimizer_seconds": 0.20496748201549053,
+            "end_to_end_seconds": 0.6736890180036426,
+            "training_compute_seconds": 0.6729126740247011,
+            "diagnostics_seconds": 0.0007746145129203796,
+            "static_qr_metadata_records": 3,
+            "dynamic_metadata_broadcasts": 0,
+            "reverse_segment_cache_hit": true,
+            "gradient_bucket_cache_hit": true,
+            "layer_halo_message_count": 0,
+            "layer_halo_payload_bytes": 0,
+            "layer_halo_intra_node_bytes": 0,
+            "layer_halo_inter_node_bytes": 0,
+            "layer_halo_wait_seconds": 0.0,
+            "owned_site_work": 2,
+            "owned_bond_work": 2,
+            "boundary_exchanges": 1,
+            "svd_activity": 2,
+            "qr_activity": 0,
+            "peak_memory_bytes": 60416,
+            "useful_work_completed": true,
+            "two_site_splits": 2,
+            "truncated_splits": 0,
+            "discarded_weight": 0.0,
+            "boundary_forward_exchanges": 1,
+            "boundary_reverse_exchanges": 1,
+            "boundary_bytes": 144,
+            "bond_updates": [
+              {
+                "operation_id": "56c5cffbb196271a",
+                "bond": 1,
+                "owner_ranks": [
+                  0,
+                  1
+                ],
+                "compute_owner": 0,
+                "original_rank": 2,
+                "kept_rank": 2,
+                "discarded_weight": 0.0,
+                "communication_peer": 1,
+                "communication_sequence": 5,
+                "input_shapes": [
+                  [
+                    1,
+                    2,
+                    2,
+                    1
+                  ],
+                  [
+                    1,
+                    1,
+                    2,
+                    1
+                  ]
+                ],
+                "output_shapes": [
+                  [
+                    1,
+                    2,
+                    2,
+                    2
+                  ],
+                  [
+                    1,
+                    2,
+                    2,
+                    1
+                  ]
+                ],
+                "payload_bytes": 144,
+                "forward_transport": "batched_isend_irecv",
+                "reverse_transport": "batched_isend_irecv"
+              }
+            ],
+            "allocated_memory_bytes": 27136,
+            "reserved_memory_bytes": 203423744,
+            "tape_memory_bytes": 496,
+            "optimizer_memory_bytes": 12,
+            "communication_buffer_bytes": 144,
+            "gradient_collective_count": 2,
+            "gradient_collective_bytes": 8,
+            "gradient_bucket_count": 2,
+            "gradient_bucket_fill_ratio": 1.52587890625e-07,
+            "reverse_tape_segments": 6,
+            "fused_reverse_segments": 2,
+            "reverse_autograd_grad_invocations": 3,
+            "reverse_python_dispatches": 6,
+            "qr_factorization_count": 3,
+            "svd_factorization_count": 0,
+            "objective_scan_pairs": 1,
+            "objective_scan_forward_messages": 1,
+            "objective_scan_reverse_messages": 1,
+            "objective_execution": "heisenberg_mpo_five_channel_scan",
+            "learning_rate": 0.02,
+            "largest_realized_bond": 2,
+            "forward_peak_memory_bytes": 60416,
+            "reverse_peak_memory_bytes": 40448,
+            "optimizer_stage": "adam",
+            "objective_evaluations": 1,
+            "parameter_gradients": [
+              [
+                0,
+                0.03620176017284393
+              ]
+            ],
+            "parameter_values": [
+              [
+                0,
+                0.3100000023841858
+              ]
+            ],
+            "optimizer_collective_count": 1,
+            "optimizer_collective_bytes": 8,
+            "lbfgs_history_length": 0,
+            "adjoint_tensor_bytes": 208,
+            "forward_tensor_bytes": 112,
+            "boundary_gradient_buffer_bytes": 48,
+            "canonicalization_temporary_bytes": 0,
+            "truncation_temporary_bytes": 0
+          },
+          {
+            "step": 1,
+            "loss": 0.9510278701782227,
+            "forward_seconds": 0.3659805692732334,
+            "reverse_seconds": 0.09890256728976965,
+            "optimizer_seconds": 0.002702990546822548,
+            "end_to_end_seconds": 0.46847127564251423,
+            "training_compute_seconds": 0.46769236121326685,
+            "diagnostics_seconds": 0.0007776739075779915,
+            "static_qr_metadata_records": 3,
+            "dynamic_metadata_broadcasts": 0,
+            "reverse_segment_cache_hit": true,
+            "gradient_bucket_cache_hit": true,
+            "layer_halo_message_count": 0,
+            "layer_halo_payload_bytes": 0,
+            "layer_halo_intra_node_bytes": 0,
+            "layer_halo_inter_node_bytes": 0,
+            "layer_halo_wait_seconds": 0.0,
+            "owned_site_work": 2,
+            "owned_bond_work": 2,
+            "boundary_exchanges": 1,
+            "svd_activity": 2,
+            "qr_activity": 0,
+            "peak_memory_bytes": 67072,
+            "useful_work_completed": true,
+            "two_site_splits": 2,
+            "truncated_splits": 0,
+            "discarded_weight": 0.0,
+            "boundary_forward_exchanges": 1,
+            "boundary_reverse_exchanges": 1,
+            "boundary_bytes": 144,
+            "bond_updates": [
+              {
+                "operation_id": "56c5cffbb196271a",
+                "bond": 1,
+                "owner_ranks": [
+                  0,
+                  1
+                ],
+                "compute_owner": 0,
+                "original_rank": 2,
+                "kept_rank": 2,
+                "discarded_weight": 0.0,
+                "communication_peer": 1,
+                "communication_sequence": 5,
+                "input_shapes": [
+                  [
+                    1,
+                    2,
+                    2,
+                    1
+                  ],
+                  [
+                    1,
+                    1,
+                    2,
+                    1
+                  ]
+                ],
+                "output_shapes": [
+                  [
+                    1,
+                    2,
+                    2,
+                    2
+                  ],
+                  [
+                    1,
+                    2,
+                    2,
+                    1
+                  ]
+                ],
+                "payload_bytes": 144,
+                "forward_transport": "batched_isend_irecv",
+                "reverse_transport": "batched_isend_irecv"
+              }
+            ],
+            "allocated_memory_bytes": 27136,
+            "reserved_memory_bytes": 203423744,
+            "tape_memory_bytes": 496,
+            "optimizer_memory_bytes": 12,
+            "communication_buffer_bytes": 144,
+            "gradient_collective_count": 2,
+            "gradient_collective_bytes": 8,
+            "gradient_bucket_count": 2,
+            "gradient_bucket_fill_ratio": 1.52587890625e-07,
+            "reverse_tape_segments": 6,
+            "fused_reverse_segments": 2,
+            "reverse_autograd_grad_invocations": 3,
+            "reverse_python_dispatches": 6,
+            "qr_factorization_count": 3,
+            "svd_factorization_count": 0,
+            "objective_scan_pairs": 1,
+            "objective_scan_forward_messages": 1,
+            "objective_scan_reverse_messages": 1,
+            "objective_execution": "heisenberg_mpo_five_channel_scan",
+            "learning_rate": 0.02,
+            "largest_realized_bond": 2,
+            "forward_peak_memory_bytes": 67072,
+            "reverse_peak_memory_bytes": 41472,
+            "optimizer_stage": "adam",
+            "objective_evaluations": 1,
+            "parameter_gradients": [
+              [
+                0,
+                0.04051528871059418
+              ]
+            ],
+            "parameter_values": [
+              [
+                0,
+                0.2900000214576721
+              ]
+            ],
+            "optimizer_collective_count": 1,
+            "optimizer_collective_bytes": 8,
+            "lbfgs_history_length": 0,
+            "adjoint_tensor_bytes": 208,
+            "forward_tensor_bytes": 112,
+            "boundary_gradient_buffer_bytes": 48,
+            "canonicalization_temporary_bytes": 0,
+            "truncation_temporary_bytes": 0
+          },
+          {
+            "step": 2,
+            "loss": 0.9437436461448669,
+            "forward_seconds": 0.4190244162455201,
+            "reverse_seconds": 0.0980046484619379,
+            "optimizer_seconds": 0.0026115253567695618,
+            "end_to_end_seconds": 0.5204818965867162,
+            "training_compute_seconds": 0.5197392050176859,
+            "diagnostics_seconds": 0.0007411818951368332,
+            "static_qr_metadata_records": 3,
+            "dynamic_metadata_broadcasts": 0,
+            "reverse_segment_cache_hit": true,
+            "gradient_bucket_cache_hit": true,
+            "layer_halo_message_count": 0,
+            "layer_halo_payload_bytes": 0,
+            "layer_halo_intra_node_bytes": 0,
+            "layer_halo_inter_node_bytes": 0,
+            "layer_halo_wait_seconds": 0.0,
+            "owned_site_work": 2,
+            "owned_bond_work": 2,
+            "boundary_exchanges": 1,
+            "svd_activity": 2,
+            "qr_activity": 0,
+            "peak_memory_bytes": 67072,
+            "useful_work_completed": true,
+            "two_site_splits": 2,
+            "truncated_splits": 0,
+            "discarded_weight": 0.0,
+            "boundary_forward_exchanges": 1,
+            "boundary_reverse_exchanges": 1,
+            "boundary_bytes": 144,
+            "bond_updates": [
+              {
+                "operation_id": "56c5cffbb196271a",
+                "bond": 1,
+                "owner_ranks": [
+                  0,
+                  1
+                ],
+                "compute_owner": 0,
+                "original_rank": 2,
+                "kept_rank": 2,
+                "discarded_weight": 0.0,
+                "communication_peer": 1,
+                "communication_sequence": 5,
+                "input_shapes": [
+                  [
+                    1,
+                    2,
+                    2,
+                    1
+                  ],
+                  [
+                    1,
+                    1,
+                    2,
+                    1
+                  ]
+                ],
+                "output_shapes": [
+                  [
+                    1,
+                    2,
+                    2,
+                    2
+                  ],
+                  [
+                    1,
+                    2,
+                    2,
+                    1
+                  ]
+                ],
+                "payload_bytes": 144,
+                "forward_transport": "batched_isend_irecv",
+                "reverse_transport": "batched_isend_irecv"
+              }
+            ],
+            "allocated_memory_bytes": 27136,
+            "reserved_memory_bytes": 203423744,
+            "tape_memory_bytes": 496,
+            "optimizer_memory_bytes": 12,
+            "communication_buffer_bytes": 144,
+            "gradient_collective_count": 2,
+            "gradient_collective_bytes": 8,
+            "gradient_bucket_count": 2,
+            "gradient_bucket_fill_ratio": 1.52587890625e-07,
+            "reverse_tape_segments": 6,
+            "fused_reverse_segments": 2,
+            "reverse_autograd_grad_invocations": 3,
+            "reverse_python_dispatches": 6,
+            "qr_factorization_count": 3,
+            "svd_factorization_count": 0,
+            "objective_scan_pairs": 1,
+            "objective_scan_forward_messages": 1,
+            "objective_scan_reverse_messages": 1,
+            "objective_execution": "heisenberg_mpo_five_channel_scan",
+            "learning_rate": 0.02,
+            "largest_realized_bond": 2,
+            "forward_peak_memory_bytes": 67072,
+            "reverse_peak_memory_bytes": 41472,
+            "optimizer_stage": "adam",
+            "objective_evaluations": 1,
+            "parameter_gradients": [
+              [
+                0,
+                0.044800952076911926
+              ]
+            ],
+            "parameter_values": [
+              [
+                0,
+                0.2699730396270752
+              ]
+            ],
+            "optimizer_collective_count": 1,
+            "optimizer_collective_bytes": 8,
+            "lbfgs_history_length": 0,
+            "adjoint_tensor_bytes": 208,
+            "forward_tensor_bytes": 112,
+            "boundary_gradient_buffer_bytes": 48,
+            "canonicalization_temporary_bytes": 0,
+            "truncation_temporary_bytes": 0
+          }
+        ],
+        "memory_growth_bytes": 0,
+        "suspected_memory_leak": false,
+        "checkpoint_files": [],
+        "checkpoint_schema": "sharded_mps_training_checkpoint_v2",
+        "checkpoint_integrity": "sha256_atomic_file_and_metadata",
+        "checkpoint_commit_protocol": "immutable_rank_shards_atomic_manifest_v1",
+        "checkpoint_retention_generations": 2,
+        "checkpoint_pruned_files": [],
+        "checkpoint_write_seconds": 0.0,
+        "checkpoint_commit_seconds": 0.0,
+        "checkpoint_prune_seconds": 0.0,
+        "checkpoint_bytes_written": 0,
+        "checkpoint_retained_bytes": 0,
+        "checkpoint_free_space_reserve_bytes": 1073741824,
+        "checkpoint_min_free_bytes_observed": 0,
+        "checkpoint_estimated_generation_bytes": 0,
+        "checkpoint_storage_semantics": "shared_filesystem_verified",
+        "checkpoint_storage_probe_seconds": 0.0,
+        "checkpoint_overwrite_allowed": false,
+        "checkpoint_deserialization_policy": "torch_weights_only",
+        "checkpoint_writer_lease": "exclusive_atomic_file_v1",
+        "checkpoint_writer_lease_break_allowed": false,
+        "checkpoint_writer_lease_stale_seconds": 3600.0,
+        "checkpoint_writer_lease_heartbeat_count": 0,
+        "checkpoint_writer_lease_heartbeat_seconds": 0.0,
+        "checkpoint_contract_fingerprint": "4bd5979e0b62d618959ae1fc7af871602ab1959410435c3305054711f784ad7c",
+        "memory_warmup_steps": 1,
+        "communication_setup_seconds": 0.0,
+        "site_kernel_execution": "eager",
+        "site_kernel_selection_reason": "auto_cpu_eager_fast_path",
+        "site_ownership": [
+          [
+            0,
+            1
+          ],
+          [
+            2,
+            3
+          ]
+        ],
+        "site_ownership_policy": "balanced",
+        "communication_protocol": "batched_isend_irecv_packed_multi_tensor_envelope",
+        "communication_stream": "dedicated_cuda_stream",
+        "rank_useful_work": true,
+        "full_mps_materialization": false,
+        "speedup_gate_passed": false,
+        "capacity_gate_passed": false,
+        "correctness_gate_passed": true,
+        "scalability_claim_allowed": false,
+        "release_gate_allowed": false,
+        "blockers": [
+          "release_speedup_evidence_not_attached",
+          "release_capacity_evidence_not_attached",
+          "multi_gpu_scaling_report_not_attached"
+        ]
+      },
+      "cpu_losses": [
+        0.9573941230773926,
+        0.9510281682014465,
+        0.9437441825866699
+      ],
+      "parameters": [
+        0.24990087747573853,
+        -0.23008741438388824
+      ]
+    },
+    "mps_torch.complex128_sgd": {
+      "status": "passed",
+      "summary": {
+        "executor": "pytorch_native_sharded_mps_training_v1",
+        "distribution_semantics": "sharded_across_ranks",
+        "rank": 0,
+        "world_size": 2,
+        "local_world_size": 1,
+        "node_count": 2,
+        "optimizer": "sgd",
+        "completed_steps": 3,
+        "start_step": 0,
+        "losses": [
+          0.9573938978884055,
+          0.9559985916473526,
+          0.954495325702577
+        ],
+        "optimizer_state_ownership_semantics": "sharded_across_ranks",
+        "optimizer_ownership": [
+          {
+            "parameter_index": 0,
+            "owner_rank": 0,
+            "optimizer_state_local": true,
+            "gradient_route": "bounded_dtype_owner_reduce",
+            "update_route": "owner_step_then_bounded_dtype_all_gather"
+          },
+          {
+            "parameter_index": 1,
+            "owner_rank": 1,
+            "optimizer_state_local": false,
+            "gradient_route": "bounded_dtype_owner_reduce",
+            "update_route": "owner_step_then_bounded_dtype_all_gather"
+          }
+        ],
+        "step_metrics": [
+          {
+            "step": 0,
+            "loss": 0.9573938978884055,
+            "forward_seconds": 0.5113787045702338,
+            "reverse_seconds": 0.09017936140298843,
+            "optimizer_seconds": 0.001760357990860939,
+            "end_to_end_seconds": 0.604171521961689,
+            "training_compute_seconds": 0.603408807888627,
+            "diagnostics_seconds": 0.0007615042850375175,
+            "static_qr_metadata_records": 3,
+            "dynamic_metadata_broadcasts": 0,
+            "reverse_segment_cache_hit": true,
+            "gradient_bucket_cache_hit": false,
+            "layer_halo_message_count": 0,
+            "layer_halo_payload_bytes": 0,
+            "layer_halo_intra_node_bytes": 0,
+            "layer_halo_inter_node_bytes": 0,
+            "layer_halo_wait_seconds": 0.0,
+            "owned_site_work": 2,
+            "owned_bond_work": 2,
+            "boundary_exchanges": 1,
+            "svd_activity": 2,
+            "qr_activity": 0,
+            "peak_memory_bytes": 91648,
+            "useful_work_completed": true,
+            "two_site_splits": 2,
+            "truncated_splits": 0,
+            "discarded_weight": 0.0,
+            "boundary_forward_exchanges": 1,
+            "boundary_reverse_exchanges": 1,
+            "boundary_bytes": 288,
+            "bond_updates": [
+              {
+                "operation_id": "56c5cffbb196271a",
+                "bond": 1,
+                "owner_ranks": [
+                  0,
+                  1
+                ],
+                "compute_owner": 0,
+                "original_rank": 2,
+                "kept_rank": 2,
+                "discarded_weight": 0.0,
+                "communication_peer": 1,
+                "communication_sequence": 5,
+                "input_shapes": [
+                  [
+                    1,
+                    2,
+                    2,
+                    1
+                  ],
+                  [
+                    1,
+                    1,
+                    2,
+                    1
+                  ]
+                ],
+                "output_shapes": [
+                  [
+                    1,
+                    2,
+                    2,
+                    2
+                  ],
+                  [
+                    1,
+                    2,
+                    2,
+                    1
+                  ]
+                ],
+                "payload_bytes": 288,
+                "forward_transport": "batched_isend_irecv",
+                "reverse_transport": "batched_isend_irecv"
+              }
+            ],
+            "allocated_memory_bytes": 79360,
+            "reserved_memory_bytes": 203423744,
+            "tape_memory_bytes": 992,
+            "optimizer_memory_bytes": 0,
+            "communication_buffer_bytes": 288,
+            "gradient_collective_count": 2,
+            "gradient_collective_bytes": 16,
+            "gradient_bucket_count": 2,
+            "gradient_bucket_fill_ratio": 3.0517578125e-07,
+            "reverse_tape_segments": 6,
+            "fused_reverse_segments": 2,
+            "reverse_autograd_grad_invocations": 3,
+            "reverse_python_dispatches": 6,
+            "qr_factorization_count": 3,
+            "svd_factorization_count": 0,
+            "objective_scan_pairs": 1,
+            "objective_scan_forward_messages": 1,
+            "objective_scan_reverse_messages": 1,
+            "objective_execution": "heisenberg_mpo_five_channel_scan",
+            "learning_rate": 0.02,
+            "largest_realized_bond": 2,
+            "forward_peak_memory_bytes": 75776,
+            "reverse_peak_memory_bytes": 91648,
+            "optimizer_stage": "sgd",
+            "objective_evaluations": 1,
+            "parameter_gradients": [
+              [
+                0,
+                0.036201799477557056
+              ]
+            ],
+            "parameter_values": [
+              [
+                0,
+                0.31
+              ]
+            ],
+            "optimizer_collective_count": 1,
+            "optimizer_collective_bytes": 16,
+            "lbfgs_history_length": 0,
+            "adjoint_tensor_bytes": 416,
+            "forward_tensor_bytes": 224,
+            "boundary_gradient_buffer_bytes": 96,
+            "canonicalization_temporary_bytes": 0,
+            "truncation_temporary_bytes": 0
+          },
+          {
+            "step": 1,
+            "loss": 0.9559985916473526,
+            "forward_seconds": 0.44297038670629263,
+            "reverse_seconds": 0.07325682230293751,
+            "optimizer_seconds": 0.0016627740114927292,
+            "end_to_end_seconds": 0.5188309140503407,
+            "training_compute_seconds": 0.517982667312026,
+            "diagnostics_seconds": 0.0008468469604849815,
+            "static_qr_metadata_records": 3,
+            "dynamic_metadata_broadcasts": 0,
+            "reverse_segment_cache_hit": true,
+            "gradient_bucket_cache_hit": true,
+            "layer_halo_message_count": 0,
+            "layer_halo_payload_bytes": 0,
+            "layer_halo_intra_node_bytes": 0,
+            "layer_halo_inter_node_bytes": 0,
+            "layer_halo_wait_seconds": 0.0,
+            "owned_site_work": 2,
+            "owned_bond_work": 2,
+            "boundary_exchanges": 1,
+            "svd_activity": 2,
+            "qr_activity": 0,
+            "peak_memory_bytes": 119296,
+            "useful_work_completed": true,
+            "two_site_splits": 2,
+            "truncated_splits": 0,
+            "discarded_weight": 0.0,
+            "boundary_forward_exchanges": 1,
+            "boundary_reverse_exchanges": 1,
+            "boundary_bytes": 288,
+            "bond_updates": [
+              {
+                "operation_id": "56c5cffbb196271a",
+                "bond": 1,
+                "owner_ranks": [
+                  0,
+                  1
+                ],
+                "compute_owner": 0,
+                "original_rank": 2,
+                "kept_rank": 2,
+                "discarded_weight": 0.0,
+                "communication_peer": 1,
+                "communication_sequence": 5,
+                "input_shapes": [
+                  [
+                    1,
+                    2,
+                    2,
+                    1
+                  ],
+                  [
+                    1,
+                    1,
+                    2,
+                    1
+                  ]
+                ],
+                "output_shapes": [
+                  [
+                    1,
+                    2,
+                    2,
+                    2
+                  ],
+                  [
+                    1,
+                    2,
+                    2,
+                    1
+                  ]
+                ],
+                "payload_bytes": 288,
+                "forward_transport": "batched_isend_irecv",
+                "reverse_transport": "batched_isend_irecv"
+              }
+            ],
+            "allocated_memory_bytes": 79360,
+            "reserved_memory_bytes": 203423744,
+            "tape_memory_bytes": 992,
+            "optimizer_memory_bytes": 0,
+            "communication_buffer_bytes": 288,
+            "gradient_collective_count": 2,
+            "gradient_collective_bytes": 16,
+            "gradient_bucket_count": 2,
+            "gradient_bucket_fill_ratio": 3.0517578125e-07,
+            "reverse_tape_segments": 6,
+            "fused_reverse_segments": 2,
+            "reverse_autograd_grad_invocations": 3,
+            "reverse_python_dispatches": 6,
+            "qr_factorization_count": 3,
+            "svd_factorization_count": 0,
+            "objective_scan_pairs": 1,
+            "objective_scan_forward_messages": 1,
+            "objective_scan_reverse_messages": 1,
+            "objective_execution": "heisenberg_mpo_five_channel_scan",
+            "learning_rate": 0.02,
+            "largest_realized_bond": 2,
+            "forward_peak_memory_bytes": 119296,
+            "reverse_peak_memory_bytes": 93696,
+            "optimizer_stage": "sgd",
+            "objective_evaluations": 1,
+            "parameter_gradients": [
+              [
+                0,
+                0.03726929344467947
+              ]
+            ],
+            "parameter_values": [
+              [
+                0,
+                0.3092759640104489
+              ]
+            ],
+            "optimizer_collective_count": 1,
+            "optimizer_collective_bytes": 16,
+            "lbfgs_history_length": 0,
+            "adjoint_tensor_bytes": 416,
+            "forward_tensor_bytes": 224,
+            "boundary_gradient_buffer_bytes": 96,
+            "canonicalization_temporary_bytes": 0,
+            "truncation_temporary_bytes": 0
+          },
+          {
+            "step": 2,
+            "loss": 0.954495325702577,
+            "forward_seconds": 0.4307200238108635,
+            "reverse_seconds": 0.07278314139693975,
+            "optimizer_seconds": 0.001566859893500805,
+            "end_to_end_seconds": 0.5059942854568362,
+            "training_compute_seconds": 0.5051622986793518,
+            "diagnostics_seconds": 0.0008306670933961868,
+            "static_qr_metadata_records": 3,
+            "dynamic_metadata_broadcasts": 0,
+            "reverse_segment_cache_hit": true,
+            "gradient_bucket_cache_hit": true,
+            "layer_halo_message_count": 0,
+            "layer_halo_payload_bytes": 0,
+            "layer_halo_intra_node_bytes": 0,
+            "layer_halo_inter_node_bytes": 0,
+            "layer_halo_wait_seconds": 0.0,
+            "owned_site_work": 2,
+            "owned_bond_work": 2,
+            "boundary_exchanges": 1,
+            "svd_activity": 2,
+            "qr_activity": 0,
+            "peak_memory_bytes": 119296,
+            "useful_work_completed": true,
+            "two_site_splits": 2,
+            "truncated_splits": 0,
+            "discarded_weight": 0.0,
+            "boundary_forward_exchanges": 1,
+            "boundary_reverse_exchanges": 1,
+            "boundary_bytes": 288,
+            "bond_updates": [
+              {
+                "operation_id": "56c5cffbb196271a",
+                "bond": 1,
+                "owner_ranks": [
+                  0,
+                  1
+                ],
+                "compute_owner": 0,
+                "original_rank": 2,
+                "kept_rank": 2,
+                "discarded_weight": 0.0,
+                "communication_peer": 1,
+                "communication_sequence": 5,
+                "input_shapes": [
+                  [
+                    1,
+                    2,
+                    2,
+                    1
+                  ],
+                  [
+                    1,
+                    1,
+                    2,
+                    1
+                  ]
+                ],
+                "output_shapes": [
+                  [
+                    1,
+                    2,
+                    2,
+                    2
+                  ],
+                  [
+                    1,
+                    2,
+                    2,
+                    1
+                  ]
+                ],
+                "payload_bytes": 288,
+                "forward_transport": "batched_isend_irecv",
+                "reverse_transport": "batched_isend_irecv"
+              }
+            ],
+            "allocated_memory_bytes": 79360,
+            "reserved_memory_bytes": 203423744,
+            "tape_memory_bytes": 992,
+            "optimizer_memory_bytes": 0,
+            "communication_buffer_bytes": 288,
+            "gradient_collective_count": 2,
+            "gradient_collective_bytes": 16,
+            "gradient_bucket_count": 2,
+            "gradient_bucket_fill_ratio": 3.0517578125e-07,
+            "reverse_tape_segments": 6,
+            "fused_reverse_segments": 2,
+            "reverse_autograd_grad_invocations": 3,
+            "reverse_python_dispatches": 6,
+            "qr_factorization_count": 3,
+            "svd_factorization_count": 0,
+            "objective_scan_pairs": 1,
+            "objective_scan_forward_messages": 1,
+            "objective_scan_reverse_messages": 1,
+            "objective_execution": "heisenberg_mpo_five_channel_scan",
+            "learning_rate": 0.02,
+            "largest_realized_bond": 2,
+            "forward_peak_memory_bytes": 119296,
+            "reverse_peak_memory_bytes": 93696,
+            "optimizer_stage": "sgd",
+            "objective_evaluations": 1,
+            "parameter_gradients": [
+              [
+                0,
+                0.03837370519060729
+              ]
+            ],
+            "parameter_values": [
+              [
+                0,
+                0.30853057814155527
+              ]
+            ],
+            "optimizer_collective_count": 1,
+            "optimizer_collective_bytes": 16,
+            "lbfgs_history_length": 0,
+            "adjoint_tensor_bytes": 416,
+            "forward_tensor_bytes": 224,
+            "boundary_gradient_buffer_bytes": 96,
+            "canonicalization_temporary_bytes": 0,
+            "truncation_temporary_bytes": 0
+          }
+        ],
+        "memory_growth_bytes": 0,
+        "suspected_memory_leak": false,
+        "checkpoint_files": [],
+        "checkpoint_schema": "sharded_mps_training_checkpoint_v2",
+        "checkpoint_integrity": "sha256_atomic_file_and_metadata",
+        "checkpoint_commit_protocol": "immutable_rank_shards_atomic_manifest_v1",
+        "checkpoint_retention_generations": 2,
+        "checkpoint_pruned_files": [],
+        "checkpoint_write_seconds": 0.0,
+        "checkpoint_commit_seconds": 0.0,
+        "checkpoint_prune_seconds": 0.0,
+        "checkpoint_bytes_written": 0,
+        "checkpoint_retained_bytes": 0,
+        "checkpoint_free_space_reserve_bytes": 1073741824,
+        "checkpoint_min_free_bytes_observed": 0,
+        "checkpoint_estimated_generation_bytes": 0,
+        "checkpoint_storage_semantics": "shared_filesystem_verified",
+        "checkpoint_storage_probe_seconds": 0.0,
+        "checkpoint_overwrite_allowed": false,
+        "checkpoint_deserialization_policy": "torch_weights_only",
+        "checkpoint_writer_lease": "exclusive_atomic_file_v1",
+        "checkpoint_writer_lease_break_allowed": false,
+        "checkpoint_writer_lease_stale_seconds": 3600.0,
+        "checkpoint_writer_lease_heartbeat_count": 0,
+        "checkpoint_writer_lease_heartbeat_seconds": 0.0,
+        "checkpoint_contract_fingerprint": "603389dd3991b75595f0f79f7eceb9cf56d1b8731743d2f1dcfa27c3ae931299",
+        "memory_warmup_steps": 1,
+        "communication_setup_seconds": 0.0,
+        "site_kernel_execution": "eager",
+        "site_kernel_selection_reason": "auto_cpu_eager_fast_path",
+        "site_ownership": [
+          [
+            0,
+            1
+          ],
+          [
+            2,
+            3
+          ]
+        ],
+        "site_ownership_policy": "balanced",
+        "communication_protocol": "batched_isend_irecv_packed_multi_tensor_envelope",
+        "communication_stream": "dedicated_cuda_stream",
+        "rank_useful_work": true,
+        "full_mps_materialization": false,
+        "speedup_gate_passed": false,
+        "capacity_gate_passed": false,
+        "correctness_gate_passed": true,
+        "scalability_claim_allowed": false,
+        "release_gate_allowed": false,
+        "blockers": [
+          "release_speedup_evidence_not_attached",
+          "release_capacity_evidence_not_attached",
+          "multi_gpu_scaling_report_not_attached"
+        ]
+      },
+      "cpu_losses": [
+        0.9573938978884059,
+        0.9559985916473518,
+        0.954495325702576
+      ],
+      "parameters": [
+        0.3077631040377431,
+        -0.18614861037463232
+      ]
+    },
+    "mps_torch.complex128_adam": {
+      "status": "passed",
+      "summary": {
+        "executor": "pytorch_native_sharded_mps_training_v1",
+        "distribution_semantics": "sharded_across_ranks",
+        "rank": 0,
+        "world_size": 2,
+        "local_world_size": 1,
+        "node_count": 2,
+        "optimizer": "adam",
+        "completed_steps": 3,
+        "start_step": 0,
+        "losses": [
+          0.9573938978884055,
+          0.9510282507412648,
+          0.9437440643396502
+        ],
+        "optimizer_state_ownership_semantics": "sharded_across_ranks",
+        "optimizer_ownership": [
+          {
+            "parameter_index": 0,
+            "owner_rank": 0,
+            "optimizer_state_local": true,
+            "gradient_route": "bounded_dtype_owner_reduce",
+            "update_route": "owner_step_then_bounded_dtype_all_gather"
+          },
+          {
+            "parameter_index": 1,
+            "owner_rank": 1,
+            "optimizer_state_local": false,
+            "gradient_route": "bounded_dtype_owner_reduce",
+            "update_route": "owner_step_then_bounded_dtype_all_gather"
+          }
+        ],
+        "step_metrics": [
+          {
+            "step": 0,
+            "loss": 0.9573938978884055,
+            "forward_seconds": 0.4359327554702759,
+            "reverse_seconds": 0.07327725272625685,
+            "optimizer_seconds": 0.0033033760264515877,
+            "end_to_end_seconds": 0.5133854830637574,
+            "training_compute_seconds": 0.5126111190766096,
+            "diagnostics_seconds": 0.0007730843499302864,
+            "static_qr_metadata_records": 3,
+            "dynamic_metadata_broadcasts": 0,
+            "reverse_segment_cache_hit": true,
+            "gradient_bucket_cache_hit": true,
+            "layer_halo_message_count": 0,
+            "layer_halo_payload_bytes": 0,
+            "layer_halo_intra_node_bytes": 0,
+            "layer_halo_inter_node_bytes": 0,
+            "layer_halo_wait_seconds": 0.0,
+            "owned_site_work": 2,
+            "owned_bond_work": 2,
+            "boundary_exchanges": 1,
+            "svd_activity": 2,
+            "qr_activity": 0,
+            "peak_memory_bytes": 113664,
+            "useful_work_completed": true,
+            "two_site_splits": 2,
+            "truncated_splits": 0,
+            "discarded_weight": 0.0,
+            "boundary_forward_exchanges": 1,
+            "boundary_reverse_exchanges": 1,
+            "boundary_bytes": 288,
+            "bond_updates": [
+              {
+                "operation_id": "56c5cffbb196271a",
+                "bond": 1,
+                "owner_ranks": [
+                  0,
+                  1
+                ],
+                "compute_owner": 0,
+                "original_rank": 2,
+                "kept_rank": 2,
+                "discarded_weight": 0.0,
+                "communication_peer": 1,
+                "communication_sequence": 5,
+                "input_shapes": [
+                  [
+                    1,
+                    2,
+                    2,
+                    1
+                  ],
+                  [
+                    1,
+                    1,
+                    2,
+                    1
+                  ]
+                ],
+                "output_shapes": [
+                  [
+                    1,
+                    2,
+                    2,
+                    2
+                  ],
+                  [
+                    1,
+                    2,
+                    2,
+                    1
+                  ]
+                ],
+                "payload_bytes": 288,
+                "forward_transport": "batched_isend_irecv",
+                "reverse_transport": "batched_isend_irecv"
+              }
+            ],
+            "allocated_memory_bytes": 80384,
+            "reserved_memory_bytes": 203423744,
+            "tape_memory_bytes": 992,
+            "optimizer_memory_bytes": 20,
+            "communication_buffer_bytes": 288,
+            "gradient_collective_count": 2,
+            "gradient_collective_bytes": 16,
+            "gradient_bucket_count": 2,
+            "gradient_bucket_fill_ratio": 3.0517578125e-07,
+            "reverse_tape_segments": 6,
+            "fused_reverse_segments": 2,
+            "reverse_autograd_grad_invocations": 3,
+            "reverse_python_dispatches": 6,
+            "qr_factorization_count": 3,
+            "svd_factorization_count": 0,
+            "objective_scan_pairs": 1,
+            "objective_scan_forward_messages": 1,
+            "objective_scan_reverse_messages": 1,
+            "objective_execution": "heisenberg_mpo_five_channel_scan",
+            "learning_rate": 0.02,
+            "largest_realized_bond": 2,
+            "forward_peak_memory_bytes": 113664,
+            "reverse_peak_memory_bytes": 93696,
+            "optimizer_stage": "adam",
+            "objective_evaluations": 1,
+            "parameter_gradients": [
+              [
+                0,
+                0.036201799477557056
+              ]
+            ],
+            "parameter_values": [
+              [
+                0,
+                0.31
+              ]
+            ],
+            "optimizer_collective_count": 1,
+            "optimizer_collective_bytes": 16,
+            "lbfgs_history_length": 0,
+            "adjoint_tensor_bytes": 416,
+            "forward_tensor_bytes": 224,
+            "boundary_gradient_buffer_bytes": 96,
+            "canonicalization_temporary_bytes": 0,
+            "truncation_temporary_bytes": 0
+          },
+          {
+            "step": 1,
+            "loss": 0.9510282507412648,
+            "forward_seconds": 0.43326524645090103,
+            "reverse_seconds": 0.07231575064361095,
+            "optimizer_seconds": 0.002622906118631363,
+            "end_to_end_seconds": 0.5092291887849569,
+            "training_compute_seconds": 0.5083034075796604,
+            "diagnostics_seconds": 0.0009244214743375778,
+            "static_qr_metadata_records": 3,
+            "dynamic_metadata_broadcasts": 0,
+            "reverse_segment_cache_hit": true,
+            "gradient_bucket_cache_hit": true,
+            "layer_halo_message_count": 0,
+            "layer_halo_payload_bytes": 0,
+            "layer_halo_intra_node_bytes": 0,
+            "layer_halo_inter_node_bytes": 0,
+            "layer_halo_wait_seconds": 0.0,
+            "owned_site_work": 2,
+            "owned_bond_work": 2,
+            "boundary_exchanges": 1,
+            "svd_activity": 2,
+            "qr_activity": 0,
+            "peak_memory_bytes": 120320,
+            "useful_work_completed": true,
+            "two_site_splits": 2,
+            "truncated_splits": 0,
+            "discarded_weight": 0.0,
+            "boundary_forward_exchanges": 1,
+            "boundary_reverse_exchanges": 1,
+            "boundary_bytes": 288,
+            "bond_updates": [
+              {
+                "operation_id": "56c5cffbb196271a",
+                "bond": 1,
+                "owner_ranks": [
+                  0,
+                  1
+                ],
+                "compute_owner": 0,
+                "original_rank": 2,
+                "kept_rank": 2,
+                "discarded_weight": 0.0,
+                "communication_peer": 1,
+                "communication_sequence": 5,
+                "input_shapes": [
+                  [
+                    1,
+                    2,
+                    2,
+                    1
+                  ],
+                  [
+                    1,
+                    1,
+                    2,
+                    1
+                  ]
+                ],
+                "output_shapes": [
+                  [
+                    1,
+                    2,
+                    2,
+                    2
+                  ],
+                  [
+                    1,
+                    2,
+                    2,
+                    1
+                  ]
+                ],
+                "payload_bytes": 288,
+                "forward_transport": "batched_isend_irecv",
+                "reverse_transport": "batched_isend_irecv"
+              }
+            ],
+            "allocated_memory_bytes": 80384,
+            "reserved_memory_bytes": 203423744,
+            "tape_memory_bytes": 992,
+            "optimizer_memory_bytes": 20,
+            "communication_buffer_bytes": 288,
+            "gradient_collective_count": 2,
+            "gradient_collective_bytes": 16,
+            "gradient_bucket_count": 2,
+            "gradient_bucket_fill_ratio": 3.0517578125e-07,
+            "reverse_tape_segments": 6,
+            "fused_reverse_segments": 2,
+            "reverse_autograd_grad_invocations": 3,
+            "reverse_python_dispatches": 6,
+            "qr_factorization_count": 3,
+            "svd_factorization_count": 0,
+            "objective_scan_pairs": 1,
+            "objective_scan_forward_messages": 1,
+            "objective_scan_reverse_messages": 1,
+            "objective_execution": "heisenberg_mpo_five_channel_scan",
+            "learning_rate": 0.02,
+            "largest_realized_bond": 2,
+            "forward_peak_memory_bytes": 120320,
+            "reverse_peak_memory_bytes": 94720,
+            "optimizer_stage": "adam",
+            "objective_evaluations": 1,
+            "parameter_gradients": [
+              [
+                0,
+                0.040515283911568
+              ]
+            ],
+            "parameter_values": [
+              [
+                0,
+                0.2900000055245857
+              ]
+            ],
+            "optimizer_collective_count": 1,
+            "optimizer_collective_bytes": 16,
+            "lbfgs_history_length": 0,
+            "adjoint_tensor_bytes": 416,
+            "forward_tensor_bytes": 224,
+            "boundary_gradient_buffer_bytes": 96,
+            "canonicalization_temporary_bytes": 0,
+            "truncation_temporary_bytes": 0
+          },
+          {
+            "step": 2,
+            "loss": 0.9437440643396502,
+            "forward_seconds": 0.43125378806144,
+            "reverse_seconds": 0.073183448985219,
+            "optimizer_seconds": 0.0026626065373420715,
+            "end_to_end_seconds": 0.5079654837027192,
+            "training_compute_seconds": 0.5071962391957641,
+            "diagnostics_seconds": 0.000767923891544342,
+            "static_qr_metadata_records": 3,
+            "dynamic_metadata_broadcasts": 0,
+            "reverse_segment_cache_hit": true,
+            "gradient_bucket_cache_hit": true,
+            "layer_halo_message_count": 0,
+            "layer_halo_payload_bytes": 0,
+            "layer_halo_intra_node_bytes": 0,
+            "layer_halo_inter_node_bytes": 0,
+            "layer_halo_wait_seconds": 0.0,
+            "owned_site_work": 2,
+            "owned_bond_work": 2,
+            "boundary_exchanges": 1,
+            "svd_activity": 2,
+            "qr_activity": 0,
+            "peak_memory_bytes": 120320,
+            "useful_work_completed": true,
+            "two_site_splits": 2,
+            "truncated_splits": 0,
+            "discarded_weight": 0.0,
+            "boundary_forward_exchanges": 1,
+            "boundary_reverse_exchanges": 1,
+            "boundary_bytes": 288,
+            "bond_updates": [
+              {
+                "operation_id": "56c5cffbb196271a",
+                "bond": 1,
+                "owner_ranks": [
+                  0,
+                  1
+                ],
+                "compute_owner": 0,
+                "original_rank": 2,
+                "kept_rank": 2,
+                "discarded_weight": 0.0,
+                "communication_peer": 1,
+                "communication_sequence": 5,
+                "input_shapes": [
+                  [
+                    1,
+                    2,
+                    2,
+                    1
+                  ],
+                  [
+                    1,
+                    1,
+                    2,
+                    1
+                  ]
+                ],
+                "output_shapes": [
+                  [
+                    1,
+                    2,
+                    2,
+                    2
+                  ],
+                  [
+                    1,
+                    2,
+                    2,
+                    1
+                  ]
+                ],
+                "payload_bytes": 288,
+                "forward_transport": "batched_isend_irecv",
+                "reverse_transport": "batched_isend_irecv"
+              }
+            ],
+            "allocated_memory_bytes": 80384,
+            "reserved_memory_bytes": 203423744,
+            "tape_memory_bytes": 992,
+            "optimizer_memory_bytes": 20,
+            "communication_buffer_bytes": 288,
+            "gradient_collective_count": 2,
+            "gradient_collective_bytes": 16,
+            "gradient_bucket_count": 2,
+            "gradient_bucket_fill_ratio": 3.0517578125e-07,
+            "reverse_tape_segments": 6,
+            "fused_reverse_segments": 2,
+            "reverse_autograd_grad_invocations": 3,
+            "reverse_python_dispatches": 6,
+            "qr_factorization_count": 3,
+            "svd_factorization_count": 0,
+            "objective_scan_pairs": 1,
+            "objective_scan_forward_messages": 1,
+            "objective_scan_reverse_messages": 1,
+            "objective_execution": "heisenberg_mpo_five_channel_scan",
+            "learning_rate": 0.02,
+            "largest_realized_bond": 2,
+            "forward_peak_memory_bytes": 120320,
+            "reverse_peak_memory_bytes": 94720,
+            "optimizer_stage": "adam",
+            "objective_evaluations": 1,
+            "parameter_gradients": [
+              [
+                0,
+                0.044800998441732715
+              ]
+            ],
+            "parameter_values": [
+              [
+                0,
+                0.2699730191834
+              ]
+            ],
+            "optimizer_collective_count": 1,
+            "optimizer_collective_bytes": 16,
+            "lbfgs_history_length": 0,
+            "adjoint_tensor_bytes": 416,
+            "forward_tensor_bytes": 224,
+            "boundary_gradient_buffer_bytes": 96,
+            "canonicalization_temporary_bytes": 0,
+            "truncation_temporary_bytes": 0
+          }
+        ],
+        "memory_growth_bytes": 0,
+        "suspected_memory_leak": false,
+        "checkpoint_files": [],
+        "checkpoint_schema": "sharded_mps_training_checkpoint_v2",
+        "checkpoint_integrity": "sha256_atomic_file_and_metadata",
+        "checkpoint_commit_protocol": "immutable_rank_shards_atomic_manifest_v1",
+        "checkpoint_retention_generations": 2,
+        "checkpoint_pruned_files": [],
+        "checkpoint_write_seconds": 0.0,
+        "checkpoint_commit_seconds": 0.0,
+        "checkpoint_prune_seconds": 0.0,
+        "checkpoint_bytes_written": 0,
+        "checkpoint_retained_bytes": 0,
+        "checkpoint_free_space_reserve_bytes": 1073741824,
+        "checkpoint_min_free_bytes_observed": 0,
+        "checkpoint_estimated_generation_bytes": 0,
+        "checkpoint_storage_semantics": "shared_filesystem_verified",
+        "checkpoint_storage_probe_seconds": 0.0,
+        "checkpoint_overwrite_allowed": false,
+        "checkpoint_deserialization_policy": "torch_weights_only",
+        "checkpoint_writer_lease": "exclusive_atomic_file_v1",
+        "checkpoint_writer_lease_break_allowed": false,
+        "checkpoint_writer_lease_stale_seconds": 3600.0,
+        "checkpoint_writer_lease_heartbeat_count": 0,
+        "checkpoint_writer_lease_heartbeat_seconds": 0.0,
+        "checkpoint_contract_fingerprint": "d573e1d4bbb4e2cf9f9de0fc7e63e8fa33818c831d078c07f3ba342750129581",
+        "memory_warmup_steps": 1,
+        "communication_setup_seconds": 0.0,
+        "site_kernel_execution": "eager",
+        "site_kernel_selection_reason": "auto_cpu_eager_fast_path",
+        "site_ownership": [
+          [
+            0,
+            1
+          ],
+          [
+            2,
+            3
+          ]
+        ],
+        "site_ownership_policy": "balanced",
+        "communication_protocol": "batched_isend_irecv_packed_multi_tensor_envelope",
+        "communication_stream": "dedicated_cuda_stream",
+        "rank_useful_work": true,
+        "full_mps_materialization": false,
+        "speedup_gate_passed": false,
+        "capacity_gate_passed": false,
+        "correctness_gate_passed": true,
+        "scalability_claim_allowed": false,
+        "release_gate_allowed": false,
+        "blockers": [
+          "release_speedup_evidence_not_attached",
+          "release_capacity_evidence_not_attached",
+          "multi_gpu_scaling_report_not_attached"
+        ]
+      },
+      "cpu_losses": [
+        0.9573938978884059,
+        0.951028250741265,
+        0.9437440643396507
+      ],
+      "parameters": [
+        0.2499008522037021,
+        -0.23008741928677187
+      ]
+    },
+    "tensor_network_torch.complex64_sgd": {
+      "status": "passed",
+      "summary": {
+        "state_mode": "distributed_tensor_network_training",
+        "objective": "pauli_product_expectation_value",
+        "losses": [
+          0.9573931097984314,
+          0.955997884273529,
+          0.9544947147369385
+        ],
+        "final_loss": 0.9544947147369385,
+        "completed_steps": 3,
+        "start_step": 0,
+        "rank": 0,
+        "world_size": 2,
+        "local_world_size": 1,
+        "node_count": 2,
+        "rank_placement": {
+          "rank": 0,
+          "world_size": 2,
+          "local_world_size": 1,
+          "node_count": 2,
+          "node_rank": 0,
+          "local_rank": 0
+        },
+        "distribution_semantics": "sharded_across_ranks",
+        "claim_evidence_type": "production_runtime",
+        "forward_distribution_semantics": "sharded_across_ranks",
+        "backward_distribution_semantics": "sharded_across_ranks",
+        "gradient_reduction": "owner_reduce",
+        "gradient_distribution_semantics": "sharded_across_ranks",
+        "gradient_ownership_semantics": "sharded_across_ranks",
+        "parameter_ownership_semantics": "sharded_across_ranks",
+        "gradient_ownership": [
+          {
+            "rank": 0,
+            "parameter_indices": [
+              0
+            ],
+            "owned_parameter_count": 1,
+            "ownership": "rank_owned_optimizer_update",
+            "writeback_route": "owner_update_then_packed_all_gather"
+          },
+          {
+            "rank": 1,
+            "parameter_indices": [
+              1
+            ],
+            "owned_parameter_count": 1,
+            "ownership": "rank_owned_optimizer_update",
+            "writeback_route": "owner_update_then_packed_all_gather"
+          }
+        ],
+        "optimizer_update_ownership": [
+          {
+            "rank": 0,
+            "parameter_indices": [
+              0
+            ],
+            "owned_parameter_count": 1,
+            "ownership": "rank_owned_optimizer_update",
+            "writeback_route": "owner_update_then_packed_all_gather"
+          },
+          {
+            "rank": 1,
+            "parameter_indices": [
+              1
+            ],
+            "owned_parameter_count": 1,
+            "ownership": "rank_owned_optimizer_update",
+            "writeback_route": "owner_update_then_packed_all_gather"
+          }
+        ],
+        "training_step_count": 3,
+        "optimizer_update_semantics": "sharded_across_ranks",
+        "optimizer_update_ownership_semantics": "sharded_across_ranks",
+        "task_plan_identity": "21d8280c477cb3639f17cdb530e30b1c2044ff7fd945f985b1f392aa36395c5b",
+        "slice_tasks": 4,
+        "slice_labels": [
+          5,
+          6
+        ],
+        "tasks_by_rank": {
+          "0": 2,
+          "1": 2
+        },
+        "local_memory_bytes_by_rank": [
+          1224,
+          1224
+        ],
+        "owned_parameter_bytes_by_rank": [
+          4,
+          4
+        ],
+        "parameter_owner_ranks": [
+          0,
+          1
+        ],
+        "parameter_ownership": [
+          {
+            "rank": 0,
+            "parameter_indices": [
+              0
+            ],
+            "owned_parameter_count": 1,
+            "ownership": "rank_owned_optimizer_update",
+            "writeback_route": "owner_update_then_packed_all_gather"
+          },
+          {
+            "rank": 1,
+            "parameter_indices": [
+              1
+            ],
+            "owned_parameter_count": 1,
+            "ownership": "rank_owned_optimizer_update",
+            "writeback_route": "owner_update_then_packed_all_gather"
+          }
+        ],
+        "step_records": [
+          {
+            "step": 0,
+            "loss": 0.9573931097984314,
+            "reverse": {
+              "task_plan_identity": "21d8280c477cb3639f17cdb530e30b1c2044ff7fd945f985b1f392aa36395c5b",
+              "rank": 0,
+              "world_size": 2,
+              "local_world_size": 1,
+              "node_count": 2,
+              "rank_placement": {
+                "rank": 0,
+                "local_rank": 0,
+                "world_size": 2,
+                "local_world_size": 1,
+                "node_rank": 0,
+                "node_count": 2
+              },
+              "local_task_count": 2,
+              "local_slice_batch_size": 1,
+              "local_slice_batch_count": 2,
+              "local_forward_operation_count": 56,
+              "local_reverse_operation_count": 56,
+              "local_execution_seconds": 0.3827568804845214,
+              "collective_seconds": 0.008034096099436283,
+              "collective_count": 2,
+              "collective_payload_bytes_per_rank": 16,
+              "nonfinite_cotangent_count": 0,
+              "nonfinite_parameter_gradient_count": 0,
+              "local_saved_tape_bytes": 0,
+              "local_peak_slice_tensor_bytes": 1224,
+              "local_rematerialized_operation_count": 0,
+              "distribution_semantics": "sharded_across_ranks",
+              "forward_distribution_semantics": "sharded_across_ranks",
+              "backward_distribution_semantics": "sharded_across_ranks",
+              "gradient_distribution_semantics": "sharded_across_ranks",
+              "local_gradient_contribution_semantics": "rank_owned_slice_contributions",
+              "gradient_aggregation_semantics": "reduce_to_parameter_owner",
+              "parameter_gradient_owner_ranks": [
+                0,
+                1
+              ],
+              "scalability_claim_allowed": false,
+              "scalability_blockers": [
+                "accelerator_capacity_evidence_pending",
+                "production_benchmark_audit_pending"
+              ]
+            },
+            "optimizer": {
+              "rank": 0,
+              "world_size": 2,
+              "local_world_size": 1,
+              "node_count": 2,
+              "rank_placement": {
+                "rank": 0,
+                "local_rank": 0,
+                "world_size": 2,
+                "local_world_size": 1,
+                "node_rank": 0,
+                "node_count": 2
+              },
+              "optimizer_name": "rank_owned_sgd",
+              "learning_rate": 0.02,
+              "training_step_count": 1,
+              "owned_parameter_indices": [
+                0
+              ],
+              "parameter_ownership_semantics": "sharded_across_ranks",
+              "gradient_ownership_semantics": "sharded_across_ranks",
+              "gradient_distribution_semantics": "sharded_across_ranks",
+              "gradient_reduction": "owner_reduce",
+              "gradient_ownership": [
+                {
+                  "rank": 0,
+                  "parameter_indices": [
+                    0
+                  ],
+                  "owned_parameter_count": 1,
+                  "ownership": "rank_owned_optimizer_update",
+                  "writeback_route": "owner_update_then_packed_all_gather"
+                },
+                {
+                  "rank": 1,
+                  "parameter_indices": [
+                    1
+                  ],
+                  "owned_parameter_count": 1,
+                  "ownership": "rank_owned_optimizer_update",
+                  "writeback_route": "owner_update_then_packed_all_gather"
+                }
+              ],
+              "optimizer_update_semantics": "sharded_across_ranks",
+              "optimizer_update_ownership_semantics": "sharded_across_ranks",
+              "optimizer_update_ownership": [
+                {
+                  "rank": 0,
+                  "parameter_indices": [
+                    0
+                  ],
+                  "owned_parameter_count": 1,
+                  "ownership": "rank_owned_optimizer_update",
+                  "writeback_route": "owner_update_then_packed_all_gather"
+                },
+                {
+                  "rank": 1,
+                  "parameter_indices": [
+                    1
+                  ],
+                  "owned_parameter_count": 1,
+                  "ownership": "rank_owned_optimizer_update",
+                  "writeback_route": "owner_update_then_packed_all_gather"
+                }
+              ],
+              "parameter_distribution_after_step": "replicated_for_next_forward",
+              "parameter_writeback_route": "owner_update_then_packed_all_gather",
+              "optimizer_state_distribution": "rank_owned",
+              "collective_count": 1,
+              "collective_payload_bytes_per_rank": 4,
+              "execution_seconds": 0.0029292497783899307
+            },
+            "local_task_count": 2,
+            "local_forward_operation_count": 56,
+            "local_reverse_operation_count": 56,
+            "collective_count": 2,
+            "collective_seconds": 0.008034096099436283
+          },
+          {
+            "step": 1,
+            "loss": 0.955997884273529,
+            "reverse": {
+              "task_plan_identity": "21d8280c477cb3639f17cdb530e30b1c2044ff7fd945f985b1f392aa36395c5b",
+              "rank": 0,
+              "world_size": 2,
+              "local_world_size": 1,
+              "node_count": 2,
+              "rank_placement": {
+                "rank": 0,
+                "local_rank": 0,
+                "world_size": 2,
+                "local_world_size": 1,
+                "node_rank": 0,
+                "node_count": 2
+              },
+              "local_task_count": 2,
+              "local_slice_batch_size": 1,
+              "local_slice_batch_count": 2,
+              "local_forward_operation_count": 56,
+              "local_reverse_operation_count": 56,
+              "local_execution_seconds": 0.3377655101940036,
+              "collective_seconds": 0.002090081572532654,
+              "collective_count": 2,
+              "collective_payload_bytes_per_rank": 16,
+              "nonfinite_cotangent_count": 0,
+              "nonfinite_parameter_gradient_count": 0,
+              "local_saved_tape_bytes": 0,
+              "local_peak_slice_tensor_bytes": 1224,
+              "local_rematerialized_operation_count": 0,
+              "distribution_semantics": "sharded_across_ranks",
+              "forward_distribution_semantics": "sharded_across_ranks",
+              "backward_distribution_semantics": "sharded_across_ranks",
+              "gradient_distribution_semantics": "sharded_across_ranks",
+              "local_gradient_contribution_semantics": "rank_owned_slice_contributions",
+              "gradient_aggregation_semantics": "reduce_to_parameter_owner",
+              "parameter_gradient_owner_ranks": [
+                0,
+                1
+              ],
+              "scalability_claim_allowed": false,
+              "scalability_blockers": [
+                "accelerator_capacity_evidence_pending",
+                "production_benchmark_audit_pending"
+              ]
+            },
+            "optimizer": {
+              "rank": 0,
+              "world_size": 2,
+              "local_world_size": 1,
+              "node_count": 2,
+              "rank_placement": {
+                "rank": 0,
+                "local_rank": 0,
+                "world_size": 2,
+                "local_world_size": 1,
+                "node_rank": 0,
+                "node_count": 2
+              },
+              "optimizer_name": "rank_owned_sgd",
+              "learning_rate": 0.02,
+              "training_step_count": 1,
+              "owned_parameter_indices": [
+                0
+              ],
+              "parameter_ownership_semantics": "sharded_across_ranks",
+              "gradient_ownership_semantics": "sharded_across_ranks",
+              "gradient_distribution_semantics": "sharded_across_ranks",
+              "gradient_reduction": "owner_reduce",
+              "gradient_ownership": [
+                {
+                  "rank": 0,
+                  "parameter_indices": [
+                    0
+                  ],
+                  "owned_parameter_count": 1,
+                  "ownership": "rank_owned_optimizer_update",
+                  "writeback_route": "owner_update_then_packed_all_gather"
+                },
+                {
+                  "rank": 1,
+                  "parameter_indices": [
+                    1
+                  ],
+                  "owned_parameter_count": 1,
+                  "ownership": "rank_owned_optimizer_update",
+                  "writeback_route": "owner_update_then_packed_all_gather"
+                }
+              ],
+              "optimizer_update_semantics": "sharded_across_ranks",
+              "optimizer_update_ownership_semantics": "sharded_across_ranks",
+              "optimizer_update_ownership": [
+                {
+                  "rank": 0,
+                  "parameter_indices": [
+                    0
+                  ],
+                  "owned_parameter_count": 1,
+                  "ownership": "rank_owned_optimizer_update",
+                  "writeback_route": "owner_update_then_packed_all_gather"
+                },
+                {
+                  "rank": 1,
+                  "parameter_indices": [
+                    1
+                  ],
+                  "owned_parameter_count": 1,
+                  "ownership": "rank_owned_optimizer_update",
+                  "writeback_route": "owner_update_then_packed_all_gather"
+                }
+              ],
+              "parameter_distribution_after_step": "replicated_for_next_forward",
+              "parameter_writeback_route": "owner_update_then_packed_all_gather",
+              "optimizer_state_distribution": "rank_owned",
+              "collective_count": 1,
+              "collective_payload_bytes_per_rank": 4,
+              "execution_seconds": 0.0022308984771370888
+            },
+            "local_task_count": 2,
+            "local_forward_operation_count": 56,
+            "local_reverse_operation_count": 56,
+            "collective_count": 2,
+            "collective_seconds": 0.002090081572532654
+          },
+          {
+            "step": 2,
+            "loss": 0.9544947147369385,
+            "reverse": {
+              "task_plan_identity": "21d8280c477cb3639f17cdb530e30b1c2044ff7fd945f985b1f392aa36395c5b",
+              "rank": 0,
+              "world_size": 2,
+              "local_world_size": 1,
+              "node_count": 2,
+              "rank_placement": {
+                "rank": 0,
+                "local_rank": 0,
+                "world_size": 2,
+                "local_world_size": 1,
+                "node_rank": 0,
+                "node_count": 2
+              },
+              "local_task_count": 2,
+              "local_slice_batch_size": 1,
+              "local_slice_batch_count": 2,
+              "local_forward_operation_count": 56,
+              "local_reverse_operation_count": 56,
+              "local_execution_seconds": 0.32775075640529394,
+              "collective_seconds": 0.0019986676052212715,
+              "collective_count": 2,
+              "collective_payload_bytes_per_rank": 16,
+              "nonfinite_cotangent_count": 0,
+              "nonfinite_parameter_gradient_count": 0,
+              "local_saved_tape_bytes": 0,
+              "local_peak_slice_tensor_bytes": 1224,
+              "local_rematerialized_operation_count": 0,
+              "distribution_semantics": "sharded_across_ranks",
+              "forward_distribution_semantics": "sharded_across_ranks",
+              "backward_distribution_semantics": "sharded_across_ranks",
+              "gradient_distribution_semantics": "sharded_across_ranks",
+              "local_gradient_contribution_semantics": "rank_owned_slice_contributions",
+              "gradient_aggregation_semantics": "reduce_to_parameter_owner",
+              "parameter_gradient_owner_ranks": [
+                0,
+                1
+              ],
+              "scalability_claim_allowed": false,
+              "scalability_blockers": [
+                "accelerator_capacity_evidence_pending",
+                "production_benchmark_audit_pending"
+              ]
+            },
+            "optimizer": {
+              "rank": 0,
+              "world_size": 2,
+              "local_world_size": 1,
+              "node_count": 2,
+              "rank_placement": {
+                "rank": 0,
+                "local_rank": 0,
+                "world_size": 2,
+                "local_world_size": 1,
+                "node_rank": 0,
+                "node_count": 2
+              },
+              "optimizer_name": "rank_owned_sgd",
+              "learning_rate": 0.02,
+              "training_step_count": 1,
+              "owned_parameter_indices": [
+                0
+              ],
+              "parameter_ownership_semantics": "sharded_across_ranks",
+              "gradient_ownership_semantics": "sharded_across_ranks",
+              "gradient_distribution_semantics": "sharded_across_ranks",
+              "gradient_reduction": "owner_reduce",
+              "gradient_ownership": [
+                {
+                  "rank": 0,
+                  "parameter_indices": [
+                    0
+                  ],
+                  "owned_parameter_count": 1,
+                  "ownership": "rank_owned_optimizer_update",
+                  "writeback_route": "owner_update_then_packed_all_gather"
+                },
+                {
+                  "rank": 1,
+                  "parameter_indices": [
+                    1
+                  ],
+                  "owned_parameter_count": 1,
+                  "ownership": "rank_owned_optimizer_update",
+                  "writeback_route": "owner_update_then_packed_all_gather"
+                }
+              ],
+              "optimizer_update_semantics": "sharded_across_ranks",
+              "optimizer_update_ownership_semantics": "sharded_across_ranks",
+              "optimizer_update_ownership": [
+                {
+                  "rank": 0,
+                  "parameter_indices": [
+                    0
+                  ],
+                  "owned_parameter_count": 1,
+                  "ownership": "rank_owned_optimizer_update",
+                  "writeback_route": "owner_update_then_packed_all_gather"
+                },
+                {
+                  "rank": 1,
+                  "parameter_indices": [
+                    1
+                  ],
+                  "owned_parameter_count": 1,
+                  "ownership": "rank_owned_optimizer_update",
+                  "writeback_route": "owner_update_then_packed_all_gather"
+                }
+              ],
+              "parameter_distribution_after_step": "replicated_for_next_forward",
+              "parameter_writeback_route": "owner_update_then_packed_all_gather",
+              "optimizer_state_distribution": "rank_owned",
+              "collective_count": 1,
+              "collective_payload_bytes_per_rank": 4,
+              "execution_seconds": 0.002251420170068741
+            },
+            "local_task_count": 2,
+            "local_forward_operation_count": 56,
+            "local_reverse_operation_count": 56,
+            "collective_count": 2,
+            "collective_seconds": 0.0019986676052212715
+          }
+        ],
+        "optimizer_name": "rank_owned_sgd",
+        "learning_rate": 0.02,
+        "checkpoint_files": [],
+        "checkpoint_storage_semantics": "not_requested",
+        "nonfinite_parameter_gradient_count": 0,
+        "communication_bytes": 48,
+        "communication_tiers": {
+          "model": "collective_topology_dependent",
+          "collective": "all_reduce_sum",
+          "reduction_tensor_bytes": 48,
+          "inter_node_collective_bytes": 48,
+          "intra_node_collective_bytes": 0,
+          "unattributed_collective_bytes": 0,
+          "inter_node_collective_possible": true,
+          "note": "Exact intra-node/inter-node bytes depend on torch.distributed/NCCL collective algorithm."
+        },
+        "replicated_autograd": false,
+        "full_state_materialized": false,
+        "scalability_claim_allowed": false,
+        "scalability_blockers": [
+          "accelerator_capacity_evidence_pending",
+          "production_benchmark_audit_pending"
+        ]
+      },
+      "cpu_losses": [
+        0.9573941230773926,
+        0.9559987783432007,
+        0.954495370388031
+      ],
+      "parameters": [
+        0.30776309967041016,
+        -0.18614859879016876
+      ]
+    },
+    "tensor_network_torch.complex128_sgd": {
+      "status": "passed",
+      "summary": {
+        "state_mode": "distributed_tensor_network_training",
+        "objective": "pauli_product_expectation_value",
+        "losses": [
+          0.9573938978884055,
+          0.9559985916473522,
+          0.9544953257025768
+        ],
+        "final_loss": 0.9544953257025768,
+        "completed_steps": 3,
+        "start_step": 0,
+        "rank": 0,
+        "world_size": 2,
+        "local_world_size": 1,
+        "node_count": 2,
+        "rank_placement": {
+          "rank": 0,
+          "world_size": 2,
+          "local_world_size": 1,
+          "node_count": 2,
+          "node_rank": 0,
+          "local_rank": 0
+        },
+        "distribution_semantics": "sharded_across_ranks",
+        "claim_evidence_type": "production_runtime",
+        "forward_distribution_semantics": "sharded_across_ranks",
+        "backward_distribution_semantics": "sharded_across_ranks",
+        "gradient_reduction": "owner_reduce",
+        "gradient_distribution_semantics": "sharded_across_ranks",
+        "gradient_ownership_semantics": "sharded_across_ranks",
+        "parameter_ownership_semantics": "sharded_across_ranks",
+        "gradient_ownership": [
+          {
+            "rank": 0,
+            "parameter_indices": [
+              0
+            ],
+            "owned_parameter_count": 1,
+            "ownership": "rank_owned_optimizer_update",
+            "writeback_route": "owner_update_then_packed_all_gather"
+          },
+          {
+            "rank": 1,
+            "parameter_indices": [
+              1
+            ],
+            "owned_parameter_count": 1,
+            "ownership": "rank_owned_optimizer_update",
+            "writeback_route": "owner_update_then_packed_all_gather"
+          }
+        ],
+        "optimizer_update_ownership": [
+          {
+            "rank": 0,
+            "parameter_indices": [
+              0
+            ],
+            "owned_parameter_count": 1,
+            "ownership": "rank_owned_optimizer_update",
+            "writeback_route": "owner_update_then_packed_all_gather"
+          },
+          {
+            "rank": 1,
+            "parameter_indices": [
+              1
+            ],
+            "owned_parameter_count": 1,
+            "ownership": "rank_owned_optimizer_update",
+            "writeback_route": "owner_update_then_packed_all_gather"
+          }
+        ],
+        "training_step_count": 3,
+        "optimizer_update_semantics": "sharded_across_ranks",
+        "optimizer_update_ownership_semantics": "sharded_across_ranks",
+        "task_plan_identity": "c6ea5d13067b9d7249dec84e8092dc0e34685d98b08d3fb3affefaad004c4091",
+        "slice_tasks": 4,
+        "slice_labels": [
+          5,
+          6
+        ],
+        "tasks_by_rank": {
+          "0": 2,
+          "1": 2
+        },
+        "local_memory_bytes_by_rank": [
+          2448,
+          2448
+        ],
+        "owned_parameter_bytes_by_rank": [
+          8,
+          8
+        ],
+        "parameter_owner_ranks": [
+          0,
+          1
+        ],
+        "parameter_ownership": [
+          {
+            "rank": 0,
+            "parameter_indices": [
+              0
+            ],
+            "owned_parameter_count": 1,
+            "ownership": "rank_owned_optimizer_update",
+            "writeback_route": "owner_update_then_packed_all_gather"
+          },
+          {
+            "rank": 1,
+            "parameter_indices": [
+              1
+            ],
+            "owned_parameter_count": 1,
+            "ownership": "rank_owned_optimizer_update",
+            "writeback_route": "owner_update_then_packed_all_gather"
+          }
+        ],
+        "step_records": [
+          {
+            "step": 0,
+            "loss": 0.9573938978884055,
+            "reverse": {
+              "task_plan_identity": "c6ea5d13067b9d7249dec84e8092dc0e34685d98b08d3fb3affefaad004c4091",
+              "rank": 0,
+              "world_size": 2,
+              "local_world_size": 1,
+              "node_count": 2,
+              "rank_placement": {
+                "rank": 0,
+                "local_rank": 0,
+                "world_size": 2,
+                "local_world_size": 1,
+                "node_rank": 0,
+                "node_count": 2
+              },
+              "local_task_count": 2,
+              "local_slice_batch_size": 1,
+              "local_slice_batch_count": 2,
+              "local_forward_operation_count": 56,
+              "local_reverse_operation_count": 56,
+              "local_execution_seconds": 0.3335640737786889,
+              "collective_seconds": 0.017487854696810246,
+              "collective_count": 2,
+              "collective_payload_bytes_per_rank": 32,
+              "nonfinite_cotangent_count": 0,
+              "nonfinite_parameter_gradient_count": 0,
+              "local_saved_tape_bytes": 0,
+              "local_peak_slice_tensor_bytes": 2448,
+              "local_rematerialized_operation_count": 0,
+              "distribution_semantics": "sharded_across_ranks",
+              "forward_distribution_semantics": "sharded_across_ranks",
+              "backward_distribution_semantics": "sharded_across_ranks",
+              "gradient_distribution_semantics": "sharded_across_ranks",
+              "local_gradient_contribution_semantics": "rank_owned_slice_contributions",
+              "gradient_aggregation_semantics": "reduce_to_parameter_owner",
+              "parameter_gradient_owner_ranks": [
+                0,
+                1
+              ],
+              "scalability_claim_allowed": false,
+              "scalability_blockers": [
+                "accelerator_capacity_evidence_pending",
+                "production_benchmark_audit_pending"
+              ]
+            },
+            "optimizer": {
+              "rank": 0,
+              "world_size": 2,
+              "local_world_size": 1,
+              "node_count": 2,
+              "rank_placement": {
+                "rank": 0,
+                "local_rank": 0,
+                "world_size": 2,
+                "local_world_size": 1,
+                "node_rank": 0,
+                "node_count": 2
+              },
+              "optimizer_name": "rank_owned_sgd",
+              "learning_rate": 0.02,
+              "training_step_count": 1,
+              "owned_parameter_indices": [
+                0
+              ],
+              "parameter_ownership_semantics": "sharded_across_ranks",
+              "gradient_ownership_semantics": "sharded_across_ranks",
+              "gradient_distribution_semantics": "sharded_across_ranks",
+              "gradient_reduction": "owner_reduce",
+              "gradient_ownership": [
+                {
+                  "rank": 0,
+                  "parameter_indices": [
+                    0
+                  ],
+                  "owned_parameter_count": 1,
+                  "ownership": "rank_owned_optimizer_update",
+                  "writeback_route": "owner_update_then_packed_all_gather"
+                },
+                {
+                  "rank": 1,
+                  "parameter_indices": [
+                    1
+                  ],
+                  "owned_parameter_count": 1,
+                  "ownership": "rank_owned_optimizer_update",
+                  "writeback_route": "owner_update_then_packed_all_gather"
+                }
+              ],
+              "optimizer_update_semantics": "sharded_across_ranks",
+              "optimizer_update_ownership_semantics": "sharded_across_ranks",
+              "optimizer_update_ownership": [
+                {
+                  "rank": 0,
+                  "parameter_indices": [
+                    0
+                  ],
+                  "owned_parameter_count": 1,
+                  "ownership": "rank_owned_optimizer_update",
+                  "writeback_route": "owner_update_then_packed_all_gather"
+                },
+                {
+                  "rank": 1,
+                  "parameter_indices": [
+                    1
+                  ],
+                  "owned_parameter_count": 1,
+                  "ownership": "rank_owned_optimizer_update",
+                  "writeback_route": "owner_update_then_packed_all_gather"
+                }
+              ],
+              "parameter_distribution_after_step": "replicated_for_next_forward",
+              "parameter_writeback_route": "owner_update_then_packed_all_gather",
+              "optimizer_state_distribution": "rank_owned",
+              "collective_count": 1,
+              "collective_payload_bytes_per_rank": 8,
+              "execution_seconds": 0.002107313834130764
+            },
+            "local_task_count": 2,
+            "local_forward_operation_count": 56,
+            "local_reverse_operation_count": 56,
+            "collective_count": 2,
+            "collective_seconds": 0.017487854696810246
+          },
+          {
+            "step": 1,
+            "loss": 0.9559985916473522,
+            "reverse": {
+              "task_plan_identity": "c6ea5d13067b9d7249dec84e8092dc0e34685d98b08d3fb3affefaad004c4091",
+              "rank": 0,
+              "world_size": 2,
+              "local_world_size": 1,
+              "node_count": 2,
+              "rank_placement": {
+                "rank": 0,
+                "local_rank": 0,
+                "world_size": 2,
+                "local_world_size": 1,
+                "node_rank": 0,
+                "node_count": 2
+              },
+              "local_task_count": 2,
+              "local_slice_batch_size": 1,
+              "local_slice_batch_count": 2,
+              "local_forward_operation_count": 56,
+              "local_reverse_operation_count": 56,
+              "local_execution_seconds": 0.32403017207980156,
+              "collective_seconds": 0.004267379641532898,
+              "collective_count": 2,
+              "collective_payload_bytes_per_rank": 32,
+              "nonfinite_cotangent_count": 0,
+              "nonfinite_parameter_gradient_count": 0,
+              "local_saved_tape_bytes": 0,
+              "local_peak_slice_tensor_bytes": 2448,
+              "local_rematerialized_operation_count": 0,
+              "distribution_semantics": "sharded_across_ranks",
+              "forward_distribution_semantics": "sharded_across_ranks",
+              "backward_distribution_semantics": "sharded_across_ranks",
+              "gradient_distribution_semantics": "sharded_across_ranks",
+              "local_gradient_contribution_semantics": "rank_owned_slice_contributions",
+              "gradient_aggregation_semantics": "reduce_to_parameter_owner",
+              "parameter_gradient_owner_ranks": [
+                0,
+                1
+              ],
+              "scalability_claim_allowed": false,
+              "scalability_blockers": [
+                "accelerator_capacity_evidence_pending",
+                "production_benchmark_audit_pending"
+              ]
+            },
+            "optimizer": {
+              "rank": 0,
+              "world_size": 2,
+              "local_world_size": 1,
+              "node_count": 2,
+              "rank_placement": {
+                "rank": 0,
+                "local_rank": 0,
+                "world_size": 2,
+                "local_world_size": 1,
+                "node_rank": 0,
+                "node_count": 2
+              },
+              "optimizer_name": "rank_owned_sgd",
+              "learning_rate": 0.02,
+              "training_step_count": 1,
+              "owned_parameter_indices": [
+                0
+              ],
+              "parameter_ownership_semantics": "sharded_across_ranks",
+              "gradient_ownership_semantics": "sharded_across_ranks",
+              "gradient_distribution_semantics": "sharded_across_ranks",
+              "gradient_reduction": "owner_reduce",
+              "gradient_ownership": [
+                {
+                  "rank": 0,
+                  "parameter_indices": [
+                    0
+                  ],
+                  "owned_parameter_count": 1,
+                  "ownership": "rank_owned_optimizer_update",
+                  "writeback_route": "owner_update_then_packed_all_gather"
+                },
+                {
+                  "rank": 1,
+                  "parameter_indices": [
+                    1
+                  ],
+                  "owned_parameter_count": 1,
+                  "ownership": "rank_owned_optimizer_update",
+                  "writeback_route": "owner_update_then_packed_all_gather"
+                }
+              ],
+              "optimizer_update_semantics": "sharded_across_ranks",
+              "optimizer_update_ownership_semantics": "sharded_across_ranks",
+              "optimizer_update_ownership": [
+                {
+                  "rank": 0,
+                  "parameter_indices": [
+                    0
+                  ],
+                  "owned_parameter_count": 1,
+                  "ownership": "rank_owned_optimizer_update",
+                  "writeback_route": "owner_update_then_packed_all_gather"
+                },
+                {
+                  "rank": 1,
+                  "parameter_indices": [
+                    1
+                  ],
+                  "owned_parameter_count": 1,
+                  "ownership": "rank_owned_optimizer_update",
+                  "writeback_route": "owner_update_then_packed_all_gather"
+                }
+              ],
+              "parameter_distribution_after_step": "replicated_for_next_forward",
+              "parameter_writeback_route": "owner_update_then_packed_all_gather",
+              "optimizer_state_distribution": "rank_owned",
+              "collective_count": 1,
+              "collective_payload_bytes_per_rank": 8,
+              "execution_seconds": 0.002113872207701206
+            },
+            "local_task_count": 2,
+            "local_forward_operation_count": 56,
+            "local_reverse_operation_count": 56,
+            "collective_count": 2,
+            "collective_seconds": 0.004267379641532898
+          },
+          {
+            "step": 2,
+            "loss": 0.9544953257025768,
+            "reverse": {
+              "task_plan_identity": "c6ea5d13067b9d7249dec84e8092dc0e34685d98b08d3fb3affefaad004c4091",
+              "rank": 0,
+              "world_size": 2,
+              "local_world_size": 1,
+              "node_count": 2,
+              "rank_placement": {
+                "rank": 0,
+                "local_rank": 0,
+                "world_size": 2,
+                "local_world_size": 1,
+                "node_rank": 0,
+                "node_count": 2
+              },
+              "local_task_count": 2,
+              "local_slice_batch_size": 1,
+              "local_slice_batch_count": 2,
+              "local_forward_operation_count": 56,
+              "local_reverse_operation_count": 56,
+              "local_execution_seconds": 0.3217854527756572,
+              "collective_seconds": 0.009983552619814873,
+              "collective_count": 2,
+              "collective_payload_bytes_per_rank": 32,
+              "nonfinite_cotangent_count": 0,
+              "nonfinite_parameter_gradient_count": 0,
+              "local_saved_tape_bytes": 0,
+              "local_peak_slice_tensor_bytes": 2448,
+              "local_rematerialized_operation_count": 0,
+              "distribution_semantics": "sharded_across_ranks",
+              "forward_distribution_semantics": "sharded_across_ranks",
+              "backward_distribution_semantics": "sharded_across_ranks",
+              "gradient_distribution_semantics": "sharded_across_ranks",
+              "local_gradient_contribution_semantics": "rank_owned_slice_contributions",
+              "gradient_aggregation_semantics": "reduce_to_parameter_owner",
+              "parameter_gradient_owner_ranks": [
+                0,
+                1
+              ],
+              "scalability_claim_allowed": false,
+              "scalability_blockers": [
+                "accelerator_capacity_evidence_pending",
+                "production_benchmark_audit_pending"
+              ]
+            },
+            "optimizer": {
+              "rank": 0,
+              "world_size": 2,
+              "local_world_size": 1,
+              "node_count": 2,
+              "rank_placement": {
+                "rank": 0,
+                "local_rank": 0,
+                "world_size": 2,
+                "local_world_size": 1,
+                "node_rank": 0,
+                "node_count": 2
+              },
+              "optimizer_name": "rank_owned_sgd",
+              "learning_rate": 0.02,
+              "training_step_count": 1,
+              "owned_parameter_indices": [
+                0
+              ],
+              "parameter_ownership_semantics": "sharded_across_ranks",
+              "gradient_ownership_semantics": "sharded_across_ranks",
+              "gradient_distribution_semantics": "sharded_across_ranks",
+              "gradient_reduction": "owner_reduce",
+              "gradient_ownership": [
+                {
+                  "rank": 0,
+                  "parameter_indices": [
+                    0
+                  ],
+                  "owned_parameter_count": 1,
+                  "ownership": "rank_owned_optimizer_update",
+                  "writeback_route": "owner_update_then_packed_all_gather"
+                },
+                {
+                  "rank": 1,
+                  "parameter_indices": [
+                    1
+                  ],
+                  "owned_parameter_count": 1,
+                  "ownership": "rank_owned_optimizer_update",
+                  "writeback_route": "owner_update_then_packed_all_gather"
+                }
+              ],
+              "optimizer_update_semantics": "sharded_across_ranks",
+              "optimizer_update_ownership_semantics": "sharded_across_ranks",
+              "optimizer_update_ownership": [
+                {
+                  "rank": 0,
+                  "parameter_indices": [
+                    0
+                  ],
+                  "owned_parameter_count": 1,
+                  "ownership": "rank_owned_optimizer_update",
+                  "writeback_route": "owner_update_then_packed_all_gather"
+                },
+                {
+                  "rank": 1,
+                  "parameter_indices": [
+                    1
+                  ],
+                  "owned_parameter_count": 1,
+                  "ownership": "rank_owned_optimizer_update",
+                  "writeback_route": "owner_update_then_packed_all_gather"
+                }
+              ],
+              "parameter_distribution_after_step": "replicated_for_next_forward",
+              "parameter_writeback_route": "owner_update_then_packed_all_gather",
+              "optimizer_state_distribution": "rank_owned",
+              "collective_count": 1,
+              "collective_payload_bytes_per_rank": 8,
+              "execution_seconds": 0.002190397121012211
+            },
+            "local_task_count": 2,
+            "local_forward_operation_count": 56,
+            "local_reverse_operation_count": 56,
+            "collective_count": 2,
+            "collective_seconds": 0.009983552619814873
+          }
+        ],
+        "optimizer_name": "rank_owned_sgd",
+        "learning_rate": 0.02,
+        "checkpoint_files": [],
+        "checkpoint_storage_semantics": "not_requested",
+        "nonfinite_parameter_gradient_count": 0,
+        "communication_bytes": 96,
+        "communication_tiers": {
+          "model": "collective_topology_dependent",
+          "collective": "all_reduce_sum",
+          "reduction_tensor_bytes": 96,
+          "inter_node_collective_bytes": 96,
+          "intra_node_collective_bytes": 0,
+          "unattributed_collective_bytes": 0,
+          "inter_node_collective_possible": true,
+          "note": "Exact intra-node/inter-node bytes depend on torch.distributed/NCCL collective algorithm."
+        },
+        "replicated_autograd": false,
+        "full_state_materialized": false,
+        "scalability_claim_allowed": false,
+        "scalability_blockers": [
+          "accelerator_capacity_evidence_pending",
+          "production_benchmark_audit_pending"
+        ]
+      },
+      "cpu_losses": [
+        0.9573938978884059,
+        0.9559985916473518,
+        0.954495325702576
+      ],
+      "parameters": [
+        0.3077631040377431,
+        -0.18614861037463232
+      ]
+    }
+  }
+}

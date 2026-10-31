@@ -118,8 +118,13 @@ def _execution_settings(
         "complex64": torch.complex64,
         "complex128": torch.complex128,
     }[precision]
+    device = options.device or "cpu"
+    if str(device).split(":", 1)[0] == "flagos":
+        from ..compute import resolve_platform_device
+
+        device = str(resolve_platform_device(device))
     return (
-        options.device or "cpu",
+        device,
         dtype,
         options.batch_size,
         bool(options.require_gradients),

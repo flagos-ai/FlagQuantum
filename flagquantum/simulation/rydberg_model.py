@@ -152,7 +152,7 @@ def native_model(
         raise CapabilityError(
             "native Rydberg dynamics currently supports one or two actors"
         )
-    if torch.device(device).type != "cpu":
+    if str(device).split(":", 1)[0] not in {"cpu", "flagos"}:
         raise _error(
             "unsupported_device",
             "continuous-time evolution currently supports CPU only",
@@ -164,6 +164,7 @@ def native_model(
             "dtype must be torch.complex64 or torch.complex128",
             "dtype",
         )
+    device = torch.device(device)
     real_dtype = torch.float32 if dtype == torch.complex64 else torch.float64
     grid, boundaries = _grid(record, times, real_dtype=real_dtype)
     controls = tuple(
@@ -190,15 +191,15 @@ def native_model(
                 "parameter_values",
             )
     bindings: list[dict[str, float]] | None = [] if names else None
-    local_n = torch.diag(torch.tensor([0.0, 1.0, 0.0], dtype=dtype))
-    local_drive = torch.zeros((3, 3), dtype=dtype)
+    local_n = torch.diag(torch.tensor([0.0, 1.0, 0.0], dtype=dtype, device=device))
+    local_drive = torch.zeros((3, 3), dtype=dtype, device=device)
     local_drive[0, 1] = 1
     populations = [_embed(local_n, i, count) for i in range(count)]
     drives = [_embed(local_drive, i, count) for i in range(count)]
     jumps = []
     for i in range(count):
         for level in (0, 1):
-            jump = torch.zeros((3, 3), dtype=dtype)
+            jump = torch.zeros((3, 3), dtype=dtype, device=device)
             jump[2, level] = 1
             jumps.append((_embed(jump, i, count), context.loss_rate))
     order = {name: i for i, (name, _) in enumerate(context.atoms)}
@@ -211,7 +212,7 @@ def native_model(
                 parameter_values[interval],
                 names,
                 dtype=dtype,
-                device=torch.device("cpu"),
+                device=device,
                 field=field,
             )
             for name, value in raw.items():
@@ -225,7 +226,7 @@ def native_model(
                         "native controls require real scalar bindings",
                         field,
                     )
-                tensor = value_to_tensor(value, dtype=real_dtype, device="cpu").clone()
+                tensor = value_to_tensor(value, dtype=real_dtype, device=device).clone()
                 if not bool(torch.isfinite(tensor).item()):
                     raise _error(
                         "invalid_coefficient",
@@ -245,7 +246,7 @@ def native_model(
             Fraction(float(grid[interval].item()))
             + Fraction(float(grid[interval + 1].item()))
         ) / 2
-        matrix = torch.zeros((3**count, 3**count), dtype=dtype)
+        matrix = torch.zeros((3**count, 3**count), dtype=dtype, device=device)
         for a, b in combinations(range(count), 2):
             pa = _exact_position(
                 context, moves, context.atoms[a][0], midpoint, boundaries
@@ -270,7 +271,7 @@ def native_model(
                 continue
             scalars = [
                 value_to_tensor(
-                    bind_parameter_value(v, values), dtype=real_dtype, device="cpu"
+                    bind_parameter_value(v, values), dtype=real_dtype, device=device
                 )
                 for v in (pulse.amplitude, pulse.detuning, pulse.phase)
             ]

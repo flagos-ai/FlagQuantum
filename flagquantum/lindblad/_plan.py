@@ -623,6 +623,10 @@ def _decode_request(
     }.get(summary.precision)
     if dtype is None:
         raise SerializationError("unsupported Lindblad plan precision")
+    if str(summary.device).split(":", 1)[0] == "flagos":
+        from ..compute import resolve_platform_device
+
+        resolve_platform_device(summary.device)
     try:
         raw_n_qubits = request["n_qubits"]
         if labelled and raw_n_qubits is not None:

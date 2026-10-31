@@ -1,0 +1,92 @@
+{
+  "rank": 0,
+  "device": "flagos:0",
+  "backend_name": "flagcx",
+  "staged_gloo_disabled": true,
+  "cases": {
+    "torch.float32_RedOpType.SUM": {
+      "status": "passed"
+    },
+    "torch.float32_RedOpType.AVG": {
+      "status": "passed"
+    },
+    "torch.float32_RedOpType.PRODUCT": {
+      "status": "passed"
+    },
+    "torch.float32_RedOpType.MIN": {
+      "status": "passed"
+    },
+    "torch.float32_RedOpType.MAX": {
+      "status": "passed"
+    },
+    "torch.float32_gather_base": {
+      "status": "passed"
+    },
+    "torch.float32_scatter_list": {
+      "status": "passed"
+    },
+    "torch.float32_scatter_base": {
+      "status": "passed"
+    },
+    "torch.float32_send_recv": {
+      "status": "passed"
+    },
+    "torch.float64_RedOpType.SUM": {
+      "status": "passed"
+    },
+    "torch.float64_RedOpType.AVG": {
+      "status": "passed"
+    },
+    "torch.float64_RedOpType.PRODUCT": {
+      "status": "passed"
+    },
+    "torch.float64_RedOpType.MIN": {
+      "status": "passed"
+    },
+    "torch.float64_RedOpType.MAX": {
+      "status": "passed"
+    },
+    "torch.float64_gather_base": {
+      "status": "passed"
+    },
+    "torch.float64_scatter_list": {
+      "status": "passed"
+    },
+    "torch.float64_scatter_base": {
+      "status": "passed"
+    },
+    "torch.float64_send_recv": {
+      "status": "passed"
+    },
+    "torch.complex64_RedOpType.SUM": {
+      "status": "passed"
+    },
+    "torch.complex64_gather_base": {
+      "status": "passed"
+    },
+    "torch.complex64_scatter_list": {
+      "status": "passed"
+    },
+    "torch.complex64_scatter_base": {
+      "status": "passed"
+    },
+    "torch.complex64_send_recv": {
+      "status": "passed"
+    },
+    "torch.complex128_RedOpType.SUM": {
+      "status": "passed"
+    },
+    "torch.complex128_gather_base": {
+      "status": "passed"
+    },
+    "torch.complex128_scatter_list": {
+      "status": "passed"
+    },
+    "torch.complex128_scatter_base": {
+      "status": "passed"
+    },
+    "torch.complex128_send_recv": {
+      "status": "passed"
+    }
+  }
+}

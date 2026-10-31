@@ -352,12 +352,21 @@ def _spsa_gradient(
     base = parameters.detach()
     flat = base.reshape(-1)
     size = flat.numel()
-    total = torch.zeros(size, dtype=torch.float64)
+    total = torch.zeros(size, dtype=torch.float64, device=base.device)
     for _ in range(directions):
-        drawn = torch.randint(0, 2, (size,), generator=generator, dtype=torch.int64)
+        drawn = torch.randint(
+            0,
+            2,
+            (size,),
+            generator=generator,
+            dtype=torch.int64,
+            device=generator.device if generator is not None else "cpu",
+        )
         # A Rademacher draw is +-1, so its reciprocal is itself and the
         # finite-difference coefficient needs no extra division.
-        direction = (2.0 * drawn.to(torch.float64) - 1.0).to(base.dtype)
+        direction = (2.0 * drawn.to(torch.float64) - 1.0).to(
+            device=base.device, dtype=base.dtype
+        )
         plus = flat + step * direction
         minus = flat - step * direction
         difference = evaluate(plus.reshape_as(base)) - evaluate(minus.reshape_as(base))

@@ -1,0 +1,257 @@
+{
+  "wheel_sha256": "e9c647daf76300c466958d5730d0cdacef46132be64d780d494821510893c5a3",
+  "cases": {
+    "collective_rank0": {
+      "rank": 0,
+      "device": "flagos:0",
+      "backend_name": "flagcx",
+      "staged_gloo_disabled": true,
+      "cases": {
+        "torch.float32_RedOpType.SUM": {
+          "status": "passed"
+        },
+        "torch.float32_RedOpType.AVG": {
+          "status": "passed"
+        },
+        "torch.float32_RedOpType.PRODUCT": {
+          "status": "passed"
+        },
+        "torch.float32_RedOpType.MIN": {
+          "status": "passed"
+        },
+        "torch.float32_RedOpType.MAX": {
+          "status": "passed"
+        },
+        "torch.float32_gather_base": {
+          "status": "passed"
+        },
+        "torch.float32_scatter_list": {
+          "status": "passed"
+        },
+        "torch.float32_scatter_base": {
+          "status": "passed"
+        },
+        "torch.float32_send_recv": {
+          "status": "passed"
+        },
+        "torch.float64_RedOpType.SUM": {
+          "status": "passed"
+        },
+        "torch.float64_RedOpType.AVG": {
+          "status": "passed"
+        },
+        "torch.float64_RedOpType.PRODUCT": {
+          "status": "passed"
+        },
+        "torch.float64_RedOpType.MIN": {
+          "status": "passed"
+        },
+        "torch.float64_RedOpType.MAX": {
+          "status": "passed"
+        },
+        "torch.float64_gather_base": {
+          "status": "passed"
+        },
+        "torch.float64_scatter_list": {
+          "status": "passed"
+        },
+        "torch.float64_scatter_base": {
+          "status": "passed"
+        },
+        "torch.float64_send_recv": {
+          "status": "passed"
+        },
+        "torch.complex64_RedOpType.SUM": {
+          "status": "passed"
+        },
+        "torch.complex64_gather_base": {
+          "status": "passed"
+        },
+        "torch.complex64_scatter_list": {
+          "status": "passed"
+        },
+        "torch.complex64_scatter_base": {
+          "status": "passed"
+        },
+        "torch.complex64_send_recv": {
+          "status": "passed"
+        },
+        "torch.complex128_RedOpType.SUM": {
+          "status": "passed"
+        },
+        "torch.complex128_gather_base": {
+          "status": "passed"
+        },
+        "torch.complex128_scatter_list": {
+          "status": "passed"
+        },
+        "torch.complex128_scatter_base": {
+          "status": "passed"
+        },
+        "torch.complex128_send_recv": {
+          "status": "passed"
+        }
+      }
+    },
+    "collective_rank1": {
+      "rank": 1,
+      "device": "flagos:1",
+      "backend_name": "flagcx",
+      "staged_gloo_disabled": true,
+      "cases": {
+        "torch.float32_RedOpType.SUM": {
+          "status": "passed"
+        },
+        "torch.float32_RedOpType.AVG": {
+          "status": "passed"
+        },
+        "torch.float32_RedOpType.PRODUCT": {
+          "status": "passed"
+        },
+        "torch.float32_RedOpType.MIN": {
+          "status": "passed"
+        },
+        "torch.float32_RedOpType.MAX": {
+          "status": "passed"
+        },
+        "torch.float32_gather_base": {
+          "status": "passed"
+        },
+        "torch.float32_scatter_list": {
+          "status": "passed"
+        },
+        "torch.float32_scatter_base": {
+          "status": "passed"
+        },
+        "torch.float32_send_recv": {
+          "status": "passed"
+        },
+        "torch.float64_RedOpType.SUM": {
+          "status": "passed"
+        },
+        "torch.float64_RedOpType.AVG": {
+          "status": "passed"
+        },
+        "torch.float64_RedOpType.PRODUCT": {
+          "status": "passed"
+        },
+        "torch.float64_RedOpType.MIN": {
+          "status": "passed"
+        },
+        "torch.float64_RedOpType.MAX": {
+          "status": "passed"
+        },
+        "torch.float64_gather_base": {
+          "status": "passed"
+        },
+        "torch.float64_scatter_list": {
+          "status": "passed"
+        },
+        "torch.float64_scatter_base": {
+          "status": "passed"
+        },
+        "torch.float64_send_recv": {
+          "status": "passed"
+        },
+        "torch.complex64_RedOpType.SUM": {
+          "status": "passed"
+        },
+        "torch.complex64_gather_base": {
+          "status": "passed"
+        },
+        "torch.complex64_scatter_list": {
+          "status": "passed"
+        },
+        "torch.complex64_scatter_base": {
+          "status": "passed"
+        },
+        "torch.complex64_send_recv": {
+          "status": "passed"
+        },
+        "torch.complex128_RedOpType.SUM": {
+          "status": "passed"
+        },
+        "torch.complex128_gather_base": {
+          "status": "passed"
+        },
+        "torch.complex128_scatter_list": {
+          "status": "passed"
+        },
+        "torch.complex128_scatter_base": {
+          "status": "passed"
+        },
+        "torch.complex128_send_recv": {
+          "status": "passed"
+        }
+      }
+    },
+    "ddp_rank0": {
+      "rank": 0,
+      "device": "flagos:0",
+      "distribution_semantics": "data_parallel_replicated",
+      "scalability_claim_allowed": false,
+      "cases": {
+        "torch.float32": {
+          "status": "passed",
+          "losses": [
+            0.8599445819854736,
+            0.8557224273681641,
+            0.8510570526123047
+          ],
+          "cpu_losses": [
+            0.8599444627761841,
+            0.8557225465774536,
+            0.8510570526123047
+          ]
+        },
+        "torch.float64": {
+          "status": "passed",
+          "losses": [
+            0.8599444645345068,
+            0.8557224330544289,
+            0.8510570456564321
+          ],
+          "cpu_losses": [
+            0.8599444645345071,
+            0.8557224330544293,
+            0.8510570456564329
+          ]
+        }
+      }
+    },
+    "ddp_rank1": {
+      "rank": 1,
+      "device": "flagos:1",
+      "distribution_semantics": "data_parallel_replicated",
+      "scalability_claim_allowed": false,
+      "cases": {
+        "torch.float32": {
+          "status": "passed",
+          "losses": [
+            0.8599445819854736,
+            0.8557224273681641,
+            0.8510570526123047
+          ],
+          "cpu_losses": [
+            0.8599444627761841,
+            0.8557225465774536,
+            0.8510570526123047
+          ]
+        },
+        "torch.float64": {
+          "status": "passed",
+          "losses": [
+            0.8599444645345068,
+            0.8557224330544289,
+            0.8510570456564321
+          ],
+          "cpu_losses": [
+            0.8599444645345071,
+            0.8557224330544293,
+            0.8510570456564329
+          ]
+        }
+      }
+    }
+  }
+}

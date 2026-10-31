@@ -61,12 +61,12 @@ def _outputs(
             )
         if (
             matrix.dtype != torch.complex128
-            or matrix.device.type != "cpu"
+            or matrix.device.type not in {"cpu", "flagos"}
             or matrix.requires_grad
         ):
             raise CapabilityError("Ising output matrices require static CPU complex128")
         checked = _normalize_observables(
-            {"output": matrix},
+            {"output": matrix.detach().cpu()},
             dim=2,
             dtype=torch.complex128,
             device=torch.device("cpu"),
@@ -102,7 +102,7 @@ def plan_ising(
     if (
         resolved.mode not in {"auto", "density_matrix"}
         or resolved.backend not in {"auto", "pytorch"}
-        or resolved.device not in {"auto", "cpu"}
+        or resolved.device.split(":", 1)[0] not in {"auto", "cpu", "flagos"}
         or resolved.target not in {"auto", "state", "expectation"}
         or resolved.batch_size != 1
         or (resolved.shots != 1 if sampled else resolved.shots is not None)
@@ -135,7 +135,7 @@ def plan_ising(
         resolved,
         mode="density_matrix",
         backend="pytorch",
-        device="cpu",
+        device="cpu" if resolved.device == "auto" else resolved.device,
         target=(
             ("expectation" if requests else "state")
             if resolved.target == "auto"
@@ -303,7 +303,7 @@ def validate_ising_payload(values: Mapping[str, Any]) -> dict[str, Any]:
     expected = ExecutionOptions(
         mode="density_matrix",
         backend="pytorch",
-        device="cpu",
+        device=resolved["device"],
         target=resolved["target"],
         batch_size=1,
         precision="complex128",
@@ -318,6 +318,7 @@ def validate_ising_payload(values: Mapping[str, Any]) -> dict[str, Any]:
     expected.pop("version")
     if (
         resolved != expected
+        or str(resolved["device"]).split(":", 1)[0] not in {"cpu", "flagos"}
         or (_SAMPLED_NUMERIC_BYTES if sampled else 64) > DEFAULT_DENSE_MATRIX_BYTES
         or resolved["target"] not in {"state", "expectation"}
         or (resolved["target"] == "expectation" and not requests)
@@ -404,7 +405,7 @@ def braid_depth(plan: ExecutionPlan) -> int:
 
 
 def _execute_pair_observation(
-    record: ProgramRecord, *, seed: int
+    record: ProgramRecord, *, seed: int, device: torch.device
 ) -> tuple[torch.Tensor, MeasurementResult]:
     """Compose existing probability/draw and Simulation authorities once."""
     from ..simulation.ising_braid import (
@@ -415,20 +416,22 @@ def _execute_pair_observation(
     from ._terminal_instruments import _instrument_probabilities
     from .measurements import _draw_probability_indices
 
-    before = _ising_sampled_prefix(record)
+    before = _ising_sampled_prefix(record, device)
     branches: list[tuple[str, tuple[torch.Tensor, ...]]] = [
         (label, (projector,))
-        for label, projector in zip(("1", "psi"), _charge_projectors(), strict=True)
+        for label, projector in zip(
+            ("1", "psi"), _charge_projectors(device), strict=True
+        )
     ]
     weights, probabilities = _instrument_probabilities(
         before.unsqueeze(0), branches, 1e-10
     )
-    generator = torch.Generator(device="cpu").manual_seed(seed)
+    generator = torch.Generator(device=device).manual_seed(seed)
     selected = _draw_probability_indices(probabilities, 1, generator=generator)
     if (
         selected.shape != (1, 1)
         or selected.dtype != torch.int64
-        or selected.device.type != "cpu"
+        or selected.device != before.device
     ):
         raise ExecutionError("sampled Ising draw must be one CPU int64 index")
     state = _continue_ising_sampled(record, before, int(selected[0, 0]))
@@ -445,7 +448,7 @@ def _execute_pair_observation(
                 metadata={
                     "stage": "intermediate",
                     "outcome_labels": [label for label, _ in branches],
-                    "probabilities": weights.tolist(),
+                    "probabilities": weights.detach().cpu().tolist(),
                     "probability_correction": float(
                         (probabilities - weights).abs().max()
                     ),
@@ -467,18 +470,22 @@ def execute_ising_plan(plan: ExecutionPlan) -> ExecutionResult:
 
     payload = plan.to_dict()
     record = native_program_from_dict(_require_mapping("program", payload["program"]))
+    from ..compute import resolve_platform_device
+
+    resolved = _require_mapping("resolved_options", payload["resolved_options"])
+    device = resolve_platform_device(resolved["device"])
     event = None
     if payload["version"] == "1.3":
-        seed = _require_mapping("resolved_options", payload["resolved_options"])["seed"]
+        seed = resolved["seed"]
         assert type(seed) is int
-        state, event = _execute_pair_observation(record, seed=seed)
+        state, event = _execute_pair_observation(record, seed=seed, device=device)
     else:
-        state = evolve_ising_braid(record).unsqueeze(0)
+        state = evolve_ising_braid(record, device=device).unsqueeze(0)
     measurements = []
     values = []
     for index, request in enumerate(_read_outputs(payload)):
         assert isinstance(request.observable, torch.Tensor)
-        value = torch.einsum("bij,ji->b", state, request.observable).real
+        value = torch.einsum("bij,ji->b", state, request.observable.to(device)).real
         values.append(value)
         metadata = {
             "fq_output_index": index,
@@ -505,7 +512,7 @@ def execute_ising_plan(plan: ExecutionPlan) -> ExecutionResult:
         runtime={
             "mode": "density_matrix",
             "backend": "pytorch",
-            "device": "cpu",
+            "device": str(state.device),
             "precision": "complex128",
             "execution_path": "native_ising_braid",
             "world_size": 1,

@@ -1,0 +1,1630 @@
+{
+  "phase": "save",
+  "pid": 7660,
+  "hostname": "redacted",
+  "context": {
+    "rank": 1,
+    "world_size": 2,
+    "local_rank": 0,
+    "local_world_size": 1,
+    "node_rank": 1,
+    "node_count": 2,
+    "hostname": "redacted",
+    "backend": "flagos",
+    "device": "flagos:0",
+    "initialized": true,
+    "initialized_by_flagquantum": true,
+    "distributed_identity": {
+      "schema": "flagquantum_distributed_identity_v1",
+      "outer_backend": "flagos",
+      "logical_device": "flagos:0",
+      "rank": 1,
+      "world_size": 2,
+      "process_group_initialized": true,
+      "provider": "torch_fl",
+      "provider_version": null,
+      "inner_backend": null,
+      "inner_backend_verified": false,
+      "flagcx_route_verified": false,
+      "flagcx_route_status": "unverified",
+      "host_staging_observed": null,
+      "communication_claim_allowed": false,
+      "blockers": [
+        "flagcx_inner_backend_unverified",
+        "flagcx_collective_conformance_pending",
+        "host_staging_unverified"
+      ],
+      "platform_identity": {
+        "provider": "torch_fl",
+        "device_type": "flagos",
+        "torch_version": "2.10.0+cpu",
+        "provider_version": null,
+        "vendor": null,
+        "metadata": {}
+      }
+    }
+  },
+  "checkpoint_filesystem": "shared_LeoFS",
+  "cases": {
+    "statevector_torch.complex64_sgd": {
+      "status": "passed",
+      "summary": {
+        "executor": "pytorch_native_sharded_statevector_training_v1",
+        "rank": 1,
+        "world_size": 2,
+        "local_world_size": 1,
+        "node_count": 2,
+        "completed_steps": 2,
+        "start_step": 0,
+        "losses": [
+          0.957393229007721,
+          0.9559978246688843
+        ],
+        "optimizer": "sgd",
+        "parameter_ownership_semantics": "sharded_across_ranks",
+        "gradient_ownership_semantics": "sharded_across_ranks",
+        "gradient_reduction": "reduce_scatter_sum",
+        "gradient_reduction_scheme": "owner_sharded_reduce_scatter",
+        "optimizer_state_ownership_semantics": "sharded_across_ranks",
+        "optimizer_update_ownership_semantics": "sharded_across_ranks",
+        "optimizer_update_semantics": "sharded_across_ranks",
+        "optimizer_ownership": [
+          {
+            "parameter": "parameter:0",
+            "owner_rank": 0,
+            "gradient_reduction": "reduce_scatter_sum",
+            "optimizer_state_local": false,
+            "update_route": "owner_step_then_broadcast"
+          },
+          {
+            "parameter": "parameter:1",
+            "owner_rank": 1,
+            "gradient_reduction": "reduce_scatter_sum",
+            "optimizer_state_local": true,
+            "update_route": "owner_step_then_broadcast"
+          }
+        ],
+        "progress_event_count": 21,
+        "communication_events": 14,
+        "communication_bytes": 128,
+        "peak_memory_bytes": 25600,
+        "local_state_bytes": 64,
+        "communication_fraction": 0.6666666666666666,
+        "checkpoint_files": [
+          "/checkpoints/checkpoint-v60/statevector_torch.complex64_sgd/rank-1.pt",
+          "/checkpoints/checkpoint-v60/statevector_torch.complex64_sgd/rank-1.pt"
+        ],
+        "distribution_semantics": "sharded_across_ranks",
+        "scalability_claim_allowed": false,
+        "release_gate_allowed": false,
+        "blockers": [
+          "release_capacity_and_multinode_acceptance_pending"
+        ]
+      },
+      "parameters": [
+        0.3085305690765381,
+        -0.18056336045265198
+      ],
+      "cpu_losses": [
+        0.9573941230773926,
+        0.9559987783432007
+      ]
+    },
+    "statevector_torch.complex64_adam": {
+      "status": "passed",
+      "summary": {
+        "executor": "pytorch_native_sharded_statevector_training_v1",
+        "rank": 1,
+        "world_size": 2,
+        "local_world_size": 1,
+        "node_count": 2,
+        "completed_steps": 2,
+        "start_step": 0,
+        "losses": [
+          0.957393229007721,
+          0.9510278701782227
+        ],
+        "optimizer": "adam",
+        "parameter_ownership_semantics": "sharded_across_ranks",
+        "gradient_ownership_semantics": "sharded_across_ranks",
+        "gradient_reduction": "reduce_scatter_sum",
+        "gradient_reduction_scheme": "owner_sharded_reduce_scatter",
+        "optimizer_state_ownership_semantics": "sharded_across_ranks",
+        "optimizer_update_ownership_semantics": "sharded_across_ranks",
+        "optimizer_update_semantics": "sharded_across_ranks",
+        "optimizer_ownership": [
+          {
+            "parameter": "parameter:0",
+            "owner_rank": 0,
+            "gradient_reduction": "reduce_scatter_sum",
+            "optimizer_state_local": false,
+            "update_route": "owner_step_then_broadcast"
+          },
+          {
+            "parameter": "parameter:1",
+            "owner_rank": 1,
+            "gradient_reduction": "reduce_scatter_sum",
+            "optimizer_state_local": true,
+            "update_route": "owner_step_then_broadcast"
+          }
+        ],
+        "progress_event_count": 21,
+        "communication_events": 14,
+        "communication_bytes": 128,
+        "peak_memory_bytes": 28672,
+        "local_state_bytes": 64,
+        "communication_fraction": 0.6666666666666666,
+        "checkpoint_files": [
+          "/checkpoints/checkpoint-v60/statevector_torch.complex64_adam/rank-1.pt",
+          "/checkpoints/checkpoint-v60/statevector_torch.complex64_adam/rank-1.pt"
+        ],
+        "distribution_semantics": "sharded_across_ranks",
+        "scalability_claim_allowed": false,
+        "release_gate_allowed": false,
+        "blockers": [
+          "release_capacity_and_multinode_acceptance_pending"
+        ]
+      },
+      "parameters": [
+        0.2699730396270752,
+        -0.21002236008644104
+      ],
+      "cpu_losses": [
+        0.9573941230773926,
+        0.9510281682014465
+      ]
+    },
+    "statevector_torch.complex128_sgd": {
+      "status": "passed",
+      "summary": {
+        "executor": "pytorch_native_sharded_statevector_training_v1",
+        "rank": 1,
+        "world_size": 2,
+        "local_world_size": 1,
+        "node_count": 2,
+        "completed_steps": 2,
+        "start_step": 0,
+        "losses": [
+          0.9573938978884056,
+          0.9559985916473519
+        ],
+        "optimizer": "sgd",
+        "parameter_ownership_semantics": "sharded_across_ranks",
+        "gradient_ownership_semantics": "sharded_across_ranks",
+        "gradient_reduction": "reduce_scatter_sum",
+        "gradient_reduction_scheme": "owner_sharded_reduce_scatter",
+        "optimizer_state_ownership_semantics": "sharded_across_ranks",
+        "optimizer_update_ownership_semantics": "sharded_across_ranks",
+        "optimizer_update_semantics": "sharded_across_ranks",
+        "optimizer_ownership": [
+          {
+            "parameter": "parameter:0",
+            "owner_rank": 0,
+            "gradient_reduction": "reduce_scatter_sum",
+            "optimizer_state_local": false,
+            "update_route": "owner_step_then_broadcast"
+          },
+          {
+            "parameter": "parameter:1",
+            "owner_rank": 1,
+            "gradient_reduction": "reduce_scatter_sum",
+            "optimizer_state_local": true,
+            "update_route": "owner_step_then_broadcast"
+          }
+        ],
+        "progress_event_count": 21,
+        "communication_events": 14,
+        "communication_bytes": 224,
+        "peak_memory_bytes": 38912,
+        "local_state_bytes": 128,
+        "communication_fraction": 0.6363636363636364,
+        "checkpoint_files": [
+          "/checkpoints/checkpoint-v60/statevector_torch.complex128_sgd/rank-1.pt",
+          "/checkpoints/checkpoint-v60/statevector_torch.complex128_sgd/rank-1.pt"
+        ],
+        "distribution_semantics": "sharded_across_ranks",
+        "scalability_claim_allowed": false,
+        "release_gate_allowed": false,
+        "blockers": [
+          "release_capacity_and_multinode_acceptance_pending"
+        ]
+      },
+      "parameters": [
+        0.30853057814155527,
+        -0.18056337202701214
+      ],
+      "cpu_losses": [
+        0.9573938978884059,
+        0.9559985916473518
+      ]
+    },
+    "statevector_torch.complex128_adam": {
+      "status": "passed",
+      "summary": {
+        "executor": "pytorch_native_sharded_statevector_training_v1",
+        "rank": 1,
+        "world_size": 2,
+        "local_world_size": 1,
+        "node_count": 2,
+        "completed_steps": 2,
+        "start_step": 0,
+        "losses": [
+          0.9573938978884056,
+          0.9510282507412647
+        ],
+        "optimizer": "adam",
+        "parameter_ownership_semantics": "sharded_across_ranks",
+        "gradient_ownership_semantics": "sharded_across_ranks",
+        "gradient_reduction": "reduce_scatter_sum",
+        "gradient_reduction_scheme": "owner_sharded_reduce_scatter",
+        "optimizer_state_ownership_semantics": "sharded_across_ranks",
+        "optimizer_update_ownership_semantics": "sharded_across_ranks",
+        "optimizer_update_semantics": "sharded_across_ranks",
+        "optimizer_ownership": [
+          {
+            "parameter": "parameter:0",
+            "owner_rank": 0,
+            "gradient_reduction": "reduce_scatter_sum",
+            "optimizer_state_local": false,
+            "update_route": "owner_step_then_broadcast"
+          },
+          {
+            "parameter": "parameter:1",
+            "owner_rank": 1,
+            "gradient_reduction": "reduce_scatter_sum",
+            "optimizer_state_local": true,
+            "update_route": "owner_step_then_broadcast"
+          }
+        ],
+        "progress_event_count": 21,
+        "communication_events": 14,
+        "communication_bytes": 224,
+        "peak_memory_bytes": 41984,
+        "local_state_bytes": 128,
+        "communication_fraction": 0.6363636363636364,
+        "checkpoint_files": [
+          "/checkpoints/checkpoint-v60/statevector_torch.complex128_adam/rank-1.pt",
+          "/checkpoints/checkpoint-v60/statevector_torch.complex128_adam/rank-1.pt"
+        ],
+        "distribution_semantics": "sharded_across_ranks",
+        "scalability_claim_allowed": false,
+        "release_gate_allowed": false,
+        "blockers": [
+          "release_capacity_and_multinode_acceptance_pending"
+        ]
+      },
+      "parameters": [
+        0.2699730191834,
+        -0.21002236800706753
+      ],
+      "cpu_losses": [
+        0.9573938978884059,
+        0.951028250741265
+      ]
+    },
+    "mps_torch.complex64_sgd": {
+      "status": "passed",
+      "summary": {
+        "executor": "pytorch_native_sharded_mps_training_v1",
+        "distribution_semantics": "sharded_across_ranks",
+        "rank": 1,
+        "world_size": 2,
+        "local_world_size": 1,
+        "node_count": 2,
+        "optimizer": "sgd",
+        "completed_steps": 2,
+        "start_step": 0,
+        "losses": [
+          0.957393229007721,
+          0.955997884273529
+        ],
+        "optimizer_state_ownership_semantics": "sharded_across_ranks",
+        "optimizer_ownership": [
+          {
+            "parameter_index": 0,
+            "owner_rank": 0,
+            "optimizer_state_local": false,
+            "gradient_route": "bounded_dtype_owner_reduce",
+            "update_route": "owner_step_then_bounded_dtype_all_gather"
+          },
+          {
+            "parameter_index": 1,
+            "owner_rank": 1,
+            "optimizer_state_local": true,
+            "gradient_route": "bounded_dtype_owner_reduce",
+            "update_route": "owner_step_then_bounded_dtype_all_gather"
+          }
+        ],
+        "step_metrics": [
+          {
+            "step": 0,
+            "loss": 0.957393229007721,
+            "forward_seconds": 0.5204785799141973,
+            "reverse_seconds": 4.075165529968217,
+            "optimizer_seconds": 0.0024736300110816956,
+            "end_to_end_seconds": 4.5990439099259675,
+            "training_compute_seconds": 4.598134550033137,
+            "diagnostics_seconds": 0.000907369889318943,
+            "static_qr_metadata_records": 3,
+            "dynamic_metadata_broadcasts": 0,
+            "reverse_segment_cache_hit": false,
+            "gradient_bucket_cache_hit": false,
+            "layer_halo_message_count": 0,
+            "layer_halo_payload_bytes": 0,
+            "layer_halo_intra_node_bytes": 0,
+            "layer_halo_inter_node_bytes": 0,
+            "layer_halo_wait_seconds": 0.0,
+            "owned_site_work": 3,
+            "owned_bond_work": 1,
+            "boundary_exchanges": 1,
+            "svd_activity": 1,
+            "qr_activity": 0,
+            "peak_memory_bytes": 201390080,
+            "useful_work_completed": true,
+            "two_site_splits": 1,
+            "truncated_splits": 0,
+            "discarded_weight": 0.0,
+            "boundary_forward_exchanges": 1,
+            "boundary_reverse_exchanges": 1,
+            "boundary_bytes": 144,
+            "bond_updates": [
+              {
+                "operation_id": "56c5cffbb196271a",
+                "bond": 1,
+                "owner_ranks": [
+                  0,
+                  1
+                ],
+                "compute_owner": 0,
+                "original_rank": 2,
+                "kept_rank": 2,
+                "discarded_weight": 0.0,
+                "communication_peer": 1,
+                "communication_sequence": 5,
+                "input_shapes": [
+                  [
+                    1,
+                    2,
+                    2,
+                    1
+                  ],
+                  [
+                    1,
+                    1,
+                    2,
+                    1
+                  ]
+                ],
+                "output_shapes": [
+                  [
+                    1,
+                    2,
+                    2,
+                    2
+                  ],
+                  [
+                    1,
+                    2,
+                    2,
+                    1
+                  ]
+                ],
+                "payload_bytes": 144,
+                "forward_transport": "batched_isend_irecv",
+                "reverse_transport": "batched_isend_irecv"
+              }
+            ],
+            "allocated_memory_bytes": 59904,
+            "reserved_memory_bytes": 203423744,
+            "tape_memory_bytes": 368,
+            "optimizer_memory_bytes": 0,
+            "communication_buffer_bytes": 144,
+            "gradient_collective_count": 2,
+            "gradient_collective_bytes": 8,
+            "gradient_bucket_count": 2,
+            "gradient_bucket_fill_ratio": 1.52587890625e-07,
+            "reverse_tape_segments": 6,
+            "fused_reverse_segments": 2,
+            "reverse_autograd_grad_invocations": 3,
+            "reverse_python_dispatches": 6,
+            "qr_factorization_count": 3,
+            "svd_factorization_count": 0,
+            "objective_scan_pairs": 1,
+            "objective_scan_forward_messages": 1,
+            "objective_scan_reverse_messages": 1,
+            "objective_execution": "heisenberg_mpo_five_channel_scan",
+            "learning_rate": 0.02,
+            "largest_realized_bond": 2,
+            "forward_peak_memory_bytes": 70656,
+            "reverse_peak_memory_bytes": 201390080,
+            "optimizer_stage": "sgd",
+            "objective_evaluations": 1,
+            "parameter_gradients": [],
+            "parameter_values": [],
+            "optimizer_collective_count": 1,
+            "optimizer_collective_bytes": 8,
+            "lbfgs_history_length": 0,
+            "adjoint_tensor_bytes": 208,
+            "forward_tensor_bytes": 112,
+            "boundary_gradient_buffer_bytes": 0,
+            "canonicalization_temporary_bytes": 0,
+            "truncation_temporary_bytes": 0
+          },
+          {
+            "step": 1,
+            "loss": 0.955997884273529,
+            "forward_seconds": 0.3878151399549097,
+            "reverse_seconds": 0.10981991002336144,
+            "optimizer_seconds": 0.0014031198807060719,
+            "end_to_end_seconds": 0.5000653299503028,
+            "training_compute_seconds": 0.49906051997095346,
+            "diagnostics_seconds": 0.001002349890768528,
+            "static_qr_metadata_records": 3,
+            "dynamic_metadata_broadcasts": 0,
+            "reverse_segment_cache_hit": true,
+            "gradient_bucket_cache_hit": true,
+            "layer_halo_message_count": 0,
+            "layer_halo_payload_bytes": 0,
+            "layer_halo_intra_node_bytes": 0,
+            "layer_halo_inter_node_bytes": 0,
+            "layer_halo_wait_seconds": 0.0,
+            "owned_site_work": 3,
+            "owned_bond_work": 1,
+            "boundary_exchanges": 1,
+            "svd_activity": 1,
+            "qr_activity": 0,
+            "peak_memory_bytes": 201390080,
+            "useful_work_completed": true,
+            "two_site_splits": 1,
+            "truncated_splits": 0,
+            "discarded_weight": 0.0,
+            "boundary_forward_exchanges": 1,
+            "boundary_reverse_exchanges": 1,
+            "boundary_bytes": 144,
+            "bond_updates": [
+              {
+                "operation_id": "56c5cffbb196271a",
+                "bond": 1,
+                "owner_ranks": [
+                  0,
+                  1
+                ],
+                "compute_owner": 0,
+                "original_rank": 2,
+                "kept_rank": 2,
+                "discarded_weight": 0.0,
+                "communication_peer": 1,
+                "communication_sequence": 5,
+                "input_shapes": [
+                  [
+                    1,
+                    2,
+                    2,
+                    1
+                  ],
+                  [
+                    1,
+                    1,
+                    2,
+                    1
+                  ]
+                ],
+                "output_shapes": [
+                  [
+                    1,
+                    2,
+                    2,
+                    2
+                  ],
+                  [
+                    1,
+                    2,
+                    2,
+                    1
+                  ]
+                ],
+                "payload_bytes": 144,
+                "forward_transport": "batched_isend_irecv",
+                "reverse_transport": "batched_isend_irecv"
+              }
+            ],
+            "allocated_memory_bytes": 59904,
+            "reserved_memory_bytes": 203423744,
+            "tape_memory_bytes": 368,
+            "optimizer_memory_bytes": 0,
+            "communication_buffer_bytes": 144,
+            "gradient_collective_count": 2,
+            "gradient_collective_bytes": 8,
+            "gradient_bucket_count": 2,
+            "gradient_bucket_fill_ratio": 1.52587890625e-07,
+            "reverse_tape_segments": 6,
+            "fused_reverse_segments": 2,
+            "reverse_autograd_grad_invocations": 3,
+            "reverse_python_dispatches": 6,
+            "qr_factorization_count": 3,
+            "svd_factorization_count": 0,
+            "objective_scan_pairs": 1,
+            "objective_scan_forward_messages": 1,
+            "objective_scan_reverse_messages": 1,
+            "objective_execution": "heisenberg_mpo_five_channel_scan",
+            "learning_rate": 0.02,
+            "largest_realized_bond": 2,
+            "forward_peak_memory_bytes": 201390080,
+            "reverse_peak_memory_bytes": 73216,
+            "optimizer_stage": "sgd",
+            "objective_evaluations": 1,
+            "parameter_gradients": [],
+            "parameter_values": [],
+            "optimizer_collective_count": 1,
+            "optimizer_collective_bytes": 8,
+            "lbfgs_history_length": 0,
+            "adjoint_tensor_bytes": 208,
+            "forward_tensor_bytes": 112,
+            "boundary_gradient_buffer_bytes": 0,
+            "canonicalization_temporary_bytes": 0,
+            "truncation_temporary_bytes": 0
+          }
+        ],
+        "memory_growth_bytes": 0,
+        "suspected_memory_leak": false,
+        "checkpoint_files": [
+          "/checkpoints/checkpoint-v60/mps_torch.complex64_sgd/rank-1-step-1.pt",
+          "/checkpoints/checkpoint-v60/mps_torch.complex64_sgd/rank-1-step-2.pt"
+        ],
+        "checkpoint_schema": "sharded_mps_training_checkpoint_v2",
+        "checkpoint_integrity": "sha256_atomic_file_and_metadata",
+        "checkpoint_commit_protocol": "immutable_rank_shards_atomic_manifest_v1",
+        "checkpoint_retention_generations": 2,
+        "checkpoint_pruned_files": [],
+        "checkpoint_write_seconds": 0.021843049908056855,
+        "checkpoint_commit_seconds": 0.014429179951548576,
+        "checkpoint_prune_seconds": 0.008596789790317416,
+        "checkpoint_bytes_written": 17116,
+        "checkpoint_retained_bytes": 17116,
+        "checkpoint_free_space_reserve_bytes": 1073741824,
+        "checkpoint_min_free_bytes_observed": 728365125632,
+        "checkpoint_estimated_generation_bytes": 2097160,
+        "checkpoint_storage_semantics": "shared_filesystem_verified",
+        "checkpoint_storage_probe_seconds": 0.008328010095283389,
+        "checkpoint_overwrite_allowed": false,
+        "checkpoint_deserialization_policy": "torch_weights_only",
+        "checkpoint_writer_lease": "exclusive_atomic_file_v1",
+        "checkpoint_writer_lease_break_allowed": false,
+        "checkpoint_writer_lease_stale_seconds": 3600.0,
+        "checkpoint_writer_lease_heartbeat_count": 2,
+        "checkpoint_writer_lease_heartbeat_seconds": 0.012908389791846275,
+        "checkpoint_contract_fingerprint": "509e623db1c9bcd465b3b5659f46e4db88c59c5925bb1400e9af54be4234c1df",
+        "memory_warmup_steps": 1,
+        "communication_setup_seconds": 0.000878920080140233,
+        "site_kernel_execution": "eager",
+        "site_kernel_selection_reason": "auto_checkpoint_compatibility_uses_eager",
+        "site_ownership": [
+          [
+            0,
+            1
+          ],
+          [
+            2,
+            3
+          ]
+        ],
+        "site_ownership_policy": "balanced",
+        "communication_protocol": "batched_isend_irecv_packed_multi_tensor_envelope",
+        "communication_stream": "dedicated_cuda_stream",
+        "rank_useful_work": true,
+        "full_mps_materialization": false,
+        "speedup_gate_passed": false,
+        "capacity_gate_passed": false,
+        "correctness_gate_passed": true,
+        "scalability_claim_allowed": false,
+        "release_gate_allowed": false,
+        "blockers": [
+          "release_speedup_evidence_not_attached",
+          "release_capacity_evidence_not_attached",
+          "multi_gpu_scaling_report_not_attached"
+        ]
+      },
+      "parameters": [
+        0.3085305690765381,
+        -0.18056336045265198
+      ],
+      "cpu_losses": [
+        0.9573941230773926,
+        0.9559987783432007
+      ]
+    },
+    "mps_torch.complex64_adam": {
+      "status": "passed",
+      "summary": {
+        "executor": "pytorch_native_sharded_mps_training_v1",
+        "distribution_semantics": "sharded_across_ranks",
+        "rank": 1,
+        "world_size": 2,
+        "local_world_size": 1,
+        "node_count": 2,
+        "optimizer": "adam",
+        "completed_steps": 2,
+        "start_step": 0,
+        "losses": [
+          0.957393229007721,
+          0.9510278701782227
+        ],
+        "optimizer_state_ownership_semantics": "sharded_across_ranks",
+        "optimizer_ownership": [
+          {
+            "parameter_index": 0,
+            "owner_rank": 0,
+            "optimizer_state_local": false,
+            "gradient_route": "bounded_dtype_owner_reduce",
+            "update_route": "owner_step_then_bounded_dtype_all_gather"
+          },
+          {
+            "parameter_index": 1,
+            "owner_rank": 1,
+            "optimizer_state_local": true,
+            "gradient_route": "bounded_dtype_owner_reduce",
+            "update_route": "owner_step_then_bounded_dtype_all_gather"
+          }
+        ],
+        "step_metrics": [
+          {
+            "step": 0,
+            "loss": 0.957393229007721,
+            "forward_seconds": 0.38018245017156005,
+            "reverse_seconds": 0.1069171701092273,
+            "optimizer_seconds": 0.0041345900390297174,
+            "end_to_end_seconds": 0.4920733100734651,
+            "training_compute_seconds": 0.4912488400004804,
+            "diagnostics_seconds": 0.0008233401458710432,
+            "static_qr_metadata_records": 3,
+            "dynamic_metadata_broadcasts": 0,
+            "reverse_segment_cache_hit": true,
+            "gradient_bucket_cache_hit": true,
+            "layer_halo_message_count": 0,
+            "layer_halo_payload_bytes": 0,
+            "layer_halo_intra_node_bytes": 0,
+            "layer_halo_inter_node_bytes": 0,
+            "layer_halo_wait_seconds": 0.0,
+            "owned_site_work": 3,
+            "owned_bond_work": 1,
+            "boundary_exchanges": 1,
+            "svd_activity": 1,
+            "qr_activity": 0,
+            "peak_memory_bytes": 99840,
+            "useful_work_completed": true,
+            "two_site_splits": 1,
+            "truncated_splits": 0,
+            "discarded_weight": 0.0,
+            "boundary_forward_exchanges": 1,
+            "boundary_reverse_exchanges": 1,
+            "boundary_bytes": 144,
+            "bond_updates": [
+              {
+                "operation_id": "56c5cffbb196271a",
+                "bond": 1,
+                "owner_ranks": [
+                  0,
+                  1
+                ],
+                "compute_owner": 0,
+                "original_rank": 2,
+                "kept_rank": 2,
+                "discarded_weight": 0.0,
+                "communication_peer": 1,
+                "communication_sequence": 5,
+                "input_shapes": [
+                  [
+                    1,
+                    2,
+                    2,
+                    1
+                  ],
+                  [
+                    1,
+                    1,
+                    2,
+                    1
+                  ]
+                ],
+                "output_shapes": [
+                  [
+                    1,
+                    2,
+                    2,
+                    2
+                  ],
+                  [
+                    1,
+                    2,
+                    2,
+                    1
+                  ]
+                ],
+                "payload_bytes": 144,
+                "forward_transport": "batched_isend_irecv",
+                "reverse_transport": "batched_isend_irecv"
+              }
+            ],
+            "allocated_memory_bytes": 61952,
+            "reserved_memory_bytes": 203423744,
+            "tape_memory_bytes": 368,
+            "optimizer_memory_bytes": 12,
+            "communication_buffer_bytes": 144,
+            "gradient_collective_count": 2,
+            "gradient_collective_bytes": 8,
+            "gradient_bucket_count": 2,
+            "gradient_bucket_fill_ratio": 1.52587890625e-07,
+            "reverse_tape_segments": 6,
+            "fused_reverse_segments": 2,
+            "reverse_autograd_grad_invocations": 3,
+            "reverse_python_dispatches": 6,
+            "qr_factorization_count": 3,
+            "svd_factorization_count": 0,
+            "objective_scan_pairs": 1,
+            "objective_scan_forward_messages": 1,
+            "objective_scan_reverse_messages": 1,
+            "objective_execution": "heisenberg_mpo_five_channel_scan",
+            "learning_rate": 0.02,
+            "largest_realized_bond": 2,
+            "forward_peak_memory_bytes": 99840,
+            "reverse_peak_memory_bytes": 74240,
+            "optimizer_stage": "adam",
+            "objective_evaluations": 1,
+            "parameter_gradients": [],
+            "parameter_values": [],
+            "optimizer_collective_count": 1,
+            "optimizer_collective_bytes": 8,
+            "lbfgs_history_length": 0,
+            "adjoint_tensor_bytes": 208,
+            "forward_tensor_bytes": 112,
+            "boundary_gradient_buffer_bytes": 0,
+            "canonicalization_temporary_bytes": 0,
+            "truncation_temporary_bytes": 0
+          },
+          {
+            "step": 1,
+            "loss": 0.9510278701782227,
+            "forward_seconds": 0.37111446005292237,
+            "reverse_seconds": 0.09925805008970201,
+            "optimizer_seconds": 0.0018630798440426588,
+            "end_to_end_seconds": 0.4730219899211079,
+            "training_compute_seconds": 0.4722520699724555,
+            "diagnostics_seconds": 0.0007688601035624743,
+            "static_qr_metadata_records": 3,
+            "dynamic_metadata_broadcasts": 0,
+            "reverse_segment_cache_hit": true,
+            "gradient_bucket_cache_hit": true,
+            "layer_halo_message_count": 0,
+            "layer_halo_payload_bytes": 0,
+            "layer_halo_intra_node_bytes": 0,
+            "layer_halo_inter_node_bytes": 0,
+            "layer_halo_wait_seconds": 0.0,
+            "owned_site_work": 3,
+            "owned_bond_work": 1,
+            "boundary_exchanges": 1,
+            "svd_activity": 1,
+            "qr_activity": 0,
+            "peak_memory_bytes": 105984,
+            "useful_work_completed": true,
+            "two_site_splits": 1,
+            "truncated_splits": 0,
+            "discarded_weight": 0.0,
+            "boundary_forward_exchanges": 1,
+            "boundary_reverse_exchanges": 1,
+            "boundary_bytes": 144,
+            "bond_updates": [
+              {
+                "operation_id": "56c5cffbb196271a",
+                "bond": 1,
+                "owner_ranks": [
+                  0,
+                  1
+                ],
+                "compute_owner": 0,
+                "original_rank": 2,
+                "kept_rank": 2,
+                "discarded_weight": 0.0,
+                "communication_peer": 1,
+                "communication_sequence": 5,
+                "input_shapes": [
+                  [
+                    1,
+                    2,
+                    2,
+                    1
+                  ],
+                  [
+                    1,
+                    1,
+                    2,
+                    1
+                  ]
+                ],
+                "output_shapes": [
+                  [
+                    1,
+                    2,
+                    2,
+                    2
+                  ],
+                  [
+                    1,
+                    2,
+                    2,
+                    1
+                  ]
+                ],
+                "payload_bytes": 144,
+                "forward_transport": "batched_isend_irecv",
+                "reverse_transport": "batched_isend_irecv"
+              }
+            ],
+            "allocated_memory_bytes": 61952,
+            "reserved_memory_bytes": 203423744,
+            "tape_memory_bytes": 368,
+            "optimizer_memory_bytes": 12,
+            "communication_buffer_bytes": 144,
+            "gradient_collective_count": 2,
+            "gradient_collective_bytes": 8,
+            "gradient_bucket_count": 2,
+            "gradient_bucket_fill_ratio": 1.52587890625e-07,
+            "reverse_tape_segments": 6,
+            "fused_reverse_segments": 2,
+            "reverse_autograd_grad_invocations": 3,
+            "reverse_python_dispatches": 6,
+            "qr_factorization_count": 3,
+            "svd_factorization_count": 0,
+            "objective_scan_pairs": 1,
+            "objective_scan_forward_messages": 1,
+            "objective_scan_reverse_messages": 1,
+            "objective_execution": "heisenberg_mpo_five_channel_scan",
+            "learning_rate": 0.02,
+            "largest_realized_bond": 2,
+            "forward_peak_memory_bytes": 105984,
+            "reverse_peak_memory_bytes": 75264,
+            "optimizer_stage": "adam",
+            "objective_evaluations": 1,
+            "parameter_gradients": [],
+            "parameter_values": [],
+            "optimizer_collective_count": 1,
+            "optimizer_collective_bytes": 8,
+            "lbfgs_history_length": 0,
+            "adjoint_tensor_bytes": 208,
+            "forward_tensor_bytes": 112,
+            "boundary_gradient_buffer_bytes": 0,
+            "canonicalization_temporary_bytes": 0,
+            "truncation_temporary_bytes": 0
+          }
+        ],
+        "memory_growth_bytes": 0,
+        "suspected_memory_leak": false,
+        "checkpoint_files": [
+          "/checkpoints/checkpoint-v60/mps_torch.complex64_adam/rank-1-step-1.pt",
+          "/checkpoints/checkpoint-v60/mps_torch.complex64_adam/rank-1-step-2.pt"
+        ],
+        "checkpoint_schema": "sharded_mps_training_checkpoint_v2",
+        "checkpoint_integrity": "sha256_atomic_file_and_metadata",
+        "checkpoint_commit_protocol": "immutable_rank_shards_atomic_manifest_v1",
+        "checkpoint_retention_generations": 2,
+        "checkpoint_pruned_files": [],
+        "checkpoint_write_seconds": 0.020642539719119668,
+        "checkpoint_commit_seconds": 0.012442429782822728,
+        "checkpoint_prune_seconds": 0.007337810238823295,
+        "checkpoint_bytes_written": 18810,
+        "checkpoint_retained_bytes": 18810,
+        "checkpoint_free_space_reserve_bytes": 1073741824,
+        "checkpoint_min_free_bytes_observed": 728365096960,
+        "checkpoint_estimated_generation_bytes": 2097184,
+        "checkpoint_storage_semantics": "shared_filesystem_verified",
+        "checkpoint_storage_probe_seconds": 0.008160230005159974,
+        "checkpoint_overwrite_allowed": false,
+        "checkpoint_deserialization_policy": "torch_weights_only",
+        "checkpoint_writer_lease": "exclusive_atomic_file_v1",
+        "checkpoint_writer_lease_break_allowed": false,
+        "checkpoint_writer_lease_stale_seconds": 3600.0,
+        "checkpoint_writer_lease_heartbeat_count": 2,
+        "checkpoint_writer_lease_heartbeat_seconds": 0.012005219934508204,
+        "checkpoint_contract_fingerprint": "4bd5979e0b62d618959ae1fc7af871602ab1959410435c3305054711f784ad7c",
+        "memory_warmup_steps": 1,
+        "communication_setup_seconds": 0.0,
+        "site_kernel_execution": "eager",
+        "site_kernel_selection_reason": "auto_checkpoint_compatibility_uses_eager",
+        "site_ownership": [
+          [
+            0,
+            1
+          ],
+          [
+            2,
+            3
+          ]
+        ],
+        "site_ownership_policy": "balanced",
+        "communication_protocol": "batched_isend_irecv_packed_multi_tensor_envelope",
+        "communication_stream": "dedicated_cuda_stream",
+        "rank_useful_work": true,
+        "full_mps_materialization": false,
+        "speedup_gate_passed": false,
+        "capacity_gate_passed": false,
+        "correctness_gate_passed": true,
+        "scalability_claim_allowed": false,
+        "release_gate_allowed": false,
+        "blockers": [
+          "release_speedup_evidence_not_attached",
+          "release_capacity_evidence_not_attached",
+          "multi_gpu_scaling_report_not_attached"
+        ]
+      },
+      "parameters": [
+        0.2699730396270752,
+        -0.21002236008644104
+      ],
+      "cpu_losses": [
+        0.9573941230773926,
+        0.9510281682014465
+      ]
+    },
+    "mps_torch.complex128_sgd": {
+      "status": "passed",
+      "summary": {
+        "executor": "pytorch_native_sharded_mps_training_v1",
+        "distribution_semantics": "sharded_across_ranks",
+        "rank": 1,
+        "world_size": 2,
+        "local_world_size": 1,
+        "node_count": 2,
+        "optimizer": "sgd",
+        "completed_steps": 2,
+        "start_step": 0,
+        "losses": [
+          0.9573938978884055,
+          0.9559985916473526
+        ],
+        "optimizer_state_ownership_semantics": "sharded_across_ranks",
+        "optimizer_ownership": [
+          {
+            "parameter_index": 0,
+            "owner_rank": 0,
+            "optimizer_state_local": false,
+            "gradient_route": "bounded_dtype_owner_reduce",
+            "update_route": "owner_step_then_bounded_dtype_all_gather"
+          },
+          {
+            "parameter_index": 1,
+            "owner_rank": 1,
+            "optimizer_state_local": true,
+            "gradient_route": "bounded_dtype_owner_reduce",
+            "update_route": "owner_step_then_bounded_dtype_all_gather"
+          }
+        ],
+        "step_metrics": [
+          {
+            "step": 0,
+            "loss": 0.9573938978884055,
+            "forward_seconds": 0.4591238899156451,
+            "reverse_seconds": 0.09154097991995513,
+            "optimizer_seconds": 0.0014443800318986177,
+            "end_to_end_seconds": 0.5529335900209844,
+            "training_compute_seconds": 0.5521231801249087,
+            "diagnostics_seconds": 0.0008082399144768715,
+            "static_qr_metadata_records": 3,
+            "dynamic_metadata_broadcasts": 0,
+            "reverse_segment_cache_hit": true,
+            "gradient_bucket_cache_hit": false,
+            "layer_halo_message_count": 0,
+            "layer_halo_payload_bytes": 0,
+            "layer_halo_intra_node_bytes": 0,
+            "layer_halo_inter_node_bytes": 0,
+            "layer_halo_wait_seconds": 0.0,
+            "owned_site_work": 3,
+            "owned_bond_work": 1,
+            "boundary_exchanges": 1,
+            "svd_activity": 1,
+            "qr_activity": 0,
+            "peak_memory_bytes": 126976,
+            "useful_work_completed": true,
+            "two_site_splits": 1,
+            "truncated_splits": 0,
+            "discarded_weight": 0.0,
+            "boundary_forward_exchanges": 1,
+            "boundary_reverse_exchanges": 1,
+            "boundary_bytes": 288,
+            "bond_updates": [
+              {
+                "operation_id": "56c5cffbb196271a",
+                "bond": 1,
+                "owner_ranks": [
+                  0,
+                  1
+                ],
+                "compute_owner": 0,
+                "original_rank": 2,
+                "kept_rank": 2,
+                "discarded_weight": 0.0,
+                "communication_peer": 1,
+                "communication_sequence": 5,
+                "input_shapes": [
+                  [
+                    1,
+                    2,
+                    2,
+                    1
+                  ],
+                  [
+                    1,
+                    1,
+                    2,
+                    1
+                  ]
+                ],
+                "output_shapes": [
+                  [
+                    1,
+                    2,
+                    2,
+                    2
+                  ],
+                  [
+                    1,
+                    2,
+                    2,
+                    1
+                  ]
+                ],
+                "payload_bytes": 288,
+                "forward_transport": "batched_isend_irecv",
+                "reverse_transport": "batched_isend_irecv"
+              }
+            ],
+            "allocated_memory_bytes": 115200,
+            "reserved_memory_bytes": 203423744,
+            "tape_memory_bytes": 736,
+            "optimizer_memory_bytes": 0,
+            "communication_buffer_bytes": 288,
+            "gradient_collective_count": 2,
+            "gradient_collective_bytes": 16,
+            "gradient_bucket_count": 2,
+            "gradient_bucket_fill_ratio": 3.0517578125e-07,
+            "reverse_tape_segments": 6,
+            "fused_reverse_segments": 2,
+            "reverse_autograd_grad_invocations": 3,
+            "reverse_python_dispatches": 6,
+            "qr_factorization_count": 3,
+            "svd_factorization_count": 0,
+            "objective_scan_pairs": 1,
+            "objective_scan_forward_messages": 1,
+            "objective_scan_reverse_messages": 1,
+            "objective_execution": "heisenberg_mpo_five_channel_scan",
+            "learning_rate": 0.02,
+            "largest_realized_bond": 2,
+            "forward_peak_memory_bytes": 113152,
+            "reverse_peak_memory_bytes": 126976,
+            "optimizer_stage": "sgd",
+            "objective_evaluations": 1,
+            "parameter_gradients": [],
+            "parameter_values": [],
+            "optimizer_collective_count": 1,
+            "optimizer_collective_bytes": 16,
+            "lbfgs_history_length": 0,
+            "adjoint_tensor_bytes": 416,
+            "forward_tensor_bytes": 224,
+            "boundary_gradient_buffer_bytes": 0,
+            "canonicalization_temporary_bytes": 0,
+            "truncation_temporary_bytes": 0
+          },
+          {
+            "step": 1,
+            "loss": 0.9559985916473526,
+            "forward_seconds": 0.4410793299321085,
+            "reverse_seconds": 0.07954765995964408,
+            "optimizer_seconds": 0.0020687500946223736,
+            "end_to_end_seconds": 0.5234643397852778,
+            "training_compute_seconds": 0.5227105598896742,
+            "diagnostics_seconds": 0.0007525798864662647,
+            "static_qr_metadata_records": 3,
+            "dynamic_metadata_broadcasts": 0,
+            "reverse_segment_cache_hit": true,
+            "gradient_bucket_cache_hit": true,
+            "layer_halo_message_count": 0,
+            "layer_halo_payload_bytes": 0,
+            "layer_halo_intra_node_bytes": 0,
+            "layer_halo_inter_node_bytes": 0,
+            "layer_halo_wait_seconds": 0.0,
+            "owned_site_work": 3,
+            "owned_bond_work": 1,
+            "boundary_exchanges": 1,
+            "svd_activity": 1,
+            "qr_activity": 0,
+            "peak_memory_bytes": 159232,
+            "useful_work_completed": true,
+            "two_site_splits": 1,
+            "truncated_splits": 0,
+            "discarded_weight": 0.0,
+            "boundary_forward_exchanges": 1,
+            "boundary_reverse_exchanges": 1,
+            "boundary_bytes": 288,
+            "bond_updates": [
+              {
+                "operation_id": "56c5cffbb196271a",
+                "bond": 1,
+                "owner_ranks": [
+                  0,
+                  1
+                ],
+                "compute_owner": 0,
+                "original_rank": 2,
+                "kept_rank": 2,
+                "discarded_weight": 0.0,
+                "communication_peer": 1,
+                "communication_sequence": 5,
+                "input_shapes": [
+                  [
+                    1,
+                    2,
+                    2,
+                    1
+                  ],
+                  [
+                    1,
+                    1,
+                    2,
+                    1
+                  ]
+                ],
+                "output_shapes": [
+                  [
+                    1,
+                    2,
+                    2,
+                    2
+                  ],
+                  [
+                    1,
+                    2,
+                    2,
+                    1
+                  ]
+                ],
+                "payload_bytes": 288,
+                "forward_transport": "batched_isend_irecv",
+                "reverse_transport": "batched_isend_irecv"
+              }
+            ],
+            "allocated_memory_bytes": 115200,
+            "reserved_memory_bytes": 203423744,
+            "tape_memory_bytes": 736,
+            "optimizer_memory_bytes": 0,
+            "communication_buffer_bytes": 288,
+            "gradient_collective_count": 2,
+            "gradient_collective_bytes": 16,
+            "gradient_bucket_count": 2,
+            "gradient_bucket_fill_ratio": 3.0517578125e-07,
+            "reverse_tape_segments": 6,
+            "fused_reverse_segments": 2,
+            "reverse_autograd_grad_invocations": 3,
+            "reverse_python_dispatches": 6,
+            "qr_factorization_count": 3,
+            "svd_factorization_count": 0,
+            "objective_scan_pairs": 1,
+            "objective_scan_forward_messages": 1,
+            "objective_scan_reverse_messages": 1,
+            "objective_execution": "heisenberg_mpo_five_channel_scan",
+            "learning_rate": 0.02,
+            "largest_realized_bond": 2,
+            "forward_peak_memory_bytes": 159232,
+            "reverse_peak_memory_bytes": 128512,
+            "optimizer_stage": "sgd",
+            "objective_evaluations": 1,
+            "parameter_gradients": [],
+            "parameter_values": [],
+            "optimizer_collective_count": 1,
+            "optimizer_collective_bytes": 16,
+            "lbfgs_history_length": 0,
+            "adjoint_tensor_bytes": 416,
+            "forward_tensor_bytes": 224,
+            "boundary_gradient_buffer_bytes": 0,
+            "canonicalization_temporary_bytes": 0,
+            "truncation_temporary_bytes": 0
+          }
+        ],
+        "memory_growth_bytes": 0,
+        "suspected_memory_leak": false,
+        "checkpoint_files": [
+          "/checkpoints/checkpoint-v60/mps_torch.complex128_sgd/rank-1-step-1.pt",
+          "/checkpoints/checkpoint-v60/mps_torch.complex128_sgd/rank-1-step-2.pt"
+        ],
+        "checkpoint_schema": "sharded_mps_training_checkpoint_v2",
+        "checkpoint_integrity": "sha256_atomic_file_and_metadata",
+        "checkpoint_commit_protocol": "immutable_rank_shards_atomic_manifest_v1",
+        "checkpoint_retention_generations": 2,
+        "checkpoint_pruned_files": [],
+        "checkpoint_write_seconds": 0.019290709868073463,
+        "checkpoint_commit_seconds": 0.013969070045277476,
+        "checkpoint_prune_seconds": 0.007622850360348821,
+        "checkpoint_bytes_written": 17116,
+        "checkpoint_retained_bytes": 17116,
+        "checkpoint_free_space_reserve_bytes": 1073741824,
+        "checkpoint_min_free_bytes_observed": 728365060096,
+        "checkpoint_estimated_generation_bytes": 2097168,
+        "checkpoint_storage_semantics": "shared_filesystem_verified",
+        "checkpoint_storage_probe_seconds": 0.00875633000396192,
+        "checkpoint_overwrite_allowed": false,
+        "checkpoint_deserialization_policy": "torch_weights_only",
+        "checkpoint_writer_lease": "exclusive_atomic_file_v1",
+        "checkpoint_writer_lease_break_allowed": false,
+        "checkpoint_writer_lease_stale_seconds": 3600.0,
+        "checkpoint_writer_lease_heartbeat_count": 2,
+        "checkpoint_writer_lease_heartbeat_seconds": 0.014440339989960194,
+        "checkpoint_contract_fingerprint": "603389dd3991b75595f0f79f7eceb9cf56d1b8731743d2f1dcfa27c3ae931299",
+        "memory_warmup_steps": 1,
+        "communication_setup_seconds": 0.0,
+        "site_kernel_execution": "eager",
+        "site_kernel_selection_reason": "auto_checkpoint_compatibility_uses_eager",
+        "site_ownership": [
+          [
+            0,
+            1
+          ],
+          [
+            2,
+            3
+          ]
+        ],
+        "site_ownership_policy": "balanced",
+        "communication_protocol": "batched_isend_irecv_packed_multi_tensor_envelope",
+        "communication_stream": "dedicated_cuda_stream",
+        "rank_useful_work": true,
+        "full_mps_materialization": false,
+        "speedup_gate_passed": false,
+        "capacity_gate_passed": false,
+        "correctness_gate_passed": true,
+        "scalability_claim_allowed": false,
+        "release_gate_allowed": false,
+        "blockers": [
+          "release_speedup_evidence_not_attached",
+          "release_capacity_evidence_not_attached",
+          "multi_gpu_scaling_report_not_attached"
+        ]
+      },
+      "parameters": [
+        0.30853057814155527,
+        -0.18056337202701214
+      ],
+      "cpu_losses": [
+        0.9573938978884059,
+        0.9559985916473518
+      ]
+    },
+    "mps_torch.complex128_adam": {
+      "status": "passed",
+      "summary": {
+        "executor": "pytorch_native_sharded_mps_training_v1",
+        "distribution_semantics": "sharded_across_ranks",
+        "rank": 1,
+        "world_size": 2,
+        "local_world_size": 1,
+        "node_count": 2,
+        "optimizer": "adam",
+        "completed_steps": 2,
+        "start_step": 0,
+        "losses": [
+          0.9573938978884055,
+          0.9510282507412648
+        ],
+        "optimizer_state_ownership_semantics": "sharded_across_ranks",
+        "optimizer_ownership": [
+          {
+            "parameter_index": 0,
+            "owner_rank": 0,
+            "optimizer_state_local": false,
+            "gradient_route": "bounded_dtype_owner_reduce",
+            "update_route": "owner_step_then_bounded_dtype_all_gather"
+          },
+          {
+            "parameter_index": 1,
+            "owner_rank": 1,
+            "optimizer_state_local": true,
+            "gradient_route": "bounded_dtype_owner_reduce",
+            "update_route": "owner_step_then_bounded_dtype_all_gather"
+          }
+        ],
+        "step_metrics": [
+          {
+            "step": 0,
+            "loss": 0.9573938978884055,
+            "forward_seconds": 0.437042549951002,
+            "reverse_seconds": 0.09514907980337739,
+            "optimizer_seconds": 0.0036478701513260603,
+            "end_to_end_seconds": 0.5366969199385494,
+            "training_compute_seconds": 0.5358526199124753,
+            "diagnostics_seconds": 0.0008431000169366598,
+            "static_qr_metadata_records": 3,
+            "dynamic_metadata_broadcasts": 0,
+            "reverse_segment_cache_hit": true,
+            "gradient_bucket_cache_hit": true,
+            "layer_halo_message_count": 0,
+            "layer_halo_payload_bytes": 0,
+            "layer_halo_intra_node_bytes": 0,
+            "layer_halo_inter_node_bytes": 0,
+            "layer_halo_wait_seconds": 0.0,
+            "owned_site_work": 3,
+            "owned_bond_work": 1,
+            "boundary_exchanges": 1,
+            "svd_activity": 1,
+            "qr_activity": 0,
+            "peak_memory_bytes": 154112,
+            "useful_work_completed": true,
+            "two_site_splits": 1,
+            "truncated_splits": 0,
+            "discarded_weight": 0.0,
+            "boundary_forward_exchanges": 1,
+            "boundary_reverse_exchanges": 1,
+            "boundary_bytes": 288,
+            "bond_updates": [
+              {
+                "operation_id": "56c5cffbb196271a",
+                "bond": 1,
+                "owner_ranks": [
+                  0,
+                  1
+                ],
+                "compute_owner": 0,
+                "original_rank": 2,
+                "kept_rank": 2,
+                "discarded_weight": 0.0,
+                "communication_peer": 1,
+                "communication_sequence": 5,
+                "input_shapes": [
+                  [
+                    1,
+                    2,
+                    2,
+                    1
+                  ],
+                  [
+                    1,
+                    1,
+                    2,
+                    1
+                  ]
+                ],
+                "output_shapes": [
+                  [
+                    1,
+                    2,
+                    2,
+                    2
+                  ],
+                  [
+                    1,
+                    2,
+                    2,
+                    1
+                  ]
+                ],
+                "payload_bytes": 288,
+                "forward_transport": "batched_isend_irecv",
+                "reverse_transport": "batched_isend_irecv"
+              }
+            ],
+            "allocated_memory_bytes": 116224,
+            "reserved_memory_bytes": 203423744,
+            "tape_memory_bytes": 736,
+            "optimizer_memory_bytes": 20,
+            "communication_buffer_bytes": 288,
+            "gradient_collective_count": 2,
+            "gradient_collective_bytes": 16,
+            "gradient_bucket_count": 2,
+            "gradient_bucket_fill_ratio": 3.0517578125e-07,
+            "reverse_tape_segments": 6,
+            "fused_reverse_segments": 2,
+            "reverse_autograd_grad_invocations": 3,
+            "reverse_python_dispatches": 6,
+            "qr_factorization_count": 3,
+            "svd_factorization_count": 0,
+            "objective_scan_pairs": 1,
+            "objective_scan_forward_messages": 1,
+            "objective_scan_reverse_messages": 1,
+            "objective_execution": "heisenberg_mpo_five_channel_scan",
+            "learning_rate": 0.02,
+            "largest_realized_bond": 2,
+            "forward_peak_memory_bytes": 154112,
+            "reverse_peak_memory_bytes": 128512,
+            "optimizer_stage": "adam",
+            "objective_evaluations": 1,
+            "parameter_gradients": [],
+            "parameter_values": [],
+            "optimizer_collective_count": 1,
+            "optimizer_collective_bytes": 16,
+            "lbfgs_history_length": 0,
+            "adjoint_tensor_bytes": 416,
+            "forward_tensor_bytes": 224,
+            "boundary_gradient_buffer_bytes": 0,
+            "canonicalization_temporary_bytes": 0,
+            "truncation_temporary_bytes": 0
+          },
+          {
+            "step": 1,
+            "loss": 0.9510282507412648,
+            "forward_seconds": 0.4435033700428903,
+            "reverse_seconds": 0.07513393997214735,
+            "optimizer_seconds": 0.002566570183262229,
+            "end_to_end_seconds": 0.5235313200391829,
+            "training_compute_seconds": 0.5212190900929272,
+            "diagnostics_seconds": 0.0023110900074243546,
+            "static_qr_metadata_records": 3,
+            "dynamic_metadata_broadcasts": 0,
+            "reverse_segment_cache_hit": true,
+            "gradient_bucket_cache_hit": true,
+            "layer_halo_message_count": 0,
+            "layer_halo_payload_bytes": 0,
+            "layer_halo_intra_node_bytes": 0,
+            "layer_halo_inter_node_bytes": 0,
+            "layer_halo_wait_seconds": 0.0,
+            "owned_site_work": 3,
+            "owned_bond_work": 1,
+            "boundary_exchanges": 1,
+            "svd_activity": 1,
+            "qr_activity": 0,
+            "peak_memory_bytes": 160256,
+            "useful_work_completed": true,
+            "two_site_splits": 1,
+            "truncated_splits": 0,
+            "discarded_weight": 0.0,
+            "boundary_forward_exchanges": 1,
+            "boundary_reverse_exchanges": 1,
+            "boundary_bytes": 288,
+            "bond_updates": [
+              {
+                "operation_id": "56c5cffbb196271a",
+                "bond": 1,
+                "owner_ranks": [
+                  0,
+                  1
+                ],
+                "compute_owner": 0,
+                "original_rank": 2,
+                "kept_rank": 2,
+                "discarded_weight": 0.0,
+                "communication_peer": 1,
+                "communication_sequence": 5,
+                "input_shapes": [
+                  [
+                    1,
+                    2,
+                    2,
+                    1
+                  ],
+                  [
+                    1,
+                    1,
+                    2,
+                    1
+                  ]
+                ],
+                "output_shapes": [
+                  [
+                    1,
+                    2,
+                    2,
+                    2
+                  ],
+                  [
+                    1,
+                    2,
+                    2,
+                    1
+                  ]
+                ],
+                "payload_bytes": 288,
+                "forward_transport": "batched_isend_irecv",
+                "reverse_transport": "batched_isend_irecv"
+              }
+            ],
+            "allocated_memory_bytes": 116224,
+            "reserved_memory_bytes": 203423744,
+            "tape_memory_bytes": 736,
+            "optimizer_memory_bytes": 20,
+            "communication_buffer_bytes": 288,
+            "gradient_collective_count": 2,
+            "gradient_collective_bytes": 16,
+            "gradient_bucket_count": 2,
+            "gradient_bucket_fill_ratio": 3.0517578125e-07,
+            "reverse_tape_segments": 6,
+            "fused_reverse_segments": 2,
+            "reverse_autograd_grad_invocations": 3,
+            "reverse_python_dispatches": 6,
+            "qr_factorization_count": 3,
+            "svd_factorization_count": 0,
+            "objective_scan_pairs": 1,
+            "objective_scan_forward_messages": 1,
+            "objective_scan_reverse_messages": 1,
+            "objective_execution": "heisenberg_mpo_five_channel_scan",
+            "learning_rate": 0.02,
+            "largest_realized_bond": 2,
+            "forward_peak_memory_bytes": 160256,
+            "reverse_peak_memory_bytes": 129536,
+            "optimizer_stage": "adam",
+            "objective_evaluations": 1,
+            "parameter_gradients": [],
+            "parameter_values": [],
+            "optimizer_collective_count": 1,
+            "optimizer_collective_bytes": 16,
+            "lbfgs_history_length": 0,
+            "adjoint_tensor_bytes": 416,
+            "forward_tensor_bytes": 224,
+            "boundary_gradient_buffer_bytes": 0,
+            "canonicalization_temporary_bytes": 0,
+            "truncation_temporary_bytes": 0
+          }
+        ],
+        "memory_growth_bytes": 0,
+        "suspected_memory_leak": false,
+        "checkpoint_files": [
+          "/checkpoints/checkpoint-v60/mps_torch.complex128_adam/rank-1-step-1.pt",
+          "/checkpoints/checkpoint-v60/mps_torch.complex128_adam/rank-1-step-2.pt"
+        ],
+        "checkpoint_schema": "sharded_mps_training_checkpoint_v2",
+        "checkpoint_integrity": "sha256_atomic_file_and_metadata",
+        "checkpoint_commit_protocol": "immutable_rank_shards_atomic_manifest_v1",
+        "checkpoint_retention_generations": 2,
+        "checkpoint_pruned_files": [],
+        "checkpoint_write_seconds": 0.02054012008011341,
+        "checkpoint_commit_seconds": 0.019306299975141883,
+        "checkpoint_prune_seconds": 0.009504060260951519,
+        "checkpoint_bytes_written": 18810,
+        "checkpoint_retained_bytes": 18810,
+        "checkpoint_free_space_reserve_bytes": 1073741824,
+        "checkpoint_min_free_bytes_observed": 728365015040,
+        "checkpoint_estimated_generation_bytes": 2097208,
+        "checkpoint_storage_semantics": "shared_filesystem_verified",
+        "checkpoint_storage_probe_seconds": 0.009223549859598279,
+        "checkpoint_overwrite_allowed": false,
+        "checkpoint_deserialization_policy": "torch_weights_only",
+        "checkpoint_writer_lease": "exclusive_atomic_file_v1",
+        "checkpoint_writer_lease_break_allowed": false,
+        "checkpoint_writer_lease_stale_seconds": 3600.0,
+        "checkpoint_writer_lease_heartbeat_count": 2,
+        "checkpoint_writer_lease_heartbeat_seconds": 0.01443926990032196,
+        "checkpoint_contract_fingerprint": "d573e1d4bbb4e2cf9f9de0fc7e63e8fa33818c831d078c07f3ba342750129581",
+        "memory_warmup_steps": 1,
+        "communication_setup_seconds": 0.0,
+        "site_kernel_execution": "eager",
+        "site_kernel_selection_reason": "auto_checkpoint_compatibility_uses_eager",
+        "site_ownership": [
+          [
+            0,
+            1
+          ],
+          [
+            2,
+            3
+          ]
+        ],
+        "site_ownership_policy": "balanced",
+        "communication_protocol": "batched_isend_irecv_packed_multi_tensor_envelope",
+        "communication_stream": "dedicated_cuda_stream",
+        "rank_useful_work": true,
+        "full_mps_materialization": false,
+        "speedup_gate_passed": false,
+        "capacity_gate_passed": false,
+        "correctness_gate_passed": true,
+        "scalability_claim_allowed": false,
+        "release_gate_allowed": false,
+        "blockers": [
+          "release_speedup_evidence_not_attached",
+          "release_capacity_evidence_not_attached",
+          "multi_gpu_scaling_report_not_attached"
+        ]
+      },
+      "parameters": [
+        0.2699730191834,
+        -0.21002236800706753
+      ],
+      "cpu_losses": [
+        0.9573938978884059,
+        0.951028250741265
+      ]
+    }
+  }
+}

@@ -230,11 +230,28 @@ def apply_gate_pair(
     """Apply one split-complex gate matrix to a flat statevector."""
 
     qubits = tuple(int(qubit) for qubit in qubits)
-    remaining = tuple(qubit for qubit in range(n_qubits) if qubit not in qubits)
-    permutation = remaining + qubits
-    inverse = tuple(permutation.index(qubit) for qubit in range(n_qubits))
+    # Consecutive untouched qubits are one axis. A two-qubit gate therefore
+    # needs at most five axes, even on a large register. Materializing an
+    # n-qubit permuted view otherwise exceeds some accelerators' copy rank.
+    logical_shape: list[int] = []
+    wire_axes: dict[int, int] = {}
+    cursor = 0
+    for qubit in sorted(qubits):
+        if qubit > cursor:
+            logical_shape.append(2 ** (qubit - cursor))
+        wire_axes[qubit] = len(logical_shape)
+        logical_shape.append(2)
+        cursor = qubit + 1
+    if cursor < n_qubits:
+        logical_shape.append(2 ** (n_qubits - cursor))
+    gate_axes = tuple(wire_axes[qubit] for qubit in qubits)
+    remaining = tuple(
+        axis for axis in range(len(logical_shape)) if axis not in gate_axes
+    )
+    permutation = remaining + gate_axes
+    inverse = tuple(permutation.index(axis) for axis in range(len(logical_shape)))
+    permuted_shape = tuple(logical_shape[axis] for axis in permutation)
     gate_dimension = 2 ** len(qubits)
-    logical_shape = (2,) * n_qubits
     values_real = (
         real.reshape(logical_shape).permute(permutation).reshape(-1, gate_dimension)
     )
@@ -248,8 +265,8 @@ def apply_gate_pair(
         0, 1
     ) + values_imag @ matrix_real.transpose(0, 1)
     return (
-        updated_real.reshape(logical_shape).permute(inverse).reshape(-1),
-        updated_imag.reshape(logical_shape).permute(inverse).reshape(-1),
+        updated_real.reshape(permuted_shape).permute(inverse).reshape(-1),
+        updated_imag.reshape(permuted_shape).permute(inverse).reshape(-1),
     )
 
 

@@ -1,0 +1,7 @@
+{
+  "status": "passed",
+  "cpu_gradient_and_update_parity": true,
+  "exact_optimizer_rng_restart": true,
+  "explicit_global_decoder_host_boundary": true,
+  "device": "flagos:0"
+}

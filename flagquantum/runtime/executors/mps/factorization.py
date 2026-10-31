@@ -226,9 +226,9 @@ def factorization_workspace_pool() -> FactorizationWorkspacePool:
 def cuda_factorization_memory_snapshot(
     device: torch.device,
 ) -> FactorizationMemorySnapshot:
-    """Measure allocator and device headroom without retaining CUDA tensors."""
+    """Measure allocator and device headroom without retaining device tensors."""
 
-    if device.type != "cuda":
+    if device.type not in {"cuda", "flagos"}:
         maximum = (1 << 63) - 1
         return FactorizationMemorySnapshot(
             free_bytes=maximum,
@@ -242,7 +242,8 @@ def cuda_factorization_memory_snapshot(
     allocated = memory.allocated_bytes
     reserved = memory.reserved_bytes
     if free is None or total is None or allocated is None or reserved is None:
-        raise MPSFactorizationMemoryError("CUDA memory snapshot is unavailable")
+        label = "CUDA" if device.type == "cuda" else "FlagOS"
+        raise MPSFactorizationMemoryError(f"{label} memory snapshot is unavailable")
     return FactorizationMemorySnapshot(
         free_bytes=int(free),
         total_bytes=int(total),

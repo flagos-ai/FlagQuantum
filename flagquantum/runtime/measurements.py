@@ -322,9 +322,13 @@ def _generator(target: Any, metadata: dict[str, Any]) -> torch.Generator | None:
     seed = metadata.get("seed")
     if seed is None:
         return None
-    device = getattr(target, "device", "cpu")
-    device_type = torch.device(device).type
-    generator = torch.Generator(device=device_type)
+    from ..simulation.tensor_network.state import TensorNetworkState
+
+    if isinstance(target, TensorNetworkState) and target.plan.nodes:
+        device = target.plan.nodes[0].tensor.device
+    else:
+        device = getattr(target, "device", torch.device("cpu"))
+    generator = torch.Generator(device=torch.device(device))
     generator.manual_seed(int(seed))
     return generator
 

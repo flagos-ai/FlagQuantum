@@ -18,6 +18,7 @@ import torch.distributed as dist
 from torch.profiler import record_function
 
 from ....compute import PlatformRuntime, get_platform_runtime
+from ....compute._memory import _peak_allocated_memory
 from ....core.ir import CircuitIR, ensure_circuit_ir
 from ...distributed.context import resolve_local_world_size
 from . import checkpointing as _checkpointing
@@ -54,11 +55,10 @@ def _finish_training_phase(
     reset_peak_memory: bool,
 ) -> tuple[float, int]:
     peak_memory = 0
-    if device.type == "cuda":
-        platform.synchronize(device)
-        peak_memory = int(torch.cuda.max_memory_allocated(device))
-        if reset_peak_memory:
-            torch.cuda.reset_peak_memory_stats(device)
+    if device.type != "cpu":
+        peak_memory = _peak_allocated_memory(
+            device, reset=reset_peak_memory, platform=platform
+        )
     return time.perf_counter() - started, peak_memory
 
 
@@ -942,14 +942,18 @@ def train_distributed_mps(
             )
             optimizer_collective_count += parameter_collectives
             optimizer_collective_bytes += parameter_bytes
-        if resolved_device.type == "cuda":
+        if resolved_device.type != "cpu":
             platform.synchronize(resolved_device)
         optimizer_seconds = time.perf_counter() - optimizer_started
         diagnostics_started = time.perf_counter()
         training_compute_seconds = diagnostics_started - step_started
-        if resolved_device.type == "cuda":
+        if resolved_device.type != "cpu":
             platform.synchronize(resolved_device)
-            memory = max(forward_peak_memory, reverse_peak_memory)
+            memory = max(
+                forward_peak_memory,
+                reverse_peak_memory,
+                _peak_allocated_memory(resolved_device, reset=False, platform=platform),
+            )
             memory_snapshot = platform.memory_snapshot(resolved_device)
             allocated_memory = int(memory_snapshot.allocated_bytes or 0)
             reserved_memory = int(memory_snapshot.reserved_bytes or 0)

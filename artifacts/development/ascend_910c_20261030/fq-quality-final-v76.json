@@ -1,0 +1,94 @@
+{
+  "source_revision": "55987ed85267b1d00cff05e0bb9ee3516632f563",
+  "checks": [
+    {
+      "command": [
+        "python",
+        "tools/check_architecture.py"
+      ],
+      "exit_code": 0,
+      "output": "architecture boundaries passed\n"
+    },
+    {
+      "command": [
+        "python",
+        "tools/check_repository_hygiene.py"
+      ],
+      "exit_code": 0,
+      "output": "NOTICE: tracked_bytes=99150005 exceeds review reference 61900000; review growth\nNOTICE: tracked_files=4486 exceeds review reference 3010; review growth\nNOTICE: development_doc_files=427 exceeds review reference 200; review growth\nrepository hygiene passed\n"
+    },
+    {
+      "command": [
+        "python",
+        "tools/check_docs_links.py"
+      ],
+      "exit_code": 0,
+      "output": "Checked 724 markdown files; all local links and anchors resolve.\n"
+    },
+    {
+      "command": [
+        "python",
+        "tools/check_legacy_root_api_usage.py"
+      ],
+      "exit_code": 0,
+      "output": "legacy root API usage check passed\n"
+    },
+    {
+      "command": [
+        "python",
+        "tools/check_repository_language.py"
+      ],
+      "exit_code": 0,
+      "output": "Checked 4494 paths; 0 files violate the language policy.\nBinary images and non-UTF-8 files require separate visual review.\n"
+    },
+    {
+      "command": [
+        "python",
+        "-m",
+        "tools.operator_manifest",
+        "--check"
+      ],
+      "exit_code": 0,
+      "output": ""
+    },
+    {
+      "command": [
+        "python",
+        "-m",
+        "tools.runtime_contract_schema",
+        "--check"
+      ],
+      "exit_code": 0,
+      "output": ""
+    },
+    {
+      "command": [
+        "python",
+        "-m",
+        "tools.correctness_certification",
+        "--check"
+      ],
+      "exit_code": 0,
+      "output": ""
+    },
+    {
+      "command": [
+        "python",
+        "-m",
+        "tools.docs_source_of_truth",
+        "--check"
+      ],
+      "exit_code": 0,
+      "output": ""
+    },
+    {
+      "command": [
+        "python",
+        "-m",
+        "tools.public_api_snapshot"
+      ],
+      "exit_code": 0,
+      "output": "public API migration baseline passed\n"
+    }
+  ]
+}
