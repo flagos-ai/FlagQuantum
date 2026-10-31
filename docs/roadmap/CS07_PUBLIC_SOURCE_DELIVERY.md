@@ -95,3 +95,27 @@ release review and any additional language/profile admission remain separate.
   tests/team/simulation/test_controlled_phase_graph.py (44 observed versus 28
   expected). This change does not modify Simulation or those expectations; the
   local default suite is not claimed green.
+
+### CI follow-up
+
+The first runtime/coverage failure exposed missing registration of the new
+source CLI in the enforced algorithm-example inventory. The fix adds the index,
+premise contract and real subprocess assertions for text and file input; all
+27 algorithm-example tests pass.
+
+Two independent two-GPU CI runs passed numerical correctness but refused latency
+variation. Their 50-iteration timing batches lasted about 6-19 ms, with raw
+coefficients of variation 0.374 and 0.325 (robust values 0.168 and 0.118). GPU
+occupancy records were clean; this does not certify absence of host jitter.
+A bounded same-host probe of the unchanged benchmark at merge source
+0a920e768817bf55726ede611a61ccea3e860524 compared 50 and 2000 inner iterations.
+The 2000-iteration batch had median 0.304876 seconds, raw coefficient 0.03910,
+passed correctness and passed the unchanged performance evaluator.
+
+The two-GPU workflow therefore batches 2000 iterations per sample, retaining
+10 warmup batches, 30 measured batches, the same per-iteration work, raw samples,
+rank ownership, recorded inner-loop/completed-work counts and the 0.10 variation
+threshold. No kernels, evaluator, data filtering or benchmark-default CLI change.
+Batch latency must be compared only with the recorded batch dimensions; this
+change supplies no speedup or historical regression claim. Full new-head CI
+remains the authority for the integrated result.
