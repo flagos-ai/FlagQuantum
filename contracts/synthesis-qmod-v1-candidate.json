@@ -1,0 +1,50 @@
+{
+  "schema": "flagquantum.synthesis_qmod_admission",
+  "version": "1.0",
+  "status": "authorized_pending_implementation",
+  "proposal": "docs/api-changes/FQ-SYNTH-QMOD-ADMISSION-20261031.md",
+  "authorization_record": "docs/api-changes/FQ-SYNTH-QMOD-IMPLEMENTATION-20261031.md",
+  "authorization_source": {
+    "kind": "explicit_human_user_instruction",
+    "request": "Merge PR #969 and proceed to the next step",
+    "proposal_merge": "c994934998eb3a6dbe983e008c8ad7fe8875bfca"
+  },
+  "proposal_contract_sha256": "52200d453dc39f215c52c2f391b160e409a594fd832834e23c44a2d1b2455229",
+  "implementation_authorized": true,
+  "production_implemented": false,
+  "release_authorized": false,
+  "human_trial_records": [],
+  "synthesize_signature": "(function: 'Definition | str | PathLike[str]', *, inputs: 'Mapping[str, UInt] | None' = None, input_state: 'InputState | None' = None, constants: 'Mapping[str, int] | None' = None, functions: 'Sequence[Definition]' = (), max_qubits: 'int | None' = 256, max_operations: 'int | None' = 100000, max_depth: 'int | None' = None, max_workspace: 'int | None' = None, construction_budget: 'ConstructionBudget' = ConstructionBudget(qubits=256, operations=100000, candidate_checks=2), objective: \"Literal['width', 'depth']\" = 'width', basis: 'Iterable[str] | None' = None, topology: \"Literal['line'] | None\" = None, preparation: 'CircuitIR | None' = None, preparation_map: 'Mapping[str, Sequence[int]] | None' = None, source_format: \"Literal['qmod'] | None\" = None, source_name: 'str | None' = None, source_version: 'str | None' = None, memory_limit_bytes: 'int | None' = None) -> 'Program'",
+  "namespace_exports": [
+    "ConstructionBudget",
+    "InputState",
+    "Program",
+    "SynthesisError",
+    "UInt",
+    "qfunc",
+    "synthesize"
+  ],
+  "common_report_fields": [
+    "resources",
+    "source_resources",
+    "workspace_qubits",
+    "candidate",
+    "function",
+    "source_locations",
+    "scope",
+    "register_widths",
+    "source_format",
+    "memory_limit_bytes",
+    "memory_limit_origin"
+  ],
+  "native_public_excludes": [
+    "arithmetic_resources",
+    "output_widths"
+  ],
+  "source_memory_default": 536870912,
+  "source_version": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "source_error_type": "flagquantum.ecosystem.InteropConversionError",
+  "new_public_types": [],
+  "serialization_change": false,
+  "new_executor": false
+}
