@@ -100,7 +100,7 @@ jobs:
             rm -f .git/info/sparse-checkout
             git config --local --unset core.sparseCheckout || true
           fi
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           persist-credentials: false
       - name: Install this checkout in the provisioned Python environment
@@ -112,7 +112,7 @@ jobs:
           --expected-devices 2
       - name: Retain native environment, watchdog and per-case reports
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: ascend-910c-${{ github.sha }}-${{ github.run_attempt }}
           path: ${{ runner.temp }}/ascend-910c/
