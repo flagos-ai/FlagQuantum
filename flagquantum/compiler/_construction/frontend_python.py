@@ -221,7 +221,7 @@ def capture(
     """Infer exact widths into existing SSA; explicitly supplied helpers inline.
 
     The subset includes unsigned arithmetic, ==/< comparisons, one-bit
-    and/or/not, static range loops, assignments, direct helpers and one return.
+    and/or/not, conditional values, static ranges, assignments, helpers and return.
     Constants bind declared entry parameters by value. Globals, closures and arbitrary Python are not executed.
     """
     definitions = (function, *functions)
@@ -392,6 +392,34 @@ def capture(
             return env[node.id]
         if isinstance(node, ast.Constant):
             return constant(node.value, source, node)
+        if isinstance(node, ast.IfExp):
+            predicate = expression(node.test, env, source, depth + 1)
+            if predicate[1] > 1 or (
+                predicate[0].type != INDEX and predicate[0].type != uint_type(1)
+            ):
+                _error(
+                    source,
+                    node.test,
+                    "conditional",
+                    "conditional predicate requires one bit or numeric 0/1; compare multi-bit integers explicitly",
+                )
+            yes = expression(node.body, env, source, depth + 1)
+            no = expression(node.orelse, env, source, depth + 1)
+            if predicate[0].type == INDEX:
+                return yes if predicate[1] else no
+            bound = max(yes[1], no[1])
+            result = value(unsigned_width(bound))
+            emit(
+                Operation(
+                    "qint.select",
+                    (predicate[0], yes[0], no[0]),
+                    (result,),
+                    location=source.location(node),
+                ),
+                source,
+                node,
+            )
+            return result, bound
         if isinstance(node, ast.Compare):
             if len(node.ops) != 1 or not isinstance(node.ops[0], (ast.Eq, ast.Lt)):
                 _error(

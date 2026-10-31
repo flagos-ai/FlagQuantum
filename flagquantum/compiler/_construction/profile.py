@@ -22,6 +22,7 @@ _ATTRIBUTES = MappingProxyType(
         "qint.multiply": frozenset(),
         "qint.equal": frozenset(),
         "qint.less": frozenset(),
+        "qint.select": frozenset(),
         "qint.call": frozenset({"callee"}),
         "qint.return": frozenset(),
     }
@@ -210,6 +211,14 @@ def verify_construction(
                         operation,
                     )
                 bound = 1
+            elif operation.name == "qint.select":
+                if len(operands) != 3 or operands[0][0] != uint_type(1):
+                    _fail(
+                        "select.signature",
+                        "selection requires a quantum one-bit predicate and two unsigned branches",
+                        operation,
+                    )
+                bound = max(operands[1][1], operands[2][1])
             elif operation.name == "qint.call":
                 callee = operation.attributes.get("callee")
                 if not isinstance(callee, str) or callee not in symbols:

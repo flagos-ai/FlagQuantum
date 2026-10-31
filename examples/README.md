@@ -920,3 +920,11 @@ workspace cleanup and named reading are automatic. Only bounded classical
 range loops are admitted; there is no data-dependent quantum loop or native
 source grammar expansion. Full amplitudes, not uniform probabilities alone,
 verify the phase effect.
+
+[Coherent value selection](synthesis_conditional.py): run
+`python -m examples.synthesis_conditional` to compute an unsigned minimum from
+`x if x<y else y` and mark a selected one-bit predicate in phase mode. Both use
+the existing public synth/Program/run/named-reader workflow. The compiler handles
+branch widths, coherent choice and exact workspace cleanup; users specify the
+computation, quantum widths, preparation and constraints. Full amplitude tests,
+rather than uniform probabilities alone, certify phase.

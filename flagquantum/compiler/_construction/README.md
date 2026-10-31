@@ -247,3 +247,25 @@ At capture completion, unused arith.constant definitions are omitted. Their
 compile-time values do not consume physical binding width or obstruct a terminal
 phase product. Quantum operations are retained. Value IDs may have gaps;
 lifetime analysis uses its own inlined program IDs, not original capture IDs.
+
+## Coherent conditional values
+
+The Python expression `yes if predicate else no` captures one private
+`qint.select` in the existing HybridProgram. The predicate is one quantum bit;
+classical 0/1 folds after validating both expressions. Ranges use the branch
+maximum, preserving one-bit predicate/phase composition and avoiding the extra
+bit from adding mutually exclusive products. Lifetimes retain all quantum
+operand identities for exact inverse computation, including repeated aliases.
+
+The existing arithmetic emitter zero-extends both branches and computes
+`no XOR (predicate AND no) XOR (predicate AND yes)` into fresh result storage
+with X/CX/CCX and no extra kernel scratch. Repeated controls simplify, without
+flipping borrowed inputs. Retain/recompute and exact phase-prefix inversion
+remain authoritative. No public type, executor or generic controlled-block API
+is introduced; statement-level if/else remains unsupported.
+
+Run `python -m examples.synthesis_conditional`, then
+`tests/team/compiler/test_construction_selection_expression.py` and
+`tests/integration/test_synthesis_conditional.py`. See the
+[contract](../../../docs/api-changes/FQ-SYNTH-CONDITIONAL-EXPRESSION-20261031.md)
+and [delivery](../../../docs/roadmap/SYNTH_CONDITIONAL_EXPRESSION_DELIVERY.md).
