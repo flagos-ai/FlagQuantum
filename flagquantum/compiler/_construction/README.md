@@ -192,3 +192,25 @@ run tests/integration/test_synthesis_boolean_predicates.py. The latter verifies
 complete truth tables including nonzero XOR destinations, complex amplitudes
 entangled with an external reference, full-size input pairs, both public modes,
 helpers and cleanup. See the [semantic contract](../../../docs/api-changes/FQ-SYNTH-BOOLEAN-PREDICATES-20261031.md).
+
+## Direct controlled-predicate phase markers
+
+For a terminal returned product of two quantum.uint(1) values in phase mode,
+keep both operand encodings live and mark with CZ, reducing identical encodings
+to Z. The final product's result and scratch are omitted. Existing lifetime,
+allocation, source and resource records remain authoritative; a discarded
+product has no schedule event. Other phase returns and all value XOR stay on
+the existing path. No new control type, opcode or source syntax is required.
+
+Capture the actual forward prefix after both operands have been ensured, then
+invert that same prefix after the marker. Recompute may restore dependencies;
+neither operand may be erased before marking. Preparation stays outside the
+oracle. This is controlled predicate phase, not generic control of an arbitrary
+unitary block. Public phase target admission stays logical CPU only.
+
+Run python -m examples.synthesis_controlled_predicate. The Compiler unit tests
+compare actual trace/operation boundaries and an independent general prefix
+built from the unchanged value evaluator. Integration tests compare full states
+including control-zero references, true/false predicates, aliases, entanglement,
+interference, dirty-workspace probability and public resource ceilings. See the
+[controlled-predicate contract](../../../docs/api-changes/FQ-SYNTH-CONTROLLED-PREDICATE-20261031.md).
