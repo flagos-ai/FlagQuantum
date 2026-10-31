@@ -72,6 +72,8 @@ def analyze_lifetimes(
                     bound = operation.attributes["value"]
                 elif operation.name in {"qint.equal", "qint.less"}:
                     bound = 1
+                elif operation.name == "qint.select":
+                    bound = max(bounds[value.id] for value in operands[1:])
                 else:
                     left, right = (bounds[value.id] for value in operands)
                     bound = (

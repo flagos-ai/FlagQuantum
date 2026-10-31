@@ -175,7 +175,7 @@ def schedule_arithmetic(
         return left, right
 
     def reserve(key: ValueId, op: Operation) -> _Allocation:
-        if op.name in {"qint.equal", "qint.less", "qint.multiply"}:
+        if op.name in {"qint.equal", "qint.less", "qint.multiply", "qint.select"}:
             owned = allocate(unsigned_width(bound(key)), op)
             return _Allocation(owned, owned)
         left, _ = operands(op)
@@ -189,6 +189,21 @@ def schedule_arithmetic(
     def kernel(
         key: ValueId, allocation: _Allocation, op: Operation, scratch: tuple[int, ...]
     ) -> Iterable[Instruction]:
+        if op.name == "qint.select":
+            predicate, yes, no = (encoding(value.id) for value in op.operands)
+            assert isinstance(predicate, tuple) and len(predicate) == 1
+            control = predicate[0]
+            # b XOR (p AND b) XOR (p AND a) selects a/b without flipping p.
+            gates = list(_copy(no, allocation.result))
+            for branch in (no, yes):
+                for gate in _copy(branch, allocation.result):
+                    if gate.name == "x":
+                        gates.append(Instruction("cx", (control, *gate.wires)))
+                    elif gate.wires[0] == control:
+                        gates.append(gate)
+                    else:
+                        gates.append(Instruction("ccx", (control, *gate.wires)))
+            return gates
         left, right = operands(op)
         if op.name in {"qint.equal", "qint.less"}:
             return comparison_xor(
