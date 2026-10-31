@@ -17,6 +17,12 @@ Benchmark claims require audited artifacts and are not inferred from this file.
 
 ## Unreleased
 
+- Complete all six unsigned comparisons and chained interval predicates in
+  bounded Python synthesis. Middle expressions capture once; every operand
+  validates even after a false pair. Normalize to existing less/equal, negate
+  and conjunction without new types or opcodes. Existing value/phase cleanup,
+  Program/run/read, source budgets and native Qmod restrictions remain.
+
 - Admit pure conditional values (`a if predicate else b`) in unsigned Python
   synthesis. One-bit guards remain coherent; branch widths use their maximum
   range, and one-bit selections compose with existing phase mode. The existing
