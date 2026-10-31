@@ -24,3 +24,12 @@ effective state-memory limits and unambiguous whole-source/actual costs.
 Two independent developer trial records remain absent and release authorization
 remains false. Source activation is an unreleased development-evidence candidate,
 not certification of the entire native language, 216 originals or hardware.
+
+## Wording corrections without expanding the reviewed scope
+
+The historical proposal's fq.PlanningError shorthand means the existing public
+flagquantum.errors.PlanningError, as its JSON already specifies. No root error
+export is added. Its zero-argument Python wording does not authorize a new
+arithmetic profile: existing capture rejects empty inputs, and this rejection
+is preserved. Native source can still initialize fresh constant outputs through
+its already verified register profile. Historical proposal bytes remain intact.

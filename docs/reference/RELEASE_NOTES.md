@@ -17,6 +17,14 @@ Benchmark claims require audited artifacts and are not inferred from this file.
 
 ## Unreleased
 
+- Extend the unreleased synthesize candidate with bounded local .qmod files
+  (PathLike) and explicit source text (source_format="qmod"). Both use the
+  existing checked Program, runtime and named reader. Source diagnostics and
+  whole-source/actual resource reports are retained; native inputs default to
+  a 512 MiB planned-state buffer ceiling. Three unchanged originals are verified
+  through both forms. This is a pinned subset, with independent trials and
+  release review still pending; it does not admit the full Qmod standard library.
+
 - Add the maintained `flagquantum.synth` implementation candidate and
   `fq.run(program)` for its factory-created Program. The normal high-level path
   uses named preparation and `program.probabilities(result)`; the root facade
