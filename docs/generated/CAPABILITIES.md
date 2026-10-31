@@ -441,7 +441,7 @@ Spell gates and states a target cannot express in the gates that target publishe
 
 ### Constrained coherent integer synthesis
 
-Construct a checked reversible arithmetic circuit from bounded Python unsigned arithmetic and one-bit ==/< predicates, then execute and read named registers through the existing runtime.
+Construct a checked reversible arithmetic circuit from bounded Python unsigned arithmetic and one-bit ==/< predicates composed with and/or/not, then execute and read named registers through the existing runtime.
 
 - **Maturity:** Development evidence
 - **Public API:** `flagquantum.synth.synthesize`, `flagquantum.synth.Program.probabilities`, `fq.run`
@@ -451,7 +451,7 @@ Construct a checked reversible arithmetic circuit from bounded Python unsigned a
 - **Distribution semantics:** `single_device_fast_path`
 - **Start:** [quick example](../../examples/algorithms/synthesis_trial.py)
 - **Documentation:** [guide](../../flagquantum/synth/README.md)
-- **Known boundary:** Unreleased unsigned-integer CPU profile with bounded Python syntax including single ==/< comparisons, known input preparations and finite checked candidates; no arbitrary Python or Boolean control flow, general Qmod, Program/.fq serialization, noise, measurements, directed or allocated-layout admission, or optimality guarantee. A Program executes its checked plan and refuses execution overrides; changed constraints require resynthesis. Two independent developer trials and release review remain pending.
+- **Known boundary:** Unreleased unsigned-integer CPU profile with bounded Python syntax including single ==/< comparisons and one-bit and/or/not expressions, known input preparations and finite checked candidates; no arbitrary Python or Boolean control flow, general Qmod, Program/.fq serialization, noise, measurements, directed or allocated-layout admission, or optimality guarantee. A Program executes its checked plan and refuses execution overrides; changed constraints require resynthesis. Two independent developer trials and release review remain pending.
 
 ### Coherent predicate phase synthesis
 

@@ -186,8 +186,8 @@ def capture(
 ) -> HybridProgram:
     """Infer exact widths into existing SSA; explicitly supplied helpers inline.
 
-    The subset is nonnegative integer constants, +, *, literal **2, local single
-    assignments, direct helper calls and one return. Constants bind declared entry
+    The subset includes unsigned arithmetic, ==/< comparisons, one-bit
+    and/or/not, single assignments, direct helper calls and one return. Constants bind declared entry
     parameters by value. Globals, closures and arbitrary Python are not executed.
     """
     definitions = (function, *functions)
@@ -306,6 +306,35 @@ def capture(
         environment[name] = constant(number, main, main.node)
     stack: list[str] = []
 
+    def one_bit(operand: _Expression, source: _Source, node: ast.expr) -> _Expression:
+        if operand[1] > 1 or (
+            operand[0].type != INDEX and operand[0].type != uint_type(1)
+        ):
+            _error(
+                source,
+                node,
+                "boolean",
+                "and/or/not require one-bit unsigned operands or numeric 0/1; compare multi-bit integers explicitly",
+            )
+        return operand
+
+    def negate(operand: _Expression, source: _Source, node: ast.expr) -> _Expression:
+        if operand[0].type == INDEX:
+            return constant(1 - operand[1], source, node)
+        zero = constant(0, source, node)
+        result = value(1)
+        emit(
+            Operation(
+                "qint.equal",
+                (operand[0], zero[0]),
+                (result,),
+                location=source.location(node),
+            ),
+            source,
+            node,
+        )
+        return result, 1
+
     def expression(
         node: ast.expr, env: Mapping[str, _Expression], source: _Source, depth: int = 0
     ) -> _Expression:
@@ -356,6 +385,44 @@ def capture(
                 node,
             )
             return result, 1
+        if isinstance(node, ast.UnaryOp) and isinstance(node.op, ast.Not):
+            operand = one_bit(
+                expression(node.operand, env, source, depth + 1), source, node.operand
+            )
+            return negate(operand, source, node)
+        if isinstance(node, ast.BoolOp):
+            left = one_bit(
+                expression(node.values[0], env, source, depth + 1),
+                source,
+                node.values[0],
+            )
+            for child in node.values[1:]:
+                right = one_bit(
+                    expression(child, env, source, depth + 1), source, child
+                )
+                if isinstance(node.op, ast.Or):
+                    left, right = negate(left, source, node), negate(
+                        right, source, node
+                    )
+                bound = left[1] * right[1]
+                if left[0].type == right[0].type == INDEX:
+                    left = constant(bound, source, node)
+                else:
+                    result = value(1)
+                    emit(
+                        Operation(
+                            "qint.multiply",
+                            (left[0], right[0]),
+                            (result,),
+                            location=source.location(node),
+                        ),
+                        source,
+                        node,
+                    )
+                    left = result, bound
+                if isinstance(node.op, ast.Or):
+                    left = negate(left, source, node)
+            return left
         if isinstance(node, ast.BinOp):
             left = expression(node.left, env, source, depth + 1)
             if isinstance(node.op, ast.Pow):
