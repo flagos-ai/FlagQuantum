@@ -83,7 +83,7 @@ development_artifact = "flagquantum/compiler/IMPLEMENTATION.md"
 
 [capabilities.coherent_integer_synthesis]
 title = "Constrained coherent integer synthesis"
-summary = "Construct a checked reversible arithmetic circuit from a bounded Python integer computation, then execute and read named registers through the existing runtime."
+summary = "Construct a checked reversible arithmetic circuit from bounded Python unsigned arithmetic and one-bit ==/< predicates, then execute and read named registers through the existing runtime."
 category = "build_and_compile"
 user_goals = ["Write unsigned arithmetic without designing gates or workspace", "Compare retained and recomputed workspace under a qubit budget", "Run a checked synthesis Program and read named probabilities"]
 public_apis = ["flagquantum.synth.synthesize", "flagquantum.synth.Program.probabilities", "run"]
@@ -95,10 +95,10 @@ quick_start = "examples/algorithms/synthesis_trial.py"
 documentation = "flagquantum/synth/README.md"
 level = "development_evidence"
 owner = "services maintainers"
-limitations = "Unreleased unsigned-integer CPU profile with bounded Python syntax, known input preparations and finite checked candidates; no arbitrary Python, general Qmod, Program/.fq serialization, noise, measurements, directed or allocated-layout admission, or optimality guarantee. A Program executes its checked plan and refuses execution overrides; changed constraints require resynthesis. Two independent developer trials and release review remain pending."
-focused_tests = "tests/unit/test_synthesis_run_contract.py"
-integration_tests = "tests/api_contract/test_synthesis_run_admission.py"
-development_artifact = "docs/roadmap/SYNTH_PROGRAM_RUN_DELIVERY.md"
+limitations = "Unreleased unsigned-integer CPU profile with bounded Python syntax including single ==/< comparisons, known input preparations and finite checked candidates; no arbitrary Python or Boolean control flow, general Qmod, Program/.fq serialization, noise, measurements, directed or allocated-layout admission, or optimality guarantee. A Program executes its checked plan and refuses execution overrides; changed constraints require resynthesis. Two independent developer trials and release review remain pending."
+focused_tests = "tests/team/compiler/test_construction_comparisons.py"
+integration_tests = "tests/integration/test_synthesis_comparisons.py"
+development_artifact = "docs/roadmap/SYNTH_COMPARISON_DELIVERY.md"
 
 [capabilities.qmod_source_adaptation]
 title = "Bounded native Qmod source and checked execution"

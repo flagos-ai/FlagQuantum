@@ -20,6 +20,8 @@ _ATTRIBUTES = MappingProxyType(
         "arith.constant": frozenset({"value"}),
         "qint.add": frozenset(),
         "qint.multiply": frozenset(),
+        "qint.equal": frozenset(),
+        "qint.less": frozenset(),
         "qint.call": frozenset({"callee"}),
         "qint.return": frozenset(),
     }
@@ -194,6 +196,20 @@ def verify_construction(
                     )
                 left, right = (item[1] for item in operands)
                 bound = left + right if operation.name == "qint.add" else left * right
+            elif operation.name in {"qint.equal", "qint.less"}:
+                if len(operands) != 2 or all(item[0] == INDEX for item in operands):
+                    _fail(
+                        "comparison.signature",
+                        "comparison requires two operands including a quantum value",
+                        operation,
+                    )
+                if width != 1:
+                    _fail(
+                        "comparison.width",
+                        "comparison result must be exactly one bit",
+                        operation,
+                    )
+                bound = 1
             elif operation.name == "qint.call":
                 callee = operation.attributes.get("callee")
                 if not isinstance(callee, str) or callee not in symbols:

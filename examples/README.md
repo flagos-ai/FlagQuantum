@@ -1,5 +1,9 @@
 # FlagQuantum Examples
 
+[Coherent predicate synthesis](synthesis_predicate.py): run
+`python -m examples.synthesis_predicate` for named basis and uniform results of
+`x*x+y<5`, using the maintained synth facade without gate design or bit decoding.
+
 Private constrained-synthesis contributor workflows:
 
 - [Candidate selection](synthesis_selection.py): run

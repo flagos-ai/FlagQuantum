@@ -16,7 +16,7 @@ token. Function inputs are immutable basis borrows. Repeated reads of a value
 are legal; overlapping physical input/output/workspace ports are not.
 
 Supported records are `arith.constant` with classical INDEX type and a checked
-nonnegative integer, `qint.add`, `qint.multiply`, `qint.call`, and `qint.return`.
+nonnegative integer, `qint.add`, `qint.multiply`, `qint.equal`, `qint.less`, `qint.call`, and `qint.return`.
 Functions return one quantum integer expression. Definitions form an acyclic
 call graph. This is a closed verifier profile, not an extension to the existing
 classical hybrid verifier or its lowering pipeline.
@@ -30,7 +30,8 @@ aliases for the full-width arithmetic evaluator.
 The lowering contract requires `z ^= f(inputs)` for every target bitstring
 with zero workspace, preserving phases and cleaning workspace. The verifier
 checks definitions and bindings; arithmetic lowering implements this permutation
-for constants, addition, multiplication, calls and returns. `fresh_zero` is an allocator obligation; `caller_asserted_zero` is a
+for constants, addition, multiplication, one-bit equality/less-than predicates,
+calls and returns. `fresh_zero` is an allocator obligation; `caller_asserted_zero` is a
 caller precondition. Neither is inferred from an external state.
 
 For a small change, edit the corresponding verifier, add an accepted/rejected
@@ -148,3 +149,14 @@ python -m pytest tests/team/compiler/test_construction_selection.py tests/integr
 public builder or a Qmod parser. The current native Python synth API is unchanged;
 external native syntax and Services admission remain later milestones. See the
 [CS07-B delivery](../../../docs/roadmap/CS07_REGISTER_PROGRAM_DELIVERY.md).
+
+Python single == and < expressions produce quantum.uint(1) with conservative
+[0,1] range, even for repeated operands or a specific basis preparation. Both
+classical operands fold exactly; otherwise the shared comparison kernel uses
+full zero-extended unsigned operands. bool return annotations require one-bit
+results; parameters remain int. The existing lifetime analysis and both
+schedules own comparison results and locally clean prefix flags/scratch. The
+shared kernel also implements Algorithms' existing greater-than comparator.
+See the [comparison contract](../../../docs/api-changes/FQ-SYNTH-COMPARISONS-20261031.md)
+and [delivery](../../../docs/roadmap/SYNTH_COMPARISON_DELIVERY.md). Qmod grammar,
+Boolean control flow and effectful quantum blocks are unchanged.

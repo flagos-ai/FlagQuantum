@@ -117,3 +117,124 @@ def multiply_accumulate(
                 )
                 yield Instruction("cx", (scratch[k - 1], scratch[k]))
             yield prepare
+
+
+def comparison_xor(
+    a: tuple[int, ...] | int,
+    b: tuple[int, ...] | int,
+    target: int,
+    equality: tuple[int, ...],
+    scratch: int,
+    *,
+    operation: str,
+) -> tuple[Instruction, ...]:
+    """XOR an exact unsigned predicate, restoring operands and zero scratch.
+
+    The shared prefix-equality comparator supports eq/lt/gt. Numeric operands
+    are MSB first and zero extended; constants need no physical register.
+    Operand aliases are legal, but each register has distinct qubits and every
+    target/flag/scratch qubit is disjoint. This emits no relative phase.
+    """
+    if operation not in {"eq", "lt", "gt"}:
+        raise ValueError("comparison operation must be eq, lt or gt")
+
+    def bits(value: tuple[int, ...] | int) -> tuple[tuple[int, int | None], ...]:
+        if isinstance(value, bool):
+            raise TypeError("comparison constants must be Python integers")
+        if isinstance(value, int):
+            if value < 0:
+                raise ValueError("comparison constants must be nonnegative")
+            return tuple((int(bit), None) for bit in f"{value:b}")
+        if not value or len(set(value)) != len(value):
+            raise ValueError("comparison registers must be nonempty and distinct")
+        return tuple((1, wire) for wire in value)
+
+    left, right = bits(a), bits(b)
+    width = max(len(left), len(right))
+    if len(equality) != width + 1:
+        raise ValueError("comparison needs width + 1 zero equality flags")
+    operands = tuple(wire for _, wire in (*left, *right) if wire is not None)
+    temporary = (*equality, scratch, target)
+    wires = (*operands, *temporary)
+    if any(isinstance(w, bool) or not isinstance(w, int) for w in wires):
+        raise TypeError("comparison qubits must be Python integers")
+    if min(wires) < 0 or len(set(temporary)) != len(temporary):
+        raise ValueError("comparison temporary qubits must be nonnegative and distinct")
+    if set(operands) & set(temporary):
+        raise ValueError("comparison operands and temporary qubits must be disjoint")
+    left = ((0, None),) * (width - len(left)) + left
+    right = ((0, None),) * (width - len(right)) + right
+    gates: list[Instruction] = []
+
+    def condition(
+        terms: tuple[tuple[tuple[int, int | None], int], ...], dest: int
+    ) -> None:
+        controls: dict[int, int] = {}
+        for (bit, wire), expected in terms:
+            if wire is None:
+                if bit != expected:
+                    return
+            elif wire in controls and controls[wire] != expected:
+                return
+            else:
+                controls[wire] = expected
+        ordered = tuple(controls)
+        negative = tuple(q for q in ordered if controls[q] == 0)
+        gates.extend(Instruction("x", (q,)) for q in negative)
+        if len(ordered) <= 2:
+            gates.append(
+                Instruction(("x", "cx", "ccx")[len(ordered)], (*ordered, dest))
+            )
+        else:
+            first = Instruction("ccx", (*ordered[:2], scratch))
+            gates.extend(
+                (first, Instruction("ccx", (scratch, ordered[2], dest)), first)
+            )
+        gates.extend(Instruction("x", (q,)) for q in reversed(negative))
+
+    def prefix(index: int) -> None:
+        lbit, lwire = left[index]
+        rbit, rwire = right[index]
+        previous, following = equality[index : index + 2]
+        if lwire is not None and rwire is not None and lwire != rwire:
+            # Extracted from Algorithms' existing comparator equality step.
+            gates.extend(
+                (
+                    Instruction("cx", (lwire, scratch)),
+                    Instruction("cx", (rwire, scratch)),
+                    Instruction("x", (scratch,)),
+                    Instruction("ccx", (previous, scratch, following)),
+                    Instruction("x", (scratch,)),
+                    Instruction("cx", (rwire, scratch)),
+                    Instruction("cx", (lwire, scratch)),
+                )
+            )
+        elif lwire is not None and rwire is not None:
+            condition((((1, previous), 1),), following)
+        elif lwire is not None:
+            condition((((1, previous), 1), ((1, lwire), rbit)), following)
+        elif rwire is not None:
+            condition((((1, previous), 1), ((1, rwire), lbit)), following)
+        elif lbit == rbit:
+            condition((((1, previous), 1),), following)
+
+    gates.append(Instruction("x", (equality[0],)))
+    for index in range(width):
+        prefix(index)
+    if operation == "eq":
+        gates.append(Instruction("cx", (equality[-1], target)))
+    else:
+        expected = (0, 1) if operation == "lt" else (1, 0)
+        for index in range(width):
+            condition(
+                (
+                    ((1, equality[index]), 1),
+                    (left[index], expected[0]),
+                    (right[index], expected[1]),
+                ),
+                target,
+            )
+    for index in reversed(range(width)):
+        prefix(index)
+    gates.append(Instruction("x", (equality[0],)))
+    return tuple(gates)

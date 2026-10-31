@@ -17,6 +17,13 @@ Benchmark claims require audited artifacts and are not inferred from this file.
 
 ## Unreleased
 
+- Extend the unreleased Python synthesis profile with single unsigned == and <
+  predicates and optional one-bit bool return annotations. The same Program,
+  exact CPU execution and named reader now expose coherent 0/1 flags. Both
+  workspace schedules restore inputs and clean temporary qubits. The shared
+  pure kernel also serves the existing Algorithms comparator. Boolean control
+  flow, effectful blocks and Qmod grammar are outside this extension.
+
 - Extend the unreleased synthesize candidate with bounded local .qmod files
   (PathLike) and explicit source text (source_format="qmod"). Both use the
   existing checked Program, runtime and named reader. Source diagnostics and

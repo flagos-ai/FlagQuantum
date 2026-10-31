@@ -57,6 +57,41 @@ retains the original private-adaptation record. The
 [public source delivery](../../docs/roadmap/CS07_PUBLIC_SOURCE_DELIVERY.md)
 implements the separately reviewed file/text entry over the same Program.
 
+## Coherent predicates
+
+```python
+def predicate(x: int, y: int) -> bool:
+    return x * x + y < 5
+
+program = synth.synthesize(
+    predicate,
+    inputs={"x": synth.UInt(2), "y": synth.UInt(2)},
+    input_state=synth.InputState.uniform(),
+    max_qubits=22,
+)
+result = fq.run(program)
+print(dict(program.probabilities(result, registers=("x", "y", "result"))))
+```
+
+Single == and < compare full unsigned values; unequal widths are zero extended.
+The logical result is one bit, displayed as integer 0/1 in named tuples. This
+computes a flag coherently alongside x/y; it does not measure a condition or
+enter Python control flow. Optional bool return annotations require a one-bit
+result; parameters still use int/UInt declarations. Explicitly registered helpers
+and optional qfunc use the same profile. Existing arithmetic can reuse a flag's
+0/1 encoding. Chained comparisons, !=/<=/>/>=, Boolean and/or/not, bool parameters,
+True/False literals and Python if/loops remain unsupported. Native Qmod syntax
+has not expanded.
+
+Run python -m examples.synthesis_predicate for basis and uniform workflows with
+no gate design, physical indices or bit decoding. For x*x+y<5 at two bits, the
+normal width objective selects 19 total qubits and 14 workspace qubits. The
+complete uniform example executes 273 operations at depth 178; these are this
+profile's actual costs, not an optimality or hardware claim. The alternative
+retained schedule uses 22 qubits and 17 workspace qubits. See the
+[comparison delivery](../../docs/roadmap/SYNTH_COMPARISON_DELIVERY.md) for exact
+acceptance, raw versus transformed costs and limits.
+
 ## Local native source
 
 ```python

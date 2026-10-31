@@ -70,6 +70,8 @@ def analyze_lifetimes(
                 counter += 1
                 if operation.name == "arith.constant":
                     bound = operation.attributes["value"]
+                elif operation.name in {"qint.equal", "qint.less"}:
+                    bound = 1
                 else:
                     left, right = (bounds[value.id] for value in operands)
                     bound = (

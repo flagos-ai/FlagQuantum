@@ -53,6 +53,14 @@ def _error(
     )
 
 
+def _annotation_name(annotation: ast.expr | None) -> str | None:
+    if isinstance(annotation, ast.Name):
+        return annotation.id
+    if isinstance(annotation, ast.Constant) and isinstance(annotation.value, str):
+        return annotation.value
+    return None
+
+
 def _source(function: Callable[..., object], *, decorated: bool = False) -> _Source:
     if not inspect.isfunction(function) or hasattr(function, "__wrapped__"):
         raise TypeError(
@@ -106,21 +114,17 @@ def _source(function: Callable[..., object], *, decorated: bool = False) -> _Sou
             "only the explicit trial qfunc decorator is supported",
         )
     args = node.args
-    for annotation in (
-        node.returns,
-        *(arg.annotation for arg in (*args.posonlyargs, *args.args)),
-    ):
-        if annotation is not None and not (
-            isinstance(annotation, ast.Name)
-            and annotation.id == "int"
-            or isinstance(annotation, ast.Constant)
-            and annotation.value == "int"
-        ):
+    annotations = (
+        (node.returns, {"int", "bool"}),
+        *((arg.annotation, {"int"}) for arg in (*args.posonlyargs, *args.args)),
+    )
+    for annotation, allowed in annotations:
+        if annotation is not None and _annotation_name(annotation) not in allowed:
             _error(
                 source,
                 annotation,
                 "annotation",
-                "only optional int annotations are supported; quantum roles and other annotation semantics require a separate contract",
+                "use optional int parameters and int/bool return annotations; quantum roles require a separate contract",
             )
     if (
         args.vararg
@@ -323,6 +327,35 @@ def capture(
             return env[node.id]
         if isinstance(node, ast.Constant):
             return constant(node.value, source, node)
+        if isinstance(node, ast.Compare):
+            if len(node.ops) != 1 or not isinstance(node.ops[0], (ast.Eq, ast.Lt)):
+                _error(
+                    source,
+                    node,
+                    "comparison",
+                    "use one == or < comparison; chained and other comparisons are unsupported",
+                )
+            left = expression(node.left, env, source, depth + 1)
+            right = expression(node.comparators[0], env, source, depth + 1)
+            equal = isinstance(node.ops[0], ast.Eq)
+            if left[0].type == right[0].type == INDEX:
+                return constant(
+                    int(left[1] == right[1] if equal else left[1] < right[1]),
+                    source,
+                    node,
+                )
+            result = value(1)
+            emit(
+                Operation(
+                    "qint.equal" if equal else "qint.less",
+                    (left[0], right[0]),
+                    (result,),
+                    location=source.location(node),
+                ),
+                source,
+                node,
+            )
+            return result, 1
         if isinstance(node, ast.BinOp):
             left = expression(node.left, env, source, depth + 1)
             if isinstance(node.op, ast.Pow):
@@ -430,6 +463,17 @@ def capture(
                         "return one supported integer expression",
                     )
                 result = expression(statement.value, env, source)
+                if _annotation_name(source.node.returns) == "bool" and (
+                    result[1] > 1
+                    or result[0].type != INDEX
+                    and result[0].type.parameters != (1,)
+                ):
+                    _error(
+                        source,
+                        statement,
+                        "return",
+                        "bool return requires a one-bit result; return a comparison or use int",
+                    )
                 stack.pop()
                 return result
             if (
