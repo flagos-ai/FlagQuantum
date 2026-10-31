@@ -105,7 +105,11 @@ def probabilities(
             )
         measured = execute_measurements(
             state.reshape(1, -1),
-            (MeasurementNode("probabilities", selected),),
+            (
+                MeasurementNode(
+                    "probabilities", selected, metadata={"max_marginal_wires": max_bits}
+                ),
+            ),
             n_qubits=resources.n_qubits,
         )
         marginal = measured[0].value

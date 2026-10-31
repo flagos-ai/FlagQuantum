@@ -1,5 +1,19 @@
 # Services
 
+The private `_synthesis_registers.synthesize_registers` workflow admits the
+Compiler's owned fresh-register model after external source adaptation. It uses
+the same `synthesis._complete` plan/check/Program factory as Python arithmetic,
+then the existing `fq.run(program)` and bounded named reader. It performs no
+execution or source parsing, and requires an explicit state-memory ceiling.
+It does not add a public source loader or a second Program or executor.
+Start with `tests/integration/test_synthesis_register_workflow.py`; run the
+larger original-file acceptance separately with
+`python -m pytest tests/integration/test_synthesis_qmod_originals.py -q -s`.
+That test retains the original 23/24-qubit dimensions, preflights its bounded
+reference buffers, and raises the existing amplitude-read limit explicitly.
+See the [CS07-D delivery record](../../docs/roadmap/CS07_QMOD_EXECUTION_DELIVERY.md)
+for precise support and remaining public-entry/release boundaries.
+
 Services contains small, reusable application workflows that add behavior beyond
 one stable FlagQuantum API call, such as capability aggregation, execution
 preflight, and deployment preflight.

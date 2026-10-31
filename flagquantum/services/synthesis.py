@@ -6,9 +6,9 @@ import inspect
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass, field, replace
 from types import MappingProxyType
-from typing import Literal, TypedDict
+from typing import Literal
 
-from ..compiler import ResourceEstimate, estimate_resources
+from ..compiler import estimate_resources
 from ..compiler._construction.constraints import CircuitLimits
 from ..compiler._construction.frontend_python import (
     Definition,
@@ -24,7 +24,6 @@ from ..compiler._construction.selection import (
     select_arithmetic,
 )
 from ..compiler._construction.target import Target
-from ..compiler._hybrid.model import SourceLocation
 from ..compiler._hybrid.verifier import Diagnostic, HybridVerificationError
 from ..compiler.basis_conversion import require_basis
 from ..compiler.coupling import CouplingMap
@@ -49,22 +48,6 @@ __all__ = (
     "qfunc",
     "synthesize",
 )
-
-
-class _Report(TypedDict):
-    input_widths: Mapping[str, int]
-    result_width: int
-    input_state: str
-    constants: Mapping[str, int]
-    max_qubits: int | None
-    workspace_qubits: int
-    candidate: str
-    function: str
-    source_locations: tuple[SourceLocation, ...]
-    scope: str
-    resources: ResourceEstimate
-    source_resources: ResourceEstimate
-    arithmetic_resources: ResourceEstimate
 
 
 @dataclass(frozen=True)
@@ -448,9 +431,38 @@ def synthesize(
     row = selection.selected
     if row is None or row.target is None or row.arithmetic is None:
         raise SynthesisError(selection)
+    block = graph.body.blocks[0]
+    report: dict[str, object] = {
+        "input_widths": MappingProxyType({name: inputs[name].width for name in names}),
+        "result_width": len(selection.registers["result"]),
+        "input_state": state_name,
+        "constants": MappingProxyType(dict(constants or {})),
+        "max_qubits": max_qubits,
+        "function": graph.name,
+        "source_locations": tuple(
+            dict.fromkeys(
+                op.location for op in block.operations if op.location is not None
+            )
+        ),
+        "scope": "actual_cpu_preparation_arithmetic_cleanup",
+    }
+    return _complete(selection, report)
+
+
+def _complete(
+    selection: Selection,
+    report: Mapping[str, object],
+    *,
+    memory_limit_bytes: int | None = None,
+) -> Program:
+    """Admit either construction producer through one checked execution authority."""
+    row = selection.selected
+    if row is None or row.target is None or row.arithmetic is None:
+        raise SynthesisError(selection)
     from .._api import plan
 
     options = ExecutionOptions(
+        memory_limit_bytes=memory_limit_bytes,
         mode="statevector",
         backend="torch",
         device="cpu",
@@ -462,36 +474,29 @@ def synthesize(
     execution = plan(row.target.submitted, options=options)
     checked = inspect_execution(
         execution,
-        limits=constraints.limits,
-        basis=target.basis,
+        limits=selection.constraints.limits,
+        basis=selection.target.basis,
         coupling=row.target.coupling,
         registers=selection.registers,
     )
+    if memory_limit_bytes is not None and execution.state_bytes > memory_limit_bytes:
+        raise ValueError(
+            f"execution memory budget exceeded: state requires {execution.state_bytes} "
+            f"bytes, limit is {memory_limit_bytes}; no allocation was performed"
+        )
     resources = checked.resources
-    block = graph.body.blocks[0]
-    report: _Report = {
-        "input_widths": MappingProxyType({name: inputs[name].width for name in names}),
-        "result_width": len(selection.registers["result"]),
-        "input_state": state_name,
-        "constants": MappingProxyType(dict(constants or {})),
-        "max_qubits": max_qubits,
-        "workspace_qubits": row.arithmetic.peak_workspace,
-        "candidate": row.strategy,
-        "function": graph.name,
-        "source_locations": tuple(
-            dict.fromkeys(
-                op.location for op in block.operations if op.location is not None
-            )
-        ),
-        "scope": "actual_cpu_preparation_arithmetic_cleanup",
-        "resources": resources,
-        "source_resources": dict(row.stage_resources)["source"],
-        "arithmetic_resources": estimate_resources(row.arithmetic.circuit),
-    }
+    complete_report = dict(report)
+    complete_report.update(
+        workspace_qubits=row.arithmetic.peak_workspace,
+        candidate=row.strategy,
+        resources=resources,
+        source_resources=dict(row.stage_resources)["source"],
+        arithmetic_resources=estimate_resources(row.arithmetic.circuit),
+    )
     program = Program(
         row.target.submitted,
         row.arithmetic.circuit,
-        MappingProxyType(report),
+        MappingProxyType(complete_report),
         selection.registers,
         selection,
         checked,
