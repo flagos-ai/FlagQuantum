@@ -150,12 +150,36 @@ def _source(function: Callable[..., object], *, decorated: bool = False) -> _Sou
     if not statements or not isinstance(statements[-1], ast.Return):
         _error(source, node, "return", "end the function with one return expression")
     for statement in statements[:-1]:
-        if not isinstance(statement, ast.Assign):
+        if isinstance(statement, ast.For):
+            if (
+                not isinstance(statement.target, ast.Name)
+                or not isinstance(statement.iter, ast.Call)
+                or not isinstance(statement.iter.func, ast.Name)
+                or statement.iter.func.id != "range"
+                or not 1 <= len(statement.iter.args) <= 3
+                or statement.iter.keywords
+                or any(isinstance(arg, ast.Starred) for arg in statement.iter.args)
+                or statement.orelse
+            ):
+                _error(
+                    source,
+                    statement,
+                    "loop.range",
+                    "use one index and builtin range with 1-3 positional arguments, without loop else",
+                )
+            if any(not isinstance(child, ast.Assign) for child in statement.body):
+                _error(
+                    source,
+                    statement,
+                    "loop.body",
+                    "loop bodies accept assignments only; nested loops, branches, return and effects are unsupported",
+                )
+        elif not isinstance(statement, ast.Assign):
             _error(
                 source,
                 statement,
                 "statement",
-                "use single assignments and one final return; branches, loops and side effects are unsupported",
+                "use single assignments, bounded range loops and one final return; branches, dynamic loops and side effects are unsupported",
             )
     return source
 
@@ -187,8 +211,8 @@ def capture(
     """Infer exact widths into existing SSA; explicitly supplied helpers inline.
 
     The subset includes unsigned arithmetic, ==/< comparisons, one-bit
-    and/or/not, single assignments, direct helper calls and one return. Constants bind declared entry
-    parameters by value. Globals, closures and arbitrary Python are not executed.
+    and/or/not, static range loops, assignments, direct helpers and one return.
+    Constants bind declared entry parameters by value. Globals, closures and arbitrary Python are not executed.
     """
     definitions = (function, *functions)
     sources: dict[str, _Source] = {}
@@ -305,6 +329,8 @@ def capture(
     for name, number in classic.items():
         environment[name] = constant(number, main, main.node)
     stack: list[str] = []
+    loop_depth = 0
+    loop_iterations = 0
 
     def one_bit(operand: _Expression, source: _Source, node: ast.expr) -> _Expression:
         if operand[1] > 1 or (
@@ -468,6 +494,13 @@ def capture(
             )
             return result, bound
         if isinstance(node, ast.Call) and isinstance(node.func, ast.Name):
+            if node.func.id in env:
+                _error(
+                    source,
+                    node,
+                    "call",
+                    "helper names cannot be shadowed by value bindings",
+                )
             callee = sources.get(node.func.id)
             if callee is None:
                 _error(
@@ -502,6 +535,121 @@ def capture(
             "syntax",
             f"unsupported {type(node).__name__}; use named integer values, arithmetic and explicitly registered direct helpers",
         )
+
+    def assignment(
+        statement: ast.stmt,
+        env: dict[str, _Expression],
+        source: _Source,
+        *,
+        updates: frozenset[str] = frozenset(),
+        written: set[str] | None = None,
+    ) -> None:
+        if (
+            not isinstance(statement, ast.Assign)
+            or len(statement.targets) != 1
+            or not isinstance(statement.targets[0], ast.Name)
+        ):
+            _error(
+                source,
+                statement,
+                "assignment",
+                "use one local name = expression; tuple, attribute and augmented assignments are unsupported",
+            )
+        target = statement.targets[0].id
+        if written is not None and (target == "range" or target in sources):
+            _error(
+                source,
+                statement,
+                "loop.binding",
+                "loop locals cannot shadow range or registered helpers",
+            )
+        if target in env and (
+            target not in updates or written is not None and target in written
+        ):
+            _error(
+                source,
+                statement,
+                "assignment",
+                f"{target!r} is already bound; assign a new local name",
+            )
+        env[target] = expression(statement.value, env, source)
+        if written is not None:
+            written.add(target)
+
+    def static_loop(
+        statement: ast.For, env: dict[str, _Expression], source: _Source
+    ) -> None:
+        nonlocal loop_depth, loop_iterations, counter
+        if loop_depth:
+            _error(
+                source,
+                statement,
+                "loop.nested",
+                "only one active loop is supported, including helper bodies",
+            )
+        assert isinstance(statement.target, ast.Name) and isinstance(
+            statement.iter, ast.Call
+        )
+        index = statement.target.id
+        if index in env or index in sources or index == "range":
+            _error(
+                source,
+                statement.target,
+                "loop.binding",
+                "use a fresh scoped loop index without shadowing inputs, locals or helpers",
+            )
+        if "range" in env or "range" in sources:
+            _error(
+                source, statement, "loop.range", "builtin range must not be shadowed"
+            )
+        bounds = tuple(expression(arg, env, source) for arg in statement.iter.args)
+        if any(item[0].type != INDEX for item in bounds):
+            _error(
+                source,
+                statement.iter,
+                "loop.range",
+                "range arguments must be explicit classical integers, not quantum values",
+            )
+        numbers = tuple(item[1] for item in bounds)
+        if len(numbers) == 1:
+            start, stop, step = 0, numbers[0], 1
+        elif len(numbers) == 2:
+            start, stop, step = numbers[0], numbers[1], 1
+        else:
+            start, stop, step = numbers
+        if step < 1:
+            _error(source, statement.iter, "loop.range", "range step must be positive")
+        iterations = max(0, (stop - start + step - 1) // step)
+        if iterations > 256 - loop_iterations:
+            _error(
+                source,
+                statement,
+                "loop.budget",
+                "capture exceeds 256 total loop iterations; reduce static ranges",
+            )
+        loop_iterations += iterations
+        parameters = {
+            arg.arg for arg in (*source.node.args.posonlyargs, *source.node.args.args)
+        }
+        carried = frozenset(env).difference(parameters)
+        before_ops, before_counter = len(operations), counter
+        loop_depth += 1
+        try:
+            # Empty loops still validate source, but their provisional SSA cannot escape.
+            for number in range(start, stop, step) if iterations else (start,):
+                local = dict(env)
+                local[index] = constant(number, source, statement.target)
+                written: set[str] = set()
+                for child in statement.body:
+                    assignment(child, local, source, updates=carried, written=written)
+                if iterations:
+                    for name in written.intersection(carried):
+                        env[name] = local[name]
+        finally:
+            loop_depth -= 1
+            if not iterations:
+                del operations[before_ops:]
+                counter = before_counter
 
     def body(source: _Source, env: dict[str, _Expression]) -> _Expression:
         name = source.node.name
@@ -543,26 +691,10 @@ def capture(
                     )
                 stack.pop()
                 return result
-            if (
-                not isinstance(statement, ast.Assign)
-                or len(statement.targets) != 1
-                or not isinstance(statement.targets[0], ast.Name)
-            ):
-                _error(
-                    source,
-                    statement,
-                    "assignment",
-                    "use one local name = expression; tuple, attribute and augmented assignments are unsupported",
-                )
-            target = statement.targets[0].id
-            if target in env:
-                _error(
-                    source,
-                    statement,
-                    "assignment",
-                    f"{target!r} is already bound; assign a new local name",
-                )
-            env[target] = expression(statement.value, env, source)
+            if isinstance(statement, ast.For):
+                static_loop(statement, env, source)
+            else:
+                assignment(statement, env, source)
         raise AssertionError("validated source did not return")
 
     result, _ = body(main, environment)
