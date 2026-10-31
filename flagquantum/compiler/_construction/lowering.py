@@ -10,7 +10,7 @@ from dataclasses import dataclass
 from typing import Literal
 
 from ...core.ir import CircuitIR, Instruction
-from .._arithmetic_kernels import multiply_accumulate, ripple_add
+from .._arithmetic_kernels import comparison_xor, multiply_accumulate, ripple_add
 from .._hybrid.model import INDEX, HybridProgram, Operation, ValueId
 from .bindings import verify_bindings
 from .lifetimes import LifetimeAnalysis, analyze_lifetimes
@@ -156,7 +156,7 @@ def schedule_arithmetic(
         return left, right
 
     def reserve(key: ValueId, op: Operation) -> _Allocation:
-        if op.name == "qint.multiply":
+        if op.name in {"qint.equal", "qint.less", "qint.multiply"}:
             owned = allocate(unsigned_width(bound(key)), op)
             return _Allocation(owned, owned)
         left, _ = operands(op)
@@ -171,6 +171,15 @@ def schedule_arithmetic(
         key: ValueId, allocation: _Allocation, op: Operation, scratch: tuple[int, ...]
     ) -> Iterable[Instruction]:
         left, right = operands(op)
+        if op.name in {"qint.equal", "qint.less"}:
+            return comparison_xor(
+                left,
+                right,
+                allocation.result[0],
+                scratch[:-1],
+                scratch[-1],
+                operation="eq" if op.name == "qint.equal" else "lt",
+            )
         if op.name == "qint.multiply":
             return multiply_accumulate(left, right, allocation.result, scratch)
         assert not isinstance(left, int)
@@ -183,9 +192,12 @@ def schedule_arithmetic(
     def apply(key: ValueId, *, inverse: bool) -> None:
         op = definitions[key]
         allocation = active[key]
-        scratch = (
-            allocate(len(allocation.result), op) if op.name == "qint.multiply" else ()
-        )
+        scratch_count = 0
+        if op.name == "qint.multiply":
+            scratch_count = len(allocation.result)
+        elif op.name in {"qint.equal", "qint.less"}:
+            scratch_count = max(unsigned_width(bound(v.id)) for v in op.operands) + 2
+        scratch = allocate(scratch_count, op) if scratch_count else ()
         # Scratch is always zero and local to this invocation. A restored operand
         # may now occupy different physical qubits; regenerate the kernel using
         # its current binding instead of replaying stale controls.
