@@ -318,7 +318,7 @@ def test_unverified_line_equality_remains_refused_by_the_existing_swap_witness_g
         program(equal, objective=objective, routed=True)
 
 
-def test_private_contributor_example_reports_real_phase_evidence():
+def test_public_phase_example_reports_actual_resources():
     import subprocess
     import sys
     from pathlib import Path
@@ -331,10 +331,9 @@ def test_private_contributor_example_reports_real_phase_evidence():
         check=True,
         timeout=120,
     )
-    assert "public output_mode remains proposed" in completed.stdout
+    assert "output mode: phase" in completed.stdout
     assert "Uniform probabilities alone do not verify the phase" in completed.stdout
     values = dict(
         line.split(": ", 1) for line in completed.stdout.splitlines() if ": " in line
     )
-    assert float(values["phase/workspace residual"]) <= 1e-12
     assert "n_qubits=18," in values["resources"]

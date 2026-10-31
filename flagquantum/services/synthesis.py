@@ -347,6 +347,33 @@ def synthesize(
     source_name: None = None,
     source_version: None = None,
     memory_limit_bytes: int | None = None,
+    output_mode: Literal["value"] = "value",
+) -> Program: ...
+
+
+@overload
+def synthesize(
+    function: Definition,
+    *,
+    inputs: Mapping[str, UInt],
+    input_state: InputState | None = None,
+    constants: Mapping[str, int] | None = None,
+    functions: Sequence[Definition] = (),
+    max_qubits: int | None = 256,
+    max_operations: int | None = 100_000,
+    max_depth: int | None = None,
+    max_workspace: int | None = None,
+    construction_budget: ConstructionBudget = _DEFAULT_BUDGET,
+    objective: Literal["width", "depth"] = "width",
+    basis: None = None,
+    topology: None = None,
+    preparation: CircuitIR | None = None,
+    preparation_map: Mapping[str, Sequence[int]] | None = None,
+    source_format: None = None,
+    source_name: None = None,
+    source_version: None = None,
+    memory_limit_bytes: int | None = None,
+    output_mode: Literal["phase"],
 ) -> Program: ...
 
 
@@ -372,6 +399,7 @@ def synthesize(
     source_name: str | None = None,
     source_version: str | None = None,
     memory_limit_bytes: int | None = None,
+    output_mode: Literal["value"] = "value",
 ) -> Program: ...
 
 
@@ -397,6 +425,7 @@ def synthesize(
     source_name: None = None,
     source_version: str | None = None,
     memory_limit_bytes: int | None = None,
+    output_mode: Literal["value"] = "value",
 ) -> Program: ...
 
 
@@ -421,6 +450,7 @@ def synthesize(
     source_name: str | None = None,
     source_version: str | None = None,
     memory_limit_bytes: int | None = None,
+    output_mode: Literal["value", "phase"] = "value",
 ) -> Program:
     """Synthesize high-level unsigned arithmetic for exact local CPU execution.
 
@@ -435,10 +465,20 @@ def synthesize(
     memory_limit_bytes applies to both source profiles. This is not a process
     peak-memory limit. Python retains its existing default memory behavior.
 
+    output_mode="value" preserves the reversible XOR result. "phase" accepts
+    only a one-bit Python return on logical CPU targets (basis/topology=None):
+    it multiplies each input amplitude by (-1)**predicate and cleans workspace.
+    Preparation stays outside that oracle. No result register is exported in
+    phase mode; read inputs with explicit register names. Uniform probabilities
+    alone cannot verify phase. Phase reports omit arithmetic_resources, and
+    result_width=0 denotes the absence of an exported result register.
+
     Returns:
         A factory-created Program with checked execution, circuit and report.
 
     Raises:
+        TypeError: output_mode is not a string, or input declarations are invalid.
+        ValueError: The mode, phase source/target, or one-bit return is unsupported.
         InteropConversionError: Native input violates the bounded source profile.
         PlanningError: The planned state buffer exceeds the effective memory cap.
         SynthesisError: No fully checked candidate satisfies the request, or
@@ -461,6 +501,19 @@ def synthesize(
             result = fq.run(program)
             probabilities = program.probabilities(result)
     """
+    if not isinstance(output_mode, str):
+        raise TypeError("output_mode must be a string: value or phase")
+    if output_mode not in {"value", "phase"}:
+        raise ValueError("output_mode must be value or phase")
+    if output_mode == "phase":
+        if isinstance(function, (PathLike, str)):
+            raise ValueError(
+                "phase output supports Python definitions only; native source requires value mode"
+            )
+        if basis is not None or topology is not None:
+            raise ValueError(
+                "phase output requires logical CPU targets: basis=None and topology=None"
+            )
     constraints = Constraints(
         CircuitLimits(max_qubits, max_operations, max_depth), max_workspace
     )
@@ -580,6 +633,7 @@ def synthesize(
         budget=construction_budget,
         target=target,
         objective=objective,
+        output_mode=output_mode,
     )
     row = selection.selected
     if row is None or row.target is None or row.arithmetic is None:
@@ -587,7 +641,7 @@ def synthesize(
     block = graph.body.blocks[0]
     report: dict[str, object] = {
         "input_widths": MappingProxyType({name: inputs[name].width for name in names}),
-        "result_width": len(selection.registers["result"]),
+        "result_width": len(selection.registers.get("result", ())),
         "input_state": state_name,
         "constants": MappingProxyType(dict(constants or {})),
         "max_qubits": max_qubits,
@@ -597,8 +651,13 @@ def synthesize(
                 op.location for op in block.operations if op.location is not None
             )
         ),
-        "scope": "actual_cpu_preparation_arithmetic_cleanup",
+        "scope": (
+            "actual_cpu_preparation_predicate_phase_cleanup"
+            if output_mode == "phase"
+            else "actual_cpu_preparation_arithmetic_cleanup"
+        ),
         "source_format": "python",
+        "output_mode": output_mode,
     }
     return _complete(
         selection,
@@ -659,7 +718,11 @@ def _complete(
         memory_limit_bytes=memory_limit_bytes,
         memory_limit_origin=memory_limit_origin,
     )
-    if isinstance(row.arithmetic, ArithmeticCandidate):
+    complete_report.setdefault("output_mode", "value")
+    if (
+        isinstance(row.arithmetic, ArithmeticCandidate)
+        and complete_report["output_mode"] == "value"
+    ):
         complete_report["arithmetic_resources"] = estimate_resources(
             row.arithmetic.circuit
         )

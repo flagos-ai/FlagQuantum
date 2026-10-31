@@ -1,5 +1,12 @@
 # Private predicate phase construction and public-entry proposal
 
+Historical #974 delivery record. The subsequent
+[public phase delivery](SYNTH_PUBLIC_PHASE_DELIVERY.md) supersedes the public
+keyword status and contributor command below. This record retains the original
+private evidence and target limitations; its proposal/approval statements
+refer to that earlier stage.
+
+
 Date: 2026-10-31. Development evidence, unreleased. #972 merged as
 d6df7bca0d5f68b760518af023f00f0669b66145 after 57 successful checks and three
 configured skips. The user's merge-and-next instruction authorizes this private

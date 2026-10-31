@@ -17,6 +17,14 @@ Benchmark claims require audited artifacts and are not inferred from this file.
 
 ## Unreleased
 
+- Add output_mode="phase" to the unreleased synthesize candidate. Python one-bit
+  predicates mark amplitudes by (-1)**predicate and clean workspace through the
+  existing Compiler schedules and Program/run flow; value remains the default.
+  Phase exports input registers only, records its mode/scope and omits the
+  value-only arithmetic_resources diagnostic. Native Qmod phase and explicit
+  basis/topology requests fail before source work. The first admission is exact
+  logical CPU only; independent trials and release review remain pending.
+
 - Extend the unreleased Python synthesis profile with single unsigned == and <
   predicates and optional one-bit bool return annotations. The same Program,
   exact CPU execution and named reader now expose coherent 0/1 flags. Both

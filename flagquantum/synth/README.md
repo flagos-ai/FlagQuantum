@@ -150,11 +150,63 @@ workflow, or append a local .qmod path. Three unchanged originals have passed
 both public forms at 1/23/24 qubits. This is development evidence; independent
 trials remain 0/2 and release authorization remains false.
 
-## Phase construction status
+## Predicate phase synthesis
 
-Compiler now has private predicate phase evidence; the proposed public
-output_mode="phase" keyword is not available yet. Current synthesize calls still
-produce value/comparison results. The [phase proposal and private delivery](../../docs/roadmap/SYNTH_PHASE_ORACLE_DELIVERY.md)
-include explicit future user code and actual contributor commands. The first
-public proposal is logical CPU only; general line phase and projective target
-conversion are not admitted by the private probes.
+Use the same high-level predicate with output_mode="phase" to mark input
+amplitudes instead of exporting a result bit. Save this in a Python source file:
+
+```python
+import flagquantum as fq
+from flagquantum import synth
+
+
+def marked(x: int, y: int) -> bool:
+    return x * x + y < 5
+
+
+program = synth.synthesize(
+    marked,
+    inputs={"x": synth.UInt(2), "y": synth.UInt(2)},
+    input_state=synth.InputState.uniform(),
+    output_mode="phase",
+    max_qubits=22,
+    memory_limit_bytes=64 * 1024**2,
+)
+result = fq.run(program)
+print(dict(program.probabilities(result, registers=("x", "y"))))
+print(program.report["resources"])
+```
+
+Every input pair has probability 1/16. The amplitude is -1/4 when x*x+y<5 and
++1/4 otherwise; temporary qubits return to zero. **Uniform probabilities alone
+do not verify phase.** The acceptance suite compares complete complex amplitudes
+and checks interference, including the absolute sign of constant predicates.
+
+Run python -m examples.synthesis_phase_oracle. Users declare unsigned input
+widths, known preparation, the one-bit computation, its phase effect and resource
+ceilings. They do not design gates, select physical wires, decode bitstrings or
+write uncomputation. The default output_mode="value" retains the existing XOR
+result and all target options. No decorator is required; qfunc/helpers/constants
+work through the same source-capture profile.
+
+Phase currently accepts Python one-bit unsigned returns only, including ==/<
+and optional bool return annotations. It requires basis=None and topology=None;
+native Qmod phase and explicit basis/routing requests fail before source
+acquisition or capture. A wider integer return is rejected rather than coerced
+to truthiness. Existing input_state or mapped static preparation is supported;
+preparation stays outside the phase oracle. Memory and construction limits keep
+their existing meaning; no numerical execution occurs during synthesis.
+
+Phase Program registers contain inputs only. The existing reader default is
+("result",), so select input names explicitly as above; the default raises an
+actionable missing-register error. report["output_mode"] is present for both
+Python and native inputs. For phase, result_width=0 means no exported result,
+scope is actual_cpu_preparation_predicate_phase_cleanup, and arithmetic_resources
+is omitted. Use source_resources and actual resources for whole-program costs.
+
+This is unreleased logical-CPU development evidence. General routed phase,
+projective basis conversion, arbitrary angles, controlled-block/within-apply DSL,
+Qmod phase, GPU/QPU/gradient admission and full-corpus compatibility remain out
+of scope. See [public delivery](../../docs/roadmap/SYNTH_PUBLIC_PHASE_DELIVERY.md)
+and the [historical private evidence](../../docs/roadmap/SYNTH_PHASE_ORACLE_DELIVERY.md).
+Independent developer trials remain 0/2 and release authorization is false.
