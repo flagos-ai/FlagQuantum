@@ -11,7 +11,7 @@ COPY wheels.sha256 /tmp/wheels.sha256
 RUN echo "${RUNNER_SHA256}  /tmp/runner.tar.gz" | sha256sum -c - \
     && cd /tmp/ascend-wheels && sha256sum -c /tmp/wheels.sha256 \
     && "${PYTHON}" -m venv --system-site-packages /opt/ascend-ci-env \
-    && /opt/ascend-ci-env/bin/python -m pip install --no-deps /tmp/ascend-wheels/*.whl \
+    && /opt/ascend-ci-env/bin/python -m pip install --ignore-installed --no-deps /tmp/ascend-wheels/*.whl \
     && cp /tmp/wheels.sha256 /opt/ascend-ci-env/wheels.sha256 \
     && mkdir -p /opt/actions-runner /opt/action-cache /home/fqci/ascend/log /ascend/log \
     && test ! -e /opt/actions-runner/.credentials && test ! -e /opt/actions-runner/.runner \
