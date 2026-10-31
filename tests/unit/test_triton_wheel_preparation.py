@@ -66,7 +66,13 @@ def _prepare(
     bindir = directory / "bin"
     bindir.mkdir()
     python = bindir / "python"
-    python.write_text(f'#!/bin/sh\nexec "{pip_python}" "$@"\n')
+    # Parse metadata with the core interpreter (including its TOML dependency),
+    # while keeping every pip operation in the isolated installation environment.
+    python.write_text(
+        '#!/bin/sh\nif [ "$1" = "-m" ] && [ "$2" = "pip" ]; then\n'
+        f'  exec "{pip_python}" "$@"\nfi\n'
+        f'exec "{sys.executable}" "$@"\n'
+    )
     python.chmod(0o755)
     timeout = bindir / "timeout"
     timeout.write_text(
