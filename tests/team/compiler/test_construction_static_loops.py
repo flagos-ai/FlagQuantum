@@ -1,5 +1,7 @@
 """Bounded classical ranges build fresh SSA with explicit scope and budgets."""
 
+from collections.abc import Callable, Iterable
+from types import FunctionType
 
 import pytest
 
@@ -260,3 +262,46 @@ def test_range_and_registered_helpers_cannot_be_shadowed_by_loop_bindings() -> N
         )
         with pytest.raises(HybridVerificationError, match="construction.python"):
             capture(_cell(text), {"x": 1}, functions=(helper,))
+
+
+def test_range_helpers_cannot_hide_quantum_work_behind_a_classical_return() -> None:
+    def hidden(x: int) -> int:
+        _quantum = x + x
+        return 0
+
+    fn = _cell(
+        "def main(x):\n    total=x\n    for i in range(hidden(x)):\n        total=total+x\n    return total\n"
+    )
+    with pytest.raises(HybridVerificationError, match="loop.range"):
+        capture(fn, {"x": 1}, functions=(hidden,))
+
+
+@pytest.mark.parametrize("binding", ["global", "closure"])
+def test_overridden_builtin_range_is_rejected_without_calling_it(binding: str) -> None:
+    calls: list[int] = []
+
+    def foreign_range(n: int) -> list[int]:
+        calls.append(n)
+        return []
+
+    if binding == "global":
+        function = _cell(
+            "def main(x):\n    total=x\n    for i in range(2):\n        total=total+x\n    return total\n"
+        )
+        assert isinstance(function, FunctionType)
+        function.__globals__["range"] = foreign_range
+    else:
+
+        def definition(range: Callable[[int], Iterable[int]]) -> Callable[[int], int]:
+            def main(x: int) -> int:
+                total = x
+                for i in range(2):
+                    total = total + x
+                return total
+
+            return main
+
+        function = definition(foreign_range)
+    with pytest.raises(HybridVerificationError, match="loop.range"):
+        capture(function, {"x": 1})
+    assert calls == []

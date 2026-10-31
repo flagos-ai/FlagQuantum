@@ -152,6 +152,16 @@ def _source(function: Callable[..., object], *, decorated: bool = False) -> _Sou
     for statement in statements[:-1]:
         if isinstance(statement, ast.For):
             if (
+                "range" in function.__code__.co_freevars
+                or dict.get(function.__globals__, "range", range) is not range
+            ):
+                _error(
+                    source,
+                    statement,
+                    "loop.range",
+                    "builtin range cannot be replaced by a global or closure binding",
+                )
+            if (
                 not isinstance(statement.target, ast.Name)
                 or not isinstance(statement.iter, ast.Call)
                 or not isinstance(statement.iter.func, ast.Name)
@@ -602,8 +612,11 @@ def capture(
             _error(
                 source, statement, "loop.range", "builtin range must not be shadowed"
             )
+        before_bounds = len(operations)
         bounds = tuple(expression(arg, env, source) for arg in statement.iter.args)
-        if any(item[0].type != INDEX for item in bounds):
+        if any(item[0].type != INDEX for item in bounds) or any(
+            op.name != "arith.constant" for op in operations[before_bounds:]
+        ):
             _error(
                 source,
                 statement.iter,
@@ -705,6 +718,13 @@ def capture(
             "return",
             "the entry must return a quantum integer expression; a fixed value can be written as x*0 + value",
         )
+    used = {operand.id for op in operations for operand in op.operands}
+    used.add(result.id)
+    operations[:] = [
+        op
+        for op in operations
+        if op.name != "arith.constant" or op.results[0].id in used
+    ]
     emit(
         Operation("qint.return", (result,), location=main.location(main.node.body[-1])),
         main,

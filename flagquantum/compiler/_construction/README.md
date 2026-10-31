@@ -236,9 +236,14 @@ cannot be shadowed by numerical bindings. Structural/nesting/scope errors occur
 before lowering or planning; source body execution is never a fallback.
 
 Run python -m examples.synthesis_static_loop. Start changes with
- tests/team/compiler/test_construction_static_loops.py and then
- tests/integration/test_synthesis_static_loops.py. Acceptance compares complete
+`tests/team/compiler/test_construction_static_loops.py` and then
+`tests/integration/test_synthesis_static_loops.py`. Acceptance compares complete
 looped/explicitly expanded computations, arbitrary XOR targets, complex states,
 external references, value/phase paths and clean workspace. Source operation
 counts or identical gate sequences are not substitutes for that equivalence.
 See the [loop contract](../../../docs/api-changes/FQ-SYNTH-STATIC-LOOPS-20261031.md).
+
+At capture completion, unused arith.constant definitions are omitted. Their
+compile-time values do not consume physical binding width or obstruct a terminal
+phase product. Quantum operations are retained. Value IDs may have gaps;
+lifetime analysis uses its own inlined program IDs, not original capture IDs.

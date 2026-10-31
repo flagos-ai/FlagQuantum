@@ -13,7 +13,8 @@ A for statement uses one fresh index name and builtin range with one to three
 positional nonnegative classical integer arguments. The step must be positive.
 Bounds can use existing pure arithmetic, local constants and explicit constants
 parameters; they must resolve to INDEX, never quantum values or sampled input
-states. Globals, callable range substitutes, keywords, starred arguments and
+states. Bound evaluation must emit only classical constants; a helper cannot
+hide quantum work behind a constant return. Globals, callable range substitutes, keywords, starred arguments and
 shadowing range/helpers are refused.
 
 One active loop is admitted, including helper expansion. Nested loop bodies,
@@ -43,7 +44,10 @@ width inference, constants/helpers, verifier/ranges/lifetimes, arithmetic/Boolea
 kernels, both schedules, value XOR, exact phase prefix-adjoint cleanup, finite
 candidate/target checks and Program/run/read remain authoritative. No Core,
 Runtime, Services, source file format, signature/export/report or serialization
-changes; native Qmod grammar is unchanged.
+changes; native Qmod grammar is unchanged. Unused classical constant definitions
+are omitted at capture completion, so compile-time loop scaffolding cannot
+inflate physical binding widths or block direct-product phase lowering.
+Quantum operations are not removed by this cleanup.
 
 Compare looped and explicitly expanded computations on complete basis domains,
 nonzero XOR outputs, phase-bearing and external-reference-entangled states,
