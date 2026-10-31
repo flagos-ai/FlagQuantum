@@ -20,7 +20,8 @@ RUN echo "${RUNNER_SHA256}  /tmp/runner.tar.gz" | sha256sum -c - \
     && (getent group 1000 || groupadd --gid 1000 fqci) \
     && (getent passwd 1000 || useradd --uid 1000 --gid 1000 --home-dir /home/fqci --shell /bin/bash fqci) \
     && chown -R 1000:1000 /opt/actions-runner /opt/ascend-ci-env /home/fqci /ascend/log \
-    && rm -rf /tmp/ascend-wheels /tmp/runner.tar.gz /tmp/wheels.sha256
+    && rm -rf /tmp/ascend-wheels /tmp/runner.tar.gz /tmp/wheels.sha256 \
+    && rm -f /tmp/debug_kernel_input.mlir
 
 ENV PATH=/opt/ascend-ci-env/bin:${PATH} \
     LD_LIBRARY_PATH=/opt/ascend-ci-env/lib/python3.11/site-packages/torch_fl/lib:${LD_LIBRARY_PATH} \
