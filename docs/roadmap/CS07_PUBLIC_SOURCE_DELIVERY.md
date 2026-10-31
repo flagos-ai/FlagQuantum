@@ -89,3 +89,9 @@ release review and any additional language/profile admission remain separate.
   dependency, vocabulary, repository language, maturity, generated documentation,
   local documentation links and ownership classification passed.
 - Both Python and native-source executable examples completed with named results.
+- Default smoke/unit run stopped at its configured three-failure limit:
+  4496 passed, 121 skipped, 3 failed. All three are the previously observed local
+  native-QFT fusion operation-count expectations in
+  tests/team/simulation/test_controlled_phase_graph.py (44 observed versus 28
+  expected). This change does not modify Simulation or those expectations; the
+  local default suite is not claimed green.
