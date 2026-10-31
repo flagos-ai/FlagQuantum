@@ -169,3 +169,26 @@ line probes preserve phase compensation, while the existing equality-line
 SWAP-witness refusal remains active. The public synthesize keyword is proposed,
 not implemented. See [phase construction](../../../docs/roadmap/SYNTH_PHASE_ORACLE_DELIVERY.md)
 for exact contracts, successful and refused profiles, and the shortest commands.
+
+## One-bit Boolean expressions
+
+The Python frontend admits and/or/not over one-bit unsigned expression values
+and numeric 0/1 constants. It validates all operands, including source that a
+host Python expression could short-circuit; source bodies are never executed.
+Multi-bit truthiness is rejected at the offending operand's source location.
+Boolean expressions compute coherent values; classical if/loops, side effects,
+bool parameters/literals and bitwise operators keep their existing refusals.
+
+Reuse the existing graph: AND is qint.multiply, NOT is qint.equal with zero,
+and OR is their De Morgan composition. No Boolean opcode, type, kernel or
+allocation scheme is added. Existing verifier/ranges/lifetimes, both workspace
+schedules, value XOR lowering and phase prefix-adjoint cleanup own the resulting
+circuit. Definition and expanded-operation budgets apply to every generated
+operation. Value and phase target boundaries are unchanged.
+
+Run python -m examples.synthesis_boolean_predicate for the public workflow.
+For changes, start with tests/team/compiler/test_construction_booleans.py, then
+run tests/integration/test_synthesis_boolean_predicates.py. The latter verifies
+complete truth tables including nonzero XOR destinations, complex amplitudes
+entangled with an external reference, full-size input pairs, both public modes,
+helpers and cleanup. See the [semantic contract](../../../docs/api-changes/FQ-SYNTH-BOOLEAN-PREDICATES-20261031.md).
