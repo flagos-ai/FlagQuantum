@@ -32,6 +32,7 @@ python -m examples.algorithms.linear_combination
 python -m examples.algorithms.logical_resources
 python -m examples.algorithms.arithmetic
 python -m examples.algorithms.synthesis_trial
+python -m examples.algorithms.synthesis_source_trial
 ```
 
 [`tests/test_algorithm_examples.py`](../../tests/test_algorithm_examples.py) runs
@@ -161,6 +162,13 @@ What they show:
   a constrained line-topology example. Finite candidate selection and exact
   local CPU statevectors are supported. There is no optimality claim; independent
   developer trials and final release review remain pending.
+
+- [`synthesis_source_trial.py`](synthesis_source_trial.py): the unreleased pinned
+  Qmod subset uses the same checked Program, exact CPU execution and named reader.
+  With no arguments, it runs coherent `x*x+1` source text. Append a local `.qmod`
+  path to run a bounded regular UTF-8 file instead. Native synthesis defaults to
+  a 512 MiB planned-state buffer ceiling; larger named reads remain explicitly
+  bounded. This does not imply general Qmod standard-library compatibility.
 
 ## These scripts use the subpackage surface
 

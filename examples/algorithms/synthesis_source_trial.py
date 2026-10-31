@@ -19,6 +19,10 @@ SOURCE = """qfunc main(output x:qnum<2>, output result:qnum) {
 
 
 def main() -> None:
+    print(
+        "premise: unreleased pinned Qmod subset on exact local CPU statevectors; "
+        "source text and regular UTF-8 files share the checked Program and named reader."
+    )
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("source", type=Path, nargs="?")
     args = parser.parse_args()
@@ -34,8 +38,8 @@ def main() -> None:
     distribution = program.probabilities(
         result, registers=tuple(widths), max_amplitudes=16_777_216
     )
-    print(dict(distribution))
-    print(program.report["resources"])
+    print("distribution:", dict(distribution))
+    print("resources:", program.report["resources"])
 
 
 if __name__ == "__main__":
