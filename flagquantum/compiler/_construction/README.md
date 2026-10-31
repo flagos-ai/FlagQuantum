@@ -160,3 +160,12 @@ shared kernel also implements Algorithms' existing greater-than comparator.
 See the [comparison contract](../../../docs/api-changes/FQ-SYNTH-COMPARISONS-20261031.md)
 and [delivery](../../../docs/roadmap/SYNTH_COMPARISON_DELIVERY.md). Qmod grammar,
 Boolean control flow and effectful quantum blocks are unchanged.
+
+Private output_mode="phase" lowering has no output binding and requires a
+one-bit return. It marks the available predicate and literally reverses the
+selected X/CX/CCX prefix, including inverse allocation events. Preparation is
+outside this U. Native logical targets are verified; conservative PHASE_BASIS
+line probes preserve phase compensation, while the existing equality-line
+SWAP-witness refusal remains active. The public synthesize keyword is proposed,
+not implemented. See [phase construction](../../../docs/roadmap/SYNTH_PHASE_ORACLE_DELIVERY.md)
+for exact contracts, successful and refused profiles, and the shortest commands.

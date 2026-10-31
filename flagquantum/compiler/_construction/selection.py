@@ -13,12 +13,13 @@ from ...core.parameters import parameter_names_in_value
 from .._hybrid.model import HybridProgram
 from .._hybrid.verifier import Diagnostic, HybridVerificationError
 from ..resource_estimation import ResourceEstimate, estimate_resources
+from .bindings import OutputMode
 from .constraints import CircuitLimits
 from .lowering import ArithmeticCandidate, Schedule, schedule_arithmetic
 from .profile import verify_construction
 from .register_lowering import RegisterCandidate, schedule_register_program
 from .register_profile import register_ports, verify_register_program
-from .target import Target, TargetError, TargetProduct, compile_target
+from .target import PHASE_BASIS, Target, TargetError, TargetProduct, compile_target
 
 
 @dataclass(frozen=True)
@@ -149,6 +150,7 @@ def select_arithmetic(
     budget: ConstructionBudget = _DEFAULT_BUDGET,
     target: Target = _DEFAULT_TARGET,
     objective: Literal["width", "depth"] = "width",
+    output_mode: OutputMode = "value",
 ) -> Selection:
     """Check both schedules; return no selected program after incomplete search.
 
@@ -164,6 +166,19 @@ def select_arithmetic(
         raise TypeError("use Constraints, ConstructionBudget and Target records")
     if objective not in {"width", "depth"}:
         raise ValueError("objective must be width or depth")
+    if output_mode not in ("value", "phase"):
+        raise ValueError("choose value or phase output mode")
+    if output_mode == "phase":
+        if target.basis is None and target.couplings:
+            raise ValueError(
+                "routed phase output requires the conservative PHASE_BASIS profile"
+            )
+        if target.basis is not None and (
+            set(target.basis) != set(PHASE_BASIS) or target.optimize
+        ):
+            raise ValueError(
+                "phase output admits only native logical targets or the unoptimized PHASE_BASIS profile; other conversions may drop global phase"
+            )
     graph = verify_construction(functions, entry=entry)
     block = graph.body.blocks[0]
     if isinstance(input_names, (str, bytes)):
@@ -195,8 +210,14 @@ def select_arithmetic(
         position += width
     width = block.operations[-1].operands[0].type.parameters[0]
     assert isinstance(width, int)
-    mapping["result"] = tuple(range(position, position + width))
-    position += width
+    if output_mode == "phase":
+        if width != 1:
+            raise ValueError("phase output requires an exactly one-bit return")
+        output: tuple[int, ...] = ()
+    else:
+        output = tuple(range(position, position + width))
+        mapping["result"] = output
+        position += width
     if preparation is not None and not isinstance(preparation, CircuitIR):
         raise TypeError("preparation must be an explicit CircuitIR")
     prepared = () if preparation is None else preparation.instructions
@@ -210,6 +231,14 @@ def select_arithmetic(
         ):
             raise ValueError(
                 "preparation must cover input/output only without observations"
+            )
+        if (
+            output_mode == "phase"
+            and target.basis is not None
+            and any(gate.name not in target.basis or gate.metadata for gate in prepared)
+        ):
+            raise ValueError(
+                "phase basis preparation requires plain native gates without control metadata"
             )
         for gate in prepared:
             if any(parameter_names_in_value(value) for value in gate.params.values()):
@@ -235,13 +264,14 @@ def select_arithmetic(
         arithmetic = schedule_arithmetic(
             functions,
             bindings,
-            mapping["result"],
+            output,
             entry=entry,
             n_qubits=budget.qubits,
             workspace=tuple(range(position, budget.qubits)),
             workspace_state="fresh_zero",
             max_operations=budget.operations,
             scheduling=strategy,
+            output_mode=output_mode,
         )
         return arithmetic
 
