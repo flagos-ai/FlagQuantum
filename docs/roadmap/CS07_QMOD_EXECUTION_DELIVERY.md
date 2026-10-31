@@ -157,6 +157,10 @@ also passed. Independent human trials and release approval remain pending.
 
 ## Remaining scope
 
+The [public source admission proposal](../api-changes/FQ-SYNTH-QMOD-ADMISSION-20261031.md)
+now makes input dispatch, resource scopes, memory defaults, errors and the
+future public acceptance concrete. It remains a proposal, not an activated API.
+
 Native source entry remains private. Before exporting one, prepare a concrete API
 proposal covering names, source context, constraints, file/text ownership,
 diagnostics and the same Program/run/read journey. No run_qmod, public qmod
