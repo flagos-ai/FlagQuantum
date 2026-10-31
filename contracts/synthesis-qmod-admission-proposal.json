@@ -1,0 +1,131 @@
+{
+  "schema": "flagquantum.synthesis_qmod_admission_proposal",
+  "version": "1.0",
+  "status": "proposed",
+  "proposal": "docs/api-changes/FQ-SYNTH-QMOD-ADMISSION-20261031.md",
+  "baseline": "2d0ab6fd12c8e54b76abbd16a37067b265642bce",
+  "implementation_authorized": false,
+  "production_implemented": false,
+  "api_owner_approval": null,
+  "release_authorized": false,
+  "human_trial_records": [],
+  "classification": "single_device_fast_path",
+  "namespace_exports": [
+    "ConstructionBudget",
+    "InputState",
+    "Program",
+    "SynthesisError",
+    "UInt",
+    "qfunc",
+    "synthesize"
+  ],
+  "new_public_types": [],
+  "current_synthesize_signature": "(function: 'Definition', *, inputs: 'Mapping[str, UInt]', input_state: 'InputState | None' = None, constants: 'Mapping[str, int] | None' = None, functions: 'Sequence[Definition]' = (), max_qubits: 'int | None' = 256, max_operations: 'int | None' = 100000, max_depth: 'int | None' = None, max_workspace: 'int | None' = None, construction_budget: 'ConstructionBudget' = ConstructionBudget(qubits=256, operations=100000, candidate_checks=2), objective: \"Literal['width', 'depth']\" = 'width', basis: 'Iterable[str] | None' = None, topology: \"Literal['line'] | None\" = None, preparation: 'CircuitIR | None' = None, preparation_map: 'Mapping[str, Sequence[int]] | None' = None) -> 'Program'",
+  "proposed_synthesize_signature": "(function: 'Definition | str | PathLike[str]', *, inputs: 'Mapping[str, UInt] | None' = None, input_state: 'InputState | None' = None, constants: 'Mapping[str, int] | None' = None, functions: 'Sequence[Definition]' = (), max_qubits: 'int | None' = 256, max_operations: 'int | None' = 100000, max_depth: 'int | None' = None, max_workspace: 'int | None' = None, construction_budget: 'ConstructionBudget' = ConstructionBudget(qubits=256, operations=100000, candidate_checks=2), objective: \"Literal['width', 'depth']\" = 'width', basis: 'Iterable[str] | None' = None, topology: \"Literal['line'] | None\" = None, preparation: 'CircuitIR | None' = None, preparation_map: 'Mapping[str, Sequence[int]] | None' = None, source_format: \"Literal['qmod'] | None\" = None, source_name: 'str | None' = None, source_version: 'str | None' = None, memory_limit_bytes: 'int | None' = None) -> 'Program'",
+  "unchanged_run_signature": "(program_or_plan: 'Circuit | CircuitIR | ExecutionPlan | IsingBraidProgram | LindbladPlan | SynthesisProgram', *, options: 'ExecutionOptions | None' = None, outputs: 'OutputRequest | Sequence[OutputRequest] | None' = None, noise_model: 'NoiseModel | None' = None, compiler: 'str | None' = None, target: 'str | None' = None, target_qubits: 'Sequence[int] | None' = None, shots: 'int | None' = None, name: 'str | None' = None) -> 'ExecutionResult'",
+  "unchanged_probabilities_signature": "(self, result: 'ExecutionResult', *, registers: 'Sequence[str]' = ('result',), max_bits: 'int' = 16, max_keys: 'int' = 65536, max_amplitudes: 'int' = 4194304, threshold: 'float' = 1e-14) -> 'Distribution'",
+  "type_owner": "flagquantum.services.synthesis.Program",
+  "text_requires_source_format": "qmod",
+  "string_is_never_filename": true,
+  "file_input": "os.PathLike[str]",
+  "file_suffix": ".qmod",
+  "file_source_format": [
+    null,
+    "qmod"
+  ],
+  "text_default_name": "<qmod>",
+  "file_source_name_override": false,
+  "default_source_version": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "source_version_is_authentication": false,
+  "source_rejects_non_none": [
+    "inputs",
+    "input_state",
+    "constants",
+    "preparation",
+    "preparation_map"
+  ],
+  "source_functions_must_be_empty": true,
+  "python_inputs_required": true,
+  "memory": {
+    "python_none": null,
+    "source_none": 536870912,
+    "explicit": "positive_plain_int",
+    "scope": "planned_state_buffer",
+    "failure": "flagquantum.errors.PlanningError"
+  },
+  "readout": {
+    "registers_default": [
+      "result"
+    ],
+    "max_bits": 16,
+    "max_keys": 65536,
+    "max_amplitudes": 4194304,
+    "threshold": 1e-14,
+    "source_outputs_never_renamed": true
+  },
+  "report": {
+    "common_fields": [
+      "resources",
+      "source_resources",
+      "workspace_qubits",
+      "candidate",
+      "function",
+      "source_locations",
+      "scope",
+      "register_widths",
+      "source_format",
+      "memory_limit_bytes",
+      "memory_limit_origin"
+    ],
+    "whole_construction_cost": "source_resources",
+    "checked_executable_cost": "resources",
+    "python_existing_keys_preserved": true,
+    "source_only_fields": [
+      "source_name",
+      "source_version"
+    ],
+    "native_public_excludes": [
+      "arithmetic_resources",
+      "output_widths"
+    ],
+    "arithmetic_property_public": false,
+    "new_cost_alias": false,
+    "memory_limit_origin_values": [
+      "profile_default",
+      "explicit"
+    ]
+  },
+  "source_error": {
+    "type": "flagquantum.ecosystem.InteropConversionError",
+    "existing_report": true,
+    "adapter": "qmod",
+    "direction": "import",
+    "framework_version": null,
+    "coordinates": "filename:line:column in issue message",
+    "codes": "existing Diagnostic.code retained",
+    "new_schema": false
+  },
+  "file_max_bytes": 262144,
+  "file_max_read_bytes": 262145,
+  "new_executor": false,
+  "new_source_wrapper": false,
+  "new_registry": false,
+  "serialization_change": false,
+  "public_activation_requires": [
+    "explicit_api_owner_review",
+    "coordinated_contract_and_typing_implementation",
+    "public_file_and_text_journeys",
+    "three_original_size_public_acceptance",
+    "fresh_head_ci"
+  ],
+  "release_requires": [
+    "two_independent_developer_trial_records",
+    "explicit_release_review"
+  ],
+  "proposal_only_tests": "tests/api_contract/test_synthesis_qmod_admission_proposal.py",
+  "typing_overloads": [
+    "definition_requires_inputs",
+    "text_requires_qmod_format",
+    "path_infers_qmod_format"
+  ]
+}

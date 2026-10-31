@@ -52,5 +52,8 @@ and [contract](../../contracts/synthesis-program-run-v1-candidate.json).
 
 The [independent developer trial guide](../../docs/roadmap/SYNTH_DEVELOPER_TRIALS.md)
 provides tasks and an unfilled record template for the merged Python entry.
-The [CS07 source admission](../../docs/roadmap/CS07_SOURCE_ADMISSION.md) separately
-tracks original-file integrity and the still-unimplemented external frontend.
+The [CS07 checked source evidence](../../docs/roadmap/CS07_QMOD_EXECUTION_DELIVERY.md)
+records private adaptation and original-size CPU verification for three retained
+Qmod files. A [public source proposal](../../docs/api-changes/FQ-SYNTH-QMOD-ADMISSION-20261031.md)
+specifies the additional input journey for review; no public file/text source
+entry is implemented by that proposal.
