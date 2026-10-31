@@ -256,3 +256,47 @@ Qmod phase, GPU/QPU/gradient admission and full-corpus compatibility remain out
 of scope. See [public delivery](../../docs/roadmap/SYNTH_PUBLIC_PHASE_DELIVERY.md)
 and the [historical private evidence](../../docs/roadmap/SYNTH_PHASE_ORACLE_DELIVERY.md).
 Independent developer trials remain 0/2 and release authorization is false.
+
+## Controlled predicate phase without a control-block API
+
+A one-bit enable value can mask a predicate through existing expression syntax:
+
+```python
+def marked(enable: int, x: int, y: int) -> int:
+    return enable and (x < y)
+
+program = synth.synthesize(
+    marked,
+    inputs={"enable": synth.UInt(1), "x": synth.UInt(2), "y": synth.UInt(2)},
+    input_state=synth.InputState.uniform(),
+    output_mode="phase",
+    max_qubits=16,
+)
+result = fq.run(program)
+print(dict(program.probabilities(result, registers=("enable", "x", "y"))))
+```
+
+The control-zero branch keeps its exact amplitude; the control-one branch gains
+(-1)**(x<y). The control can be in a superposition or entangled with data. int
+reflects Python's operand-valued and on numeric 0/1 inputs; phase synthesis
+still verifies a one-bit return. There is no classical branch or input measurement.
+
+The phase lowerer recognizes a terminal product of two one-bit quantum values,
+marks their live encodings with CZ (Z for a repeated encoding), and inverts the
+same actual compute prefix. It omits the product result and scratch. This
+optimization improves already admitted expressions; other phase expressions and
+value XOR keep their existing lowering. Earlier predicate work can still dominate
+workspace, so a lower peak is not guaranteed for every function.
+
+For `return enable and flag` with two UInt(1) inputs, uniform phase synthesis
+fits max_qubits=2, max_workspace=0 and max_operations=3, including two Hadamards
+and one CZ. The raw general prefix baseline uses four allocated qubits and
+seven gates; the direct raw marker uses two and one. Source and actual complete
+costs are distinct. No hardware timing or global optimality claim follows.
+
+Run python -m examples.synthesis_controlled_predicate for both examples.
+Uniform named probabilities alone cannot certify controlled phase; complete
+complex-state and interference acceptance does. Public phase remains logical
+CPU only. Generic unitary control, within-apply, arbitrary angles and routed
+phase remain separate work. See the
+[controlled-predicate delivery](../../docs/roadmap/SYNTH_CONTROLLED_PREDICATE_DELIVERY.md).

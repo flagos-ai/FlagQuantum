@@ -19,15 +19,15 @@ from flagquantum.core.ir import CircuitIR, Instruction
 pytestmark = pytest.mark.unit
 
 
-def mask(enable: int, flag: int) -> bool:
+def mask(enable: int, flag: int) -> int:
     return enable and flag
 
 
-def alias(x: int) -> bool:
+def alias(x: int) -> int:
     return x and x
 
 
-def controlled(enable: int, x: int, y: int) -> bool:
+def controlled(enable: int, x: int, y: int) -> int:
     return enable and (x < y)
 
 

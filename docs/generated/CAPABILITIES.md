@@ -33,8 +33,9 @@ This catalog is generated from the machine-validated
 | Write unsigned arithmetic without designing gates or workspace | Constrained coherent integer synthesis | Development evidence | [Run example](../../examples/algorithms/synthesis_trial.py) |
 | Compare retained and recomputed workspace under a qubit budget | Constrained coherent integer synthesis | Development evidence | [Run example](../../examples/algorithms/synthesis_trial.py) |
 | Run a checked synthesis Program and read named probabilities | Constrained coherent integer synthesis | Development evidence | [Run example](../../examples/algorithms/synthesis_trial.py) |
-| Inspect exact predicate phase construction and clean workspace | Coherent predicate phase synthesis | Development evidence | [Run example](../../examples/synthesis_phase_oracle.py) |
-| Mark a high-level predicate without writing gates or uncomputation | Coherent predicate phase synthesis | Development evidence | [Run example](../../examples/synthesis_phase_oracle.py) |
+| Inspect exact predicate phase construction and clean workspace | Coherent predicate phase synthesis | Development evidence | [Run example](../../examples/synthesis_controlled_predicate.py) |
+| Mark a high-level predicate without writing gates or uncomputation | Coherent predicate phase synthesis | Development evidence | [Run example](../../examples/synthesis_controlled_predicate.py) |
+| Fit a coherent one-bit control mask under a workspace ceiling | Coherent predicate phase synthesis | Development evidence | [Run example](../../examples/synthesis_controlled_predicate.py) |
 | Run bounded local Qmod files or explicit source text | Bounded native Qmod source and checked execution | Development evidence | [Run example](../../examples/algorithms/synthesis_source_trial.py) |
 | Distinguish parsed, lowered and actually verified original-source evidence | Bounded native Qmod source and checked execution | Development evidence | [Run example](../../examples/algorithms/synthesis_source_trial.py) |
 | Inspect a circuit diagram in a terminal | Circuit drawing | Experimental | [Read guide](../../flagquantum/drawer/README.md) |
@@ -463,9 +464,9 @@ Construct an exact marked sign from a verified one-bit predicate through the sha
 - **Hardware:** `cpu`
 - **Gradient support:** `not_applicable`
 - **Distribution semantics:** `single_device_fast_path`
-- **Start:** [quick example](../../examples/synthesis_phase_oracle.py)
+- **Start:** [quick example](../../examples/synthesis_controlled_predicate.py)
 - **Documentation:** [guide](../../docs/roadmap/SYNTH_PUBLIC_PHASE_DELIVERY.md)
-- **Known boundary:** Unreleased Python one-bit predicates admit output_mode=phase through the existing public Program/run/read flow on native logical CPU only, with no result flag. Wider returns, Qmod phase and explicit basis/topology are refused before source work where knowable. Exact phase and clean workspace are verified; controlled-marker conjugation remains private evidence only. Conservative line polynomial probes pass, but equality line is explicitly refused by the retained routed-SWAP witness guard; no general line, projective conversion or generic controlled-Circuit legalization claim. Zero workspace is a declared precondition, not an external-state proof. No Qmod phase, arbitrary angles, within-apply DSL, all-corpus or release admission. Independent trials remain 0/2.
+- **Known boundary:** Unreleased Python one-bit predicates admit output_mode=phase through the existing public Program/run/read flow on native logical CPU only, with no result flag. Wider returns, Qmod phase and explicit basis/topology are refused before source work where knowable. Exact phase and clean workspace are verified; controlled one-bit predicates use the existing expression syntax with direct terminal-product phase markers; generic controlled-block legalization remains outside admission. Conservative line polynomial probes pass, but equality line is explicitly refused by the retained routed-SWAP witness guard; no general line, projective conversion or generic controlled-Circuit legalization claim. Zero workspace is a declared precondition, not an external-state proof. No Qmod phase, arbitrary angles, within-apply DSL, all-corpus or release admission. Independent trials remain 0/2.
 
 ### Circuit drawing
 
