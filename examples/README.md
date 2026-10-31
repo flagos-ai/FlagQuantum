@@ -895,3 +895,11 @@ and actual costs, with no private imports, gates, wire indices or decoding.
 Each input pair has probability 1/16; phase/workspace correctness is verified
 separately by complete amplitude and interference tests. Logical CPU only;
 native Qmod phase and explicit basis/topology are refused.
+
+[Composite predicate synthesis](synthesis_boolean_predicate.py): run
+`python -m examples.synthesis_boolean_predicate` to compute
+(x<2 and y==1) or not(x==y) in value and phase modes through the public Program.
+Named probabilities and actual costs require no gates, physical wires or
+bitstring decoding. Uniform probabilities alone do not certify phase; complete
+complex-state and interference acceptance supplies that evidence. Boolean
+operands are one-bit values; source is fully validated without host execution.

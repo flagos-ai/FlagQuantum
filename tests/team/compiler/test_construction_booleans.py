@@ -33,7 +33,9 @@ pytestmark = pytest.mark.unit
         "x or (not 1)",
     ],
 )
-def test_composition_is_one_bit_with_existing_opcodes_and_source_locations(expression):
+def test_composition_is_one_bit_with_existing_opcodes_and_source_locations(
+    expression: str,
+) -> None:
     function = _cell(f"def main(x,y,z):\n    return {expression}\n")
     graph = capture(function, {"x": 1, "y": 1, "z": 1})
     assert verify_construction((graph,), entry=graph.name) is graph
@@ -63,8 +65,8 @@ def test_composition_is_one_bit_with_existing_opcodes_and_source_locations(expre
     ],
 )
 def test_classical_subexpressions_fold_exact_values_without_new_truthiness(
-    expression, number
-):
+    expression: str, number: int
+) -> None:
     graph = capture(_cell(f"def main(x):\n    return x + ({expression})\n"), {"x": 1})
     constant = graph.body.blocks[0].operations[-2].operands[1]
     definitions = {
@@ -88,7 +90,9 @@ def test_classical_subexpressions_fold_exact_values_without_new_truthiness(
         "(x == 0) or (x+1)",
     ],
 )
-def test_multibit_and_nonbit_constants_refuse_with_operand_source_location(expression):
+def test_multibit_and_nonbit_constants_refuse_with_operand_source_location(
+    expression: str,
+) -> None:
     with pytest.raises(
         HybridVerificationError, match="construction.python.boolean"
     ) as error:
@@ -108,12 +112,14 @@ def test_multibit_and_nonbit_constants_refuse_with_operand_source_location(expre
         "0 and (x < x < 2)",
     ],
 )
-def test_constants_do_not_hide_unsupported_source_by_host_short_circuit(expression):
+def test_constants_do_not_hide_unsupported_source_by_host_short_circuit(
+    expression: str,
+) -> None:
     with pytest.raises(HybridVerificationError, match="construction.python"):
         capture(_cell(f"def main(x):\n    return {expression}\n"), {"x": 1})
 
 
-def test_helper_inlining_aliases_and_arithmetic_use_the_same_verified_graph():
+def test_helper_inlining_aliases_and_arithmetic_use_the_same_verified_graph() -> None:
     def helper(x: int, y: int) -> bool:
         return x or not y
 
@@ -136,12 +142,12 @@ def test_helper_inlining_aliases_and_arithmetic_use_the_same_verified_graph():
 @pytest.mark.parametrize(
     "expression", ["~x", "x & y", "x | y", "x ^ y", "x if y else 0"]
 )
-def test_unadmitted_boolean_adjacent_syntax_is_still_refused(expression):
+def test_unadmitted_boolean_adjacent_syntax_is_still_refused(expression: str) -> None:
     with pytest.raises(HybridVerificationError, match="construction.python"):
         capture(_cell(f"def main(x,y):\n    return {expression}\n"), {"x": 1, "y": 1})
 
 
-def test_boolean_expansion_and_nesting_are_bounded_before_lowering():
+def test_boolean_expansion_and_nesting_are_bounded_before_lowering() -> None:
     for expression in [" or ".join(["x"] * 900), "not " * 66 + "x"]:
         with pytest.raises(HybridVerificationError, match="construction.python.budget"):
             capture(_cell(f"def main(x):\n    return {expression}\n"), {"x": 1})

@@ -79,7 +79,8 @@ computes a flag coherently alongside x/y; it does not measure a condition or
 enter Python control flow. Optional bool return annotations require a one-bit
 result; parameters still use int/UInt declarations. Explicitly registered helpers
 and optional qfunc use the same profile. Existing arithmetic can reuse a flag's
-0/1 encoding. Chained comparisons, !=/<=/>/>=, Boolean and/or/not, bool parameters,
+0/1 encoding. One-bit conditions also compose with and/or/not; see below.
+Chained comparisons, !=/<=/>/>=, bitwise operators, bool parameters,
 True/False literals and Python if/loops remain unsupported. Native Qmod syntax
 has not expanded.
 
@@ -91,6 +92,51 @@ profile's actual costs, not an optimality or hardware claim. The alternative
 retained schedule uses 22 qubits and 17 workspace qubits. See the
 [comparison delivery](../../docs/roadmap/SYNTH_COMPARISON_DELIVERY.md) for exact
 acceptance, raw versus transformed costs and limits.
+
+## Composite conditions
+
+Write a pure one-bit computation using normal Python Boolean syntax:
+
+```python
+import flagquantum as fq
+from flagquantum import synth
+
+
+def marked(x: int, y: int) -> bool:
+    return (x < 2 and y == 1) or not (x == y)
+
+
+program = synth.synthesize(
+    marked,
+    inputs={"x": synth.UInt(2), "y": synth.UInt(2)},
+    input_state=synth.InputState.uniform(),
+    output_mode="phase",
+    max_qubits=24,
+    memory_limit_bytes=64 * 1024**2,
+)
+result = fq.run(program)
+print(dict(program.probabilities(result, registers=("x", "y"))))
+print(program.report["resources"])
+```
+
+and/or/not accept comparison flags, UInt(1) inputs, one-bit helpers and numeric
+0/1 constants. Operand order, nesting and Python precedence are respected on
+that domain; multi-bit integer truthiness is rejected. Source is validated in
+full, including an operand a host interpreter could short-circuit. A constant
+cannot hide an unsupported call or side effect. All accepted expressions are
+pure coherent computations; the compiler does not execute Python bodies.
+
+Value mode returns the same expression as a 0/1 result flag; phase mode marks
+each amplitude by (-1)**marked(x,y). Phase still requires logical CPU targets.
+Every input pair in this example has probability 1/16; complete amplitude and
+interference tests verify the phase. Temporary predicate values and workspace
+are cleaned automatically through the existing schedules. No Boolean register
+type, new executor, manual gates, physical indices or decoding is needed.
+
+Run python -m examples.synthesis_boolean_predicate for both modes. See the
+[Boolean delivery](../../docs/roadmap/SYNTH_BOOLEAN_PREDICATES_DELIVERY.md) for
+measured costs, exact evidence and refusals. Existing unsupported branching,
+measurements, native grammar and independent trial/release gates remain in force.
 
 ## Local native source
 

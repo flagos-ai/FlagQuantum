@@ -17,6 +17,12 @@ Benchmark claims require audited artifacts and are not inferred from this file.
 
 ## Unreleased
 
+- Compose one-bit Python synthesis predicates with and/or/not. Reuse existing
+  multiplication/equality kernels, both workspace schedules and value/phase
+  Program execution. Multi-bit truthiness and unsupported source hidden behind
+  a constant are refused. No Boolean type, opcode, executor, signature or native
+  Qmod grammar is added; existing target and release boundaries remain in force.
+
 - Add output_mode="phase" to the unreleased synthesize candidate. Python one-bit
   predicates mark amplitudes by (-1)**predicate and clean workspace through the
   existing Compiler schedules and Program/run flow; value remains the default.
