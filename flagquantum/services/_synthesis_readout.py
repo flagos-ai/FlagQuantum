@@ -83,7 +83,8 @@ def probabilities(
         or any(name not in mapping for name in registers)
     ):
         raise ValueError(
-            "select distinct declared register names, such as ('x', 'result')"
+            f"select distinct declared register names; available names are {tuple(mapping)!r}; "
+            f"for example registers={tuple(mapping)[:1]!r}"
         )
     resources = checked.verify_result(result)
     state = result.state

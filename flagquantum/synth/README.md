@@ -53,7 +53,64 @@ and [contract](../../contracts/synthesis-program-run-v1-candidate.json).
 The [independent developer trial guide](../../docs/roadmap/SYNTH_DEVELOPER_TRIALS.md)
 provides tasks and an unfilled record template for the merged Python entry.
 The [CS07 checked source evidence](../../docs/roadmap/CS07_QMOD_EXECUTION_DELIVERY.md)
-records private adaptation and original-size CPU verification for three retained
-Qmod files. A [public source proposal](../../docs/api-changes/FQ-SYNTH-QMOD-ADMISSION-20261031.md)
-specifies the additional input journey for review; no public file/text source
-entry is implemented by that proposal.
+retains the original private-adaptation record. The
+[public source delivery](../../docs/roadmap/CS07_PUBLIC_SOURCE_DELIVERY.md)
+implements the separately reviewed file/text entry over the same Program.
+
+## Local native source
+
+```python
+from pathlib import Path
+import flagquantum as fq
+from flagquantum import synth
+
+program = synth.synthesize(Path("example.qmod"), max_qubits=24)
+result = fq.run(program)
+print(dict(program.probabilities(result, registers=("x", "result"))))
+```
+
+Or use explicit source text, including in a notebook:
+
+```python
+program = synth.synthesize(
+    """qfunc main(output x:qnum<2>, output result:qnum) {
+        allocate(x); hadamard_transform(x); result=x*x+1;
+    }""",
+    source_format="qmod",
+    source_name="polynomial.qmod",
+    max_qubits=24,
+)
+result = fq.run(program)
+print(dict(program.probabilities(result, registers=("x", "result"))))
+```
+
+A string is always source text, never a filename. Files must be regular UTF-8
+.qmod files, at most 262144 bytes. Native input owns initialization, so inputs,
+input_state, constants, preparation and preparation_map must remain None and
+functions must be empty. The supported subset is one main, fresh unsigned scalar
+outputs, bounded arithmetic and the admitted preparation operations; general
+standard-library calls, arrays/views, Input/Const and free/drop remain refused.
+See the [adapter profile](../ecosystem/_qmod/README.md) for exact syntax.
+
+Source context defaults to pinned revision
+2bfd835e73b6882fcc515a725098b04766c238e7. It declares semantics, not authenticity.
+An unsupported explicit source_version fails before file reading. Parsing issues
+raise flagquantum.ecosystem.InteropConversionError with structured diagnostics
+and source locations; local I/O errors retain their normal exception types.
+
+Native synthesis defaults to a 512 MiB planned-state buffer limit. Override with
+memory_limit_bytes explicitly; this is not a process peak-memory guarantee.
+Exceeding the limit raises flagquantum.errors.PlanningError before execution.
+Python's existing default remains unchanged. Named reading retains its own
+max_amplitudes budget, independently of the synthesis memory ceiling.
+
+program.report["register_widths"] lists actual names; the reader default is still
+"result". Select registers explicitly if a source uses other names. Both input
+forms report whole source_resources and actual resources, source locations,
+source_format and effective memory limit/origin. Native reports also retain
+source_name/source_version and omit the Python arithmetic_resources field.
+
+Run python -m examples.algorithms.synthesis_source_trial for the complete text
+workflow, or append a local .qmod path. Three unchanged originals have passed
+both public forms at 1/23/24 qubits. This is development evidence; independent
+trials remain 0/2 and release authorization remains false.

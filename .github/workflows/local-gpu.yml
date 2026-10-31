@@ -223,7 +223,9 @@ jobs:
           CUDA_VISIBLE_DEVICES=0,1 python tools/run_with_watchdog.py --phase semantic-tests --stall-seconds 180 --timeout-seconds 600 --diagnostics hardware-run/watchdog-semantics -- python -m pytest tests/distributed/test_mps_reverse.py::test_explicit_rank_owned_mps_reverse_nccl -q -rs 2>&1 | tee hardware-run/two-gpu-torch.log
           CUDA_VISIBLE_DEVICES=0,1 python tools/run_with_watchdog.py --phase mps-backward --stall-seconds 240 --timeout-seconds 900 --diagnostics hardware-run/watchdog-mps-backward -- python -m pytest tests/distributed/test_mps_accelerator_backward_evidence.py -q -rs -s 2>&1 | tee hardware-run/two-gpu-jax.log
           CUDA_VISIBLE_DEVICES=0,1 python tools/run_with_watchdog.py --phase mps-forward --stall-seconds 180 --timeout-seconds 600 --diagnostics hardware-run/watchdog-mps-forward -- python -m pytest tests/distributed/test_mps_forward.py::test_rank_owned_mps_forward_nccl -q -rs 2>&1 | tee hardware-run/two-gpu-mps-forward.log
-          CUDA_VISIBLE_DEVICES=0,1 python tools/run_with_watchdog.py --phase distributed-benchmark --stall-seconds 300 --timeout-seconds 1200 --diagnostics hardware-run/watchdog-distributed-benchmark -- torchrun --standalone --nproc-per-node=2 benchmarks/continuous_performance.py --mode distributed-shard --warmup 10 --repetitions 30 --inner-loops 50 --output hardware-run/two-gpu-performance.json
+          # Batch enough unchanged iterations to average host scheduling jitter;
+          # the former 50-iteration samples lasted only about 6-19 ms.
+          CUDA_VISIBLE_DEVICES=0,1 python tools/run_with_watchdog.py --phase distributed-benchmark --stall-seconds 300 --timeout-seconds 1200 --diagnostics hardware-run/watchdog-distributed-benchmark -- torchrun --standalone --nproc-per-node=2 benchmarks/continuous_performance.py --mode distributed-shard --warmup 10 --repetitions 30 --inner-loops 2000 --output hardware-run/two-gpu-performance.json
           python tools/evaluate_performance_artifact.py --write hardware-run/two-gpu-performance.json
       - if: always()
         run: >-

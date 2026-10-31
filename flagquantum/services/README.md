@@ -5,14 +5,20 @@ Compiler's owned fresh-register model after external source adaptation. It uses
 the same `synthesis._complete` plan/check/Program factory as Python arithmetic,
 then the existing `fq.run(program)` and bounded named reader. It performs no
 execution or source parsing, and requires an explicit state-memory ceiling.
-It does not add a public source loader or a second Program or executor.
+The public synthesize entry dispatches local PathLike .qmod files and explicitly
+marked source text through Ecosystem acquisition into this workflow. Both
+profiles share one Program and executor. Native inputs default to a 512 MiB
+planned-state buffer ceiling and reject Python preparation arguments.
 Start with `tests/integration/test_synthesis_register_workflow.py`; run the
 larger original-file acceptance separately with
 `python -m pytest tests/integration/test_synthesis_qmod_originals.py -q -s`.
 That test retains the original 23/24-qubit dimensions, preflights its bounded
 reference buffers, and raises the existing amplitude-read limit explicitly.
 See the [CS07-D delivery record](../../docs/roadmap/CS07_QMOD_EXECUTION_DELIVERY.md)
-for precise support and remaining public-entry/release boundaries.
+for historical support; the [public source delivery](../../docs/roadmap/CS07_PUBLIC_SOURCE_DELIVERY.md)
+records the current entry, common report and remaining release boundaries.
+The common report uses register_widths, source_resources and resources. Native
+whole-construction costs are not labeled arithmetic_resources.
 
 Services contains small, reusable application workflows that add behavior beyond
 one stable FlagQuantum API call, such as capability aggregation, execution

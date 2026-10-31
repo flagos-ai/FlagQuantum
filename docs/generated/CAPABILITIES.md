@@ -33,8 +33,8 @@ This catalog is generated from the machine-validated
 | Write unsigned arithmetic without designing gates or workspace | Constrained coherent integer synthesis | Development evidence | [Run example](../../examples/algorithms/synthesis_trial.py) |
 | Compare retained and recomputed workspace under a qubit budget | Constrained coherent integer synthesis | Development evidence | [Run example](../../examples/algorithms/synthesis_trial.py) |
 | Run a checked synthesis Program and read named probabilities | Constrained coherent integer synthesis | Development evidence | [Run example](../../examples/algorithms/synthesis_trial.py) |
-| Inspect native-source adaptation into the shared construction model | Private native Qmod adaptation and checked execution | Development evidence | [Run example](../../tests/team/ecosystem/test_qmod_parser.py) |
-| Distinguish parsed, lowered and actually verified original-source evidence | Private native Qmod adaptation and checked execution | Development evidence | [Run example](../../tests/team/ecosystem/test_qmod_parser.py) |
+| Run bounded local Qmod files or explicit source text | Bounded native Qmod source and checked execution | Development evidence | [Run example](../../examples/algorithms/synthesis_source_trial.py) |
+| Distinguish parsed, lowered and actually verified original-source evidence | Bounded native Qmod source and checked execution | Development evidence | [Run example](../../examples/algorithms/synthesis_source_trial.py) |
 | Inspect a circuit diagram in a terminal | Circuit drawing | Experimental | [Read guide](../../flagquantum/drawer/README.md) |
 | Render a figure for a document or notebook | Circuit drawing | Experimental | [Read guide](../../flagquantum/drawer/README.md) |
 | Check a program's wiring and gate order by eye | Circuit drawing | Experimental | [Read guide](../../flagquantum/drawer/README.md) |
@@ -449,7 +449,7 @@ Construct a checked reversible arithmetic circuit from a bounded Python integer 
 - **Distribution semantics:** `single_device_fast_path`
 - **Start:** [quick example](../../examples/algorithms/synthesis_trial.py)
 - **Documentation:** [guide](../../flagquantum/synth/README.md)
-- **Known boundary:** Unreleased unsigned-integer CPU profile with bounded Python syntax, known input preparations and finite checked candidates; no arbitrary Python, public Qmod input, Program/.fq serialization, noise, measurements, directed or allocated-layout admission, or optimality guarantee. A Program executes its checked plan and refuses execution overrides; changed constraints require resynthesis. Two independent developer trials and release review remain pending.
+- **Known boundary:** Unreleased unsigned-integer CPU profile with bounded Python syntax, known input preparations and finite checked candidates; no arbitrary Python, general Qmod, Program/.fq serialization, noise, measurements, directed or allocated-layout admission, or optimality guarantee. A Program executes its checked plan and refuses execution overrides; changed constraints require resynthesis. Two independent developer trials and release review remain pending.
 
 ### Circuit drawing
 
@@ -1580,19 +1580,19 @@ Run owner-sharded statevector, MPS and tensor-network training through pure Flag
 
 ## Deployment and extension
 
-### Private native Qmod adaptation and checked execution
+### Bounded native Qmod source and checked execution
 
 Translate a bounded pinned native Qmod subset into the verified Compiler construction profile and the existing checked Program, preserving source diagnostics, initialization, numeric significance and named CPU results.
 
 - **Maturity:** Development evidence
-- **Public API:** Not exposed; internal development evidence only
+- **Public API:** `flagquantum.synth.synthesize`
 - **Runtime modes:** `statevector`
 - **Hardware:** `cpu`
 - **Gradient support:** `not_applicable`
 - **Distribution semantics:** `single_device_fast_path`
-- **Start:** [quick example](../../tests/team/ecosystem/test_qmod_parser.py)
+- **Start:** [quick example](../../examples/algorithms/synthesis_source_trial.py)
 - **Documentation:** [guide](../../flagquantum/ecosystem/_qmod/README.md)
-- **Known boundary:** Private pinned-source subset only, with one main and fresh unsigned scalar outputs; no public source execution entry, general standard library, arrays/views, Input/Const, free/drop or .fq support. Original corpus: 3/3 parsed, lowered, executed and full-state verified at unchanged 1/23/24-qubit sizes on exact CPU complex128. Services reuses the same checked Program and named reader with an explicit state-memory ceiling; this is not a process peak-memory guarantee. Synthetic probes do not increase original counts. Source-version context is declared, not authenticated; retained manifests separately check original bytes. No all-corpus, release or hardware claim.
+- **Known boundary:** Unreleased pinned-source subset only, with one main and fresh unsigned scalar outputs; no general standard library, arrays/views, Input/Const, free/drop or .fq support. Original corpus: 3/3 parsed, lowered, executed and full-state verified at unchanged 1/23/24-qubit sizes on exact CPU complex128. Both file and text inputs passed these three originals. Services reuses the same checked Program and named reader with a default 512 MiB planned-state buffer ceiling; this is not a process peak-memory guarantee. Synthetic probes do not increase original counts. Source-version context is declared, not authenticated; retained manifests separately check original bytes. No all-corpus, release or hardware claim.
 
 ### Circuit packaging and cloud deployment
 

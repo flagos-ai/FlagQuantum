@@ -17,6 +17,7 @@ from __future__ import annotations
 import argparse
 import dataclasses
 import difflib
+import hashlib
 import inspect
 import json
 import re
@@ -746,6 +747,75 @@ def _validate_authorized_synthesis_run(contract: dict[str, Any]) -> list[str]:
     ):
         if contract.get(key) != str(inspect.signature(value, eval_str=False)):
             errors.append(f"synthesis {key} differs from its candidate contract")
+    source_contract = json.loads(
+        (ROOT / "contracts/synthesis-qmod-v1-candidate.json").read_text()
+    )
+    errors.extend(_validate_authorized_synthesis_qmod(source_contract))
+    if contract.get("synthesize_signature") != source_contract.get(
+        "synthesize_signature"
+    ):
+        errors.append("synthesis source signature differs from its reviewed admission")
+    return errors
+
+
+def _validate_authorized_synthesis_qmod(contract: Any) -> list[str]:
+    """Guard the reviewed source addition without changing historical proposals."""
+    import flagquantum as fq
+    from flagquantum import synth
+
+    path = ROOT / "contracts/synthesis-qmod-admission-proposal.json"
+    reviewed_hash = "52200d453dc39f215c52c2f391b160e409a594fd832834e23c44a2d1b2455229"
+    if hashlib.sha256(path.read_bytes()).hexdigest() != reviewed_hash:
+        return ["reviewed Qmod source proposal changed"]
+    proposal = json.loads(path.read_text())
+    expected = {
+        "schema": "flagquantum.synthesis_qmod_admission",
+        "version": "1.0",
+        "status": "implemented_candidate_pending_trials",
+        "proposal": "docs/api-changes/FQ-SYNTH-QMOD-ADMISSION-20261031.md",
+        "authorization_record": "docs/api-changes/FQ-SYNTH-QMOD-IMPLEMENTATION-20261031.md",
+        "authorization_source": {
+            "kind": "explicit_human_user_instruction",
+            "request": "Merge PR #969 and proceed to the next step",
+            "proposal_merge": "c994934998eb3a6dbe983e008c8ad7fe8875bfca",
+        },
+        "proposal_contract_sha256": reviewed_hash,
+        "implementation_authorized": True,
+        "production_implemented": True,
+        "release_authorized": False,
+        "human_trial_records": [],
+        "synthesize_signature": proposal["proposed_synthesize_signature"],
+        "namespace_exports": proposal["namespace_exports"],
+        "common_report_fields": proposal["report"]["common_fields"],
+        "native_public_excludes": proposal["report"]["native_public_excludes"],
+        "source_memory_default": proposal["memory"]["source_none"],
+        "source_version": proposal["default_source_version"],
+        "source_error_type": proposal["source_error"]["type"],
+        "new_public_types": [],
+        "serialization_change": False,
+        "new_executor": False,
+    }
+    errors = []
+    if not isinstance(contract, dict) or contract != expected:
+        errors.append("Qmod source admission differs from reviewed scope")
+    if not isinstance(contract, dict):
+        return errors
+    if any(
+        type(contract.get(key)) is not bool
+        for key, value in expected.items()
+        if type(value) is bool
+    ):
+        errors.append("Qmod admission flags must be explicit booleans")
+    if not (ROOT / expected["authorization_record"]).is_file():
+        errors.append("Qmod source implementation authorization is missing")
+    if str(inspect.signature(synth.synthesize)) != expected["synthesize_signature"]:
+        errors.append("Qmod source signature exceeds approved admission")
+    if (
+        str(inspect.signature(fq.run)) != proposal["unchanged_run_signature"]
+        or str(inspect.signature(synth.Program.probabilities))
+        != proposal["unchanged_probabilities_signature"]
+    ):
+        errors.append("Qmod admission must preserve run/read signatures")
     return errors
 
 

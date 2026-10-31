@@ -1,7 +1,6 @@
 """Private fresh-register producer for the shared checked synthesis workflow."""
 
 from collections.abc import Sequence
-from types import MappingProxyType
 from typing import Literal
 
 from ..compiler._construction.selection import (
@@ -28,6 +27,10 @@ def synthesize_registers(
     target: Target = _TARGET,
     objective: Literal["width", "depth"] = "width",
     memory_limit_bytes: int,
+    memory_limit_origin: Literal["profile_default", "explicit"] = "explicit",
+    source_format: Literal["register", "qmod"] = "register",
+    source_name: str | None = None,
+    source_version: str | None = None,
 ) -> Program:
     """Plan verified owned records; require an explicit Runtime memory ceiling.
 
@@ -48,25 +51,27 @@ def synthesize_registers(
         target=target,
         objective=objective,
     )
+    report: dict[str, object] = {
+        "function": program.name,
+        "source_identities": (
+            program.semantic_identity,
+            *(f.semantic_identity for f in sorted(functions, key=lambda f: f.name)),
+        ),
+        "source_locations": tuple(
+            dict.fromkeys(
+                op.location
+                for op in program.body.blocks[0].operations
+                if op.location is not None
+            )
+        ),
+        "scope": "actual_cpu_preparation_arithmetic_cleanup",
+        "source_format": source_format,
+    }
+    if source_format == "qmod":
+        report.update(source_name=source_name, source_version=source_version)
     return _complete(
         selection,
-        {
-            "function": program.name,
-            "output_widths": MappingProxyType(
-                {name: len(ports) for name, ports in selection.registers.items()}
-            ),
-            "source_identities": (
-                program.semantic_identity,
-                *(f.semantic_identity for f in sorted(functions, key=lambda f: f.name)),
-            ),
-            "source_locations": tuple(
-                dict.fromkeys(
-                    op.location
-                    for op in program.body.blocks[0].operations
-                    if op.location is not None
-                )
-            ),
-            "scope": "actual_cpu_register_preparation_arithmetic_cleanup",
-        },
+        report,
         memory_limit_bytes=memory_limit_bytes,
+        memory_limit_origin=memory_limit_origin,
     )

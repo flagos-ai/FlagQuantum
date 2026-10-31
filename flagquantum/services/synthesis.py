@@ -5,8 +5,9 @@ from __future__ import annotations
 import inspect
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass, field, replace
+from os import PathLike
 from types import MappingProxyType
-from typing import Literal
+from typing import Literal, overload
 
 from ..compiler import estimate_resources
 from ..compiler._construction.constraints import CircuitLimits
@@ -16,7 +17,9 @@ from ..compiler._construction.frontend_python import (
     capture,
 )
 from ..compiler._construction.frontend_python import qfunc as qfunc
+from ..compiler._construction.lowering import ArithmeticCandidate
 from ..compiler._construction.profile import uint_type
+from ..compiler._construction.register_profile import register_ports
 from ..compiler._construction.selection import (
     Constraints,
     ConstructionBudget,
@@ -30,6 +33,7 @@ from ..compiler.coupling import CouplingMap
 from ..core.ir import CircuitIR, Instruction
 from ..core.operator_schema import get_operator_schema
 from ..core.parameters import parameter_names_in_value
+from ..errors import PlanningError
 from ..runtime.dynamic._conditions import instruction_is_dynamic
 from ..runtime.execution_plan import ExecutionPlan
 from ..runtime.execution_plan_contract import plan_execution_program
@@ -303,6 +307,25 @@ _DEFAULT_BUDGET = ConstructionBudget()
 _LINE_BASIS = ("x", "h", "s", "sdg", "t", "tdg", "ry", "rz", "cx", "u3", "swap")
 
 
+def _target(
+    position: int,
+    budget: ConstructionBudget,
+    basis: tuple[str, ...] | None,
+    topology: Literal["line"] | None,
+) -> Target:
+    return Target(
+        basis=basis,
+        couplings=(
+            tuple(CouplingMap.line(n) for n in range(position, budget.qubits + 1))
+            if topology == "line"
+            else ()
+        ),
+        optimize=topology is None,
+        restore_layout=topology is None,
+    )
+
+
+@overload
 def synthesize(
     function: Definition,
     *,
@@ -320,6 +343,84 @@ def synthesize(
     topology: Literal["line"] | None = None,
     preparation: CircuitIR | None = None,
     preparation_map: Mapping[str, Sequence[int]] | None = None,
+    source_format: None = None,
+    source_name: None = None,
+    source_version: None = None,
+    memory_limit_bytes: int | None = None,
+) -> Program: ...
+
+
+@overload
+def synthesize(
+    function: str,
+    *,
+    inputs: None = None,
+    input_state: None = None,
+    constants: None = None,
+    functions: tuple[()] = (),
+    max_qubits: int | None = 256,
+    max_operations: int | None = 100_000,
+    max_depth: int | None = None,
+    max_workspace: int | None = None,
+    construction_budget: ConstructionBudget = _DEFAULT_BUDGET,
+    objective: Literal["width", "depth"] = "width",
+    basis: Iterable[str] | None = None,
+    topology: Literal["line"] | None = None,
+    preparation: None = None,
+    preparation_map: None = None,
+    source_format: Literal["qmod"],
+    source_name: str | None = None,
+    source_version: str | None = None,
+    memory_limit_bytes: int | None = None,
+) -> Program: ...
+
+
+@overload
+def synthesize(
+    function: PathLike[str],
+    *,
+    inputs: None = None,
+    input_state: None = None,
+    constants: None = None,
+    functions: tuple[()] = (),
+    max_qubits: int | None = 256,
+    max_operations: int | None = 100_000,
+    max_depth: int | None = None,
+    max_workspace: int | None = None,
+    construction_budget: ConstructionBudget = _DEFAULT_BUDGET,
+    objective: Literal["width", "depth"] = "width",
+    basis: Iterable[str] | None = None,
+    topology: Literal["line"] | None = None,
+    preparation: None = None,
+    preparation_map: None = None,
+    source_format: Literal["qmod"] | None = None,
+    source_name: None = None,
+    source_version: str | None = None,
+    memory_limit_bytes: int | None = None,
+) -> Program: ...
+
+
+def synthesize(
+    function: Definition | str | PathLike[str],
+    *,
+    inputs: Mapping[str, UInt] | None = None,
+    input_state: InputState | None = None,
+    constants: Mapping[str, int] | None = None,
+    functions: Sequence[Definition] = (),
+    max_qubits: int | None = 256,
+    max_operations: int | None = 100_000,
+    max_depth: int | None = None,
+    max_workspace: int | None = None,
+    construction_budget: ConstructionBudget = _DEFAULT_BUDGET,
+    objective: Literal["width", "depth"] = "width",
+    basis: Iterable[str] | None = None,
+    topology: Literal["line"] | None = None,
+    preparation: CircuitIR | None = None,
+    preparation_map: Mapping[str, Sequence[int]] | None = None,
+    source_format: Literal["qmod"] | None = None,
+    source_name: str | None = None,
+    source_version: str | None = None,
+    memory_limit_bytes: int | None = None,
 ) -> Program:
     """Synthesize high-level unsigned arithmetic for exact local CPU execution.
 
@@ -328,10 +429,18 @@ def synthesize(
     probabilities by declared names. The initial source-retaining Python profile
     and target support are documented in flagquantum.synth/README.md.
 
+    PathLike[str] accepts local .qmod files; strings require source_format="qmod"
+    and are always source text. Native source declares its own preparation and
+    output names. Its default planned-state buffer ceiling is 512 MiB; explicit
+    memory_limit_bytes applies to both source profiles. This is not a process
+    peak-memory limit. Python retains its existing default memory behavior.
+
     Returns:
         A factory-created Program with checked execution, circuit and report.
 
     Raises:
+        InteropConversionError: Native input violates the bounded source profile.
+        PlanningError: The planned state buffer exceeds the effective memory cap.
         SynthesisError: No fully checked candidate satisfies the request, or
             construction/search is incomplete. Checked repair arguments, when
             available, are attached to the error.
@@ -359,6 +468,67 @@ def synthesize(
         raise TypeError("construction_budget must be ConstructionBudget")
     if topology not in {None, "line"}:
         raise ValueError("the admitted topology profiles are logical (None) and line")
+    if objective not in {"width", "depth"}:
+        raise ValueError("objective must be width or depth")
+    ExecutionOptions(memory_limit_bytes=memory_limit_bytes)
+    if source_format is not None and not isinstance(source_format, str):
+        raise TypeError("source_format must be a string or None")
+    if source_format not in {None, "qmod"}:
+        raise ValueError("the admitted source format is qmod")
+    if not isinstance(functions, Sequence) or isinstance(functions, (str, bytes)):
+        raise TypeError("functions must be a sequence of Python definitions")
+    selected_basis = (
+        (_LINE_BASIS if topology == "line" else None)
+        if basis is None
+        else require_basis(basis)
+    )
+    is_file = isinstance(function, PathLike)
+    if isinstance(function, (PathLike, str)):
+        if not is_file and source_format != "qmod":
+            raise ValueError("text requires source_format='qmod'; use Path for files")
+        if (
+            any(
+                value is not None
+                for value in (
+                    inputs,
+                    input_state,
+                    constants,
+                    preparation,
+                    preparation_map,
+                )
+            )
+            or functions
+        ):
+            raise ValueError(
+                "native source owns preparation and inputs; omit Python inputs/state/constants/functions/preparation"
+            )
+        from ..ecosystem._qmod.source import load_qmod
+        from ._synthesis_registers import synthesize_registers
+
+        imported = load_qmod(
+            function, source_name=source_name, source_version=source_version
+        )
+        _, _, position = register_ports(imported.program)
+        effective_memory = (
+            512 * 1024**2 if memory_limit_bytes is None else memory_limit_bytes
+        )
+        return synthesize_registers(
+            imported.program,
+            imported.functions,
+            constraints=constraints,
+            budget=construction_budget,
+            target=_target(position, construction_budget, selected_basis, topology),
+            objective=objective,
+            memory_limit_bytes=effective_memory,
+            memory_limit_origin=(
+                "profile_default" if memory_limit_bytes is None else "explicit"
+            ),
+            source_format="qmod",
+            source_name=imported.source_name,
+            source_version=imported.source_version,
+        )
+    if any(value is not None for value in (source_format, source_name, source_version)):
+        raise ValueError("source_format/name/version apply only to native source")
     if not isinstance(inputs, Mapping) or (
         constants is not None and not isinstance(constants, Mapping)
     ):
@@ -400,24 +570,7 @@ def synthesize(
     prepared, state_name = _prepare(
         inputs, mapping, input_state, preparation, preparation_map
     )
-    selected_basis = (
-        (_LINE_BASIS if topology == "line" else None)
-        if basis is None
-        else require_basis(basis)
-    )
-    target = Target(
-        basis=selected_basis,
-        couplings=(
-            tuple(
-                CouplingMap.line(n)
-                for n in range(position, construction_budget.qubits + 1)
-            )
-            if topology == "line"
-            else ()
-        ),
-        optimize=topology is None,
-        restore_layout=topology is None,
-    )
+    target = _target(position, construction_budget, selected_basis, topology)
     selection = select_arithmetic(
         (graph,),
         entry=graph.name,
@@ -445,8 +598,16 @@ def synthesize(
             )
         ),
         "scope": "actual_cpu_preparation_arithmetic_cleanup",
+        "source_format": "python",
     }
-    return _complete(selection, report)
+    return _complete(
+        selection,
+        report,
+        memory_limit_bytes=memory_limit_bytes,
+        memory_limit_origin=(
+            "profile_default" if memory_limit_bytes is None else "explicit"
+        ),
+    )
 
 
 def _complete(
@@ -454,6 +615,7 @@ def _complete(
     report: Mapping[str, object],
     *,
     memory_limit_bytes: int | None = None,
+    memory_limit_origin: Literal["profile_default", "explicit"] = "profile_default",
 ) -> Program:
     """Admit either construction producer through one checked execution authority."""
     row = selection.selected
@@ -480,7 +642,7 @@ def _complete(
         registers=selection.registers,
     )
     if memory_limit_bytes is not None and execution.state_bytes > memory_limit_bytes:
-        raise ValueError(
+        raise PlanningError(
             f"execution memory budget exceeded: state requires {execution.state_bytes} "
             f"bytes, limit is {memory_limit_bytes}; no allocation was performed"
         )
@@ -491,8 +653,16 @@ def _complete(
         candidate=row.strategy,
         resources=resources,
         source_resources=dict(row.stage_resources)["source"],
-        arithmetic_resources=estimate_resources(row.arithmetic.circuit),
+        register_widths=MappingProxyType(
+            {name: len(ports) for name, ports in selection.registers.items()}
+        ),
+        memory_limit_bytes=memory_limit_bytes,
+        memory_limit_origin=memory_limit_origin,
     )
+    if isinstance(row.arithmetic, ArithmeticCandidate):
+        complete_report["arithmetic_resources"] = estimate_resources(
+            row.arithmetic.circuit
+        )
     program = Program(
         row.target.submitted,
         row.arithmetic.circuit,

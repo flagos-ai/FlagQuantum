@@ -8,8 +8,7 @@ from pathlib import Path
 import pytest
 
 import flagquantum as fq
-from flagquantum.ecosystem._qmod.adapter import SUPPORTED_SOURCE_VERSION, parse_qmod
-from flagquantum.services._synthesis_registers import synthesize_registers
+from flagquantum import synth
 from tests.integration.test_synthesis_register_workflow import check_state
 
 pytestmark = [pytest.mark.integration, pytest.mark.slow]
@@ -34,17 +33,22 @@ CORPUS = Path(__file__).resolve().parents[1] / "fixtures/classiq_qmod"
         ),
     ],
 )
-def test_unmodified_originals_at_actual_dimensions(filename, widths, total, expected):
+@pytest.mark.parametrize("input_kind", ["file", "text"])
+def test_unmodified_originals_at_actual_dimensions(
+    filename, widths, total, expected, input_kind
+):
     source = CORPUS / filename
-    imported = parse_qmod(
-        source.read_text(),
-        filename=str(source),
-        source_version=SUPPORTED_SOURCE_VERSION,
-    )
-    program = synthesize_registers(
-        imported.program, imported.functions, memory_limit_bytes=2 * 1024**3
-    )
-    assert dict(program.report["output_widths"]) == widths
+    if input_kind == "file":
+        program = synth.synthesize(source, max_qubits=24)
+    else:
+        program = synth.synthesize(
+            source.read_bytes().decode("utf-8"),
+            source_format="qmod",
+            source_name=str(source),
+            max_qubits=24,
+        )
+    assert dict(program.report["register_widths"]) == widths
+    assert program.report["memory_limit_bytes"] == 512 * 1024**2
     assert program.report["resources"].n_qubits == total
     # Bound this independent full-state test's working set before allocation.
     # Runtime's own sealed memory decision is separate from this test harness.
@@ -65,7 +69,8 @@ def test_unmodified_originals_at_actual_dimensions(filename, widths, total, expe
         + json.dumps(
             {
                 "file": filename,
-                "source_version": imported.source_version,
+                "source_version": program.report["source_version"],
+                "input_kind": input_kind,
                 "output_widths": widths,
                 "logical_ports": dict(program.registers),
                 "physical_ports": dict(program._checked.registers),

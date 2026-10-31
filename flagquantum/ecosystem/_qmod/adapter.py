@@ -37,6 +37,7 @@ class QmodImport:
     functions: tuple[HybridProgram, ...]
     source_version: str
     inferred_widths: Mapping[str, int]
+    source_name: str
 
 
 class _Expression:
@@ -356,6 +357,15 @@ class _Adapt:
         return program, functions
 
 
+def check_source_version(source_version: str, token: Token) -> None:
+    if source_version != SUPPORTED_SOURCE_VERSION:
+        reject(
+            token,
+            "version",
+            f"only the pinned source profile {SUPPORTED_SOURCE_VERSION} is admitted",
+        )
+
+
 def parse_qmod(
     source: str, *, filename: str = "<qmod>", source_version: str
 ) -> QmodImport:
@@ -366,14 +376,9 @@ def parse_qmod(
     No files, SDKs, synthesis, execution, eval or generated Python are involved.
     """
     tokens = tokenize(source, filename)
-    if source_version != SUPPORTED_SOURCE_VERSION:
-        reject(
-            tokens[0],
-            "version",
-            f"only the pinned source profile {SUPPORTED_SOURCE_VERSION} is admitted",
-        )
+    check_source_version(source_version, tokens[0])
     adapter = _Adapt(Parser(tokens).parse())
     program, functions = adapter.adapt()
     return QmodImport(
-        program, functions, source_version, MappingProxyType(adapter.inferred)
+        program, functions, source_version, MappingProxyType(adapter.inferred), filename
     )
