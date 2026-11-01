@@ -297,9 +297,9 @@ def test_aliased_const_actuals_stay_one_register_across_local_helpers() -> None:
 
 
 @pytest.mark.parametrize(
-    "statement", ["tmp:qbit;", "release(q);", "free(q);", "drop(q);"]
+    "statement", ["tmp:qbit; allocate(tmp);", "release(q);", "free(q);", "drop(q);"]
 )
-def test_private_local_contract_does_not_expand_native_source(statement: str) -> None:
+def test_manual_local_lifecycle_stays_outside_native_source(statement: str) -> None:
     with pytest.raises(InteropConversionError):
         synth.synthesize(
             f"qfunc main(output q:qbit) {{ allocate(q); {statement} }}",

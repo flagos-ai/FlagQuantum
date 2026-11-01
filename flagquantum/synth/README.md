@@ -143,6 +143,9 @@ measurements, native grammar and independent trial/release gates remain in force
 
 ## Local native source
 
+Native compute/phase/cleanup now also accepts bounded `within/apply`; see the
+complete example below and the [exact source profile](../ecosystem/_qmod/README.md).
+
 ```python
 from pathlib import Path
 import flagquantum as fq
@@ -283,7 +286,7 @@ scope is actual_cpu_preparation_predicate_phase_cleanup, and arithmetic_resource
 is omitted. Use source_resources and actual resources for whole-program costs.
 
 This is unreleased logical-CPU development evidence. General routed phase,
-projective basis conversion, arbitrary angles, controlled-block/within-apply DSL,
+projective basis conversion, arbitrary angles, general controlled-block/within-apply DSL,
 arbitrary native Qmod phase, GPU/QPU/gradient admission and full-corpus compatibility remain out
 of scope. See [public delivery](../../docs/roadmap/SYNTH_PUBLIC_PHASE_DELIVERY.md)
 and the [historical private evidence](../../docs/roadmap/SYNTH_PHASE_ORACLE_DELIVERY.md).
@@ -356,7 +359,7 @@ Helpers accept fixed-width Const and fresh Output scalars. Const actuals must
 be initialized and can alias other Const arguments; Outputs remain disjoint and
 fresh. Kind/width mismatches, recursion and invalid unused helpers are refused.
 At most 32 definitions and Compiler's 4096-node/visit bounds are allowed.
-Consuming Input, mutable borrowing, local scopes, arrays and arbitrary unitary composition
+Consuming Input, mutable borrowing, general local scopes, arrays and arbitrary unitary composition
 remain separate work. The Python-first workflow is unchanged; no Python
 decorator is required by this native compatibility feature. See the
 [delivery](../../docs/roadmap/SYNTH_QMOD_HELPERS_DELIVERY.md).
@@ -437,7 +440,7 @@ costs are distinct. No hardware timing or global optimality claim follows.
 Run python -m examples.synthesis_controlled_predicate for both examples.
 Uniform named probabilities alone cannot certify controlled phase; complete
 complex-state and interference acceptance does. Public phase remains logical
-CPU only. Generic unitary control, within-apply, arbitrary angles and routed
+CPU only. Generic unitary control, general within-apply, arbitrary angles and routed
 phase remain separate work. See the
 [controlled-predicate delivery](../../docs/roadmap/SYNTH_CONTROLLED_PREDICATE_DELIVERY.md).
 
@@ -594,3 +597,41 @@ by -1, with only input registers returned. Run
 probabilities alone do not certify phase; acceptance compares full amplitudes
 including external reference entanglement and clean workspace. See the
 [delivery record](../../docs/roadmap/SYNTH_COMPARISON_CHAINS_DELIVERY.md).
+
+## Native temporary conditions without exported flags
+
+```python
+import flagquantum as fq
+from flagquantum import synth
+
+source = """qfunc mark(const x:qnum<2>, const y:qnum<2>) {
+    flag:qbit;
+    within { flag=x<y; } apply { phase(flag,pi); }
+    within { flag=x==y; } apply { phase(flag,pi); }
+}
+qfunc main(output x:qnum<2>, output y:qnum<2>) {
+    allocate(x); allocate(y);
+    hadamard_transform(x); hadamard_transform(y);
+    mark(x,y);
+}"""
+program = synth.synthesize(source, source_format="qmod", max_qubits=10)
+result = fq.run(program)
+print(dict(program.probabilities(result, registers=("x", "y"))))
+```
+
+Every pair has probability 1/16; full amplitudes are (-1)**int(x<=y)/4.
+Only x/y are named results. Compiler generates gates, checks read-only apply
+dependencies, reverses each selected computation, proves zero and reuses the
+temporary slot. The two scopes fit ten qubits, including six internal work bits;
+simultaneously preparing both flags needs eleven. Width and depth objectives
+both preserve these measured costs; scope orders are not automatically rewritten.
+
+Use `python -m examples.synthesis_qmod_within` or a local .qmod file through the
+same entry. Local declarations are function-level; within prepares fresh
+quantum-dependent unsigned expressions, and apply permits phase or Const-only
+helpers. Sequential blocks may reuse the source name. Bare qnum infers once;
+explicit widths preserve zero extension. Gates/writes in apply, literal/local
+allocation, lexical nesting, manual free/drop and consuming Input are refused.
+This bounded source profile adds no Python decorator or public API. Existing
+Python predicates remain the concise entry when importing source is unnecessary.
+See the [delivery and limits](../../docs/roadmap/SYNTH_QMOD_WITHIN_DELIVERY.md).
