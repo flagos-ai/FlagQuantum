@@ -85,7 +85,7 @@ unshadowed symbolic coefficient; no evaluation or SDK is involved. Source names
 shadowing `phase` or its `pi` coefficient are refused at the intrinsic call.
 `phase(x*y, pi)` can use a direct CZ marker; `phase(x*x, pi)` preserves aliases.
 Quantum-dependent constants preserve their overall sign, including `x*0+1`.
-Pure literal phases, multibit results, comparisons and arbitrary angles remain
+Pure literal phases, multibit results and arbitrary angles remain
 unsupported. Width inference uses declared domains, even after `x=0`.
 
 This statement emits the existing qreg.phase callee and borrows live values;
@@ -108,7 +108,7 @@ Run `python -m examples.synthesis_qmod_within` for the shortest source workflow.
 Function-level `flag:qbit;`, `tmp:qnum<N>;` or `tmp:qnum;` declarations may be
 prepared by fresh quantum-expression assignments in a lexical
 `within { ... } apply { ... }` block. Earlier prepared locals can feed later
-computations. Apply admits existing one-bit polynomial `phase(expr,pi)` and
+computations. Apply admits existing one-bit `phase(expr,pi)` and
 Const-only helper calls. Helpers can themselves contain supported scopes.
 Block words are contextual: existing helpers and variables named within or
 apply remain valid, including calls to within(...) inside an apply block.
@@ -124,8 +124,7 @@ allocate no storage and do not appear in the output-only inferred-width map.
 Local reads or initialization outside scopes, pure literal preparation, allocate
 or gates in preparation, helper preparation calls, Output preparation, arbitrary
 gates/writes in apply, Output helper arguments, nesting in preparation and declarations
-inside blocks are refused. Empty apply is valid; empty within is refused. Direct
-comparison phase arguments remain refused: compute a one-bit local first.
+inside blocks are refused. Empty apply is valid; empty within is refused. One-bit comparison phase arguments use the existing Compiler predicate path.
 Manual uncompute/release/free/drop and consuming Input remain outside admission.
 Generated local and cleanup operations count toward existing expansion budgets.
 No simulator, SDK, allocator, executor or duplicate lifetime checker is added.
@@ -192,10 +191,13 @@ signed values and statement-level control remain refused. Python's admitted
 comparison-chain semantics do not silently apply to native source.
 
 The official [phase statement](https://docs.classiq.io/qmod-reference/language-reference/statements/phase/)
-requires polynomial expressions. Direct or nested comparisons in a native phase
-argument remain refused. Compute a fresh flag Output and then phase(flag, pi).
-This flag is an exported live output; internal work is cleaned, but the flag is
-not an implicitly erased temporary or the Python output_mode="phase" workflow.
+documents polynomial expressions. FlagQuantum additionally admits one-bit
+unsigned comparison predicates in phase(expr,pi), including comparisons nested
+in admitted arithmetic. This is a FlagQuantum-native extension to the import
+profile, not a claim that Classiq accepts this spelling. Existing Compiler
+predicate construction provides the sign and cleanup without exporting a flag.
+The pinned upstream original-source cohort does not increase with this extension.
+Run python -m examples.synthesis_native_predicate_phase for a complete workflow.
 
 Run `python -m examples.synthesis_qmod_comparisons`. Tests are
 `tests/team/ecosystem/test_qmod_comparisons.py` and
