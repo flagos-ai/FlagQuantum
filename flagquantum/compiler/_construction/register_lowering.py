@@ -51,7 +51,11 @@ def schedule_register_program(
     verify_register_program(program, functions, max_qubits=n_qubits)
     program = expand_register_calls(program, functions)
     functions = tuple(f for f in functions if not is_register_function(f))
-    labels, bindings, position = register_ports(program)
+    labels, bindings, output_width = register_ports(program)
+    position = max(
+        (max(ports) + 1 for ports in bindings.values()), default=output_width
+    )
+    local_width = position - output_width
     instructions: list[Instruction] = []
     segments: list[ArithmeticCandidate] = []
     computed: dict[ValueId, ArithmeticCandidate] = {}
@@ -151,6 +155,6 @@ def schedule_register_program(
         scheduling,
         MappingProxyType(labels),
         tuple(segments),
-        max((s.peak_workspace for s in segments), default=0),
+        local_width + max((s.peak_workspace for s in segments), default=0),
         sum(s.recomputations for s in segments),
     )

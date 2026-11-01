@@ -22,6 +22,8 @@ from .register_expansion import expand_register_calls, is_register_function
 _ATTRIBUTES = MappingProxyType(
     {
         "qreg.declare": frozenset({"name"}),
+        "qreg.local": frozenset({"name"}),
+        "qreg.release": frozenset(),
         "qreg.allocate": frozenset(),
         "qreg.initialize": frozenset({"value"}),
         "qreg.gate": frozenset({"gate", "index"}),
@@ -63,7 +65,7 @@ def register_width(value: Value, operation: Operation | None = None) -> int:
 def register_ports(
     program: HybridProgram,
 ) -> tuple[dict[str, tuple[int, ...]], dict[ValueId, tuple[int, ...]], int]:
-    """Map verified declarations to disjoint MSB-first ports in source order."""
+    """Map verified outputs first, then reuse zero local slots by lifetime."""
     names: dict[str, tuple[int, ...]] = {}
     values: dict[ValueId, tuple[int, ...]] = {}
     position = 0
@@ -74,6 +76,19 @@ def register_ports(
             names[op.attributes["name"]] = ports
             values[value.id] = ports
             position += len(ports)
+    following = position
+    free: set[int] = set()
+    for op in program.body.blocks[0].operations:
+        if op.name == "qreg.local":
+            value = op.results[0]
+            width = register_width(value)
+            reused = tuple(sorted(free)[:width])
+            free.difference_update(reused)
+            count = width - len(reused)
+            values[value.id] = (*reused, *range(following, following + count))
+            following += count
+        elif op.name == "qreg.release":
+            free.update(values[op.operands[1].id])
     return names, values, position
 
 
@@ -92,6 +107,7 @@ def verify_register_program(
     repeated actual inputs borrow one register and do not copy quantum state.
     Phase calls borrow initialized values without changing basis values or roles.
     Uncompute makes unchanged directly computed storage fresh, retaining ownership.
+    Local storage must be released fresh before return and cannot escape as output.
     """
     _positive_integer(max_qubits, "max_qubits")
     _positive_integer(max_nodes, "max_nodes")
@@ -188,6 +204,8 @@ def _verify_body(
             _fail("register.ssa", "duplicate Const entry reference")
         known[value.id] = value
     registers: list[Value] = list(borrowed)
+    returned: list[Value] = list(borrowed)
+    local_storage: set[Value] = set()
     initialized = {v.id for v in borrowed}
     reversible: dict[ValueId, frozenset[ValueId]] = {}
     labels: set[str] = set()
@@ -235,7 +253,7 @@ def _verify_body(
             )
         if any(known.get(v.id) != v for v in op.operands):
             _fail("register.use", "undefined or mistyped operand", op)
-        if op.name == "qreg.declare":
+        if op.name in {"qreg.declare", "qreg.local"}:
             if op.operands or len(op.results) != 1:
                 _fail(
                     "register.declare", "declaration requires one register result", op
@@ -244,14 +262,18 @@ def _verify_body(
             width += register_width(value, op)
             label = op.attributes["name"]
             if not isinstance(label, str) or not label.strip() or label in labels:
-                _fail("register.name", "output names must be nonempty and unique", op)
+                _fail("register.name", "register names must be nonempty and unique", op)
             if width > max_qubits:
                 _fail(
                     "register.budget",
-                    "live output widths exceed construction capacity",
+                    "live register widths exceed construction capacity",
                     op,
                 )
             registers.append(value)
+            if op.name == "qreg.declare":
+                returned.append(value)
+            else:
+                local_storage.add(value)
             labels.add(label)
         else:
             if not op.operands or op.operands[0] != effect:
@@ -264,11 +286,13 @@ def _verify_body(
                     op,
                 )
             if op.name == "qreg.return":
+                if local_storage:
+                    _fail("register.local", "release every local before return", op)
                 if (
                     position != len(block.operations) - 1
                     or op.results
                     or not registers
-                    or operands != tuple(registers)
+                    or operands != tuple(returned)
                     or initialized != {v.id for v in registers}
                 ):
                     _fail(
@@ -325,6 +349,21 @@ def _verify_body(
                 changed = tuple(writes)
             elif op.name == "qreg.phase":
                 check_call(op, operands)
+            elif op.name == "qreg.release":
+                if destination in borrowed:
+                    _fail("register.const", "Const cannot be released", op)
+                if arguments or destination not in local_storage:
+                    _fail("register.release", "release requires one owned local", op)
+                if destination.id in initialized:
+                    _fail(
+                        "register.initialized",
+                        "release requires fresh zero storage",
+                        op,
+                    )
+                registers.remove(destination)
+                local_storage.remove(destination)
+                width -= register_width(destination)
+                changed = (destination,)
             elif op.name == "qreg.uncompute":
                 if destination in borrowed:
                     _fail("register.const", "Const cannot be uncomputed", op)
@@ -401,3 +440,9 @@ def _verify_body(
             if result.id in known:
                 _fail("register.ssa", "duplicate register/effect definition", op)
             known[result.id] = result
+    _, bindings, output_width = register_ports(program)
+    reserved = sum(register_width(v) for v in borrowed) + max(
+        (max(ports) + 1 for ports in bindings.values()), default=output_width
+    )
+    if reserved > max_qubits:
+        _fail("register.budget", "reserved outputs and local pool exceed capacity")

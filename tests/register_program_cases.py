@@ -24,12 +24,17 @@ class Registers:
         self.operations: list[Operation] = []
         self.counter = 1
 
-    def declare(self, name: str, width: int) -> Value:
+    def declare(self, name: str, width: int, *, local: bool = False) -> Value:
         register = Value(ValueId("register_probe", self.counter), register_type(width))
         self.counter += 1
-        self.outputs.append(register)
+        if not local:
+            self.outputs.append(register)
         self.operations.append(
-            Operation("qreg.declare", results=(register,), attributes={"name": name})
+            Operation(
+                "qreg.local" if local else "qreg.declare",
+                results=(register,),
+                attributes={"name": name},
+            )
         )
         return register
 
