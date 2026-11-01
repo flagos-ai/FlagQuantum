@@ -1,5 +1,10 @@
 # Native one-bit predicate phases
 
+The [documented Classiq phase grammar](https://docs.classiq.io/qmod-reference/language-reference/statements/phase/)
+is polynomial-only. This proposal is a FlagQuantum-native predicate extension
+to the import profile, not an additional upstream compatibility claim. Retained
+Classiq sources and their evidence counts remain separate.
+
 Following #994 (ea1d2da8d34ecd35ccf4b68a7222408d9f2b03af), admit
 phase(expression,pi) for existing unsigned comparison expressions, including
 comparisons nested in admitted arithmetic when the complete inferred result
