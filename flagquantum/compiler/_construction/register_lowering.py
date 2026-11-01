@@ -12,7 +12,13 @@ from types import MappingProxyType
 
 from ...core.ir import CircuitIR, Instruction
 from .._hybrid.model import Block, HybridProgram, Operation, Region, Value, ValueId
-from .lowering import ArithmeticCandidate, Schedule, _copy, schedule_arithmetic
+from .lowering import (
+    ArithmeticCandidate,
+    Schedule,
+    _copy,
+    adjoint_value_candidate,
+    schedule_arithmetic,
+)
 from .profile import _fail, _positive_integer, _width, uint_type
 from .register_expansion import expand_register_calls, is_register_function
 from .register_profile import register_ports, register_width, verify_register_program
@@ -48,6 +54,7 @@ def schedule_register_program(
     labels, bindings, position = register_ports(program)
     instructions: list[Instruction] = []
     segments: list[ArithmeticCandidate] = []
+    computed: dict[ValueId, ArithmeticCandidate] = {}
     symbols = {f.name: f for f in functions}
     for ordinal, op in enumerate(program.body.blocks[0].operations):
         gates: tuple[Instruction, ...] = ()
@@ -60,6 +67,10 @@ def schedule_register_program(
                     op.attributes["gate"], (ports[-1 - op.attributes["index"]],)
                 ),
             )
+        elif op.name == "qreg.uncompute":
+            segment = adjoint_value_candidate(computed.pop(op.operands[1].id))
+            segments.append(segment)
+            gates = segment.circuit.instructions
         elif op.name in {"qreg.compute", "qreg.phase"}:
             phase = op.name == "qreg.phase"
             actual = op.operands[1:] if phase else op.operands[2:]
@@ -129,6 +140,8 @@ def schedule_register_program(
                 ),
             )
             segments.append(segment)
+            if not phase:
+                computed[op.operands[1].id] = segment
             gates = segment.circuit.instructions
         if len(instructions) + len(gates) > max_operations:
             _fail("lowering.operations", "whole program exceeds operation budget", op)

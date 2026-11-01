@@ -5,8 +5,9 @@ arbitrary XOR target and restore every supplied zero workspace qubit. The same
 X/CX/CCX kernels serve forward and inverse computation without hidden phase.
 """
 
+from collections import Counter
 from collections.abc import Iterable, Mapping, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import Literal
 
 from ...core.ir import CircuitIR, Instruction
@@ -39,6 +40,37 @@ class ArithmeticCandidate:
     events: tuple[ScheduleEvent, ...]
     peak_workspace: int
     recomputations: int
+
+
+def _self_adjoint_gates(gates: Sequence[Instruction]) -> bool:
+    return all(
+        gate.name in {"x", "cx", "ccx"}
+        and gate.matrix is None
+        and not gate.params
+        and not gate.metadata
+        for gate in gates
+    )
+
+
+def adjoint_value_candidate(candidate: ArithmeticCandidate) -> ArithmeticCandidate:
+    """Reverse the selected clean value circuit and its actual allocation events."""
+    computes = Counter(e.value for e in candidate.events if e.action == "compute")
+    cleans = Counter(e.value for e in candidate.events if e.action == "uncompute")
+    if not _self_adjoint_gates(candidate.circuit.instructions) or computes != cleans:
+        _fail("register.adjoint", "cleanup requires a clean exact value candidate")
+    events = tuple(
+        replace(event, action="uncompute" if event.action == "compute" else "compute")
+        for event in reversed(candidate.events)
+    )
+    return replace(
+        candidate,
+        circuit=replace(
+            candidate.circuit,
+            instructions=tuple(reversed(candidate.circuit.instructions)),
+        ),
+        events=events,
+        recomputations=sum(count - 1 for count in cleans.values()),
+    )
 
 
 @dataclass(frozen=True)
@@ -320,13 +352,7 @@ def schedule_arithmetic(
                 marker_wires.append(predicate[0])
         prefix = tuple(instructions)
         forward_events = tuple(events)
-        if any(
-            gate.name not in {"x", "cx", "ccx"}
-            or gate.matrix is not None
-            or gate.params
-            or gate.metadata
-            for gate in prefix
-        ):
+        if not _self_adjoint_gates(prefix):
             _fail(
                 "phase.adjoint",
                 "phase prefix requires admitted exact self-adjoint gates",
