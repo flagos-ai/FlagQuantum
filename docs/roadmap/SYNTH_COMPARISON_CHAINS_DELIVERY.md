@@ -133,3 +133,23 @@ the new 134 and separate 12 public API checks, distinct selected acceptance
 totals 1891 passed / 21 skipped. CI will be recorded on the submitted PR. The original three-Qmod count, independent trial/release gates,
 general quantum control/within-apply, all-216 compatibility and accelerator/
 gradient admission retain their separate requirements.
+
+
+## 2026-11-01 CI runner migration
+
+The initial head 4a089350c7f8759f78737f0f81a06c09d515ea76 completed 55 checks
+successfully, with three configured skips, one cancelled macOS wheel job and
+one failed CI summary. The wheel job had no runner or steps. Its annotation
+identifies the scheduled macOS 14 image brownout, ahead of removal on
+2026-11-02; see the [official notice](https://github.com/actions/runner-images/issues/13518).
+The summary correctly refused the cancelled release-wheel dependency.
+
+Move the PR and release wheel matrices from macos-14 to the supported macos-15
+arm64 image. Keep the arm64 artifact, cp310 limited-API wheel selector, native
+build/test commands, artifact validation and required final gate. Update the
+existing CI/CD matrix assertions accordingly; no numerical implementation,
+dependency, ABI policy or public API changes. Verification of the migrated
+runner is recorded on the follow-up commit's CI. The existing packaging,
+installation, CI tier/source/CPU-budget/watchdog/preparation policy suites pass
+115 checks; Ruff, Black, ownership, repository language and documentation links
+also pass.

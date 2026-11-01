@@ -333,7 +333,7 @@ def test_release_builds_the_supported_platform_and_interpreter_matrix() -> None:
 
     assert platforms == {
         ("ubuntu-22.04", "manylinux-x86_64"),
-        ("macos-14", "macos-arm64"),
+        ("macos-15", "macos-arm64"),
         ("windows-2022", "windows-amd64"),
     }
     assert job["strategy"]["max-parallel"] <= 4

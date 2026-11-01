@@ -136,7 +136,7 @@ def test_pull_request_ci_builds_native_release_wheels() -> None:
     assert {
         (entry["os"], entry["artifact"], entry["identifier"]) for entry in matrix
     } == {
-        ("macos-14", "macos-arm64", "cp310-macosx_arm64"),
+        ("macos-15", "macos-arm64", "cp310-macosx_arm64"),
         ("windows-2022", "windows-amd64", "cp310-win_amd64"),
     }
     assert any(
