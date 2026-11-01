@@ -244,12 +244,10 @@ def test_user_constraints_include_hidden_locals_and_source_effect_order() -> Non
     assert program.report["resources"].n_qubits == 10
     assert program.report["workspace_qubits"] == 6
     main = SOURCE[SOURCE.index("qfunc main") :]
-    overlapping = (
-        """qfunc mark(const x:qnum<2>,const y:qnum<2>) {a:qbit; b:qbit;
+    helper = """qfunc mark(const x:qnum<2>,const y:qnum<2>) {a:qbit; b:qbit;
       within {a=x<y; b=x==y;} apply {phase(a,pi); phase(b,pi);}
     }"""
-        + main
-    )
+    overlapping = helper + main
     alternative = synth.synthesize(overlapping, source_format="qmod")
     assert alternative.report["resources"].n_qubits == 11
     assert alternative.report["workspace_qubits"] == 7
