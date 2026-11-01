@@ -16,7 +16,7 @@ MAX_FUNCTIONS = 32
 _TOKEN = re.compile(
     r"(?P<space>\s+)|(?P<comment>//[^\n]*|/\*[\s\S]*?\*/)"
     r"|(?P<number>[0-9]+)|(?P<name>[A-Za-z_][A-Za-z_0-9]*)"
-    r"|(?P<symbol>\*\*|\^=|\+=|->|==|!=|<=|>=|[{}()<>,:;=+*\[\].^/\-])"
+    r"|(?P<symbol>\*\*|\^=|\+=|->|==|!=|<=|>=|[{}()<>,:;=+*\[\].^/\-&|~])"
 )
 _RESERVED = frozenset(
     {
@@ -172,7 +172,15 @@ class Parser:
         token = self.current
         if nesting >= MAX_DEPTH:
             reject(token, "budget.depth", f"expression nesting exceeds {MAX_DEPTH}")
-        if token.text == "(":
+        if token.text == "~":
+            self.take("~")
+            operand = self.expression(25, nesting + 1)
+            if operand.depth >= MAX_DEPTH:
+                reject(
+                    token, "budget.depth", f"expression tree exceeds depth {MAX_DEPTH}"
+                )
+            left = Expression(token, (operand,), operand.depth + 1)
+        elif token.text == "(":
             self.take("(")
             left = self.expression(nesting=nesting + 1)
             self.take(")")
@@ -187,7 +195,15 @@ class Parser:
                     "expected a nonnegative integer, output name or parentheses",
                 )
             left = Expression(self.name())
-        precedence = {**dict.fromkeys(_COMPARISONS, 5), "+": 10, "*": 20, "**": 30}
+        precedence = {
+            **dict.fromkeys(_COMPARISONS, 5),
+            "|": 6,
+            "^": 7,
+            "&": 8,
+            "+": 10,
+            "*": 20,
+            "**": 30,
+        }
         compared = False
         while precedence.get(self.current.text, -1) >= minimum:
             operator = self.current
@@ -222,7 +238,7 @@ class Parser:
                     f"expression tree exceeds depth {MAX_DEPTH}",
                 )
             left = Expression(operator, (left, right), depth)
-        if self.current.text in {"-", "/", "^", "[", ".", "("}:
+        if self.current.text in {"-", "/", "[", ".", "("}:
             reject(
                 self.current,
                 "operator",

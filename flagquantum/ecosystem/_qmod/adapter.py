@@ -99,10 +99,30 @@ class _Expression:
                 if text not in self.names:
                     self.names.append(text)
                 result = ((1 << width) - 1, True)
+        elif text == "~":
+            value, quantum = self.infer(node.children[0])
+            if value > 1:
+                reject(
+                    node.token, "width", "bitwise operands must have one-bit domains"
+                )
+            result = (1 if quantum else 1 ^ value, quantum)
         else:
             left, lq = self.infer(node.children[0])
             right, rq = self.infer(node.children[1])
-            if text in _RELATIONS:
+            if text in {"&", "|", "^"}:
+                if left > 1 or right > 1:
+                    reject(
+                        node.token,
+                        "width",
+                        "bitwise operands must have one-bit domains",
+                    )
+                bound = (
+                    left & right
+                    if text == "&"
+                    else left | right if text == "|" else left ^ right
+                )
+                result = (1 if lq or rq else bound, lq or rq)
+            elif text in _RELATIONS:
                 opcode, swap, invert = _RELATIONS[text]
                 a, b = (right, left) if swap else (left, right)
                 bound = int(a == b if opcode == "qint.equal" else a < b) ^ int(invert)
@@ -150,6 +170,9 @@ class _Expression:
         if not node.children:
             return self.inputs[node.token.text]
         left = self.emit(node.children[0])
+        if node.token.text == "~":
+            zero = self.operation("arith.constant", (), INDEX, node.token, value=0)
+            return self.operation("qint.equal", (left, zero), uint_type(1), node.token)
         if node.token.text == "**":
             result = left
             base_bound = self.facts[node.children[0]][0]
@@ -162,6 +185,23 @@ class _Expression:
                 )
             return result
         right = self.emit(node.children[1])
+        if node.token.text in {"&", "|", "^"}:
+            if node.token.text == "&":
+                return self.operation(
+                    "qint.multiply", (left, right), uint_type(1), node.token
+                )
+            zero = self.operation("arith.constant", (), INDEX, node.token, value=0)
+            if node.token.text == "|":
+                total = self.operation(
+                    "qint.add", (left, right), uint_type(2), node.token
+                )
+                return self.operation(
+                    "qint.less", (zero, total), uint_type(1), node.token
+                )
+            equal = self.operation(
+                "qint.equal", (left, right), uint_type(1), node.token
+            )
+            return self.operation("qint.equal", (equal, zero), uint_type(1), node.token)
         if node.token.text not in _RELATIONS:
             return self.operation(
                 "qint.add" if node.token.text == "+" else "qint.multiply",
