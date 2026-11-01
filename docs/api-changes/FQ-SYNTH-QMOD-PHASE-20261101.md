@@ -53,7 +53,8 @@ Prove source validation and source locations, owned-IR handoff, basis inputs,
 complete complex superpositions including global signs, interference, repeated
 phase calls separated by mutations, subsequent arithmetic and zero workspace
 under both schedules. Exercise text and Path entry, unchanged named outputs,
-plan identity, resource/memory failures and target refusals before planning.
+plan identity and resource/target refusals before planning. Memory failures use
+the existing planning boundary and must precede execution.
 Record actual default resources and a runnable public example without physical
 indices or bitstring decoding. Public API, architecture and existing source
 regressions must remain unchanged. Trials remain 0/2 and release_authorized=false.

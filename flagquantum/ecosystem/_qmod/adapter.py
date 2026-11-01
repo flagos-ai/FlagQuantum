@@ -240,6 +240,38 @@ class _Adapt:
                     self.effect_op(
                         "qreg.initialize", token, (destination,), value=expression.bound
                     )
+            elif token.text == "phase":
+                if len(args) != 2 or "phase" in self.parameters:
+                    reject(
+                        token,
+                        "signature",
+                        "phase requires an expression and unshadowed pi coefficient",
+                    )
+                coefficient = args[1]
+                if (
+                    coefficient.children
+                    or coefficient.token.text != "pi"
+                    or "pi" in self.parameters
+                ):
+                    reject(
+                        coefficient.token,
+                        "coefficient",
+                        "phase supports only the unshadowed symbolic coefficient pi",
+                    )
+                expression = _Expression(args[0], self.widths, f"main.phase{index}")
+                if not expression.quantum or unsigned_width(expression.bound) != 1:
+                    reject(
+                        args[0].token,
+                        "phase",
+                        "phase requires a quantum expression with exactly one-bit result",
+                    )
+                graph = expression.function()
+                self.functions.append(graph)
+                inputs = tuple(
+                    self.register(self.parameters[name].name)
+                    for name in expression.names
+                )
+                self.effect_op("qreg.phase", token, inputs, callee=graph.name)
             elif token.text == "allocate":
                 if len(args) not in {1, 2}:
                     reject(
