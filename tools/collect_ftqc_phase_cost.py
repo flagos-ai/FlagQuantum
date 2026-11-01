@@ -190,6 +190,24 @@ def execute(
         "rss_max_gap_limit_seconds": 0.1,
         "rss_scope": "sum owned-group RSS; shared pages may count twice; sampled, not allocation cap",
     }
+
+    def query_rss(group: int) -> int:
+        query_started = time.monotonic()
+        try:
+            return _process_group_rss(group)
+        except subprocess.TimeoutExpired as error:
+            # Retain counts only; process-table contents never enter evidence.
+            result["rss_query_timeout"] = {
+                "elapsed_seconds": time.monotonic() - query_started,
+                "stdout_bytes": (
+                    len(error.stdout) if isinstance(error.stdout, bytes) else None
+                ),
+                "stderr_bytes": (
+                    len(error.stderr) if isinstance(error.stderr, bytes) else None
+                ),
+            }
+            raise
+
     process: subprocess.Popen[bytes] | None = None
     peak, maximum_gap = 0, 0.0
     with (
@@ -210,7 +228,7 @@ def execute(
             while process.poll() is None:
                 # Reserve the existing helper's TERM/KILL/wait allowance inside 30s.
                 budget(output, min(deadline, started + SECONDS), CLEANUP_RESERVE)
-                rss = _process_group_rss(process.pid)
+                rss = query_rss(process.pid)
                 now = time.monotonic()
                 maximum_gap = max(maximum_gap, now - previous_sample)
                 previous_sample = now
@@ -219,7 +237,7 @@ def execute(
                 if maximum_gap > 0.1 or rss > RSS_BYTES:
                     raise RuntimeError("RSS sample gap or group limit exceeded")
                 time.sleep(0.01)
-            final_rss = _process_group_rss(process.pid)
+            final_rss = query_rss(process.pid)
             maximum_gap = max(maximum_gap, time.monotonic() - previous_sample)
             if (
                 final_rss

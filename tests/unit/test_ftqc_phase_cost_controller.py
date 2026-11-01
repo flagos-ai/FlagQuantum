@@ -562,3 +562,47 @@ def test_probability_guard_failure_crosses_worker_boundary_without_execution(
     )
     assert assessed["status"] == "failed"
     assert assessed["failure_domain"] == "producer"
+
+
+@pytest.mark.parametrize("final_query", [False, True])
+@pytest.mark.parametrize("partial", [None, b"private process rows", "text output"])
+def test_rss_timeout_retains_bounded_evidence_and_cleanup(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    final_query: bool,
+    partial: bytes | str | None,
+) -> None:
+    class Process:
+        pid = 4242
+        returncode = None
+
+        def poll(self) -> int | None:
+            return 0 if final_query else None
+
+    process = Process()
+    error = subprocess.TimeoutExpired("ps", 0.05, output=partial, stderr=b"detail")
+    calls: list[int | None] = []
+    stopped: list[object] = []
+
+    def query(group: int | None) -> int:
+        calls.append(group)
+        raise error
+
+    monkeypatch.setattr(subprocess, "Popen", lambda *_args, **_kwargs: process)
+    monkeypatch.setattr(controller, "budget", lambda *_: None)
+    monkeypatch.setattr(controller, "_process_group_rss", query)
+    monkeypatch.setattr(controller, "_stop_group", stopped.append)
+    directory = tmp_path / "attempt"
+    directory.mkdir()
+    report = controller.execute(["synthetic"], directory, tmp_path, float("inf"))
+    assert calls == [4242] and stopped == [process]
+    assert report["status"] == "failed" and "TimeoutExpired" in report["diagnostic"]
+    evidence = report["rss_query_timeout"]
+    assert evidence["elapsed_seconds"] >= 0
+    assert evidence["stdout_bytes"] == (
+        len(partial) if isinstance(partial, bytes) else None
+    )
+    assert evidence["stderr_bytes"] == 6
+    assert set(evidence) == {"elapsed_seconds", "stdout_bytes", "stderr_bytes"}
+    assert "private process rows" not in json.dumps(report)
+    assert "text output" not in json.dumps(report)
