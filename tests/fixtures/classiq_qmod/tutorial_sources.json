@@ -1,0 +1,20 @@
+{
+  "repository": "https://github.com/Classiq/classiq-library",
+  "commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "license_file": "LICENSE.txt",
+  "license_sha256": "241f68c9f35357f97e8a2a195e447d4f80098c140f0b3b3c770a11eed96f58e0",
+  "fixtures": [
+    {
+      "file": "classiq_overview_tutorial.qmod",
+      "upstream_path": "tutorials/basic_tutorials/the_classiq_tutorial/classiq_overview_tutorial.qmod",
+      "git_blob_sha1": "1f476102f49ad56009d5329a8f180c1596be61dc",
+      "sha256": "5e28d56fea67b203a6e0e0b44ef0fa8998e66ae477fc62a4b02d2c5c8bcd30d1"
+    },
+    {
+      "file": "execution_tutorial.qmod",
+      "upstream_path": "tutorials/basic_tutorials/the_classiq_tutorial/execution_tutorial.qmod",
+      "git_blob_sha1": "7e9df09937d8360be71688762c4d22f309faa443",
+      "sha256": "4dbff47c68a449c918d30cdb63d8398de7084f02617e604d82c24191bcbfea8b"
+    }
+  ]
+}
