@@ -83,7 +83,7 @@ development_artifact = "flagquantum/compiler/IMPLEMENTATION.md"
 
 [capabilities.coherent_integer_synthesis]
 title = "Constrained coherent integer synthesis"
-summary = "Construct a checked reversible arithmetic circuit from bounded Python unsigned arithmetic and one-bit ==/< predicates composed with and/or/not, coherent conditional values and static bounded range loops, then execute and read named registers through the existing runtime."
+summary = "Construct a checked reversible arithmetic circuit from bounded Python unsigned arithmetic and one-bit unsigned comparisons and chains composed with and/or/not, coherent conditional values and static bounded range loops, then execute and read named registers through the existing runtime."
 category = "build_and_compile"
 user_goals = ["Write unsigned arithmetic without designing gates or workspace", "Compare retained and recomputed workspace under a qubit budget", "Run a checked synthesis Program and read named probabilities"]
 public_apis = ["flagquantum.synth.synthesize", "flagquantum.synth.Program.probabilities", "run"]
@@ -91,14 +91,14 @@ runtime_modes = ["statevector"]
 hardware = ["cpu"]
 gradient_support = "bound_scalar_preparation_pytorch_autograd"
 distribution_semantics = "single_device_fast_path"
-quick_start = "examples/synthesis_conditional.py"
+quick_start = "examples/synthesis_interval.py"
 documentation = "flagquantum/synth/README.md"
 level = "development_evidence"
 owner = "services maintainers"
-limitations = "Unreleased unsigned-integer CPU profile with bounded Python syntax including single ==/< comparisons and one-bit and/or/not expressions, one-bit conditional value selection, static single-level classical ranges with scoped carried values, known input preparations and finite checked candidates; no arbitrary Python or statement-level Boolean control flow, general Qmod, Program/.fq serialization, noise, measurements, directed or allocated-layout admission, or optimality guarantee. A Program executes its checked plan and refuses execution overrides; changed constraints require resynthesis. Two independent developer trials and release review remain pending."
-focused_tests = "tests/team/compiler/test_construction_selection_expression.py"
-integration_tests = "tests/integration/test_synthesis_conditional.py"
-development_artifact = "docs/roadmap/SYNTH_CONDITIONAL_EXPRESSION_DELIVERY.md"
+limitations = "Unreleased unsigned-integer CPU profile with bounded Python syntax including all six unsigned comparisons and chained interval predicates and one-bit and/or/not expressions, one-bit conditional value selection, static single-level classical ranges with scoped carried values, known input preparations and finite checked candidates; no arbitrary Python or statement-level Boolean control flow, general Qmod, Program/.fq serialization, noise, measurements, directed or allocated-layout admission, or optimality guarantee. A Program executes its checked plan and refuses execution overrides; changed constraints require resynthesis. Two independent developer trials and release review remain pending."
+focused_tests = "tests/team/compiler/test_construction_comparison_chains.py"
+integration_tests = "tests/integration/test_synthesis_comparison_chains.py"
+development_artifact = "docs/roadmap/SYNTH_COMPARISON_CHAINS_DELIVERY.md"
 
 [capabilities.predicate_phase_construction]
 title = "Coherent predicate phase synthesis"

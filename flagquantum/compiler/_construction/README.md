@@ -269,3 +269,24 @@ Run `python -m examples.synthesis_conditional`, then
 `tests/integration/test_synthesis_conditional.py`. See the
 [contract](../../../docs/api-changes/FQ-SYNTH-CONDITIONAL-EXPRESSION-20261031.md)
 and [delivery](../../../docs/roadmap/SYNTH_CONDITIONAL_EXPRESSION_DELIVERY.md).
+
+## Unsigned comparison chains
+
+The Python frontend accepts ==/!=/</<=/>/>= and adjacent chains such as
+`low <= x <= high`. It normalizes to existing equal/less, one-bit negate and
+conjunction. Both Boolean composition and chained comparisons use the same
+conjunction emitter. Each original operand is captured once, left to right;
+normalization swaps only the current pair and keeps the original middle value
+for the following comparison. All operands validate even after a false prefix.
+
+The existing IR, verifier/lifetimes, kernels, both schedules, precise phase
+inverse and Program path do not change. This is pure value computation, not
+Python short-circuit execution, identity/membership or statement-level control.
+The prior single-comparison refusal cases now have positive full-domain checks;
+false-prefix refusal is preserved using an unsupported identity test.
+
+Run `python -m examples.synthesis_interval`, then
+`tests/team/compiler/test_construction_comparison_chains.py` and
+`tests/integration/test_synthesis_comparison_chains.py`. See the
+[contract](../../../docs/api-changes/FQ-SYNTH-COMPARISON-CHAINS-20261031.md) and
+[delivery](../../../docs/roadmap/SYNTH_COMPARISON_CHAINS_DELIVERY.md).

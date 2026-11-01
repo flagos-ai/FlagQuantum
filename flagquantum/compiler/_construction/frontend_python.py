@@ -220,7 +220,7 @@ def capture(
 ) -> HybridProgram:
     """Infer exact widths into existing SSA; explicitly supplied helpers inline.
 
-    The subset includes unsigned arithmetic, ==/< comparisons, one-bit
+    The subset includes unsigned arithmetic, comparison chains, one-bit
     and/or/not, conditional values, static ranges, assignments, helpers and return.
     Constants bind declared entry parameters by value. Globals, closures and arbitrary Python are not executed.
     """
@@ -371,6 +371,25 @@ def capture(
         )
         return result, 1
 
+    def conjoin(
+        left: _Expression, right: _Expression, source: _Source, node: ast.expr
+    ) -> _Expression:
+        bound = left[1] * right[1]
+        if left[0].type == right[0].type == INDEX:
+            return constant(bound, source, node)
+        result = value(1)
+        emit(
+            Operation(
+                "qint.multiply",
+                (left[0], right[0]),
+                (result,),
+                location=source.location(node),
+            ),
+            source,
+            node,
+        )
+        return result, bound
+
     def expression(
         node: ast.expr, env: Mapping[str, _Expression], source: _Source, depth: int = 0
     ) -> _Expression:
@@ -421,34 +440,55 @@ def capture(
             )
             return result, bound
         if isinstance(node, ast.Compare):
-            if len(node.ops) != 1 or not isinstance(node.ops[0], (ast.Eq, ast.Lt)):
+            if any(
+                not isinstance(
+                    op, (ast.Eq, ast.NotEq, ast.Lt, ast.LtE, ast.Gt, ast.GtE)
+                )
+                for op in node.ops
+            ):
                 _error(
                     source,
                     node,
                     "comparison",
-                    "use one == or < comparison; chained and other comparisons are unsupported",
+                    "use unsigned ==, !=, <, <=, > or >= comparisons; identity and membership are unsupported",
                 )
-            left = expression(node.left, env, source, depth + 1)
-            right = expression(node.comparators[0], env, source, depth + 1)
-            equal = isinstance(node.ops[0], ast.Eq)
-            if left[0].type == right[0].type == INDEX:
-                return constant(
-                    int(left[1] == right[1] if equal else left[1] < right[1]),
-                    source,
-                    node,
+            previous = expression(node.left, env, source, depth + 1)
+            combined: _Expression | None = None
+            for op, child in zip(node.ops, node.comparators, strict=True):
+                following = expression(child, env, source, depth + 1)
+                left, right = previous, following
+                equal = isinstance(op, (ast.Eq, ast.NotEq))
+                if isinstance(op, (ast.Gt, ast.LtE)):
+                    left, right = right, left
+                if left[0].type == right[0].type == INDEX:
+                    comparison = constant(
+                        int(left[1] == right[1] if equal else left[1] < right[1]),
+                        source,
+                        node,
+                    )
+                else:
+                    result = value(1)
+                    emit(
+                        Operation(
+                            "qint.equal" if equal else "qint.less",
+                            (left[0], right[0]),
+                            (result,),
+                            location=source.location(node),
+                        ),
+                        source,
+                        node,
+                    )
+                    comparison = result, 1
+                if isinstance(op, (ast.NotEq, ast.LtE, ast.GtE)):
+                    comparison = negate(comparison, source, node)
+                combined = (
+                    comparison
+                    if combined is None
+                    else conjoin(combined, comparison, source, node)
                 )
-            result = value(1)
-            emit(
-                Operation(
-                    "qint.equal" if equal else "qint.less",
-                    (left[0], right[0]),
-                    (result,),
-                    location=source.location(node),
-                ),
-                source,
-                node,
-            )
-            return result, 1
+                previous = following
+            assert combined is not None
+            return combined
         if isinstance(node, ast.UnaryOp) and isinstance(node.op, ast.Not):
             operand = one_bit(
                 expression(node.operand, env, source, depth + 1), source, node.operand
@@ -468,22 +508,7 @@ def capture(
                     left, right = negate(left, source, node), negate(
                         right, source, node
                     )
-                bound = left[1] * right[1]
-                if left[0].type == right[0].type == INDEX:
-                    left = constant(bound, source, node)
-                else:
-                    result = value(1)
-                    emit(
-                        Operation(
-                            "qint.multiply",
-                            (left[0], right[0]),
-                            (result,),
-                            location=source.location(node),
-                        ),
-                        source,
-                        node,
-                    )
-                    left = result, bound
+                left = conjoin(left, right, source, node)
                 if isinstance(node.op, ast.Or):
                     left = negate(left, source, node)
             return left

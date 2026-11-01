@@ -30,9 +30,9 @@ This catalog is generated from the machine-validated
 | Synthesize a one-qubit or two-qubit unitary into a target basis | Target-basis gate and state-preparation synthesis | Development evidence | [Run example](../../examples/compiler_synthesis.py) |
 | Prepare a state from its amplitude vector in a target basis | Target-basis gate and state-preparation synthesis | Development evidence | [Run example](../../examples/compiler_synthesis.py) |
 | Find out whether a target basis can carry a program at all | Target-basis gate and state-preparation synthesis | Development evidence | [Run example](../../examples/compiler_synthesis.py) |
-| Write unsigned arithmetic without designing gates or workspace | Constrained coherent integer synthesis | Development evidence | [Run example](../../examples/synthesis_conditional.py) |
-| Compare retained and recomputed workspace under a qubit budget | Constrained coherent integer synthesis | Development evidence | [Run example](../../examples/synthesis_conditional.py) |
-| Run a checked synthesis Program and read named probabilities | Constrained coherent integer synthesis | Development evidence | [Run example](../../examples/synthesis_conditional.py) |
+| Write unsigned arithmetic without designing gates or workspace | Constrained coherent integer synthesis | Development evidence | [Run example](../../examples/synthesis_interval.py) |
+| Compare retained and recomputed workspace under a qubit budget | Constrained coherent integer synthesis | Development evidence | [Run example](../../examples/synthesis_interval.py) |
+| Run a checked synthesis Program and read named probabilities | Constrained coherent integer synthesis | Development evidence | [Run example](../../examples/synthesis_interval.py) |
 | Inspect exact predicate phase construction and clean workspace | Coherent predicate phase synthesis | Development evidence | [Run example](../../examples/synthesis_controlled_predicate.py) |
 | Mark a high-level predicate without writing gates or uncomputation | Coherent predicate phase synthesis | Development evidence | [Run example](../../examples/synthesis_controlled_predicate.py) |
 | Fit a coherent one-bit control mask under a workspace ceiling | Coherent predicate phase synthesis | Development evidence | [Run example](../../examples/synthesis_controlled_predicate.py) |
@@ -442,7 +442,7 @@ Spell gates and states a target cannot express in the gates that target publishe
 
 ### Constrained coherent integer synthesis
 
-Construct a checked reversible arithmetic circuit from bounded Python unsigned arithmetic and one-bit ==/< predicates composed with and/or/not, coherent conditional values and static bounded range loops, then execute and read named registers through the existing runtime.
+Construct a checked reversible arithmetic circuit from bounded Python unsigned arithmetic and one-bit unsigned comparisons and chains composed with and/or/not, coherent conditional values and static bounded range loops, then execute and read named registers through the existing runtime.
 
 - **Maturity:** Development evidence
 - **Public API:** `flagquantum.synth.synthesize`, `flagquantum.synth.Program.probabilities`, `fq.run`
@@ -450,9 +450,9 @@ Construct a checked reversible arithmetic circuit from bounded Python unsigned a
 - **Hardware:** `cpu`
 - **Gradient support:** `bound_scalar_preparation_pytorch_autograd`
 - **Distribution semantics:** `single_device_fast_path`
-- **Start:** [quick example](../../examples/synthesis_conditional.py)
+- **Start:** [quick example](../../examples/synthesis_interval.py)
 - **Documentation:** [guide](../../flagquantum/synth/README.md)
-- **Known boundary:** Unreleased unsigned-integer CPU profile with bounded Python syntax including single ==/< comparisons and one-bit and/or/not expressions, one-bit conditional value selection, static single-level classical ranges with scoped carried values, known input preparations and finite checked candidates; no arbitrary Python or statement-level Boolean control flow, general Qmod, Program/.fq serialization, noise, measurements, directed or allocated-layout admission, or optimality guarantee. A Program executes its checked plan and refuses execution overrides; changed constraints require resynthesis. Two independent developer trials and release review remain pending.
+- **Known boundary:** Unreleased unsigned-integer CPU profile with bounded Python syntax including all six unsigned comparisons and chained interval predicates and one-bit and/or/not expressions, one-bit conditional value selection, static single-level classical ranges with scoped carried values, known input preparations and finite checked candidates; no arbitrary Python or statement-level Boolean control flow, general Qmod, Program/.fq serialization, noise, measurements, directed or allocated-layout admission, or optimality guarantee. A Program executes its checked plan and refuses execution overrides; changed constraints require resynthesis. Two independent developer trials and release review remain pending.
 
 ### Coherent predicate phase synthesis
 

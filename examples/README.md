@@ -928,3 +928,11 @@ the existing public synth/Program/run/named-reader workflow. The compiler handle
 branch widths, coherent choice and exact workspace cleanup; users specify the
 computation, quantum widths, preparation and constraints. Full amplitude tests,
 rather than uniform probabilities alone, certify phase.
+
+[Interval predicate synthesis](synthesis_interval.py): run
+`python -m examples.synthesis_interval` for `low <= x <= high and x != excluded`
+in the existing value/phase Program flow. All six unsigned relations and chains
+reuse the current comparator kernels and cleanup. The middle value captures
+once; unsupported source still fails after a false prefix. Quantum widths,
+classical constants, preparation and budgets are explicit; gates, workspace,
+physical maps and bit decoding are automatic.

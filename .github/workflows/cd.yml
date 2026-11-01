@@ -87,7 +87,7 @@ jobs:
         include:
           - os: ubuntu-22.04
             artifact: manylinux-x86_64
-          - os: macos-14
+          - os: macos-15
             artifact: macos-arm64
           - os: windows-2022
             artifact: windows-amd64

@@ -74,11 +74,6 @@ def test_constant_comparisons_fold_exact_values_not_upper_bound_comparison():
 @pytest.mark.parametrize(
     "body",
     [
-        "x <= y",
-        "x > y",
-        "x >= y",
-        "x != y",
-        "x < y < 3",
         "x is y",
         "x in y",
         "x and y",
