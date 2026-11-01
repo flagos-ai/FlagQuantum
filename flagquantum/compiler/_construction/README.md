@@ -290,3 +290,31 @@ Run `python -m examples.synthesis_interval`, then
 `tests/integration/test_synthesis_comparison_chains.py`. See the
 [contract](../../../docs/api-changes/FQ-SYNTH-COMPARISON-CHAINS-20261031.md) and
 [delivery](../../../docs/roadmap/SYNTH_COMPARISON_CHAINS_DELIVERY.md).
+
+## Ordered phase borrows
+
+`qreg.phase(effect, *registers)` names an existing verified one-bit expression
+callee. It borrows initialized references, preserves basis values and returns
+the next effect without initializing or consuming a reference. Phase may change;
+this is a basis-constant quantum borrow, not a classical constant or a claim
+that the quantum state is unchanged. Extra Const/trust annotations are refused.
+
+The same register call checker and unique-actual wrapper serve compute and
+phase. The arithmetic scheduler emits its selected predicate prefix, marker and
+exact inverse before the following register action can mutate an input. Only
+that proven-zero internal tail is reused; all declared outputs remain live.
+This is one audited call boundary, not general within/apply or free/drop.
+
+The same phase-target guard protects arithmetic and register producers. The
+contributor fixture works on native logical targets and unoptimized PHASE_BASIS
+routing with physical layout retained. Its restored route is refused because
+the existing normalizer cancels restore-SWAP witnesses. That strict evidence
+check remains, and no unverified mapping is passed to Runtime.
+
+Run `python -m examples.synthesis_register_phase`, then
+`tests/team/compiler/test_construction_register_phase.py` and
+`tests/integration/test_synthesis_register_phase.py`. The example is a private
+owned-IR contributor trial. The public Python predicate path is unchanged;
+public syntax/roles and native Qmod admission follow separate review. See the
+[contract](../../../docs/api-changes/FQ-SYNTH-REGISTER-PHASE-20261101.md) and
+[delivery](../../../docs/roadmap/SYNTH_REGISTER_PHASE_DELIVERY.md).

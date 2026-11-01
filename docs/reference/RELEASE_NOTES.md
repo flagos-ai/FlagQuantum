@@ -17,6 +17,13 @@ Benchmark claims require audited artifacts and are not inferred from this file.
 
 ## Unreleased
 
+- Add a private ordered predicate-phase action to the fresh-register Compiler
+  profile. It borrows initialized basis values without consuming references,
+  reuses existing exact prefix/adjoint cleanup and shares workspace with later
+  compute/phase actions. Existing target evidence remains fail closed. This is
+  an internal role/cleanup dependency for composition; public syntax, roles,
+  native Qmod grammar and signatures are unchanged.
+
 - Complete all six unsigned comparisons and chained interval predicates in
   bounded Python synthesis. Middle expressions capture once; every operand
   validates even after a false pair. Normalize to existing less/equal, negate

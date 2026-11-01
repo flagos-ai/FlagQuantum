@@ -64,3 +64,12 @@ register behavior, and original-size Qmod acceptance. Record actual costs and a
 runnable private Compiler contributor example alongside the unchanged public
 high-level predicate path. No public role DSL or all-216 compatibility claim;
 independent trials remain 0/2 and release_authorized remains false.
+
+
+Observed target boundary: the interleaving fixture passes native logical and
+PHASE_BASIS routing with the final physical layout retained. Its restored-layout
+route is refused before planning because existing Runtime normalization cancels
+restore SWAPs and the target's witness audit no longer matches. Preserve that
+fail-closed refusal and add a negative test; do not weaken layout evidence or
+claim restored routing for this fixture. General optimizer/routing evidence
+repair is separate from this call-role slice.
