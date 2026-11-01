@@ -50,8 +50,9 @@ or `qnum<positive literal width>`. All are unsigned integral storage in this
 profile. Statements are fresh assignment, allocate(var), allocate(literal,var),
 X/H/S/Z on qbit, hadamard_transform on one scalar, and the bounded phase
 statement below. Right-hand expressions
-use declared quantum parameters, nonnegative decimal literals, parentheses, +, * and a
-literal **2. Standard arithmetic precedence applies. Line and block comments
+use declared quantum parameters, nonnegative decimal literals, parentheses, +, *,
+literal **2 and unsigned binary ==, !=, <, <=, >, >=. Comparisons have lower
+precedence than arithmetic and produce one-bit 0/1 results. Line and block comments
 and CRLF are accepted. The entire source must be consumed.
 
 Omitted qnum widths resolve at initialization. Literal allocation sizes must
@@ -147,3 +148,33 @@ workflow. See [Const delivery](../../../docs/roadmap/SYNTH_QMOD_CONST_DELIVERY.m
 `tests/integration/test_synthesis_qmod_const.py`. This admits closed Const/Output
 composition, not general function-role or scope semantics. Source error classes
 and coordinates remain; role/alias/expansion diagnostics now use Compiler codes.
+
+## Unsigned comparisons
+
+Comparisons reuse Compiler qint.equal/qint.less with operand reversal and a
+one-bit equality-to-zero complement. Operands are emitted in source order;
+unequal widths are zero extended by Compiler. Literal-only comparisons fold
+exactly, while quantum results retain their full declared domains. Const helper
+arguments may alias. Parenthesized comparisons compose with arithmetic and with
+explicitly parenthesized comparisons; unparenthesized chains, logical operators,
+signed values and statement-level control remain refused. Python's admitted
+comparison-chain semantics do not silently apply to native source.
+
+The official [phase statement](https://docs.classiq.io/qmod-reference/language-reference/statements/phase/)
+requires polynomial expressions. Direct or nested comparisons in a native phase
+argument remain refused. Compute a fresh flag Output and then phase(flag, pi).
+This flag is an exported live output; internal work is cleaned, but the flag is
+not an implicitly erased temporary or the Python output_mode="phase" workflow.
+
+Run `python -m examples.synthesis_qmod_comparisons`. Tests are
+`tests/team/ecosystem/test_qmod_comparisons.py` and
+`tests/integration/test_synthesis_qmod_comparisons.py`.
+The additive `comparison_sources.json` fixture sidecar records the unchanged
+upstream comparator_integer_example.qmod and shared license. Its full three-bit
+input and inferred one-bit flag pass both public file and text execution with
+complete-state and zero-work checks: baseline three originals plus this one
+give four admitted originals. The original three-file manifest and seven-digest
+verifier remain frozen; the additive provenance test checks the new cohort.
+The inspected two-variable comparator requires signed allocation and remains
+unsupported. See the [comparison delivery](../../../docs/roadmap/SYNTH_QMOD_COMPARISONS_DELIVERY.md)
+for measured costs and boundaries; this does not imply all-corpus support.
