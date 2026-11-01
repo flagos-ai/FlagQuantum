@@ -44,7 +44,7 @@ files are not simulated by this test grid. See the
 
 ## Initially admitted grammar
 
-One `qfunc main` has only output scalar parameters. Scalars are qbit, bare qnum
+One `qfunc main` and optional bounded helper definitions have only output scalar parameters. Scalars are qbit, bare qnum
 or `qnum<positive literal width>`. All are unsigned integral storage in this
 profile. Statements are fresh assignment, allocate(var), allocate(literal,var),
 X/H/S/Z on qbit, hadamard_transform on one scalar, and the bounded phase
@@ -60,7 +60,7 @@ Quantum variables are not folded from the basis values used to initialize them.
 Pure literal subexpressions can be folded. Duplicate output names, unknown
 symbols, uninitialized reads and repeated initialization are rejected, with
 native source locations. Single-qubit calls on qnum, numeric indexing, arrays,
-slices, bind, locals, helper definitions, classical parameters, Input/Const,
+slices, bind, locals, classical parameters, Input/Const,
 free/drop, control/invert/within, signed/fractional numbers, in-place assignment
 and other functions/operators are outside this subset and must fail explicitly.
 
@@ -99,3 +99,30 @@ workflow. Focused tests are `tests/team/ecosystem/test_qmod_phase.py` and
 `tests/integration/test_synthesis_qmod_phase.py`. See the
 [delivery record](../../../docs/roadmap/SYNTH_QMOD_PHASE_DELIVERY.md).
 These are synthetic probes, not additional admitted originals.
+
+## Fresh-output quantum helpers
+
+A source can define at most 32 qfuncs with exactly one main. Helpers accept only
+fresh output scalar variables, and every output must be initialized by return.
+They may call each other in an acyclic graph, including forward references;
+repeated calls must use different fresh storage. Argument kinds and resolved
+widths match exactly. A bare qnum actual can infer its width from a verified
+helper output; an already specified width cannot be coerced. There are no
+captured external outputs, mutable borrows, Input/Const roles or local storage.
+Builtin functions and the pi coefficient symbol cannot be redefined.
+
+Each definition is independently translated and verified by Compiler, including
+unused definitions. The adapter then substitutes output references in verified
+register effects and threads the existing effect token. Arithmetic callees use
+definition-qualified names and are reused across repeated calls. Final main is
+verified again. The adapter does not clone quantum states, substitute source
+text, execute Python, add a call executor or duplicate Compiler's lifetime
+rules. Expanded effects point to the call site; arithmetic callees retain their
+definition locations. Existing token, node, width and 4096-effect budgets apply.
+
+Run `python -m examples.synthesis_qmod_helpers` for nested preparation and
+`x*x+y` with named output reading. See
+[helper delivery](../../../docs/roadmap/SYNTH_QMOD_HELPERS_DELIVERY.md) and
+`tests/team/ecosystem/test_qmod_helpers.py` plus
+`tests/integration/test_synthesis_qmod_helpers.py` for the contributor path.
+This is fresh Output composition, not general function-role or scope admission.

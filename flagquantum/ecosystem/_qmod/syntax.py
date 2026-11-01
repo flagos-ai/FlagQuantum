@@ -12,6 +12,7 @@ from ...compiler._hybrid.verifier import Diagnostic, HybridVerificationError
 MAX_BYTES = 262144
 MAX_TOKENS = 4096
 MAX_DEPTH = 32
+MAX_FUNCTIONS = 32
 _TOKEN = re.compile(
     r"(?P<space>\s+)|(?P<comment>//[^\n]*|/\*[\s\S]*?\*/)"
     r"|(?P<number>[0-9]+)|(?P<name>[A-Za-z_][A-Za-z_0-9]*)"
@@ -118,7 +119,7 @@ class Function:
 
 
 class Parser:
-    """One source entry; syntax records stay within this private adapter."""
+    """Bounded source definitions; records stay within this private adapter."""
 
     def __init__(self, tokens: tuple[Token, ...]) -> None:
         self.tokens = tokens
@@ -202,11 +203,9 @@ class Parser:
             )
         return left
 
-    def parse(self) -> Function:
+    def function(self) -> Function:
         self.take("qfunc")
         name = self.name()
-        if name.text != "main":
-            reject(name, "entry", "the initial native profile requires one qfunc main")
         self.take("(")
         parameters: list[Parameter] = []
         while self.current.text != ")":
@@ -283,5 +282,15 @@ class Parser:
             self.take(";")
             statements.append(Statement(operator, arguments))
         self.take("}")
-        self.take("<eof>")
         return Function(name, tuple(parameters), tuple(statements))
+
+    def parse(self) -> tuple[Function, ...]:
+        functions = [self.function()]
+        while self.current.text != "<eof>":
+            if len(functions) >= MAX_FUNCTIONS:
+                reject(
+                    self.current, "budget.functions", "source exceeds 32 definitions"
+                )
+            functions.append(self.function())
+        self.take("<eof>")
+        return tuple(functions)

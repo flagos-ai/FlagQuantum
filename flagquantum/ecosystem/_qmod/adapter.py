@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from types import MappingProxyType
 
@@ -27,6 +27,8 @@ from .syntax import Expression, Function, Parameter, Parser, Token, reject, toke
 
 SUPPORTED_SOURCE_VERSION = "2bfd835e73b6882fcc515a725098b04766c238e7"
 MAX_EFFECT_OPERATIONS = 4096
+_GATE_CALLS = frozenset({"X", "H", "S", "Z", "hadamard_transform"})
+_INTRINSICS = _GATE_CALLS | {"allocate", "phase", "pi"}
 
 
 @dataclass(frozen=True)
@@ -149,8 +151,16 @@ class _Expression:
 
 
 class _Adapt:
-    def __init__(self, syntax: Function) -> None:
+    def __init__(
+        self,
+        syntax: Function,
+        resolve: Callable[
+            [Token], tuple[Function, HybridProgram, tuple[HybridProgram, ...]]
+        ],
+    ) -> None:
         self.syntax = syntax
+        self.resolve = resolve
+        self.scope = syntax.name.text
         self.parameters: dict[str, Parameter] = {}
         for parameter in syntax.parameters:
             name = parameter.name.text
@@ -161,7 +171,7 @@ class _Adapt:
         self.inferred: dict[str, int] = {}
         self.registers: dict[str, Value] = {}
         self.counter = len(self.parameters) + 1
-        self.entry = Value(ValueId("main", 0), QUANTUM_EFFECT)
+        self.entry = Value(ValueId(self.scope, 0), QUANTUM_EFFECT)
         self.effect = self.entry
         self.operations: list[Operation] = []
         self.functions: list[HybridProgram] = []
@@ -188,7 +198,9 @@ class _Adapt:
             )
         if name not in self.registers:
             index = tuple(self.parameters).index(name) + 1
-            self.registers[name] = Value(ValueId("main", index), register_type(width))
+            self.registers[name] = Value(
+                ValueId(self.scope, index), register_type(width)
+            )
         return self.registers[name]
 
     def effect_op(
@@ -200,7 +212,7 @@ class _Adapt:
                 "budget.expansion",
                 "native expansion exceeds 4096 effect operations",
             )
-        effect = Value(ValueId("main", self.counter), QUANTUM_EFFECT)
+        effect = Value(ValueId(self.scope, self.counter), QUANTUM_EFFECT)
         self.counter += 1
         self.operations.append(
             Operation(
@@ -219,12 +231,58 @@ class _Adapt:
             reject(node.token, "signature", "this argument must be one output variable")
         return node.token
 
+    def call(self, token: Token, arguments: tuple[Expression, ...]) -> None:
+        if token.text in self.parameters:
+            reject(token, "call", "an output variable shadows this helper call")
+        syntax, program, functions = self.resolve(token)
+        if len(arguments) != len(syntax.parameters):
+            reject(token, "signature", "helper output argument count disagrees")
+        declarations = tuple(
+            op.results[0]
+            for op in program.body.blocks[0].operations
+            if op.name == "qreg.declare"
+        )
+        bindings: dict[Value, Value] = {}
+        for argument, parameter, formal in zip(
+            arguments, syntax.parameters, declarations, strict=True
+        ):
+            actual_name = self.atom(argument)
+            actual = self.register(actual_name, formal.type.parameters[0])
+            if (
+                self.parameters[actual_name.text].kind != parameter.kind
+                or actual.type != formal.type
+            ):
+                reject(
+                    argument.token,
+                    "signature",
+                    "helper output kind/width must match exactly",
+                )
+            if actual in bindings.values():
+                reject(
+                    argument.token,
+                    "alias",
+                    "helper outputs require distinct fresh storage",
+                )
+            bindings[formal] = actual
+        known = {f.name for f in self.functions}
+        self.functions.extend(f for f in functions if f.name not in known)
+        for op in program.body.blocks[0].operations:
+            if op.name not in {"qreg.declare", "qreg.return"}:
+                self.effect_op(
+                    op.name,
+                    token,
+                    tuple(bindings[v] for v in op.operands[1:]),
+                    **op.attributes,
+                )
+
     def adapt(self) -> tuple[HybridProgram, tuple[HybridProgram, ...]]:
         for index, statement in enumerate(self.syntax.statements):
             token, args = statement.token, statement.arguments
             if token.text == "=":
                 target = self.atom(args[0])
-                expression = _Expression(args[1], self.widths, f"main.expr{index}")
+                expression = _Expression(
+                    args[1], self.widths, f"{self.scope}.expr{index}"
+                )
                 destination = self.register(target, unsigned_width(expression.bound))
                 if expression.quantum:
                     graph = expression.function()
@@ -258,7 +316,9 @@ class _Adapt:
                         "coefficient",
                         "phase supports only the unshadowed symbolic coefficient pi",
                     )
-                expression = _Expression(args[0], self.widths, f"main.phase{index}")
+                expression = _Expression(
+                    args[0], self.widths, f"{self.scope}.phase{index}"
+                )
                 if not expression.quantum or unsigned_width(expression.bound) != 1:
                     reject(
                         args[0].token,
@@ -303,7 +363,7 @@ class _Adapt:
                         "allocation size must agree with the declared width",
                     )
                 self.effect_op("qreg.allocate", token, (destination,))
-            elif token.text in {"X", "H", "S", "Z", "hadamard_transform"}:
+            elif token.text in _GATE_CALLS:
                 if len(args) != 1:
                     reject(
                         token, "signature", f"{token.text} requires one output variable"
@@ -334,11 +394,7 @@ class _Adapt:
                         index=bit,
                     )
             else:
-                reject(
-                    token,
-                    "call",
-                    f"unsupported function {token.text!r}; no operation is silently omitted",
-                )
+                self.call(token, args)
         declared = tuple(self.register(p.name) for p in self.syntax.parameters)
         declarations = tuple(
             Operation(
@@ -350,7 +406,7 @@ class _Adapt:
             for parameter, value in zip(self.syntax.parameters, declared, strict=True)
         )
         program = HybridProgram(
-            "main",
+            self.scope,
             Region(
                 (
                     Block(
@@ -409,8 +465,46 @@ def parse_qmod(
     """
     tokens = tokenize(source, filename)
     check_source_version(source_version, tokens[0])
-    adapter = _Adapt(Parser(tokens).parse())
-    program, functions = adapter.adapt()
+    definitions: dict[str, Function] = {}
+    for syntax in Parser(tokens).parse():
+        name = syntax.name.text
+        if name in definitions or name in _INTRINSICS:
+            reject(syntax.name, "name", "duplicate function or intrinsic redefinition")
+        definitions[name] = syntax
+    if "main" not in definitions:
+        reject(tokens[0], "entry", "source requires one qfunc main")
+    compiled: dict[str, tuple[_Adapt, HybridProgram, tuple[HybridProgram, ...]]] = {}
+    active: set[str] = set()
+
+    def resolve(
+        token: Token,
+    ) -> tuple[Function, HybridProgram, tuple[HybridProgram, ...]]:
+        name = token.text
+        if name == "main" or name not in definitions:
+            reject(token, "call", f"unsupported native helper call {name!r}")
+        adapter, program, functions = build(definitions[name])
+        return adapter.syntax, program, functions
+
+    def build(
+        syntax: Function,
+    ) -> tuple[_Adapt, HybridProgram, tuple[HybridProgram, ...]]:
+        name = syntax.name.text
+        if name in active:
+            reject(
+                syntax.name, "recursion", "quantum helper call graph must be acyclic"
+            )
+        if name not in compiled:
+            active.add(name)
+            adapter = _Adapt(syntax, resolve)
+            program, functions = adapter.adapt()
+            compiled[name] = adapter, program, functions
+            active.remove(name)
+        return compiled[name]
+
+    # Unused definitions must obey the same contract as reachable helpers.
+    for syntax in definitions.values():
+        build(syntax)
+    adapter, program, functions = compiled["main"]
     return QmodImport(
         program, functions, source_version, MappingProxyType(adapter.inferred), filename
     )
