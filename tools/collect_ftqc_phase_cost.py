@@ -191,7 +191,10 @@ def execute(
         "rss_scope": "sum owned-group RSS; shared pages may count twice; sampled, not allocation cap",
     }
 
+    query_started = started
+
     def query_rss(group: int) -> int:
+        nonlocal query_started
         query_started = time.monotonic()
         try:
             return _process_group_rss(group)
@@ -207,6 +210,14 @@ def execute(
                 ),
             }
             raise
+
+    def record_gap(completed: float, previous: float) -> None:
+        # Separate known intervals; neither interval identifies an OS-level cause.
+        result["rss_gap_timing"] = {
+            "between_queries_seconds": query_started - previous,
+            "query_and_return_seconds": completed - query_started,
+            "sample_gap_seconds": completed - previous,
+        }
 
     process: subprocess.Popen[bytes] | None = None
     peak, maximum_gap = 0, 0.0
@@ -230,20 +241,26 @@ def execute(
                 budget(output, min(deadline, started + SECONDS), CLEANUP_RESERVE)
                 rss = query_rss(process.pid)
                 now = time.monotonic()
+                prior_sample = previous_sample
                 maximum_gap = max(maximum_gap, now - previous_sample)
                 previous_sample = now
                 observations.append((now - started, rss))
                 peak = max(peak, rss)
                 if maximum_gap > 0.1 or rss > RSS_BYTES:
+                    if maximum_gap > 0.1:
+                        record_gap(now, prior_sample)
                     raise RuntimeError("RSS sample gap or group limit exceeded")
                 time.sleep(0.01)
             final_rss = query_rss(process.pid)
-            maximum_gap = max(maximum_gap, time.monotonic() - previous_sample)
+            final_now = time.monotonic()
+            maximum_gap = max(maximum_gap, final_now - previous_sample)
             if (
                 final_rss
                 or maximum_gap > 0.1
                 or not any(rss > 0 for _, rss in observations)
             ):
+                if maximum_gap > 0.1:
+                    record_gap(final_now, previous_sample)
                 raise RuntimeError(
                     "group survived launcher or final monitoring interval invalid"
                 )

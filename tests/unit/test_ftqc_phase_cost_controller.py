@@ -606,3 +606,77 @@ def test_rss_timeout_retains_bounded_evidence_and_cleanup(
     assert set(evidence) == {"elapsed_seconds", "stdout_bytes", "stderr_bytes"}
     assert "private process rows" not in json.dumps(report)
     assert "text output" not in json.dumps(report)
+
+
+@pytest.mark.parametrize("final_query", [False, True])
+@pytest.mark.parametrize("query_started", [0.12, 0.031])
+def test_sample_gap_retains_two_intervals_without_retry(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    final_query: bool,
+    query_started: float,
+) -> None:
+    class Process:
+        pid = 4242
+        returncode = None
+
+        def poll(self) -> int | None:
+            return 0 if final_query else None
+
+    process = Process()
+    clock = iter([0.0, query_started, 0.151, 0.16, 0.17, 0.18])
+    calls: list[int | None] = []
+    stopped: list[object] = []
+
+    def query(group: int | None) -> int:
+        calls.append(group)
+        return 0 if final_query else 4096
+
+    monkeypatch.setattr(time, "monotonic", lambda: next(clock))
+    monkeypatch.setattr(subprocess, "Popen", lambda *_args, **_kwargs: process)
+    monkeypatch.setattr(controller, "budget", lambda *_: None)
+    monkeypatch.setattr(controller, "_process_group_rss", query)
+    monkeypatch.setattr(controller, "_stop_group", stopped.append)
+    directory = tmp_path / "attempt"
+    directory.mkdir()
+    report = controller.execute(["synthetic"], directory, tmp_path, float("inf"))
+    assert calls == [4242] and stopped == [process]
+    assert report["status"] == "failed"
+    evidence = report["rss_gap_timing"]
+    assert evidence == pytest.approx(
+        {
+            "between_queries_seconds": query_started,
+            "query_and_return_seconds": 0.151 - query_started,
+            "sample_gap_seconds": 0.151,
+        },
+        abs=1e-12,
+        rel=0,
+    )
+    assert report["rss_sample_gap_max_seconds"] == 0.151
+    assert "rss_query_timeout" not in report
+
+
+def test_surviving_group_does_not_claim_a_sample_gap(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    class Process:
+        pid = 4242
+        returncode = 0
+
+        def poll(self) -> int:
+            return 0
+
+    process = Process()
+    clock = iter([0.0, 0.01, 0.02, 0.03, 0.04, 0.05])
+    stopped: list[object] = []
+    monkeypatch.setattr(time, "monotonic", lambda: next(clock))
+    monkeypatch.setattr(subprocess, "Popen", lambda *_args, **_kwargs: process)
+    monkeypatch.setattr(controller, "budget", lambda *_: None)
+    monkeypatch.setattr(controller, "_process_group_rss", lambda _: 4096)
+    monkeypatch.setattr(controller, "_stop_group", stopped.append)
+    directory = tmp_path / "attempt"
+    directory.mkdir()
+    report = controller.execute(["synthetic"], directory, tmp_path, float("inf"))
+    assert report["status"] == "failed" and stopped == [process]
+    assert "rss_gap_timing" not in report
+    assert report["rss_max_gap_limit_seconds"] == 0.1
