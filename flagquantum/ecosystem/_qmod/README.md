@@ -123,7 +123,7 @@ allocate no storage and do not appear in the output-only inferred-width map.
 
 Local reads or initialization outside scopes, pure literal preparation, allocate
 or gates in preparation, helper preparation calls, Output preparation, arbitrary
-gates/writes in apply, Output helper arguments, lexical nesting and declarations
+gates/writes in apply, Output helper arguments, nesting in preparation and declarations
 inside blocks are refused. Empty apply is valid; empty within is refused. Direct
 comparison phase arguments remain refused: compute a one-bit local first.
 Manual uncompute/release/free/drop and consuming Input remain outside admission.
@@ -209,3 +209,17 @@ verifier remain frozen; the additive provenance test checks the new cohort.
 The inspected two-variable comparator requires signed allocation and remains
 unsupported. See the [comparison delivery](../../../docs/roadmap/SYNTH_QMOD_COMPARISONS_DELIVERY.md)
 for measured costs and boundaries; this does not imply all-corpus support.
+
+## Nested apply scopes
+
+Apply may contain another supported within/apply block, to lexical depth 32.
+Preparation still admits only fresh quantum-expression local assignments.
+Each inner scope cleans only its newly materialized locals and restores the
+outer context; parent locals may feed inner computations and stay live until
+parent exit. Reinitializing a live parent is refused by Compiler. Inner locals
+cannot escape; siblings may reuse released names with fixed widths. Declarations
+remain function-level and scope words remain contextual identifiers.
+
+Run `python -m examples.synthesis_qmod_nested`. The example computes x+y into
+energy, then phases energy<4 inside an inner scope, returning only x/y.
+See the [contract](../../../docs/api-changes/FQ-SYNTH-NESTED-APPLY-20261101.md).
