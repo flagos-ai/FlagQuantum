@@ -206,8 +206,23 @@ def schedule_arithmetic(
             left, right = right, left
         return left, right
 
+    def carry_free_add(op: Operation) -> bool:
+        if op.name != "qint.add":
+            return False
+        left, right = operands(op)
+        if not isinstance(left, tuple) or not isinstance(right, int) or right <= 0:
+            return False
+        variable = op.operands[1] if op.operands[0].type == INDEX else op.operands[0]
+        mask = (1 << unsigned_width(bound(variable.id))) - 1
+        return right & mask == 0
+
     def reserve(key: ValueId, op: Operation) -> _Allocation:
-        if op.name in {"qint.equal", "qint.less", "qint.multiply", "qint.select"}:
+        if op.name in {
+            "qint.equal",
+            "qint.less",
+            "qint.multiply",
+            "qint.select",
+        } or carry_free_add(op):
             owned = allocate(unsigned_width(bound(key)), op)
             return _Allocation(owned, owned)
         left, _ = operands(op)
@@ -237,6 +252,8 @@ def schedule_arithmetic(
                         gates.append(Instruction("ccx", (control, *gate.wires)))
             return gates
         left, right = operands(op)
+        if carry_free_add(op):
+            return (*_copy(left, allocation.result), *_copy(right, allocation.result))
         if op.name in {"qint.equal", "qint.less"}:
             return comparison_xor(
                 left,
