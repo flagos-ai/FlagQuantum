@@ -176,7 +176,7 @@ def test_new_original_is_verified_at_unchanged_declared_size(
     assert path.read_bytes() == original
 
 
-@pytest.mark.parametrize("statement", ["flag=x<y<2;", "phase(x<y,pi);", "flag=x is y;"])
+@pytest.mark.parametrize("statement", ["flag=x<y<2;", "phase(x+y,pi);", "flag=x is y;"])
 def test_unsupported_conditions_fail_before_planning(
     monkeypatch: pytest.MonkeyPatch, statement: str
 ) -> None:

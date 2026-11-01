@@ -86,11 +86,13 @@ def test_unparenthesized_chains_are_rejected(expression: str) -> None:
 
 
 @pytest.mark.parametrize("expression", ["x<y", "(x==y)*x", "x*(1<2)"])
-def test_phase_arguments_keep_the_polynomial_source_boundary(expression: str) -> None:
-    with pytest.raises(HybridVerificationError, match="qmod.phase"):
-        parse(
-            f"qfunc main(output x:qbit,output y:qbit) {{ allocate(x); allocate(y); phase({expression},pi); }}"
-        )
+def test_phase_arguments_admit_one_bit_comparison_expressions(expression: str) -> None:
+    imported = parse(
+        f"qfunc main(output x:qbit,output y:qbit) {{ allocate(x); allocate(y); phase({expression},pi); }}"
+    )
+    assert any(
+        op.name == "qreg.phase" for op in imported.program.body.blocks[0].operations
+    )
 
 
 def test_arithmetic_precedence_and_explicit_nested_comparisons() -> None:

@@ -71,7 +71,6 @@ class _Expression:
         self.node, self.widths, self.name = node, widths, name
         self.facts: dict[Expression, tuple[int, bool]] = {}
         self.names: list[str] = []
-        self.comparison = False
         self.bound, self.quantum = self.infer(node)
         arguments: list[Value] = []
         for index, key in enumerate(self.names):
@@ -104,7 +103,6 @@ class _Expression:
             left, lq = self.infer(node.children[0])
             right, rq = self.infer(node.children[1])
             if text in _RELATIONS:
-                self.comparison = True
                 opcode, swap, invert = _RELATIONS[text]
                 a, b = (right, left) if swap else (left, right)
                 bound = int(a == b if opcode == "qint.equal" else a < b) ^ int(invert)
@@ -443,12 +441,6 @@ class _Adapt:
                     "phase supports only the unshadowed symbolic coefficient pi",
                 )
             expression = _Expression(args[0], self.widths, f"{self.scope}.phase{index}")
-            if expression.comparison:
-                reject(
-                    args[0].token,
-                    "phase",
-                    "phase requires a polynomial; compute comparison into a one-bit register first",
-                )
             if not expression.quantum or unsigned_width(expression.bound) != 1:
                 reject(
                     args[0].token,

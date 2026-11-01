@@ -48,7 +48,7 @@ def test_native_phase_builds_owned_one_bit_callee(kind, allocation):
         ("output x:qnum<2>", "x=0; phase(x,pi);", "qmod.phase"),
         ("output x:qnum", "phase(x,pi);", "qmod.width"),
         ("output x:qbit", "allocate(x); phase(missing,pi);", "qmod.name"),
-        ("output x:qbit", "allocate(x); phase(x==1,pi);", "qmod.phase"),
+        ("output x:qbit", "allocate(x); phase(1==1,pi);", "qmod.phase"),
     ],
 )
 def test_unsupported_native_phase_fails_with_source_location(declaration, body, code):
