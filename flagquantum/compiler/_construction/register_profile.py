@@ -25,6 +25,7 @@ _ATTRIBUTES = MappingProxyType(
         "qreg.initialize": frozenset({"value"}),
         "qreg.gate": frozenset({"gate", "index"}),
         "qreg.compute": frozenset({"callee"}),
+        "qreg.phase": frozenset({"callee"}),
         "qreg.return": frozenset(),
     }
 )
@@ -86,6 +87,7 @@ def verify_register_program(
     order. Gates address numeric bit indices (zero is least significant).
     Compute initializes a fresh destination using a verified arithmetic function;
     repeated actual inputs borrow one register and do not copy quantum state.
+    Phase calls borrow initialized values without changing basis values or roles.
     """
     _positive_integer(max_qubits, "max_qubits")
     _positive_integer(max_nodes, "max_nodes")
@@ -123,6 +125,39 @@ def verify_register_program(
     initialized: set[ValueId] = set()
     labels: set[str] = set()
     width = 0
+
+    def check_call(
+        op: Operation, arguments: Sequence[Value], destination: Value | None = None
+    ) -> None:
+        callee = op.attributes["callee"]
+        if not isinstance(callee, str) or callee not in symbols:
+            _fail("register.callee", "call requires a verified expression function", op)
+        body = symbols[callee].body.blocks[0]
+        if len(arguments) != len(body.arguments) or any(
+            register_width(actual) != _width(formal.type, max_qubits)
+            for actual, formal in zip(arguments, body.arguments, strict=True)
+        ):
+            _fail(
+                "register.signature",
+                "register widths disagree with arithmetic inputs",
+                op,
+            )
+        if destination is not None and destination in arguments:
+            _fail("register.alias", "fresh destination cannot alias an input", op)
+        if any(v.id not in initialized for v in arguments):
+            _fail("register.uninitialized", "call reads uninitialized storage", op)
+        returned = body.operations[-1].operands[0]
+        result_width = _width(returned.type, max_qubits)
+        if destination is None:
+            if result_width != 1:
+                _fail(
+                    "register.phase",
+                    "phase call requires an exactly one-bit return",
+                    op,
+                )
+        elif register_width(destination) < result_width:
+            _fail("register.width", "fresh assignment cannot truncate its result", op)
+
     for position, op in enumerate(block.operations):
         attributes = _ATTRIBUTES.get(op.name)
         if attributes is None or set(op.attributes) != attributes or op.regions:
@@ -180,11 +215,13 @@ def verify_register_program(
             if not operands:
                 _fail(
                     "register.signature",
-                    "operation requires a destination register",
+                    "operation requires at least one register operand",
                     op,
                 )
             destination, *arguments = operands
-            if op.name == "qreg.gate":
+            if op.name == "qreg.phase":
+                check_call(op, operands)
+            elif op.name == "qreg.gate":
                 index = op.attributes["index"]
                 if (
                     arguments
@@ -227,44 +264,7 @@ def verify_register_program(
                                 op,
                             )
                 else:
-                    callee = op.attributes["callee"]
-                    if not isinstance(callee, str) or callee not in symbols:
-                        _fail(
-                            "register.callee",
-                            "compute requires a verified expression function",
-                            op,
-                        )
-                    body = symbols[callee].body.blocks[0]
-                    if len(arguments) != len(body.arguments) or any(
-                        register_width(actual) != _width(formal.type, max_qubits)
-                        for actual, formal in zip(
-                            arguments, body.arguments, strict=True
-                        )
-                    ):
-                        _fail(
-                            "register.signature",
-                            "register widths disagree with arithmetic inputs",
-                            op,
-                        )
-                    if destination in arguments:
-                        _fail(
-                            "register.alias",
-                            "fresh destination cannot alias an input",
-                            op,
-                        )
-                    if any(v.id not in initialized for v in arguments):
-                        _fail(
-                            "register.uninitialized",
-                            "arithmetic reads uninitialized storage",
-                            op,
-                        )
-                    returned = body.operations[-1].operands[0]
-                    if register_width(destination) < _width(returned.type, max_qubits):
-                        _fail(
-                            "register.width",
-                            "fresh assignment cannot truncate its result",
-                            op,
-                        )
+                    check_call(op, arguments, destination)
                 initialized.add(destination.id)
             effect = op.results[0]
         for result in op.results:

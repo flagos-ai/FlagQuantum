@@ -140,6 +140,19 @@ _DEFAULT_TARGET = Target()
 _STRATEGIES: tuple[Schedule, ...] = ("retain", "recompute")
 
 
+def _check_phase_target(target: Target) -> None:
+    if target.basis is None and target.couplings:
+        raise ValueError(
+            "routed phase output requires the conservative PHASE_BASIS profile"
+        )
+    if target.basis is not None and (
+        set(target.basis) != set(PHASE_BASIS) or target.optimize
+    ):
+        raise ValueError(
+            "phase output admits only native logical targets or the unoptimized PHASE_BASIS profile; other conversions may drop global phase"
+        )
+
+
 def select_arithmetic(
     functions: Sequence[HybridProgram],
     *,
@@ -169,16 +182,7 @@ def select_arithmetic(
     if output_mode not in ("value", "phase"):
         raise ValueError("choose value or phase output mode")
     if output_mode == "phase":
-        if target.basis is None and target.couplings:
-            raise ValueError(
-                "routed phase output requires the conservative PHASE_BASIS profile"
-            )
-        if target.basis is not None and (
-            set(target.basis) != set(PHASE_BASIS) or target.optimize
-        ):
-            raise ValueError(
-                "phase output admits only native logical targets or the unoptimized PHASE_BASIS profile; other conversions may drop global phase"
-            )
+        _check_phase_target(target)
     graph = verify_construction(functions, entry=entry)
     block = graph.body.blocks[0]
     if isinstance(input_names, (str, bytes)):
@@ -309,6 +313,8 @@ def select_register_program(
     # Keep capacity exhaustion in the selector's existing incomplete-search
     # diagnostic rather than mistaking a resource budget for invalid semantics.
     verify_register_program(program, functions)
+    if any(op.name == "qreg.phase" for op in program.body.blocks[0].operations):
+        _check_phase_target(target)
     mapping, _, position = register_ports(program)
     identities = (
         program.semantic_identity,
