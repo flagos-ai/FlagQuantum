@@ -47,7 +47,8 @@ files are not simulated by this test grid. See the
 One `qfunc main` has only output scalar parameters. Scalars are qbit, bare qnum
 or `qnum<positive literal width>`. All are unsigned integral storage in this
 profile. Statements are fresh assignment, allocate(var), allocate(literal,var),
-X/H/S/Z on qbit, and hadamard_transform on one scalar. Right-hand expressions
+X/H/S/Z on qbit, hadamard_transform on one scalar, and the bounded phase
+statement below. Right-hand expressions
 use declared outputs, nonnegative decimal literals, parentheses, +, * and a
 literal **2. Standard arithmetic precedence applies. Line and block comments
 and CRLF are accepted. The entire source must be consumed.
@@ -72,3 +73,29 @@ Classiq commit `2bfd835e73b6882fcc515a725098b04766c238e7`. That argument is a
 caller declaration, not proof of source authorship or a hash check. The original
 fixture manifest separately proves byte integrity. Current documentation may
 change; do not silently accept another source version or expand the grammar.
+
+## Ordered sign phases
+
+`phase(expression, pi);` applies (-1)**expression without a result flag. The
+expression uses the arithmetic subset above, references initialized quantum
+outputs and has an inferred result width of exactly one bit. `pi` must be the
+unshadowed symbolic coefficient; no evaluation or SDK is involved. Source names
+shadowing `phase` or its `pi` coefficient are refused at the intrinsic call.
+`phase(x*y, pi)` can use a direct CZ marker; `phase(x*x, pi)` preserves aliases.
+Quantum-dependent constants preserve their overall sign, including `x*0+1`.
+Pure literal phases, multibit results, comparisons and arbitrary angles remain
+unsupported. Width inference uses declared domains, even after `x=0`.
+
+This statement emits the existing qreg.phase callee and borrows live values;
+Compiler handles exact cleanup before later mutation or arithmetic. It does
+not consume or initialize the borrowed outputs. Use the default synthesis mode:
+Qmod `output_mode="phase"` remains a refused Python-only expression mode.
+Default logical CPU execution is admitted; public explicit basis/line targets
+are refused by the existing exact-phase target guard. Memory is checked at the
+existing planning boundary, before execution, rather than by the source parser.
+
+Run `python -m examples.synthesis_qmod_phase` for a gate-free, named-result
+workflow. Focused tests are `tests/team/ecosystem/test_qmod_phase.py` and
+`tests/integration/test_synthesis_qmod_phase.py`. See the
+[delivery record](../../../docs/roadmap/SYNTH_QMOD_PHASE_DELIVERY.md).
+These are synthetic probes, not additional admitted originals.

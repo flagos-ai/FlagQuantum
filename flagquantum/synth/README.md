@@ -238,9 +238,9 @@ write uncomputation. The default output_mode="value" retains the existing XOR
 result and all target options. No decorator is required; qfunc/helpers/constants
 work through the same source-capture profile.
 
-Phase currently accepts Python one-bit unsigned returns only, including ==/<
+The output_mode="phase" option accepts Python one-bit unsigned returns, including ==/<
 and optional bool return annotations. It requires basis=None and topology=None;
-native Qmod phase and explicit basis/routing requests fail before source
+Qmod with that option and explicit basis/routing requests fail before source
 acquisition or capture. A wider integer return is rejected rather than coerced
 to truthiness. Existing input_state or mapped static preparation is supported;
 preparation stays outside the phase oracle. Memory and construction limits keep
@@ -255,10 +255,41 @@ is omitted. Use source_resources and actual resources for whole-program costs.
 
 This is unreleased logical-CPU development evidence. General routed phase,
 projective basis conversion, arbitrary angles, controlled-block/within-apply DSL,
-Qmod phase, GPU/QPU/gradient admission and full-corpus compatibility remain out
+arbitrary native Qmod phase, GPU/QPU/gradient admission and full-corpus compatibility remain out
 of scope. See [public delivery](../../docs/roadmap/SYNTH_PUBLIC_PHASE_DELIVERY.md)
 and the [historical private evidence](../../docs/roadmap/SYNTH_PHASE_ORACLE_DELIVERY.md).
 Independent developer trials remain 0/2 and release authorization is false.
+
+### Native sign phase statements
+
+Qmod can instead apply ordered `phase(expression, pi)` statements to initialized
+scalar outputs. The expression must reference a quantum register and have a
+one-bit unsigned result; this is a bounded sign marker, not arbitrary-angle
+phase synthesis. Use the default value mode and read the live named registers:
+
+```python
+import flagquantum as fq
+from flagquantum import synth
+
+source = """qfunc main(output x:qnum<1>, output y:qnum<1>) {
+    allocate(x); allocate(y);
+    hadamard_transform(x); hadamard_transform(y);
+    phase(x*y, pi);
+    hadamard_transform(y);
+}"""
+program = synth.synthesize(source, source_format="qmod", max_qubits=2)
+result = fq.run(program)
+print(dict(program.probabilities(result, registers=("x", "y"))))
+```
+
+The two named results (0,0) and (1,1) each have probability 1/2, within floating
+precision. Default costs are 2 qubits, zero workspace, 4 operations (3 H, 1 CZ)
+and depth 3. Compiler handles arithmetic selection, exact inverse cleanup and
+wire layout; users supply register widths, preparation, phase intent and budgets.
+Run `python -m examples.synthesis_qmod_phase`. Arbitrary angles, multibit phase
+results, fixed classical phase, helpers and explicit basis/line targets remain
+unsupported. The Python-only output_mode option is not needed for source phase
+statements. See the [delivery](../../docs/roadmap/SYNTH_QMOD_PHASE_DELIVERY.md).
 
 ## Controlled predicate phase without a control-block API
 
