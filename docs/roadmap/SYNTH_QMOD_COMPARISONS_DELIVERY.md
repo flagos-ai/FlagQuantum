@@ -43,6 +43,9 @@ is zeroed. This is not implicit uncomputation of an exported result. Python
 predicate phase mode and exact CPU target restrictions retain their contracts.
 An existing negative phase test now expects qmod.phase instead of qmod.operator
 because comparison parsing is admitted but this statement remains restricted.
+The earlier Python-comparison delivery's native refusal case now checks a
+positive full-state binary comparison and a refused chain, matching this
+contract instead of retaining an obsolete prohibition on all comparisons.
 
 ## Original source and evidence
 
@@ -75,6 +78,11 @@ Full-state and dirty-work tolerances are 1e-12. Broader results are recorded in
 the PR; known local QFT baseline failures are reported separately.
 The 340-case frontend coverage run passes with all 517 statements and all 210
 branch exits covered across the existing four native frontend modules.
+The broad run records 2173 passes, 21 skips and one obsolete all-comparison
+refusal. After updating that case to verify binary admission and chain refusal,
+its targeted rerun passes, giving 2174 distinct existing cases verified. The
+initial invocation is not described as green. The default tier records 4911
+passes, 121 skips and the same three local native-QFT 44-versus-28 failures.
 
 CPU complex128 measurements on CPython 3.12.14 / PyTorch 2.14.1 include all
 preparation and exported flags. Both objectives choose identical costs here:
