@@ -26,6 +26,7 @@ _ATTRIBUTES = MappingProxyType(
         "qreg.initialize": frozenset({"value"}),
         "qreg.gate": frozenset({"gate", "index"}),
         "qreg.compute": frozenset({"callee"}),
+        "qreg.uncompute": frozenset(),
         "qreg.phase": frozenset({"callee"}),
         "qreg.call": frozenset({"callee"}),
         "qreg.return": frozenset(),
@@ -90,6 +91,7 @@ def verify_register_program(
     Compute initializes a fresh destination using a verified arithmetic function;
     repeated actual inputs borrow one register and do not copy quantum state.
     Phase calls borrow initialized values without changing basis values or roles.
+    Uncompute makes unchanged directly computed storage fresh, retaining ownership.
     """
     _positive_integer(max_qubits, "max_qubits")
     _positive_integer(max_nodes, "max_nodes")
@@ -187,6 +189,7 @@ def _verify_body(
         known[value.id] = value
     registers: list[Value] = list(borrowed)
     initialized = {v.id for v in borrowed}
+    reversible: dict[ValueId, frozenset[ValueId]] = {}
     labels: set[str] = set()
     width = sum(register_width(v) for v in borrowed)
     if width > max_qubits:
@@ -285,6 +288,7 @@ def _verify_body(
                     op,
                 )
             destination, *arguments = operands
+            changed: tuple[Value, ...] = ()
             if op.name == "qreg.call":
                 callee = op.attributes["callee"]
                 if not isinstance(callee, str) or callee not in helpers:
@@ -318,8 +322,20 @@ def _verify_body(
                         "register.initialized", "call requires fresh Output actuals", op
                     )
                 initialized.update(v.id for v in writes)
+                changed = tuple(writes)
             elif op.name == "qreg.phase":
                 check_call(op, operands)
+            elif op.name == "qreg.uncompute":
+                if destination in borrowed:
+                    _fail("register.const", "Const cannot be uncomputed", op)
+                if arguments or destination.id not in reversible:
+                    _fail(
+                        "register.uncompute",
+                        "cleanup requires an unchanged direct compute and its inputs",
+                        op,
+                    )
+                initialized.remove(destination.id)
+                changed = (destination,)
             elif op.name == "qreg.gate":
                 if destination in borrowed:
                     _fail("register.const", "Const cannot be a gate target", op)
@@ -340,6 +356,7 @@ def _verify_body(
                     _fail(
                         "register.uninitialized", "gate reads uninitialized storage", op
                     )
+                changed = (destination,)
             else:
                 if destination in borrowed:
                     _fail(
@@ -373,6 +390,12 @@ def _verify_body(
                 else:
                     check_call(op, arguments, destination)
                 initialized.add(destination.id)
+                changed = (destination,)
+            for key, dependencies in tuple(reversible.items()):
+                if any(value.id in dependencies for value in changed):
+                    del reversible[key]
+            if op.name == "qreg.compute":
+                reversible[destination.id] = frozenset(v.id for v in operands)
             effect = op.results[0]
         for result in op.results:
             if result.id in known:

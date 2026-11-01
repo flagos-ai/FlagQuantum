@@ -353,3 +353,36 @@ public source example is `python -m examples.synthesis_qmod_const`; source role
 translation owns no duplicate Compiler role/effect checker. See
 the [contract](../../../docs/api-changes/FQ-SYNTH-CONST-CALLS-20261101.md) and
 [delivery](../../../docs/roadmap/SYNTH_CONST_CALLS_DELIVERY.md).
+
+## Computed storage cleanup
+
+Private qreg.uncompute(effect, destination) returns a directly computed result
+to fresh proven-zero storage. A structural proof tracks the result and its
+direct inputs since qreg.compute. A write to either invalidates that proof,
+including a diagonal gate or a cancelling gate pair; compute/phase/Const reads
+preserve it. Cleaning a dependency invalidates the dependent result's cleanup
+authority. Arbitrary initialization, user zero assertions and helper Outputs
+do not create direct-compute authority. Const references cannot be cleaned.
+
+register_lowering.py retains the actual selected ArithmeticCandidate and emits
+its exact reverse, with the same physical bindings and cleaned work tail. The
+shared lowering adjoint check admits only payload-free X/CX/CCX. Reverse events
+exchange compute/uncompute and retain their allocations, scratch and live-width
+observations. Actual forward and inverse segments, rematerializations, complete
+gate counts, workspace peaks and operation budgets use the existing records.
+No second synthesis decision is made to obtain the inverse.
+
+The destination reference and physical slot remain owned. A subsequent compute
+or initialization can reuse them, but reads/returns while fresh and double
+cleanup fail. All declared outputs still return initialized in order; no local
+escape, pool release, Input consumption, drop or free is implied. This is a
+closed prerequisite for later local/within scopes, not a general unitary inverse.
+Every helper verifies independently, including unused ones, and the expanded
+root verifies again through the existing call boundary.
+
+Run `python -m examples.synthesis_register_cleanup`, then
+`tests/team/compiler/test_construction_register_cleanup.py` and
+`tests/integration/test_synthesis_register_cleanup.py`. This owned-record example
+is for contributors; public Python/native source syntax is unchanged. See the
+[contract](../../../docs/api-changes/FQ-SYNTH-COMPUTED-CLEANUP-20261101.md) and
+[delivery](../../../docs/roadmap/SYNTH_COMPUTED_REGISTER_CLEANUP_DELIVERY.md).
