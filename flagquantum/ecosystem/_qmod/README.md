@@ -51,7 +51,7 @@ profile. Statements are fresh assignment, allocate(var), allocate(literal,var),
 X/H/S/Z on qbit, hadamard_transform on one scalar, and the bounded phase
 statement below. Right-hand expressions
 use declared quantum parameters, nonnegative decimal literals, parentheses, +, *,
-literal **2 and unsigned binary ==, !=, <, <=, >, >=. Comparisons have lower
+positive literal powers **1 through **8 and unsigned binary ==, !=, <, <=, >, >=. Comparisons have lower
 precedence than arithmetic and produce one-bit 0/1 results. Line and block comments
 and CRLF are accepted. The entire source must be consumed.
 
@@ -225,3 +225,19 @@ remain function-level and scope words remain contextual identifiers.
 Run `python -m examples.synthesis_qmod_nested`. The example computes x+y into
 energy, then phases energy<4 inside an inner scope, returning only x/y.
 See the [contract](../../../docs/api-changes/FQ-SYNTH-NESTED-APPLY-20261101.md).
+
+## Bounded positive literal powers
+
+The exponent must be a literal leaf in 1..8; zero, negative, fractional,
+classical/quantum variables, computed exponents and larger literals are refused.
+Parenthesized bases may themselves contain powers. Right associativity is
+preserved: x**2**2 has a nonliteral exponent and is refused, while (x**2)**2
+is admitted. Full domain inference retains the existing 256-bit guard.
+
+Power one reuses its operand. Higher powers expand left to right to at most
+seven existing qint.multiply operations with exact intermediate widths. Compiler
+selects multiplication implementations and scratch schedules, rather than a new
+power kernel. Literal-only powers fold; quantum-dependent constants retain their
+quantum dependencies. Existing phase, Const, local cleanup and resource limits
+still apply. This is bounded support, not optimal addition-chain selection.
+Run python -m examples.synthesis_qmod_powers for the complete cube workflow.

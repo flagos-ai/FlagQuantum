@@ -111,7 +111,11 @@ class _Expression:
                 bound = (
                     left + right
                     if text == "+"
-                    else left * left if text == "**" else left * right
+                    else (
+                        left ** int(node.children[1].token.text)
+                        if text == "**"
+                        else left * right
+                    )
                 )
                 result = (bound, lq or rq)
         if unsigned_width(result[0]) > 256:
@@ -146,7 +150,18 @@ class _Expression:
         if not node.children:
             return self.inputs[node.token.text]
         left = self.emit(node.children[0])
-        right = left if node.token.text == "**" else self.emit(node.children[1])
+        if node.token.text == "**":
+            result = left
+            base_bound = self.facts[node.children[0]][0]
+            for exponent in range(2, int(node.children[1].token.text) + 1):
+                result = self.operation(
+                    "qint.multiply",
+                    (result, left),
+                    uint_type(unsigned_width(base_bound**exponent)),
+                    node.token,
+                )
+            return result
+        right = self.emit(node.children[1])
         if node.token.text not in _RELATIONS:
             return self.operation(
                 "qint.add" if node.token.text == "+" else "qint.multiply",
