@@ -318,3 +318,37 @@ owned-IR contributor trial. The public Python predicate path is unchanged;
 public syntax/roles and native Qmod admission follow separate review. See the
 [contract](../../../docs/api-changes/FQ-SYNTH-REGISTER-PHASE-20261101.md) and
 [delivery](../../../docs/roadmap/SYNTH_REGISTER_PHASE_DELIVERY.md).
+
+## Const and fresh-output register calls
+
+Private register callees reuse HybridProgram: block arguments after the effect
+are initialized Const references; qreg.declare operations are fresh outputs.
+The final return lists all borrows then outputs, once and in order. A Const
+preserves computational-basis values while allowing phase and entanglement to
+change. It cannot be targeted by a gate or initialization, computed into, or
+passed as a nested Output. Structural refusal includes cancelling gate pairs;
+arbitrary unitary-equivalence proofs are not part of this profile.
+
+qreg.call passes Const actuals first and fresh Output actuals second. Exact
+widths and initialized reads are mandatory, even for unused Const parameters.
+Const actuals may alias each other; outputs must be disjoint from every actual.
+All definitions validate, including unused callees. Root programs keep the
+effect-only entry and all-zero allocation precondition; borrowed callees cannot
+be selected as fresh roots. No consuming Input or source-level Const is added.
+
+register_profile.py verifies roles and the acyclic call graph. The internal
+register_expansion.py substitutes verified references and rethreads effects;
+register_lowering.py then uses the unchanged arithmetic/phase schedules. The
+selector checks reachable expanded phase actions before target conversion, so
+nested calls cannot hide phase effects. Limits include 32 call levels, the
+existing 4096 source/final model nodes, and 4096 expansion visits including
+empty calls. No alternative executor, public type or role manager is needed.
+
+Run `python -m examples.synthesis_const_calls` for the contributor-only owned-IR
+path, then `tests/team/compiler/test_construction_register_calls.py` and
+`tests/integration/test_synthesis_const_calls.py`. Public Python and native
+Output-only syntax stay unchanged. Ecosystem's Output-only substitution is
+frozen for replacement by this verified Compiler boundary in the subsequent
+native role-admission change; do not extend a second role checker there. See
+the [contract](../../../docs/api-changes/FQ-SYNTH-CONST-CALLS-20261101.md) and
+[delivery](../../../docs/roadmap/SYNTH_CONST_CALLS_DELIVERY.md).
