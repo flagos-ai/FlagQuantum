@@ -390,6 +390,28 @@ def capture(
         )
         return result, bound
 
+    def arithmetic(
+        opcode: str,
+        left: _Expression,
+        right: _Expression,
+        source: _Source,
+        node: ast.expr,
+    ) -> _Expression:
+        bound = left[1] + right[1] if opcode == "qint.add" else left[1] * right[1]
+        if unsigned_width(bound) > 256:
+            _error(source, node, "budget", "expression exceeds the 256-bit safety cap")
+        if left[0].type == right[0].type == INDEX:
+            return constant(bound, source, node)
+        result = value(unsigned_width(bound))
+        emit(
+            Operation(
+                opcode, (left[0], right[0]), (result,), location=source.location(node)
+            ),
+            source,
+            node,
+        )
+        return result, bound
+
     def expression(
         node: ast.expr, env: Mapping[str, _Expression], source: _Source, depth: int = 0
     ) -> _Expression:
@@ -518,16 +540,19 @@ def capture(
                 if (
                     not isinstance(node.right, ast.Constant)
                     or type(node.right.value) is not int
-                    or node.right.value != 2
+                    or not 1 <= node.right.value <= 8
                 ):
                     _error(
                         source,
                         node,
                         "power",
-                        "only literal **2 is supported; use an explicit supported product",
+                        "power requires a literal integer exponent in 1..8",
                     )
-                right, opcode = left, "qint.multiply"
-            elif isinstance(node.op, (ast.Add, ast.Mult)):
+                powered = left
+                for _ in range(1, node.right.value):
+                    powered = arithmetic("qint.multiply", powered, left, source, node)
+                return powered
+            if isinstance(node.op, (ast.Add, ast.Mult)):
                 right = expression(node.right, env, source, depth + 1)
                 opcode = "qint.add" if isinstance(node.op, ast.Add) else "qint.multiply"
             else:
@@ -535,27 +560,9 @@ def capture(
                     source,
                     node,
                     "operator",
-                    "only +, * and literal **2 are supported; unsigned subtraction/division/modulo need a separate contract",
+                    "only +, * and literal powers 1..8 are supported; unsigned subtraction/division/modulo need a separate contract",
                 )
-            bound = left[1] + right[1] if opcode == "qint.add" else left[1] * right[1]
-            if unsigned_width(bound) > 256:
-                _error(
-                    source, node, "budget", "expression exceeds the 256-bit safety cap"
-                )
-            if left[0].type == right[0].type == INDEX:
-                return constant(bound, source, node)
-            result = value(unsigned_width(bound))
-            emit(
-                Operation(
-                    opcode,
-                    (left[0], right[0]),
-                    (result,),
-                    location=source.location(node),
-                ),
-                source,
-                node,
-            )
-            return result, bound
+            return arithmetic(opcode, left, right, source, node)
         if isinstance(node, ast.Call) and isinstance(node.func, ast.Name):
             if node.func.id in env:
                 _error(

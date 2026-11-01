@@ -107,7 +107,7 @@ def _cell(source: str, filename: str = "<cs04-cached-cell>") -> Callable[..., ob
         ("return x-y", "operator"),
         ("return x//y", "operator"),
         ("return x%y", "operator"),
-        ("return x**3", "power"),
+        ("return x**9", "power"),
         ("return x**True", "power"),
         ("return x[0]", "syntax"),
         ("return x.real", "syntax"),
