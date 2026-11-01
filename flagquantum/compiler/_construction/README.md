@@ -334,7 +334,7 @@ widths and initialized reads are mandatory, even for unused Const parameters.
 Const actuals may alias each other; outputs must be disjoint from every actual.
 All definitions validate, including unused callees. Root programs keep the
 effect-only entry and all-zero allocation precondition; borrowed callees cannot
-be selected as fresh roots. No consuming Input or source-level Const is added.
+be selected as fresh roots. Consuming Input is not admitted by this contract.
 
 register_profile.py verifies roles and the acyclic call graph. The internal
 register_expansion.py substitutes verified references and rethreads effects;
@@ -346,9 +346,10 @@ empty calls. No alternative executor, public type or role manager is needed.
 
 Run `python -m examples.synthesis_const_calls` for the contributor-only owned-IR
 path, then `tests/team/compiler/test_construction_register_calls.py` and
-`tests/integration/test_synthesis_const_calls.py`. Public Python and native
-Output-only syntax stay unchanged. Ecosystem's Output-only substitution is
-frozen for replacement by this verified Compiler boundary in the subsequent
-native role-admission change; do not extend a second role checker there. See
+`tests/integration/test_synthesis_const_calls.py`. Public Python stays unchanged.
+Ecosystem now delegates native Const/Output helpers through this boundary; its
+former Output-only substitution and alias checker have been removed. The new
+public source example is `python -m examples.synthesis_qmod_const`; source role
+translation owns no duplicate Compiler role/effect checker. See
 the [contract](../../../docs/api-changes/FQ-SYNTH-CONST-CALLS-20261101.md) and
 [delivery](../../../docs/roadmap/SYNTH_CONST_CALLS_DELIVERY.md).

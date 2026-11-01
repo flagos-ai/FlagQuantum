@@ -172,8 +172,8 @@ A string is always source text, never a filename. Files must be regular UTF-8
 .qmod files, at most 262144 bytes. Native input owns initialization, so inputs,
 input_state, constants, preparation and preparation_map must remain None and
 functions must be empty. The supported subset is one main, fresh unsigned scalar
-outputs, bounded arithmetic and the admitted preparation operations; general
-standard-library calls, arrays/views, Input/Const and free/drop remain refused.
+outputs, scalar Const/Output helpers, bounded arithmetic and admitted preparation;
+general standard-library calls, arrays/views, consuming Input and free/drop remain refused.
 See the [adapter profile](../ecosystem/_qmod/README.md) for exact syntax.
 
 Source context defaults to pinned revision
@@ -323,13 +323,50 @@ needed. This source uses 18 qubits, 10 workspace, 166 operations and depth 124,
 including preparation and cleanup. Width/depth objectives select the same costs
 for this fixture. Run `python -m examples.synthesis_qmod_helpers`.
 
-Helpers currently accept fresh Output scalars only. Initialized actuals,
-overlapping outputs, kind/width mismatches, recursion and invalid unused helpers
-are refused. At most 32 definitions and 4096 expanded effects are allowed.
-Input/Const borrowing, local scopes, arrays and arbitrary unitary composition
+Helpers accept fixed-width Const and fresh Output scalars. Const actuals must
+be initialized and can alias other Const arguments; Outputs remain disjoint and
+fresh. Kind/width mismatches, recursion and invalid unused helpers are refused.
+At most 32 definitions and Compiler's 4096-node/visit bounds are allowed.
+Consuming Input, mutable borrowing, local scopes, arrays and arbitrary unitary composition
 remain separate work. The Python-first workflow is unchanged; no Python
 decorator is required by this native compatibility feature. See the
 [delivery](../../docs/roadmap/SYNTH_QMOD_HELPERS_DELIVERY.md).
+
+### Computing from live Const inputs
+
+Keep prepared values live while a helper computes a fresh output:
+
+```python
+import flagquantum as fq
+from flagquantum import synth
+
+source = """qfunc compute_energy(const x:qnum<2>, const y:qnum<2>, output energy:qnum) {
+    energy=x*x+y;
+}
+qfunc main(output x:qnum<2>, output y:qnum<2>, output energy:qnum) {
+    allocate(x); allocate(y);
+    hadamard_transform(x); hadamard_transform(y);
+    compute_energy(x,y,energy);
+}"""
+program = synth.synthesize(source, source_format="qmod", max_qubits=24)
+result = fq.run(program)
+print(dict(program.probabilities(result, registers=("x", "y", "energy"))))
+```
+
+All sixteen `(x,y,x*x+y)` tuples have probability approximately 1/16, with
+18 qubits, 10 workspace, 166 operations and depth 124 for this complete example.
+Compiler generates arithmetic, selects work storage, cleans it and handles the
+layout. Run `python -m examples.synthesis_qmod_const`. Source roles can be
+interleaved positionally; the adapter maps them to the same verified Compiler
+call ABI used by the previous internal slice.
+
+Const means preserved basis values, permitting phase/entanglement. The helper
+may read or phase a Const, but cannot gate it, reinitialize it, compute into it
+or pass it as Output; callers may mutate after return. Main remains Output-only.
+Bare Const qnum, input/output const combinations, consuming Input and implicit
+mutable roles are refused. This adds native source syntax, not Python Const
+classes or a required decorator. See the
+[delivery](../../docs/roadmap/SYNTH_QMOD_CONST_DELIVERY.md).
 
 ## Controlled predicate phase without a control-block API
 
