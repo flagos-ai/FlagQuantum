@@ -291,6 +291,46 @@ results, fixed classical phase, helpers and explicit basis/line targets remain
 unsupported. The Python-only output_mode option is not needed for source phase
 statements. See the [delivery](../../docs/roadmap/SYNTH_QMOD_PHASE_DELIVERY.md).
 
+### Composing native preparations
+
+Native sources can separate preparation and computation into named qfuncs with
+fresh scalar outputs. A minimal composition is:
+
+```python
+import flagquantum as fq
+from flagquantum import synth
+
+source = """qfunc prepare_grid(output x:qnum<2>, output y:qnum<2>) {
+    allocate(x); allocate(y);
+    hadamard_transform(x); hadamard_transform(y);
+}
+qfunc prepare_source(output x:qnum<2>, output y:qnum<2>, output energy:qnum) {
+    prepare_grid(x,y);
+    energy=x*x+y;
+}
+qfunc main(output x:qnum, output y:qnum, output energy:qnum) {
+    prepare_source(x,y,energy);
+}"""
+program = synth.synthesize(source, source_format="qmod", max_qubits=24)
+result = fq.run(program)
+print(dict(program.probabilities(result, registers=("x", "y", "energy"))))
+```
+
+All sixteen `(x,y,x*x+y)` results have probability approximately 1/16. Main's
+widths infer to 2, 2 and 4 bits. Compiler still handles gate design, temporary
+qubits, cleanup and layout; no gate sequence, physical index or bit decoding is
+needed. This source uses 18 qubits, 10 workspace, 166 operations and depth 124,
+including preparation and cleanup. Width/depth objectives select the same costs
+for this fixture. Run `python -m examples.synthesis_qmod_helpers`.
+
+Helpers currently accept fresh Output scalars only. Initialized actuals,
+overlapping outputs, kind/width mismatches, recursion and invalid unused helpers
+are refused. At most 32 definitions and 4096 expanded effects are allowed.
+Input/Const borrowing, local scopes, arrays and arbitrary unitary composition
+remain separate work. The Python-first workflow is unchanged; no Python
+decorator is required by this native compatibility feature. See the
+[delivery](../../docs/roadmap/SYNTH_QMOD_HELPERS_DELIVERY.md).
+
 ## Controlled predicate phase without a control-block API
 
 A one-bit enable value can mask a predicate through existing expression syntax:
