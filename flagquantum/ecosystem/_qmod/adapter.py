@@ -24,7 +24,16 @@ from ...compiler._hybrid.model import (
     ValueId,
 )
 from ...compiler._hybrid.verifier import Diagnostic, HybridVerificationError
-from .syntax import Expression, Function, Parameter, Parser, Token, reject, tokenize
+from .syntax import (
+    Expression,
+    Function,
+    Parameter,
+    Parser,
+    Statement,
+    Token,
+    reject,
+    tokenize,
+)
 
 SUPPORTED_SOURCE_VERSION = "2bfd835e73b6882fcc515a725098b04766c238e7"
 MAX_EFFECT_OPERATIONS = 4096
@@ -204,15 +213,24 @@ class _Adapt:
         self.effect = self.entry
         self.operations: list[Operation] = []
         self.functions: list[HybridProgram] = []
+        self.local_scope: list[tuple[str, Token]] | None = None
 
     def register(self, token: Token, inferred: int | None = None) -> Value:
         name = token.text
         if name not in self.parameters:
             reject(token, "name", f"unknown output {name!r}")
+        local = self.parameters[name].role == "local"
+        if local and self.local_scope is None:
+            reject(
+                token,
+                "scope",
+                "local references are available only inside within/apply",
+            )
         width = self.widths[name]
         if width is None and inferred is not None:
             self.widths[name] = width = inferred
-            self.inferred[name] = inferred
+            if not local:
+                self.inferred[name] = inferred
         if width is None:
             reject(
                 token,
@@ -226,31 +244,51 @@ class _Adapt:
                 f"declared width {width} cannot fit the expression domain requiring {inferred} bits",
             )
         if name not in self.registers:
-            index = tuple(self.parameters).index(name) + 1
+            if local:
+                index = self.counter
+                self.counter += 1
+            else:
+                index = tuple(self.parameters).index(name) + 1
             self.registers[name] = Value(
                 ValueId(self.scope, index), register_type(width)
             )
+            if local:
+                assert self.local_scope is not None
+                self.local_scope.append((name, token))
+                self.append_op(
+                    token,
+                    Operation(
+                        "qreg.local",
+                        results=(self.registers[name],),
+                        attributes={"name": f"{name}.within{index}"},
+                        location=token.location,
+                    ),
+                )
         return self.registers[name]
 
-    def effect_op(
-        self, name: str, token: Token, values: tuple[Value, ...], **attributes: object
-    ) -> None:
+    def append_op(self, token: Token, operation: Operation) -> None:
         if len(self.operations) >= MAX_EFFECT_OPERATIONS:
             reject(
                 token,
                 "budget.expansion",
                 "native expansion exceeds 4096 effect operations",
             )
+        self.operations.append(operation)
+
+    def effect_op(
+        self, name: str, token: Token, values: tuple[Value, ...], **attributes: object
+    ) -> None:
         effect = Value(ValueId(self.scope, self.counter), QUANTUM_EFFECT)
         self.counter += 1
-        self.operations.append(
+        self.append_op(
+            token,
             Operation(
                 name,
                 (self.effect, *values),
                 (effect,),
                 attributes,
                 location=token.location,
-            )
+            ),
         )
         self.effect = effect
 
@@ -260,10 +298,18 @@ class _Adapt:
             reject(node.token, "signature", "this argument must be one output variable")
         return node.token
 
-    def call(self, token: Token, arguments: tuple[Expression, ...]) -> None:
+    def call(
+        self,
+        token: Token,
+        arguments: tuple[Expression, ...],
+        *,
+        const_only: bool = False,
+    ) -> None:
         if token.text in self.parameters:
             reject(token, "call", "an output variable shadows this helper call")
         syntax, program = self.resolve(token)
+        if const_only and any(p.role != "const" for p in syntax.parameters):
+            reject(token, "scope", "apply helper calls require Const-only parameters")
         if len(arguments) != len(syntax.parameters):
             reject(token, "signature", "helper argument count disagrees")
         const = iter(program.body.blocks[0].arguments[1:])
@@ -293,132 +339,190 @@ class _Adapt:
             (reads if borrowed else writes).append(actual)
         self.effect_op("qreg.call", token, (*reads, *writes), callee=program.name)
 
-    def adapt(self) -> HybridProgram:
-        for index, statement in enumerate(self.syntax.statements):
-            token, args = statement.token, statement.arguments
-            if token.text == "=":
-                target = self.atom(args[0])
-                expression = _Expression(
-                    args[1], self.widths, f"{self.scope}.expr{index}"
-                )
-                destination = self.register(target, unsigned_width(expression.bound))
-                if expression.quantum:
-                    graph = expression.function()
-                    self.functions.append(graph)
-                    inputs = tuple(
-                        self.register(self.parameters[name].name)
-                        for name in expression.names
+    def within(self, statement: Statement, index: str) -> None:
+        if not statement.within:
+            reject(
+                statement.token,
+                "scope",
+                "within requires at least one local computation",
+            )
+        self.local_scope = []
+        try:
+            for position, child in enumerate(statement.within):
+                if child.token.text != "=":
+                    reject(
+                        child.token,
+                        "scope",
+                        "within admits only quantum-expression local assignments",
                     )
-                    self.effect_op(
-                        "qreg.compute", token, (destination, *inputs), callee=graph.name
+                target = self.atom(child.arguments[0])
+                if (
+                    target.text not in self.parameters
+                    or self.parameters[target.text].role != "local"
+                ):
+                    reject(target, "scope", "within prepares declared locals only")
+                self.statement(child, f"{index}.within{position}")
+            for position, child in enumerate(statement.apply):
+                if child.token.text == "phase":
+                    self.statement(child, f"{index}.apply{position}")
+                elif child.token.text in _INTRINSICS or child.token.text == "=":
+                    reject(
+                        child.token,
+                        "scope",
+                        "apply admits phase and Const-only helper calls",
                     )
                 else:
-                    self.effect_op(
-                        "qreg.initialize", token, (destination,), value=expression.bound
-                    )
-            elif token.text == "phase":
-                if len(args) != 2 or "phase" in self.parameters:
-                    reject(
-                        token,
-                        "signature",
-                        "phase requires an expression and unshadowed pi coefficient",
-                    )
-                coefficient = args[1]
-                if (
-                    coefficient.children
-                    or coefficient.token.text != "pi"
-                    or "pi" in self.parameters
-                ):
-                    reject(
-                        coefficient.token,
-                        "coefficient",
-                        "phase supports only the unshadowed symbolic coefficient pi",
-                    )
-                expression = _Expression(
-                    args[0], self.widths, f"{self.scope}.phase{index}"
+                    self.call(child.token, child.arguments, const_only=True)
+            for name, token in reversed(self.local_scope):
+                value = self.registers[name]
+                self.effect_op("qreg.uncompute", token, (value,))
+                self.effect_op("qreg.release", token, (value,))
+        finally:
+            for name, _ in self.local_scope:
+                self.registers.pop(name, None)
+            self.local_scope = None
+
+    def statement(self, statement: Statement, index: str) -> None:
+        token, args = statement.token, statement.arguments
+        if statement.declaration is not None:
+            parameter = statement.declaration
+            name = parameter.name.text
+            if name in self.parameters or name in _INTRINSICS:
+                reject(
+                    parameter.name,
+                    "name",
+                    "local names cannot shadow parameters, locals or intrinsics",
                 )
-                if expression.comparison:
-                    reject(
-                        args[0].token,
-                        "phase",
-                        "phase requires a polynomial; compute comparison into a one-bit Output first",
-                    )
-                if not expression.quantum or unsigned_width(expression.bound) != 1:
-                    reject(
-                        args[0].token,
-                        "phase",
-                        "phase requires a quantum expression with exactly one-bit result",
-                    )
+            self.parameters[name] = parameter
+            self.widths[name] = parameter.width
+        elif token.text == "within":
+            self.within(statement, index)
+        elif token.text == "=":
+            target = self.atom(args[0])
+            expression = _Expression(args[1], self.widths, f"{self.scope}.expr{index}")
+            if self.local_scope is not None and not expression.quantum:
+                reject(
+                    token,
+                    "scope",
+                    "within preparation requires a quantum-dependent expression",
+                )
+            destination = self.register(target, unsigned_width(expression.bound))
+            if expression.quantum:
                 graph = expression.function()
                 self.functions.append(graph)
                 inputs = tuple(
                     self.register(self.parameters[name].name)
                     for name in expression.names
                 )
-                self.effect_op("qreg.phase", token, inputs, callee=graph.name)
-            elif token.text == "allocate":
-                if len(args) not in {1, 2}:
-                    reject(
-                        token,
-                        "signature",
-                        "allocate accepts an output or a literal size and output",
-                    )
-                size = None
-                if len(args) == 2:
-                    if args[0].children or not args[0].token.text.isdecimal():
-                        reject(
-                            args[0].token,
-                            "width",
-                            "allocation size must be a literal in 1..256",
-                        )
-                    size = int(args[0].token.text)
-                    if not 1 <= size <= 256:
-                        reject(
-                            args[0].token,
-                            "width",
-                            "allocation size must be a literal in 1..256",
-                        )
-                target = self.atom(args[-1])
-                destination = self.register(target, size)
-                if size is not None and self.widths[target.text] != size:
-                    reject(
-                        target,
-                        "width",
-                        "allocation size must agree with the declared width",
-                    )
-                self.effect_op("qreg.allocate", token, (destination,))
-            elif token.text in _GATE_CALLS:
-                if len(args) != 1:
-                    reject(
-                        token, "signature", f"{token.text} requires one output variable"
-                    )
-                target = self.atom(args[0])
-                destination = self.register(target)
-                if (
-                    token.text != "hadamard_transform"
-                    and self.parameters[target.text].kind != "qbit"
-                ):
-                    reject(
-                        target,
-                        "type",
-                        "single-qubit gates require qbit; numeric/array views are not admitted",
-                    )
-                width = self.widths[target.text]
-                assert width is not None
-                for bit in range(width if token.text == "hadamard_transform" else 1):
-                    self.effect_op(
-                        "qreg.gate",
-                        token,
-                        (destination,),
-                        gate=(
-                            "h"
-                            if token.text == "hadamard_transform"
-                            else token.text.lower()
-                        ),
-                        index=bit,
-                    )
+                self.effect_op(
+                    "qreg.compute", token, (destination, *inputs), callee=graph.name
+                )
             else:
-                self.call(token, args)
+                self.effect_op(
+                    "qreg.initialize", token, (destination,), value=expression.bound
+                )
+        elif token.text == "phase":
+            if len(args) != 2 or "phase" in self.parameters:
+                reject(
+                    token,
+                    "signature",
+                    "phase requires an expression and unshadowed pi coefficient",
+                )
+            coefficient = args[1]
+            if (
+                coefficient.children
+                or coefficient.token.text != "pi"
+                or "pi" in self.parameters
+            ):
+                reject(
+                    coefficient.token,
+                    "coefficient",
+                    "phase supports only the unshadowed symbolic coefficient pi",
+                )
+            expression = _Expression(args[0], self.widths, f"{self.scope}.phase{index}")
+            if expression.comparison:
+                reject(
+                    args[0].token,
+                    "phase",
+                    "phase requires a polynomial; compute comparison into a one-bit register first",
+                )
+            if not expression.quantum or unsigned_width(expression.bound) != 1:
+                reject(
+                    args[0].token,
+                    "phase",
+                    "phase requires a quantum expression with exactly one-bit result",
+                )
+            graph = expression.function()
+            self.functions.append(graph)
+            inputs = tuple(
+                self.register(self.parameters[name].name) for name in expression.names
+            )
+            self.effect_op("qreg.phase", token, inputs, callee=graph.name)
+        elif token.text == "allocate":
+            if len(args) not in {1, 2}:
+                reject(
+                    token,
+                    "signature",
+                    "allocate accepts an output or a literal size and output",
+                )
+            size = None
+            if len(args) == 2:
+                if args[0].children or not args[0].token.text.isdecimal():
+                    reject(
+                        args[0].token,
+                        "width",
+                        "allocation size must be a literal in 1..256",
+                    )
+                size = int(args[0].token.text)
+                if not 1 <= size <= 256:
+                    reject(
+                        args[0].token,
+                        "width",
+                        "allocation size must be a literal in 1..256",
+                    )
+            target = self.atom(args[-1])
+            destination = self.register(target, size)
+            if size is not None and self.widths[target.text] != size:
+                reject(
+                    target,
+                    "width",
+                    "allocation size must agree with the declared width",
+                )
+            self.effect_op("qreg.allocate", token, (destination,))
+        elif token.text in _GATE_CALLS:
+            if len(args) != 1:
+                reject(token, "signature", f"{token.text} requires one output variable")
+            target = self.atom(args[0])
+            destination = self.register(target)
+            if (
+                token.text != "hadamard_transform"
+                and self.parameters[target.text].kind != "qbit"
+            ):
+                reject(
+                    target,
+                    "type",
+                    "single-qubit gates require qbit; numeric/array views are not admitted",
+                )
+            width = self.widths[target.text]
+            assert width is not None
+            for bit in range(width if token.text == "hadamard_transform" else 1):
+                self.effect_op(
+                    "qreg.gate",
+                    token,
+                    (destination,),
+                    gate=(
+                        "h"
+                        if token.text == "hadamard_transform"
+                        else token.text.lower()
+                    ),
+                    index=bit,
+                )
+        else:
+            self.call(token, args)
+
+    def adapt(self) -> HybridProgram:
+        for index, statement in enumerate(self.syntax.statements):
+            self.statement(statement, str(index))
         output_parameters = tuple(
             p for p in self.syntax.parameters if p.role == "output"
         )

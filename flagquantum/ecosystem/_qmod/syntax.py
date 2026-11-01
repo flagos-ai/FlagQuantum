@@ -19,7 +19,18 @@ _TOKEN = re.compile(
     r"|(?P<symbol>\*\*|\^=|\+=|->|==|!=|<=|>=|[{}()<>,:;=+*\[\].^/\-])"
 )
 _RESERVED = frozenset(
-    {"qfunc", "output", "input", "const", "qbit", "qnum", "true", "false"}
+    {
+        "qfunc",
+        "output",
+        "input",
+        "const",
+        "qbit",
+        "qnum",
+        "true",
+        "false",
+        "within",
+        "apply",
+    }
 )
 _COMPARISONS = frozenset({"==", "!=", "<", "<=", ">", ">="})
 
@@ -104,13 +115,16 @@ class Parameter:
     name: Token
     kind: str
     width: int | None
-    role: Literal["output", "const"] = "output"
+    role: Literal["output", "const", "local"] = "output"
 
 
 @dataclass(frozen=True)
 class Statement:
     token: Token
     arguments: tuple[Expression, ...]
+    declaration: Parameter | None = None
+    within: tuple[Statement, ...] = ()
+    apply: tuple[Statement, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -214,6 +228,34 @@ class Parser:
             )
         return left
 
+    def scalar_type(self) -> tuple[str, int | None]:
+        kind = self.current
+        if kind.text not in {"qbit", "qnum"}:
+            reject(
+                kind, "type", "only scalar qbit and unsigned integer qnum are admitted"
+            )
+        self.position += 1
+        width: int | None = 1 if kind.text == "qbit" else None
+        if self.current.text == "<":
+            if kind.text != "qnum":
+                reject(self.current, "type", "qbit has no numeric modifiers")
+            self.take("<")
+            width = self.width()
+            if self.current.text != ">":
+                reject(
+                    self.current,
+                    "type",
+                    "signed and fractional modifiers are not admitted",
+                )
+            self.take(">")
+        if self.current.text == "[":
+            reject(
+                self.current,
+                "type",
+                "arrays, slices and bind require separate view semantics",
+            )
+        return kind.text, width
+
     def function(self) -> Function:
         self.take("qfunc")
         name = self.name()
@@ -241,38 +283,12 @@ class Parser:
                 )
             parameter = self.name()
             self.take(":")
-            kind = self.current
-            if kind.text not in {"qbit", "qnum"}:
-                reject(
-                    kind,
-                    "type",
-                    "only scalar qbit and unsigned integer qnum are admitted",
-                )
-            self.position += 1
-            width: int | None = 1 if kind.text == "qbit" else None
-            if self.current.text == "<":
-                if kind.text != "qnum":
-                    reject(self.current, "type", "qbit has no numeric modifiers")
-                self.take("<")
-                width = self.width()
-                if self.current.text != ">":
-                    reject(
-                        self.current,
-                        "type",
-                        "signed and fractional modifiers are not admitted",
-                    )
-                self.take(">")
-            if self.current.text == "[":
-                reject(
-                    self.current,
-                    "type",
-                    "arrays, slices and bind require separate view semantics",
-                )
+            kind, width = self.scalar_type()
             if role == "const" and width is None:
                 reject(
                     parameter, "width", "Const qnum requires an explicit unsigned width"
                 )
-            parameters.append(Parameter(parameter, kind.text, width, role))
+            parameters.append(Parameter(parameter, kind, width, role))
             if self.current.text != ",":
                 break
             self.take(",")
@@ -281,11 +297,41 @@ class Parser:
                     self.current, "syntax", "trailing parameter commas are not admitted"
                 )
         self.take(")")
+        return Function(name, tuple(parameters), self.block())
+
+    def block(self, *, nested: bool = False) -> tuple[Statement, ...]:
         self.take("{")
         statements: list[Statement] = []
         while self.current.text != "}":
+            if self.current.text == "within":
+                token = self.take("within")
+                if nested:
+                    reject(
+                        token, "scope", "lexically nested within/apply is not admitted"
+                    )
+                preparation = self.block(nested=True)
+                self.take("apply")
+                actions = self.block(nested=True)
+                statements.append(
+                    Statement(token, (), within=preparation, apply=actions)
+                )
+                continue
             target = self.name()
             arguments: tuple[Expression, ...]
+            if self.current.text == ":":
+                token = self.take(":")
+                if nested:
+                    reject(
+                        token, "scope", "declare locals at function level before within"
+                    )
+                kind, width = self.scalar_type()
+                self.take(";")
+                statements.append(
+                    Statement(
+                        token, (), declaration=Parameter(target, kind, width, "local")
+                    )
+                )
+                continue
             if self.current.text == "=":
                 operator = self.take("=")
                 arguments = (Expression(target), self.expression())
@@ -304,12 +350,12 @@ class Parser:
                 reject(
                     self.current,
                     "statement",
-                    "only fresh assignment and admitted calls are supported; no locals or in-place assignment",
+                    "only fresh assignment, scalar declarations and admitted calls are supported",
                 )
             self.take(";")
             statements.append(Statement(operator, arguments))
         self.take("}")
-        return Function(name, tuple(parameters), tuple(statements))
+        return tuple(statements)
 
     def parse(self) -> tuple[Function, ...]:
         functions = [self.function()]
