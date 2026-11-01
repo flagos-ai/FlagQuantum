@@ -224,7 +224,8 @@ print(dict(program.probabilities(result, registers=("x", "y", "flag"))))
 
 Each `(x,y,int(x<y))` has probability 1/16. All six unsigned binary relations
 are supported; native unparenthesized chains and logical operators are refused.
-Direct phase comparisons are refused: compute a flag first, then phase(flag,pi).
+FlagQuantum also admits phase(x<y,pi) as a native predicate extension; see the
+[profile and upstream grammar boundary](../ecosystem/_qmod/README.md).
 The named flag remains a live output, with internal workspace cleaned. This
 does not change Python predicate phase mode. Run
 `python -m examples.synthesis_qmod_comparisons`; the complete circuit uses

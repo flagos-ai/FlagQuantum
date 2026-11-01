@@ -195,7 +195,7 @@ def test_local_references_are_not_available_outside_scope(body: str) -> None:
         ("within {flag=x<y;} phase(flag,pi);", "qmod.syntax"),
         ("apply {phase(flag,pi);}", "qmod.statement"),
         ("within {flag=x<y;", "qmod.syntax"),
-        ("within {flag=x<y;} apply {phase(x<y,pi);}", "qmod.phase"),
+        ("within {flag=x<y;} apply {phase(x+y,pi);}", "qmod.phase"),
         ("within {flag=x<y;flag=x==y;} apply {}", "register.initialized"),
         ("within {flag=x<y;} apply {} within {flag=x+y;} apply {}", "qmod.width"),
     ],
