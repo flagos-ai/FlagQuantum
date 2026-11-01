@@ -23,15 +23,15 @@ def test_forward_nested_repeated_helpers_deduplicate_owned_arithmetic(reverse):
     ]
     imported = parse("\n".join(reversed(pieces) if reverse else pieces))
     assert dict(imported.inferred_widths) == dict.fromkeys(["a", "b", "c", "d"], 1)
-    assert [f.name for f in imported.functions] == ["leaf.expr2"]
-    computes = [
+    assert [f.name for f in imported.functions] == ["leaf.expr2", "leaf", "wrap"]
+    calls = [
         op
         for op in imported.program.body.blocks[0].operations
-        if op.name == "qreg.compute"
+        if op.name == "qreg.call"
     ]
-    assert len(computes) == 2
-    assert computes[0].operands[1:] != computes[1].operands[1:]
-    assert all(op.location.filename == "helpers.qmod" for op in computes)
+    assert len(calls) == 2
+    assert calls[0].operands[1:] != calls[1].operands[1:]
+    assert all(op.location.filename == "helpers.qmod" for op in calls)
 
 
 @pytest.mark.parametrize(
@@ -110,7 +110,7 @@ def test_helper_signature_and_freshness(suffix, code):
             "qfunc h(output q:qbit) { q=outside; } qfunc main(output outside:qbit) { outside=0; }",
             "qmod.name",
         ),
-        ("qfunc h(const q:qbit) {} qfunc main(output q:qbit) { q=0; }", "qmod.role"),
+        ("qfunc h(input q:qbit) {} qfunc main(output q:qbit) { q=0; }", "qmod.role"),
     ],
 )
 def test_invalid_definitions_are_rejected_even_when_unused(source, code):
@@ -129,7 +129,7 @@ def test_caller_width_never_coerces_verified_output(width):
 
 
 def test_distinct_output_formals_cannot_alias_one_actual():
-    with pytest.raises(HybridVerificationError, match="qmod.alias"):
+    with pytest.raises(HybridVerificationError, match="construction.register.alias"):
         parse(
             "qfunc pair(output a:qbit,output b:qbit) { a=0; b=0; } qfunc main(output x:qbit) { pair(x,x); }"
         )
@@ -147,7 +147,7 @@ def test_maximum_acyclic_chain_is_admitted_without_recursive_source_expansion():
     imported = parse(" ".join(helpers) + " qfunc main(output x:qbit) { f30(x); }")
     assert [op.name for op in imported.program.body.blocks[0].operations] == [
         "qreg.declare",
-        "qreg.allocate",
+        "qreg.call",
         "qreg.return",
     ]
 
@@ -161,5 +161,5 @@ def test_expansion_budget_counts_verified_inlined_effects():
     helper = "qfunc h(output q:qbit) { allocate(q); " + "H(q);" * 512 + " }"
     outputs = ",".join(f"output q{i}:qbit" for i in range(9))
     calls = " ".join(f"h(q{i});" for i in range(9))
-    with pytest.raises(HybridVerificationError, match="qmod.budget.expansion"):
+    with pytest.raises(HybridVerificationError, match="construction.register.budget"):
         parse(helper + f" qfunc main({outputs}) {{ {calls} }}")

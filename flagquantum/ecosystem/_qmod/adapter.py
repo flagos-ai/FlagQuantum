@@ -154,9 +154,7 @@ class _Adapt:
     def __init__(
         self,
         syntax: Function,
-        resolve: Callable[
-            [Token], tuple[Function, HybridProgram, tuple[HybridProgram, ...]]
-        ],
+        resolve: Callable[[Token], tuple[Function, HybridProgram]],
     ) -> None:
         self.syntax = syntax
         self.resolve = resolve
@@ -234,20 +232,24 @@ class _Adapt:
     def call(self, token: Token, arguments: tuple[Expression, ...]) -> None:
         if token.text in self.parameters:
             reject(token, "call", "an output variable shadows this helper call")
-        syntax, program, functions = self.resolve(token)
+        syntax, program = self.resolve(token)
         if len(arguments) != len(syntax.parameters):
-            reject(token, "signature", "helper output argument count disagrees")
-        declarations = tuple(
+            reject(token, "signature", "helper argument count disagrees")
+        const = iter(program.body.blocks[0].arguments[1:])
+        outputs = iter(
             op.results[0]
             for op in program.body.blocks[0].operations
             if op.name == "qreg.declare"
         )
-        bindings: dict[Value, Value] = {}
-        for argument, parameter, formal in zip(
-            arguments, syntax.parameters, declarations, strict=True
-        ):
+        reads: list[Value] = []
+        writes: list[Value] = []
+        for argument, parameter in zip(arguments, syntax.parameters, strict=True):
+            borrowed = parameter.role == "const"
+            formal = next(const if borrowed else outputs)
             actual_name = self.atom(argument)
-            actual = self.register(actual_name, formal.type.parameters[0])
+            actual = self.register(
+                actual_name, None if borrowed else formal.type.parameters[0]
+            )
             if (
                 self.parameters[actual_name.text].kind != parameter.kind
                 or actual.type != formal.type
@@ -255,27 +257,12 @@ class _Adapt:
                 reject(
                     argument.token,
                     "signature",
-                    "helper output kind/width must match exactly",
+                    "helper argument kind/width must match exactly",
                 )
-            if actual in bindings.values():
-                reject(
-                    argument.token,
-                    "alias",
-                    "helper outputs require distinct fresh storage",
-                )
-            bindings[formal] = actual
-        known = {f.name for f in self.functions}
-        self.functions.extend(f for f in functions if f.name not in known)
-        for op in program.body.blocks[0].operations:
-            if op.name not in {"qreg.declare", "qreg.return"}:
-                self.effect_op(
-                    op.name,
-                    token,
-                    tuple(bindings[v] for v in op.operands[1:]),
-                    **op.attributes,
-                )
+            (reads if borrowed else writes).append(actual)
+        self.effect_op("qreg.call", token, (*reads, *writes), callee=program.name)
 
-    def adapt(self) -> tuple[HybridProgram, tuple[HybridProgram, ...]]:
+    def adapt(self) -> HybridProgram:
         for index, statement in enumerate(self.syntax.statements):
             token, args = statement.token, statement.arguments
             if token.text == "=":
@@ -395,7 +382,13 @@ class _Adapt:
                     )
             else:
                 self.call(token, args)
-        declared = tuple(self.register(p.name) for p in self.syntax.parameters)
+        output_parameters = tuple(
+            p for p in self.syntax.parameters if p.role == "output"
+        )
+        borrowed = tuple(
+            self.register(p.name) for p in self.syntax.parameters if p.role == "const"
+        )
+        declared = tuple(self.register(p.name) for p in output_parameters)
         declarations = tuple(
             Operation(
                 "qreg.declare",
@@ -403,20 +396,20 @@ class _Adapt:
                 attributes={"name": parameter.name.text},
                 location=parameter.name.location,
             )
-            for parameter, value in zip(self.syntax.parameters, declared, strict=True)
+            for parameter, value in zip(output_parameters, declared, strict=True)
         )
         program = HybridProgram(
             self.scope,
             Region(
                 (
                     Block(
-                        (self.entry,),
+                        (self.entry, *borrowed),
                         (
                             *declarations,
                             *self.operations,
                             Operation(
                                 "qreg.return",
-                                (self.effect, *declared),
+                                (self.effect, *borrowed, *declared),
                                 location=self.syntax.name.location,
                             ),
                         ),
@@ -425,24 +418,7 @@ class _Adapt:
             ),
             location=self.syntax.name.location,
         )
-        functions = tuple(self.functions)
-        try:
-            verify_register_program(program, functions)
-        except HybridVerificationError as error:
-            loc = self.syntax.name.location
-            diagnostics = tuple(
-                (
-                    item
-                    if item.message.startswith(f"{loc.filename}:")
-                    else Diagnostic(
-                        item.code,
-                        f"{loc.filename}:{loc.line}:{loc.column}: {item.message}",
-                    )
-                )
-                for item in error.diagnostics
-            )
-            raise HybridVerificationError(diagnostics) from error
-        return program, functions
+        return program
 
 
 def check_source_version(source_version: str, token: Token) -> None:
@@ -457,7 +433,7 @@ def check_source_version(source_version: str, token: Token) -> None:
 def parse_qmod(
     source: str, *, filename: str = "<qmod>", source_version: str
 ) -> QmodImport:
-    """Adapt the pinned unsigned/output native subset to verified owned records.
+    """Adapt the pinned unsigned scalar native subset to verified owned records.
 
     The caller declares source_version; this does not authenticate source bytes.
     Originals are independently checked against their retained source manifest.
@@ -473,21 +449,17 @@ def parse_qmod(
         definitions[name] = syntax
     if "main" not in definitions:
         reject(tokens[0], "entry", "source requires one qfunc main")
-    compiled: dict[str, tuple[_Adapt, HybridProgram, tuple[HybridProgram, ...]]] = {}
+    compiled: dict[str, tuple[_Adapt, HybridProgram]] = {}
     active: set[str] = set()
 
-    def resolve(
-        token: Token,
-    ) -> tuple[Function, HybridProgram, tuple[HybridProgram, ...]]:
+    def resolve(token: Token) -> tuple[Function, HybridProgram]:
         name = token.text
         if name == "main" or name not in definitions:
             reject(token, "call", f"unsupported native helper call {name!r}")
-        adapter, program, functions = build(definitions[name])
-        return adapter.syntax, program, functions
+        adapter, program = build(definitions[name])
+        return adapter.syntax, program
 
-    def build(
-        syntax: Function,
-    ) -> tuple[_Adapt, HybridProgram, tuple[HybridProgram, ...]]:
+    def build(syntax: Function) -> tuple[_Adapt, HybridProgram]:
         name = syntax.name.text
         if name in active:
             reject(
@@ -496,15 +468,38 @@ def parse_qmod(
         if name not in compiled:
             active.add(name)
             adapter = _Adapt(syntax, resolve)
-            program, functions = adapter.adapt()
-            compiled[name] = adapter, program, functions
+            program = adapter.adapt()
+            compiled[name] = adapter, program
             active.remove(name)
         return compiled[name]
 
     # Unused definitions must obey the same contract as reachable helpers.
     for syntax in definitions.values():
         build(syntax)
-    adapter, program, functions = compiled["main"]
+    adapter, program = compiled["main"]
+    records: dict[str, HybridProgram] = {}
+    for name, (producer, model) in compiled.items():
+        for function in producer.functions:
+            records[function.name] = function
+        if name != "main":
+            records[name] = model
+    functions = tuple(records.values())
+    try:
+        verify_register_program(program, functions)
+    except HybridVerificationError as error:
+        loc = program.location
+        assert loc is not None
+        diagnostics = tuple(
+            (
+                item
+                if item.message.startswith(f"{loc.filename}:")
+                else Diagnostic(
+                    item.code, f"{loc.filename}:{loc.line}:{loc.column}: {item.message}"
+                )
+            )
+            for item in error.diagnostics
+        )
+        raise HybridVerificationError(diagnostics) from error
     return QmodImport(
         program, functions, source_version, MappingProxyType(adapter.inferred), filename
     )
