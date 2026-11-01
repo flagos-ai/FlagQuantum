@@ -186,7 +186,7 @@ one-bit equality-to-zero complement. Operands are emitted in source order;
 unequal widths are zero extended by Compiler. Literal-only comparisons fold
 exactly, while quantum results retain their full declared domains. Const helper
 arguments may alias. Parenthesized comparisons compose with arithmetic and with
-explicitly parenthesized comparisons; unparenthesized chains, logical operators,
+explicitly parenthesized comparisons; unparenthesized chains, keyword and/or/not,
 signed values and statement-level control remain refused. Python's admitted
 comparison-chain semantics do not silently apply to native source.
 
@@ -241,3 +241,19 @@ power kernel. Literal-only powers fold; quantum-dependent constants retain their
 quantum dependencies. Existing phase, Const, local cleanup and resource limits
 still apply. This is bounded support, not optimal addition-chain selection.
 Run python -m examples.synthesis_qmod_powers for the complete cube workflow.
+
+## One-bit logical composition
+
+Use &, |, ^ and unary ~ on complete one-bit unsigned expression domains,
+including comparison flags and literals 0/1. Multibit values are refused even
+when initialized to zero. These are eager coherent operations: 0&x and 1|x
+still require x initialized. No measurement, host Boolean conversion, signed
+complement, keyword and/or/not or in-place ^= is introduced.
+
+Precedence (highest first) is **, ~, *, +, &, ^, |, comparisons. Parenthesize
+comparison operands, for example phase((x<2)|(y==3),pi). Unary depth counts
+against existing expression limits. Translation reuses multiplication, equality,
+addition and less-than; Compiler owns cleanup and budgets.
+Run python -m examples.synthesis_qmod_bit_predicates. Direct comparisons in
+phase remain the previously documented FlagQuantum-native extension, separate
+from upstream original-source compatibility evidence.
