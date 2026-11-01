@@ -637,3 +637,33 @@ allocation, lexical nesting, manual free/drop and consuming Input are refused.
 This bounded source profile adds no Python decorator or public API. Existing
 Python predicates remain the concise entry when importing source is unnecessary.
 See the [delivery and limits](../../docs/roadmap/SYNTH_QMOD_WITHIN_DELIVERY.md).
+
+## Positive literal powers in Python
+
+```python
+import flagquantum as fq
+from flagquantum import synth
+
+
+def cube(x: int) -> int:
+    return x**3
+
+
+program = synth.synthesize(
+    cube,
+    inputs={"x": synth.UInt(2)},
+    input_state=synth.InputState.uniform(),
+    max_qubits=24,
+    memory_limit_bytes=256 * 1024**2,
+)
+result = fq.run(program)
+print(dict(program.probabilities(result, registers=("x", "result"))))
+```
+
+The pairs (0,0), (1,1), (2,8) and (3,27) each have probability 1/4.
+Positive literal exponents 1..8 share existing multiplication synthesis and
+cleanup with native powers. No decorator, temporary register or multiplication
+chain is required. Users still declare input domains, preparation and budgets.
+Configured/computed exponents, bool, zero, negative, fractional and larger values
+are refused. See the [delivery](../../docs/roadmap/SYNTH_PYTHON_POWERS_DELIVERY.md).
+Run python -m examples.synthesis_python_powers from a saved source file.

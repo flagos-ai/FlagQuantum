@@ -420,3 +420,15 @@ Run `python -m examples.synthesis_local_registers`, then
 returns x/y/reference, with every temporary hidden and zero. See the
 [contract](../../../docs/api-changes/FQ-SYNTH-LOCAL-REGISTERS-20261101.md) and
 [delivery](../../../docs/roadmap/SYNTH_LOCAL_REGISTERS_DELIVERY.md).
+
+## Python positive literal powers
+
+Python capture admits x**n for literal integer n in 1..8. The base is captured
+once; exponent one reuses its value and larger exponents emit at most seven
+existing multiplications. One private arithmetic routine owns constant folding,
+complete-domain width checks and emission for +, * and powers. The square graph
+remains unchanged. No function body is evaluated or power kernel introduced.
+Boolean, zero, negative, fractional, configured, computed and larger exponents
+are refused. Compiler node/visit, 256-bit and physical resource budgets remain
+in force. Run python -m examples.synthesis_python_powers and the focused
+Python power integration suite; this does not establish notebook acceptance.
