@@ -346,6 +346,7 @@ class _Adapt:
                 "scope",
                 "within requires at least one local computation",
             )
+        parent_scope = self.local_scope
         self.local_scope = []
         try:
             for position, child in enumerate(statement.within):
@@ -363,7 +364,9 @@ class _Adapt:
                     reject(target, "scope", "within prepares declared locals only")
                 self.statement(child, f"{index}.within{position}")
             for position, child in enumerate(statement.apply):
-                if child.token.text == "phase":
+                if child.within is not None:
+                    self.within(child, f"{index}.apply{position}")
+                elif child.token.text == "phase":
                     self.statement(child, f"{index}.apply{position}")
                 elif child.token.text in _INTRINSICS or child.token.text == "=":
                     reject(
@@ -380,7 +383,7 @@ class _Adapt:
         finally:
             for name, _ in self.local_scope:
                 self.registers.pop(name, None)
-            self.local_scope = None
+            self.local_scope = parent_scope
 
     def statement(self, statement: Statement, index: str) -> None:
         token, args = statement.token, statement.arguments
