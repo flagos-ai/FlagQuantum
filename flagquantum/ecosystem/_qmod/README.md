@@ -62,8 +62,8 @@ Quantum variables are not folded from the basis values used to initialize them.
 Pure literal subexpressions can be folded. Duplicate output names, unknown
 symbols, uninitialized reads and repeated initialization are rejected, with
 native source locations. Single-qubit calls on qnum, numeric indexing, arrays,
-slices, bind, locals, classical parameters, consuming Input,
-free/drop, control/invert/within, signed/fractional numbers, in-place assignment
+slices, bind, unscoped local initialization, classical parameters, consuming Input,
+free/drop, control/invert, signed/fractional numbers, in-place assignment
 and other functions/operators are outside this subset and must fail explicitly.
 
 Limits: 262,144 UTF-8 source bytes, 4,096 tokens, depth 32, 78 decimal digits per
@@ -102,6 +102,34 @@ workflow. Focused tests are `tests/team/ecosystem/test_qmod_phase.py` and
 [delivery record](../../../docs/roadmap/SYNTH_QMOD_PHASE_DELIVERY.md).
 These are synthetic probes, not additional admitted originals.
 
+## Bounded compute/apply/cleanup scopes
+
+Run `python -m examples.synthesis_qmod_within` for the shortest source workflow.
+Function-level `flag:qbit;`, `tmp:qnum<N>;` or `tmp:qnum;` declarations may be
+prepared by fresh quantum-expression assignments in a lexical
+`within { ... } apply { ... }` block. Earlier prepared locals can feed later
+computations. Apply admits existing one-bit polynomial `phase(expr,pi)` and
+Const-only helper calls. Helpers can themselves contain supported scopes.
+
+The adapter emits existing qreg.local/compute/phase/call records, followed by
+qreg.uncompute/release in reverse preparation order. Compiler proves dependency
+preservation, uses each selected computation's exact inverse and reuses proven
+zero storage. Locals never become named results. After apply, a source local is
+uninitialized again; a later block can reuse the name with fresh owned identity.
+Bare qnum infers its width once and retains it across blocks. Unused declarations
+allocate no storage and do not appear in the output-only inferred-width map.
+
+Local reads or initialization outside scopes, pure literal preparation, allocate
+or gates in preparation, helper preparation calls, Output preparation, arbitrary
+gates/writes in apply, Output helper arguments, lexical nesting and declarations
+inside blocks are refused. Empty apply is valid; empty within is refused. Direct
+comparison phase arguments remain refused: compute a one-bit local first.
+Manual uncompute/release/free/drop and consuming Input remain outside admission.
+Generated local and cleanup operations count toward existing expansion budgets.
+No simulator, SDK, allocator, executor or duplicate lifetime checker is added.
+See the [contract](../../../docs/api-changes/FQ-SYNTH-QMOD-WITHIN-20261101.md)
+and [measured delivery](../../../docs/roadmap/SYNTH_QMOD_WITHIN_DELIVERY.md).
+
 ## Const and fresh-output quantum helpers
 
 A source can define at most 32 qfuncs with exactly one main. Helpers accept
@@ -115,7 +143,8 @@ Const actuals may alias each other; Outputs must be disjoint from all arguments.
 Argument kinds and resolved
 widths match exactly. A bare qnum actual can infer its width from a verified
 helper output; an already specified width cannot be coerced. There are no
-captured external variables, mutable borrows, consuming Input or local storage.
+captured external variables, mutable borrows or consuming Input. Helper-owned
+local storage is limited to the within/apply profile below.
 Builtin functions and the pi coefficient symbol cannot be redefined.
 
 The adapter preserves source positional matching, then emits the Compiler ABI
