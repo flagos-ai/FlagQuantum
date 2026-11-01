@@ -1,7 +1,7 @@
 """Compose fresh-register effects with the existing arithmetic scheduler.
 
-All declared output storage stays live. Each arithmetic segment cleans its own
-workspace immediately, so only that proven-zero tail is reused by later calls.
+All declared output storage stays live. Arithmetic and phase segments clean their
+own workspace immediately; only that proven-zero tail is reused by later calls.
 The returned circuit requires an all-zero entry state; this is an allocation
 precondition, not a claim inferred from an arbitrary external state.
 """
@@ -57,12 +57,13 @@ def schedule_register_program(
                     op.attributes["gate"], (ports[-1 - op.attributes["index"]],)
                 ),
             )
-        elif op.name == "qreg.compute":
-            destination, *actual = op.operands[1:]
+        elif op.name in {"qreg.compute", "qreg.phase"}:
+            phase = op.name == "qreg.phase"
+            actual = op.operands[1:] if phase else op.operands[2:]
             # A wrapper preserves repeated actual aliases while the original
             # binding verifier still requires disjoint entry argument ports.
             unique = tuple(dict.fromkeys(actual))
-            name = f"{program.name}.compute{ordinal}"
+            name = f"{program.name}.{op.name.removeprefix('qreg.')}{ordinal}"
             while name in symbols:
                 name += ".call"
             borrowed = tuple(
@@ -103,15 +104,20 @@ def schedule_register_program(
             segment = schedule_arithmetic(
                 (*functions, wrapper),
                 {new.id: bindings[old.id] for old, new in replacements.items()},
-                # A fresh wider destination keeps its high bits zero; bind the
-                # full-width XOR evaluator to the matching low-weight slice.
-                bindings[destination.id][-_width(returned.type, n_qubits) :],
+                # Value calls bind the fresh destination's low-weight slice;
+                # phase calls have no externally bound value-result storage.
+                (
+                    ()
+                    if phase
+                    else bindings[op.operands[1].id][-_width(returned.type, n_qubits) :]
+                ),
                 entry=name,
                 n_qubits=n_qubits,
                 workspace=tuple(range(position, n_qubits)),
                 workspace_state="fresh_zero",
                 max_operations=remaining,
                 scheduling=scheduling,
+                output_mode="phase" if phase else "value",
             )
             segment = replace(
                 segment,

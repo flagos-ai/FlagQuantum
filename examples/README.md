@@ -936,3 +936,13 @@ reuse the current comparator kernels and cleanup. The middle value captures
 once; unsupported source still fails after a false prefix. Quantum widths,
 classical constants, preparation and budgets are explicit; gates, workspace,
 physical maps and bit decoding are automatic.
+
+[Ordered phase borrows](synthesis_register_phase.py) is a **private Compiler
+contributor trial**. Run `python -m examples.synthesis_register_phase` to assemble
+owned IR, then use the existing Services bridge, checked Program/run and named
+reading. The source copies a reference, applies a predicate phase, mutates an
+input, computes a product, applies another phase and interferes the result.
+It demonstrates local scratch cleanup/reuse and quantum basis-constant borrowing.
+Its IR producer is not public Python/Qmod syntax; ordinary users keep the
+existing high-level predicate entry. Full complex-state tests verify the signs
+and external reference; probabilities alone cannot establish them.
