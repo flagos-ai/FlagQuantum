@@ -100,3 +100,15 @@ def test_power_width_guard_and_literal_folding() -> None:
             source_format="qmod",
             max_workspace=0,
         )
+
+
+def test_quantum_dependent_constant_power_keeps_initialization_and_coherence() -> None:
+    source = """qfunc main(output x:qbit,output result:qnum) {
+      allocate(x);H(x);S(x);result=(x*0+1)**8;
+    }"""
+    p = synth.synthesize(source, source_format="qmod")
+    check_state(p, fq.run(p), {(0, 1): 2**-0.5, (1, 1): 1j * 2**-0.5})
+    with pytest.raises(InteropConversionError):
+        synth.synthesize(
+            source.replace("allocate(x);H(x);S(x);", ""), source_format="qmod"
+        )
