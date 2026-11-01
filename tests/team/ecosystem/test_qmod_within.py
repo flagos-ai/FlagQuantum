@@ -136,6 +136,26 @@ def test_bare_local_width_is_inferred_once_then_retained() -> None:
         )
 
 
+@pytest.mark.parametrize("depth", [32, 33])
+def test_lexical_scope_depth_has_an_independent_bounded_limit(depth: int) -> None:
+    body = "phase(t0,pi);"
+    for index in reversed(range(depth)):
+        body = f"within {{t{index}=x<y;}} apply {{{body}}}"
+    declarations = "".join(f"t{index}:qbit;" for index in range(depth))
+    if depth == 33:
+        with pytest.raises(HybridVerificationError, match="qmod.budget.depth"):
+            parse(body, declarations=declarations)
+    else:
+        imported = parse(body, declarations=declarations)
+        assert (
+            sum(
+                op.name == "qreg.local"
+                for op in imported.program.body.blocks[0].operations
+            )
+            == depth
+        )
+
+
 @pytest.mark.parametrize(
     "body",
     [
@@ -168,7 +188,10 @@ def test_local_references_are_not_available_outside_scope(body: str) -> None:
         ("within { other:qbit; } apply {}", "qmod.scope"),
         ("within { flag=x<y; } apply { other:qbit; }", "qmod.scope"),
         ("within { within {flag=x<y;} apply {} } apply {}", "qmod.scope"),
-        ("within {flag=x<y;} apply { within {flag=x<y;} apply {} }", "qmod.scope"),
+        (
+            "within {flag=x<y;} apply { within {flag=x<y;} apply {} }",
+            "register.initialized",
+        ),
         ("within {flag=x<y;} phase(flag,pi);", "qmod.syntax"),
         ("apply {phase(flag,pi);}", "qmod.statement"),
         ("within {flag=x<y;", "qmod.syntax"),

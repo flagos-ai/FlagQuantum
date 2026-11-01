@@ -297,7 +297,9 @@ class Parser:
         self.take(")")
         return Function(name, tuple(parameters), self.block())
 
-    def block(self, *, nested: bool = False) -> tuple[Statement, ...]:
+    def block(
+        self, *, allow_scopes: bool = True, scope_depth: int = 0
+    ) -> tuple[Statement, ...]:
         self.take("{")
         statements: list[Statement] = []
         while self.current.text != "}":
@@ -306,13 +308,17 @@ class Parser:
                 and self.tokens[self.position + 1].text == "{"
             ):
                 token = self.take("within")
-                if nested:
+                if not allow_scopes:
                     reject(
-                        token, "scope", "lexically nested within/apply is not admitted"
+                        token, "scope", "nested scopes belong in apply, not preparation"
                     )
-                preparation = self.block(nested=True)
+                if scope_depth >= MAX_DEPTH:
+                    reject(token, "budget.depth", "scope nesting exceeds depth 32")
+                preparation = self.block(
+                    allow_scopes=False, scope_depth=scope_depth + 1
+                )
                 self.take("apply")
-                actions = self.block(nested=True)
+                actions = self.block(scope_depth=scope_depth + 1)
                 statements.append(
                     Statement(token, (), within=preparation, apply=actions)
                 )
@@ -321,7 +327,7 @@ class Parser:
             arguments: tuple[Expression, ...]
             if self.current.text == ":":
                 token = self.take(":")
-                if nested:
+                if scope_depth:
                     reject(
                         token, "scope", "declare locals at function level before within"
                     )
