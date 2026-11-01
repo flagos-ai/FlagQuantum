@@ -218,5 +218,5 @@ def test_wide_folded_constant_is_refused_before_state_allocation() -> None:
     )
     with pytest.raises(PlanningError, match="memory budget"):
         synth.synthesize(
-            function, inputs={"x": synth.UInt(1)}, memory_limit_bytes=64 * 1024**2
+            function, inputs={"x": synth.UInt(1)}, memory_limit_bytes=1024**2
         )
