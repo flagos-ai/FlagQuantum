@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
-from typing import NoReturn
+from typing import Literal, NoReturn
 
 from ...compiler._hybrid.model import SourceLocation
 from ...compiler._hybrid.verifier import Diagnostic, HybridVerificationError
@@ -103,6 +103,7 @@ class Parameter:
     name: Token
     kind: str
     width: int | None
+    role: Literal["output", "const"] = "output"
 
 
 @dataclass(frozen=True)
@@ -209,13 +210,25 @@ class Parser:
         self.take("(")
         parameters: list[Parameter] = []
         while self.current.text != ")":
-            if self.current.text != "output":
+            role: Literal["output", "const"]
+            if self.current.text == "output":
+                self.take("output")
+                role = "output"
+                if self.current.text == "const":
+                    reject(
+                        self.current,
+                        "role",
+                        "output const is outside the admitted roles",
+                    )
+            elif self.current.text == "const" and name.text != "main":
+                self.take("const")
+                role = "const"
+            else:
                 reject(
                     self.current,
                     "role",
-                    "only output parameters are admitted; Input/Const and borrowed roles are distinct",
+                    "main requires Output; helpers admit Output or fixed-width Const only",
                 )
-            self.take("output")
             parameter = self.name()
             self.take(":")
             kind = self.current
@@ -245,7 +258,11 @@ class Parser:
                     "type",
                     "arrays, slices and bind require separate view semantics",
                 )
-            parameters.append(Parameter(parameter, kind.text, width))
+            if role == "const" and width is None:
+                reject(
+                    parameter, "width", "Const qnum requires an explicit unsigned width"
+                )
+            parameters.append(Parameter(parameter, kind.text, width, role))
             if self.current.text != ",":
                 break
             self.take(",")

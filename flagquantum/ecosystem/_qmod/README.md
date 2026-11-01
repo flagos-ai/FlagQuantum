@@ -42,14 +42,15 @@ one-qubit X plus separately labelled small synthetic cases. Larger original
 files are not simulated by this test grid. See the
 [delivery and compatibility counts](../../../docs/roadmap/CS07_QMOD_PARSER_DELIVERY.md).
 
-## Initially admitted grammar
+## Admitted grammar
 
-One `qfunc main` and optional bounded helper definitions have only output scalar parameters. Scalars are qbit, bare qnum
+One `qfunc main` has Output scalars; helpers may add fixed-width Const scalars.
+Scalars are qbit, bare qnum for Output,
 or `qnum<positive literal width>`. All are unsigned integral storage in this
 profile. Statements are fresh assignment, allocate(var), allocate(literal,var),
 X/H/S/Z on qbit, hadamard_transform on one scalar, and the bounded phase
 statement below. Right-hand expressions
-use declared outputs, nonnegative decimal literals, parentheses, +, * and a
+use declared quantum parameters, nonnegative decimal literals, parentheses, +, * and a
 literal **2. Standard arithmetic precedence applies. Line and block comments
 and CRLF are accepted. The entire source must be consumed.
 
@@ -60,7 +61,7 @@ Quantum variables are not folded from the basis values used to initialize them.
 Pure literal subexpressions can be folded. Duplicate output names, unknown
 symbols, uninitialized reads and repeated initialization are rejected, with
 native source locations. Single-qubit calls on qnum, numeric indexing, arrays,
-slices, bind, locals, classical parameters, Input/Const,
+slices, bind, locals, classical parameters, consuming Input,
 free/drop, control/invert/within, signed/fractional numbers, in-place assignment
 and other functions/operators are outside this subset and must fail explicitly.
 
@@ -100,29 +101,49 @@ workflow. Focused tests are `tests/team/ecosystem/test_qmod_phase.py` and
 [delivery record](../../../docs/roadmap/SYNTH_QMOD_PHASE_DELIVERY.md).
 These are synthetic probes, not additional admitted originals.
 
-## Fresh-output quantum helpers
+## Const and fresh-output quantum helpers
 
-A source can define at most 32 qfuncs with exactly one main. Helpers accept only
-fresh output scalar variables, and every output must be initialized by return.
+A source can define at most 32 qfuncs with exactly one main. Helpers accept
+`const q:qbit`, `const x:qnum<N>` and fresh Output scalars. Const qnum requires
+an explicit unsigned literal width; Output can retain bare-width inference.
+Every Output must be initialized by return. Const actuals must already have a
+known width and be initialized, even when the callee does not use them.
 They may call each other in an acyclic graph, including forward references;
-repeated calls must use different fresh storage. Argument kinds and resolved
+repeated calls may reuse Const actuals but need different fresh Output storage.
+Const actuals may alias each other; Outputs must be disjoint from all arguments.
+Argument kinds and resolved
 widths match exactly. A bare qnum actual can infer its width from a verified
 helper output; an already specified width cannot be coerced. There are no
-captured external outputs, mutable borrows, Input/Const roles or local storage.
+captured external variables, mutable borrows, consuming Input or local storage.
 Builtin functions and the pi coefficient symbol cannot be redefined.
 
-Each definition is independently translated and verified by Compiler, including
-unused definitions. The adapter then substitutes output references in verified
-register effects and threads the existing effect token. Arithmetic callees use
-definition-qualified names and are reused across repeated calls. Final main is
-verified again. The adapter does not clone quantum states, substitute source
-text, execute Python, add a call executor or duplicate Compiler's lifetime
-rules. Expanded effects point to the call site; arithmetic callees retain their
-definition locations. Existing token, node, width and 4096-effect budgets apply.
+The adapter preserves source positional matching, then emits the Compiler ABI
+with Const actuals before Outputs regardless of source parameter order. It
+returns owned qreg.call records and all definitions, including unused helpers,
+only after Compiler verification. Compiler owns initialization, fresh roles,
+aliases, complete returns, graph/expansion budgets, substitution and cleanup.
+The former Ecosystem Output-only substituter and alias checker are removed;
+no second role checker or call executor is introduced. Arithmetic callees keep
+definition-qualified names. Existing source/token/width limits and Compiler's
+4096 source/final-node/expansion-visit budgets apply, including empty calls.
+
+Const preserves basis values, while phase and entanglement may change. It is
+not classical const or an unchanged reduced state. It may be arithmetic/phase
+input or a nested Const argument, but cannot be a gate target, initialized,
+computed into or passed as Output. Even S/Z and cancelling X/X through gate
+calls are conservatively refused; use the admitted one-bit/pi phase statement.
+Callers may mutate their values after return. Main stays Output-only with known
+source preparation. `input`, `input const`, `output const`, unqualified mutable
+parameters and arbitrary unitary effects remain unsupported.
 
 Run `python -m examples.synthesis_qmod_helpers` for nested preparation and
 `x*x+y` with named output reading. See
 [helper delivery](../../../docs/roadmap/SYNTH_QMOD_HELPERS_DELIVERY.md) and
 `tests/team/ecosystem/test_qmod_helpers.py` plus
 `tests/integration/test_synthesis_qmod_helpers.py` for the contributor path.
-This is fresh Output composition, not general function-role or scope admission.
+Run `python -m examples.synthesis_qmod_const` for the public Const computation
+workflow. See [Const delivery](../../../docs/roadmap/SYNTH_QMOD_CONST_DELIVERY.md),
+`tests/team/ecosystem/test_qmod_const.py` and
+`tests/integration/test_synthesis_qmod_const.py`. This admits closed Const/Output
+composition, not general function-role or scope semantics. Source error classes
+and coordinates remain; role/alias/expansion diagnostics now use Compiler codes.
