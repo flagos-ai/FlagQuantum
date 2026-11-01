@@ -110,6 +110,8 @@ prepared by fresh quantum-expression assignments in a lexical
 `within { ... } apply { ... }` block. Earlier prepared locals can feed later
 computations. Apply admits existing one-bit polynomial `phase(expr,pi)` and
 Const-only helper calls. Helpers can themselves contain supported scopes.
+Block words are contextual: existing helpers and variables named within or
+apply remain valid, including calls to within(...) inside an apply block.
 
 The adapter emits existing qreg.local/compute/phase/call records, followed by
 qreg.uncompute/release in reverse preparation order. Compiler proves dependency

@@ -72,7 +72,7 @@ SDK/cloud execution or synthesis-time simulation occurs.
 
 ## Acceptance and measured costs
 
-109 new cases pass: 49 parser/translation/proof cases and 60 workflow cases.
+111 new cases pass: 51 parser/translation/proof cases and 60 workflow cases.
 They cover all sixteen basis inputs under both width/depth objectives, complex
 states, external references, absolute/relative/global signs, interference,
 chained multiplication/comparison locals, same-name reuse, nested helper calls,
@@ -81,7 +81,7 @@ Native, Python and owned-IR producers replace each other behind unchanged
 Program/run/named consumers. File/text forms, resource/memory/target constraints,
 no execution during synthesis and pre-planning refusals are tested.
 
-317 Qmod-focused cases pass, covering all 543 statements and 234 branch exits
+364 Qmod-focused cases pass, covering all 543 statements and 234 branch exits
 in the two production modules. The twelve public API candidate cases pass;
 strict mypy passes 879 production/example sources. Both existing source-overload
 typing cases pass with the same flags and cache disabled: the valid case has
@@ -95,9 +95,24 @@ default attempt stopped with 306 passed, 54 skipped, one failure and two fixture
 errors because ENOSPC prevented unrelated SDK-wheel fixtures from being written.
 An additional whole-Ecosystem coverage attempt also hit fixture/SQLite ENOSPC
 (770 passed, nine skipped, 196 errors, exit 3); it is not counted as a pass.
-After removing only completed generated test fixtures, the focused 317-case
+After removing only completed generated test fixtures, the focused 364-case
 coverage run above passes. No filesystem guard or test is weakened, and this is
 not a claim that the complete local default suite passed.
+
+The broader scoped regression first produced 2541 passes, 21 skips and two
+failures in 520.91 seconds. Both failures exposed a real compatibility issue:
+an existing helper named apply was rejected by the initial reserved-word change.
+Within/apply are now recognized only at block grammar positions; helper/variable
+names remain valid, and the private AST distinguishes an empty block from a
+call. The final focused run includes all 45 existing native Const workflow cases
+and two new contextual-name probes. One empty-helper probe was corrected to
+expect the existing register-return refusal, without broadening Compiler rules.
+The first broad run is retained as failed; unaffected passes and the focused
+correction are separate evidence, not a claimed full rerun of the broad suite.
+The complete affected native-source regression then passes 568 cases in
+27.20 seconds: all Qmod unit cases, native comparison/Const/helper/phase/within
+workflows and parser execution. The unchanged large-original cohort was already
+verified by the initial broad run and is not rerun or added to this count.
 
 The following are exact logical CPU complex128 measurements for the example;
 width and depth objectives produce the same counts in each row:

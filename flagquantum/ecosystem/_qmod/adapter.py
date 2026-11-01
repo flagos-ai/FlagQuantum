@@ -395,7 +395,7 @@ class _Adapt:
                 )
             self.parameters[name] = parameter
             self.widths[name] = parameter.width
-        elif token.text == "within":
+        elif statement.within is not None:
             self.within(statement, index)
         elif token.text == "=":
             target = self.atom(args[0])

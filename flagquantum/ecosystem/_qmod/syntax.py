@@ -28,8 +28,6 @@ _RESERVED = frozenset(
         "qnum",
         "true",
         "false",
-        "within",
-        "apply",
     }
 )
 _COMPARISONS = frozenset({"==", "!=", "<", "<=", ">", ">="})
@@ -123,7 +121,7 @@ class Statement:
     token: Token
     arguments: tuple[Expression, ...]
     declaration: Parameter | None = None
-    within: tuple[Statement, ...] = ()
+    within: tuple[Statement, ...] | None = None
     apply: tuple[Statement, ...] = ()
 
 
@@ -303,7 +301,10 @@ class Parser:
         self.take("{")
         statements: list[Statement] = []
         while self.current.text != "}":
-            if self.current.text == "within":
+            if (
+                self.current.text == "within"
+                and self.tokens[self.position + 1].text == "{"
+            ):
                 token = self.take("within")
                 if nested:
                     reject(

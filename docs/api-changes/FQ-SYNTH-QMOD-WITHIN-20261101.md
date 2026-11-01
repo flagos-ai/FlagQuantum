@@ -11,7 +11,8 @@ alias/lifetime proof, resource accounting and targets, unchanged from #991/#992.
 Admit function-level scalar local declarations `flag:qbit;`, `tmp:qnum<N>;` and
 bare `tmp:qnum;`, followed by nonnested lexical
 `within { preparations } apply { actions }` statements. `within` and `apply`
-become keywords. Local declarations must precede use and cannot shadow parameters,
+are contextual block words; existing helper/variable names remain valid. Local
+declarations must precede use and cannot shadow parameters,
 locals or intrinsics. An unused declaration owns no physical storage. Local
 reads/initialization outside within/apply are refused.
 

@@ -88,6 +88,23 @@ def test_unused_unbound_declarations_allocate_no_quantum_storage() -> None:
     )
 
 
+def test_scope_words_remain_valid_helper_and_variable_names() -> None:
+    imported = parse(
+        "within(x); within {flag=x<y;} apply {within(x);apply(flag);}",
+        helpers="qfunc within(const apply:qnum<2>) {} qfunc apply(const within:qbit) {phase(within,pi);}",
+    )
+    assert [
+        op.attributes["callee"]
+        for op in imported.program.body.blocks[0].operations
+        if op.name == "qreg.call"
+    ] == ["within", "within", "apply"]
+
+
+def test_empty_scope_named_helper_keeps_the_existing_register_contract() -> None:
+    with pytest.raises(HybridVerificationError, match="register.return"):
+        parse("within();", declarations="", helpers="qfunc within() {}")
+
+
 def test_explicit_width_stays_fixed_across_scopes_and_empty_apply_is_valid() -> None:
     imported = parse(
         "within { flag=x<y; } apply {} within { flag=x+y; } apply {}",
@@ -153,7 +170,7 @@ def test_local_references_are_not_available_outside_scope(body: str) -> None:
         ("within { within {flag=x<y;} apply {} } apply {}", "qmod.scope"),
         ("within {flag=x<y;} apply { within {flag=x<y;} apply {} }", "qmod.scope"),
         ("within {flag=x<y;} phase(flag,pi);", "qmod.syntax"),
-        ("apply {phase(flag,pi);}", "qmod.name"),
+        ("apply {phase(flag,pi);}", "qmod.statement"),
         ("within {flag=x<y;", "qmod.syntax"),
         ("within {flag=x<y;} apply {phase(x<y,pi);}", "qmod.phase"),
         ("within {flag=x<y;flag=x==y;} apply {}", "register.initialized"),
