@@ -386,3 +386,37 @@ Run `python -m examples.synthesis_register_cleanup`, then
 is for contributors; public Python/native source syntax is unchanged. See the
 [contract](../../../docs/api-changes/FQ-SYNTH-COMPUTED-CLEANUP-20261101.md) and
 [delivery](../../../docs/roadmap/SYNTH_COMPUTED_REGISTER_CLEANUP_DELIVERY.md).
+
+## Local ownership and zero-slot reuse
+
+Private qreg.local declares fresh temporary storage without adding a named
+output. qreg.release(effect, local) requires a live owned local in fresh
+proven-zero state, invalidates its reference and makes its slots available to
+later locals. A computed local uses the selected qreg.uncompute inverse first.
+Allocated/initialized state, even a known zero, cannot simply be released.
+Const references, outputs, stale references, trust attributes and local escape
+are refused. Every local must be released before return; outputs and borrows
+retain their existing initialization/order rules.
+
+register_ports maps named outputs first and assigns locals the lowest available
+zero slots by lifetime. Locals may have noncontiguous MSB-first ports. Arithmetic
+scratch starts after the high-water local band for the entire program, so a
+later local cannot dirty scratch captured by an earlier selected inverse.
+Whole workspace is local-band peak plus maximum arithmetic scratch; resource,
+qubit, memory and workspace budgets include all hidden storage. Even outputs
+declared late remain reserved. This is conservative physical allocation, not
+automatic rewriting of source effect order or a global-width optimum.
+
+register_expansion gives each helper local a fresh SSA identity and collision-free
+internal label per call. Only Const and declared Output roles cross a call;
+locals do not escape. Every helper, including unused definitions, verifies
+independently and the expanded root verifies again. Existing model/visit/depth
+budgets and exact phase targets remain. No Runtime allocator or public API is
+added, and native local/within/free/drop syntax is still outside admission.
+
+Run `python -m examples.synthesis_local_registers`, then
+`tests/team/compiler/test_construction_local_registers.py` and
+`tests/integration/test_synthesis_local_registers.py`. The contributor example
+returns x/y/reference, with every temporary hidden and zero. See the
+[contract](../../../docs/api-changes/FQ-SYNTH-LOCAL-REGISTERS-20261101.md) and
+[delivery](../../../docs/roadmap/SYNTH_LOCAL_REGISTERS_DELIVERY.md).
