@@ -17,6 +17,7 @@ from ...compiler._hybrid.model import (
     QUANTUM_EFFECT,
     Block,
     HybridProgram,
+    IRType,
     Operation,
     Region,
     Value,
@@ -29,6 +30,16 @@ SUPPORTED_SOURCE_VERSION = "2bfd835e73b6882fcc515a725098b04766c238e7"
 MAX_EFFECT_OPERATIONS = 4096
 _GATE_CALLS = frozenset({"X", "H", "S", "Z", "hadamard_transform"})
 _INTRINSICS = _GATE_CALLS | {"allocate", "phase", "pi"}
+_RELATIONS = MappingProxyType(
+    {
+        "==": ("qint.equal", False, False),
+        "!=": ("qint.equal", False, True),
+        "<": ("qint.less", False, False),
+        "<=": ("qint.less", True, True),
+        ">": ("qint.less", True, False),
+        ">=": ("qint.less", False, True),
+    }
+)
 
 
 @dataclass(frozen=True)
@@ -43,7 +54,7 @@ class QmodImport:
 
 
 class _Expression:
-    """Infer the admitted monotone unsigned domain and emit existing qint records."""
+    """Infer unsigned arithmetic/predicate domains and emit existing qint records."""
 
     def __init__(
         self, node: Expression, widths: Mapping[str, int | None], name: str
@@ -51,6 +62,7 @@ class _Expression:
         self.node, self.widths, self.name = node, widths, name
         self.facts: dict[Expression, tuple[int, bool]] = {}
         self.names: list[str] = []
+        self.comparison = False
         self.bound, self.quantum = self.infer(node)
         arguments: list[Value] = []
         for index, key in enumerate(self.names):
@@ -82,12 +94,19 @@ class _Expression:
         else:
             left, lq = self.infer(node.children[0])
             right, rq = self.infer(node.children[1])
-            bound = (
-                left + right
-                if text == "+"
-                else left * left if text == "**" else left * right
-            )
-            result = (bound, lq or rq)
+            if text in _RELATIONS:
+                self.comparison = True
+                opcode, swap, invert = _RELATIONS[text]
+                a, b = (right, left) if swap else (left, right)
+                bound = int(a == b if opcode == "qint.equal" else a < b) ^ int(invert)
+                result = (1 if lq or rq else bound, lq or rq)
+            else:
+                bound = (
+                    left + right
+                    if text == "+"
+                    else left * left if text == "**" else left * right
+                )
+                result = (bound, lq or rq)
         if unsigned_width(result[0]) > 256:
             reject(
                 node.token,
@@ -97,34 +116,46 @@ class _Expression:
         self.facts[node] = result
         return result
 
+    def operation(
+        self,
+        name: str,
+        operands: tuple[Value, ...],
+        kind: IRType,
+        token: Token,
+        **attributes: object,
+    ) -> Value:
+        result = Value(
+            ValueId(self.name, len(self.arguments) + len(self.operations)), kind
+        )
+        self.operations.append(
+            Operation(name, operands, (result,), attributes, location=token.location)
+        )
+        return result
+
     def emit(self, node: Expression) -> Value:
         bound, quantum = self.facts[node]
         if not quantum:
-            result = Value(
-                ValueId(self.name, len(self.arguments) + len(self.operations)), INDEX
-            )
-            op = Operation(
-                "arith.constant",
-                results=(result,),
-                attributes={"value": bound},
-                location=node.token.location,
-            )
-        elif not node.children:
+            return self.operation("arith.constant", (), INDEX, node.token, value=bound)
+        if not node.children:
             return self.inputs[node.token.text]
-        else:
-            left = self.emit(node.children[0])
-            right = left if node.token.text == "**" else self.emit(node.children[1])
-            result = Value(
-                ValueId(self.name, len(self.arguments) + len(self.operations)),
-                uint_type(unsigned_width(bound)),
-            )
-            op = Operation(
+        left = self.emit(node.children[0])
+        right = left if node.token.text == "**" else self.emit(node.children[1])
+        if node.token.text not in _RELATIONS:
+            return self.operation(
                 "qint.add" if node.token.text == "+" else "qint.multiply",
                 (left, right),
-                (result,),
-                location=node.token.location,
+                uint_type(unsigned_width(bound)),
+                node.token,
             )
-        self.operations.append(op)
+        opcode, swap, invert = _RELATIONS[node.token.text]
+        result = self.operation(
+            opcode, (right, left) if swap else (left, right), uint_type(1), node.token
+        )
+        if invert:
+            zero = self.operation("arith.constant", (), INDEX, node.token, value=0)
+            result = self.operation(
+                "qint.equal", (result, zero), uint_type(1), node.token
+            )
         return result
 
     def function(self) -> HybridProgram:
@@ -306,6 +337,12 @@ class _Adapt:
                 expression = _Expression(
                     args[0], self.widths, f"{self.scope}.phase{index}"
                 )
+                if expression.comparison:
+                    reject(
+                        args[0].token,
+                        "phase",
+                        "phase requires a polynomial; compute comparison into a one-bit Output first",
+                    )
                 if not expression.quantum or unsigned_width(expression.bound) != 1:
                     reject(
                         args[0].token,

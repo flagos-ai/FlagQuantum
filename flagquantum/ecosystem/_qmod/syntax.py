@@ -16,11 +16,12 @@ MAX_FUNCTIONS = 32
 _TOKEN = re.compile(
     r"(?P<space>\s+)|(?P<comment>//[^\n]*|/\*[\s\S]*?\*/)"
     r"|(?P<number>[0-9]+)|(?P<name>[A-Za-z_][A-Za-z_0-9]*)"
-    r"|(?P<symbol>\*\*|\^=|\+=|->|==|[{}()<>,:;=+*\[\].^/\-])"
+    r"|(?P<symbol>\*\*|\^=|\+=|->|==|!=|<=|>=|[{}()<>,:;=+*\[\].^/\-])"
 )
 _RESERVED = frozenset(
     {"qfunc", "output", "input", "const", "qbit", "qnum", "true", "false"}
 )
+_COMPARISONS = frozenset({"==", "!=", "<", "<=", ">", ">="})
 
 
 @dataclass(frozen=True)
@@ -174,9 +175,18 @@ class Parser:
                     "expected a nonnegative integer, output name or parentheses",
                 )
             left = Expression(self.name())
-        precedence = {"+": 10, "*": 20, "**": 30}
+        precedence = {**dict.fromkeys(_COMPARISONS, 5), "+": 10, "*": 20, "**": 30}
+        compared = False
         while precedence.get(self.current.text, -1) >= minimum:
             operator = self.current
+            if operator.text in _COMPARISONS:
+                if compared:
+                    reject(
+                        operator,
+                        "operator",
+                        "comparison chains require explicit parentheses",
+                    )
+                compared = True
             self.position += 1
             level = precedence[operator.text]
             right = self.expression(
@@ -196,7 +206,7 @@ class Parser:
                     f"expression tree exceeds depth {MAX_DEPTH}",
                 )
             left = Expression(operator, (left, right), depth)
-        if self.current.text in {"-", "/", "^", "==", "[", ".", "("}:
+        if self.current.text in {"-", "/", "^", "[", ".", "("}:
             reject(
                 self.current,
                 "operator",

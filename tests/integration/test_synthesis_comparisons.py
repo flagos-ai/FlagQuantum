@@ -209,10 +209,15 @@ def test_constraints_and_construction_budget_fail_before_run():
         )
 
 
-def test_qmod_grammar_does_not_expand_with_python_predicates():
+def test_qmod_binary_comparison_is_admitted_but_python_chains_are_not() -> None:
+    program = synth.synthesize(
+        "qfunc main(output x:qnum<2>, output result:qnum) { allocate(x); hadamard_transform(x); result=x<2; }",
+        source_format="qmod",
+    )
+    check_state(program, fq.run(program), {(x, int(x < 2)): 0.5 for x in range(4)})
     with pytest.raises(InteropConversionError):
         synth.synthesize(
-            "qfunc main(output x:qnum<2>, output result:qnum) { allocate(x); result=x<2; }",
+            "qfunc main(output x:qnum<2>, output result:qnum) { allocate(x); result=0<x<2; }",
             source_format="qmod",
         )
 
