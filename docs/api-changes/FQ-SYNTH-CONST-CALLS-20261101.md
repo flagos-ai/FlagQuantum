@@ -9,7 +9,8 @@ No public signatures, schemas, exports or source grammar change.
 
 Reuse HybridProgram, Block, quantum.effect and quantum.register. A register
 callee has block arguments `(effect, *const_references)`, declares zero or more
-fresh output references with existing qreg.declare, and returns the current
+fresh output references with existing qreg.declare, has at least one register
+formal overall, and returns the current
 effect followed by every Const reference and declared output in that order.
 Register entry arguments encode basis-constant borrowing in this closed profile;
 they are not consuming Input or arbitrary mutable references. A complete root

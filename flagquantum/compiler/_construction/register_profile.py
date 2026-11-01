@@ -5,7 +5,7 @@ arithmetic expressions. One linear effect orders uses; no external state is
 inspected or certified by this structural verifier.
 """
 
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from types import MappingProxyType
 
 from .._hybrid.model import (
@@ -17,6 +17,7 @@ from .._hybrid.model import (
     ValueId,
 )
 from .profile import _fail, _positive_integer, _width, verify_construction
+from .register_expansion import expand_register_calls, is_register_function
 
 _ATTRIBUTES = MappingProxyType(
     {
@@ -26,6 +27,7 @@ _ATTRIBUTES = MappingProxyType(
         "qreg.gate": frozenset({"gate", "index"}),
         "qreg.compute": frozenset({"callee"}),
         "qreg.phase": frozenset({"callee"}),
+        "qreg.call": frozenset({"callee"}),
         "qreg.return": frozenset(),
     }
 )
@@ -97,13 +99,6 @@ def verify_register_program(
         not isinstance(f, HybridProgram) for f in functions
     ):
         raise TypeError("use the existing HybridProgram records")
-    if len(program.body.blocks) != 1:
-        _fail("register.blocks", "register construction requires one ordered block")
-    block = program.body.blocks[0]
-    if len(block.arguments) != 1 or block.arguments[0].type != QUANTUM_EFFECT:
-        _fail("register.entry", "fresh construction requires one quantum effect input")
-    if not block.operations or block.operations[-1].name != "qreg.return":
-        _fail("register.return", "register construction requires a final qreg.return")
     nodes = sum(
         len(b.arguments) + len(b.operations)
         for f in (program, *functions)
@@ -111,20 +106,91 @@ def verify_register_program(
     )
     if nodes > max_nodes:
         _fail("register.budget", "register and expression source exceeds node budget")
-    if functions:
+    if len({f.name for f in functions}) != len(functions):
+        _fail("register.callee", "function definitions require unique names")
+    arithmetic = tuple(f for f in functions if not is_register_function(f))
+    helpers = {f.name: f for f in functions if is_register_function(f)}
+    if arithmetic:
         verify_construction(
-            functions,
-            entry=functions[0].name,
+            arithmetic,
+            entry=arithmetic[0].name,
             max_width=max_qubits,
             max_nodes=max_nodes,
         )
-    symbols = {f.name: f for f in functions}
+    active: set[str] = set()
+    depths: dict[str, int] = {}
+
+    def visit(name: str) -> int:
+        if name in active:
+            _fail("register.recursion", f"register call cycle at {name!r}")
+        if name not in depths:
+            if len(active) >= 32:
+                _fail("register.budget", "register call nesting exceeds 32")
+            active.add(name)
+            depth = 1
+            for op in helpers[name].body.blocks[0].operations:
+                if op.name == "qreg.call":
+                    callee = op.attributes.get("callee")
+                    if not isinstance(callee, str) or callee not in helpers:
+                        _fail(
+                            "register.callee", "call requires a register function", op
+                        )
+                    depth = max(depth, 1 + visit(callee))
+            if depth > 32:
+                _fail("register.budget", "register call nesting exceeds 32")
+            _verify_body(
+                helpers[name], arithmetic, helpers, max_qubits, const_entry=True
+            )
+            active.remove(name)
+            depths[name] = depth
+        return depths[name]
+
+    for name in helpers:
+        visit(name)
+    _verify_body(program, arithmetic, helpers, max_qubits)
+    expanded = expand_register_calls(program, functions, max_nodes=max_nodes)
+    if expanded is not program:
+        _verify_body(expanded, arithmetic, {}, max_qubits)
+    return program
+
+
+def _verify_body(
+    program: HybridProgram,
+    arithmetic: Sequence[HybridProgram],
+    helpers: Mapping[str, HybridProgram],
+    max_qubits: int,
+    *,
+    const_entry: bool = False,
+) -> None:
+    if len(program.body.blocks) != 1:
+        _fail("register.blocks", "register construction requires one ordered block")
+    block = program.body.blocks[0]
+    if (
+        not block.arguments
+        or block.arguments[0].type != QUANTUM_EFFECT
+        or (not const_entry and len(block.arguments) != 1)
+    ):
+        _fail(
+            "register.entry",
+            "fresh roots require one effect; callees may add Const references",
+        )
+    if not block.operations or block.operations[-1].name != "qreg.return":
+        _fail("register.return", "register construction requires a final qreg.return")
+    symbols = {f.name: f for f in arithmetic}
     effect = block.arguments[0]
     known: dict[ValueId, Value] = {effect.id: effect}
-    registers: list[Value] = []
-    initialized: set[ValueId] = set()
+    borrowed = block.arguments[1:]
+    for value in borrowed:
+        register_width(value)
+        if value.id in known:
+            _fail("register.ssa", "duplicate Const entry reference")
+        known[value.id] = value
+    registers: list[Value] = list(borrowed)
+    initialized = {v.id for v in borrowed}
     labels: set[str] = set()
-    width = 0
+    width = sum(register_width(v) for v in borrowed)
+    if width > max_qubits:
+        _fail("register.budget", "Const entry widths exceed construction capacity")
 
     def check_call(
         op: Operation, arguments: Sequence[Value], destination: Value | None = None
@@ -219,9 +285,44 @@ def verify_register_program(
                     op,
                 )
             destination, *arguments = operands
-            if op.name == "qreg.phase":
+            if op.name == "qreg.call":
+                callee = op.attributes["callee"]
+                if not isinstance(callee, str) or callee not in helpers:
+                    _fail("register.callee", "call requires a register function", op)
+                body = helpers[callee].body.blocks[0]
+                const = body.arguments[1:]
+                outputs = tuple(
+                    q.results[0] for q in body.operations if q.name == "qreg.declare"
+                )
+                formal = (*const, *outputs)
+                if len(operands) != len(formal) or any(
+                    actual.type != expected.type
+                    for actual, expected in zip(operands, formal, strict=True)
+                ):
+                    _fail("register.signature", "call roles or widths disagree", op)
+                reads, writes = operands[: len(const)], operands[len(const) :]
+                if any(v.id not in initialized for v in reads):
+                    _fail(
+                        "register.uninitialized", "Const actual is not initialized", op
+                    )
+                if len(set(writes)) != len(writes) or set(writes).intersection(reads):
+                    _fail(
+                        "register.alias",
+                        "Output actuals must be disjoint from all arguments",
+                        op,
+                    )
+                if any(v in borrowed for v in writes):
+                    _fail("register.const", "Const cannot be passed as Output", op)
+                if any(v.id in initialized for v in writes):
+                    _fail(
+                        "register.initialized", "call requires fresh Output actuals", op
+                    )
+                initialized.update(v.id for v in writes)
+            elif op.name == "qreg.phase":
                 check_call(op, operands)
             elif op.name == "qreg.gate":
+                if destination in borrowed:
+                    _fail("register.const", "Const cannot be a gate target", op)
                 index = op.attributes["index"]
                 if (
                     arguments
@@ -240,6 +341,12 @@ def verify_register_program(
                         "register.uninitialized", "gate reads uninitialized storage", op
                     )
             else:
+                if destination in borrowed:
+                    _fail(
+                        "register.const",
+                        "Const cannot be initialized or computed into",
+                        op,
+                    )
                 if destination.id in initialized:
                     _fail(
                         "register.initialized", "destination is already initialized", op
@@ -271,4 +378,3 @@ def verify_register_program(
             if result.id in known:
                 _fail("register.ssa", "duplicate register/effect definition", op)
             known[result.id] = result
-    return program

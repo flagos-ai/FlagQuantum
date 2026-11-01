@@ -17,6 +17,7 @@ from .bindings import OutputMode
 from .constraints import CircuitLimits
 from .lowering import ArithmeticCandidate, Schedule, schedule_arithmetic
 from .profile import verify_construction
+from .register_expansion import expand_register_calls
 from .register_lowering import RegisterCandidate, schedule_register_program
 from .register_profile import register_ports, verify_register_program
 from .target import PHASE_BASIS, Target, TargetError, TargetProduct, compile_target
@@ -313,7 +314,8 @@ def select_register_program(
     # Keep capacity exhaustion in the selector's existing incomplete-search
     # diagnostic rather than mistaking a resource budget for invalid semantics.
     verify_register_program(program, functions)
-    if any(op.name == "qreg.phase" for op in program.body.blocks[0].operations):
+    expanded = expand_register_calls(program, functions)
+    if any(op.name == "qreg.phase" for op in expanded.body.blocks[0].operations):
         _check_phase_target(target)
     mapping, _, position = register_ports(program)
     identities = (

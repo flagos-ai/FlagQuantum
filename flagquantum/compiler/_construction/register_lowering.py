@@ -14,6 +14,7 @@ from ...core.ir import CircuitIR, Instruction
 from .._hybrid.model import Block, HybridProgram, Operation, Region, Value, ValueId
 from .lowering import ArithmeticCandidate, Schedule, _copy, schedule_arithmetic
 from .profile import _fail, _positive_integer, _width, uint_type
+from .register_expansion import expand_register_calls, is_register_function
 from .register_profile import register_ports, register_width, verify_register_program
 
 
@@ -42,6 +43,8 @@ def schedule_register_program(
     if max_operations > 100_000 or scheduling not in {"retain", "recompute"}:
         _fail("register.budget", "use a known schedule and at most 100000 operations")
     verify_register_program(program, functions, max_qubits=n_qubits)
+    program = expand_register_calls(program, functions)
+    functions = tuple(f for f in functions if not is_register_function(f))
     labels, bindings, position = register_ports(program)
     instructions: list[Instruction] = []
     segments: list[ArithmeticCandidate] = []
