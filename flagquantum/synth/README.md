@@ -84,8 +84,8 @@ and optional qfunc use the same profile. Existing arithmetic can reuse a flag's
 0/1 encoding. One-bit conditions also compose with and/or/not; see below.
 Identity/membership tests, bitwise operators, bool parameters,
 True/False literals and Python if/while statements remain unsupported. Static range loops
-use the bounded profile below. Native Qmod syntax
-has not expanded.
+use the bounded profile below. Native Qmod has a separately bounded binary
+comparison profile documented under local native source below.
 
 Run python -m examples.synthesis_predicate for basis and uniform workflows with
 no gate design, physical indices or bit decoding. For x*x+y<5 at two bits, the
@@ -195,9 +195,38 @@ source_format and effective memory limit/origin. Native reports also retain
 source_name/source_version and omit the Python arithmetic_resources field.
 
 Run python -m examples.algorithms.synthesis_source_trial for the complete text
-workflow, or append a local .qmod path. Three unchanged originals have passed
-both public forms at 1/23/24 qubits. This is development evidence; independent
+workflow, or append a local .qmod path. Four unchanged originals have passed
+both public forms: the baseline three at 1/23/24 qubits and the added integer
+comparator at 10 allocated qubits. This is development evidence; independent
 trials remain 0/2 and release authorization remains false.
+
+Native source also admits unsigned binary comparisons through Const helpers:
+
+```python
+import flagquantum as fq
+from flagquantum import synth
+
+source = """qfunc compare(const x:qnum<2>, const y:qnum<2>, output flag:qbit) {
+    flag=x<y;
+}
+qfunc main(output x:qnum<2>, output y:qnum<2>, output flag:qbit) {
+    allocate(x); allocate(y);
+    hadamard_transform(x); hadamard_transform(y);
+    compare(x,y,flag);
+}"""
+program = synth.synthesize(source, source_format="qmod", max_qubits=24)
+result = fq.run(program)
+print(dict(program.probabilities(result, registers=("x", "y", "flag"))))
+```
+
+Each `(x,y,int(x<y))` has probability 1/16. All six unsigned binary relations
+are supported; native unparenthesized chains and logical operators are refused.
+Direct phase comparisons are refused: compute a flag first, then phase(flag,pi).
+The named flag remains a live output, with internal workspace cleaned. This
+does not change Python predicate phase mode. Run
+`python -m examples.synthesis_qmod_comparisons`; the complete circuit uses
+10 total/used qubits, five work qubits, 49 operations and depth 40. See the
+[delivery record](../../docs/roadmap/SYNTH_QMOD_COMPARISONS_DELIVERY.md).
 
 ## Predicate phase synthesis
 
