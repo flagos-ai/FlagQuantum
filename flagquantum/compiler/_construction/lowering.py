@@ -216,6 +216,24 @@ def schedule_arithmetic(
         mask = (1 << unsigned_width(bound(variable.id))) - 1
         return right & mask == 0
 
+    def shifted_multiply(op: Operation) -> tuple[tuple[int, ...], int] | None:
+        if op.name != "qint.multiply":
+            return None
+        left, right = operands(op)
+        if isinstance(left, int):
+            left, right = right, left
+        if (
+            not isinstance(left, tuple)
+            or not isinstance(right, int)
+            or right <= 1
+            or right & (right - 1)
+        ):
+            return None
+        variable = op.operands[1] if op.operands[0].type == INDEX else op.operands[0]
+        if bound(variable.id) == 0:
+            return None
+        return left, right.bit_length() - 1
+
     def reserve(key: ValueId, op: Operation) -> _Allocation:
         if op.name in {
             "qint.equal",
@@ -254,6 +272,10 @@ def schedule_arithmetic(
         left, right = operands(op)
         if carry_free_add(op):
             return (*_copy(left, allocation.result), *_copy(right, allocation.result))
+        shifted = shifted_multiply(op)
+        if shifted is not None:
+            variable, shift = shifted
+            return _copy(variable, allocation.result[:-shift])
         if op.name in {"qint.equal", "qint.less"}:
             return comparison_xor(
                 left,
@@ -276,7 +298,7 @@ def schedule_arithmetic(
         op = definitions[key]
         allocation = active[key]
         scratch_count = 0
-        if op.name == "qint.multiply":
+        if op.name == "qint.multiply" and shifted_multiply(op) is None:
             scratch_count = len(allocation.result)
         elif op.name in {"qint.equal", "qint.less"}:
             scratch_count = max(unsigned_width(bound(v.id)) for v in op.operands) + 2

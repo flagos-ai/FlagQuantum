@@ -447,3 +447,18 @@ Run `python -m examples.synthesis_carry_free_add` and
 uses 19 qubits and an 8 MiB planned state buffer. See the
 [contract](../../../docs/api-changes/FQ-SYNTH-CARRY-FREE-ADD-20261101.md) and
 [delivery](../../../docs/roadmap/SYNTH_CARRY_FREE_ADD_DELIVERY.md).
+
+## Multiplication by powers of two
+
+For a positive-domain quantum operand multiplied by a classical 2**k (k>=1),
+the scheduler copies its bits into the high result bits and reserves no generic
+multiplication scratch. Low k result bits stay zero; the full result width is
+still allocated. Forward, inverse and rematerialized computation read current
+bindings. Both operand orders work. Zero, one, other constants, two quantum
+operands and derived zero-bound values retain generic multiplication.
+
+Run `python -m examples.synthesis_power_two_multiply` and
+`tests/integration/test_synthesis_power_two_multiply.py`. The one-bit x*256
+example uses 19 qubits and an 8 MiB planned state buffer. See the
+[contract](../../../docs/api-changes/FQ-SYNTH-POWER-TWO-MULTIPLY-20261101.md) and
+[delivery](../../../docs/roadmap/SYNTH_POWER_TWO_MULTIPLY_DELIVERY.md).
