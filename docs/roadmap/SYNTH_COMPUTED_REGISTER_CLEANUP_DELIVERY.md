@@ -134,7 +134,10 @@ rematerialization. Raw forward-plus-inverse costs are:
 | recompute | 5 | 116 | 3 / 3 |
 
 These raw schedules exclude input preparation and target transforms. Complete
-complex-state execution checks both physical histories. These are measured
+complex-state execution inserts a nontrivial output phase between forward and
+inverse, checking both the raw source instructions and the checked target.
+Thus adjacent inverse cancellation cannot turn that evidence into an identity
+test. The raw table excludes this extra phase marker. These are measured
 candidate costs, not an optimality, hardware, speed or release claim.
 Original Qmod sources/licenses/hashes and the four-original cohort are unchanged.
 

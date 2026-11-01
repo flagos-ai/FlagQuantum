@@ -6,6 +6,7 @@ from dataclasses import replace
 from typing import Literal
 
 import pytest
+import torch
 
 import flagquantum as fq
 from examples.synthesis_register_cleanup import cleanup_composition, flag_value, less
@@ -98,11 +99,16 @@ def test_cleanup_phase_is_observable_by_interference(strategy: Schedule) -> None
     _check(replace(selection, selected=row), {(1, 0): 1})
 
 
+def is_two(out: int) -> bool:
+    return out == 2
+
+
 @pytest.mark.parametrize("strategy", ["retain", "recompute"])
 def test_rematerialized_result_cleanup_uses_the_selected_physical_history(
     strategy: Schedule,
 ) -> None:
     graph = capture(pressure, {"x": 1, "y": 1})
+    marker = capture(is_two, {"out": 2})
     p = Registers()
     x, y, out = p.declare("x", 1), p.declare("y", 1), p.declare("out", 2)
     for value in (x, y):
@@ -110,14 +116,30 @@ def test_rematerialized_result_cleanup_uses_the_selected_physical_history(
         p.emit("qreg.gate", value, gate="h", index=0)
     p.emit("qreg.gate", x, gate="s", index=0)
     p.emit("qreg.compute", out, x, y, callee=graph.name)
+    p.emit("qreg.phase", out, callee=marker.name)
     p.emit("qreg.uncompute", out)
     p.emit("qreg.allocate", out)
-    selection = select_register_program(p.finish(), (graph,))
+    selection = select_register_program(p.finish(), (graph, marker))
     row = next(r for r in selection.rows if r.strategy == strategy)
     _check(
         replace(selection, selected=row),
-        {(a, b, 0): 1j**a / 2 for a in range(2) for b in range(2)},
+        {(a, b, 0): 1j**a * (-1) ** (a * b) / 2 for a in range(2) for b in range(2)},
     )
+    # Execute the selected source instructions as well as the checked target;
+    # a nontrivial middle phase prevents U followed by its inverse cancelling.
+    assert row.arithmetic is not None
+    work = row.arithmetic.peak_workspace
+    raw = replace(row.arithmetic.circuit, n_wires=4 + work)
+    observed = (
+        fq.Circuit.from_ir(raw, dtype=torch.complex128, device="cpu")
+        .state()
+        .reshape(-1)
+    )
+    expected = torch.zeros_like(observed)
+    for a in range(2):
+        for b in range(2):
+            expected[((a << 3) | (b << 2)) << work] = 1j**a * (-1) ** (a * b) / 2
+    torch.testing.assert_close(observed, expected, atol=1e-12, rtol=0)
     assert (
         selection.rows[0].arithmetic.peak_workspace
         != selection.rows[1].arithmetic.peak_workspace
