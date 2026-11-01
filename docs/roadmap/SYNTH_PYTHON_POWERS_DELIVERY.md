@@ -91,3 +91,11 @@ three QFT fusion assertion failures in 230.49 seconds; it is not recorded green.
 Original source/license bytes, four-original cohort, trials 0/2 and
 release_authorized=false remain unchanged. No arbitrary Python, general exponent
 language, signed/fixed-point arithmetic, consuming roles or hardware admission.
+
+## Subsequent capacity improvement
+
+The [carry-free addition follow-up](SYNTH_CARRY_FREE_ADD_DELIVERY.md) proves
+that the one-bit x+2**8 example needs no ripple carry workspace. Its planned
+state is now 8 MiB, so the executable negative memory test uses a 1 MiB budget
+and a separate positive case executes under 64 MiB. The 8 GiB / 64 MiB refusal
+above records the earlier implementation, not the current capacity boundary.

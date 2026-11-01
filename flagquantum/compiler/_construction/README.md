@@ -432,3 +432,18 @@ Boolean, zero, negative, fractional, configured, computed and larger exponents
 are refused. Compiler node/visit, 256-bit and physical resource budgets remain
 in force. Run python -m examples.synthesis_python_powers and the focused
 Python power integration suite; this does not establish notebook acceptance.
+
+## Range-proven constant addition
+
+The arithmetic scheduler uses result-only X/CX copies for a positive classical
+addition constant whose bits are disjoint from the complete unsigned input
+domain mask. Addition then equals XOR. Both operand orders use this proof;
+initialization does not narrow the domain. Zero, overlapping constants and two
+quantum operands keep ripple lowering. Existing inverse cleanup, retain and
+recompute schedules, resource accounting and Program execution remain shared.
+
+Run `python -m examples.synthesis_carry_free_add` and
+`tests/integration/test_synthesis_carry_free_add.py`. The one-bit x+256 example
+uses 19 qubits and an 8 MiB planned state buffer. See the
+[contract](../../../docs/api-changes/FQ-SYNTH-CARRY-FREE-ADD-20261101.md) and
+[delivery](../../../docs/roadmap/SYNTH_CARRY_FREE_ADD_DELIVERY.md).
