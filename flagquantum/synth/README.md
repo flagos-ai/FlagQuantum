@@ -223,7 +223,8 @@ print(dict(program.probabilities(result, registers=("x", "y", "flag"))))
 ```
 
 Each `(x,y,int(x<y))` has probability 1/16. All six unsigned binary relations
-are supported; native unparenthesized chains and logical operators are refused.
+are supported; native unparenthesized chains and keyword and/or/not are refused.
+One-bit &, |, ^ and ~ compose conditions eagerly; see the native profile.
 FlagQuantum also admits phase(x<y,pi) as a native predicate extension; see the
 [profile and upstream grammar boundary](../ecosystem/_qmod/README.md).
 The named flag remains a live output, with internal workspace cleaned. This
