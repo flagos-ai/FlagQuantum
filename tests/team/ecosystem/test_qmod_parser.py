@@ -174,7 +174,7 @@ def test_relabelled_source_is_compiled_generically_without_filename_dispatch() -
         ("qfunc main(output q:qbit) { allocate(q); free(q); }", "qmod.call"),
         ("qfunc main(output q:qbit) { allocate(q); bind(q,q); }", "qmod.call"),
         ("qfunc main(output q:qbit) { unknown(q); }", "qmod.call"),
-        ("qfunc main(output q:qnum<2>) { allocate(q); q=q**3; }", "qmod.operator"),
+        ("qfunc main(output q:qnum<2>) { allocate(q); q=q**9; }", "qmod.operator"),
         ("qfunc main(output q:qbit) { q=1.5; }", "qmod.operator"),
         ("qfunc main(output q:qbit) { q=1/2; }", "qmod.operator"),
         ("qfunc main(output q:qnum<2>) { allocate(q); X(q[0]); }", "qmod.operator"),

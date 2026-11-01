@@ -204,11 +204,15 @@ class Parser:
             right = self.expression(
                 level if operator.text == "**" else level + 1, nesting + 1
             )
-            if operator.text == "**" and (right.children or right.token.text != "2"):
+            if operator.text == "**" and (
+                right.children
+                or not right.token.text.isdecimal()
+                or not 1 <= int(right.token.text) <= 8
+            ):
                 reject(
                     operator,
                     "operator",
-                    "only a literal square exponent **2 is admitted",
+                    "power requires a literal exponent in 1..8",
                 )
             depth = max(left.depth, right.depth) + 1
             if depth > MAX_DEPTH:
