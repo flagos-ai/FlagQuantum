@@ -6,7 +6,8 @@ import ast
 import inspect
 import textwrap
 from collections.abc import Callable, Mapping, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from types import MappingProxyType
 from typing import NoReturn
 
 from .._hybrid.model import (
@@ -30,6 +31,7 @@ class _Source:
     filename: str
     first_line: int
     indentation: int
+    program: bool = False
 
     def location(self, node: ast.expr | ast.stmt) -> SourceLocation:
         return SourceLocation(
@@ -61,7 +63,12 @@ def _annotation_name(annotation: ast.expr | None) -> str | None:
     return None
 
 
-def _source(function: Callable[..., object], *, decorated: bool = False) -> _Source:
+def _source(
+    function: Callable[..., object],
+    *,
+    decorated: bool = False,
+    allow_program: bool = False,
+) -> _Source:
     if not inspect.isfunction(function) or hasattr(function, "__wrapped__"):
         raise TypeError(
             "capture requires a Python function, not a callable object or method"
@@ -87,7 +94,18 @@ def _source(function: Callable[..., object], *, decorated: bool = False) -> _Sou
         raise ValueError("capture requires one ordinary function definition")
     node = tree.body[0]
     source = _Source(
-        node, inspect.getsourcefile(function) or "<python>", first, indentation
+        node,
+        inspect.getsourcefile(function) or "<python>",
+        first,
+        indentation,
+        allow_program
+        and any(
+            isinstance(arg.annotation, ast.Subscript)
+            or isinstance(arg.annotation, ast.Constant)
+            and isinstance(arg.annotation.value, str)
+            and "[" in arg.annotation.value
+            for arg in (*node.args.posonlyargs, *node.args.args)
+        ),
     )
     if sum(1 for _ in ast.walk(node)) > 4096:
         _error(
@@ -115,8 +133,12 @@ def _source(function: Callable[..., object], *, decorated: bool = False) -> _Sou
         )
     args = node.args
     annotations = (
-        (node.returns, {"int", "bool"}),
-        *((arg.annotation, {"int"}) for arg in (*args.posonlyargs, *args.args)),
+        ()
+        if source.program
+        else (
+            (node.returns, {"int", "bool"}),
+            *((arg.annotation, {"int"}) for arg in (*args.posonlyargs, *args.args)),
+        )
     )
     for annotation, allowed in annotations:
         if annotation is not None and _annotation_name(annotation) not in allowed:
@@ -139,6 +161,8 @@ def _source(function: Callable[..., object], *, decorated: bool = False) -> _Sou
             "signature",
             "use positional parameters without defaults or variadic arguments",
         )
+    if source.program:
+        return source
     statements = node.body
     if (
         statements
@@ -197,6 +221,10 @@ def _source(function: Callable[..., object], *, decorated: bool = False) -> _Sou
 @dataclass(frozen=True)
 class _QuantumFunction:
     source: _Source
+    function: Callable[..., object] | None = None
+    annotation_bindings: Mapping[str, object] | None = field(
+        default=None, repr=False, compare=False, hash=False
+    )
 
     def __call__(self, *args: object, **kwargs: object) -> NoReturn:
         raise TypeError("qfunc is a captured quantum definition; pass it to synthesize")
@@ -204,7 +232,26 @@ class _QuantumFunction:
 
 def qfunc(function: Callable[..., object]) -> _QuantumFunction:
     """Snapshot a definition's source early and prevent accidental host execution."""
-    return _QuantumFunction(_source(function, decorated=True))
+    source = _source(function, decorated=True, allow_program=True)
+    if not source.program:
+        return _QuantumFunction(source)
+    from .frontend_program import program_annotation_names, program_ports
+
+    frame = inspect.currentframe()
+    bindings: dict[str, object] = {}
+    try:
+        if frame is not None and frame.f_back is not None:
+            visible = frame.f_back.f_locals
+            bindings = {
+                name: visible[name]
+                for name in program_annotation_names(source)
+                if name in visible
+            }
+    finally:
+        del frame
+    definition = _QuantumFunction(source, function, MappingProxyType(bindings))
+    program_ports(definition)
+    return definition
 
 
 Definition = Callable[..., object] | _QuantumFunction
@@ -225,6 +272,14 @@ def capture(
     Constants bind declared entry parameters by value. Globals, closures and arbitrary Python are not executed.
     """
     definitions = (function, *functions)
+    for definition in definitions:
+        if isinstance(definition, _QuantumFunction) and definition.source.program:
+            _error(
+                definition.source,
+                definition.source.node,
+                "program.profile",
+                "typed qfunc programs own their ports; synthesize the root without scalar inputs/helpers",
+            )
     sources: dict[str, _Source] = {}
     source_nodes = 0
     for definition in definitions:
