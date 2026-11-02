@@ -196,3 +196,86 @@ and verifies that its production tree matches the explicit production pin. Thus
 immutable receipts remain verifiable after this oracle-only correction. A missing
 commit requires fetching that exact revision; there is no silent current-source
 substitution. Dirty development receipts remain ineligible for formal evidence.
+
+## Frozen P0 observations
+
+The source commits are `601f179f5d973bd00d2c560bb20383390cf772ab`
+(initial 125 configurations) and
+`44afa3c1971924ff74230bf76404ae29f6f99aba`
+(the three corrected line configurations). Both have the accepted AO-02
+production tree and a byte-identical timing driver. Their distinct probe/source
+hashes are retained; the second probe changes only interrupted-exit handling.
+
+The [manifest](../../benchmarks/synthesis/baselines/pf00-manifest.json) maps each
+of the 125 unique configurations to its cohort. There are 128 configuration
+attempts overall. All original records, including 21 failed line-oracle trials,
+remain in the [initial raw receipt](../../benchmarks/synthesis/baselines/pf00-initial.json.gz).
+The [correction receipt](../../benchmarks/synthesis/baselines/pf00-line_correction.json.gz)
+contains 21 independently verified replacement trials. The
+[overview](../../benchmarks/synthesis/baselines/pf00-summary.json) is derived from
+that explicit selection, with no successful-only hiding of the remaining gaps.
+
+| Selected cohort | Verified | Expected refusal | Timeout | Measurement failure |
+| --- | ---: | ---: | ---: | ---: |
+| Primary E0 trials | 605 | 15 | 5 | 0 |
+| Independent primary RSS trials | 121 | 3 | 1 | 0 |
+| Separate diagnostic trials | 115 | 3 | 2 | 5 |
+
+124 configurations have all five accepted primary measurements: 121 compiled
+configurations and three real budget-refusal configurations. The original
+`mixed_products-16x16` has no successful formal sample; all five timing attempts
+and its memory/diagnostic attempts time out. Six additional large configurations
+lack complete diagnostic spans (five recorded incomplete-stack observer failures,
+one timeout). Those original failure labels remain unchanged. An updated exit
+handler preserves original exceptions, but does not manufacture missing data.
+This is a partial diagnostic baseline, not a claim that all 125 have full C1–C6
+attribution. RSS uses one observation per configuration, not a five-trial memory
+distribution.
+
+Host: Apple M5, Python 3.12.14, PyTorch 2.13.0, one compiler worker and one
+intra/inter-op thread. The host was not exclusive; frequency/thermal state is
+unmeasured. Initial cold-process startup-to-import median is 503.2 ms (five
+samples, 482.6–791.6 ms). It is a cold process, not a flushed OS page cache.
+
+| Two-bit uniform energy, logical target | E0 median | Window sampled peak RSS | First run median | Named read median |
+| --- | ---: | ---: | ---: | ---: |
+| Scalar Python | 33.70 ms | 206.58 MiB | 49.13 ms | 22.32 ms |
+| Unified Python qfunc | 32.47 ms | 206.88 MiB | 46.11 ms | 21.40 ms |
+| Qmod | 32.52 ms | 207.16 MiB | 46.21 ms | 21.82 ms |
+
+Each retains the same 16/8/81/59 total/workspace/operations/depth and 1 MiB
+planned statevector. Planned state bytes are not compiler RSS. The close frontend
+numbers are observations, not significant frontend speed differences.
+
+The separate qfunc diagnostic observes 43 `plan_to_dict` calls, 50 IR
+`from_dict` calls and 4,498 Instruction constructions. These include necessary
+candidate construction and validation; high counts do not prove redundancy.
+Its exclusive C1–C6 spans are approximately 4.41/0.98/5.38/29.10/8.07/238.40 ms
+**under the intrusive probe**. They are not unprofiled per-pass latency or a
+natural C6 percentage, and must not be compared to the 32.47 ms primary E0 as
+if both were the same cohort. PF-01 must demonstrate actual end-to-end/RSS
+benefit before removing any work.
+
+Reproduce the selection and deterministic gzip bundle from the two raw receipts:
+
+```bash
+python -m benchmarks.synthesis.performance_bundle \
+  --initial /tmp/pf00-p0.json \
+  --line-correction /tmp/pf00-line-correction.json \
+  --output /tmp/pf00-bundle
+```
+
+The correction run uses the same driver command at its recorded commit with
+three exact `--case` values: `energy-2x2:scalar:inline:line:success`,
+`energy-2x2:qfunc:inline:line:success` and
+`energy-2x2:qmod:inline:line:success`. Script/source snapshots remain in Git;
+archived measurement/oracle bytes are not rewritten to the current verifier.
+
+Validation remains scoped: the final PF-00/AO contract suite passes, strict
+mypy/Ruff/Black/API/architecture checks pass, and the original AO artifacts and
+production files are unchanged. The broader local default run has 17,667 passed,
+540 skipped and 21 failures; its newly observed abbreviated-citation failure is
+fixed and passes a targeted rerun, while the remaining 20 nodes were present in
+the prior local baseline. The broader benchmark/release run has 1,054 passed,
+95 skipped, one installed-package import failure and seven errors from a single
+240-second MPS recovery fixture timeout. No full-local-suite green is claimed.

@@ -288,3 +288,35 @@ def test_pinned_source_or_production_cannot_be_relabelled(
     altered[field] = "0" * 40
     with pytest.raises(ValueError):
         verify_sources(altered, formal=True)
+
+
+def test_frozen_bundle_keeps_failures_and_exact_cohort_selection() -> None:
+    from collections import Counter
+
+    from benchmarks.synthesis.performance_bundle import sha256
+
+    base = Path(__file__).resolve().parents[2] / "benchmarks/synthesis/baselines"
+    manifest = json.loads((base / "pf00-manifest.json").read_text())
+    overview = json.loads((base / "pf00-summary.json").read_text())
+    assert manifest["coverage"]["unique_configurations"] == 125
+    assert manifest["coverage"]["attempted_configurations"] == 128
+    assert manifest["coverage"]["complete_primary_configurations"] == 124
+    expected = {
+        f"energy-2x2:{name}:inline:line:success" for name in ("scalar", "qfunc", "qmod")
+    }
+    assert {
+        key
+        for key, value in manifest["selection"].items()
+        if value == "line_correction"
+    } == expected
+    for cohort in manifest["cohorts"].values():
+        assert sha256(base / cohort["file"]) == cohort["gzip_sha256"]
+    assert manifest["cohorts"]["initial"]["raw_statuses"]["validation_failed"] == 21
+    assert manifest["cohorts"]["line_correction"]["raw_statuses"] == {"verified": 21}
+    assert len(overview["rows"]) == 125
+    primary = Counter()
+    for row in overview["rows"]:
+        primary.update(row["timing"]["statuses"])
+        assert row["cohort"] == manifest["selection"][row["id"]]
+    assert dict(primary) == manifest["coverage"]["selected_primary_statuses"]
+    assert dict(primary) == {"verified": 605, "resource_refused": 15, "timeout": 5}

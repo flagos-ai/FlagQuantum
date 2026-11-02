@@ -211,3 +211,13 @@ and `--memory-trials 5` requests repeats. Diagnostic stage spans/RSS include
 profiler perturbation and cannot replace primary E0/RSS. The raw receipt records
 all failures and sampling limits. This creates Python P0 evidence, not a speedup,
 Rust decision, hardware claim or replacement for AO-00/01/02 static-resource data.
+
+The checked PF-00 bundle keeps its initial and corrected-line cohorts separately.
+[pf00-manifest.json](baselines/pf00-manifest.json) selects 125 unique
+configurations from 128 attempts and preserves every original failure. There are
+124 complete primary five-sample configurations; the original large mixed-product
+case remains timed out, and seven diagnostic configurations are incomplete.
+[pf00-summary.json](baselines/pf00-summary.json) is the human review table.
+Use `performance_bundle --initial ... --line-correction ... --output ...` to
+rebuild selection and deterministic compressed receipts. The reader checks the
+recorded Git source, rather than assuming current verifier bytes produced old data.
