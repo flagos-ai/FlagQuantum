@@ -202,6 +202,11 @@ These examples do not use that alias:
   fixed-shot experiment through its canonical QEC execution import. It uses one
   original source and exact final partial batches with five default decoders;
   install the Stim and PyMatching extras. Reports counts without a speed claim.
+  Add `--code surface --basis z` or `--code surface --basis x` for distance-three,
+  three-round memory using 35 shots in batches of 16, 16 and 3. X memory uses
+  the certified all-data X product. Each command reports five decoder counts
+  and checks the fixed-shot interval; zero observed failures do not establish
+  logical suppression, a threshold or decoder performance.
 - [`qec/circuit_noise_dem.py`](qec/circuit_noise_dem.py) builds and samples a
   distance-five circuit-location surface-code DEM without a dense statevector
   or optional SDK; the physical circuit has 49 qubits.

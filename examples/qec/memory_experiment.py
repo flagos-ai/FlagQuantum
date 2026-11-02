@@ -4,13 +4,38 @@ Install with ``python -m pip install -e '.[stim,pymatching]'``. No GPU is used.
 The explicit noise keeps every declared detector represented for PyMatching.
 """
 
-from flagquantum.qec import PhenomenologicalNoise, RepetitionCode, build_memory_circuit
+import argparse
+
+from flagquantum.qec import (
+    Pauli,
+    PhenomenologicalNoise,
+    RepetitionCode,
+    RotatedSurfaceCode,
+    build_memory_circuit,
+)
 from flagquantum.qec.execution.experiments import run_memory_experiment
 
 
 def main() -> None:
     """Count shot-level logical disagreements, retaining the one-shot tail."""
-    memory = build_memory_circuit(RepetitionCode(distance=3), rounds=1)
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--code", choices=("repetition", "surface"), default="repetition"
+    )
+    parser.add_argument("--basis", choices=("x", "z"), default="z")
+    args = parser.parse_args()
+    if args.code == "repetition":
+        if args.basis != "z":
+            parser.error("the repetition example supports only Z readout")
+        memory = build_memory_circuit(RepetitionCode(distance=3), rounds=1)
+        noise = PhenomenologicalNoise(data_flip=0.01, measurement_flip=0.01)
+    else:
+        code = RotatedSurfaceCode(distance=3)
+        product = Pauli(x_qubits=code.data_qubits) if args.basis == "x" else None
+        memory = build_memory_circuit(code, rounds=3, product=product)
+        noise = PhenomenologicalNoise(
+            data_flip=0.005, phase_flip=0.007, measurement_flip=0.009
+        )
     for decoder in (
         "minimum_weight_matching",
         "sliding_window_matching",
@@ -20,7 +45,7 @@ def main() -> None:
     ):
         result = run_memory_experiment(
             memory,
-            noise=PhenomenologicalNoise(data_flip=0.01, measurement_flip=0.01),
+            noise=noise,
             decoder=decoder,
             shots=35,
             batch_size=16,
@@ -30,6 +55,8 @@ def main() -> None:
             decoder, result.shots, result.logical_failures, result.observable_failures
         )
         assert result.shots == 35
+        assert result.seed == 53 and result.sampling_source == "memory_circuit"
+        assert result.observable_failures == (result.logical_failures,)
         assert (
             result.confidence_interval[0]
             <= result.logical_error_rate
