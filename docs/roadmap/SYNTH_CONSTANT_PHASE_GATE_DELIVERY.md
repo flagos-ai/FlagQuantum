@@ -124,6 +124,7 @@ or release promotion is inferred from this gate.
 
 The [RZ/native-phase follow-up](SYNTH_LITERAL_RZ_DELIVERY.md) adds fixed-decimal
 angle literals to PHASE/RZ and preserves the existing integer and predicate
-profiles. Its native high-level entry is a Python radians function; the earlier
-integer-only PHASE source restriction above records this delivery's historical
-boundary rather than the current extended source profile.
+profiles. UP-00 withdraws its unreleased float-return prototype and keeps the shared
+angle/RZ import slice. The earlier integer-only PHASE source restriction above
+records this delivery's historical boundary rather than the extended source
+profile. See the [unified contract](../api-changes/FQ-SYNTH-UNIFIED-PROGRAM-UP00-20261102.md).

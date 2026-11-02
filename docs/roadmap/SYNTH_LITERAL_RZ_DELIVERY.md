@@ -1,3 +1,63 @@
+# UP-00 contract and retained RZ compatibility
+
+The [unified-program contract](../api-changes/FQ-SYNTH-UNIFIED-PROGRAM-UP00-20261102.md)
+supersedes the prototype's native-entry decision below. RZ import, decimal-angle
+validation, original source/license pins and exact Core phase conventions remain.
+The unmerged float-return evaluator, Compiler flag and Services dispatch are
+withdrawn. This document's historical results are bound to head
+4c923bf111ace9c29bf0d784bbfabfc0fee940d9, not the revised runtime admission.
+
+## Current runnable user workflow
+
+Run `python -m examples.synthesis_native_and_qmod_rz`. It demonstrates:
+
+- Python high-level `x*x+y` with named uniform preparation and reading;
+- equivalent Qmod scalar helper with Const inputs and fresh output;
+- coherent Qmod RZ import, independent Circuit reference and absolute-phase oracle.
+
+The first two agree on all sixteen `(x,y,x*x+y)` outcomes. The native output is
+named `result` by the existing API; the Qmod example uses that same output port.
+Named joint reading explicitly requests `(x,y,result)`; default reading is the
+result marginal. Full complex amplitudes and workspace cleanup are checked in
+the integration suite, not inferred from matching probabilities.
+
+RZ's native mathematical program counterpart is an explicit gap for UP-02,
+not a reason to force a Qmod user to translate into a float-return function.
+Unified typed Python preparation/phase/control examples are design candidates,
+not runnable APIs. See the UP-00 contract for grammar, ownership, source safety,
+resource limits, staged acceptance and the three current/target distinctions.
+
+## Revised validation
+
+Current focused run: 163 passed in 3.86 seconds, covering the new Compiler and
+integration boundary suites, Python source regression, RZ register contract,
+and Qmod RZ/retained PHASE. This includes both objectives, basis/coherent and
+reference-entangled phases, exact Decimal bounds and final-plan budget refusal.
+The frontend replacement test reads identical named full states and proves
+workspace zero over all sixteen basis terms of the coherent two-bit example.
+
+Initial replacement fixtures incorrectly assumed a `z` native result and an
+all-register default marginal. They were corrected to the existing `result`
+name and explicit registers, without changing production result semantics.
+The failed fixture runs are not reported as passing. The related regression passes 2688 cases in 645.27 seconds; default-tier
+results for the revised head are recorded in the
+[UP-00 delivery](SYNTH_UNIFIED_PROGRAM_UP00_DELIVERY.md): 17417 passed, 527 skipped,
+27 failed and 6 errors. The same 33 failure/error nodes reproduce on the isolated
+main base in the same local environment/history context; the default tier is not
+green. No unrelated assertions or implementation are changed.
+Original pins and licenses are unchanged. Trials remain 0/2 and
+release_authorized=false; corpus coverage remains 8/216 paths, 7/208 blobs on
+the retained RZ candidate. This PR is not merged by this task.
+
+---
+
+## Historical prototype record (superseded, not current user instructions)
+
+The following text is preserved verbatim as evidence for head
+4c923bf111ace9c29bf0d784bbfabfc0fee940d9. Its native phase example is no longer
+admitted. Commands, counts and resource figures below must not be attributed to
+the adjusted UP-00 implementation.
+
 # Native high-level radians intent and original RZ migration
 
 Follow #1002 merged at 6df1f2ae6296334d087fdf39918f8b1e46559a19 after

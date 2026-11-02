@@ -70,12 +70,18 @@ admission; this document does not authorize a snapshot update to bypass review.
 | `control (p) { B }` | `control(p, lambda: B())` | Coherent quantum condition; UP-04 |
 
 The initial candidate `phase` expression grammar is constants, initialized
-unsigned quantum scalars, `+`, `-`, `*` and bounded positive literal powers,
-with a finite construction-time real coefficient. It is not a general real
-quantum data type. Negative intermediate phase expressions are valid in that
-future profile; this does not enlarge today's Qmod literal gate parser.
+unsigned quantum scalars, `+`, `-`, `*` and literal powers 1..8, with a
+finite binary64 construction-time real coefficient. Reject nonfinite binding/lowered angles
+rather than silently reducing, overflowing or approximating them. This is not
+a general real quantum data type. Negative intermediate phase expressions are
+valid in that future profile; this does not enlarge today's Qmod literal gate parser.
 
 Root outputs use signature ports, not a second mandatory return dictionary.
+The first root has Output ports only and prepares them inside the program;
+combining that root with scalar-profile inputs/input_state/custom preparation
+must fail rather than prepare twice. Existing pure-function inputs/InputState
+stay supported through their adapter. External live-state Circuit composition
+has a separate explicit port/ownership contract, not an implicit root input.
 `from flagquantum.synth import *` remains limited to the existing `__all__` until
 the additions pass their own export review. No `.fq` format is required.
 Aliases such as `with quantum_if`, a new angle-first phase API or mandatory
@@ -90,12 +96,24 @@ ports and an effect summary. A root allocates/prepares outputs and yields an
 executable Program; a preparation isometry is not automatically a unitary on
 arbitrary inputs. A decorator alone proves neither controllability nor inversion.
 
+For the future program frontend, resolve statically named qfunc calls at synthesis
+into a bounded definition snapshot. Later host rebinding cannot change a sealed
+Program. No public function registry is required. Existing pure-function helper
+configuration remains supported without an implicit arbitrary-call fallback.
+
 Width, signedness, fractional bits, numeric bit weights and source indexing are
 explicit. First program admission is unsigned integer only. Do not infer QNum
 semantics from UInt spelling or initial basis values. Fresh `x*x+y`, with both
 inputs in `0..3`, needs four result bits for the full range `0..12`. Classical
 parameters occupy no quantum wires; construction-time binding changes program
 identity. Runtime parameter training is a separate capability.
+
+For future source indexing, preserve Qmod numeric significance: unsigned integer
+bit i has weight 2**i. An ordered MSB-first w-wire FlagQuantum arithmetic port
+therefore maps source bit i to port[w-1-i]. Do not reverse Core's wire convention
+or extend this rule to array positions without a view contract. Numeric indexed
+gates/views remain unadmitted today; UP-01 or a later view slice must prove the
+mapping with basis-state and routed readout tests before exposing them.
 
 | Role | Entry | Exit | Contract |
 | --- | --- | --- | --- |
@@ -147,7 +165,10 @@ condition and body cannot reference the same quantum variable, including aliases
 or disjoint slices of the same variable. All external ports stay initialized;
 local scratch is statically provisioned and clean on both branches. Refuse branch
 outputs, user-visible conditional allocation/consumption, reset, measurement and
-unsupported control depth. Classical Python `if` is construction-time only.
+unsupported control depth. First admission is single-level control without an
+else branch or general higher-order callbacks. Static calls remain acyclic and
+bounded by the existing definition/node/expansion limits. Classical Python `if`
+is construction-time only.
 
 Only validated unitary bodies are invertible/controllable. Inverse must use the
 same chosen implementation, including its phase and scratch contract. In
@@ -162,6 +183,29 @@ operations, regions and quantum-effect tokens with added operation verification
 as needed; no second canonical IR. Lower into existing CoreIR/CircuitIR and use
 existing finite-candidate selection, target conversion, routing and execution.
 Having a region field does not establish any of the new semantic invariants.
+
+The existing private register operations remain the lowering vocabulary:
+
+| Operations | Required admission invariant |
+| --- | --- |
+| qreg.declare / local | Unique typed logical storage; declaration does not initialize state |
+| qreg.allocate / initialize | Fresh target only; establish initialized ownership |
+| qreg.compute | Checked unsigned expression and full-domain result fit; inputs stay live |
+| qreg.phase | Checked borrowed expression; preserve basis values and phase convention |
+| qreg.gate | Closed verified gate attributes; effects respect port roles |
+| qreg.call | Verify reachable/unused definitions, exact ports and acyclic bounded expansion |
+| qreg.uncompute | Same producer inverse with valid dependencies; restore clean ownership |
+| qreg.release | Compiler-proven clean local storage, invalidate reference before reuse |
+| qreg.return | Export only live declared outputs and terminate the current effect |
+
+Use the existing linear quantum-effect chain: each stateful operation consumes
+the current token once and produces its successor. A source-local expression
+value is immutable and is not itself a storage reference. A caller-supplied
+"unitary" or "clean" attribute cannot establish either property. Future coherent
+regions need checked dependency/alias/effect summaries and token joins; they
+cannot enter through arbitrary qreg.gate records or measured-feedback regions.
+No new control opcode or region schema is admitted by UP-00. This is a mapping
+to current authoritative operations, not a duplicate registry or public schema.
 
 Reject unsupported source/roles/effects at the earliest knowable point. Do not
 run host bodies or silently narrow the domain, relax budgets, truncate outputs,

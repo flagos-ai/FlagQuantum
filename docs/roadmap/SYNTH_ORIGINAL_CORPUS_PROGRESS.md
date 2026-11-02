@@ -122,21 +122,22 @@ three-failure limit. These expect 28 state applies and observe 44; no Simulation
 implementation or assertion changes. The default tier is not green.
 Log: /private/tmp/fq-phase-gate-default.log.
 
-## Native high-level intent is a required companion
+## UP-00 native compatibility decision
 
-The RZ follow-up implements a native Python float-return phase function rather
-than offering a Qmod string or a Circuit gate as the native high-level answer.
-See [the native-first workflow](SYNTH_LITERAL_RZ_DELIVERY.md): return
-1.9*(q-0.5) with UInt(1), named preparation and output_mode=phase; Compiler
-selects RZ automatically. Circuit is only a gate baseline, Qmod a migration
-format. The current native real-phase subset is bounded to one-bit expressions.
-Future compatibility delivery must include a runnable native high-level example
-and shared execution/oracle checks, or name an explicit native semantic gap.
-General high-level support must not be inferred from an existing gate API.
+The [unified contract](../api-changes/FQ-SYNTH-UNIFIED-PROGRAM-UP00-20261102.md)
+preserves unchanged Qmod source as the migration path and familiar qfunc/role/
+phase/control concepts as the future native program design. RZ/decimal import
+remains; the unmerged float-return native phase prototype is withdrawn. General
+explicit native phase is a named gap, not a Circuit alias or a mandatory rewrite.
 
-The native high-level RZ follow-up passes 118 targeted cases in 1.41 seconds
-and 2689 related cases in 612.40 seconds. Its default smoke/unit run records
-5064 passed, 121 skipped and the same three existing local QFT fusion failures
-in 212.67 seconds; it is not a green default tier. See the native-first delivery
-for the exact input/angle grammar, resource limits and unchanged implementation
-boundary.
+Run `python -m examples.synthesis_native_and_qmod_rz` for current Python
+high-level arithmetic, its equivalent Qmod, and an independent RZ Circuit
+reference. These distinct tasks are labeled; the arithmetic example is not
+claimed to be a native implementation of arbitrary-angle phase. Corpus counts
+and source pins do not change because a Python convenience profile is withdrawn.
+
+The earlier 118 targeted/2689 related runs and 5064 passed/121 skipped/3 local
+QFT assertion failures belong to prototype head
+4c923bf111ace9c29bf0d784bbfabfc0fee940d9. They are preserved in the
+[historical delivery record](SYNTH_LITERAL_RZ_DELIVERY.md) and are not current
+revised-head results. Current UP-00 checks are recorded separately.
