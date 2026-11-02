@@ -90,7 +90,12 @@ def require_device(device: str) -> None:
     if device.startswith("mps") and not torch.backends.mps.is_available():
         raise UnsupportedRouteError("MPS unavailable; no CPU fallback")
     try:
-        torch.empty(1, dtype=torch.float32, device=resolve_platform_device(device))
+        physical = (
+            torch.device(device)
+            if device.startswith(("cpu", "cuda", "mps"))
+            else resolve_platform_device(device)
+        )
+        torch.empty(1, dtype=torch.float32, device=physical)
     except (RuntimeError, ValueError, NotImplementedError) as exc:
         raise UnsupportedRouteError(str(exc)) from exc
 
@@ -313,6 +318,16 @@ def probe_stages(device: str) -> list[dict[str, Any]]:
         }
     except (UnsupportedRouteError, NotImplementedError) as exc:
         native = {"stage": "native_fp64", "status": "unsupported", "error": str(exc)}
+    except KeyError as exc:
+        native = {
+            "stage": "native_fp64",
+            "status": (
+                "unsupported"
+                if "Unknown FlagQuantum platform" in str(exc)
+                else "failed"
+            ),
+            "error": f"{type(exc).__name__}: {exc}",
+        }
     except Exception as exc:
         native = {
             "stage": "native_fp64",
@@ -323,6 +338,31 @@ def probe_stages(device: str) -> list[dict[str, Any]]:
     rows.append(native)
     print(json.dumps(native), flush=True)
     return rows
+
+
+def verify_residency(result: dict[str, Any], mode: str, device: str) -> dict[str, Any]:
+    """Observe actual output words and refuse host fallback or dtype demotion."""
+    requested = torch.device(device)
+    words = result["state_words"] + result["gradient_words"] + result["value_words"]
+    expected_dtype = torch.float64 if mode == "fp64" else torch.float32
+    for word in words:
+        if word.device.type != requested.type or (
+            requested.type != "cpu"
+            and requested.index is not None
+            and word.device.index != requested.index
+        ):
+            raise RuntimeError(f"candidate output escaped {device}: {word.device}")
+        if word.dtype != expected_dtype:
+            raise RuntimeError(
+                f"candidate silently changed word dtype: {word.dtype}, expected {expected_dtype}"
+            )
+    result["summary"] = {
+        **result["summary"],
+        "observed_tensor_devices": sorted({str(word.device) for word in words}),
+        "observed_word_dtypes": sorted({str(word.dtype) for word in words}),
+        "output_device_and_dtype_verified": True,
+    }
+    return result
 
 
 def evaluate(case: Case, mode: str, device: str, *, preflight: bool) -> dict[str, Any]:
@@ -356,23 +396,27 @@ def evaluate(case: Case, mode: str, device: str, *, preflight: bool) -> dict[str
             )
             shifted.append(observable.expectation(shifted_state).sum().real)
         gradient = ((shifted[0] - shifted[1]) / 2).reshape(1)
-        return {
-            "state": state,
-            "value": value,
-            "gradient": gradient,
-            "terms": term_values,
-            "value_words": [value, term_values],
-            "state_words": [state.real, state.imag],
-            "gradient_words": [gradient],
-            "summary": {
-                "backend": "FlagQuantum_Circuit_complex128",
-                "gradient_method": "parameter_shift",
-                "host_execution_fallback": False,
-                "parameter_host_fallback": False,
-                "host_gate_encoding": False,
-                "automatic_precision_selection": False,
+        return verify_residency(
+            {
+                "state": state,
+                "value": value,
+                "gradient": gradient,
+                "terms": term_values,
+                "value_words": [value, term_values],
+                "state_words": [state.real, state.imag],
+                "gradient_words": [gradient],
+                "summary": {
+                    "backend": "FlagQuantum_Circuit_complex128",
+                    "gradient_method": "parameter_shift",
+                    "host_execution_fallback": False,
+                    "parameter_host_fallback": False,
+                    "host_gate_encoding": False,
+                    "automatic_precision_selection": False,
+                },
             },
-        }
+            mode,
+            device,
+        )
     functions: dict[str, Callable[..., Any]] = {
         "fp32": parameter_shift_split_real_imag_gradient,
         "selective_p2": parameter_shift_split_real_imag_precision_gradient,
@@ -407,25 +451,29 @@ def evaluate(case: Case, mode: str, device: str, *, preflight: bool) -> dict[str
         if mode == "fp32"
         else [result.gradient.high, result.gradient.low]
     )
-    return {
-        "state": state,
-        "value": expectation.value,
-        "terms": expectation.term_expectations,
-        "value_words": (
-            [expectation.value, expectation.term_expectations]
-            if mode == "fp32"
-            else [
-                expectation.value.high,
-                expectation.value.low,
-                expectation.term_expectations.high,
-                expectation.term_expectations.low,
-            ]
-        ),
-        "gradient": result.gradient,
-        "state_words": words,
-        "gradient_words": gradient_words,
-        "summary": result.summary(),
-    }
+    return verify_residency(
+        {
+            "state": state,
+            "value": expectation.value,
+            "terms": expectation.term_expectations,
+            "value_words": (
+                [expectation.value, expectation.term_expectations]
+                if mode == "fp32"
+                else [
+                    expectation.value.high,
+                    expectation.value.low,
+                    expectation.term_expectations.high,
+                    expectation.term_expectations.low,
+                ]
+            ),
+            "gradient": result.gradient,
+            "state_words": words,
+            "gradient_words": gradient_words,
+            "summary": result.summary(),
+        },
+        mode,
+        device,
+    )
 
 
 def cpu_output(result: dict[str, Any]) -> tuple[np.ndarray, float, np.ndarray]:

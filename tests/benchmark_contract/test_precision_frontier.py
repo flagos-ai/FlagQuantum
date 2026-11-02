@@ -185,3 +185,24 @@ def test_unsupported_stage_inventory_is_retained_without_worker(
     (output / "summary.json").write_text(json.dumps(summary))
     with pytest.raises(ValueError, match="inventory"):
         producer.render_report(output)
+
+
+def test_output_guards_refuse_host_fallback_and_dtype_demotion() -> None:
+    from benchmarks.precision_frontier import verify_residency
+
+    def output(dtype: torch.dtype) -> dict:
+        word = torch.ones(1, dtype=dtype)
+        return {
+            "state_words": [word],
+            "gradient_words": [word],
+            "value_words": [word],
+            "summary": {},
+        }
+
+    with pytest.raises(RuntimeError, match="escaped"):
+        verify_residency(output(torch.float32), "fp32", "cuda:0")
+    with pytest.raises(RuntimeError, match="word dtype"):
+        verify_residency(output(torch.float32), "fp64", "cpu")
+    assert verify_residency(output(torch.float32), "fp32", "cpu")["summary"][
+        "output_device_and_dtype_verified"
+    ]
