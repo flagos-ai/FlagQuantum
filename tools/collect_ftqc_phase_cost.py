@@ -24,6 +24,10 @@ from pathlib import Path
 from types import FrameType
 from typing import Any
 
+from tools.ftqc_monitor_evidence import (
+    collect_failure_identity,
+    unavailable_failure_identity,
+)
 from tools.observe_ftqc_phase_cost import CASES, ROUTES, atomic, description, expansion
 from tools.run_with_watchdog import _process_group_rss, _stop_group
 
@@ -192,13 +196,15 @@ def execute(
     }
 
     query_started = started
+    query_failure: BaseException | None = None
 
     def query_rss(group: int) -> int:
-        nonlocal query_started
+        nonlocal query_started, query_failure
         query_started = time.monotonic()
         try:
             return _process_group_rss(group)
         except subprocess.TimeoutExpired as error:
+            query_failure = error
             # Retain counts only; process-table contents never enter evidence.
             result["rss_query_timeout"] = {
                 "elapsed_seconds": time.monotonic() - query_started,
@@ -276,6 +282,16 @@ def execute(
                     _stop_group(process)
                 except (OSError, subprocess.SubprocessError) as error:
                     result["cleanup_error"] = f"{type(error).__name__}: {error}"
+            if query_failure is not None:
+                try:
+                    result["rss_failure_identity"] = collect_failure_identity(
+                        query_failure
+                    )
+                except BaseException:
+                    # Optional evidence cannot mask the original failure or cleanup.
+                    result["rss_failure_identity"] = unavailable_failure_identity()
+                finally:
+                    query_failure = None
             result.update(
                 outer_wall_seconds=time.monotonic() - started,
                 cleanup_seconds=time.monotonic() - cleanup,

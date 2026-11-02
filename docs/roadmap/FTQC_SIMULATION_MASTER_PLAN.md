@@ -808,3 +808,30 @@ Reviewed-head checks and actual-main delivery evidence are still required before
 calling that implementation delivered. No new study probe, retry or restart is
 authorized. Production selection and a larger domain remain unapproved.
 R01-R15, FTS-02/09/10/11 and M2 remain partial.
+
+### FTS-10D failure identity tooling
+
+The separately authorized Tools change adds bounded, record-only RSS-timeout
+identity after the existing owned-group cleanup and before final wall accounting.
+The private `rss_failure_identity` field keeps `checkpoint="unknown"`; filename
+comparison and code-object identity do not authorize a checkpoint or explain an
+OS delay. It retains at most 16 scalar frame labels and eight allowed-name
+candidates, with filename digests rather than paths, process tables or locals.
+CPython 3.12 records the explicitly versioned, filename-separated code-structure
+schema; other supported Python runtimes retain portable labels and explicitly
+report the unsupported structural schema. Metadata capture failure cannot mask
+the original process failure or cleanup result. The existing 50ms query deadline,
+100ms sample-gap limit, numerical/resource guards, query count and group cleanup
+are unchanged. Metadata work is included in failure wall accounting; no timing
+or original-monitor equivalence claim follows.
+
+Local diagnostic evidence remains separate from this development delivery. The
+latest specifically authorized one-query integration returned successfully under
+a matching new coordinator code identity, with no target or numerical worker.
+It observed no timeout or owned-group RSS and did not exercise the full monitor.
+Its original unknown checkpoint and all historical failed records remain intact.
+Research remains stopped at 230/349 charged attempts: 19 probes and 211 workers;
+old 193-attempt evidence remains separate. This tooling change authorizes no
+further research probe, retry, continuation or matrix. R01-R15, FTS-02/09/10/11
+and M2 remain partial. Reviewed-head and actual-main delivery gates are required
+before declaring this development item admitted.
