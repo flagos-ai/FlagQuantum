@@ -73,9 +73,11 @@ All 120 matched training cases across both rounds completed, with passing oracle
 checks, zero checkpoint parameter/gradient/optimizer replay error and identical
 paired final parameters. In the final round, training before/after median ratios
 across six task/seed pairs are 1.023 for default Module, 1.084 for public JAX,
-0.992 for native adjoint, 1.001 for the internal JAX kernel and 1.037 for
+0.992 for direct local statevector with Torch backprop, 1.001 for the internal JAX kernel and 1.037 for
 TensorCircuit JAX. Inspect the per-seed reports rather than treating this as a
 universal ranking or attributing all wall-time change to the implementation.
+The retained protocol does not run a whole-circuit native adjoint or external
+whole-training compilation; those stronger comparisons remain required by #918.
 
 The independent public-builder reproducer passes 4/8 cases before and 8/8 after.
 The old JAX route cannot replay Torch `.square()`, `torch.sin` or `.detach()`;
