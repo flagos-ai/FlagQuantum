@@ -1,0 +1,5 @@
+{
+  "archive": "pre-freeze-debugging.json.gz",
+  "archive_sha256": "abaa26672b5381136eeb4c1b199eaff447698d4b7628d5aa8aa56a15a600b30e",
+  "scope": "pre-freeze dirty development checkout; not pinned scientific evidence; retains sandbox launch failure, wrong collection-guard class, zero discarded-weight budget refusal, then initial bounded CPU check"
+}

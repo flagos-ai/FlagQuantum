@@ -1,0 +1,27 @@
+{
+  "all_launchers_exited": true,
+  "cleanup_elapsed_seconds": 0.0,
+  "cleanup_failures": [],
+  "cleanup_logs": {},
+  "cleanup_required": false,
+  "cleanup_results": {},
+  "cleanup_verified": true,
+  "elapsed_seconds": 27.83305161073804,
+  "failure_detected_seconds": null,
+  "first_failure_job": null,
+  "jobs": [
+    {
+      "log": "/nfs/fq-mps-capacity-41410450971-1-out/transport-check-logs/node-0.log",
+      "name": "node-0",
+      "returncode": 0
+    },
+    {
+      "log": "/nfs/fq-mps-capacity-41410450971-1-out/transport-check-logs/node-1.log",
+      "name": "node-1",
+      "returncode": 0
+    }
+  ],
+  "reason": "completed",
+  "schema": "flagquantum.multinode_watchdog.v1",
+  "status": "passed"
+}

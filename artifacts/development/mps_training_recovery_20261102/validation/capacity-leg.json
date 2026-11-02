@@ -1,0 +1,8 @@
+{
+  "path": "artifacts/development/mps_capacity_series_20261023/summary.json",
+  "sha256": "eaf558bf912719fd5ea1289979ca9532caad5e4af763c8c31d09175060d0d030",
+  "repository_snapshot": {
+    "source_commit": "9ad41ce1a24cda37e17eb6e54988ff64bedf618d"
+  },
+  "scope": "retained October 23 fixed 131072-site capacity campaign, distinct from November 2 multi-step 32-site training; not rerun or promoted by this issue"
+}

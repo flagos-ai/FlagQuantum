@@ -5,6 +5,10 @@ on:
     - cron: "17 3 * * 1"
   workflow_dispatch:
     inputs:
+      run_mps_training_series:
+        description: Measure fixed-workload multi-step MPS training and recovery on the reserved pair
+        type: boolean
+        default: false
       run_capacity_series:
         description: Measure only the frozen MPS capacity series on the reserved A800 pair
         type: boolean
@@ -15,8 +19,47 @@ on:
         default: false
 
 jobs:
+  prepare-mps-source:
+    if: github.event_name == 'workflow_dispatch' && (inputs.run_capacity_series || inputs.run_mps_training_series)
+    runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'flagquantum-a100-cpu' || 'ubuntu-latest' }}
+    timeout-minutes: 10
+    concurrency:
+      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('a100-cpu-{0}-prepare-mps-source-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-${{ github.event.pull_request.number || github.ref_name }}-light-a
+      queue: max
+    outputs:
+      artifact-key: ${{ steps.pack-source.outputs.artifact-key }}
+    steps:
+      - name: Clear sparse checkout state from a previous job
+        run: |
+          if [ -d .git ]; then
+            git sparse-checkout disable
+            rm -f .git/info/sparse-checkout
+            git config --local --unset core.sparseCheckout || true
+          fi
+      - uses: actions/checkout@v4
+        timeout-minutes: 5
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+      - name: Pack the exact commit and complete tree for the reserved pair
+        id: pack-source
+        run: |
+          set -o pipefail
+          echo "artifact-key=${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}" >> "$GITHUB_OUTPUT"
+          mkdir "$RUNNER_TEMP/mps-source"
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          git rev-parse HEAD > "$RUNNER_TEMP/mps-source/source.sha"
+          git rev-list --objects --no-walk HEAD | git pack-objects --stdout > "$RUNNER_TEMP/mps-source/source.pack"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mps-source-${{ steps.pack-source.outputs.artifact-key }}
+          path: ${{ runner.temp }}/mps-source/
+          retention-days: 1
+          compression-level: 0
+
   mps-capacity-series:
-    if: github.event_name == 'workflow_dispatch' && inputs.run_capacity_series
+    if: github.event_name == 'workflow_dispatch' && (inputs.run_capacity_series || inputs.run_mps_training_series)
+    needs: prepare-mps-source
     runs-on: [self-hosted, linux, gpu, flagquantum-local, multinode]
     concurrency:
       group: flagquantum-accelerator
@@ -35,17 +78,43 @@ jobs:
               fi
             )
           fi
-      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v8.0.2
         with:
-          path: capacity-series-source
+          digest-mismatch: error
+          name: mps-source-${{ needs.prepare-mps-source.outputs.artifact-key }}
+          path: ${{ runner.temp }}/mps-source/
+      - name: Restore and verify this run's exact source commit
+        run: |
+          sha="$(cat "$RUNNER_TEMP/mps-source/source.sha")"
+          test "$sha" = "$GITHUB_SHA"
+          mkdir -p capacity-series-source
+          cd capacity-series-source
+          if [ ! -d .git ]; then git init .; fi
+          git index-pack --stdin < "$RUNNER_TEMP/mps-source/source.pack"
+          printf '%s\n' "$sha" > .git/shallow
+          git config --worktree core.sparseCheckout false
+          git config --worktree core.sparseCheckoutCone false
+          rm -f .git/info/sparse-checkout
+          git read-tree --empty
+          git checkout --force --detach "$sha"
+          git clean -ffdx
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
       - name: Measure one frozen workload at every rank count
         working-directory: capacity-series-source
         env:
           STAGING: /nfs/fq-mps-capacity-${{ github.run_id }}-${{ github.run_attempt }}
           OUTPUT: /nfs/fq-mps-capacity-${{ github.run_id }}-${{ github.run_attempt }}-out
+          TRAINING_SERIES: ${{ inputs.run_mps_training_series }}
+          CAPACITY_SERIES: ${{ inputs.run_capacity_series }}
         run: |
+          if [ "$TRAINING_SERIES" = true ] && [ "$CAPACITY_SERIES" = true ]; then
+            echo "Select only one fixed-workload campaign" >&2
+            exit 1
+          fi
+          extra=()
+          if [ "$TRAINING_SERIES" = true ]; then extra+=(--training-series); fi
           /root/liuwei/FlagQuantum/.conda-root/envs/flagquantum-dev/bin/python \
-            tools/run_mps_capacity_series.py --staging "$STAGING" --output "$OUTPUT"
+            tools/run_mps_capacity_series.py --staging "$STAGING" --output "$OUTPUT" "${extra[@]}"
       - name: Retain raw measurements and diagnostics
         if: always()
         run: |
@@ -63,7 +132,7 @@ jobs:
           retention-days: 30
 
   gpu-scheduled:
-    if: ${{ !inputs.run_capacity_series }}
+    if: ${{ !inputs.run_capacity_series && !inputs.run_mps_training_series }}
     runs-on: [self-hosted, linux, gpu, flagquantum-local, a800-172]
     # Every accelerator job here measures a device that the others also measure,
     # and the repository registers its runners onto shared hosts. Nothing
@@ -121,7 +190,7 @@ jobs:
           path: hardware-run/
 
   local-scale-scheduled:
-    if: (github.event_name == 'workflow_dispatch' || github.event_name == 'schedule') && !inputs.run_capacity_series
+    if: (github.event_name == 'workflow_dispatch' || github.event_name == 'schedule') && !inputs.run_capacity_series && !inputs.run_mps_training_series
     runs-on: [self-hosted, linux, gpu, flagquantum-local, a800-172]
     concurrency:
       group: flagquantum-accelerator
@@ -228,7 +297,7 @@ jobs:
     # Manual only. The pair holds a device on each of two shared hosts for the
     # length of the run, and a schedule would take them whether or not anyone
     # is watching the result.
-    if: github.event_name == 'workflow_dispatch' && inputs.run_multinode && !inputs.run_capacity_series
+    if: github.event_name == 'workflow_dispatch' && inputs.run_multinode && !inputs.run_capacity_series && !inputs.run_mps_training_series
     # Only the launch host carries `multinode`. SSH reaches the peer from there
     # and not the other way round, so a job that lands on the peer cannot start
     # the pair at all; `--preflight` is what notices if that label ever moves.

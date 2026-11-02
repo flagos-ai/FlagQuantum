@@ -1,0 +1,6 @@
+{
+  "source_commit": "6dce93ede10b2e4a38c942939959221bec2acade",
+  "run": "https://github.com/flagos-ai/FlagQuantum/actions/runs/41413093125",
+  "job": "https://github.com/flagos-ai/FlagQuantum/actions/runs/41413093125/job/125171049044",
+  "scope": "Initial PR source-pool policy failure: manual MPS source producer targeted a reserved entry runner. Corrected to the ordinary trusted CPU pool with fork fallback and per-run concurrency; existing entry-slot policy remains intact. Numerical producer and protocol unchanged."
+}

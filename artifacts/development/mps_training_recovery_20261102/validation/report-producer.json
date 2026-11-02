@@ -1,0 +1,7 @@
+{
+  "source_commit": "9f3f1f2e8630bb0b32e3f7b139806f32401e0b57",
+  "producer_sha256": {
+    "benchmarks/build_mps_training_recovery_report.py": "3a1a0aabe0bea844bf060b7e0ffef3f25d1d194cb1f07ae996101de9b4b65b25"
+  },
+  "scope": "report rendering and independent raw-value validation; numerical producer revisions remain recorded per campaign"
+}

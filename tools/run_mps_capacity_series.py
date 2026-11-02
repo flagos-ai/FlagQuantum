@@ -69,6 +69,7 @@ def point_command(
     port: int,
     *,
     transport_check: bool = False,
+    training_series: bool = False,
 ) -> list[str]:
     """Keep circuit geometry fixed while varying only deployment topology."""
     if world not in (1, 2, 4, 8, 16) or node not in range(2 if world == 16 else 1):
@@ -95,6 +96,15 @@ def point_command(
             str(staging / "tests/distributed/mps_training_runtime.py"),
             "--backend",
             "nccl",
+        ]
+    if training_series:
+        return [
+            *launch,
+            str(staging / "benchmarks/internal/evidence/mps_training_acceptance.py"),
+            "--recovery-protocol",
+            str(staging / "benchmarks/manifests/mps_training_recovery_v1.json"),
+            "--output",
+            str(output / f"world-{world}.json"),
         ]
     return [
         *launch,
@@ -126,6 +136,7 @@ def worker(args: argparse.Namespace) -> int:
         args.address,
         args.port,
         transport_check=args.transport_check,
+        training_series=args.training_series,
     )
     env = dict(
         os.environ,
@@ -234,7 +245,12 @@ def campaign(args: argparse.Namespace) -> int:
                 "cuda_allocator_policy": "expandable_segments:True",
                 "infiniband_hcas": args.infiniband_hcas,
                 "p2p_timeout_seconds": args.timeout,
-                "capacity_site_kernels": "explicit_compiled_from_frozen_workload_body",
+                "capacity_site_kernels": (
+                    None
+                    if args.training_series
+                    else "explicit_compiled_from_frozen_workload_body"
+                ),
+                "campaign": "training_recovery" if args.training_series else "capacity",
                 "topology": [
                     _run(["nvidia-smi", "topo", "-m"]),
                     _run(ssh_argv(args.peer, ["nvidia-smi", "topo", "-m"])),
@@ -244,6 +260,7 @@ def campaign(args: argparse.Namespace) -> int:
         )
         + "\n"
     )
+    failed_points = []
     for world, transport_check in (
         (16, True),
         (1, False),
@@ -310,6 +327,7 @@ def campaign(args: argparse.Namespace) -> int:
                 "--infiniband-hcas",
                 args.infiniband_hcas,
                 *(["--transport-check"] if transport_check else []),
+                *(["--training-series"] if args.training_series else []),
             ]
             cleanup = [*base, "--stop-worker", "--pid-file", str(pid_file)]
             if node:
@@ -357,6 +375,21 @@ def campaign(args: argparse.Namespace) -> int:
             for job in jobs:
                 subprocess.run(job["cleanup_command"], timeout=30, check=True)
             watcher.join(timeout=45)
+        if args.training_series and not transport_check:
+            (args.output / f"world-{world}-outcome.json").write_text(
+                json.dumps(
+                    {
+                        "world_size": world,
+                        "status": "completed" if passed else "failed",
+                        "note": "worker exit status; inspect retained rank records, logs and watchdog for OOM or timeout classification",
+                    },
+                    indent=2,
+                )
+                + "\n"
+            )
+        if not passed and args.training_series and not transport_check:
+            failed_points.append(world)
+            continue
         if not passed:
             raise SystemExit(
                 f"{point} failed; retain all logs and diagnose before retry"
@@ -369,7 +402,7 @@ def campaign(args: argparse.Namespace) -> int:
     (args.output / "raw-digests.json").write_text(
         json.dumps({"commit": revision, "sha256": digests}, indent=2) + "\n"
     )
-    return 0
+    return 1 if failed_points else 0
 
 
 def main() -> int:
@@ -389,6 +422,7 @@ def main() -> int:
         default="mlx5_101,mlx5_102,mlx5_103,mlx5_104,mlx5_105,mlx5_106,mlx5_107,mlx5_108",
     )
     parser.add_argument("--transport-check", action="store_true")
+    parser.add_argument("--training-series", action="store_true")
     parser.add_argument("--timeout", type=int, default=1200)
     parser.add_argument("--worker", action="store_true")
     parser.add_argument("--stop-worker", action="store_true")
