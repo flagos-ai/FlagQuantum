@@ -4,6 +4,10 @@ on:
   pull_request:
   workflow_dispatch:
     inputs:
+      precision_frontier:
+        description: Measure the frozen complete-circuit precision frontier on one GPU
+        type: boolean
+        default: false
       qng_ablation:
         description: Run the frozen single-GPU QNG algorithm/fusion experiment
         type: boolean
@@ -135,6 +139,30 @@ jobs:
         run: |
           python -c "import pytest, torch, numpy"
           python -m pip install --no-deps --no-build-isolation -e .
+      - name: Reject conflicting manual campaigns
+        if: ${{ inputs.qng_ablation && inputs.precision_frontier }}
+        run: |
+          echo "Select only one of qng_ablation and precision_frontier"
+          exit 1
+      - name: Frozen complete-circuit precision frontier
+        if: ${{ inputs.precision_frontier }}
+        env:
+          CUDA_VISIBLE_DEVICES: "0"
+          OMP_NUM_THREADS: "1"
+          OPENBLAS_NUM_THREADS: "1"
+          MKL_NUM_THREADS: "1"
+          NVIDIA_TF32_OVERRIDE: "0"
+          PRECISION_OUTPUT: ${{ runner.temp }}/precision-frontier-${{ github.run_id }}-${{ github.run_attempt }}
+        run: |
+          python tools/run_with_watchdog.py --phase precision-frontier --stall-seconds 240 --timeout-seconds 900 --diagnostics "$PRECISION_OUTPUT-watchdog" -- python -m benchmarks.precision_frontier --device cuda:0 --staged-controls --output "$PRECISION_OUTPUT"
+          python -m benchmarks.precision_frontier --report --output "$PRECISION_OUTPUT"
+      - name: Retain precision measurements including unsupported or failed routes
+        if: ${{ always() && inputs.precision_frontier }}
+        run: |
+          output="${RUNNER_TEMP}/precision-frontier-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          mkdir -p hardware-run
+          if [ -d "$output" ]; then cp -a "$output" hardware-run/precision-cuda; fi
+          if [ -d "$output-watchdog" ]; then cp -a "$output-watchdog" hardware-run/precision-watchdog; fi
       - name: Frozen QNG algorithm and fusion ablation
         if: ${{ inputs.qng_ablation }}
         env:
@@ -155,7 +183,7 @@ jobs:
           if [ -d "$output" ]; then cp -a "$output" hardware-run/qng-cuda; fi
           if [ -d "$output-watchdog" ]; then cp -a "$output-watchdog" hardware-run/qng-watchdog; fi
       - name: One-GPU local behavior
-        if: ${{ !inputs.qng_ablation }}
+        if: ${{ !inputs.qng_ablation && !inputs.precision_frontier }}
         run: |
           mkdir -p hardware-run
           set -o pipefail
@@ -164,7 +192,7 @@ jobs:
           CUDA_VISIBLE_DEVICES=0 python tools/run_with_watchdog.py --phase one-gpu-tests --stall-seconds 180 --timeout-seconds 600 --diagnostics hardware-run/watchdog-one-gpu-tests -- python -m pytest tests/test_statevector_triton_gates.py tests/qec/test_ising_comparison.py::test_real_cuda_complete_hyperedge_correction_and_timing tests/benchmark_contract/test_qng_hva_cuda.py::test_real_fused_tangents_metric_and_update_match_oracle -q -rs 2>&1 | tee hardware-run/one-gpu.log
           CUDA_VISIBLE_DEVICES=0 python tools/run_with_watchdog.py --phase one-gpu-benchmark --stall-seconds 240 --timeout-seconds 900 --diagnostics hardware-run/watchdog-one-gpu-benchmark -- python benchmarks/continuous_performance.py --mode local-gpu --backend pytorch --warmup 10 --repetitions 30 --inner-loops 20 --output hardware-run/one-gpu-performance.json
           python tools/evaluate_performance_artifact.py --write hardware-run/one-gpu-performance.json
-      - if: ${{ always() && !inputs.qng_ablation }}
+      - if: ${{ always() && !inputs.qng_ablation && !inputs.precision_frontier }}
         run: >-
           python tools/hardware_run_manifest.py
           --output hardware-run/one-gpu.json
@@ -179,7 +207,7 @@ jobs:
           path: hardware-run/
 
   two-gpu-distributed-required:
-    if: ${{ !inputs.validate_pool && !inputs.validate_mc550_pool && !inputs.qng_ablation }}
+    if: ${{ !inputs.validate_pool && !inputs.validate_mc550_pool && !inputs.qng_ablation && !inputs.precision_frontier }}
     needs: prepare-source
     runs-on: [self-hosted, linux, gpu, flagquantum-local, a800-172]
     concurrency:
