@@ -18,9 +18,8 @@ from ..runtime.dynamic._conditions import instruction_is_dynamic
 from ..runtime.execution_plan import ExecutionPlan
 from ..runtime.execution_plan_contract import (
     canonical_json,
-    plan_decision,
     plan_execution_program,
-    plan_program,
+    plan_to_dict,
 )
 from ..runtime.result import ExecutionResult
 
@@ -47,7 +46,11 @@ _UNBOUNDED_LIMITS = CircuitLimits()
 def _program(plan: ExecutionPlan) -> CircuitIR:
     if not isinstance(plan, ExecutionPlan):
         raise TypeError("inspection requires an existing ExecutionPlan from fq.plan")
-    decision = plan_decision(plan)  # Validates the existing serialized contract.
+    payload = plan_to_dict(plan)  # Validate through Runtime, not a subclass override.
+    decision = payload["decision"]
+    fingerprints = payload["fingerprints"]
+    assert isinstance(decision, Mapping)
+    assert isinstance(fingerprints, Mapping)
     if (
         plan.analysis is None
         or plan.mode != "statevector"
@@ -63,12 +66,14 @@ def _program(plan: ExecutionPlan) -> CircuitIR:
         or decision["allow_approximate"]
         or decision["allow_backend_fallback"]
         or plan.noisy_execution_plan is not None
-        or plan.to_dict()["extensions"]
+        or payload["extensions"]
     ):
         raise ExecutionContractError(
             "execution.profile",
             "require one exact local CPU torch statevector without noise or fallback",
         )
+    program_fingerprint = fingerprints["program"]
+    del payload, fingerprints
     if plan.state_bytes != decision["state_bytes"]:
         raise ExecutionContractError(
             "execution.controls", "state allocation differs from the sealed decision"
@@ -101,9 +106,10 @@ def _program(plan: ExecutionPlan) -> CircuitIR:
                 "execution.layers",
                 "layer order or qubit summary differs from the canonical program",
             )
-    recorded = plan_program(plan)
     actual = plan_execution_program(plan)
-    if recorded.content_hash != actual.content_hash:
+    # Runtime already recomputed this fingerprint from the sealed program. Keep
+    # its authoritative layer reconstruction, without rebuilding the record again.
+    if program_fingerprint != actual.content_hash:
         raise ExecutionContractError(
             "execution.layers",
             "actual instruction layers differ from the sealed program",

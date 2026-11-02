@@ -1,0 +1,62 @@
+{
+  "claims": "Scoped local PF-01 development comparison; not release, Rust or hardware evidence",
+  "rows": {
+    "energy-2x2:scalar:inline:line:success": {
+      "e0_ns": {
+        "after": {
+          "max": 777100916,
+          "median": 747087541,
+          "min": 735653958
+        },
+        "before": {
+          "max": 864183542,
+          "median": 826635125,
+          "min": 812764459
+        },
+        "reduction": {
+          "absolute": 79547584,
+          "fraction": 0.09623058783039252,
+          "meets_review_line": false
+        }
+      },
+      "e1_ns": {
+        "after": {
+          "max": 1567972291,
+          "median": 1508610999,
+          "min": 1495577750
+        },
+        "before": {
+          "max": 1744600541,
+          "median": 1707916416,
+          "min": 1689100041
+        },
+        "reduction": {
+          "absolute": 199305417,
+          "fraction": 0.11669506489479167,
+          "meets_review_line": true
+        }
+      },
+      "sampled_compile_rss_bytes": {
+        "after": {
+          "max": 227196928,
+          "median": 226459648,
+          "min": 183861248
+        },
+        "before": {
+          "max": 227229696,
+          "median": 185040896,
+          "min": 165199872
+        },
+        "reduction": {
+          "absolute": -41418752,
+          "fraction": -0.22383566495484328,
+          "meets_review_line": false
+        }
+      }
+    }
+  },
+  "source_revisions": {
+    "after": "a1c6308123c938a711fc036f54f1d3393f1aa07c",
+    "before": "6bb1b7d9fa99719f326dd2106ff88ecdfc909f72"
+  }
+}

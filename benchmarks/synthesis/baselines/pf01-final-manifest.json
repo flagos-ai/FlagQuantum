@@ -1,0 +1,36 @@
+{
+  "after_revision": "84a0024478aaa873b2bfab3b2390402064f51a0c",
+  "artifacts": {
+    "before": {
+      "file": "pf01-before.json.gz",
+      "sha256": "10dcf837743ebf53cb39c499745b5613dcd3e09ab3cf58d9bb194356eb7d2af6"
+    },
+    "comparison": {
+      "file": "pf01-final-comparison.json",
+      "sha256": "d6313d6c5e6aa58277dbe1e1354bea34b0bab10e4b3666da2822e5718fb55268"
+    },
+    "final_after": {
+      "file": "pf01-final-after.json.gz",
+      "sha256": "ac229e1428712d1b779f73b2a4bac9ccc33096173a5a4f124622409a421851f5"
+    },
+    "initial_experiments": {
+      "file": "pf01-manifest.json",
+      "sha256": "32cc97a52369ac9eade7c66b2af78381c9f6e9bed57be21825f40ed89252fca9"
+    },
+    "interleaved_rss_review": {
+      "file": "pf01-interleaved-rss.json.gz",
+      "sha256": "e28b505dcdcaa5cc1b26b6ecb37877d8c29cb342f7259400a7d8a26887380410"
+    }
+  },
+  "before_revision": "6bb1b7d9fa99719f326dd2106ff88ecdfc909f72",
+  "primary_statuses": {
+    "measurement_failed": 0,
+    "resource_refused": 27,
+    "timeout": 0,
+    "verified": 171
+  },
+  "review": "First candidate and sequential RSS reviews retained in initial manifest. Final primary scalar logical RSS regression retained; not reproduced by alternating snapshots. No RSS improvement conclusion.",
+  "rss_review_tool_path": "benchmarks/synthesis/performance_rss_review.py",
+  "rss_review_tool_revision": "5d800fd8b57a625a71eba4e6373045836b7551b3",
+  "scope": "Final PF-01 Services delivery; scoped local Python time comparison, no RSS improvement, Rust, hardware or release claim"
+}

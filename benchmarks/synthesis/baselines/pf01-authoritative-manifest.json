@@ -1,0 +1,42 @@
+{
+  "after_revision": "9f44251d5d10fe2aa673484cd43f7e4f5920c166",
+  "artifacts": {
+    "after": {
+      "file": "pf01-authoritative-after.json.gz",
+      "sha256": "dbe17355a060400ee710d8ee4c19578f307fb74dade6cd1225b6e437cc6010fb"
+    },
+    "before": {
+      "file": "pf01-before.json.gz",
+      "sha256": "10dcf837743ebf53cb39c499745b5613dcd3e09ab3cf58d9bb194356eb7d2af6"
+    },
+    "comparison": {
+      "file": "pf01-authoritative-comparison.json",
+      "sha256": "ff7b7ff402a27b2f17b9cf19ebc387d23bce518b6031ab437d55f65ec2e636d5"
+    },
+    "earlier_experiments": {
+      "file": "pf01-final-manifest.json",
+      "sha256": "c918280de296fb2336c2117dffafd12aa69f198e0f2694a021813fdb68c55034"
+    },
+    "qmod-rss": {
+      "file": "pf01-authoritative-qmod-rss.json.gz",
+      "sha256": "8109a9ce7d0045a785b81fc35817092dc766b44375d799ff5193e2b185cd5afe"
+    },
+    "rss": {
+      "file": "pf01-authoritative-rss.json.gz",
+      "sha256": "0112b1bd9eeb3dc4f68e80dfc64902f7e474a15d699cb93042556979d22e98a9"
+    }
+  },
+  "before_revision": "6bb1b7d9fa99719f326dd2106ff88ecdfc909f72",
+  "limitations": "22/125 configurations measured; original AO/PF-00 untouched. Original and all candidate receipts preserved. Primary scalar logical/Qmod line RSS regressions retained; separate alternating review does not replace them. No universal or RSS improvement claim.",
+  "primary_statuses": {
+    "measurement_failed": 0,
+    "resource_refused": 27,
+    "timeout": 0,
+    "verified": 171
+  },
+  "rss_review_tool_revisions": {
+    "qmod_line": "05db0169f8b00c79f22041e9a6748b09d84c64fd",
+    "scalar": "9f44251d5d10fe2aa673484cd43f7e4f5920c166"
+  },
+  "scope": "PF-01 Services-local conversion reuse with authoritative Runtime serializer; scoped local development time observations, no RSS/Rust/hardware/release claim"
+}
