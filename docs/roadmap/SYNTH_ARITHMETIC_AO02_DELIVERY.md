@@ -273,3 +273,15 @@ Local logs: `/private/tmp/fq-ao02-frozen-related.log`, `fq-ao02-final-focused.lo
 `fq-ao02-benchmark-tier.log` and `fq-ao02-distributed-tier.log`.
 Remote exact-head PR CI is a separate gate; no repository-wide green or promotion
 is inferred from the focused local checks.
+
+## Main synchronization
+
+The branch also merges main `6649717cd` without changing or retagging the original
+measurements. Its production Python bytes match measurement revision
+`b5c3db4b487a4b144a83a1e50fc8541475708774`; the additional main changes are
+outside this arithmetic implementation. Post-sync combined arithmetic,
+workspace, artifact, source-typing and Qmod-parser acceptance passes 191 cases
+in 15.43 seconds. Strict mypy again passes 884 sources, the native/Qmod example
+runs, API protection passes and all 825 local Markdown links resolve.
+Logs: `/private/tmp/fq-ao02-post-sync-acceptance.log`,
+`fq-ao02-post-sync-mypy.log` and `fq-ao02-post-sync-example.log`.
