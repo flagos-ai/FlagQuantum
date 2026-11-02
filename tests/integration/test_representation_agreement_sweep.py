@@ -628,9 +628,9 @@ def test_each_cell_names_the_seed_that_drew_its_parameters() -> None:
 
     assert first["seed"] == 260720
     assert second["seed"] == 260721
-    assert first["energies"]["statevector"] != second["energies"]["statevector"], (
-        "two seeds must not describe the same parameters"
-    )
+    assert (
+        first["energies"]["statevector"] != second["energies"]["statevector"]
+    ), "two seeds must not describe the same parameters"
 
 
 def test_the_grid_keeps_every_seed_it_was_asked_for() -> None:
