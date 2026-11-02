@@ -80,7 +80,7 @@ the independent reference is `manual_reference` in
 Only `services/_synthesis_execution.py` changes production behavior internally.
 Previously each `_program` check obtained the decision, extensions, recorded IR
 and actual IR through separate validated Runtime conversions. It now obtains
-one validated `ExecutionPlan.to_dict()` payload for the decision, extensions
+one validated Runtime `plan_to_dict(plan)` payload for the decision, extensions
 and program fingerprint. The full payload is released before actual layer
 reconstruction; only the needed decision and fingerprint remain. Runtime's
 serializer recomputes the sealed program's
@@ -96,6 +96,12 @@ unchanged. Plan/result admission, raw controls, layout, basis, budgets and
 actual state shape/dtype checks remain at their existing boundaries. Local
 payloads live only within one call; nested mutable data is never cached.
 
+The owning Runtime function is called directly: an `ExecutionPlan` subclass
+cannot replace validation by overriding its instance serializer. A new negative
+case supplies an override that forges the program fingerprint to match modified
+instruction layers; inspection must still reject it. This candidate-only gap was
+found in final review and repaired before delivery.
+
 New negative cases alter the sealed program metadata, program fingerprint,
 decision or extensions after successful inspection/execution. Inspection,
 resource access and real-result association must all reject the altered plan;
@@ -108,7 +114,9 @@ result shape/precision and nonidentity physical layouts with relative phase.
 The clean comparison pins are:
 
 - Before: `6bb1b7d9fa99719f326dd2106ff88ecdfc909f72`.
-- Final after: `84a0024478aaa873b2bfab3b2390402064f51a0c`.
+- Final after: `9f44251d5d10fe2aa673484cd43f7e4f5920c166`.
+- Payload-lifetime candidate: `84a0024478aaa873b2bfab3b2390402064f51a0c`,
+  retained with its measurements and RSS review.
 - Initial candidate: `a1c6308123c938a711fc036f54f1d3393f1aa07c`, retained with
   its original measurements and two sequential RSS reviews.
 
@@ -159,14 +167,15 @@ one warm process.
 
 | Native qfunc workload | E0 before/final median | E1 before/final median |
 | --- | --- | --- |
-| Energy, 2+2 bits, logical | 32.689 / 29.679 ms | 100.483 / 92.794 ms |
-| Energy, 8+8 bits, logical | 1064.701 / 945.323 ms | Not run: state budget |
-| Shared square, 8+8 bits, logical | 1679.383 / 1496.542 ms | Not run: state budget |
-| Energy, 2+2 bits, basis | 256.010 / 239.927 ms | 533.820 / 475.747 ms |
-| Energy, 2+2 bits, line | 815.641 / 758.405 ms | 1702.736 / 1525.334 ms |
+| Energy, 2+2 bits, logical | 32.689 / 29.731 ms | 100.483 / 92.613 ms |
+| Energy, 8+8 bits, logical | 1064.701 / 938.130 ms | Not run: state budget |
+| Shared square, 8+8 bits, logical | 1679.383 / 1496.280 ms | Not run: state budget |
+| Energy, 2+2 bits, basis | 256.010 / 236.803 ms | 533.820 / 474.020 ms |
+| Energy, 2+2 bits, line | 815.641 / 732.315 ms | 1702.736 / 1498.787 ms |
 
-The two large logical E0 groups meet the review line: 11.21%/119.38 ms and
-10.89%/182.84 ms reductions. Four E1 groups meet it: qfunc basis/line, Qmod line
+Four E0 groups meet the review line: the two large logical groups at
+11.89%/126.57 ms and 10.90%/183.10 ms reductions, plus qfunc/Qmod line.
+Four E1 groups meet it: qfunc basis/line, Qmod line
 and scalar line. The small logical qfunc E0 improvement does not meet the
 absolute review line. This is evidence for selected local development workloads,
 not a universal synthesis-speedup percentage.
@@ -179,23 +188,25 @@ time observations. All remaining Runtime validation/reconstruction stays intact.
 ### RSS review
 
 Primary RSS medians are visibly unstable on this nonexclusive macOS host.
-The final scalar logical group shows a 21.50 MiB/11.61% increase, while two other
-groups cross the nominal RSS-improvement line. Neither direction is promoted as
+The final scalar logical and Qmod line groups show approximately 21 MiB
+increases, crossing the material-regression review line; shared square crosses
+the nominal RSS-improvement line. Neither direction is promoted as
 a memory conclusion. Initial candidate sequential measurements also flagged
 scalar line; their separate five-memory-worker reviews are retained without
 replacing the original three-worker data.
 
 The supplementary final review interleaves five before/five after fresh memory
-workers for each of scalar logical/line, reversing AB/BA order each round.
+workers for each of scalar logical/line and Qmod line, reversing AB/BA order each round.
 Workers import immutable Git archives, verify their import location, use the
-unchanged PF-00 worker/oracle, and all twenty must independently verify. The
+unchanged PF-00 worker/oracle, and all thirty must independently verify. The
 review records archive hashes, source/tree pins, script hash, raw RSS points,
 resource hashes and lifetime high-water separately. Its medians are:
 
 | Target | Sampled compile RSS before/final | Lifetime high-water before/final |
 | --- | --- | --- |
-| Logical | 206.469 / 206.516 MiB | 206.469 / 206.516 MiB |
-| Line | 215.688 / 216.125 MiB | 215.688 / 216.453 MiB |
+| Scalar logical | 206.609 / 206.641 MiB | 206.609 / 206.641 MiB |
+| Scalar line | 216.281 / 216.172 MiB | 216.281 / 216.406 MiB |
+| Qmod line | 215.719 / 216.547 MiB | 216.422 / 216.703 MiB |
 
 The material regression did not reproduce in this controlled-order review.
 This does not prove identical allocation peaks or future RSS behavior. There is
@@ -204,26 +215,30 @@ of this host's observations. The compiler-window peak and lifetime peak are
 never subtracted or relabeled as Python allocation memory.
 
 The final manifest is
-[`pf01-final-manifest.json`](../../benchmarks/synthesis/baselines/pf01-final-manifest.json),
+[`pf01-authoritative-manifest.json`](../../benchmarks/synthesis/baselines/pf01-authoritative-manifest.json),
 with separately hashed original, final and supplementary receipts. Reproduce
 the comparisons and supplementary review using:
 
 ```bash
 python -m benchmarks.synthesis.performance_compare \
   --before benchmarks/synthesis/baselines/pf01-before.json.gz \
-  --after benchmarks/synthesis/baselines/pf01-final-after.json.gz \
+  --after benchmarks/synthesis/baselines/pf01-authoritative-after.json.gz \
   --output /tmp/pf01-comparison.json
 python -m benchmarks.synthesis.performance_rss_review \
   --before 6bb1b7d9fa99719f326dd2106ff88ecdfc909f72 \
-  --after 84a0024478aaa873b2bfab3b2390402064f51a0c \
+  --after 9f44251d5d10fe2aa673484cd43f7e4f5920c166 \
   --output /tmp/pf01-rss-review.json
+python -m benchmarks.synthesis.performance_rss_review \
+  --before 6bb1b7d9fa99719f326dd2106ff88ecdfc909f72 \
+  --after 9f44251d5d10fe2aa673484cd43f7e4f5920c166 --qmod-line \
+  --output /tmp/pf01-qmod-rss-review.json
 ```
 
 Fetch both full source pins before validation if using a shallow checkout.
 The comparison rejects changed measurement code/protocol/environment, circuit
 hashes/costs, refusal codes, missing primary trials or changed execution scope.
 New acceptance cases exercise these refusals with a real measured workflow.
-Final scope acceptance: **254 passed in 39.86 s**, including all sixteen small
+Final scope acceptance: **255 passed in 39.58 s**, including all sixteen small
 basis inputs, every nonzero XOR target, full complex amplitudes, clean workspace,
 real nonidentity routing, source/result tampering and the receipt comparisons.
 The native qfunc, corresponding Qmod and independent Circuit example were also
@@ -233,11 +248,15 @@ and all 834 Markdown link/anchor checks passed. The initial sandbox-only
 acceptance attempt could not read `sysctl`/`ps`; the same tests passed with
 own-worker OS inspection enabled. No test was weakened.
 
-The broad final `pr-default` result is tracked separately in the PR description
-and delivery ledger, together with exact-head remote CI. An earlier pre-final
-default run was deliberately interrupted for the payload-lifetime revision and
-is not a full-suite pass. Focused acceptance does not substitute for that tier
-or claim that preexisting host/environment failures are fixed.
+The broad local `pr-default` run on the payload-lifetime candidate completed
+with **17671 passed, 588 skipped, 27 failed and six errors in 820.38 s**.
+All 33 failing/error node IDs were already present in pre-PF-01 local logs;
+there is no new failing ID. This is not a green full suite and does not cover
+the subsequent authoritative-serializer dispatch fix. That fix is included in
+the final 255-test scope run and exact-head remote CI is tracked separately in
+the PR and delivery ledger. An earlier interrupted default run is not a
+full-suite pass. No claim is made that unrelated host/environment failures are
+fixed.
 
 The benefit review line is a median reduction of at least 10% and 20 ms for
 E0/E1, or at least 10% and 16 MiB for sampled compile-window RSS. Smaller changes
