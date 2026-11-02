@@ -19,7 +19,9 @@ from benchmarks.synthesis.performance_workloads import Workload
 from benchmarks.synthesis.results import _integer, _object
 
 
-def review(repository: Path, before: str, after: str, output: Path) -> None:
+def review(
+    repository: Path, before: str, after: str, output: Path, *, qmod_line: bool = False
+) -> None:
     repository = repository.resolve()
     sources = {"before": pinned_revision(before), "after": pinned_revision(after)}
     snapshots: dict[str, Path] = {}
@@ -99,7 +101,15 @@ def review(repository: Path, before: str, after: str, output: Path) -> None:
                 raise ValueError(
                     "RSS review requires the unchanged measurement implementation"
                 )
-        for target in ("logical", "line"):
+        cases = (
+            (("qmod_line", Workload("energy-2x2", frontend="qmod", target="line")),)
+            if qmod_line
+            else tuple(
+                (target, Workload("energy-2x2", target=target))
+                for target in ("logical", "line")
+            )
+        )
+        for target, workload in cases:
             for label in sources:
                 records[target + ":" + label] = []
             for repetition in range(5):
@@ -112,7 +122,7 @@ def review(repository: Path, before: str, after: str, output: Path) -> None:
                     try:
                         os.chdir(snapshots[label])
                         sample = trial(
-                            Workload("energy-2x2", target=target),
+                            workload,
                             "memory",
                             warmups=2,
                             seconds=30,
@@ -129,7 +139,7 @@ def review(repository: Path, before: str, after: str, output: Path) -> None:
                             "RSS review requires every independent worker to verify"
                         )
         summary: dict[str, object] = {}
-        for target in ("logical", "line"):
+        for target, _ in cases:
             left, right = records[target + ":before"], records[target + ":after"]
             expected = _object(left[0]["verification"])["resources"]
             if any(
@@ -171,8 +181,13 @@ def main() -> None:
     parser.add_argument("--before", required=True)
     parser.add_argument("--after", required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument(
+        "--qmod-line", action="store_true", help="Review Qmod line only"
+    )
     args = parser.parse_args()
-    review(args.repository, args.before, args.after, args.output)
+    review(
+        args.repository, args.before, args.after, args.output, qmod_line=args.qmod_line
+    )
 
 
 if __name__ == "__main__":
