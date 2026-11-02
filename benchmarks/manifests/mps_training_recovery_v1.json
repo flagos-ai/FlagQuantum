@@ -1,0 +1,41 @@
+{
+  "protocol_id": "fixed_mps_training_recovery_20261102",
+  "n_sites": 32,
+  "layers": 3,
+  "family": "circuit_training",
+  "dtype": "complex128",
+  "initial_parameters": [
+    0.31,
+    -0.17
+  ],
+  "initial_state": "zero_product_mps",
+  "max_bond": 4,
+  "cutoff": 0.0,
+  "canonicalization_policy": "none",
+  "gradient_policy": "approximate",
+  "gradient_semantics": "projected_stop_subspace; not the derivative of an actively truncated forward map",
+  "optimizer": "adam",
+  "learning_rate": 0.025,
+  "steps": 8,
+  "checkpoint_step": 4,
+  "stopping_rule": "always complete eight updates; no target-based early stop",
+  "objective": "negative mean on-site Z expectation",
+  "objective_target": -0.95,
+  "comparison_atol": 2e-05,
+  "finite_difference_epsilon": 1e-05,
+  "compile_site_kernels": false,
+  "prefetch_layer_halos": false,
+  "fuse_local_reverse": false,
+  "world_sizes": [
+    1,
+    2,
+    4,
+    8,
+    16
+  ],
+  "capacity_leg": "artifacts/development/mps_capacity_series_20261023/summary.json",
+  "capacity_leg_scope": "separate retained 131072-site single-step capacity campaign; not convergence evidence",
+  "timing": "barrier-bracketed whole training calls and per-rank runtime phase samples; first step retained and steady statistics use steps 2 through 8",
+  "amdahl": "not fitted or estimated; only measured strong-scaling efficiency is reported",
+  "gradient_tolerance": 0.01
+}

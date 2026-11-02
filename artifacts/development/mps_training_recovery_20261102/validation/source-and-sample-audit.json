@@ -1,0 +1,31 @@
+{
+  "campaigns": [
+    {
+      "campaign": "cpu",
+      "source_commit": "9ad41ce1a24cda37e17eb6e54988ff64bedf618d",
+      "world_sizes": [
+        1,
+        2
+      ],
+      "source_and_manifest_hashes_verified": true,
+      "raw_recovery_ownership_and_sharding_errors_recomputed": true,
+      "checkpoint_commit_and_owner_receipts_verified": true,
+      "reports_reproduce_byte_for_byte": true
+    },
+    {
+      "campaign": "cuda",
+      "source_commit": "b4391cfe68ac518c4a37ac9ca081e948f00c4a63",
+      "world_sizes": [
+        1,
+        2,
+        4,
+        8,
+        16
+      ],
+      "source_and_manifest_hashes_verified": true,
+      "raw_recovery_ownership_and_sharding_errors_recomputed": true,
+      "checkpoint_commit_and_owner_receipts_verified": true,
+      "reports_reproduce_byte_for_byte": true
+    }
+  ]
+}

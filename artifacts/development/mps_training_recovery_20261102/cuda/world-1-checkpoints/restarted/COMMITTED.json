@@ -1,0 +1,1 @@
+{"completed_steps":8,"contract_fingerprint":"208f19b3daf540302653c03ba3129e9f0509fef6ec7b215c277b7783bf43c0ab","schema":"sharded_mps_checkpoint_manifest_v1","shards":[{"completed_steps":8,"file":"rank-0-step-8.pt","rank":0,"sha256":"a31513a6f7322112be5d710ea2b76807d61a8ff71afa1d9a264eaaa6c14e150e"}],"world_size":1}

@@ -1,0 +1,278 @@
+{
+  "source": {
+    "code_version": "9ad41ce1a24cda37e17eb6e54988ff64bedf618d",
+    "dirty": false,
+    "protocol_sha256": "14a6eaa14b723073a911829b488c4526f60e7c5145c8d47c7de2cc55fc116611",
+    "producer_sha256": {
+      "benchmarks/training_comparison.py": "c49b2df42157c6e2b863712ca734eca50deb1418dac0346a38f44f3288b3a64a",
+      "benchmarks/training_workloads.py": "7c797a3214221d3d858e12d3852cfb7a191689b0dad9dc227a395dd983777235",
+      "benchmarks/training_engines.py": "ca3f49678f2ec97e2fde0ddbb1658291b6114f988c5300b7253e54376f6d307c",
+      "benchmarks/internal/evidence/mps_training_recovery.py": "96e4a3049c3d353a577300a0826ef094ae353b6cfcc16612e1ea623e03d07e00",
+      "benchmarks/internal/evidence/mps_training_acceptance.py": "73041260bc4b2de927df78cdac37b3acbdf45e52a6c9a1306e68ce0dfc8e79c5",
+      "tools/run_mps_capacity_series.py": "6841fdfdf9e286254a3460daed34ffe1f7e0a4b52bc548928bf3689508b4e1ca"
+    },
+    "installation": {
+      "distribution_version": "0.4.0",
+      "native_cpu_adjoint_available": false,
+      "native_cpu_extension_sha256": null
+    },
+    "versions": {
+      "torch": "2.14.1",
+      "numpy": "2.5.4",
+      "pennylane": "0.45.1",
+      "pennylane-lightning": "0.45.0",
+      "tensorcircuit-ng": "1.10.0",
+      "jax": "0.10.2",
+      "jaxlib": "0.10.2"
+    }
+  },
+  "protocol": {
+    "protocol_id": "fixed_mps_training_recovery_20261102",
+    "n_sites": 32,
+    "layers": 3,
+    "family": "circuit_training",
+    "dtype": "complex128",
+    "initial_parameters": [
+      0.31,
+      -0.17
+    ],
+    "initial_state": "zero_product_mps",
+    "max_bond": 4,
+    "cutoff": 0.0,
+    "canonicalization_policy": "none",
+    "gradient_policy": "approximate",
+    "gradient_semantics": "projected_stop_subspace; not the derivative of an actively truncated forward map",
+    "optimizer": "adam",
+    "learning_rate": 0.025,
+    "steps": 8,
+    "checkpoint_step": 4,
+    "stopping_rule": "always complete eight updates; no target-based early stop",
+    "objective": "negative mean on-site Z expectation",
+    "objective_target": -0.95,
+    "comparison_atol": 2e-05,
+    "finite_difference_epsilon": 1e-05,
+    "compile_site_kernels": false,
+    "prefetch_layer_halos": false,
+    "fuse_local_reverse": false,
+    "world_sizes": [
+      1,
+      2,
+      4,
+      8,
+      16
+    ],
+    "capacity_leg": "artifacts/development/mps_capacity_series_20261023/summary.json",
+    "capacity_leg_scope": "separate retained 131072-site single-step capacity campaign; not convergence evidence",
+    "timing": "barrier-bracketed whole training calls and per-rank runtime phase samples; first step retained and steady statistics use steps 2 through 8",
+    "amdahl": "not fitted or estimated; only measured strong-scaling efficiency is reported",
+    "gradient_tolerance": 0.01
+  },
+  "measurement_sha256": {
+    "world-1.json.gz": "d89517dcf0467de33fd431c3ad64a559c9ade8e1910a960cb89f64f1d6307018",
+    "world-2.json.gz": "535be7ad639f600a7cd82538703667f6419ec5d2edd34afef4e78a360a963032"
+  },
+  "rows": [
+    {
+      "world_size": 1,
+      "node_count": 1,
+      "status": "completed",
+      "objective_pre_update_samples": [
+        -0.867517359116092,
+        -0.8892135602423984,
+        -0.9087630915166116,
+        -0.9259125148892678,
+        -0.9407344146400884,
+        -0.9536056476594186,
+        -0.9648143769845402,
+        -0.9743560162396515
+      ],
+      "owned_gradient_vectors": [
+        [
+          0.19597201558067,
+          -0.1406199899174163
+        ],
+        [
+          0.19992533903777052,
+          -0.09298308852566459
+        ],
+        [
+          0.2011498295686163,
+          -0.04569443401650149
+        ],
+        [
+          0.19856549881447408,
+          -0.0037251432873061235
+        ],
+        [
+          0.19080369782253156,
+          0.025698283222707646
+        ],
+        [
+          0.17699341314665434,
+          0.03695658084106155
+        ],
+        [
+          0.15758760197012928,
+          0.03049250850515968
+        ],
+        [
+          0.13410229631964543,
+          0.011831111089871386
+        ]
+      ],
+      "global_discarded_weight_per_update": [
+        0.0008116238646136175,
+        0.0003844874704525801,
+        0.00016189928376376364,
+        6.113093220034406e-05,
+        2.199370751327561e-05,
+        8.400706964187942e-06,
+        3.6831184905081722e-06,
+        1.8228795348495698e-06
+      ],
+      "global_largest_bond_per_update": [
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4
+      ],
+      "step_critical_rank_seconds": [
+        0.11408495799696539,
+        0.09076562500558794,
+        0.09590741600550245,
+        0.09588308300590143,
+        0.09256237500812858,
+        0.09554170799674466,
+        0.0963482910010498,
+        0.09561137499986216
+      ],
+      "statistic": "median_steps_2_through_8",
+      "steady_median_seconds": 0.09561137499986216,
+      "scaling_errors_vs_world_1": {
+        "loss": 0.0,
+        "parameter_gradients": 0.0,
+        "parameter_values": 0.0,
+        "final_parameters": 0.0,
+        "owner_optimizer_state": 0.0
+      },
+      "matched_local_objective_error": 6.616929226765933e-14,
+      "matched_local_projected_gradient_error": 1.7794793416570087e-14,
+      "local_derivative_semantics_error": 0.335684886345073,
+      "target_met_at_last_pre_update_objective": true,
+      "recovery_passed": true,
+      "per_rank_peak_bytes": [
+        16
+      ],
+      "measured_speedup": 1.0,
+      "measured_efficiency": 1.0
+    },
+    {
+      "world_size": 2,
+      "node_count": 1,
+      "status": "completed",
+      "objective_pre_update_samples": [
+        -0.867517359116092,
+        -0.8892135602423984,
+        -0.9087630915166058,
+        -0.9259125148892757,
+        -0.9407344146400952,
+        -0.9536056476594289,
+        -0.9648143769845632,
+        -0.9743560162396385
+      ],
+      "owned_gradient_vectors": [
+        [
+          0.19597201558067,
+          -0.14061998991741614
+        ],
+        [
+          0.19992533903777032,
+          -0.09298308852566463
+        ],
+        [
+          0.20114982956863392,
+          -0.045694434016483584
+        ],
+        [
+          0.19856549881447016,
+          -0.0037251432873078166
+        ],
+        [
+          0.19080369782253878,
+          0.025698283222714856
+        ],
+        [
+          0.1769934131466552,
+          0.03695658084105058
+        ],
+        [
+          0.15758760197014113,
+          0.030492508505157764
+        ],
+        [
+          0.13410229631964882,
+          0.011831111089865336
+        ]
+      ],
+      "global_discarded_weight_per_update": [
+        0.0008116238646136181,
+        0.00038448747045257954,
+        0.00016189928376376204,
+        6.113093220034652e-05,
+        2.199370751327713e-05,
+        8.40070696418941e-06,
+        3.6831184905090366e-06,
+        1.8228795348500294e-06
+      ],
+      "global_largest_bond_per_update": [
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4
+      ],
+      "step_critical_rank_seconds": [
+        0.1066156669985503,
+        0.09972100000595674,
+        0.10402712500945199,
+        0.09822537501167972,
+        0.09727399999974295,
+        0.09521087500615977,
+        0.09423075000813697,
+        0.09423233399866149
+      ],
+      "statistic": "median_steps_2_through_8",
+      "steady_median_seconds": 0.09727399999974295,
+      "scaling_errors_vs_world_1": {
+        "loss": 2.298161660974074e-14,
+        "parameter_gradients": 1.790234627208065e-14,
+        "parameter_values": 3.400058012914542e-15,
+        "final_parameters": 3.1363800445660672e-15,
+        "owner_optimizer_state": 2.7755575615628914e-15
+      },
+      "matched_local_objective_error": 6.616929226765933e-14,
+      "matched_local_projected_gradient_error": 1.7735812818386876e-14,
+      "local_derivative_semantics_error": 0.335684886345073,
+      "target_met_at_last_pre_update_objective": true,
+      "recovery_passed": true,
+      "per_rank_peak_bytes": [
+        8,
+        8
+      ],
+      "measured_speedup": 0.9829078170951623,
+      "measured_efficiency": 0.49145390854758114
+    }
+  ],
+  "unsuccessful_outcomes": [],
+  "scalability_claim_allowed": false,
+  "release_gate_allowed": false,
+  "amdahl_estimate": null,
+  "claim_evidence_type": "development_smoke"
+}
