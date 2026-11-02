@@ -69,6 +69,7 @@ def point_command(
     port: int,
     *,
     transport_check: bool = False,
+    training_series: bool = False,
 ) -> list[str]:
     """Keep circuit geometry fixed while varying only deployment topology."""
     if world not in (1, 2, 4, 8, 16) or node not in range(2 if world == 16 else 1):
@@ -95,6 +96,15 @@ def point_command(
             str(staging / "tests/distributed/mps_training_runtime.py"),
             "--backend",
             "nccl",
+        ]
+    if training_series:
+        return [
+            *launch,
+            str(staging / "benchmarks/internal/evidence/mps_training_acceptance.py"),
+            "--recovery-protocol",
+            str(staging / "benchmarks/manifests/mps_training_recovery_v1.json"),
+            "--output",
+            str(output / f"world-{world}.json"),
         ]
     return [
         *launch,
@@ -126,6 +136,7 @@ def worker(args: argparse.Namespace) -> int:
         args.address,
         args.port,
         transport_check=args.transport_check,
+        training_series=args.training_series,
     )
     env = dict(
         os.environ,
@@ -310,6 +321,7 @@ def campaign(args: argparse.Namespace) -> int:
                 "--infiniband-hcas",
                 args.infiniband_hcas,
                 *(["--transport-check"] if transport_check else []),
+                *(["--training-series"] if args.training_series else []),
             ]
             cleanup = [*base, "--stop-worker", "--pid-file", str(pid_file)]
             if node:
@@ -389,6 +401,7 @@ def main() -> int:
         default="mlx5_101,mlx5_102,mlx5_103,mlx5_104,mlx5_105,mlx5_106,mlx5_107,mlx5_108",
     )
     parser.add_argument("--transport-check", action="store_true")
+    parser.add_argument("--training-series", action="store_true")
     parser.add_argument("--timeout", type=int, default=1200)
     parser.add_argument("--worker", action="store_true")
     parser.add_argument("--stop-worker", action="store_true")
