@@ -126,6 +126,14 @@ failure diagnostics instead of manufacturing a candidate. A normalization node
 budget refusal keeps a valid original with its refusal evidence. Semantic or
 binding errors are not swallowed or bypassed.
 
+Optional duplicate emission has a private deterministic work bound: when a valid
+original already exceeds 10,000 operations, keep that original and the normalized
+SSA/facts, and record `construction.normalization.budget` without building another
+circuit. This bounds extra circuit construction, not wall-clock time. It applies
+to all expressions, not a named corpus case. A resource-refused original can
+still be rescued by normalization under the existing construction limits. This
+guard does not promise compile-time nonregression; AO-04 owns broader search.
+
 A real accepted test example `a=x+y; b=y*x; c=y+b; d=y+a; return d*c` under
 recompute has original logical cost `(28,869,659)` and normalized cost
 `(25,863,667)`: fewer work qubits and gates, but greater depth. The guard therefore

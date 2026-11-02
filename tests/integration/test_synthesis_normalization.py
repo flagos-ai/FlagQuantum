@@ -159,3 +159,55 @@ def test_independent_circuit_reference_matches_all_targets_and_complete_state() 
     for x, y in product(range(2), repeat=2):
         expected[x, y, (x + y) ** 2] = 0.5
     torch.testing.assert_close(state, expected, atol=1e-12, rtol=0)
+
+
+def test_wide_declared_return_preserves_all_256_nonzero_xor_targets() -> None:
+    from benchmarks.synthesis.verification import classical_apply, encode
+    from flagquantum.compiler._construction.profile import uint_type
+    from flagquantum.compiler._hybrid.model import (
+        INDEX,
+        Block,
+        HybridProgram,
+        Operation,
+        Region,
+        Value,
+        ValueId,
+    )
+
+    x = Value(ValueId("wide", 0), uint_type(1))
+    zero = Value(ValueId("wide", 1), INDEX)
+    result = Value(ValueId("wide", 2), uint_type(8))
+    graph = HybridProgram(
+        "wide",
+        Region(
+            (
+                Block(
+                    (x,),
+                    (
+                        Operation(
+                            "arith.constant", results=(zero,), attributes={"value": 0}
+                        ),
+                        Operation("qint.add", (x, zero), (result,)),
+                        Operation("qint.return", (result,)),
+                    ),
+                ),
+            )
+        ),
+    )
+    outputs = tuple(range(1, 9))
+    candidate = schedule_arithmetic(
+        (graph,),
+        {x.id: (0,)},
+        outputs,
+        entry="wide",
+        n_qubits=16,
+        workspace=tuple(range(9, 16)),
+        workspace_state="fresh_zero",
+    )
+    assert candidate.lifetimes.program.body.blocks[0].operations[-1].operands[
+        0
+    ].type == uint_type(8)
+    for value, target in product(range(2), range(256)):
+        assert classical_apply(
+            candidate.circuit, encode((value, target), ((0,), outputs))
+        ) == encode((value, target ^ value), ((0,), outputs))

@@ -26,6 +26,9 @@ from .ranges import unsigned_width
 _WireValue = tuple[int, ...] | int
 Schedule = Literal["retain", "recompute"]
 
+# Bound optional duplicate circuit construction; SSA facts remain available.
+_NORMALIZATION_PROBE_MAX_OPERATIONS = 10_000
+
 
 @dataclass(frozen=True)
 class ScheduleEvent:
@@ -537,6 +540,22 @@ def schedule_arithmetic(
             assert baseline_failure is not None
             raise baseline_failure
         return replace(original, normalization=normalization)
+    if (
+        original is not None
+        and len(original.circuit.instructions) > _NORMALIZATION_PROBE_MAX_OPERATIONS
+    ):
+        return replace(
+            original,
+            normalization=normalization,
+            baseline=original,
+            normalization_errors=(
+                Diagnostic(
+                    "construction.normalization.budget",
+                    "optional rewritten circuit emission skipped: original exceeds "
+                    f"{_NORMALIZATION_PROBE_MAX_OPERATIONS} operations",
+                ),
+            ),
+        )
     try:
         rewritten = emit((normalization.program,))
     except HybridVerificationError as error:

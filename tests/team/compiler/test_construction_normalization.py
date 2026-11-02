@@ -238,6 +238,32 @@ def guarded(x: int, y: int) -> int:
     return d * c
 
 
+def test_optional_emission_budget_retains_original_and_normalized_facts(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from flagquantum.compiler._construction import lowering
+
+    graph = capture(repeated, {"x": 1, "y": 1})
+    args = graph.body.blocks[0].arguments
+    monkeypatch.setattr(lowering, "_NORMALIZATION_PROBE_MAX_OPERATIONS", 0)
+    candidate = lowering.schedule_arithmetic(
+        (graph,),
+        {args[0].id: (0,), args[1].id: (1,)},
+        (2, 3, 4),
+        entry=graph.name,
+        n_qubits=32,
+        workspace=tuple(range(5, 32)),
+        workspace_state="fresh_zero",
+    )
+    assert candidate.baseline is not None
+    assert candidate.circuit == candidate.baseline.circuit
+    assert candidate.normalization is not None
+    assert len(candidate.normalization.squares) == 1
+    assert candidate.normalized_cost is None
+    assert candidate.normalization_errors[0].code == "construction.normalization.budget"
+    assert "0 operations" in candidate.normalization_errors[0].message
+
+
 def test_real_depth_regression_keeps_original_candidate_for_later_selection() -> None:
     from flagquantum.compiler._construction.lowering import (
         _logical_cost,
@@ -315,3 +341,67 @@ def test_explicit_ssa_helper_call_sites_survive_sharing() -> None:
     normalized = normalize_arithmetic(analyze_lifetimes((graph, helper), entry="entry"))
     square_id = next(iter(normalized.squares))
     assert {loc.line for loc in normalized.origins[square_id]} == {2, 10, 11}
+
+
+def test_optional_flattened_node_budget_keeps_a_valid_original_schedule() -> None:
+    from flagquantum.compiler._construction.lowering import schedule_arithmetic
+    from flagquantum.compiler._hybrid.model import INDEX
+
+    arguments = tuple(Value(ValueId("wide_entry", i), uint_type(1)) for i in range(254))
+    helper_arg = Value(ValueId("constant_helper", 0), uint_type(1))
+    constants = tuple(
+        Operation(
+            "arith.constant",
+            results=(Value(ValueId("constant_helper", i + 1), INDEX),),
+            attributes={"value": 0},
+        )
+        for i in range(500)
+    )
+    helper = HybridProgram(
+        "constant_helper",
+        Region(
+            (
+                Block(
+                    (helper_arg,), (*constants, Operation("qint.return", (helper_arg,)))
+                ),
+            )
+        ),
+    )
+    calls = tuple(
+        Operation(
+            "qint.call",
+            (arguments[0],),
+            (Value(ValueId("wide_entry", 254 + i), uint_type(1)),),
+            {"callee": "constant_helper"},
+        )
+        for i in range(8)
+    )
+    graph = HybridProgram(
+        "wide_entry",
+        Region(
+            (
+                Block(
+                    arguments,
+                    (*calls, Operation("qint.return", (calls[-1].results[0],))),
+                ),
+            )
+        ),
+    )
+    candidate = schedule_arithmetic(
+        (graph, helper),
+        {value.id: (i,) for i, value in enumerate(arguments)},
+        (254,),
+        entry="wide_entry",
+        n_qubits=256,
+        workspace=(255,),
+        workspace_state="fresh_zero",
+    )
+    assert candidate.normalization is None
+    assert (
+        candidate.normalization_errors
+        and "budget" in candidate.normalization_errors[0].code
+    )
+    assert candidate.peak_workspace == 0
+    assert [(gate.name, gate.wires) for gate in candidate.circuit.instructions] == [
+        ("cx", (0, 254))
+    ]
