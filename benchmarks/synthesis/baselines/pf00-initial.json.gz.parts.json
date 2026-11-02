@@ -1,0 +1,27 @@
+{
+  "gzip_bytes": 6982827,
+  "gzip_sha256": "922d0a48f2957e42e7061773dd064048b692b4a48f88354d3bcff22c469555d8",
+  "parts": [
+    {
+      "bytes": 1750000,
+      "file": "pf00-initial.json.gz.part-00",
+      "sha256": "56212ecb689fec70820d4492de2dbb348a15f10e8c80b65e1f5a9da82145fdf1"
+    },
+    {
+      "bytes": 1750000,
+      "file": "pf00-initial.json.gz.part-01",
+      "sha256": "6fd9750de44e08e838e37496499e910b18ae50c808df18dc0c5303558b084d8c"
+    },
+    {
+      "bytes": 1750000,
+      "file": "pf00-initial.json.gz.part-02",
+      "sha256": "7513d1713dfae228dfd911d60e30b4f062820fcda783086c7df7d22130b14a51"
+    },
+    {
+      "bytes": 1732827,
+      "file": "pf00-initial.json.gz.part-03",
+      "sha256": "7a327ac294d6054860f4555323614cf0fa103a6bb378b7d38460573f69503af6"
+    }
+  ],
+  "schema": "flagquantum.synthesis.gzip_parts.v1"
+}

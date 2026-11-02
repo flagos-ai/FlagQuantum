@@ -310,7 +310,7 @@ def test_frozen_bundle_keeps_failures_and_exact_cohort_selection() -> None:
         if value == "line_correction"
     } == expected
     for cohort in manifest["cohorts"].values():
-        assert sha256(base / cohort["file"]) == cohort["gzip_sha256"]
+        assert sha256(base / cohort["file"]) == cohort["stored_sha256"]
     assert manifest["cohorts"]["initial"]["raw_statuses"]["validation_failed"] == 21
     assert manifest["cohorts"]["line_correction"]["raw_statuses"] == {"verified": 21}
     assert len(overview["rows"]) == 125
@@ -320,3 +320,24 @@ def test_frozen_bundle_keeps_failures_and_exact_cohort_selection() -> None:
         assert row["cohort"] == manifest["selection"][row["id"]]
     assert dict(primary) == manifest["coverage"]["selected_primary_statuses"]
     assert dict(primary) == {"verified": 605, "resource_refused": 15, "timeout": 5}
+
+
+def test_archive_parts_reassemble_exact_bytes_and_reject_tampering(
+    tmp_path: Path,
+) -> None:
+    from benchmarks.synthesis.performance_bundle import store_archive
+    from benchmarks.synthesis.performance_results import archive_bytes
+
+    original = bytes(range(256)) * 8000
+    path = tmp_path / "record.gz"
+    path.write_bytes(original)
+    index = store_archive(path)
+    assert not path.exists()
+    assert archive_bytes(index) == original
+    parts = json.loads(index.read_text())["parts"]
+    assert all((tmp_path / part["file"]).stat().st_size <= 1_800_000 for part in parts)
+    first = tmp_path / parts[0]["file"]
+    raw = first.read_bytes()
+    first.write_bytes(b"X" + raw[1:])
+    with pytest.raises(ValueError, match="checksum"):
+        archive_bytes(index)

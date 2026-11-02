@@ -40,6 +40,37 @@ def freeze(source: Path, target: Path) -> None:
         shutil.copyfileobj(raw, compressed)
 
 
+def store_archive(path: Path) -> Path:
+    if path.stat().st_size <= 1_800_000:
+        return path
+    parts = []
+    with path.open("rb") as source:
+        number = 0
+        while block := source.read(1_750_000):
+            part = path.with_name(path.name + f".part-{number:02d}")
+            part.write_bytes(block)
+            parts.append(
+                {"file": part.name, "bytes": len(block), "sha256": sha256(part)}
+            )
+            number += 1
+    index = path.with_name(path.name + ".parts.json")
+    index.write_text(
+        json.dumps(
+            {
+                "schema": "flagquantum.synthesis.gzip_parts.v1",
+                "gzip_sha256": sha256(path),
+                "gzip_bytes": path.stat().st_size,
+                "parts": parts,
+            },
+            indent=2,
+            sort_keys=True,
+        )
+        + "\n"
+    )
+    path.unlink()
+    return index
+
+
 def bundle(initial: Path, correction: Path, output: Path) -> dict[str, object]:
     inputs = {"initial": initial, "line_correction": correction}
     data = {name: read(path) for name, path in inputs.items()}
@@ -99,14 +130,18 @@ def bundle(initial: Path, correction: Path, output: Path) -> dict[str, object]:
     for name, payload in data.items():
         target = output / f"pf00-{name}.json.gz"
         freeze(inputs[name], target)
+        gzip_hash = sha256(target)
+        gzip_size = target.stat().st_size
+        stored = store_archive(target)
         cohorts[name] = {
-            "file": target.name,
+            "file": stored.name,
+            "stored_sha256": sha256(stored),
             "source_revision": payload["source_revision"],
             "production_tree": payload["production_tree"],
             "uncompressed_sha256": sha256(inputs[name]),
-            "gzip_sha256": sha256(target),
+            "gzip_sha256": gzip_hash,
             "uncompressed_bytes": inputs[name].stat().st_size,
-            "gzip_bytes": target.stat().st_size,
+            "gzip_bytes": gzip_size,
             "attempted_configurations": len(objects(payload["rows"])),
             "raw_statuses": dict(
                 Counter(

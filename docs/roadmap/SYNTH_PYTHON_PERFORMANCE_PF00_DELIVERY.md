@@ -209,7 +209,7 @@ hashes are retained; the second probe changes only interrupted-exit handling.
 The [manifest](../../benchmarks/synthesis/baselines/pf00-manifest.json) maps each
 of the 125 unique configurations to its cohort. There are 128 configuration
 attempts overall. All original records, including 21 failed line-oracle trials,
-remain in the [initial raw receipt](../../benchmarks/synthesis/baselines/pf00-initial.json.gz).
+remain in the [initial raw receipt](../../benchmarks/synthesis/baselines/pf00-initial.json.gz.parts.json).
 The [correction receipt](../../benchmarks/synthesis/baselines/pf00-line_correction.json.gz)
 contains 21 independently verified replacement trials. The
 [overview](../../benchmarks/synthesis/baselines/pf00-summary.json) is derived from
@@ -279,3 +279,10 @@ fixed and passes a targeted rerun, while the remaining 20 nodes were present in
 the prior local baseline. The broader benchmark/release run has 1,054 passed,
 95 skipped, one installed-package import failure and seven errors from a single
 240-second MPS recovery fixture timeout. No full-local-suite green is claimed.
+
+The initial gzip is stored as byte-identical ordered parts to respect the existing
+1,800,000-byte repository file limit. Its `.parts.json` index records each part's
+size/SHA-256 and the complete gzip SHA-256. The reader validates and joins those
+bytes before decompression; no raw sample or original measurement byte changes.
+The bundle command produces the parts automatically. A missing/modified part
+fails validation. This is archive storage, not a change to either cohort.

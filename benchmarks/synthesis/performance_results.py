@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import gzip
 import hashlib
+import io
 import json
 import subprocess
 from collections import Counter
@@ -295,10 +296,44 @@ def verify_sources(payload: dict[str, object], *, formal: bool) -> None:
             raise ValueError("historical resource artifact changed")
 
 
+def archive_bytes(index_path: Path) -> bytes:
+    index = _object(json.loads(index_path.read_text()))
+    if index.get("schema") != "flagquantum.synthesis.gzip_parts.v1":
+        raise ValueError("unknown segmented receipt format")
+    parts = index["parts"]
+    if not isinstance(parts, list) or not 1 <= len(parts) <= 64:
+        raise ValueError("invalid archive part count")
+    blocks = []
+    for value in parts:
+        part = _object(value)
+        name = part["file"]
+        if not isinstance(name, str) or Path(name).name != name or name in {".", ".."}:
+            raise ValueError("archive parts must be sibling files")
+        path = index_path.parent / name
+        size = path.stat().st_size
+        if not 0 < size <= 1_800_000 or size != part["bytes"]:
+            raise ValueError("invalid archive part size")
+        raw = path.read_bytes()
+        if hashlib.sha256(raw).hexdigest() != part["sha256"]:
+            raise ValueError("archive part checksum differs")
+        blocks.append(raw)
+    raw = b"".join(blocks)
+    if (
+        len(raw) != index["gzip_bytes"]
+        or hashlib.sha256(raw).hexdigest() != index["gzip_sha256"]
+    ):
+        raise ValueError("reassembled gzip differs")
+    return raw
+
+
 def read(path: Path, *, formal: bool = True) -> dict[str, object]:
-    opener = gzip.open if path.suffix == ".gz" else open
-    with opener(path, "rb") as source:
-        raw = source.read((512 << 20) + 1)
+    if path.name.endswith(".parts.json"):
+        with gzip.GzipFile(fileobj=io.BytesIO(archive_bytes(path))) as source:
+            raw = source.read((512 << 20) + 1)
+    else:
+        opener = gzip.open if path.suffix == ".gz" else open
+        with opener(path, "rb") as source:
+            raw = source.read((512 << 20) + 1)
     if len(raw) > 512 << 20:
         raise ValueError("PF-00 receipt exceeds 512 MiB")
     data = _object(json.loads(raw))

@@ -2,7 +2,7 @@
   "cohorts": {
     "initial": {
       "attempted_configurations": 125,
-      "file": "pf00-initial.json.gz",
+      "file": "pf00-initial.json.gz.parts.json",
       "gzip_bytes": 6982827,
       "gzip_sha256": "922d0a48f2957e42e7061773dd064048b692b4a48f88354d3bcff22c469555d8",
       "production_tree": "eaf1417f32942e5ed2e36e69373ca1c3dfdebb88",
@@ -14,6 +14,7 @@
         "verified": 820
       },
       "source_revision": "601f179f5d973bd00d2c560bb20383390cf772ab",
+      "stored_sha256": "9676900195a4a54b7a0a2b5cc1d24b051aa2639ad79a497ab1d677b721e4e92f",
       "uncompressed_bytes": 131157014,
       "uncompressed_sha256": "e0fe5681bc3898d877ae2846d476fdb3f3dac1576a39dbba4b1888ccd8fa8cde"
     },
@@ -27,6 +28,7 @@
         "verified": 21
       },
       "source_revision": "44afa3c1971924ff74230bf76404ae29f6f99aba",
+      "stored_sha256": "42024e65e981b8bb683e7a0e558302e10c788e1038d7c1e30d9b4ff6025a2006",
       "uncompressed_bytes": 4056197,
       "uncompressed_sha256": "74bce0c0564a1073f49fd84de7ddb4d56f25e6026c95514acb2900cf2db0b5e2"
     }
