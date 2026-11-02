@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import gzip
 import hashlib
 import json
 import math
@@ -154,8 +155,14 @@ def report(directory: Path, worlds: list[int]) -> tuple[dict[str, Any], str]:
     digests = {}
     for world in worlds:
         path = directory / f"world-{world}.json"
+        if not path.exists() and path.with_suffix(".json.gz").exists():
+            path = path.with_suffix(".json.gz")
         if path.exists():
-            point = json.loads(path.read_text())
+            point = json.loads(
+                gzip.decompress(path.read_bytes())
+                if path.suffix == ".gz"
+                else path.read_bytes()
+            )
             validate(point, world)
             measurements[world] = point
             digests[path.name] = hashlib.sha256(path.read_bytes()).hexdigest()

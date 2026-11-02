@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import copy
+import gzip
 import json
 import os
 import subprocess
@@ -185,3 +186,10 @@ def test_missing_outcome_is_not_treated_as_fast_scaling(
     assert payload["rows"][0]["measured_efficiency"] is None
     assert payload["unsuccessful_outcomes"][0]["status"] == "cuda_oom"
     assert "cuda_oom" in text
+    point = tmp_path / "world-2.json"
+    point.with_suffix(".json.gz").write_bytes(
+        gzip.compress(point.read_bytes(), mtime=0)
+    )
+    point.unlink()
+    compressed, _ = report(tmp_path, [1, 2])
+    assert compressed["rows"] == payload["rows"]
