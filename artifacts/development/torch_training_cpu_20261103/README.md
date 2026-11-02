@@ -148,3 +148,24 @@ capsule hashes and full producer file pins. `verify.py` validates them and
 regenerates `summary.json`, numerical comparisons and consumed-hash checks.
 The capsules include all logs and partial-receipt material. Sanitization uses
 `tools.sanitize_public_evidence.sanitize_text`; no checkpoint binary is published.
+
+## Additional checkpoint blocker found by real CUDA CI
+
+[Run 41482999465](https://github.com/flagos-ai/FlagQuantum/actions/runs/41482999465/job/125406746309)
+passes the existing 19 GPU tests but fails both new fq.train checkpoint recovery
+cases. Frozen features combined with a detached parameter-derived rotation are
+classified as constant angles by the existing v1 workload signature. Priming a
+fresh Module at its initial parameter values then fails workload admission.
+The same CPU reproducer fails on the pre-implementation producer
+`97b315ea02863583e88d13a4127be65133485cf6` and current source; its trainable-feature
+control restores. `checkpoint-blocker.json`, the reproducer and sanitized GPU
+failure log retain this result. The failing GPU tests are kept intact.
+
+The [review-only checkpoint proposal](checkpoint_proposal.md) describes a
+versioned v2 workload identity based on canonical IR and existing bindings while
+preserving strict legacy v1 reading. The accompanying identity fake passes ten
+checks, including frozen-feature replay and refusals for changed topology,
+gradient cuts and static constants. This fake changes no production loader,
+serialized default or public schema and does not certify migration/RNG behavior.
+The previously approved #936 contract preserved checkpoint semantics; this
+protected extension needs separate approval. PR #1022 stays draft and unmerged.

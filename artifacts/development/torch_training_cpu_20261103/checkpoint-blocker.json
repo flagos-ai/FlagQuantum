@@ -1,0 +1,47 @@
+{
+  "status": "requires_separate_checkpoint_boundary_approval",
+  "baseline": {
+    "source_commit": "97b315ea02863583e88d13a4127be65133485cf6",
+    "records": [
+      {
+        "trainable_features": false,
+        "status": "refused",
+        "type": "TrainingStateError",
+        "reason": "checkpoint workload does not match the target module"
+      },
+      {
+        "trainable_features": true,
+        "status": "restored"
+      }
+    ]
+  },
+  "candidate": {
+    "source_commit": "542943f264462a8166328951d77dcea866b4f8d7",
+    "records": [
+      {
+        "trainable_features": false,
+        "status": "refused",
+        "type": "TrainingStateError",
+        "reason": "checkpoint workload does not match the target module"
+      },
+      {
+        "trainable_features": true,
+        "status": "restored"
+      }
+    ]
+  },
+  "gpu_failure": {
+    "source_commit": "8c23640dfbd2f41a65d4bcb4ea9f74cdc634858a",
+    "run_url": "https://github.com/flagos-ai/FlagQuantum/actions/runs/41482999465",
+    "job_url": "https://github.com/flagos-ai/FlagQuantum/actions/runs/41482999465/job/125406746309",
+    "failed_cases": [
+      "frozen-feature SGD checkpoint recovery",
+      "frozen-feature Adam checkpoint recovery"
+    ]
+  },
+  "review_only_fake": {
+    "passed": 10,
+    "production_loader_changed": false
+  },
+  "proposal": "checkpoint_proposal.md"
+}

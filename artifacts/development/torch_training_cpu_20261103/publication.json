@@ -1568,6 +1568,16 @@
         "raw_sha256": "301b914e99f950d45a1b49431063384572ae9323de781f63054c069f7976585e",
         "published_sha256": "301b914e99f950d45a1b49431063384572ae9323de781f63054c069f7976585e",
         "gzip_sha256": "1707e7722413b709c231303a0ce6ea55848972075d371ace18a4fba7c9379c6b"
+      },
+      "fq936-initial-cuda-failure.txt.gz": {
+        "raw_sha256": "37b2a45b1a6c161a36aa0eb916d7ed6ff41978e77e6271452daae28a72520d63",
+        "published_sha256": "cb43622ef51833d891ae03c5c1fb9ab5500601847c07ed4118894d271d6af5e2",
+        "gzip_sha256": "eb36e93d6f9e7628701b30bd80fa54213be34b7b4c6376628415e0b30d16127e"
+      },
+      "fq936-checkpoint-identity-fake.txt.gz": {
+        "raw_sha256": "3b992e4db2f658e9ae2c362b387b5db6bb326f9ea893d2a81285591e60874c8c",
+        "published_sha256": "3b992e4db2f658e9ae2c362b387b5db6bb326f9ea893d2a81285591e60874c8c",
+        "gzip_sha256": "2c5a75975cdeac4c2478f5dc1a02d51c6494fa50ea5b9fc6e1bcaf594735b9a6"
       }
     }
   }
