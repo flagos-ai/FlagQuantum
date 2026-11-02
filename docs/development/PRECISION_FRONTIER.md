@@ -121,3 +121,10 @@ complex accelerator tensors, distributed execution and unbounded gradients
 are outside the staged contracts. Existing host/device boundaries are retained.
 These measurements do not certify a provider, extend a stage's supported
 domain, or promote experimental capabilities to production readiness.
+
+The direct native FP64 Circuit tensor boundary exposes output residency and
+dtype, but does not expose a gate/parameter host-route trace. Those host
+boundary fields are reported as unknown in the current producer; provider
+internals are not audited. P3's explicit host encoding is known and retained.
+The FP64 gate-synthesis diagnostic uses existing device GATE_MAT_DICT
+generators, not inspection of constants inside a fused native kernel.

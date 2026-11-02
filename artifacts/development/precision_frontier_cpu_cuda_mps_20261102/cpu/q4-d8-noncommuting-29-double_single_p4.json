@@ -1,0 +1,337 @@
+{
+  "benchmark_evidence_class": "comparison_non_release",
+  "bit_identity_scope": "same_route_state_observables_gradient_words_dtype_shape_and_bytes_all_retained_samples",
+  "case": {
+    "depth": 8,
+    "family": "noncommuting",
+    "qubits": 4,
+    "seed": 29
+  },
+  "device": "cpu",
+  "environment": {
+    "cuda_runtime": null,
+    "device": "cpu",
+    "device_name": "arm",
+    "device_uuid": null,
+    "device_uuid_unavailable_reason": "CPU has no accelerator UUID",
+    "driver_version": null,
+    "fma_policy": "eager_PyTorch_build_and_device_intrinsics_not_independently_overridden",
+    "interop_threads": 1,
+    "omp_threads": "1",
+    "openblas_threads": "1",
+    "synchronization": "synchronous_CPU",
+    "tf32_cudnn": false,
+    "tf32_environment": {
+      "CUBLAS_WORKSPACE_CONFIG": null,
+      "NVIDIA_TF32_OVERRIDE": "0",
+      "TORCH_ALLOW_TF32_CUBLAS_OVERRIDE": "0"
+    },
+    "tf32_matmul": false,
+    "threads": 1,
+    "torch_build": "PyTorch built with:\n  - GCC 4.2\n  - C++ Version: 202002\n  - clang 21.0.0\n  - OpenMP 202011\n  - LAPACK is enabled (usually provided by MKL)\n  - NNPACK is enabled\n  - CPU capability usage: DEFAULT\n  - Build settings: BLAS_INFO=accelerate, BUILD_TYPE=Release, COMMIT_SHA=5c4886908584029761b579af026dcfb627c84070, CUDA_FLAGS= -DLIBCUDACXX_ENABLE_SIMPLIFIED_COMPLEX_OPERATIONS -Xfatbin -compress-all  -Wno-deprecated-gpu-targets --expt-extended-lambda -DCUB_WRAPPED_NAMESPACE=at_cuda_detail -DDISABLE_CUSPARSE_DEPRECATED -DCUDA_HAS_FP16=1 -D__CUDA_NO_HALF_OPERATORS__ -D__CUDA_NO_HALF_CONVERSIONS__ -D__CUDA_NO_HALF2_OPERATORS__ -D__CUDA_NO_BFLOAT16_CONVERSIONS__ -DC10_NODEPRECATED, CXX_COMPILER=/usr/bin/c++, CXX_FLAGS= -fvisibility-inlines-hidden -DUSE_PTHREADPOOL -DNDEBUG -DUSE_KINETO -DUSE_PYTORCH_QNNPACK -DAT_BUILD_ARM_VEC256_WITH_SLEEF -DUSE_PYTORCH_METAL_EXPORT -DSYMBOLICATE_MOBILE_DEBUG_HANDLE -DUSE_COREML_DELEGATE -O2 -fPIC -DC10_NODEPRECATED -Wall -Wextra -Werror=return-type -Werror=non-virtual-dtor -Werror=braced-scalar-init -Werror=range-loop-construct -Werror=bool-operation -Wnarrowing -Wno-missing-field-initializers -Wno-unknown-pragmas -Wno-unused-parameter -Wno-strict-overflow -Wno-strict-aliasing -Wvla-extension -Wsuggest-override -Wnewline-eof -Winconsistent-missing-override -Winconsistent-missing-destructor-override -Wno-pass-failed -Wno-error=old-style-cast -Wconstant-conversion -Qunused-arguments -faligned-new -fno-math-errno -fno-trapping-math -Werror=format -fclang-abi-compat=17 -DUSE_MPS -Wno-missing-braces, LAPACK_INFO=accelerate, TORCH_VERSION=2.14.1, USE_CUDA=OFF, USE_CUDNN=OFF, USE_CUSPARSELT=OFF, USE_EIGEN_FOR_BLAS=ON, USE_GFLAGS=OFF, USE_GLOG=OFF, USE_GLOO=ON, USE_HIPSPARSELT=OFF, USE_MKL=OFF, USE_MKLDNN=OFF, USE_MPI=OFF, USE_NCCL=OFF, USE_NNPACK=ON, USE_OPENMP=ON, USE_ROCM=OFF, USE_ROCM_KERNEL_ASSERT=OFF, USE_XCCL=OFF, USE_XPU=OFF, \n",
+    "torch_compile": false,
+    "torch_jit": false,
+    "versions": {
+      "numpy": "2.5.4",
+      "torch": "2.14.1",
+      "triton": null
+    }
+  },
+  "execution": {
+    "accuracy_requirement": {
+      "contract_version": "1.0",
+      "kind": "accuracy_requirement",
+      "max_decomposition_residual": null,
+      "max_expectation_abs_error": 1e-09,
+      "max_expectation_rel_error": 1e-08,
+      "max_gradient_rel_error": 1e-08,
+      "max_norm_drift": 1e-09,
+      "max_state_infidelity": 1e-09,
+      "max_truncation_error": null,
+      "min_gradient_cosine_similarity": 0.99999999,
+      "mode": "adaptive",
+      "require_convergence_evidence": false,
+      "require_determinism": false
+    },
+    "accuracy_requirement_hash": "59c066b7a3a56e6a04a2ac9c8e494163662e731e0571e1d3af7423fe550ce1b3",
+    "automatic_runtime_selection": false,
+    "complex_accelerator_tensor_materialized": false,
+    "convergence_certification": false,
+    "device": "cpu",
+    "device_async_safety_checks": true,
+    "device_only_double_single_trigonometry": true,
+    "distribution_semantics": "single_device_fast_path",
+    "executor": "split_real_imag_statevector_p4_device_double_single",
+    "gate_count": 85,
+    "gate_generation": "double_single_fp32_device_trigonometry",
+    "gradient_method": "parameter_shift",
+    "hardware_certification": false,
+    "host_execution_fallback": false,
+    "host_gate_encoding": false,
+    "host_scalar_parameter_ingestion": false,
+    "host_sync_safety_checks": false,
+    "logical_complex128_certified": false,
+    "native_complex128": false,
+    "normalization_count": 0,
+    "observed_tensor_devices": [
+      "cpu"
+    ],
+    "observed_word_dtypes": [
+      "torch.float32"
+    ],
+    "operator_evidence_ids": [],
+    "operator_profile": "split_real_imag_statevector_p4_device_double_single",
+    "operator_profile_hash": "5a1d01aab761b21bda7b5c19dee29fd3eb3d96ce39df58f6f75fd66e12d2a745",
+    "output_device_and_dtype_verified": true,
+    "parameter_encoding": "float32_or_double_single_device",
+    "parameter_host_fallback": false,
+    "parameter_order": [
+      "theta"
+    ],
+    "performance_claim_allowed": false,
+    "precision_class": "emulated_high_precision",
+    "precision_mechanism": "double_single_fp32",
+    "precision_plan": {
+      "allow_dtype_demotion": false,
+      "checkpoint_dtype": "double_single_fp32",
+      "communication_dtype": "not_applicable",
+      "complex_representation": "double_single_fp32",
+      "contract_version": "1.0",
+      "decomposition_dtype": "not_applicable",
+      "gate_generation_dtype": "double_single_fp32_device_trigonometry",
+      "gradient_dtype": "double_single_fp32",
+      "kernel_compute_dtype": "float32",
+      "kind": "precision_plan",
+      "optimizer_master_dtype": "not_integrated",
+      "parameter_dtype": "float32_or_double_single_device",
+      "reduction_dtype": "double_single_fp32",
+      "refinement": "adaptive_block_replay",
+      "state_storage_dtype": "float32"
+    },
+    "precision_plan_hash": "cead4d09c139ceacf9914439ba8cad6b4ec8d2fc113dc07c0a06d0f608da7b9e",
+    "production_claim_allowed": false,
+    "provider": "pytorch_cpu",
+    "renormalize_every": 0,
+    "representation": "double_single_fp32_complex",
+    "scalability_claim_allowed": false,
+    "schema": "flagquantum_split_real_imag_p4_gradient_result_v1",
+    "shifted_evaluations": 2,
+    "state_host_fallback": false,
+    "state_word_count_per_amplitude": 4,
+    "state_word_dtype": "float32",
+    "term_count": 3
+  },
+  "gate_count": 85,
+  "gradient": [
+    -0.7983184000435166
+  ],
+  "hostname": "redacted",
+  "initial_theta_intended_float64": 0.4771192630128276,
+  "initial_theta_matched_float32": 0.4771192669868469,
+  "memory": {
+    "accelerator_peak_unavailable_reason": "CPU_or_MPS_no_allocator_peak_API",
+    "cuda_peak_allocated_bytes": null,
+    "frontier_peak_memory_bytes": 220037120,
+    "process_peak_rss_bytes_at_timing_end": 220037120,
+    "scope": "RSS_includes_imports_preflight_warmup_and_hash_transfers_before_oracle_diagnostics_CUDA_peak_covers_timed_samples",
+    "state_payload_bytes": 256
+  },
+  "mode": "double_single_p4",
+  "observable_errors": {
+    "X1": 1.9984014443252818e-15,
+    "Z0": 1.4988010832439613e-15,
+    "Z0Z1": 4.4825254619240695e-15,
+    "objective": 5.273559366969494e-16
+  },
+  "observables": {
+    "X1": 0.9057032065804353,
+    "Z0": -0.2376212158031652,
+    "Z0Z1": -0.06447740551476633,
+    "objective": 0.199111036108361
+  },
+  "output_state_imag": [
+    -0.20838741918629627,
+    -0.17853886421032827,
+    -0.09242976949672244,
+    -0.0012098966198112598,
+    -0.114809853452567,
+    -0.14581615279081594,
+    -0.14945992278514364,
+    -0.16133573973351423,
+    0.04715559675428424,
+    0.01759077144331539,
+    0.07464765586609057,
+    0.09678821645048785,
+    0.08550323601295845,
+    0.10443166474429488,
+    0.06798261405271784,
+    -0.05398546785653924
+  ],
+  "output_state_real": [
+    0.08651953544419011,
+    0.15697716949838947,
+    0.2162330486135664,
+    0.19671010871242112,
+    0.15484317714115292,
+    0.10625743990711656,
+    0.18554525714777315,
+    0.16510277320362388,
+    0.2880069010287764,
+    0.2525674185948361,
+    0.34047821205038176,
+    0.2689563783853295,
+    0.2533830395503892,
+    0.27153610527737815,
+    0.24443803107069328,
+    0.20711941941197853
+  ],
+  "output_word_hashes_sha256": [
+    "5bae52f65bc7d1878532dec2e2218ec1ca88252bd9e9b593d38a78480d3c5ada",
+    "5bae52f65bc7d1878532dec2e2218ec1ca88252bd9e9b593d38a78480d3c5ada",
+    "5bae52f65bc7d1878532dec2e2218ec1ca88252bd9e9b593d38a78480d3c5ada",
+    "5bae52f65bc7d1878532dec2e2218ec1ca88252bd9e9b593d38a78480d3c5ada",
+    "5bae52f65bc7d1878532dec2e2218ec1ca88252bd9e9b593d38a78480d3c5ada"
+  ],
+  "platform": "macOS-27.0-arm64-arm-64bit",
+  "protocol": {
+    "accelerator_policy": "explicit_optional_cuda_and_non_NVIDIA_mps_campaigns_no_host_fallback",
+    "accuracy_targets": [
+      0.001,
+      1e-06,
+      1e-09
+    ],
+    "bit_identity_policy": "actual_output_word_dtype_shape_bytes_SHA256_not_equal_scalar_errors",
+    "case_timeout_seconds": 240,
+    "coefficient_policy": "ordered_1e8_1_minus1e8_Z0_terms_retained_in_candidate_coalesced_in_independent_reference",
+    "compile_policy": "eager_no_Torch_compile_no_JIT_TF32_disabled_FMA_observability_recorded",
+    "families": [
+      "noncommuting",
+      "cancellation_echo"
+    ],
+    "frontier_policy": "all_quality_components_within_tolerance_then_Pareto_median_time_and_observed_peak_memory_CPU_RSS_or_CUDA_allocator_no_storage_substitution",
+    "input_policy": "identical_FP32_representable_theta_dyadic_fixed_angles_and_exact_coefficients_all_routes",
+    "memory_policy": "worker_peak_RSS_at_timing_end_CUDA_allocator_peak_and_exact_state_payload_separate",
+    "modes": [
+      "fp32",
+      "double_single_p4",
+      "fp64"
+    ],
+    "normalization_interval": 0,
+    "optional_stage_controls": [
+      "selective_p2",
+      "double_single_p3"
+    ],
+    "protocol_id": "complete_circuit_precision_20261102",
+    "reference": "CPU_NumPy_complex128_dense_basis_embedding_and_analytic_initial_RY_tangent",
+    "repeats": 5,
+    "schema": "flagquantum.precision_frontier_protocol.v1",
+    "seeds": [
+      11,
+      29
+    ],
+    "shapes": [
+      {
+        "depth": 2,
+        "qubits": 2
+      },
+      {
+        "depth": 8,
+        "qubits": 2
+      },
+      {
+        "depth": 8,
+        "qubits": 4
+      }
+    ],
+    "threads": 1,
+    "timing_policy": "synchronized_absolute_complete_circuit_parameter_shift_samples_median_first_call_separate_no_diagnostic_transfer",
+    "unsupported_policy": "retain_unsupported_failed_timeout_slower_inaccurate_no_infinite_speedups",
+    "warmup_calls": 1
+  },
+  "python": "3.12.14",
+  "quality": {
+    "accuracy_error": 8.433311389147909e-15,
+    "gradient_max_absolute_error": 3.219646771412954e-15,
+    "norm_drift": 3.1086244689504383e-15,
+    "observable_max_absolute_error": 4.4825254619240695e-15,
+    "state_fidelity": 1.0,
+    "state_infidelity": 0.0,
+    "state_l2_error": 1.7316105688066604e-14,
+    "state_max_absolute_error": 8.433311389147909e-15
+  },
+  "quality_vs_intended_inputs": {
+    "accuracy_error": 3.2135330230165238e-09,
+    "gradient_max_absolute_error": 1.0369840541812891e-09,
+    "norm_drift": 3.1086244689504383e-15,
+    "observable_max_absolute_error": 3.2135330230165238e-09,
+    "state_fidelity": 0.9999999999999998,
+    "state_infidelity": 2.220446049250313e-16,
+    "state_l2_error": 1.987008598032434e-09,
+    "state_max_absolute_error": 6.467228064881266e-10
+  },
+  "reference_gradient": -0.7983184000435198,
+  "reference_observables": {
+    "X1": 0.9057032065804373,
+    "Z0": -0.2376212158031667,
+    "Z0Z1": -0.06447740551476185,
+    "objective": 0.19911103610836153
+  },
+  "repeated_output_bit_identity": true,
+  "runner": "precision_frontier",
+  "scalability_claim_allowed": false,
+  "schema": "flagquantum.precision_frontier.v1",
+  "source": {
+    "code_version": "3ba42c605f36d86ce52c499dc216fab72f4ddcac",
+    "dirty": false,
+    "installation": {
+      "distribution_version": "0.4.0",
+      "native_cpu_adjoint_available": false,
+      "native_cpu_extension_sha256": null
+    },
+    "producer_sha256": {
+      "benchmarks/precision_frontier.py": "f33cf770c2bc6048bb9e159ddeacfcf4de9a3ef75897ba36697139b669c9934d",
+      "benchmarks/precision_workloads.py": "d574ff161fc62604ae3f57a76761eea75b2b6c2c11e4fa3394430ed4909dfa2d",
+      "benchmarks/training_comparison.py": "c49b2df42157c6e2b863712ca734eca50deb1418dac0346a38f44f3288b3a64a",
+      "benchmarks/training_engines.py": "ca3f49678f2ec97e2fde0ddbb1658291b6114f988c5300b7253e54376f6d307c",
+      "benchmarks/training_workloads.py": "7c797a3214221d3d858e12d3852cfb7a191689b0dad9dc227a395dd983777235"
+    },
+    "protocol_sha256": "589c2e4b489d0a0bffd868fd797175adde7cba262baab4b27db58661e38e679e",
+    "versions": {
+      "jax": "0.10.2",
+      "jaxlib": "0.10.2",
+      "numpy": "2.5.4",
+      "pennylane": "0.45.1",
+      "pennylane-lightning": "0.45.0",
+      "tensorcircuit-ng": "1.10.0",
+      "torch": "2.14.1"
+    }
+  },
+  "status": "completed",
+  "synthesis": {
+    "coefficient_conversion_max_error": 0.0,
+    "gate_synthesis_max_entry_error": 8.881784197001252e-16,
+    "gate_synthesis_scope": "actual_stage_encoder",
+    "normalization_interval": 0,
+    "output_conversion": "FP32_words_transferred_then_reconstructed_on_CPU_float64_only_outside_timer",
+    "parameter_conversion_absolute_error": 3.974019335828416e-09,
+    "reference_state_parameter_conversion_max_error": 6.46723537771915e-10
+  },
+  "timing": {
+    "first_call_including_preflight_seconds": 0.5273420000012266,
+    "median_seconds": 0.468080957987695,
+    "samples_seconds": [
+      0.468080957987695,
+      0.4695585419976851,
+      0.47116108299815096,
+      0.4667514999891864,
+      0.46500283300701994
+    ],
+    "scope": "complete_circuit_build_gate_generation_state_expectation_parameter_shift_no_diagnostic_transfer",
+    "statistic": "median",
+    "total_measured_seconds_including_warmup": 3.3445441239891807,
+    "total_timed_seconds_including_first_call": 2.867896915980964,
+    "warmup_calls": 1,
+    "warmup_seconds": 0.4766472080082167
+  },
+  "world_size": 1
+}

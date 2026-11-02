@@ -206,3 +206,31 @@ def test_output_guards_refuse_host_fallback_and_dtype_demotion() -> None:
     assert verify_residency(output(torch.float32), "fp32", "cpu")["summary"][
         "output_device_and_dtype_verified"
     ]
+
+
+def test_cuda_metadata_normalizes_uuid_for_driver_query(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from types import SimpleNamespace
+
+    from benchmarks import precision_frontier as producer
+
+    uuid = "11111111-2222-3333-4444-555555555555"
+    monkeypatch.setattr(producer.torch.cuda, "is_available", lambda: True)
+    monkeypatch.setattr(
+        producer.torch.cuda,
+        "get_device_properties",
+        lambda device: SimpleNamespace(name="test GPU", uuid=uuid),
+    )
+    observed = []
+
+    def query(command, **kwargs):
+        observed.append(command)
+        return f"GPU-{uuid}, 580.82.07\n"
+
+    monkeypatch.setattr(producer.subprocess, "check_output", query)
+    result = producer.environment("cuda:0")
+    assert observed[0][-1] == f"--id=GPU-{uuid}"
+    assert result["device_uuid"] == f"GPU-{uuid}"
+    assert result["driver_version"] == "580.82.07"
+    assert result["driver_version_unavailable_reason"] is None

@@ -1,0 +1,8 @@
+{
+  "schema": "flagquantum.precision_frontier_discovery.v1",
+  "source_commit": "85de27031547f0819c97c6fe681eb4b63587efd2",
+  "archive": "initial-discovery.json.gz",
+  "archive_sha256": "406a50d18b309e080f800ce1a6623bfcc5ae889cff75a9e2553586802ac4a016",
+  "scope": "initial_CPU_CUDA_full_campaigns_and_MPS_preflight_before_actual_output_word_guards_and_physical_device_probe_correction",
+  "final_campaigns_are_separate": true
+}

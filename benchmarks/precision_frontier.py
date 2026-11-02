@@ -140,6 +140,8 @@ def environment(device: str) -> dict[str, Any]:
             if logical < len(visible) and visible[logical]
             else str(logical)
         )
+        if uuid and not selector.startswith("GPU-"):
+            selector = "GPU-" + selector
         try:
             record = (
                 subprocess.check_output(
@@ -167,6 +169,11 @@ def environment(device: str) -> dict[str, Any]:
         "versions": versions,
         "cuda_runtime": torch.version.cuda,
         "driver_version": driver,
+        "driver_version_unavailable_reason": (
+            None
+            if driver is not None or not device.startswith("cuda")
+            else "nvidia-smi query unavailable for selected physical GPU"
+        ),
         "torch_build": torch.__config__.show(),
         "tf32_environment": {
             name: os.environ.get(name)
@@ -409,8 +416,11 @@ def evaluate(case: Case, mode: str, device: str, *, preflight: bool) -> dict[str
                     "backend": "FlagQuantum_Circuit_complex128",
                     "gradient_method": "parameter_shift",
                     "host_execution_fallback": False,
-                    "parameter_host_fallback": False,
-                    "host_gate_encoding": False,
+                    "parameter_host_fallback": None,
+                    "host_gate_encoding": None,
+                    "host_boundary_unavailable_reason": "native Circuit tensor output does not expose gate/parameter host-route tracing",
+                    "provider_internal_route_audited": False,
+                    "fallback_observation_scope": "returned state, observable and gradient words verified on requested device",
                     "automatic_precision_selection": False,
                 },
             },

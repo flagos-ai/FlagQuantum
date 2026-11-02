@@ -1,0 +1,429 @@
+{
+  "benchmark_evidence_class": "comparison_non_release",
+  "device": "cpu",
+  "environment": {
+    "cuda_runtime": null,
+    "device": "cpu",
+    "device_name": "arm",
+    "device_uuid": null,
+    "device_uuid_unavailable_reason": "CPU has no accelerator UUID",
+    "driver_version": null,
+    "fma_policy": "eager_PyTorch_build_and_device_intrinsics_not_independently_overridden",
+    "interop_threads": 1,
+    "omp_threads": "1",
+    "openblas_threads": "1",
+    "synchronization": "synchronous_CPU",
+    "tf32_cudnn": false,
+    "tf32_environment": {
+      "CUBLAS_WORKSPACE_CONFIG": null,
+      "NVIDIA_TF32_OVERRIDE": null,
+      "TORCH_ALLOW_TF32_CUBLAS_OVERRIDE": null
+    },
+    "tf32_matmul": false,
+    "threads": 1,
+    "torch_build": "PyTorch built with:\n  - GCC 4.2\n  - C++ Version: 202002\n  - clang 21.0.0\n  - OpenMP 202011\n  - LAPACK is enabled (usually provided by MKL)\n  - NNPACK is enabled\n  - CPU capability usage: DEFAULT\n  - Build settings: BLAS_INFO=accelerate, BUILD_TYPE=Release, COMMIT_SHA=5c4886908584029761b579af026dcfb627c84070, CUDA_FLAGS= -DLIBCUDACXX_ENABLE_SIMPLIFIED_COMPLEX_OPERATIONS -Xfatbin -compress-all  -Wno-deprecated-gpu-targets --expt-extended-lambda -DCUB_WRAPPED_NAMESPACE=at_cuda_detail -DDISABLE_CUSPARSE_DEPRECATED -DCUDA_HAS_FP16=1 -D__CUDA_NO_HALF_OPERATORS__ -D__CUDA_NO_HALF_CONVERSIONS__ -D__CUDA_NO_HALF2_OPERATORS__ -D__CUDA_NO_BFLOAT16_CONVERSIONS__ -DC10_NODEPRECATED, CXX_COMPILER=/usr/bin/c++, CXX_FLAGS= -fvisibility-inlines-hidden -DUSE_PTHREADPOOL -DNDEBUG -DUSE_KINETO -DUSE_PYTORCH_QNNPACK -DAT_BUILD_ARM_VEC256_WITH_SLEEF -DUSE_PYTORCH_METAL_EXPORT -DSYMBOLICATE_MOBILE_DEBUG_HANDLE -DUSE_COREML_DELEGATE -O2 -fPIC -DC10_NODEPRECATED -Wall -Wextra -Werror=return-type -Werror=non-virtual-dtor -Werror=braced-scalar-init -Werror=range-loop-construct -Werror=bool-operation -Wnarrowing -Wno-missing-field-initializers -Wno-unknown-pragmas -Wno-unused-parameter -Wno-strict-overflow -Wno-strict-aliasing -Wvla-extension -Wsuggest-override -Wnewline-eof -Winconsistent-missing-override -Winconsistent-missing-destructor-override -Wno-pass-failed -Wno-error=old-style-cast -Wconstant-conversion -Qunused-arguments -faligned-new -fno-math-errno -fno-trapping-math -Werror=format -fclang-abi-compat=17 -DUSE_MPS -Wno-missing-braces, LAPACK_INFO=accelerate, TORCH_VERSION=2.14.1, USE_CUDA=OFF, USE_CUDNN=OFF, USE_CUSPARSELT=OFF, USE_EIGEN_FOR_BLAS=ON, USE_GFLAGS=OFF, USE_GLOG=OFF, USE_GLOO=ON, USE_HIPSPARSELT=OFF, USE_MKL=OFF, USE_MKLDNN=OFF, USE_MPI=OFF, USE_NCCL=OFF, USE_NNPACK=ON, USE_OPENMP=ON, USE_ROCM=OFF, USE_ROCM_KERNEL_ASSERT=OFF, USE_XCCL=OFF, USE_XPU=OFF, \n",
+    "torch_compile": false,
+    "torch_jit": false,
+    "versions": {
+      "numpy": "2.5.4",
+      "torch": "2.14.1",
+      "triton": null
+    }
+  },
+  "execution_semantics": "single_device_fast_path",
+  "hostname": "redacted",
+  "platform": "macOS-27.0-arm64-arm-64bit",
+  "protocol": {
+    "accelerator_policy": "explicit_optional_cuda_and_non_NVIDIA_mps_campaigns_no_host_fallback",
+    "accuracy_targets": [
+      0.001,
+      1e-06,
+      1e-09
+    ],
+    "bit_identity_policy": "actual_output_word_dtype_shape_bytes_SHA256_not_equal_scalar_errors",
+    "case_timeout_seconds": 240,
+    "coefficient_policy": "ordered_1e8_1_minus1e8_Z0_terms_retained_in_candidate_coalesced_in_independent_reference",
+    "compile_policy": "eager_no_Torch_compile_no_JIT_TF32_disabled_FMA_observability_recorded",
+    "families": [
+      "noncommuting",
+      "cancellation_echo"
+    ],
+    "frontier_policy": "all_quality_components_within_tolerance_then_Pareto_median_time_and_observed_peak_memory_CPU_RSS_or_CUDA_allocator_no_storage_substitution",
+    "input_policy": "identical_FP32_representable_theta_dyadic_fixed_angles_and_exact_coefficients_all_routes",
+    "memory_policy": "worker_peak_RSS_at_timing_end_CUDA_allocator_peak_and_exact_state_payload_separate",
+    "modes": [
+      "fp32",
+      "double_single_p4",
+      "fp64"
+    ],
+    "normalization_interval": 0,
+    "optional_stage_controls": [
+      "selective_p2",
+      "double_single_p3"
+    ],
+    "protocol_id": "complete_circuit_precision_20261102",
+    "reference": "CPU_NumPy_complex128_dense_basis_embedding_and_analytic_initial_RY_tangent",
+    "repeats": 5,
+    "schema": "flagquantum.precision_frontier_protocol.v1",
+    "seeds": [
+      11,
+      29
+    ],
+    "shapes": [
+      {
+        "depth": 2,
+        "qubits": 2
+      },
+      {
+        "depth": 8,
+        "qubits": 2
+      },
+      {
+        "depth": 8,
+        "qubits": 4
+      }
+    ],
+    "threads": 1,
+    "timing_policy": "synchronized_absolute_complete_circuit_parameter_shift_samples_median_first_call_separate_no_diagnostic_transfer",
+    "unsupported_policy": "retain_unsupported_failed_timeout_slower_inaccurate_no_infinite_speedups",
+    "warmup_calls": 1
+  },
+  "python": "3.12.14",
+  "runner": "precision_frontier",
+  "scalability_claim_allowed": false,
+  "schema": "flagquantum.precision_frontier.v1",
+  "smoke": false,
+  "source": {
+    "code_version": "3ba42c605f36d86ce52c499dc216fab72f4ddcac",
+    "dirty": false,
+    "installation": {
+      "distribution_version": "0.4.0",
+      "native_cpu_adjoint_available": false,
+      "native_cpu_extension_sha256": null
+    },
+    "producer_sha256": {
+      "benchmarks/precision_frontier.py": "f33cf770c2bc6048bb9e159ddeacfcf4de9a3ef75897ba36697139b669c9934d",
+      "benchmarks/precision_workloads.py": "d574ff161fc62604ae3f57a76761eea75b2b6c2c11e4fa3394430ed4909dfa2d",
+      "benchmarks/training_comparison.py": "c49b2df42157c6e2b863712ca734eca50deb1418dac0346a38f44f3288b3a64a",
+      "benchmarks/training_engines.py": "ca3f49678f2ec97e2fde0ddbb1658291b6114f988c5300b7253e54376f6d307c",
+      "benchmarks/training_workloads.py": "7c797a3214221d3d858e12d3852cfb7a191689b0dad9dc227a395dd983777235"
+    },
+    "protocol_sha256": "589c2e4b489d0a0bffd868fd797175adde7cba262baab4b27db58661e38e679e",
+    "versions": {
+      "jax": "0.10.2",
+      "jaxlib": "0.10.2",
+      "numpy": "2.5.4",
+      "pennylane": "0.45.1",
+      "pennylane-lightning": "0.45.0",
+      "tensorcircuit-ng": "1.10.0",
+      "torch": "2.14.1"
+    }
+  },
+  "stages": [
+    {
+      "conformance_passed": true,
+      "probe_seconds": 0.23677870800020173,
+      "report": {
+        "cases": [
+          {
+            "absolute_error": 0.0,
+            "candidate": 1.0,
+            "float32_absolute_error": 1.0,
+            "float32_baseline": 0.0,
+            "float32_baseline_within_threshold": false,
+            "improvement_factor": 1e+30,
+            "max_absolute_error": 0.0,
+            "min_improvement_factor": 1000000.0,
+            "name": "cancellation_sum",
+            "passed": true,
+            "reference": 1.0
+          },
+          {
+            "absolute_error": 0.0,
+            "candidate": 1.0,
+            "float32_absolute_error": 0.0,
+            "float32_baseline": 1.0,
+            "float32_baseline_within_threshold": true,
+            "improvement_factor": 1.0,
+            "max_absolute_error": 0.0,
+            "min_improvement_factor": 1000000.0,
+            "name": "cancellation_dot",
+            "passed": true,
+            "reference": 1.0
+          },
+          {
+            "absolute_error": 3.954836337158875e-13,
+            "candidate": {
+              "imag": 0.20745700833068081,
+              "real": 0.9782441360382599
+            },
+            "float32_absolute_error": 3.635899748404226e-05,
+            "float32_baseline": {
+              "imag": 0.2074650675058365,
+              "real": 0.9782795906066895
+            },
+            "float32_baseline_within_threshold": false,
+            "improvement_factor": 91935530.0304596,
+            "max_absolute_error": 1e-10,
+            "min_improvement_factor": 100.0,
+            "name": "complex_phase_chain",
+            "passed": true,
+            "reference": {
+              "imag": 0.20745700833079808,
+              "real": 0.9782441360386376
+            }
+          }
+        ],
+        "compute_dtype": "float32",
+        "conformance_version": "1.0",
+        "device": "cpu",
+        "passed": true,
+        "reference": "cpu_float64_and_complex128",
+        "runtime_integration_certified": false,
+        "schema": "flagquantum_double_single_conformance_v1",
+        "torch_version": "2.14.1"
+      },
+      "stage": "arithmetic",
+      "status": "completed"
+    },
+    {
+      "conformance_passed": true,
+      "probe_seconds": 0.02057999999669846,
+      "report": {
+        "cases": [
+          {
+            "depth": 2,
+            "max_abs_error": 6.433741266870533e-08,
+            "norm_drift": 4.2855735959967944e-08,
+            "passed": true,
+            "state_infidelity": 2.220446049250313e-15
+          }
+        ],
+        "device": "cpu",
+        "hardware_certification": false,
+        "operator_profile": "split_real_imag_statevector_p0",
+        "operator_profile_hash": "408c86ead15dc9744740aefe028bd996b16a6b47ea9fb0ae590b28072fb0ed42",
+        "passed": true,
+        "provider": "pytorch_cpu",
+        "schema": "flagquantum_split_real_imag_conformance_v1"
+      },
+      "stage": "P0",
+      "status": "completed"
+    },
+    {
+      "conformance_passed": true,
+      "probe_seconds": 0.04750091700407211,
+      "report": {
+        "cases": [
+          {
+            "depth": 2,
+            "expectation_abs_error": 3.1082489932582336e-09,
+            "expectation_rel_error": 3.5310460721083935e-07,
+            "gradient_cosine_similarity": 0.9999999998438057,
+            "gradient_relative_error": 2.539757657462643e-05,
+            "norm_drift": 0.0,
+            "passed": true,
+            "seed": 0
+          }
+        ],
+        "device": "cpu",
+        "hardware_certification": false,
+        "operator_profile": "split_real_imag_statevector_p1",
+        "operator_profile_hash": "1cdcb61eed56855abd704dbdef5a1ccf846abd8906c2b45fc3ab00d5c563cb54",
+        "passed": true,
+        "provider": "pytorch_cpu",
+        "schema": "flagquantum_split_real_imag_training_conformance_v1"
+      },
+      "stage": "P1",
+      "status": "completed"
+    },
+    {
+      "conformance_passed": true,
+      "probe_seconds": 0.04408224999497179,
+      "report": {
+        "cases": [
+          {
+            "depth": 2,
+            "expectation_abs_error": 1.4901161193847656e-07,
+            "expectation_improvement_factor": 171961.175,
+            "fp32_expectation_abs_error": 0.025624211877584457,
+            "fp32_gradient_relative_error": 0.25001405908938235,
+            "gradient_improvement_factor": 9807.978870674662,
+            "gradient_relative_error": 2.5490884756788288e-05,
+            "passed": true,
+            "seed": 0
+          }
+        ],
+        "device": "cpu",
+        "hardware_certification": false,
+        "operator_profile": "split_real_imag_statevector_p2_precision",
+        "operator_profile_hash": "0988ca5d6111b63b75d46d79f6532e89a3679a54a32cbc698f28cba4ac6e52e7",
+        "passed": true,
+        "provider": "pytorch_cpu",
+        "schema": "flagquantum_split_real_imag_precision_conformance_v1"
+      },
+      "stage": "P2",
+      "status": "completed"
+    },
+    {
+      "conformance_passed": true,
+      "probe_seconds": 0.15809120899939444,
+      "report": {
+        "cases": [
+          {
+            "depth": 2,
+            "expectation_abs_error": 3.535366444040733e-15,
+            "expectation_improvement_factor": 3369261.166830226,
+            "gradient_improvement_factor": 33549839.724907525,
+            "gradient_relative_error": 7.740948045874141e-13,
+            "max_state_abs_error": 3.1087483753007656e-15,
+            "norm_drift": 3.1086244689504383e-15,
+            "p2_expectation_abs_error": 1.1911572870421105e-08,
+            "p2_gradient_relative_error": 2.597075662579135e-05,
+            "passed": true,
+            "seed": 0,
+            "state_infidelity": 0.0
+          }
+        ],
+        "convergence_certification": false,
+        "device": "cpu",
+        "hardware_certification": false,
+        "host_gate_encoding": true,
+        "operator_profile": "split_real_imag_statevector_p3_double_single",
+        "operator_profile_hash": "0ccd4d210f02e442338cef95d29cd26559608c8bd2410836de66979628d119a0",
+        "passed": true,
+        "provider": "pytorch_cpu",
+        "schema": "flagquantum_split_real_imag_p3_conformance_v1",
+        "state_host_fallback": false
+      },
+      "stage": "P3",
+      "status": "completed"
+    },
+    {
+      "conformance_passed": true,
+      "probe_seconds": 0.26677566701255273,
+      "report": {
+        "cases": [
+          {
+            "depth": 2,
+            "expectation_abs_error": 6.678685382510707e-16,
+            "gradient_relative_error": 2.520959980848518e-12,
+            "max_state_abs_error": 6.108497124050732e-15,
+            "norm_drift": 1.5987211554602254e-14,
+            "passed": true,
+            "seed": 0,
+            "state_infidelity": 2.220446049250313e-16
+          }
+        ],
+        "convergence_certification": false,
+        "device": "cpu",
+        "device_only_double_single_trigonometry": true,
+        "hardware_certification": false,
+        "host_gate_encoding": false,
+        "max_gate_entry_abs_error": 5.45547824116195e-14,
+        "max_trigonometry_abs_error": 3.4647285040989573e-13,
+        "operator_profile": "split_real_imag_statevector_p4_device_double_single",
+        "operator_profile_hash": "5a1d01aab761b21bda7b5c19dee29fd3eb3d96ce39df58f6f75fd66e12d2a745",
+        "parameter_host_fallback": false,
+        "passed": true,
+        "provider": "pytorch_cpu",
+        "schema": "flagquantum_split_real_imag_p4_conformance_v1",
+        "stability_cases": [
+          {
+            "depth": 4,
+            "max_state_abs_error": 7.884492050422767e-15,
+            "norm_drift": 1.3988810110276972e-14,
+            "passed": true,
+            "seed": 0,
+            "state_infidelity": 0.0
+          }
+        ],
+        "state_host_fallback": false
+      },
+      "stage": "P4",
+      "status": "completed"
+    },
+    {
+      "conformance_passed": true,
+      "probe_seconds": 0.2166542089980794,
+      "report": {
+        "cases": [
+          {
+            "depth": 2,
+            "finite_difference_gradient_relative_error": 1.9110369626936902e-07,
+            "forward_absolute_error": 3.14281269411798e-10,
+            "gradient_cosine_similarity": 1.0000000000000002,
+            "gradient_relative_error": 2.444453822993325e-08,
+            "passed": true,
+            "seed": 0
+          }
+        ],
+        "convergence_certification": false,
+        "delivered_loss_dtype": "float32",
+        "delivered_tensor_grad_dtype": "float32",
+        "delivered_tensor_grad_precision": "float32_boundary",
+        "device": "cpu",
+        "hardware_certification": false,
+        "internal_gradient_representation": "double_single_high_low",
+        "native_cuda_evidence": false,
+        "optimizer_available": true,
+        "optimizer_evidence_in_report": false,
+        "passed": true,
+        "provider": "pytorch_cpu",
+        "schema": "flagquantum_split_real_imag_p5_autograd_conformance_v1",
+        "torch_fl_flagos_evidence": false
+      },
+      "stage": "P5_autograd",
+      "status": "completed"
+    },
+    {
+      "conformance_passed": true,
+      "probe_seconds": 0.4919197919953149,
+      "report": {
+        "cancellation_double_single_absolute_error": 0.0,
+        "cancellation_float32_absolute_error": 4.656612873077393e-10,
+        "cases": [
+          {
+            "double_single_loss_absolute_error": 1.4350076682489998e-11,
+            "double_single_parameter_absolute_error": 7.57030549358717e-11,
+            "float32_loss_absolute_error": 1.0332501521048698e-09,
+            "float32_parameter_absolute_error": 6.571934718646588e-09,
+            "passed": true,
+            "step": 1,
+            "workload": "two_qubit_vqe"
+          },
+          {
+            "double_single_loss_absolute_error": 8.83887768532432e-10,
+            "double_single_parameter_absolute_error": 6.537835550712856e-10,
+            "float32_loss_absolute_error": 9.587386579079649e-09,
+            "float32_parameter_absolute_error": 1.236090518830224e-08,
+            "passed": true,
+            "step": 1,
+            "workload": "three_qubit_qaoa"
+          }
+        ],
+        "convergence_certification": false,
+        "device": "cpu",
+        "gradient_representation": "double_single_high_low",
+        "native_cuda_evidence": false,
+        "optimizer": "double_single_sgd_without_momentum",
+        "parameter_representation": "double_single_high_low",
+        "passed": true,
+        "provider": "pytorch_cpu",
+        "schema": "flagquantum_split_real_imag_p5_optimizer_conformance_v1",
+        "tensor_grad_used": false,
+        "torch_fl_flagos_evidence": false
+      },
+      "stage": "P5_optimizer",
+      "status": "completed"
+    },
+    {
+      "conformance_passed": true,
+      "independent_max_error": 2.220446049250313e-16,
+      "probe_seconds": 0.0028216659993631765,
+      "stage": "native_fp64",
+      "status": "completed"
+    }
+  ],
+  "world_size": 1
+}
