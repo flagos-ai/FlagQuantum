@@ -276,7 +276,7 @@ is inferred from the focused local checks.
 
 ## Main synchronization
 
-The branch also merges main `6649717cd` without changing or retagging the original
+The branch also merges main `6649717cd9859ceb64eaa525e07ec32932b70485` without changing or retagging the original
 measurements. Its production Python bytes match measurement revision
 `b5c3db4b487a4b144a83a1e50fc8541475708774`; the additional main changes are
 outside this arithmetic implementation. Post-sync combined arithmetic,
