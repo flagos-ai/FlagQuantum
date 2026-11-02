@@ -2,9 +2,13 @@
 
 This is a bounded Compiler baseline, not a new synthesis engine. It changes no
 production lowering, selection, default, export, dependency or public contract.
-The user workflow remains `synth.synthesize(...)`, `fq.run(program)` and named
+The primary user workflow is a composable Python `qfunc` program: allocate its
+ports, prepare Hadamards and call an arithmetic helper in the same program, then
+use `synth.synthesize(main)`, `fq.run(program)` and named
 `program.probabilities(...)`. See the runnable
-[example](../../examples/synthesis_arithmetic_baseline.py).
+[example](../../examples/synthesis_arithmetic_baseline.py). The frozen measured
+corpus retains its original pure-function/InputState harness; it is historical
+benchmark machinery, not a reversal of the unified program-entry design.
 
 Run from the repository root in an installed FlagQuantum environment:
 

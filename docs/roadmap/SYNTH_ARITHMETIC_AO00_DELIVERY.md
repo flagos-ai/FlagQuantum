@@ -12,18 +12,24 @@ Save this in a source-retaining Python file, or run
 ```python
 import flagquantum as fq
 from flagquantum import synth
+from flagquantum.synth import Const, Output, QNum, allocate, hadamard_transform
 
 
-def energy(x: int, y: int) -> int:
-    return x*x+y
+@synth.qfunc
+def energy(x: Const[QNum], y: Const[QNum], result: Output[QNum]) -> None:
+    result |= x*x+y
 
 
-program = synth.synthesize(
-    energy,
-    inputs={"x": synth.UInt(2), "y": synth.UInt(2)},
-    input_state=synth.InputState.uniform(),
-    memory_limit_bytes=64 * 1024**2,
-)
+@synth.qfunc
+def main(x: Output[QNum], y: Output[QNum], result: Output[QNum]) -> None:
+    allocate(2, x)
+    allocate(2, y)
+    hadamard_transform(x)
+    hadamard_transform(y)
+    energy(x, y, result)
+
+
+program = synth.synthesize(main, memory_limit_bytes=64 * 1024**2)
 result = fq.run(program)
 print(dict(program.probabilities(result, registers=("x", "y", "result"))))
 print(program.report["resources"])
@@ -37,10 +43,13 @@ physical wire assignment, carry management or bitstring decoding.
 The equivalent existing Qmod path is:
 
 ```qmod
+qfunc energy(const x:qnum<2>,const y:qnum<2>,output result:qnum) {
+    result=x*x+y;
+}
 qfunc main(output x:qnum<2>,output y:qnum<2>,output result:qnum) {
     allocate(x);allocate(y);
     hadamard_transform(x);hadamard_transform(y);
-    result=x*x+y;
+    energy(x,y,result);
 }
 ```
 
@@ -75,7 +84,7 @@ synthesis. For x=2a+b and y=2c+d, low-to-high output bits are b XOR d, c XOR bd,
 a(1-b) XOR bcd and ab; scratch bc is uncomputed. The runner checks the full
 uniform state against mathematics; tests check all 256 input/target combinations.
 
-## Resource meaning and observed sentinel
+## Resource meaning and frozen measured sentinel
 
 | Implementation/profile | Allocated/used | Workspace | Operations | Depth | Two-qubit operations |
 | --- | --- | --- | --- | --- | --- |
@@ -85,6 +94,11 @@ uniform state against mathematics; tests check all 256 input/target combinations
 | Manual exact named basis | 9/9 | 1 | 92 | 60 | 39 |
 | Python/Qmod named basis + line | 18/18 | 10 | 2162 | 1088 | 1712 |
 | Manual named basis + line | 9/9 | 1 | 196 | 112 | 143 |
+
+The table preserves the original scalar-Python/Qmod/manual measurement. The
+current unified qfunc primary example is separately verified after the merge:
+its logical circuit also uses 18 qubits, 10 workspace, 166 operations and depth
+124. This does not relabel or regenerate the ninety-case historical artifact.
 
 These are static counts of generated circuits, not CPU runtime measurements.
 Logical CCX is one three-qubit operation, so its cost becomes visible in the
@@ -242,3 +256,24 @@ outcomes. The public API guard and all 810 local Markdown links pass after the
 merge. Logs: `/private/tmp/fq-ao00-up01-sync-focused.log`,
 `fq-ao00-sync-mypy.log`, `fq-ao00-sync-example.log` and
 `fq-ao00-sync-program-example.log`.
+
+
+## Primary example correction: use the unified program entry
+
+After UP-01 merged, the primary user example and PR description were corrected
+to use the same composable `@synth.qfunc` entry: Output ports, allocation,
+Hadamard preparation, arithmetic helper composition and named readout. Keeping
+the pre-UP-01 scalar/InputState example in that position incorrectly suggested
+an entry-design reversal. The original scalar functions remain in the frozen
+benchmark harness; they are not the recommended primary program presentation.
+The Qmod example now shows the matching helper composition.
+
+A new integration acceptance checks the current primary Python program and
+matching Qmod against the independent complete-state oracle, including all
+sixteen logical outcomes and clean workspace, and pins the observed 18/10/166/
+124 resource tuple. The combined acceptance now passes 159 cases in 19.26 seconds.
+The executable primary example also runs successfully. No production code,
+measured benchmark script, baseline JSON or measurement commit is changed by
+this presentation correction. Current logs:
+`/private/tmp/fq-1006-native-example-acceptance.log`,
+`fq-1006-native-example.log` and `fq-1006-native-mypy.log`.

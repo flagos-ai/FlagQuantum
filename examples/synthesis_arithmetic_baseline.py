@@ -3,24 +3,36 @@
 import flagquantum as fq
 from flagquantum import synth
 from flagquantum.compiler.resource_estimation import estimate_resources
+from flagquantum.synth import Const, Output, QNum, allocate, hadamard_transform
 
 
-def energy(x: int, y: int) -> int:
-    return x * x + y
+@synth.qfunc
+def energy(x: Const[QNum], y: Const[QNum], result: Output[QNum]) -> None:
+    result |= x * x + y
 
 
-QMOD = """qfunc main(output x:qnum<2>, output y:qnum<2>, output result:qnum) {
+@synth.qfunc
+def main(x: Output[QNum], y: Output[QNum], result: Output[QNum]) -> None:
+    allocate(2, x)
+    allocate(2, y)
+    hadamard_transform(x)
+    hadamard_transform(y)
+    energy(x, y, result)
+
+
+QMOD = """qfunc energy(const x:qnum<2>, const y:qnum<2>, output result:qnum) {
+    result=x*x+y;
+}
+qfunc main(output x:qnum<2>, output y:qnum<2>, output result:qnum) {
     allocate(x); allocate(y);
     hadamard_transform(x); hadamard_transform(y);
-    result=x*x+y;
+    energy(x,y,result);
 }"""
 
 
-def main() -> None:
+def run() -> None:
     program = synth.synthesize(
-        energy,
-        inputs={"x": synth.UInt(2), "y": synth.UInt(2)},
-        input_state=synth.InputState.uniform(),
+        main,
         memory_limit_bytes=64 * 1024**2,
     )
     result = fq.run(program)
@@ -37,4 +49,4 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    run()
