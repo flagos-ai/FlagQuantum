@@ -23,6 +23,7 @@ from .training_compilation import (
     _snapshot_statistics,
     _training_exclusion,
     _training_signature,
+    _training_value,
     _TrainingProgram,
 )
 
@@ -46,8 +47,17 @@ def _eager_training_update(
     reason: str,
     *,
     execution: ExecutionResult | None = None,
+    retain_execution: bool = True,
 ) -> tuple[ExecutionResult, torch.Tensor]:
-    execution = module.execute(inputs) if execution is None else execution
+    if execution is None:
+        value_only = not retain_execution and not _training_exclusion(
+            module, optimizer, ()
+        )
+        execution = (
+            ExecutionResult(value=_training_value(module, inputs))
+            if value_only
+            else module.execute(inputs)
+        )
     loss = _scalar_objective(objective, execution.require_value())
     torch.autograd.backward(loss)
     optimizer.step()
@@ -72,6 +82,7 @@ def _training_update(
     remaining_steps: int,
     disabled: str,
     first_step: bool,
+    retain_execution: bool,
 ) -> tuple[ExecutionResult, torch.Tensor, str]:
     optimizer.zero_grad(set_to_none=True)
     if module._training_program is None and (
@@ -83,14 +94,24 @@ def _training_update(
             else "short_training_run"
         )
         execution, loss = _eager_training_update(
-            module, optimizer, objective, inputs, reason
+            module,
+            optimizer,
+            objective,
+            inputs,
+            reason,
+            retain_execution=retain_execution,
         )
         return execution, loss, disabled
     reason = disabled or _training_exclusion(module, optimizer, ())
     if reason:
         module._training_program = None
         execution, loss = _eager_training_update(
-            module, optimizer, objective, inputs, reason
+            module,
+            optimizer,
+            objective,
+            inputs,
+            reason,
+            retain_execution=retain_execution,
         )
         return execution, loss, disabled
     parameters = module._owned_parameters()
@@ -113,7 +134,12 @@ def _training_update(
     if reason:
         module._training_program = None
         execution, loss = _eager_training_update(
-            module, optimizer, objective, inputs, reason
+            module,
+            optimizer,
+            objective,
+            inputs,
+            reason,
+            retain_execution=retain_execution,
         )
         return execution, loss, disabled
     if program is None:
@@ -129,7 +155,12 @@ def _training_update(
         if program.diagnostics["status"] == "eager":
             reason = str(program.diagnostics["reason"])
             execution, loss = _eager_training_update(
-                module, optimizer, objective, inputs, reason
+                module,
+                optimizer,
+                objective,
+                inputs,
+                reason,
+                retain_execution=retain_execution,
             )
             return execution, loss, reason
     try:
@@ -329,6 +360,7 @@ def train(
             steps - step_index,
             compilation_disabled,
             step_index == 0,
+            callback is not None or step_index == steps - 1,
         )
         detached_loss = loss.detach()
         if defer_loss_history:

@@ -151,7 +151,13 @@ def _training_exclusion(
         getattr(getattr(getattr(module, name), "__func__", None), "__code__", None)
         is None
         or getattr(module, name).__func__.__code__.co_filename != source
-        for name in ("execute", "_build", "_execute_impl", "_owned_parameters")
+        for name in (
+            "execute",
+            "_build",
+            "_execute_impl",
+            "_owned_parameters",
+            "_forward_local_tensor",
+        )
     ):
         return "module_override_not_certified"
     if module.policy.backend != "pytorch":
@@ -188,6 +194,17 @@ def _training_exclusion(
     if any(group.get("differentiable", False) for group in optimizer.param_groups):
         return "differentiable_optimizer_requires_eager"
     return ""
+
+
+def _training_value(module: Module, inputs: torch.Tensor | None) -> torch.Tensor:
+    # Reuse the existing value-only Module implementation for unobserved steps.
+    # Its consumed-IR snapshot remains readable before the next data delivery.
+    try:
+        return module._forward_local_tensor(inputs, None)
+    except (FlagQuantumError, TypeError):
+        raise
+    except Exception as error:
+        raise ExecutionError("module execution failed") from error
 
 
 def _optimizer_exclusion(optimizer: torch.optim.Optimizer) -> str:

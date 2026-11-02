@@ -450,3 +450,76 @@ def test_parameter_hooks_added_during_callback_select_eager_before_next_update(
         result.last_execution.runtime["training_compilation"]["reason"]
         == "tensor_hooks_require_eager"
     )
+
+
+def test_unobserved_eager_steps_preserve_consumed_ir_and_checkpoint_recovery(tmp_path):
+    current = model()
+    optimizer = torch.optim.Adam(current.parameters(), lr=0.03)
+    consumed = []
+
+    def features(index):
+        return torch.tensor([[0.1], [0.3]], dtype=torch.float64) + index * 0.01
+
+    def inputs(index):
+        if index:
+            assert current._last_ir.content_hash == consumed[-1]
+        if index == 3:
+            current.save_checkpoint(
+                tmp_path / "step3.pt", optimizer=optimizer, step=3, seed=11
+            )
+        consumed.append(
+            build(current.parameters_tensor.detach().clone(), features(index))
+            .to_ir()
+            .content_hash
+        )
+        return features(index)
+
+    result = fq.train(
+        current,
+        optimizer=optimizer,
+        objective=lambda value: value.square().mean(),
+        inputs=inputs,
+        steps=6,
+    )
+    replay = model()
+    replay_optimizer = torch.optim.Adam(replay.parameters(), lr=0.03)
+    replay(features(2))
+    replay.load_checkpoint(tmp_path / "step3.pt", optimizer=replay_optimizer)
+    restored = fq.train(
+        replay,
+        optimizer=replay_optimizer,
+        objective=lambda value: value.square().mean(),
+        inputs=lambda index: features(index + 3),
+        steps=3,
+    )
+    torch.testing.assert_close(
+        restored.losses, result.losses[3:], atol=1e-12, rtol=1e-12
+    )
+    torch.testing.assert_close(
+        replay.parameters_tensor, current.parameters_tensor, atol=1e-12, rtol=1e-12
+    )
+    torch.testing.assert_close(replay_optimizer.state_dict(), optimizer.state_dict())
+    assert result.last_execution.provenance["ir_hash"] == consumed[-1]
+    assert (
+        result.last_execution.state is not None
+        and result.last_execution.metrics["training"]
+    )
+
+
+def test_execute_overrides_remain_observable_without_a_training_callback():
+    class Observed(fq.Module):
+        calls = 0
+
+        def execute(self, inputs=None, parameters=None):
+            self.calls += 1
+            return super().execute(inputs, parameters)
+
+    current = Observed(build, 2, dtype=torch.float64)
+    fq.train(
+        current,
+        optimizer=torch.optim.SGD(current.parameters(), lr=0.03),
+        objective=lambda value: value.square().mean(),
+        inputs=torch.tensor([[0.1]], dtype=torch.float64),
+        steps=6,
+    )
+    assert current.calls == 6
