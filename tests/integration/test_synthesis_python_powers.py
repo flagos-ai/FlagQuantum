@@ -217,6 +217,4 @@ def test_wide_folded_constant_is_refused_before_state_allocation() -> None:
         "def main(x: int) -> int:\n    return x+2**8\n", filename="<wide-folded-power>"
     )
     with pytest.raises(PlanningError, match="memory budget"):
-        synth.synthesize(
-            function, inputs={"x": synth.UInt(1)}, memory_limit_bytes=1024**2
-        )
+        synth.synthesize(function, inputs={"x": synth.UInt(1)}, memory_limit_bytes=1024)

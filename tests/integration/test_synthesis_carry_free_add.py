@@ -50,7 +50,8 @@ def test_every_input_and_nonzero_xor_target_on_permuted_bindings(
         workspace_state="fresh_zero",
         scheduling=strategy,
     )
-    assert row.peak_workspace == 3
+    assert row.peak_workspace == 0
+    assert row.conservative is not None and row.conservative.peak_workspace == 3
     assert all(g.name in {"x", "cx"} for g in row.circuit.instructions)
     for x in range(4):
         for z in range(8):
@@ -132,9 +133,9 @@ def test_previously_eight_gibibyte_example_executes_under_sixty_four_mib(
             memory_limit_bytes=64 * 1024**2,
         )
     check_state(p, fq.run(p), {(x, x + 256): 2**-0.5 for x in range(2)})
-    assert p.report["resources"].n_qubits == 19
-    assert p.execution.state_bytes == 8 * 1024**2
-    assert p.report["workspace_qubits"] == 9
+    assert p.report["resources"].n_qubits == 10
+    assert p.execution.state_bytes == 16 * 1024
+    assert p.report["workspace_qubits"] == 0
 
 
 @pytest.mark.parametrize("objective", ["width", "depth"])

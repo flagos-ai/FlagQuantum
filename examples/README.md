@@ -1,5 +1,10 @@
 # FlagQuantum Examples
 
+[Composable arithmetic synthesis](synthesis_arithmetic_implementations.py): run
+`python -m examples.synthesis_arithmetic_implementations` to allocate, prepare
+superpositions, compose a Python qfunc, compute `x*x+y`, and read named outcomes.
+The example also executes matching Qmod and prints actual resources.
+
 [Coherent predicate synthesis](synthesis_predicate.py): run
 `python -m examples.synthesis_predicate` for named basis and uniform results of
 `x*x+y<5`, using the maintained synth facade without gate design or bit decoding.
@@ -7,7 +12,7 @@
 Private constrained-synthesis contributor workflows:
 
 - [Candidate selection](synthesis_selection.py): run
-  `python -m examples.synthesis_selection` to select both schedules through
+  `python -m examples.synthesis_selection` to compare both schedules under
   different final constraints, then check and execute their real Runtime plans.
 - [Complete static costs](synthesis_selection_costs.py): run
   `python -m examples.synthesis_selection_costs` for both candidates of four

@@ -5,7 +5,11 @@ from dataclasses import replace
 import pytest
 
 from flagquantum.compiler._arithmetic_kernels import ripple_add
-from flagquantum.compiler._construction.lowering import lower_arithmetic
+from flagquantum.compiler._construction.lowering import (
+    _emit_arithmetic,
+    lower_arithmetic,
+    schedule_arithmetic,
+)
 from flagquantum.compiler._construction.profile import uint_type
 from flagquantum.compiler._construction.ranges import unsigned_width
 from flagquantum.compiler._hybrid.model import (
@@ -43,13 +47,16 @@ def _program(a: int = 2, b: int = 2, out: int = 3) -> HybridProgram:
     )
 
 
-def _lower(program: HybridProgram, *, extra: int = 0, **limits: int) -> CircuitIR:
+def _lower(
+    program: HybridProgram, *, extra: int = 0, conservative: bool = False, **limits: int
+) -> CircuitIR:
     args = program.body.blocks[0].arguments
     a, b = (int(v.type.parameters[0]) for v in args)
     out = int(program.body.blocks[0].operations[-1].operands[0].type.parameters[0])
     start = a + b + out
     count = start + max(a, b) + max(0, b - a) + 2 + extra
-    return lower_arithmetic(
+    emit = _emit_arithmetic if conservative else schedule_arithmetic
+    return emit(
         (program,),
         {args[0].id: tuple(range(a)), args[1].id: tuple(range(a, a + b))},
         tuple(range(a + b, start)),
@@ -58,7 +65,7 @@ def _lower(program: HybridProgram, *, extra: int = 0, **limits: int) -> CircuitI
         workspace=tuple(range(start, count)),
         workspace_state="fresh_zero",
         **limits,
-    )
+    ).circuit
 
 
 def _image(program: CircuitIR, bits: int) -> int:
@@ -174,13 +181,18 @@ def test_range_rejects_lossy_or_negative_bounds(bound: int) -> None:
 @pytest.mark.parametrize("budget", [1, 37, 40])
 def test_operation_budget_includes_inverse_and_final_copy(budget: int) -> None:
     with pytest.raises(HybridVerificationError, match="lowering.operations"):
-        _lower(_program(), max_operations=budget)
+        _lower(_program(), conservative=True, max_operations=budget)
 
 
 def test_exact_operation_budget_is_accepted() -> None:
     program = _lower(_program())
-    assert len(program.instructions) == 41
-    assert _lower(_program(), max_operations=41).instructions == program.instructions
+    assert len(program.instructions) == 14
+    assert _lower(_program(), max_operations=14).instructions == program.instructions
+    assert (
+        len(_lower(_program(), conservative=True, max_operations=41).instructions) == 41
+    )
+    with pytest.raises(HybridVerificationError, match="lowering.operations"):
+        _lower(_program(), max_operations=13)
 
 
 def test_insufficient_workspace_reports_source_before_returning_ir() -> None:
@@ -191,7 +203,7 @@ def test_insufficient_workspace_reports_source_before_returning_ir() -> None:
     with pytest.raises(
         HybridVerificationError, match=r"lowering.workspace: addition.py:9:4"
     ):
-        _lower(program, extra=-1)
+        _lower(program, conservative=True, extra=-1)
 
 
 def test_multiplication_is_lowered_by_the_same_entry() -> None:

@@ -22,8 +22,16 @@ pytestmark = pytest.mark.unit
 BASIS = ("x", "h", "s", "sdg", "t", "tdg", "ry", "rz", "cx", "u3", "swap")
 
 
+def branch_pressure(x: int, y: int) -> int:
+    """Shared dependencies preserve a real schedule tradeoff after terminal XOR."""
+    t = x * y
+    a = t + x
+    b = t + y
+    return a * b
+
+
 def _select(**kwargs):
-    graph = capture(pressure, {"x": 1, "y": 1})
+    graph = capture(branch_pressure, {"x": 1, "y": 1})
     return select_arithmetic((graph,), entry=graph.name, **kwargs)
 
 
@@ -66,13 +74,13 @@ def test_complete_cost_matrix_and_nondominated_default(function, width, target) 
 
 
 def test_constraints_and_objectives_select_real_different_schedules() -> None:
-    narrow = _select(constraints=Constraints(CircuitLimits(max_qubits=9)))
-    shallow = _select(constraints=Constraints(CircuitLimits(max_operations=40)))
+    narrow = _select(constraints=Constraints(CircuitLimits(max_qubits=17)))
+    shallow = _select(constraints=Constraints(CircuitLimits(max_operations=103)))
     assert narrow.selected.strategy == "recompute"
     assert shallow.selected.strategy == "retain"
     assert _select(objective="depth").selected.strategy == "retain"
     assert (
-        _select(constraints=Constraints(max_workspace=5)).selected.strategy
+        _select(constraints=Constraints(max_workspace=12)).selected.strategy
         == "recompute"
     )
     assert _select().ranking_version == 1
@@ -94,7 +102,7 @@ def test_determinism_ignores_elapsed_observations(monkeypatch) -> None:
 
 def test_all_violations_and_every_combined_recovery_is_retried() -> None:
     constraints = Constraints(
-        CircuitLimits(max_qubits=8, max_operations=39, max_depth=34), max_workspace=4
+        CircuitLimits(max_qubits=16, max_operations=102, max_depth=72), max_workspace=11
     )
     failed = _select(constraints=constraints)
     assert failed.selected is None and failed.complete
@@ -114,7 +122,7 @@ def test_all_violations_and_every_combined_recovery_is_retried() -> None:
     # A width-only relaxation cannot repair this combination.
     assert (
         _select(
-            constraints=Constraints(replace(constraints.limits, max_qubits=10), 4)
+            constraints=Constraints(replace(constraints.limits, max_qubits=18), 11)
         ).selected
         is None
     )
@@ -124,8 +132,8 @@ def test_all_violations_and_every_combined_recovery_is_retried() -> None:
     "budget",
     [
         ConstructionBudget(candidate_checks=1),
-        ConstructionBudget(qubits=9),
-        ConstructionBudget(operations=45),
+        ConstructionBudget(qubits=17),
+        ConstructionBudget(operations=105),
         ConstructionBudget(qubits=3),
     ],
 )
@@ -158,17 +166,17 @@ def test_preparation_scope_final_limit_does_not_prune_larger_source() -> None:
     preparation = CircuitIR(2, tuple(Instruction("x", (0,)) for _ in range(100)))
     result = _select(
         preparation=preparation,
-        constraints=Constraints(CircuitLimits(max_operations=40)),
+        constraints=Constraints(CircuitLimits(max_operations=103)),
     )
     assert result.selected is not None and result.selected.strategy == "retain"
     costs = dict(result.selected.stage_resources)
-    assert costs["source"].n_operations == 140
-    assert costs["executable"].n_operations == 40
+    assert costs["source"].n_operations == 205
+    assert costs["executable"].n_operations == 103
 
 
 def test_preparation_cannot_claim_dirty_workspace_or_measurements() -> None:
     for preparation in (
-        CircuitIR(5, ()),
+        CircuitIR(6, ()),
         CircuitIR(2, (), measurements=(MeasurementNode("probabilities", (0,)),)),
     ):
         with pytest.raises(ValueError, match="input/output"):
@@ -197,7 +205,9 @@ def test_actual_normalization_basis_drift_is_not_silently_repaired() -> None:
 
 
 def test_explicit_topologies_are_not_resized_or_substituted() -> None:
-    result = _select(target=Target(basis=BASIS, couplings=(CouplingMap(8, ((0, 1),)),)))
+    result = _select(
+        target=Target(basis=BASIS, couplings=(CouplingMap(16, ((0, 1),)),))
+    )
     assert result.complete and result.selected is None
     assert all("no explicit coupling" in r.diagnostics[0].message for r in result.rows)
     with pytest.raises(ValueError, match="unambiguous"):
@@ -231,7 +241,7 @@ def test_routed_request_is_deterministic_even_after_topology_cache_use() -> None
     topology = Target(
         basis=BASIS,
         couplings=tuple(
-            CouplingMap(n, tuple((i, i + 1) for i in range(n - 1))) for n in (9, 10)
+            CouplingMap(n, tuple((i, i + 1) for i in range(n - 1))) for n in (17, 18)
         ),
         optimize=False,
         restore_layout=False,
@@ -265,7 +275,7 @@ def test_stale_candidate_stage_is_refused_without_recompiling(monkeypatch) -> No
 
 def test_intermediate_conversion_budget_is_not_reported_as_infeasibility() -> None:
     report = _select(
-        target=Target(basis=BASIS), budget=ConstructionBudget(operations=100)
+        target=Target(basis=BASIS), budget=ConstructionBudget(operations=200)
     )
     assert not report.complete and report.selected is None
     assert any(row.diagnostics[0].code == "target.budget" for row in report.rows)
@@ -351,11 +361,13 @@ def test_one_qubit_double_cost_advisory_includes_blocked_alternative(
     def expensive_recomputation(program):
         costs = original(program)
         return (
-            replace(costs, n_operations=80, depth=70) if costs.n_qubits == 9 else costs
+            replace(costs, n_operations=250, depth=200)
+            if costs.n_qubits == 17
+            else costs
         )
 
     monkeypatch.setattr(selection, "estimate_resources", expensive_recomputation)
-    report = _select(constraints=Constraints(CircuitLimits(max_qubits=9)))
+    report = _select(constraints=Constraints(CircuitLimits(max_qubits=17)))
     assert report.selected.strategy == "recompute"
     assert not report.rows[0].feasible
     assert any(

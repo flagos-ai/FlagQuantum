@@ -70,7 +70,7 @@ def test_every_basis_input_uses_only_high_level_logic_and_named_readout() -> Non
             )
             assert set(distribution) == {(x, y, x * x + y)}
             assert math.isclose(distribution[(x, y, x * x + y)], 1, abs_tol=1e-10)
-            assert program.report["workspace_qubits"] == 10
+            assert program.report["workspace_qubits"] == 8
             assert program.report["result_width"] == 4
 
 
@@ -94,7 +94,7 @@ def test_uniform_joint_marginal_and_reordered_registers_read_real_probabilities(
     assert all(
         abs(marginal[(value,)] - count / 16) < 1e-10 for value, count in counts.items()
     )
-    assert marginal.diagnostics["scanned_amplitudes"] == 1 << 18
+    assert marginal.diagnostics["scanned_amplitudes"] == 1 << 16
 
 
 def test_plain_and_qfunc_forms_generate_identical_circuits() -> None:
@@ -264,17 +264,17 @@ def test_bad_preparation_names_and_ranges_are_rejected(state: synth.InputState) 
 def test_resource_failure_can_be_repaired_without_changing_the_function() -> None:
     with pytest.raises(HybridVerificationError, match="max_qubits"):
         synth.synthesize(
-            polynomial, inputs={"x": synth.UInt(2), "y": synth.UInt(2)}, max_qubits=17
+            polynomial, inputs={"x": synth.UInt(2), "y": synth.UInt(2)}, max_qubits=15
         )
     program = synth.synthesize(
-        polynomial, inputs={"x": synth.UInt(2), "y": synth.UInt(2)}, max_qubits=18
+        polynomial, inputs={"x": synth.UInt(2), "y": synth.UInt(2)}, max_qubits=16
     )
-    assert program.circuit.n_wires == 18
+    assert program.circuit.n_wires == 16
     with pytest.raises(HybridVerificationError, match="max_operations"):
         synth.synthesize(
             polynomial,
             inputs={"x": synth.UInt(2), "y": synth.UInt(2)},
-            max_operations=161,
+            max_operations=76,
         )
 
 

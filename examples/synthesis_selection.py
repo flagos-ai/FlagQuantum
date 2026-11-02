@@ -28,10 +28,18 @@ def pressure(x: int, y: int) -> int:
     return t + u
 
 
+def branch_pressure(x: int, y: int) -> int:
+    """Keep shared dependencies live to demonstrate a real schedule tradeoff."""
+    t = x * y
+    a = t + x
+    b = t + y
+    return a * b
+
+
 def main() -> None:
-    graph = capture(pressure, {"x": 1, "y": 1})
+    graph = capture(branch_pressure, {"x": 1, "y": 1})
     preparation = fq.Circuit(2, dtype=torch.complex128).h(0).h(1).s(0).to_ir()
-    for limits in (CircuitLimits(max_qubits=9), CircuitLimits(max_operations=42)):
+    for limits in (CircuitLimits(max_qubits=17), CircuitLimits(max_operations=106)):
         report = select_arithmetic(
             (graph,),
             entry=graph.name,
@@ -79,7 +87,7 @@ def main() -> None:
         for x in range(2):
             for y in range(2):
                 index = (
-                    (((x << 1) | y) << 2) | pressure(x, y)
+                    (((x << 1) | y) << 3) | branch_pressure(x, y)
                 ) << row.arithmetic.peak_workspace
                 reference[index] = torch.tensor(1j if x else 1, dtype=state.dtype) / 2
         torch.testing.assert_close(state, reference, atol=1e-12, rtol=0)

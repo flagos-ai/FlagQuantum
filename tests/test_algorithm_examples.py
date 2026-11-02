@@ -1694,9 +1694,9 @@ def test_synthesis_trial_runs_basis_and_coherent_named_workflows() -> None:
     expected = {(x, y, x * x + y): 1 / 16 for x in range(4) for y in range(4)}
     assert uniform == pytest.approx(expected, abs=1e-10)
     resources = _labelled(output, "logical resources")
-    assert "n_qubits=18" in resources
-    assert "n_operations=166" in resources
-    assert "depth=124" in resources
+    assert "n_qubits=16" in resources
+    assert "n_operations=81" in resources
+    assert "depth=59" in resources
     _assert_premise("synthesis_trial", output)
 
 
@@ -1715,7 +1715,7 @@ def test_synthesis_source_trial_runs_text_and_local_file(
     else:
         output = _run("synthesis_source_trial")
         expected = {(x, x * x + 1): 0.25 for x in range(4)}
-        qubits, operations, depth = 16, 162, 124
+        qubits, operations, depth = 14, 74, 57
     observed = ast.literal_eval(_labelled(output, "distribution"))
     assert observed == pytest.approx(expected, abs=1e-12)
     resources = _labelled(output, "resources")

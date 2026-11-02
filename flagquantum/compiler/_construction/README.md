@@ -563,3 +563,30 @@ Qmod and an independently derived Circuit reference. Follow
 then `tests/integration/test_synthesis_normalization.py` for complete-state,
 XOR, resource-guard and mutation-boundary acceptance. The AO-00 JSON and measured
 revision stay frozen; new results use separate AO-01 files.
+
+## AO-02 arithmetic implementation family
+
+`schedule_arithmetic` retains the actual AO-01 schedule and probes one bounded
+family: symmetric same-SSA squaring, constant shift/add using shared Cuccaro
+sweeps, and direct terminal XOR addition. The existing power-of-two and
+disjoint-constant proofs are reused. Accumulation kernels only write internal
+zero product storage; the terminal writer supports arbitrary nonzero targets.
+Its carry prefix excludes output wires and is inverted after XOR writes.
+
+The local guard requires nonincreasing workspace/operations/depth and one strict
+gain. `conservative`, `implementation_cost`, `implementation_rules` and refusal
+diagnostics keep private evidence; `baseline`/`normalization` retain earlier
+representations and source facts. Public candidate rows and budgets remain
+unchanged. AO-04 owns target-aware implementation enumeration.
+
+Terminal events have an empty owned allocation because result storage belongs
+to the external caller. Their paired compute/write and carry-cleanup events
+account for scratch without freeing caller output. Exact adjoints reverse those
+actual gates/events. The phase emitter remains conservative.
+
+Run `python -m examples.synthesis_arithmetic_implementations` for the complete
+native qfunc/Qmod workflow. Kernel tests are in
+`tests/team/compiler/test_construction_arithmetic_implementations.py`; integration
+acceptance covers coherent targets, controls, adjoints and both schedules.
+See [the AO-02 delivery record](../../../docs/roadmap/SYNTH_ARITHMETIC_AO02_DELIVERY.md)
+for proofs, scope, fixed receipts and the remaining AO-03/04 gap.

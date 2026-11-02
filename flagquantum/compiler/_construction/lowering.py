@@ -13,7 +13,14 @@ from dataclasses import dataclass, field, replace
 from typing import Literal
 
 from ...core.ir import CircuitIR, Instruction
-from .._arithmetic_kernels import comparison_xor, multiply_accumulate, ripple_add
+from .._arithmetic_kernels import (
+    comparison_xor,
+    constant_multiply_accumulate,
+    multiply_accumulate,
+    ripple_add,
+    square_accumulate,
+    xor_add_parts,
+)
 from .._hybrid.model import INDEX, HybridProgram, Operation, ValueId
 from .._hybrid.verifier import Diagnostic, HybridVerificationError
 from ..resource_estimation import estimate_resources
@@ -53,6 +60,12 @@ class ArithmeticCandidate:
     normalized_cost: tuple[int, int, int] | None = None
     normalization_errors: tuple[Diagnostic, ...] = ()
     baseline_errors: tuple[Diagnostic, ...] = ()
+    implementation: Literal["conservative", "arithmetic"] = "conservative"
+    implementation_rules: tuple[tuple[ValueId, str], ...] = ()
+    conservative: ArithmeticCandidate | None = field(default=None, repr=False)
+    implementation_cost: tuple[int, int, int] | None = None
+    implementation_errors: tuple[Diagnostic, ...] = ()
+    conservative_errors: tuple[Diagnostic, ...] = ()
 
 
 def _self_adjoint_gates(gates: Sequence[Instruction]) -> bool:
@@ -83,6 +96,11 @@ def adjoint_value_candidate(candidate: ArithmeticCandidate) -> ArithmeticCandida
         ),
         events=events,
         recomputations=sum(count - 1 for count in cleans.values()),
+        conservative=(
+            adjoint_value_candidate(candidate.conservative)
+            if candidate.conservative is not None
+            else None
+        ),
         baseline=(
             adjoint_value_candidate(candidate.baseline)
             if candidate.baseline is not None
@@ -127,6 +145,7 @@ def _emit_arithmetic(
     max_operations: int = 100_000,
     scheduling: Schedule = "retain",
     output_mode: OutputMode = "value",
+    implementation: Literal["conservative", "arithmetic"] = "conservative",
 ) -> ArithmeticCandidate:
     """Emit one bounded candidate and its actual zero-pool allocation history.
 
@@ -167,6 +186,14 @@ def _emit_arithmetic(
     ensuring: set[ValueId] = set()
     returned = block.operations[-1].operands[0].id
     final = block.operations[-2] if len(block.operations) > 1 else None
+    direct_output = (
+        implementation == "arithmetic"
+        and output_mode == "value"
+        and final is not None
+        and final.name == "qint.add"
+        and final.results[0].id == returned
+    )
+    rules: list[tuple[ValueId, str]] = []
     phase_product = (
         final
         if output_mode == "phase"
@@ -252,6 +279,23 @@ def _emit_arithmetic(
             return None
         return left, right.bit_length() - 1
 
+    def multiplication_rule(op: Operation) -> str | None:
+        if implementation != "arithmetic" or op.name != "qint.multiply":
+            return None
+        left, right = operands(op)
+        if isinstance(left, tuple) and op.operands[0].id == op.operands[1].id:
+            return "square_symmetry"
+        if isinstance(left, int):
+            left, right = right, left
+        if (
+            isinstance(left, tuple)
+            and isinstance(right, int)
+            and right > 1
+            and right & (right - 1)
+        ):
+            return "constant_shift_add"
+        return None
+
     def reserve(key: ValueId, op: Operation) -> _Allocation:
         if op.name in {
             "qint.equal",
@@ -304,6 +348,17 @@ def _emit_arithmetic(
                 operation="eq" if op.name == "qint.equal" else "lt",
             )
         if op.name == "qint.multiply":
+            rule = multiplication_rule(op)
+            if rule == "square_symmetry":
+                assert isinstance(left, tuple)
+                return square_accumulate(left, allocation.result, scratch)
+            if rule == "constant_shift_add":
+                if isinstance(left, int):
+                    left, right = right, left
+                assert isinstance(left, tuple) and isinstance(right, int)
+                return constant_multiply_accumulate(
+                    left, right, allocation.result, scratch
+                )
             return multiply_accumulate(left, right, allocation.result, scratch)
         assert not isinstance(left, int)
         width = max(unsigned_width(bound(v.id)) for v in op.operands)
@@ -318,6 +373,14 @@ def _emit_arithmetic(
         scratch_count = 0
         if op.name == "qint.multiply" and shifted_multiply(op) is None:
             scratch_count = len(allocation.result)
+            rule = multiplication_rule(op)
+            if rule is not None:
+                rules.append((key, rule))
+            if rule == "constant_shift_add":
+                left, right = operands(op)
+                variable = right if isinstance(left, int) else left
+                assert isinstance(variable, tuple)
+                scratch_count = max(0, len(allocation.result) - len(variable)) + 1
         elif op.name in {"qint.equal", "qint.less"}:
             scratch_count = max(unsigned_width(bound(v.id)) for v in op.operands) + 2
         scratch = allocate(scratch_count, op) if scratch_count else ()
@@ -388,7 +451,7 @@ def _emit_arithmetic(
     for position, op in enumerate(block.operations[:-1]):
         key = op.results[0].id
         if op.name == "arith.constant" or (
-            phase_product is not None and key == returned
+            (phase_product is not None or direct_output) and key == returned
         ):
             continue
         ensure(key)
@@ -398,8 +461,9 @@ def _emit_arithmetic(
             uses = analysis.values[key].uses
             if not uses or uses[-1] <= position:
                 erase(key)
-    for key in phase_operands:
-        ensure(key)
+    if not direct_output:
+        for key in phase_operands:
+            ensure(key)
     if output_mode == "phase":
         marker_wires: list[int] = []
         for key in phase_operands:
@@ -447,7 +511,40 @@ def _emit_arithmetic(
             if action == "compute":
                 counts[event.value] = counts.get(event.value, 0) + 1
     else:
-        emit(_copy(encoding(returned), tuple(output)), block.operations[-1])
+        if direct_output:
+            assert final is not None
+            for dependency in analysis.values[returned].dependencies:
+                ensure(dependency)
+            left, right = operands(final)
+            target = tuple(output)[-unsigned_width(bound(returned)) :]
+            disjoint = carry_free_add(final)
+            scratch_count = 0 if left == right or disjoint else len(target) - 1
+            scratch = allocate(scratch_count, final) if scratch_count else ()
+            if disjoint:
+                prefix, writes = (), (*_copy(left, target), *_copy(right, target))
+            else:
+                prefix, writes = xor_add_parts(left, right, target, scratch)
+            if len(events) + 2 > 100_000:
+                _fail(
+                    "lowering.schedule.budget",
+                    "terminal XOR exceeds event budget",
+                    final,
+                )
+            count = emit((*prefix, *writes), final)
+            # Empty owned allocation denotes an external XOR result. The paired
+            # events account for carry computation/write and exact carry cleanup.
+            events.append(
+                ScheduleEvent("compute", returned, (), scratch, len(occupied), count)
+            )
+            count = emit(reversed(prefix), final)
+            events.append(
+                ScheduleEvent("uncompute", returned, (), scratch, len(occupied), count)
+            )
+            occupied.difference_update(scratch)
+            counts[returned] = 1
+            rules.append((returned, "terminal_xor_add"))
+        else:
+            emit(_copy(encoding(returned), tuple(output)), block.operations[-1])
         # Restoration order is not dependency order. Clean descendants first so a
         # still-live ancestor is not erased only to be rebuilt for the next inverse.
         for key in reversed(definitions):
@@ -461,6 +558,8 @@ def _emit_arithmetic(
         tuple(events),
         peak,
         sum(count - 1 for count in counts.values()),
+        implementation=implementation,
+        implementation_rules=tuple(dict.fromkeys(rules)),
     )
 
 
@@ -469,7 +568,7 @@ def _logical_cost(candidate: ArithmeticCandidate) -> tuple[int, int, int]:
     return candidate.peak_workspace, resource.n_operations, resource.depth
 
 
-def schedule_arithmetic(
+def _schedule_normalized_arithmetic(
     functions: Sequence[HybridProgram],
     inputs: Mapping[ValueId, Sequence[int]],
     output: Sequence[int],
@@ -586,6 +685,137 @@ def schedule_arithmetic(
     )
     return replace(
         chosen, normalization=normalization, baseline=original, normalized_cost=new_cost
+    )
+
+
+def schedule_arithmetic(
+    functions: Sequence[HybridProgram],
+    inputs: Mapping[ValueId, Sequence[int]],
+    output: Sequence[int],
+    *,
+    entry: str,
+    n_qubits: int,
+    workspace: Sequence[int] = (),
+    workspace_state: Literal[
+        "fresh_zero", "caller_asserted_zero", "unknown"
+    ] = "unknown",
+    max_operations: int = 100_000,
+    scheduling: Schedule = "retain",
+    output_mode: OutputMode = "value",
+) -> ArithmeticCandidate:
+    """Retain AO-01 and check one bounded arithmetic implementation family.
+
+    Local adoption requires nonincreasing workspace/operations/depth and a strict
+    gain. Final addition is a genuine XOR writer, even on a nonzero target.
+    Phase mode, public selector rows and target-aware choice remain unchanged.
+    """
+    conservative = None
+    refusal = None
+    try:
+        conservative = _schedule_normalized_arithmetic(
+            functions,
+            inputs,
+            output,
+            entry=entry,
+            n_qubits=n_qubits,
+            workspace=workspace,
+            workspace_state=workspace_state,
+            max_operations=max_operations,
+            scheduling=scheduling,
+            output_mode=output_mode,
+        )
+    except HybridVerificationError as error:
+        if not all(
+            d.code.startswith("construction.lowering.") for d in error.diagnostics
+        ):
+            raise
+        refusal = error
+    if output_mode != "value":
+        if conservative is None:
+            assert refusal is not None
+            raise refusal
+        return conservative
+    if conservative is not None:
+        normalization = conservative.normalization
+        if normalization is None:
+            return conservative
+        if len(conservative.circuit.instructions) > _NORMALIZATION_PROBE_MAX_OPERATIONS:
+            return replace(
+                conservative,
+                implementation_errors=(
+                    Diagnostic(
+                        "construction.implementation.budget",
+                        "optional arithmetic emission exceeds probe budget",
+                    ),
+                ),
+            )
+    else:
+        normalization = normalize_arithmetic(analyze_lifetimes(functions, entry=entry))
+    operations = normalization.program.body.blocks[0].operations
+    eligible = operations[-2].name == "qint.add" if len(operations) > 1 else False
+    eligible |= any(
+        op.name == "qint.multiply"
+        and (
+            op.operands[0].id == op.operands[1].id
+            or any(value.type == INDEX for value in op.operands)
+        )
+        for op in operations[:-1]
+    )
+    if not eligible and conservative is not None:
+        return conservative
+    try:
+        optimized = _emit_arithmetic(
+            (normalization.program,),
+            inputs,
+            output,
+            implementation="arithmetic",
+            entry=entry,
+            n_qubits=n_qubits,
+            workspace=workspace,
+            workspace_state=workspace_state,
+            max_operations=max_operations,
+            scheduling=scheduling,
+            output_mode=output_mode,
+        )
+    except HybridVerificationError as error:
+        if conservative is None or not all(
+            d.code.startswith("construction.lowering.") for d in error.diagnostics
+        ):
+            raise
+        return replace(
+            conservative,
+            conservative=conservative,
+            implementation_errors=error.diagnostics,
+        )
+    new_cost = _logical_cost(optimized)
+    if conservative is None:
+        assert refusal is not None
+        return replace(
+            optimized,
+            normalization=normalization,
+            implementation_cost=new_cost,
+            conservative_errors=refusal.diagnostics,
+        )
+    old_cost = _logical_cost(conservative)
+    chosen = (
+        optimized
+        if all(a <= b for a, b in zip(new_cost, old_cost, strict=True))
+        and new_cost != old_cost
+        else conservative
+    )
+    return replace(
+        chosen,
+        normalization=normalization,
+        baseline=(
+            (conservative.baseline or conservative)
+            if chosen is optimized
+            else conservative.baseline
+        ),
+        conservative=conservative,
+        implementation_cost=new_cost,
+        normalized_cost=conservative.normalized_cost,
+        normalization_errors=conservative.normalization_errors,
+        baseline_errors=conservative.baseline_errors,
     )
 
 

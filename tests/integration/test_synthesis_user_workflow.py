@@ -1,6 +1,7 @@
 """One ordinary synthesis product, real execution and routed named reading."""
 
 import math
+from collections.abc import Callable
 from dataclasses import replace
 
 import pytest
@@ -16,9 +17,15 @@ from flagquantum.services import _synthesis_readout as readout
 pytestmark = pytest.mark.integration
 
 
-def _program(**kwargs):
+def branch_pressure(x: int, y: int) -> int:
+    """Keep an actual schedule tradeoff after the linear case improves."""
+    t = x * y
+    return (t + x) * (t + y)
+
+
+def _program(*, function: Callable[[int, int], int] = pressure, **kwargs):
     return synth.synthesize(
-        pressure,
+        function,
         inputs={"y": synth.UInt(1), "x": synth.UInt(1)},
         input_state=synth.InputState.uniform(),
         **kwargs,
@@ -50,9 +57,7 @@ def test_high_level_inputs_and_names_need_no_gates_maps_or_decoding(
         else {(1, 2, 1): 1.0}
     )
     assert dict(observed) == pytest.approx(expected, abs=1e-10)
-    assert program.report["candidate"] == (
-        "recompute" if objective == "width" else "retain"
-    )
+    assert program.report["candidate"] == "retain"
     assert program.report["resources"] == program._checked.verify_result(result)
     row = program.selection.selected
     assert row.source_identities
@@ -72,8 +77,8 @@ def test_high_level_inputs_and_names_need_no_gates_maps_or_decoding(
 
 
 def test_final_constraints_change_schedule_without_user_selecting_one() -> None:
-    narrow = _program(max_qubits=9)
-    shallow = _program(max_operations=42)
+    narrow = _program(function=branch_pressure, max_qubits=17)
+    shallow = _program(function=branch_pressure, max_operations=105)
     assert narrow.report["candidate"] == "recompute"
     assert shallow.report["candidate"] == "retain"
     for program in (narrow, shallow):
@@ -84,12 +89,18 @@ def test_final_constraints_change_schedule_without_user_selecting_one() -> None:
 
 def test_every_user_repair_is_a_real_complete_retry() -> None:
     with pytest.raises(synth.SynthesisError) as caught:
-        _program(max_qubits=8, max_operations=39, max_depth=34, max_workspace=4)
+        _program(
+            function=branch_pressure,
+            max_qubits=16,
+            max_operations=104,
+            max_depth=74,
+            max_workspace=11,
+        )
     error = caught.value
     assert error.selection.complete and len(error.repairs) == 2
     assert "not a global lower bound" in str(error)
     for repair in error.repairs:
-        program = _program(**repair)
+        program = _program(function=branch_pressure, **repair)
         assert sum(program.probabilities(fq.run(program)).values()) == pytest.approx(
             1.0
         )

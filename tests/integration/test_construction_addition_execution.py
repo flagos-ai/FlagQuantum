@@ -93,8 +93,8 @@ def test_all_16_pairs_all_8_targets_and_zero_workspace_on_real_cpu(
                 torch.testing.assert_close(state, expected, atol=1e-12, rtol=0)
     resources = estimate_resources(program)
     assert resources.n_qubits == 13
-    assert resources.n_operations == 41
-    assert resources.operation_counts == {"cx": 33, "ccx": 8}
+    assert resources.n_operations == 14
+    assert resources.operation_counts == {"cx": 6, "ccx": 8}
 
 
 def test_arbitrary_complex_entangled_inputs_and_permuted_maps_keep_exact_phase(

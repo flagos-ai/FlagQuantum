@@ -22,7 +22,7 @@ CORPUS = Path(__file__).resolve().parents[1] / "fixtures/classiq_qmod"
         (
             "synthesis_tutorial.qmod",
             {"x": 3, "y": 6},
-            23,
+            21,
             {(x, x * x + 1): 1 / math.sqrt(8) for x in range(8)},
         ),
         (
