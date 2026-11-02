@@ -203,3 +203,12 @@ All six conditions are met within this declared bounded development comparison.
 Missing native internal tracing and unavailable driver-query data remain explicit
 limits; they cannot support a device-only gate-synthesis or vendor certification
 claim. Closing the characterization issue does not certify those capabilities.
+
+Final local checks passed: 79 focused scientific/workflow policy tests and 105
+quality/provenance/privacy/lane tests in an isolated single-branch clone; the
+whole-directory revision-origin audit also passed there. The isolated checkout
+excludes unrelated historical local refs, which otherwise change the origin
+registry's reachability question. Its tests and audit logs are retained under
+`validation/`. Formatting, type, architecture, dependency, language, docs-link
+and public-evidence privacy checks passed; all three reports regenerated
+byte-for-byte. Remote PR CI remains a separate merge gate.
