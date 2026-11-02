@@ -13,6 +13,7 @@ MAX_BYTES = 262144
 MAX_TOKENS = 4096
 MAX_DEPTH = 32
 MAX_FUNCTIONS = 32
+ANGLE_CALLS = frozenset({"PHASE", "RZ"})
 _TOKEN = re.compile(
     r"(?P<space>\s+)|(?P<comment>//[^\n]*|/\*[\s\S]*?\*/)"
     r"|(?P<number>[0-9]+)|(?P<name>[A-Za-z_][A-Za-z_0-9]*)"
@@ -246,6 +247,31 @@ class Parser:
             )
         return left
 
+    def angle_argument(self) -> Expression:
+        integer = self.current
+        if not integer.text.isdecimal() or self.tokens[self.position + 1].text != ".":
+            return self.expression()
+        self.position += 1
+        dot = self.take(".")
+        fraction = self.current
+        if (
+            not fraction.text.isdecimal()
+            or dot.location.line != integer.location.line
+            or dot.location.column != integer.location.column + len(integer.text)
+            or fraction.location.line != dot.location.line
+            or fraction.location.column != dot.location.column + 1
+        ):
+            reject(
+                dot,
+                "angle",
+                "decimal angles require contiguous digits on both sides of the point",
+            )
+        text = integer.text + "." + fraction.text
+        if len(text) > 78:
+            reject(integer, "budget.number", "angle literal exceeds 78 characters")
+        self.position += 1
+        return Expression(Token(text, integer.location))
+
     def scalar_type(self) -> tuple[str, int | None]:
         kind = self.current
         if kind.text not in {"qbit", "qnum"}:
@@ -367,7 +393,11 @@ class Parser:
                 self.take("(")
                 args: list[Expression] = []
                 if self.current.text != ")":
-                    args.append(self.expression())
+                    args.append(
+                        self.angle_argument()
+                        if target.text in ANGLE_CALLS
+                        else self.expression()
+                    )
                     while self.current.text == ",":
                         self.take(",")
                         args.append(self.expression())

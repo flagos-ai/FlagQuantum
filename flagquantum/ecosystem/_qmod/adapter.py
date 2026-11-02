@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import re
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
+from decimal import Decimal
 from types import MappingProxyType
 
 from ...compiler._construction.profile import uint_type
@@ -25,6 +27,7 @@ from ...compiler._hybrid.model import (
 )
 from ...compiler._hybrid.verifier import Diagnostic, HybridVerificationError
 from .syntax import (
+    ANGLE_CALLS,
     Expression,
     Function,
     Parameter,
@@ -38,7 +41,7 @@ from .syntax import (
 SUPPORTED_SOURCE_VERSION = "2bfd835e73b6882fcc515a725098b04766c238e7"
 MAX_EFFECT_OPERATIONS = 4096
 _GATE_CALLS = frozenset({"X", "H", "S", "Z", "hadamard_transform"})
-_INTRINSICS = _GATE_CALLS | {"allocate", "phase", "pi", "PHASE"}
+_INTRINSICS = _GATE_CALLS | {"allocate", "phase", "pi"} | ANGLE_CALLS
 _RELATIONS = MappingProxyType(
     {
         "==": ("qint.equal", False, False),
@@ -539,33 +542,33 @@ class _Adapt:
                     "allocation size must agree with the declared width",
                 )
             self.effect_op("qreg.allocate", token, (destination,))
-        elif token.text == "PHASE":
+        elif token.text in ANGLE_CALLS:
             if len(args) != 2:
                 reject(
                     token,
                     "signature",
-                    "PHASE requires an integer angle and qbit target",
+                    f"{token.text} requires a literal angle and qbit target",
                 )
             angle = args[0]
             if (
                 angle.children
-                or not angle.token.text.isdecimal()
-                or int(angle.token.text) > 2**53
+                or not re.fullmatch(r"[0-9]+(?:\.[0-9]+)?", angle.token.text)
+                or Decimal(angle.token.text) > 2**53
             ):
                 reject(
                     angle.token,
                     "angle",
-                    "PHASE angle must be an integer literal in 0..2**53 radians",
+                    f"{token.text} angle must be a literal in 0..2**53 radians",
                 )
             target = self.atom(args[1])
             destination = self.register(target)
             if self.parameters[target.text].kind != "qbit":
-                reject(target, "type", "PHASE requires a scalar qbit target")
+                reject(target, "type", f"{token.text} requires a scalar qbit target")
             self.effect_op(
                 "qreg.gate",
                 token,
                 (destination,),
-                gate="phase",
+                gate=token.text.lower(),
                 index=0,
                 angle=float(angle.token.text),
             )

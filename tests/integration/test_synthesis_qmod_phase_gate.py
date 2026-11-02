@@ -79,7 +79,6 @@ def test_output_helper_composition_and_lowercase_predicate_remain_distinct() -> 
         "PHASE(9007199254740993,q);",
         "PHASE(1);",
         "PHASE(1,q,q);",
-        "PHASE(1.5,q);",
         "PHASE(-1,q);",
     ],
 )
