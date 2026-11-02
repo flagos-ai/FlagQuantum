@@ -102,3 +102,104 @@ def test_user_failure_is_not_caught_or_retried_as_a_compile_failure():
     with pytest.raises(ValueError, match="user failure"):
         compiled(torch.tensor([0.1]))
     assert len(calls) == 1
+
+
+def test_torch_analysis_restart_is_not_misreported_as_backend_failure():
+    import torch._dynamo.exc as exceptions
+
+    restart = getattr(exceptions, "TensorifyScalarRestartAnalysis", None)
+    if restart is None:
+        pytest.skip("this Torch version has no backend scalar-specialization restart")
+
+    attempts = []
+    calls = []
+    value = torch.tensor([0.2], dtype=torch.float64)
+    diagnostics = {}
+
+    def backend(graph, examples):
+        attempts.append(1)
+        if len(attempts) == 1:
+            raise restart("test specialization restart")
+        return graph.forward
+
+    def step(x):
+        calls.append(1)
+        value.add_(x)
+        return value.clone()
+
+    compiled = compile_training_callable(step, backend=backend, diagnostics=diagnostics)
+    result = compiled(torch.tensor([0.1], dtype=torch.float64))
+    torch.testing.assert_close(result, torch.tensor([0.3], dtype=torch.float64))
+    assert len(calls) == 1 and len(attempts) == 2
+    assert diagnostics["restarted_graph_count"] == 1
+    assert diagnostics["declined_graph_count"] == 0
+
+
+@pytest.mark.parametrize(
+    "objective",
+    (
+        lambda value: value.square().mean(),
+        lambda value: torch.sin(value).sum(),
+        torch.mean,
+    ),
+)
+def test_functional_objectives_are_admitted_without_executing_them(objective):
+    diagnostics = {}
+
+    def step(value):
+        return objective(value)
+
+    compiled = compile_training_callable(
+        step,
+        backend=lambda graph, examples: graph.forward,
+        diagnostics=diagnostics,
+        objective=objective,
+    )
+    assert compiled is not step and diagnostics["status"] == "lazy"
+    value = torch.tensor([0.1, 0.3], dtype=torch.float64)
+    torch.testing.assert_close(compiled(value), objective(value))
+
+
+def test_stateful_objective_is_eager_and_called_once_per_actual_step():
+    calls = []
+    diagnostics = {}
+
+    def objective(value):
+        calls.append(1)
+        return value.square().mean()
+
+    def step(value):
+        return objective(value)
+
+    compiled = compile_training_callable(
+        step, backend="inductor", diagnostics=diagnostics, objective=objective
+    )
+    assert compiled is step and not calls
+    for _ in range(3):
+        compiled(torch.tensor([0.1]))
+    assert len(calls) == 3
+    assert diagnostics["status"] == "eager" and diagnostics["reason"]
+
+
+@pytest.mark.parametrize(
+    "objective",
+    (
+        lambda value: value.add_(1).mean(),
+        lambda value: value.bernoulli().mean(),
+        lambda value: value.mean() if value.sum() > 0 else -value.mean(),
+        lambda value: value.numpy(),
+    ),
+)
+def test_mutation_randomness_and_control_flow_are_not_presumed_pure(objective):
+    diagnostics = {}
+
+    def step(value):
+        return objective(value)
+
+    assert (
+        compile_training_callable(
+            step, backend="inductor", diagnostics=diagnostics, objective=objective
+        )
+        is step
+    )
+    assert diagnostics["status"] == "eager"
