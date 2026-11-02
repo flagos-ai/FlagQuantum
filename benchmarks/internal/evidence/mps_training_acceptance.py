@@ -44,10 +44,15 @@ def source_identity() -> tuple[str, bool]:
 
 
 def build_circuit(
-    parameters: tuple[torch.Tensor, ...], n_wires: int, layers: int, family: str
+    parameters: tuple[torch.Tensor, ...],
+    n_wires: int,
+    layers: int,
+    family: str,
+    *,
+    dtype: torch.dtype = torch.complex64,
 ):
     theta, phi = parameters
-    circuit = fq.Circuit(n_wires, device=theta.device)
+    circuit = fq.Circuit(n_wires, device=theta.device, dtype=dtype)
     for layer in range(layers):
         for wire in range(n_wires):
             if family == "tfim_time_evolution":
@@ -160,6 +165,7 @@ def distributed_run(args, device):
 
 def main():
     parser = argparse.ArgumentParser()
+    parser.add_argument("--recovery-protocol", type=Path)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--n-wires", type=int, default=16)
     parser.add_argument("--layers", type=int, default=4)
@@ -205,6 +211,11 @@ def main():
     )
     parser.add_argument("--seed", type=int, default=520052)
     args = parser.parse_args()
+    if args.recovery_protocol is not None:
+        from benchmarks.internal.evidence.mps_training_recovery import run
+
+        run(args.recovery_protocol, args.output)
+        return
     torch.manual_seed(args.seed)
     world_size = int(os.environ.get("WORLD_SIZE", "1"))
     local_rank = int(os.environ.get("LOCAL_RANK", "0"))
