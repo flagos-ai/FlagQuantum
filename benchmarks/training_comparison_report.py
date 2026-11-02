@@ -17,6 +17,26 @@ def render_report(directory: Path) -> str:
         from benchmarks.qng_hva_ablation import render_report as render_qng_report
 
         return render_qng_report(directory)
+    if summary["source"] != freeze["source"] or summary["smoke"] != freeze["smoke"]:
+        raise ValueError("summary producer or smoke scope changed")
+    protocol = freeze["protocol"]
+    seeds = protocol["seeds"][:1] if summary["smoke"] else protocol["seeds"]
+    expected = {
+        f"{task}-{engine}-{seed}"
+        for task in ("classifier", "heisenberg")
+        for engine in protocol["engines"]
+        + (
+            ["classical"]
+            if task == "classifier" and protocol.get("include_classical_control", True)
+            else []
+        )
+        for seed in seeds
+    }
+    observed = [case["case"] for case in summary["cases"]]
+    if len(observed) != len(set(observed)) or set(observed) != expected:
+        raise ValueError(
+            "training report must retain all frozen tasks, engines and seeds"
+        )
     groups: dict[tuple[str, str], list[dict[str, Any]]] = {}
     failures = []
     for case in summary["cases"]:

@@ -139,3 +139,25 @@ def test_parity_detects_wrong_quantum_expectation() -> None:
         return values[0] + features[0]
 
     assert not check_parity("classifier", parameters, dataset()[0], wrong).passed
+
+
+def test_report_refuses_missing_seed(tmp_path: Path) -> None:
+    import json
+
+    from benchmarks.training_comparison_report import render_report
+
+    freeze = {
+        "schema": "flagquantum.training_comparison.v1",
+        "source": {"code_version": "test"},
+        "protocol": {"engines": ["flagquantum"], "seeds": [11, 29]},
+        "smoke": False,
+    }
+    (tmp_path / "freeze.json").write_text(json.dumps(freeze))
+    cases = [
+        {"case": f"{task}-flagquantum-11", "status": "timeout"}
+        for task in ("classifier", "heisenberg")
+    ]
+    cases.append({"case": "classifier-classical-11", "status": "timeout"})
+    (tmp_path / "summary.json").write_text(json.dumps({**freeze, "cases": cases}))
+    with pytest.raises(ValueError, match="all frozen tasks, engines and seeds"):
+        render_report(tmp_path)
