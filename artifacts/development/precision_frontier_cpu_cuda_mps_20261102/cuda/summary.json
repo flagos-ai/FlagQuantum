@@ -1,0 +1,574 @@
+{
+  "benchmark_evidence_class": "comparison_non_release",
+  "cases": [
+    {
+      "case": "q2-d2-noncommuting-11-fp32",
+      "mode": "fp32",
+      "process_wall_seconds": 2.8194794319570065,
+      "result": "q2-d2-noncommuting-11-fp32.json",
+      "status": "completed",
+      "worker_started": true
+    },
+    {
+      "case": "q2-d2-noncommuting-11-double_single_p4",
+      "mode": "double_single_p4",
+      "process_wall_seconds": 10.282009605318308,
+      "result": "q2-d2-noncommuting-11-double_single_p4.json",
+      "status": "completed",
+      "worker_started": true
+    },
+    {
+      "case": "q2-d2-noncommuting-11-fp64",
+      "mode": "fp64",
+      "process_wall_seconds": 2.670096606016159,
+      "result": "q2-d2-noncommuting-11-fp64.json",
+      "status": "completed",
+      "worker_started": true
+    },
+    {
+      "case": "q2-d2-noncommuting-11-selective_p2",
+      "mode": "selective_p2",
+      "process_wall_seconds": 3.0206526909023523,
+      "result": "q2-d2-noncommuting-11-selective_p2.json",
+      "status": "completed",
+      "worker_started": true
+    },
+    {
+      "case": "q2-d2-noncommuting-11-double_single_p3",
+      "mode": "double_single_p3",
+      "process_wall_seconds": 8.127630650997162,
+      "result": "q2-d2-noncommuting-11-double_single_p3.json",
+      "status": "completed",
+      "worker_started": true
+    },
+    {
+      "case": "q2-d2-noncommuting-29-fp32",
+      "mode": "fp32",
+      "process_wall_seconds": 2.8203653376549482,
+      "result": "q2-d2-noncommuting-29-fp32.json",
+      "status": "completed",
+      "worker_started": true
+    },
+    {
+      "case": "q2-d2-noncommuting-29-double_single_p4",
+      "mode": "double_single_p4",
+      "process_wall_seconds": 10.281328301876783,
+      "result": "q2-d2-noncommuting-29-double_single_p4.json",
+      "status": "completed",
+      "worker_started": true
+    },
+    {
+      "case": "q2-d2-noncommuting-29-fp64",
+      "mode": "fp64",
+      "process_wall_seconds": 2.720763210207224,
+      "result": "q2-d2-noncommuting-29-fp64.json",
+      "status": "completed",
+      "worker_started": true
+    },
+    {
+      "case": "q2-d2-noncommuting-29-selective_p2",
+      "mode": "selective_p2",
+      "process_wall_seconds": 2.9203463532030582,
+      "result": "q2-d2-noncommuting-29-selective_p2.json",
+      "status": "completed",
+      "worker_started": true
+    },
+    {
+      "case": "q2-d2-noncommuting-29-double_single_p3",
+      "mode": "double_single_p3",
+      "process_wall_seconds": 8.328261274844408,
+      "result": "q2-d2-noncommuting-29-double_single_p3.json",
+      "status": "completed",
+      "worker_started": true
+    },
+    {
+      "case": "q2-d2-cancellation_echo-11-fp32",
+      "mode": "fp32",
+      "process_wall_seconds": 2.8706047292798758,
+      "result": "q2-d2-cancellation_echo-11-fp32.json",
+      "status": "completed",
+      "worker_started": true
+    },
+    {
+      "case": "q2-d2-cancellation_echo-11-double_single_p4",
+      "mode": "double_single_p4",
+      "process_wall_seconds": 12.334625599905849,
+      "result": "q2-d2-cancellation_echo-11-double_single_p4.json",
+      "status": "completed",
+      "worker_started": true
+    },
+    {
+      "case": "q2-d2-cancellation_echo-11-fp64",
+      "mode": "fp64",
+      "process_wall_seconds": 2.5199881810694933,
+      "result": "q2-d2-cancellation_echo-11-fp64.json",
+      "status": "completed",
+      "worker_started": true
+    },
+    {
+      "case": "q2-d2-cancellation_echo-11-selective_p2",
+      "mode": "selective_p2",
+      "process_wall_seconds": 3.221172032877803,
+      "result": "q2-d2-cancellation_echo-11-selective_p2.json",
+      "status": "completed",
+      "worker_started": true
+    },
+    {
+      "case": "q2-d2-cancellation_echo-11-double_single_p3",
+      "mode": "double_single_p3",
+      "process_wall_seconds": 9.38030012883246,
+      "result": "q2-d2-cancellation_echo-11-double_single_p3.json",
+      "status": "completed",
+      "worker_started": true
+    },
+    {
+      "case": "q2-d2-cancellation_echo-29-fp32",
+      "mode": "fp32",
+      "process_wall_seconds": 2.920230455696583,
+      "result": "q2-d2-cancellation_echo-29-fp32.json",
+      "status": "completed",
+      "worker_started": true
+    },
+    {
+      "case": "q2-d2-cancellation_echo-29-double_single_p4",
+      "mode": "double_single_p4",
+      "process_wall_seconds": 12.5341538451612,
+      "result": "q2-d2-cancellation_echo-29-double_single_p4.json",
+      "status": "completed",
+      "worker_started": true
+    },
+    {
+      "case": "q2-d2-cancellation_echo-29-fp64",
+      "mode": "fp64",
+      "process_wall_seconds": 2.5691489577293396,
+      "result": "q2-d2-cancellation_echo-29-fp64.json",
+      "status": "completed",
+      "worker_started": true
+    },
+    {
+      "case": "q2-d2-cancellation_echo-29-selective_p2",
+      "mode": "selective_p2",
+      "process_wall_seconds": 3.121181968599558,
+      "result": "q2-d2-cancellation_echo-29-selective_p2.json",
+      "status": "completed",
+      "worker_started": true
+    },
+    {
+      "case": "q2-d2-cancellation_echo-29-double_single_p3",
+      "mode": "double_single_p3",
+      "process_wall_seconds": 9.430497877299786,
+      "result": "q2-d2-cancellation_echo-29-double_single_p3.json",
+      "status": "completed",
+      "worker_started": true
+    },
+    {
+      "case": "q2-d8-noncommuting-11-fp32",
+      "mode": "fp32",
+      "process_wall_seconds": 3.4219694919884205,
+      "result": "q2-d8-noncommuting-11-fp32.json",
+      "status": "completed",
+      "worker_started": true
+    },
+    {
+      "case": "q2-d8-noncommuting-11-double_single_p4",
+      "mode": "double_single_p4",
+      "process_wall_seconds": 28.563687454909086,
+      "result": "q2-d8-noncommuting-11-double_single_p4.json",
+      "status": "completed",
+      "worker_started": true
+    },
+    {
+      "case": "q2-d8-noncommuting-11-fp64",
+      "mode": "fp64",
+      "process_wall_seconds": 2.7703116685152054,
+      "result": "q2-d8-noncommuting-11-fp64.json",
+      "status": "completed",
+      "worker_started": true
+    },
+    {
+      "case": "q2-d8-noncommuting-11-selective_p2",
+      "mode": "selective_p2",
+      "process_wall_seconds": 3.5228138752281666,
+      "result": "q2-d8-noncommuting-11-selective_p2.json",
+      "status": "completed",
+      "worker_started": true
+    },
+    {
+      "case": "q2-d8-noncommuting-11-double_single_p3",
+      "mode": "double_single_p3",
+      "process_wall_seconds": 20.74737694300711,
+      "result": "q2-d8-noncommuting-11-double_single_p3.json",
+      "status": "completed",
+      "worker_started": true
+    },
+    {
+      "case": "q2-d8-noncommuting-29-fp32",
+      "mode": "fp32",
+      "process_wall_seconds": 3.4213289972394705,
+      "result": "q2-d8-noncommuting-29-fp32.json",
+      "status": "completed",
+      "worker_started": true
+    },
+    {
+      "case": "q2-d8-noncommuting-29-double_single_p4",
+      "mode": "double_single_p4",
+      "process_wall_seconds": 28.959873711690307,
+      "result": "q2-d8-noncommuting-29-double_single_p4.json",
+      "status": "completed",
+      "worker_started": true
+    },
+    {
+      "case": "q2-d8-noncommuting-29-fp64",
+      "mode": "fp64",
+      "process_wall_seconds": 2.819838549941778,
+      "result": "q2-d8-noncommuting-29-fp64.json",
+      "status": "completed",
+      "worker_started": true
+    },
+    {
+      "case": "q2-d8-noncommuting-29-selective_p2",
+      "mode": "selective_p2",
+      "process_wall_seconds": 3.4708199184387922,
+      "result": "q2-d8-noncommuting-29-selective_p2.json",
+      "status": "completed",
+      "worker_started": true
+    },
+    {
+      "case": "q2-d8-noncommuting-29-double_single_p3",
+      "mode": "double_single_p3",
+      "process_wall_seconds": 20.847264470532537,
+      "result": "q2-d8-noncommuting-29-double_single_p3.json",
+      "status": "completed",
+      "worker_started": true
+    },
+    {
+      "case": "q2-d8-cancellation_echo-11-fp32",
+      "mode": "fp32",
+      "process_wall_seconds": 3.471381677314639,
+      "result": "q2-d8-cancellation_echo-11-fp32.json",
+      "status": "completed",
+      "worker_started": true
+    },
+    {
+      "case": "q2-d8-cancellation_echo-11-double_single_p4",
+      "mode": "double_single_p4",
+      "process_wall_seconds": 35.76797645166516,
+      "result": "q2-d8-cancellation_echo-11-double_single_p4.json",
+      "status": "completed",
+      "worker_started": true
+    },
+    {
+      "case": "q2-d8-cancellation_echo-11-fp64",
+      "mode": "fp64",
+      "process_wall_seconds": 2.8195665702223778,
+      "result": "q2-d8-cancellation_echo-11-fp64.json",
+      "status": "completed",
+      "worker_started": true
+    },
+    {
+      "case": "q2-d8-cancellation_echo-11-selective_p2",
+      "mode": "selective_p2",
+      "process_wall_seconds": 3.8721141405403614,
+      "result": "q2-d8-cancellation_echo-11-selective_p2.json",
+      "status": "completed",
+      "worker_started": true
+    },
+    {
+      "case": "q2-d8-cancellation_echo-11-double_single_p3",
+      "mode": "double_single_p3",
+      "process_wall_seconds": 24.35097279585898,
+      "result": "q2-d8-cancellation_echo-11-double_single_p3.json",
+      "status": "completed",
+      "worker_started": true
+    },
+    {
+      "case": "q2-d8-cancellation_echo-29-fp32",
+      "mode": "fp32",
+      "process_wall_seconds": 3.620893716812134,
+      "result": "q2-d8-cancellation_echo-29-fp32.json",
+      "status": "completed",
+      "worker_started": true
+    },
+    {
+      "case": "q2-d8-cancellation_echo-29-double_single_p4",
+      "mode": "double_single_p4",
+      "process_wall_seconds": 35.519794303923845,
+      "result": "q2-d8-cancellation_echo-29-double_single_p4.json",
+      "status": "completed",
+      "worker_started": true
+    },
+    {
+      "case": "q2-d8-cancellation_echo-29-fp64",
+      "mode": "fp64",
+      "process_wall_seconds": 2.9201023560017347,
+      "result": "q2-d8-cancellation_echo-29-fp64.json",
+      "status": "completed",
+      "worker_started": true
+    },
+    {
+      "case": "q2-d8-cancellation_echo-29-selective_p2",
+      "mode": "selective_p2",
+      "process_wall_seconds": 3.821924950927496,
+      "result": "q2-d8-cancellation_echo-29-selective_p2.json",
+      "status": "completed",
+      "worker_started": true
+    },
+    {
+      "case": "q2-d8-cancellation_echo-29-double_single_p3",
+      "mode": "double_single_p3",
+      "process_wall_seconds": 24.20175516232848,
+      "result": "q2-d8-cancellation_echo-29-double_single_p3.json",
+      "status": "completed",
+      "worker_started": true
+    },
+    {
+      "case": "q4-d8-noncommuting-11-fp32",
+      "mode": "fp32",
+      "process_wall_seconds": 3.971504967659712,
+      "result": "q4-d8-noncommuting-11-fp32.json",
+      "status": "completed",
+      "worker_started": true
+    },
+    {
+      "case": "q4-d8-noncommuting-11-double_single_p4",
+      "mode": "double_single_p4",
+      "process_wall_seconds": 47.13515296392143,
+      "result": "q4-d8-noncommuting-11-double_single_p4.json",
+      "status": "completed",
+      "worker_started": true
+    },
+    {
+      "case": "q4-d8-noncommuting-11-fp64",
+      "mode": "fp64",
+      "process_wall_seconds": 3.020496193319559,
+      "result": "q4-d8-noncommuting-11-fp64.json",
+      "status": "completed",
+      "worker_started": true
+    },
+    {
+      "case": "q4-d8-noncommuting-11-selective_p2",
+      "mode": "selective_p2",
+      "process_wall_seconds": 4.372094538062811,
+      "result": "q4-d8-noncommuting-11-selective_p2.json",
+      "status": "completed",
+      "worker_started": true
+    },
+    {
+      "case": "q4-d8-noncommuting-11-double_single_p3",
+      "mode": "double_single_p3",
+      "process_wall_seconds": 34.867172019556165,
+      "result": "q4-d8-noncommuting-11-double_single_p3.json",
+      "status": "completed",
+      "worker_started": true
+    },
+    {
+      "case": "q4-d8-noncommuting-29-fp32",
+      "mode": "fp32",
+      "process_wall_seconds": 3.971639459952712,
+      "result": "q4-d8-noncommuting-29-fp32.json",
+      "status": "completed",
+      "worker_started": true
+    },
+    {
+      "case": "q4-d8-noncommuting-29-double_single_p4",
+      "mode": "double_single_p4",
+      "process_wall_seconds": 47.241202821955085,
+      "result": "q4-d8-noncommuting-29-double_single_p4.json",
+      "status": "completed",
+      "worker_started": true
+    },
+    {
+      "case": "q4-d8-noncommuting-29-fp64",
+      "mode": "fp64",
+      "process_wall_seconds": 3.020743079483509,
+      "result": "q4-d8-noncommuting-29-fp64.json",
+      "status": "completed",
+      "worker_started": true
+    },
+    {
+      "case": "q4-d8-noncommuting-29-selective_p2",
+      "mode": "selective_p2",
+      "process_wall_seconds": 4.423525372520089,
+      "result": "q4-d8-noncommuting-29-selective_p2.json",
+      "status": "completed",
+      "worker_started": true
+    },
+    {
+      "case": "q4-d8-noncommuting-29-double_single_p3",
+      "mode": "double_single_p3",
+      "process_wall_seconds": 35.97354616969824,
+      "result": "q4-d8-noncommuting-29-double_single_p3.json",
+      "status": "completed",
+      "worker_started": true
+    },
+    {
+      "case": "q4-d8-cancellation_echo-11-fp32",
+      "mode": "fp32",
+      "process_wall_seconds": 3.6712338402867317,
+      "result": "q4-d8-cancellation_echo-11-fp32.json",
+      "status": "completed",
+      "worker_started": true
+    },
+    {
+      "case": "q4-d8-cancellation_echo-11-double_single_p4",
+      "mode": "double_single_p4",
+      "process_wall_seconds": 36.07134861126542,
+      "result": "q4-d8-cancellation_echo-11-double_single_p4.json",
+      "status": "completed",
+      "worker_started": true
+    },
+    {
+      "case": "q4-d8-cancellation_echo-11-fp64",
+      "mode": "fp64",
+      "process_wall_seconds": 2.8203981555998325,
+      "result": "q4-d8-cancellation_echo-11-fp64.json",
+      "status": "completed",
+      "worker_started": true
+    },
+    {
+      "case": "q4-d8-cancellation_echo-11-selective_p2",
+      "mode": "selective_p2",
+      "process_wall_seconds": 4.072682166472077,
+      "result": "q4-d8-cancellation_echo-11-selective_p2.json",
+      "status": "completed",
+      "worker_started": true
+    },
+    {
+      "case": "q4-d8-cancellation_echo-11-double_single_p3",
+      "mode": "double_single_p3",
+      "process_wall_seconds": 24.80258691497147,
+      "result": "q4-d8-cancellation_echo-11-double_single_p3.json",
+      "status": "completed",
+      "worker_started": true
+    },
+    {
+      "case": "q4-d8-cancellation_echo-29-fp32",
+      "mode": "fp32",
+      "process_wall_seconds": 3.671868583187461,
+      "result": "q4-d8-cancellation_echo-29-fp32.json",
+      "status": "completed",
+      "worker_started": true
+    },
+    {
+      "case": "q4-d8-cancellation_echo-29-double_single_p4",
+      "mode": "double_single_p4",
+      "process_wall_seconds": 36.86972106061876,
+      "result": "q4-d8-cancellation_echo-29-double_single_p4.json",
+      "status": "completed",
+      "worker_started": true
+    },
+    {
+      "case": "q4-d8-cancellation_echo-29-fp64",
+      "mode": "fp64",
+      "process_wall_seconds": 2.870385155081749,
+      "result": "q4-d8-cancellation_echo-29-fp64.json",
+      "status": "completed",
+      "worker_started": true
+    },
+    {
+      "case": "q4-d8-cancellation_echo-29-selective_p2",
+      "mode": "selective_p2",
+      "process_wall_seconds": 4.072440510615706,
+      "result": "q4-d8-cancellation_echo-29-selective_p2.json",
+      "status": "completed",
+      "worker_started": true
+    },
+    {
+      "case": "q4-d8-cancellation_echo-29-double_single_p3",
+      "mode": "double_single_p3",
+      "process_wall_seconds": 24.802654640749097,
+      "result": "q4-d8-cancellation_echo-29-double_single_p3.json",
+      "status": "completed",
+      "worker_started": true
+    }
+  ],
+  "device": "cuda:0",
+  "execution_semantics": "single_device_fast_path",
+  "hostname": "redacted",
+  "platform": "Linux-5.15.0-181-generic-x86_64-with-glibc2.35",
+  "protocol": {
+    "accelerator_policy": "explicit_optional_cuda_and_non_NVIDIA_mps_campaigns_no_host_fallback",
+    "accuracy_targets": [
+      0.001,
+      1e-06,
+      1e-09
+    ],
+    "bit_identity_policy": "actual_output_word_dtype_shape_bytes_SHA256_not_equal_scalar_errors",
+    "case_timeout_seconds": 240,
+    "coefficient_policy": "ordered_1e8_1_minus1e8_Z0_terms_retained_in_candidate_coalesced_in_independent_reference",
+    "compile_policy": "eager_no_Torch_compile_no_JIT_TF32_disabled_FMA_observability_recorded",
+    "families": [
+      "noncommuting",
+      "cancellation_echo"
+    ],
+    "frontier_policy": "all_quality_components_within_tolerance_then_Pareto_median_time_and_observed_peak_memory_CPU_RSS_or_CUDA_allocator_no_storage_substitution",
+    "input_policy": "identical_FP32_representable_theta_dyadic_fixed_angles_and_exact_coefficients_all_routes",
+    "memory_policy": "worker_peak_RSS_at_timing_end_CUDA_allocator_peak_and_exact_state_payload_separate",
+    "modes": [
+      "fp32",
+      "double_single_p4",
+      "fp64"
+    ],
+    "normalization_interval": 0,
+    "optional_stage_controls": [
+      "selective_p2",
+      "double_single_p3"
+    ],
+    "protocol_id": "complete_circuit_precision_20261102",
+    "reference": "CPU_NumPy_complex128_dense_basis_embedding_and_analytic_initial_RY_tangent",
+    "repeats": 5,
+    "schema": "flagquantum.precision_frontier_protocol.v1",
+    "seeds": [
+      11,
+      29
+    ],
+    "shapes": [
+      {
+        "depth": 2,
+        "qubits": 2
+      },
+      {
+        "depth": 8,
+        "qubits": 2
+      },
+      {
+        "depth": 8,
+        "qubits": 4
+      }
+    ],
+    "threads": 1,
+    "timing_policy": "synchronized_absolute_complete_circuit_parameter_shift_samples_median_first_call_separate_no_diagnostic_transfer",
+    "unsupported_policy": "retain_unsupported_failed_timeout_slower_inaccurate_no_infinite_speedups",
+    "warmup_calls": 1
+  },
+  "python": "3.12.13",
+  "runner": "precision_frontier",
+  "scalability_claim_allowed": false,
+  "schema": "flagquantum.precision_frontier.v1",
+  "smoke": false,
+  "source": {
+    "code_version": "3ba42c605f36d86ce52c499dc216fab72f4ddcac",
+    "dirty": false,
+    "installation": {
+      "distribution_version": "0.4.0",
+      "native_cpu_adjoint_available": true,
+      "native_cpu_extension_sha256": "f3a6477ee409fe50c28b0ccfede0869a66d7249a0f2f1f6d9981f7be8b633c2a"
+    },
+    "producer_sha256": {
+      "benchmarks/precision_frontier.py": "f33cf770c2bc6048bb9e159ddeacfcf4de9a3ef75897ba36697139b669c9934d",
+      "benchmarks/precision_workloads.py": "d574ff161fc62604ae3f57a76761eea75b2b6c2c11e4fa3394430ed4909dfa2d",
+      "benchmarks/training_comparison.py": "c49b2df42157c6e2b863712ca734eca50deb1418dac0346a38f44f3288b3a64a",
+      "benchmarks/training_engines.py": "ca3f49678f2ec97e2fde0ddbb1658291b6114f988c5300b7253e54376f6d307c",
+      "benchmarks/training_workloads.py": "7c797a3214221d3d858e12d3852cfb7a191689b0dad9dc227a395dd983777235"
+    },
+    "protocol_sha256": "589c2e4b489d0a0bffd868fd797175adde7cba262baab4b27db58661e38e679e",
+    "versions": {
+      "jax": "0.10.2",
+      "jaxlib": "0.10.2",
+      "numpy": "2.5.1",
+      "tensorcircuit-ng": "1.8.0",
+      "torch": "2.13.0"
+    }
+  },
+  "world_size": 1
+}

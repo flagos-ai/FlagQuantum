@@ -1,0 +1,15 @@
+{
+  "schema": "flagquantum.precision_host_observations.v1",
+  "cpu_model": "Apple M5",
+  "machine": "arm64",
+  "platform": "macOS-27.0-arm64-arm-64bit",
+  "compiler_related_inherited_environment": {
+    "PYTORCH_MPS_FAST_MATH": null,
+    "PYTORCH_MPS_PREFER_METAL": null,
+    "PYTORCH_ENABLE_MPS_FALLBACK": null,
+    "NVIDIA_TF32_OVERRIDE": null,
+    "TORCH_ALLOW_TF32_CUBLAS_OVERRIDE": null
+  },
+  "scope": "post_campaign_readonly_host_observation_not_a_replacement_for_per_worker_environment",
+  "mps_campaign_override": "PYTORCH_ENABLE_MPS_FALLBACK=0"
+}

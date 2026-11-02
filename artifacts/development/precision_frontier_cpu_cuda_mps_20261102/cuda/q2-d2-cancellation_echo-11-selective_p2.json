@@ -1,0 +1,308 @@
+{
+  "benchmark_evidence_class": "comparison_non_release",
+  "bit_identity_scope": "same_route_state_observables_gradient_words_dtype_shape_and_bytes_all_retained_samples",
+  "case": {
+    "depth": 2,
+    "family": "cancellation_echo",
+    "qubits": 2,
+    "seed": 11
+  },
+  "device": "cuda:0",
+  "environment": {
+    "cuda_runtime": "13.0",
+    "device": "cuda:0",
+    "device_name": "NVIDIA A800-SXM4-80GB",
+    "device_uuid": "dd0e4377-e2a5-f437-cdd8-d9a7a16e18c9",
+    "device_uuid_unavailable_reason": null,
+    "driver_version": null,
+    "fma_policy": "eager_PyTorch_build_and_device_intrinsics_not_independently_overridden",
+    "interop_threads": 1,
+    "omp_threads": "1",
+    "openblas_threads": "1",
+    "synchronization": "backend_synchronize_at_every_sample_boundary",
+    "tf32_cudnn": false,
+    "tf32_environment": {
+      "CUBLAS_WORKSPACE_CONFIG": null,
+      "NVIDIA_TF32_OVERRIDE": "0",
+      "TORCH_ALLOW_TF32_CUBLAS_OVERRIDE": "0"
+    },
+    "tf32_matmul": false,
+    "threads": 1,
+    "torch_build": "PyTorch built with:\n  - GCC 13.3\n  - C++ Version: 202002\n  - Intel(R) oneAPI Math Kernel Library Version 2024.2-Product Build 20240605 for Intel(R) 64 architecture applications\n  - Intel(R) MKL-DNN v3.12.0 (Git Hash 80afa71049cd69a3df32adcccb623b12cd7baa22)\n  - OpenMP 201511 (a.k.a. OpenMP 4.5)\n  - LAPACK is enabled (usually provided by MKL)\n  - NNPACK is enabled\n  - CPU capability usage: AVX512\n  - CUDA Runtime 13.0\n  - NVCC architecture flags: -gencode;arch=compute_75,code=sm_75;-gencode;arch=compute_80,code=sm_80;-gencode;arch=compute_86,code=sm_86;-gencode;arch=compute_90,code=sm_90;-gencode;arch=compute_100,code=sm_100;-gencode;arch=compute_120,code=sm_120\n  - CuDNN 92.0  (built against CUDA 13.2)\n  - Magma 2.6.1\n  - Build settings: BLAS_INFO=mkl, BUILD_TYPE=Release, COMMIT_SHA=cf30153c4c131c8164ee7798e5022d810682e2cb, CUDA_FLAGS= -DLIBCUDACXX_ENABLE_SIMPLIFIED_COMPLEX_OPERATIONS -Xfatbin -compress-all -DONNX_NAMESPACE=onnx_torch -gencode arch=compute_75,code=sm_75 -gencode arch=compute_80,code=sm_80 -gencode arch=compute_86,code=sm_86 -gencode arch=compute_90,code=sm_90 -gencode arch=compute_100,code=sm_100 -gencode arch=compute_120,code=sm_120 -Xcudafe --diag_suppress=cc_clobber_ignored,--diag_suppress=field_without_dll_interface,--diag_suppress=base_class_has_different_dll_interface,--diag_suppress=dll_interface_conflict_none_assumed,--diag_suppress=dll_interface_conflict_dllexport_assumed,--diag_suppress=bad_friend_decl --expt-relaxed-constexpr --expt-extended-lambda -Xfatbin -compress-all --threads 2 -compress-mode=size -Wno-deprecated-gpu-targets --expt-extended-lambda -DCUB_WRAPPED_NAMESPACE=at_cuda_detail -DDISABLE_CUSPARSE_DEPRECATED -DCUDA_HAS_FP16=1 -D__CUDA_NO_HALF_OPERATORS__ -D__CUDA_NO_HALF_CONVERSIONS__ -D__CUDA_NO_HALF2_OPERATORS__ -D__CUDA_NO_BFLOAT16_CONVERSIONS__ -DC10_NODEPRECATED, CUDA_VERSION=13.0, CUDNN_VERSION=9.20.0, CXX_COMPILER=/opt/rh/gcc-toolset-13<redacted-path> CXX_FLAGS= -fvisibility-inlines-hidden -DUSE_PTHREADPOOL -DNDEBUG -DUSE_KINETO -DHAS_CUPTI -DUSE_FBGEMM -DUSE_MSLK -DUSE_PYTORCH_QNNPACK -DSYMBOLICATE_MOBILE_DEBUG_HANDLE -O2 -fPIC -DC10_NODEPRECATED -Wall -Wextra -Werror=return-type -Werror=non-virtual-dtor -Werror=range-loop-construct -Werror=bool-operation -Wnarrowing -Wno-missing-field-initializers -Wno-unknown-pragmas -Wno-unused-parameter -Wno-strict-overflow -Wno-strict-aliasing -Wno-stringop-overflow -Wsuggest-override -Wno-psabi -Wno-error=old-style-cast -faligned-new -Wno-maybe-uninitialized -fno-math-errno -fno-trapping-math -Werror=format -Wno-dangling-reference -Wno-error=dangling-reference -Wno-stringop-overflow, LAPACK_INFO=mkl, PERF_WITH_AVX=1, PERF_WITH_AVX2=1, TORCH_VERSION=2.13.0, USE_CUDA=1, USE_CUDNN=ON, USE_CUSPARSELT=1, USE_GFLAGS=OFF, USE_GLOG=OFF, USE_GLOO=ON, USE_MKL=ON, USE_MKLDNN=ON, USE_MPI=OFF, USE_NCCL=ON, USE_NNPACK=ON, USE_OPENMP=ON, USE_ROCM=OFF, USE_ROCM_KERNEL_ASSERT=OFF, USE_XCCL=OFF, USE_XPU=OFF, \n",
+    "torch_compile": false,
+    "torch_jit": false,
+    "versions": {
+      "numpy": "2.5.1",
+      "torch": "2.13.0",
+      "triton": "3.7.1"
+    }
+  },
+  "execution": {
+    "accuracy_requirement": {
+      "contract_version": "1.0",
+      "kind": "accuracy_requirement",
+      "max_decomposition_residual": null,
+      "max_expectation_abs_error": 5e-05,
+      "max_expectation_rel_error": 0.0005,
+      "max_gradient_rel_error": 0.002,
+      "max_norm_drift": 5e-05,
+      "max_state_infidelity": null,
+      "max_truncation_error": null,
+      "min_gradient_cosine_similarity": 0.999,
+      "mode": "adaptive",
+      "require_convergence_evidence": false,
+      "require_determinism": false
+    },
+    "accuracy_requirement_hash": "a5fb64387230514f030c132797b2675a14d4a372b50ad415d2d04c902e6dff3e",
+    "amplitude_count": 4,
+    "circuit_hash": "4f66f57b81350624a79335ce76f6be658986e9d3c74a0558fde4ac9b3a80751b",
+    "complex_accelerator_tensor_materialized": false,
+    "convergence_evidence": false,
+    "device": "cuda:0",
+    "device_type": "cuda",
+    "distributed_supported": false,
+    "distribution_semantics": "single_device_fast_path",
+    "executor": "split_real_imag_statevector_p2_precision",
+    "flagquantum_host_fallback": false,
+    "gate_count": 19,
+    "gate_generation_dtype": "float32",
+    "gradient_high_dtype": "float32",
+    "gradient_low_dtype": "float32",
+    "gradient_method": "parameter_shift",
+    "gradient_supported": true,
+    "kernel_compute_dtype": "float32",
+    "native_autograd_supported": false,
+    "observable_supported": true,
+    "observed_tensor_devices": [
+      "cuda:0"
+    ],
+    "observed_word_dtypes": [
+      "torch.float32"
+    ],
+    "operator_evidence_ids": [],
+    "operator_profile": "split_real_imag_statevector_p2_precision",
+    "operator_profile_hash": "0988ca5d6111b63b75d46d79f6532e89a3679a54a32cbc698f28cba4ac6e52e7",
+    "output_device_and_dtype_verified": true,
+    "parameter_order": [
+      "theta"
+    ],
+    "precision_plan": {
+      "allow_dtype_demotion": false,
+      "checkpoint_dtype": "float32",
+      "communication_dtype": "not_applicable",
+      "complex_representation": "split_real_imag",
+      "contract_version": "1.0",
+      "decomposition_dtype": "not_applicable",
+      "gate_generation_dtype": "float32",
+      "gradient_dtype": "double_single_fp32",
+      "kernel_compute_dtype": "float32",
+      "kind": "precision_plan",
+      "optimizer_master_dtype": "not_integrated",
+      "parameter_dtype": "float32",
+      "reduction_dtype": "double_single_fp32",
+      "refinement": "compensated_reduction",
+      "state_storage_dtype": "float32"
+    },
+    "precision_plan_hash": "51cc2f281271a7d4ba09afda5b75d5964af2223ca62e377c8905e27ae1ba6178",
+    "provider": "pytorch_cuda",
+    "provider_internal_route_audited": false,
+    "reduction_dtype": "double_single_fp32",
+    "representation": "split_real_imag",
+    "runtime_default": false,
+    "scalability_claim_allowed": false,
+    "schema": "flagquantum_split_real_imag_precision_gradient_v1",
+    "shifted_evaluations": 2,
+    "state_bytes": 32,
+    "storage_dtype": "float32",
+    "term_count": 5,
+    "value_high_dtype": "float32",
+    "value_low_dtype": "float32"
+  },
+  "gate_count": 19,
+  "gradient": [
+    -0.8962560200067493
+  ],
+  "hostname": "redacted",
+  "initial_theta_intended_float64": 0.4595411380128276,
+  "initial_theta_matched_float32": 0.4595411419868469,
+  "memory": {
+    "accelerator_peak_unavailable_reason": null,
+    "cuda_peak_allocated_bytes": 8555008,
+    "frontier_peak_memory_bytes": 8555008,
+    "process_peak_rss_bytes_at_timing_end": 1159884800,
+    "scope": "RSS_includes_imports_preflight_warmup_and_hash_transfers_before_oracle_diagnostics_CUDA_peak_covers_timed_samples",
+    "state_payload_bytes": 32
+  },
+  "mode": "selective_p2",
+  "observable_errors": {
+    "X1": 6.197567083976452e-07,
+    "Z0": 6.131237412221324e-08,
+    "Z0Z1": 3.773450281319929e-17,
+    "objective": 2.2853138471196077e-07
+  },
+  "observables": {
+    "X1": 0.99999938024329,
+    "Z0": -0.44353683806209165,
+    "Z0Z1": 0.0,
+    "objective": 0.056462872094148686
+  },
+  "output_state_imag": [
+    -3.424431582743637e-08,
+    -3.424431582743637e-08,
+    7.902533738501916e-09,
+    7.902533738501916e-09
+  ],
+  "output_state_real": [
+    0.37298208475112915,
+    0.37298208475112915,
+    0.6007362604141235,
+    0.6007362604141235
+  ],
+  "output_word_hashes_sha256": [
+    "613f9bd3c3a19f6d2e8574e2d2bd750ef78377b67c9dca1b85ea46af3fa838a5",
+    "613f9bd3c3a19f6d2e8574e2d2bd750ef78377b67c9dca1b85ea46af3fa838a5",
+    "613f9bd3c3a19f6d2e8574e2d2bd750ef78377b67c9dca1b85ea46af3fa838a5",
+    "613f9bd3c3a19f6d2e8574e2d2bd750ef78377b67c9dca1b85ea46af3fa838a5",
+    "613f9bd3c3a19f6d2e8574e2d2bd750ef78377b67c9dca1b85ea46af3fa838a5"
+  ],
+  "platform": "Linux-5.15.0-181-generic-x86_64-with-glibc2.35",
+  "protocol": {
+    "accelerator_policy": "explicit_optional_cuda_and_non_NVIDIA_mps_campaigns_no_host_fallback",
+    "accuracy_targets": [
+      0.001,
+      1e-06,
+      1e-09
+    ],
+    "bit_identity_policy": "actual_output_word_dtype_shape_bytes_SHA256_not_equal_scalar_errors",
+    "case_timeout_seconds": 240,
+    "coefficient_policy": "ordered_1e8_1_minus1e8_Z0_terms_retained_in_candidate_coalesced_in_independent_reference",
+    "compile_policy": "eager_no_Torch_compile_no_JIT_TF32_disabled_FMA_observability_recorded",
+    "families": [
+      "noncommuting",
+      "cancellation_echo"
+    ],
+    "frontier_policy": "all_quality_components_within_tolerance_then_Pareto_median_time_and_observed_peak_memory_CPU_RSS_or_CUDA_allocator_no_storage_substitution",
+    "input_policy": "identical_FP32_representable_theta_dyadic_fixed_angles_and_exact_coefficients_all_routes",
+    "memory_policy": "worker_peak_RSS_at_timing_end_CUDA_allocator_peak_and_exact_state_payload_separate",
+    "modes": [
+      "fp32",
+      "double_single_p4",
+      "fp64"
+    ],
+    "normalization_interval": 0,
+    "optional_stage_controls": [
+      "selective_p2",
+      "double_single_p3"
+    ],
+    "protocol_id": "complete_circuit_precision_20261102",
+    "reference": "CPU_NumPy_complex128_dense_basis_embedding_and_analytic_initial_RY_tangent",
+    "repeats": 5,
+    "schema": "flagquantum.precision_frontier_protocol.v1",
+    "seeds": [
+      11,
+      29
+    ],
+    "shapes": [
+      {
+        "depth": 2,
+        "qubits": 2
+      },
+      {
+        "depth": 8,
+        "qubits": 2
+      },
+      {
+        "depth": 8,
+        "qubits": 4
+      }
+    ],
+    "threads": 1,
+    "timing_policy": "synchronized_absolute_complete_circuit_parameter_shift_samples_median_first_call_separate_no_diagnostic_transfer",
+    "unsupported_policy": "retain_unsupported_failed_timeout_slower_inaccurate_no_infinite_speedups",
+    "warmup_calls": 1
+  },
+  "python": "3.12.13",
+  "quality": {
+    "accuracy_error": 6.197567092858236e-07,
+    "gradient_max_absolute_error": 9.232570308270738e-08,
+    "norm_drift": 6.197567092858236e-07,
+    "observable_max_absolute_error": 6.197567083976452e-07,
+    "state_fidelity": 0.9999999999999837,
+    "state_infidelity": 1.63202784619898e-14,
+    "state_l2_error": 3.356946719414269e-07,
+    "state_max_absolute_error": 1.902622668062314e-07
+  },
+  "quality_vs_intended_inputs": {
+    "accuracy_error": 6.197567092858236e-07,
+    "gradient_max_absolute_error": 9.408832812862755e-08,
+    "norm_drift": 6.197567092858236e-07,
+    "observable_max_absolute_error": 6.197567091748013e-07,
+    "state_fidelity": 0.9999999999999831,
+    "state_infidelity": 1.687538997430238e-14,
+    "state_l2_error": 3.3640504479080653e-07,
+    "state_max_absolute_error": 1.9143656317318788e-07
+  },
+  "reference_gradient": -0.8962561123324524,
+  "reference_observables": {
+    "X1": 0.9999999999999984,
+    "Z0": -0.4435368993744658,
+    "Z0Z1": 3.773450281319929e-17,
+    "objective": 0.0564631006255334
+  },
+  "repeated_output_bit_identity": true,
+  "runner": "precision_frontier",
+  "scalability_claim_allowed": false,
+  "schema": "flagquantum.precision_frontier.v1",
+  "source": {
+    "code_version": "3ba42c605f36d86ce52c499dc216fab72f4ddcac",
+    "dirty": false,
+    "installation": {
+      "distribution_version": "0.4.0",
+      "native_cpu_adjoint_available": true,
+      "native_cpu_extension_sha256": "f3a6477ee409fe50c28b0ccfede0869a66d7249a0f2f1f6d9981f7be8b633c2a"
+    },
+    "producer_sha256": {
+      "benchmarks/precision_frontier.py": "f33cf770c2bc6048bb9e159ddeacfcf4de9a3ef75897ba36697139b669c9934d",
+      "benchmarks/precision_workloads.py": "d574ff161fc62604ae3f57a76761eea75b2b6c2c11e4fa3394430ed4909dfa2d",
+      "benchmarks/training_comparison.py": "c49b2df42157c6e2b863712ca734eca50deb1418dac0346a38f44f3288b3a64a",
+      "benchmarks/training_engines.py": "ca3f49678f2ec97e2fde0ddbb1658291b6114f988c5300b7253e54376f6d307c",
+      "benchmarks/training_workloads.py": "7c797a3214221d3d858e12d3852cfb7a191689b0dad9dc227a395dd983777235"
+    },
+    "protocol_sha256": "589c2e4b489d0a0bffd868fd797175adde7cba262baab4b27db58661e38e679e",
+    "versions": {
+      "jax": "0.10.2",
+      "jaxlib": "0.10.2",
+      "numpy": "2.5.1",
+      "tensorcircuit-ng": "1.8.0",
+      "torch": "2.13.0"
+    }
+  },
+  "status": "completed",
+  "synthesis": {
+    "coefficient_conversion_max_error": 0.0,
+    "gate_synthesis_max_entry_error": 2.8757223491382433e-08,
+    "gate_synthesis_scope": "actual_stage_encoder",
+    "normalization_interval": 0,
+    "output_conversion": "FP32_words_transferred_then_reconstructed_on_CPU_float64_only_outside_timer",
+    "parameter_conversion_absolute_error": 3.974019335828416e-09,
+    "reference_state_parameter_conversion_max_error": 1.1936691635128235e-09
+  },
+  "timing": {
+    "first_call_including_preflight_seconds": 0.40108857676386833,
+    "median_seconds": 0.08106314204633236,
+    "samples_seconds": [
+      0.08108382858335972,
+      0.08097127825021744,
+      0.08106314204633236,
+      0.08116456493735313,
+      0.08086959272623062
+    ],
+    "scope": "complete_circuit_build_gate_generation_state_expectation_parameter_shift_no_diagnostic_transfer",
+    "statistic": "median",
+    "total_measured_seconds_including_warmup": 0.8876048736274242,
+    "total_timed_seconds_including_first_call": 0.8062409833073616,
+    "warmup_calls": 1,
+    "warmup_seconds": 0.08136389032006264
+  },
+  "world_size": 1
+}

@@ -1,0 +1,104 @@
+{
+  "benchmark_evidence_class": "comparison_non_release",
+  "case": {
+    "depth": 2,
+    "family": "cancellation_echo",
+    "qubits": 2,
+    "seed": 11
+  },
+  "device": "mps",
+  "error": "native_fp64 preflight: Apple MPS has no FP64/complex128 kernels; CPU substitution is prohibited",
+  "execution_semantics": "single_device_fast_path",
+  "hostname": "redacted",
+  "mode": "fp64",
+  "platform": "macOS-27.0-arm64-arm-64bit",
+  "protocol": {
+    "accelerator_policy": "explicit_optional_cuda_and_non_NVIDIA_mps_campaigns_no_host_fallback",
+    "accuracy_targets": [
+      0.001,
+      1e-06,
+      1e-09
+    ],
+    "bit_identity_policy": "actual_output_word_dtype_shape_bytes_SHA256_not_equal_scalar_errors",
+    "case_timeout_seconds": 240,
+    "coefficient_policy": "ordered_1e8_1_minus1e8_Z0_terms_retained_in_candidate_coalesced_in_independent_reference",
+    "compile_policy": "eager_no_Torch_compile_no_JIT_TF32_disabled_FMA_observability_recorded",
+    "families": [
+      "noncommuting",
+      "cancellation_echo"
+    ],
+    "frontier_policy": "all_quality_components_within_tolerance_then_Pareto_median_time_and_observed_peak_memory_CPU_RSS_or_CUDA_allocator_no_storage_substitution",
+    "input_policy": "identical_FP32_representable_theta_dyadic_fixed_angles_and_exact_coefficients_all_routes",
+    "memory_policy": "worker_peak_RSS_at_timing_end_CUDA_allocator_peak_and_exact_state_payload_separate",
+    "modes": [
+      "fp32",
+      "double_single_p4",
+      "fp64"
+    ],
+    "normalization_interval": 0,
+    "optional_stage_controls": [
+      "selective_p2",
+      "double_single_p3"
+    ],
+    "protocol_id": "complete_circuit_precision_20261102",
+    "reference": "CPU_NumPy_complex128_dense_basis_embedding_and_analytic_initial_RY_tangent",
+    "repeats": 5,
+    "schema": "flagquantum.precision_frontier_protocol.v1",
+    "seeds": [
+      11,
+      29
+    ],
+    "shapes": [
+      {
+        "depth": 2,
+        "qubits": 2
+      },
+      {
+        "depth": 8,
+        "qubits": 2
+      },
+      {
+        "depth": 8,
+        "qubits": 4
+      }
+    ],
+    "threads": 1,
+    "timing_policy": "synchronized_absolute_complete_circuit_parameter_shift_samples_median_first_call_separate_no_diagnostic_transfer",
+    "unsupported_policy": "retain_unsupported_failed_timeout_slower_inaccurate_no_infinite_speedups",
+    "warmup_calls": 1
+  },
+  "python": "3.12.14",
+  "runner": "precision_frontier",
+  "scalability_claim_allowed": false,
+  "schema": "flagquantum.precision_frontier.v1",
+  "smoke": false,
+  "source": {
+    "code_version": "3ba42c605f36d86ce52c499dc216fab72f4ddcac",
+    "dirty": false,
+    "installation": {
+      "distribution_version": "0.4.0",
+      "native_cpu_adjoint_available": false,
+      "native_cpu_extension_sha256": null
+    },
+    "producer_sha256": {
+      "benchmarks/precision_frontier.py": "f33cf770c2bc6048bb9e159ddeacfcf4de9a3ef75897ba36697139b669c9934d",
+      "benchmarks/precision_workloads.py": "d574ff161fc62604ae3f57a76761eea75b2b6c2c11e4fa3394430ed4909dfa2d",
+      "benchmarks/training_comparison.py": "c49b2df42157c6e2b863712ca734eca50deb1418dac0346a38f44f3288b3a64a",
+      "benchmarks/training_engines.py": "ca3f49678f2ec97e2fde0ddbb1658291b6114f988c5300b7253e54376f6d307c",
+      "benchmarks/training_workloads.py": "7c797a3214221d3d858e12d3852cfb7a191689b0dad9dc227a395dd983777235"
+    },
+    "protocol_sha256": "589c2e4b489d0a0bffd868fd797175adde7cba262baab4b27db58661e38e679e",
+    "versions": {
+      "jax": "0.10.2",
+      "jaxlib": "0.10.2",
+      "numpy": "2.5.4",
+      "pennylane": "0.45.1",
+      "pennylane-lightning": "0.45.0",
+      "tensorcircuit-ng": "1.10.0",
+      "torch": "2.14.1"
+    }
+  },
+  "status": "unsupported",
+  "worker_started": false,
+  "world_size": 1
+}

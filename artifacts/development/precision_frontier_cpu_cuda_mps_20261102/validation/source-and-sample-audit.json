@@ -1,0 +1,32 @@
+{
+  "schema": "flagquantum.precision_frontier_audit.v1",
+  "campaigns": [
+    {
+      "campaign": "cpu",
+      "source_commit": "3ba42c605f36d86ce52c499dc216fab72f4ddcac",
+      "counts": {
+        "completed": 60
+      },
+      "committed_producer_and_manifest_hashes_match": true,
+      "raw_samples_identity_and_peak_memory_scopes_checked": true
+    },
+    {
+      "campaign": "cuda",
+      "source_commit": "3ba42c605f36d86ce52c499dc216fab72f4ddcac",
+      "counts": {
+        "completed": 60
+      },
+      "committed_producer_and_manifest_hashes_match": true,
+      "raw_samples_identity_and_peak_memory_scopes_checked": true
+    },
+    {
+      "campaign": "mps",
+      "source_commit": "3ba42c605f36d86ce52c499dc216fab72f4ddcac",
+      "counts": {
+        "unsupported": 36
+      },
+      "committed_producer_and_manifest_hashes_match": true,
+      "raw_samples_identity_and_peak_memory_scopes_checked": true
+    }
+  ]
+}
