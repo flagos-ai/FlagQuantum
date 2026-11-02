@@ -423,6 +423,31 @@ Subsequent reports should state verified capability gains, closed requirements, 
 
 ### Delivery Tracking
 
+The chunk-schedule conformance follow-up reuses the admitted Surface composition
+and coherent decoder records. Controlled mixed rows check order, denominator,
+one compilation and close for batch sizes 1, 7, 35 and 64. Late sample,
+shape/prediction, result-count, cleanup and interruption cases check that no
+partial successful record returns and original exceptions remain visible.
+Real distance-three, three-round Surface X/Z cases compare native matching and
+PyMatching against direct single-shot decoding with each identical call schedule.
+The reference shares Stim and the decoder; it checks composition, not a second
+physical simulator, a general decoder ranking or equivalence across schedules.
+
+```bash
+python -m pip install -e '.[stim,pymatching]'
+PYTHONPATH=. python examples/qec/memory_experiment.py --code surface --basis x --batch-size 1
+PYTHONPATH=. python examples/qec/memory_experiment.py --code surface --basis z --batch-size 35
+PYTHONPATH=. python examples/qec/memory_experiment.py --code surface --basis z --batch-size 64
+```
+
+Each CPU command prints five lines of `<decoder> 35 <failures> (<failures>,)`.
+Counts are measured in the recorded environment, with no required equality
+across decoders or batch sizes. Default batch size 16, seed 53, original source,
+API, refusal domains and cleanup remain unchanged. Final reviewed-head and
+actual-main acceptance remain delivery gates. No historical campaign is rerun;
+this adds bounded FTS-07 conformance without throughput/RSS measurements,
+performance claims or R01-R15/M1/M2 closure.
+
 The bounded shared-decoder comparison reuses existing matching/PyMatching,
 BP+OSD and C/005 evidence. Five independent toy DEMs cover unique explanations,
 exact/near ties and a minimum-configuration versus logical-class MAP distinction;

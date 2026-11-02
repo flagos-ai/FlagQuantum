@@ -23,7 +23,10 @@ def main() -> None:
         "--code", choices=("repetition", "surface"), default="repetition"
     )
     parser.add_argument("--basis", choices=("x", "z"), default="z")
+    parser.add_argument("--batch-size", type=int, default=16)
     args = parser.parse_args()
+    if args.batch_size <= 0:
+        parser.error("--batch-size must be positive")
     if args.code == "repetition":
         if args.basis != "z":
             parser.error("the repetition example supports only Z readout")
@@ -48,7 +51,7 @@ def main() -> None:
             noise=noise,
             decoder=decoder,
             shots=35,
-            batch_size=16,
+            batch_size=args.batch_size,
             seed=53,
         )
         print(
