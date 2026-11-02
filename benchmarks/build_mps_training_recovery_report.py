@@ -59,6 +59,11 @@ def validate(point: dict[str, Any], world: int) -> None:
         if len(ownership) != world:
             raise ValueError("site ownership topology mismatch")
         sites.extend(ownership[rank])
+        for key in ("checkpoint_reference", "checkpoint_prefix", "checkpoint_resumed"):
+            if sorted(map(int, record[key]["bond_layout"])) != sorted(ownership[rank]):
+                raise ValueError("checkpoint bond layout does not match owned sites")
+            if record[key]["world_size"] != world:
+                raise ValueError("checkpoint world mismatch")
         owned = record["checkpoint_reference"]["owned_indices"]
         owners.extend(owned)
         if (
@@ -116,6 +121,31 @@ def validate(point: dict[str, Any], world: int) -> None:
         raise ValueError("optimizer owners do not partition parameters")
     if len(point["matched_local_mps"]) != protocol["steps"]:
         raise ValueError("missing matched local MPS validation")
+    if point["recovery_passed"] != all(r["recovery_passed"] for r in point["ranks"]):
+        raise ValueError("global recovery label disagrees with rank state")
+    gradients = trajectory(point, "parameter_gradients")
+    values = trajectory(point, "parameter_values")
+    for step, diagnostic in enumerate(point["matched_local_mps"]):
+        if diagnostic["parameters"] != values[step]:
+            raise ValueError("local comparison uses different parameters")
+        observed = {
+            "sharding_objective_max_abs_error": max(
+                abs(
+                    r["uninterrupted"]["step_metrics"][step]["loss"]
+                    - diagnostic["objective"]
+                )
+                for r in point["ranks"]
+            ),
+            "sharding_projected_gradient_max_abs_error": tree_max_error(
+                gradients[step], diagnostic["projected_gradients"]
+            ),
+            "derivative_semantics_max_abs_difference": tree_max_error(
+                diagnostic["projected_gradients"],
+                diagnostic["truncated_forward_finite_difference"],
+            ),
+        }
+        if any(value != diagnostic[key] for key, value in observed.items()):
+            raise ValueError("local error label disagrees with raw values")
 
 
 def report(directory: Path, worlds: list[int]) -> tuple[dict[str, Any], str]:
@@ -219,9 +249,9 @@ def report(directory: Path, worlds: list[int]) -> tuple[dict[str, Any], str]:
     lines = [
         "# Fixed-workload MPS training and recovery",
         "",
-        "One frozen 32-site, three-layer problem; eight Adam updates. The 131072-site capacity leg is separate. These are development measurements, with no new certified rank count or capability promotion.",
+        f"One frozen {reference['protocol']['n_sites']}-site, {reference['protocol']['layers']}-layer problem; {reference['protocol']['steps']} Adam updates. The 131072-site capacity leg is separate. These are development measurements, with no new certified rank count or capability promotion.",
         "",
-        "Costs use the maximum recorded rank time for each uninterrupted update; all eight raw samples are retained, and the steady statistic is the median of updates 2–8. Whole-call barrier-bracketed wall time and checkpoint IO are separate in raw rank summaries. The one-rank control uses the same distributed engine, not the fastest local implementation. Local MPS diagnostics are outside these timers.",
+        f"Costs use the maximum recorded rank time for each uninterrupted update; all {reference['protocol']['steps']} raw samples are retained, and the steady statistic is the median of updates 2–{reference['protocol']['steps']}. Whole-call barrier-bracketed wall time and checkpoint IO are separate in raw rank summaries. The one-rank control uses the same distributed engine, not the fastest local implementation. Local MPS diagnostics are outside these timers.",
         "",
         "Efficiency is measured T1/(p*Tp) on the identical workload and backend, not an Amdahl estimate. No parallel fraction was measured or fitted. CPU/Gloo correctness is separate from CUDA/NCCL hardware evidence.",
         "",

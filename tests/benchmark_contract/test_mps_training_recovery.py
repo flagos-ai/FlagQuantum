@@ -16,6 +16,7 @@ np = pytest.importorskip("numpy")
 
 from benchmarks.build_mps_training_recovery_report import report, validate  # noqa: E402
 from benchmarks.internal.evidence.mps_training_recovery import (  # noqa: E402
+    execute,
     local_diagnostic,
     tensor_tree,
     tree_max_error,
@@ -66,6 +67,22 @@ def test_optimizer_state_comparison_detects_changed_moment() -> None:
     changed["exp_avg"]["dtype"] = "torch.float32"
     with pytest.raises(ValueError, match="metadata"):
         tree_max_error(original, changed)
+
+
+def test_training_refuses_object_gather(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from benchmarks.internal.evidence import mps_training_recovery as recovery
+
+    monkeypatch.setattr(recovery.dist, "barrier", lambda: None)
+    monkeypatch.setattr(
+        recovery.fqxd,
+        "train_distributed_mps",
+        lambda *args, **kwargs: recovery.dist.all_gather_object([], {}),
+    )
+    protocol = json.loads(PROTOCOL.read_text())
+    with pytest.raises(AssertionError, match="gather forbidden"):
+        execute(protocol, torch.device("cpu"), tmp_path, 1)
 
 
 @pytest.fixture(scope="module")
@@ -133,7 +150,9 @@ def test_two_rank_updates_checkpoint_and_owner_state_match(
     )
 
 
-@pytest.mark.parametrize("mutation", ("owner", "optimizer", "trace", "protocol"))
+@pytest.mark.parametrize(
+    "mutation", ("owner", "optimizer", "trace", "protocol", "local_error")
+)
 def test_report_rejects_corrupt_recovery_evidence(
     measured_recovery: dict, mutation: str
 ) -> None:
@@ -144,6 +163,8 @@ def test_report_rejects_corrupt_recovery_evidence(
         point["ranks"][0]["checkpoint_resumed"]["optimizer_state"]["state"] = {}
     elif mutation == "trace":
         point["ranks"][0]["uninterrupted"]["step_metrics"].pop()
+    elif mutation == "local_error":
+        point["matched_local_mps"][0]["sharding_projected_gradient_max_abs_error"] = 10
     else:
         point["protocol"]["n_sites"] += 1
     with pytest.raises(ValueError):
