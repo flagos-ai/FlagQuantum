@@ -477,3 +477,20 @@ Run `python -m examples.synthesis_qmod_phase_gate`, then
 `tests/integration/test_synthesis_qmod_phase_gate.py`. Full complex amplitudes
 are necessary to distinguish phase from RZ's global-phase convention. See the
 [contract](../../../docs/api-changes/FQ-SYNTH-CONSTANT-PHASE-GATE-20261102.md).
+
+## Native one-bit radians capture and RZ literals
+
+In Python phase mode an explicit float return selects a bounded one-UInt(1)
+radians function. frontend_python reuses source/signature validation, interprets
+both complete-domain values through checked arithmetic AST nodes, and builds an
+existing register/effect program. Exact antisymmetric phases select RZ; general
+phases reuse PHASE/X while preserving global phase. Known X/H preparation is
+inserted after allocation. No host body execution, real quantum-data type or
+second executor is introduced. Services reuses selection and checked completion.
+
+The constant-angle register gate set now shares phase/rz validation and named
+theta lowering; old gate attributes are unchanged. Run
+`python -m examples.synthesis_native_and_qmod_rz` and
+`tests/integration/test_synthesis_real_phase.py`. Wider/general phase functions
+remain refused; do not extend this profile by enumerating exponentially larger
+domains. See the [contract](../../../docs/api-changes/FQ-SYNTH-LITERAL-RZ-20261102.md).

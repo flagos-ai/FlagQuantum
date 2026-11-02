@@ -1,19 +1,20 @@
 # Original Qmod corpus progress
 
-As of 2026-11-02, following #1001 merged at
-f79a806ba1b456b5d3d79eb636fbad2b107e0bd7 after 57 successful checks and
+As of 2026-11-02, following #1002 merged at
+6df1f2ae6296334d087fdf39918f8b1e46559a19 after 57 successful checks and
 three configured skips. The denominator is the retained Classiq library snapshot
 2bfd835e73b6882fcc515a725098b04766c238e7, not the moving upstream main.
 
 ## What has actually run
 
-Seven of 216 original file paths (3.24%) have complete parse, lowering, real CPU
+Eight of 216 original file paths (3.70%) have complete parse, lowering, real CPU
 complex128 execution and full-state verification at their original dimensions.
-Both file and text inputs are covered. This is six distinct source blobs out
-of 208 (2.88%), not seven independent algorithms.
+Both file and text inputs are covered. This is seven distinct source blobs out
+of 208 (3.37%), not eight independent algorithms.
 
 | Original filename | Full execution evidence | Allocated qubits |
 | --- | --- | --- |
+| RZ.qmod | New literal-angle original, both input forms and native high-level counterpart | 1 |
 | PHASE.qmod | New constant-phase original, both input forms and coherent probes | 1 |
 | X.qmod | Existing baseline | 1 |
 | synthesis_tutorial.qmod | Existing baseline | 23 |
@@ -63,8 +64,8 @@ substitute hand-built circuit is counted as an original execution.
 ## Whole-corpus frontend audit
 
 All 216 retained input blobs were checked against their pinned Git blob hashes
-and passed individually through the current native frontend. Seven are admitted;
-209 are refused. This audit does no synthesis, planning or execution. Refusals
+and passed individually through the current native frontend. Eight are admitted;
+208 are refused. This audit does no synthesis, planning or execution. Refusals
 are grouped by their first diagnostic, so later missing dependencies are hidden:
 
 | First diagnostic | Files |
@@ -73,7 +74,7 @@ are grouped by their first diagnostic, so later missing dependencies are hidden:
 | qmod.role | 61 |
 | qmod.type | 23 |
 | qmod.token | 19 |
-| qmod.operator | 11 |
+| qmod.operator | 10 |
 | qmod.expression | 8 |
 | qmod.budget.tokens | 7 |
 | qmod.call | 6 |
@@ -86,7 +87,7 @@ The original scan used the merged #1000 implementation; the PHASE follow-up
 reran all 216 hash-checked sources and changed admission from six to seven. Per-file diagnostics and pinned-source
 inventory remain in the project audit ledger; these aggregate results are a
 local development audit, not a CI-certified corpus runner or compatibility
-claim. The seven admitted files now have separate real execution evidence.
+claim. The eight admitted files now have separate real execution evidence.
 
 ## Next delivery priorities
 
@@ -120,3 +121,22 @@ QFT fusion assertion failures in 212.38 seconds, stopped at the configured
 three-failure limit. These expect 28 state applies and observe 44; no Simulation
 implementation or assertion changes. The default tier is not green.
 Log: /private/tmp/fq-phase-gate-default.log.
+
+## Native high-level intent is a required companion
+
+The RZ follow-up implements a native Python float-return phase function rather
+than offering a Qmod string or a Circuit gate as the native high-level answer.
+See [the native-first workflow](SYNTH_LITERAL_RZ_DELIVERY.md): return
+1.9*(q-0.5) with UInt(1), named preparation and output_mode=phase; Compiler
+selects RZ automatically. Circuit is only a gate baseline, Qmod a migration
+format. The current native real-phase subset is bounded to one-bit expressions.
+Future compatibility delivery must include a runnable native high-level example
+and shared execution/oracle checks, or name an explicit native semantic gap.
+General high-level support must not be inferred from an existing gate API.
+
+The native high-level RZ follow-up passes 118 targeted cases in 1.41 seconds
+and 2689 related cases in 612.40 seconds. Its default smoke/unit run records
+5064 passed, 121 skipped and the same three existing local QFT fusion failures
+in 212.67 seconds; it is not a green default tier. See the native-first delivery
+for the exact input/angle grammar, resource limits and unchanged implementation
+boundary.

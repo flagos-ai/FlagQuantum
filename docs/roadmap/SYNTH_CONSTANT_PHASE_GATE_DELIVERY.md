@@ -119,3 +119,11 @@ and positive probes now name the gate they require. No target decomposer changes
 Independent trials remain 0/2 and release_authorized=false. No arbitrary Python,
 general Qmod, consuming roles, arrays, signed/fixed-point data, GPU/QPU admission
 or release promotion is inferred from this gate.
+
+## Subsequent native-first extension
+
+The [RZ/native-phase follow-up](SYNTH_LITERAL_RZ_DELIVERY.md) adds fixed-decimal
+angle literals to PHASE/RZ and preserves the existing integer and predicate
+profiles. Its native high-level entry is a Python radians function; the earlier
+integer-only PHASE source restriction above records this delivery's historical
+boundary rather than the current extended source profile.
