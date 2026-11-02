@@ -1,6 +1,8 @@
 """AO-01 comparisons preserve the original measured artifact and failed scopes."""
 
 import json
+from collections import Counter
+from dataclasses import asdict
 from pathlib import Path
 
 import pytest
@@ -50,3 +52,18 @@ def test_changed_budget_is_not_a_comparable_resource_result(tmp_path: Path) -> N
     path.write_text(json.dumps(altered))
     with pytest.raises(ValueError, match="configuration"):
         differences(BASELINE, path)
+
+
+def test_checked_measurements_preserve_oracles_and_reproduce_comparison() -> None:
+    current = BASELINE.with_name("ao01.json")
+    rows = differences(BASELINE, current)
+    assert not any(row.classification in {"regressed", "tradeoff"} for row in rows)
+    assert sum(row.classification == "incomplete" for row in rows) == 1
+    before, after = json.loads(BASELINE.read_text()), json.loads(current.read_text())
+    assert all(
+        after["source_hashes"][name] == digest
+        for name, digest in before["source_hashes"].items()
+    )
+    comparison = json.loads(BASELINE.with_name("ao01-comparison.json").read_text())
+    assert comparison["summary"] == dict(Counter(r.classification for r in rows))
+    assert comparison["rows"] == [asdict(row) for row in rows]

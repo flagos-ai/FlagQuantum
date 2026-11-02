@@ -182,6 +182,67 @@ post-target counts are reported without a blanket target nonregression claim.
 No runtime speedup, optimality, peak RSS, QPU, release, independent-user-trial or
 distributed scalability is claimed.
 
-Final source revision, resource measurements, regression and validation receipts
-are recorded below after measurement. Earlier exploratory failures and old
-receipts are not substituted for final-head evidence.
+## Measured resources and acceptance receipts
+
+`ao01.json` records measurement source revision
+`4cd4bafc0ae1fb5564afe2409a9a5d2117054aaa`; `ao01-comparison.json` compares
+that artifact with the frozen original. Of ninety cases, 89 compile and one
+(`mixed_products-16x16`) reaches the unchanged 30-second external deadline,
+as it did in AO-00. Among comparable completed cases, 21 improve and 68 remain
+unchanged; none regress or trade one reported logical metric for another.
+This is a statement about this corpus/run, not a universal target guarantee.
+An independent second complete generation at the same source revision matches
+all ninety statuses, circuit hashes, resource counts, strategies, verification
+records, nine target sentinels and two spelling variants. Timing samples are
+retained separately and are not required or claimed to be identical.
+
+| Case | AO-00 allocated/work/operations/depth | AO-01 |
+| --- | --- | --- |
+| `shared_square-1x1` | 17 / 12 / 99 / 82 | 14 / 9 / 79 / 66 |
+| `shared_square-2x2` | 30 / 20 / 352 / 280 | 26 / 16 / 314 / 248 |
+| `energy-2x2` | 18 / 10 / 166 / 124 | unchanged |
+| `shared_square-16x16` | 170 / 104 / 41680 / 31724 | unchanged; optional emission capped |
+
+The generator performs 6,018 basis/target checks and 74 bounded coherent-state
+checks (37 cases). Large rows use exact gate interpretation with declared
+sampling/exhaustiveness and no invented full-state execution. For example,
+the two-bit shared-square row plans 1 GiB but executes no quantum state; the
+one-bit runnable program uses 256 KiB. All state-based workspace leakage checks
+are zero. The nine target sentinel counts and spelling variants remain recorded.
+
+An exploratory uncapped run produced a second timeout at `shared_square-16x16`;
+its repeat completed it. These observations motivated bounding optional duplicate
+emission rather than hiding a failed measurement. Final generation completes
+that case with its original resources; timings remain host-load-sensitive and
+do not establish compiler speedup. Exploratory artifacts/logs remain local under
+`/private/tmp/fq-ao01-exploratory*` and `fq-ao01-repeat*`; they do not replace
+either checked baseline.
+
+Validation receipts:
+
+- Related compiler/construction/synth regression: 2,479 passed in 582.65 seconds
+  before the final optional-emission guard. Final focused acceptance: 184 passed
+  in 9.64 seconds, rerunning every changed test module and covering that guard,
+  flattened-node budget refusal,
+  full declared outputs, both schedules, coherent phases and nonzero targets.
+- Strict mypy passes 883 production/example sources. Black 24 and 26, Ruff,
+  public API protection, architecture, dependency, capability maturity, language,
+  hygiene and Compiler ownership checks pass. The runnable native/Qmod example
+  passes with the four expected outcomes and actual 14/9/79/66 counts.
+- The earlier broad local default tier reports 17,584 passed, 527 skipped,
+  27 failed and six errors. All 33 failure/error node identities also occur in
+  the AO-00 and UP-01 baseline logs: optional Aer/plugin and shared installed
+  package mismatches, simulation expectations, evidence pins and sandbox/socket
+  prerequisites. This is not an all-green default-tier claim or a final-head
+  rerun of that entire tier.
+- Benchmark/release tier: 995 passed, 95 skipped, one known no-PYTHONPATH
+  subprocess failure importing `_FORBIDDEN_FALLBACKS` from the older installed
+  package. CPU-distributed tier with socket permission: 317 passed, 170 skipped,
+  one existing macOS abrupt-rank-loss diagnostic-string failure. These broader
+  runs precede the final narrow emission guard; no unrelated code/test is relaxed.
+
+Local logs: `/private/tmp/fq-ao01-related.log`, `fq-ao01-final-acceptance.log`,
+`fq-ao01-final-mypy.log`, `fq-ao01-final-checks.log`,
+`fq-ao01-final-measurement.log`, `fq-ao01-final-repeat.log`,
+`fq-ao01-default.log`, `fq-ao01-benchmark-tier.log` and
+`fq-ao01-distributed-tier.log`. Remote PR CI remains a separate acceptance gate.
