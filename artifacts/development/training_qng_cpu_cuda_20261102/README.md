@@ -114,7 +114,7 @@ The local focused selection passed 99 tests, with the real CUDA-only check
 explicitly skipped on this CPU host. The subsequently added rejection test
 for a truncated completed trajectory passed separately, together with the matched-training missing-seed rejection test, bringing
 the focused coverage to 101 passed and one GPU-only skip. Black, Ruff, mypy, architecture,
-dependency policy and ownership checks passed. Logs are under `validation/`.
+dependency policy and ownership checks passed. Logs are under `validation/`, losslessly compressed as `.log.gz`.
 This is a focused verification statement, not a claim that the entire default
 suite ran locally.
 
@@ -139,7 +139,7 @@ parity test passed on an **NVIDIA A800-SXM4-80GB**, CUDA runtime **13.0**,
 Triton **3.7.1**. The producing commit is
 `770e24b4f43290f0e1a7d9ca212a8a4e4a396da5`, with `dirty=false` throughout.
 The [successful GPU run](https://github.com/flagos-ai/FlagQuantum/actions/runs/41394198690)
-and its complete job log and metadata are retained under `validation/`.
+and its complete job log (gzip-compressed) and metadata are retained under `validation/`.
 
 CUDA paired reverse/unfused metric-time ratios range from 10.85 to 78.49;
 unfused/fused metric-time ratios range from 3.73 to 4.80. These are small-state
