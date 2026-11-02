@@ -167,12 +167,13 @@ def test_root_rejects_duplicate_scalar_state_configuration(
 
 
 def test_real_plan_budget_errors_and_routed_named_readout() -> None:
-    simple = program_definition("""@qfunc
+    source = """@qfunc
 def main(x: Output[QBit],result: Output[QBit]):
     allocate(x)
     hadamard_transform(x)
     result |= x
-""")
+"""
+    simple = program_definition(source)
     with pytest.raises(PlanningError, match="memory budget"):
         synth.synthesize(simple, memory_limit_bytes=16)
     with pytest.raises(synth.SynthesisError):
@@ -185,10 +186,11 @@ def main(x: Output[QBit],result: Output[QBit]):
 
 
 def test_const_root_is_not_an_executable_input_state() -> None:
-    definition = program_definition("""@qfunc
+    source = """@qfunc
 def main(x: Const[QNum[2]]):
     hadamard_transform(x)
-""")
+"""
+    definition = program_definition(source)
     with pytest.raises(HybridVerificationError, match="Output-only"):
         synth.synthesize(definition)
 
