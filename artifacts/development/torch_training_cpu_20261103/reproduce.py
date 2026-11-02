@@ -31,7 +31,9 @@ CASES = (
     (7, 2, 64, "ring"),
     (7, 4, 1, "chain"),
 )
-ROOT = Path(__file__).resolve().parents[3]
+ROOT = Path(
+    os.environ.get("FQ_TRAINING_SOURCE_ROOT", Path(__file__).resolve().parents[3])
+).resolve()
 
 
 def git(*arguments: str) -> str:
@@ -40,7 +42,9 @@ def git(*arguments: str) -> str:
     ).strip()
 
 
-def worker(case: int, kind: str, route: str, output: Path) -> None:
+def worker(
+    case: int, kind: str, route: str, output: Path, without_callback: bool
+) -> None:
     imported = time.perf_counter()
     import torch
 
@@ -51,7 +55,7 @@ def worker(case: int, kind: str, route: str, output: Path) -> None:
     torch.set_num_threads(1)
     torch.set_num_interop_threads(1)
     training = importlib.import_module("flagquantum.runtime.training")
-    training._MIN_COMPILED_STEPS = 0 if route == "forced_candidate" else None
+    setattr(training, "_MIN_COMPILED_STEPS", 0 if route == "forced_candidate" else None)
     width, depth, batch, layout = CASES[case]
     generator = torch.Generator().manual_seed(20261102)
     initial = torch.randn(2 * width, generator=generator, dtype=torch.float64) * 0.2
@@ -119,6 +123,7 @@ def worker(case: int, kind: str, route: str, output: Path) -> None:
         "distribution_semantics": "single_device_fast_path",
         "scalability_claim_allowed": False,
         "status": "running",
+        "without_callback": without_callback,
         "updates": [],
     }
     output.write_text(json.dumps(record))
@@ -129,6 +134,21 @@ def worker(case: int, kind: str, route: str, output: Path) -> None:
         previous = time.perf_counter()
         intervals: list[float] = []
         checkpoint_seconds = 0.0
+        deliveries: list[float] = []
+
+        def delivered(index: int) -> Any:
+            nonlocal checkpoint_seconds
+            deliveries.append(time.perf_counter())
+            if without_callback and index == 30:
+                checkpoint_start = time.perf_counter()
+                current.save_checkpoint(
+                    Path(temporary) / "step30.pt",
+                    optimizer=optimizer,
+                    step=30,
+                    seed=20261102,
+                )
+                checkpoint_seconds = time.perf_counter() - checkpoint_start
+            return inputs(index)
 
         def callback(step: int, loss: float, execution: Any) -> None:
             nonlocal previous, checkpoint_seconds
@@ -161,12 +181,20 @@ def worker(case: int, kind: str, route: str, output: Path) -> None:
                 current,
                 optimizer=optimizer,
                 objective=objective,
-                inputs=inputs,
+                inputs=delivered,
                 steps=60,
-                callback=callback,
+                callback=None if without_callback else callback,
             )
+            finished = time.perf_counter()
+            if without_callback:
+                intervals = [
+                    right - left
+                    for left, right in zip(
+                        deliveries, (*deliveries[1:], finished), strict=True
+                    )
+                ]
             record.update(
-                training_seconds=time.perf_counter() - started,
+                training_seconds=finished - started,
                 first_update_seconds=intervals[0],
                 per_update_seconds=intervals,
                 steady_median_seconds=statistics.median(intervals[10:]),
@@ -251,13 +279,19 @@ def worker(case: int, kind: str, route: str, output: Path) -> None:
             output.write_text(json.dumps(record, indent=2) + "\n")
 
 
-def campaign(output: Path, trials: int) -> int:
+def campaign(
+    output: Path, trials: int, without_callback: bool, only_default: bool
+) -> int:
     if git("status", "--porcelain"):
         raise RuntimeError("measure a committed clean source tree")
     output.mkdir(parents=True, exist_ok=False)
     records: list[dict[str, Any]] = []
     for trial in range(trials):
-        routes = ("default_eager", "forced_candidate")
+        routes: tuple[str, ...] = (
+            ("default_eager",)
+            if only_default
+            else ("default_eager", "forced_candidate")
+        )
         if trial % 2:
             routes = tuple(reversed(routes))
         for case in range(len(CASES)):
@@ -281,6 +315,7 @@ def campaign(output: Path, trials: int) -> int:
                                 route,
                                 "--output",
                                 str(receipt),
+                                *(["--without-callback"] if without_callback else []),
                             ],
                             cwd=ROOT,
                             start_new_session=True,
@@ -347,11 +382,15 @@ def main() -> int:
     parser.add_argument("--optimizer", choices=("SGD", "Adam"))
     parser.add_argument("--route", choices=("default_eager", "forced_candidate"))
     parser.add_argument("--trials", type=int, default=3)
+    parser.add_argument("--without-callback", action="store_true")
+    parser.add_argument("--only-default", action="store_true")
     args = parser.parse_args()
     if args.worker is not None:
-        worker(args.worker, args.optimizer, args.route, args.output)
+        worker(
+            args.worker, args.optimizer, args.route, args.output, args.without_callback
+        )
         return 0
-    return campaign(args.output, args.trials)
+    return campaign(args.output, args.trials, args.without_callback, args.only_default)
 
 
 if __name__ == "__main__":
