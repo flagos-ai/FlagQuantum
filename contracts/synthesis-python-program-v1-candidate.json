@@ -1,0 +1,74 @@
+{
+  "schema": "flagquantum.synthesis_python_program_admission",
+  "version": "1.0",
+  "status": "authorized_candidate_pending_trials",
+  "proposal": "docs/api-changes/FQ-SYNTH-PYTHON-PROGRAM-UP01-20261102.md",
+  "proposal_sha256": "8a48425c29b29d1aac72ea9438dd3e9bdceafb40e41ce14ea704df48dd4a6a47",
+  "authorization_source": {
+    "kind": "explicit_human_user_instruction",
+    "request": "Check and merge #1003 when CI passes, then implement UP-01 Python qfunc preparation, arithmetic and composition with tests and examples.",
+    "prerequisite_merge": "ef95c04f08ddeb05c1c8469b51f4cfccb7c4fc62"
+  },
+  "implementation_authorized": true,
+  "release_authorized": false,
+  "human_trial_records": [],
+  "namespace": "flagquantum.synth",
+  "previous_namespace_exports": [
+    "ConstructionBudget",
+    "InputState",
+    "Program",
+    "SynthesisError",
+    "UInt",
+    "qfunc",
+    "synthesize"
+  ],
+  "namespace_exports": [
+    "ConstructionBudget",
+    "InputState",
+    "Program",
+    "SynthesisError",
+    "UInt",
+    "qfunc",
+    "synthesize",
+    "Output",
+    "Const",
+    "QNum",
+    "QBit",
+    "allocate",
+    "hadamard_transform"
+  ],
+  "new_annotation_symbols": [
+    "Output",
+    "Const",
+    "QNum",
+    "QBit"
+  ],
+  "new_operations": [
+    "allocate",
+    "hadamard_transform"
+  ],
+  "synthesize_signature": "(function: 'Definition | str | PathLike[str]', *, inputs: 'Mapping[str, UInt] | None' = None, input_state: 'InputState | None' = None, constants: 'Mapping[str, int] | None' = None, functions: 'Sequence[Definition]' = (), max_qubits: 'int | None' = 256, max_operations: 'int | None' = 100000, max_depth: 'int | None' = None, max_workspace: 'int | None' = None, construction_budget: 'ConstructionBudget' = ConstructionBudget(qubits=256, operations=100000, candidate_checks=2), objective: \"Literal['width', 'depth']\" = 'width', basis: 'Iterable[str] | None' = None, topology: \"Literal['line'] | None\" = None, preparation: 'CircuitIR | None' = None, preparation_map: 'Mapping[str, Sequence[int]] | None' = None, source_format: \"Literal['qmod'] | None\" = None, source_name: 'str | None' = None, source_version: 'str | None' = None, memory_limit_bytes: 'int | None' = None, output_mode: \"Literal['value', 'phase']\" = 'value') -> 'Program'",
+  "run_signature": "(program_or_plan: 'Circuit | CircuitIR | ExecutionPlan | IsingBraidProgram | LindbladPlan | SynthesisProgram', *, options: 'ExecutionOptions | None' = None, outputs: 'OutputRequest | Sequence[OutputRequest] | None' = None, noise_model: 'NoiseModel | None' = None, compiler: 'str | None' = None, target: 'str | None' = None, target_qubits: 'Sequence[int] | None' = None, shots: 'int | None' = None, name: 'str | None' = None) -> 'ExecutionResult'",
+  "probabilities_signature": "(self, result: 'ExecutionResult', *, registers: 'Sequence[str]' = ('result',), max_bits: 'int' = 16, max_keys: 'int' = 65536, max_amplitudes: 'int' = 4194304, threshold: 'float' = 1e-14) -> 'Distribution'",
+  "root_roles": [
+    "Output"
+  ],
+  "helper_roles": [
+    "Const",
+    "Output"
+  ],
+  "source_profile": "retained_ast_unsigned_integer_program",
+  "source_memory_default": 536870912,
+  "new_executor": false,
+  "serialization_change": false,
+  "historical_contracts_sha256": {
+    "contracts/synthesis-program-run-v1-candidate.json": "d52065534f7f806595209019658e88be810c9b1fbbf168217e58e36b57b29e63",
+    "contracts/synthesis-phase-v1-candidate.json": "7944da1a1415e434ac115ab42cf0ede8b4fcec41dc450719449c72d311865e1b",
+    "contracts/synthesis-qmod-v1-candidate.json": "3ec0bd6c274b7af2c28468be53b99739cdf703b518c3a828b0d905c933026a16"
+  },
+  "new_operation_signatures": {
+    "allocate": "(size_or_out: 'int | QNum', out: 'QNum | None' = None, /) -> 'None'",
+    "hadamard_transform": "(out: 'QNum', /) -> 'None'"
+  },
+  "typed_program_overload": true
+}

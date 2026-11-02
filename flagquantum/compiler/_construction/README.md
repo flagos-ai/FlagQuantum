@@ -481,12 +481,12 @@ are necessary to distinguish phase from RZ's global-phase convention. See the
 ## Unified program boundary and RZ literals
 
 The [UP-00 contract](../../../docs/api-changes/FQ-SYNTH-UNIFIED-PROGRAM-UP00-20261102.md)
-fixes the future program semantics without admitting that language yet. Existing
-qfunc snapshots remain bounded unsigned definitions. The unreleased float-return
-radians evaluator is withdrawn; source capture accepts the existing int/bool
-annotations and has no phase-specific evaluator or host-execution fallback.
-General explicit phase expressions, typed program ports and coherent blocks
-remain follow-on work, not new Source/IR classes in this slice.
+fixes program semantics. UP-01 now admits the typed preparation/arithmetic/call
+subset below; scalar qfunc snapshots retain their bounded unsigned profile.
+The unreleased float-return radians evaluator is withdrawn. Scalar capture
+keeps int/bool annotations; typed programs use explicit Output/Const ports and
+None returns. Neither path executes host bodies. General explicit real phase
+and coherent control remain follow-on work; no second canonical IR is added.
 
 The closed constant-angle register gate set shares phase/rz validation and Core
 named-theta lowering. Source decimal gates are owned by Ecosystem, not the Python
@@ -494,3 +494,29 @@ integer frontend. Run `tests/team/compiler/test_construction_rz_gate.py` and
 `tests/team/compiler/test_construction_program_boundary.py`; use
 `python -m examples.synthesis_native_and_qmod_rz` for runnable high-level integer,
 Qmod and Circuit comparisons with the remaining native phase gap explicit.
+
+## Python program capture (UP-01)
+
+frontend_program owns the typed AST-to-register handoff. program_types supplies
+annotation roles/types and captured operation symbols; those never allocate or
+calculate in host Python. frontend_python reuses its source reader and captures
+only annotation-name bindings from the lexical definition scope. Body call
+bindings resolve statically at synthesis, then the existing checked Program is
+independent of later namespace changes. No arbitrary annotations or properties
+are evaluated.
+
+The frontend emits existing qreg allocate/initialize/gate/compute/call/return
+operations and reuses scalar capture for mathematical expressions. It retains
+exact source positions, infers full-domain unsigned widths and bounds static
+specializations/calls. Existing register verification owns initialization,
+Const/fresh-Output, alias and cleanup proofs; selection/lowering reuse existing
+kernels, schedules, targets and resource checks. No Qmod string bridge or second
+IR is involved. General inverse/phase/control/local scopes remain later slices.
+
+Golden path: run `python -m examples.synthesis_python_program`, change a literal
+allocation width, then run `tests/team/compiler/test_construction_python_program.py`
+and `tests/integration/test_synthesis_python_program.py`. Include full complex
+state/clean-workspace checks, not just output probabilities. The typed program
+[contract](../../../docs/api-changes/FQ-SYNTH-PYTHON-PROGRAM-UP01-20261102.md)
+and [delivery](../../../docs/roadmap/SYNTH_PYTHON_PROGRAM_UP01_DELIVERY.md) record
+exact API scope, source guards, original-profile preservation and validation.
