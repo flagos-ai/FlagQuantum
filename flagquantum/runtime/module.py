@@ -28,6 +28,7 @@ from .builder_compilation import (
     SlotParameterMapping,
     _builder_tensor_inputs,
     _refuse_non_finite_bound_parameters,
+    _remember_local_ir,
     can_defer_ir_snapshot,
     deferred_ir_snapshot,
     detached_ir_snapshot,
@@ -1140,7 +1141,7 @@ class Module(torch.nn.Module):
                 raise TypeError(
                     "local fq.Module execution requires a Circuit builder result"
                 )
-            self._remember_local_ir(circuit, selected_parameters, inputs)
+            _remember_local_ir(self, circuit, selected_parameters, inputs)
             qubits = self.policy.observable_qubits or (0,)
             # A Hamiltonian energy is evaluated on the simulated object, so the
             # Z readout only runs for the observables that are defined by it.
@@ -1181,38 +1182,6 @@ class Module(torch.nn.Module):
             return value
         finally:
             self._builder_bindings.clear()
-
-    def _remember_local_ir(
-        self,
-        circuit: Circuit,
-        parameters: torch.Tensor | Mapping[str, torch.Tensor],
-        inputs: torch.Tensor | None,
-    ) -> None:
-        """Freeze consumed values without eagerly serializing unused diagnostics."""
-        ir = ensure_circuit_ir(circuit)
-        program = self._builder_program
-        if (
-            program is not None
-            and circuit is self._builder_bound_circuit
-            and not self.policy.correctness_debug
-        ):
-            generation, safe, budget = self._local_snapshot_eligibility
-            if generation != self._builder_compile_count:
-                safe = can_defer_ir_snapshot(program, ir)
-                budget = ir_snapshot_input_budget(ir) if safe else 0
-                self._local_snapshot_eligibility = (
-                    self._builder_compile_count,
-                    safe,
-                    budget,
-                )
-            tensors, _, _ = _builder_tensor_inputs(parameters, inputs)
-            if safe and sum(t.numel() * t.element_size() for t in tensors) <= budget:
-                self._last_ir_snapshot = None
-                self._last_ir_factory = deferred_ir_snapshot(
-                    program, ir, tensors, len(self._builder_slots)
-                )
-                return
-        self._last_ir = detached_ir_snapshot(ir)
 
     def get_extra_state(self) -> dict[str, Any]:
         return {"policy": self.policy.to_dict()}
