@@ -71,6 +71,8 @@ def _program(plan: ExecutionPlan) -> CircuitIR:
             "execution.profile",
             "require one exact local CPU torch statevector without noise or fallback",
         )
+    program_fingerprint = fingerprints["program"]
+    del payload, fingerprints
     if plan.state_bytes != decision["state_bytes"]:
         raise ExecutionContractError(
             "execution.controls", "state allocation differs from the sealed decision"
@@ -106,7 +108,7 @@ def _program(plan: ExecutionPlan) -> CircuitIR:
     actual = plan_execution_program(plan)
     # Runtime already recomputed this fingerprint from the sealed program. Keep
     # its authoritative layer reconstruction, without rebuilding the record again.
-    if fingerprints["program"] != actual.content_hash:
+    if program_fingerprint != actual.content_hash:
         raise ExecutionContractError(
             "execution.layers",
             "actual instruction layers differ from the sealed program",
