@@ -18,6 +18,11 @@ def test_source_overloads_distinguish_file_text_and_python(
 from flagquantum import synth
 def polynomial(x: int) -> int:
     return x*x+1
+from flagquantum.synth import Output, QNum, allocate, hadamard_transform
+@synth.qfunc
+def main(q: Output[QNum]) -> None:
+    allocate(2,q)
+    hadamard_transform(q)
 """
     if valid:
         code += """synth.synthesize(polynomial, inputs={"x":synth.UInt(2)}, output_mode="value")
@@ -26,6 +31,8 @@ synth.synthesize(Path("source.qmod"))
 synth.synthesize("qfunc main(output q:qbit) { allocate(q); }", source_format="qmod", output_mode="value")
 synth.synthesize(polynomial, inputs={"x":synth.UInt(1)}, output_mode="phase")
 synth.synthesize(function=polynomial, inputs={"x":synth.UInt(1)}, output_mode="phase", basis=None, topology=None)
+synth.synthesize(main)
+synth.synthesize(main, memory_limit_bytes=1024, topology="line")
 """
     else:
         code += """synth.synthesize(polynomial)
@@ -38,6 +45,10 @@ synth.synthesize(polynomial, inputs={"x":synth.UInt(1)}, output_mode="phase", ba
 synth.synthesize("text", source_format="qmod", output_mode="phase")
 synth.synthesize(Path("source.qmod"), output_mode="phase")
 synth.synthesize(polynomial, inputs={"x":synth.UInt(1)}, output_mode="sign")
+synth.synthesize(main, input_state=synth.InputState.uniform())
+synth.synthesize(main, output_mode="phase")
+synth.synthesize(main, source_format="qmod")
+synth.synthesize(main, functions=(polynomial,))
 """
     path = tmp_path / "typing_case.py"
     path.write_text(code)
@@ -57,4 +68,4 @@ synth.synthesize(polynomial, inputs={"x":synth.UInt(1)}, output_mode="sign")
         assert result == 0, stdout + stderr
     else:
         assert result == 1, stdout + stderr
-        assert stdout.count(": error:") == 10, stdout
+        assert stdout.count(": error:") == 14, stdout

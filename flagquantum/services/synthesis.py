@@ -19,6 +19,24 @@ from ..compiler._construction.frontend_python import (
 from ..compiler._construction.frontend_python import qfunc as qfunc
 from ..compiler._construction.lowering import ArithmeticCandidate
 from ..compiler._construction.profile import uint_type
+from ..compiler._construction.program_types import (
+    Const as Const,
+)
+from ..compiler._construction.program_types import (
+    Output as Output,
+)
+from ..compiler._construction.program_types import (
+    QBit as QBit,
+)
+from ..compiler._construction.program_types import (
+    QNum as QNum,
+)
+from ..compiler._construction.program_types import (
+    allocate as allocate,
+)
+from ..compiler._construction.program_types import (
+    hadamard_transform as hadamard_transform,
+)
 from ..compiler._construction.register_profile import register_ports
 from ..compiler._construction.selection import (
     Constraints,
@@ -51,6 +69,12 @@ __all__ = (
     "UInt",
     "qfunc",
     "synthesize",
+    "Output",
+    "Const",
+    "QNum",
+    "QBit",
+    "allocate",
+    "hadamard_transform",
 )
 
 
@@ -429,6 +453,32 @@ def synthesize(
 ) -> Program: ...
 
 
+@overload
+def synthesize(
+    function: _QuantumFunction,
+    *,
+    inputs: None = None,
+    input_state: None = None,
+    constants: None = None,
+    functions: tuple[()] = (),
+    max_qubits: int | None = 256,
+    max_operations: int | None = 100_000,
+    max_depth: int | None = None,
+    max_workspace: int | None = None,
+    construction_budget: ConstructionBudget = _DEFAULT_BUDGET,
+    objective: Literal["width", "depth"] = "width",
+    basis: Iterable[str] | None = None,
+    topology: Literal["line"] | None = None,
+    preparation: None = None,
+    preparation_map: None = None,
+    source_format: None = None,
+    source_name: None = None,
+    source_version: None = None,
+    memory_limit_bytes: int | None = None,
+    output_mode: Literal["value"] = "value",
+) -> Program: ...
+
+
 def synthesize(
     function: Definition | str | PathLike[str],
     *,
@@ -582,6 +632,45 @@ def synthesize(
         )
     if any(value is not None for value in (source_format, source_name, source_version)):
         raise ValueError("source_format/name/version apply only to native source")
+    if isinstance(function, _QuantumFunction) and function.source.program:
+        if (
+            output_mode != "value"
+            or functions
+            or any(
+                value is not None
+                for value in (
+                    inputs,
+                    input_state,
+                    constants,
+                    preparation,
+                    preparation_map,
+                )
+            )
+        ):
+            raise ValueError(
+                "typed qfunc programs own preparation and Output ports; omit scalar "
+                "inputs/state/constants/functions/preparation and use value mode"
+            )
+        from ..compiler._construction.frontend_program import capture_program
+        from ._synthesis_registers import synthesize_registers
+
+        program, definitions = capture_program(function)
+        _, _, position = register_ports(program)
+        return synthesize_registers(
+            program,
+            definitions,
+            constraints=constraints,
+            budget=construction_budget,
+            target=_target(position, construction_budget, selected_basis, topology),
+            objective=objective,
+            memory_limit_bytes=(
+                512 * 1024**2 if memory_limit_bytes is None else memory_limit_bytes
+            ),
+            memory_limit_origin=(
+                "profile_default" if memory_limit_bytes is None else "explicit"
+            ),
+            source_format="python",
+        )
     if not isinstance(inputs, Mapping) or (
         constants is not None and not isinstance(constants, Mapping)
     ):

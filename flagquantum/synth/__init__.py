@@ -5,11 +5,17 @@ CPU statevectors. See README.md for scope and the independent user-trial gate.
 """
 
 from ..services.synthesis import (
+    Const,
     ConstructionBudget,
     InputState,
+    Output,
     Program,
+    QBit,
+    QNum,
     SynthesisError,
     UInt,
+    allocate,
+    hadamard_transform,
     qfunc,
     synthesize,
 )
@@ -22,4 +28,10 @@ __all__ = (
     "UInt",
     "qfunc",
     "synthesize",
+    "Output",
+    "Const",
+    "QNum",
+    "QBit",
+    "allocate",
+    "hadamard_transform",
 )
