@@ -89,6 +89,8 @@ def test_cuda_public_module_vjps_adam_validation_and_recovery(
         "gpu": torch.cuda.get_device_name(0),
         "updates": 6,
         "status": "running",
+        "torch_version": torch.__version__,
+        "cuda_runtime_version": torch.version.cuda,
     }
     seen_devices = set()
     try:
@@ -100,6 +102,8 @@ def test_cuda_public_module_vjps_adam_validation_and_recovery(
                 record.update(status="unsupported", reason=type(error).__name__)
                 pytest.skip("installed JAX CUDA backend is unavailable")
             assert devices
+            record["jax_version"] = jax.__version__
+            record["jax_device_kinds"] = [device.device_kind for device in devices]
             kernel = importlib.import_module("flagquantum.runtime.executors.jax.kernel")
             original = kernel._jax_to_torch
 
@@ -229,6 +233,20 @@ def test_cuda_public_module_vjps_adam_validation_and_recovery(
             consumed_ir_hash=consumed,
             jax_array_platforms=sorted(seen_devices),
             final_parameters=model.parameters_tensor.detach().cpu().tolist(),
+            compatibility=dict(execution.compatibility),
+            effective_execution={
+                key: execution.runtime.get(key)
+                for key in (
+                    "backend",
+                    "mode",
+                    "gradient_interface",
+                    "jit",
+                    "compute_dtype",
+                    "matmul_precision",
+                    "statevector_algorithm",
+                    "builder_lowering_reason",
+                )
+            },
         )
     except BaseException as error:
         if record["status"] != "unsupported":
