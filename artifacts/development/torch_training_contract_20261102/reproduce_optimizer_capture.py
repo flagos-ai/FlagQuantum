@@ -1,5 +1,6 @@
 """Check eager/identity-compiler optimizer trajectories without numeric codegen."""
 
+import argparse
 import hashlib
 import json
 import subprocess
@@ -34,6 +35,9 @@ def trajectory(kind, capture):
     return model.parameters_tensor.detach(), losses, graphs
 
 
+parser = argparse.ArgumentParser(description=__doc__)
+parser.add_argument("--output", required=True, type=Path)
+args = parser.parse_args()
 torch.set_num_threads(1)
 results = []
 for kind in ("SGD", "Adam"):
@@ -80,7 +84,7 @@ output = dict(
     producer_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
     results=results,
 )
-Path(__file__).with_name("optimizer-capture.json").write_text(
+args.output.write_text(
     json.dumps(output, indent=2) + "\n"
 )
 print([(r["optimizer"], r["status"], r["parameter_max_error"]) for r in results])

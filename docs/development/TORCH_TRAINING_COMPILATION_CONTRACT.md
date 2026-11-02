@@ -104,7 +104,7 @@ From the measured repository checkout, with its environment:
 
 ```bash
 python -m pytest tests/unit/test_training_compilation_contract_fake.py -q
-PYTHONPATH=. python artifacts/development/torch_training_contract_20261102/reproduce_optimizer_capture.py
+PYTHONPATH=. python artifacts/development/torch_training_contract_20261102/reproduce_optimizer_capture.py --output /tmp/optimizer-capture.json
 ```
 
 ## Required production acceptance before promotion
