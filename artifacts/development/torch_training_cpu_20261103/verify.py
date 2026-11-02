@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import gzip
 import hashlib
 import json
 import statistics
@@ -74,6 +75,13 @@ def load_capsules() -> dict[str, dict[str, Any]]:
                 ["git", "show", f"{pin}:{path}"], timeout=15
             )
             assert hashlib.sha256(original).hexdigest() == digest
+    for filename, evidence in publication["validation"]["files"].items():
+        compressed = (HERE / "validation" / filename).read_bytes()
+        assert hashlib.sha256(compressed).hexdigest() == evidence["gzip_sha256"]
+        assert (
+            hashlib.sha256(gzip.decompress(compressed)).hexdigest()
+            == evidence["published_sha256"]
+        )
     return capsules
 
 
