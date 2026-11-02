@@ -30,5 +30,7 @@
     "verified": 171
   },
   "review": "First candidate and sequential RSS reviews retained in initial manifest. Final primary scalar logical RSS regression retained; not reproduced by alternating snapshots. No RSS improvement conclusion.",
+  "rss_review_tool_path": "benchmarks/synthesis/performance_rss_review.py",
+  "rss_review_tool_revision": "5d800fd8b57a625a71eba4e6373045836b7551b3",
   "scope": "Final PF-01 Services delivery; scoped local Python time comparison, no RSS improvement, Rust, hardware or release claim"
 }
