@@ -107,12 +107,18 @@ def _pymatching() -> ModuleType:
 
 def _translate(
     graph: DecodingGraph,
+    *,
+    record_edge_ids: bool = False,
 ) -> tuple[Any, dict[tuple[int, int], DecodingGraphEdge]]:
     """Build PyMatching's matching graph for one decoding graph.
 
     Returns the matching graph and the map from a node pair back to the decoding
     graph edge it stands for, which is how a selected edge is read as the
     mechanism this package selected.
+
+    ``record_edge_ids`` appends private edge labels above the logical range so
+    one SDK decode can return a coherent full record. The default translation
+    and its logical-only batch shape remain unchanged.
     """
 
     carried: dict[tuple[int, int], DecodingGraphEdge] = {}
@@ -142,9 +148,11 @@ def _translate(
         )
 
     matching = _pymatching().Matching()
-    for edge in graph.edges:
+    for index, edge in enumerate(graph.edges):
         first, second = edge.detectors
         labels = set(edge.observables)
+        if record_edge_ids:
+            labels.add(graph.num_observables + index)
         if second == graph.boundary_node:
             matching.add_boundary_edge(
                 first,
@@ -160,7 +168,9 @@ def _translate(
                 weight=edge.weight,
                 error_probability=edge.probability,
             )
-    matching.ensure_num_fault_ids(graph.num_observables)
+    matching.ensure_num_fault_ids(
+        graph.num_observables + (graph.num_edges if record_edge_ids else 0)
+    )
     if matching.num_detectors != graph.num_detectors:
         raise CapabilityError(
             "PyMatching inferred "
@@ -186,6 +196,12 @@ class PyMatchingDecoder:
     what keeps the label bookkeeping an independent side of the comparison. Its
     ``weight`` is the exact sum of the selected mechanisms' weights, and not
     PyMatching's single-precision accumulator.
+
+    Full records use an additional temporary graph with private edge labels.
+    Logical predictions and edges then come from one SDK solution, including
+    ties. This adds graph construction and metadata cost per full-record call;
+    it is not a performance optimization. The stored logical-only graph and
+    decoder instance fields remain unchanged.
     """
 
     graph: DecodingGraph
@@ -350,26 +366,27 @@ class PyMatchingDecoder:
         syndrome = [0] * self.graph.num_detectors
         for detector in defects:
             syndrome[detector] = 1
+        # One SDK solution carries both logical labels and private edge labels.
+        # Keep the stored logical-only graph, its batch path and instance fields
+        # unchanged; the additional graph is local to this full-record call.
+        matching, _ = _translate(self.graph, record_edge_ids=True)
         try:
-            predicted = self._matching.decode(syndrome)
-            selected = self._matching.decode_to_edges_array(syndrome)
+            predicted = matching.decode(syndrome)
         except ValueError as exc:
             raise CapabilityError(
                 "PyMatching found no perfect matching for a syndrome the "
                 f"self-implemented matcher refuses as well: {exc}"
             ) from exc
-        try:
-            edges = tuple(
-                self._edges[self._pair(int(row[0]), int(row[1]))] for row in selected
-            )
-        except KeyError as exc:  # pragma: no cover - a translation invariant
-            raise CapabilityError(
-                f"PyMatching selected the edge {exc.args[0]!r}, which this graph "
-                "does not carry"
-            ) from exc
+        edges = tuple(
+            edge
+            for index, edge in enumerate(self.graph.edges)
+            if predicted[self.graph.num_observables + index]
+        )
         return MatchingDecodeResult(
             observables=tuple(
-                index for index, flipped in enumerate(predicted) if flipped
+                index
+                for index, flipped in enumerate(predicted[: self.graph.num_observables])
+                if flipped
             ),
             error_edges=edges,
             weight=sum(edge.weight for edge in edges),

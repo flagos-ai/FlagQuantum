@@ -203,6 +203,12 @@ These examples do not use that alias:
   across five certified concrete decoders. Requires the PyMatching extra; this
   operation retains correction fields and is separate from logical-only Tensor
   batch predictions. It makes no speed claim.
+- [`qec/decoder_comparison.py`](qec/decoder_comparison.py) presents three existing
+  decoders with the same toy DEM and syndrome. Requires only CPU and the
+  PyMatching extra, without Stim or sampling. Complete records expose valid
+  corrections, mathematical ties and precision caveats; minimum configuration
+  cost and logical-class MAP are distinct objectives. BP+OSD need not minimize
+  cost, and different logical predictions need not indicate a decoding defect.
 - [`qec/memory_experiment.py`](qec/memory_experiment.py) composes the approved
   fixed-shot experiment through its canonical QEC execution import. It uses one
   original source and exact final partial batches with five default decoders;

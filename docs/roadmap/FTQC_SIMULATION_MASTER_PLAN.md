@@ -423,6 +423,37 @@ Subsequent reports should state verified capability gains, closed requirements, 
 
 ### Delivery Tracking
 
+The bounded shared-decoder comparison reuses existing matching/PyMatching,
+BP+OSD and C/005 evidence. Five independent toy DEMs cover unique explanations,
+exact/near ties and a minimum-configuration versus logical-class MAP distinction;
+hyperedge and parallel-edge controls retain each implementation's refusal domain.
+An independent scalar-XOR/rational-probability oracle checks all 48 syndrome
+rows of the five models without sampling or calling production solvers.
+Mathematical ties and the existing numerical comparison bands remain distinct;
+BP+OSD is checked for consistency, not forced optimality or matcher agreement.
+
+```bash
+python -m pip install -e '.[pymatching]'
+PYTHONPATH=. python examples/qec/decoder_comparison.py
+```
+
+The CPU example prints 15 complete decoder records, three per model, all with
+`consistent=True`; model notes distinguish the comparison objectives. It does
+not require Stim, GPU hardware or random samples. Exact selections and precision
+caveats require reviewed-head evidence; actual-main admission remains a gate.
+No previous Surface/Steane collection is rerun to populate this contribution,
+and no decoder algorithm, API, numerical bound or frozen artifact changes.
+The new cases exposed a PyMatching full record combining logical bits from
+`decode` with different tied edges from `decode_to_edges_array`. Under separate
+explicit approval, the private adapter instead takes both from one SDK decode
+on a temporary graph carrying disjoint private edge labels. Stored graph/batch
+shape, decoder fields and refusal domains remain unchanged; zero/multiple
+logical-bit cases check that private labels do not escape. The extra graph has
+construction and metadata cost; no performance benefit is claimed. Original
+failure evidence is retained rather than relabeled as a successful comparison.
+This is bounded FTS-05/06 and R01/R14 conformance, not FTS-09, M1/M2 closure,
+logical-error suppression, general decoder ranking or a performance result.
+
 The bounded Surface composition follow-up reuses #792's X/Z measurement maps,
 forced-fault references and retained distance examples, and the existing C/007
 fixed-shot implementation. It adds noisy distance-three, three-round X/Z
