@@ -31,9 +31,9 @@ def test_all_expression_families_have_exact_coherent_and_basis_oracles(
 def test_energy_all_256_input_target_pairs_and_full_complex_states() -> None:
     row = measure(Case(EXPRESSIONS[4], (2, 2)))
     assert row.resources is not None and row.verification is not None
-    assert (row.resources.allocated_qubits, row.resources.workspace_qubits) == (18, 10)
-    assert (row.resources.operations, row.resources.depth) == (166, 124)
-    assert row.resources.planned_complex128_state_bytes == 4 * 1024**2
+    assert (row.resources.allocated_qubits, row.resources.workspace_qubits) == (16, 8)
+    assert (row.resources.operations, row.resources.depth) == (81, 59)
+    assert row.resources.planned_complex128_state_bytes == 1024**2
     assert row.verification.basis_checks == 256
     assert row.verification.coherent_states == 2
     assert row.verification.maximum_amplitude_error < 1e-12
@@ -105,12 +105,12 @@ def test_helper_expansion_and_exchanged_spelling_improve_without_rewriting_histo
         helper.resources.allocated_qubits,
         helper.resources.operations,
         helper.resources.depth,
-    ) == (18, 166, 124)
+    ) == (16, 81, 59)
     assert (
         exchanged.resources.allocated_qubits,
         exchanged.resources.operations,
         exchanged.resources.depth,
-    ) == (18, 166, 124)
+    ) == (16, 81, 59)
     # AO-01 closes this spelling gap; the checked AO-00 measurement stays frozen.
     import json
     from pathlib import Path
@@ -128,7 +128,7 @@ def test_helper_expansion_and_exchanged_spelling_improve_without_rewriting_histo
         old["operations"],
         old["depth"],
     ) == (20, 12, 170, 126)
-    assert exchanged.resources.workspace_qubits == 10
+    assert exchanged.resources.workspace_qubits == 8
 
 
 def test_independent_manual_reference_preserves_all_256_input_target_pairs() -> None:
@@ -149,7 +149,7 @@ def test_independent_manual_reference_preserves_all_256_input_target_pairs() -> 
         )
 
 
-def test_primary_qfunc_example_prepares_composes_and_matches_frozen_costs() -> None:
+def test_primary_qfunc_example_prepares_composes_and_improves_frozen_costs() -> None:
     from benchmarks.synthesis.arithmetic_baseline import costs, workspace_of
     from examples.synthesis_arithmetic_baseline import QMOD, main
     from flagquantum import synth
@@ -168,4 +168,4 @@ def test_primary_qfunc_example_prepares_composes_and_matches_frozen_costs() -> N
             resource.workspace_qubits,
             resource.operations,
             resource.depth,
-        ) == (18, 10, 166, 124)
+        ) == (16, 8, 81, 59)

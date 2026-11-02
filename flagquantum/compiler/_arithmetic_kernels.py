@@ -14,9 +14,17 @@ def ripple_add(
     a: tuple[int, ...], b: tuple[int, ...], carry: int, carry_out: int
 ) -> tuple[Instruction, ...]:
     """Emit the existing exact 8*n+1 gate adder on explicit disjoint qubit maps."""
+    if isinstance(carry_out, bool) or not isinstance(carry_out, int):
+        raise TypeError("ripple_add wires must be Python integers")
+    return _ripple_add(a, b, carry, carry_out)
+
+
+def _ripple_add(
+    a: tuple[int, ...], b: tuple[int, ...], carry: int, carry_out: int | None
+) -> tuple[Instruction, ...]:
     if not a or len(a) != len(b):
         raise ValueError("ripple_add requires nonempty equal-width registers")
-    wires = (*a, *b, carry, carry_out)
+    wires = (*a, *b, carry, *((carry_out,) if carry_out is not None else ()))
     if any(isinstance(w, bool) or not isinstance(w, int) for w in wires):
         raise TypeError("ripple_add wires must be Python integers")
     if min(wires) < 0 or len(set(wires)) != len(wires):
@@ -30,7 +38,8 @@ def ripple_add(
                 Instruction("ccx", (left, right, carry)),
             )
         )
-    instructions.append(Instruction("cx", (carry, carry_out)))
+    if carry_out is not None:
+        instructions.append(Instruction("cx", (carry, carry_out)))
     for left, right in zip(a, b, strict=True):
         instructions.extend(
             (
@@ -59,36 +68,8 @@ def multiply_accumulate(
     caller can stop at its operation budget without materializing a wide circuit.
     """
 
-    def bits(value: tuple[int, ...] | int) -> tuple[tuple[int, int | None], ...]:
-        if isinstance(value, bool):
-            raise TypeError("multiplication constants must be Python integers")
-        if isinstance(value, int):
-            if value < 0:
-                raise ValueError("multiplication constants must be nonnegative")
-            return tuple(
-                (i, None) for i in range(value.bit_length()) if value & (1 << i)
-            )
-        if any(isinstance(q, bool) or not isinstance(q, int) for q in value):
-            raise TypeError("multiplication operand labels must be Python integers")
-        if not value or len(set(value)) != len(value):
-            raise ValueError(
-                "multiplication operand maps must be nonempty and injective"
-            )
-        return tuple(enumerate(reversed(value)))
-
-    left, right = bits(a), bits(b)
-    operands = tuple(q for _, q in (*left, *right) if q is not None)
-    if not product or len(scratch) != len(product):
-        raise ValueError(
-            "multiplication requires equally wide product and scratch maps"
-        )
-    allocated = (*product, *scratch)
-    if any(isinstance(q, bool) or not isinstance(q, int) for q in allocated):
-        raise TypeError("multiplication qubit labels must be Python integers")
-    if min((*operands, *allocated)) < 0 or len(set(allocated)) != len(allocated):
-        raise ValueError("multiplication allocations must be nonnegative and disjoint")
-    if set(operands).intersection(allocated):
-        raise ValueError("multiplication allocations overlap an operand")
+    left, right = _multiplication_bits(a), _multiplication_bits(b)
+    _validate_product_maps((*left, *right), product, scratch, len(product))
     for i, control_a in left:
         for j, control_b in right:
             shift = i + j
@@ -98,25 +79,158 @@ def multiply_accumulate(
             controls = tuple(
                 dict.fromkeys(q for q in (control_a, control_b) if q is not None)
             )
-            prepare = Instruction(
-                ("x", "cx", "ccx")[len(controls)], (*controls, scratch[0])
+            yield from _controlled_increment(controls, accumulator, scratch)
+
+
+def _multiplication_bits(
+    value: tuple[int, ...] | int,
+) -> tuple[tuple[int, int | None], ...]:
+    if isinstance(value, bool):
+        raise TypeError("multiplication constants must be Python integers")
+    if isinstance(value, int):
+        if value < 0:
+            raise ValueError("multiplication constants must be nonnegative")
+        return tuple((i, None) for i in range(value.bit_length()) if value & (1 << i))
+    if any(isinstance(q, bool) or not isinstance(q, int) for q in value):
+        raise TypeError("multiplication operand labels must be Python integers")
+    if not value or len(set(value)) != len(value):
+        raise ValueError("multiplication operand maps must be nonempty and injective")
+    return tuple(enumerate(reversed(value)))
+
+
+def square_accumulate(
+    operand: tuple[int, ...], product: tuple[int, ...], scratch: tuple[int, ...]
+) -> Iterator[Instruction]:
+    """Add x*x modulo 2**width using diagonal and doubled cross terms.
+
+    x_i**2=x_i and the two ordered x_i*x_j terms contribute at i+j+1.
+    Product may be nonzero; operands survive and initially zero scratch is clean.
+    """
+    if not isinstance(operand, tuple):
+        raise TypeError("square requires a physical operand map")
+    bits = _multiplication_bits(operand)
+    _validate_product_maps(bits, product, scratch, len(product))
+    for i, control in bits:
+        assert control is not None
+        yield from _controlled_increment(
+            (control,), tuple(reversed(product))[2 * i :], scratch
+        )
+    for position, (i, a) in enumerate(bits):
+        for j, b in bits[position + 1 :]:
+            assert a is not None and b is not None
+            yield from _controlled_increment(
+                (a, b), tuple(reversed(product))[i + j + 1 :], scratch
             )
-            yield prepare
-            # c[k+1] = c[k] & old_product[k]. Overflow is modular, not measured.
-            for k in range(1, len(accumulator)):
-                yield Instruction(
-                    "ccx", (scratch[k - 1], accumulator[k - 1], scratch[k])
-                )
-            for k, target in enumerate(accumulator):
-                yield Instruction("cx", (scratch[k], target))
-            # old_bit = new_bit XOR carry. The two gates erase each saved carry
-            # after the accumulator changes, without erasing its input controls.
-            for k in reversed(range(1, len(accumulator))):
-                yield Instruction(
-                    "ccx", (scratch[k - 1], accumulator[k - 1], scratch[k])
-                )
-                yield Instruction("cx", (scratch[k - 1], scratch[k]))
-            yield prepare
+
+
+def _validate_product_maps(
+    bits: tuple[tuple[int, int | None], ...],
+    product: tuple[int, ...],
+    scratch: tuple[int, ...],
+    required: int,
+) -> None:
+    operands = tuple(q for _, q in bits if q is not None)
+    if not product or len(scratch) != required:
+        raise ValueError("arithmetic output/scratch widths disagree")
+    allocated = (*product, *scratch)
+    if any(
+        isinstance(q, bool) or not isinstance(q, int) for q in (*operands, *allocated)
+    ):
+        raise TypeError("arithmetic qubit labels must be Python integers")
+    if min((*operands, *allocated)) < 0 or len(set(allocated)) != len(allocated):
+        raise ValueError("arithmetic allocations must be nonnegative and disjoint")
+    if set(operands).intersection(allocated):
+        raise ValueError("arithmetic allocations overlap an operand")
+
+
+def _controlled_increment(
+    controls: tuple[int, ...], accumulator: tuple[int, ...], scratch: tuple[int, ...]
+) -> Iterator[Instruction]:
+    if not accumulator:
+        return
+    prepare = Instruction(("x", "cx", "ccx")[len(controls)], (*controls, scratch[0]))
+    yield prepare
+    for k in range(1, len(accumulator)):
+        yield Instruction("ccx", (scratch[k - 1], accumulator[k - 1], scratch[k]))
+    for k, target in enumerate(accumulator):
+        yield Instruction("cx", (scratch[k], target))
+    for k in reversed(range(1, len(accumulator))):
+        yield Instruction("ccx", (scratch[k - 1], accumulator[k - 1], scratch[k]))
+        yield Instruction("cx", (scratch[k - 1], scratch[k]))
+    yield prepare
+
+
+def constant_multiply_accumulate(
+    operand: tuple[int, ...],
+    constant: int,
+    product: tuple[int, ...],
+    scratch: tuple[int, ...],
+) -> Iterator[Instruction]:
+    """Shift/add a nonnegative constant with shared Cuccaro sweeps.
+
+    Only zero padding and one carry are needed. Omitting carry-out implements
+    modular addition; the Cuccaro inverse sweep restores input and carry.
+    This is addition into an accumulator, never an arbitrary-target XOR writer.
+    """
+    if not isinstance(operand, tuple):
+        raise TypeError("constant multiplication requires a physical operand map")
+    bits = _multiplication_bits(operand)
+    terms = _multiplication_bits(constant)
+    required = max(0, len(product) - len(operand)) + 1
+    _validate_product_maps(bits, product, scratch, required)
+    for shift, _ in terms:
+        accumulator = product[: len(product) - shift] if shift < len(product) else ()
+        if not accumulator:
+            continue
+        variable = operand[-len(accumulator) :]
+        padding = scratch[: len(accumulator) - len(variable)]
+        yield from _ripple_add((*padding, *variable), accumulator, scratch[-1], None)
+
+
+def xor_add_parts(
+    a: tuple[int, ...] | int,
+    b: tuple[int, ...] | int,
+    target: tuple[int, ...],
+    scratch: tuple[int, ...],
+) -> tuple[tuple[Instruction, ...], tuple[Instruction, ...]]:
+    """Return clean-carry prefix and XOR writes; invert the prefix afterwards.
+
+    c[i+1]=a[i]b[i] XOR a[i]c[i] XOR b[i]c[i]. Target is arbitrary,
+    disjoint from operands/zero carries, and must not enter the prefix.
+    Equal operand maps implement x+x as a shift with no carry allocation.
+    """
+    left, right = _multiplication_bits(a), _multiplication_bits(b)
+    required = 0 if a == b else len(target) - 1
+    _validate_product_maps((*left, *right), target, scratch, required)
+    left_bits, right_bits = dict(left), dict(right)
+    prefix: list[Instruction] = []
+    writes: list[Instruction] = []
+
+    def toggle(
+        terms: tuple[tuple[int, int | None], ...], output: int
+    ) -> tuple[Instruction, ...]:
+        if any(bit == 0 for bit, wire in terms if wire is None):
+            return ()
+        controls = tuple(dict.fromkeys(wire for _, wire in terms if wire is not None))
+        return (Instruction(("x", "cx", "ccx")[len(controls)], (*controls, output)),)
+
+    def bit(bits: dict[int, int | None], index: int) -> tuple[int, int | None]:
+        return (1, bits[index]) if index in bits else (0, None)
+
+    for i, output in enumerate(reversed(target)):
+        if a == b:
+            if i:
+                writes.extend(toggle((bit(left_bits, i - 1),), output))
+            continue
+        x, y = bit(left_bits, i), bit(right_bits, i)
+        carry = (1, scratch[i - 1]) if i else (0, None)
+        writes.extend(toggle((x,), output))
+        writes.extend(toggle((y,), output))
+        writes.extend(toggle((carry,), output))
+        if i < len(scratch):
+            for terms in ((x, y), (x, carry), (y, carry)):
+                prefix.extend(toggle(terms, scratch[i]))
+    return tuple(prefix), tuple(writes)
 
 
 def comparison_xor(

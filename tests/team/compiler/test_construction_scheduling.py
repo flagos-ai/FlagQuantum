@@ -12,6 +12,7 @@ from flagquantum.compiler._construction.lifetimes import analyze_lifetimes
 from flagquantum.compiler._construction.lowering import (
     ArithmeticCandidate,
     Schedule,
+    _emit_arithmetic,
     lower_arithmetic,
     schedule_arithmetic,
 )
@@ -95,13 +96,14 @@ def test_shared_additions_constants_padding_and_zero_products(
 
 
 def _candidate(
-    width: int, strategy: Schedule, capacity: int = 128
+    width: int, strategy: Schedule, capacity: int = 128, *, conservative: bool = False
 ) -> ArithmeticCandidate:
     graph = capture(pressure, {"x": width, "y": width})
     block = graph.body.blocks[0]
     result_width = block.operations[-1].operands[0].type.parameters[0]
     begin = 2 * width + result_width
-    return schedule_arithmetic(
+    emit = _emit_arithmetic if conservative else schedule_arithmetic
+    return emit(
         (graph,),
         {
             v.id: tuple(range(i * width, (i + 1) * width))
@@ -178,7 +180,7 @@ def test_fixed_workload_has_real_workspace_gate_tradeoff(
         if candidate.strategy == "recompute":
             assert compiled.n_operations > keep_ops
     with pytest.raises(HybridVerificationError, match="zero qubits"):
-        _candidate(width, "retain", io + clean)
+        _candidate(width, "retain", io + clean, conservative=True)
     for candidate in (retained, recomputed):
         with pytest.raises(HybridVerificationError, match="zero qubits"):
             _candidate(width, candidate.strategy, io + candidate.peak_workspace - 1)

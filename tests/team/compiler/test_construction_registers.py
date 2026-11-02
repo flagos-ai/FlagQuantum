@@ -57,10 +57,10 @@ def test_two_schedules_keep_all_outputs_live_and_real_segment_evidence(
     )
     assert tuple(lowered.registers) == ("x", "y", "result")
     assert tuple(lowered.registers.values()) == ((0,), (1,), (2, 3))
-    assert lowered.peak_workspace == (6 if scheduling == "retain" else 5)
+    assert lowered.peak_workspace == 4
     assert len(lowered.segments) == 1
     assert lowered.segments[0].peak_workspace == lowered.peak_workspace
-    assert len(lowered.circuit.instructions) == (43 if scheduling == "retain" else 61)
+    assert len(lowered.circuit.instructions) == (26 if scheduling == "retain" else 44)
     assert lowered.recomputations == sum(s.recomputations for s in lowered.segments)
 
 
@@ -72,7 +72,7 @@ def test_whole_program_constraints_include_preparation_and_exact_target_costs() 
     shallow = select_register_program(
         program, functions, constraints=Constraints(CircuitLimits(max_operations=43))
     )
-    assert narrow.selected.strategy == "recompute"
+    assert narrow.selected.strategy == "retain"
     assert shallow.selected.strategy == "retain"
     for selection in (narrow, shallow):
         assert selection.complete
@@ -85,14 +85,14 @@ def test_whole_program_constraints_include_preparation_and_exact_target_costs() 
             assert row.resources.n_qubits == 4 + row.arithmetic.peak_workspace
             assert row.stage_resources[-1][1] == row.resources
     assert not select_register_program(
-        program, functions, constraints=Constraints(CircuitLimits(max_operations=40))
+        program, functions, constraints=Constraints(CircuitLimits(max_operations=24))
     ).selected
 
 
 def test_complete_failures_have_real_retries_but_budget_exhaustion_does_not() -> None:
     program, functions = pressure_program()
     rejected = select_register_program(
-        program, functions, constraints=Constraints(CircuitLimits(max_qubits=8))
+        program, functions, constraints=Constraints(CircuitLimits(max_qubits=7))
     )
     assert (
         rejected.complete

@@ -319,10 +319,12 @@ def test_polynomial_cannot_reuse_a_live_product_as_later_scratch() -> None:
             Operation("qint.return", (result,)),
         ),
     )
-    # The multiplication fits, but this schedule needs one more qubit to retain
+    from flagquantum.compiler._construction.lowering import _emit_arithmetic
+
+    # The conservative multiplication fits, but this schedule needs one more qubit to retain
     # its result and finish the addition. It must fail without aliasing a result.
     with pytest.raises(HybridVerificationError, match="lowering.workspace"):
-        lower_arithmetic(
+        _emit_arithmetic(
             (main,),
             {x.id: (0, 1), y.id: (2, 3)},
             (4, 5, 6, 7),
@@ -331,3 +333,19 @@ def test_polynomial_cannot_reuse_a_live_product_as_later_scratch() -> None:
             workspace=tuple(range(8, 17)),
             workspace_state="fresh_zero",
         )
+
+    optimized = lower_arithmetic(
+        (main,),
+        {x.id: (0, 1), y.id: (2, 3)},
+        (4, 5, 6, 7),
+        entry="main",
+        n_qubits=16,
+        workspace=tuple(range(8, 16)),
+        workspace_state="fresh_zero",
+    )
+    for a in range(4):
+        for b in range(4):
+            for target in range(16):
+                initial = (((a << 2) | b) << 4 | target) << 8
+                expected = (((a << 2) | b) << 4 | (target ^ (a * a + b))) << 8
+                assert _image(optimized, initial) == expected
