@@ -382,3 +382,24 @@ def _tensor_constant_key(owner: Module, value: torch.Tensor) -> tuple[int, int, 
             0 if previous is None else previous[1] + 1,
         )
     return key, owner._jax_constant_snapshots[key][1], value.requires_grad
+
+
+def _bind_current_builder(
+    owner: Module, tensor_inputs: tuple[torch.Tensor, ...]
+) -> Circuit:
+    """Bind and validate current values after the caller authenticated reuse."""
+    assert owner._builder_program is not None
+    assert owner._builder_bound_circuit is not None
+    dynamic_values = owner._builder_program(*tensor_inputs)
+    if isinstance(dynamic_values, torch.Tensor):
+        dynamic_values = (dynamic_values,)
+    else:
+        dynamic_values = tuple(dynamic_values)
+    if len(dynamic_values) != len(owner._builder_slots):
+        raise ExecutionError("compiled builder parameter slot count changed")
+    owner._builder_bindings.bind(dynamic_values)
+    if not owner.policy.correctness_debug:
+        # Debug owns its documented NonFiniteTrainingError after execution.
+        _refuse_non_finite_bound_parameters(owner._builder_bound_circuit)
+    owner._builder_bound_circuit._invalidate_execution_cache(instructions_changed=False)
+    return owner._builder_bound_circuit

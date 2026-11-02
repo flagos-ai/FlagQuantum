@@ -438,3 +438,33 @@ def test_static_multiangle_and_controlled_gate_recipe_uses_the_same_public_consu
             reference.parameters_tensor.add_(0.005)
     assert compiled._builder_compile_count == 1
     assert compiled._jax_kernel_build_count == 1
+
+
+def test_subclass_build_lifecycle_is_not_bypassed_by_the_warm_binding_path():
+    class Observed(fq.Module):
+        def __init__(self):
+            super().__init__(
+                build,
+                2,
+                dtype=torch.float64,
+                init=torch.tensor([0.23, -0.31]),
+                policy=fq.RuntimePolicy(
+                    execution_options=fq.ExecutionOptions(backend="jax"),
+                    observable="z_sum",
+                    observable_qubits=(0, 1),
+                ),
+            )
+            self.build_calls = 0
+
+        def _build(self, inputs, parameters):
+            self.build_calls += 1
+            return super()._build(inputs, parameters)
+
+    model = Observed()
+    for step in range(3):
+        x = torch.tensor([[0.1, -0.2]], dtype=torch.float64) + step * 0.01
+        torch.testing.assert_close(
+            model(x), analytic(model.parameters_tensor, x), atol=1e-10, rtol=1e-10
+        )
+    assert model.build_calls == 3
+    assert model._builder_compile_count == 1

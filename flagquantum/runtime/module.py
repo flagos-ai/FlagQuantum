@@ -23,9 +23,9 @@ from ..errors import (
 )
 from .builder_compilation import (
     BuilderBindings,
+    _bind_current_builder,
     _builder_tensor_inputs,
     _install_captured_bindings,
-    _refuse_non_finite_bound_parameters,
     _remember_local_ir,
     _tensor_constant_key,
     can_defer_ir_snapshot,
@@ -380,29 +380,7 @@ class Module(torch.nn.Module):
         else:
             self._builder_cache_hits += 1
 
-        assert self._builder_program is not None
-        assert self._builder_bound_circuit is not None
-        dynamic_values = self._builder_program(*tensor_inputs)
-        if isinstance(dynamic_values, torch.Tensor):
-            dynamic_values = (dynamic_values,)
-        else:
-            dynamic_values = tuple(dynamic_values)
-        if len(dynamic_values) != len(self._builder_slots):
-            raise ExecutionError("compiled builder parameter slot count changed")
-        self._builder_bindings.bind(dynamic_values)
-        if not self.policy.correctness_debug:
-            # `correctness_debug` owns non-finite diagnosis and reports it as
-            # `NonFiniteTrainingError` after the run, covering the value and the
-            # gradients as well as the parameters. Refusing here instead would
-            # take that documented category away from the policy that exists to
-            # produce it, without catching anything the policy misses.
-            _refuse_non_finite_bound_parameters(self._builder_bound_circuit)
-        # ``Circuit.state`` is the only value-dependent cache on this reusable
-        # container. Instructions and their parameter maps stay immutable.
-        self._builder_bound_circuit._invalidate_execution_cache(
-            instructions_changed=False
-        )
-        return self._builder_bound_circuit
+        return _bind_current_builder(self, tensor_inputs)
 
     def _compile_builder_program(
         self,
@@ -1082,8 +1060,14 @@ class Module(torch.nn.Module):
             ):
                 # Rebinding validates the current angles even when IR snapshots
                 # are deferred and the JAX kernel can reuse its compiled trace.
-                self._build(inputs, selected)
                 tensors, _, _ = _builder_tensor_inputs(selected, inputs)
+                if type(self) is Module:
+                    # The kernel signature already authenticated shape, dtype,
+                    # device, builder, policy, precision and static constants.
+                    self._builder_cache_hits += 1
+                    _bind_current_builder(self, tensors)
+                else:
+                    self._build(inputs, selected)
                 self._last_ir_snapshot = None
                 self._last_ir_factory = deferred_ir_snapshot(
                     self._builder_program,
