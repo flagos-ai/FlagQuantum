@@ -8,6 +8,30 @@ Compiler owns program transformations over Core semantics. Runtime chooses
 execution; Simulation supplies numerical kernels; Compute and Remote adapt
 resources. Compiler does not run the program.
 
+## Reusable Module frontend
+
+[Module capture](module_builder.py) owns the private entry approved in
+[the lowering contract](../../docs/development/MODULE_REUSABLE_EXECUTION_CONTRACT.md).
+It replaces Runtime's capture with canonical CircuitIR placeholders plus the
+existing Torch FX binding graph. The graph is an ephemeral classical artifact,
+not another quantum IR. Preserve detach nodes: these bindings are differentiated
+again, so post-autograd detach-to-alias decompositions are inappropriate here.
+
+For a typical change, run:
+
+```bash
+python -m pytest tests/unit/test_module_ir_capture.py tests/unit/test_module_ir_replacement.py -q
+```
+
+The first file checks angle values and nonuniform VJPs against independent Torch
+arithmetic. The second runs the same public Module consumer with canonical and
+legacy JAX lowering, including changing inputs, Adam and checkpoint recovery.
+Only admitted pure binding operations lower to JAX. Unsupported operations retain
+the existing JAX builder compatibility route with a reason; instruction matrices
+and captured trainable constants are refused rather than silently changed.
+Runtime owns reuse and invalidation; Simulation receives Core instructions and
+numerical values without importing this capture type.
+
 ## Exact identity removal and small components
 
 Submitted nonzero angles are not deleted by a near-zero cutoff. Identity removal

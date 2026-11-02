@@ -10,8 +10,13 @@ Compute and Remote adapt resources through their contracts.
 
 The approved [Module capture boundary](../../docs/development/MODULE_REUSABLE_EXECUTION_CONTRACT.md)
 permits only `module.py` to call the Compiler-owned builder capture entry.
-Its production replacement is pending. Runtime retains lifecycle and binding;
+The replacement keeps one current capture and existing live binding maps.
+JAX tracing consumes its canonical IR instead of invoking the original Python
+builder again. Runtime retains lifecycle, consumed snapshots and constant guards;
 Simulation continues to consume Core IR without Compiler artifact types.
+`execute().runtime` reports `builder_lowering`, an exclusion reason when the
+legacy JAX builder is needed, and `jax_kernel_build_count`. That count tracks
+kernel objects, not individual lazy XLA compilations or derivative variants.
 
 ## Follow the local path
 

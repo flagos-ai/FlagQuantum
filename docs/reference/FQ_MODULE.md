@@ -58,6 +58,42 @@ circuit builder and skips `ExecutionResult`, IR snapshot, topology hash,
 provenance, and runtime-summary construction. Call `execute()` whenever those
 audit fields are required.
 
+The optional JAX policy uses the same ordinary Torch-shaped static builder.
+No private kernel or bridge is needed:
+
+```python
+def batched_circuit(theta, x):
+    return fq.Circuit(1, bsz=x.shape[0], device=theta.device).ry(
+        0, theta[0].square() + theta[1] * torch.sin(x[:, 0]))
+
+layer = fq.Module(
+    batched_circuit, 2, dtype=torch.float64,
+    init=torch.tensor([0.2, -0.3], dtype=torch.float64),
+    policy=fq.RuntimePolicy(
+        execution_options=fq.ExecutionOptions(backend="jax")),
+)
+optimizer = torch.optim.Adam(layer.parameters(), lr=0.03)
+for step in range(4):
+    x = (torch.linspace(-0.3, 0.5, 4, dtype=torch.float64)[:, None]
+         + step * 0.01).requires_grad_()
+    optimizer.zero_grad(set_to_none=True)
+    layer(x).square().mean().backward()
+    optimizer.step()
+with torch.no_grad():
+    details = layer.execute(x)
+print(details.runtime["builder_lowering"])
+print(details.runtime["jax_kernel_build_count"])
+```
+
+With optional JAX installed, this reports canonical IR binding and one kernel
+object. Lazy derivative/validation JIT variants have separate first-use costs;
+the object count is not their compilation count. execute().runtime also reports
+an exclusion reason when an older JAX builder route is necessary. Backend,
+gradient interface, JIT and precision remain visible there. JAX is first-order;
+retain the default Torch policy for higher-order derivatives. This example makes
+an explicit route discoverable and does not establish a universal speed ranking
+or completion of the training-performance budgets.
+
 Under an initialized multi-rank process group, the same statevector module and
 result surface automatically use the native sharded statevector runtime.
 Distribution topology comes from the execution environment, not from a second
