@@ -133,7 +133,7 @@ jobs:
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
       - name: Install FlagQuantum without replacing the runner's framework stack
         run: |
-          python -c "import pytest, torch"
+          python -c "import pytest, torch, numpy"
           python -m pip install --no-deps --no-build-isolation -e .
       - name: Frozen QNG algorithm and fusion ablation
         if: ${{ inputs.qng_ablation }}
@@ -146,7 +146,7 @@ jobs:
         run: |
           python tools/run_with_watchdog.py --phase qng-ablation --stall-seconds 240 --timeout-seconds 900 --diagnostics "$QNG_OUTPUT-watchdog" -- python -m benchmarks.qng_hva_time_to_accuracy --ablation --device cuda --output "$QNG_OUTPUT"
           python -m benchmarks.training_comparison_report "$QNG_OUTPUT"
-          python -m pytest tests/benchmark_contract/test_qng_hva_ablation.py::test_real_fused_tangents_metric_and_update_match_oracle -q -rs
+          python -m pytest tests/benchmark_contract/test_qng_hva_cuda.py::test_real_fused_tangents_metric_and_update_match_oracle -q -rs
       - name: Retain QNG measurements including failed cases
         if: ${{ always() && inputs.qng_ablation }}
         run: |
@@ -161,14 +161,14 @@ jobs:
           set -o pipefail
           CUDA_VISIBLE_DEVICES=0 python -c "import torch; assert torch.cuda.device_count() == 1"
           CUDA_VISIBLE_DEVICES=0 python tools/run_with_watchdog.py --phase one-gpu-correctness --stall-seconds 180 --timeout-seconds 600 --diagnostics hardware-run/watchdog-one-gpu-correctness -- python tests/distributed/correctness_hardware.py 2>&1 | tee hardware-run/one-gpu-correctness.json
-          CUDA_VISIBLE_DEVICES=0 python tools/run_with_watchdog.py --phase one-gpu-tests --stall-seconds 180 --timeout-seconds 600 --diagnostics hardware-run/watchdog-one-gpu-tests -- python -m pytest tests/test_statevector_triton_gates.py tests/qec/test_ising_comparison.py::test_real_cuda_complete_hyperedge_correction_and_timing -q -rs 2>&1 | tee hardware-run/one-gpu.log
+          CUDA_VISIBLE_DEVICES=0 python tools/run_with_watchdog.py --phase one-gpu-tests --stall-seconds 180 --timeout-seconds 600 --diagnostics hardware-run/watchdog-one-gpu-tests -- python -m pytest tests/test_statevector_triton_gates.py tests/qec/test_ising_comparison.py::test_real_cuda_complete_hyperedge_correction_and_timing tests/benchmark_contract/test_qng_hva_cuda.py::test_real_fused_tangents_metric_and_update_match_oracle -q -rs 2>&1 | tee hardware-run/one-gpu.log
           CUDA_VISIBLE_DEVICES=0 python tools/run_with_watchdog.py --phase one-gpu-benchmark --stall-seconds 240 --timeout-seconds 900 --diagnostics hardware-run/watchdog-one-gpu-benchmark -- python benchmarks/continuous_performance.py --mode local-gpu --backend pytorch --warmup 10 --repetitions 30 --inner-loops 20 --output hardware-run/one-gpu-performance.json
           python tools/evaluate_performance_artifact.py --write hardware-run/one-gpu-performance.json
       - if: ${{ always() && !inputs.qng_ablation }}
         run: >-
           python tools/hardware_run_manifest.py
           --output hardware-run/one-gpu.json
-          --command 'CUDA_VISIBLE_DEVICES=0 python -m pytest tests/test_statevector_triton_gates.py tests/qec/test_ising_comparison.py::test_real_cuda_complete_hyperedge_correction_and_timing -q -rs'
+          --command 'CUDA_VISIBLE_DEVICES=0 python -m pytest tests/test_statevector_triton_gates.py tests/qec/test_ising_comparison.py::test_real_cuda_complete_hyperedge_correction_and_timing tests/benchmark_contract/test_qng_hva_cuda.py::test_real_fused_tangents_metric_and_update_match_oracle -q -rs'
           --world-size 1
           --evidence-scope one_gpu_local
           --log hardware-run/one-gpu.log

@@ -1,7 +1,7 @@
 {
   "benchmark_evidence_class": "comparison_non_release",
   "execution_semantics": "single_device_fast_path",
-  "hostname": "bm-baai-dx-zone1-lc-a800-80g-15-171",
+  "hostname": "redacted",
   "platform": "Linux-5.15.0-181-generic-x86_64-with-glibc2.35",
   "protocol": {
     "case_timeout_seconds": 240,

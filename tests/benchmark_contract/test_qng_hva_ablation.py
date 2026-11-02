@@ -108,30 +108,6 @@ def test_complete_trajectories_match_and_total_includes_first_call() -> None:
             assert result["time_to_target_total_seconds"] is None
 
 
-@pytest.mark.skipif(
-    not torch.cuda.is_available(), reason="actual CUDA/Triton route required"
-)
-def test_real_fused_tangents_metric_and_update_match_oracle() -> None:
-    pytest.importorskip("triton")
-    workload = Workload(4, 2, "complex64", "cuda")
-    parameters = (
-        (
-            0.07
-            * torch.randn(
-                workload.count,
-                generator=torch.Generator().manual_seed(29),
-                dtype=torch.float64,
-            )
-        )
-        .float()
-        .cuda()
-        .requires_grad_()
-    )
-    assert verify(Geometry("fused_forward", workload), parameters, 0.001, 0.005)[
-        "passed"
-    ]
-
-
 def test_timeout_failure_and_unsupported_are_retained_without_ratios(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

@@ -41,12 +41,13 @@ parameterization, optimizer, damping, target and stop rules. QNG uses 13 and
 CPU raw evidence was produced by committed source
 `d76c095afba994972d4a0dfce9a924a2f7143673`, with `dirty=false` in every freeze
 and case. Frozen manifests, producer hashes, installed package versions,
-platform, Python and host identity accompany the raw results. The later
+platform and Python accompany the raw results. The later
 `770e24b4f43290f0e1a7d9ca212a8a4e4a396da5` commit adds GPU device/cache
 provenance, bounded compiler-process cleanup and report inventory checks;
 it does not change the CPU numerical algorithm, target or optimizer.
 The CPU QNG Markdown was regenerated with the complete-trajectory renderer
-`bd8819e22e48c9826341ae64eaf514aa10cb5ff1`; raw JSON is unchanged.
+`bd8819e22e48c9826341ae64eaf514aa10cb5ff1`; numerical results and source identities are unchanged; hostnames and local
+paths use the repository publication sanitizer.
 
 ## Numerical checks and timing interpretation
 
@@ -172,7 +173,17 @@ other accelerators and quantum advantage remain outside these claims.
 
 The initial PR quality run rejected the audit's new `renderer_commit` field
 name. The audit now nests its renderer identity under the existing
-`source_commit` vocabulary; all raw freeze and case records are unchanged.
+`source_commit` vocabulary; all numerical freeze and case fields are unchanged.
 The original failed quality log is retained as `validation/ci-initial-quality.log.gz`.
 The exact revision-field inventory regression was rerun without changing the
 gate, its vocabulary or any test expectation.
+
+The initial coverage run also identified unsanitized infrastructure identifiers
+and a CUDA/Triton test missing its device/extra markers. Public JSON and logs
+now use the existing repository sanitizer; numerical values, targets, seeds,
+source pins and hashes are unchanged. The fused-kernel test carries `gpu` and
+`triton` and is explicitly executed by both the manual A800 workflow and the regular
+single-GPU regression lane. Its GPU-only module keeps CPU optional-dependency
+skips separate; missing NumPy on the prepared GPU runner is a setup failure,
+not a silently skipped oracle. The
+original coverage failure logs are retained with the same publication redactions.

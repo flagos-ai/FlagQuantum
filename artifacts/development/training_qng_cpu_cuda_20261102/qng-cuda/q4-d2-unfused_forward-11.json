@@ -14,7 +14,7 @@
   "execution_semantics": "single_device_fast_path",
   "final_relative_energy_error": 1.9403584111504985e-07,
   "first_call_seconds": 0.11078327149152756,
-  "hostname": "bm-baai-dx-zone1-lc-a800-80g-15-171",
+  "hostname": "redacted",
   "initial_assessment_seconds": 0.012238752096891403,
   "initial_energy": -5.996374130249023,
   "initial_parameters": [

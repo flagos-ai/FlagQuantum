@@ -312,8 +312,8 @@ Use the existing **Local GPU Gate** workflow's `qng_ablation=true` dispatch
 input to measure on its reserved A800 lane. It retains exact-commit source
 preparation, accelerator concurrency and watchdog bounds, and uploads raw
 results and logs even on failure. This manual option does not run extra
-benchmarks on ordinary PR checks. The GPU run also executes the independent
-fused-kernel parity test. No runner, dependency, public API, backend routing or
+benchmarks on ordinary PR checks. The independent fused-kernel parity test
+also runs in the regular single-GPU regression lane. No runner, dependency, public API, backend routing or
 capability maturity is added.
 
 The CPU training producer now also records initial assessment, measured total

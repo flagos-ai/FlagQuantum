@@ -2,7 +2,7 @@
   "benchmark_evidence_class": "comparison_non_release",
   "error": "the existing Triton HVA kernel requires CUDA complex64",
   "execution_semantics": "single_device_fast_path",
-  "hostname": "baaideMacBook-Pro-8.local",
+  "hostname": "redacted",
   "platform": "macOS-27.0-arm64-arm-64bit",
   "protocol": {
     "case_timeout_seconds": 240,
