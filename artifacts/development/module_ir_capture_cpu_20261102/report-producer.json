@@ -1,0 +1,32 @@
+{
+  "source_commit": "a6fc719b883f23c5075bd2e3da37b9fc3e203dbb",
+  "producer_sha256": {
+    "benchmarks/module_execution_matrix.py": "b041196170a2394ef9b7d37148bd5da0421da1a17b9f729b27183bdc28d0ece1",
+    "benchmarks/training_comparison_report.py": "89adcecf8d36559471bb0f62ffb6e0114db56acad574e6f8c71c4e78b380fd23",
+    "artifacts/development/module_ir_capture_cpu_20261102/validation/evidence.py": "439f32736b27658254d90fcbd3e2c725ddf3b13c0bc56ea3d6a8cb7aa0eebb2a",
+    "artifacts/development/module_ir_capture_cpu_20261102/validation/reproduce_builder.py": "ee95180ff833ae6043f265aef16118600ff8c98350a93a0dd4c2ba7a7641afaa"
+  },
+  "validation_logs": {
+    "validation/fq918-ir-final-source-tests.log.gz": {
+      "raw_sha256": "943acbc4194c31a995f1e76b1ec79f290983899ece3883c3618a4cdaef30e4ee",
+      "published_sha256": "3d0f726137fd8b7bff731ac1cdf750966303dc2123ee0973b178260a456edf03"
+    },
+    "validation/fq918-ir-hot-binding-tests.log.gz": {
+      "raw_sha256": "49f9eee165dae836bd21ebb6d9d941b81cc1dcf08f9780f59a1aadee47224495",
+      "published_sha256": "ade0742fa7cda182a3e3b2aa29c1df1286f38d9d660c7b32582ccfccac1dbf47"
+    },
+    "validation/fq918-ir-code-quality.log.gz": {
+      "raw_sha256": "19b8ce8951c91d3712143f8ac56823db0b484b00fc20822465cc3c57fd2515a3",
+      "published_sha256": "f274e55ef816a80594fc93385224b6ca5fb13a11547fed3cb13af2fc9bc4b7cf"
+    },
+    "validation/fq918-ir-capture-tests.log.gz": {
+      "raw_sha256": "25e8998636a52e62f821e066def6a2a8076abd2cdf2d4e20349aa09ec85cf314",
+      "published_sha256": "05d3d4bff7fc9228979d0c4c4456b23ccbba8dbbfcf0772fdd1c96fd9a11cfd2"
+    },
+    "validation/fq918-ir-replacement-tests.log.gz": {
+      "raw_sha256": "921da727f162334abdfcba1eccf5b157144cecc16ea0bf6d69f4c08e5eb37736",
+      "published_sha256": "78f7add2dfac454f6921513b9b434350ff6e7c286c4d4a0284df7a8a2ada192c"
+    }
+  },
+  "scope": "Reporting source is separate from measured production revisions. Initial failing development tests are retained alongside final passing verification."
+}

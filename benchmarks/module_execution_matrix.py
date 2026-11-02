@@ -6,12 +6,13 @@ import argparse
 import hashlib
 import itertools
 import json
+import math
 import os
 import statistics
 import subprocess
 import sys
 import time
-from collections.abc import Callable
+from collections.abc import Callable, Mapping, Sequence
 from contextlib import nullcontext
 from dataclasses import asdict, dataclass
 from importlib.metadata import version
@@ -118,7 +119,9 @@ def measure(case: Case, repeats: int, iterations: int) -> list[Measurement]:
             context = (
                 torch.no_grad()
                 if _demand == "no_grad"
-                else torch.inference_mode() if _demand == "inference" else nullcontext()
+                else torch.inference_mode()
+                if _demand == "inference"
+                else nullcontext()
             )
             with context:
                 value = function(parameters, features).reshape(())
@@ -172,6 +175,127 @@ def measure(case: Case, repeats: int, iterations: int) -> list[Measurement]:
                 )
             )
     return measurements
+
+
+def aggregate_process_trials(
+    summaries: Mapping[str, Sequence[Mapping[str, Any]]],
+) -> dict[str, Any]:
+    """Retain every case while aggregating three fresh trials in each phase."""
+    phases: dict[str, list[dict[tuple[Any, ...], float]]] = {}
+    for phase in ("before", "after"):
+        trials = summaries[phase]
+        if len(trials) != 3:
+            raise ValueError("each phase requires three complete process trials")
+        phases[phase] = []
+        for trial in trials:
+            points: dict[tuple[Any, ...], float] = {}
+            for case in trial["cases"]:
+                if case["status"] != "completed":
+                    raise ValueError(
+                        "failed or timed-out cases cannot be aggregated as completed"
+                    )
+                shape = tuple(case["case"][key] for key in ("width", "depth", "ring"))
+                for point in case["measurements"]:
+                    samples = point["seconds_per_call"]
+                    if len(samples) != trial["repeats"] or not all(
+                        math.isfinite(x) and x > 0 for x in samples
+                    ):
+                        raise ValueError("invalid timing block samples")
+                    median = statistics.median(samples)
+                    if median != point["median_seconds"]:
+                        raise ValueError(
+                            "recorded median differs from retained block samples"
+                        )
+                    key = (*shape, point["demand"], point["route"])
+                    if key in points:
+                        raise ValueError("duplicate case/demand/route")
+                    points[key] = median
+                expected = {
+                    (*shape, demand, route)
+                    for demand in (
+                        "parameters",
+                        "inputs",
+                        "both",
+                        "no_grad",
+                        "inference",
+                    )
+                    for route in (
+                        "default_module",
+                        "jax_module",
+                        "jax_kernel_diagnostic",
+                    )
+                }
+                if {key for key in points if key[:3] == shape} != expected:
+                    raise ValueError("case is missing a route or derivative demand")
+            phases[phase].append(points)
+    all_trials = [trial for phase in phases.values() for trial in phase]
+    keys = all_trials[0].keys()
+    if not keys or any(trial.keys() != keys for trial in all_trials):
+        raise ValueError("all trials must retain identical case/demand/route keys")
+    points = []
+    medians = {}
+    for key in sorted(keys):
+        record = dict(
+            zip(("width", "depth", "ring", "demand", "route"), key, strict=True)
+        )
+        for phase in ("before", "after"):
+            values = [trial[key] for trial in phases[phase]]
+            median = statistics.median(values)
+            record[phase] = {
+                "process_medians_seconds": values,
+                "median_seconds": median,
+                "mad_seconds": statistics.median(abs(x - median) for x in values),
+                "min_seconds": min(values),
+                "max_seconds": max(values),
+            }
+            medians[phase, key] = median
+        record["before_over_after"] = (
+            record["before"]["median_seconds"] / record["after"]["median_seconds"]
+        )
+        points.append(record)
+    contexts = []
+    for demand in ("parameters", "inputs", "both", "no_grad", "inference"):
+        record = {"demand": demand}
+        for route in ("default_module", "jax_module", "jax_kernel_diagnostic"):
+            ratios = [
+                p["before_over_after"]
+                for p in points
+                if p["demand"] == demand and p["route"] == route
+            ]
+            record[route] = {
+                "median_ratio": statistics.median(ratios),
+                "min_ratio": min(ratios),
+                "max_ratio": max(ratios),
+            }
+        contexts.append(record)
+    budgets = {}
+    for phase in ("before", "after"):
+        public_passes = default_passes = total = 0
+        for key in keys:
+            if key[-1] != "default_module":
+                continue
+            total += 1
+            default = medians[phase, key]
+            public = medians[phase, (*key[:-1], "jax_module")]
+            kernel = medians[phase, (*key[:-1], "jax_kernel_diagnostic")]
+            public_passes += int(public <= 1.15 * kernel + 5e-6)
+            default_passes += int(default <= 1.25 * min(default, public) + 5e-6)
+        budgets[phase] = {
+            "public_overhead_passes": public_passes,
+            "default_accessibility_passes": default_passes,
+            "total": total,
+        }
+    return {
+        "distribution_semantics": "single_device_fast_path",
+        "scalability_claim_allowed": False,
+        "closure_status": "not_ready_to_close_918",
+        "numerical_checks": sum(len(trial) for trial in all_trials),
+        "fresh_shape_processes": sum(len(trial) // 15 for trial in all_trials),
+        "aggregation": "median of three process medians, then ratio; no confidence interval with n=3",
+        "contexts": contexts,
+        "proposed_development_budgets": budgets,
+        "points": points,
+    }
 
 
 def main() -> int:

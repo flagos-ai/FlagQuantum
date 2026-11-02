@@ -10,7 +10,9 @@ from typing import TYPE_CHECKING, Any
 import torch
 
 from ..core.ir import CircuitIR, Instruction, ensure_circuit_ir
+from ..core.operator_schema import get_operator_schema
 from ..core.parameters import ParameterExpression
+from ..errors import ExecutionError
 
 if TYPE_CHECKING:
     from ..circuit import Circuit
@@ -321,3 +323,83 @@ def _remember_local_ir(
             )
             return
     owner._last_ir = detached_ir_snapshot(ir)
+
+
+def _install_captured_bindings(
+    circuit: Circuit,
+    template: CircuitIR,
+    slots: tuple[tuple[int, str], ...],
+    bindings: BuilderBindings,
+) -> None:
+    """Install canonical template slots at the existing Runtime binding boundary."""
+    circuit._parameter_bindings = bindings
+    positions = {slot: index for index, slot in enumerate(slots)}
+    bound_count = 0
+    for index, instruction in enumerate(template.instructions):
+        parameter_slots = {
+            key: positions[index, key]
+            for key in instruction.params
+            if (index, key) in positions
+        }
+        constants = {
+            key: value
+            for key, value in instruction.params.items()
+            if key not in parameter_slots
+        }
+        names = getattr(get_operator_schema(instruction.name), "parameters", ())
+        circuit._instructions.append(
+            CompiledInstruction(
+                name=instruction.name,
+                wires=instruction.wires,
+                params=SlotParameterMapping(constants, parameter_slots, bindings),
+                matrix=instruction.matrix,
+                metadata=instruction.metadata,
+                parameter_slots=tuple(parameter_slots.get(name, -1) for name in names),
+                parameter_constants=tuple(constants.get(name) for name in names),
+            )
+        )
+        bound_count += len(parameter_slots)
+    if bound_count != len(slots):
+        raise ExecutionError("compiled builder parameter slot table is inconsistent")
+
+
+def _tensor_constant_key(owner: Module, value: torch.Tensor) -> tuple[int, int, bool]:
+    """Track static Tensor changes without treating them as dynamic inputs."""
+    if not value.is_inference():
+        return id(value), value._version, value.requires_grad
+    key = id(value)
+    previous = owner._jax_constant_snapshots.get(key)
+    if previous is None or (
+        previous[0].shape != value.shape
+        or previous[0].dtype != value.dtype
+        or previous[0].device != value.device
+        or not torch.equal(previous[0], value)
+    ):
+        with torch.inference_mode(False), torch.no_grad():
+            frozen = value.detach().clone()
+        owner._jax_constant_snapshots[key] = (
+            frozen,
+            0 if previous is None else previous[1] + 1,
+        )
+    return key, owner._jax_constant_snapshots[key][1], value.requires_grad
+
+
+def _bind_current_builder(
+    owner: Module, tensor_inputs: tuple[torch.Tensor, ...]
+) -> Circuit:
+    """Bind and validate current values after the caller authenticated reuse."""
+    assert owner._builder_program is not None
+    assert owner._builder_bound_circuit is not None
+    dynamic_values = owner._builder_program(*tensor_inputs)
+    if isinstance(dynamic_values, torch.Tensor):
+        dynamic_values = (dynamic_values,)
+    else:
+        dynamic_values = tuple(dynamic_values)
+    if len(dynamic_values) != len(owner._builder_slots):
+        raise ExecutionError("compiled builder parameter slot count changed")
+    owner._builder_bindings.bind(dynamic_values)
+    if not owner.policy.correctness_debug:
+        # Debug owns its documented NonFiniteTrainingError after execution.
+        _refuse_non_finite_bound_parameters(owner._builder_bound_circuit)
+    owner._builder_bound_circuit._invalidate_execution_cache(instructions_changed=False)
+    return owner._builder_bound_circuit

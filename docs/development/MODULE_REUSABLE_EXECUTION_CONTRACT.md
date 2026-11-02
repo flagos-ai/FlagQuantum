@@ -1,7 +1,7 @@
 # Approved reusable Module lowering boundary
 
-Status: **boundary explicitly approved by the user on 2026-11-02; implementation
-pending**. This is the review packet for
+Status: **boundary explicitly approved by the user on 2026-11-02; production
+replacement implemented on the follow-up branch, acceptance/CI in progress**. This is the review packet for
 [#918](https://github.com/flagos-ai/FlagQuantum/issues/918) slice B
 ([#928](https://github.com/flagos-ai/FlagQuantum/issues/928)); it does not authorize
 a new backend default or whole-training-step compilation in #936.
@@ -14,7 +14,8 @@ contract-only change lands. The domain instructions and architecture checker now
 `CapturedModuleBuilder` and `capture_module_builder` from
 `compiler.module_builder` in `runtime/module.py`. This contract-only permission
 is separate from the legacy migration allowances and does not admit arbitrary
-Compiler imports. No production consumer invokes the new entry yet. Simulation continues to consume Core
+Compiler imports. The follow-up implementation invokes it only from Module's
+existing builder capture method. Simulation continues to consume Core
 contracts only. Do not route the dependency through a registry or another domain.
 
 Keep the public PyTorch default and explicit JAX policy. A default JAX switch
@@ -51,9 +52,10 @@ builder again. Compiler owns the private capture result: canonical
 and the existing Circuit constructor properties. The private capture function
 takes a builder callable and current flat tensor inputs, with named-parameter
 order and input-presence flags, and returns that capture result. Runtime alone
-retains it; Simulation receives only canonical IR plus tensor values. The test
-fake demonstrates this data boundary without adding a production registry or
-public protocol.
+retains it; Simulation receives only canonical IR plus tensor values. The original test fake demonstrates this data boundary without adding a
+production registry or public protocol. The production capture additionally
+records named-group layout and lifted Tensor constants for Runtime guards;
+neither is serialized or passed to Simulation.
 
 Re-use requires builder identity, topology, parameter names/order, binding
 shape/dtype/device, declared batch, observable, precision and execution policy to
@@ -80,13 +82,33 @@ nonuniform output cotangents, independent analytic values/gradients and Adam
 updates. It is a boundary feasibility test, **not** a compiled executor or a
 performance result; it still uses the current builder capture and validation.
 
-Production replacement conformance must additionally cover all supported gate
+Production conformance is in `tests/unit/test_module_ir_capture.py` and
+`tests/unit/test_module_ir_replacement.py`; real CUDA coverage runs from
+`tests/benchmark_contract/test_module_ir_cuda.py` on the existing one-GPU Gate.
+It covers all supported gate
 families/modes, all derivative demands, higher derivatives on the Torch route,
 precision/device changes, checkpoint/optimizer recovery, hooks, unsupported
 capture/operations, optional dependencies, bounded cache growth and cold/hot
 capture counts. Compare old and replacement implementations through the same
-public consumer. Unsupported capture keeps the current supported route with an
-explicit reason; no hidden device transfer, precision change or silent fallback.
+public consumer. Unsupported pure operations such as Tensor.prod keep the old JAX builder route
+with an explicit reason, without changing the selected backend. Explicit matrix
+instructions are not implemented by the JAX numerical owner and are refused;
+otherwise a named gate could silently ignore its carried matrix. Captured
+trainable Tensor constants and Hamiltonian coefficients are also refused on JAX
+because its current bridge differentiates only explicit parameters/inputs.
+Existing authorized PyTorch backend fallback remains available. These refusals
+use the frozen unsupported-capability category from Proposal 006.
+
+Torch and JAX binding graphs preserve detach gradient cuts. Runtime reuses one
+capture across changing tensor values and derivative demands; new builder,
+shape/dtype/device, precision or execution policy invalidates it. Observable
+coefficients and lifted Tensor versions invalidate only the affected JAX kernel.
+Inference Tensors have no version counter, so Runtime keeps one current detached
+comparison snapshot per such constant, on its existing device. Obsolete snapshots
+are pruned; they never accumulate by optimizer step. Static Python closure state
+and non-Tensor constants remain static: pass changing data through parameters or
+inputs, or replace the builder. No hidden device transfer, precision change or
+silent backend substitution is introduced.
 
 Whole-step compilation in #936 is a separate boundary review: it must preserve
 caller-owned objectives/optimizers, zero_grad/execute/objective/backward/step,

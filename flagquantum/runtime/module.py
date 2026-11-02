@@ -15,7 +15,6 @@ from torch.utils.hooks import RemovableHandle
 
 from ..circuit import Circuit
 from ..core.ir import CircuitIR, ensure_circuit_ir
-from ..core.operator_schema import get_operator_schema
 from ..errors import (
     CapabilityError,
     ExecutionError,
@@ -24,11 +23,11 @@ from ..errors import (
 )
 from .builder_compilation import (
     BuilderBindings,
-    CompiledInstruction,
-    SlotParameterMapping,
+    _bind_current_builder,
     _builder_tensor_inputs,
-    _refuse_non_finite_bound_parameters,
+    _install_captured_bindings,
     _remember_local_ir,
+    _tensor_constant_key,
     can_defer_ir_snapshot,
     deferred_ir_snapshot,
     detached_ir_snapshot,
@@ -40,6 +39,7 @@ from .result_adapters import LiveRuntimeSummary
 
 if TYPE_CHECKING:
     from ..algorithms import Hamiltonian
+    from ..compiler.module_builder import CapturedModuleBuilder
     from ..simulation.mps.state import MPSState
     from ..simulation.tensor_network.state import TensorNetworkState
     from .executors.jax.kernel import JAXQuantumKernel
@@ -178,7 +178,7 @@ class Module(torch.nn.Module):
         self._program_cache_hits = 0
         self._builder_program: Any | None = None
         self._builder_program_signature: tuple[Any, ...] | None = None
-        self._builder_template: Circuit | None = None
+        self._captured_builder: CapturedModuleBuilder | None = None
         self._builder_bound_circuit: Circuit | None = None
         self._builder_bindings = BuilderBindings()
         self._builder_slots: tuple[tuple[int, str], ...] = ()
@@ -186,8 +186,12 @@ class Module(torch.nn.Module):
         self._builder_cache_hits = 0
         self._local_snapshot_eligibility: tuple[int, bool, int] = (-1, False, 0)
         self._jax_kernel: JAXQuantumKernel | None = None
+        self._jax_kernel_build_count = 0
         self._jax_kernel_signature: tuple[Any, ...] | None = None
         self._jax_ir_template: CircuitIR | None = None
+        self._builder_lowering = "torch_fx_bindings"
+        self._builder_lowering_reason = ""
+        self._jax_constant_snapshots: dict[int, tuple[torch.Tensor, int]] = {}
         self._jax_snapshot_replay_safe = False
         self._jax_snapshot_budget = 512
         self._correctness_debug_hook_handle: tuple[RemovableHandle, ...] | None = None
@@ -276,6 +280,9 @@ class Module(torch.nn.Module):
         self._jax_kernel = None
         self._jax_kernel_signature = None
         self._jax_ir_template = None
+        self._builder_lowering = "torch_fx_bindings"
+        self._builder_lowering_reason = ""
+        self._jax_constant_snapshots.clear()
         self._sync_correctness_debug_hook()
 
     def _apply(
@@ -314,7 +321,8 @@ class Module(torch.nn.Module):
         self._jax_ir_template = None
         object.__setattr__(self, "_builder_program", None)
         self._builder_program_signature = None
-        self._builder_template = None
+        self._captured_builder = None
+        self._jax_constant_snapshots.clear()
         self._builder_bound_circuit = None
         self._builder_bindings.clear()
         self._builder_slots = ()
@@ -353,7 +361,15 @@ class Module(torch.nn.Module):
         signature = tuple(
             (tuple(tensor.shape), tensor.dtype, tensor.device)
             for tensor in tensor_inputs
-        ) + (names, has_inputs)
+        ) + (
+            names,
+            has_inputs,
+            id(self.circuit_builder),
+            self.policy,
+            self.precision,
+            id(self.hamiltonian),
+            id(None if self.hamiltonian is None else self.hamiltonian.terms),
+        )
         if (
             self._builder_program is None
             or self._builder_program_signature != signature
@@ -364,29 +380,7 @@ class Module(torch.nn.Module):
         else:
             self._builder_cache_hits += 1
 
-        assert self._builder_program is not None
-        assert self._builder_bound_circuit is not None
-        dynamic_values = self._builder_program(*tensor_inputs)
-        if isinstance(dynamic_values, torch.Tensor):
-            dynamic_values = (dynamic_values,)
-        else:
-            dynamic_values = tuple(dynamic_values)
-        if len(dynamic_values) != len(self._builder_slots):
-            raise ExecutionError("compiled builder parameter slot count changed")
-        self._builder_bindings.bind(dynamic_values)
-        if not self.policy.correctness_debug:
-            # `correctness_debug` owns non-finite diagnosis and reports it as
-            # `NonFiniteTrainingError` after the run, covering the value and the
-            # gradients as well as the parameters. Refusing here instead would
-            # take that documented category away from the policy that exists to
-            # produce it, without catching anything the policy misses.
-            _refuse_non_finite_bound_parameters(self._builder_bound_circuit)
-        # ``Circuit.state`` is the only value-dependent cache on this reusable
-        # container. Instructions and their parameter maps stay immutable.
-        self._builder_bound_circuit._invalidate_execution_cache(
-            instructions_changed=False
-        )
-        return self._builder_bound_circuit
+        return _bind_current_builder(self, tensor_inputs)
 
     def _compile_builder_program(
         self,
@@ -396,117 +390,23 @@ class Module(torch.nn.Module):
         has_inputs: bool,
         signature: tuple[Any, ...],
     ) -> None:
-        from torch.fx.experimental.proxy_tensor import make_fx
+        from ..compiler.module_builder import capture_module_builder
 
-        captured: list[Circuit] = []
-
-        def extract(*flat_inputs: torch.Tensor) -> tuple[torch.Tensor, ...]:
-            parameter_count = len(flat_inputs) - int(has_inputs)
-            raw_parameters = flat_inputs[:parameter_count]
-            traced_parameters: Any = (
-                {name: raw_parameters[index] for index, name in enumerate(names)}
-                if names
-                else raw_parameters[0]
-            )
-            traced_inputs = flat_inputs[-1] if has_inputs else None
-            circuit = self._invoke_circuit_builder(traced_parameters, traced_inputs)
-            if not isinstance(circuit, Circuit):
-                raise TypeError("compiled circuit builder must return a Circuit")
-            if any(
-                isinstance(instruction.matrix, torch.Tensor)
-                and instruction.matrix.requires_grad
-                for instruction in circuit.to_ir().instructions
-            ):
-                raise TypeError("compiled builders do not yet support dynamic matrices")
-            captured[:] = [circuit]
-            return tuple(
-                value
-                for instruction in circuit.to_ir().instructions
-                for value in instruction.params.values()
-                if isinstance(value, torch.Tensor)
-            )
-
-        try:
-            program = make_fx(extract)(*tensor_inputs)
-        except Exception as error:
-            raise ExecutionError(
-                "Module builder compilation requires static circuit topology; "
-                "do not branch on Tensor values when choosing gates or qubits"
-            ) from error
-        program.graph.eliminate_dead_code()
-        program.recompile()
-        if not captured:
-            raise ExecutionError("compiled builder did not capture a Circuit")
-        template = captured[-1]
-        if template._inputs is not None:
-            raise TypeError(
-                "compiled builders do not yet support dynamic Circuit inputs; "
-                "encode inputs in gate parameters instead"
-            )
-        slots = tuple(
-            (index, key)
-            for index, instruction in enumerate(template.to_ir().instructions)
-            for key, value in instruction.params.items()
-            if isinstance(value, torch.Tensor)
+        capture = capture_module_builder(
+            self._invoke_circuit_builder,
+            tensor_inputs,
+            names=names,
+            has_inputs=has_inputs,
         )
-        constructor = template.circuit_param
-        bound = type(template)(
-            n_qubits=constructor["n_qubits"],
-            bsz=constructor["bsz"],
-            device=constructor["device"],
-            dtype=constructor["dtype"],
-            inputs=constructor["inputs"],
-            config=constructor["config"],
-        )
-        bound._parameter_bindings = self._builder_bindings
-        slot_index = 0
-        compiled_instructions: list[CompiledInstruction] = []
-        for instruction in template.to_ir().instructions:
-            constants: dict[str, Any] = {}
-            parameter_slots: dict[str, int] = {}
-            for key, value in instruction.params.items():
-                if isinstance(value, torch.Tensor):
-                    parameter_slots[key] = slot_index
-                    slot_index += 1
-                else:
-                    constants[key] = value
-            compiled_instructions.append(
-                CompiledInstruction(
-                    name=instruction.name,
-                    wires=instruction.wires,
-                    params=SlotParameterMapping(
-                        constants, parameter_slots, self._builder_bindings
-                    ),
-                    matrix=instruction.matrix,
-                    metadata=instruction.metadata,
-                    parameter_slots=tuple(
-                        parameter_slots.get(name, -1)
-                        for name in (
-                            getattr(
-                                get_operator_schema(instruction.name), "parameters", ()
-                            )
-                        )
-                    ),
-                    parameter_constants=tuple(
-                        constants.get(name)
-                        for name in (
-                            getattr(
-                                get_operator_schema(instruction.name), "parameters", ()
-                            )
-                        )
-                    ),
-                )
-            )
-        if slot_index != len(slots):
-            raise ExecutionError(
-                "compiled builder parameter slot table is inconsistent"
-            )
-        bound._instructions.extend(compiled_instructions)
+        template = capture.template
+        slots = capture.slots
+        bound = capture.circuit_type(**capture.constructor)
+        _install_captured_bindings(bound, template, slots, self._builder_bindings)
         # Runtime compilation artifacts must not become checkpointed child
         # modules; they are rebuilt after dtype/device/signature changes.
-        object.__setattr__(self, "_builder_program", program)
+        object.__setattr__(self, "_builder_program", capture.binding_graph)
         self._builder_program_signature = signature
-        self._builder_template = template
+        self._captured_builder = capture
         self._builder_bound_circuit = bound
         self._builder_slots = slots
         self._builder_compile_count += 1
@@ -578,6 +478,9 @@ class Module(torch.nn.Module):
             "builder_compiled": self._builder_program is not None,
             "builder_compile_count": self._builder_compile_count,
             "builder_cache_hits": self._builder_cache_hits,
+            "builder_lowering": self._builder_lowering,
+            "builder_lowering_reason": self._builder_lowering_reason,
+            "jax_kernel_build_count": self._jax_kernel_build_count,
             "static_program_reused": self._builder_bound_circuit is not None,
         }
 
@@ -766,11 +669,42 @@ class Module(torch.nn.Module):
             # Do not retain the current autograd graph between training steps.
             self._builder_bindings.clear()
 
+    def _hamiltonian_signature(self) -> tuple[Any, ...]:
+        if self.hamiltonian is None:
+            return ()
+        return tuple(
+            (
+                term.ops,
+                (
+                    _tensor_constant_key(self, term.coefficient)
+                    if isinstance(term.coefficient, torch.Tensor)
+                    else term.coefficient
+                ),
+            )
+            for term in self.hamiltonian.terms
+        )
+
     def _jax_signature(
         self,
         selected_parameters: torch.Tensor,
         inputs: torch.Tensor | None,
     ) -> tuple[Any, ...]:
+        constants = (
+            ()
+            if self._captured_builder is None
+            else self._captured_builder.tensor_constants
+        )
+        constant_keys = tuple(_tensor_constant_key(self, value) for value in constants)
+        hamiltonian = self._hamiltonian_signature()
+        if self._jax_constant_snapshots:
+            current = {id(value) for value in constants}
+            if self.hamiltonian is not None:
+                current.update(id(term.coefficient) for term in self.hamiltonian.terms)
+            self._jax_constant_snapshots = {
+                key: value
+                for key, value in self._jax_constant_snapshots.items()
+                if key in current
+            }
         return (
             tuple(selected_parameters.shape),
             selected_parameters.dtype,
@@ -778,8 +712,11 @@ class Module(torch.nn.Module):
             None if inputs is None else tuple(inputs.shape),
             None if inputs is None else inputs.dtype,
             None if inputs is None else inputs.device,
-            self.precision.complex_dtype,
+            self.precision,
             self.policy,
+            id(self.circuit_builder),
+            hamiltonian,
+            constant_keys,
         )
 
     def _jax_value(
@@ -803,6 +740,24 @@ class Module(torch.nn.Module):
         builder = self.circuit_builder
         if not callable(builder):
             raise TypeError("JAX module circuit builder must be callable")
+        constants = (
+            ()
+            if self._captured_builder is None
+            else self._captured_builder.tensor_constants
+        )
+        coefficients = (
+            ()
+            if self.hamiltonian is None or self.policy.observable != "hamiltonian"
+            else tuple(term.coefficient for term in self.hamiltonian.terms)
+        )
+        if any(
+            isinstance(value, torch.Tensor) and value.requires_grad
+            for value in (*constants, *coefficients)
+        ):
+            raise CapabilityError(
+                "JAX Module does not differentiate captured tensor constants or "
+                "Hamiltonian coefficients; use PyTorch or explicit parameters/inputs"
+            )
         accepts_inputs = self._builder_accepts_inputs(builder)
         kernel_signature = self._jax_signature(selected_parameters, inputs)
         if self._jax_kernel is None or self._jax_kernel_signature != kernel_signature:
@@ -810,8 +765,19 @@ class Module(torch.nn.Module):
 
             if not isinstance(circuit, Circuit):
                 raise TypeError("JAX module builder must return a Circuit")
+            lowered, reason = (
+                (None, "custom_builder_adapter")
+                if self._captured_builder is None
+                else self._captured_builder.jax_builder()
+            )
+            self._builder_lowering = (
+                "canonical_ir_fx_bindings"
+                if lowered is not None
+                else "python_builder_jax_compatibility"
+            )
+            self._builder_lowering_reason = reason
             self._jax_kernel = compile_quantum_kernel(
-                builder,
+                builder if lowered is None else lowered,
                 selected_parameters.detach(),
                 backend="jax",
                 interface="torch",
@@ -825,6 +791,7 @@ class Module(torch.nn.Module):
             )
             self._jax_kernel._declared_batch_size = circuit.bsz
             self._jax_kernel_signature = kernel_signature
+            self._jax_kernel_build_count += 1
         value = self._jax_kernel(selected_parameters, inputs)
         if value.ndim == 0:
             value = value.reshape(1)
@@ -855,7 +822,13 @@ class Module(torch.nn.Module):
             try:
                 value = self._jax_value(circuit, selected_parameters, inputs)
                 assert self._jax_kernel is not None
-                runtime = {**self._jax_kernel.summary(), **program_runtime}
+                runtime = {
+                    **self._jax_kernel.summary(),
+                    **program_runtime,
+                    "builder_lowering": self._builder_lowering,
+                    "builder_lowering_reason": self._builder_lowering_reason,
+                    "jax_kernel_build_count": self._jax_kernel_build_count,
+                }
                 return ExecutionResult(
                     value=value,
                     metrics={
@@ -979,6 +952,8 @@ class Module(torch.nn.Module):
                 "local_world_size": 1,
                 "node_count": 1,
                 **program_runtime,
+                "builder_lowering": "torch_fx_bindings",
+                "builder_lowering_reason": "",
             }
         input_batch_size = 1 if inputs is None or inputs.ndim == 0 else inputs.shape[0]
         parameter_batch_size = 1
@@ -1085,8 +1060,14 @@ class Module(torch.nn.Module):
             ):
                 # Rebinding validates the current angles even when IR snapshots
                 # are deferred and the JAX kernel can reuse its compiled trace.
-                self._build(inputs, selected)
                 tensors, _, _ = _builder_tensor_inputs(selected, inputs)
+                if type(self) is Module:
+                    # The kernel signature already authenticated shape, dtype,
+                    # device, builder, policy, precision and static constants.
+                    self._builder_cache_hits += 1
+                    _bind_current_builder(self, tensors)
+                else:
+                    self._build(inputs, selected)
                 self._last_ir_snapshot = None
                 self._last_ir_factory = deferred_ir_snapshot(
                     self._builder_program,

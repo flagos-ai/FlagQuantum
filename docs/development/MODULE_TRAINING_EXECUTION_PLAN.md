@@ -1,9 +1,11 @@
 # Ordinary Module execution: implementation and acceptance plan
 
-Status: proposed architecture work under [#918](https://github.com/flagos-ai/FlagQuantum/issues/918).
-Only derivative-demand execution described below is implemented in this change.
-Batch semantics and automatic backend selection remain proposals requiring
-API-owner review. This document grants no approval and freezes no new contract.
+Status: ordered work under [#918](https://github.com/flagos-ai/FlagQuantum/issues/918).
+Derivative-demand execution and explicit declared batches are implemented.
+Slice B follows the user-approved 2026-11-02 lowering contract and replacement
+fake; its production replacement and acceptance evidence are under review.
+Automatic selection and whole-step compilation remain separate proposals.
+This document grants no additional API/default approval.
 
 ## User outcome
 
@@ -29,8 +31,9 @@ with torch.no_grad():
 assert torch.isfinite(prediction).all()
 ```
 
-This code runs today using the PyTorch default. Automatic route selection and
-batched feature execution are future outcomes, not properties of this example.
+This code runs today using the PyTorch default. Explicit Circuit.bsz input
+batches are implemented under frozen Proposal 005; this scalar example does not
+use them. Automatic route selection remains a proposal.
 The existing explicit JAX policy remains supported. Installed native-adjoint
 availability does not imply that Module uses that derivative implementation.
 
@@ -60,9 +63,11 @@ bounded; no cache keyed by every parameter value or training step is acceptable.
 | D: effective route selection | API-owner contract first; then Runtime | Extend existing policy/planning selection | Explicit requests stay authoritative. Automatic selection only considers supported implementations and explains choice, derivative, precision, device and exclusions. Missing optional dependencies and unsupported operations have tested outcomes. |
 | E: adoption and performance acceptance | Runtime; shared benchmark/docs | Existing quick starts, examples and performance catalog | Public entry points pass the reviewed hardware/workload matrix; every remaining loss has an owner. No claim is based solely on an internal kernel. |
 
-Slice A is implemented here. B through E are open. Do not mark the parent done
-because A or an internal kernel is fast. B requires a separately reviewed
-cross-domain lowering contract and replacement test before implementations.
+Slices A and declared-batch C are implemented; broader C hardware/performance
+acceptance remains open. B's contract and fake landed in PR #1014 before its
+Compiler/Runtime implementation. Its generated matrix and retained matched
+training comparison remain required for acceptance. D/E and #936 are still open.
+Do not close the parent because a slice or an internal kernel is fast.
 Implementation issues: [B: reusable program #928](https://github.com/flagos-ai/FlagQuantum/issues/928),
 [C: input batches #929](https://github.com/flagos-ai/FlagQuantum/issues/929),
 [D/E: execution selection #930](https://github.com/flagos-ai/FlagQuantum/issues/930).
@@ -87,13 +92,11 @@ Existing first-order differentiation limits remain; no higher-order claim is mad
 
 ## Decisions that need API-owner approval
 
-Batch contract: specify feature axes, output axes, parameter sharing, gradient
-reduction, empty batches and noncontiguous tensors. Distinguish parameter batches
-from input batches; do not silently form a Cartesian product. The current
-scalar-output bridge multiplies saved gradients by an upstream scalar/batch
-scale. Shared parameters with vector outputs require a true cotangent contraction
-and reduction, not that broadcast rule. Arbitrary leading dimensions cannot be
-interpreted as a batch without an approved contract.
+Batch contract: the [approved compatibility proposal](API_CHANGE_PROPOSAL_MODULE_JAX_DECLARED_BATCH.md)
+implements the existing explicit Circuit.bsz semantics. Parameter sharing,
+cotangent contraction, refusal of invalid shapes and absence of implicit Cartesian
+products remain authoritative. No new batch API or arbitrary axis inference is
+approved by the reusable capture change.
 
 Selection contract: retain current explicit backend precedence and preserve
 serialized policies/checkpoints. Review an opt-in automatic policy before any

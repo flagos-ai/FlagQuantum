@@ -222,6 +222,24 @@ framework ranking. Statevector may contract a gate network to a dense state when
 the static operation estimate is lower and no intermediate exceeds the dense
 state size (or sixteen elements); its diagnostics expose the selected algorithm.
 
+## Ordinary Module canonical capture
+
+Common pure Torch binding expressions, including square, sin, explicit casts,
+shape operations and detach cuts, now lower from the captured canonical IR into
+the optional JAX route. This does not admit arbitrary Python/Torch programs.
+Unsupported pure bindings use the existing JAX builder compatibility path and
+report the reason through execute().runtime. Keep Python closure state and
+non-Tensor constants static; changing data belongs in parameters or inputs.
+
+Explicit instruction matrices are not supported by the JAX numerical kernels;
+Module refuses them rather than evaluating only the opcode and ignoring its
+matrix. Captured trainable Tensor constants and Hamiltonian coefficients are
+also refused on JAX; use PyTorch or express trainable data through explicit
+parameters/inputs. Only an authorized backend fallback may select PyTorch.
+JAX remains first-order and optional, with the PyTorch default unchanged.
+Canonical capture is not automatic selection, whole-step compilation or proof
+that the default meets the parent training-performance budgets.
+
 ## Portable experiment archives
 
 `fq.save` / `fq.load` use `.fqx` for CircuitIR and optional numeric results with
