@@ -3,13 +3,100 @@
 from __future__ import annotations
 
 import json
+import os
+import subprocess
 from pathlib import Path
 
 import pytest
+import yaml
 
 from tools import run_mps_capacity_series as series
 
 pytestmark = pytest.mark.unit
+
+
+def test_reserved_pair_restores_exact_source_and_reruns_the_same_artifact(
+    tmp_path: Path,
+) -> None:
+    workflow = (
+        Path(__file__).resolve().parents[2] / ".github/workflows/scheduled-hardware.yml"
+    )
+    jobs = yaml.safe_load(workflow.read_text())["jobs"]
+    producer = jobs["prepare-mps-source"]
+    consumer = jobs["mps-capacity-series"]
+    assert (
+        producer["outputs"]["artifact-key"]
+        == "${{ steps.pack-source.outputs.artifact-key }}"
+    )
+    download = next(
+        s
+        for s in consumer["steps"]
+        if s.get("uses", "").startswith("actions/download-artifact@")
+    )
+    assert (
+        "${{ needs.prepare-mps-source.outputs.artifact-key }}"
+        in download["with"]["name"]
+    )
+    pack = next(s["run"] for s in producer["steps"] if s.get("id") == "pack-source")
+    restore = next(
+        s["run"]
+        for s in consumer["steps"]
+        if s.get("name") == "Restore and verify this run's exact source commit"
+    )
+    source, target, temporary = (
+        tmp_path / name for name in ("source", "target", "temporary")
+    )
+    for directory in (source, target, temporary):
+        directory.mkdir()
+    env = dict(
+        os.environ,
+        GIT_CONFIG_NOSYSTEM="1",
+        GIT_CONFIG_GLOBAL=os.devnull,
+        RUNNER_TEMP=str(temporary),
+        GITHUB_RUN_ID="123",
+        GITHUB_RUN_ATTEMPT="1",
+        GITHUB_OUTPUT=str(temporary / "output"),
+    )
+
+    def run(
+        command: list[str], cwd: Path, check: bool = True
+    ) -> subprocess.CompletedProcess[str]:
+        return subprocess.run(
+            command,
+            cwd=cwd,
+            env=env,
+            check=check,
+            capture_output=True,
+            text=True,
+            timeout=20,
+        )
+
+    for args in (
+        ("init",),
+        ("config", "user.name", "FlagQuantum"),
+        ("config", "user.email", "liuwei.chem.phys@gmail.com"),
+    ):
+        run(["git", *args], source)
+    (source / "workload.txt").write_text("frozen circuit\n")
+    (source / "binary.dat").write_bytes(bytes(range(256)))
+    run(["git", "add", "."], source)
+    run(["git", "commit", "-m", "frozen"], source)
+    sha = run(["git", "rev-parse", "HEAD"], source).stdout.strip()
+    env["GITHUB_SHA"] = sha
+    run(["bash", "-eo", "pipefail", "-c", pack], source)
+    assert (temporary / "output").read_text().strip() == "artifact-key=123-1"
+    env["GITHUB_RUN_ATTEMPT"] = "2"
+    for _ in range(2):
+        run(["bash", "-eo", "pipefail", "-c", restore], target)
+        restored = target / "capacity-series-source"
+        assert run(["git", "rev-parse", "HEAD"], restored).stdout.strip() == sha
+        assert (restored / "binary.dat").read_bytes() == bytes(range(256))
+        assert (restored / "workload.txt").read_text() == "frozen circuit\n"
+        (restored / "workload.txt").write_text("dirty\n")
+    (temporary / "mps-source/source.sha").write_text("0" * 40 + "\n")
+    assert (
+        run(["bash", "-eo", "pipefail", "-c", restore], target, False).returncode != 0
+    )
 
 
 @pytest.mark.parametrize("world", [1, 2, 4, 8, 16])
