@@ -67,12 +67,14 @@ def test_full_corpus_and_native_equivalents_are_retained() -> None:
 
 
 @pytest.mark.parametrize("frontend", ["scalar", "qfunc", "qmod"])
+@pytest.mark.parametrize("target", ["logical", "basis", "line"])
 @pytest.mark.parametrize("variant", ["inline", "helper", "exchanged"])
 def test_real_user_workflow_has_independent_xor_phase_and_cleanup_reference(
     frontend: Literal["scalar", "qfunc", "qmod"],
     variant: Literal["inline", "helper", "exchanged"],
+    target: Literal["logical", "basis", "line"],
 ) -> None:
-    workload = Workload("energy-2x2", frontend, variant)
+    workload = Workload("energy-2x2", frontend, variant, target)
     prepared = Prepared(workload)
     try:
         program = prepared.compile()
@@ -254,3 +256,35 @@ def test_budget_refusal_is_measured_and_never_executed(
     assert sample["verification"] == {"expected_refusal": True}
     assert "resources" not in sample["verification"]
     assert sample["e0_ns"] > 0
+
+
+def test_probe_does_not_mask_a_deadline_or_observer_exception() -> None:
+    import sys
+
+    from benchmarks.synthesis.performance_probe import Probe
+
+    class OriginalError(RuntimeError):
+        pass
+
+    probe = Probe()
+    with pytest.raises(OriginalError, match="original"), probe:
+        # A failing callback can be disabled by CPython before unwind events.
+        probe.stack.append(object())
+        raise OriginalError("original")
+    assert sys.getprofile() is None
+    assert not probe.stack
+
+
+@pytest.mark.parametrize(
+    "field", ["source_revision", "production_tree", "production_baseline_revision"]
+)
+def test_pinned_source_or_production_cannot_be_relabelled(
+    receipt: dict[str, object], field: str
+) -> None:
+    from benchmarks.synthesis.performance_results import verify_sources
+
+    altered = copy.deepcopy(receipt)
+    altered["source_dirty"] = False
+    altered[field] = "0" * 40
+    with pytest.raises(ValueError):
+        verify_sources(altered, formal=True)

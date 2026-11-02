@@ -6,6 +6,7 @@ import argparse
 import gzip
 import hashlib
 import json
+import subprocess
 from collections import Counter
 from pathlib import Path
 
@@ -64,6 +65,8 @@ def validate_sample(sample: dict[str, object]) -> None:
                 )
                 if exclusive > inclusive or _integer(span["calls"]) < 1:
                     raise ValueError("invalid span time/call count")
+                if span["stage"] not in {"C1", "C2", "C3", "C4", "C5", "C6"}:
+                    raise ValueError("unknown diagnostic stage")
                 total += exclusive
             if (
                 total != diagnostic["exclusive_sum_ns"]
@@ -189,27 +192,105 @@ def validate(payload: dict[str, object], *, formal: bool = True) -> None:
         or set(ids) | set(not_selected) != expected
     ):
         raise ValueError("missing/unreported workload")
+    verify_sources(payload, formal=formal)
+
+
+def pinned_revision(value: object) -> str:
+    if (
+        not isinstance(value, str)
+        or len(value) != 40
+        or any(c not in "0123456789abcdef" for c in value)
+    ):
+        raise ValueError("record a full lowercase commit/tree SHA")
+    return value
+
+
+def git_bytes(root: Path, *arguments: str) -> bytes:
+    result = subprocess.run(
+        ["git", *arguments], cwd=root, capture_output=True, check=False, timeout=15
+    )
+    if result.returncode:
+        raise ValueError(
+            "recorded measurement revision unavailable; fetch its exact commit before validation: "
+            + result.stderr.decode(errors="replace").strip()
+        )
+    return result.stdout
+
+
+def verify_sources(payload: dict[str, object], *, formal: bool) -> None:
     root = Path(__file__).resolve().parents[2]
     hashes = _object(payload["source_hashes"])
-    expected_paths = {
-        str(p.relative_to(root)) for p in (root / "benchmarks/synthesis").glob("*.py")
-    }
+    dirty = payload["source_dirty"]
+    if type(dirty) is not bool:
+        raise ValueError("source_dirty must be boolean")
+    if dirty:
+        if formal:
+            raise ValueError("formal evidence cannot use dirty sources")
+        expected_paths = {
+            str(p.relative_to(root))
+            for p in (root / "benchmarks/synthesis").glob("*.py")
+        }
+
+        def contents(name: str) -> bytes:
+            return (root / name).read_bytes()
+
+    else:
+        revision = pinned_revision(payload["source_revision"])
+        production = pinned_revision(payload["production_baseline_revision"])
+        tree = pinned_revision(payload["production_tree"])
+        if (
+            git_bytes(root, "rev-parse", revision + ":flagquantum").decode().strip()
+            != tree
+            or git_bytes(root, "rev-parse", production + ":flagquantum")
+            .decode()
+            .strip()
+            != tree
+        ):
+            raise ValueError("measurement and pinned production trees differ")
+        names = (
+            git_bytes(
+                root,
+                "ls-tree",
+                "-r",
+                "--name-only",
+                revision,
+                "--",
+                "benchmarks/synthesis",
+            )
+            .decode()
+            .splitlines()
+        )
+        expected_paths = {
+            name
+            for name in names
+            if Path(name).parent == Path("benchmarks/synthesis")
+            and name.endswith(".py")
+        }
+
+        def contents(name: str) -> bytes:
+            return git_bytes(root, "show", revision + ":" + name)
+
     if set(hashes) != expected_paths:
         raise ValueError("measurement source manifest is incomplete")
     for name, expected_hash in hashes.items():
         if (
             not name.startswith("benchmarks/synthesis/")
             or ".." in Path(name).parts
-            or hashlib.sha256((root / name).read_bytes()).hexdigest() != expected_hash
+            or hashlib.sha256(contents(name)).hexdigest() != expected_hash
         ):
-            raise ValueError("measurement script/oracle bytes changed")
-    for name, expected_hash in _object(payload["original_resource_hashes"]).items():
+            raise ValueError("recorded measurement script/oracle bytes changed")
+    artifacts = _object(payload["original_resource_hashes"])
+    expected_artifacts = {
+        p.name for p in (root / "benchmarks/synthesis/baselines").glob("ao*.json")
+    }
+    if set(artifacts) != expected_artifacts:
+        raise ValueError("historical resource manifest is incomplete")
+    for name, expected_hash in artifacts.items():
+        path = "benchmarks/synthesis/baselines/" + name
         if (
             Path(name).name != name
-            or hashlib.sha256(
-                (root / "benchmarks/synthesis/baselines" / name).read_bytes()
-            ).hexdigest()
-            != expected_hash
+            or hashlib.sha256((root / path).read_bytes()).hexdigest() != expected_hash
+            or hashlib.sha256(contents(path)).hexdigest() != expected_hash
         ):
             raise ValueError("historical resource artifact changed")
 

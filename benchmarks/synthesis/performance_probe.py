@@ -107,7 +107,12 @@ class Probe:
     def __exit__(self, *args: object) -> None:
         sys.setprofile(None)
         if self.stack:
-            raise RuntimeError("incomplete diagnostic call stack")
+            if args and args[0] is not None:
+                # A signal or observer error can disable profiling mid-callback.
+                # Preserve the original exception; incomplete spans are not published.
+                self.stack.clear()
+            else:
+                raise RuntimeError("incomplete diagnostic call stack")
 
     def event(self, frame: FrameType, event: str, arg: object) -> None:
         if event not in {"call", "return"}:

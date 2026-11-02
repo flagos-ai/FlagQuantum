@@ -335,8 +335,15 @@ class Prepared:
                     "PF-00 named result differs from independent mathematics"
                 )
             state = result.statevector().reshape(-1)
+            selected = program.selection.selected
+            if selected is None or selected.target is None:
+                raise AssertionError("missing verified target layout")
+            physical_registers = {
+                name: tuple(selected.target.layout.physical_of(q) for q in ports)
+                for name, ports in program.registers.items()
+            }
             amplitudes = expected_amplitudes(
-                self.case, program.registers, program.circuit.n_wires
+                self.case, physical_registers, program.circuit.n_wires
             )
             residual = state.clone()
             for index, amplitude in amplitudes.items():

@@ -172,3 +172,27 @@ experiment results and test commands. Neither tool tests nor a development pilot
 constitutes formal baseline evidence. PF-01 removes measured redundant work;
 PF-02 changes no trust boundary without proof; PF-03 establishes P1. Rust remains
 a separately justified future stage against P1, never inferred from this P0 alone.
+
+## Preserved measurement and verifier correction
+
+The first complete matrix is pinned to
+`601f179f5d973bd00d2c560bb20383390cf772ab`; its raw receipt is preserved,
+including all 125 attempted configurations. Three non-restoring line targets
+exposed a benchmark-oracle coordinate error: `Program.registers` is logical,
+while the returned statevector is physical. Named readout and the independent
+logical XOR interpreter were already correct. The corrected complete-state
+oracle applies the selected target layout to expected support indices.
+
+Only those three configurations are remeasured in a separate committed cohort.
+The manifest explicitly chooses the corrected records for them and the original
+records elsewhere; it does not relabel source revisions or erase failed trials.
+The synthesis timer/driver and production tree are unchanged. Probe exception
+cleanup additionally preserves the original exception if a callback is interrupted;
+it publishes no incomplete spans. Original diagnostic failures remain failures,
+not retroactively successful or reclassified observations.
+
+The reader validates clean source/oracle hashes against the recorded Git commit,
+and verifies that its production tree matches the explicit production pin. Thus
+immutable receipts remain verifiable after this oracle-only correction. A missing
+commit requires fetching that exact revision; there is no silent current-source
+substitution. Dirty development receipts remain ineligible for formal evidence.
