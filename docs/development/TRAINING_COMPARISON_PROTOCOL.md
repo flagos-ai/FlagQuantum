@@ -154,11 +154,11 @@ derivatives, full checkpoint/replay scenarios, disjoint data splits and a
 deliberately wrong simulator. Optional backend cases skip only when their
 package is unavailable, without substituting another engine.
 
-Remaining extensions in #900 include QNG reverse/unfused-forward/fused-forward
-ablation, independently varied parameter count, larger workloads, vectorized
-training, repeated timing campaigns and optional accelerator measurements.
-This bounded CPU stage does not close those requirements or promote results
-to release evidence.
+The historical CPU stage leaves QNG reverse/unfused-forward/fused-forward
+ablation and independently varied parameter count to the QNG protocol below.
+Larger workloads, vectorized training and repeated timing campaigns are useful
+future extensions outside this bounded experiment. These reports remain
+comparison evidence and are not promoted to release evidence.
 
 ## JAX execution-strategy diagnostic
 
@@ -235,3 +235,88 @@ with frozen baseline Module and kernel sources as well as the candidate, and
 is outside this performance change. The comparison's independent parity and
 finite-output checks remain mandatory; this diagnostic does not certify all
 invalid-input behavior.
+
+## QNG algorithm and kernel-fusion ablation
+
+Issue #900's remaining geometry experiment extends the existing entry point:
+
+```bash
+python -m benchmarks.qng_hva_time_to_accuracy --ablation --smoke --output /tmp/qng-smoke
+python -m benchmarks.qng_hva_time_to_accuracy --ablation --output /tmp/qng-cpu
+python -m benchmarks.qng_hva_time_to_accuracy --ablation --device cuda --output /tmp/qng-cuda
+python -m benchmarks.training_comparison_report /tmp/qng-cpu
+python -m benchmarks.training_comparison_report /tmp/qng-cuda
+```
+
+The CPU and CUDA manifests in `benchmarks/manifests/qng_hva_ablation_*_v1.json`
+freeze three seeds, 30 updates, learning rate 0.03, damping 0.001, and a 0.01
+relative-energy-error target before measurements. They retain the maintained
+open Heisenberg XX+YY+ZZ objective and dimer-initialized bond-resolved-phase HVA.
+The inventory above reuses the classifier/Adam results; the earlier
+`qng_hva_scaling.py`, `qng_phase_breakdown.py` and
+`qng_hva_forward_tangent_triton.py` measure phases or reverse-versus-fused
+ratios without an unfused control. They cannot alone attribute a gain to fusion.
+The older CUDA-only entry-point command remains available unchanged.
+
+The new experiment compares vectorized reverse Jacobians, eager unfused forward
+tangents and the existing Triton fused forward-tangent kernel. Reverse and
+unfused geometry share a precomputed Pauli layout and the same eager rotation
+primitive; both tangent routes batch all parameter lanes. Preparation and static
+layout belong to setup. Reverse versus unfused metric time measures the
+algorithm difference within that benchmark adapter. Unfused versus Triton metric
+time measures the fusion implementation difference, including launch/allocation
+costs. Both comparisons use identical layer-block Fubini-Study projection,
+objective gradients, damping and linear solve. Ratios of complete QNG update
+time are not substituted for isolated metric-construction savings.
+
+PennyLane's supported `default.qubit`/Torch `adjoint_metric_tensor` route provides
+a framework metric control, projected to the same layer blocks. Its objective
+gradient deliberately remains the identical FlagQuantum reverse-mode gradient,
+so this is a metric ablation, not an end-to-end PennyLane optimizer ranking.
+The separate matched Adam campaign compares complete Lightning and
+TensorCircuit-NG training implementations. See the
+[framework transform documentation](https://docs.pennylane.ai/en/stable/code/api/pennylane.adjoint_metric_tensor.html).
+
+All methods use widths/depths (4,1), (4,2), (6,1), giving 13, 26 and 21
+parameters. Thus parameter count changes at fixed width and width changes at
+fixed depth. Every route is checked against independently assembled NumPy
+rotation matrices and centered finite differences, including state tangents,
+metric, objective gradient and damped update direction. The dense Hamiltonian
+spectrum supplies the target reference. An analytic four-site ground energy
+and dimer energy supplement the numerical oracle. The framework transform does
+not expose tangents, so that diagnostic is explicitly inapplicable there.
+
+CPU uses complex128/float64. The existing Triton kernel requires CUDA
+complex64/float32: all routes in the separate CUDA campaign use that precision,
+with independent parity tolerance 0.005 (CPU 2e-6). No CPU/CUDA cross-precision
+speedup is computed. Missing dependencies, unsupported devices and timeouts
+remain visible; there is no substitute route or infinite-speedup score.
+CPU cannot establish Triton fusion savings. A completed CUDA experiment is
+required to assess that acceptance criterion.
+
+Every case runs in a fresh process with a 240-second deadline. Torch and
+OMP/OpenBLAS/MKL thread settings are one; no Torch JIT or compile is enabled.
+The CUDA campaign uses a fresh private Triton cache for every case, so compile
+and load cost occurs on the first measured direction call. Cache files are
+deleted after each worker exits; timeout cleanup terminates its process group. CUDA is synchronized at
+every phase boundary. Reports retain first-call cost separately and include it
+in total cost and total time to target, together with setup, warmup and initial
+assessment. Oracle time is separate; supervisor process wall includes common
+imports, the oracle and interpreter startup. Fixed-budget training continues
+after reaching the target. Every step records energy, parameters, direction,
+metric/gradient/solve timings and elapsed time in the linked result JSON.
+Peak process RSS includes imports and the oracle; CUDA allocated peak covers
+training. Neither is a claim of exclusive system memory use.
+
+Use the existing **Local GPU Gate** workflow's `qng_ablation=true` dispatch
+input to measure on its reserved A800 lane. It retains exact-commit source
+preparation, accelerator concurrency and watchdog bounds, and uploads raw
+results and logs even on failure. This manual option does not run extra
+benchmarks on ordinary PR checks. The independent fused-kernel parity test
+also runs in the regular single-GPU regression lane. No runner, dependency, public API, backend routing or
+capability maturity is added.
+
+The CPU training producer now also records initial assessment, measured total
+time to target and fresh-process wall time. Report regeneration shows total
+cost and median per-update time for new results; historical files remain
+immutable and missing historical fields are labeled as unrecorded.

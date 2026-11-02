@@ -1,0 +1,51 @@
+{
+  "schema": "flagquantum.qng_hva_ablation_protocol.v1",
+  "protocol_id": "qng_hva_ablation_cuda_cold_cache_20261102",
+  "device": "cuda",
+  "precision": "complex64",
+  "workloads": [
+    {
+      "qubits": 4,
+      "depth": 1
+    },
+    {
+      "qubits": 4,
+      "depth": 2
+    },
+    {
+      "qubits": 6,
+      "depth": 1
+    }
+  ],
+  "seeds": [
+    11,
+    29,
+    47
+  ],
+  "steps": 30,
+  "initial_std": 0.02,
+  "learning_rate": 0.03,
+  "damping": 0.001,
+  "warmup_calls": 1,
+  "threads": 1,
+  "target_relative_energy_error": 0.01,
+  "case_timeout_seconds": 240,
+  "parity_tolerance": 0.005,
+  "methods": [
+    "reverse_jacobian",
+    "unfused_forward",
+    "fused_forward",
+    "pennylane_metric"
+  ],
+  "workload": "canonical_bond_resolved_phase_HVA_open_XX_YY_ZZ_dimer_singlet",
+  "metric": "Fubini_Study_layer_block_diagonal_no_factor_four",
+  "optimizer": "theta_minus_lr_solve_metric_plus_damping_identity_gradient",
+  "stop_rule": "exactly_30_updates_even_after_target_or_case_wall_timeout",
+  "smoke": "first_workload_seed_11_three_updates_not_acceptance_evidence",
+  "target_rule": "initial_or_post_update_absolute_relative_energy_error_to_independent_numpy_ground_energy",
+  "compile_policy": "no_Torch_compile_or_JIT_Triton_compiles_on_first_call_included_in_total",
+  "failure_policy": "retain_unsupported_timeout_failure_no_infinite_speedup",
+  "timing_scope": "setup_first_call_warmup_initial_assessment_updates_validation_in_total_oracle_separate_process_wall_inclusive",
+  "fusion_control": "batched_eager_tangent_lanes_vs_existing_Triton_HVA_same_primal_gradient_and_projection",
+  "triton_cache_policy": "fresh_private_Triton_cache_per_case_deleted_after_worker_exit"
+}

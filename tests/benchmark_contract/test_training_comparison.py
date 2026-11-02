@@ -101,6 +101,26 @@ def test_checkpoint_restores_complete_adam_trajectory(
 ) -> None:
     result = train_case(task, "flagquantum", 11, smoke=True, directory=tmp_path)
     assert result["completed_steps"] == 3
+    startup = (
+        sum(
+            result[key]
+            for key in (
+                "backend_setup_seconds",
+                "warmup_seconds",
+                "initial_assessment_seconds",
+            )
+        )
+        + result["parity"]["first_value_grad_seconds"]
+    )
+    assert result["total_measured_seconds"] == pytest.approx(
+        startup + result["training_seconds"] + result["assessment_seconds"]
+    )
+    if result["time_to_target_seconds"] is None:
+        assert result["time_to_target_total_seconds"] is None
+    else:
+        assert result["time_to_target_total_seconds"] == pytest.approx(
+            startup + result["time_to_target_seconds"]
+        )
     assert result["checkpoint_replay_max_parameter_error"] == 0
     assert result["checkpoint_replay_max_gradient_error"] == 0
     assert result["checkpoint_replay_max_optimizer_error"] == 0
@@ -119,3 +139,25 @@ def test_parity_detects_wrong_quantum_expectation() -> None:
         return values[0] + features[0]
 
     assert not check_parity("classifier", parameters, dataset()[0], wrong).passed
+
+
+def test_report_refuses_missing_seed(tmp_path: Path) -> None:
+    import json
+
+    from benchmarks.training_comparison_report import render_report
+
+    freeze = {
+        "schema": "flagquantum.training_comparison.v1",
+        "source": {"code_version": "test"},
+        "protocol": {"engines": ["flagquantum"], "seeds": [11, 29]},
+        "smoke": False,
+    }
+    (tmp_path / "freeze.json").write_text(json.dumps(freeze))
+    cases = [
+        {"case": f"{task}-flagquantum-11", "status": "timeout"}
+        for task in ("classifier", "heisenberg")
+    ]
+    cases.append({"case": "classifier-classical-11", "status": "timeout"})
+    (tmp_path / "summary.json").write_text(json.dumps({**freeze, "cases": cases}))
+    with pytest.raises(ValueError, match="all frozen tasks, engines and seeds"):
+        render_report(tmp_path)

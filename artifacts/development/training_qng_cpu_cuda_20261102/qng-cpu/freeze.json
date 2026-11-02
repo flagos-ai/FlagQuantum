@@ -1,0 +1,89 @@
+{
+  "benchmark_evidence_class": "comparison_non_release",
+  "execution_semantics": "single_device_fast_path",
+  "hostname": "redacted",
+  "platform": "macOS-27.0-arm64-arm-64bit",
+  "protocol": {
+    "case_timeout_seconds": 240,
+    "compile_policy": "no_Torch_compile_or_JIT_Triton_compiles_on_first_call_included_in_total",
+    "damping": 0.001,
+    "device": "cpu",
+    "failure_policy": "retain_unsupported_timeout_failure_no_infinite_speedup",
+    "fusion_control": "batched_eager_tangent_lanes_vs_existing_Triton_HVA_same_primal_gradient_and_projection",
+    "initial_std": 0.02,
+    "learning_rate": 0.03,
+    "methods": [
+      "reverse_jacobian",
+      "unfused_forward",
+      "fused_forward",
+      "pennylane_metric"
+    ],
+    "metric": "Fubini_Study_layer_block_diagonal_no_factor_four",
+    "optimizer": "theta_minus_lr_solve_metric_plus_damping_identity_gradient",
+    "parity_tolerance": 2e-06,
+    "precision": "complex128",
+    "protocol_id": "qng_hva_ablation_cpu_20261102",
+    "schema": "flagquantum.qng_hva_ablation_protocol.v1",
+    "seeds": [
+      11,
+      29,
+      47
+    ],
+    "smoke": "first_workload_seed_11_three_updates_not_acceptance_evidence",
+    "steps": 30,
+    "stop_rule": "exactly_30_updates_even_after_target_or_case_wall_timeout",
+    "target_relative_energy_error": 0.01,
+    "target_rule": "initial_or_post_update_absolute_relative_energy_error_to_independent_numpy_ground_energy",
+    "threads": 1,
+    "timing_scope": "setup_first_call_warmup_initial_assessment_updates_validation_in_total_oracle_separate_process_wall_inclusive",
+    "warmup_calls": 1,
+    "workload": "canonical_bond_resolved_phase_HVA_open_XX_YY_ZZ_dimer_singlet",
+    "workloads": [
+      {
+        "depth": 1,
+        "qubits": 4
+      },
+      {
+        "depth": 2,
+        "qubits": 4
+      },
+      {
+        "depth": 1,
+        "qubits": 6
+      }
+    ]
+  },
+  "python": "3.12.14",
+  "runner": "qng_hva_time_to_accuracy",
+  "scalability_claim_allowed": false,
+  "schema": "flagquantum.qng_hva_ablation.v1",
+  "smoke": false,
+  "source": {
+    "code_version": "d76c095afba994972d4a0dfce9a924a2f7143673",
+    "dirty": false,
+    "installation": {
+      "distribution_version": "0.4.0",
+      "native_cpu_adjoint_available": false,
+      "native_cpu_extension_sha256": null
+    },
+    "producer_sha256": {
+      "benchmarks/qng_hva_ablation.py": "b8dc4afb55bedda0bed67ac568898b0cdaaa8d96dcc2b05a33d5ee8ff8b9aaf0",
+      "benchmarks/qng_hva_geometry.py": "754d6e45066133352ac39cdc555d95f7e6299f242207cb08e6bf6851c16a237c",
+      "benchmarks/qng_hva_time_to_accuracy.py": "45a34574fd94742ea0b6fe0400fa1dafa236a92ad82719073fd222508d4228c4",
+      "benchmarks/training_comparison.py": "c49b2df42157c6e2b863712ca734eca50deb1418dac0346a38f44f3288b3a64a",
+      "benchmarks/training_engines.py": "ca3f49678f2ec97e2fde0ddbb1658291b6114f988c5300b7253e54376f6d307c",
+      "benchmarks/training_workloads.py": "7c797a3214221d3d858e12d3852cfb7a191689b0dad9dc227a395dd983777235"
+    },
+    "protocol_sha256": "bf4fb5b75b7a01192c9a649b0c9b661ff8539a39d07e3f42d7de3abf62ffb5cb",
+    "versions": {
+      "jax": "0.10.2",
+      "jaxlib": "0.10.2",
+      "numpy": "2.5.4",
+      "pennylane": "0.45.1",
+      "pennylane-lightning": "0.45.0",
+      "tensorcircuit-ng": "1.10.0",
+      "torch": "2.14.1"
+    }
+  },
+  "world_size": 1
+}

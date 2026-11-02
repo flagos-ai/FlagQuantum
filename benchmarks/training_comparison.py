@@ -240,6 +240,7 @@ def train_case(
     """Run one isolated case; hold out test data until fixed-step training ends."""
     if task == "heisenberg" and engine == "classical":
         raise ValueError("classical control applies only to the classifier")
+    worker_started = time.perf_counter()
     train, validation, test = dataset()
     if smoke:
         train, validation, test = (
@@ -262,7 +263,15 @@ def train_case(
     checkpoint: dict[str, Any] | None = None
     trace: list[Trace] = []
     target_time: float | None = None
+    initial_assessment_started = time.perf_counter()
     initial_score = score(task, parameters, validation, expectation)
+    initial_assessment_seconds = time.perf_counter() - initial_assessment_started
+    startup_seconds = (
+        setup_seconds
+        + parity.first_value_grad_seconds
+        + warmup_seconds
+        + initial_assessment_seconds
+    )
 
     def target(value: float) -> bool:
         return value >= 0.8 if task == "classifier" else value <= 0.01
@@ -379,6 +388,11 @@ def train_case(
         initial_validation_score=initial_score,
         assessment=asdict(assessment),
         time_to_target_seconds=target_time,
+        time_to_target_total_seconds=(
+            None if target_time is None else startup_seconds + target_time
+        ),
+        initial_assessment_seconds=initial_assessment_seconds,
+        worker_wall_seconds=time.perf_counter() - worker_started,
         completed_steps=steps,
         trace=[asdict(point) for point in trace],
         backend_setup_seconds=setup_seconds,
@@ -386,11 +400,7 @@ def train_case(
         training_seconds=training_seconds,
         checkpoint_write_seconds=checkpoint_seconds,
         assessment_seconds=assessment_seconds,
-        total_measured_seconds=setup_seconds
-        + parity.first_value_grad_seconds
-        + warmup_seconds
-        + training_seconds
-        + assessment_seconds,
+        total_measured_seconds=startup_seconds + training_seconds + assessment_seconds,
         checkpoint_replay_max_parameter_error=checkpoint_error,
         checkpoint_replay_max_gradient_error=checkpoint_gradient_error,
         checkpoint_replay_max_optimizer_error=checkpoint_optimizer_error,
@@ -487,6 +497,7 @@ def campaign(output: Path, *, smoke: bool, protocol: Path = MANIFEST) -> int:
                     MKL_NUM_THREADS="1",
                     JAX_PLATFORMS="cpu",
                 )
+                process_started = time.perf_counter()
                 with (output / f"{directory.name}.log").open("w") as log:
                     try:
                         result = subprocess.run(
@@ -505,6 +516,7 @@ def campaign(output: Path, *, smoke: bool, protocol: Path = MANIFEST) -> int:
                     {
                         "case": directory.name,
                         "status": status,
+                        "process_wall_seconds": time.perf_counter() - process_started,
                         "result": str(directory.relative_to(output) / "result.json"),
                     }
                 )
