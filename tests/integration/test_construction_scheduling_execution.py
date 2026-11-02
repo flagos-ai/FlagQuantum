@@ -32,10 +32,13 @@ def test_workspace_example_runs_the_fixed_cost_table_and_both_cpu_paths() -> Non
     )
     assert "1 retain 6 10 40 35 0" in result.stdout
     assert "1 recompute 5 9 58 54 3" in result.stdout
-    assert "2 retain 28 39 739 545 0" in result.stdout
-    assert "2 recompute 23 34 1091 860 3" in result.stdout
-    assert "3 retain 47 65 2714 2035 0" in result.stdout
-    assert "3 recompute 39 57 4010 3115 3" in result.stdout
+    # AO-01 canonical operand order improves the current example. Historical
+    # CS-05 costs remain checked against retained original candidates in the
+    # Compiler scheduling tests and recorded in the unchanged delivery table.
+    assert "2 retain 25 36 733 543 0" in result.stdout
+    assert "2 recompute 23 34 1085 860 3" in result.stdout
+    assert "3 retain 41 59 2702 2033 0" in result.stdout
+    assert "3 recompute 39 57 3998 3115 3" in result.stdout
     assert "both one-bit schedules passed" in result.stdout
 
 

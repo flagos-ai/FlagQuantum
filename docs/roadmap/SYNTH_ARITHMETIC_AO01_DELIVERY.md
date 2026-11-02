@@ -246,3 +246,32 @@ Local logs: `/private/tmp/fq-ao01-related.log`, `fq-ao01-final-acceptance.log`,
 `fq-ao01-final-measurement.log`, `fq-ao01-final-repeat.log`,
 `fq-ao01-default.log`, `fq-ao01-benchmark-tier.log` and
 `fq-ao01-distributed-tier.log`. Remote PR CI remains a separate acceptance gate.
+
+## PR #1010 CI repair
+
+The first CI attempt at `3a6fbfb5d7274d179b316cf7ce2dac25ffdb807e`
+exceeded the source-preparation job's five-minute deadline during artifact
+upload. Downstream suites did not execute; their aggregate gates failed on
+skipped prerequisites. The unchanged-head rerun cleared source preparation.
+
+That rerun then exposed one actual stale resource assertion in
+`test_workspace_example_runs_the_fixed_cost_table_and_both_cpu_paths`, reported
+by both [runtime](https://github.com/flagos-ai/FlagQuantum/actions/runs/41405088616/job/125151671408)
+and [coverage](https://github.com/flagos-ai/FlagQuantum/actions/runs/41405088616/job/125151672915).
+AO-01 canonical operand ordering improves the existing workspace example:
+two-bit retain becomes 25/36/733/543 (work/qubits/operations/depth), and
+three-bit retain becomes 41/59/2702/2033. The executable output test now asserts
+those actual costs, including the corresponding improved recompute gate counts.
+The historical CS-05 table and original-candidate resource assertions remain
+intact. No production code, semantic check, compiler budget, measured source or
+baseline JSON changes in this repair.
+
+The stale assertion was reproduced before editing. After repair, all 197
+combined AO-01/workspace-execution acceptance cases pass in 11.74 seconds,
+including both exact CPU schedules, every one-bit nonzero XOR target, complex
+entanglement, controlled relative phase and compute/mark/uncompute cleanup.
+The broader latest-source compiler/synth regression passes 2,482 cases in
+594.44 seconds; both source-typing cases and the native/Qmod example also pass.
+Logs: `/private/tmp/fq-1010-workspace-before.log`, `fq-1010-fixed-acceptance.log`,
+`fq-1010-related.log`, `fq-1010-source-typing.log` and the downloaded CI failure
+logs `fq-1010-runtime-failed.log` / `fq-1010-coverage1-failed.log`.
