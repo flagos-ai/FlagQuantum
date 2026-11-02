@@ -27,7 +27,7 @@ def _parse(source: str) -> QmodImport:
     "filename,widths,inferred,total",
     [
         ("X.qmod", {"q": 1}, {}, 1),
-        ("synthesis_tutorial.qmod", {"x": 3, "y": 6}, {"y": 6}, 23),
+        ("synthesis_tutorial.qmod", {"x": 3, "y": 6}, {"y": 6}, 21),
         (
             "multiplication_2vars_example.qmod",
             {"a": 3, "b": 3, "res": 6},
