@@ -142,3 +142,33 @@ def test_original_rz_bytes_license_and_global_phase(input_kind: str) -> None:
     assert p.report["resources"].n_qubits == 1
     assert p.execution.state_bytes == 32
     assert p.report["workspace_qubits"] == 0
+
+
+@pytest.mark.parametrize("preparation", ["", "X(q);", "H(q);"])
+@pytest.mark.parametrize("objective", ["width", "depth"])
+def test_rz_basis_and_coherent_states_keep_absolute_phase(
+    preparation: str, objective: Literal["width", "depth"]
+) -> None:
+    p = synth.synthesize(
+        f"qfunc main(output q:qbit) {{allocate(q);{preparation}RZ(1.9,q);}}",
+        source_format="qmod",
+        objective=objective,
+    )
+    if preparation == "H(q);":
+        expected = {(0,): cmath.exp(-0.95j) / 2**0.5, (1,): cmath.exp(0.95j) / 2**0.5}
+    else:
+        bit = int(preparation == "X(q);")
+        expected = {(bit,): cmath.exp(0.95j if bit else -0.95j)}
+    check_state(p, fq.run(p), expected)
+
+
+def test_rz_compatibility_retains_real_plan_budgets_and_target_refusal() -> None:
+    from flagquantum.errors import PlanningError
+
+    source = "qfunc main(output q:qbit) {allocate(q);H(q);RZ(1.9,q);}"
+    with pytest.raises(PlanningError, match="memory budget"):
+        synth.synthesize(source, source_format="qmod", memory_limit_bytes=16)
+    with pytest.raises(synth.SynthesisError):
+        synth.synthesize(source, source_format="qmod", max_operations=1)
+    with pytest.raises(synth.SynthesisError):
+        synth.synthesize(source, source_format="qmod", basis=("x", "h"))

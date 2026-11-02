@@ -2,9 +2,9 @@
 
 This maintained domain facade re-exports one Services implementation. It adds no
 builder, Program wrapper, validation engine or executor. The initial unreleased
-candidate supports source-retaining Python unsigned arithmetic, bounded one-bit
-radians phase functions, known basis or
-uniform preparation, exact CPU statevectors and the admitted line profile.
+candidate supports source-retaining Python unsigned arithmetic and one-bit
+pi-predicate phases, known basis/uniform preparation, exact CPU statevectors
+and the admitted line profile.
 Independent developer trial records and final release review are still pending.
 
 ```python
@@ -29,7 +29,8 @@ assert dict(program.probabilities(result, registers=("x", "y", "result"))) == {
 Run `python -m examples.algorithms.synthesis_trial` for the complete basis,
 uniform and routed named workflows. The normal path needs no gate design,
 physical numbers, workspace maps, candidate choice or bit decoding. Optional
-qfunc covers the unsigned trial subset; the radians profile uses plain functions.
+qfunc covers the unsigned trial subset; full role-annotated programs remain
+follow-on work under the UP-00 contract.
 
 Services owns capture/preparation composition, the factory-created Program and
 named probability reading. Compiler owns existing arithmetic schedules, target
@@ -236,8 +237,8 @@ does not change Python predicate phase mode. Run
 
 ## Predicate phase synthesis
 
-This section describes the existing bool/int predicate profile. Explicit float
-returns use the separate radians profile described below.
+This section describes the existing bool/int/unannotated predicate profile.
+Float-return functions are not admitted; see the UP-00 boundary below.
 
 Use the same high-level predicate with output_mode="phase" to mark input
 amplitudes instead of exporting a result bit. Save this in a Python source file:
@@ -672,53 +673,40 @@ Configured/computed exponents, bool, zero, negative, fractional and larger value
 are refused. See the [delivery](../../docs/roadmap/SYNTH_PYTHON_POWERS_DELIVERY.md).
 Run python -m examples.synthesis_python_powers from a saved source file.
 
-## Native high-level phase functions
+## Unified program contract and compatibility
 
-Describe the phase in ordinary Python; do not name gates or physical wires:
+The [UP-00 contract](../../docs/api-changes/FQ-SYNTH-UNIFIED-PROGRAM-UP00-20261102.md)
+keeps familiar Qmod concepts as the program design baseline: qfunc, quantum
+roles, allocate, expressions, phase, calls and control. It fixes their meaning
+and staged admission; it does not export Output/Const/QNum or admit arbitrary
+effectful Python bodies today. Existing `.qmod` sources do not need conversion
+into a new Python syntax. Unsupported constructs fail rather than being guessed.
+
+The unmerged float-return radians prototype from #1003 is withdrawn. Existing
+int/bool/unannotated Python predicates still mean pi phase; general explicit
+native phase programs remain a gap for UP-02. The planned phase operation is
+`phase(expression, coefficient=1.0)`, not a new return-type convention.
+
+Current RZ compatibility preserves the Qmod statement:
 
 ```python
 import flagquantum as fq
 from flagquantum import synth
 
-def phase(q: int) -> float:
-    return 1.9 * (q - 0.5)
-
 program = synth.synthesize(
-    phase,
-    inputs={"q": synth.UInt(1)},
-    input_state=synth.InputState.uniform(),
-    output_mode="phase",
-    max_qubits=1,
-    max_workspace=0,
+    "qfunc main(output q:qbit) {allocate(q);H(q);RZ(1.9,q);}",
+    source_format="qmod",
     memory_limit_bytes=1024**2,
 )
 result = fq.run(program)
+print(dict(program.probabilities(result, registers=("q",))))
 print(result.statevector())
 ```
 
-An explicit float return means radians: each basis amplitude is multiplied by
-exp(i*phase(q)). The compiler checks both values of the complete one-bit domain
-from the retained AST, without executing the function body, then selects existing
-RZ/PHASE/X gates. Here it chooses RZ(1.9); known uniform preparation adds H.
-Expected amplitudes are about 0.4113-0.5752i and 0.4113+0.5752i. Users declare
-quantum encoding, initial state, phase effect and budgets; they do not supply
-gates, physical indices, ancillas or bit decoding.
-
-This first profile accepts one UInt(1), one return expression, numeric literals,
-the input name, +, -, *, unary signs and optional docstrings. Integer arithmetic
-is exact; float operations preserve ordinary float64 evaluation order. Literals,
-intermediates and final phases must be finite and within +/-2**53, with depth
-at most 32. All domain values are checked even for basis-zero preparation.
-Constant/global phases are preserved. Named basis/uniform InputState is supported;
-helpers, constants bindings, loops, assignments, wider/multiple inputs, arbitrary
-real-data computation and custom preparation IR are not admitted. This plain
-function profile does not require qfunc. Existing bool/int/unannotated phase
-functions retain pi-predicate semantics; float returns are rejected in value mode.
-
-The output has the input name only, result_width=0 and no result flag. The real
-phase scope is actual_cpu_preparation_real_phase; the predicate scope remains
-unchanged. Named probabilities alone cannot verify phase. Run
-`python -m examples.synthesis_native_and_qmod_rz` for native high-level intent,
-Qmod migration and a separate gate-level reference. Gate-level Circuit usage is
-not presented as high-level synthesis. See the
-[delivery](../../docs/roadmap/SYNTH_LITERAL_RZ_DELIVERY.md).
+This is a coherent variant with H, not the unmodified pinned RZ original.
+Amplitudes are exp(-0.95i)/sqrt(2) and exp(0.95i)/sqrt(2); probabilities are
+approximately 1/2 each. Decimal PHASE/RZ limits and gate-target restrictions are
+in the [compatibility delivery](../../docs/roadmap/SYNTH_LITERAL_RZ_DELIVERY.md).
+Run `python -m examples.synthesis_native_and_qmod_rz` for current Python
+high-level arithmetic, matching Qmod and the independent RZ Circuit reference.
+The example states the native phase gap rather than calling Circuit high-level.

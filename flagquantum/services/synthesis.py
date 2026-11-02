@@ -15,19 +15,16 @@ from ..compiler._construction.frontend_python import (
     Definition,
     _QuantumFunction,
     capture,
-    prepare_real_phase,
 )
 from ..compiler._construction.frontend_python import qfunc as qfunc
 from ..compiler._construction.lowering import ArithmeticCandidate
 from ..compiler._construction.profile import uint_type
-from ..compiler._construction.register_expansion import is_register_function
 from ..compiler._construction.register_profile import register_ports
 from ..compiler._construction.selection import (
     Constraints,
     ConstructionBudget,
     Selection,
     select_arithmetic,
-    select_register_program,
 )
 from ..compiler._construction.target import Target
 from ..compiler._hybrid.verifier import Diagnostic, HybridVerificationError
@@ -455,7 +452,7 @@ def synthesize(
     memory_limit_bytes: int | None = None,
     output_mode: Literal["value", "phase"] = "value",
 ) -> Program:
-    """Synthesize bounded Python computations and phase intent for local CPU execution.
+    """Synthesize high-level unsigned arithmetic for exact local CPU execution.
 
     Final ceilings are distinct from construction_budget. Synthesis plans once
     but never executes. Pass the resulting Program to fq.run, then read actual
@@ -472,13 +469,8 @@ def synthesize(
     only a one-bit Python return on logical CPU targets (basis/topology=None):
     it multiplies each input amplitude by (-1)**predicate and cleans workspace.
     Preparation stays outside that oracle. No result register is exported in
-    phase mode; read inputs with explicit register names. An explicit float
-    return annotation instead selects radians for a bounded one-UInt(1)
-    arithmetic phase function. It supports literals, the input name, +, -, *,
-    unary signs and named basis/uniform preparation, without helpers, constants
-    bindings or custom preparation IR. Wider and general real functions remain
-    unsupported. Existing int/bool phase returns still mean pi times predicate.
-    Uniform probabilities alone cannot verify phase. Phase reports omit arithmetic_resources, and
+    phase mode; read inputs with explicit register names. Uniform probabilities
+    alone cannot verify phase. Phase reports omit arithmetic_resources, and
     result_width=0 denotes the absence of an exported result register.
 
     Returns:
@@ -611,13 +603,7 @@ def synthesize(
         {name: spec.width for name, spec in inputs.items()},
         constants=constants,
         functions=functions,
-        real_phase=output_mode == "phase",
     )
-    real_phase = is_register_function(graph)
-    if real_phase and preparation is not None:
-        raise ValueError(
-            "real phase accepts named input_state, not custom preparation IR"
-        )
     if isinstance(function, _QuantumFunction):
         parameters = tuple(
             arg.arg
@@ -638,29 +624,19 @@ def synthesize(
         inputs, mapping, input_state, preparation, preparation_map
     )
     target = _target(position, construction_budget, selected_basis, topology)
-    if real_phase:
-        graph = prepare_real_phase(graph, prepared)
-        selection = select_register_program(
-            graph,
-            constraints=constraints,
-            budget=construction_budget,
-            target=target,
-            objective=objective,
-        )
-    else:
-        selection = select_arithmetic(
-            (graph,),
-            entry=graph.name,
-            input_names=names,
-            preparation=CircuitIR(position, prepared, dtype="complex128"),
-            constraints=constraints,
-            budget=construction_budget,
-            target=target,
-            objective=objective,
-            output_mode=output_mode,
-        )
+    selection = select_arithmetic(
+        (graph,),
+        entry=graph.name,
+        input_names=names,
+        preparation=CircuitIR(position, prepared, dtype="complex128"),
+        constraints=constraints,
+        budget=construction_budget,
+        target=target,
+        objective=objective,
+        output_mode=output_mode,
+    )
     row = selection.selected
-    if row is None or row.target is None or (not real_phase and row.arithmetic is None):
+    if row is None or row.target is None or row.arithmetic is None:
         raise SynthesisError(selection)
     block = graph.body.blocks[0]
     report: dict[str, object] = {
@@ -676,13 +652,9 @@ def synthesize(
             )
         ),
         "scope": (
-            "actual_cpu_preparation_real_phase"
-            if real_phase
-            else (
-                "actual_cpu_preparation_predicate_phase_cleanup"
-                if output_mode == "phase"
-                else "actual_cpu_preparation_arithmetic_cleanup"
-            )
+            "actual_cpu_preparation_predicate_phase_cleanup"
+            if output_mode == "phase"
+            else "actual_cpu_preparation_arithmetic_cleanup"
         ),
         "source_format": "python",
         "output_mode": output_mode,
