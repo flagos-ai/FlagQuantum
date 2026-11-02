@@ -10,8 +10,48 @@ from typing import Any
 import pytest
 
 from benchmarks import mps_placement_conformance as placement
+from benchmarks.internal.evidence.representation_conformance import source_record
 
 pytestmark = pytest.mark.unit
+
+
+@pytest.mark.parametrize("has_base", [False, True])
+def test_source_identity_remains_truthful_without_a_remote_base(
+    has_base: bool, tmp_path: Path
+) -> None:
+    def git(*arguments: str) -> str:
+        return subprocess.check_output(
+            ["git", *arguments],
+            cwd=tmp_path,
+            text=True,
+            stderr=subprocess.DEVNULL,
+            timeout=15,
+        ).strip()
+
+    git("init")
+    git("config", "user.name", "FlagQuantum")
+    git("config", "user.email", "liuwei.chem.phys@gmail.com")
+    package = tmp_path / "flagquantum"
+    package.mkdir()
+    source = package / "example.py"
+    source.write_text("value = 1\n")
+    git("add", ".")
+    git("commit", "-m", "fixture")
+    head = git("rev-parse", "HEAD")
+    if has_base:
+        git("update-ref", "refs/remotes/origin/main", head)
+    else:
+        (tmp_path / ".git/shallow").write_text(head + "\n")
+    record = source_record(tmp_path, ["benchmarks/example.py"])
+    assert record["source_commit"] == head
+    assert record["measuring_source_committed"] is True
+    assert record["base_commit"] == (head if has_base else None)
+    assert (record["base_commit_unavailable_reason"] is None) is has_base
+    source.write_text("value = 2\n")
+    assert (
+        source_record(tmp_path, ["benchmarks/example.py"])["measuring_source_committed"]
+        is False
+    )
 
 
 @pytest.mark.parametrize("failure", ["stall", "exit"])

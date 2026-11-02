@@ -50,6 +50,16 @@ and generated documentation checks pass.
 
 ## Repository-wide checks and baseline comparison
 
+CI restores some lanes from a shallow pack containing just the current commit
+and tree. The producer now keeps its actual HEAD source pin but records a null
+base and an explicit reason when `origin/main` is absent. Two Git-fixture tests
+exercise that checkout and a checkout with a base ref. Historical artifact-pin
+resolution is a separate test, explicitly skipped only for shallow history;
+all numerical artifact assertions continue to run there. The existing required
+full-history evidence-origin gate still verifies every recorded source pin.
+These metadata/test changes do not alter the numerical code or rewrite the
+producer-pinned measurements above.
+
 The ordinary checkout contains many historical development refs. Its full
 evidence gate reports 98 historical-origin diagnostics both on base main and
 on this branch: the diagnostic set has no additions. Those refs make commits

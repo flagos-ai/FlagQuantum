@@ -18,16 +18,32 @@ def read_payload(path: Path) -> dict[str, Any]:
     payload = json.loads(path.read_text())
     assert payload["measuring_source_committed"] is True
     assert len(payload["source_commit"]) == 40
-    subprocess.run(
-        ["git", "cat-file", "-e", f"{payload['source_commit']}^{{commit}}"],
-        cwd=ROOT,
-        check=True,
-        timeout=15,
-    )
     assert payload["command"].startswith("python benchmarks/")
     assert str(ROOT) not in payload["command"]
     assert payload["scalability_claim_allowed"] is False
     return payload
+
+
+def test_recorded_producer_is_obtainable_in_full_history() -> None:
+    shallow = subprocess.check_output(
+        ["git", "rev-parse", "--is-shallow-repository"], cwd=ROOT, text=True, timeout=15
+    ).strip()
+    if shallow == "true":
+        pytest.skip("historical pin lookup belongs to the full-history evidence gate")
+    paths = list((ARTIFACTS / "representation_conformance_cpu_20261102").glob("*.json"))
+    paths += list((ARTIFACTS / "mps_placement_conformance_cpu_20261102").glob("*.json"))
+    producers = {
+        json.loads(path.read_text())["source_commit"]
+        for path in paths
+        if path.name != "smoke_unit_partitions.json"
+    }
+    for producer in producers:
+        subprocess.run(
+            ["git", "cat-file", "-e", f"{producer}^{{commit}}"],
+            cwd=ROOT,
+            check=True,
+            timeout=15,
+        )
 
 
 @pytest.mark.parametrize("dtype", ["complex64", "complex128"])

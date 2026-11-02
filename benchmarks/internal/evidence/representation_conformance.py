@@ -44,7 +44,8 @@ class SplitBoundary(TypedDict):
 
 class SourceRecord(TypedDict):
     source_commit: str
-    base_commit: str
+    base_commit: str | None
+    base_commit_unavailable_reason: str | None
     measuring_source_committed: bool
     command: str
 
@@ -135,9 +136,22 @@ def source_record(root: Path, argv: Sequence[str]) -> SourceRecord:
         "benchmarks/internal",
     )
     command = [argument.replace(str(root.resolve()) + "/", "") for argument in argv]
+    base = subprocess.run(
+        ["git", "rev-parse", "--verify", "refs/remotes/origin/main^{commit}"],
+        cwd=root,
+        text=True,
+        capture_output=True,
+        check=False,
+        timeout=15,
+    )
     return {
         "source_commit": git("rev-parse", "HEAD"),
-        "base_commit": git("rev-parse", "origin/main"),
+        "base_commit": base.stdout.strip() if base.returncode == 0 else None,
+        "base_commit_unavailable_reason": (
+            None
+            if base.returncode == 0
+            else "origin/main is unavailable in this checkout"
+        ),
         "measuring_source_committed": not changed,
         "command": shlex.join(["python", *command]),
     }
