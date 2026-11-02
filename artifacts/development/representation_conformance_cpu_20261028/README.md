@@ -1,5 +1,16 @@
 # State, observable and gradient conformance across representations, on CPU
 
+> Historical evidence, superseded for #899 acceptance by
+> `../representation_conformance_cpu_20261102/README.md`. The original JSON is
+> retained unchanged. The own-map finite difference and local scan below used a
+> no-grad forward while autograd used a grad-enabled factorization path. Their
+> difference was not solely a backward error. The final ideal-state Schmidt gap
+> also cannot exclude a near-degenerate intermediate SVD. In particular, the
+> claims below that the derivative of the same map was measured and that no
+> actual truncation was near-degenerate must not be used for current acceptance.
+> The corrected corpus uses one training forward, records actual split spectra,
+> and labels unstable probes as boundaries instead of proving non-differentiability.
+
 This extends the representation-agreement grid of #709 and the state/gradient
 grid of the #899 first leg to a corpus that varies the parameter draw, covers
 both amplitude precisions and both sides of a truncating cap, and adds two

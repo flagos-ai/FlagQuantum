@@ -117,7 +117,7 @@ def dataclass_record(value: type[Any]) -> list[dict[str, object]] | None:
     fields = []
     for field in dataclasses.fields(value):
         default_factory: object = {"kind": "missing"}
-        if field.default_factory is not dataclasses.MISSING:  # type: ignore[misc]
+        if field.default_factory is not dataclasses.MISSING:
             default_factory = {
                 "kind": "factory",
                 "value": qualified_name(field.default_factory),
@@ -214,6 +214,8 @@ def validate() -> tuple[str, ...]:
     )
     experiment_contract = json.loads(EXPERIMENT_CONTRACT.read_text(encoding="utf-8"))
     actual = generate()
+    actual_exports = actual["exports"]
+    assert isinstance(actual_exports, dict)
     names = actual["stable_exports"]
     assert isinstance(names, list)
     historical_exports = baseline["exports"]
@@ -284,13 +286,13 @@ def validate() -> tuple[str, ...]:
         for name in names
         if name not in authorized_changes and name != "__version__"
     ]
-    expected = {
+    expected: dict[str, object] = {
         "stable_exports": compared_names,
         "exports": {name: historical_exports[name] for name in compared_names},
     }
-    compared_actual = {
+    compared_actual: dict[str, object] = {
         "stable_exports": compared_names,
-        "exports": {name: actual["exports"][name] for name in compared_names},
+        "exports": {name: actual_exports[name] for name in compared_names},
     }
     errors: list[str] = []
     if expected != compared_actual:
@@ -361,10 +363,10 @@ def validate() -> tuple[str, ...]:
         from flagquantum.remote import jobs
 
         for name, expected_signature in jobs_contract["public_signatures"].items():
-            obj = jobs
+            obj: object = jobs
             for component in name.split("."):
                 obj = getattr(obj, component)
-            if str(inspect.signature(obj)) != expected_signature:
+            if not callable(obj) or str(inspect.signature(obj)) != expected_signature:
                 errors.append(f"authorized remote job API signature changed: {name}")
         import flagquantum as fq
 
@@ -631,6 +633,23 @@ def _validate_authorized_execution_result(contract: dict[str, Any]) -> list[str]
     return errors
 
 
+_SYNTH_PROGRAM_EXPORTS = (
+    "ConstructionBudget",
+    "InputState",
+    "Program",
+    "SynthesisError",
+    "UInt",
+    "qfunc",
+    "synthesize",
+    "Output",
+    "Const",
+    "QNum",
+    "QBit",
+    "allocate",
+    "hadamard_transform",
+)
+
+
 def _validate_authorized_synthesis_run(contract: dict[str, Any]) -> list[str]:
     """Protect the exact reviewed synthesis extension, not arbitrary input types."""
     import flagquantum as fq
@@ -728,18 +747,22 @@ def _validate_authorized_synthesis_run(contract: dict[str, Any]) -> list[str]:
         errors.append(
             "synthesis run signature exceeds the approved single input addition"
         )
-    if tuple(synth.__all__) != exports or tuple(synthesis.__all__) != exports:
+    active_exports = _SYNTH_PROGRAM_EXPORTS
+    if (
+        tuple(synth.__all__) != active_exports
+        or tuple(synthesis.__all__) != active_exports
+    ):
         errors.append("synthesis namespace exports differ from admission")
     if any(
         getattr(synth, name, None) is not getattr(synthesis, name, None)
-        for name in exports
+        for name in active_exports
     ):
         errors.append("synthesis facade must reuse the canonical Services symbols")
     if synth.Program.__module__ != "flagquantum.services.synthesis" or hasattr(
         synth.Program, "to_ir"
     ):
         errors.append("synthesis Program owner/coercion differs from admission")
-    if any(name in fq.__all__ for name in exports):
+    if any(name in fq.__all__ for name in active_exports):
         errors.append("synthesis feature symbols must not enter stable root exports")
     for key, value in (
         ("probabilities_signature", synth.Program.probabilities),
@@ -895,14 +918,69 @@ def _validate_authorized_synthesis_phase(contract: Any) -> list[str]:
         errors.append("predicate phase implementation authorization is missing")
     if str(inspect.signature(synth.synthesize)) != expected["synthesize_signature"]:
         errors.append("predicate phase signature exceeds approved admission")
-    if list(synth.__all__) != expected["namespace_exports"]:
-        errors.append("predicate phase must preserve namespace exports")
+    if tuple(synth.__all__) != _SYNTH_PROGRAM_EXPORTS:
+        errors.append("phase namespace differs from the authorized program successor")
+    program_contract = json.loads(
+        (ROOT / "contracts/synthesis-python-program-v1-candidate.json").read_text()
+    )
+    errors.extend(_validate_authorized_synthesis_python_program(program_contract))
     if (
         str(inspect.signature(fq.run)) != proposal["unchanged_run_signature"]
         or str(inspect.signature(synth.Program.probabilities))
         != proposal["unchanged_probabilities_signature"]
     ):
         errors.append("predicate phase must preserve run/read signatures")
+    return errors
+
+
+def _validate_authorized_synthesis_python_program(contract: Any) -> list[str]:
+    """Protect the user-authorized UP-01 successor without rewriting predecessors."""
+    import flagquantum as fq
+    from flagquantum import synth
+    from flagquantum.services import synthesis
+
+    path = ROOT / "contracts/synthesis-python-program-v1-candidate.json"
+    reviewed_hash = "5f500166f026674faa66744ef33d17bc67edc6a16f695ff891769785e1cf6a5e"
+    if hashlib.sha256(path.read_bytes()).hexdigest() != reviewed_hash:
+        return ["reviewed Python program contract changed"]
+    expected = json.loads(path.read_text())
+    if not isinstance(contract, dict) or json.dumps(
+        contract, sort_keys=True
+    ) != json.dumps(expected, sort_keys=True):
+        return ["Python program admission differs from its reviewed scope"]
+    errors = []
+    if (
+        hashlib.sha256((ROOT / contract["proposal"]).read_bytes()).hexdigest()
+        != contract["proposal_sha256"]
+    ):
+        errors.append("reviewed Python program proposal changed")
+    for filename, digest in contract["historical_contracts_sha256"].items():
+        if hashlib.sha256((ROOT / filename).read_bytes()).hexdigest() != digest:
+            errors.append("Python program must preserve historical synthesis contracts")
+    if tuple(contract["namespace_exports"]) != _SYNTH_PROGRAM_EXPORTS:
+        errors.append("Python program export delta exceeds authorization")
+    if (
+        tuple(synth.__all__) != _SYNTH_PROGRAM_EXPORTS
+        or tuple(synthesis.__all__) != _SYNTH_PROGRAM_EXPORTS
+    ):
+        errors.append("Python program namespace differs from its reviewed scope")
+    if any(
+        getattr(synth, name, None) is not getattr(synthesis, name, None)
+        for name in _SYNTH_PROGRAM_EXPORTS
+    ):
+        errors.append("Python program facade must reuse Services symbols")
+    for field, value in (
+        ("synthesize_signature", synth.synthesize),
+        ("run_signature", fq.run),
+        ("probabilities_signature", synth.Program.probabilities),
+    ):
+        if str(inspect.signature(value)) != contract[field]:
+            errors.append("Python program must preserve run/read/synthesize signatures")
+    for name, signature in contract["new_operation_signatures"].items():
+        if str(inspect.signature(getattr(synth, name))) != signature:
+            errors.append("Python program operation signature differs from approval")
+    if set(_SYNTH_PROGRAM_EXPORTS).intersection(fq.__all__):
+        errors.append("Python program symbols must not enter Stable Core exports")
     return errors
 
 

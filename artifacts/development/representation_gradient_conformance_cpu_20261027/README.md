@@ -1,5 +1,14 @@
 # Representation conformance for state and gradient, on CPU
 
+> Historical evidence. For #899 acceptance use
+> `../representation_conformance_cpu_20261102/README.md`. Raw JSON below is
+> preserved. The original own-map difference and smoothness scan used a no-grad
+> forward, while the gradient used a grad-enabled factorization path. Treating
+> their difference as solely the backward error was not justified. The corrected
+> corpus preserves the training forward and explicitly reports numerical and
+> actual-SVD domain boundaries; it does not infer non-differentiability from a
+> finite scan alone.
+
 This extends the representation-agreement grid of #709 from one expectation
 value to the state, several observables and the parameter gradient, for issue
 #899. The payload `complex128.json` was produced by

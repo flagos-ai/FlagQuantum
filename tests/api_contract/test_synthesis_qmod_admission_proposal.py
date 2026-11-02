@@ -35,7 +35,11 @@ def test_proposal_does_not_activate_or_change_the_existing_public_api():
     assert PROPOSAL["api_owner_approval"] is None
     assert PROPOSAL["release_authorized"] is False
     assert not PROPOSAL["human_trial_records"]
-    assert tuple(synth.__all__) == tuple(active["namespace_exports"])
+    program = json.loads(
+        (ROOT / "contracts/synthesis-python-program-v1-candidate.json").read_text()
+    )
+    assert active["namespace_exports"] == program["previous_namespace_exports"]
+    assert tuple(synth.__all__) == tuple(program["namespace_exports"])
     assert str(inspect.signature(synth.synthesize)) == active["synthesize_signature"]
     assert str(inspect.signature(fq.run)) == active["run_signature"]
     assert (

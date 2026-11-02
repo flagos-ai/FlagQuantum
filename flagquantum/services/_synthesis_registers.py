@@ -28,7 +28,7 @@ def synthesize_registers(
     objective: Literal["width", "depth"] = "width",
     memory_limit_bytes: int,
     memory_limit_origin: Literal["profile_default", "explicit"] = "explicit",
-    source_format: Literal["register", "qmod"] = "register",
+    source_format: Literal["register", "qmod", "python"] = "register",
     source_name: str | None = None,
     source_version: str | None = None,
 ) -> Program:

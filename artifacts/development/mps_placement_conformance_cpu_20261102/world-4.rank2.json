@@ -1,0 +1,328 @@
+{
+  "schema": "flagquantum.mps_placement_conformance.v1",
+  "n_qubits": 10,
+  "seed": 20261028,
+  "world_size": 4,
+  "rank": 2,
+  "backend": "gloo",
+  "dtype": "complex128",
+  "python": "3.12.14",
+  "torch": "2.14.1",
+  "parameter_initialization": "0.1 * float64 randn(3), shared across ranks",
+  "parameters": [
+    -0.06923006165853482,
+    -0.028271825072411272,
+    -0.06533277067043884
+  ],
+  "tolerances": {
+    "value_relative": 1e-12,
+    "gradient_relative": 1e-12,
+    "gradient_cosine_deficit": 1e-12
+  },
+  "source_commit": "71003d31521f6106feaacfe83fd46ef97fac9d44",
+  "base_commit": "ef95c04f08ddeb05c1c8469b51f4cfccb7c4fc62",
+  "measuring_source_committed": true,
+  "command": "python benchmarks/mps_placement_conformance.py --local-world-size 4 --timeout-seconds 90 --output artifacts/development/mps_placement_conformance_cpu_20261102/world-4.json",
+  "rendezvous": "file_store",
+  "socket_interface": "lo0",
+  "scalability_claim_allowed": false,
+  "peak_process_rss_bytes": 253329408,
+  "device": "cpu",
+  "arms": [
+    {
+      "max_bond": 64,
+      "gradient_policy": "exact",
+      "sharded_value": 0.9936173625070481,
+      "sharded_gradient": [
+        0.13801594102209755,
+        0.11293371359053628,
+        2.0816681711721685e-17
+      ],
+      "rank": 2,
+      "distribution_semantics": "sharded_across_ranks",
+      "world_size": 4,
+      "local_world_size": 4,
+      "node_count": 1,
+      "discarded_weight": 0.0,
+      "svd_factorization_count": 0,
+      "qr_factorization_count": 26,
+      "gradient_accuracy": "exact",
+      "replicated_autograd": false,
+      "full_mps_reconstruction": false,
+      "saved_tensor_bytes": 8320,
+      "reverse_tape_records": 37,
+      "blockers": [],
+      "site_ownership": [
+        [
+          0,
+          1
+        ],
+        [
+          2,
+          3,
+          4
+        ],
+        [
+          5,
+          6
+        ],
+        [
+          7,
+          8,
+          9
+        ]
+      ],
+      "runtime": {
+        "executor": "pytorch_explicit_rank_owned_mps_reverse_v1",
+        "world_size": 4,
+        "local_world_size": 4,
+        "node_count": 1,
+        "rank": 2,
+        "distribution_semantics": "sharded_across_ranks",
+        "mps_backward_execution": "completed",
+        "backward_error": null,
+        "reverse_tape_identity": "6c0874c86c111623002dd8611f1a95d42ec71e3991fabf261d5c55d3a06c0e9d",
+        "reverse_tape_records": 37,
+        "saved_tensor_bytes": 8320,
+        "checkpoint_policy": {
+          "version": "mps_reverse_checkpoint_v3",
+          "max_saved_bytes": 268435456,
+          "max_saved_factorization_bytes": null,
+          "rematerialization_interval": 1,
+          "save_two_site_factorizations": false
+        },
+        "last_completed_record": 36,
+        "watchdog_diagnostics": {
+          "rank": 2,
+          "tape_cursor": 37,
+          "reverse_sequence": null,
+          "operation_id": null,
+          "bond": null,
+          "communication_peer": null,
+          "last_completed_record": 36
+        },
+        "parameter_ownership": [
+          {
+            "parameter_index": 0,
+            "owner_ranks": [
+              0,
+              1,
+              2,
+              3
+            ],
+            "occurrence_count": 29,
+            "reduction": "all_reduce_sum"
+          }
+        ],
+        "shared_parameter_reduction": "bounded_dtype_all_reduce_sum",
+        "gradient_policy": "exact",
+        "gradient_accuracy": "exact",
+        "gradient_tolerance": 1.0,
+        "discarded_weight": 0.0,
+        "objective_scan_pairs": 0,
+        "objective_scan_forward_messages": 0,
+        "objective_scan_reverse_messages": 0,
+        "objective_execution": "single_observable_scan",
+        "reverse_tape_segments": 31,
+        "fused_reverse_segments": 4,
+        "reverse_autograd_grad_invocations": 8,
+        "reverse_python_dispatches": 31,
+        "gradient_collective_count": 1,
+        "gradient_collective_bytes": 24,
+        "gradient_bucket_count": 1,
+        "gradient_bucket_fill_ratio": 9.1552734375e-07,
+        "gradient_owner_ranks": [],
+        "canonicalization_policy": "dirty",
+        "initial_mps_canonical": true,
+        "dirty_bonds": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8
+        ],
+        "planned_canonicalization_bonds": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8
+        ],
+        "qr_factorization_count": 26,
+        "svd_factorization_count": 0,
+        "static_qr_metadata_records": 18,
+        "dynamic_metadata_broadcasts": 0,
+        "reverse_segment_cache_hit": false,
+        "gradient_bucket_cache_hit": false,
+        "layer_halo_message_count": 0,
+        "layer_halo_payload_bytes": 0,
+        "layer_halo_intra_node_bytes": 0,
+        "layer_halo_inter_node_bytes": 0,
+        "layer_halo_wait_seconds": 0.0,
+        "canonicalization_pullback": "explicit_owner_local_qr_vjp",
+        "truncation_pullback": "explicit_owner_local_svd_vjp",
+        "singular_value_degeneracy_policy": "fail_closed_at_truncation_boundary",
+        "replicated_autograd": false,
+        "statevector_fallback": false,
+        "full_mps_reconstruction": false,
+        "jax_required": false,
+        "scalability_claim_allowed": false,
+        "blockers": []
+      }
+    },
+    {
+      "max_bond": 2,
+      "gradient_policy": "approximate",
+      "sharded_value": 0.9926553291054739,
+      "sharded_gradient": [
+        0.13800044839769093,
+        0.1375252697092011,
+        -0.00023128808408386103
+      ],
+      "rank": 2,
+      "distribution_semantics": "sharded_across_ranks",
+      "world_size": 4,
+      "local_world_size": 4,
+      "node_count": 1,
+      "discarded_weight": 0.0009600649976543819,
+      "svd_factorization_count": 7,
+      "qr_factorization_count": 19,
+      "gradient_accuracy": "approximate",
+      "replicated_autograd": false,
+      "full_mps_reconstruction": false,
+      "saved_tensor_bytes": 1408,
+      "reverse_tape_records": 37,
+      "blockers": [],
+      "site_ownership": [
+        [
+          0,
+          1
+        ],
+        [
+          2,
+          3,
+          4
+        ],
+        [
+          5,
+          6
+        ],
+        [
+          7,
+          8,
+          9
+        ]
+      ],
+      "runtime": {
+        "executor": "pytorch_explicit_rank_owned_mps_reverse_v1",
+        "world_size": 4,
+        "local_world_size": 4,
+        "node_count": 1,
+        "rank": 2,
+        "distribution_semantics": "sharded_across_ranks",
+        "mps_backward_execution": "completed",
+        "backward_error": null,
+        "reverse_tape_identity": "8e05f26d49573273a6c34a11b2d81051bcf889383edec7ca88623b565f43f4e3",
+        "reverse_tape_records": 37,
+        "saved_tensor_bytes": 1408,
+        "checkpoint_policy": {
+          "version": "mps_reverse_checkpoint_v3",
+          "max_saved_bytes": 268435456,
+          "max_saved_factorization_bytes": null,
+          "rematerialization_interval": 1,
+          "save_two_site_factorizations": false
+        },
+        "last_completed_record": 36,
+        "watchdog_diagnostics": {
+          "rank": 2,
+          "tape_cursor": 37,
+          "reverse_sequence": null,
+          "operation_id": null,
+          "bond": null,
+          "communication_peer": null,
+          "last_completed_record": 36
+        },
+        "parameter_ownership": [
+          {
+            "parameter_index": 0,
+            "owner_ranks": [
+              0,
+              1,
+              2,
+              3
+            ],
+            "occurrence_count": 29,
+            "reduction": "all_reduce_sum"
+          }
+        ],
+        "shared_parameter_reduction": "bounded_dtype_all_reduce_sum",
+        "gradient_policy": "approximate",
+        "gradient_accuracy": "approximate",
+        "gradient_tolerance": 1.0,
+        "discarded_weight": 0.0009600649976543819,
+        "objective_scan_pairs": 0,
+        "objective_scan_forward_messages": 0,
+        "objective_scan_reverse_messages": 0,
+        "objective_execution": "single_observable_scan",
+        "reverse_tape_segments": 31,
+        "fused_reverse_segments": 4,
+        "reverse_autograd_grad_invocations": 8,
+        "reverse_python_dispatches": 31,
+        "gradient_collective_count": 1,
+        "gradient_collective_bytes": 24,
+        "gradient_bucket_count": 1,
+        "gradient_bucket_fill_ratio": 9.1552734375e-07,
+        "gradient_owner_ranks": [],
+        "canonicalization_policy": "dirty",
+        "initial_mps_canonical": true,
+        "dirty_bonds": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8
+        ],
+        "planned_canonicalization_bonds": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8
+        ],
+        "qr_factorization_count": 19,
+        "svd_factorization_count": 7,
+        "static_qr_metadata_records": 11,
+        "dynamic_metadata_broadcasts": 7,
+        "reverse_segment_cache_hit": false,
+        "gradient_bucket_cache_hit": true,
+        "layer_halo_message_count": 0,
+        "layer_halo_payload_bytes": 0,
+        "layer_halo_intra_node_bytes": 0,
+        "layer_halo_inter_node_bytes": 0,
+        "layer_halo_wait_seconds": 0.0,
+        "canonicalization_pullback": "explicit_owner_local_qr_vjp",
+        "truncation_pullback": "explicit_owner_local_svd_vjp",
+        "singular_value_degeneracy_policy": "fail_closed_at_truncation_boundary",
+        "replicated_autograd": false,
+        "statevector_fallback": false,
+        "full_mps_reconstruction": false,
+        "jax_required": false,
+        "scalability_claim_allowed": false,
+        "blockers": []
+      }
+    }
+  ],
+  "claim_boundary": "bounded placement semantics; not capacity, speed, accelerator or scalability evidence"
+}
