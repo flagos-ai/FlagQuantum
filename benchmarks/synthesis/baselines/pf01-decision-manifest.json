@@ -1,0 +1,30 @@
+{
+  "after_revision": "40a421eba6486d1c9ffad4217d398018d780ee57",
+  "artifacts": {
+    "after": {
+      "file": "pf01-decision-after.json.gz",
+      "sha256": "74deb3a1d65ba48ca0d924ec13f6e8c9f63ba078ca60adbfe0fad9ff5d4674b3",
+      "source_revision": "40a421eba6486d1c9ffad4217d398018d780ee57"
+    },
+    "before": {
+      "file": "pf01-decision-before.json.gz",
+      "sha256": "9c954055cacc4a0628c335f1fe488c1e83c88abb75e63688ddf8da0a9c2e2e02",
+      "source_revision": "f820a1f7eaa3990bed1bcf30f3adfd5199c23edd"
+    },
+    "comparison": {
+      "file": "pf01-decision-comparison.json",
+      "sha256": "c7958411a5a5813abc624f1f4f046617ba9d554b3ad6e422f1df937d0cff9e73"
+    },
+    "rss_review": {
+      "file": "pf01-decision-rss-review.json.gz",
+      "sha256": "4ac2b5579bfde05a192330a54dd3a2ea0a2ed1bd5905fabe8b1573572aac5b9c",
+      "tool_revision": "5c4d214a406daea1f707642148f9b0d3e0a437ad"
+    }
+  },
+  "before_revision": "f820a1f7eaa3990bed1bcf30f3adfd5199c23edd",
+  "configurations_per_side": 10,
+  "expected_refusal_samples_per_side": 9,
+  "rss_review": "Primary shared-square RSS median regression retained; ten alternating fresh workers reviewed the exact workload. No verified RSS benefit. Original AO/PF-00/#1021 artifacts and oracles unchanged.",
+  "scope": "Second PF-01 Services slice: reuse decision fields within one fully validated inspection; local development time evidence, no RSS improvement/Rust/hardware/release claim",
+  "verified_primary_samples_per_side": 81
+}
