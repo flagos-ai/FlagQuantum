@@ -13,6 +13,10 @@ def render_report(directory: Path) -> str:
     """Require a consistent producer/protocol before reporting completed cases."""
     freeze = json.loads((directory / "freeze.json").read_text())
     summary = json.loads((directory / "summary.json").read_text())
+    if freeze["schema"] == "flagquantum.qng_hva_ablation.v1":
+        from benchmarks.qng_hva_ablation import render_report as render_qng_report
+
+        return render_qng_report(directory)
     groups: dict[tuple[str, str], list[dict[str, Any]]] = {}
     failures = []
     for case in summary["cases"]:
@@ -91,6 +95,34 @@ def render_report(directory: Path) -> str:
             target_text = "not reached" if target is None else f"{target:.4f}"
             lines.append(
                 f"| {task} | {engine} | {result['seed']} | {score:.8g} | {result['training_seconds']:.4f} | {result['warmup_seconds']:.4f} | {result['parity']['first_value_grad_seconds']:.4f} | {target_text} | {replay:.3g} |"
+            )
+    lines += [
+        "",
+        "## Total cost including first call",
+        "",
+        "Measured total includes setup, first call, warmup, initial validation (when recorded), training and final assessment. Training already includes checkpoint writing. Oracle and recovery are excluded from measured total. Process wall includes interpreter startup, imports, oracle and recovery; it is an application diagnostic, not a pure simulator ranking.",
+        "",
+        "| Task | Engine | Seed | Per-step update s, median | Total measured s | Total time to target s | Fresh-process wall s |",
+        "| --- | --- | ---: | ---: | ---: | --- | --- |",
+    ]
+    process_wall = {
+        case["case"]: case.get("process_wall_seconds") for case in summary["cases"]
+    }
+    for (task, engine), results in sorted(groups.items()):
+        for result in sorted(results, key=lambda r: r["seed"]):
+            target = result.get("time_to_target_total_seconds")
+            target_text = (
+                "not recorded by historical producer"
+                if "time_to_target_total_seconds" not in result
+                else "not reached" if target is None else f"{target:.6f}"
+            )
+            wall = process_wall.get(f"{task}-{engine}-{result['seed']}")
+            wall_text = "not recorded" if wall is None else f"{wall:.6f}"
+            step = statistics.median(
+                point["update_seconds"] for point in result["trace"]
+            )
+            lines.append(
+                f"| {task} | {engine} | {result['seed']} | {step:.6f} | {result['total_measured_seconds']:.6f} | {target_text} | {wall_text} |"
             )
     lines += ["", "## Retained failures and limits", ""]
     lines += failures or ["No case failed or timed out in this directory."]
