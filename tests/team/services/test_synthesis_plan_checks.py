@@ -1,5 +1,6 @@
 """Conformance against live and recorded plans, plus fail-closed consistency."""
 
+import json
 from dataclasses import replace
 from typing import Any
 
@@ -13,7 +14,10 @@ from flagquantum.compiler.coupling import CouplingMap
 from flagquantum.compiler.layout import remove_layout_restore
 from flagquantum.core.ir import CircuitIR, MeasurementNode
 from flagquantum.runtime.execution_plan import ExecutionPlan
-from flagquantum.runtime.execution_plan_contract import plan_execution_program
+from flagquantum.runtime.execution_plan_contract import (
+    ExecutionPlanContractError,
+    plan_execution_program,
+)
 from flagquantum.services._synthesis_execution import (
     ExecutionContractError,
     inspect_execution,
@@ -248,6 +252,36 @@ def test_changed_raw_controls_cannot_hide_behind_the_sealed_payload() -> None:
         inspect_execution(replace(plan, analysis=replace(plan.analysis, n_wires=2)))
     with pytest.raises(ExecutionContractError, match="execution.profile"):
         inspect_execution(replace(plan, state_mode="density_matrix"))
+
+
+@pytest.mark.parametrize("damage", ["program", "fingerprint", "decision", "extension"])
+@pytest.mark.parametrize("boundary", ["inspection", "resources", "result"])
+def test_each_boundary_revalidates_changed_sealed_payload(
+    damage: str, boundary: str
+) -> None:
+    plan = fq.plan(fq.Circuit(1).h(0), options=_options())
+    checked = inspect_execution(plan)
+    result = fq.run(plan)
+    assert checked.verify_result(result).n_operations == 1
+    payload = json.loads(plan.to_json())
+    if damage == "program":
+        payload["program"]["metadata"]["changed_after_inspection"] = True
+    elif damage == "fingerprint":
+        payload["fingerprints"]["program"] = "0" * 64
+    elif damage == "decision":
+        payload["decision"]["allow_approximate"] = True
+    else:
+        payload["extensions"] = [{"namespace": "unrecognized"}]
+    changed = replace(plan, _contract_payload_json=json.dumps(payload))
+    with pytest.raises(ExecutionPlanContractError):
+        if boundary == "inspection":
+            inspect_execution(changed)
+        elif boundary == "resources":
+            _ = replace(checked, plan=changed).resources
+        else:
+            checked.verify_result(replace(result, plan=changed))
+    # A failed foreign plan never invalidates or replaces the original contract.
+    assert checked.verify_result(result).n_operations == 1
 
 
 def test_layer_order_and_gate_content_must_match_the_canonical_payload() -> None:
