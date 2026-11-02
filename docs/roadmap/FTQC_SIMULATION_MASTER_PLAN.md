@@ -423,6 +423,27 @@ Subsequent reports should state verified capability gains, closed requirements, 
 
 ### Delivery Tracking
 
+The bounded Surface composition follow-up reuses #792's X/Z measurement maps,
+forced-fault references and retained distance examples, and the existing C/007
+fixed-shot implementation. It adds noisy distance-three, three-round X/Z
+complete-result conformance against direct per-shot decoding of the original
+source, independent score-interval inversion, and zero-noise PyMatching
+refusals. The reference shares the Stim engine and decoder; it independently
+checks composition, not a second physical simulator or decoder algorithm.
+Run the public CPU workflow after installing the existing Stim/PyMatching extras:
+
+```bash
+PYTHONPATH=. python examples/qec/memory_experiment.py --code surface --basis z
+PYTHONPATH=. python examples/qec/memory_experiment.py --code surface --basis x
+```
+
+Each command reports five lines of `<decoder> 35 <failures> (<failures>,)`.
+Counts are environment-scoped observations, not predeclared zeros or required
+agreement between different decoders. Reviewed-head and actual-main evidence
+remain delivery gates; no historical matrix is rerun or relabeled. This adds
+bounded FTS-06/R01/R08/R14 composition coverage, without closing M1, M2 or the
+remaining scientific, performance, feedback and hardware requirements.
+
 | Item | State | Evidence / next gate |
 | --- | --- | --- |
 | FTS-01 | Merged in [#799](https://github.com/flagos-ai/FlagQuantum/pull/799); post-merge acceptance complete | [Exact main, CI, source, fresh artifacts/install and examples](../development/FTQC_001_MAINLINE_ACCEPTANCE.md). |

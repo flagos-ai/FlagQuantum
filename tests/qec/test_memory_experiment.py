@@ -16,13 +16,20 @@ from flagquantum.errors import CapabilityError, ValidationError
 from flagquantum.noise import NoiseModel, bit_flip_channel
 from flagquantum.qec import (
     DetectorErrorModel,
+    Pauli,
     PhenomenologicalNoise,
     RepetitionCode,
     RotatedSurfaceCode,
     build_memory_circuit,
     get_decoder,
 )
+from flagquantum.qec.adapters.stim import (
+    compile_stim_sampler,
+    memory_to_stim_text,
+    stim_circuit_to_dem_text,
+)
 from flagquantum.qec.decoders import registry
+from flagquantum.qec.decoders.batch import decode_batch
 from flagquantum.qec.execution import experiments as ex
 from flagquantum.simulation.stabilizer import StabilizerDependencyError, engine
 
@@ -48,7 +55,7 @@ def memory() -> Any:
 
 
 def run(**options: Any) -> ex.MemoryExperimentResult:
-    values = dict(
+    values: dict[str, Any] = dict(
         noise=PhenomenologicalNoise(),
         decoder=NAMES[0],
         shots=35,
@@ -94,9 +101,12 @@ def controlled(monkeypatch: pytest.MonkeyPatch) -> Any:
     m = memory()
     object.__setattr__(m, "observables", (0, 1))
     object.__setattr__(m, "detectors", (0, 1))
-    monkeypatch.setattr(
-        ex, "memory_to_stim_text", lambda m, **kw: calls.append("export") or "ORIGINAL"
-    )
+
+    def export(m: Any, **kw: Any) -> str:
+        calls.append("export")
+        return "ORIGINAL"
+
+    monkeypatch.setattr(ex, "memory_to_stim_text", export)
 
     def dem(text: str, *, decompose_errors: bool) -> str:
         assert text == "ORIGINAL" and decompose_errors is False
@@ -136,7 +146,7 @@ def test_exact_tail_multiple_observables_and_immutable_result(controlled: Any) -
     ]
     assert controlled.handle.closed == 1
     with pytest.raises(dataclasses.FrozenInstanceError):
-        result.shots = 1
+        setattr(result, "shots", 1)
     assert [f.name for f in dataclasses.fields(result)] == [
         "shots",
         "logical_failures",
@@ -166,6 +176,7 @@ def test_zero_all_and_batch_larger_than_shots(
 )
 def test_interval_by_inverting_the_score_test(n: int, k: int) -> None:
     low, high = ex._wilson_interval(k, n)
+    assert (low, high) == pytest.approx(_score_interval(k, n), abs=1e-12, rel=0)
     z = NormalDist().inv_cdf(0.975)
 
     def score(p: float) -> float:
@@ -234,7 +245,7 @@ def test_primary_failure_and_cleanup_context(
     if stage == "sample":
         controlled.handle.error = primary
     else:
-        original = ex.decode_batch
+        original = decode_batch
 
         def decode(decoder: Any, rows: Any) -> Any:
             if rows:
@@ -260,7 +271,7 @@ def test_sole_cleanup_failure_returns_no_result(controlled: Any) -> None:
 def test_malformed_prediction_closes(
     controlled: Any, monkeypatch: pytest.MonkeyPatch, indices: Any
 ) -> None:
-    original = ex.decode_batch
+    original = decode_batch
 
     def decode(decoder: Any, rows: Any) -> Any:
         return (
@@ -356,27 +367,42 @@ def test_opt_in_surface_only() -> None:
 
 @pytest.mark.parametrize("name", NAMES)
 @pytest.mark.parametrize(
-    "noise",
+    "profile,noise",
     [
-        PhenomenologicalNoise(data_flip=0.01, measurement_flip=0.01),
-        NoiseModel().add("cx", bit_flip_channel(0.125)),
+        ("repetition", PhenomenologicalNoise(data_flip=0.01, measurement_flip=0.01)),
+        ("repetition", NoiseModel().add("cx", bit_flip_channel(0.125))),
+        *(
+            (
+                basis,
+                PhenomenologicalNoise(
+                    data_flip=0.005, phase_flip=0.007, measurement_flip=0.009
+                ),
+            )
+            for basis in ("surface_x", "surface_z")
+        ),
     ],
 )
 def test_noisy_actual_law_counts_match_original_text_and_single_shot_reference(
-    name: str, noise: Any
+    name: str, profile: str, noise: Any
 ) -> None:
     pytest.importorskip("stim")
     if name == "pymatching":
         pytest.importorskip("pymatching")
     m = memory()
-    text = ex.memory_to_stim_text(m, noise=noise)
+    if profile.startswith("surface"):
+        code = RotatedSurfaceCode(distance=3)
+        product = Pauli(x_qubits=code.data_qubits) if profile == "surface_x" else None
+        m = build_memory_circuit(code, rounds=3, product=product)
+        assert m.readout_basis == profile[-1]
+        assert (len(m.detectors), len(m.observables)) == (24, 1)
+    text = memory_to_stim_text(m, noise=noise)
     model = DetectorErrorModel.from_stim_text(
-        ex.stim_circuit_to_dem_text(text, decompose_errors=False)
+        stim_circuit_to_dem_text(text, decompose_errors=False)
     )
     selected = get_decoder(name, model)
     counts = [0] * model.num_observables
     failed = 0
-    with ex.compile_stim_sampler(text, seed=53) as sampler:
+    with compile_stim_sampler(text, seed=53) as sampler:
         for size in (16, 16, 3):
             batch = sampler.sample(shots=size)
             for detection, observed in zip(
@@ -390,15 +416,58 @@ def test_noisy_actual_law_counts_match_original_text_and_single_shot_reference(
                 failed += int(any(wrong))
                 counts = [a + b for a, b in zip(counts, wrong, strict=True)]
     result = run(memory=m, noise=noise, decoder=name)
+    assert result.shots == 35 and result.seed == 53
+    assert result.sampling_source == "memory_circuit"
     assert result.logical_failures == failed
+    assert result.logical_error_rate == failed / 35
     assert result.observable_failures == tuple(counts)
     assert result.confidence_interval == ex._wilson_interval(failed, 35)
+    assert result.confidence_interval == pytest.approx(
+        _score_interval(failed, 35), abs=1e-12, rel=0
+    )
+
+
+def _score_interval(failures: int, shots: int) -> tuple[float, float]:
+    """Invert the binomial score test without using the production formula."""
+    quantile_squared = NormalDist().inv_cdf(0.975) ** 2
+    proportion = failures / shots
+
+    def score(p: float) -> float:
+        return (failures - shots * p) ** 2 - quantile_squared * shots * p * (1 - p)
+
+    low, high = 0.0, proportion
+    for _ in range(64):
+        middle = (low + high) / 2
+        if score(middle) > 0:
+            low = middle
+        else:
+            high = middle
+    lower = (low + high) / 2
+    low, high = proportion, 1.0
+    for _ in range(64):
+        middle = (low + high) / 2
+        if score(middle) > 0:
+            high = middle
+        else:
+            low = middle
+    return lower, (low + high) / 2
+
+
+@pytest.mark.parametrize("basis", ("x", "z"))
+def test_three_round_surface_zero_noise_matching_refusal(basis: str) -> None:
+    pytest.importorskip("stim")
+    pytest.importorskip("pymatching")
+    code = RotatedSurfaceCode(distance=3)
+    product = Pauli(x_qubits=code.data_qubits) if basis == "x" else None
+    m = build_memory_circuit(code, rounds=3, product=product)
+    with pytest.raises(CapabilityError, match="flipped by no mechanism"):
+        run(memory=m, noise=PhenomenologicalNoise(), decoder="pymatching")
 
 
 def test_late_decode_failure_never_returns_partial_counts(
     controlled: Any, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    original = ex.decode_batch
+    original = decode_batch
     calls = 0
     primary = RuntimeError("late batch")
 
@@ -443,7 +512,7 @@ def test_model_dimensions_rejected_before_compile(controlled: Any) -> None:
 def test_invalid_prediction_carrier_is_validation_error(
     controlled: Any, monkeypatch: pytest.MonkeyPatch, indices: Any
 ) -> None:
-    original = ex.decode_batch
+    original = decode_batch
     monkeypatch.setattr(
         ex,
         "decode_batch",
@@ -488,6 +557,7 @@ def test_noncertified_decoder_refused_even_if_it_decodes(
     model = DetectorErrorModel.from_stim_text(
         "error(.1) D0 L0\ndetector D0\nlogical_observable L0"
     )
+    selected: MinimumWeightMatchingDecoder | SlidingWindowDecoder
     if subclass:
         selected = Derived.from_detector_error_model(model)
     else:
