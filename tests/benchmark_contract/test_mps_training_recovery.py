@@ -70,8 +70,9 @@ def test_optimizer_state_comparison_detects_changed_moment() -> None:
         tree_max_error(original, changed)
 
 
-def test_training_refuses_object_gather(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+@pytest.mark.parametrize("gather", ("object", "state"))
+def test_training_refuses_full_collection(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, gather: str
 ) -> None:
     from benchmarks.internal.evidence import mps_training_recovery as recovery
 
@@ -79,7 +80,11 @@ def test_training_refuses_object_gather(
     monkeypatch.setattr(
         recovery.fqxd,
         "train_distributed_mps",
-        lambda *args, **kwargs: recovery.dist.all_gather_object([], {}),
+        lambda *args, **kwargs: (
+            recovery.dist.all_gather_object([], {})
+            if gather == "object"
+            else recovery.ShardedMPSState.gather_tensors(None)
+        ),
     )
     protocol = json.loads(PROTOCOL.read_text())
     with pytest.raises(AssertionError, match="gather forbidden"):

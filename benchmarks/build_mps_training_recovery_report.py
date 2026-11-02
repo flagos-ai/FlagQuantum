@@ -35,6 +35,26 @@ def trajectory(point: dict[str, Any], field: str) -> list[Any]:
     return rows
 
 
+def owner_optimizer_states(point: dict[str, Any]) -> list[Any]:
+    """Compare per-parameter Adam state across changing ownership partitions."""
+    states = {}
+    for rank in point["ranks"]:
+        receipt = rank["checkpoint_reference"]
+        optimizer = receipt["optimizer_state"]
+        if optimizer is None:
+            if receipt["owned_indices"]:
+                raise ValueError("owned parameters have no optimizer state")
+            continue
+        local_indices = optimizer["param_groups"][0]["params"]
+        for global_index, local_index in zip(
+            receipt["owned_indices"], local_indices, strict=True
+        ):
+            states[global_index] = optimizer["state"][str(local_index)]
+    if sorted(states) != list(range(len(point["protocol"]["initial_parameters"]))):
+        raise ValueError("missing owner optimizer state")
+    return [states[index] for index in sorted(states)]
+
+
 def validate(point: dict[str, Any], world: int) -> None:
     protocol = point["protocol"]
     if point["status"] != "completed" or point["source"]["dirty"]:
@@ -204,12 +224,42 @@ def report(directory: Path, worlds: list[int]) -> tuple[dict[str, Any], str]:
             )
             for field in ("loss", "parameter_gradients", "parameter_values")
         }
+        scaling_errors["final_parameters"] = (
+            tree_max_error(
+                point["ranks"][0]["reference_parameters_final"],
+                baseline["ranks"][0]["reference_parameters_final"],
+            )
+            if baseline
+            else None
+        )
+        scaling_errors["owner_optimizer_state"] = (
+            tree_max_error(
+                owner_optimizer_states(point), owner_optimizer_states(baseline)
+            )
+            if baseline
+            else None
+        )
         diagnostics = point["matched_local_mps"]
         row = {
             "world_size": world,
             "node_count": point["node_count"],
             "status": "completed",
             "objective_pre_update_samples": trajectory(point, "loss"),
+            "owned_gradient_vectors": trajectory(point, "parameter_gradients"),
+            "global_discarded_weight_per_update": [
+                sum(
+                    r["uninterrupted"]["step_metrics"][step]["discarded_weight"]
+                    for r in point["ranks"]
+                )
+                for step in range(point["protocol"]["steps"])
+            ],
+            "global_largest_bond_per_update": [
+                max(
+                    r["uninterrupted"]["step_metrics"][step]["largest_realized_bond"]
+                    for r in point["ranks"]
+                )
+                for step in range(point["protocol"]["steps"])
+            ],
             "step_critical_rank_seconds": samples,
             "statistic": f"median_steps_2_through_{point['protocol']['steps']}",
             "steady_median_seconds": med,
