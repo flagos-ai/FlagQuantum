@@ -96,7 +96,9 @@ from the compiler-worker scope. This runner supports Linux and macOS.
 
 Record window-start/current RSS, sampled compilation-window peak, window-end
 RSS, and lifetime `ru_maxrss` including import, source preparation and warmups.
-The lifetime mark is read before verification/simulation. It cannot be reset or
+The lifetime mark and compile-window end are recorded before diagnostic report
+construction, verification or simulation. Report construction has its own phase
+and nanoseconds, outside the compilation RSS window. It cannot be reset or
 subtracted to create a phase peak. macOS high-water units are bytes; Linux units
 are KiB. Missing observations are failures/unknown, never zero.
 

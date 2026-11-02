@@ -98,6 +98,17 @@ def test_actual_timing_memory_and_diagnostic_workers_are_separate(
     assert all(s["status"] == "verified" and s["process_group_reaped"] for s in raw)
     assert all(len(s["warmup_ns"]) == 2 for s in raw)
     diagnostic = next(s for s in raw if s["mode"] == "diagnostic")
+    phases = [p["phase"] for p in diagnostic["phase_transitions"]]
+    assert (
+        phases.index("compile_end")
+        < phases.index("diagnostic_report")
+        < phases.index("verification")
+    )
+    assert diagnostic["diagnostic_report_ns"] > 0
+    assert all(
+        p["phase"] not in {"diagnostic_report", "verification"}
+        for p in diagnostic["memory"]["points"]
+    )
     spans = diagnostic["diagnostic"]["spans"]
     assert {s["stage"] for s in spans} == {"C1", "C2", "C3", "C4", "C5", "C6"}
     assert {v for s in spans for k, v in s["context"] if k == "scheduling"} >= {

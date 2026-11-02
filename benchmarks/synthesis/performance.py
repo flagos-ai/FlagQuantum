@@ -142,7 +142,6 @@ def worker(workload: Workload, mode: Mode, warmups: int, seconds: float) -> None
             with probe:
                 program = compile_once()
             elapsed = prepared.last_e0_ns
-            payload["diagnostic"] = probe.report(elapsed)
         else:
             program = compile_once()
             elapsed = prepared.last_e0_ns
@@ -155,6 +154,11 @@ def worker(workload: Workload, mode: Mode, warmups: int, seconds: float) -> None
         barrier("compile_end")
         # Capture before verification/simulation can raise the OS high-water mark.
         payload["compile_lifetime_high_water"] = high_water()
+        if mode == "diagnostic":
+            barrier("diagnostic_report")
+            report_start = time.perf_counter_ns()
+            payload["diagnostic"] = probe.report(elapsed)
+            payload["diagnostic_report_ns"] = time.perf_counter_ns() - report_start
         barrier("verification")
         if program is None:
             if not workload.refused or not refused_codes:
@@ -242,6 +246,7 @@ def trial(
     stage = "unattributed"
     phase_start = time.monotonic()
     overhead_ns = 0
+    transitions: list[dict[str, object]] = []
     with tempfile.TemporaryFile(mode="w+t") as errors:
         process = subprocess.Popen(
             [
@@ -295,6 +300,9 @@ def trial(
                         stage = data["stage"]
                     elif event == "phase":
                         phase = data["phase"]
+                        transitions.append(
+                            {"phase": phase, "timestamp_ns": time.perf_counter_ns()}
+                        )
                         phase_start = time.monotonic()
                         stage = "unattributed"
                         if phase == "compile" and mode in {"memory", "diagnostic"}:
@@ -380,6 +388,7 @@ def trial(
         worker_pid=process.pid,
         process_group_reaped=cleanup,
         wall_ns=time.perf_counter_ns() - start,
+        phase_transitions=transitions,
     )
     if not cleanup:
         samples.update(status="measurement_failed", error="worker group remains alive")
@@ -389,7 +398,7 @@ def trial(
             "scope": "externally sampled worker/tree RSS; verification and simulation excluded from compile window",
             "points": points,
             "requested_interval_ns": 15_000_000,
-            "sampler_cpu_wall_ns": overhead_ns,
+            "sampler_wall_ns": overhead_ns,
             "window_sampled_peak_rss_bytes": max(
                 (integer(p["parent_rss_bytes"]) for p in window), default=None
             ),
