@@ -513,7 +513,10 @@ def synthesize(
     and are always source text. Native source declares its own preparation and
     output names. Its default planned-state buffer ceiling is 512 MiB; explicit
     memory_limit_bytes applies to both source profiles. This is not a process
-    peak-memory limit. Python retains its existing default memory behavior.
+    peak-memory limit. Scalar Python retains its existing memory behavior.
+    A typed qfunc root owns Output ports and in-program preparation, reusing the
+    same register workflow and 512 MiB default state-buffer ceiling. Omit scalar
+    inputs/state/constants/functions/preparation for that profile.
 
     output_mode="value" preserves the reversible XOR result. "phase" accepts
     only a one-bit Python return on logical CPU targets (basis/topology=None):

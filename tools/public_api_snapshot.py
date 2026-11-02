@@ -117,7 +117,7 @@ def dataclass_record(value: type[Any]) -> list[dict[str, object]] | None:
     fields = []
     for field in dataclasses.fields(value):
         default_factory: object = {"kind": "missing"}
-        if field.default_factory is not dataclasses.MISSING:  # type: ignore[misc]
+        if field.default_factory is not dataclasses.MISSING:
             default_factory = {
                 "kind": "factory",
                 "value": qualified_name(field.default_factory),
@@ -214,6 +214,8 @@ def validate() -> tuple[str, ...]:
     )
     experiment_contract = json.loads(EXPERIMENT_CONTRACT.read_text(encoding="utf-8"))
     actual = generate()
+    actual_exports = actual["exports"]
+    assert isinstance(actual_exports, dict)
     names = actual["stable_exports"]
     assert isinstance(names, list)
     historical_exports = baseline["exports"]
@@ -284,13 +286,13 @@ def validate() -> tuple[str, ...]:
         for name in names
         if name not in authorized_changes and name != "__version__"
     ]
-    expected = {
+    expected: dict[str, object] = {
         "stable_exports": compared_names,
         "exports": {name: historical_exports[name] for name in compared_names},
     }
-    compared_actual = {
+    compared_actual: dict[str, object] = {
         "stable_exports": compared_names,
-        "exports": {name: actual["exports"][name] for name in compared_names},
+        "exports": {name: actual_exports[name] for name in compared_names},
     }
     errors: list[str] = []
     if expected != compared_actual:
@@ -361,10 +363,10 @@ def validate() -> tuple[str, ...]:
         from flagquantum.remote import jobs
 
         for name, expected_signature in jobs_contract["public_signatures"].items():
-            obj = jobs
+            obj: object = jobs
             for component in name.split("."):
                 obj = getattr(obj, component)
-            if str(inspect.signature(obj)) != expected_signature:
+            if not callable(obj) or str(inspect.signature(obj)) != expected_signature:
                 errors.append(f"authorized remote job API signature changed: {name}")
         import flagquantum as fq
 

@@ -2,10 +2,71 @@
 
 This maintained domain facade re-exports one Services implementation. It adds no
 builder, Program wrapper, validation engine or executor. The initial unreleased
-candidate supports source-retaining Python unsigned arithmetic and one-bit
-pi-predicate phases, known basis/uniform preparation, exact CPU statevectors
-and the admitted line profile.
+candidate supports bounded typed Python programs, source-retaining unsigned
+arithmetic and one-bit pi-predicate phases, known basis/uniform preparation,
+exact CPU statevectors and the admitted line profile.
 Independent developer trial records and final release review are still pending.
+
+
+## Python quantum programs
+
+Prepare state, compute arithmetic and compose helpers inside one qfunc:
+
+```python
+import flagquantum as fq
+from flagquantum import synth
+from flagquantum.synth import Const, Output, QNum, allocate, hadamard_transform
+
+@synth.qfunc
+def energy(x: Const[QNum], y: Const[QNum], result: Output[QNum]) -> None:
+    result |= x*x+y
+
+@synth.qfunc
+def main(x: Output[QNum], y: Output[QNum], result: Output[QNum]) -> None:
+    allocate(2, x)
+    allocate(2, y)
+    hadamard_transform(x)
+    hadamard_transform(y)
+    energy(x, y, result)
+
+program = synth.synthesize(main, max_qubits=24, memory_limit_bytes=2**30)
+result = fq.run(program)
+print(dict(program.probabilities(result, registers=("x", "y", "result"))))
+```
+
+All sixteen `(x,y,x*x+y)` outcomes have probability approximately 1/16. The
+compiler infers four result bits over the full input domain, implements the
+arithmetic and cleans workspace. State preparation now lives in the program;
+InputState is still available for the existing pure-function convenience entry.
+
+Use `Output[QNum[2, False, 0]]` and `allocate(x)` when the width is in the
+annotation, or `Output[QNum]` and `allocate(2,x)`. Both follow familiar Qmod
+concepts. The latter spelling also works with ordinary strict static checkers.
+Const inputs can share the same prepared register; fresh Outputs stay disjoint.
+All helper calls resolve to captured qfunc definitions, without a public registry
+or executing Python bodies. Names/types/operation aliases are checked by identity.
+
+Run `python -m examples.synthesis_python_program` for nested preparation,
+computation, equivalent Qmod and an independent Circuit reference. The generic
+program uses 18 qubits, 10 workspace, 166 operations and depth 124. The specialized
+two-bit Boolean reference uses 9 qubits, one workspace and 15 operations. That
+reference requires a hand-derived algorithm; no optimum or equal-cost claim.
+See the [UP-01 delivery](../../docs/roadmap/SYNTH_PYTHON_PROGRAM_UP01_DELIVERY.md).
+
+The first typed profile supports QBit and unsigned integer QNum, Output/Const,
+literal basis initialization, allocation, Hadamard preparation, fresh `|=`
+expressions using +, *, literal powers 1..8, and acyclic positional qfunc calls.
+Root ports are Output-only. Signed/fractional types, Input/free/drop, local quantum
+variables, arrays/views, host callbacks, loops/branches, explicit phase/control/
+inverse and runtime classical parameters remain outside this Python profile.
+Existing scalar/Qmod capabilities retain their own documented scopes.
+
+Do not combine typed roots with scalar inputs/InputState/constants/functions/
+custom preparation or predicate output_mode=phase. A root owns its preparation.
+Its default state-buffer ceiling is 512 MiB; explicit limits apply to the actual
+checked plan. No new executor, root export or execution unwrap is introduced.
+
+## Pure-function convenience
 
 ```python
 import flagquantum as fq
@@ -29,8 +90,8 @@ assert dict(program.probabilities(result, registers=("x", "y", "result"))) == {
 Run `python -m examples.algorithms.synthesis_trial` for the complete basis,
 uniform and routed named workflows. The normal path needs no gate design,
 physical numbers, workspace maps, candidate choice or bit decoding. Optional
-qfunc covers the unsigned trial subset; full role-annotated programs remain
-follow-on work under the UP-00 contract.
+qfunc supports the unsigned trial subset and the bounded typed program profile
+above; explicit real phase and coherent control remain follow-on work.
 
 Services owns capture/preparation composition, the factory-created Program and
 named probability reading. Compiler owns existing arithmetic schedules, target
@@ -678,8 +739,9 @@ Run python -m examples.synthesis_python_powers from a saved source file.
 The [UP-00 contract](../../docs/api-changes/FQ-SYNTH-UNIFIED-PROGRAM-UP00-20261102.md)
 keeps familiar Qmod concepts as the program design baseline: qfunc, quantum
 roles, allocate, expressions, phase, calls and control. It fixes their meaning
-and staged admission; it does not export Output/Const/QNum or admit arbitrary
-effectful Python bodies today. Existing `.qmod` sources do not need conversion
+and staged admission. UP-01 now exports Output/Const/QNum/QBit and the bounded
+preparation/arithmetic/call subset above; arbitrary effectful Python bodies
+remain refused. Existing `.qmod` sources do not need conversion
 into a new Python syntax. Unsupported constructs fail rather than being guessed.
 
 The unmerged float-return radians prototype from #1003 is withdrawn. Existing
