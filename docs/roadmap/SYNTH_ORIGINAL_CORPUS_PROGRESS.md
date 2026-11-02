@@ -1,19 +1,20 @@
 # Original Qmod corpus progress
 
-As of 2026-11-02, following #1000 merged at
-67feba502d4a5071ffef19ce09e5ca4f58677b64 after 57 successful checks and
+As of 2026-11-02, following #1001 merged at
+f79a806ba1b456b5d3d79eb636fbad2b107e0bd7 after 57 successful checks and
 three configured skips. The denominator is the retained Classiq library snapshot
 2bfd835e73b6882fcc515a725098b04766c238e7, not the moving upstream main.
 
 ## What has actually run
 
-Six of 216 original file paths (2.78%) have complete parse, lowering, real CPU
+Seven of 216 original file paths (3.24%) have complete parse, lowering, real CPU
 complex128 execution and full-state verification at their original dimensions.
-Both file and text inputs are covered. This is five distinct source blobs out
-of 208 (2.40%), not six independent algorithms.
+Both file and text inputs are covered. This is six distinct source blobs out
+of 208 (2.88%), not seven independent algorithms.
 
 | Original filename | Full execution evidence | Allocated qubits |
 | --- | --- | --- |
+| PHASE.qmod | New constant-phase original, both input forms and coherent probes | 1 |
 | X.qmod | Existing baseline | 1 |
 | synthesis_tutorial.qmod | Existing baseline | 23 |
 | multiplication_2vars_example.qmod | Existing baseline | 24 |
@@ -24,7 +25,9 @@ of 208 (2.40%), not six independent algorithms.
 The two added tutorials compute the already supported x*x+1 on a uniform
 three-bit input. They exercise implicit and explicit allocation widths.
 execution_tutorial.qmod is byte-identical to synthesis_tutorial.qmod; it increases
-path coverage only. No new algorithm family or language capability is claimed.
+path coverage only. Those two tutorials did not add an algorithm family or language capability.
+The later PHASE cohort adds a new constant-phase gate path, with native angles
+limited to integer literals 0..2**53 radians; it is not general CReal support.
 Recent arithmetic optimizations improved capacity but did not increase this
 original-source count before these missing evidence cases were added.
 
@@ -60,8 +63,8 @@ substitute hand-built circuit is counted as an original execution.
 ## Whole-corpus frontend audit
 
 All 216 retained input blobs were checked against their pinned Git blob hashes
-and passed individually through the current native frontend. Six are admitted;
-210 are refused. This audit does no synthesis, planning or execution. Refusals
+and passed individually through the current native frontend. Seven are admitted;
+209 are refused. This audit does no synthesis, planning or execution. Refusals
 are grouped by their first diagnostic, so later missing dependencies are hidden:
 
 | First diagnostic | Files |
@@ -73,17 +76,17 @@ are grouped by their first diagnostic, so later missing dependencies are hidden:
 | qmod.operator | 11 |
 | qmod.expression | 8 |
 | qmod.budget.tokens | 7 |
-| qmod.call | 7 |
+| qmod.call | 6 |
 | qmod.width | 5 |
 | qmod.statement | 2 |
 | qmod.budget.source | 2 |
 | qmod.signature | 1 |
 
-The scan used implementation 7a7a133bddc013d2e286fe5eeede585d35acaba3,
-whose tree equals the merged #1000 tree. Per-file diagnostics and pinned-source
+The original scan used the merged #1000 implementation; the PHASE follow-up
+reran all 216 hash-checked sources and changed admission from six to seven. Per-file diagnostics and pinned-source
 inventory remain in the project audit ledger; these aggregate results are a
 local development audit, not a CI-certified corpus runner or compatibility
-claim. The six admitted files now have separate real execution evidence.
+claim. The seven admitted files now have separate real execution evidence.
 
 ## Next delivery priorities
 
@@ -104,14 +107,16 @@ The new sources have a separate tutorial_sources.json pin and reuse the retained
 MIT license. Old manifests, license bytes and the original seven digest checks
 are unchanged. No production implementation changes in this evidence slice.
 Independent developer trials remain 0/2 and release_authorized remains false.
-Four real file/text integration cases pass in 92.50 seconds; two independent
-pinned-source/manifest/license unit cases pass. Existing seven digest checks,
-Black 26.10.1, Ruff, architecture, unchanged API snapshot, generated docs,
-maturity, language, local links and whitespace pass. Production is unchanged;
-no repeat of the parent arithmetic regression or strict typing is claimed.
+The retained #1001 tutorial evidence remains four file/text cases passing in
+92.50 seconds and two independent source/manifest/license unit cases. The new
+PHASE focused suite passes 53 cases in 0.69 seconds, including its original
+file/text executions and coherent/global-phase probes. See the
+[PHASE delivery](SYNTH_CONSTANT_PHASE_GATE_DELIVERY.md) for the complete boundary.
 
-Required default smoke/unit: 5030 passed, 121 skipped and the same three local
-Simulation QFT fusion assertion failures in 207.97 seconds; stopped at its
-configured three-failure limit. These expect 28 state applies and observe 44.
-No Simulation code or assertion is changed. The default tier is not green.
-Log: /private/tmp/fq-tutorial-default.log.
+The PHASE follow-up also passes strict typing across 879 production/example
+sources and existing static/documentation/source digest checks. Required default
+smoke/unit records 5051 passed, 121 skipped and the same three local Simulation
+QFT fusion assertion failures in 212.38 seconds, stopped at the configured
+three-failure limit. These expect 28 state applies and observe 44; no Simulation
+implementation or assertion changes. The default tier is not green.
+Log: /private/tmp/fq-phase-gate-default.log.

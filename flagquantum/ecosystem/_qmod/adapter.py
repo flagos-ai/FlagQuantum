@@ -38,7 +38,7 @@ from .syntax import (
 SUPPORTED_SOURCE_VERSION = "2bfd835e73b6882fcc515a725098b04766c238e7"
 MAX_EFFECT_OPERATIONS = 4096
 _GATE_CALLS = frozenset({"X", "H", "S", "Z", "hadamard_transform"})
-_INTRINSICS = _GATE_CALLS | {"allocate", "phase", "pi"}
+_INTRINSICS = _GATE_CALLS | {"allocate", "phase", "pi", "PHASE"}
 _RELATIONS = MappingProxyType(
     {
         "==": ("qint.equal", False, False),
@@ -539,6 +539,36 @@ class _Adapt:
                     "allocation size must agree with the declared width",
                 )
             self.effect_op("qreg.allocate", token, (destination,))
+        elif token.text == "PHASE":
+            if len(args) != 2:
+                reject(
+                    token,
+                    "signature",
+                    "PHASE requires an integer angle and qbit target",
+                )
+            angle = args[0]
+            if (
+                angle.children
+                or not angle.token.text.isdecimal()
+                or int(angle.token.text) > 2**53
+            ):
+                reject(
+                    angle.token,
+                    "angle",
+                    "PHASE angle must be an integer literal in 0..2**53 radians",
+                )
+            target = self.atom(args[1])
+            destination = self.register(target)
+            if self.parameters[target.text].kind != "qbit":
+                reject(target, "type", "PHASE requires a scalar qbit target")
+            self.effect_op(
+                "qreg.gate",
+                token,
+                (destination,),
+                gate="phase",
+                index=0,
+                angle=float(angle.token.text),
+            )
         elif token.text in _GATE_CALLS:
             if len(args) != 1:
                 reject(token, "signature", f"{token.text} requires one output variable")

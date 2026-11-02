@@ -68,7 +68,13 @@ def schedule_register_program(
             ports = bindings[op.operands[1].id]
             gates = (
                 Instruction(
-                    op.attributes["gate"], (ports[-1 - op.attributes["index"]],)
+                    op.attributes["gate"],
+                    (ports[-1 - op.attributes["index"]],),
+                    params=(
+                        {"theta": op.attributes["angle"]}
+                        if op.attributes["gate"] == "phase"
+                        else {}
+                    ),
                 ),
             )
         elif op.name == "qreg.uncompute":
