@@ -10,6 +10,7 @@ from .._hybrid.model import (
     HybridProgram,
     Operation,
     Region,
+    SourceLocation,
     Value,
     ValueId,
 )
@@ -32,6 +33,7 @@ class ValueLifetime:
 class LifetimeAnalysis:
     program: HybridProgram
     values: Mapping[ValueId, ValueLifetime]
+    source_origins: Mapping[ValueId, tuple[SourceLocation, ...]]
 
 
 def analyze_lifetimes(
@@ -48,12 +50,19 @@ def analyze_lifetimes(
     arguments = main.body.blocks[0].arguments
     bounds = {arg.id: (1 << arg.type.parameters[0]) - 1 for arg in arguments}
     operations: list[Operation] = []
+    source_origins: dict[ValueId, tuple[SourceLocation, ...]] = {
+        arg.id: () for arg in arguments
+    }
     counter = len(arguments)
     scope = entry
     while any(arg.id.scope == scope for arg in arguments):
         scope += ".inline"
 
-    def inline(name: str, actual: tuple[Value, ...]) -> Value:
+    def inline(
+        name: str,
+        actual: tuple[Value, ...],
+        call_sites: tuple[SourceLocation, ...] = (),
+    ) -> Value:
         nonlocal counter
         block = symbols[name].body.blocks[0]
         values = {
@@ -64,7 +73,14 @@ def analyze_lifetimes(
             if operation.name == "qint.return":
                 return operands[0]
             if operation.name == "qint.call":
-                result = inline(operation.attributes["callee"], operands)
+                locations = (
+                    *call_sites,
+                    *((operation.location,) if operation.location is not None else ()),
+                )
+                result = inline(operation.attributes["callee"], operands, locations)
+                source_origins[result.id] = tuple(
+                    dict.fromkeys((*source_origins[result.id], *locations))
+                )
             else:
                 result = Value(ValueId(scope, counter), operation.results[0].type)
                 counter += 1
@@ -80,6 +96,18 @@ def analyze_lifetimes(
                         left + right if operation.name == "qint.add" else left * right
                     )
                 bounds[result.id] = bound
+                source_origins[result.id] = tuple(
+                    dict.fromkeys(
+                        (
+                            *call_sites,
+                            *(
+                                (operation.location,)
+                                if operation.location is not None
+                                else ()
+                            ),
+                        )
+                    )
+                )
                 operations.append(
                     Operation(
                         operation.name,
@@ -123,4 +151,5 @@ def analyze_lifetimes(
                 for key, value in values.items()
             }
         ),
+        MappingProxyType(source_origins),
     )

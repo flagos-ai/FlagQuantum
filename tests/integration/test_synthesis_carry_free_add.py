@@ -167,4 +167,13 @@ def test_proof_uses_full_domain_not_basis_initialization(
         memory_limit_bytes=64 * 1024**2,
     )
     gates = p.circuit.instructions
-    assert any(g.name == "ccx" for g in gates) == (not carry_free)
+    assert any(g.name == "ccx" for g in gates) == (not carry_free and constant != 0)
+    if constant == 0:
+        assert len(p.registers["result"]) == 2
+        selected = p.selection.selected
+        assert selected is not None and selected.arithmetic is not None
+        assert selected.arithmetic.baseline is not None
+        assert any(
+            g.name == "ccx" for g in selected.arithmetic.baseline.circuit.instructions
+        )
+        assert selected.arithmetic.peak_workspace == 0

@@ -10,6 +10,7 @@ from flagquantum.compiler._construction.frontend_python import Definition, captu
 from flagquantum.compiler._construction.lowering import (
     ArithmeticCandidate,
     Schedule,
+    _emit_arithmetic,
     schedule_arithmetic,
 )
 from flagquantum.compiler._hybrid.model import HybridProgram, ValueId
@@ -53,6 +54,7 @@ def build(
     *,
     mode: OutputMode = "phase",
     max_operations: int = 100_000,
+    normalize: bool = True,
 ) -> ArithmeticCandidate:
     graph = capture(function, widths)
     bindings, n_input = ports(graph)
@@ -65,7 +67,8 @@ def build(
         output_mode=mode,
         max_operations=max_operations,
     )
-    probe = schedule_arithmetic(
+    emitter = schedule_arithmetic if normalize else _emit_arithmetic
+    probe = emitter(
         (graph,),
         bindings,
         output,
@@ -74,7 +77,7 @@ def build(
         **kwargs,
     )
     n = start + probe.peak_workspace
-    return schedule_arithmetic(
+    return emitter(
         (graph,),
         bindings,
         output,
@@ -87,14 +90,14 @@ def build(
 def general_phase(
     function: Definition, widths: Mapping[str, int], strategy: Schedule
 ) -> CircuitIR:
-    """Independent general phase baseline from the unchanged value evaluator.
+    """Independent general phase baseline from the unnormalized value emitter.
 
     Its first write to the disjoint value target marks the copy boundary. Keep
     exactly the preceding compute/cleanup prefix, phase its source bit, invert
     that same prefix, and remove the unused value-target slot. The baseline
     retains the value schedule's allocated width; no old source is copied.
     """
-    candidate = build(function, widths, strategy, mode="value")
+    candidate = build(function, widths, strategy, mode="value", normalize=False)
     n_input = sum(widths.values())
     gates = candidate.circuit.instructions
     cut = next(i for i, gate in enumerate(gates) if n_input in gate.wires)

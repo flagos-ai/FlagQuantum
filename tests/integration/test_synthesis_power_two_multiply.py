@@ -181,9 +181,17 @@ def test_constant_proof_controls_actual_scratch_reservation(
         workspace=tuple(range(2 + width, 64)),
         workspace_state="fresh_zero",
     )
-    assert len(row.events) == 2
-    assert all(bool(e.scratch) == (not shifted) for e in row.events)
-    assert row.peak_workspace == width * (1 if shifted else 2)
+    original = row.baseline or row
+    assert len(original.events) == 2
+    assert all(bool(e.scratch) == (not shifted) for e in original.events)
+    assert original.peak_workspace == width * (1 if shifted else 2)
+    if constant == 1:
+        assert row.events == () and row.peak_workspace == 0
+        assert [gate.name for gate in row.circuit.instructions] == ["cx", "cx"]
+    else:
+        assert len(row.events) == 2
+        assert all(bool(e.scratch) == (not shifted) for e in row.events)
+        assert row.peak_workspace == width * (1 if shifted else 2)
 
 
 @pytest.mark.parametrize("strategy", ["retain", "recompute"])

@@ -147,13 +147,23 @@ def test_fixed_workload_has_real_workspace_gate_tradeoff(
 ) -> None:
     retained = _candidate(width, "retain")
     recomputed = _candidate(width, "recompute")
-    assert retained.peak_workspace == keep > clean == recomputed.peak_workspace
+    # Keep the original resource receipt while testing the actual optimized
+    # schedules at their reported capacity, rather than regenerating history.
+    retained_base = retained.baseline or retained
+    recomputed_base = recomputed.baseline or recomputed
     assert (
-        len(retained.circuit.instructions)
+        retained_base.peak_workspace == keep > clean == recomputed_base.peak_workspace
+    )
+    assert (
+        len(retained_base.circuit.instructions)
         == keep_ops
         < clean_ops
-        == len(recomputed.circuit.instructions)
+        == len(recomputed_base.circuit.instructions)
     )
+    assert retained.peak_workspace <= keep
+    assert recomputed.peak_workspace <= clean
+    assert len(retained.circuit.instructions) <= keep_ops
+    assert len(recomputed.circuit.instructions) <= clean_ops
     assert retained.recomputations == 0 < recomputed.recomputations
     for candidate in (retained, recomputed):
         block = candidate.lifetimes.program.body.blocks[0]
@@ -292,7 +302,16 @@ def test_function_call_instances_keep_shared_argument_identity_and_distinct_resu
             workspace_state="fresh_zero",
             scheduling=strategy,
         )
-        assert candidate.lifetimes == analysis
+        assert candidate.normalization is not None
+        assert candidate.normalization.original == analysis.program
+        # Source call instances stay distinct; only proved pure SSA results share.
+        assert (
+            sum(
+                op.name == "qint.multiply"
+                for op in candidate.lifetimes.program.body.blocks[0].operations
+            )
+            == 1
+        )
         for value in range(2):
             for target in range(4):
                 initial = ((value << 2) | target) << 13
@@ -404,7 +423,7 @@ def test_returned_input_and_unused_values_do_not_require_a_consuming_effect() ->
         assert circuit.instructions
 
 
-def test_long_recomputation_dependencies_fail_with_a_bounded_diagnostic() -> None:
+def test_long_zero_chain_is_simplified_without_relaxing_original_depth_limit() -> None:
     x = Value(ValueId("chain", 0), uint_type(1))
     from flagquantum.compiler._hybrid.model import INDEX
 
@@ -426,7 +445,18 @@ def test_long_recomputation_dependencies_fail_with_a_bounded_diagnostic() -> Non
     assert lower_arithmetic(
         (graph,), {x.id: (0,)}, (1,), scheduling="retain", **options
     )
+    from flagquantum.compiler._construction.lowering import _emit_arithmetic
+
     with pytest.raises(HybridVerificationError, match="dependency depth"):
-        lower_arithmetic(
+        _emit_arithmetic(
             (graph,), {x.id: (0,)}, (1,), scheduling="recompute", **options
         )
+    candidate = schedule_arithmetic(
+        (graph,), {x.id: (0,)}, (1,), scheduling="recompute", **options
+    )
+    assert candidate.normalization is not None
+    assert any("depth" in diagnostic.code for diagnostic in candidate.baseline_errors)
+    for value in range(2):
+        for target in range(2):
+            initial = ((value << 1) | target) << 94
+            assert _image(candidate, initial) == initial

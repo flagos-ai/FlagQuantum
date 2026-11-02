@@ -5,14 +5,19 @@ arbitrary XOR target and restore every supplied zero workspace qubit. The same
 X/CX/CCX kernels serve forward and inverse computation without hidden phase.
 """
 
+from __future__ import annotations
+
 from collections import Counter
 from collections.abc import Iterable, Mapping, Sequence
-from dataclasses import dataclass, replace
+from dataclasses import dataclass, field, replace
 from typing import Literal
 
 from ...core.ir import CircuitIR, Instruction
 from .._arithmetic_kernels import comparison_xor, multiply_accumulate, ripple_add
 from .._hybrid.model import INDEX, HybridProgram, Operation, ValueId
+from .._hybrid.verifier import Diagnostic, HybridVerificationError
+from ..resource_estimation import estimate_resources
+from .arithmetic_rewrites import ArithmeticNormalization, normalize_arithmetic
 from .bindings import OutputMode, verify_bindings
 from .lifetimes import LifetimeAnalysis, analyze_lifetimes
 from .profile import _fail, _positive_integer, uint_type
@@ -20,6 +25,9 @@ from .ranges import unsigned_width
 
 _WireValue = tuple[int, ...] | int
 Schedule = Literal["retain", "recompute"]
+
+# Bound optional duplicate circuit construction; SSA facts remain available.
+_NORMALIZATION_PROBE_MAX_OPERATIONS = 10_000
 
 
 @dataclass(frozen=True)
@@ -40,6 +48,11 @@ class ArithmeticCandidate:
     events: tuple[ScheduleEvent, ...]
     peak_workspace: int
     recomputations: int
+    normalization: ArithmeticNormalization | None = field(default=None, repr=False)
+    baseline: ArithmeticCandidate | None = field(default=None, repr=False)
+    normalized_cost: tuple[int, int, int] | None = None
+    normalization_errors: tuple[Diagnostic, ...] = ()
+    baseline_errors: tuple[Diagnostic, ...] = ()
 
 
 def _self_adjoint_gates(gates: Sequence[Instruction]) -> bool:
@@ -70,6 +83,11 @@ def adjoint_value_candidate(candidate: ArithmeticCandidate) -> ArithmeticCandida
         ),
         events=events,
         recomputations=sum(count - 1 for count in cleans.values()),
+        baseline=(
+            adjoint_value_candidate(candidate.baseline)
+            if candidate.baseline is not None
+            else None
+        ),
     )
 
 
@@ -95,7 +113,7 @@ def _copy(value: _WireValue, target: tuple[int, ...]) -> tuple[Instruction, ...]
     )
 
 
-def schedule_arithmetic(
+def _emit_arithmetic(
     functions: Sequence[HybridProgram],
     inputs: Mapping[ValueId, Sequence[int]],
     output: Sequence[int],
@@ -443,6 +461,131 @@ def schedule_arithmetic(
         tuple(events),
         peak,
         sum(count - 1 for count in counts.values()),
+    )
+
+
+def _logical_cost(candidate: ArithmeticCandidate) -> tuple[int, int, int]:
+    resource = estimate_resources(candidate.circuit)
+    return candidate.peak_workspace, resource.n_operations, resource.depth
+
+
+def schedule_arithmetic(
+    functions: Sequence[HybridProgram],
+    inputs: Mapping[ValueId, Sequence[int]],
+    output: Sequence[int],
+    *,
+    entry: str,
+    n_qubits: int,
+    workspace: Sequence[int] = (),
+    workspace_state: Literal[
+        "fresh_zero", "caller_asserted_zero", "unknown"
+    ] = "unknown",
+    max_operations: int = 100_000,
+    scheduling: Schedule = "retain",
+    output_mode: OutputMode = "value",
+) -> ArithmeticCandidate:
+    """Keep the original schedule; adopt a proven non-worse pure value graph.
+
+    This is a bounded local rewrite guard, not target-aware implementation search.
+    The existing two schedule checks and incomplete-search contract are unchanged.
+    Phase keeps its existing exact prefix/inverse path. A proved rewrite can fit
+    where original construction exhausted workspace/operations; that refusal is
+    retained rather than inventing an original candidate that was never built.
+    """
+
+    def emit(graphs: Sequence[HybridProgram]) -> ArithmeticCandidate:
+        return _emit_arithmetic(
+            graphs,
+            inputs,
+            output,
+            entry=entry,
+            n_qubits=n_qubits,
+            workspace=workspace,
+            workspace_state=workspace_state,
+            max_operations=max_operations,
+            scheduling=scheduling,
+            output_mode=output_mode,
+        )
+
+    if output_mode != "value":
+        return emit(functions)
+    original = None
+    baseline_failure = None
+    try:
+        original = emit(functions)
+    except HybridVerificationError as error:
+        if not all(
+            d.code.startswith("construction.lowering.") for d in error.diagnostics
+        ):
+            raise
+        baseline_failure = error
+    analysis = (
+        original.lifetimes
+        if original is not None
+        else analyze_lifetimes(functions, entry=entry)
+    )
+    try:
+        normalization = normalize_arithmetic(analysis)
+    except HybridVerificationError as error:
+        if original is None or not all(
+            d.code.startswith("construction.budget.") for d in error.diagnostics
+        ):
+            raise
+        return replace(original, normalization_errors=error.diagnostics)
+    if (
+        normalization.program.semantic_identity
+        == normalization.original.semantic_identity
+    ):
+        if original is None:
+            assert baseline_failure is not None
+            raise baseline_failure
+        return replace(original, normalization=normalization)
+    if (
+        original is not None
+        and len(original.circuit.instructions) > _NORMALIZATION_PROBE_MAX_OPERATIONS
+    ):
+        return replace(
+            original,
+            normalization=normalization,
+            baseline=original,
+            normalization_errors=(
+                Diagnostic(
+                    "construction.normalization.budget",
+                    "optional rewritten circuit emission skipped: original exceeds "
+                    f"{_NORMALIZATION_PROBE_MAX_OPERATIONS} operations",
+                ),
+            ),
+        )
+    try:
+        rewritten = emit((normalization.program,))
+    except HybridVerificationError as error:
+        if original is None or not all(
+            d.code.startswith("construction.lowering.") for d in error.diagnostics
+        ):
+            raise
+        return replace(
+            original,
+            normalization=normalization,
+            baseline=original,
+            normalization_errors=error.diagnostics,
+        )
+    new_cost = _logical_cost(rewritten)
+    if original is None:
+        assert baseline_failure is not None
+        return replace(
+            rewritten,
+            normalization=normalization,
+            normalized_cost=new_cost,
+            baseline_errors=baseline_failure.diagnostics,
+        )
+    old_cost = _logical_cost(original)
+    chosen = (
+        rewritten
+        if all(new <= old for new, old in zip(new_cost, old_cost, strict=True))
+        else original
+    )
+    return replace(
+        chosen, normalization=normalization, baseline=original, normalized_cost=new_cost
     )
 
 

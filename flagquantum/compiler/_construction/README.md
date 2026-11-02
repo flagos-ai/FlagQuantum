@@ -520,3 +520,46 @@ state/clean-workspace checks, not just output probabilities. The typed program
 [contract](../../../docs/api-changes/FQ-SYNTH-PYTHON-PROGRAM-UP01-20261102.md)
 and [delivery](../../../docs/roadmap/SYNTH_PYTHON_PROGRAM_UP01_DELIVERY.md) record
 exact API scope, source guards, original-profile preservation and validation.
+
+## AO-01 arithmetic normalization and bit facts
+
+The shared value scheduler now verifies the original graph, keeps its original
+candidate, and normalizes an immutable inlined pure segment in
+`arithmetic_rewrites.py`. Canonical operand order uses width and structural
+rank, not user names. Constants, zero/one identities, common pure operations
+and dead expressions are shared/simplified without narrowing any declared
+input or return type. A typed quantum constant witness remains where an INDEX
+constant could not legally stand for quantum output storage.
+
+`bit_facts.py` describes complete declared domains: effective width and known
+zero/one masks. Addition propagates possible carries; multiplication uses sound
+conservative trailing-zero, power-of-two and same-SSA-square facts. This does
+not introduce a square kernel or general Boolean-network search. The 4096-node,
+256-bit profile bounds apply before rewriting. No input-state narrowing or
+cross-effect/global memoization is permitted. `lifetimes.py` retains supplied
+source locations and explicit SSA call sites; scalar helpers already inlined by
+Python capture retain the helper-body locations that frontend supplied.
+
+The same emitter builds original and rewritten schedules. Actual workspace,
+operation count and ASAP depth come from the existing allocation history and
+resource estimator. Adopt a rewrite only when none of those logical metrics
+increases, or when the original cannot fit the construction budget and the
+verified rewrite can. Keep the original SSA, original candidate or its exact
+budget diagnostics, masks, square identities, source origins and normalized
+costs on private `ArithmeticCandidate` fields. These do not add a public report
+schema or another canonical IR. The original construction caps and both existing
+schedule checks remain; this is not target-aware Pareto search or optimality.
+
+Each `qreg.compute` gets its own invocation; a quantum write, another register
+segment, or region cannot reuse a stale computed value. Original initialization,
+alias, effect/version and cleanup validation runs before simplification. Exact
+adjoint cleanup retains the matching original candidate's inverse evidence.
+The phase-mode emitter is unchanged; phase tests use the explicitly unnormalized
+value emitter when constructing their historical general reference.
+
+Run `python -m examples.synthesis_normalization` for the unified qfunc program,
+Qmod and an independently derived Circuit reference. Follow
+`tests/team/compiler/test_construction_normalization.py` for a small rule change,
+then `tests/integration/test_synthesis_normalization.py` for complete-state,
+XOR, resource-guard and mutation-boundary acceptance. The AO-00 JSON and measured
+revision stay frozen; new results use separate AO-01 files.

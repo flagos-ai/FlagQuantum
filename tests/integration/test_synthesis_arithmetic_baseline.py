@@ -95,7 +95,7 @@ def test_qmod_manual_and_python_costs_include_preparation_and_target_rewrites() 
     )
 
 
-def test_helper_expansion_and_exchanged_spelling_record_existing_cost_difference() -> (
+def test_helper_expansion_and_exchanged_spelling_improve_without_rewriting_history() -> (
     None
 ):
     from benchmarks.synthesis.arithmetic_baseline import spelling_variants
@@ -110,9 +110,25 @@ def test_helper_expansion_and_exchanged_spelling_record_existing_cost_difference
         exchanged.resources.allocated_qubits,
         exchanged.resources.operations,
         exchanged.resources.depth,
-    ) == (20, 170, 126)
-    # AO-00 records this gap; normalization/optimization belongs to later AO PRs.
-    assert exchanged.resources.workspace_qubits == 12
+    ) == (18, 166, 124)
+    # AO-01 closes this spelling gap; the checked AO-00 measurement stays frozen.
+    import json
+    from pathlib import Path
+
+    frozen = json.loads(
+        (
+            Path(__file__).resolve().parents[2]
+            / "benchmarks/synthesis/baselines/ao00.json"
+        ).read_text()
+    )
+    old = frozen["spelling_variants"][1]["resources"]
+    assert (
+        old["allocated_qubits"],
+        old["workspace_qubits"],
+        old["operations"],
+        old["depth"],
+    ) == (20, 12, 170, 126)
+    assert exchanged.resources.workspace_qubits == 10
 
 
 def test_independent_manual_reference_preserves_all_256_input_target_pairs() -> None:

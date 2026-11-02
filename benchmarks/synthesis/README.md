@@ -154,3 +154,22 @@ PRs. Preserve it; record new optimizer results in a new artifact with their own
 source revision. Review any deliberate update to current-generator cost tests
 alongside equivalence evidence and comparison to this frozen baseline. Do not
 regenerate the old baseline merely to turn a resource regression green.
+
+## AO-01 comparison
+
+The [AO-01 delivery record](../../docs/roadmap/SYNTH_ARITHMETIC_AO01_DELIVERY.md)
+documents pure expression normalization, CSE and conservative bit facts. Run the
+same generator into a separate artifact, then compare without changing AO-00:
+
+```bash
+python -m benchmarks.synthesis.arithmetic_baseline --output /tmp/ao01.json
+python -m benchmarks.synthesis.normalization \
+  --baseline benchmarks/synthesis/baselines/ao00.json \
+  --current /tmp/ao01.json --output /tmp/ao01-comparison.json
+```
+
+The comparison checks the frozen baseline hash and identical configuration.
+Timeouts stay incomplete, not successful optimizations. Logical resource gains
+do not imply target, timing, runtime or memory-residency speedups. The native
+unified qfunc workflow is `examples/synthesis_normalization.py`; the old corpus
+entry points are retained to preserve measurement comparability.
