@@ -254,3 +254,121 @@ def test_cuda_public_module_vjps_adam_validation_and_recovery(
         raise
     finally:
         _publish(record)
+
+
+@pytest.mark.parametrize("kind", ("SGD", "Adam"))
+def test_cuda_public_train_keeps_eager_ownership_and_checkpoint_recovery(
+    kind, monkeypatch, tmp_path
+):
+    if not torch.cuda.is_available():
+        pytest.skip("real CUDA is required")
+    training = importlib.import_module("flagquantum.runtime.training")
+    monkeypatch.setattr(training, "_MIN_COMPILED_STEPS", 0)
+    model = _model("pytorch")
+    optimizer = getattr(torch.optim, kind)(model.parameters(), lr=0.03)
+    reference = model.parameters_tensor.detach().clone().requires_grad_()
+    reference_optimizer = getattr(torch.optim, kind)([reference], lr=0.03)
+    target = torch.linspace(-0.2, 0.4, 8, dtype=torch.float64, device="cuda")
+    weights = torch.linspace(0.4, 1.6, 8, dtype=torch.float64, device="cuda")
+    record = {
+        "workflow": "fq.train",
+        "backend": "pytorch",
+        "batch": 8,
+        "optimizer": kind,
+        "device": "cuda:0",
+        "dtype": "complex128/float64",
+        "gpu": torch.cuda.get_device_name(0),
+        "updates": 6,
+        "status": "running",
+        "torch_version": torch.__version__,
+        "cuda_runtime_version": torch.version.cuda,
+    }
+
+    def features(index):
+        return (
+            torch.linspace(-0.3, 0.5, 16, dtype=torch.float64, device="cuda").reshape(
+                8, 2
+            )
+            + index * 0.01
+        )
+
+    def objective(value):
+        return ((value - target).square() * weights).mean()
+
+    def callback(step, loss, execution):
+        reference_optimizer.zero_grad(set_to_none=True)
+        expected = _analytic(reference, features(step - 1))
+        expected_loss = objective(expected)
+        expected_loss.backward()
+        torch.testing.assert_close(
+            execution.value, expected.detach(), atol=1e-9, rtol=1e-9
+        )
+        torch.testing.assert_close(
+            loss, float(expected_loss.detach()), atol=1e-9, rtol=1e-9
+        )
+        torch.testing.assert_close(
+            model.parameters_tensor.grad, reference.grad, atol=1e-9, rtol=1e-9
+        )
+        reference_optimizer.step()
+        torch.testing.assert_close(
+            model.parameters_tensor, reference, atol=1e-9, rtol=1e-9
+        )
+        assert (
+            execution.runtime["training_compilation"]["reason"]
+            == "device_not_certified"
+        )
+        if step == 3:
+            model.save_checkpoint(
+                tmp_path / "step3.pt", optimizer=optimizer, step=3, seed=11
+            )
+
+    try:
+        result = fq.train(
+            model,
+            optimizer=optimizer,
+            objective=objective,
+            inputs=features,
+            steps=6,
+            callback=callback,
+        )
+        replay = _model("pytorch")
+        replay_optimizer = getattr(torch.optim, kind)(replay.parameters(), lr=0.03)
+        replay(features(2))
+        replay.load_checkpoint(tmp_path / "step3.pt", optimizer=replay_optimizer)
+        restored = fq.train(
+            replay,
+            optimizer=replay_optimizer,
+            objective=objective,
+            inputs=lambda index: features(index + 3),
+            steps=3,
+        )
+        torch.testing.assert_close(
+            replay.parameters_tensor, model.parameters_tensor, atol=1e-9, rtol=1e-9
+        )
+        torch.testing.assert_close(
+            replay_optimizer.state_dict(), optimizer.state_dict(), atol=1e-9, rtol=1e-9
+        )
+        torch.testing.assert_close(
+            restored.losses, result.losses[3:], atol=1e-9, rtol=1e-9
+        )
+        assert (
+            restored.last_execution.provenance["ir_hash"]
+            == result.last_execution.provenance["ir_hash"]
+        )
+        assert model._training_program is None and replay._training_program is None
+        record.update(
+            status="passed",
+            compilation=dict(result.last_execution.runtime["training_compilation"]),
+            recovery_parameter_max_error=float(
+                (replay.parameters_tensor - model.parameters_tensor)
+                .abs()
+                .max()
+                .detach()
+            ),
+            final_parameters=model.parameters_tensor.detach().cpu().tolist(),
+        )
+    except BaseException as error:
+        record.update(status="failed", error_type=type(error).__name__)
+        raise
+    finally:
+        _publish(record)
