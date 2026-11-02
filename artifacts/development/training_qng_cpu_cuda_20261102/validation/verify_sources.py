@@ -74,7 +74,7 @@ for directory in ("training-cpu", "qng-cpu", "qng-cuda"):
     )
 payload = {
     "schema": "flagquantum.training_qng_evidence_audit.v1",
-    "renderer_commit": "bd8819e22e48c9826341ae64eaf514aa10cb5ff1",
+    "report_renderer": {"source_commit": "bd8819e22e48c9826341ae64eaf514aa10cb5ff1"},
     "campaigns": checks,
 }
 (evidence / "validation/source-and-case-audit.json").write_text(

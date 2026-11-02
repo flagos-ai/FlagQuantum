@@ -169,3 +169,10 @@ All six acceptance criteria are supported by this bounded evidence. Issue #900
 can close when the fix and this evidence are merged after repository checks.
 Larger-task performance, vectorized throughput, repeated host timing campaigns,
 other accelerators and quantum advantage remain outside these claims.
+
+The initial PR quality run rejected the audit's new `renderer_commit` field
+name. The audit now nests its renderer identity under the existing
+`source_commit` vocabulary; all raw freeze and case records are unchanged.
+The original failed quality log is retained as `validation/ci-initial-quality.log.gz`.
+The exact revision-field inventory regression was rerun without changing the
+gate, its vocabulary or any test expectation.
