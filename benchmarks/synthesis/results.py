@@ -116,12 +116,12 @@ def read_result(path: Path) -> dict[str, object]:
         ):
             raise ValueError("basis verification scope is overstated")
         value_count = (1 << sum(case.widths)) if exhaustive else 18
-        targets = (
+        target_count = (
             16
             if case.identifier == "energy-2x2"
             else len({0, 1, (1 << output_width(case)) - 1})
         )
-        if verification["basis_checks"] != value_count * targets:
+        if verification["basis_checks"] != value_count * target_count:
             raise ValueError("basis verification count does not match the fixed recipe")
         coherent = verification.get("coherent_states")
         if coherent not in (0, 2) or type(coherent) is not int:
