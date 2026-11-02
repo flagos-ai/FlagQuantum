@@ -1,0 +1,5 @@
+{
+  "world_size": 4,
+  "status": "completed",
+  "note": "worker exit status; inspect retained rank records, logs and watchdog for OOM or timeout classification"
+}

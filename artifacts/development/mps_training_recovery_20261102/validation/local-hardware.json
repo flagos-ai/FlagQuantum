@@ -1,0 +1,5 @@
+{
+  "cpu_model": "Apple M5",
+  "platform": "macOS-27.0-arm64-arm-64bit",
+  "scope": "post-campaign read-only hardware observation on the same local worker; not replacement metadata for original samples"
+}
