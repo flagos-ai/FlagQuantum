@@ -191,3 +191,23 @@ It excludes preparation/target optimization and must not be mixed with the
 full-program matrix's counts. No timing, peak memory or release claim follows
 from these static resources. The user workflow remains the unified qfunc entry:
 `python -m examples.synthesis_arithmetic_implementations`.
+
+## PF-00 Python time and process memory
+
+The [PF-00 delivery record](../../docs/roadmap/SYNTH_PYTHON_PERFORMANCE_PF00_DELIVERY.md)
+defines separate primary timing, primary OS RSS, cold-import and intrusive
+stage-diagnostic cohorts. The ninety-case resource corpus remains unchanged;
+new native qfunc/Qmod/target/variant/refusal workloads supplement it.
+
+```bash
+python -m benchmarks.synthesis.performance --output /tmp/pf00.json
+python -m benchmarks.synthesis.performance_results /tmp/pf00.json \
+  --summary /tmp/pf00-summary.json
+```
+
+Formal E0 uses five fresh workers, each with two warmups. Memory observations
+use independent unprofiled workers; the full matrix defaults to one RSS trial,
+and `--memory-trials 5` requests repeats. Diagnostic stage spans/RSS include
+profiler perturbation and cannot replace primary E0/RSS. The raw receipt records
+all failures and sampling limits. This creates Python P0 evidence, not a speedup,
+Rust decision, hardware claim or replacement for AO-00/01/02 static-resource data.
