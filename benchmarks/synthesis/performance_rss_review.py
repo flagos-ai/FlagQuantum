@@ -15,15 +15,36 @@ from pathlib import Path
 from benchmarks.synthesis.performance import environment, trial
 from benchmarks.synthesis.performance_compare import _metric
 from benchmarks.synthesis.performance_results import pinned_revision, validate_sample
-from benchmarks.synthesis.performance_workloads import Workload
+from benchmarks.synthesis.performance_workloads import Workload, workloads
 from benchmarks.synthesis.results import _integer, _object
 
 
 def review(
-    repository: Path, before: str, after: str, output: Path, *, qmod_line: bool = False
+    repository: Path,
+    before: str,
+    after: str,
+    output: Path,
+    *,
+    qmod_line: bool = False,
+    case: str | None = None,
 ) -> None:
     repository = repository.resolve()
     sources = {"before": pinned_revision(before), "after": pinned_revision(after)}
+    cases: tuple[tuple[str, Workload], ...]
+    if case is not None:
+        selected = next((w for w in workloads() if w.identifier == case), None)
+        if qmod_line or selected is None or selected.refused:
+            raise ValueError("select one fixed successful workload for RSS review")
+        cases = ((case, selected),)
+    else:
+        cases = (
+            (("qmod_line", Workload("energy-2x2", frontend="qmod", target="line")),)
+            if qmod_line
+            else tuple(
+                (target, Workload("energy-2x2", target=target))
+                for target in ("logical", "line")
+            )
+        )
     snapshots: dict[str, Path] = {}
     records: dict[str, list[dict[str, object]]] = {}
     payload: dict[str, object] = {
@@ -101,14 +122,6 @@ def review(
                 raise ValueError(
                     "RSS review requires the unchanged measurement implementation"
                 )
-        cases = (
-            (("qmod_line", Workload("energy-2x2", frontend="qmod", target="line")),)
-            if qmod_line
-            else tuple(
-                (target, Workload("energy-2x2", target=target))
-                for target in ("logical", "line")
-            )
-        )
         for target, workload in cases:
             for label in sources:
                 records[target + ":" + label] = []
@@ -181,12 +194,19 @@ def main() -> None:
     parser.add_argument("--before", required=True)
     parser.add_argument("--after", required=True)
     parser.add_argument("--output", type=Path, required=True)
-    parser.add_argument(
+    selection = parser.add_mutually_exclusive_group()
+    selection.add_argument(
         "--qmod-line", action="store_true", help="Review Qmod line only"
     )
+    selection.add_argument("--case", help="One fixed successful workload identifier")
     args = parser.parse_args()
     review(
-        args.repository, args.before, args.after, args.output, qmod_line=args.qmod_line
+        args.repository,
+        args.before,
+        args.after,
+        args.output,
+        qmod_line=args.qmod_line,
+        case=args.case,
     )
 
 
