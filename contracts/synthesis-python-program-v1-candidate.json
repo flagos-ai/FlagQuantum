@@ -3,7 +3,7 @@
   "version": "1.0",
   "status": "authorized_candidate_pending_trials",
   "proposal": "docs/api-changes/FQ-SYNTH-PYTHON-PROGRAM-UP01-20261102.md",
-  "proposal_sha256": "cfb1569ef1f7a20c3543b01275e978d7c1fc59eedfb3cde13ccdaac82e711fff",
+  "proposal_sha256": "8a48425c29b29d1aac72ea9438dd3e9bdceafb40e41ce14ea704df48dd4a6a47",
   "authorization_source": {
     "kind": "explicit_human_user_instruction",
     "request": "Check and merge #1003 when CI passes, then implement UP-01 Python qfunc preparation, arithmetic and composition with tests and examples.",
@@ -65,5 +65,10 @@
     "contracts/synthesis-program-run-v1-candidate.json": "d52065534f7f806595209019658e88be810c9b1fbbf168217e58e36b57b29e63",
     "contracts/synthesis-phase-v1-candidate.json": "7944da1a1415e434ac115ab42cf0ede8b4fcec41dc450719449c72d311865e1b",
     "contracts/synthesis-qmod-v1-candidate.json": "3ec0bd6c274b7af2c28468be53b99739cdf703b518c3a828b0d905c933026a16"
-  }
+  },
+  "new_operation_signatures": {
+    "allocate": "(size_or_out: 'int | QNum', out: 'QNum | None' = None, /) -> 'None'",
+    "hadamard_transform": "(out: 'QNum', /) -> 'None'"
+  },
+  "typed_program_overload": true
 }

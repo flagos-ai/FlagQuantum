@@ -22,7 +22,9 @@ bitstring decoding is required. Existing pure integer functions remain supported
 Add only `Output`, `Const`, `QNum`, `QBit`, `allocate`, `hadamard_transform` to
 the existing seven `flagquantum.synth` exports, through the same Services facade.
 Star import exposes exactly those thirteen names. No root export, synthesize
-parameter/default/mode, fq.run or Program.probabilities signature changes.
+runtime parameter/default/mode, fq.run or Program.probabilities signature changes.
+One additive typing overload admits a captured qfunc root without scalar inputs;
+plain Python functions still require their explicit scalar input declarations.
 
 - QNum denotes unsigned integer computational-basis encoding. `QNum[width]` and
   `QNum[width, False, 0]` accept literal widths 1..256; signed/fractional forms
