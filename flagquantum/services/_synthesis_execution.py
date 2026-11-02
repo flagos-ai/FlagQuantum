@@ -53,16 +53,16 @@ def _program(plan: ExecutionPlan) -> CircuitIR:
     assert isinstance(fingerprints, Mapping)
     if (
         plan.analysis is None
-        or plan.mode != "statevector"
-        or plan.state_mode != plan.mode
-        or plan.backend not in {"torch", "pytorch"}
-        or plan.device != "cpu"
+        or decision["mode"] != "statevector"
+        or plan.state_mode != decision["mode"]
+        or decision["backend"] not in {"torch", "pytorch"}
+        or decision["device"] != "cpu"
         or type(plan.world_size) is not int
         or plan.world_size != 1
         or decision["world_size"] != 1
-        or plan.batch_size != 1
-        or plan.precision not in {"complex64", "complex128"}
-        or plan.target not in {"auto", "state"}
+        or decision["batch_size"] != 1
+        or decision["precision"] not in {"complex64", "complex128"}
+        or decision["target"] not in {"auto", "state"}
         or decision["allow_approximate"]
         or decision["allow_backend_fallback"]
         or plan.noisy_execution_plan is not None
@@ -88,8 +88,8 @@ def _program(plan: ExecutionPlan) -> CircuitIR:
         raise ExecutionContractError("execution.controls", str(error)) from error
     if (
         config.backend not in {"torch", "pytorch"}
-        or config.device != plan.device
-        or config.complex_dtype != plan.precision
+        or config.device != decision["device"]
+        or config.complex_dtype != decision["precision"]
     ):
         raise ExecutionContractError(
             "execution.controls",
