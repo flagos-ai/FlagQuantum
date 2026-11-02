@@ -92,6 +92,14 @@ runtime_compiler_import_allowed = [
     "flagquantum/runtime/executors/mps/noisy.py",
 ]
 
+# User-approved 2026-11-02 contract-first Module frontend composition boundary.
+# This is permission for one replacement entry, not a general Runtime dependency.
+[module_builder_capture_boundary]
+importer = "flagquantum/runtime/module.py"
+module = "compiler.module_builder"
+names = ["CapturedModuleBuilder", "capture_module_builder"]
+approval = "docs/development/MODULE_REUSABLE_EXECUTION_CONTRACT.md"
+
 [accelerator_boundaries.direct_cuda_call_ceiling]
 "flagquantum/benchmarking/statevector_local.py" = 5
 "flagquantum/runtime/executors/mps/compiled_layers.py" = 1

@@ -8,6 +8,11 @@ Runtime owns selection, execution lifecycle, coordination, recovery, and result
 assembly. Compiler transforms programs; Simulation computes numerical updates;
 Compute and Remote adapt resources through their contracts.
 
+The approved [Module capture boundary](../../docs/development/MODULE_REUSABLE_EXECUTION_CONTRACT.md)
+permits only `module.py` to call the Compiler-owned builder capture entry.
+Its production replacement is pending. Runtime retains lifecycle and binding;
+Simulation continues to consume Core IR without Compiler artifact types.
+
 ## Follow the local path
 
 ```text

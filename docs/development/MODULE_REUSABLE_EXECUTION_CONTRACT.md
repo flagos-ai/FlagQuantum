@@ -1,17 +1,20 @@
-# Proposed reusable Module lowering boundary
+# Approved reusable Module lowering boundary
 
-Status: **boundary explicitly approved by the user on 2026-11-02; implementation pending**. This is the review packet for
+Status: **boundary explicitly approved by the user on 2026-11-02; implementation
+pending**. This is the review packet for
 [#918](https://github.com/flagos-ai/FlagQuantum/issues/918) slice B
 ([#928](https://github.com/flagos-ai/FlagQuantum/issues/928)); it does not authorize
 a new backend default or whole-training-step compilation in #936.
 
 ## Approved decision
 
-The user approved one narrow Runtime-to-Compiler dependency for the existing Module builder
-capture/lowering entry, replacing `Module._compile_builder_program`, after the
-contract-only change lands. Runtime currently prohibits Compiler dependencies;
-its domain instructions and dependency check must be amended in that reviewed
-contract change, before implementation. Simulation continues to consume Core
+The user approved one narrow Runtime-to-Compiler dependency for the existing
+Module builder capture/lowering entry, replacing `Module._compile_builder_program`, after the
+contract-only change lands. The domain instructions and architecture checker now admit only imports of
+`CapturedModuleBuilder` and `capture_module_builder` from
+`compiler.module_builder` in `runtime/module.py`. This contract-only permission
+is separate from the legacy migration allowances and does not admit arbitrary
+Compiler imports. No production consumer invokes the new entry yet. Simulation continues to consume Core
 contracts only. Do not route the dependency through a registry or another domain.
 
 Keep the public PyTorch default and explicit JAX policy. A default JAX switch
@@ -25,7 +28,9 @@ Alternatives are to retain the current duplicate capture, or optimize only the
 Torch path. Neither resolves the separate JAX re-execution of the Python builder.
 The proposed boundary replaces capture; it does not add a second Module, quantum
 IR, backend registry or planner. Review owners are Integration/API, Compiler,
-Simulation and Runtime. The user approved the boundary in this packet; production replacement and CI review remain required. This is not approval of automatic selection or whole-step compilation.
+Simulation and Runtime. The user approved the boundary in this packet;
+production replacement and CI review remain required. This is not approval of
+automatic selection or whole-step compilation.
 
 ## Producer and consumer responsibilities
 
@@ -40,7 +45,8 @@ Runtime owns one bounded current-signature artifact, tensor binding, derivative
 demand, invalidation, diagnostics and lifecycle. Simulation accepts canonical IR
 and current tensor bindings; it must not import Compiler artifact types. JAX
 lowers that same canonical template rather than invoking the original Python
-builder again. Compiler owns the private capture result: canonical `template: CircuitIR`,
+builder again. Compiler owns the private capture result: canonical
+`template: CircuitIR`,
 `binding_graph: torch.fx.GraphModule`, ordered `slots: tuple[tuple[int, str], ...]`
 and the existing Circuit constructor properties. The private capture function
 takes a builder callable and current flat tensor inputs, with named-parameter

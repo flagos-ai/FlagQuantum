@@ -104,6 +104,16 @@ def _imports(path: Path) -> tuple[tuple[str, str], ...]:
     return tuple(imports)
 
 
+def _approved_module_capture_import(relative: str, module: str, name: str) -> bool:
+    """Admit only the reviewed Module frontend entry, before its implementation."""
+    boundary = CONFIG["module_builder_capture_boundary"]
+    return (
+        relative == boundary["importer"]
+        and module.removeprefix("flagquantum.") == boundary["module"]
+        and name in boundary["names"]
+    )
+
+
 def _module_name(path: Path, package_root: Path) -> str:
     parts = path.relative_to(package_root).with_suffix("").parts
     if parts[-1] == "__init__":
@@ -541,7 +551,8 @@ def architecture_errors() -> tuple[str, ...]:
                     part in {"_compiler", "compilation", "compiler"}
                     for part in module.split(".")
                 )
-                for module, _ in imports
+                and not _approved_module_capture_import(relative, module, name)
+                for module, name in imports
             )
             if imports_compiler:
                 observed_runtime_compiler_imports.add(relative)
