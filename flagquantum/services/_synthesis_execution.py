@@ -19,6 +19,7 @@ from ..runtime.execution_plan import ExecutionPlan
 from ..runtime.execution_plan_contract import (
     canonical_json,
     plan_execution_program,
+    plan_to_dict,
 )
 from ..runtime.result import ExecutionResult
 
@@ -45,7 +46,7 @@ _UNBOUNDED_LIMITS = CircuitLimits()
 def _program(plan: ExecutionPlan) -> CircuitIR:
     if not isinstance(plan, ExecutionPlan):
         raise TypeError("inspection requires an existing ExecutionPlan from fq.plan")
-    payload = plan.to_dict()  # Runtime validates the complete sealed contract.
+    payload = plan_to_dict(plan)  # Validate through Runtime, not a subclass override.
     decision = payload["decision"]
     fingerprints = payload["fingerprints"]
     assert isinstance(decision, Mapping)

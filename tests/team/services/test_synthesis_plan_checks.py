@@ -1,7 +1,7 @@
 """Conformance against live and recorded plans, plus fail-closed consistency."""
 
 import json
-from dataclasses import replace
+from dataclasses import fields, replace
 from typing import Any
 
 import pytest
@@ -302,6 +302,31 @@ def test_layer_order_and_gate_content_must_match_the_canonical_payload() -> None
                 layers=(replace(layer, instructions=(changed_gate,)), *plan.layers[1:]),
             )
         )
+
+
+def test_serializer_override_cannot_authorize_changed_instruction_layers() -> None:
+    class MisleadingPlan(ExecutionPlan):
+        def to_dict(self) -> dict[str, object]:
+            payload = super().to_dict()
+            fingerprints = payload["fingerprints"]
+            assert isinstance(fingerprints, dict)
+            fingerprints["program"] = plan_execution_program(self).content_hash
+            return payload
+
+    plan = fq.plan(fq.Circuit(1).h(0), options=_options())
+    misleading = MisleadingPlan(
+        **{field.name: getattr(plan, field.name) for field in fields(plan)}
+    )
+    layer = misleading.layers[0]
+    changed = replace(
+        misleading,
+        layers=(
+            replace(layer, instructions=(replace(layer.instructions[0], name="x"),)),
+        ),
+    )
+    with pytest.raises(ExecutionContractError, match="execution.layers"):
+        inspect_execution(changed)
+    assert inspect_execution(plan).resources.n_operations == 1
 
 
 @pytest.mark.parametrize(
