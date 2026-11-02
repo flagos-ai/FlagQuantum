@@ -462,3 +462,18 @@ Run `python -m examples.synthesis_power_two_multiply` and
 example uses 19 qubits and an 8 MiB planned state buffer. See the
 [contract](../../../docs/api-changes/FQ-SYNTH-POWER-TWO-MULTIPLY-20261101.md) and
 [delivery](../../../docs/roadmap/SYNTH_POWER_TWO_MULTIPLY_DELIVERY.md).
+
+## Constant phase in register effects
+
+The existing qreg.gate record admits gate=phase with exactly gate/index/angle,
+a finite Python float in radians and an initialized target. It emits the
+existing Core phase opcode with named theta; other gates retain gate/index.
+Const targets, unknown state and malformed indices/attributes remain refused,
+and gate writes retain dependency invalidation. Native source policy is owned
+by Ecosystem, which currently admits only integer literals 0..2**53 on qbits.
+
+Run `python -m examples.synthesis_qmod_phase_gate`, then
+`tests/team/compiler/test_construction_phase_gate.py` and
+`tests/integration/test_synthesis_qmod_phase_gate.py`. Full complex amplitudes
+are necessary to distinguish phase from RZ's global-phase convention. See the
+[contract](../../../docs/api-changes/FQ-SYNTH-CONSTANT-PHASE-GATE-20261102.md).

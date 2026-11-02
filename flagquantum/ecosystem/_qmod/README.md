@@ -257,3 +257,21 @@ addition and less-than; Compiler owns cleanup and budgets.
 Run python -m examples.synthesis_qmod_bit_predicates. Direct comparisons in
 phase remain the previously documented FlagQuantum-native extension, separate
 from upstream original-source compatibility evidence.
+
+## Constant-angle PHASE original
+
+Uppercase `PHASE(k, q)` admits a nonnegative integer literal k<=2**53 in
+radians and an initialized scalar qbit. The literal converts exactly to the
+Compiler's finite-float phase gate. It is a reserved intrinsic; helpers may not
+shadow it. Decimal, negative, symbolic, computed and quantum angles remain
+refused, as do numeric/array targets and Const gate targets. Lowercase
+`phase(expression, pi)` remains the separate predicate operation. Within/apply
+actions and role rules are unchanged.
+
+Compiler owns the existing register gate validation and emits the existing
+Core phase instruction with its named theta parameter. Runtime and numerical
+kernels are reused; no matrix or backend-specific implementation is introduced.
+Run `python -m examples.synthesis_qmod_phase_gate` and
+`tests/integration/test_synthesis_qmod_phase_gate.py`. Compare amplitudes, since
+probabilities alone do not expose phase errors. See the
+[delivery](../../../docs/roadmap/SYNTH_CONSTANT_PHASE_GATE_DELIVERY.md).
