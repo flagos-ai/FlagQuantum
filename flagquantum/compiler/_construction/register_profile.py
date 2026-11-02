@@ -5,6 +5,7 @@ arithmetic expressions. One linear effect orders uses; no external state is
 inspected or certified by this structural verifier.
 """
 
+import math
 from collections.abc import Mapping, Sequence
 from types import MappingProxyType
 
@@ -34,7 +35,7 @@ _ATTRIBUTES = MappingProxyType(
         "qreg.return": frozenset(),
     }
 )
-_GATES = frozenset({"x", "h", "s", "z"})
+_GATES = frozenset({"x", "h", "s", "z", "phase"})
 
 
 def register_type(width: int) -> IRType:
@@ -247,6 +248,9 @@ def _verify_body(
 
     for position, op in enumerate(block.operations):
         attributes = _ATTRIBUTES.get(op.name)
+        if op.name == "qreg.gate" and op.attributes.get("gate") == "phase":
+            assert attributes is not None
+            attributes = attributes | {"angle"}
         if attributes is None or set(op.attributes) != attributes or op.regions:
             _fail(
                 "register.operation", "unsupported register operation or attributes", op
@@ -388,9 +392,17 @@ def _verify_body(
                 ):
                     _fail(
                         "register.gate",
-                        "use X/H/S/Z and an in-range numeric bit index",
+                        "use X/H/S/Z/phase and an in-range numeric bit index",
                         op,
                     )
+                if op.attributes["gate"] == "phase":
+                    angle = op.attributes["angle"]
+                    if type(angle) is not float or not math.isfinite(angle):
+                        _fail(
+                            "register.gate",
+                            "phase angle must be a finite float in radians",
+                            op,
+                        )
                 if destination.id not in initialized:
                     _fail(
                         "register.uninitialized", "gate reads uninitialized storage", op
