@@ -245,7 +245,12 @@ def campaign(args: argparse.Namespace) -> int:
                 "cuda_allocator_policy": "expandable_segments:True",
                 "infiniband_hcas": args.infiniband_hcas,
                 "p2p_timeout_seconds": args.timeout,
-                "capacity_site_kernels": "explicit_compiled_from_frozen_workload_body",
+                "capacity_site_kernels": (
+                    None
+                    if args.training_series
+                    else "explicit_compiled_from_frozen_workload_body"
+                ),
+                "campaign": "training_recovery" if args.training_series else "capacity",
                 "topology": [
                     _run(["nvidia-smi", "topo", "-m"]),
                     _run(ssh_argv(args.peer, ["nvidia-smi", "topo", "-m"])),
@@ -255,6 +260,7 @@ def campaign(args: argparse.Namespace) -> int:
         )
         + "\n"
     )
+    failed_points = []
     for world, transport_check in (
         (16, True),
         (1, False),
@@ -369,6 +375,21 @@ def campaign(args: argparse.Namespace) -> int:
             for job in jobs:
                 subprocess.run(job["cleanup_command"], timeout=30, check=True)
             watcher.join(timeout=45)
+        if args.training_series and not transport_check:
+            (args.output / f"world-{world}-outcome.json").write_text(
+                json.dumps(
+                    {
+                        "world_size": world,
+                        "status": "completed" if passed else "failed",
+                        "note": "worker exit status; inspect retained rank records, logs and watchdog for OOM or timeout classification",
+                    },
+                    indent=2,
+                )
+                + "\n"
+            )
+        if not passed and args.training_series and not transport_check:
+            failed_points.append(world)
+            continue
         if not passed:
             raise SystemExit(
                 f"{point} failed; retain all logs and diagnose before retry"
@@ -381,7 +402,7 @@ def campaign(args: argparse.Namespace) -> int:
     (args.output / "raw-digests.json").write_text(
         json.dumps({"commit": revision, "sha256": digests}, indent=2) + "\n"
     )
-    return 0
+    return 1 if failed_points else 0
 
 
 def main() -> int:
