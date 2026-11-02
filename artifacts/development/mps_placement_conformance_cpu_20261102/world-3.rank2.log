@@ -1,0 +1,5 @@
+{"phase": "initializing", "rank": "2"}
+{"phase": "measuring_arm", "rank": 2, "cap": 64}
+{"phase": "arm_complete", "rank": 2, "cap": 64, "saved_tensor_bytes": 4384}
+{"phase": "measuring_arm", "rank": 2, "cap": 2}
+{"phase": "arm_complete", "rank": 2, "cap": 2, "saved_tensor_bytes": 1184}

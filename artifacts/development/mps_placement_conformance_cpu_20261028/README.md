@@ -1,5 +1,10 @@
 # Sharded versus unsharded MPS on CPU
 
+> The numerical payloads here are preserved. A new run with full source,
+> tolerance and runtime metadata, a checked-in file-store launcher, rank logs
+> and exact reproduction commands is recorded in
+> `../mps_placement_conformance_cpu_20261102/README.md` for #899 acceptance.
+
 Part of #899: representation agreement was extended to state and gradient
 conformance by #942, but that grid compares numerical paths on one device. This
 compares *placements* of the same path — the question a user with a sharded

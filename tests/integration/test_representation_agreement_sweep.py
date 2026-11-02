@@ -555,7 +555,9 @@ def test_smoothness_probe_separates_a_truncating_map_from_a_jumping_one() -> Non
 
 def test_a_smooth_truncating_cell_records_its_own_derivative_and_its_jump() -> None:
     """The cell must carry both numbers, or neither can be read on its own."""
-    cell = _cell(n_qubits=8, depth=4, max_bond=4, gradients=True)
+    cell = _cell(
+        n_qubits=8, depth=4, max_bond=4, dtype=torch.complex128, gradients=True
+    )
 
     assert cell["mps_truncated"] is True
     own_map = cell["gradients"]["mps_own_map"]
@@ -875,3 +877,113 @@ def test_the_own_map_check_states_the_precision_it_is_valid_at() -> None:
     assert single["gradients"]["mps_own_map"]["finite_difference_domain"].startswith(
         "not a check on autograd"
     )
+
+
+@pytest.mark.parametrize("dtype", [torch.complex64, torch.complex128])
+def test_state_observables_and_gradient_share_the_training_forward(
+    dtype: torch.dtype,
+) -> None:
+    cell = _cell(n_qubits=8, depth=4, max_bond=4, dtype=dtype, gradients=True)
+    assert cell["gradients"]["forward_path"] == "grad_enabled_projected_stop_subspace"
+    assert cell["energies"] == pytest.approx(
+        cell["gradients"]["forward_energies"], rel=1e-8
+    )
+    assert set(cell["observables"]["mps"]) == {"z:0", "x:1", "zz:0,1"}
+    derivative = cell["gradients"]["mps_own_map"]["derivative"]
+    if dtype == torch.complex64:
+        assert derivative["status"] == "unsupported_precision"
+        assert derivative["max_relative_error"] is None
+    else:
+        assert derivative["status"] == "step_consistent_probe"
+
+
+def test_numerical_derivative_preserves_the_grad_enabled_forward(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from flagquantum.core.ir import ensure_circuit_ir
+
+    parameters = (
+        0.05 * torch.randn(4, 8, 2, generator=torch.Generator().manual_seed(260720))
+    ).double()
+    original = sweep.fqr.run_native
+    seen: list[bool] = []
+
+    def observe(circuit: object, **kwargs: object) -> object:
+        if kwargs.get("mode") == "mps":
+            seen.append(torch.is_grad_enabled())
+            assert kwargs["truncated_gradient"] == "projected_stop_subspace"
+            assert any(
+                instruction.params["theta"].requires_grad
+                for instruction in ensure_circuit_ir(circuit).instructions
+                if "theta" in instruction.params
+            )
+        return original(circuit, **kwargs)
+
+    monkeypatch.setattr(sweep.fqr, "run_native", observe)
+    result = sweep.truncated_derivative_error(
+        parameters, structure="nearest_neighbour", n_qubits=8, max_bond=4, indices=(2,)
+    )
+    assert seen and all(seen)
+    assert result["status"] == "step_consistent_probe"
+    # This is the trainable forward's derivative. The old no-grad oracle gives
+    # -0.07786446 and must not be accepted as a same-map measurement.
+    assert result["samples"][0]["difference_half_h"] == pytest.approx(
+        -0.16308292, abs=1e-5
+    )
+
+
+def test_intermediate_svd_boundary_cannot_be_replaced_by_final_ideal_state() -> None:
+    cell = _cell(
+        n_qubits=8,
+        depth=2,
+        structure="all_to_all",
+        max_bond=4,
+        dtype=torch.complex128,
+        gradients=True,
+    )
+    assert cell["schmidt"]["near_degenerate"] is False
+    actual = cell["actual_svd"]
+    assert actual["source"] == "actual_training_forward_svd"
+    assert actual["near_degenerate"] is True
+    assert any(
+        record["near_degenerate"] and record["discarded_weight"] > 1e-12
+        for record in actual["records"]
+    )
+    derivative = cell["gradients"]["mps_own_map"]["derivative"]
+    assert derivative["status"] == "domain_boundary"
+    assert derivative["max_relative_error"] is None
+    assert derivative["near_degenerate_perturbations"] is True
+
+
+@pytest.mark.parametrize("bucket", [False, True])
+def test_actual_split_observer_sees_a_tied_cut_without_changing_factors(
+    bucket: bool,
+) -> None:
+    from benchmarks.internal.evidence.representation_conformance import (
+        observe_svd_splits,
+    )
+    from flagquantum.simulation.mps import factorization
+    from flagquantum.simulation.mps.models import MPSConfig
+
+    matrix = torch.eye(4, dtype=torch.complex128).reshape(1, 4, 4)
+    options = dict(left_dim=2, right_dim=2, config=MPSConfig(max_bond=2))
+
+    def split() -> tuple[torch.Tensor, torch.Tensor]:
+        if bucket:
+            left, right, _ = factorization._split_pair_matrix_bucket(
+                matrix.unsqueeze(0), **options
+            )[0]
+        else:
+            left, right, _ = factorization._split_pair_matrix(matrix, **options)
+        return left, right
+
+    expected = split()
+    original = factorization._cuda_svd
+    with observe_svd_splits(2) as records:
+        observed = split()
+    assert factorization._cuda_svd is original
+    for measured, reference in zip(observed, expected, strict=True):
+        torch.testing.assert_close(measured, reference)
+    assert len(records) == 1
+    assert records[0]["near_degenerate"] is True
+    assert records[0]["discarded_weight"] == pytest.approx(0.5)

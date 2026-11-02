@@ -35,16 +35,17 @@ def _run(world_size: int, output: Path) -> dict:
         [
             sys.executable,
             "-m",
-            "torch.distributed.run",
-            "--standalone",
-            f"--nproc-per-node={world_size}",
-            str(ROOT / "benchmarks/mps_placement_conformance.py"),
+            "benchmarks.mps_placement_conformance",
+            "--local-world-size",
+            str(world_size),
+            "--timeout-seconds",
+            "60",
             "--output",
             str(output),
         ],
         cwd=ROOT,
         check=True,
-        timeout=300,
+        timeout=90,
     )
     return json.loads(output.with_suffix(".rank0.json").read_text())
 
@@ -57,6 +58,17 @@ def test_moving_the_same_mps_across_ranks_preserves_value_and_gradient(
     arms = {arm["max_bond"]: arm for arm in payload["arms"]}
 
     assert payload["world_size"] == world_size
+    assert payload["rendezvous"] == "file_store"
+    assert payload["tolerances"]["gradient_relative"] == PLACEMENT_RELATIVE_BOUND
+    assert len(payload["source_commit"]) == 40
+    assert "--local-world-size" in payload["command"]
+    assert "file://" not in payload["command"]
+    assert payload["scalability_claim_allowed"] is False
+    for arm in payload["arms"]:
+        assert len(arm["site_ownership"]) == world_size
+        assert arm["runtime"]["statevector_fallback"] is False
+        assert arm["runtime"]["gradient_collective_count"] > 0
+        assert arm["saved_tensor_bytes"] > 0
 
     # The control: a cap that discards nothing isolates placement.
     exact = arms[64]
