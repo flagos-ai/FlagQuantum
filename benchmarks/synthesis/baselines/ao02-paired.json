@@ -1,0 +1,600 @@
+{
+  "baseline": "actual retained AO-01 candidate, not a regenerated historical artifact",
+  "rows": [
+    {
+      "case": "square-2",
+      "conservative": {
+        "allocated_qubits": 14,
+        "circuit_hash": "68d6c7f9f4237280b9891eb4df60f3ffc255abb8566bb6a5e7fa72aedd7381da",
+        "depth": 72,
+        "operation_counts": {
+          "ccx": 40,
+          "cx": 52
+        },
+        "operations": 92,
+        "planned_complex128_state_bytes": 262144,
+        "two_qubit_operations": 52,
+        "used_qubits": 14,
+        "workspace_qubits": 8
+      },
+      "exhaustive_input_target_checks": 64,
+      "expression": "x*x",
+      "rules": [
+        "square_symmetry"
+      ],
+      "selected": {
+        "allocated_qubits": 14,
+        "circuit_hash": "64dcf5beaab12bb7df8bc33d5a9a46b6d73702621f2f85ffbe1401698f3e2ad2",
+        "depth": 48,
+        "operation_counts": {
+          "ccx": 24,
+          "cx": 38
+        },
+        "operations": 62,
+        "planned_complex128_state_bytes": 262144,
+        "two_qubit_operations": 38,
+        "used_qubits": 14,
+        "workspace_qubits": 8
+      },
+      "strategy": "retain"
+    },
+    {
+      "case": "square-2",
+      "conservative": {
+        "allocated_qubits": 14,
+        "circuit_hash": "68d6c7f9f4237280b9891eb4df60f3ffc255abb8566bb6a5e7fa72aedd7381da",
+        "depth": 72,
+        "operation_counts": {
+          "ccx": 40,
+          "cx": 52
+        },
+        "operations": 92,
+        "planned_complex128_state_bytes": 262144,
+        "two_qubit_operations": 52,
+        "used_qubits": 14,
+        "workspace_qubits": 8
+      },
+      "exhaustive_input_target_checks": 64,
+      "expression": "x*x",
+      "rules": [
+        "square_symmetry"
+      ],
+      "selected": {
+        "allocated_qubits": 14,
+        "circuit_hash": "64dcf5beaab12bb7df8bc33d5a9a46b6d73702621f2f85ffbe1401698f3e2ad2",
+        "depth": 48,
+        "operation_counts": {
+          "ccx": 24,
+          "cx": 38
+        },
+        "operations": 62,
+        "planned_complex128_state_bytes": 262144,
+        "two_qubit_operations": 38,
+        "used_qubits": 14,
+        "workspace_qubits": 8
+      },
+      "strategy": "recompute"
+    },
+    {
+      "case": "square-3",
+      "conservative": {
+        "allocated_qubits": 21,
+        "circuit_hash": "d2bcd221d8745a028beae76fc3aacb95a02b7784765a33dde487f668e1ba639d",
+        "depth": 216,
+        "operation_counts": {
+          "ccx": 132,
+          "cx": 144
+        },
+        "operations": 276,
+        "planned_complex128_state_bytes": 33554432,
+        "two_qubit_operations": 144,
+        "used_qubits": 21,
+        "workspace_qubits": 12
+      },
+      "exhaustive_input_target_checks": 512,
+      "expression": "x*x",
+      "rules": [
+        "square_symmetry"
+      ],
+      "selected": {
+        "allocated_qubits": 21,
+        "circuit_hash": "0c66fa0b8055c59f7e0b7f357035965016112341c822f25611752b07cb21f16a",
+        "depth": 126,
+        "operation_counts": {
+          "ccx": 72,
+          "cx": 90
+        },
+        "operations": 162,
+        "planned_complex128_state_bytes": 33554432,
+        "two_qubit_operations": 90,
+        "used_qubits": 21,
+        "workspace_qubits": 12
+      },
+      "strategy": "retain"
+    },
+    {
+      "case": "square-3",
+      "conservative": {
+        "allocated_qubits": 21,
+        "circuit_hash": "d2bcd221d8745a028beae76fc3aacb95a02b7784765a33dde487f668e1ba639d",
+        "depth": 216,
+        "operation_counts": {
+          "ccx": 132,
+          "cx": 144
+        },
+        "operations": 276,
+        "planned_complex128_state_bytes": 33554432,
+        "two_qubit_operations": 144,
+        "used_qubits": 21,
+        "workspace_qubits": 12
+      },
+      "exhaustive_input_target_checks": 512,
+      "expression": "x*x",
+      "rules": [
+        "square_symmetry"
+      ],
+      "selected": {
+        "allocated_qubits": 21,
+        "circuit_hash": "0c66fa0b8055c59f7e0b7f357035965016112341c822f25611752b07cb21f16a",
+        "depth": 126,
+        "operation_counts": {
+          "ccx": 72,
+          "cx": 90
+        },
+        "operations": 162,
+        "planned_complex128_state_bytes": 33554432,
+        "two_qubit_operations": 90,
+        "used_qubits": 21,
+        "workspace_qubits": 12
+      },
+      "strategy": "recompute"
+    },
+    {
+      "case": "constant_product-4",
+      "conservative": {
+        "allocated_qubits": 22,
+        "circuit_hash": "fd8c6ccf2ede7902fc4995d185f695b9a245713cfcd5eafa1e638982916a0009",
+        "depth": 192,
+        "operation_counts": {
+          "ccx": 96,
+          "cx": 150
+        },
+        "operations": 246,
+        "planned_complex128_state_bytes": 67108864,
+        "two_qubit_operations": 150,
+        "used_qubits": 22,
+        "workspace_qubits": 12
+      },
+      "exhaustive_input_target_checks": 1024,
+      "expression": "x*3",
+      "rules": [
+        "constant_shift_add"
+      ],
+      "selected": {
+        "allocated_qubits": 19,
+        "circuit_hash": "5659448aeb2f636335364ee083d40515bb6b7cc2716283a67a848b3dba38ce91",
+        "depth": 177,
+        "operation_counts": {
+          "ccx": 44,
+          "cx": 138
+        },
+        "operations": 182,
+        "planned_complex128_state_bytes": 8388608,
+        "two_qubit_operations": 138,
+        "used_qubits": 19,
+        "workspace_qubits": 9
+      },
+      "strategy": "retain"
+    },
+    {
+      "case": "constant_product-4",
+      "conservative": {
+        "allocated_qubits": 22,
+        "circuit_hash": "fd8c6ccf2ede7902fc4995d185f695b9a245713cfcd5eafa1e638982916a0009",
+        "depth": 192,
+        "operation_counts": {
+          "ccx": 96,
+          "cx": 150
+        },
+        "operations": 246,
+        "planned_complex128_state_bytes": 67108864,
+        "two_qubit_operations": 150,
+        "used_qubits": 22,
+        "workspace_qubits": 12
+      },
+      "exhaustive_input_target_checks": 1024,
+      "expression": "x*3",
+      "rules": [
+        "constant_shift_add"
+      ],
+      "selected": {
+        "allocated_qubits": 19,
+        "circuit_hash": "5659448aeb2f636335364ee083d40515bb6b7cc2716283a67a848b3dba38ce91",
+        "depth": 177,
+        "operation_counts": {
+          "ccx": 44,
+          "cx": 138
+        },
+        "operations": 182,
+        "planned_complex128_state_bytes": 8388608,
+        "two_qubit_operations": 138,
+        "used_qubits": 19,
+        "workspace_qubits": 9
+      },
+      "strategy": "recompute"
+    },
+    {
+      "case": "constant_product-5",
+      "conservative": {
+        "allocated_qubits": 26,
+        "circuit_hash": "5f30f566c5046980744875ce8fcf689450beac06edc460cf98ce881f6d8ffc5f",
+        "depth": 270,
+        "operation_counts": {
+          "ccx": 140,
+          "cx": 207
+        },
+        "operations": 347,
+        "planned_complex128_state_bytes": 1073741824,
+        "two_qubit_operations": 207,
+        "used_qubits": 26,
+        "workspace_qubits": 14
+      },
+      "exhaustive_input_target_checks": 4096,
+      "expression": "x*3",
+      "rules": [
+        "constant_shift_add"
+      ],
+      "selected": {
+        "allocated_qubits": 22,
+        "circuit_hash": "53e4e59196eb03a20a49824d03225116daa3767bcdee260c45ae3ce202f45120",
+        "depth": 209,
+        "operation_counts": {
+          "ccx": 52,
+          "cx": 163
+        },
+        "operations": 215,
+        "planned_complex128_state_bytes": 67108864,
+        "two_qubit_operations": 163,
+        "used_qubits": 22,
+        "workspace_qubits": 10
+      },
+      "strategy": "retain"
+    },
+    {
+      "case": "constant_product-5",
+      "conservative": {
+        "allocated_qubits": 26,
+        "circuit_hash": "5f30f566c5046980744875ce8fcf689450beac06edc460cf98ce881f6d8ffc5f",
+        "depth": 270,
+        "operation_counts": {
+          "ccx": 140,
+          "cx": 207
+        },
+        "operations": 347,
+        "planned_complex128_state_bytes": 1073741824,
+        "two_qubit_operations": 207,
+        "used_qubits": 26,
+        "workspace_qubits": 14
+      },
+      "exhaustive_input_target_checks": 4096,
+      "expression": "x*3",
+      "rules": [
+        "constant_shift_add"
+      ],
+      "selected": {
+        "allocated_qubits": 22,
+        "circuit_hash": "53e4e59196eb03a20a49824d03225116daa3767bcdee260c45ae3ce202f45120",
+        "depth": 209,
+        "operation_counts": {
+          "ccx": 52,
+          "cx": 163
+        },
+        "operations": 215,
+        "planned_complex128_state_bytes": 67108864,
+        "two_qubit_operations": 163,
+        "used_qubits": 22,
+        "workspace_qubits": 10
+      },
+      "strategy": "recompute"
+    },
+    {
+      "case": "five_times-4",
+      "conservative": {
+        "allocated_qubits": 25,
+        "circuit_hash": "a789fbcaa7a15bcfcf24ba2330c5c2f9b0e38bc6407d5cc651520afff3a4c316",
+        "depth": 216,
+        "operation_counts": {
+          "ccx": 112,
+          "cx": 167
+        },
+        "operations": 279,
+        "planned_complex128_state_bytes": 536870912,
+        "two_qubit_operations": 167,
+        "used_qubits": 25,
+        "workspace_qubits": 14
+      },
+      "exhaustive_input_target_checks": 2048,
+      "expression": "5*x",
+      "rules": [
+        "constant_shift_add"
+      ],
+      "selected": {
+        "allocated_qubits": 22,
+        "circuit_hash": "3f0851380e78bfd63dfdd948e44019798668d920d1f770d3b948e7853cf3e650",
+        "depth": 193,
+        "operation_counts": {
+          "ccx": 48,
+          "cx": 151
+        },
+        "operations": 199,
+        "planned_complex128_state_bytes": 67108864,
+        "two_qubit_operations": 151,
+        "used_qubits": 22,
+        "workspace_qubits": 11
+      },
+      "strategy": "retain"
+    },
+    {
+      "case": "five_times-4",
+      "conservative": {
+        "allocated_qubits": 25,
+        "circuit_hash": "a789fbcaa7a15bcfcf24ba2330c5c2f9b0e38bc6407d5cc651520afff3a4c316",
+        "depth": 216,
+        "operation_counts": {
+          "ccx": 112,
+          "cx": 167
+        },
+        "operations": 279,
+        "planned_complex128_state_bytes": 536870912,
+        "two_qubit_operations": 167,
+        "used_qubits": 25,
+        "workspace_qubits": 14
+      },
+      "exhaustive_input_target_checks": 2048,
+      "expression": "5*x",
+      "rules": [
+        "constant_shift_add"
+      ],
+      "selected": {
+        "allocated_qubits": 22,
+        "circuit_hash": "3f0851380e78bfd63dfdd948e44019798668d920d1f770d3b948e7853cf3e650",
+        "depth": 193,
+        "operation_counts": {
+          "ccx": 48,
+          "cx": 151
+        },
+        "operations": 199,
+        "planned_complex128_state_bytes": 67108864,
+        "two_qubit_operations": 151,
+        "used_qubits": 22,
+        "workspace_qubits": 11
+      },
+      "strategy": "recompute"
+    },
+    {
+      "case": "add-2x2",
+      "conservative": {
+        "allocated_qubits": 11,
+        "circuit_hash": "50afcb4e2d0dcf640cc58c204cca6242c76e4ac532f6159cd19ab8211cc88173",
+        "depth": 35,
+        "operation_counts": {
+          "ccx": 8,
+          "cx": 33
+        },
+        "operations": 41,
+        "planned_complex128_state_bytes": 32768,
+        "two_qubit_operations": 33,
+        "used_qubits": 11,
+        "workspace_qubits": 4
+      },
+      "exhaustive_input_target_checks": 128,
+      "expression": "x+y",
+      "rules": [
+        "terminal_xor_add"
+      ],
+      "selected": {
+        "allocated_qubits": 9,
+        "circuit_hash": "a6e5a9c46375ff59772e38d6a7dd3482319492a10e040c341bf80da22a8e9d39",
+        "depth": 8,
+        "operation_counts": {
+          "ccx": 8,
+          "cx": 6
+        },
+        "operations": 14,
+        "planned_complex128_state_bytes": 8192,
+        "two_qubit_operations": 6,
+        "used_qubits": 9,
+        "workspace_qubits": 2
+      },
+      "strategy": "retain"
+    },
+    {
+      "case": "add-2x2",
+      "conservative": {
+        "allocated_qubits": 11,
+        "circuit_hash": "50afcb4e2d0dcf640cc58c204cca6242c76e4ac532f6159cd19ab8211cc88173",
+        "depth": 35,
+        "operation_counts": {
+          "ccx": 8,
+          "cx": 33
+        },
+        "operations": 41,
+        "planned_complex128_state_bytes": 32768,
+        "two_qubit_operations": 33,
+        "used_qubits": 11,
+        "workspace_qubits": 4
+      },
+      "exhaustive_input_target_checks": 128,
+      "expression": "x+y",
+      "rules": [
+        "terminal_xor_add"
+      ],
+      "selected": {
+        "allocated_qubits": 9,
+        "circuit_hash": "a6e5a9c46375ff59772e38d6a7dd3482319492a10e040c341bf80da22a8e9d39",
+        "depth": 8,
+        "operation_counts": {
+          "ccx": 8,
+          "cx": 6
+        },
+        "operations": 14,
+        "planned_complex128_state_bytes": 8192,
+        "two_qubit_operations": 6,
+        "used_qubits": 9,
+        "workspace_qubits": 2
+      },
+      "strategy": "recompute"
+    },
+    {
+      "case": "add-1x3",
+      "conservative": {
+        "allocated_qubits": 13,
+        "circuit_hash": "aa978ed289cfc5f56ba4be9a7d9fcff2e4d995fb7c85104f4fadf5ea899baf60",
+        "depth": 51,
+        "operation_counts": {
+          "ccx": 12,
+          "cx": 44
+        },
+        "operations": 56,
+        "planned_complex128_state_bytes": 131072,
+        "two_qubit_operations": 44,
+        "used_qubits": 13,
+        "workspace_qubits": 5
+      },
+      "exhaustive_input_target_checks": 256,
+      "expression": "x+y",
+      "rules": [
+        "terminal_xor_add"
+      ],
+      "selected": {
+        "allocated_qubits": 11,
+        "circuit_hash": "d8d355e502b021ae05850537b91db8fa9f74a941028bf5a39cb9dc8cc151b379",
+        "depth": 8,
+        "operation_counts": {
+          "ccx": 6,
+          "cx": 7
+        },
+        "operations": 13,
+        "planned_complex128_state_bytes": 32768,
+        "two_qubit_operations": 7,
+        "used_qubits": 11,
+        "workspace_qubits": 3
+      },
+      "strategy": "retain"
+    },
+    {
+      "case": "add-1x3",
+      "conservative": {
+        "allocated_qubits": 13,
+        "circuit_hash": "aa978ed289cfc5f56ba4be9a7d9fcff2e4d995fb7c85104f4fadf5ea899baf60",
+        "depth": 51,
+        "operation_counts": {
+          "ccx": 12,
+          "cx": 44
+        },
+        "operations": 56,
+        "planned_complex128_state_bytes": 131072,
+        "two_qubit_operations": 44,
+        "used_qubits": 13,
+        "workspace_qubits": 5
+      },
+      "exhaustive_input_target_checks": 256,
+      "expression": "x+y",
+      "rules": [
+        "terminal_xor_add"
+      ],
+      "selected": {
+        "allocated_qubits": 11,
+        "circuit_hash": "d8d355e502b021ae05850537b91db8fa9f74a941028bf5a39cb9dc8cc151b379",
+        "depth": 8,
+        "operation_counts": {
+          "ccx": 6,
+          "cx": 7
+        },
+        "operations": 13,
+        "planned_complex128_state_bytes": 32768,
+        "two_qubit_operations": 7,
+        "used_qubits": 11,
+        "workspace_qubits": 3
+      },
+      "strategy": "recompute"
+    },
+    {
+      "case": "multiply_add-1x1x2",
+      "conservative": {
+        "allocated_qubits": 12,
+        "circuit_hash": "2b1362049b9d679d045df7a94e900b155087b52f729c1fddade4c5ce6142ea63",
+        "depth": 39,
+        "operation_counts": {
+          "ccx": 12,
+          "cx": 33
+        },
+        "operations": 45,
+        "planned_complex128_state_bytes": 65536,
+        "two_qubit_operations": 33,
+        "used_qubits": 12,
+        "workspace_qubits": 5
+      },
+      "exhaustive_input_target_checks": 128,
+      "expression": "x*y+z",
+      "rules": [
+        "terminal_xor_add"
+      ],
+      "selected": {
+        "allocated_qubits": 10,
+        "circuit_hash": "1ca4765afafa6bc6f2cbf349df1eab158032f5824020bc63f4102428434aa715",
+        "depth": 12,
+        "operation_counts": {
+          "ccx": 8,
+          "cx": 7
+        },
+        "operations": 15,
+        "planned_complex128_state_bytes": 16384,
+        "two_qubit_operations": 7,
+        "used_qubits": 10,
+        "workspace_qubits": 3
+      },
+      "strategy": "retain"
+    },
+    {
+      "case": "multiply_add-1x1x2",
+      "conservative": {
+        "allocated_qubits": 12,
+        "circuit_hash": "2b1362049b9d679d045df7a94e900b155087b52f729c1fddade4c5ce6142ea63",
+        "depth": 39,
+        "operation_counts": {
+          "ccx": 12,
+          "cx": 33
+        },
+        "operations": 45,
+        "planned_complex128_state_bytes": 65536,
+        "two_qubit_operations": 33,
+        "used_qubits": 12,
+        "workspace_qubits": 5
+      },
+      "exhaustive_input_target_checks": 128,
+      "expression": "x*y+z",
+      "rules": [
+        "terminal_xor_add"
+      ],
+      "selected": {
+        "allocated_qubits": 10,
+        "circuit_hash": "1ca4765afafa6bc6f2cbf349df1eab158032f5824020bc63f4102428434aa715",
+        "depth": 12,
+        "operation_counts": {
+          "ccx": 8,
+          "cx": 7
+        },
+        "operations": 15,
+        "planned_complex128_state_bytes": 16384,
+        "two_qubit_operations": 7,
+        "used_qubits": 10,
+        "workspace_qubits": 3
+      },
+      "strategy": "recompute"
+    }
+  ],
+  "schema": "flagquantum.synthesis.arithmetic_implementations.v1",
+  "scope": "exact pre-target arithmetic including cleanup; no preparation or state execution",
+  "source_revision": "b5c3db4b487a4b144a83a1e50fc8541475708774"
+}

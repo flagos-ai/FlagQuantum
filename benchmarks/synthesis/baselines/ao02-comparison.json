@@ -1,0 +1,1089 @@
+{
+  "artifact_sha256": {
+    "baseline": "c5f084ae48066f8055a94a3be02d0d30d71c233783c7fd1234ccb2b3d464c864",
+    "current": "2633ab71f359742bd19fd330a4e2db7407b2442d610aee2a1e63acd0346b3ded"
+  },
+  "rows": [
+    {
+      "after_status": "compiled",
+      "before_status": "compiled",
+      "case": "add-1x1",
+      "classification": "improved",
+      "deltas": {
+        "allocated_qubits": -2,
+        "depth": -15,
+        "operations": -17,
+        "workspace_qubits": -2
+      }
+    },
+    {
+      "after_status": "compiled",
+      "before_status": "compiled",
+      "case": "add-2x2",
+      "classification": "improved",
+      "deltas": {
+        "allocated_qubits": -2,
+        "depth": -27,
+        "operations": -27,
+        "workspace_qubits": -2
+      }
+    },
+    {
+      "after_status": "compiled",
+      "before_status": "compiled",
+      "case": "add-3x3",
+      "classification": "improved",
+      "deltas": {
+        "allocated_qubits": -2,
+        "depth": -39,
+        "operations": -37,
+        "workspace_qubits": -2
+      }
+    },
+    {
+      "after_status": "compiled",
+      "before_status": "compiled",
+      "case": "add-4x4",
+      "classification": "improved",
+      "deltas": {
+        "allocated_qubits": -2,
+        "depth": -51,
+        "operations": -47,
+        "workspace_qubits": -2
+      }
+    },
+    {
+      "after_status": "compiled",
+      "before_status": "compiled",
+      "case": "add-8x8",
+      "classification": "improved",
+      "deltas": {
+        "allocated_qubits": -2,
+        "depth": -99,
+        "operations": -87,
+        "workspace_qubits": -2
+      }
+    },
+    {
+      "after_status": "compiled",
+      "before_status": "compiled",
+      "case": "add-16x16",
+      "classification": "improved",
+      "deltas": {
+        "allocated_qubits": -2,
+        "depth": -195,
+        "operations": -167,
+        "workspace_qubits": -2
+      }
+    },
+    {
+      "after_status": "compiled",
+      "before_status": "compiled",
+      "case": "double-1",
+      "classification": "improved",
+      "deltas": {
+        "allocated_qubits": -3,
+        "depth": -20,
+        "operations": -21,
+        "workspace_qubits": -3
+      }
+    },
+    {
+      "after_status": "compiled",
+      "before_status": "compiled",
+      "case": "double-2",
+      "classification": "improved",
+      "deltas": {
+        "allocated_qubits": -4,
+        "depth": -36,
+        "operations": -39,
+        "workspace_qubits": -4
+      }
+    },
+    {
+      "after_status": "compiled",
+      "before_status": "compiled",
+      "case": "double-3",
+      "classification": "improved",
+      "deltas": {
+        "allocated_qubits": -5,
+        "depth": -52,
+        "operations": -57,
+        "workspace_qubits": -5
+      }
+    },
+    {
+      "after_status": "compiled",
+      "before_status": "compiled",
+      "case": "double-4",
+      "classification": "improved",
+      "deltas": {
+        "allocated_qubits": -6,
+        "depth": -68,
+        "operations": -75,
+        "workspace_qubits": -6
+      }
+    },
+    {
+      "after_status": "compiled",
+      "before_status": "compiled",
+      "case": "double-8",
+      "classification": "improved",
+      "deltas": {
+        "allocated_qubits": -10,
+        "depth": -132,
+        "operations": -147,
+        "workspace_qubits": -10
+      }
+    },
+    {
+      "after_status": "compiled",
+      "before_status": "compiled",
+      "case": "double-16",
+      "classification": "improved",
+      "deltas": {
+        "allocated_qubits": -18,
+        "depth": -260,
+        "operations": -291,
+        "workspace_qubits": -18
+      }
+    },
+    {
+      "after_status": "compiled",
+      "before_status": "compiled",
+      "case": "square-1",
+      "classification": "unchanged",
+      "deltas": {
+        "allocated_qubits": 0,
+        "depth": 0,
+        "operations": 0,
+        "workspace_qubits": 0
+      }
+    },
+    {
+      "after_status": "compiled",
+      "before_status": "compiled",
+      "case": "square-2",
+      "classification": "improved",
+      "deltas": {
+        "allocated_qubits": 0,
+        "depth": -24,
+        "operations": -30,
+        "workspace_qubits": 0
+      }
+    },
+    {
+      "after_status": "compiled",
+      "before_status": "compiled",
+      "case": "square-3",
+      "classification": "improved",
+      "deltas": {
+        "allocated_qubits": 0,
+        "depth": -90,
+        "operations": -114,
+        "workspace_qubits": 0
+      }
+    },
+    {
+      "after_status": "compiled",
+      "before_status": "compiled",
+      "case": "square-4",
+      "classification": "improved",
+      "deltas": {
+        "allocated_qubits": 0,
+        "depth": -216,
+        "operations": -276,
+        "workspace_qubits": 0
+      }
+    },
+    {
+      "after_status": "compiled",
+      "before_status": "compiled",
+      "case": "square-8",
+      "classification": "improved",
+      "deltas": {
+        "allocated_qubits": 0,
+        "depth": -1680,
+        "operations": -2184,
+        "workspace_qubits": 0
+      }
+    },
+    {
+      "after_status": "compiled",
+      "before_status": "compiled",
+      "case": "square-16",
+      "classification": "unchanged",
+      "deltas": {
+        "allocated_qubits": 0,
+        "depth": 0,
+        "operations": 0,
+        "workspace_qubits": 0
+      }
+    },
+    {
+      "after_status": "compiled",
+      "before_status": "compiled",
+      "case": "multiply-1x1",
+      "classification": "unchanged",
+      "deltas": {
+        "allocated_qubits": 0,
+        "depth": 0,
+        "operations": 0,
+        "workspace_qubits": 0
+      }
+    },
+    {
+      "after_status": "compiled",
+      "before_status": "compiled",
+      "case": "multiply-2x2",
+      "classification": "unchanged",
+      "deltas": {
+        "allocated_qubits": 0,
+        "depth": 0,
+        "operations": 0,
+        "workspace_qubits": 0
+      }
+    },
+    {
+      "after_status": "compiled",
+      "before_status": "compiled",
+      "case": "multiply-3x3",
+      "classification": "unchanged",
+      "deltas": {
+        "allocated_qubits": 0,
+        "depth": 0,
+        "operations": 0,
+        "workspace_qubits": 0
+      }
+    },
+    {
+      "after_status": "compiled",
+      "before_status": "compiled",
+      "case": "multiply-4x4",
+      "classification": "unchanged",
+      "deltas": {
+        "allocated_qubits": 0,
+        "depth": 0,
+        "operations": 0,
+        "workspace_qubits": 0
+      }
+    },
+    {
+      "after_status": "compiled",
+      "before_status": "compiled",
+      "case": "multiply-8x8",
+      "classification": "unchanged",
+      "deltas": {
+        "allocated_qubits": 0,
+        "depth": 0,
+        "operations": 0,
+        "workspace_qubits": 0
+      }
+    },
+    {
+      "after_status": "compiled",
+      "before_status": "compiled",
+      "case": "multiply-16x16",
+      "classification": "unchanged",
+      "deltas": {
+        "allocated_qubits": 0,
+        "depth": 0,
+        "operations": 0,
+        "workspace_qubits": 0
+      }
+    },
+    {
+      "after_status": "compiled",
+      "before_status": "compiled",
+      "case": "energy-1x1",
+      "classification": "improved",
+      "deltas": {
+        "allocated_qubits": -2,
+        "depth": -15,
+        "operations": -17,
+        "workspace_qubits": -2
+      }
+    },
+    {
+      "after_status": "compiled",
+      "before_status": "compiled",
+      "case": "energy-2x2",
+      "classification": "improved",
+      "deltas": {
+        "allocated_qubits": -2,
+        "depth": -65,
+        "operations": -85,
+        "workspace_qubits": -2
+      }
+    },
+    {
+      "after_status": "compiled",
+      "before_status": "compiled",
+      "case": "energy-3x3",
+      "classification": "improved",
+      "deltas": {
+        "allocated_qubits": -2,
+        "depth": -145,
+        "operations": -192,
+        "workspace_qubits": -2
+      }
+    },
+    {
+      "after_status": "compiled",
+      "before_status": "compiled",
+      "case": "energy-4x4",
+      "classification": "improved",
+      "deltas": {
+        "allocated_qubits": -2,
+        "depth": -285,
+        "operations": -377,
+        "workspace_qubits": -2
+      }
+    },
+    {
+      "after_status": "compiled",
+      "before_status": "compiled",
+      "case": "energy-8x8",
+      "classification": "improved",
+      "deltas": {
+        "allocated_qubits": -2,
+        "depth": -1805,
+        "operations": -2377,
+        "workspace_qubits": -2
+      }
+    },
+    {
+      "after_status": "compiled",
+      "before_status": "compiled",
+      "case": "energy-16x16",
+      "classification": "unchanged",
+      "deltas": {
+        "allocated_qubits": 0,
+        "depth": 0,
+        "operations": 0,
+        "workspace_qubits": 0
+      }
+    },
+    {
+      "after_status": "compiled",
+      "before_status": "compiled",
+      "case": "multiply_add-1x1x1",
+      "classification": "improved",
+      "deltas": {
+        "allocated_qubits": -2,
+        "depth": -15,
+        "operations": -17,
+        "workspace_qubits": -2
+      }
+    },
+    {
+      "after_status": "compiled",
+      "before_status": "compiled",
+      "case": "multiply_add-2x2x2",
+      "classification": "improved",
+      "deltas": {
+        "allocated_qubits": -2,
+        "depth": -41,
+        "operations": -55,
+        "workspace_qubits": -2
+      }
+    },
+    {
+      "after_status": "compiled",
+      "before_status": "compiled",
+      "case": "multiply_add-3x3x3",
+      "classification": "improved",
+      "deltas": {
+        "allocated_qubits": -2,
+        "depth": -55,
+        "operations": -78,
+        "workspace_qubits": -2
+      }
+    },
+    {
+      "after_status": "compiled",
+      "before_status": "compiled",
+      "case": "multiply_add-4x4x4",
+      "classification": "improved",
+      "deltas": {
+        "allocated_qubits": -2,
+        "depth": -69,
+        "operations": -101,
+        "workspace_qubits": -2
+      }
+    },
+    {
+      "after_status": "compiled",
+      "before_status": "compiled",
+      "case": "multiply_add-8x8x8",
+      "classification": "improved",
+      "deltas": {
+        "allocated_qubits": -2,
+        "depth": -125,
+        "operations": -193,
+        "workspace_qubits": -2
+      }
+    },
+    {
+      "after_status": "compiled",
+      "before_status": "compiled",
+      "case": "multiply_add-16x16x16",
+      "classification": "unchanged",
+      "deltas": {
+        "allocated_qubits": 0,
+        "depth": 0,
+        "operations": 0,
+        "workspace_qubits": 0
+      }
+    },
+    {
+      "after_status": "compiled",
+      "before_status": "compiled",
+      "case": "shared_square-1x1",
+      "classification": "improved",
+      "deltas": {
+        "allocated_qubits": -3,
+        "depth": -34,
+        "operations": -42,
+        "workspace_qubits": -3
+      }
+    },
+    {
+      "after_status": "compiled",
+      "before_status": "compiled",
+      "case": "shared_square-2x2",
+      "classification": "improved",
+      "deltas": {
+        "allocated_qubits": -4,
+        "depth": -122,
+        "operations": -152,
+        "workspace_qubits": -4
+      }
+    },
+    {
+      "after_status": "compiled",
+      "before_status": "compiled",
+      "case": "shared_square-3x3",
+      "classification": "improved",
+      "deltas": {
+        "allocated_qubits": -5,
+        "depth": -264,
+        "operations": -332,
+        "workspace_qubits": -5
+      }
+    },
+    {
+      "after_status": "compiled",
+      "before_status": "compiled",
+      "case": "shared_square-4x4",
+      "classification": "improved",
+      "deltas": {
+        "allocated_qubits": -6,
+        "depth": -484,
+        "operations": -614,
+        "workspace_qubits": -6
+      }
+    },
+    {
+      "after_status": "compiled",
+      "before_status": "compiled",
+      "case": "shared_square-8x8",
+      "classification": "improved",
+      "deltas": {
+        "allocated_qubits": -10,
+        "depth": -2504,
+        "operations": -3242,
+        "workspace_qubits": -10
+      }
+    },
+    {
+      "after_status": "compiled",
+      "before_status": "compiled",
+      "case": "shared_square-16x16",
+      "classification": "unchanged",
+      "deltas": {
+        "allocated_qubits": 0,
+        "depth": 0,
+        "operations": 0,
+        "workspace_qubits": 0
+      }
+    },
+    {
+      "after_status": "compiled",
+      "before_status": "compiled",
+      "case": "mixed_products-1x1",
+      "classification": "improved",
+      "deltas": {
+        "allocated_qubits": -2,
+        "depth": -15,
+        "operations": -17,
+        "workspace_qubits": -2
+      }
+    },
+    {
+      "after_status": "compiled",
+      "before_status": "compiled",
+      "case": "mixed_products-2x2",
+      "classification": "improved",
+      "deltas": {
+        "allocated_qubits": -2,
+        "depth": -53,
+        "operations": -77,
+        "workspace_qubits": -2
+      }
+    },
+    {
+      "after_status": "compiled",
+      "before_status": "compiled",
+      "case": "mixed_products-3x3",
+      "classification": "improved",
+      "deltas": {
+        "allocated_qubits": -2,
+        "depth": -139,
+        "operations": -181,
+        "workspace_qubits": -2
+      }
+    },
+    {
+      "after_status": "compiled",
+      "before_status": "compiled",
+      "case": "mixed_products-4x4",
+      "classification": "improved",
+      "deltas": {
+        "allocated_qubits": -2,
+        "depth": -277,
+        "operations": -363,
+        "workspace_qubits": -2
+      }
+    },
+    {
+      "after_status": "compiled",
+      "before_status": "compiled",
+      "case": "mixed_products-8x8",
+      "classification": "improved",
+      "deltas": {
+        "allocated_qubits": -2,
+        "depth": -1789,
+        "operations": -2351,
+        "workspace_qubits": -2
+      }
+    },
+    {
+      "after_status": "timeout",
+      "before_status": "timeout",
+      "case": "mixed_products-16x16",
+      "classification": "incomplete",
+      "deltas": {}
+    },
+    {
+      "after_status": "compiled",
+      "before_status": "compiled",
+      "case": "linear-1x1",
+      "classification": "improved",
+      "deltas": {
+        "allocated_qubits": -1,
+        "depth": 0,
+        "operations": -2,
+        "workspace_qubits": -1
+      }
+    },
+    {
+      "after_status": "compiled",
+      "before_status": "compiled",
+      "case": "linear-2x2",
+      "classification": "unchanged",
+      "deltas": {
+        "allocated_qubits": 0,
+        "depth": 0,
+        "operations": 0,
+        "workspace_qubits": 0
+      }
+    },
+    {
+      "after_status": "compiled",
+      "before_status": "compiled",
+      "case": "linear-3x3",
+      "classification": "improved",
+      "deltas": {
+        "allocated_qubits": -4,
+        "depth": -85,
+        "operations": -154,
+        "workspace_qubits": -4
+      }
+    },
+    {
+      "after_status": "compiled",
+      "before_status": "compiled",
+      "case": "linear-4x4",
+      "classification": "improved",
+      "deltas": {
+        "allocated_qubits": -4,
+        "depth": -169,
+        "operations": -276,
+        "workspace_qubits": -4
+      }
+    },
+    {
+      "after_status": "compiled",
+      "before_status": "compiled",
+      "case": "linear-8x8",
+      "classification": "improved",
+      "deltas": {
+        "allocated_qubits": -4,
+        "depth": -745,
+        "operations": -1084,
+        "workspace_qubits": -4
+      }
+    },
+    {
+      "after_status": "compiled",
+      "before_status": "compiled",
+      "case": "linear-16x16",
+      "classification": "improved",
+      "deltas": {
+        "allocated_qubits": -4,
+        "depth": -3049,
+        "operations": -4236,
+        "workspace_qubits": -4
+      }
+    },
+    {
+      "after_status": "compiled",
+      "before_status": "compiled",
+      "case": "overlapping-1x1x1",
+      "classification": "unchanged",
+      "deltas": {
+        "allocated_qubits": 0,
+        "depth": 0,
+        "operations": 0,
+        "workspace_qubits": 0
+      }
+    },
+    {
+      "after_status": "compiled",
+      "before_status": "compiled",
+      "case": "overlapping-2x2x2",
+      "classification": "unchanged",
+      "deltas": {
+        "allocated_qubits": 0,
+        "depth": 0,
+        "operations": 0,
+        "workspace_qubits": 0
+      }
+    },
+    {
+      "after_status": "compiled",
+      "before_status": "compiled",
+      "case": "overlapping-3x3x3",
+      "classification": "unchanged",
+      "deltas": {
+        "allocated_qubits": 0,
+        "depth": 0,
+        "operations": 0,
+        "workspace_qubits": 0
+      }
+    },
+    {
+      "after_status": "compiled",
+      "before_status": "compiled",
+      "case": "overlapping-4x4x4",
+      "classification": "unchanged",
+      "deltas": {
+        "allocated_qubits": 0,
+        "depth": 0,
+        "operations": 0,
+        "workspace_qubits": 0
+      }
+    },
+    {
+      "after_status": "compiled",
+      "before_status": "compiled",
+      "case": "overlapping-8x8x8",
+      "classification": "unchanged",
+      "deltas": {
+        "allocated_qubits": 0,
+        "depth": 0,
+        "operations": 0,
+        "workspace_qubits": 0
+      }
+    },
+    {
+      "after_status": "compiled",
+      "before_status": "compiled",
+      "case": "overlapping-16x16x16",
+      "classification": "unchanged",
+      "deltas": {
+        "allocated_qubits": 0,
+        "depth": 0,
+        "operations": 0,
+        "workspace_qubits": 0
+      }
+    },
+    {
+      "after_status": "compiled",
+      "before_status": "compiled",
+      "case": "add-1x3",
+      "classification": "improved",
+      "deltas": {
+        "allocated_qubits": -4,
+        "depth": -43,
+        "operations": -47,
+        "workspace_qubits": -4
+      }
+    },
+    {
+      "after_status": "compiled",
+      "before_status": "compiled",
+      "case": "add-2x4",
+      "classification": "improved",
+      "deltas": {
+        "allocated_qubits": -4,
+        "depth": -55,
+        "operations": -57,
+        "workspace_qubits": -4
+      }
+    },
+    {
+      "after_status": "compiled",
+      "before_status": "compiled",
+      "case": "multiply-1x3",
+      "classification": "unchanged",
+      "deltas": {
+        "allocated_qubits": 0,
+        "depth": 0,
+        "operations": 0,
+        "workspace_qubits": 0
+      }
+    },
+    {
+      "after_status": "compiled",
+      "before_status": "compiled",
+      "case": "multiply-2x4",
+      "classification": "unchanged",
+      "deltas": {
+        "allocated_qubits": 0,
+        "depth": 0,
+        "operations": 0,
+        "workspace_qubits": 0
+      }
+    },
+    {
+      "after_status": "compiled",
+      "before_status": "compiled",
+      "case": "energy-1x3",
+      "classification": "improved",
+      "deltas": {
+        "allocated_qubits": -4,
+        "depth": -41,
+        "operations": -47,
+        "workspace_qubits": -4
+      }
+    },
+    {
+      "after_status": "compiled",
+      "before_status": "compiled",
+      "case": "energy-2x4",
+      "classification": "improved",
+      "deltas": {
+        "allocated_qubits": -2,
+        "depth": -61,
+        "operations": -77,
+        "workspace_qubits": -2
+      }
+    },
+    {
+      "after_status": "compiled",
+      "before_status": "compiled",
+      "case": "multiply_add-1x3x2",
+      "classification": "improved",
+      "deltas": {
+        "allocated_qubits": -2,
+        "depth": -27,
+        "operations": -40,
+        "workspace_qubits": -2
+      }
+    },
+    {
+      "after_status": "compiled",
+      "before_status": "compiled",
+      "case": "multiply_add-2x4x1",
+      "classification": "improved",
+      "deltas": {
+        "allocated_qubits": -2,
+        "depth": -59,
+        "operations": -84,
+        "workspace_qubits": -2
+      }
+    },
+    {
+      "after_status": "compiled",
+      "before_status": "compiled",
+      "case": "shared_square-1x3",
+      "classification": "improved",
+      "deltas": {
+        "allocated_qubits": -9,
+        "depth": -228,
+        "operations": -288,
+        "workspace_qubits": -9
+      }
+    },
+    {
+      "after_status": "compiled",
+      "before_status": "compiled",
+      "case": "shared_square-2x4",
+      "classification": "improved",
+      "deltas": {
+        "allocated_qubits": -10,
+        "depth": -424,
+        "operations": -538,
+        "workspace_qubits": -10
+      }
+    },
+    {
+      "after_status": "compiled",
+      "before_status": "compiled",
+      "case": "mixed_products-1x3",
+      "classification": "improved",
+      "deltas": {
+        "allocated_qubits": -4,
+        "depth": -31,
+        "operations": -47,
+        "workspace_qubits": -4
+      }
+    },
+    {
+      "after_status": "compiled",
+      "before_status": "compiled",
+      "case": "mixed_products-2x4",
+      "classification": "improved",
+      "deltas": {
+        "allocated_qubits": -4,
+        "depth": -67,
+        "operations": -109,
+        "workspace_qubits": -4
+      }
+    },
+    {
+      "after_status": "compiled",
+      "before_status": "compiled",
+      "case": "linear-1x3",
+      "classification": "improved",
+      "deltas": {
+        "allocated_qubits": -7,
+        "depth": -79,
+        "operations": -125,
+        "workspace_qubits": -7
+      }
+    },
+    {
+      "after_status": "compiled",
+      "before_status": "compiled",
+      "case": "linear-2x4",
+      "classification": "improved",
+      "deltas": {
+        "allocated_qubits": -6,
+        "depth": -119,
+        "operations": -198,
+        "workspace_qubits": -6
+      }
+    },
+    {
+      "after_status": "compiled",
+      "before_status": "compiled",
+      "case": "overlapping-1x3x2",
+      "classification": "improved",
+      "deltas": {
+        "allocated_qubits": -3,
+        "depth": -32,
+        "operations": -6,
+        "workspace_qubits": -3
+      }
+    },
+    {
+      "after_status": "compiled",
+      "before_status": "compiled",
+      "case": "overlapping-2x4x1",
+      "classification": "improved",
+      "deltas": {
+        "allocated_qubits": -2,
+        "depth": -32,
+        "operations": -4,
+        "workspace_qubits": -2
+      }
+    },
+    {
+      "after_status": "compiled",
+      "before_status": "compiled",
+      "case": "zero_product-1",
+      "classification": "unchanged",
+      "deltas": {
+        "allocated_qubits": 0,
+        "depth": 0,
+        "operations": 0,
+        "workspace_qubits": 0
+      }
+    },
+    {
+      "after_status": "compiled",
+      "before_status": "compiled",
+      "case": "zero_product-3",
+      "classification": "unchanged",
+      "deltas": {
+        "allocated_qubits": 0,
+        "depth": 0,
+        "operations": 0,
+        "workspace_qubits": 0
+      }
+    },
+    {
+      "after_status": "compiled",
+      "before_status": "compiled",
+      "case": "identity_product-1",
+      "classification": "improved",
+      "deltas": {
+        "allocated_qubits": -2,
+        "depth": -4,
+        "operations": -4,
+        "workspace_qubits": -2
+      }
+    },
+    {
+      "after_status": "compiled",
+      "before_status": "compiled",
+      "case": "identity_product-3",
+      "classification": "improved",
+      "deltas": {
+        "allocated_qubits": -6,
+        "depth": -34,
+        "operations": -40,
+        "workspace_qubits": -6
+      }
+    },
+    {
+      "after_status": "compiled",
+      "before_status": "compiled",
+      "case": "shift_product-1",
+      "classification": "unchanged",
+      "deltas": {
+        "allocated_qubits": 0,
+        "depth": 0,
+        "operations": 0,
+        "workspace_qubits": 0
+      }
+    },
+    {
+      "after_status": "compiled",
+      "before_status": "compiled",
+      "case": "shift_product-3",
+      "classification": "unchanged",
+      "deltas": {
+        "allocated_qubits": 0,
+        "depth": 0,
+        "operations": 0,
+        "workspace_qubits": 0
+      }
+    },
+    {
+      "after_status": "compiled",
+      "before_status": "compiled",
+      "case": "constant_product-1",
+      "classification": "unchanged",
+      "deltas": {
+        "allocated_qubits": 0,
+        "depth": 0,
+        "operations": 0,
+        "workspace_qubits": 0
+      }
+    },
+    {
+      "after_status": "compiled",
+      "before_status": "compiled",
+      "case": "constant_product-3",
+      "classification": "unchanged",
+      "deltas": {
+        "allocated_qubits": 0,
+        "depth": 0,
+        "operations": 0,
+        "workspace_qubits": 0
+      }
+    },
+    {
+      "after_status": "compiled",
+      "before_status": "compiled",
+      "case": "zero_add-1",
+      "classification": "improved",
+      "deltas": {
+        "allocated_qubits": -3,
+        "depth": -18,
+        "operations": -18,
+        "workspace_qubits": -3
+      }
+    },
+    {
+      "after_status": "compiled",
+      "before_status": "compiled",
+      "case": "zero_add-3",
+      "classification": "improved",
+      "deltas": {
+        "allocated_qubits": -5,
+        "depth": -50,
+        "operations": -50,
+        "workspace_qubits": -5
+      }
+    },
+    {
+      "after_status": "compiled",
+      "before_status": "compiled",
+      "case": "disjoint_add-1",
+      "classification": "improved",
+      "deltas": {
+        "allocated_qubits": -9,
+        "depth": -2,
+        "operations": -11,
+        "workspace_qubits": -9
+      }
+    },
+    {
+      "after_status": "compiled",
+      "before_status": "compiled",
+      "case": "disjoint_add-3",
+      "classification": "improved",
+      "deltas": {
+        "allocated_qubits": -9,
+        "depth": -2,
+        "operations": -13,
+        "workspace_qubits": -9
+      }
+    },
+    {
+      "after_status": "compiled",
+      "before_status": "compiled",
+      "case": "power_square-1",
+      "classification": "unchanged",
+      "deltas": {
+        "allocated_qubits": 0,
+        "depth": 0,
+        "operations": 0,
+        "workspace_qubits": 0
+      }
+    },
+    {
+      "after_status": "compiled",
+      "before_status": "compiled",
+      "case": "power_square-3",
+      "classification": "improved",
+      "deltas": {
+        "allocated_qubits": 0,
+        "depth": -90,
+        "operations": -114,
+        "workspace_qubits": 0
+      }
+    }
+  ],
+  "schema": "flagquantum.synthesis.normalization_comparison.v1",
+  "summary": {
+    "improved": 62,
+    "incomplete": 1,
+    "unchanged": 27
+  }
+}

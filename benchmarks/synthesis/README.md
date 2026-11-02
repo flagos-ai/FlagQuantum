@@ -173,3 +173,21 @@ Timeouts stay incomplete, not successful optimizations. Logical resource gains
 do not imply target, timing, runtime or memory-residency speedups. The native
 unified qfunc workflow is `examples/synthesis_normalization.py`; the old corpus
 entry points are retained to preserve measurement comparability.
+
+## AO-02 arithmetic implementations
+
+The [AO-02 delivery record](../../docs/roadmap/SYNTH_ARITHMETIC_AO02_DELIVERY.md)
+documents the guarded square/constant/terminal-XOR family. `ao02.json` and
+`ao02-comparison.json` use the unchanged ninety-case runner/oracles and preserve
+both AO-00 and AO-01 artifacts. Generate a supplementary paired receipt with:
+
+```bash
+python -m benchmarks.synthesis.implementations --output /tmp/ao02-paired.json
+```
+
+The paired receipt compares sixteen actual pre-target blocks (eight cases,
+both schedules), including cleanup and every small input/target combination.
+It excludes preparation/target optimization and must not be mixed with the
+full-program matrix's counts. No timing, peak memory or release claim follows
+from these static resources. The user workflow remains the unified qfunc entry:
+`python -m examples.synthesis_arithmetic_implementations`.

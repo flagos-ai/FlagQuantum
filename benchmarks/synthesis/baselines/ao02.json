@@ -1,0 +1,4626 @@
+{
+  "configuration": {
+    "basis_input_bits_exhaustive_max": 6,
+    "claims": "local CPU correctness and static resources only; no speed, optimality, hardware, release or scalability claim",
+    "cost_scope": "static instruction counts including input preparation and all cleanup; state bytes are not process peak memory",
+    "large_case_timeout_seconds": 30,
+    "max_execution_qubits": 20,
+    "max_operations": 100000,
+    "max_qubits": 256,
+    "objective": "width",
+    "seed": 20261102,
+    "state_execution_limit_bytes": 16777216,
+    "timing_scope": "one synthesize call including capture, selection, target compilation and planning; excludes verification and process startup",
+    "worker_threshold_input_bits": 12
+  },
+  "environment": {
+    "platform": "macOS-27.0-arm64-arm-64bit",
+    "python": "3.12.14",
+    "torch": "2.13.0",
+    "torch_threads": 1
+  },
+  "rows": [
+    {
+      "candidate_seconds": [
+        [
+          "retain",
+          0.000669291999656707
+        ],
+        [
+          "recompute",
+          0.0006451249937526882
+        ]
+      ],
+      "case": "add-1x1",
+      "diagnostic_codes": [],
+      "expression": "x+y",
+      "output_width": 2,
+      "resources": {
+        "allocated_qubits": 5,
+        "circuit_hash": "823e879da0af00261448fb0575e2efe0af51963e743e5e0e1541fc3d254d5454",
+        "depth": 5,
+        "operation_counts": {
+          "ccx": 2,
+          "cx": 3,
+          "h": 2
+        },
+        "operations": 7,
+        "planned_complex128_state_bytes": 512,
+        "two_qubit_operations": 3,
+        "used_qubits": 5,
+        "workspace_qubits": 1
+      },
+      "selected_target_seconds": 0.0014080830005696043,
+      "status": "compiled",
+      "strategy": "retain",
+      "synthesis_and_planning_seconds": 0.04053570800169837,
+      "verification": {
+        "basis_checks": 12,
+        "basis_domain_exhaustive": true,
+        "coherent_states": 2,
+        "maximum_amplitude_error": 1.1102230246251565e-16,
+        "nonzero_targets": true,
+        "scope": "exact gate interpretation; bounded full-state verification",
+        "workspace_nonzero_probability": 0.0
+      },
+      "widths": [
+        1,
+        1
+      ],
+      "worker_wall_seconds": null
+    },
+    {
+      "candidate_seconds": [
+        [
+          "retain",
+          0.0003845000028377399
+        ],
+        [
+          "recompute",
+          0.0008807079866528511
+        ]
+      ],
+      "case": "add-2x2",
+      "diagnostic_codes": [],
+      "expression": "x+y",
+      "output_width": 3,
+      "resources": {
+        "allocated_qubits": 9,
+        "circuit_hash": "e1230884daffbfcc8f1a6fa2ec109937b9e8eb4818d0bd20c4fca4f6be770e31",
+        "depth": 9,
+        "operation_counts": {
+          "ccx": 8,
+          "cx": 6,
+          "h": 4
+        },
+        "operations": 18,
+        "planned_complex128_state_bytes": 8192,
+        "two_qubit_operations": 6,
+        "used_qubits": 9,
+        "workspace_qubits": 2
+      },
+      "selected_target_seconds": 0.000669625005684793,
+      "status": "compiled",
+      "strategy": "retain",
+      "synthesis_and_planning_seconds": 0.010666832997230813,
+      "verification": {
+        "basis_checks": 48,
+        "basis_domain_exhaustive": true,
+        "coherent_states": 2,
+        "maximum_amplitude_error": 8.441528768080324e-17,
+        "nonzero_targets": true,
+        "scope": "exact gate interpretation; bounded full-state verification",
+        "workspace_nonzero_probability": 0.0
+      },
+      "widths": [
+        2,
+        2
+      ],
+      "worker_wall_seconds": null
+    },
+    {
+      "candidate_seconds": [
+        [
+          "retain",
+          0.00048320899077225477
+        ],
+        [
+          "recompute",
+          0.00045375000627245754
+        ]
+      ],
+      "case": "add-3x3",
+      "diagnostic_codes": [],
+      "expression": "x+y",
+      "output_width": 4,
+      "resources": {
+        "allocated_qubits": 13,
+        "circuit_hash": "eed063acc52b7e77ab8357a7f6fd210a74536ca2dcdb3c6b737b106e119f4e85",
+        "depth": 13,
+        "operation_counts": {
+          "ccx": 14,
+          "cx": 9,
+          "h": 6
+        },
+        "operations": 29,
+        "planned_complex128_state_bytes": 131072,
+        "two_qubit_operations": 9,
+        "used_qubits": 13,
+        "workspace_qubits": 3
+      },
+      "selected_target_seconds": 0.0008494999929098412,
+      "status": "compiled",
+      "strategy": "retain",
+      "synthesis_and_planning_seconds": 0.014774750001379289,
+      "verification": {
+        "basis_checks": 192,
+        "basis_domain_exhaustive": true,
+        "coherent_states": 2,
+        "maximum_amplitude_error": 6.938893903907228e-17,
+        "nonzero_targets": true,
+        "scope": "exact gate interpretation; bounded full-state verification",
+        "workspace_nonzero_probability": 0.0
+      },
+      "widths": [
+        3,
+        3
+      ],
+      "worker_wall_seconds": null
+    },
+    {
+      "candidate_seconds": [
+        [
+          "retain",
+          0.0005543339939322323
+        ],
+        [
+          "recompute",
+          0.0004979170043952763
+        ]
+      ],
+      "case": "add-4x4",
+      "diagnostic_codes": [],
+      "expression": "x+y",
+      "output_width": 5,
+      "resources": {
+        "allocated_qubits": 17,
+        "circuit_hash": "1c7ca1003d9718b6120ef0161b7a4a79a50bc5ad7f46ddaa85e71925b44891bf",
+        "depth": 17,
+        "operation_counts": {
+          "ccx": 20,
+          "cx": 12,
+          "h": 8
+        },
+        "operations": 40,
+        "planned_complex128_state_bytes": 2097152,
+        "two_qubit_operations": 12,
+        "used_qubits": 17,
+        "workspace_qubits": 4
+      },
+      "selected_target_seconds": 0.0011055000068154186,
+      "status": "compiled",
+      "strategy": "retain",
+      "synthesis_and_planning_seconds": 0.017611084011150524,
+      "verification": {
+        "basis_checks": 54,
+        "basis_domain_exhaustive": false,
+        "coherent_states": 0,
+        "maximum_amplitude_error": null,
+        "nonzero_targets": true,
+        "scope": "exact gate interpretation; no quantum state executed",
+        "workspace_nonzero_probability": null
+      },
+      "widths": [
+        4,
+        4
+      ],
+      "worker_wall_seconds": null
+    },
+    {
+      "candidate_seconds": [
+        [
+          "retain",
+          0.00113795799552463
+        ],
+        [
+          "recompute",
+          0.0008265000069513917
+        ]
+      ],
+      "case": "add-8x8",
+      "diagnostic_codes": [],
+      "expression": "x+y",
+      "output_width": 9,
+      "resources": {
+        "allocated_qubits": 33,
+        "circuit_hash": "6bfed64b5bd4d283de0f69a0910b26c6333cee820bf3303712ae1ccb5969c25c",
+        "depth": 33,
+        "operation_counts": {
+          "ccx": 44,
+          "cx": 24,
+          "h": 16
+        },
+        "operations": 84,
+        "planned_complex128_state_bytes": 137438953472,
+        "two_qubit_operations": 24,
+        "used_qubits": 33,
+        "workspace_qubits": 8
+      },
+      "selected_target_seconds": 0.022059832990635186,
+      "status": "compiled",
+      "strategy": "retain",
+      "synthesis_and_planning_seconds": 0.06525420800608117,
+      "verification": {
+        "basis_checks": 54,
+        "basis_domain_exhaustive": false,
+        "coherent_states": 0,
+        "maximum_amplitude_error": null,
+        "nonzero_targets": true,
+        "scope": "exact gate interpretation; no quantum state executed",
+        "workspace_nonzero_probability": null
+      },
+      "widths": [
+        8,
+        8
+      ],
+      "worker_wall_seconds": null
+    },
+    {
+      "candidate_seconds": [
+        [
+          "retain",
+          0.0019600000086938962
+        ],
+        [
+          "recompute",
+          0.0013513329904526472
+        ]
+      ],
+      "case": "add-16x16",
+      "diagnostic_codes": [],
+      "expression": "x+y",
+      "output_width": 17,
+      "resources": {
+        "allocated_qubits": 65,
+        "circuit_hash": "93ef2c709012a32028fb77ac1a807f69d6719283ab59ab49bbf46c965eff21a7",
+        "depth": 65,
+        "operation_counts": {
+          "ccx": 92,
+          "cx": 48,
+          "h": 32
+        },
+        "operations": 172,
+        "planned_complex128_state_bytes": 590295810358705651712,
+        "two_qubit_operations": 48,
+        "used_qubits": 65,
+        "workspace_qubits": 16
+      },
+      "selected_target_seconds": 0.02652170800138265,
+      "status": "compiled",
+      "strategy": "retain",
+      "synthesis_and_planning_seconds": 0.10164470800373238,
+      "verification": {
+        "basis_checks": 54,
+        "basis_domain_exhaustive": false,
+        "coherent_states": 0,
+        "maximum_amplitude_error": null,
+        "nonzero_targets": true,
+        "scope": "exact gate interpretation; no quantum state executed",
+        "workspace_nonzero_probability": null
+      },
+      "widths": [
+        16,
+        16
+      ],
+      "worker_wall_seconds": null
+    },
+    {
+      "candidate_seconds": [
+        [
+          "retain",
+          0.0003895419940818101
+        ],
+        [
+          "recompute",
+          0.00026358298782724887
+        ]
+      ],
+      "case": "double-1",
+      "diagnostic_codes": [],
+      "expression": "x+x",
+      "output_width": 2,
+      "resources": {
+        "allocated_qubits": 3,
+        "circuit_hash": "2cc234ff45729e372a9c77a4c56993831e95e2998040c6dfdbca278b1966595e",
+        "depth": 2,
+        "operation_counts": {
+          "cx": 1,
+          "h": 1
+        },
+        "operations": 2,
+        "planned_complex128_state_bytes": 128,
+        "two_qubit_operations": 1,
+        "used_qubits": 2,
+        "workspace_qubits": 0
+      },
+      "selected_target_seconds": 0.00041558399971108884,
+      "status": "compiled",
+      "strategy": "retain",
+      "synthesis_and_planning_seconds": 0.005328833009116352,
+      "verification": {
+        "basis_checks": 6,
+        "basis_domain_exhaustive": true,
+        "coherent_states": 2,
+        "maximum_amplitude_error": 1.1102230246251565e-16,
+        "nonzero_targets": true,
+        "scope": "exact gate interpretation; bounded full-state verification",
+        "workspace_nonzero_probability": 0.0
+      },
+      "widths": [
+        1
+      ],
+      "worker_wall_seconds": null
+    },
+    {
+      "candidate_seconds": [
+        [
+          "retain",
+          0.0003190830029780045
+        ],
+        [
+          "recompute",
+          0.0002943339932244271
+        ]
+      ],
+      "case": "double-2",
+      "diagnostic_codes": [],
+      "expression": "x+x",
+      "output_width": 3,
+      "resources": {
+        "allocated_qubits": 5,
+        "circuit_hash": "6c4e90facd69d06a103e283a589f5cd38244c99a6047cc3d2141240338babe7a",
+        "depth": 2,
+        "operation_counts": {
+          "cx": 2,
+          "h": 2
+        },
+        "operations": 4,
+        "planned_complex128_state_bytes": 512,
+        "two_qubit_operations": 2,
+        "used_qubits": 4,
+        "workspace_qubits": 0
+      },
+      "selected_target_seconds": 0.00036262501089368016,
+      "status": "compiled",
+      "strategy": "retain",
+      "synthesis_and_planning_seconds": 0.005151834004209377,
+      "verification": {
+        "basis_checks": 12,
+        "basis_domain_exhaustive": true,
+        "coherent_states": 2,
+        "maximum_amplitude_error": 1.1102230246251565e-16,
+        "nonzero_targets": true,
+        "scope": "exact gate interpretation; bounded full-state verification",
+        "workspace_nonzero_probability": 0.0
+      },
+      "widths": [
+        2
+      ],
+      "worker_wall_seconds": null
+    },
+    {
+      "candidate_seconds": [
+        [
+          "retain",
+          0.000378249998902902
+        ],
+        [
+          "recompute",
+          0.00042424999992363155
+        ]
+      ],
+      "case": "double-3",
+      "diagnostic_codes": [],
+      "expression": "x+x",
+      "output_width": 4,
+      "resources": {
+        "allocated_qubits": 7,
+        "circuit_hash": "683e06bb3c5446767aa11500b58dec451f69dfaa34a51ee25290523998620800",
+        "depth": 2,
+        "operation_counts": {
+          "cx": 3,
+          "h": 3
+        },
+        "operations": 6,
+        "planned_complex128_state_bytes": 2048,
+        "two_qubit_operations": 3,
+        "used_qubits": 6,
+        "workspace_qubits": 0
+      },
+      "selected_target_seconds": 0.0004276249965187162,
+      "status": "compiled",
+      "strategy": "retain",
+      "synthesis_and_planning_seconds": 0.0060580830031540245,
+      "verification": {
+        "basis_checks": 24,
+        "basis_domain_exhaustive": true,
+        "coherent_states": 2,
+        "maximum_amplitude_error": 1.1102230246251565e-16,
+        "nonzero_targets": true,
+        "scope": "exact gate interpretation; bounded full-state verification",
+        "workspace_nonzero_probability": 0.0
+      },
+      "widths": [
+        3
+      ],
+      "worker_wall_seconds": null
+    },
+    {
+      "candidate_seconds": [
+        [
+          "retain",
+          0.0004297909908927977
+        ],
+        [
+          "recompute",
+          0.0004271669895388186
+        ]
+      ],
+      "case": "double-4",
+      "diagnostic_codes": [],
+      "expression": "x+x",
+      "output_width": 5,
+      "resources": {
+        "allocated_qubits": 9,
+        "circuit_hash": "db775c2a9040ac28fd972fe87e7757802657b7082209aef659ca935de4cbe48d",
+        "depth": 2,
+        "operation_counts": {
+          "cx": 4,
+          "h": 4
+        },
+        "operations": 8,
+        "planned_complex128_state_bytes": 8192,
+        "two_qubit_operations": 4,
+        "used_qubits": 8,
+        "workspace_qubits": 0
+      },
+      "selected_target_seconds": 0.0004010840057162568,
+      "status": "compiled",
+      "strategy": "retain",
+      "synthesis_and_planning_seconds": 0.00722387499990873,
+      "verification": {
+        "basis_checks": 48,
+        "basis_domain_exhaustive": true,
+        "coherent_states": 2,
+        "maximum_amplitude_error": 8.441528768080324e-17,
+        "nonzero_targets": true,
+        "scope": "exact gate interpretation; bounded full-state verification",
+        "workspace_nonzero_probability": 0.0
+      },
+      "widths": [
+        4
+      ],
+      "worker_wall_seconds": null
+    },
+    {
+      "candidate_seconds": [
+        [
+          "retain",
+          0.0006809170008637011
+        ],
+        [
+          "recompute",
+          0.000599959006649442
+        ]
+      ],
+      "case": "double-8",
+      "diagnostic_codes": [],
+      "expression": "x+x",
+      "output_width": 9,
+      "resources": {
+        "allocated_qubits": 17,
+        "circuit_hash": "a33a8f4ea368e85659df910c91ec89969ce02a0bdad35eca3c584708bda5b5b7",
+        "depth": 2,
+        "operation_counts": {
+          "cx": 8,
+          "h": 8
+        },
+        "operations": 16,
+        "planned_complex128_state_bytes": 2097152,
+        "two_qubit_operations": 8,
+        "used_qubits": 16,
+        "workspace_qubits": 0
+      },
+      "selected_target_seconds": 0.0005899590032640845,
+      "status": "compiled",
+      "strategy": "retain",
+      "synthesis_and_planning_seconds": 0.009838291996857151,
+      "verification": {
+        "basis_checks": 54,
+        "basis_domain_exhaustive": false,
+        "coherent_states": 0,
+        "maximum_amplitude_error": null,
+        "nonzero_targets": true,
+        "scope": "exact gate interpretation; no quantum state executed",
+        "workspace_nonzero_probability": null
+      },
+      "widths": [
+        8
+      ],
+      "worker_wall_seconds": null
+    },
+    {
+      "candidate_seconds": [
+        [
+          "retain",
+          0.0016609170124866068
+        ],
+        [
+          "recompute",
+          0.0010994170006597415
+        ]
+      ],
+      "case": "double-16",
+      "diagnostic_codes": [],
+      "expression": "x+x",
+      "output_width": 17,
+      "resources": {
+        "allocated_qubits": 33,
+        "circuit_hash": "6b45dfae76f0ad757b6c9e3a1dc349c63fdb3c93652f8d623c653c735d90f423",
+        "depth": 2,
+        "operation_counts": {
+          "cx": 16,
+          "h": 16
+        },
+        "operations": 32,
+        "planned_complex128_state_bytes": 137438953472,
+        "two_qubit_operations": 16,
+        "used_qubits": 32,
+        "workspace_qubits": 0
+      },
+      "selected_target_seconds": 0.018596082998556085,
+      "status": "compiled",
+      "strategy": "retain",
+      "synthesis_and_planning_seconds": 0.04588224999315571,
+      "verification": {
+        "basis_checks": 54,
+        "basis_domain_exhaustive": false,
+        "coherent_states": 0,
+        "maximum_amplitude_error": null,
+        "nonzero_targets": true,
+        "scope": "exact gate interpretation; no quantum state executed",
+        "workspace_nonzero_probability": null
+      },
+      "widths": [
+        16
+      ],
+      "worker_wall_seconds": null
+    },
+    {
+      "candidate_seconds": [
+        [
+          "retain",
+          0.00039845799619797617
+        ],
+        [
+          "recompute",
+          0.000272374993073754
+        ]
+      ],
+      "case": "square-1",
+      "diagnostic_codes": [],
+      "expression": "x*x",
+      "output_width": 1,
+      "resources": {
+        "allocated_qubits": 4,
+        "circuit_hash": "c333286b25dcce7e71bba1292f7b51cb19baff70f90a2be0c53ad22fbd4da303",
+        "depth": 6,
+        "operation_counts": {
+          "cx": 5,
+          "h": 1
+        },
+        "operations": 6,
+        "planned_complex128_state_bytes": 256,
+        "two_qubit_operations": 5,
+        "used_qubits": 4,
+        "workspace_qubits": 2
+      },
+      "selected_target_seconds": 0.0008003749971976504,
+      "status": "compiled",
+      "strategy": "retain",
+      "synthesis_and_planning_seconds": 0.007151750003686175,
+      "verification": {
+        "basis_checks": 4,
+        "basis_domain_exhaustive": true,
+        "coherent_states": 2,
+        "maximum_amplitude_error": 1.1102230246251565e-16,
+        "nonzero_targets": true,
+        "scope": "exact gate interpretation; bounded full-state verification",
+        "workspace_nonzero_probability": 0.0
+      },
+      "widths": [
+        1
+      ],
+      "worker_wall_seconds": null
+    },
+    {
+      "candidate_seconds": [
+        [
+          "retain",
+          0.0006543340132338926
+        ],
+        [
+          "recompute",
+          0.0007549580041086301
+        ]
+      ],
+      "case": "square-2",
+      "diagnostic_codes": [],
+      "expression": "x*x",
+      "output_width": 4,
+      "resources": {
+        "allocated_qubits": 14,
+        "circuit_hash": "865e76e23a3273f73d0e95237af5ff084d31cfaa8345a5b1e46f17b305361d15",
+        "depth": 46,
+        "operation_counts": {
+          "ccx": 22,
+          "cx": 36,
+          "h": 2
+        },
+        "operations": 60,
+        "planned_complex128_state_bytes": 262144,
+        "two_qubit_operations": 36,
+        "used_qubits": 14,
+        "workspace_qubits": 8
+      },
+      "selected_target_seconds": 0.0028377090056892484,
+      "status": "compiled",
+      "strategy": "retain",
+      "synthesis_and_planning_seconds": 0.028125916011049412,
+      "verification": {
+        "basis_checks": 12,
+        "basis_domain_exhaustive": true,
+        "coherent_states": 2,
+        "maximum_amplitude_error": 1.1102230246251565e-16,
+        "nonzero_targets": true,
+        "scope": "exact gate interpretation; bounded full-state verification",
+        "workspace_nonzero_probability": 0.0
+      },
+      "widths": [
+        2
+      ],
+      "worker_wall_seconds": null
+    },
+    {
+      "candidate_seconds": [
+        [
+          "retain",
+          0.0013640419929288328
+        ],
+        [
+          "recompute",
+          0.0012787919986294582
+        ]
+      ],
+      "case": "square-3",
+      "diagnostic_codes": [],
+      "expression": "x*x",
+      "output_width": 6,
+      "resources": {
+        "allocated_qubits": 21,
+        "circuit_hash": "d894b571bb7d4ef5036cd753cba7da5205f81ec3fc97ac42c9641ddce8ff0f2e",
+        "depth": 124,
+        "operation_counts": {
+          "ccx": 70,
+          "cx": 88,
+          "h": 3
+        },
+        "operations": 161,
+        "planned_complex128_state_bytes": 33554432,
+        "two_qubit_operations": 88,
+        "used_qubits": 21,
+        "workspace_qubits": 12
+      },
+      "selected_target_seconds": 0.007307791995117441,
+      "status": "compiled",
+      "strategy": "retain",
+      "synthesis_and_planning_seconds": 0.06964633299503475,
+      "verification": {
+        "basis_checks": 24,
+        "basis_domain_exhaustive": true,
+        "coherent_states": 0,
+        "maximum_amplitude_error": null,
+        "nonzero_targets": true,
+        "scope": "exact gate interpretation; no quantum state executed",
+        "workspace_nonzero_probability": null
+      },
+      "widths": [
+        3
+      ],
+      "worker_wall_seconds": null
+    },
+    {
+      "candidate_seconds": [
+        [
+          "retain",
+          0.0026172910002060235
+        ],
+        [
+          "recompute",
+          0.0026744579954538494
+        ]
+      ],
+      "case": "square-4",
+      "diagnostic_codes": [],
+      "expression": "x*x",
+      "output_width": 8,
+      "resources": {
+        "allocated_qubits": 28,
+        "circuit_hash": "70e540569164f6d4db5369ea3ba6d73561f4a5e0dfffb1be8d899bc5ea5af479",
+        "depth": 262,
+        "operation_counts": {
+          "ccx": 158,
+          "cx": 178,
+          "h": 4
+        },
+        "operations": 340,
+        "planned_complex128_state_bytes": 4294967296,
+        "two_qubit_operations": 178,
+        "used_qubits": 28,
+        "workspace_qubits": 16
+      },
+      "selected_target_seconds": 0.015023999992990866,
+      "status": "compiled",
+      "strategy": "retain",
+      "synthesis_and_planning_seconds": 0.1407362500031013,
+      "verification": {
+        "basis_checks": 48,
+        "basis_domain_exhaustive": true,
+        "coherent_states": 0,
+        "maximum_amplitude_error": null,
+        "nonzero_targets": true,
+        "scope": "exact gate interpretation; no quantum state executed",
+        "workspace_nonzero_probability": null
+      },
+      "widths": [
+        4
+      ],
+      "worker_wall_seconds": null
+    },
+    {
+      "candidate_seconds": [
+        [
+          "retain",
+          0.03808633299195208
+        ],
+        [
+          "recompute",
+          0.03497804200742394
+        ]
+      ],
+      "case": "square-8",
+      "diagnostic_codes": [],
+      "expression": "x*x",
+      "output_width": 16,
+      "resources": {
+        "allocated_qubits": 56,
+        "circuit_hash": "730dd9a1b81a4fa49458e48ccaa776648dd81b9277d007932934660dc45b0b9a",
+        "depth": 1774,
+        "operation_counts": {
+          "ccx": 1150,
+          "cx": 1158,
+          "h": 8
+        },
+        "operations": 2316,
+        "planned_complex128_state_bytes": 1152921504606846976,
+        "two_qubit_operations": 1158,
+        "used_qubits": 56,
+        "workspace_qubits": 32
+      },
+      "selected_target_seconds": 0.10216837500047404,
+      "status": "compiled",
+      "strategy": "retain",
+      "synthesis_and_planning_seconds": 1.1876172910124296,
+      "verification": {
+        "basis_checks": 54,
+        "basis_domain_exhaustive": false,
+        "coherent_states": 0,
+        "maximum_amplitude_error": null,
+        "nonzero_targets": true,
+        "scope": "exact gate interpretation; no quantum state executed",
+        "workspace_nonzero_probability": null
+      },
+      "widths": [
+        8
+      ],
+      "worker_wall_seconds": null
+    },
+    {
+      "candidate_seconds": [
+        [
+          "retain",
+          0.07826599999680184
+        ],
+        [
+          "recompute",
+          0.0784282499953406
+        ]
+      ],
+      "case": "square-16",
+      "diagnostic_codes": [],
+      "expression": "x*x",
+      "output_width": 32,
+      "resources": {
+        "allocated_qubits": 112,
+        "circuit_hash": "53b9b4c498c9fc69b48a8715d89a382d0bcbe5903ae66c8b25322e9d7795ec2a",
+        "depth": 26110,
+        "operation_counts": {
+          "ccx": 17344,
+          "cx": 16988,
+          "h": 16
+        },
+        "operations": 34348,
+        "planned_complex128_state_bytes": 83076749736557242056487941267521536,
+        "two_qubit_operations": 16988,
+        "used_qubits": 112,
+        "workspace_qubits": 64
+      },
+      "selected_target_seconds": 1.7008779999887338,
+      "status": "compiled",
+      "strategy": "retain",
+      "synthesis_and_planning_seconds": 19.723570582995308,
+      "verification": {
+        "basis_checks": 54,
+        "basis_domain_exhaustive": false,
+        "coherent_states": 0,
+        "maximum_amplitude_error": null,
+        "nonzero_targets": true,
+        "scope": "exact gate interpretation; no quantum state executed",
+        "workspace_nonzero_probability": null
+      },
+      "widths": [
+        16
+      ],
+      "worker_wall_seconds": null
+    },
+    {
+      "candidate_seconds": [
+        [
+          "retain",
+          0.0004255840030964464
+        ],
+        [
+          "recompute",
+          0.0002406670100754127
+        ]
+      ],
+      "case": "multiply-1x1",
+      "diagnostic_codes": [],
+      "expression": "x*y",
+      "output_width": 1,
+      "resources": {
+        "allocated_qubits": 5,
+        "circuit_hash": "1094a7d7dc28d8b6528174544a3e4d0c2e430dfe7d196d9021c0b32ede1b6fd7",
+        "depth": 6,
+        "operation_counts": {
+          "ccx": 2,
+          "cx": 3,
+          "h": 2
+        },
+        "operations": 7,
+        "planned_complex128_state_bytes": 512,
+        "two_qubit_operations": 3,
+        "used_qubits": 5,
+        "workspace_qubits": 2
+      },
+      "selected_target_seconds": 0.001498500001616776,
+      "status": "compiled",
+      "strategy": "retain",
+      "synthesis_and_planning_seconds": 0.01038341700041201,
+      "verification": {
+        "basis_checks": 8,
+        "basis_domain_exhaustive": true,
+        "coherent_states": 2,
+        "maximum_amplitude_error": 1.1102230246251565e-16,
+        "nonzero_targets": true,
+        "scope": "exact gate interpretation; bounded full-state verification",
+        "workspace_nonzero_probability": 0.0
+      },
+      "widths": [
+        1,
+        1
+      ],
+      "worker_wall_seconds": null
+    },
+    {
+      "candidate_seconds": [
+        [
+          "retain",
+          0.00033466699824202806
+        ],
+        [
+          "recompute",
+          0.00039479200495406985
+        ]
+      ],
+      "case": "multiply-2x2",
+      "diagnostic_codes": [],
+      "expression": "x*y",
+      "output_width": 4,
+      "resources": {
+        "allocated_qubits": 16,
+        "circuit_hash": "c821bfa20618d0c9eca738e4062eb2626091c95a55667ed06a37ed693b83f3dc",
+        "depth": 70,
+        "operation_counts": {
+          "ccx": 46,
+          "cx": 42,
+          "h": 4
+        },
+        "operations": 92,
+        "planned_complex128_state_bytes": 1048576,
+        "two_qubit_operations": 42,
+        "used_qubits": 16,
+        "workspace_qubits": 8
+      },
+      "selected_target_seconds": 0.00393445800000336,
+      "status": "compiled",
+      "strategy": "retain",
+      "synthesis_and_planning_seconds": 0.03927754100004677,
+      "verification": {
+        "basis_checks": 48,
+        "basis_domain_exhaustive": true,
+        "coherent_states": 2,
+        "maximum_amplitude_error": 8.441528768080324e-17,
+        "nonzero_targets": true,
+        "scope": "exact gate interpretation; bounded full-state verification",
+        "workspace_nonzero_probability": 0.0
+      },
+      "widths": [
+        2,
+        2
+      ],
+      "worker_wall_seconds": null
+    },
+    {
+      "candidate_seconds": [
+        [
+          "retain",
+          0.0006681249942630529
+        ],
+        [
+          "recompute",
+          0.0007348330109380186
+        ]
+      ],
+      "case": "multiply-3x3",
+      "diagnostic_codes": [],
+      "expression": "x*y",
+      "output_width": 6,
+      "resources": {
+        "allocated_qubits": 24,
+        "circuit_hash": "3a80ae8a39228e60dee032591a7041b0ec5146bedaa7bdb8e99b0bd9266a257d",
+        "depth": 214,
+        "operation_counts": {
+          "ccx": 142,
+          "cx": 130,
+          "h": 6
+        },
+        "operations": 278,
+        "planned_complex128_state_bytes": 268435456,
+        "two_qubit_operations": 130,
+        "used_qubits": 24,
+        "workspace_qubits": 12
+      },
+      "selected_target_seconds": 0.012953208002727479,
+      "status": "compiled",
+      "strategy": "retain",
+      "synthesis_and_planning_seconds": 0.11694245800026692,
+      "verification": {
+        "basis_checks": 192,
+        "basis_domain_exhaustive": true,
+        "coherent_states": 0,
+        "maximum_amplitude_error": null,
+        "nonzero_targets": true,
+        "scope": "exact gate interpretation; no quantum state executed",
+        "workspace_nonzero_probability": null
+      },
+      "widths": [
+        3,
+        3
+      ],
+      "worker_wall_seconds": null
+    },
+    {
+      "candidate_seconds": [
+        [
+          "retain",
+          0.001305416997638531
+        ],
+        [
+          "recompute",
+          0.001517374999821186
+        ]
+      ],
+      "case": "multiply-4x4",
+      "diagnostic_codes": [],
+      "expression": "x*y",
+      "output_width": 8,
+      "resources": {
+        "allocated_qubits": 32,
+        "circuit_hash": "94542addbfe8f3c714e3512c67c914dd4a6eda76068f0d7879b3e6203fbac210",
+        "depth": 478,
+        "operation_counts": {
+          "ccx": 318,
+          "cx": 294,
+          "h": 8
+        },
+        "operations": 620,
+        "planned_complex128_state_bytes": 68719476736,
+        "two_qubit_operations": 294,
+        "used_qubits": 32,
+        "workspace_qubits": 16
+      },
+      "selected_target_seconds": 0.02749695800594054,
+      "status": "compiled",
+      "strategy": "retain",
+      "synthesis_and_planning_seconds": 0.3337066660023993,
+      "verification": {
+        "basis_checks": 54,
+        "basis_domain_exhaustive": false,
+        "coherent_states": 0,
+        "maximum_amplitude_error": null,
+        "nonzero_targets": true,
+        "scope": "exact gate interpretation; no quantum state executed",
+        "workspace_nonzero_probability": null
+      },
+      "widths": [
+        4,
+        4
+      ],
+      "worker_wall_seconds": null
+    },
+    {
+      "candidate_seconds": [
+        [
+          "retain",
+          0.030664667006931268
+        ],
+        [
+          "recompute",
+          0.007831790993805043
+        ]
+      ],
+      "case": "multiply-8x8",
+      "diagnostic_codes": [],
+      "expression": "x*y",
+      "output_width": 16,
+      "resources": {
+        "allocated_qubits": 64,
+        "circuit_hash": "f1004e4691f49734ee8f877dc5df0b75768ba19979e09042cea3542545f0d700",
+        "depth": 3454,
+        "operation_counts": {
+          "ccx": 2302,
+          "cx": 2190,
+          "h": 16
+        },
+        "operations": 4508,
+        "planned_complex128_state_bytes": 295147905179352825856,
+        "two_qubit_operations": 2190,
+        "used_qubits": 64,
+        "workspace_qubits": 32
+      },
+      "selected_target_seconds": 0.21095683399471454,
+      "status": "compiled",
+      "strategy": "retain",
+      "synthesis_and_planning_seconds": 2.468019792009727,
+      "verification": {
+        "basis_checks": 54,
+        "basis_domain_exhaustive": false,
+        "coherent_states": 0,
+        "maximum_amplitude_error": null,
+        "nonzero_targets": true,
+        "scope": "exact gate interpretation; no quantum state executed",
+        "workspace_nonzero_probability": null
+      },
+      "widths": [
+        8,
+        8
+      ],
+      "worker_wall_seconds": null
+    },
+    {
+      "candidate_seconds": [
+        [
+          "retain",
+          0.07801908400142565
+        ],
+        [
+          "recompute",
+          0.08435183300753124
+        ]
+      ],
+      "case": "multiply-16x16",
+      "diagnostic_codes": [],
+      "expression": "x*y",
+      "output_width": 32,
+      "resources": {
+        "allocated_qubits": 128,
+        "circuit_hash": "676dba75c211c4c8796616e577398f6da7f1c0c805a269c4832efc86e3a599ba",
+        "depth": 26110,
+        "operation_counts": {
+          "ccx": 17406,
+          "cx": 16926,
+          "h": 32
+        },
+        "operations": 34364,
+        "planned_complex128_state_bytes": 5444517870735015415413993718908291383296,
+        "two_qubit_operations": 16926,
+        "used_qubits": 128,
+        "workspace_qubits": 64
+      },
+      "selected_target_seconds": 1.6511865420034155,
+      "status": "compiled",
+      "strategy": "retain",
+      "synthesis_and_planning_seconds": 18.652838750000228,
+      "verification": {
+        "basis_checks": 54,
+        "basis_domain_exhaustive": false,
+        "coherent_states": 0,
+        "maximum_amplitude_error": null,
+        "nonzero_targets": true,
+        "scope": "exact gate interpretation; no quantum state executed",
+        "workspace_nonzero_probability": null
+      },
+      "widths": [
+        16,
+        16
+      ],
+      "worker_wall_seconds": null
+    },
+    {
+      "candidate_seconds": [
+        [
+          "retain",
+          0.0009974169952329248
+        ],
+        [
+          "recompute",
+          0.0006637920014327392
+        ]
+      ],
+      "case": "energy-1x1",
+      "diagnostic_codes": [],
+      "expression": "x*x+y",
+      "output_width": 2,
+      "resources": {
+        "allocated_qubits": 6,
+        "circuit_hash": "ecbff489fb18d41bd350fbfc62ea6cb33872b0f82fe87822d50581cdd287fee5",
+        "depth": 11,
+        "operation_counts": {
+          "ccx": 2,
+          "cx": 9,
+          "h": 2
+        },
+        "operations": 13,
+        "planned_complex128_state_bytes": 1024,
+        "two_qubit_operations": 9,
+        "used_qubits": 6,
+        "workspace_qubits": 2
+      },
+      "selected_target_seconds": 0.0008655420097056776,
+      "status": "compiled",
+      "strategy": "retain",
+      "synthesis_and_planning_seconds": 0.011761458998080343,
+      "verification": {
+        "basis_checks": 12,
+        "basis_domain_exhaustive": true,
+        "coherent_states": 2,
+        "maximum_amplitude_error": 1.1102230246251565e-16,
+        "nonzero_targets": true,
+        "scope": "exact gate interpretation; bounded full-state verification",
+        "workspace_nonzero_probability": 0.0
+      },
+      "widths": [
+        1,
+        1
+      ],
+      "worker_wall_seconds": null
+    },
+    {
+      "candidate_seconds": [
+        [
+          "retain",
+          0.0009570419933879748
+        ],
+        [
+          "recompute",
+          0.00125966701307334
+        ]
+      ],
+      "case": "energy-2x2",
+      "diagnostic_codes": [],
+      "expression": "x*x+y",
+      "output_width": 4,
+      "resources": {
+        "allocated_qubits": 16,
+        "circuit_hash": "e190e0aacdf10f289c92285f8ba7f61f556d15c13a5648a2736ddb6b6516b55a",
+        "depth": 59,
+        "operation_counts": {
+          "ccx": 34,
+          "cx": 43,
+          "h": 4
+        },
+        "operations": 81,
+        "planned_complex128_state_bytes": 1048576,
+        "two_qubit_operations": 43,
+        "used_qubits": 16,
+        "workspace_qubits": 8
+      },
+      "selected_target_seconds": 0.002632124989759177,
+      "status": "compiled",
+      "strategy": "retain",
+      "synthesis_and_planning_seconds": 0.037775709002744406,
+      "verification": {
+        "basis_checks": 256,
+        "basis_domain_exhaustive": true,
+        "coherent_states": 2,
+        "maximum_amplitude_error": 8.441528768080324e-17,
+        "nonzero_targets": true,
+        "scope": "exact gate interpretation; bounded full-state verification",
+        "workspace_nonzero_probability": 0.0
+      },
+      "widths": [
+        2,
+        2
+      ],
+      "worker_wall_seconds": null
+    },
+    {
+      "candidate_seconds": [
+        [
+          "retain",
+          0.0018743749969871715
+        ],
+        [
+          "recompute",
+          0.002041917003225535
+        ]
+      ],
+      "case": "energy-3x3",
+      "diagnostic_codes": [],
+      "expression": "x*x+y",
+      "output_width": 6,
+      "resources": {
+        "allocated_qubits": 24,
+        "circuit_hash": "c7a64c3f99db70827e042f3990486830802348cbbb60a5992c6113a40f2b88a8",
+        "depth": 143,
+        "operation_counts": {
+          "ccx": 90,
+          "cx": 98,
+          "h": 6
+        },
+        "operations": 194,
+        "planned_complex128_state_bytes": 268435456,
+        "two_qubit_operations": 98,
+        "used_qubits": 24,
+        "workspace_qubits": 12
+      },
+      "selected_target_seconds": 0.005950542006758042,
+      "status": "compiled",
+      "strategy": "retain",
+      "synthesis_and_planning_seconds": 0.0816368339874316,
+      "verification": {
+        "basis_checks": 192,
+        "basis_domain_exhaustive": true,
+        "coherent_states": 0,
+        "maximum_amplitude_error": null,
+        "nonzero_targets": true,
+        "scope": "exact gate interpretation; no quantum state executed",
+        "workspace_nonzero_probability": null
+      },
+      "widths": [
+        3,
+        3
+      ],
+      "worker_wall_seconds": null
+    },
+    {
+      "candidate_seconds": [
+        [
+          "retain",
+          0.0031149999995250255
+        ],
+        [
+          "recompute",
+          0.0031692500051576644
+        ]
+      ],
+      "case": "energy-4x4",
+      "diagnostic_codes": [],
+      "expression": "x*x+y",
+      "output_width": 8,
+      "resources": {
+        "allocated_qubits": 32,
+        "circuit_hash": "0c9f17eb25eeec91ff5c11f77b8dab8b7dbbc60883a6141ae08617b391b7f8b1",
+        "depth": 287,
+        "operation_counts": {
+          "ccx": 186,
+          "cx": 191,
+          "h": 8
+        },
+        "operations": 385,
+        "planned_complex128_state_bytes": 68719476736,
+        "two_qubit_operations": 191,
+        "used_qubits": 32,
+        "workspace_qubits": 16
+      },
+      "selected_target_seconds": 0.01157654200505931,
+      "status": "compiled",
+      "strategy": "retain",
+      "synthesis_and_planning_seconds": 0.18581483299203683,
+      "verification": {
+        "basis_checks": 54,
+        "basis_domain_exhaustive": false,
+        "coherent_states": 0,
+        "maximum_amplitude_error": null,
+        "nonzero_targets": true,
+        "scope": "exact gate interpretation; no quantum state executed",
+        "workspace_nonzero_probability": null
+      },
+      "widths": [
+        4,
+        4
+      ],
+      "worker_wall_seconds": null
+    },
+    {
+      "candidate_seconds": [
+        [
+          "retain",
+          0.040215916000306606
+        ],
+        [
+          "recompute",
+          0.019714833004400134
+        ]
+      ],
+      "case": "energy-8x8",
+      "diagnostic_codes": [],
+      "expression": "x*x+y",
+      "output_width": 16,
+      "resources": {
+        "allocated_qubits": 64,
+        "circuit_hash": "b0643fa54add424dbfff0d518c87664b2bb806eace6f57190d67857f7c1027f9",
+        "depth": 1823,
+        "operation_counts": {
+          "ccx": 1210,
+          "cx": 1183,
+          "h": 16
+        },
+        "operations": 2409,
+        "planned_complex128_state_bytes": 295147905179352825856,
+        "two_qubit_operations": 1183,
+        "used_qubits": 64,
+        "workspace_qubits": 32
+      },
+      "selected_target_seconds": 0.07295408399659209,
+      "status": "compiled",
+      "strategy": "retain",
+      "synthesis_and_planning_seconds": 1.1945362919941545,
+      "verification": {
+        "basis_checks": 54,
+        "basis_domain_exhaustive": false,
+        "coherent_states": 0,
+        "maximum_amplitude_error": null,
+        "nonzero_targets": true,
+        "scope": "exact gate interpretation; no quantum state executed",
+        "workspace_nonzero_probability": null
+      },
+      "widths": [
+        8,
+        8
+      ],
+      "worker_wall_seconds": null
+    },
+    {
+      "candidate_seconds": [
+        [
+          "retain",
+          0.07745633299055044
+        ],
+        [
+          "recompute",
+          0.0655378330120584
+        ]
+      ],
+      "case": "energy-16x16",
+      "diagnostic_codes": [],
+      "expression": "x*x+y",
+      "output_width": 32,
+      "resources": {
+        "allocated_qubits": 130,
+        "circuit_hash": "63cab89006ffc3cd24eb54a9b4af8741303fd860c4a7ee6778c29bd3d6500e07",
+        "depth": 26444,
+        "operation_counts": {
+          "ccx": 17472,
+          "cx": 17410,
+          "h": 32
+        },
+        "operations": 34914,
+        "planned_complex128_state_bytes": 21778071482940061661655974875633165533184,
+        "two_qubit_operations": 17410,
+        "used_qubits": 130,
+        "workspace_qubits": 66
+      },
+      "selected_target_seconds": 1.2410540410055546,
+      "status": "compiled",
+      "strategy": "retain",
+      "synthesis_and_planning_seconds": 18.637681583000813,
+      "verification": {
+        "basis_checks": 54,
+        "basis_domain_exhaustive": false,
+        "coherent_states": 0,
+        "maximum_amplitude_error": null,
+        "nonzero_targets": true,
+        "scope": "exact gate interpretation; no quantum state executed",
+        "workspace_nonzero_probability": null
+      },
+      "widths": [
+        16,
+        16
+      ],
+      "worker_wall_seconds": null
+    },
+    {
+      "candidate_seconds": [
+        [
+          "retain",
+          0.001091166996047832
+        ],
+        [
+          "recompute",
+          0.0007276669930433854
+        ]
+      ],
+      "case": "multiply_add-1x1x1",
+      "diagnostic_codes": [],
+      "expression": "x*y+z",
+      "output_width": 2,
+      "resources": {
+        "allocated_qubits": 7,
+        "circuit_hash": "73a0da3a0fbcd5b5bc2c97780bc624427fa7d5b903d27f0598f61078fed14c48",
+        "depth": 11,
+        "operation_counts": {
+          "ccx": 6,
+          "cx": 5,
+          "h": 3
+        },
+        "operations": 14,
+        "planned_complex128_state_bytes": 2048,
+        "two_qubit_operations": 5,
+        "used_qubits": 7,
+        "workspace_qubits": 2
+      },
+      "selected_target_seconds": 0.0008600829896749929,
+      "status": "compiled",
+      "strategy": "retain",
+      "synthesis_and_planning_seconds": 0.01387395799974911,
+      "verification": {
+        "basis_checks": 24,
+        "basis_domain_exhaustive": true,
+        "coherent_states": 2,
+        "maximum_amplitude_error": 1.1102230246251565e-16,
+        "nonzero_targets": true,
+        "scope": "exact gate interpretation; bounded full-state verification",
+        "workspace_nonzero_probability": 0.0
+      },
+      "widths": [
+        1,
+        1,
+        1
+      ],
+      "worker_wall_seconds": null
+    },
+    {
+      "candidate_seconds": [
+        [
+          "retain",
+          0.0012054999970132485
+        ],
+        [
+          "recompute",
+          0.0010689159971661866
+        ]
+      ],
+      "case": "multiply_add-2x2x2",
+      "diagnostic_codes": [],
+      "expression": "x*y+z",
+      "output_width": 4,
+      "resources": {
+        "allocated_qubits": 18,
+        "circuit_hash": "1d3b42eb17e902aee2ed331f7ff29b65aeb0125f2f5e519bd4b9022b4db9f125",
+        "depth": 83,
+        "operation_counts": {
+          "ccx": 58,
+          "cx": 49,
+          "h": 6
+        },
+        "operations": 113,
+        "planned_complex128_state_bytes": 4194304,
+        "two_qubit_operations": 49,
+        "used_qubits": 18,
+        "workspace_qubits": 8
+      },
+      "selected_target_seconds": 0.0032928750006249174,
+      "status": "compiled",
+      "strategy": "retain",
+      "synthesis_and_planning_seconds": 0.04998825000075158,
+      "verification": {
+        "basis_checks": 192,
+        "basis_domain_exhaustive": true,
+        "coherent_states": 2,
+        "maximum_amplitude_error": 5.551115123125783e-17,
+        "nonzero_targets": true,
+        "scope": "exact gate interpretation; bounded full-state verification",
+        "workspace_nonzero_probability": 0.0
+      },
+      "widths": [
+        2,
+        2,
+        2
+      ],
+      "worker_wall_seconds": null
+    },
+    {
+      "candidate_seconds": [
+        [
+          "retain",
+          0.0021053750097053126
+        ],
+        [
+          "recompute",
+          0.0021354159980546683
+        ]
+      ],
+      "case": "multiply_add-3x3x3",
+      "diagnostic_codes": [],
+      "expression": "x*y+z",
+      "output_width": 6,
+      "resources": {
+        "allocated_qubits": 27,
+        "circuit_hash": "8591fb734aabde6e2127e874185f899a3d4eb90b4d658a555b9b678d1c01a201",
+        "depth": 233,
+        "operation_counts": {
+          "ccx": 162,
+          "cx": 140,
+          "h": 9
+        },
+        "operations": 311,
+        "planned_complex128_state_bytes": 2147483648,
+        "two_qubit_operations": 140,
+        "used_qubits": 27,
+        "workspace_qubits": 12
+      },
+      "selected_target_seconds": 0.00884129200130701,
+      "status": "compiled",
+      "strategy": "retain",
+      "synthesis_and_planning_seconds": 0.15656666600261815,
+      "verification": {
+        "basis_checks": 54,
+        "basis_domain_exhaustive": false,
+        "coherent_states": 0,
+        "maximum_amplitude_error": null,
+        "nonzero_targets": true,
+        "scope": "exact gate interpretation; no quantum state executed",
+        "workspace_nonzero_probability": null
+      },
+      "widths": [
+        3,
+        3,
+        3
+      ],
+      "worker_wall_seconds": null
+    },
+    {
+      "candidate_seconds": [
+        [
+          "retain",
+          0.0038227500044740736
+        ],
+        [
+          "recompute",
+          0.003993917009211145
+        ]
+      ],
+      "case": "multiply_add-4x4x4",
+      "diagnostic_codes": [],
+      "expression": "x*y+z",
+      "output_width": 8,
+      "resources": {
+        "allocated_qubits": 36,
+        "circuit_hash": "7846682f4b7366202d9942e3ba8949ced24aad5ec5850d4b117f7353ade5b9e3",
+        "depth": 503,
+        "operation_counts": {
+          "ccx": 346,
+          "cx": 307,
+          "h": 12
+        },
+        "operations": 665,
+        "planned_complex128_state_bytes": 1099511627776,
+        "two_qubit_operations": 307,
+        "used_qubits": 36,
+        "workspace_qubits": 16
+      },
+      "selected_target_seconds": 0.01986604199919384,
+      "status": "compiled",
+      "strategy": "retain",
+      "synthesis_and_planning_seconds": 0.3117845000087982,
+      "verification": {
+        "basis_checks": 54,
+        "basis_domain_exhaustive": false,
+        "coherent_states": 0,
+        "maximum_amplitude_error": null,
+        "nonzero_targets": true,
+        "scope": "exact gate interpretation; no quantum state executed",
+        "workspace_nonzero_probability": null
+      },
+      "widths": [
+        4,
+        4,
+        4
+      ],
+      "worker_wall_seconds": null
+    },
+    {
+      "candidate_seconds": [
+        [
+          "retain",
+          0.04290999998920597
+        ],
+        [
+          "recompute",
+          0.04791408400342334
+        ]
+      ],
+      "case": "multiply_add-8x8x8",
+      "diagnostic_codes": [],
+      "expression": "x*y+z",
+      "output_width": 16,
+      "resources": {
+        "allocated_qubits": 72,
+        "circuit_hash": "c43513667a0c64bb10f134dd3f920a90f3bb4c9a9c63eb70db6804cb767a60a9",
+        "depth": 3503,
+        "operation_counts": {
+          "ccx": 2362,
+          "cx": 2215,
+          "h": 24
+        },
+        "operations": 4601,
+        "planned_complex128_state_bytes": 75557863725914323419136,
+        "two_qubit_operations": 2215,
+        "used_qubits": 72,
+        "workspace_qubits": 32
+      },
+      "selected_target_seconds": 0.13482125000155065,
+      "status": "compiled",
+      "strategy": "retain",
+      "synthesis_and_planning_seconds": 2.3552050839934964,
+      "verification": {
+        "basis_checks": 54,
+        "basis_domain_exhaustive": false,
+        "coherent_states": 0,
+        "maximum_amplitude_error": null,
+        "nonzero_targets": true,
+        "scope": "exact gate interpretation; no quantum state executed",
+        "workspace_nonzero_probability": null
+      },
+      "widths": [
+        8,
+        8,
+        8
+      ],
+      "worker_wall_seconds": null
+    },
+    {
+      "candidate_seconds": [
+        [
+          "retain",
+          0.07483033400785644
+        ],
+        [
+          "recompute",
+          0.07693712500622496
+        ]
+      ],
+      "case": "multiply_add-16x16x16",
+      "diagnostic_codes": [],
+      "expression": "x*y+z",
+      "output_width": 32,
+      "resources": {
+        "allocated_qubits": 146,
+        "circuit_hash": "2304e844d797ff8dc8307ad94e6e0692432ede3f38024d3667ab2603e387c232",
+        "depth": 26444,
+        "operation_counts": {
+          "ccx": 17536,
+          "cx": 17346,
+          "h": 48
+        },
+        "operations": 34930,
+        "planned_complex128_state_bytes": 1427247692705959881058285969449495136382746624,
+        "two_qubit_operations": 17346,
+        "used_qubits": 146,
+        "workspace_qubits": 66
+      },
+      "selected_target_seconds": 1.2338163329986855,
+      "status": "compiled",
+      "strategy": "retain",
+      "synthesis_and_planning_seconds": 17.918835874996148,
+      "verification": {
+        "basis_checks": 54,
+        "basis_domain_exhaustive": false,
+        "coherent_states": 0,
+        "maximum_amplitude_error": null,
+        "nonzero_targets": true,
+        "scope": "exact gate interpretation; no quantum state executed",
+        "workspace_nonzero_probability": null
+      },
+      "widths": [
+        16,
+        16,
+        16
+      ],
+      "worker_wall_seconds": null
+    },
+    {
+      "candidate_seconds": [
+        [
+          "retain",
+          0.0017926670116139576
+        ],
+        [
+          "recompute",
+          0.0015159590111579746
+        ]
+      ],
+      "case": "shared_square-1x1",
+      "diagnostic_codes": [],
+      "expression": "(x+y)*(x+y)",
+      "output_width": 3,
+      "resources": {
+        "allocated_qubits": 14,
+        "circuit_hash": "490dfc34ac44278f33023ac1e16c5ce7ca0518fdddb21c3295eb18d732247949",
+        "depth": 48,
+        "operation_counts": {
+          "ccx": 14,
+          "cx": 41,
+          "h": 2
+        },
+        "operations": 57,
+        "planned_complex128_state_bytes": 262144,
+        "two_qubit_operations": 41,
+        "used_qubits": 14,
+        "workspace_qubits": 9
+      },
+      "selected_target_seconds": 0.0037330420018406585,
+      "status": "compiled",
+      "strategy": "retain",
+      "synthesis_and_planning_seconds": 0.03302095900289714,
+      "verification": {
+        "basis_checks": 12,
+        "basis_domain_exhaustive": true,
+        "coherent_states": 2,
+        "maximum_amplitude_error": 1.1102230246251565e-16,
+        "nonzero_targets": true,
+        "scope": "exact gate interpretation; bounded full-state verification",
+        "workspace_nonzero_probability": 0.0
+      },
+      "widths": [
+        1,
+        1
+      ],
+      "worker_wall_seconds": null
+    },
+    {
+      "candidate_seconds": [
+        [
+          "retain",
+          0.0030169590027071536
+        ],
+        [
+          "recompute",
+          0.00314174999948591
+        ]
+      ],
+      "case": "shared_square-2x2",
+      "diagnostic_codes": [],
+      "expression": "(x+y)*(x+y)",
+      "output_width": 6,
+      "resources": {
+        "allocated_qubits": 26,
+        "circuit_hash": "6dce2394692e79e9c1c04a0a159de543031beca536ebb1c1e6d9a1e807b4be35",
+        "depth": 158,
+        "operation_counts": {
+          "ccx": 78,
+          "cx": 118,
+          "h": 4
+        },
+        "operations": 200,
+        "planned_complex128_state_bytes": 1073741824,
+        "two_qubit_operations": 118,
+        "used_qubits": 26,
+        "workspace_qubits": 16
+      },
+      "selected_target_seconds": 0.009758457992575131,
+      "status": "compiled",
+      "strategy": "retain",
+      "synthesis_and_planning_seconds": 0.09094579199154396,
+      "verification": {
+        "basis_checks": 48,
+        "basis_domain_exhaustive": true,
+        "coherent_states": 0,
+        "maximum_amplitude_error": null,
+        "nonzero_targets": true,
+        "scope": "exact gate interpretation; no quantum state executed",
+        "workspace_nonzero_probability": null
+      },
+      "widths": [
+        2,
+        2
+      ],
+      "worker_wall_seconds": null
+    },
+    {
+      "candidate_seconds": [
+        [
+          "retain",
+          0.005579874996328726
+        ],
+        [
+          "recompute",
+          0.005815750002511777
+        ]
+      ],
+      "case": "shared_square-3x3",
+      "diagnostic_codes": [],
+      "expression": "(x+y)*(x+y)",
+      "output_width": 8,
+      "resources": {
+        "allocated_qubits": 35,
+        "circuit_hash": "deadc70e97d81d5b70b873dc830486fc954fd12bbf60c0653400aa6972d43e5f",
+        "depth": 312,
+        "operation_counts": {
+          "ccx": 170,
+          "cx": 222,
+          "h": 6
+        },
+        "operations": 398,
+        "planned_complex128_state_bytes": 549755813888,
+        "two_qubit_operations": 222,
+        "used_qubits": 35,
+        "workspace_qubits": 21
+      },
+      "selected_target_seconds": 0.018716791993938386,
+      "status": "compiled",
+      "strategy": "retain",
+      "synthesis_and_planning_seconds": 0.20755362500494812,
+      "verification": {
+        "basis_checks": 192,
+        "basis_domain_exhaustive": true,
+        "coherent_states": 0,
+        "maximum_amplitude_error": null,
+        "nonzero_targets": true,
+        "scope": "exact gate interpretation; no quantum state executed",
+        "workspace_nonzero_probability": null
+      },
+      "widths": [
+        3,
+        3
+      ],
+      "worker_wall_seconds": null
+    },
+    {
+      "candidate_seconds": [
+        [
+          "retain",
+          0.009645416008424945
+        ],
+        [
+          "recompute",
+          0.009812165997573175
+        ]
+      ],
+      "case": "shared_square-4x4",
+      "diagnostic_codes": [],
+      "expression": "(x+y)*(x+y)",
+      "output_width": 10,
+      "resources": {
+        "allocated_qubits": 44,
+        "circuit_hash": "3ad7ca6914fa1ff77afd9a4d942f4ef8e529c6694026c71de6d6e963449cb94d",
+        "depth": 544,
+        "operation_counts": {
+          "ccx": 314,
+          "cx": 376,
+          "h": 8
+        },
+        "operations": 698,
+        "planned_complex128_state_bytes": 281474976710656,
+        "two_qubit_operations": 376,
+        "used_qubits": 44,
+        "workspace_qubits": 26
+      },
+      "selected_target_seconds": 0.03263945800426882,
+      "status": "compiled",
+      "strategy": "retain",
+      "synthesis_and_planning_seconds": 0.3519450410094578,
+      "verification": {
+        "basis_checks": 54,
+        "basis_domain_exhaustive": false,
+        "coherent_states": 0,
+        "maximum_amplitude_error": null,
+        "nonzero_targets": true,
+        "scope": "exact gate interpretation; no quantum state executed",
+        "workspace_nonzero_probability": null
+      },
+      "widths": [
+        4,
+        4
+      ],
+      "worker_wall_seconds": null
+    },
+    {
+      "candidate_seconds": [
+        [
+          "retain",
+          0.06740849999187049
+        ],
+        [
+          "recompute",
+          0.04756954200274777
+        ]
+      ],
+      "case": "shared_square-8x8",
+      "diagnostic_codes": [],
+      "expression": "(x+y)*(x+y)",
+      "output_width": 18,
+      "resources": {
+        "allocated_qubits": 80,
+        "circuit_hash": "bdccf8aa7a3166e50ed7a695654344dd4d81abc42682850f727082a7070daefd",
+        "depth": 2612,
+        "operation_counts": {
+          "ccx": 1650,
+          "cx": 1732,
+          "h": 16
+        },
+        "operations": 3398,
+        "planned_complex128_state_bytes": 19342813113834066795298816,
+        "two_qubit_operations": 1732,
+        "used_qubits": 80,
+        "workspace_qubits": 46
+      },
+      "selected_target_seconds": 0.16359966700838413,
+      "status": "compiled",
+      "strategy": "retain",
+      "synthesis_and_planning_seconds": 1.9372342080023373,
+      "verification": {
+        "basis_checks": 54,
+        "basis_domain_exhaustive": false,
+        "coherent_states": 0,
+        "maximum_amplitude_error": null,
+        "nonzero_targets": true,
+        "scope": "exact gate interpretation; no quantum state executed",
+        "workspace_nonzero_probability": null
+      },
+      "widths": [
+        8,
+        8
+      ],
+      "worker_wall_seconds": null
+    },
+    {
+      "candidate_seconds": [
+        [
+          "retain",
+          0.11598474999482278
+        ],
+        [
+          "recompute",
+          0.07366104099492077
+        ]
+      ],
+      "case": "shared_square-16x16",
+      "diagnostic_codes": [],
+      "expression": "(x+y)*(x+y)",
+      "output_width": 34,
+      "resources": {
+        "allocated_qubits": 170,
+        "circuit_hash": "702269f4b57add62a625287d8b1ee6f812af497bfc4866d792a3e74d6c48c8f3",
+        "depth": 31724,
+        "operation_counts": {
+          "ccx": 20934,
+          "cx": 20714,
+          "h": 32
+        },
+        "operations": 41680,
+        "planned_complex128_state_bytes": 23945242826029513411849172299223580994042798784118784,
+        "two_qubit_operations": 20714,
+        "used_qubits": 170,
+        "workspace_qubits": 104
+      },
+      "selected_target_seconds": 2.1812425829994027,
+      "status": "compiled",
+      "strategy": "retain",
+      "synthesis_and_planning_seconds": 22.88847520800482,
+      "verification": {
+        "basis_checks": 54,
+        "basis_domain_exhaustive": false,
+        "coherent_states": 0,
+        "maximum_amplitude_error": null,
+        "nonzero_targets": true,
+        "scope": "exact gate interpretation; no quantum state executed",
+        "workspace_nonzero_probability": null
+      },
+      "widths": [
+        16,
+        16
+      ],
+      "worker_wall_seconds": null
+    },
+    {
+      "candidate_seconds": [
+        [
+          "retain",
+          0.0009742080001160502
+        ],
+        [
+          "recompute",
+          0.0005639580049319193
+        ]
+      ],
+      "case": "mixed_products-1x1",
+      "diagnostic_codes": [],
+      "expression": "x*x+x*y",
+      "output_width": 2,
+      "resources": {
+        "allocated_qubits": 7,
+        "circuit_hash": "fc2a897728f6dc1a40c11a5058800d0a36d1b5977a598389981ae6bbcf52c024",
+        "depth": 17,
+        "operation_counts": {
+          "ccx": 6,
+          "cx": 11,
+          "h": 2
+        },
+        "operations": 19,
+        "planned_complex128_state_bytes": 2048,
+        "two_qubit_operations": 11,
+        "used_qubits": 7,
+        "workspace_qubits": 3
+      },
+      "selected_target_seconds": 0.0010314169921912253,
+      "status": "compiled",
+      "strategy": "retain",
+      "synthesis_and_planning_seconds": 0.013127792000886984,
+      "verification": {
+        "basis_checks": 12,
+        "basis_domain_exhaustive": true,
+        "coherent_states": 2,
+        "maximum_amplitude_error": 1.1102230246251565e-16,
+        "nonzero_targets": true,
+        "scope": "exact gate interpretation; bounded full-state verification",
+        "workspace_nonzero_probability": 0.0
+      },
+      "widths": [
+        1,
+        1
+      ],
+      "worker_wall_seconds": null
+    },
+    {
+      "candidate_seconds": [
+        [
+          "retain",
+          0.0014570839994121343
+        ],
+        [
+          "recompute",
+          0.001487457993789576
+        ]
+      ],
+      "case": "mixed_products-2x2",
+      "diagnostic_codes": [],
+      "expression": "x*x+x*y",
+      "output_width": 5,
+      "resources": {
+        "allocated_qubits": 21,
+        "circuit_hash": "68aa2475dcd93db07d77fddfef20ef8cd7a2bda9492cb7c2a5517d98bb014e83",
+        "depth": 137,
+        "operation_counts": {
+          "ccx": 92,
+          "cx": 86,
+          "h": 4
+        },
+        "operations": 182,
+        "planned_complex128_state_bytes": 33554432,
+        "two_qubit_operations": 86,
+        "used_qubits": 21,
+        "workspace_qubits": 12
+      },
+      "selected_target_seconds": 0.004994874994736165,
+      "status": "compiled",
+      "strategy": "retain",
+      "synthesis_and_planning_seconds": 0.0705003330076579,
+      "verification": {
+        "basis_checks": 48,
+        "basis_domain_exhaustive": true,
+        "coherent_states": 0,
+        "maximum_amplitude_error": null,
+        "nonzero_targets": true,
+        "scope": "exact gate interpretation; no quantum state executed",
+        "workspace_nonzero_probability": null
+      },
+      "widths": [
+        2,
+        2
+      ],
+      "worker_wall_seconds": null
+    },
+    {
+      "candidate_seconds": [
+        [
+          "retain",
+          0.0031643330003134906
+        ],
+        [
+          "recompute",
+          0.003234749994589947
+        ]
+      ],
+      "case": "mixed_products-3x3",
+      "diagnostic_codes": [],
+      "expression": "x*x+x*y",
+      "output_width": 7,
+      "resources": {
+        "allocated_qubits": 31,
+        "circuit_hash": "cd1c5e5be8480d5d5a50ca2201b0e859b891813e9515915faaa7ed14f3615e50",
+        "depth": 355,
+        "operation_counts": {
+          "ccx": 248,
+          "cx": 228,
+          "h": 6
+        },
+        "operations": 482,
+        "planned_complex128_state_bytes": 34359738368,
+        "two_qubit_operations": 228,
+        "used_qubits": 31,
+        "workspace_qubits": 18
+      },
+      "selected_target_seconds": 0.013237749997642823,
+      "status": "compiled",
+      "strategy": "retain",
+      "synthesis_and_planning_seconds": 0.2086929999932181,
+      "verification": {
+        "basis_checks": 192,
+        "basis_domain_exhaustive": true,
+        "coherent_states": 0,
+        "maximum_amplitude_error": null,
+        "nonzero_targets": true,
+        "scope": "exact gate interpretation; no quantum state executed",
+        "workspace_nonzero_probability": null
+      },
+      "widths": [
+        3,
+        3
+      ],
+      "worker_wall_seconds": null
+    },
+    {
+      "candidate_seconds": [
+        [
+          "retain",
+          0.0065203330013900995
+        ],
+        [
+          "recompute",
+          0.006584916991414502
+        ]
+      ],
+      "case": "mixed_products-4x4",
+      "diagnostic_codes": [],
+      "expression": "x*x+x*y",
+      "output_width": 9,
+      "resources": {
+        "allocated_qubits": 41,
+        "circuit_hash": "94cc45c7a8930839b504c73d7b45e18bcc6d97808ed175c460560e9c7520e063",
+        "depth": 761,
+        "operation_counts": {
+          "ccx": 524,
+          "cx": 484,
+          "h": 8
+        },
+        "operations": 1016,
+        "planned_complex128_state_bytes": 35184372088832,
+        "two_qubit_operations": 484,
+        "used_qubits": 41,
+        "workspace_qubits": 24
+      },
+      "selected_target_seconds": 0.02969745799782686,
+      "status": "compiled",
+      "strategy": "retain",
+      "synthesis_and_planning_seconds": 0.49360641700332053,
+      "verification": {
+        "basis_checks": 54,
+        "basis_domain_exhaustive": false,
+        "coherent_states": 0,
+        "maximum_amplitude_error": null,
+        "nonzero_targets": true,
+        "scope": "exact gate interpretation; no quantum state executed",
+        "workspace_nonzero_probability": null
+      },
+      "widths": [
+        4,
+        4
+      ],
+      "worker_wall_seconds": null
+    },
+    {
+      "candidate_seconds": [
+        [
+          "retain",
+          0.05711008299840614
+        ],
+        [
+          "recompute",
+          0.039732584002194926
+        ]
+      ],
+      "case": "mixed_products-8x8",
+      "diagnostic_codes": [],
+      "expression": "x*x+x*y",
+      "output_width": 17,
+      "resources": {
+        "allocated_qubits": 81,
+        "circuit_hash": "b1e289bb6c0aa7364b35de23439c36c2ab5a02266b61eaf107d2e25d52176f9a",
+        "depth": 5265,
+        "operation_counts": {
+          "ccx": 3548,
+          "cx": 3368,
+          "h": 16
+        },
+        "operations": 6932,
+        "planned_complex128_state_bytes": 38685626227668133590597632,
+        "two_qubit_operations": 3368,
+        "used_qubits": 81,
+        "workspace_qubits": 48
+      },
+      "selected_target_seconds": 0.20164912499603815,
+      "status": "compiled",
+      "strategy": "retain",
+      "synthesis_and_planning_seconds": 3.323388625009102,
+      "verification": {
+        "basis_checks": 54,
+        "basis_domain_exhaustive": false,
+        "coherent_states": 0,
+        "maximum_amplitude_error": null,
+        "nonzero_targets": true,
+        "scope": "exact gate interpretation; no quantum state executed",
+        "workspace_nonzero_probability": null
+      },
+      "widths": [
+        8,
+        8
+      ],
+      "worker_wall_seconds": null
+    },
+    {
+      "candidate_seconds": [],
+      "case": "mixed_products-16x16",
+      "diagnostic_codes": [
+        "benchmark.wall_timeout"
+      ],
+      "expression": "x*x+x*y",
+      "output_width": 33,
+      "resources": null,
+      "selected_target_seconds": null,
+      "status": "timeout",
+      "strategy": null,
+      "synthesis_and_planning_seconds": null,
+      "verification": null,
+      "widths": [
+        16,
+        16
+      ],
+      "worker_wall_seconds": 30.0133276659908
+    },
+    {
+      "candidate_seconds": [
+        [
+          "retain",
+          0.0023545839940197766
+        ],
+        [
+          "recompute",
+          0.0018617500027175993
+        ]
+      ],
+      "case": "linear-1x1",
+      "diagnostic_codes": [],
+      "expression": "3*x+5*y",
+      "output_width": 4,
+      "resources": {
+        "allocated_qubits": 16,
+        "circuit_hash": "a257d6d1d2c1525c695a7d525f402885f295f1ca0ab6c1bf30707c050ce24a95",
+        "depth": 74,
+        "operation_counts": {
+          "ccx": 24,
+          "cx": 74,
+          "h": 2
+        },
+        "operations": 100,
+        "planned_complex128_state_bytes": 1048576,
+        "two_qubit_operations": 74,
+        "used_qubits": 16,
+        "workspace_qubits": 10
+      },
+      "selected_target_seconds": 0.005823792002047412,
+      "status": "compiled",
+      "strategy": "retain",
+      "synthesis_and_planning_seconds": 0.05251333300839178,
+      "verification": {
+        "basis_checks": 12,
+        "basis_domain_exhaustive": true,
+        "coherent_states": 2,
+        "maximum_amplitude_error": 1.1102230246251565e-16,
+        "nonzero_targets": true,
+        "scope": "exact gate interpretation; bounded full-state verification",
+        "workspace_nonzero_probability": 0.0
+      },
+      "widths": [
+        1,
+        1
+      ],
+      "worker_wall_seconds": null
+    },
+    {
+      "candidate_seconds": [
+        [
+          "retain",
+          0.0028533339936984703
+        ],
+        [
+          "recompute",
+          0.0027472500078147277
+        ]
+      ],
+      "case": "linear-2x2",
+      "diagnostic_codes": [],
+      "expression": "3*x+5*y",
+      "output_width": 5,
+      "resources": {
+        "allocated_qubits": 23,
+        "circuit_hash": "262acb99055c8f225a820eccc65d1ebb8baa19d7d656f516c628dc2f70842784",
+        "depth": 174,
+        "operation_counts": {
+          "ccx": 72,
+          "cx": 167,
+          "h": 4
+        },
+        "operations": 243,
+        "planned_complex128_state_bytes": 134217728,
+        "two_qubit_operations": 167,
+        "used_qubits": 23,
+        "workspace_qubits": 14
+      },
+      "selected_target_seconds": 0.0088785420084605,
+      "status": "compiled",
+      "strategy": "retain",
+      "synthesis_and_planning_seconds": 0.10123387500061654,
+      "verification": {
+        "basis_checks": 48,
+        "basis_domain_exhaustive": true,
+        "coherent_states": 0,
+        "maximum_amplitude_error": null,
+        "nonzero_targets": true,
+        "scope": "exact gate interpretation; no quantum state executed",
+        "workspace_nonzero_probability": null
+      },
+      "widths": [
+        2,
+        2
+      ],
+      "worker_wall_seconds": null
+    },
+    {
+      "candidate_seconds": [
+        [
+          "retain",
+          0.00444512499962002
+        ],
+        [
+          "recompute",
+          0.004212250001728535
+        ]
+      ],
+      "case": "linear-3x3",
+      "diagnostic_codes": [],
+      "expression": "3*x+5*y",
+      "output_width": 6,
+      "resources": {
+        "allocated_qubits": 28,
+        "circuit_hash": "b07d86ffafce05e43fb5947dceb23d0b1951166a76fe9c9a1da9b20e5ac014ad",
+        "depth": 245,
+        "operation_counts": {
+          "ccx": 86,
+          "cx": 212,
+          "h": 6
+        },
+        "operations": 304,
+        "planned_complex128_state_bytes": 4294967296,
+        "two_qubit_operations": 212,
+        "used_qubits": 28,
+        "workspace_qubits": 16
+      },
+      "selected_target_seconds": 0.015268541988916695,
+      "status": "compiled",
+      "strategy": "retain",
+      "synthesis_and_planning_seconds": 0.1703324169939151,
+      "verification": {
+        "basis_checks": 192,
+        "basis_domain_exhaustive": true,
+        "coherent_states": 0,
+        "maximum_amplitude_error": null,
+        "nonzero_targets": true,
+        "scope": "exact gate interpretation; no quantum state executed",
+        "workspace_nonzero_probability": null
+      },
+      "widths": [
+        3,
+        3
+      ],
+      "worker_wall_seconds": null
+    },
+    {
+      "candidate_seconds": [
+        [
+          "retain",
+          0.005374416999984533
+        ],
+        [
+          "recompute",
+          0.0056933750020107254
+        ]
+      ],
+      "case": "linear-4x4",
+      "diagnostic_codes": [],
+      "expression": "3*x+5*y",
+      "output_width": 7,
+      "resources": {
+        "allocated_qubits": 34,
+        "circuit_hash": "3b2205b6709e36c0293a3c5673bebbfe12c1700f7d885668dc458d521f8154b8",
+        "depth": 307,
+        "operation_counts": {
+          "ccx": 108,
+          "cx": 263,
+          "h": 8
+        },
+        "operations": 379,
+        "planned_complex128_state_bytes": 274877906944,
+        "two_qubit_operations": 263,
+        "used_qubits": 34,
+        "workspace_qubits": 19
+      },
+      "selected_target_seconds": 0.01844716699270066,
+      "status": "compiled",
+      "strategy": "retain",
+      "synthesis_and_planning_seconds": 0.19031004099815618,
+      "verification": {
+        "basis_checks": 54,
+        "basis_domain_exhaustive": false,
+        "coherent_states": 0,
+        "maximum_amplitude_error": null,
+        "nonzero_targets": true,
+        "scope": "exact gate interpretation; no quantum state executed",
+        "workspace_nonzero_probability": null
+      },
+      "widths": [
+        4,
+        4
+      ],
+      "worker_wall_seconds": null
+    },
+    {
+      "candidate_seconds": [
+        [
+          "retain",
+          0.04180587499286048
+        ],
+        [
+          "recompute",
+          0.01216924999607727
+        ]
+      ],
+      "case": "linear-8x8",
+      "diagnostic_codes": [],
+      "expression": "3*x+5*y",
+      "output_width": 11,
+      "resources": {
+        "allocated_qubits": 58,
+        "circuit_hash": "07fee61845200032d2e00a8048e244a04fb6637a44fc6b817a71fdcc8ba2fe75",
+        "depth": 555,
+        "operation_counts": {
+          "ccx": 196,
+          "cx": 467,
+          "h": 16
+        },
+        "operations": 679,
+        "planned_complex128_state_bytes": 4611686018427387904,
+        "two_qubit_operations": 467,
+        "used_qubits": 58,
+        "workspace_qubits": 31
+      },
+      "selected_target_seconds": 0.0333552910014987,
+      "status": "compiled",
+      "strategy": "retain",
+      "synthesis_and_planning_seconds": 0.4028552910021972,
+      "verification": {
+        "basis_checks": 54,
+        "basis_domain_exhaustive": false,
+        "coherent_states": 0,
+        "maximum_amplitude_error": null,
+        "nonzero_targets": true,
+        "scope": "exact gate interpretation; no quantum state executed",
+        "workspace_nonzero_probability": null
+      },
+      "widths": [
+        8,
+        8
+      ],
+      "worker_wall_seconds": null
+    },
+    {
+      "candidate_seconds": [
+        [
+          "retain",
+          0.0647167089919094
+        ],
+        [
+          "recompute",
+          0.036767500001587905
+        ]
+      ],
+      "case": "linear-16x16",
+      "diagnostic_codes": [],
+      "expression": "3*x+5*y",
+      "output_width": 19,
+      "resources": {
+        "allocated_qubits": 106,
+        "circuit_hash": "a5351a0c550b0115cb54069dbacc2deecd3969b894a42b9054befbd75299fc00",
+        "depth": 1051,
+        "operation_counts": {
+          "ccx": 372,
+          "cx": 875,
+          "h": 32
+        },
+        "operations": 1279,
+        "planned_complex128_state_bytes": 1298074214633706907132624082305024,
+        "two_qubit_operations": 875,
+        "used_qubits": 106,
+        "workspace_qubits": 55
+      },
+      "selected_target_seconds": 0.06665812501159962,
+      "status": "compiled",
+      "strategy": "retain",
+      "synthesis_and_planning_seconds": 0.8398052499978803,
+      "verification": {
+        "basis_checks": 54,
+        "basis_domain_exhaustive": false,
+        "coherent_states": 0,
+        "maximum_amplitude_error": null,
+        "nonzero_targets": true,
+        "scope": "exact gate interpretation; no quantum state executed",
+        "workspace_nonzero_probability": null
+      },
+      "widths": [
+        16,
+        16
+      ],
+      "worker_wall_seconds": null
+    },
+    {
+      "candidate_seconds": [
+        [
+          "retain",
+          0.0011826669942820445
+        ],
+        [
+          "recompute",
+          0.000756292007281445
+        ]
+      ],
+      "case": "overlapping-1x1x1",
+      "diagnostic_codes": [],
+      "expression": "(x+y)*(x+z)",
+      "output_width": 3,
+      "resources": {
+        "allocated_qubits": 18,
+        "circuit_hash": "562c5d80730ef0b866e46627ec6957f5c5c9af18d52351d96eb5ce3dc27b18f2",
+        "depth": 82,
+        "operation_counts": {
+          "ccx": 38,
+          "cx": 59,
+          "h": 3
+        },
+        "operations": 100,
+        "planned_complex128_state_bytes": 4194304,
+        "two_qubit_operations": 59,
+        "used_qubits": 18,
+        "workspace_qubits": 12
+      },
+      "selected_target_seconds": 0.006219082992174663,
+      "status": "compiled",
+      "strategy": "retain",
+      "synthesis_and_planning_seconds": 0.05498979099502321,
+      "verification": {
+        "basis_checks": 24,
+        "basis_domain_exhaustive": true,
+        "coherent_states": 2,
+        "maximum_amplitude_error": 1.1102230246251565e-16,
+        "nonzero_targets": true,
+        "scope": "exact gate interpretation; bounded full-state verification",
+        "workspace_nonzero_probability": 0.0
+      },
+      "widths": [
+        1,
+        1,
+        1
+      ],
+      "worker_wall_seconds": null
+    },
+    {
+      "candidate_seconds": [
+        [
+          "retain",
+          0.0009596250019967556
+        ],
+        [
+          "recompute",
+          0.0011279580066911876
+        ]
+      ],
+      "case": "overlapping-2x2x2",
+      "diagnostic_codes": [],
+      "expression": "(x+y)*(x+z)",
+      "output_width": 6,
+      "resources": {
+        "allocated_qubits": 32,
+        "circuit_hash": "292e7783bac855915a11d67ee95d00a1ed68b63a28754d702d53bc502c83bb44",
+        "depth": 280,
+        "operation_counts": {
+          "ccx": 158,
+          "cx": 190,
+          "h": 6
+        },
+        "operations": 354,
+        "planned_complex128_state_bytes": 68719476736,
+        "two_qubit_operations": 190,
+        "used_qubits": 32,
+        "workspace_qubits": 20
+      },
+      "selected_target_seconds": 0.015837207989534363,
+      "status": "compiled",
+      "strategy": "retain",
+      "synthesis_and_planning_seconds": 0.15323704198817722,
+      "verification": {
+        "basis_checks": 192,
+        "basis_domain_exhaustive": true,
+        "coherent_states": 0,
+        "maximum_amplitude_error": null,
+        "nonzero_targets": true,
+        "scope": "exact gate interpretation; no quantum state executed",
+        "workspace_nonzero_probability": null
+      },
+      "widths": [
+        2,
+        2,
+        2
+      ],
+      "worker_wall_seconds": null
+    },
+    {
+      "candidate_seconds": [
+        [
+          "retain",
+          0.001756041994667612
+        ],
+        [
+          "recompute",
+          0.0017506660078652203
+        ]
+      ],
+      "case": "overlapping-3x3x3",
+      "diagnostic_codes": [],
+      "expression": "(x+y)*(x+z)",
+      "output_width": 8,
+      "resources": {
+        "allocated_qubits": 43,
+        "circuit_hash": "36c52d37efb7c8e2b4a1af744010f1b24a504402e1d7a41fb39d2d428c956e81",
+        "depth": 576,
+        "operation_counts": {
+          "ccx": 342,
+          "cx": 382,
+          "h": 9
+        },
+        "operations": 733,
+        "planned_complex128_state_bytes": 140737488355328,
+        "two_qubit_operations": 382,
+        "used_qubits": 43,
+        "workspace_qubits": 26
+      },
+      "selected_target_seconds": 0.08127524999144953,
+      "status": "compiled",
+      "strategy": "retain",
+      "synthesis_and_planning_seconds": 0.44830237499263603,
+      "verification": {
+        "basis_checks": 54,
+        "basis_domain_exhaustive": false,
+        "coherent_states": 0,
+        "maximum_amplitude_error": null,
+        "nonzero_targets": true,
+        "scope": "exact gate interpretation; no quantum state executed",
+        "workspace_nonzero_probability": null
+      },
+      "widths": [
+        3,
+        3,
+        3
+      ],
+      "worker_wall_seconds": null
+    },
+    {
+      "candidate_seconds": [
+        [
+          "retain",
+          0.0027299590001348406
+        ],
+        [
+          "recompute",
+          0.0026949580060318112
+        ]
+      ],
+      "case": "overlapping-4x4x4",
+      "diagnostic_codes": [],
+      "expression": "(x+y)*(x+z)",
+      "output_width": 10,
+      "resources": {
+        "allocated_qubits": 54,
+        "circuit_hash": "944cad1764ce3113ef72747a36f6200bc3cd85a43b5987d142cf0c8407871008",
+        "depth": 1028,
+        "operation_counts": {
+          "ccx": 630,
+          "cx": 674,
+          "h": 12
+        },
+        "operations": 1316,
+        "planned_complex128_state_bytes": 288230376151711744,
+        "two_qubit_operations": 674,
+        "used_qubits": 54,
+        "workspace_qubits": 32
+      },
+      "selected_target_seconds": 0.06012249999912456,
+      "status": "compiled",
+      "strategy": "retain",
+      "synthesis_and_planning_seconds": 0.6991304999974091,
+      "verification": {
+        "basis_checks": 54,
+        "basis_domain_exhaustive": false,
+        "coherent_states": 0,
+        "maximum_amplitude_error": null,
+        "nonzero_targets": true,
+        "scope": "exact gate interpretation; no quantum state executed",
+        "workspace_nonzero_probability": null
+      },
+      "widths": [
+        4,
+        4,
+        4
+      ],
+      "worker_wall_seconds": null
+    },
+    {
+      "candidate_seconds": [
+        [
+          "retain",
+          0.03040299999702256
+        ],
+        [
+          "recompute",
+          0.011636209004791453
+        ]
+      ],
+      "case": "overlapping-8x8x8",
+      "diagnostic_codes": [],
+      "expression": "(x+y)*(x+z)",
+      "output_width": 18,
+      "resources": {
+        "allocated_qubits": 98,
+        "circuit_hash": "63fdce4f11402e5af8afb65c6b3a2438da22a30e2c433a8433025f10148e23fd",
+        "depth": 5116,
+        "operation_counts": {
+          "ccx": 3302,
+          "cx": 3322,
+          "h": 24
+        },
+        "operations": 6648,
+        "planned_complex128_state_bytes": 5070602400912917605986812821504,
+        "two_qubit_operations": 3322,
+        "used_qubits": 98,
+        "workspace_qubits": 56
+      },
+      "selected_target_seconds": 0.2910022920113988,
+      "status": "compiled",
+      "strategy": "retain",
+      "synthesis_and_planning_seconds": 4.023682792001637,
+      "verification": {
+        "basis_checks": 54,
+        "basis_domain_exhaustive": false,
+        "coherent_states": 0,
+        "maximum_amplitude_error": null,
+        "nonzero_targets": true,
+        "scope": "exact gate interpretation; no quantum state executed",
+        "workspace_nonzero_probability": null
+      },
+      "widths": [
+        8,
+        8,
+        8
+      ],
+      "worker_wall_seconds": null
+    },
+    {
+      "candidate_seconds": [
+        [
+          "retain",
+          0.0994336660078261
+        ],
+        [
+          "recompute",
+          0.09170729099423625
+        ]
+      ],
+      "case": "overlapping-16x16x16",
+      "diagnostic_codes": [],
+      "expression": "(x+y)*(x+z)",
+      "output_width": 34,
+      "resources": {
+        "allocated_qubits": 186,
+        "circuit_hash": "5c4ac1975b8b036d442a19ebc086b63433826c85f19cfbb8607dba0afb41917f",
+        "depth": 31724,
+        "operation_counts": {
+          "ccx": 20934,
+          "cx": 20714,
+          "h": 48
+        },
+        "operations": 41696,
+        "planned_complex128_state_bytes": 1569275433846670190958947355801916604025588861116008628224,
+        "two_qubit_operations": 20714,
+        "used_qubits": 186,
+        "workspace_qubits": 104
+      },
+      "selected_target_seconds": 2.1261976250098087,
+      "status": "compiled",
+      "strategy": "retain",
+      "synthesis_and_planning_seconds": 23.07855833398935,
+      "verification": {
+        "basis_checks": 54,
+        "basis_domain_exhaustive": false,
+        "coherent_states": 0,
+        "maximum_amplitude_error": null,
+        "nonzero_targets": true,
+        "scope": "exact gate interpretation; no quantum state executed",
+        "workspace_nonzero_probability": null
+      },
+      "widths": [
+        16,
+        16,
+        16
+      ],
+      "worker_wall_seconds": null
+    },
+    {
+      "candidate_seconds": [
+        [
+          "retain",
+          0.0011097499955212697
+        ],
+        [
+          "recompute",
+          0.0010210830077994615
+        ]
+      ],
+      "case": "add-1x3",
+      "diagnostic_codes": [],
+      "expression": "x+y",
+      "output_width": 4,
+      "resources": {
+        "allocated_qubits": 11,
+        "circuit_hash": "16c1e85e2d2a35d712c7dac64b75da6cef6144e7d57159c96e49adb3e3982658",
+        "depth": 9,
+        "operation_counts": {
+          "ccx": 6,
+          "cx": 7,
+          "h": 4
+        },
+        "operations": 17,
+        "planned_complex128_state_bytes": 32768,
+        "two_qubit_operations": 7,
+        "used_qubits": 11,
+        "workspace_qubits": 3
+      },
+      "selected_target_seconds": 0.0009618329931981862,
+      "status": "compiled",
+      "strategy": "retain",
+      "synthesis_and_planning_seconds": 0.013996041001519188,
+      "verification": {
+        "basis_checks": 48,
+        "basis_domain_exhaustive": true,
+        "coherent_states": 2,
+        "maximum_amplitude_error": 8.441528768080324e-17,
+        "nonzero_targets": true,
+        "scope": "exact gate interpretation; bounded full-state verification",
+        "workspace_nonzero_probability": 0.0
+      },
+      "widths": [
+        1,
+        3
+      ],
+      "worker_wall_seconds": null
+    },
+    {
+      "candidate_seconds": [
+        [
+          "retain",
+          0.0008493749919580296
+        ],
+        [
+          "recompute",
+          0.0008521669951733202
+        ]
+      ],
+      "case": "add-2x4",
+      "diagnostic_codes": [],
+      "expression": "x+y",
+      "output_width": 5,
+      "resources": {
+        "allocated_qubits": 15,
+        "circuit_hash": "812e7aaa80a67fb45b58c522144a43365fb4390d5b510a59ef0fa825a300643f",
+        "depth": 13,
+        "operation_counts": {
+          "ccx": 12,
+          "cx": 10,
+          "h": 6
+        },
+        "operations": 28,
+        "planned_complex128_state_bytes": 524288,
+        "two_qubit_operations": 10,
+        "used_qubits": 15,
+        "workspace_qubits": 4
+      },
+      "selected_target_seconds": 0.001125042006606236,
+      "status": "compiled",
+      "strategy": "retain",
+      "synthesis_and_planning_seconds": 0.01500329100235831,
+      "verification": {
+        "basis_checks": 192,
+        "basis_domain_exhaustive": true,
+        "coherent_states": 2,
+        "maximum_amplitude_error": 6.938893903907228e-17,
+        "nonzero_targets": true,
+        "scope": "exact gate interpretation; bounded full-state verification",
+        "workspace_nonzero_probability": 0.0
+      },
+      "widths": [
+        2,
+        4
+      ],
+      "worker_wall_seconds": null
+    },
+    {
+      "candidate_seconds": [
+        [
+          "retain",
+          0.0005696660082321614
+        ],
+        [
+          "recompute",
+          0.0005331249994924292
+        ]
+      ],
+      "case": "multiply-1x3",
+      "diagnostic_codes": [],
+      "expression": "x*y",
+      "output_width": 3,
+      "resources": {
+        "allocated_qubits": 13,
+        "circuit_hash": "3ffc438d4ec7afb2b2b6b9a1a8c40e25665ce0219cb99bd6e6d90724636f410e",
+        "depth": 36,
+        "operation_counts": {
+          "ccx": 22,
+          "cx": 21,
+          "h": 4
+        },
+        "operations": 47,
+        "planned_complex128_state_bytes": 131072,
+        "two_qubit_operations": 21,
+        "used_qubits": 13,
+        "workspace_qubits": 6
+      },
+      "selected_target_seconds": 0.0021579590102192014,
+      "status": "compiled",
+      "strategy": "retain",
+      "synthesis_and_planning_seconds": 0.02235349999682512,
+      "verification": {
+        "basis_checks": 48,
+        "basis_domain_exhaustive": true,
+        "coherent_states": 2,
+        "maximum_amplitude_error": 8.441528768080324e-17,
+        "nonzero_targets": true,
+        "scope": "exact gate interpretation; bounded full-state verification",
+        "workspace_nonzero_probability": 0.0
+      },
+      "widths": [
+        1,
+        3
+      ],
+      "worker_wall_seconds": null
+    },
+    {
+      "candidate_seconds": [
+        [
+          "retain",
+          0.0014375000027939677
+        ],
+        [
+          "recompute",
+          0.001590041007148102
+        ]
+      ],
+      "case": "multiply-2x4",
+      "diagnostic_codes": [],
+      "expression": "x*y",
+      "output_width": 6,
+      "resources": {
+        "allocated_qubits": 24,
+        "circuit_hash": "d3f7429edac884289d708d9bb3896378cf6124f2e65c23345be97c275f49cbb3",
+        "depth": 190,
+        "operation_counts": {
+          "ccx": 126,
+          "cx": 116,
+          "h": 6
+        },
+        "operations": 248,
+        "planned_complex128_state_bytes": 268435456,
+        "two_qubit_operations": 116,
+        "used_qubits": 24,
+        "workspace_qubits": 12
+      },
+      "selected_target_seconds": 0.010248499995213933,
+      "status": "compiled",
+      "strategy": "retain",
+      "synthesis_and_planning_seconds": 0.14423674999852665,
+      "verification": {
+        "basis_checks": 192,
+        "basis_domain_exhaustive": true,
+        "coherent_states": 0,
+        "maximum_amplitude_error": null,
+        "nonzero_targets": true,
+        "scope": "exact gate interpretation; no quantum state executed",
+        "workspace_nonzero_probability": null
+      },
+      "widths": [
+        2,
+        4
+      ],
+      "worker_wall_seconds": null
+    },
+    {
+      "candidate_seconds": [
+        [
+          "retain",
+          0.001015125002595596
+        ],
+        [
+          "recompute",
+          0.0009015000105137005
+        ]
+      ],
+      "case": "energy-1x3",
+      "diagnostic_codes": [],
+      "expression": "x*x+y",
+      "output_width": 4,
+      "resources": {
+        "allocated_qubits": 12,
+        "circuit_hash": "eaade557d3fb002f79e7a6148b857bdb84f210a6e368665a2597a12997afca32",
+        "depth": 15,
+        "operation_counts": {
+          "ccx": 6,
+          "cx": 13,
+          "h": 4
+        },
+        "operations": 23,
+        "planned_complex128_state_bytes": 65536,
+        "two_qubit_operations": 13,
+        "used_qubits": 12,
+        "workspace_qubits": 4
+      },
+      "selected_target_seconds": 0.0009587909880792722,
+      "status": "compiled",
+      "strategy": "retain",
+      "synthesis_and_planning_seconds": 0.014093124991632067,
+      "verification": {
+        "basis_checks": 48,
+        "basis_domain_exhaustive": true,
+        "coherent_states": 2,
+        "maximum_amplitude_error": 8.441528768080324e-17,
+        "nonzero_targets": true,
+        "scope": "exact gate interpretation; bounded full-state verification",
+        "workspace_nonzero_probability": 0.0
+      },
+      "widths": [
+        1,
+        3
+      ],
+      "worker_wall_seconds": null
+    },
+    {
+      "candidate_seconds": [
+        [
+          "retain",
+          0.0016312920051859692
+        ],
+        [
+          "recompute",
+          0.0015666660037823021
+        ]
+      ],
+      "case": "energy-2x4",
+      "diagnostic_codes": [],
+      "expression": "x*x+y",
+      "output_width": 5,
+      "resources": {
+        "allocated_qubits": 19,
+        "circuit_hash": "066196f5c6334cfa29af4a12082bc856b2481a793f4b1252a5fe97d67e026c3d",
+        "depth": 65,
+        "operation_counts": {
+          "ccx": 44,
+          "cx": 46,
+          "h": 6
+        },
+        "operations": 96,
+        "planned_complex128_state_bytes": 8388608,
+        "two_qubit_operations": 46,
+        "used_qubits": 19,
+        "workspace_qubits": 8
+      },
+      "selected_target_seconds": 0.002755541994702071,
+      "status": "compiled",
+      "strategy": "retain",
+      "synthesis_and_planning_seconds": 0.03982995799742639,
+      "verification": {
+        "basis_checks": 192,
+        "basis_domain_exhaustive": true,
+        "coherent_states": 2,
+        "maximum_amplitude_error": 5.551115123125783e-17,
+        "nonzero_targets": true,
+        "scope": "exact gate interpretation; bounded full-state verification",
+        "workspace_nonzero_probability": 0.0
+      },
+      "widths": [
+        2,
+        4
+      ],
+      "worker_wall_seconds": null
+    },
+    {
+      "candidate_seconds": [
+        [
+          "retain",
+          0.0012388330069370568
+        ],
+        [
+          "recompute",
+          0.0014032080071046948
+        ]
+      ],
+      "case": "multiply_add-1x3x2",
+      "diagnostic_codes": [],
+      "expression": "x*y+z",
+      "output_width": 4,
+      "resources": {
+        "allocated_qubits": 16,
+        "circuit_hash": "f8b31ad9fa180d18700429267af9cf1b81e2efbf76c073d331855495ede806d9",
+        "depth": 47,
+        "operation_counts": {
+          "ccx": 34,
+          "cx": 26,
+          "h": 6
+        },
+        "operations": 66,
+        "planned_complex128_state_bytes": 1048576,
+        "two_qubit_operations": 26,
+        "used_qubits": 16,
+        "workspace_qubits": 6
+      },
+      "selected_target_seconds": 0.0018285419937456027,
+      "status": "compiled",
+      "strategy": "retain",
+      "synthesis_and_planning_seconds": 0.029414000004180707,
+      "verification": {
+        "basis_checks": 192,
+        "basis_domain_exhaustive": true,
+        "coherent_states": 2,
+        "maximum_amplitude_error": 6.938893903907228e-17,
+        "nonzero_targets": true,
+        "scope": "exact gate interpretation; bounded full-state verification",
+        "workspace_nonzero_probability": 0.0
+      },
+      "widths": [
+        1,
+        3,
+        2
+      ],
+      "worker_wall_seconds": null
+    },
+    {
+      "candidate_seconds": [
+        [
+          "retain",
+          0.0031797499977983534
+        ],
+        [
+          "recompute",
+          0.003446625007200055
+        ]
+      ],
+      "case": "multiply_add-2x4x1",
+      "diagnostic_codes": [],
+      "expression": "x*y+z",
+      "output_width": 6,
+      "resources": {
+        "allocated_qubits": 25,
+        "circuit_hash": "80eed1f40d4f1c36540cc4be937fcfb95cc3fadee6ffab279e85b30c33bfd4ae",
+        "depth": 205,
+        "operation_counts": {
+          "ccx": 138,
+          "cx": 124,
+          "h": 7
+        },
+        "operations": 269,
+        "planned_complex128_state_bytes": 536870912,
+        "two_qubit_operations": 124,
+        "used_qubits": 25,
+        "workspace_qubits": 12
+      },
+      "selected_target_seconds": 0.007509584000217728,
+      "status": "compiled",
+      "strategy": "retain",
+      "synthesis_and_planning_seconds": 0.11103091700351797,
+      "verification": {
+        "basis_checks": 54,
+        "basis_domain_exhaustive": false,
+        "coherent_states": 0,
+        "maximum_amplitude_error": null,
+        "nonzero_targets": true,
+        "scope": "exact gate interpretation; no quantum state executed",
+        "workspace_nonzero_probability": null
+      },
+      "widths": [
+        2,
+        4,
+        1
+      ],
+      "worker_wall_seconds": null
+    },
+    {
+      "candidate_seconds": [
+        [
+          "retain",
+          0.004927500005578622
+        ],
+        [
+          "recompute",
+          0.004819875000976026
+        ]
+      ],
+      "case": "shared_square-1x3",
+      "diagnostic_codes": [],
+      "expression": "(x+y)*(x+y)",
+      "output_width": 7,
+      "resources": {
+        "allocated_qubits": 30,
+        "circuit_hash": "820e46d312e33a5f7ac3e8f99bea06dc221079db7944dc813a47be4a79f72e8a",
+        "depth": 254,
+        "operation_counts": {
+          "ccx": 130,
+          "cx": 179,
+          "h": 4
+        },
+        "operations": 313,
+        "planned_complex128_state_bytes": 17179869184,
+        "two_qubit_operations": 179,
+        "used_qubits": 30,
+        "workspace_qubits": 19
+      },
+      "selected_target_seconds": 0.015035834003356285,
+      "status": "compiled",
+      "strategy": "retain",
+      "synthesis_and_planning_seconds": 0.16951270900608506,
+      "verification": {
+        "basis_checks": 48,
+        "basis_domain_exhaustive": true,
+        "coherent_states": 0,
+        "maximum_amplitude_error": null,
+        "nonzero_targets": true,
+        "scope": "exact gate interpretation; no quantum state executed",
+        "workspace_nonzero_probability": null
+      },
+      "widths": [
+        1,
+        3
+      ],
+      "worker_wall_seconds": null
+    },
+    {
+      "candidate_seconds": [
+        [
+          "retain",
+          0.007991457998286933
+        ],
+        [
+          "recompute",
+          0.008098708000034094
+        ]
+      ],
+      "case": "shared_square-2x4",
+      "diagnostic_codes": [],
+      "expression": "(x+y)*(x+y)",
+      "output_width": 9,
+      "resources": {
+        "allocated_qubits": 39,
+        "circuit_hash": "f3e4c96223a25b672ae362e68dbdc0c7a7a15b02716ff52df390942e5aaeab60",
+        "depth": 456,
+        "operation_counts": {
+          "ccx": 254,
+          "cx": 313,
+          "h": 6
+        },
+        "operations": 573,
+        "planned_complex128_state_bytes": 8796093022208,
+        "two_qubit_operations": 313,
+        "used_qubits": 39,
+        "workspace_qubits": 24
+      },
+      "selected_target_seconds": 0.026447208001627587,
+      "status": "compiled",
+      "strategy": "retain",
+      "synthesis_and_planning_seconds": 0.2768932920007501,
+      "verification": {
+        "basis_checks": 192,
+        "basis_domain_exhaustive": true,
+        "coherent_states": 0,
+        "maximum_amplitude_error": null,
+        "nonzero_targets": true,
+        "scope": "exact gate interpretation; no quantum state executed",
+        "workspace_nonzero_probability": null
+      },
+      "widths": [
+        2,
+        4
+      ],
+      "worker_wall_seconds": null
+    },
+    {
+      "candidate_seconds": [
+        [
+          "retain",
+          0.0014841670054011047
+        ],
+        [
+          "recompute",
+          0.0016183330008061603
+        ]
+      ],
+      "case": "mixed_products-1x3",
+      "diagnostic_codes": [],
+      "expression": "x*x+x*y",
+      "output_width": 4,
+      "resources": {
+        "allocated_qubits": 15,
+        "circuit_hash": "42e66077ffdc2afe9d627278fc29fc261975e7423b458757fca84634cee90fd2",
+        "depth": 51,
+        "operation_counts": {
+          "ccx": 30,
+          "cx": 31,
+          "h": 4
+        },
+        "operations": 65,
+        "planned_complex128_state_bytes": 524288,
+        "two_qubit_operations": 31,
+        "used_qubits": 15,
+        "workspace_qubits": 7
+      },
+      "selected_target_seconds": 0.0021353339980123565,
+      "status": "compiled",
+      "strategy": "retain",
+      "synthesis_and_planning_seconds": 0.03035375000035856,
+      "verification": {
+        "basis_checks": 48,
+        "basis_domain_exhaustive": true,
+        "coherent_states": 2,
+        "maximum_amplitude_error": 8.441528768080324e-17,
+        "nonzero_targets": true,
+        "scope": "exact gate interpretation; bounded full-state verification",
+        "workspace_nonzero_probability": 0.0
+      },
+      "widths": [
+        1,
+        3
+      ],
+      "worker_wall_seconds": null
+    },
+    {
+      "candidate_seconds": [
+        [
+          "retain",
+          0.003951624996261671
+        ],
+        [
+          "recompute",
+          0.004256125001120381
+        ]
+      ],
+      "case": "mixed_products-2x4",
+      "diagnostic_codes": [],
+      "expression": "x*x+x*y",
+      "output_width": 6,
+      "resources": {
+        "allocated_qubits": 28,
+        "circuit_hash": "a1629ef1f240ff83d1f70d26d92a3db62003ede7ca82f460790e9a8559f961b3",
+        "depth": 259,
+        "operation_counts": {
+          "ccx": 174,
+          "cx": 161,
+          "h": 6
+        },
+        "operations": 341,
+        "planned_complex128_state_bytes": 4294967296,
+        "two_qubit_operations": 161,
+        "used_qubits": 28,
+        "workspace_qubits": 16
+      },
+      "selected_target_seconds": 0.010922708999714814,
+      "status": "compiled",
+      "strategy": "retain",
+      "synthesis_and_planning_seconds": 0.13751300000876654,
+      "verification": {
+        "basis_checks": 192,
+        "basis_domain_exhaustive": true,
+        "coherent_states": 0,
+        "maximum_amplitude_error": null,
+        "nonzero_targets": true,
+        "scope": "exact gate interpretation; no quantum state executed",
+        "workspace_nonzero_probability": null
+      },
+      "widths": [
+        2,
+        4
+      ],
+      "worker_wall_seconds": null
+    },
+    {
+      "candidate_seconds": [
+        [
+          "retain",
+          0.003011334003531374
+        ],
+        [
+          "recompute",
+          0.003372375009348616
+        ]
+      ],
+      "case": "linear-1x3",
+      "diagnostic_codes": [],
+      "expression": "3*x+5*y",
+      "output_width": 6,
+      "resources": {
+        "allocated_qubits": 23,
+        "circuit_hash": "b56f8de208db5cb8d82a4d2d91ec20590d520b2e29b10751ac3a524500f4da64",
+        "depth": 141,
+        "operation_counts": {
+          "ccx": 50,
+          "cx": 137,
+          "h": 4
+        },
+        "operations": 191,
+        "planned_complex128_state_bytes": 134217728,
+        "two_qubit_operations": 137,
+        "used_qubits": 23,
+        "workspace_qubits": 13
+      },
+      "selected_target_seconds": 0.0099781669996446,
+      "status": "compiled",
+      "strategy": "retain",
+      "synthesis_and_planning_seconds": 0.0845528329955414,
+      "verification": {
+        "basis_checks": 48,
+        "basis_domain_exhaustive": true,
+        "coherent_states": 0,
+        "maximum_amplitude_error": null,
+        "nonzero_targets": true,
+        "scope": "exact gate interpretation; no quantum state executed",
+        "workspace_nonzero_probability": null
+      },
+      "widths": [
+        1,
+        3
+      ],
+      "worker_wall_seconds": null
+    },
+    {
+      "candidate_seconds": [
+        [
+          "retain",
+          0.004309167008614168
+        ],
+        [
+          "recompute",
+          0.004271375000826083
+        ]
+      ],
+      "case": "linear-2x4",
+      "diagnostic_codes": [],
+      "expression": "3*x+5*y",
+      "output_width": 7,
+      "resources": {
+        "allocated_qubits": 30,
+        "circuit_hash": "f11910edb194f4e24ee0fe4c76d74a4fc21303451789196f0aa8ce8e55ec8811",
+        "depth": 239,
+        "operation_counts": {
+          "ccx": 84,
+          "cx": 213,
+          "h": 6
+        },
+        "operations": 303,
+        "planned_complex128_state_bytes": 17179869184,
+        "two_qubit_operations": 213,
+        "used_qubits": 30,
+        "workspace_qubits": 17
+      },
+      "selected_target_seconds": 0.014875540990033187,
+      "status": "compiled",
+      "strategy": "retain",
+      "synthesis_and_planning_seconds": 0.15994054099428467,
+      "verification": {
+        "basis_checks": 192,
+        "basis_domain_exhaustive": true,
+        "coherent_states": 0,
+        "maximum_amplitude_error": null,
+        "nonzero_targets": true,
+        "scope": "exact gate interpretation; no quantum state executed",
+        "workspace_nonzero_probability": null
+      },
+      "widths": [
+        2,
+        4
+      ],
+      "worker_wall_seconds": null
+    },
+    {
+      "candidate_seconds": [
+        [
+          "retain",
+          0.002451167005347088
+        ],
+        [
+          "recompute",
+          0.0026039169897558168
+        ]
+      ],
+      "case": "overlapping-1x3x2",
+      "diagnostic_codes": [],
+      "expression": "(x+y)*(x+z)",
+      "output_width": 6,
+      "resources": {
+        "allocated_qubits": 33,
+        "circuit_hash": "c37661348b51a11b35f02359bf9c07b654f53f6ac478a5d552f355712b10af7a",
+        "depth": 302,
+        "operation_counts": {
+          "ccx": 186,
+          "cx": 218,
+          "h": 6
+        },
+        "operations": 410,
+        "planned_complex128_state_bytes": 137438953472,
+        "two_qubit_operations": 218,
+        "used_qubits": 33,
+        "workspace_qubits": 21
+      },
+      "selected_target_seconds": 0.01895850000437349,
+      "status": "compiled",
+      "strategy": "retain",
+      "synthesis_and_planning_seconds": 0.19736449999618344,
+      "verification": {
+        "basis_checks": 192,
+        "basis_domain_exhaustive": true,
+        "coherent_states": 0,
+        "maximum_amplitude_error": null,
+        "nonzero_targets": true,
+        "scope": "exact gate interpretation; no quantum state executed",
+        "workspace_nonzero_probability": null
+      },
+      "widths": [
+        1,
+        3,
+        2
+      ],
+      "worker_wall_seconds": null
+    },
+    {
+      "candidate_seconds": [
+        [
+          "retain",
+          0.0031602909875800833
+        ],
+        [
+          "recompute",
+          0.0031583750096615404
+        ]
+      ],
+      "case": "overlapping-2x4x1",
+      "diagnostic_codes": [],
+      "expression": "(x+y)*(x+z)",
+      "output_width": 7,
+      "resources": {
+        "allocated_qubits": 38,
+        "circuit_hash": "6c4abfb313aaf17d653e6c8fb89cfbb03524d137c95d2d75c7c24739b700c5ef",
+        "depth": 426,
+        "operation_counts": {
+          "ccx": 262,
+          "cx": 299,
+          "h": 7
+        },
+        "operations": 568,
+        "planned_complex128_state_bytes": 4398046511104,
+        "two_qubit_operations": 299,
+        "used_qubits": 38,
+        "workspace_qubits": 24
+      },
+      "selected_target_seconds": 0.023878332998719998,
+      "status": "compiled",
+      "strategy": "retain",
+      "synthesis_and_planning_seconds": 0.2579598750016885,
+      "verification": {
+        "basis_checks": 54,
+        "basis_domain_exhaustive": false,
+        "coherent_states": 0,
+        "maximum_amplitude_error": null,
+        "nonzero_targets": true,
+        "scope": "exact gate interpretation; no quantum state executed",
+        "workspace_nonzero_probability": null
+      },
+      "widths": [
+        2,
+        4,
+        1
+      ],
+      "worker_wall_seconds": null
+    },
+    {
+      "candidate_seconds": [
+        [
+          "retain",
+          0.00031308298639487475
+        ],
+        [
+          "recompute",
+          0.000275792001048103
+        ]
+      ],
+      "case": "zero_product-1",
+      "diagnostic_codes": [],
+      "expression": "x*0",
+      "output_width": 1,
+      "resources": {
+        "allocated_qubits": 4,
+        "circuit_hash": "574b2c1f525dcb730232d59c81cd1c756361e8df09c415c8e70c6a75adc6752b",
+        "depth": 1,
+        "operation_counts": {
+          "cx": 1,
+          "h": 1
+        },
+        "operations": 2,
+        "planned_complex128_state_bytes": 256,
+        "two_qubit_operations": 1,
+        "used_qubits": 3,
+        "workspace_qubits": 2
+      },
+      "selected_target_seconds": 0.00029158299730625004,
+      "status": "compiled",
+      "strategy": "retain",
+      "synthesis_and_planning_seconds": 0.004804875003173947,
+      "verification": {
+        "basis_checks": 4,
+        "basis_domain_exhaustive": true,
+        "coherent_states": 2,
+        "maximum_amplitude_error": 1.1102230246251565e-16,
+        "nonzero_targets": true,
+        "scope": "exact gate interpretation; bounded full-state verification",
+        "workspace_nonzero_probability": 0.0
+      },
+      "widths": [
+        1
+      ],
+      "worker_wall_seconds": null
+    },
+    {
+      "candidate_seconds": [
+        [
+          "retain",
+          0.00033224999788217247
+        ],
+        [
+          "recompute",
+          0.0002789999998640269
+        ]
+      ],
+      "case": "zero_product-3",
+      "diagnostic_codes": [],
+      "expression": "x*0",
+      "output_width": 1,
+      "resources": {
+        "allocated_qubits": 6,
+        "circuit_hash": "d8a2a9247bcd9417bf62c8d1cab81ecada084c1c7e6356dde0c026a9e71b9644",
+        "depth": 1,
+        "operation_counts": {
+          "cx": 1,
+          "h": 3
+        },
+        "operations": 4,
+        "planned_complex128_state_bytes": 1024,
+        "two_qubit_operations": 1,
+        "used_qubits": 5,
+        "workspace_qubits": 2
+      },
+      "selected_target_seconds": 0.00032870800350792706,
+      "status": "compiled",
+      "strategy": "retain",
+      "synthesis_and_planning_seconds": 0.005573750007897615,
+      "verification": {
+        "basis_checks": 16,
+        "basis_domain_exhaustive": true,
+        "coherent_states": 2,
+        "maximum_amplitude_error": 1.1102230246251565e-16,
+        "nonzero_targets": true,
+        "scope": "exact gate interpretation; bounded full-state verification",
+        "workspace_nonzero_probability": 0.0
+      },
+      "widths": [
+        3
+      ],
+      "worker_wall_seconds": null
+    },
+    {
+      "candidate_seconds": [
+        [
+          "retain",
+          0.0002674999996088445
+        ],
+        [
+          "recompute",
+          0.00022691699268762022
+        ]
+      ],
+      "case": "identity_product-1",
+      "diagnostic_codes": [],
+      "expression": "x*1",
+      "output_width": 1,
+      "resources": {
+        "allocated_qubits": 2,
+        "circuit_hash": "613351b84bce55b24cc6c9e847159b87ddc0fcb7bb451a946a967ff19c96e67e",
+        "depth": 2,
+        "operation_counts": {
+          "cx": 1,
+          "h": 1
+        },
+        "operations": 2,
+        "planned_complex128_state_bytes": 64,
+        "two_qubit_operations": 1,
+        "used_qubits": 2,
+        "workspace_qubits": 0
+      },
+      "selected_target_seconds": 0.00029904099937994033,
+      "status": "compiled",
+      "strategy": "retain",
+      "synthesis_and_planning_seconds": 0.00478833400120493,
+      "verification": {
+        "basis_checks": 4,
+        "basis_domain_exhaustive": true,
+        "coherent_states": 2,
+        "maximum_amplitude_error": 1.1102230246251565e-16,
+        "nonzero_targets": true,
+        "scope": "exact gate interpretation; bounded full-state verification",
+        "workspace_nonzero_probability": 0.0
+      },
+      "widths": [
+        1
+      ],
+      "worker_wall_seconds": null
+    },
+    {
+      "candidate_seconds": [
+        [
+          "retain",
+          0.00032870798895601183
+        ],
+        [
+          "recompute",
+          0.00031970901181921363
+        ]
+      ],
+      "case": "identity_product-3",
+      "diagnostic_codes": [],
+      "expression": "x*1",
+      "output_width": 3,
+      "resources": {
+        "allocated_qubits": 6,
+        "circuit_hash": "e94328b7b0ec25554c6f3ee95a6dcce6e4f518175f9bf126d8c0509ec6ecbf17",
+        "depth": 2,
+        "operation_counts": {
+          "cx": 3,
+          "h": 3
+        },
+        "operations": 6,
+        "planned_complex128_state_bytes": 1024,
+        "two_qubit_operations": 3,
+        "used_qubits": 6,
+        "workspace_qubits": 0
+      },
+      "selected_target_seconds": 0.00037166599940974265,
+      "status": "compiled",
+      "strategy": "retain",
+      "synthesis_and_planning_seconds": 0.005928458005655557,
+      "verification": {
+        "basis_checks": 24,
+        "basis_domain_exhaustive": true,
+        "coherent_states": 2,
+        "maximum_amplitude_error": 1.1102230246251565e-16,
+        "nonzero_targets": true,
+        "scope": "exact gate interpretation; bounded full-state verification",
+        "workspace_nonzero_probability": 0.0
+      },
+      "widths": [
+        3
+      ],
+      "worker_wall_seconds": null
+    },
+    {
+      "candidate_seconds": [
+        [
+          "retain",
+          0.00032820900378283113
+        ],
+        [
+          "recompute",
+          0.00027516701084095985
+        ]
+      ],
+      "case": "shift_product-1",
+      "diagnostic_codes": [],
+      "expression": "x*8",
+      "output_width": 4,
+      "resources": {
+        "allocated_qubits": 9,
+        "circuit_hash": "6d1de3216ce4bd39a7ed855ad7526b744a6cae5a2c0512382f21b782159fb26a",
+        "depth": 4,
+        "operation_counts": {
+          "cx": 6,
+          "h": 1
+        },
+        "operations": 7,
+        "planned_complex128_state_bytes": 8192,
+        "two_qubit_operations": 6,
+        "used_qubits": 9,
+        "workspace_qubits": 4
+      },
+      "selected_target_seconds": 0.0006554580031661317,
+      "status": "compiled",
+      "strategy": "retain",
+      "synthesis_and_planning_seconds": 0.007110082995495759,
+      "verification": {
+        "basis_checks": 6,
+        "basis_domain_exhaustive": true,
+        "coherent_states": 2,
+        "maximum_amplitude_error": 1.1102230246251565e-16,
+        "nonzero_targets": true,
+        "scope": "exact gate interpretation; bounded full-state verification",
+        "workspace_nonzero_probability": 0.0
+      },
+      "widths": [
+        1
+      ],
+      "worker_wall_seconds": null
+    },
+    {
+      "candidate_seconds": [
+        [
+          "retain",
+          0.0003727080038515851
+        ],
+        [
+          "recompute",
+          0.00030775000050198287
+        ]
+      ],
+      "case": "shift_product-3",
+      "diagnostic_codes": [],
+      "expression": "x*8",
+      "output_width": 6,
+      "resources": {
+        "allocated_qubits": 15,
+        "circuit_hash": "bd510014120728e628bf3a55d210307c2f9b7f3bf1548a6b5a2b6a98bcfd73d7",
+        "depth": 4,
+        "operation_counts": {
+          "cx": 12,
+          "h": 3
+        },
+        "operations": 15,
+        "planned_complex128_state_bytes": 524288,
+        "two_qubit_operations": 12,
+        "used_qubits": 15,
+        "workspace_qubits": 6
+      },
+      "selected_target_seconds": 0.000777084002038464,
+      "status": "compiled",
+      "strategy": "retain",
+      "synthesis_and_planning_seconds": 0.009607374988263473,
+      "verification": {
+        "basis_checks": 24,
+        "basis_domain_exhaustive": true,
+        "coherent_states": 2,
+        "maximum_amplitude_error": 1.1102230246251565e-16,
+        "nonzero_targets": true,
+        "scope": "exact gate interpretation; bounded full-state verification",
+        "workspace_nonzero_probability": 0.0
+      },
+      "widths": [
+        3
+      ],
+      "worker_wall_seconds": null
+    },
+    {
+      "candidate_seconds": [
+        [
+          "retain",
+          0.0005388339923229069
+        ],
+        [
+          "recompute",
+          0.0004995829949621111
+        ]
+      ],
+      "case": "constant_product-1",
+      "diagnostic_codes": [],
+      "expression": "x*3",
+      "output_width": 2,
+      "resources": {
+        "allocated_qubits": 7,
+        "circuit_hash": "be2565a47715fbedc9030c3c2974fe30ba2c788ba8a7c841645e57fc421280ad",
+        "depth": 14,
+        "operation_counts": {
+          "ccx": 4,
+          "cx": 12,
+          "h": 1
+        },
+        "operations": 17,
+        "planned_complex128_state_bytes": 2048,
+        "two_qubit_operations": 12,
+        "used_qubits": 7,
+        "workspace_qubits": 4
+      },
+      "selected_target_seconds": 0.001170416988315992,
+      "status": "compiled",
+      "strategy": "retain",
+      "synthesis_and_planning_seconds": 0.011581667000427842,
+      "verification": {
+        "basis_checks": 6,
+        "basis_domain_exhaustive": true,
+        "coherent_states": 2,
+        "maximum_amplitude_error": 1.1102230246251565e-16,
+        "nonzero_targets": true,
+        "scope": "exact gate interpretation; bounded full-state verification",
+        "workspace_nonzero_probability": 0.0
+      },
+      "widths": [
+        1
+      ],
+      "worker_wall_seconds": null
+    },
+    {
+      "candidate_seconds": [
+        [
+          "retain",
+          0.001085958007024601
+        ],
+        [
+          "recompute",
+          0.001119916996685788
+        ]
+      ],
+      "case": "constant_product-3",
+      "diagnostic_codes": [],
+      "expression": "x*3",
+      "output_width": 5,
+      "resources": {
+        "allocated_qubits": 18,
+        "circuit_hash": "1c99ac97a6787661b6b20fe273da4f83f540fb12dfab92d205cb09dbfdac42b0",
+        "depth": 112,
+        "operation_counts": {
+          "ccx": 60,
+          "cx": 85,
+          "h": 3
+        },
+        "operations": 148,
+        "planned_complex128_state_bytes": 4194304,
+        "two_qubit_operations": 85,
+        "used_qubits": 18,
+        "workspace_qubits": 10
+      },
+      "selected_target_seconds": 0.007047292005154304,
+      "status": "compiled",
+      "strategy": "retain",
+      "synthesis_and_planning_seconds": 0.06372645898954943,
+      "verification": {
+        "basis_checks": 24,
+        "basis_domain_exhaustive": true,
+        "coherent_states": 2,
+        "maximum_amplitude_error": 1.1102230246251565e-16,
+        "nonzero_targets": true,
+        "scope": "exact gate interpretation; bounded full-state verification",
+        "workspace_nonzero_probability": 0.0
+      },
+      "widths": [
+        3
+      ],
+      "worker_wall_seconds": null
+    },
+    {
+      "candidate_seconds": [
+        [
+          "retain",
+          0.0002845419949153438
+        ],
+        [
+          "recompute",
+          0.00032012500741984695
+        ]
+      ],
+      "case": "zero_add-1",
+      "diagnostic_codes": [],
+      "expression": "x+0",
+      "output_width": 1,
+      "resources": {
+        "allocated_qubits": 2,
+        "circuit_hash": "613351b84bce55b24cc6c9e847159b87ddc0fcb7bb451a946a967ff19c96e67e",
+        "depth": 2,
+        "operation_counts": {
+          "cx": 1,
+          "h": 1
+        },
+        "operations": 2,
+        "planned_complex128_state_bytes": 64,
+        "two_qubit_operations": 1,
+        "used_qubits": 2,
+        "workspace_qubits": 0
+      },
+      "selected_target_seconds": 0.00034845800837501884,
+      "status": "compiled",
+      "strategy": "retain",
+      "synthesis_and_planning_seconds": 0.004907708003884181,
+      "verification": {
+        "basis_checks": 4,
+        "basis_domain_exhaustive": true,
+        "coherent_states": 2,
+        "maximum_amplitude_error": 1.1102230246251565e-16,
+        "nonzero_targets": true,
+        "scope": "exact gate interpretation; bounded full-state verification",
+        "workspace_nonzero_probability": 0.0
+      },
+      "widths": [
+        1
+      ],
+      "worker_wall_seconds": null
+    },
+    {
+      "candidate_seconds": [
+        [
+          "retain",
+          0.00032412500877399
+        ],
+        [
+          "recompute",
+          0.0003046670026378706
+        ]
+      ],
+      "case": "zero_add-3",
+      "diagnostic_codes": [],
+      "expression": "x+0",
+      "output_width": 3,
+      "resources": {
+        "allocated_qubits": 6,
+        "circuit_hash": "e94328b7b0ec25554c6f3ee95a6dcce6e4f518175f9bf126d8c0509ec6ecbf17",
+        "depth": 2,
+        "operation_counts": {
+          "cx": 3,
+          "h": 3
+        },
+        "operations": 6,
+        "planned_complex128_state_bytes": 1024,
+        "two_qubit_operations": 3,
+        "used_qubits": 6,
+        "workspace_qubits": 0
+      },
+      "selected_target_seconds": 0.00034920799953397363,
+      "status": "compiled",
+      "strategy": "retain",
+      "synthesis_and_planning_seconds": 0.0057977919932454824,
+      "verification": {
+        "basis_checks": 24,
+        "basis_domain_exhaustive": true,
+        "coherent_states": 2,
+        "maximum_amplitude_error": 1.1102230246251565e-16,
+        "nonzero_targets": true,
+        "scope": "exact gate interpretation; bounded full-state verification",
+        "workspace_nonzero_probability": 0.0
+      },
+      "widths": [
+        3
+      ],
+      "worker_wall_seconds": null
+    },
+    {
+      "candidate_seconds": [
+        [
+          "retain",
+          0.00027137500001117587
+        ],
+        [
+          "recompute",
+          0.00028524998924694955
+        ]
+      ],
+      "case": "disjoint_add-1",
+      "diagnostic_codes": [],
+      "expression": "x+256",
+      "output_width": 9,
+      "resources": {
+        "allocated_qubits": 10,
+        "circuit_hash": "d7499083416741c9b871b121c21b58e76e1c4ba8ec722153a93f06534382c927",
+        "depth": 2,
+        "operation_counts": {
+          "cx": 1,
+          "h": 1,
+          "x": 1
+        },
+        "operations": 3,
+        "planned_complex128_state_bytes": 16384,
+        "two_qubit_operations": 1,
+        "used_qubits": 3,
+        "workspace_qubits": 0
+      },
+      "selected_target_seconds": 0.00042895899969153106,
+      "status": "compiled",
+      "strategy": "retain",
+      "synthesis_and_planning_seconds": 0.004898499988485128,
+      "verification": {
+        "basis_checks": 6,
+        "basis_domain_exhaustive": true,
+        "coherent_states": 2,
+        "maximum_amplitude_error": 1.1102230246251565e-16,
+        "nonzero_targets": true,
+        "scope": "exact gate interpretation; bounded full-state verification",
+        "workspace_nonzero_probability": 0.0
+      },
+      "widths": [
+        1
+      ],
+      "worker_wall_seconds": null
+    },
+    {
+      "candidate_seconds": [
+        [
+          "retain",
+          0.0002989170025102794
+        ],
+        [
+          "recompute",
+          0.00028425001073628664
+        ]
+      ],
+      "case": "disjoint_add-3",
+      "diagnostic_codes": [],
+      "expression": "x+256",
+      "output_width": 9,
+      "resources": {
+        "allocated_qubits": 12,
+        "circuit_hash": "7a0a41dcf5aeb4d11916eb76b4654a69c329d51461a0c4db7d275ba6b26f0ecb",
+        "depth": 2,
+        "operation_counts": {
+          "cx": 3,
+          "h": 3,
+          "x": 1
+        },
+        "operations": 7,
+        "planned_complex128_state_bytes": 65536,
+        "two_qubit_operations": 3,
+        "used_qubits": 7,
+        "workspace_qubits": 0
+      },
+      "selected_target_seconds": 0.00041008299740497023,
+      "status": "compiled",
+      "strategy": "retain",
+      "synthesis_and_planning_seconds": 0.006441374993300997,
+      "verification": {
+        "basis_checks": 24,
+        "basis_domain_exhaustive": true,
+        "coherent_states": 2,
+        "maximum_amplitude_error": 1.1102230246251565e-16,
+        "nonzero_targets": true,
+        "scope": "exact gate interpretation; bounded full-state verification",
+        "workspace_nonzero_probability": 0.0
+      },
+      "widths": [
+        3
+      ],
+      "worker_wall_seconds": null
+    },
+    {
+      "candidate_seconds": [
+        [
+          "retain",
+          0.0003037080023204908
+        ],
+        [
+          "recompute",
+          0.00027470799977891147
+        ]
+      ],
+      "case": "power_square-1",
+      "diagnostic_codes": [],
+      "expression": "x*x",
+      "output_width": 1,
+      "resources": {
+        "allocated_qubits": 4,
+        "circuit_hash": "c333286b25dcce7e71bba1292f7b51cb19baff70f90a2be0c53ad22fbd4da303",
+        "depth": 6,
+        "operation_counts": {
+          "cx": 5,
+          "h": 1
+        },
+        "operations": 6,
+        "planned_complex128_state_bytes": 256,
+        "two_qubit_operations": 5,
+        "used_qubits": 4,
+        "workspace_qubits": 2
+      },
+      "selected_target_seconds": 0.0006875839899294078,
+      "status": "compiled",
+      "strategy": "retain",
+      "synthesis_and_planning_seconds": 0.006724833001499064,
+      "verification": {
+        "basis_checks": 4,
+        "basis_domain_exhaustive": true,
+        "coherent_states": 2,
+        "maximum_amplitude_error": 1.1102230246251565e-16,
+        "nonzero_targets": true,
+        "scope": "exact gate interpretation; bounded full-state verification",
+        "workspace_nonzero_probability": 0.0
+      },
+      "widths": [
+        1
+      ],
+      "worker_wall_seconds": null
+    },
+    {
+      "candidate_seconds": [
+        [
+          "retain",
+          0.0013184169947635382
+        ],
+        [
+          "recompute",
+          0.0013576249912148342
+        ]
+      ],
+      "case": "power_square-3",
+      "diagnostic_codes": [],
+      "expression": "x*x",
+      "output_width": 6,
+      "resources": {
+        "allocated_qubits": 21,
+        "circuit_hash": "d894b571bb7d4ef5036cd753cba7da5205f81ec3fc97ac42c9641ddce8ff0f2e",
+        "depth": 124,
+        "operation_counts": {
+          "ccx": 70,
+          "cx": 88,
+          "h": 3
+        },
+        "operations": 161,
+        "planned_complex128_state_bytes": 33554432,
+        "two_qubit_operations": 88,
+        "used_qubits": 21,
+        "workspace_qubits": 12
+      },
+      "selected_target_seconds": 0.007480708998627961,
+      "status": "compiled",
+      "strategy": "retain",
+      "synthesis_and_planning_seconds": 0.08934933299315162,
+      "verification": {
+        "basis_checks": 24,
+        "basis_domain_exhaustive": true,
+        "coherent_states": 0,
+        "maximum_amplitude_error": null,
+        "nonzero_targets": true,
+        "scope": "exact gate interpretation; no quantum state executed",
+        "workspace_nonzero_probability": null
+      },
+      "widths": [
+        3
+      ],
+      "worker_wall_seconds": null
+    }
+  ],
+  "schema": "flagquantum.synthesis.arithmetic_baseline.v1",
+  "sentinel_targets": [
+    {
+      "implementation": "python",
+      "profile": "logical",
+      "resources": {
+        "allocated_qubits": 16,
+        "circuit_hash": "c9e350dfcecd281161343cc68c3f45df32345eada8861d352478e954bb202ca9",
+        "depth": 59,
+        "operation_counts": {
+          "ccx": 34,
+          "cx": 43,
+          "h": 4
+        },
+        "operations": 81,
+        "planned_complex128_state_bytes": 1048576,
+        "two_qubit_operations": 43,
+        "used_qubits": 16,
+        "workspace_qubits": 8
+      }
+    },
+    {
+      "implementation": "python",
+      "profile": "exact_basis_all_to_all",
+      "resources": {
+        "allocated_qubits": 16,
+        "circuit_hash": "c19e63b16d2a6cb51c83bd85bc0e83da0d092af6e7b0ea19116d6a49fd425f89",
+        "depth": 327,
+        "operation_counts": {
+          "cx": 227,
+          "h": 32,
+          "t": 108,
+          "tdg": 102,
+          "u3": 28
+        },
+        "operations": 497,
+        "planned_complex128_state_bytes": 1048576,
+        "two_qubit_operations": 227,
+        "used_qubits": 16,
+        "workspace_qubits": 8
+      }
+    },
+    {
+      "implementation": "python",
+      "profile": "exact_basis_line",
+      "resources": {
+        "allocated_qubits": 16,
+        "circuit_hash": "ef89e473d3022523f337f5bc5c946d630d068bdd9befca16d56bc4231142a025",
+        "depth": 604,
+        "operation_counts": {
+          "cx": 227,
+          "h": 32,
+          "swap": 784,
+          "t": 108,
+          "tdg": 102,
+          "u3": 28
+        },
+        "operations": 1281,
+        "planned_complex128_state_bytes": 1048576,
+        "two_qubit_operations": 1011,
+        "used_qubits": 16,
+        "workspace_qubits": 8
+      }
+    },
+    {
+      "implementation": "qmod",
+      "profile": "logical",
+      "resources": {
+        "allocated_qubits": 16,
+        "circuit_hash": "48c680e5d51efb766b32b13f605d7fc856a16d79b9c603db7635d4d88cb94817",
+        "depth": 59,
+        "operation_counts": {
+          "ccx": 34,
+          "cx": 43,
+          "h": 4
+        },
+        "operations": 81,
+        "planned_complex128_state_bytes": 1048576,
+        "two_qubit_operations": 43,
+        "used_qubits": 16,
+        "workspace_qubits": 8
+      }
+    },
+    {
+      "implementation": "qmod",
+      "profile": "exact_basis_all_to_all",
+      "resources": {
+        "allocated_qubits": 16,
+        "circuit_hash": "d567c244f222d6d252491569aaa79efa95139ca41b38487920a57fefcba3d0e3",
+        "depth": 327,
+        "operation_counts": {
+          "cx": 227,
+          "h": 32,
+          "t": 108,
+          "tdg": 102,
+          "u3": 28
+        },
+        "operations": 497,
+        "planned_complex128_state_bytes": 1048576,
+        "two_qubit_operations": 227,
+        "used_qubits": 16,
+        "workspace_qubits": 8
+      }
+    },
+    {
+      "implementation": "qmod",
+      "profile": "exact_basis_line",
+      "resources": {
+        "allocated_qubits": 16,
+        "circuit_hash": "b9d79cad455193110a231fb4bcc73cbb00aa87bb9a21fbe6a04843f49a47220c",
+        "depth": 604,
+        "operation_counts": {
+          "cx": 227,
+          "h": 32,
+          "swap": 784,
+          "t": 108,
+          "tdg": 102,
+          "u3": 28
+        },
+        "operations": 1281,
+        "planned_complex128_state_bytes": 1048576,
+        "two_qubit_operations": 1011,
+        "used_qubits": 16,
+        "workspace_qubits": 8
+      }
+    },
+    {
+      "implementation": "manual",
+      "profile": "logical",
+      "resources": {
+        "allocated_qubits": 9,
+        "circuit_hash": "9780aa7def47b6dc54e9e56841c35e8664fe9eb1cb8885b7c88e1ac16f37abf0",
+        "depth": 11,
+        "operation_counts": {
+          "ccx": 6,
+          "cx": 3,
+          "h": 4,
+          "x": 2
+        },
+        "operations": 15,
+        "planned_complex128_state_bytes": 8192,
+        "two_qubit_operations": 3,
+        "used_qubits": 9,
+        "workspace_qubits": 1
+      }
+    },
+    {
+      "implementation": "manual",
+      "profile": "exact_basis_all_to_all",
+      "resources": {
+        "allocated_qubits": 9,
+        "circuit_hash": "44f29b3f4fe82ce6344160d3eb3d95b61120ac5ccb2a8e776911875557a0228c",
+        "depth": 60,
+        "operation_counts": {
+          "cx": 39,
+          "h": 9,
+          "t": 19,
+          "tdg": 18,
+          "u3": 5,
+          "x": 2
+        },
+        "operations": 92,
+        "planned_complex128_state_bytes": 8192,
+        "two_qubit_operations": 39,
+        "used_qubits": 9,
+        "workspace_qubits": 1
+      }
+    },
+    {
+      "implementation": "manual",
+      "profile": "exact_basis_line",
+      "resources": {
+        "allocated_qubits": 9,
+        "circuit_hash": "9a4e71cc376cb43ebe2b4ac1c185a55f60328bcc681848f2f4a0eddbf85cd651",
+        "depth": 112,
+        "operation_counts": {
+          "cx": 39,
+          "h": 9,
+          "swap": 104,
+          "t": 19,
+          "tdg": 18,
+          "u3": 5,
+          "x": 2
+        },
+        "operations": 196,
+        "planned_complex128_state_bytes": 8192,
+        "two_qubit_operations": 143,
+        "used_qubits": 9,
+        "workspace_qubits": 1
+      }
+    }
+  ],
+  "source_hashes": {
+    "__init__.py": "8406b1f375574ff94a08befd7f962d972db0608ece41f14bd5f1c1f178115ca6",
+    "arithmetic_baseline.py": "1bd80ef711e7029cd04895edfec4dc03e6ee3ed128dfcbc3f5c2103beafd8265",
+    "expressions.py": "f116f93d46ed8a2cb60d7d4cfc2581442cdeac492c777b55e99d3bc6223b0c0f",
+    "implementations.py": "f973c04e2abc6289bd49ecfcccaf5da589d7d55a665630886006c0a49c38517a",
+    "normalization.py": "8cddfb771b9f2063451e9242aaed3962405905dd353fcbd4feaae0e1fd8ae3de",
+    "oracle.py": "ca109fe0e76102eaf9039ab20e9ef05965a6ae07a73247fd90d7229975c8c82f",
+    "results.py": "73ee2f6d4e1d350564927f1623753b6cce079926212d9e44168f898f623d8b98",
+    "verification.py": "14b3a8ffa52d3455eb0ef25a705f17f14af9a4ade8d79c3d611c16053b0293a4"
+  },
+  "source_revision": "b5c3db4b487a4b144a83a1e50fc8541475708774",
+  "spelling_variants": [
+    {
+      "implementation": "helper",
+      "profile": "logical",
+      "resources": {
+        "allocated_qubits": 16,
+        "circuit_hash": "e190e0aacdf10f289c92285f8ba7f61f556d15c13a5648a2736ddb6b6516b55a",
+        "depth": 59,
+        "operation_counts": {
+          "ccx": 34,
+          "cx": 43,
+          "h": 4
+        },
+        "operations": 81,
+        "planned_complex128_state_bytes": 1048576,
+        "two_qubit_operations": 43,
+        "used_qubits": 16,
+        "workspace_qubits": 8
+      }
+    },
+    {
+      "implementation": "exchanged",
+      "profile": "logical",
+      "resources": {
+        "allocated_qubits": 16,
+        "circuit_hash": "4f22088c575eefc4b650a16e2ffb59b60ba57199207c8b2ec83b7fffc0fad08a",
+        "depth": 59,
+        "operation_counts": {
+          "ccx": 34,
+          "cx": 43,
+          "h": 4
+        },
+        "operations": 81,
+        "planned_complex128_state_bytes": 1048576,
+        "two_qubit_operations": 43,
+        "used_qubits": 16,
+        "workspace_qubits": 8
+      }
+    }
+  ],
+  "summary": {
+    "compiled": 89,
+    "timeout": 1
+  }
+}
