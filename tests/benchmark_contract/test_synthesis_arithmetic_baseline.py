@@ -45,6 +45,10 @@ def test_checked_baseline_and_repeat_ignore_observational_timing(
         "static_quantum_claim",
         "summary",
         "incomplete_cost_claim",
+        "bool_width",
+        "basis_scope",
+        "target_histogram",
+        "variant_memory",
     ],
 )
 def test_result_reader_rejects_corrupted_or_overstated_evidence(
@@ -72,6 +76,16 @@ def test_result_reader_rejects_corrupted_or_overstated_evidence(
         payload["summary"]["compiled"] += 1
     elif mutation == "incomplete_cost_claim":
         row["status"] = "timeout"
+    elif mutation == "bool_width":
+        row["widths"][0] = True
+    elif mutation == "basis_scope":
+        row["verification"]["basis_domain_exhaustive"] = False
+    elif mutation == "target_histogram":
+        payload["sentinel_targets"][0]["resources"]["operations"] += 1
+    elif mutation == "variant_memory":
+        payload["spelling_variants"][0]["resources"][
+            "planned_complex128_state_bytes"
+        ] += 1
     corrupted = tmp_path / "corrupted.json"
     corrupted.write_text(json.dumps(payload))
     with pytest.raises(ValueError):

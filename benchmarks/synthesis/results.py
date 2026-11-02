@@ -27,6 +27,13 @@ def _cost(value: object, data_bits: int) -> dict[str, object]:
     resource = _object(value)
     if set(resource) != {field.name for field in fields(Costs)}:
         raise ValueError("unexpected resource fields")
+    identity = resource["circuit_hash"]
+    if (
+        not isinstance(identity, str)
+        or len(identity) != 64
+        or any(c not in "0123456789abcdef" for c in identity)
+    ):
+        raise ValueError("invalid circuit content hash")
     n = _integer(resource["allocated_qubits"])
     used = _integer(resource["used_qubits"])
     workspace = _integer(resource["workspace_qubits"])
@@ -102,9 +109,25 @@ def read_result(path: Path) -> dict[str, object]:
         verification = _object(row.get("verification"))
         if _integer(verification.get("basis_checks")) == 0:
             raise ValueError("compiled cases require independent basis checks")
+        exhaustive = sum(case.widths) <= 6
+        if (
+            verification.get("basis_domain_exhaustive") is not exhaustive
+            or verification.get("nonzero_targets") is not True
+        ):
+            raise ValueError("basis verification scope is overstated")
+        value_count = (1 << sum(case.widths)) if exhaustive else 18
+        targets = (
+            16
+            if case.identifier == "energy-2x2"
+            else len({0, 1, (1 << output_width(case)) - 1})
+        )
+        if verification["basis_checks"] != value_count * targets:
+            raise ValueError("basis verification count does not match the fixed recipe")
         coherent = verification.get("coherent_states")
         if coherent not in (0, 2) or type(coherent) is not int:
             raise ValueError("invalid coherent verification count")
+        if coherent != (2 if exhaustive and n <= 20 else 0):
+            raise ValueError("coherent verification does not match the fixed recipe")
         if coherent == 0 and (
             verification.get("maximum_amplitude_error") is not None
             or verification.get("workspace_nonzero_probability") is not None
