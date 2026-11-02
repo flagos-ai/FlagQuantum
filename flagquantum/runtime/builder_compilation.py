@@ -9,11 +9,12 @@ from typing import TYPE_CHECKING, Any
 
 import torch
 
-from ..core.ir import CircuitIR, Instruction
+from ..core.ir import CircuitIR, Instruction, ensure_circuit_ir
 from ..core.parameters import ParameterExpression
 
 if TYPE_CHECKING:
     from ..circuit import Circuit
+    from .module import Module
 
 
 class BuilderBindings:
@@ -287,3 +288,36 @@ def _refuse_non_finite_bound_parameters(circuit: Circuit) -> None:
             from ..core.ir import _normalize_angle
 
             _normalize_angle(value, opcode=instruction.name, parameter=parameter)
+
+
+def _remember_local_ir(
+    owner: Module,
+    circuit: Circuit,
+    parameters: torch.Tensor | Mapping[str, torch.Tensor],
+    inputs: torch.Tensor | None,
+) -> None:
+    """Freeze consumed values without eagerly serializing unused diagnostics."""
+    ir = ensure_circuit_ir(circuit)
+    program = owner._builder_program
+    if (
+        program is not None
+        and circuit is owner._builder_bound_circuit
+        and not owner.policy.correctness_debug
+    ):
+        generation, safe, budget = owner._local_snapshot_eligibility
+        if generation != owner._builder_compile_count:
+            safe = can_defer_ir_snapshot(program, ir)
+            budget = ir_snapshot_input_budget(ir) if safe else 0
+            owner._local_snapshot_eligibility = (
+                owner._builder_compile_count,
+                safe,
+                budget,
+            )
+        tensors, _, _ = _builder_tensor_inputs(parameters, inputs)
+        if safe and sum(t.numel() * t.element_size() for t in tensors) <= budget:
+            owner._last_ir_snapshot = None
+            owner._last_ir_factory = deferred_ir_snapshot(
+                program, ir, tensors, len(owner._builder_slots)
+            )
+            return
+    owner._last_ir = detached_ir_snapshot(ir)

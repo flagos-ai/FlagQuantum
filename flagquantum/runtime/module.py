@@ -28,6 +28,7 @@ from .builder_compilation import (
     SlotParameterMapping,
     _builder_tensor_inputs,
     _refuse_non_finite_bound_parameters,
+    _remember_local_ir,
     can_defer_ir_snapshot,
     deferred_ir_snapshot,
     detached_ir_snapshot,
@@ -183,6 +184,7 @@ class Module(torch.nn.Module):
         self._builder_slots: tuple[tuple[int, str], ...] = ()
         self._builder_compile_count = 0
         self._builder_cache_hits = 0
+        self._local_snapshot_eligibility: tuple[int, bool, int] = (-1, False, 0)
         self._jax_kernel: JAXQuantumKernel | None = None
         self._jax_kernel_signature: tuple[Any, ...] | None = None
         self._jax_ir_template: CircuitIR | None = None
@@ -1139,7 +1141,7 @@ class Module(torch.nn.Module):
                 raise TypeError(
                     "local fq.Module execution requires a Circuit builder result"
                 )
-            self._last_ir = detached_ir_snapshot(ensure_circuit_ir(circuit))
+            _remember_local_ir(self, circuit, selected_parameters, inputs)
             qubits = self.policy.observable_qubits or (0,)
             # A Hamiltonian energy is evaluated on the simulated object, so the
             # Z readout only runs for the observables that are defined by it.

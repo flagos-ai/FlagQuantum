@@ -6,6 +6,7 @@ import pytest
 
 from tools.check_architecture import (
     CONFIG,
+    _approved_module_capture_import,
     _imports_jax_executor,
     architecture_errors,
     eager_import_cycles,
@@ -16,8 +17,54 @@ pytestmark = pytest.mark.unit
 ROOT = Path(__file__).resolve().parents[2]
 
 
+@pytest.mark.parametrize("prefix", ("", "flagquantum."))
+def test_module_capture_permission_is_one_frontend_entry(prefix):
+    importer = "flagquantum/runtime/module.py"
+    module = prefix + "compiler.module_builder"
+    assert _approved_module_capture_import(importer, module, "capture_module_builder")
+    assert _approved_module_capture_import(importer, module, "CapturedModuleBuilder")
+    assert not _approved_module_capture_import(importer, module, "unreviewed_entry")
+    assert not _approved_module_capture_import(
+        importer, prefix + "compiler", "module_builder"
+    )
+    assert not _approved_module_capture_import(
+        importer, module + ".other", "capture_module_builder"
+    )
+    for other in (
+        "flagquantum/runtime/executors/jax/kernel.py",
+        "flagquantum/runtime/builder_compilation.py",
+        "flagquantum/simulation/statevector/kernels.py",
+    ):
+        assert not _approved_module_capture_import(
+            other, module, "capture_module_builder"
+        )
+    boundary = CONFIG["module_builder_capture_boundary"]
+    assert (ROOT / boundary["approval"]).is_file()
+
+
 def test_checked_architecture_boundaries_pass():
     assert architecture_errors() == ()
+
+
+def test_package_check_enforces_the_capture_exception(monkeypatch):
+    import tools.check_architecture as checker
+
+    original = checker._imports
+    admitted_name = "capture_module_builder"
+
+    def with_capture(path):
+        imports = original(path)
+        if path.relative_to(ROOT).as_posix() == "flagquantum/runtime/module.py":
+            return imports + (("compiler.module_builder", admitted_name),)
+        return imports
+
+    monkeypatch.setattr(checker, "_imports", with_capture)
+    assert architecture_errors() == ()
+    admitted_name = "unreviewed_entry"
+    assert any(
+        "module.py: new Runtime dependency on Compiler" in error
+        for error in architecture_errors()
+    )
 
 
 def test_eager_import_cycle_is_rejected_but_delayed_references_are_allowed(tmp_path):
