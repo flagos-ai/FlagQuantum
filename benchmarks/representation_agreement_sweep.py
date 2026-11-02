@@ -56,10 +56,10 @@ import argparse
 import json
 import math
 import platform
-import subprocess
 import sys
 import time
 from collections.abc import Sequence
+from contextlib import AbstractContextManager, nullcontext
 from pathlib import Path
 from typing import Any
 
@@ -67,6 +67,14 @@ import torch
 
 import flagquantum as fq
 import flagquantum.runtime as fqr
+from benchmarks.internal.evidence.representation_conformance import (
+    NEAR_DEGENERATE_GAP,
+    SplitBoundary,
+    SplitObservation,
+    observe_svd_splits,
+    source_record,
+    split_boundary,
+)
 from flagquantum.simulation.tensor_network import tensor_network_expectations
 from flagquantum.simulation.tensor_network.state import TensorNetworkState
 
@@ -84,13 +92,6 @@ STRUCTURES = ("nearest_neighbour", "all_to_all")
 #: is a budget, not a claim: a wider cell records that the oracle was skipped
 #: rather than borrowing an untested agreement.
 ORACLE_MAX_WIDTH = 8
-
-#: A cut whose two neighbouring Schmidt weights differ by less than this is
-#: treated as degenerate in exact arithmetic. Where they tie, no SVD chooses the
-#: retained subspace and no derivative of the truncating map exists, so a
-#: gradient measured there is a property of the arithmetic rather than of the
-#: backend. Weights are probabilities, so the threshold is absolute and small.
-NEAR_DEGENERATE_GAP = 1e-9
 
 
 def _integers(value: str) -> tuple[int, ...]:
@@ -183,7 +184,8 @@ def energy(target: Any, n_qubits: int) -> torch.Tensor:
         # observable batch once instead of rebuilding it for each Pauli product.
         observables: list[dict[str, tuple[int, ...]]] = [
             {"z": (qubit, qubit + 1)} for qubit in range(n_qubits - 1)
-        ] + [{"x": (qubit,)} for qubit in range(n_qubits)]
+        ]
+        observables.extend({"x": (qubit,)} for qubit in range(n_qubits))
         values = tensor_network_expectations(
             target.plan,
             observables,
@@ -195,9 +197,12 @@ def energy(target: Any, n_qubits: int) -> torch.Tensor:
         -_expectation(target, n_qubits, z=(qubit, qubit + 1))
         for qubit in range(n_qubits - 1)
     )
-    return value + sum(
+    total = value + sum(
         -0.7 * _expectation(target, n_qubits, x=(qubit,)) for qubit in range(n_qubits)
     )
+    if not isinstance(total, torch.Tensor):
+        raise ValueError("energy requires a nonempty circuit")
+    return total
 
 
 #: Observables a state conformance check reports beside the Ising energy. One
@@ -217,7 +222,7 @@ def _measure_observable(
 
     if any(qubit >= n_qubits for qubits in observable.values() for qubit in qubits):
         return None
-    return float(_expectation(target, n_qubits, **observable))
+    return float(_expectation(target, n_qubits, **observable).detach())
 
 
 def dense_state(target: Any) -> torch.Tensor:
@@ -260,8 +265,8 @@ def state_conformance(target: Any, reference: Any) -> dict[str, float]:
     )
     norm_drift = (norms - 1).abs()
     return {
-        "fidelity_vs_statevector": float(fidelity.clamp(max=1.0).mean()),
-        "norm_drift": float(norm_drift.mean()),
+        "fidelity_vs_statevector": float(fidelity.clamp(max=1.0).mean().detach()),
+        "norm_drift": float(norm_drift.mean().detach()),
     }
 
 
@@ -305,6 +310,31 @@ def _energy_gradient(
 ) -> torch.Tensor:
     """Return ``d energy / d parameters`` through one representation."""
 
+    target, leaf = training_target(
+        parameters, structure=structure, mode=mode, max_bond=max_bond
+    )
+    value = energy(target, n_qubits)
+    (gradient,) = torch.autograd.grad(value, leaf)
+    return gradient
+
+
+def training_target(
+    parameters: torch.Tensor,
+    *,
+    structure: str,
+    mode: str,
+    max_bond: int | None = None,
+) -> tuple[Any, torch.Tensor]:
+    """Run the same grad-enabled forward for states, derivatives and probes.
+
+    MPS selects a different factorization when the input does not require a
+    gradient. A numerical derivative must preserve this choice even though it
+    does not invoke backward.
+    """
+    if not torch.is_grad_enabled():
+        raise RuntimeError(
+            "training conformance requires grad-enabled forward execution"
+        )
     leaf = parameters.detach().clone().requires_grad_(True)
     options: dict[str, object] = (
         {"max_bond": max_bond} if mode == "mps" and max_bond is not None else {}
@@ -316,9 +346,7 @@ def _energy_gradient(
         # the forward map, so measuring the difference requires asking for it.
         options["truncated_gradient"] = "projected_stop_subspace"
     target = fqr.run_native(build_ansatz(leaf, structure), mode=mode, **options)
-    value = energy(target, n_qubits)
-    (gradient,) = torch.autograd.grad(value, leaf)
-    return gradient
+    return target, leaf
 
 
 def ideal_gradient(
@@ -376,7 +404,7 @@ def parameter_shift_gradient(
 
 
 def schmidt_gap(state: Any, rank: int) -> dict[str, Any]:
-    """Return the smallest exact Schmidt-weight gap at any cut a cap truncates.
+    """Return final ideal-state Schmidt gaps, not intermediate split diagnostics.
 
     A truncated SVD keeps the ``rank`` largest weights. When the last kept and
     first discarded weight are equal, that choice is arbitrary, and a gradient
@@ -386,7 +414,8 @@ def schmidt_gap(state: Any, rank: int) -> dict[str, Any]:
 
     The spectrum is read from the exact dense state, not from the MPS whose
     truncation is in question, so the gap is a property of the circuit rather
-    than of the representation that discarded the weight.
+    than of the representation that discarded the weight. It cannot exclude a
+    near-degenerate intermediate factorization; ``actual_svd`` records those.
     """
 
     psi = torch.as_tensor(state).detach().to(torch.complex128)
@@ -474,60 +503,90 @@ def truncated_derivative_error(
     This answers a different question from "does the gradient match the ideal
     circuit": it asks whether the derivative of the computation that actually
     ran is the derivative of the computation that actually ran. Central finite
-    differences of that same truncated map settle it without consulting any
-    other representation, so the answer does not presuppose that the ideal
-    gradient is reachable.
+    differences preserve its grad-enabled factorization path. Two step sizes
+    test numerical consistency; an unstable or near-degenerate probe is reported
+    as a domain boundary, not an oracle for a derivative it cannot establish.
 
     ``max_relative_error`` divides each component's absolute error by the norm of
     the autograd gradient, so a near-zero component cannot inflate it.
     """
 
+    if parameters.dtype != torch.float64:
+        return {
+            "method": "central_finite_difference",
+            "status": "unsupported_precision",
+            "checked": 0,
+            "max_abs_error": None,
+            "max_relative_error": None,
+            "reason": "a 1e-5 difference of float32 energies is not a derivative oracle",
+        }
     flat = parameters.detach().reshape(-1)
     selected = (
         tuple(indices)
         if indices is not None
         else tuple(range(0, flat.numel(), max(flat.numel() // checks, 1)))
     )
-    approximate = truncated_gradient(
-        parameters, structure=structure, n_qubits=n_qubits, max_bond=max_bond
-    ).reshape(-1)
+    with observe_svd_splits(max_bond) as base_records:
+        approximate = truncated_gradient(
+            parameters, structure=structure, n_qubits=n_qubits, max_bond=max_bond
+        ).reshape(-1)
     scale = float(approximate.norm())
     errors: list[float] = []
+    samples: list[dict[str, object]] = []
+    near_degenerate = any(record["near_degenerate"] for record in base_records)
+    stable = True
     for index in selected:
-        plus = flat.clone()
-        minus = flat.clone()
-        plus[index] += step
-        minus[index] -= step
-        with torch.no_grad():
-            forward = float(
-                energy(
-                    fqr.run_native(
-                        build_ansatz(plus.reshape(parameters.shape), structure),
+        differences: list[float] = []
+        for delta in (step, step / 2):
+            values: list[float] = []
+            for sign in (1, -1):
+                shifted = flat.clone()
+                shifted[index] += sign * delta
+                with observe_svd_splits(max_bond) as records:
+                    state, _ = training_target(
+                        shifted.reshape(parameters.shape),
+                        structure=structure,
                         mode="mps",
                         max_bond=max_bond,
-                    ),
-                    n_qubits,
-                )
-            )
-            backward = float(
-                energy(
-                    fqr.run_native(
-                        build_ansatz(minus.reshape(parameters.shape), structure),
-                        mode="mps",
-                        max_bond=max_bond,
-                    ),
-                    n_qubits,
-                )
-            )
-        differences = (forward - backward) / (2 * step)
-        errors.append(abs(differences - float(approximate[index])))
+                    )
+                near_degenerate |= any(record["near_degenerate"] for record in records)
+                values.append(float(energy(state, n_qubits).detach()))
+            differences.append((values[0] - values[1]) / (2 * delta))
+        converged = math.isclose(
+            differences[0], differences[1], rel_tol=1e-3, abs_tol=1e-6
+        )
+        stable &= converged
+        errors.append(abs(differences[1] - float(approximate[index])))
+        samples.append(
+            {
+                "index": index,
+                "autograd": float(approximate[index]),
+                "difference_h": differences[0],
+                "difference_half_h": differences[1],
+                "step_consistent": converged,
+            }
+        )
+    usable = stable and not near_degenerate
     return {
         "method": "central_finite_difference",
+        "forward_path": "grad_enabled_projected_stop_subspace",
+        "status": "step_consistent_probe" if usable else "domain_boundary",
         "step": step,
+        "refinement_step": step / 2,
         "indices": list(selected),
         "checked": len(selected),
-        "max_abs_error": max(errors) if errors else 0.0,
-        "max_relative_error": (max(errors) / scale) if errors and scale else 0.0,
+        "near_degenerate_perturbations": near_degenerate,
+        "step_consistent": stable,
+        "samples": samples,
+        "max_abs_error": max(errors) if usable and errors else None,
+        "max_relative_error": max(errors) / scale
+        if usable and errors and scale
+        else None,
+        "interpretation": (
+            "local numerical probe only; step consistency does not prove differentiability"
+            if usable
+            else "not a derivative oracle: step instability or a near-degenerate actual SVD"
+        ),
     }
 
 
@@ -543,13 +602,10 @@ def smoothness_probe(
 ) -> dict[str, Any]:
     """Measure whether the truncated energy is locally smooth in one parameter.
 
-    A finite-difference comparison is only meaningful where the map is
-    differentiable. Slicing a bond decides which subspace is kept, and that
-    decision can flip inside a small interval, so the same measurement that says
-    "autograd disagrees with the difference" has to say whether a derivative
-    exists at all. ``largest_step_jump`` is the biggest change in energy between
-    consecutive scan points; a smooth cell moves by well under 1e-3 per point
-    here, while a cell whose truncation decision flips jumps by order 0.1.
+    ``largest_step_jump`` is the largest sampled change in energy. The flag
+    ``smooth`` means only that this change is below 1e-2 for this finite scan;
+    neither outcome proves differentiability or discontinuity at the base point.
+    The scan uses the same grad-enabled forward as the derivative probe.
     """
 
     flat = parameters.detach().reshape(-1)
@@ -559,16 +615,22 @@ def smoothness_probe(
     for offset in torch.linspace(-half_range, half_range, points).tolist():
         shifted = flat.clone()
         shifted[index] = base + offset
-        circuit = build_ansatz(shifted.reshape(parameters.shape), structure)
-        with torch.no_grad():
-            state = fqr.run_native(circuit, mode="mps", max_bond=max_bond)
-            energies.append(float(energy(state, n_qubits)))
-            bonds.append(int(max(state.bond_dims)))
+        state, _ = training_target(
+            shifted.reshape(parameters.shape),
+            structure=structure,
+            mode="mps",
+            max_bond=max_bond,
+        )
+        energies.append(float(energy(state, n_qubits).detach()))
+        bonds.append(int(max(state.bond_dims)))
     jumps = [
         abs(later - earlier)
         for earlier, later in zip(energies, energies[1:], strict=False)
     ]
     return {
+        "forward_path": "grad_enabled_projected_stop_subspace",
+        "interpretation": "finite local scan; neither a proof of smoothness nor of discontinuity",
+        "step_spacing": 2 * half_range / (points - 1),
         "index": index,
         "half_range": half_range,
         "points": points,
@@ -606,24 +668,27 @@ def gradient_section(
     observables: dict[str, dict[str, float | None]] = {}
     per_mode: dict[str, dict[str, float | None]] = {}
     unsupported: dict[str, str] = {}
+    actual_splits: SplitBoundary | None = None
+    forward_energies: dict[str, float] = {}
     for mode in modes:
         try:
-            options = {"max_bond": max_bond} if mode == "mps" else {}
-            target = fqr.run_native(
-                build_ansatz(parameters, structure), mode=mode, **options
+            observation: AbstractContextManager[list[SplitObservation]] = (
+                observe_svd_splits(max_bond) if mode == "mps" else nullcontext([])
             )
+            with observation as records:
+                target, leaf = training_target(
+                    parameters, structure=structure, mode=mode, max_bond=max_bond
+                )
+            if mode == "mps":
+                actual_splits = split_boundary(records)
             states[mode] = state_conformance(target, reference_state)
             observables[mode] = {
                 label: _measure_observable(target, n_qubits, observable)
                 for label, observable in CONFORMANCE_OBSERVABLES.items()
             }
-            gradient = _energy_gradient(
-                parameters,
-                structure=structure,
-                n_qubits=n_qubits,
-                mode=mode,
-                max_bond=max_bond,
-            )
+            value = energy(target, n_qubits)
+            forward_energies[mode] = float(value.detach())
+            (gradient,) = torch.autograd.grad(value, leaf)
             per_mode[mode] = gradient_conformance(gradient, reference_gradient)
         except Exception as exc:  # a refusal is recorded, never substituted
             unsupported[mode] = f"{type(exc).__name__}: {str(exc).splitlines()[0]}"
@@ -633,6 +698,9 @@ def gradient_section(
         "observables": observables,
         "per_mode": per_mode,
         "unsupported": unsupported,
+        "forward_path": "grad_enabled_projected_stop_subspace",
+        "forward_energies": forward_energies,
+        "actual_svd": actual_splits,
         "oracle": oracle_section(parameters, structure=structure, n_qubits=n_qubits),
         "schmidt": schmidt_gap(reference_state, max_bond),
     }
@@ -650,7 +718,7 @@ def gradient_section(
                 max_bond=max_bond,
             ),
             "finite_difference_domain": (
-                "valid: double-precision energies and a 1e-5 step"
+                "valid precision: same grad-enabled forward; interpret only step-consistent, nondegenerate probes"
                 if double_precision
                 else (
                     "not a check on autograd below double precision: the "
@@ -720,12 +788,20 @@ def measure_cell(
     headroom_bond: int | None = None
     if "mps" in modes:
         try:
-            with torch.no_grad():
-                headroom_state = fqr.run_native(
-                    build_ansatz(parameters, structure),
-                    mode="mps",
-                    max_bond=headroom_cap,
-                )
+            with torch.enable_grad() if gradients else torch.no_grad():
+                if gradients:
+                    headroom_state, _ = training_target(
+                        parameters,
+                        structure=structure,
+                        mode="mps",
+                        max_bond=headroom_cap,
+                    )
+                else:
+                    headroom_state = fqr.run_native(
+                        build_ansatz(parameters, structure),
+                        mode="mps",
+                        max_bond=headroom_cap,
+                    )
                 headroom_bond = int(max(headroom_state.bond_dims))
         except Exception as exc:
             headroom_bond = None
@@ -742,10 +818,15 @@ def measure_cell(
     for mode in modes:
         options = {"max_bond": max_bond} if mode == "mps" else {}
         try:
-            with torch.no_grad():
-                target = fqr.run_native(
-                    build_ansatz(parameters, structure), mode=mode, **options
-                )
+            with torch.enable_grad() if gradients else torch.no_grad():
+                if gradients:
+                    target, _ = training_target(
+                        parameters, structure=structure, mode=mode, max_bond=max_bond
+                    )
+                else:
+                    target = fqr.run_native(
+                        build_ansatz(parameters, structure), mode=mode, **options
+                    )
                 if mode == "mps":
                     observed_bond = int(max(target.bond_dims))
                     bond_dims = [int(item) for item in target.bond_dims]
@@ -757,7 +838,7 @@ def measure_cell(
                     discarded_weight = float(report["truncation_error"])
                     max_step_error = float(report["max_truncation_error"])
                     truncation_steps = int(report["truncation_steps"])
-                energies[mode] = float(energy(target, n_qubits))
+                energies[mode] = float(energy(target, n_qubits).detach())
         except Exception as exc:
             energies[mode] = None
             failures[mode] = f"{type(exc).__name__}: {str(exc).splitlines()[0]}"
@@ -831,6 +912,12 @@ def measure_cell(
             "oracle": section["oracle"],
         }
         cell["schmidt"] = section["schmidt"]
+        cell["actual_svd"] = section["actual_svd"]
+        cell["gradients"]["forward_path"] = section["forward_path"]
+        cell["gradients"]["forward_energies"] = section["forward_energies"]
+        cell["tolerances"] = tolerances_for(dtype)
+        if section["unsupported"]:
+            failures.update(section["unsupported"])
         if "mps_own_map" in section:
             cell["gradients"]["mps_own_map"] = section["mps_own_map"]
     # A mode that raised is named with its error; a cell that measured every
@@ -1190,27 +1277,12 @@ def main() -> int:
         "command": " ".join(sys.argv),
         "python": platform.python_version(),
         "torch": torch.__version__,
-        # The published revision this measurement ran against. Recording HEAD
-        # instead would name the working commit, which is rewritten by a rebase
-        # or an amend before the payload is sealed; the evidence-revision check
-        # requires a revision a ref of this repository reaches, and an orphaned
-        # hash is exactly what it rejects.
-        "base_commit": subprocess.check_output(
-            ["git", "rev-parse", "origin/main"], cwd=REPO_ROOT, text=True, timeout=15
-        ).strip(),
-        "source_commit": subprocess.check_output(
-            ["git", "rev-parse", "HEAD"], cwd=REPO_ROOT, text=True, timeout=15
-        ).strip(),
-        # Whether the measuring code itself was committed when it ran. A whole
-        # working tree cannot be reported clean here -- writing this payload
-        # dirties the tree it would describe -- but the script that produced the
-        # numbers can be, and that is the part a reader needs to re-run.
-        "measuring_source_committed": not subprocess.check_output(
-            ["git", "status", "--porcelain", "--", str(Path(__file__).resolve())],
-            cwd=REPO_ROOT,
-            text=True,
-            timeout=15,
-        ).strip(),
+        **source_record(REPO_ROOT, sys.argv),
+        "conformance_measurement": (
+            "same_training_forward_actual_svd"
+            if arguments.gradients
+            else "forward_only"
+        ),
     }
     arguments.output.parent.mkdir(parents=True, exist_ok=True)
     arguments.output.write_text(json.dumps(payload, indent=2) + "\n")

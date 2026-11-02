@@ -24,7 +24,12 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import platform
+import subprocess
 import sys
+import tempfile
+import time
+from datetime import timedelta
 from pathlib import Path
 from typing import Any
 
@@ -35,11 +40,29 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
+from benchmarks.internal.evidence.representation_conformance import (  # noqa: E402
+    source_record,
+)
 from flagquantum.circuit import Circuit  # noqa: E402
 from flagquantum.runtime.executors.mps.reverse import (  # noqa: E402
     execute_torch_distributed_mps_reverse,
 )
+from flagquantum.runtime.executors.mps.state import initial_mps_ownership  # noqa: E402
 from flagquantum.simulation.mps.entrypoints import run_mps  # noqa: E402
+
+PLACEMENT_RELATIVE_BOUND = 1e-12
+
+
+def peak_process_rss_bytes() -> int | None:
+    """Return the process RSS high-water mark where the OS exposes it."""
+    if sys.platform == "win32":
+        return None
+    import resource
+
+    return int(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss) * (
+        1 if sys.platform == "darwin" else 1024
+    )
+
 
 #: The bond cap at which a chain of this width is held exactly. A cap at or above
 #: it cannot discard weight, so that arm isolates placement.
@@ -192,6 +215,8 @@ def measure_arm(
         "saved_tensor_bytes": summary["saved_tensor_bytes"],
         "reverse_tape_records": summary["reverse_tape_records"],
         "blockers": summary["blockers"],
+        "site_ownership": initial_mps_ownership(n_qubits, summary["world_size"]),
+        "runtime": summary,
     }
     if rank == 0:
         reference_value, reference_gradient = unsharded_reference(
@@ -205,12 +230,103 @@ def measure_arm(
     return arm
 
 
+def launch_local_world(world: int, timeout: float, output: Path, seed: int) -> int:
+    """Launch bounded Gloo workers using a fresh file store and retain rank logs."""
+    processes: list[subprocess.Popen[bytes]] = []
+    logs = []
+    output.parent.mkdir(parents=True, exist_ok=True)
+    with tempfile.TemporaryDirectory(prefix="fq-placement-") as directory:
+        try:
+            for rank in range(world):
+                env = dict(
+                    os.environ,
+                    RANK=str(rank),
+                    WORLD_SIZE=str(world),
+                    LOCAL_RANK=str(rank),
+                    LOCAL_WORLD_SIZE=str(world),
+                )
+                env["FQ_PLACEMENT_LAUNCH_COMMAND"] = json.dumps(sys.argv)
+                log = output.with_suffix(f".rank{rank}.log").open("wb")
+                logs.append(log)
+                command = [
+                    sys.executable,
+                    "-m",
+                    "benchmarks.mps_placement_conformance",
+                    "--output",
+                    str(output),
+                    "--init-method",
+                    Path(directory, "store").as_uri(),
+                    "--timeout-seconds",
+                    str(timeout),
+                    "--seed",
+                    str(seed),
+                ]
+                processes.append(
+                    subprocess.Popen(
+                        command,
+                        cwd=REPO_ROOT,
+                        env=env,
+                        stdout=log,
+                        stderr=subprocess.STDOUT,
+                    )
+                )
+            deadline = time.monotonic() + timeout
+            while any(process.poll() is None for process in processes):
+                if any(process.poll() not in (None, 0) for process in processes):
+                    raise RuntimeError("placement worker failed; inspect the rank logs")
+                if time.monotonic() >= deadline:
+                    raise TimeoutError(
+                        "placement workers exceeded their deadline; inspect rank logs"
+                    )
+                print(
+                    json.dumps(
+                        {
+                            "phase": "waiting_for_workers",
+                            "ranks": [p.poll() for p in processes],
+                        }
+                    ),
+                    flush=True,
+                )
+                time.sleep(2)
+            if any(process.returncode != 0 for process in processes):
+                raise RuntimeError("placement worker failed; inspect the rank logs")
+            return 0
+        finally:
+            for process in processes:
+                if process.poll() is None:
+                    process.terminate()
+            for process in processes:
+                try:
+                    process.wait(timeout=5)
+                except subprocess.TimeoutExpired:
+                    process.kill()
+                    process.wait(timeout=5)
+            for log in logs:
+                log.close()
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--backend", choices=("gloo", "nccl"), default="gloo")
     parser.add_argument("--seed", type=int, default=20261028)
     parser.add_argument("--output", type=Path)
+    parser.add_argument("--local-world-size", type=int)
+    parser.add_argument("--init-method", default="env://")
+    parser.add_argument("--timeout-seconds", type=float, default=90)
     arguments = parser.parse_args()
+    if arguments.timeout_seconds <= 0:
+        parser.error("--timeout-seconds must be positive")
+    if arguments.local_world_size is not None:
+        if arguments.local_world_size < 1 or arguments.output is None:
+            parser.error("a positive --local-world-size requires --output")
+        if arguments.backend != "gloo":
+            parser.error("the local file-store launcher supports gloo CPU only")
+        return launch_local_world(
+            arguments.local_world_size,
+            arguments.timeout_seconds,
+            arguments.output,
+            arguments.seed,
+        )
 
     if arguments.backend == "nccl":
         local_rank = int(os.environ["LOCAL_RANK"])
@@ -218,15 +334,43 @@ def main() -> int:
         device = torch.device("cuda", local_rank)
     else:
         device = torch.device("cpu")
-    dist.init_process_group(arguments.backend)
+    print(
+        json.dumps({"phase": "initializing", "rank": os.environ.get("RANK")}),
+        flush=True,
+    )
+    dist.init_process_group(
+        arguments.backend,
+        init_method=arguments.init_method,
+        rank=int(os.environ["RANK"]),
+        world_size=int(os.environ["WORLD_SIZE"]),
+        timeout=timedelta(seconds=arguments.timeout_seconds),
+    )
     rank, world = dist.get_rank(), dist.get_world_size()
     try:
         n_qubits = WIDTH_AT_WORLD.get(world, 2 * world)
         angles = shared_angles(arguments.seed).to(device)
-        arms = [
-            measure_arm(n_qubits, angles, cap, device, rank)
-            for cap in (EXACT_CAP, TRUNCATING_CAP)
-        ]
+        arms = []
+        for cap in (EXACT_CAP, TRUNCATING_CAP):
+            print(
+                json.dumps({"phase": "measuring_arm", "rank": rank, "cap": cap}),
+                flush=True,
+            )
+            arms.append(measure_arm(n_qubits, angles, cap, device, rank))
+            print(
+                json.dumps(
+                    {
+                        "phase": "arm_complete",
+                        "rank": rank,
+                        "cap": cap,
+                        "saved_tensor_bytes": arms[-1]["saved_tensor_bytes"],
+                    }
+                ),
+                flush=True,
+            )
+        launch_argv = (
+            json.loads(os.environ.get("FQ_PLACEMENT_LAUNCH_COMMAND", "null"))
+            or sys.argv
+        )
         payload: dict[str, Any] = {
             "schema": "flagquantum.mps_placement_conformance.v1",
             "n_qubits": n_qubits,
@@ -234,10 +378,27 @@ def main() -> int:
             "world_size": world,
             "rank": rank,
             "backend": arguments.backend,
+            "dtype": "complex128",
+            "python": platform.python_version(),
+            "torch": torch.__version__,
+            "parameter_initialization": "0.1 * float64 randn(3), shared across ranks",
+            "parameters": angles.detach().cpu().tolist(),
+            "tolerances": {
+                "value_relative": PLACEMENT_RELATIVE_BOUND,
+                "gradient_relative": PLACEMENT_RELATIVE_BOUND,
+                "gradient_cosine_deficit": PLACEMENT_RELATIVE_BOUND,
+            },
+            **source_record(REPO_ROOT, launch_argv),
+            "rendezvous": "file_store"
+            if arguments.init_method.startswith("file:")
+            else "environment",
+            "socket_interface": os.environ.get("GLOO_SOCKET_IFNAME"),
+            "scalability_claim_allowed": False,
+            "peak_process_rss_bytes": peak_process_rss_bytes(),
             "device": str(device),
             "arms": arms,
             "claim_boundary": (
-                "single-host CPU placement semantics; not capacity, speed, "
+                "bounded placement semantics; not capacity, speed, "
                 "accelerator or scalability evidence"
             ),
         }
