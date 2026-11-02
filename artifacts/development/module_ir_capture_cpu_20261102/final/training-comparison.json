@@ -1,0 +1,212 @@
+[
+  {
+    "case": "classifier-flagquantum-11",
+    "final_parameter_max_error": 0.0,
+    "before_training_seconds": 2.59074754199537,
+    "after_training_seconds": 2.678647082997486,
+    "before_over_after": 0.9671850981937665
+  },
+  {
+    "case": "classifier-flagquantum-29",
+    "final_parameter_max_error": 0.0,
+    "before_training_seconds": 2.542121499995119,
+    "after_training_seconds": 2.718553583996254,
+    "before_over_after": 0.9351007517233554
+  },
+  {
+    "case": "classifier-flagquantum-47",
+    "final_parameter_max_error": 0.0,
+    "before_training_seconds": 2.564505874994211,
+    "after_training_seconds": 2.579052959001274,
+    "before_over_after": 0.9943595248960315
+  },
+  {
+    "case": "classifier-flagquantum_torch_module-11",
+    "final_parameter_max_error": 0.0,
+    "before_training_seconds": 2.3257396659901133,
+    "after_training_seconds": 2.368737791010062,
+    "before_over_after": 0.9818476636869065
+  },
+  {
+    "case": "classifier-flagquantum_torch_module-29",
+    "final_parameter_max_error": 0.0,
+    "before_training_seconds": 2.393036875000689,
+    "after_training_seconds": 2.3412221670005238,
+    "before_over_after": 1.022131478477563
+  },
+  {
+    "case": "classifier-flagquantum_torch_module-47",
+    "final_parameter_max_error": 0.0,
+    "before_training_seconds": 2.3828379589976976,
+    "after_training_seconds": 2.3931679999950575,
+    "before_over_after": 0.9956835286961128
+  },
+  {
+    "case": "classifier-flagquantum_jax_module-11",
+    "final_parameter_max_error": 0.0,
+    "before_training_seconds": 0.3354868750029709,
+    "after_training_seconds": 0.3150850829988485,
+    "before_over_after": 1.0647501043525978
+  },
+  {
+    "case": "classifier-flagquantum_jax_module-29",
+    "final_parameter_max_error": 0.0,
+    "before_training_seconds": 0.3489655000012135,
+    "after_training_seconds": 0.31603237499075476,
+    "before_over_after": 1.1042080736551823
+  },
+  {
+    "case": "classifier-flagquantum_jax_module-47",
+    "final_parameter_max_error": 0.0,
+    "before_training_seconds": 0.3400249590049498,
+    "after_training_seconds": 0.3075423749978654,
+    "before_over_after": 1.1056198646034057
+  },
+  {
+    "case": "classifier-flagquantum_jax_kernel-11",
+    "final_parameter_max_error": 0.0,
+    "before_training_seconds": 0.14541329100029543,
+    "after_training_seconds": 0.14050404200679623,
+    "before_over_after": 1.0349402687878668
+  },
+  {
+    "case": "classifier-flagquantum_jax_kernel-29",
+    "final_parameter_max_error": 0.0,
+    "before_training_seconds": 0.14493149999179877,
+    "after_training_seconds": 0.1441829579998739,
+    "before_over_after": 1.0051916121177478
+  },
+  {
+    "case": "classifier-flagquantum_jax_kernel-47",
+    "final_parameter_max_error": 0.0,
+    "before_training_seconds": 0.14716983398830052,
+    "after_training_seconds": 0.14774862500780728,
+    "before_over_after": 0.9960825962375205
+  },
+  {
+    "case": "classifier-tensorcircuit_jax-11",
+    "final_parameter_max_error": 0.0,
+    "before_training_seconds": 0.15078462500241585,
+    "after_training_seconds": 0.1488708749966463,
+    "before_over_after": 1.012855100138376
+  },
+  {
+    "case": "classifier-tensorcircuit_jax-29",
+    "final_parameter_max_error": 0.0,
+    "before_training_seconds": 0.14748712499567773,
+    "after_training_seconds": 0.14050137498998083,
+    "before_over_after": 1.0497201540283507
+  },
+  {
+    "case": "classifier-tensorcircuit_jax-47",
+    "final_parameter_max_error": 0.0,
+    "before_training_seconds": 0.14293300001008902,
+    "after_training_seconds": 0.15057720900222193,
+    "before_over_after": 0.9492339574973785
+  },
+  {
+    "case": "heisenberg-flagquantum-11",
+    "final_parameter_max_error": 0.0,
+    "before_training_seconds": 0.32088858299539424,
+    "after_training_seconds": 0.32393558300100267,
+    "before_over_after": 0.9905938088758869
+  },
+  {
+    "case": "heisenberg-flagquantum-29",
+    "final_parameter_max_error": 0.0,
+    "before_training_seconds": 0.32981841699802317,
+    "after_training_seconds": 0.3169224159937585,
+    "before_over_after": 1.040691350164763
+  },
+  {
+    "case": "heisenberg-flagquantum-47",
+    "final_parameter_max_error": 0.0,
+    "before_training_seconds": 0.3481422500044573,
+    "after_training_seconds": 0.31468799999856856,
+    "before_over_after": 1.1063092650690236
+  },
+  {
+    "case": "heisenberg-flagquantum_torch_module-11",
+    "final_parameter_max_error": 0.0,
+    "before_training_seconds": 0.33329345801030286,
+    "after_training_seconds": 0.32364133300143294,
+    "before_over_after": 1.0298235238353415
+  },
+  {
+    "case": "heisenberg-flagquantum_torch_module-29",
+    "final_parameter_max_error": 0.0,
+    "before_training_seconds": 0.3428637500037439,
+    "after_training_seconds": 0.3307903749955585,
+    "before_over_after": 1.0364985680382857
+  },
+  {
+    "case": "heisenberg-flagquantum_torch_module-47",
+    "final_parameter_max_error": 0.0,
+    "before_training_seconds": 0.34039945800032,
+    "after_training_seconds": 0.33253779100778047,
+    "before_over_after": 1.0236414242384728
+  },
+  {
+    "case": "heisenberg-flagquantum_jax_module-11",
+    "final_parameter_max_error": 0.0,
+    "before_training_seconds": 0.0350750419893302,
+    "after_training_seconds": 0.03513158300484065,
+    "before_over_after": 0.9983905930028073
+  },
+  {
+    "case": "heisenberg-flagquantum_jax_module-29",
+    "final_parameter_max_error": 0.0,
+    "before_training_seconds": 0.03538145899074152,
+    "after_training_seconds": 0.03724020899971947,
+    "before_over_after": 0.9500875516302298
+  },
+  {
+    "case": "heisenberg-flagquantum_jax_module-47",
+    "final_parameter_max_error": 0.0,
+    "before_training_seconds": 0.03913066700624768,
+    "after_training_seconds": 0.03418925000005402,
+    "before_over_after": 1.144531307536312
+  },
+  {
+    "case": "heisenberg-flagquantum_jax_kernel-11",
+    "final_parameter_max_error": 0.0,
+    "before_training_seconds": 0.023583791000419296,
+    "after_training_seconds": 0.026552666997304186,
+    "before_over_after": 0.888189160162845
+  },
+  {
+    "case": "heisenberg-flagquantum_jax_kernel-29",
+    "final_parameter_max_error": 0.0,
+    "before_training_seconds": 0.025949832997866906,
+    "after_training_seconds": 0.023427957989042625,
+    "before_over_after": 1.1076438249549438
+  },
+  {
+    "case": "heisenberg-flagquantum_jax_kernel-47",
+    "final_parameter_max_error": 0.0,
+    "before_training_seconds": 0.024701916991034523,
+    "after_training_seconds": 0.02630241701263003,
+    "before_over_after": 0.9391500780773504
+  },
+  {
+    "case": "heisenberg-tensorcircuit_jax-11",
+    "final_parameter_max_error": 0.0,
+    "before_training_seconds": 0.026415166998049244,
+    "after_training_seconds": 0.025064207991817966,
+    "before_over_after": 1.0538999280038008
+  },
+  {
+    "case": "heisenberg-tensorcircuit_jax-29",
+    "final_parameter_max_error": 0.0,
+    "before_training_seconds": 0.09101095900405198,
+    "after_training_seconds": 0.024839750010869466,
+    "before_over_after": 3.6639241121278228
+  },
+  {
+    "case": "heisenberg-tensorcircuit_jax-47",
+    "final_parameter_max_error": 0.0,
+    "before_training_seconds": 0.026241583997034468,
+    "after_training_seconds": 0.025641333995736204,
+    "before_over_after": 1.0234094685322563
+  }
+]

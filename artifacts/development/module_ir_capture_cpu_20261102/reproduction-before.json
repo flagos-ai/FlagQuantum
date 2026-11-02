@@ -1,0 +1,102 @@
+{
+  "source_commit": "abde02fd05100b3ae2a65d68128d459cfd437dbe",
+  "source_dirty": false,
+  "imported_package": "/private/tmp/fq918-ir-before/flagquantum/__init__.py",
+  "producer_sha256": "ee95180ff833ae6043f265aef16118600ff8c98350a93a0dd4c2ba7a7641afaa",
+  "versions": {
+    "torch": "2.14.1",
+    "jax": "0.10.2",
+    "jaxlib": "0.10.2"
+  },
+  "scope": "public Module values, VJPs and Python builder calls; no performance claim",
+  "results": [
+    {
+      "recipe": "power",
+      "backend": "pytorch",
+      "value_max_error": 1.1102230246251565e-16,
+      "parameter_vjp_max_error": 6.938893903907228e-18,
+      "input_vjp_max_error": 6.938893903907228e-18,
+      "status": "completed",
+      "builder_lowering": "not_reported",
+      "jax_kernel_build_count": null,
+      "builder_calls": 1
+    },
+    {
+      "recipe": "power",
+      "backend": "jax",
+      "value_max_error": 1.1102230246251565e-16,
+      "parameter_vjp_max_error": 6.938893903907228e-18,
+      "input_vjp_max_error": 6.938893903907228e-18,
+      "status": "completed",
+      "builder_lowering": "not_reported",
+      "jax_kernel_build_count": null,
+      "builder_calls": 3
+    },
+    {
+      "recipe": "square_method",
+      "backend": "pytorch",
+      "value_max_error": 1.1102230246251565e-16,
+      "parameter_vjp_max_error": 6.938893903907228e-18,
+      "input_vjp_max_error": 6.938893903907228e-18,
+      "status": "completed",
+      "builder_lowering": "not_reported",
+      "jax_kernel_build_count": null,
+      "builder_calls": 1
+    },
+    {
+      "recipe": "square_method",
+      "backend": "jax",
+      "value_max_error": 0.0,
+      "parameter_vjp_max_error": 0.0,
+      "input_vjp_max_error": 0.0,
+      "status": "failed",
+      "error_type": "ExecutionError",
+      "cause_type": "AttributeError",
+      "builder_calls": 2
+    },
+    {
+      "recipe": "torch_sin",
+      "backend": "pytorch",
+      "value_max_error": 1.1102230246251565e-16,
+      "parameter_vjp_max_error": 1.3877787807814457e-17,
+      "input_vjp_max_error": 6.938893903907228e-18,
+      "status": "completed",
+      "builder_lowering": "not_reported",
+      "jax_kernel_build_count": null,
+      "builder_calls": 1
+    },
+    {
+      "recipe": "torch_sin",
+      "backend": "jax",
+      "value_max_error": 0.0,
+      "parameter_vjp_max_error": 0.0,
+      "input_vjp_max_error": 0.0,
+      "status": "failed",
+      "error_type": "ExecutionError",
+      "cause_type": "TypeError",
+      "builder_calls": 2
+    },
+    {
+      "recipe": "gradient_cut",
+      "backend": "pytorch",
+      "value_max_error": 1.1102230246251565e-16,
+      "parameter_vjp_max_error": 0.024284146741430007,
+      "input_vjp_max_error": 0.0,
+      "status": "failed",
+      "error_type": "AssertionError",
+      "cause_type": "NoneType",
+      "builder_calls": 1
+    },
+    {
+      "recipe": "gradient_cut",
+      "backend": "jax",
+      "value_max_error": 0.0,
+      "parameter_vjp_max_error": 0.0,
+      "input_vjp_max_error": 0.0,
+      "status": "failed",
+      "error_type": "ExecutionError",
+      "cause_type": "AttributeError",
+      "builder_calls": 2
+    }
+  ]
+}
