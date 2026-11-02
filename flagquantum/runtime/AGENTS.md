@@ -7,7 +7,13 @@ Module frontend capture entry: `module.py` may import `CapturedModuleBuilder` an
 `capture_module_builder` from `compiler.module_builder`, replacing its current
 builder capture. The contract and replacement fake must land before that
 implementation; see `docs/development/MODULE_REUSABLE_EXECUTION_CONTRACT.md`.
-This exception does not permit compiler imports in executors or Simulation.
+The separately user-approved lazy Torch training boundary permits only
+`training.py` to import `compile_training_callable` from `compiler.training`.
+Its approved contract and replacement fake must land before implementation;
+see `docs/development/TORCH_TRAINING_COMPILATION_CONTRACT.md`. It preserves
+caller-owned parameters/optimizer state, Torch defaults and checkpoint schemas;
+unsupported semantics retain an explicit eager reason. Neither exception permits
+compiler imports in executors or Simulation.
 `executors/` owns internal,
 plan-aware execution lifecycles but delegates numerical kernels to Simulation.
 During migration, `target_execution.py` belongs to Remote; its

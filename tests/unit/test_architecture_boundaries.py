@@ -7,6 +7,7 @@ import pytest
 from tools.check_architecture import (
     CONFIG,
     _approved_module_capture_import,
+    _approved_training_compile_import,
     _imports_jax_executor,
     architecture_errors,
     eager_import_cycles,
@@ -44,6 +45,50 @@ def test_module_capture_permission_is_one_frontend_entry(prefix):
 
 def test_checked_architecture_boundaries_pass():
     assert architecture_errors() == ()
+
+
+@pytest.mark.parametrize("prefix", ("", "flagquantum."))
+def test_training_compilation_permission_is_one_lifecycle_entry(prefix):
+    importer = "flagquantum/runtime/training.py"
+    module = prefix + "compiler.training"
+    assert _approved_training_compile_import(
+        importer, module, "compile_training_callable"
+    )
+    assert not _approved_training_compile_import(importer, module, "unreviewed_entry")
+    assert not _approved_training_compile_import(
+        importer, prefix + "compiler", "training"
+    )
+    for other in (
+        "flagquantum/runtime/module.py",
+        "flagquantum/runtime/executors/statevector/training.py",
+        "flagquantum/simulation/statevector/program.py",
+    ):
+        assert not _approved_training_compile_import(
+            other, module, "compile_training_callable"
+        )
+    boundary = CONFIG["training_callable_compilation_boundary"]
+    assert (ROOT / boundary["approval"]).is_file()
+
+
+def test_package_check_enforces_the_training_compilation_exception(monkeypatch):
+    import tools.check_architecture as checker
+
+    original = checker._imports
+    admitted_name = "compile_training_callable"
+
+    def with_training(path):
+        imports = original(path)
+        if path.relative_to(ROOT).as_posix() == "flagquantum/runtime/training.py":
+            return imports + (("compiler.training", admitted_name),)
+        return imports
+
+    monkeypatch.setattr(checker, "_imports", with_training)
+    assert architecture_errors() == ()
+    admitted_name = "unreviewed_entry"
+    assert any(
+        "training.py: new Runtime dependency on Compiler" in error
+        for error in architecture_errors()
+    )
 
 
 def test_package_check_enforces_the_capture_exception(monkeypatch):
