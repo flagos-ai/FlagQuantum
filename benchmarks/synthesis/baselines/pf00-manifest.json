@@ -1,0 +1,308 @@
+{
+  "cohorts": {
+    "initial": {
+      "attempted_configurations": 125,
+      "file": "pf00-initial.json.gz.parts.json",
+      "gzip_bytes": 6982827,
+      "gzip_sha256": "922d0a48f2957e42e7061773dd064048b692b4a48f88354d3bcff22c469555d8",
+      "production_tree": "eaf1417f32942e5ed2e36e69373ca1c3dfdebb88",
+      "raw_statuses": {
+        "measurement_failed": 5,
+        "resource_refused": 21,
+        "timeout": 8,
+        "validation_failed": 21,
+        "verified": 820
+      },
+      "source_revision": "601f179f5d973bd00d2c560bb20383390cf772ab",
+      "stored_sha256": "9676900195a4a54b7a0a2b5cc1d24b051aa2639ad79a497ab1d677b721e4e92f",
+      "uncompressed_bytes": 131157014,
+      "uncompressed_sha256": "e0fe5681bc3898d877ae2846d476fdb3f3dac1576a39dbba4b1888ccd8fa8cde"
+    },
+    "line_correction": {
+      "attempted_configurations": 3,
+      "file": "pf00-line_correction.json.gz",
+      "gzip_bytes": 223044,
+      "gzip_sha256": "42024e65e981b8bb683e7a0e558302e10c788e1038d7c1e30d9b4ff6025a2006",
+      "production_tree": "eaf1417f32942e5ed2e36e69373ca1c3dfdebb88",
+      "raw_statuses": {
+        "verified": 21
+      },
+      "source_revision": "44afa3c1971924ff74230bf76404ae29f6f99aba",
+      "stored_sha256": "42024e65e981b8bb683e7a0e558302e10c788e1038d7c1e30d9b4ff6025a2006",
+      "uncompressed_bytes": 4056197,
+      "uncompressed_sha256": "74bce0c0564a1073f49fd84de7ddb4d56f25e6026c95514acb2900cf2db0b5e2"
+    }
+  },
+  "coverage": {
+    "attempted_configurations": 128,
+    "complete_primary_configurations": 124,
+    "original_corpus_configurations": 90,
+    "selected_diagnostic_statuses": {
+      "measurement_failed": 5,
+      "resource_refused": 3,
+      "timeout": 2,
+      "verified": 115
+    },
+    "selected_memory_statuses": {
+      "resource_refused": 3,
+      "timeout": 1,
+      "verified": 121
+    },
+    "selected_primary_statuses": {
+      "resource_refused": 15,
+      "timeout": 5,
+      "verified": 605
+    },
+    "unique_configurations": 125
+  },
+  "incomplete_selected_records": [
+    {
+      "cohort": "initial",
+      "gaps": [
+        {
+          "error": "RuntimeError('incomplete diagnostic call stack')",
+          "mode": "diagnostic",
+          "status": "measurement_failed"
+        }
+      ],
+      "id": "square-16:scalar:inline:logical:success"
+    },
+    {
+      "cohort": "initial",
+      "gaps": [
+        {
+          "error": "per-call wall deadline exceeded",
+          "mode": "diagnostic",
+          "status": "timeout"
+        }
+      ],
+      "id": "multiply-16x16:scalar:inline:logical:success"
+    },
+    {
+      "cohort": "initial",
+      "gaps": [
+        {
+          "error": "RuntimeError('incomplete diagnostic call stack')",
+          "mode": "diagnostic",
+          "status": "measurement_failed"
+        }
+      ],
+      "id": "energy-16x16:scalar:inline:logical:success"
+    },
+    {
+      "cohort": "initial",
+      "gaps": [
+        {
+          "error": "RuntimeError('incomplete diagnostic call stack')",
+          "mode": "diagnostic",
+          "status": "measurement_failed"
+        }
+      ],
+      "id": "multiply_add-16x16x16:scalar:inline:logical:success"
+    },
+    {
+      "cohort": "initial",
+      "gaps": [
+        {
+          "error": "RuntimeError('incomplete diagnostic call stack')",
+          "mode": "diagnostic",
+          "status": "measurement_failed"
+        }
+      ],
+      "id": "shared_square-16x16:scalar:inline:logical:success"
+    },
+    {
+      "cohort": "initial",
+      "gaps": [
+        {
+          "error": "per-call wall deadline exceeded",
+          "mode": "timing",
+          "status": "timeout"
+        },
+        {
+          "error": "per-call wall deadline exceeded",
+          "mode": "timing",
+          "status": "timeout"
+        },
+        {
+          "error": "per-call wall deadline exceeded",
+          "mode": "timing",
+          "status": "timeout"
+        },
+        {
+          "error": "per-call wall deadline exceeded",
+          "mode": "timing",
+          "status": "timeout"
+        },
+        {
+          "error": "per-call wall deadline exceeded",
+          "mode": "timing",
+          "status": "timeout"
+        },
+        {
+          "error": "per-call wall deadline exceeded",
+          "mode": "memory",
+          "status": "timeout"
+        },
+        {
+          "error": "per-call wall deadline exceeded",
+          "mode": "diagnostic",
+          "status": "timeout"
+        }
+      ],
+      "id": "mixed_products-16x16:scalar:inline:logical:success"
+    },
+    {
+      "cohort": "initial",
+      "gaps": [
+        {
+          "error": "RuntimeError('incomplete diagnostic call stack')",
+          "mode": "diagnostic",
+          "status": "measurement_failed"
+        }
+      ],
+      "id": "overlapping-16x16x16:scalar:inline:logical:success"
+    }
+  ],
+  "invariants": [
+    "Same accepted production tree and byte-identical timing driver.",
+    "Original 601f179 data, including failed line-oracle records, are preserved.",
+    "Correction changes only oracle coordinates, source validation and diagnostic exception cleanup; original diagnostic failures are not retagged.",
+    "No speedup, Rust necessity, hardware or release claim."
+  ],
+  "preserved_initial_oracle_failures": [
+    "energy-2x2:qfunc:inline:line:success",
+    "energy-2x2:qmod:inline:line:success",
+    "energy-2x2:scalar:inline:line:success"
+  ],
+  "production_baseline_revision": "103250df54a0cf7204a8057baae5316ae0a4144f",
+  "production_tree": "eaf1417f32942e5ed2e36e69373ca1c3dfdebb88",
+  "schema": "flagquantum.synthesis.python_performance_manifest.v1",
+  "selection": {
+    "add-16x16:scalar:inline:logical:success": "initial",
+    "add-1x1:scalar:inline:logical:success": "initial",
+    "add-1x3:qfunc:inline:logical:success": "initial",
+    "add-1x3:qmod:inline:logical:success": "initial",
+    "add-1x3:scalar:inline:logical:success": "initial",
+    "add-2x2:scalar:inline:logical:success": "initial",
+    "add-2x4:scalar:inline:logical:success": "initial",
+    "add-3x3:scalar:inline:logical:success": "initial",
+    "add-4x4:scalar:inline:logical:success": "initial",
+    "add-8x8:scalar:inline:logical:success": "initial",
+    "constant_product-1:scalar:inline:logical:success": "initial",
+    "constant_product-3:scalar:inline:logical:success": "initial",
+    "constant_product-4:qfunc:inline:logical:success": "initial",
+    "constant_product-4:qmod:inline:logical:success": "initial",
+    "constant_product-4:scalar:inline:logical:success": "initial",
+    "constant_product-5:qfunc:inline:logical:success": "initial",
+    "constant_product-5:qmod:inline:logical:success": "initial",
+    "constant_product-5:scalar:inline:logical:success": "initial",
+    "disjoint_add-1:scalar:inline:logical:success": "initial",
+    "disjoint_add-3:scalar:inline:logical:success": "initial",
+    "double-16:scalar:inline:logical:success": "initial",
+    "double-1:scalar:inline:logical:success": "initial",
+    "double-2:scalar:inline:logical:success": "initial",
+    "double-3:scalar:inline:logical:success": "initial",
+    "double-4:scalar:inline:logical:success": "initial",
+    "double-8:scalar:inline:logical:success": "initial",
+    "energy-16x16:scalar:inline:logical:success": "initial",
+    "energy-1x1:scalar:inline:logical:success": "initial",
+    "energy-1x3:scalar:inline:logical:success": "initial",
+    "energy-2x2:qfunc:exchanged:logical:success": "initial",
+    "energy-2x2:qfunc:helper:logical:success": "initial",
+    "energy-2x2:qfunc:inline:basis:success": "initial",
+    "energy-2x2:qfunc:inline:line:success": "line_correction",
+    "energy-2x2:qfunc:inline:logical:refused": "initial",
+    "energy-2x2:qfunc:inline:logical:success": "initial",
+    "energy-2x2:qmod:exchanged:logical:success": "initial",
+    "energy-2x2:qmod:helper:logical:success": "initial",
+    "energy-2x2:qmod:inline:basis:success": "initial",
+    "energy-2x2:qmod:inline:line:success": "line_correction",
+    "energy-2x2:qmod:inline:logical:refused": "initial",
+    "energy-2x2:qmod:inline:logical:success": "initial",
+    "energy-2x2:scalar:exchanged:logical:success": "initial",
+    "energy-2x2:scalar:helper:logical:success": "initial",
+    "energy-2x2:scalar:inline:basis:success": "initial",
+    "energy-2x2:scalar:inline:line:success": "line_correction",
+    "energy-2x2:scalar:inline:logical:refused": "initial",
+    "energy-2x2:scalar:inline:logical:success": "initial",
+    "energy-2x4:scalar:inline:logical:success": "initial",
+    "energy-3x3:scalar:inline:logical:success": "initial",
+    "energy-4x4:scalar:inline:logical:success": "initial",
+    "energy-8x8:qfunc:inline:logical:success": "initial",
+    "energy-8x8:qmod:inline:logical:success": "initial",
+    "energy-8x8:scalar:inline:logical:success": "initial",
+    "identity_product-1:scalar:inline:logical:success": "initial",
+    "identity_product-3:scalar:inline:logical:success": "initial",
+    "linear-16x16:scalar:inline:logical:success": "initial",
+    "linear-1x1:scalar:inline:logical:success": "initial",
+    "linear-1x3:scalar:inline:logical:success": "initial",
+    "linear-2x2:scalar:inline:logical:success": "initial",
+    "linear-2x4:scalar:inline:logical:success": "initial",
+    "linear-3x3:scalar:inline:logical:success": "initial",
+    "linear-4x4:scalar:inline:logical:success": "initial",
+    "linear-8x8:scalar:inline:logical:success": "initial",
+    "mixed_products-16x16:scalar:inline:logical:success": "initial",
+    "mixed_products-1x1:scalar:inline:logical:success": "initial",
+    "mixed_products-1x3:scalar:inline:logical:success": "initial",
+    "mixed_products-2x2:scalar:inline:logical:success": "initial",
+    "mixed_products-2x4:scalar:inline:logical:success": "initial",
+    "mixed_products-3x3:scalar:inline:logical:success": "initial",
+    "mixed_products-4x4:scalar:inline:logical:success": "initial",
+    "mixed_products-8x8:scalar:inline:logical:success": "initial",
+    "multiply-16x16:scalar:inline:logical:success": "initial",
+    "multiply-1x1:scalar:inline:logical:success": "initial",
+    "multiply-1x3:scalar:inline:logical:success": "initial",
+    "multiply-2x2:scalar:inline:logical:success": "initial",
+    "multiply-2x4:scalar:inline:logical:success": "initial",
+    "multiply-3x3:scalar:inline:logical:success": "initial",
+    "multiply-4x4:scalar:inline:logical:success": "initial",
+    "multiply-8x8:scalar:inline:logical:success": "initial",
+    "multiply_add-16x16x16:scalar:inline:logical:success": "initial",
+    "multiply_add-1x1x1:qfunc:inline:logical:success": "initial",
+    "multiply_add-1x1x1:qmod:inline:logical:success": "initial",
+    "multiply_add-1x1x1:scalar:inline:logical:success": "initial",
+    "multiply_add-1x3x2:scalar:inline:logical:success": "initial",
+    "multiply_add-2x2x2:scalar:inline:logical:success": "initial",
+    "multiply_add-2x4x1:scalar:inline:logical:success": "initial",
+    "multiply_add-3x3x3:scalar:inline:logical:success": "initial",
+    "multiply_add-4x4x4:scalar:inline:logical:success": "initial",
+    "multiply_add-8x8x8:scalar:inline:logical:success": "initial",
+    "overlapping-16x16x16:scalar:inline:logical:success": "initial",
+    "overlapping-1x1x1:scalar:inline:logical:success": "initial",
+    "overlapping-1x3x2:scalar:inline:logical:success": "initial",
+    "overlapping-2x2x2:scalar:inline:logical:success": "initial",
+    "overlapping-2x4x1:scalar:inline:logical:success": "initial",
+    "overlapping-3x3x3:scalar:inline:logical:success": "initial",
+    "overlapping-4x4x4:scalar:inline:logical:success": "initial",
+    "overlapping-8x8x8:scalar:inline:logical:success": "initial",
+    "power_square-1:scalar:inline:logical:success": "initial",
+    "power_square-3:scalar:inline:logical:success": "initial",
+    "shared_square-16x16:scalar:inline:logical:success": "initial",
+    "shared_square-1x1:scalar:inline:logical:success": "initial",
+    "shared_square-1x3:scalar:inline:logical:success": "initial",
+    "shared_square-2x2:scalar:inline:logical:success": "initial",
+    "shared_square-2x4:scalar:inline:logical:success": "initial",
+    "shared_square-3x3:scalar:inline:logical:success": "initial",
+    "shared_square-4x4:scalar:inline:logical:success": "initial",
+    "shared_square-8x8:qfunc:inline:logical:success": "initial",
+    "shared_square-8x8:qmod:inline:logical:success": "initial",
+    "shared_square-8x8:scalar:inline:logical:success": "initial",
+    "shift_product-1:scalar:inline:logical:success": "initial",
+    "shift_product-3:scalar:inline:logical:success": "initial",
+    "square-16:scalar:inline:logical:success": "initial",
+    "square-1:scalar:inline:logical:success": "initial",
+    "square-2:qfunc:inline:logical:success": "initial",
+    "square-2:qmod:inline:logical:success": "initial",
+    "square-2:scalar:inline:logical:success": "initial",
+    "square-3:qfunc:inline:logical:success": "initial",
+    "square-3:qmod:inline:logical:success": "initial",
+    "square-3:scalar:inline:logical:success": "initial",
+    "square-4:scalar:inline:logical:success": "initial",
+    "square-8:scalar:inline:logical:success": "initial",
+    "zero_add-1:scalar:inline:logical:success": "initial",
+    "zero_add-3:scalar:inline:logical:success": "initial",
+    "zero_product-1:scalar:inline:logical:success": "initial",
+    "zero_product-3:scalar:inline:logical:success": "initial"
+  }
+}
