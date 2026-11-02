@@ -21,6 +21,7 @@ def capture_training_value(
     dtype: torch.dtype,
     observable_qubits: tuple[int, ...],
     sum_observables: bool,
+    return_state: bool = False,
 ) -> GraphModule:
     """Capture existing statevector numerics, leaving lifecycle checks outside.
 
@@ -32,6 +33,7 @@ def capture_training_value(
         dtype: Existing explicit complex precision.
         observable_qubits: Existing Z readout qubits.
         sum_observables: Whether the caller requests their scalar sum.
+        return_state: Retain the existing public ExecutionResult state output.
 
     Returns:
         An ephemeral Torch numerical graph with one positional input per binding.
@@ -67,12 +69,17 @@ def capture_training_value(
     if set(names) != set(prototype.parameter_names):
         raise CapabilityError("Torch training capture needs every canonical binding")
 
-    def numerical(*angles: torch.Tensor) -> torch.Tensor:
+    def numerical(
+        *angles: torch.Tensor,
+    ) -> torch.Tensor | tuple[torch.Tensor, torch.Tensor]:
         circuit = prototype.bind_parameters(dict(zip(names, angles, strict=True)))
+        state = circuit.state()
         values = circuit.expectation_z(observable_qubits)
         if sum_observables:
-            return values.sum(dim=-1)
-        return values if len(observable_qubits) > 1 else values[..., 0]
+            value = values.sum(dim=-1)
+        else:
+            value = values if len(observable_qubits) > 1 else values[..., 0]
+        return (value, state) if return_state else value
 
     # Frozen features still change between calls. Differentiable private examples
     # select functional tensor numerics rather than inference-only matrix caches.

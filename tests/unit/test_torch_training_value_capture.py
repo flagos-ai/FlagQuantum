@@ -83,6 +83,26 @@ def test_capture_does_not_retain_the_original_example_storage():
     torch.testing.assert_close(second, -value.cos(), atol=1e-12, rtol=1e-12)
 
 
+def test_value_and_state_share_current_bindings():
+    program = fq.Circuit(1, dtype=torch.complex128).ry(0, Parameter("a")).to_ir()
+    graph = capture_training_value(
+        program,
+        {"a": torch.tensor([0.2], dtype=torch.float64)},
+        batch_size=1,
+        device=torch.device("cpu"),
+        dtype=torch.complex128,
+        observable_qubits=(0,),
+        sum_observables=False,
+        return_state=True,
+    )
+    for angle in (0.1, 0.4):
+        current = torch.tensor([angle], dtype=torch.float64, requires_grad=True)
+        value, state = graph(current)
+        expected = torch.stack(((current / 2).cos(), (current / 2).sin()), -1)
+        torch.testing.assert_close(state, expected.to(torch.complex128))
+        torch.testing.assert_close(value, current.cos())
+
+
 def test_explicit_matrices_and_unresolved_bindings_are_refused():
     program = (
         fq.Circuit(1)
