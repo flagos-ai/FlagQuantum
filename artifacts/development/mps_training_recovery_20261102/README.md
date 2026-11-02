@@ -186,3 +186,11 @@ All six conditions are met within these explicit boundaries. Closing this issue
 does not certify arbitrary large-state training, checkpoint resizing, exact
 truncated gradients, host-loss recovery or a new release topology. Use a merge
 commit so that every source pin remains reachable.
+
+Final local validation passed 83 combined scientific/recovery/source-transport/
+workflow/privacy/field-vocabulary checks and 105 quality/provenance/privacy/lane
+checks in an isolated single-branch clone. Whole-directory revision origins,
+source/manifest/UUID/checkpoint receipts and deterministic report regeneration
+also passed there. Formatting, type, architecture, dependency, language, docs-link
+and repository-hygiene checks passed. Logs are retained under `validation/`;
+remote PR CI is the separate merge gate.
