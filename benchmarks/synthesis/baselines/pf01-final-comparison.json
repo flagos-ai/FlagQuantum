@@ -1,0 +1,1063 @@
+{
+  "claims": "Scoped local PF-01 development comparison; not release, Rust or hardware evidence",
+  "rows": {
+    "constant_product-5:qfunc:inline:logical:success": {
+      "e0_ns": {
+        "after": {
+          "max": 76621042,
+          "median": 74429209,
+          "min": 72914708
+        },
+        "before": {
+          "max": 84219750,
+          "median": 81780041,
+          "min": 80460750
+        },
+        "reduction": {
+          "absolute": 7350832,
+          "fraction": 0.089885403701375,
+          "meets_review_line": false
+        }
+      },
+      "e1_ns": null,
+      "sampled_compile_rss_bytes": {
+        "after": {
+          "max": 218398720,
+          "median": 217759744,
+          "min": 217628672
+        },
+        "before": {
+          "max": 217628672,
+          "median": 217579520,
+          "min": 206635008
+        },
+        "reduction": {
+          "absolute": -180224,
+          "fraction": -0.0008283132530120482,
+          "meets_review_line": false
+        }
+      }
+    },
+    "energy-2x2:qfunc:exchanged:logical:success": {
+      "e0_ns": {
+        "after": {
+          "max": 32625084,
+          "median": 30793625,
+          "min": 30370875
+        },
+        "before": {
+          "max": 35493250,
+          "median": 34008875,
+          "min": 33714500
+        },
+        "reduction": {
+          "absolute": 3215250,
+          "fraction": 0.09454149835888426,
+          "meets_review_line": false
+        }
+      },
+      "e1_ns": {
+        "after": {
+          "max": 106889416,
+          "median": 99139332,
+          "min": 93973250
+        },
+        "before": {
+          "max": 106422708,
+          "median": 101905083,
+          "min": 100591417
+        },
+        "reduction": {
+          "absolute": 2765751,
+          "fraction": 0.027140461678442477,
+          "meets_review_line": false
+        }
+      },
+      "sampled_compile_rss_bytes": {
+        "after": {
+          "max": 217022464,
+          "median": 216907776,
+          "min": 198131712
+        },
+        "before": {
+          "max": 217366528,
+          "median": 217137152,
+          "min": 216530944
+        },
+        "reduction": {
+          "absolute": 229376,
+          "fraction": 0.0010563645966950878,
+          "meets_review_line": false
+        }
+      }
+    },
+    "energy-2x2:qfunc:helper:logical:success": {
+      "e0_ns": {
+        "after": {
+          "max": 34790750,
+          "median": 30220959,
+          "min": 29695000
+        },
+        "before": {
+          "max": 35534209,
+          "median": 32910042,
+          "min": 32830209
+        },
+        "reduction": {
+          "absolute": 2689083,
+          "fraction": 0.08171010538363943,
+          "meets_review_line": false
+        }
+      },
+      "e1_ns": {
+        "after": {
+          "max": 108401333,
+          "median": 94669876,
+          "min": 93066958
+        },
+        "before": {
+          "max": 104153084,
+          "median": 100602084,
+          "min": 99920416
+        },
+        "reduction": {
+          "absolute": 5932208,
+          "fraction": 0.0589670488337001,
+          "meets_review_line": false
+        }
+      },
+      "sampled_compile_rss_bytes": {
+        "after": {
+          "max": 216776704,
+          "median": 216743936,
+          "min": 200081408
+        },
+        "before": {
+          "max": 216809472,
+          "median": 216793088,
+          "min": 216727552
+        },
+        "reduction": {
+          "absolute": 49152,
+          "fraction": 0.00022672309552599758,
+          "meets_review_line": false
+        }
+      }
+    },
+    "energy-2x2:qfunc:inline:basis:success": {
+      "e0_ns": {
+        "after": {
+          "max": 248040042,
+          "median": 239927042,
+          "min": 236997709
+        },
+        "before": {
+          "max": 273235417,
+          "median": 256009833,
+          "min": 254183042
+        },
+        "reduction": {
+          "absolute": 16082791,
+          "fraction": 0.06282098937973214,
+          "meets_review_line": false
+        }
+      },
+      "e1_ns": {
+        "after": {
+          "max": 487277250,
+          "median": 475746792,
+          "min": 473013165
+        },
+        "before": {
+          "max": 567259209,
+          "median": 533819917,
+          "min": 529930291
+        },
+        "reduction": {
+          "absolute": 58073125,
+          "fraction": 0.10878785738524627,
+          "meets_review_line": true
+        }
+      },
+      "sampled_compile_rss_bytes": {
+        "after": {
+          "max": 218152960,
+          "median": 217874432,
+          "min": 163889152
+        },
+        "before": {
+          "max": 217907200,
+          "median": 217415680,
+          "min": 217415680
+        },
+        "reduction": {
+          "absolute": -458752,
+          "fraction": -0.0021100226073850793,
+          "meets_review_line": false
+        }
+      }
+    },
+    "energy-2x2:qfunc:inline:line:success": {
+      "e0_ns": {
+        "after": {
+          "max": 770815041,
+          "median": 758405083,
+          "min": 744409916
+        },
+        "before": {
+          "max": 829852208,
+          "median": 815640958,
+          "min": 808506542
+        },
+        "reduction": {
+          "absolute": 57235875,
+          "fraction": 0.07017287991562582,
+          "meets_review_line": false
+        }
+      },
+      "e1_ns": {
+        "after": {
+          "max": 1564002501,
+          "median": 1525333624,
+          "min": 1519423916
+        },
+        "before": {
+          "max": 1709871667,
+          "median": 1702735625,
+          "min": 1681101042
+        },
+        "reduction": {
+          "absolute": 177402001,
+          "fraction": 0.10418646229945415,
+          "meets_review_line": true
+        }
+      },
+      "sampled_compile_rss_bytes": {
+        "after": {
+          "max": 227049472,
+          "median": 226738176,
+          "min": 200376320
+        },
+        "before": {
+          "max": 226738176,
+          "median": 226557952,
+          "min": 196427776
+        },
+        "reduction": {
+          "absolute": -180224,
+          "fraction": -0.0007954874168354065,
+          "meets_review_line": false
+        }
+      }
+    },
+    "energy-2x2:qfunc:inline:logical:refused": {
+      "e0_ns": {
+        "after": {
+          "max": 11024959,
+          "median": 10858417,
+          "min": 10667958
+        },
+        "before": {
+          "max": 11433625,
+          "median": 10784459,
+          "min": 10696541
+        },
+        "reduction": {
+          "absolute": -73958,
+          "fraction": -0.006857831255142237,
+          "meets_review_line": false
+        }
+      },
+      "e1_ns": null,
+      "sampled_compile_rss_bytes": {
+        "after": {
+          "max": 215285760,
+          "median": 214876160,
+          "min": 214695936
+        },
+        "before": {
+          "max": 215482368,
+          "median": 215367680,
+          "min": 197820416
+        },
+        "reduction": {
+          "absolute": 491520,
+          "fraction": 0.002282236591860023,
+          "meets_review_line": false
+        }
+      }
+    },
+    "energy-2x2:qfunc:inline:logical:success": {
+      "e0_ns": {
+        "after": {
+          "max": 30538625,
+          "median": 29678708,
+          "min": 29105375
+        },
+        "before": {
+          "max": 33144208,
+          "median": 32688875,
+          "min": 32414667
+        },
+        "reduction": {
+          "absolute": 3010167,
+          "fraction": 0.0920853654339588,
+          "meets_review_line": false
+        }
+      },
+      "e1_ns": {
+        "after": {
+          "max": 97116917,
+          "median": 92794290,
+          "min": 91505917
+        },
+        "before": {
+          "max": 101275125,
+          "median": 100482666,
+          "min": 99425417
+        },
+        "reduction": {
+          "absolute": 7688376,
+          "fraction": 0.07651445076108948,
+          "meets_review_line": false
+        }
+      },
+      "sampled_compile_rss_bytes": {
+        "after": {
+          "max": 216907776,
+          "median": 216875008,
+          "min": 216858624
+        },
+        "before": {
+          "max": 216891392,
+          "median": 216743936,
+          "min": 216678400
+        },
+        "reduction": {
+          "absolute": -131072,
+          "fraction": -0.0006047320281200394,
+          "meets_review_line": false
+        }
+      }
+    },
+    "energy-2x2:qmod:exchanged:logical:success": {
+      "e0_ns": {
+        "after": {
+          "max": 30921625,
+          "median": 30485250,
+          "min": 30156916
+        },
+        "before": {
+          "max": 34419208,
+          "median": 33677750,
+          "min": 33344417
+        },
+        "reduction": {
+          "absolute": 3192500,
+          "fraction": 0.09479552523550415,
+          "meets_review_line": false
+        }
+      },
+      "e1_ns": {
+        "after": {
+          "max": 94758082,
+          "median": 93848542,
+          "min": 93065250
+        },
+        "before": {
+          "max": 115830250,
+          "median": 101032917,
+          "min": 100130917
+        },
+        "reduction": {
+          "absolute": 7184375,
+          "fraction": 0.07110925046339106,
+          "meets_review_line": false
+        }
+      },
+      "sampled_compile_rss_bytes": {
+        "after": {
+          "max": 216875008,
+          "median": 216662016,
+          "min": 205848576
+        },
+        "before": {
+          "max": 217120768,
+          "median": 216629248,
+          "min": 216612864
+        },
+        "reduction": {
+          "absolute": -32768,
+          "fraction": -0.00015126304643775526,
+          "meets_review_line": false
+        }
+      }
+    },
+    "energy-2x2:qmod:helper:logical:success": {
+      "e0_ns": {
+        "after": {
+          "max": 32064209,
+          "median": 30184667,
+          "min": 29784000
+        },
+        "before": {
+          "max": 33664042,
+          "median": 32884834,
+          "min": 32589958
+        },
+        "reduction": {
+          "absolute": 2700167,
+          "fraction": 0.08210979565838769,
+          "meets_review_line": false
+        }
+      },
+      "e1_ns": {
+        "after": {
+          "max": 98674917,
+          "median": 93823875,
+          "min": 92569375
+        },
+        "before": {
+          "max": 105963625,
+          "median": 101625708,
+          "min": 100106834
+        },
+        "reduction": {
+          "absolute": 7801833,
+          "fraction": 0.07677026958572333,
+          "meets_review_line": false
+        }
+      },
+      "sampled_compile_rss_bytes": {
+        "after": {
+          "max": 217317376,
+          "median": 170033152,
+          "min": 166379520
+        },
+        "before": {
+          "max": 217137152,
+          "median": 217104384,
+          "min": 206110720
+        },
+        "reduction": {
+          "absolute": 47071232,
+          "fraction": 0.21681382537167007,
+          "meets_review_line": true
+        }
+      }
+    },
+    "energy-2x2:qmod:inline:basis:success": {
+      "e0_ns": {
+        "after": {
+          "max": 249506042,
+          "median": 243420041,
+          "min": 236934125
+        },
+        "before": {
+          "max": 257026125,
+          "median": 254581291,
+          "min": 252187667
+        },
+        "reduction": {
+          "absolute": 11161250,
+          "fraction": 0.04384159557113724,
+          "meets_review_line": false
+        }
+      },
+      "e1_ns": {
+        "after": {
+          "max": 494190540,
+          "median": 482286001,
+          "min": 473143585
+        },
+        "before": {
+          "max": 522319667,
+          "median": 516721041,
+          "min": 508814625
+        },
+        "reduction": {
+          "absolute": 34435040,
+          "fraction": 0.06664145112681796,
+          "meets_review_line": false
+        }
+      },
+      "sampled_compile_rss_bytes": {
+        "after": {
+          "max": 218333184,
+          "median": 204767232,
+          "min": 179191808
+        },
+        "before": {
+          "max": 218349568,
+          "median": 218333184,
+          "min": 217661440
+        },
+        "reduction": {
+          "absolute": 13565952,
+          "fraction": 0.062134173795587576,
+          "meets_review_line": false
+        }
+      }
+    },
+    "energy-2x2:qmod:inline:line:success": {
+      "e0_ns": {
+        "after": {
+          "max": 796711792,
+          "median": 770133167,
+          "min": 742303709
+        },
+        "before": {
+          "max": 861759125,
+          "median": 848803209,
+          "min": 831170375
+        },
+        "reduction": {
+          "absolute": 78670042,
+          "fraction": 0.09268348795792547,
+          "meets_review_line": false
+        }
+      },
+      "e1_ns": {
+        "after": {
+          "max": 1637006625,
+          "median": 1555291874,
+          "min": 1533195459
+        },
+        "before": {
+          "max": 1762645625,
+          "median": 1748560542,
+          "min": 1714923417
+        },
+        "reduction": {
+          "absolute": 193268668,
+          "fraction": 0.11053015515204277,
+          "meets_review_line": true
+        }
+      },
+      "sampled_compile_rss_bytes": {
+        "after": {
+          "max": 226951168,
+          "median": 217776128,
+          "min": 205602816
+        },
+        "before": {
+          "max": 226344960,
+          "median": 204374016,
+          "min": 179126272
+        },
+        "reduction": {
+          "absolute": -13402112,
+          "fraction": -0.06557639890973224,
+          "meets_review_line": false
+        }
+      }
+    },
+    "energy-2x2:qmod:inline:logical:refused": {
+      "e0_ns": {
+        "after": {
+          "max": 10951750,
+          "median": 10712750,
+          "min": 10577959
+        },
+        "before": {
+          "max": 10908209,
+          "median": 10681541,
+          "min": 10623584
+        },
+        "reduction": {
+          "absolute": -31209,
+          "fraction": -0.002921769433829819,
+          "meets_review_line": false
+        }
+      },
+      "e1_ns": null,
+      "sampled_compile_rss_bytes": {
+        "after": {
+          "max": 215662592,
+          "median": 215531520,
+          "min": 215498752
+        },
+        "before": {
+          "max": 215613440,
+          "median": 215351296,
+          "min": 215318528
+        },
+        "reduction": {
+          "absolute": -180224,
+          "fraction": -0.0008368837492391966,
+          "meets_review_line": false
+        }
+      }
+    },
+    "energy-2x2:qmod:inline:logical:success": {
+      "e0_ns": {
+        "after": {
+          "max": 30262917,
+          "median": 29495500,
+          "min": 28859375
+        },
+        "before": {
+          "max": 38017459,
+          "median": 33760375,
+          "min": 32919625
+        },
+        "reduction": {
+          "absolute": 4264875,
+          "fraction": 0.1263278325551775,
+          "meets_review_line": false
+        }
+      },
+      "e1_ns": {
+        "after": {
+          "max": 98611500,
+          "median": 93459041,
+          "min": 91213334
+        },
+        "before": {
+          "max": 112680501,
+          "median": 105517042,
+          "min": 102836124
+        },
+        "reduction": {
+          "absolute": 12058001,
+          "fraction": 0.11427538880401898,
+          "meets_review_line": false
+        }
+      },
+      "sampled_compile_rss_bytes": {
+        "after": {
+          "max": 217104384,
+          "median": 217071616,
+          "min": 216875008
+        },
+        "before": {
+          "max": 216956928,
+          "median": 216530944,
+          "min": 177160192
+        },
+        "reduction": {
+          "absolute": -540672,
+          "fraction": -0.0024969733656174335,
+          "meets_review_line": false
+        }
+      }
+    },
+    "energy-2x2:scalar:exchanged:logical:success": {
+      "e0_ns": {
+        "after": {
+          "max": 33902042,
+          "median": 32002375,
+          "min": 30420000
+        },
+        "before": {
+          "max": 35913875,
+          "median": 34226459,
+          "min": 33425000
+        },
+        "reduction": {
+          "absolute": 2224084,
+          "fraction": 0.06498142270574937,
+          "meets_review_line": false
+        }
+      },
+      "e1_ns": {
+        "after": {
+          "max": 106478250,
+          "median": 99327876,
+          "min": 93902417
+        },
+        "before": {
+          "max": 113883667,
+          "median": 106238209,
+          "min": 100612375
+        },
+        "reduction": {
+          "absolute": 6910333,
+          "fraction": 0.06504564661853439,
+          "meets_review_line": false
+        }
+      },
+      "sampled_compile_rss_bytes": {
+        "after": {
+          "max": 216825856,
+          "median": 216760320,
+          "min": 204193792
+        },
+        "before": {
+          "max": 216563712,
+          "median": 216563712,
+          "min": 215498752
+        },
+        "reduction": {
+          "absolute": -196608,
+          "fraction": -0.0009078529278256923,
+          "meets_review_line": false
+        }
+      }
+    },
+    "energy-2x2:scalar:helper:logical:success": {
+      "e0_ns": {
+        "after": {
+          "max": 29274792,
+          "median": 29033375,
+          "min": 28917000
+        },
+        "before": {
+          "max": 32456000,
+          "median": 32138667,
+          "min": 31517292
+        },
+        "reduction": {
+          "absolute": 3105292,
+          "fraction": 0.09662168004665532,
+          "meets_review_line": false
+        }
+      },
+      "e1_ns": {
+        "after": {
+          "max": 95163376,
+          "median": 92865500,
+          "min": 91605251
+        },
+        "before": {
+          "max": 102387250,
+          "median": 100371459,
+          "min": 98499459
+        },
+        "reduction": {
+          "absolute": 7505959,
+          "fraction": 0.07478180625032062,
+          "meets_review_line": false
+        }
+      },
+      "sampled_compile_rss_bytes": {
+        "after": {
+          "max": 216743936,
+          "median": 216727552,
+          "min": 216629248
+        },
+        "before": {
+          "max": 216596480,
+          "median": 216481792,
+          "min": 206290944
+        },
+        "reduction": {
+          "absolute": -245760,
+          "fraction": -0.001135245591462953,
+          "meets_review_line": false
+        }
+      }
+    },
+    "energy-2x2:scalar:inline:basis:success": {
+      "e0_ns": {
+        "after": {
+          "max": 244848542,
+          "median": 242250167,
+          "min": 238404000
+        },
+        "before": {
+          "max": 268691042,
+          "median": 254586917,
+          "min": 253042834
+        },
+        "reduction": {
+          "absolute": 12336750,
+          "fraction": 0.04845791034894382,
+          "meets_review_line": false
+        }
+      },
+      "e1_ns": {
+        "after": {
+          "max": 505928624,
+          "median": 492543125,
+          "min": 477175375
+        },
+        "before": {
+          "max": 569309209,
+          "median": 529209500,
+          "min": 528145750
+        },
+        "reduction": {
+          "absolute": 36666375,
+          "fraction": 0.06928517912093415,
+          "meets_review_line": false
+        }
+      },
+      "sampled_compile_rss_bytes": {
+        "after": {
+          "max": 218005504,
+          "median": 216514560,
+          "min": 169082880
+        },
+        "before": {
+          "max": 218038272,
+          "median": 218038272,
+          "min": 217808896
+        },
+        "reduction": {
+          "absolute": 1523712,
+          "fraction": 0.006988277727682597,
+          "meets_review_line": false
+        }
+      }
+    },
+    "energy-2x2:scalar:inline:line:success": {
+      "e0_ns": {
+        "after": {
+          "max": 805934042,
+          "median": 751738709,
+          "min": 736542792
+        },
+        "before": {
+          "max": 893422666,
+          "median": 827086083,
+          "min": 822418792
+        },
+        "reduction": {
+          "absolute": 75347374,
+          "fraction": 0.09109979668222758,
+          "meets_review_line": false
+        }
+      },
+      "e1_ns": {
+        "after": {
+          "max": 1778268042,
+          "median": 1517877334,
+          "min": 1506916084
+        },
+        "before": {
+          "max": 1809029374,
+          "median": 1737560042,
+          "min": 1688861251
+        },
+        "reduction": {
+          "absolute": 219682708,
+          "fraction": 0.12643172189154198,
+          "meets_review_line": true
+        }
+      },
+      "sampled_compile_rss_bytes": {
+        "after": {
+          "max": 225820672,
+          "median": 199655424,
+          "min": 158842880
+        },
+        "before": {
+          "max": 227016704,
+          "median": 200441856,
+          "min": 172900352
+        },
+        "reduction": {
+          "absolute": 786432,
+          "fraction": 0.00392349190779794,
+          "meets_review_line": false
+        }
+      }
+    },
+    "energy-2x2:scalar:inline:logical:refused": {
+      "e0_ns": {
+        "after": {
+          "max": 10746708,
+          "median": 10364041,
+          "min": 10073083
+        },
+        "before": {
+          "max": 10460750,
+          "median": 10246583,
+          "min": 10095208
+        },
+        "reduction": {
+          "absolute": -117458,
+          "fraction": -0.011463138492119763,
+          "meets_review_line": false
+        }
+      },
+      "e1_ns": null,
+      "sampled_compile_rss_bytes": {
+        "after": {
+          "max": 215416832,
+          "median": 215089152,
+          "min": 215023616
+        },
+        "before": {
+          "max": 215367680,
+          "median": 215252992,
+          "min": 214941696
+        },
+        "reduction": {
+          "absolute": 163840,
+          "fraction": 0.0007611508601004719,
+          "meets_review_line": false
+        }
+      }
+    },
+    "energy-2x2:scalar:inline:logical:success": {
+      "e0_ns": {
+        "after": {
+          "max": 29640166,
+          "median": 28801083,
+          "min": 28540208
+        },
+        "before": {
+          "max": 33046459,
+          "median": 32392250,
+          "min": 31439084
+        },
+        "reduction": {
+          "absolute": 3591167,
+          "fraction": 0.11086500629008482,
+          "meets_review_line": false
+        }
+      },
+      "e1_ns": {
+        "after": {
+          "max": 113790042,
+          "median": 92143709,
+          "min": 90623916
+        },
+        "before": {
+          "max": 119985876,
+          "median": 99538749,
+          "min": 97419460
+        },
+        "reduction": {
+          "absolute": 7395040,
+          "fraction": 0.07429307756319099,
+          "meets_review_line": false
+        }
+      },
+      "sampled_compile_rss_bytes": {
+        "after": {
+          "max": 216743936,
+          "median": 216743936,
+          "min": 200458240
+        },
+        "before": {
+          "max": 216186880,
+          "median": 194199552,
+          "min": 155041792
+        },
+        "reduction": {
+          "absolute": -22544384,
+          "fraction": -0.11608875390196574,
+          "meets_review_line": false
+        }
+      }
+    },
+    "energy-8x8:qfunc:inline:logical:success": {
+      "e0_ns": {
+        "after": {
+          "max": 974478000,
+          "median": 945322958,
+          "min": 934610333
+        },
+        "before": {
+          "max": 1106155458,
+          "median": 1064700958,
+          "min": 1055121625
+        },
+        "reduction": {
+          "absolute": 119378000,
+          "fraction": 0.11212350200590314,
+          "meets_review_line": true
+        }
+      },
+      "e1_ns": null,
+      "sampled_compile_rss_bytes": {
+        "after": {
+          "max": 226607104,
+          "median": 192086016,
+          "min": 158384128
+        },
+        "before": {
+          "max": 226902016,
+          "median": 226820096,
+          "min": 226787328
+        },
+        "reduction": {
+          "absolute": 34734080,
+          "fraction": 0.153134932100549,
+          "meets_review_line": true
+        }
+      }
+    },
+    "shared_square-8x8:qfunc:inline:logical:success": {
+      "e0_ns": {
+        "after": {
+          "max": 1569898459,
+          "median": 1496541583,
+          "min": 1479872917
+        },
+        "before": {
+          "max": 1697477167,
+          "median": 1679382792,
+          "min": 1629810500
+        },
+        "reduction": {
+          "absolute": 182841209,
+          "fraction": 0.1088740517474589,
+          "meets_review_line": true
+        }
+      },
+      "e1_ns": null,
+      "sampled_compile_rss_bytes": {
+        "after": {
+          "max": 235454464,
+          "median": 235421696,
+          "min": 199507968
+        },
+        "before": {
+          "max": 235683840,
+          "median": 225083392,
+          "min": 184893440
+        },
+        "reduction": {
+          "absolute": -10338304,
+          "fraction": -0.04593099432231766,
+          "meets_review_line": false
+        }
+      }
+    },
+    "square-3:qfunc:inline:logical:success": {
+      "e0_ns": {
+        "after": {
+          "max": 60188417,
+          "median": 58365292,
+          "min": 57935708
+        },
+        "before": {
+          "max": 65022458,
+          "median": 63768292,
+          "min": 63446291
+        },
+        "reduction": {
+          "absolute": 5403000,
+          "fraction": 0.08472862970831961,
+          "meets_review_line": false
+        }
+      },
+      "e1_ns": null,
+      "sampled_compile_rss_bytes": {
+        "after": {
+          "max": 217120768,
+          "median": 216481792,
+          "min": 205799424
+        },
+        "before": {
+          "max": 217251840,
+          "median": 217137152,
+          "min": 217022464
+        },
+        "reduction": {
+          "absolute": 655360,
+          "fraction": 0.0030181845619859653,
+          "meets_review_line": false
+        }
+      }
+    }
+  },
+  "source_revisions": {
+    "after": "84a0024478aaa873b2bfab3b2390402064f51a0c",
+    "before": "6bb1b7d9fa99719f326dd2106ff88ecdfc909f72"
+  }
+}
