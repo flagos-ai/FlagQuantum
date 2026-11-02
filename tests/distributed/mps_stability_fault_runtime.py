@@ -16,6 +16,10 @@ import flagquantum as fq
 import flagquantum.experimental.distributed as fqxd
 from flagquantum.runtime.executors.mps.errors import MPSTrainingError
 
+SETUP_COLLECTIVE_TIMEOUT_SECONDS = 30
+FAULT_COLLECTIVE_TIMEOUT_SECONDS = 3
+FAULT_DELAY_SECONDS = 5
+
 
 def circuit(theta):
     return fq.Circuit(4).ry(0, theta).rxx(0, 1, theta).rzz(1, 2, theta).ry(3, theta)
@@ -50,7 +54,9 @@ def main():
     )
     args = parser.parse_args()
     # Setup and checkpoint I/O must tolerate shared-runner scheduling delays.
-    dist.init_process_group("gloo", timeout=datetime.timedelta(seconds=30))
+    dist.init_process_group(
+        "gloo", timeout=datetime.timedelta(seconds=SETUP_COLLECTIVE_TIMEOUT_SECONDS)
+    )
     rank = dist.get_rank()
     root = Path(os.environ.get("FQ_TEST_CHECKPOINT", tempfile.mkdtemp()))
     theta = torch.tensor(0.2, requires_grad=True)
@@ -91,10 +97,12 @@ def main():
         raise torch.OutOfMemoryError("injected CUDA OOM")
     if args.mode == "collective_timeout":
         # Arm the short deadline only after both ranks finish checkpoint setup.
-        fault_group = dist.new_group(timeout=datetime.timedelta(seconds=3))
+        fault_group = dist.new_group(
+            timeout=datetime.timedelta(seconds=FAULT_COLLECTIVE_TIMEOUT_SECONDS)
+        )
         print("collective_timeout_armed", flush=True)
         if rank == 0:
-            time.sleep(5)
+            time.sleep(FAULT_DELAY_SECONDS)
         dist.barrier(group=fault_group)
     if args.mode == "generation" and rank == 0:
         path = committed_rank_path(root, rank)

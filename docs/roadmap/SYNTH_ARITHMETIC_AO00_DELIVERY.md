@@ -277,3 +277,36 @@ measured benchmark script, baseline JSON or measurement commit is changed by
 this presentation correction. Current logs:
 `/private/tmp/fq-1006-native-example-acceptance.log`,
 `fq-1006-native-example.log` and `fq-1006-native-mypy.log`.
+
+
+## CI repair: MPS participant-failure harness deadline
+
+The corrected-example head `82ea3995db929f2a6ce56c848bb5062182c6bedd`
+encountered one real failed test on the Linux CPU runner:
+`test_participant_failure_terminates_launcher[rank_exception]` in
+[distributed shard (0,2,4)](https://github.com/flagos-ai/FlagQuantum/actions/runs/41395247708/job/125115683537).
+The subprocess wrapper expired at 30 seconds; the script's initialization
+collective alone already allowed 30 seconds. The log did not establish an
+arithmetic failure or a failure of the injected-exception assertion. The
+aggregate `distributed-cpu` failure depends on that same failed shard.
+
+The test harness now follows the existing repository's 120-second startup
+allowance and derives an outer 188-second deadline from that allowance, two
+30-second setup windows, the unchanged three-second fault-collective deadline,
+and unchanged five-second fault delay. This gives the launcher/fault assertions
+time to execute; normal tests do not wait for the outer deadline. Production
+code, collective timeouts and the intentional fault remain unchanged.
+
+The original nonzero-exit, collective arming/timeout and temporary-file checks
+are retained. Rank-exception and injected-OOM modes additionally require their
+specific injected error messages, so unrelated startup failures cannot pass as
+expected faults. Three new unit checks cover budget ordering, unchanged internal
+timeouts, and the actual timeout passed to subprocess.run (not just an unused
+constant).
+
+All 14 MPS stability/fault cases and eight harness-deadline unit cases pass
+locally in 35.30 seconds; the four participant-failure modes also pass separately
+in 11.50 seconds. Logs: `/private/tmp/fq-1006-mps-complete.log`,
+`fq-1006-mps-fault-acceptance.log`, `fq-1006-mps-deadline-unit.log`.
+This test-only CI repair does not regenerate the AO-00 baseline or change its
+measurement revision. The final-head remote run remains the required gate.
