@@ -285,3 +285,33 @@ in 15.43 seconds. Strict mypy again passes 884 sources, the native/Qmod example
 runs, API protection passes and all 825 local Markdown links resolve.
 Logs: `/private/tmp/fq-ao02-post-sync-acceptance.log`,
 `fq-ao02-post-sync-mypy.log` and `fq-ao02-post-sync-example.log`.
+
+## CI regression repair
+
+The first remote run at `a238df9ed57f7570c2dd74503cecb0fb1c2c55cd`
+exposed ten integration/example assertion failures, repeated across coverage
+shards. `cpu-core`, `coverage` and `CI complete` were downstream gates, not
+additional independent defects.
+
+The repair changes no production compiler code or historical measurements:
+
+- Keep every exhaustive basis/XOR, complex-amplitude, cleanup, gradient and
+  routing check. Update current resource assertions to actual AO-02 costs:
+  14 operations for the terminal addition block, 77 for the polynomial block,
+  16/81/59 for the uniform native example, and 14/74/57 for the constant-y
+  Qmod example (qubits/operations/depth).
+- Preserve the historical 18-qubit manual Circuit and frozen resource files.
+  Construct each expected statevector with that executable's own workspace
+  width, rather than indexing both the 18- and 16-qubit programs with ten
+  workspace bits.
+- Include an eight-qubit coupling map for the optimized chain. That chain now
+  selects retain for both objectives; preserve its routed phase/cleanup checks.
+  The runnable selection example uses shared dependencies `(t+x)*(t+y)`,
+  `t=x*y`, to retain a real 17-versus-18-qubit schedule tradeoff. Its original
+  `pressure` function and the 34-row historical comparison workload remain
+  unchanged. Both selected schedules execute with exact phase and clean work.
+
+Focused reproduction of all affected files and three affected algorithm-example
+cases: 36 passed, 24 deselected in 12.17 seconds. Full AO-02 and exact-head remote
+CI results are tracked separately in the delivery ledger; this focused result
+does not imply repository-wide CI success or merge authorization.

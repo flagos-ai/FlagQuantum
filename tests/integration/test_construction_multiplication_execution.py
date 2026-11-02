@@ -138,8 +138,8 @@ def test_all_16_polynomial_inputs_and_nonzero_xor_targets_on_real_cpu(
     for source in (program, compile_program(program)):
         resources = estimate_resources(source)
         assert resources.n_qubits == 18
-        assert resources.n_operations == 162
-        assert resources.operation_counts == {"cx": 106, "ccx": 56}
+        assert resources.n_operations == 77
+        assert resources.operation_counts == {"cx": 43, "ccx": 34}
 
 
 @pytest.mark.parametrize(

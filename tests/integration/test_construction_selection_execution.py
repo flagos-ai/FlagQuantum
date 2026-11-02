@@ -41,7 +41,8 @@ def _target(routed):
         Target(
             basis=BASIS,
             couplings=tuple(
-                CouplingMap(n, tuple((i, i + 1) for i in range(n - 1))) for n in (9, 10)
+                CouplingMap(n, tuple((i, i + 1) for i in range(n - 1)))
+                for n in (8, 9, 10)
             ),
             optimize=False,
             restore_layout=False,
@@ -92,7 +93,9 @@ def test_selected_nonzero_xor_complex_phase_and_layout_on_real_runtime(
     )
     row = report.selected
     assert row is not None and row.target is not None and row.arithmetic is not None
-    assert row.strategy == ("recompute" if objective == "width" else "retain")
+    # Terminal XOR removes the historical width tradeoff for this chain.
+    # The branched example separately proves distinct constraint-driven choices.
+    assert row.strategy == "retain"
     plan = fq.plan(row.target.submitted, options=_options())
     _assert_prediction(plan, row.target)
     checked = inspect_execution(
@@ -231,7 +234,10 @@ def test_cost_example_reproduces_full_matrix_and_current_manual_comparison() -> 
             and r["target"] == name
         ]
         assert {r["strategy"] for r in group} == {"retain", "recompute", "manual"}
-        assert all(r["qubits"] == 18 and r["workspace"] == 10 for r in group)
+        manual = next(r for r in group if r["strategy"] == "manual")
+        assert (manual["qubits"], manual["workspace"]) == (18, 10)
+        optimized = [r for r in group if r["strategy"] != "manual"]
+        assert all(r["qubits"] == 16 and r["workspace"] == 8 for r in optimized)
         assert (
             next(r for r in group if r["strategy"] == "manual")["operations"]
             > next(r for r in group if r["selected"])["operations"]
@@ -257,5 +263,6 @@ def test_manual_baseline_and_selected_polynomial_share_real_coherent_outputs() -
         reference = torch.zeros_like(state)
         for x in range(4):
             for y in range(4):
-                reference[((((x << 2) | y) << 4) | (x * x + y)) << 10] = 0.25
+                workspace = program.n_wires - 8
+                reference[((((x << 2) | y) << 4) | (x * x + y)) << workspace] = 0.25
         torch.testing.assert_close(state, reference, atol=1e-12, rtol=0)
