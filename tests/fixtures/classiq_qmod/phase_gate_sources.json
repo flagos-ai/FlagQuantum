@@ -1,0 +1,14 @@
+{
+  "repository": "https://github.com/Classiq/classiq-library",
+  "commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "license_file": "LICENSE.txt",
+  "license_sha256": "241f68c9f35357f97e8a2a195e447d4f80098c140f0b3b3c770a11eed96f58e0",
+  "fixtures": [
+    {
+      "file": "PHASE.qmod",
+      "upstream_path": "functions/qmod_library_reference/qmod_core_library/standard_gates/PHASE.qmod",
+      "git_blob_sha1": "8163d1ad91e916fcc5fa6c5c5e71f61d934efbed",
+      "sha256": "8cd253f41e1ae55f32592e1a8af20c09409d970e365d4e84b5e0eed06bcca035"
+    }
+  ]
+}
