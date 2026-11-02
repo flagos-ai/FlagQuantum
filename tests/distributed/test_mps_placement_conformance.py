@@ -61,7 +61,6 @@ def test_moving_the_same_mps_across_ranks_preserves_value_and_gradient(
     assert payload["rendezvous"] == "file_store"
     assert payload["tolerances"]["gradient_relative"] == PLACEMENT_RELATIVE_BOUND
     assert len(payload["source_commit"]) == 40
-    assert len(payload["source_tree"]) == 40
     assert "--local-world-size" in payload["command"]
     assert "file://" not in payload["command"]
     assert payload["scalability_claim_allowed"] is False

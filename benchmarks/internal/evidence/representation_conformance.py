@@ -44,7 +44,6 @@ class SplitBoundary(TypedDict):
 
 class SourceRecord(TypedDict):
     source_commit: str
-    source_tree: str
     base_commit: str
     measuring_source_committed: bool
     command: str
@@ -138,7 +137,6 @@ def source_record(root: Path, argv: Sequence[str]) -> SourceRecord:
     command = [argument.replace(str(root.resolve()) + "/", "") for argument in argv]
     return {
         "source_commit": git("rev-parse", "HEAD"),
-        "source_tree": git("rev-parse", "HEAD^{tree}"),
         "base_commit": git("rev-parse", "origin/main"),
         "measuring_source_committed": not changed,
         "command": shlex.join(["python", *command]),
