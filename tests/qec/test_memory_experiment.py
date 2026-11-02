@@ -600,3 +600,194 @@ def test_unsupported_channel_keeps_strict_refusal(
     )
     with pytest.raises(CapabilityError):
         run(noise=NoiseModel().add("cx", amplitude_damping_channel(0.1)))
+
+
+@pytest.mark.parametrize("batch_size", [1, 7, 35, 64])
+def test_ordered_mixed_rows_across_chunk_schedules(
+    controlled: Any, monkeypatch: pytest.MonkeyPatch, batch_size: int
+) -> None:
+    detections = [(bool(i % 2), bool((i // 2) % 2)) for i in range(35)]
+    observed = [(i % 5 == 0, i % 7 < 2) for i in range(35)]
+    decoded_rows: list[tuple[int, ...]] = []
+    original_decode = decode_batch
+
+    def sample(*, shots: int) -> SimpleNamespace:
+        controlled.calls.append(("sample", shots))
+        start = controlled.handle.cursor
+        controlled.handle.cursor += shots
+        return SimpleNamespace(
+            detectors=torch.tensor(detections[start : start + shots]),
+            observables=torch.tensor(observed[start : start + shots]),
+        )
+
+    def decode(decoder: Any, rows: tuple[tuple[int, ...], ...]) -> tuple[Any, ...]:
+        if not rows:
+            return original_decode(decoder, rows)
+        decoded_rows.extend(rows)
+        return tuple(
+            SimpleNamespace(
+                observables=tuple(
+                    index
+                    for index, bit in enumerate((0 in row, (0 in row) != (1 in row)))
+                    if bit
+                )
+            )
+            for row in rows
+        )
+
+    monkeypatch.setattr(controlled.handle, "sample", sample)
+    monkeypatch.setattr(ex, "decode_batch", decode)
+    result = run(memory=controlled.memory, batch_size=batch_size)
+    wrong = [
+        (first != actual[0], (first != second) != actual[1])
+        for (first, second), actual in zip(detections, observed, strict=True)
+    ]
+    failures = sum(any(row) for row in wrong)
+    assert result.shots == 35 and result.logical_failures == failures
+    assert result.logical_error_rate == failures / 35
+    assert result.observable_failures == tuple(
+        sum(row[column] for row in wrong) for column in range(2)
+    )
+    assert result.confidence_interval == pytest.approx(
+        _score_interval(failures, 35), abs=1e-12, rel=0
+    )
+    assert decoded_rows == [
+        tuple(index for index, bit in enumerate(row) if bit) for row in detections
+    ]
+    expected = {1: [1] * 35, 7: [7] * 5, 35: [35], 64: [35]}[batch_size]
+    assert controlled.calls == [
+        "export",
+        "strict",
+        ("compile", 53),
+        *(("sample", size) for size in expected),
+    ]
+    assert controlled.handle.cursor == 35 and controlled.handle.closed == 1
+
+
+@pytest.mark.parametrize(
+    "fault",
+    [
+        "second_sample",
+        "tail_sample",
+        "tail_detectors",
+        "tail_observables",
+        "tail_prediction",
+        "tail_result_count",
+        "tail_decode_cleanup",
+        "tail_interrupt",
+    ],
+)
+def test_late_chunk_failure_stops_and_preserves_exception(
+    controlled: Any, monkeypatch: pytest.MonkeyPatch, fault: str
+) -> None:
+    original_sample = controlled.handle.sample
+    original_decode = decode_batch
+    requests: list[int] = []
+    decoded_sizes: list[int] = []
+    primary: BaseException = (
+        KeyboardInterrupt("tail interrupted")
+        if fault == "tail_interrupt"
+        else RuntimeError("late chunk failure")
+    )
+    cleanup = OSError("late cleanup failure")
+    if fault == "tail_decode_cleanup":
+        controlled.handle.cleanup = cleanup
+
+    def sample(*, shots: int) -> Any:
+        requests.append(shots)
+        if (fault == "second_sample" and len(requests) == 2) or (
+            len(requests) == 3 and fault in ("tail_sample", "tail_interrupt")
+        ):
+            raise primary
+        batch = original_sample(shots=shots)
+        if len(requests) == 3 and fault in ("tail_detectors", "tail_observables"):
+            field = fault.removeprefix("tail_")
+            setattr(batch, field, torch.zeros((shots, 3), dtype=torch.int8))
+        return batch
+
+    def decode(decoder: Any, rows: tuple[tuple[int, ...], ...]) -> tuple[Any, ...]:
+        if not rows:
+            return original_decode(decoder, rows)
+        decoded_sizes.append(len(rows))
+        if len(requests) == 3:
+            if fault == "tail_decode_cleanup":
+                raise primary
+            if fault == "tail_prediction":
+                return tuple(SimpleNamespace(observables=(2,)) for _ in rows)
+            if fault == "tail_result_count":
+                return original_decode(decoder, rows)[:-1]
+        return original_decode(decoder, rows)
+
+    monkeypatch.setattr(controlled.handle, "sample", sample)
+    monkeypatch.setattr(ex, "decode_batch", decode)
+    injected = fault in (
+        "second_sample",
+        "tail_sample",
+        "tail_decode_cleanup",
+        "tail_interrupt",
+    )
+    expected_error = type(primary) if injected else ValidationError
+    with pytest.raises(expected_error) as caught:
+        run(memory=controlled.memory)
+    if injected:
+        assert caught.value is primary
+    if fault == "tail_decode_cleanup":
+        assert caught.value.__cause__ is cleanup
+    else:
+        assert caught.value.__cause__ is None
+    assert requests == ([16, 16] if fault == "second_sample" else [16, 16, 3])
+    if fault == "second_sample":
+        expected_decodes = [16]
+    elif fault in (
+        "tail_sample",
+        "tail_interrupt",
+        "tail_detectors",
+        "tail_observables",
+    ):
+        expected_decodes = [16, 16]
+    else:
+        expected_decodes = [16, 16, 3]
+    assert decoded_sizes == expected_decodes
+    assert controlled.handle.closed == 1
+
+
+@pytest.mark.parametrize("basis", ("x", "z"))
+@pytest.mark.parametrize("name", ("minimum_weight_matching", "pymatching"))
+@pytest.mark.parametrize("batch_size", (1, 35, 64))
+def test_surface_counts_against_same_schedule_single_shot_reference(
+    basis: str, name: str, batch_size: int
+) -> None:
+    pytest.importorskip("stim")
+    if name == "pymatching":
+        pytest.importorskip("pymatching")
+    code = RotatedSurfaceCode(distance=3)
+    product = Pauli(x_qubits=code.data_qubits) if basis == "x" else None
+    m = build_memory_circuit(code, rounds=3, product=product)
+    noise = PhenomenologicalNoise(
+        data_flip=0.005, phase_flip=0.007, measurement_flip=0.009
+    )
+    text = memory_to_stim_text(m, noise=noise)
+    model = DetectorErrorModel.from_stim_text(
+        stim_circuit_to_dem_text(text, decompose_errors=False)
+    )
+    selected = get_decoder(name, model)
+    failures = 0
+    # Each reference has its own identical call schedule, not cross-size samples.
+    schedule = [1] * 35 if batch_size == 1 else [35]
+    with compile_stim_sampler(text, seed=53) as sampler:
+        for size in schedule:
+            batch = sampler.sample(shots=size)
+            for detection, observed in zip(
+                batch.detectors, batch.observables, strict=True
+            ):
+                answer = selected.decode(detection.nonzero().flatten().tolist())
+                failures += int(bool(observed[0]) != (0 in answer.observables))
+    result = run(memory=m, noise=noise, decoder=name, batch_size=batch_size)
+    assert result.shots == 35 and result.seed == 53
+    assert result.sampling_source == "memory_circuit"
+    assert result.logical_failures == failures
+    assert result.observable_failures == (failures,)
+    assert result.logical_error_rate == failures / 35
+    assert result.confidence_interval == pytest.approx(
+        _score_interval(failures, 35), abs=1e-12, rel=0
+    )

@@ -218,6 +218,10 @@ These examples do not use that alias:
   the certified all-data X product. Each command reports five decoder counts
   and checks the fixed-shot interval; zero observed failures do not establish
   logical suppression, a threshold or decoder performance.
+  Use `--batch-size 1`, `--batch-size 35` or `--batch-size 64` to request
+  respectively 35 single-shot batches, one full batch or one capped batch.
+  The default remains 16. Each setting advances one seeded stream; different
+  sample-call schedules need not produce identical samples or failure counts.
 - [`qec/circuit_noise_dem.py`](qec/circuit_noise_dem.py) builds and samples a
   distance-five circuit-location surface-code DEM without a dense statevector
   or optional SDK; the physical circuit has 49 qubits.
