@@ -1,0 +1,35 @@
+{
+  "schema": "flagquantum.training_qng_evidence_audit.v1",
+  "renderer_commit": "bd8819e22e48c9826341ae64eaf514aa10cb5ff1",
+  "campaigns": [
+    {
+      "campaign": "training-cpu",
+      "source_commit": "d76c095afba994972d4a0dfce9a924a2f7143673",
+      "dirty": false,
+      "counts": {
+        "completed": 33
+      },
+      "producer_and_manifest_hashes_match_committed_source": true
+    },
+    {
+      "campaign": "qng-cpu",
+      "source_commit": "d76c095afba994972d4a0dfce9a924a2f7143673",
+      "dirty": false,
+      "counts": {
+        "completed": 27,
+        "unsupported": 9
+      },
+      "producer_and_manifest_hashes_match_committed_source": true
+    },
+    {
+      "campaign": "qng-cuda",
+      "source_commit": "770e24b4f43290f0e1a7d9ca212a8a4e4a396da5",
+      "dirty": false,
+      "counts": {
+        "completed": 27,
+        "unsupported": 9
+      },
+      "producer_and_manifest_hashes_match_committed_source": true
+    }
+  ]
+}

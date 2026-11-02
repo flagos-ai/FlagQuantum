@@ -1,0 +1,451 @@
+{
+  "benchmark_evidence_class": "comparison_non_release",
+  "cases": [
+    {
+      "case": "q4-d1-reverse_jacobian-11",
+      "depth": 1,
+      "method": "reverse_jacobian",
+      "process_wall_seconds": 6.327563218772411,
+      "qubits": 4,
+      "result": "q4-d1-reverse_jacobian-11.json",
+      "seed": 11,
+      "status": "completed"
+    },
+    {
+      "case": "q4-d1-reverse_jacobian-29",
+      "depth": 1,
+      "method": "reverse_jacobian",
+      "process_wall_seconds": 6.127985641360283,
+      "qubits": 4,
+      "result": "q4-d1-reverse_jacobian-29.json",
+      "seed": 29,
+      "status": "completed"
+    },
+    {
+      "case": "q4-d1-reverse_jacobian-47",
+      "depth": 1,
+      "method": "reverse_jacobian",
+      "process_wall_seconds": 6.126910572871566,
+      "qubits": 4,
+      "result": "q4-d1-reverse_jacobian-47.json",
+      "seed": 47,
+      "status": "completed"
+    },
+    {
+      "case": "q4-d1-unfused_forward-11",
+      "depth": 1,
+      "method": "unfused_forward",
+      "process_wall_seconds": 3.5211354941129684,
+      "qubits": 4,
+      "result": "q4-d1-unfused_forward-11.json",
+      "seed": 11,
+      "status": "completed"
+    },
+    {
+      "case": "q4-d1-unfused_forward-29",
+      "depth": 1,
+      "method": "unfused_forward",
+      "process_wall_seconds": 3.671422677114606,
+      "qubits": 4,
+      "result": "q4-d1-unfused_forward-29.json",
+      "seed": 29,
+      "status": "completed"
+    },
+    {
+      "case": "q4-d1-unfused_forward-47",
+      "depth": 1,
+      "method": "unfused_forward",
+      "process_wall_seconds": 3.5731421131640673,
+      "qubits": 4,
+      "result": "q4-d1-unfused_forward-47.json",
+      "seed": 47,
+      "status": "completed"
+    },
+    {
+      "case": "q4-d1-fused_forward-11",
+      "depth": 1,
+      "method": "fused_forward",
+      "process_wall_seconds": 7.185251161456108,
+      "qubits": 4,
+      "result": "q4-d1-fused_forward-11.json",
+      "seed": 11,
+      "status": "completed"
+    },
+    {
+      "case": "q4-d1-fused_forward-29",
+      "depth": 1,
+      "method": "fused_forward",
+      "process_wall_seconds": 6.834128452464938,
+      "qubits": 4,
+      "result": "q4-d1-fused_forward-29.json",
+      "seed": 29,
+      "status": "completed"
+    },
+    {
+      "case": "q4-d1-fused_forward-47",
+      "depth": 1,
+      "method": "fused_forward",
+      "process_wall_seconds": 7.082870876416564,
+      "qubits": 4,
+      "result": "q4-d1-fused_forward-47.json",
+      "seed": 47,
+      "status": "completed"
+    },
+    {
+      "case": "q4-d1-pennylane_metric-11",
+      "depth": 1,
+      "method": "pennylane_metric",
+      "process_wall_seconds": 2.168758261948824,
+      "qubits": 4,
+      "result": "q4-d1-pennylane_metric-11.json",
+      "seed": 11,
+      "status": "unsupported"
+    },
+    {
+      "case": "q4-d1-pennylane_metric-29",
+      "depth": 1,
+      "method": "pennylane_metric",
+      "process_wall_seconds": 2.1190852764993906,
+      "qubits": 4,
+      "result": "q4-d1-pennylane_metric-29.json",
+      "seed": 29,
+      "status": "unsupported"
+    },
+    {
+      "case": "q4-d1-pennylane_metric-47",
+      "depth": 1,
+      "method": "pennylane_metric",
+      "process_wall_seconds": 2.2190535981208086,
+      "qubits": 4,
+      "result": "q4-d1-pennylane_metric-47.json",
+      "seed": 47,
+      "status": "unsupported"
+    },
+    {
+      "case": "q4-d2-reverse_jacobian-11",
+      "depth": 2,
+      "method": "reverse_jacobian",
+      "process_wall_seconds": 8.92788458801806,
+      "qubits": 4,
+      "result": "q4-d2-reverse_jacobian-11.json",
+      "seed": 11,
+      "status": "completed"
+    },
+    {
+      "case": "q4-d2-reverse_jacobian-29",
+      "depth": 2,
+      "method": "reverse_jacobian",
+      "process_wall_seconds": 9.181447193026543,
+      "qubits": 4,
+      "result": "q4-d2-reverse_jacobian-29.json",
+      "seed": 29,
+      "status": "completed"
+    },
+    {
+      "case": "q4-d2-reverse_jacobian-47",
+      "depth": 2,
+      "method": "reverse_jacobian",
+      "process_wall_seconds": 9.182701755315065,
+      "qubits": 4,
+      "result": "q4-d2-reverse_jacobian-47.json",
+      "seed": 47,
+      "status": "completed"
+    },
+    {
+      "case": "q4-d2-unfused_forward-11",
+      "depth": 2,
+      "method": "unfused_forward",
+      "process_wall_seconds": 4.172832816839218,
+      "qubits": 4,
+      "result": "q4-d2-unfused_forward-11.json",
+      "seed": 11,
+      "status": "completed"
+    },
+    {
+      "case": "q4-d2-unfused_forward-29",
+      "depth": 2,
+      "method": "unfused_forward",
+      "process_wall_seconds": 4.224655753001571,
+      "qubits": 4,
+      "result": "q4-d2-unfused_forward-29.json",
+      "seed": 29,
+      "status": "completed"
+    },
+    {
+      "case": "q4-d2-unfused_forward-47",
+      "depth": 2,
+      "method": "unfused_forward",
+      "process_wall_seconds": 4.274378092959523,
+      "qubits": 4,
+      "result": "q4-d2-unfused_forward-47.json",
+      "seed": 47,
+      "status": "completed"
+    },
+    {
+      "case": "q4-d2-fused_forward-11",
+      "depth": 2,
+      "method": "fused_forward",
+      "process_wall_seconds": 9.99248225428164,
+      "qubits": 4,
+      "result": "q4-d2-fused_forward-11.json",
+      "seed": 11,
+      "status": "completed"
+    },
+    {
+      "case": "q4-d2-fused_forward-29",
+      "depth": 2,
+      "method": "fused_forward",
+      "process_wall_seconds": 9.793884394690394,
+      "qubits": 4,
+      "result": "q4-d2-fused_forward-29.json",
+      "seed": 29,
+      "status": "completed"
+    },
+    {
+      "case": "q4-d2-fused_forward-47",
+      "depth": 2,
+      "method": "fused_forward",
+      "process_wall_seconds": 9.891974423080683,
+      "qubits": 4,
+      "result": "q4-d2-fused_forward-47.json",
+      "seed": 47,
+      "status": "completed"
+    },
+    {
+      "case": "q4-d2-pennylane_metric-11",
+      "depth": 2,
+      "method": "pennylane_metric",
+      "process_wall_seconds": 2.169256741181016,
+      "qubits": 4,
+      "result": "q4-d2-pennylane_metric-11.json",
+      "seed": 11,
+      "status": "unsupported"
+    },
+    {
+      "case": "q4-d2-pennylane_metric-29",
+      "depth": 2,
+      "method": "pennylane_metric",
+      "process_wall_seconds": 2.16964989900589,
+      "qubits": 4,
+      "result": "q4-d2-pennylane_metric-29.json",
+      "seed": 29,
+      "status": "unsupported"
+    },
+    {
+      "case": "q4-d2-pennylane_metric-47",
+      "depth": 2,
+      "method": "pennylane_metric",
+      "process_wall_seconds": 2.1693466808646917,
+      "qubits": 4,
+      "result": "q4-d2-pennylane_metric-47.json",
+      "seed": 47,
+      "status": "unsupported"
+    },
+    {
+      "case": "q6-d1-reverse_jacobian-11",
+      "depth": 1,
+      "method": "reverse_jacobian",
+      "process_wall_seconds": 14.688334703445435,
+      "qubits": 6,
+      "result": "q6-d1-reverse_jacobian-11.json",
+      "seed": 11,
+      "status": "completed"
+    },
+    {
+      "case": "q6-d1-reverse_jacobian-29",
+      "depth": 1,
+      "method": "reverse_jacobian",
+      "process_wall_seconds": 14.690277246758342,
+      "qubits": 6,
+      "result": "q6-d1-reverse_jacobian-29.json",
+      "seed": 29,
+      "status": "completed"
+    },
+    {
+      "case": "q6-d1-reverse_jacobian-47",
+      "depth": 1,
+      "method": "reverse_jacobian",
+      "process_wall_seconds": 15.28917388804257,
+      "qubits": 6,
+      "result": "q6-d1-reverse_jacobian-47.json",
+      "seed": 47,
+      "status": "completed"
+    },
+    {
+      "case": "q6-d1-unfused_forward-11",
+      "depth": 1,
+      "method": "unfused_forward",
+      "process_wall_seconds": 4.121046939864755,
+      "qubits": 6,
+      "result": "q6-d1-unfused_forward-11.json",
+      "seed": 11,
+      "status": "completed"
+    },
+    {
+      "case": "q6-d1-unfused_forward-29",
+      "depth": 1,
+      "method": "unfused_forward",
+      "process_wall_seconds": 3.922930473461747,
+      "qubits": 6,
+      "result": "q6-d1-unfused_forward-29.json",
+      "seed": 29,
+      "status": "completed"
+    },
+    {
+      "case": "q6-d1-unfused_forward-47",
+      "depth": 1,
+      "method": "unfused_forward",
+      "process_wall_seconds": 4.071847008541226,
+      "qubits": 6,
+      "result": "q6-d1-unfused_forward-47.json",
+      "seed": 47,
+      "status": "completed"
+    },
+    {
+      "case": "q6-d1-fused_forward-11",
+      "depth": 1,
+      "method": "fused_forward",
+      "process_wall_seconds": 8.888476591557264,
+      "qubits": 6,
+      "result": "q6-d1-fused_forward-11.json",
+      "seed": 11,
+      "status": "completed"
+    },
+    {
+      "case": "q6-d1-fused_forward-29",
+      "depth": 1,
+      "method": "fused_forward",
+      "process_wall_seconds": 8.83914364501834,
+      "qubits": 6,
+      "result": "q6-d1-fused_forward-29.json",
+      "seed": 29,
+      "status": "completed"
+    },
+    {
+      "case": "q6-d1-fused_forward-47",
+      "depth": 1,
+      "method": "fused_forward",
+      "process_wall_seconds": 8.788000775501132,
+      "qubits": 6,
+      "result": "q6-d1-fused_forward-47.json",
+      "seed": 47,
+      "status": "completed"
+    },
+    {
+      "case": "q6-d1-pennylane_metric-11",
+      "depth": 1,
+      "method": "pennylane_metric",
+      "process_wall_seconds": 2.2191691007465124,
+      "qubits": 6,
+      "result": "q6-d1-pennylane_metric-11.json",
+      "seed": 11,
+      "status": "unsupported"
+    },
+    {
+      "case": "q6-d1-pennylane_metric-29",
+      "depth": 1,
+      "method": "pennylane_metric",
+      "process_wall_seconds": 2.118815679103136,
+      "qubits": 6,
+      "result": "q6-d1-pennylane_metric-29.json",
+      "seed": 29,
+      "status": "unsupported"
+    },
+    {
+      "case": "q6-d1-pennylane_metric-47",
+      "depth": 1,
+      "method": "pennylane_metric",
+      "process_wall_seconds": 2.1683946326375008,
+      "qubits": 6,
+      "result": "q6-d1-pennylane_metric-47.json",
+      "seed": 47,
+      "status": "unsupported"
+    }
+  ],
+  "execution_semantics": "single_device_fast_path",
+  "hostname": "bm-baai-dx-zone1-lc-a800-80g-15-171",
+  "platform": "Linux-5.15.0-181-generic-x86_64-with-glibc2.35",
+  "protocol": {
+    "case_timeout_seconds": 240,
+    "compile_policy": "no_Torch_compile_or_JIT_Triton_compiles_on_first_call_included_in_total",
+    "damping": 0.001,
+    "device": "cuda",
+    "failure_policy": "retain_unsupported_timeout_failure_no_infinite_speedup",
+    "fusion_control": "batched_eager_tangent_lanes_vs_existing_Triton_HVA_same_primal_gradient_and_projection",
+    "initial_std": 0.02,
+    "learning_rate": 0.03,
+    "methods": [
+      "reverse_jacobian",
+      "unfused_forward",
+      "fused_forward",
+      "pennylane_metric"
+    ],
+    "metric": "Fubini_Study_layer_block_diagonal_no_factor_four",
+    "optimizer": "theta_minus_lr_solve_metric_plus_damping_identity_gradient",
+    "parity_tolerance": 0.005,
+    "precision": "complex64",
+    "protocol_id": "qng_hva_ablation_cuda_cold_cache_20261102",
+    "schema": "flagquantum.qng_hva_ablation_protocol.v1",
+    "seeds": [
+      11,
+      29,
+      47
+    ],
+    "smoke": "first_workload_seed_11_three_updates_not_acceptance_evidence",
+    "steps": 30,
+    "stop_rule": "exactly_30_updates_even_after_target_or_case_wall_timeout",
+    "target_relative_energy_error": 0.01,
+    "target_rule": "initial_or_post_update_absolute_relative_energy_error_to_independent_numpy_ground_energy",
+    "threads": 1,
+    "timing_scope": "setup_first_call_warmup_initial_assessment_updates_validation_in_total_oracle_separate_process_wall_inclusive",
+    "triton_cache_policy": "fresh_private_Triton_cache_per_case_deleted_after_worker_exit",
+    "warmup_calls": 1,
+    "workload": "canonical_bond_resolved_phase_HVA_open_XX_YY_ZZ_dimer_singlet",
+    "workloads": [
+      {
+        "depth": 1,
+        "qubits": 4
+      },
+      {
+        "depth": 2,
+        "qubits": 4
+      },
+      {
+        "depth": 1,
+        "qubits": 6
+      }
+    ]
+  },
+  "python": "3.12.13",
+  "runner": "qng_hva_time_to_accuracy",
+  "scalability_claim_allowed": false,
+  "schema": "flagquantum.qng_hva_ablation.v1",
+  "smoke": false,
+  "source": {
+    "code_version": "770e24b4f43290f0e1a7d9ca212a8a4e4a396da5",
+    "dirty": false,
+    "installation": {
+      "distribution_version": "0.4.0",
+      "native_cpu_adjoint_available": true,
+      "native_cpu_extension_sha256": "f3a6477ee409fe50c28b0ccfede0869a66d7249a0f2f1f6d9981f7be8b633c2a"
+    },
+    "producer_sha256": {
+      "benchmarks/qng_hva_ablation.py": "23ab7195d499b290d2d81a7b69c0a671cd9cb60ed1e227452bde114eb20b3b40",
+      "benchmarks/qng_hva_geometry.py": "754d6e45066133352ac39cdc555d95f7e6299f242207cb08e6bf6851c16a237c",
+      "benchmarks/qng_hva_time_to_accuracy.py": "45a34574fd94742ea0b6fe0400fa1dafa236a92ad82719073fd222508d4228c4",
+      "benchmarks/training_comparison.py": "c49b2df42157c6e2b863712ca734eca50deb1418dac0346a38f44f3288b3a64a",
+      "benchmarks/training_engines.py": "ca3f49678f2ec97e2fde0ddbb1658291b6114f988c5300b7253e54376f6d307c",
+      "benchmarks/training_workloads.py": "7c797a3214221d3d858e12d3852cfb7a191689b0dad9dc227a395dd983777235"
+    },
+    "protocol_sha256": "fed59ef05be54de3b5592a27704b3366a1c82eaa78e005bed482094e457aaa68",
+    "versions": {
+      "jax": "0.10.2",
+      "jaxlib": "0.10.2",
+      "numpy": "2.5.1",
+      "tensorcircuit-ng": "1.8.0",
+      "torch": "2.13.0",
+      "triton": "3.7.1"
+    }
+  },
+  "world_size": 1
+}
