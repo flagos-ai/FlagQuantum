@@ -24,6 +24,13 @@ def test_reserved_pair_restores_exact_source_and_reruns_the_same_artifact(
     jobs = yaml.safe_load(workflow.read_text())["jobs"]
     producer = jobs["prepare-mps-source"]
     consumer = jobs["mps-capacity-series"]
+    assert "flagquantum-a100-cpu-entry" not in producer["runs-on"]
+    assert "'flagquantum-a100-cpu'" in producer["runs-on"]
+    assert "'ubuntu-latest'" in producer["runs-on"]
+    assert (
+        "github.event.pull_request.head.repo.full_name == github.repository"
+        in producer["runs-on"]
+    )
     assert (
         producer["outputs"]["artifact-key"]
         == "${{ steps.pack-source.outputs.artifact-key }}"

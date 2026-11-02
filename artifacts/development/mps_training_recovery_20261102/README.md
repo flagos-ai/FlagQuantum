@@ -194,3 +194,10 @@ source/manifest/UUID/checkpoint receipts and deterministic report regeneration
 also passed there. Formatting, type, architecture, dependency, language, docs-link
 and repository-hygiene checks passed. Logs are retained under `validation/`;
 remote PR CI is the separate merge gate.
+
+Initial PR CI caught an additional source-runner policy error: the new manual
+producer targeted a reserved entry slot. It now uses the ordinary trusted CPU
+pool with fork fallback and per-run concurrency, preserving the existing entry
+allowlist. All 83 targeted pool/routing/source/workflow checks pass after this
+correction. The failed CI log and correction checks are retained in `validation/`;
+numerical producer and protocol bytes are unchanged.
