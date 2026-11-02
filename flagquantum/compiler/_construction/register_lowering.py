@@ -21,7 +21,12 @@ from .lowering import (
 )
 from .profile import _fail, _positive_integer, _width, uint_type
 from .register_expansion import expand_register_calls, is_register_function
-from .register_profile import register_ports, register_width, verify_register_program
+from .register_profile import (
+    _ANGLE_GATES,
+    register_ports,
+    register_width,
+    verify_register_program,
+)
 
 
 @dataclass(frozen=True)
@@ -72,7 +77,7 @@ def schedule_register_program(
                     (ports[-1 - op.attributes["index"]],),
                     params=(
                         {"theta": op.attributes["angle"]}
-                        if op.attributes["gate"] == "phase"
+                        if op.attributes["gate"] in _ANGLE_GATES
                         else {}
                     ),
                 ),

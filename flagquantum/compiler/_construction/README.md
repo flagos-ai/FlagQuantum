@@ -477,3 +477,20 @@ Run `python -m examples.synthesis_qmod_phase_gate`, then
 `tests/integration/test_synthesis_qmod_phase_gate.py`. Full complex amplitudes
 are necessary to distinguish phase from RZ's global-phase convention. See the
 [contract](../../../docs/api-changes/FQ-SYNTH-CONSTANT-PHASE-GATE-20261102.md).
+
+## Unified program boundary and RZ literals
+
+The [UP-00 contract](../../../docs/api-changes/FQ-SYNTH-UNIFIED-PROGRAM-UP00-20261102.md)
+fixes the future program semantics without admitting that language yet. Existing
+qfunc snapshots remain bounded unsigned definitions. The unreleased float-return
+radians evaluator is withdrawn; source capture accepts the existing int/bool
+annotations and has no phase-specific evaluator or host-execution fallback.
+General explicit phase expressions, typed program ports and coherent blocks
+remain follow-on work, not new Source/IR classes in this slice.
+
+The closed constant-angle register gate set shares phase/rz validation and Core
+named-theta lowering. Source decimal gates are owned by Ecosystem, not the Python
+integer frontend. Run `tests/team/compiler/test_construction_rz_gate.py` and
+`tests/team/compiler/test_construction_program_boundary.py`; use
+`python -m examples.synthesis_native_and_qmod_rz` for runnable high-level integer,
+Qmod and Circuit comparisons with the remaining native phase gap explicit.

@@ -258,13 +258,14 @@ Run python -m examples.synthesis_qmod_bit_predicates. Direct comparisons in
 phase remain the previously documented FlagQuantum-native extension, separate
 from upstream original-source compatibility evidence.
 
-## Constant-angle PHASE original
+## Literal-angle PHASE and RZ originals
 
-Uppercase `PHASE(k, q)` admits a nonnegative integer literal k<=2**53 in
-radians and an initialized scalar qbit. The literal converts exactly to the
-Compiler's finite-float phase gate. It is a reserved intrinsic; helpers may not
-shadow it. Decimal, negative, symbolic, computed and quantum angles remain
-refused, as do numeric/array targets and Const gate targets. Lowercase
+Uppercase `PHASE(k, q)` and `RZ(k, q)` admit a nonnegative integer or contiguous
+fixed-decimal literal k<=2**53 in radians and an initialized scalar qbit. Exact
+decimal bounds are checked before float64 conversion; source literals are at
+most 78 characters. Both are reserved intrinsics. Negative, exponent-form,
+symbolic, computed and quantum angles remain refused, as do numeric/array and
+Const gate targets. Decimal data arithmetic remains refused. Lowercase
 `phase(expression, pi)` remains the separate predicate operation. Within/apply
 actions and role rules are unchanged.
 
@@ -275,3 +276,8 @@ Run `python -m examples.synthesis_qmod_phase_gate` and
 `tests/integration/test_synthesis_qmod_phase_gate.py`. Compare amplitudes, since
 probabilities alone do not expose phase errors. See the
 [delivery](../../../docs/roadmap/SYNTH_CONSTANT_PHASE_GATE_DELIVERY.md).
+
+The native high-level counterpart is an ordinary Python float-return phase
+function, not a Qmod string or Circuit gate wrapper. Run
+`python -m examples.synthesis_native_and_qmod_rz`; see
+[the native-first delivery](../../../docs/roadmap/SYNTH_LITERAL_RZ_DELIVERY.md).
