@@ -29,11 +29,11 @@ def square(x: int) -> int:
     return x * x
 
 
-def cube_constant(x: int) -> int:
+def times_three(x: int) -> int:
     return 3 * x
 
 
-def fifth_constant(x: int) -> int:
+def times_five(x: int) -> int:
     return 5 * x
 
 
@@ -49,15 +49,24 @@ def energy(x: int, y: int) -> int:
     return x * x + y
 
 
+def power_square(x: int) -> int:
+    return x**2
+
+
+def helper_square(x: int) -> int:
+    return square(x)
+
+
 def candidate(
     function: Callable[..., int],
     widths: dict[str, int],
     strategy: Schedule = "retain",
     *,
+    functions: tuple[Callable[..., int], ...] = (),
     capacity: int = 128,
     max_operations: int = 100_000,
 ) -> tuple[ArithmeticCandidate, tuple[tuple[int, ...], ...]]:
-    graph = capture(function, widths)
+    graph = capture(function, widths, functions=functions)
     block = graph.body.blocks[0]
     position = 0
     registers = []
@@ -129,9 +138,9 @@ def test_all_sixteen_basis_inputs_execute_with_zero_workspace(x: int, y: int) ->
     [
         (square, {"x": 2}, "square_symmetry"),
         (square, {"x": 3}, "square_symmetry"),
-        (cube_constant, {"x": 4}, "constant_shift_add"),
-        (cube_constant, {"x": 5}, "constant_shift_add"),
-        (fifth_constant, {"x": 4}, "constant_shift_add"),
+        (times_three, {"x": 4}, "constant_shift_add"),
+        (times_three, {"x": 5}, "constant_shift_add"),
+        (times_five, {"x": 4}, "constant_shift_add"),
         (add, {"x": 2, "y": 2}, "terminal_xor_add"),
         (add, {"x": 1, "y": 3}, "terminal_xor_add"),
         (multiply_add, {"x": 1, "y": 1, "z": 2}, "terminal_xor_add"),
@@ -241,7 +250,7 @@ def test_output_alias_and_unknown_workspace_are_rejected_before_optimized_emissi
 
 
 def test_constant_tradeoff_retains_the_actual_conservative_candidate() -> None:
-    result, _ = candidate(cube_constant, {"x": 2})
+    result, _ = candidate(times_three, {"x": 2})
     assert result.conservative is not None and result.implementation_cost is not None
     assert result.implementation == "conservative"
     assert _logical_cost(result) == _logical_cost(result.conservative)
@@ -259,7 +268,25 @@ def test_optional_implementation_probe_has_a_recorded_budget(
     from flagquantum.compiler._construction import lowering
 
     monkeypatch.setattr(lowering, "_NORMALIZATION_PROBE_MAX_OPERATIONS", 10)
-    result, _ = candidate(cube_constant, {"x": 4})
+    result, _ = candidate(times_three, {"x": 4})
     assert result.implementation == "conservative"
     assert result.implementation_cost is None
     assert result.implementation_errors[0].code == "construction.implementation.budget"
+
+
+@pytest.mark.parametrize("width", [2, 3])
+@pytest.mark.parametrize("strategy", ["retain", "recompute"])
+def test_powers_helpers_and_multiplication_reach_the_same_square_implementation(
+    width: int, strategy: Schedule
+) -> None:
+    reference, _ = candidate(square, {"x": width}, strategy)
+    for function in (power_square, helper_square):
+        result, registers = candidate(
+            function, {"x": width}, strategy, functions=(square,)
+        )
+        assert _logical_cost(result) == _logical_cost(reference)
+        assert {rule for _, rule in result.implementation_rules} == {"square_symmetry"}
+        for x, target in product(range(1 << width), (0, 1, (1 << (2 * width)) - 1)):
+            assert classical_apply(
+                result.circuit, encode((x, target), registers)
+            ) == encode((x, target ^ (x * x)), registers)

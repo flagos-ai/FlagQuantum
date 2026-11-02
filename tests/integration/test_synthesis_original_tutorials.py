@@ -49,8 +49,8 @@ def test_original_tutorial_full_state_and_clean_workspace(
             memory_limit_bytes=512 * 1024**2,
         )
     assert dict(p.report["register_widths"]) == {"x": 3, "y": 6}
-    assert p.report["resources"].n_qubits == 23
-    assert p.execution.state_bytes == 128 * 1024**2
+    assert p.report["resources"].n_qubits == 21
+    assert p.execution.state_bytes == 32 * 1024**2
     result = fq.run(p)
     expected = {(x, x * x + 1): 1 / math.sqrt(8) for x in range(8)}
     check_state(p, result, expected)

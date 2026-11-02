@@ -141,8 +141,8 @@ def test_rematerialized_result_cleanup_uses_the_selected_physical_history(
             expected[((a << 3) | (b << 2)) << work] = 1j**a * (-1) ** (a * b) / 2
     torch.testing.assert_close(observed, expected, atol=1e-12, rtol=0)
     assert (
-        selection.rows[0].arithmetic.peak_workspace
-        != selection.rows[1].arithmetic.peak_workspace
+        selection.rows[0].arithmetic.recomputations
+        != selection.rows[1].arithmetic.recomputations
     )
 
 
