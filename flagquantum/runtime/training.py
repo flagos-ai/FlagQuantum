@@ -53,6 +53,9 @@ def _eager_training_update(
         value_only = not retain_execution and not _training_exclusion(
             module, optimizer, ()
         )
+        value_only = value_only and all(
+            parameter.device.type == "cpu" for parameter in module._parameter_tensors()
+        )
         execution = (
             ExecutionResult(value=_training_value(module, inputs))
             if value_only
