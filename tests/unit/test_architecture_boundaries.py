@@ -91,6 +91,67 @@ def test_package_check_enforces_the_training_compilation_exception(monkeypatch):
     )
 
 
+@pytest.mark.parametrize(
+    "importer,module,name,forbidden",
+    (
+        (
+            "flagquantum/runtime/training_compilation.py",
+            "flagquantum",
+            "compiler",
+            True,
+        ),
+        (
+            "flagquantum/simulation/statevector/local.py",
+            "compiler.training",
+            "compile_training_callable",
+            True,
+        ),
+        (
+            "flagquantum/simulation/statevector/local.py",
+            "flagquantum",
+            "compiler",
+            True,
+        ),
+        (
+            "flagquantum/simulation/statevector/local.py",
+            "torch.compiler",
+            "disable",
+            False,
+        ),
+    ),
+)
+def test_compiler_permission_does_not_escape_through_root_aliases_or_simulation(
+    monkeypatch,
+    importer,
+    module,
+    name,
+    forbidden,
+):
+    import tools.check_architecture as checker
+
+    original = checker._imports
+
+    def injected(path):
+        imports = original(path)
+        return (
+            imports + ((module, name),)
+            if path.relative_to(ROOT).as_posix() == importer
+            else imports
+        )
+
+    monkeypatch.setattr(checker, "_imports", injected)
+    errors = architecture_errors()
+    assert bool(errors) is forbidden
+    if forbidden:
+        assert any(
+            importer in error
+            and "Compiler" in error
+            or importer in error
+            and "forbidden layer" in error
+            for error in errors
+        )
+
+
 def test_package_check_enforces_the_capture_exception(monkeypatch):
     import tools.check_architecture as checker
 
