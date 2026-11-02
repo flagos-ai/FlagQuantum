@@ -5,11 +5,27 @@ from pathlib import Path
 
 import pytest
 
+from tests.distributed.mps_stability_fault_runtime import (
+    FAULT_COLLECTIVE_TIMEOUT_SECONDS,
+    FAULT_DELAY_SECONDS,
+    SETUP_COLLECTIVE_TIMEOUT_SECONDS,
+)
+
 # Unique module basename avoids collision with the benchmark-contract test.
 
 pytestmark = [pytest.mark.distributed, pytest.mark.distributed_cpu]
 ROOT = Path(__file__).resolve().parents[2]
 RUNTIME = ROOT / "tests/distributed/mps_stability_fault_runtime.py"
+# Match the existing statevector harness startup allowance on shared runners.
+# The prior 30s wrapper could expire during the script's own 30s setup window,
+# before a participant's injected failure reached the launcher.
+STARTUP_ALLOWANCE_SECONDS = 120.0
+PARTICIPANT_FAILURE_DEADLINE_SECONDS = (
+    STARTUP_ALLOWANCE_SECONDS
+    + 2 * SETUP_COLLECTIVE_TIMEOUT_SECONDS
+    + FAULT_COLLECTIVE_TIMEOUT_SECONDS
+    + FAULT_DELAY_SECONDS
+)
 
 
 @pytest.mark.parametrize(
@@ -96,10 +112,16 @@ def test_participant_failure_terminates_launcher(mode, tmp_path):
         env=env,
         capture_output=True,
         text=True,
-        timeout=30,
+        timeout=PARTICIPANT_FAILURE_DEADLINE_SECONDS,
         check=False,
     )
     assert completed.returncode != 0
+    expected_fault = {
+        "rank_exception": "injected rank exception",
+        "cuda_oom": "injected CUDA OOM",
+    }.get(mode)
+    if expected_fault is not None:
+        assert expected_fault in completed.stderr, completed.stdout + completed.stderr
     if mode == "collective_timeout":
         assert completed.stdout.count("collective_timeout_armed") == 2, (
             completed.stdout + completed.stderr
