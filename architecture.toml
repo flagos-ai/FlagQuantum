@@ -100,6 +100,13 @@ module = "compiler.module_builder"
 names = ["CapturedModuleBuilder", "capture_module_builder"]
 approval = "docs/development/MODULE_REUSABLE_EXECUTION_CONTRACT.md"
 
+# Separately user-approved 2026-11-02 lazy Torch training composition entry.
+[training_callable_compilation_boundary]
+importer = "flagquantum/runtime/training.py"
+module = "compiler.training"
+names = ["compile_training_callable"]
+approval = "docs/development/TORCH_TRAINING_COMPILATION_CONTRACT.md"
+
 [accelerator_boundaries.direct_cuda_call_ceiling]
 "flagquantum/benchmarking/statevector_local.py" = 5
 "flagquantum/runtime/executors/mps/compiled_layers.py" = 1

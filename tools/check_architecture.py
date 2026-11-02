@@ -114,6 +114,16 @@ def _approved_module_capture_import(relative: str, module: str, name: str) -> bo
     )
 
 
+def _approved_training_compile_import(relative: str, module: str, name: str) -> bool:
+    """Admit only the separately reviewed lazy Torch training entry."""
+    boundary = CONFIG["training_callable_compilation_boundary"]
+    return (
+        relative == boundary["importer"]
+        and module.removeprefix("flagquantum.") == boundary["module"]
+        and name in boundary["names"]
+    )
+
+
 def _module_name(path: Path, package_root: Path) -> str:
     parts = path.relative_to(package_root).with_suffix("").parts
     if parts[-1] == "__init__":
@@ -552,6 +562,7 @@ def architecture_errors() -> tuple[str, ...]:
                     for part in module.split(".")
                 )
                 and not _approved_module_capture_import(relative, module, name)
+                and not _approved_training_compile_import(relative, module, name)
                 for module, name in imports
             )
             if imports_compiler:
