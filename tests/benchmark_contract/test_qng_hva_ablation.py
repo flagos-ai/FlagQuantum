@@ -168,7 +168,7 @@ def test_timeout_failure_and_unsupported_are_retained_without_ratios(
         return SimpleNamespace(returncode=0)
 
     monkeypatch.setattr(producer, "runtime_metadata", lambda **kwargs: kwargs)
-    monkeypatch.setattr(producer.subprocess, "run", worker)
+    monkeypatch.setattr(producer, "run_worker", worker)
     output = tmp_path / "campaign"
     assert producer.campaign(output, device="cpu", smoke=True) == 1
     summary = json.loads((output / "summary.json").read_text())
@@ -182,3 +182,63 @@ def test_timeout_failure_and_unsupported_are_retained_without_ratios(
     assert "unavailable" in report
     assert "inf" not in report.lower()
     assert all(command[-1] == "--smoke" for command in observed)
+    summary["cases"].pop()
+    (output / "summary.json").write_text(json.dumps(summary))
+    with pytest.raises(ValueError, match="all seeds"):
+        producer.render_report(output)
+
+
+def test_source_identity_binds_geometry_protocol_and_optional_versions() -> None:
+    from benchmarks.qng_hva_ablation import identity
+
+    source = identity(protocol_path("cpu"))
+    assert "triton" in source["versions"]
+    assert "benchmarks/qng_hva_geometry.py" in source["producer_sha256"]
+    assert len(source["protocol_sha256"]) == 64
+
+
+def test_worker_timeout_terminates_compiler_descendants(tmp_path: Path) -> None:
+    import os
+    import subprocess
+    import sys
+
+    from benchmarks.qng_hva_ablation import run_worker
+
+    if os.name != "posix":
+        pytest.skip("POSIX process-group cleanup check")
+    import fcntl
+    import time
+
+    lock_path, ready_path = tmp_path / "compiler.lock", tmp_path / "compiler.ready"
+    child = (
+        "import fcntl,sys,time; "
+        "lock=open(sys.argv[1],'w'); fcntl.flock(lock,fcntl.LOCK_EX); "
+        "open(sys.argv[2],'w').write('ready'); time.sleep(60)"
+    )
+    script = (
+        "import subprocess,sys,time; "
+        "subprocess.Popen([sys.executable,'-c',sys.argv[1],sys.argv[2],sys.argv[3]]); "
+        "time.sleep(60)"
+    )
+    with (
+        (tmp_path / "worker.log").open("w") as log,
+        pytest.raises(subprocess.TimeoutExpired),
+    ):
+        run_worker(
+            [sys.executable, "-c", script, child, str(lock_path), str(ready_path)],
+            env=dict(os.environ),
+            log=log,
+            timeout=2,
+        )
+    assert ready_path.exists(), "descendant did not acquire its resource before timeout"
+    deadline = time.monotonic() + 2
+    with lock_path.open("w") as lock:
+        while True:
+            try:
+                fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                break
+            except BlockingIOError:
+                assert (
+                    time.monotonic() < deadline
+                ), "compiler descendant survived timeout"
+                time.sleep(0.01)

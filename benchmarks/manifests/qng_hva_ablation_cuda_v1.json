@@ -1,6 +1,6 @@
 {
   "schema": "flagquantum.qng_hva_ablation_protocol.v1",
-  "protocol_id": "qng_hva_ablation_cuda_20261102",
+  "protocol_id": "qng_hva_ablation_cuda_cold_cache_20261102",
   "device": "cuda",
   "precision": "complex64",
   "workloads": [
@@ -46,5 +46,6 @@
   "compile_policy": "no_Torch_compile_or_JIT_Triton_compiles_on_first_call_included_in_total",
   "failure_policy": "retain_unsupported_timeout_failure_no_infinite_speedup",
   "timing_scope": "setup_first_call_warmup_initial_assessment_updates_validation_in_total_oracle_separate_process_wall_inclusive",
-  "fusion_control": "batched_eager_tangent_lanes_vs_existing_Triton_HVA_same_primal_gradient_and_projection"
+  "fusion_control": "batched_eager_tangent_lanes_vs_existing_Triton_HVA_same_primal_gradient_and_projection",
+  "triton_cache_policy": "fresh_private_Triton_cache_per_case_deleted_after_worker_exit"
 }

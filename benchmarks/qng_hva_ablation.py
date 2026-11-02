@@ -6,14 +6,17 @@ import argparse
 import json
 import os
 import resource
+import signal
 import statistics
 import subprocess
 import sys
+import tempfile
 import time
 import traceback
 from dataclasses import asdict
+from importlib import metadata
 from pathlib import Path
-from typing import Any
+from typing import IO, Any
 
 import numpy as np
 import torch
@@ -44,6 +47,10 @@ def identity(protocol: Path) -> dict[str, Any]:
     ):
         path = ROOT / "benchmarks" / name
         source["producer_sha256"][str(path.relative_to(ROOT))] = digest(path)
+    try:
+        source["versions"]["triton"] = metadata.version("triton")
+    except metadata.PackageNotFoundError:
+        source["versions"]["triton"] = None
     return source
 
 
@@ -244,6 +251,16 @@ def run_case(
             if method == "pennylane_metric"
             else "FlagQuantum_HVA"
         ),
+        "device_name": (
+            torch.cuda.get_device_name() if workload.device == "cuda" else "CPU"
+        ),
+        "cuda_runtime": torch.version.cuda if workload.device == "cuda" else None,
+        "cuda_compute_capability": (
+            list(torch.cuda.get_device_capability())
+            if workload.device == "cuda"
+            else None
+        ),
+        "triton_cache_policy": manifest.get("triton_cache_policy", "not_applicable"),
         "interface": "torch",
         "dtype": workload.precision,
         "shots": None,
@@ -277,6 +294,33 @@ def run_case(
             torch.cuda.max_memory_allocated() if workload.device == "cuda" else None
         ),
     }
+
+
+def run_worker(
+    command: list[str], *, env: dict[str, str], log: IO[str], timeout: float
+) -> subprocess.Popen[bytes]:
+    """Bound a case and terminate compiler descendants with its process group."""
+    process = subprocess.Popen(
+        command,
+        cwd=ROOT,
+        env=env,
+        stdout=log,
+        stderr=subprocess.STDOUT,
+        start_new_session=os.name == "posix",
+    )
+    try:
+        process.wait(timeout=timeout)
+    except BaseException:
+        if os.name == "posix":
+            try:
+                os.killpg(process.pid, signal.SIGKILL)
+            except ProcessLookupError:
+                pass
+        else:
+            process.kill()
+        process.wait()
+        raise
+    return process
 
 
 def campaign(output: Path, *, device: str, smoke: bool) -> int:
@@ -330,16 +374,18 @@ def campaign(output: Path, *, device: str, smoke: bool) -> int:
                 )
                 started = time.perf_counter()
                 print(f"Starting {name}", flush=True)
-                with (output / f"{name}.log").open("w") as log:
+                with (
+                    tempfile.TemporaryDirectory(prefix="fq-qng-triton-") as cache,
+                    (output / f"{name}.log").open("w") as log,
+                ):
+                    if device == "cuda":
+                        environment["TRITON_CACHE_DIR"] = cache
                     try:
-                        completed = subprocess.run(
+                        completed = run_worker(
                             command,
-                            cwd=ROOT,
                             env=environment,
-                            stdout=log,
-                            stderr=subprocess.STDOUT,
+                            log=log,
                             timeout=manifest["case_timeout_seconds"],
-                            check=False,
                         )
                         if result_path.exists():
                             result = json.loads(result_path.read_text())
@@ -382,6 +428,23 @@ def render_report(directory: Path) -> str:
         or summary["protocol"] != freeze["protocol"]
     ):
         raise ValueError("summary source/protocol does not match freeze")
+    protocol = freeze["protocol"]
+    shapes = protocol["workloads"][:1] if freeze["smoke"] else protocol["workloads"]
+    seeds = protocol["seeds"][:1] if freeze["smoke"] else protocol["seeds"]
+    expected = {
+        (shape["qubits"], shape["depth"], method, seed)
+        for shape in shapes
+        for method in protocol["methods"]
+        for seed in seeds
+    }
+    observed = [
+        (case["qubits"], case["depth"], case["method"], case["seed"])
+        for case in summary["cases"]
+    ]
+    if len(observed) != len(set(observed)) or set(observed) != expected:
+        raise ValueError(
+            "report cases do not cover the frozen workloads, methods and all seeds"
+        )
     lines = [
         "# Matched QNG algorithm and fusion ablation",
         "",
@@ -391,8 +454,8 @@ def render_report(directory: Path) -> str:
         "",
         "First-call/JIT and warmup are separate and included in total cost and total time to target. Oracle validation and common imports are outside measured total; fresh-process wall includes them and interpreter startup. Peak RSS includes the entire worker. Fixed updates continue after reaching the target. No quantum advantage, state-of-the-art or scalability claim is made.",
         "",
-        "| Wires | Depth | Parameters | Method | Seed | Status | Final error | Training s | First call s | Total s | Total target s | RSS MiB |",
-        "| ---: | ---: | ---: | --- | ---: | --- | ---: | ---: | ---: | ---: | --- | ---: |",
+        "| Wires | Depth | Parameters | Method | Seed | Status | Final error | Training s | First call s | Total s | Total target s | RSS MiB | CUDA MiB |",
+        "| ---: | ---: | ---: | --- | ---: | --- | ---: | ---: | ---: | ---: | --- | ---: | ---: |",
     ]
     results: dict[tuple[int, int, int, str], dict[str, Any]] = {}
     for case in summary["cases"]:
@@ -404,7 +467,7 @@ def render_report(directory: Path) -> str:
                 else "See retained log; no completed result."
             )
             lines.append(
-                f"| {case['qubits']} | {case['depth']} | — | {case['method']} | {case['seed']} | {case['status']}: {reason} | — | — | — | — | — | — |"
+                f"| {case['qubits']} | {case['depth']} | — | {case['method']} | {case['seed']} | {case['status']}: {reason} | — | — | — | — | — | — | — |"
             )
             continue
         result = json.loads((directory / case["result"]).read_text())
@@ -416,10 +479,12 @@ def render_report(directory: Path) -> str:
         ):
             raise ValueError(f"unvalidated or mismatched result: {case['case']}")
         results[(case["qubits"], case["depth"], case["seed"], case["method"])] = result
+        cuda_memory = result["cuda_peak_allocated_bytes"]
+        cuda_text = "—" if cuda_memory is None else f"{cuda_memory/2**20:.3f}"
         target = result["time_to_target_total_seconds"]
         text = "not reached" if target is None else f"{target:.6f}"
         lines.append(
-            f"| {case['qubits']} | {case['depth']} | {result['parameter_count']} | [{case['method']}]({case['result']}) | {case['seed']} | completed | {result['final_relative_energy_error']:.6g} | {result['training_seconds']:.6f} | {result['first_call_seconds']:.6f} | {result['total_measured_seconds']:.6f} | {text} | {result['process_peak_rss_bytes']/2**20:.1f} |"
+            f"| {case['qubits']} | {case['depth']} | {result['parameter_count']} | [{case['method']}]({case['result']}) | {case['seed']} | completed | {result['final_relative_energy_error']:.6g} | {result['training_seconds']:.6f} | {result['first_call_seconds']:.6f} | {result['total_measured_seconds']:.6f} | {text} | {result['process_peak_rss_bytes']/2**20:.1f} | {cuda_text} |"
         )
     lines += [
         "",

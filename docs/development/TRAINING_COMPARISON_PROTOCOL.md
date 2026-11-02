@@ -296,7 +296,9 @@ required to assess that acceptance criterion.
 
 Every case runs in a fresh process with a 240-second deadline. Torch and
 OMP/OpenBLAS/MKL thread settings are one; no Torch JIT or compile is enabled.
-Triton compiles on the first measured direction call. CUDA is synchronized at
+The CUDA campaign uses a fresh private Triton cache for every case, so compile
+and load cost occurs on the first measured direction call. Cache files are
+deleted after each worker exits; timeout cleanup terminates its process group. CUDA is synchronized at
 every phase boundary. Reports retain first-call cost separately and include it
 in total cost and total time to target, together with setup, warmup and initial
 assessment. Oracle time is separate; supervisor process wall includes common
