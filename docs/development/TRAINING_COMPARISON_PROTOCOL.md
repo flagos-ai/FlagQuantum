@@ -154,11 +154,11 @@ derivatives, full checkpoint/replay scenarios, disjoint data splits and a
 deliberately wrong simulator. Optional backend cases skip only when their
 package is unavailable, without substituting another engine.
 
-Remaining extensions in #900 include QNG reverse/unfused-forward/fused-forward
-ablation, independently varied parameter count, larger workloads, vectorized
-training, repeated timing campaigns and optional accelerator measurements.
-This bounded CPU stage does not close those requirements or promote results
-to release evidence.
+The historical CPU stage leaves QNG reverse/unfused-forward/fused-forward
+ablation and independently varied parameter count to the QNG protocol below.
+Larger workloads, vectorized training and repeated timing campaigns are useful
+future extensions outside this bounded experiment. These reports remain
+comparison evidence and are not promoted to release evidence.
 
 ## JAX execution-strategy diagnostic
 

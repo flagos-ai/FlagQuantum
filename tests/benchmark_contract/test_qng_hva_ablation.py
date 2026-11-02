@@ -242,3 +242,49 @@ def test_worker_timeout_terminates_compiler_descendants(tmp_path: Path) -> None:
                     time.monotonic() < deadline
                 ), "compiler descendant survived timeout"
                 time.sleep(0.01)
+
+
+def test_report_rejects_truncated_completed_trajectory(tmp_path: Path) -> None:
+    from dataclasses import asdict
+
+    from benchmarks.qng_hva_ablation import METHODS, render_report
+
+    protocol = json.loads(protocol_path("cpu").read_text())
+    metadata = {
+        "schema": "flagquantum.qng_hva_ablation.v1",
+        "source": {"code_version": "test"},
+        "protocol": protocol,
+        "smoke": True,
+    }
+    cases = []
+    for method in METHODS:
+        name = f"{method}.json"
+        result = {
+            **metadata,
+            "status": "unsupported",
+            "error": "test unsupported route",
+        }
+        if method == "reverse_jacobian":
+            result.update(
+                status="completed",
+                workload=asdict(Workload(4, 1)),
+                completed_steps=3,
+                parity={"passed": True},
+                trace=[{"step": 1}],
+            )
+        (tmp_path / name).write_text(json.dumps(result))
+        cases.append(
+            {
+                "qubits": 4,
+                "depth": 1,
+                "method": method,
+                "seed": 11,
+                "result": name,
+                "case": method,
+                "status": result["status"],
+            }
+        )
+    (tmp_path / "freeze.json").write_text(json.dumps(metadata))
+    (tmp_path / "summary.json").write_text(json.dumps({**metadata, "cases": cases}))
+    with pytest.raises(ValueError, match="incomplete optimizer trajectory"):
+        render_report(tmp_path)

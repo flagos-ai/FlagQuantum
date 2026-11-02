@@ -101,6 +101,26 @@ def test_checkpoint_restores_complete_adam_trajectory(
 ) -> None:
     result = train_case(task, "flagquantum", 11, smoke=True, directory=tmp_path)
     assert result["completed_steps"] == 3
+    startup = (
+        sum(
+            result[key]
+            for key in (
+                "backend_setup_seconds",
+                "warmup_seconds",
+                "initial_assessment_seconds",
+            )
+        )
+        + result["parity"]["first_value_grad_seconds"]
+    )
+    assert result["total_measured_seconds"] == pytest.approx(
+        startup + result["training_seconds"] + result["assessment_seconds"]
+    )
+    if result["time_to_target_seconds"] is None:
+        assert result["time_to_target_total_seconds"] is None
+    else:
+        assert result["time_to_target_total_seconds"] == pytest.approx(
+            startup + result["time_to_target_seconds"]
+        )
     assert result["checkpoint_replay_max_parameter_error"] == 0
     assert result["checkpoint_replay_max_gradient_error"] == 0
     assert result["checkpoint_replay_max_optimizer_error"] == 0

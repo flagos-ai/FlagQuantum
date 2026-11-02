@@ -478,6 +478,11 @@ def render_report(directory: Path) -> str:
             or result["status"] != "completed"
         ):
             raise ValueError(f"unvalidated or mismatched result: {case['case']}")
+        steps = 3 if freeze["smoke"] else protocol["steps"]
+        if result["completed_steps"] != steps or [
+            p["step"] for p in result["trace"]
+        ] != list(range(1, steps + 1)):
+            raise ValueError(f"incomplete optimizer trajectory: {case['case']}")
         results[(case["qubits"], case["depth"], case["seed"], case["method"])] = result
         cuda_memory = result["cuda_peak_allocated_bytes"]
         cuda_text = "—" if cuda_memory is None else f"{cuda_memory/2**20:.3f}"
@@ -514,6 +519,36 @@ def render_report(directory: Path) -> str:
         lines.append(
             f"| {qubits} | {depth} | {seed} | {ratio('reverse_jacobian', 'unfused_forward')} | {ratio('unfused_forward', 'fused_forward')} |"
         )
+    lines += [
+        "",
+        "## Complete optimizer trajectories",
+        "",
+        "Each table retains every post-update error at the fixed budget, including non-convergence. Step zero is the initial state. Full parameter vectors, directions and timings are in the linked JSON above.",
+        "",
+    ]
+    for qubits, depth, seed in sorted({key[:3] for key in results}):
+        paired = [results.get((qubits, depth, seed, method)) for method in METHODS]
+        lines += [
+            f"<details><summary>{qubits} wires, depth {depth}, seed {seed}</summary>",
+            "",
+            "| Step | Reverse error | Unfused error | Fused error | Framework error |",
+            "| ---: | ---: | ---: | ---: | ---: |",
+        ]
+        for step in range((3 if freeze["smoke"] else protocol["steps"]) + 1):
+            values = []
+            for result in paired:
+                if result is None:
+                    values.append("unavailable")
+                else:
+                    error = (
+                        abs(result["initial_energy"] - result["exact_ground_energy"])
+                        / abs(result["exact_ground_energy"])
+                        if step == 0
+                        else result["trace"][step - 1]["relative_energy_error"]
+                    )
+                    values.append(f"{error:.10g}")
+            lines.append(f"| {step} | " + " | ".join(values) + " |")
+        lines += ["", "</details>", ""]
     lines += [
         "",
         "All seeds, every parameter vector and update direction, per-step timings, parity errors, process wall and memory remain in the JSON. Unsupported fused CPU cases cannot establish fusion savings; a completed CUDA campaign is required for that conclusion.",
