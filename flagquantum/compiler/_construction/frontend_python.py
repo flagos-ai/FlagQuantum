@@ -4,16 +4,13 @@ from __future__ import annotations
 
 import ast
 import inspect
-import math
 import textwrap
 from collections.abc import Callable, Mapping, Sequence
-from dataclasses import dataclass, replace
+from dataclasses import dataclass
 from typing import NoReturn
 
-from ...core.ir import Instruction
 from .._hybrid.model import (
     INDEX,
-    QUANTUM_EFFECT,
     Block,
     HybridProgram,
     Operation,
@@ -25,7 +22,6 @@ from .._hybrid.model import (
 from .._hybrid.verifier import Diagnostic, HybridVerificationError
 from .profile import _positive_integer, uint_type, verify_construction
 from .ranges import unsigned_width
-from .register_profile import register_type
 
 
 @dataclass(frozen=True)
@@ -65,12 +61,7 @@ def _annotation_name(annotation: ast.expr | None) -> str | None:
     return None
 
 
-def _source(
-    function: Callable[..., object],
-    *,
-    decorated: bool = False,
-    real_phase: bool = False,
-) -> _Source:
+def _source(function: Callable[..., object], *, decorated: bool = False) -> _Source:
     if not inspect.isfunction(function) or hasattr(function, "__wrapped__"):
         raise TypeError(
             "capture requires a Python function, not a callable object or method"
@@ -124,7 +115,7 @@ def _source(
         )
     args = node.args
     annotations = (
-        (node.returns, {"int", "bool", "float"} if real_phase else {"int", "bool"}),
+        (node.returns, {"int", "bool"}),
         *((arg.annotation, {"int"}) for arg in (*args.posonlyargs, *args.args)),
     )
     for annotation, allowed in annotations:
@@ -220,170 +211,12 @@ Definition = Callable[..., object] | _QuantumFunction
 _Expression = tuple[Value, int]
 
 
-def _capture_real_phase(source: _Source, name: str) -> HybridProgram:
-    body = source.node.body
-    if (
-        isinstance(body[0], ast.Expr)
-        and isinstance(body[0].value, ast.Constant)
-        and isinstance(body[0].value.value, str)
-    ):
-        body = body[1:]
-    if len(body) != 1 or not isinstance(body[0], ast.Return) or body[0].value is None:
-        _error(
-            source,
-            source.node,
-            "phase.body",
-            "real phase requires one return expression",
-        )
-    expression = body[0].value
-
-    def evaluate(node: ast.expr, bit: int, depth: int = 0) -> int | float:
-        if depth >= 32:
-            _error(
-                source, node, "phase.depth", "real phase expression depth exceeds 32"
-            )
-        value: int | float
-        if isinstance(node, ast.Constant):
-            if isinstance(node.value, bool) or not isinstance(node.value, (int, float)):
-                _error(
-                    source,
-                    node,
-                    "phase.literal",
-                    "real phase literals must be real numbers, not bool or other objects",
-                )
-            value = node.value
-        elif isinstance(node, ast.Name) and node.id == name:
-            value = bit
-        elif isinstance(node, ast.UnaryOp) and isinstance(
-            node.op, (ast.UAdd, ast.USub)
-        ):
-            operand = evaluate(node.operand, bit, depth + 1)
-            value = operand if isinstance(node.op, ast.UAdd) else -operand
-        elif isinstance(node, ast.BinOp) and isinstance(
-            node.op, (ast.Add, ast.Sub, ast.Mult)
-        ):
-            left = evaluate(node.left, bit, depth + 1)
-            right = evaluate(node.right, bit, depth + 1)
-            if isinstance(node.op, ast.Add):
-                value = left + right
-            elif isinstance(node.op, ast.Sub):
-                value = left - right
-            else:
-                value = left * right
-        else:
-            _error(
-                source,
-                node,
-                "phase.expression",
-                "use finite numbers, the input name, +, -, * and unary signs only",
-            )
-        if abs(value) > 2**53 or not math.isfinite(value):
-            _error(
-                source,
-                node,
-                "phase.range",
-                "real phase values and intermediates must be finite and within +/-2**53",
-            )
-        return value
-
-    zero, one = (float(evaluate(expression, bit)) for bit in (0, 1))
-    scope = source.node.name
-    entry = Value(ValueId(scope, 0), QUANTUM_EFFECT)
-    register = Value(ValueId(scope, 1), register_type(1))
-    effect = Value(ValueId(scope, 2), QUANTUM_EFFECT)
-    location = source.location(expression)
-    operations = [
-        Operation(
-            "qreg.declare",
-            results=(register,),
-            attributes={"name": name},
-            location=location,
-        ),
-        Operation("qreg.allocate", (entry, register), (effect,), location=location),
-    ]
-
-    def gate(opcode: str, angle: float | None = None) -> None:
-        nonlocal effect
-        result = Value(ValueId(scope, len(operations) + 1), QUANTUM_EFFECT)
-        attributes: dict[str, object] = {"gate": opcode, "index": 0}
-        if angle is not None:
-            attributes["angle"] = angle
-        operations.append(
-            Operation(
-                "qreg.gate",
-                (effect, register),
-                (result,),
-                attributes,
-                location=location,
-            )
-        )
-        effect = result
-
-    if zero == -one:
-        if one:
-            gate("rz", 2 * one)
-    else:
-        if zero:
-            gate("x")
-            gate("phase", zero)
-            gate("x")
-        if one:
-            gate("phase", one)
-    operations.append(Operation("qreg.return", (effect, register), location=location))
-    return HybridProgram(scope, Region((Block((entry,), tuple(operations)),)))
-
-
-def prepare_real_phase(
-    program: HybridProgram, preparation: Sequence[Instruction]
-) -> HybridProgram:
-    """Insert known basis/uniform preparation after fresh allocation."""
-    block = program.body.blocks[0]
-    register = block.operations[0].results[0]
-    allocated = block.operations[1].results[0]
-    effect = allocated
-    counter = max(v.id.index for op in block.operations for v in op.results) + 1
-    inserted: list[Operation] = []
-    for instruction in preparation:
-        if (
-            instruction.name not in {"x", "h"}
-            or instruction.wires != (0,)
-            or instruction.params
-            or instruction.metadata
-            or instruction.matrix is not None
-        ):
-            raise ValueError("real phase accepts named basis/uniform preparation only")
-        result = Value(ValueId(program.name, counter), QUANTUM_EFFECT)
-        counter += 1
-        inserted.append(
-            Operation(
-                "qreg.gate",
-                (effect, register),
-                (result,),
-                {"gate": instruction.name, "index": 0},
-            )
-        )
-        effect = result
-    tail = tuple(
-        replace(
-            op, operands=tuple(effect if v == allocated else v for v in op.operands)
-        )
-        for op in block.operations[2:]
-    )
-    return replace(
-        program,
-        body=Region(
-            (Block(block.arguments, (*block.operations[:2], *inserted, *tail)),)
-        ),
-    )
-
-
 def capture(
     function: Definition,
     inputs: Mapping[str, int],
     *,
     constants: Mapping[str, int] | None = None,
     functions: Sequence[Definition] = (),
-    real_phase: bool = False,
 ) -> HybridProgram:
     """Infer exact widths into existing SSA; explicitly supplied helpers inline.
 
@@ -398,7 +231,7 @@ def capture(
         source = (
             definition.source
             if isinstance(definition, _QuantumFunction)
-            else _source(definition, real_phase=real_phase and definition is function)
+            else _source(definition)
         )
         source_nodes += sum(1 for _ in ast.walk(source.node))
         if source_nodes > 4096:
@@ -444,15 +277,6 @@ def capture(
         _positive_integer(width, "input width")
         if width > 256:
             raise ValueError("input width exceeds the 256-bit construction safety cap")
-    if real_phase and _annotation_name(main.node.returns) == "float":
-        if functions or classic or len(inputs) != 1 or next(iter(inputs.values())) != 1:
-            _error(
-                main,
-                main.node,
-                "phase.profile",
-                "real phase requires one UInt(1) input without helpers or constants",
-            )
-        return _capture_real_phase(main, next(iter(inputs)))
     operations: list[Operation] = []
     counter = 0
 

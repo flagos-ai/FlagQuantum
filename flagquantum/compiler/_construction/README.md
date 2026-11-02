@@ -478,19 +478,19 @@ Run `python -m examples.synthesis_qmod_phase_gate`, then
 are necessary to distinguish phase from RZ's global-phase convention. See the
 [contract](../../../docs/api-changes/FQ-SYNTH-CONSTANT-PHASE-GATE-20261102.md).
 
-## Native one-bit radians capture and RZ literals
+## Unified program boundary and RZ literals
 
-In Python phase mode an explicit float return selects a bounded one-UInt(1)
-radians function. frontend_python reuses source/signature validation, interprets
-both complete-domain values through checked arithmetic AST nodes, and builds an
-existing register/effect program. Exact antisymmetric phases select RZ; general
-phases reuse PHASE/X while preserving global phase. Known X/H preparation is
-inserted after allocation. No host body execution, real quantum-data type or
-second executor is introduced. Services reuses selection and checked completion.
+The [UP-00 contract](../../../docs/api-changes/FQ-SYNTH-UNIFIED-PROGRAM-UP00-20261102.md)
+fixes the future program semantics without admitting that language yet. Existing
+qfunc snapshots remain bounded unsigned definitions. The unreleased float-return
+radians evaluator is withdrawn; source capture accepts the existing int/bool
+annotations and has no phase-specific evaluator or host-execution fallback.
+General explicit phase expressions, typed program ports and coherent blocks
+remain follow-on work, not new Source/IR classes in this slice.
 
-The constant-angle register gate set now shares phase/rz validation and named
-theta lowering; old gate attributes are unchanged. Run
-`python -m examples.synthesis_native_and_qmod_rz` and
-`tests/integration/test_synthesis_real_phase.py`. Wider/general phase functions
-remain refused; do not extend this profile by enumerating exponentially larger
-domains. See the [contract](../../../docs/api-changes/FQ-SYNTH-LITERAL-RZ-20261102.md).
+The closed constant-angle register gate set shares phase/rz validation and Core
+named-theta lowering. Source decimal gates are owned by Ecosystem, not the Python
+integer frontend. Run `tests/team/compiler/test_construction_rz_gate.py` and
+`tests/team/compiler/test_construction_program_boundary.py`; use
+`python -m examples.synthesis_native_and_qmod_rz` for runnable high-level integer,
+Qmod and Circuit comparisons with the remaining native phase gap explicit.
