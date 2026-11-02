@@ -50,6 +50,21 @@ python benchmarks/flagship_mps_training.py \
   --json-output benchmarks/results/local/mps_smoke.json
 ```
 
+### Arithmetic synthesis baseline
+
+The [AO-00 guide](synthesis/README.md) fixes ninety expression/domain cases,
+independent mathematical and coherent-state oracles, and logical versus target
+circuit cost accounting. Run the repository-local baseline with:
+
+```bash
+python -m benchmarks.synthesis.arithmetic_baseline --output /tmp/ao00.json
+python -m benchmarks.synthesis.arithmetic_baseline \
+  --compare benchmarks/synthesis/baselines/ao00.json /tmp/ao00.json
+```
+
+This reports local CPU static resources and bounded correctness evidence; it is
+not a simulation speed, optimality, hardware or release benchmark.
+
 ### Interoperable simulator comparison
 
 Compare equivalent exact-statevector execution from the same FlagQuantum IR:

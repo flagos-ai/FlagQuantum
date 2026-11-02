@@ -122,6 +122,85 @@ original-Qmod-corpus-coverage claim. No original source/license pin is changed.
 
 ## Validation receipts
 
-Final measured corpus counts, repeat comparison and test/check receipts are
-recorded with the completed baseline below; intermediate exploratory runs are
-not substituted for the checked evidence.
+Measured code: `6fc0ad1f87b037dcbe1935d4546de5e1dbe841e6`. The artifact's six
+Python-file hashes match the current measured scripts. The later evidence/docs
+commit does not replace the measured revision.
+
+Two complete runs each record 89 compiled cases and one incomplete timeout:
+`mixed_products-16x16` (`x*x+x*y`). That case exceeded the fixed 30-second child
+wall budget; no resource, equivalence, infeasibility or successful execution
+claim is attached. Each run has 6018 independent basis/XOR/cleanup checks across
+compiled cases. Thirty-seven cases execute both uniform and relative-phase
+full states, hence 74 full-state checks; other cases explicitly have zero
+coherent checks. The target/reference and spelling sentinels run in addition.
+
+The two-run comparison reports `{"changed_resources_or_status": []}`: every
+resource record, circuit identity, target/reference row, spelling variant and
+completion status matches. Source revision and all measured script hashes also
+match. Host timings are recorded, not compared as a speed claim.
+
+- Checked baseline SHA256:
+  `c5f084ae48066f8055a94a3be02d0d30d71c233783c7fd1234ccb2b3d464c864`.
+- Independent repeat SHA256:
+  `744932be0e85e7f76a619571ea17cc9ae37a3a376f6dd2e03e33b1a5f79ef744`.
+- Repeat raw result: `/private/tmp/fq-ao00-repeat.json`; comparison command and
+  checked baseline are sufficient to regenerate new comparisons. The repeat
+  hash identifies this run, not a promise of identical timing JSON on another host.
+
+Focused acceptance: 53 passed in 7.21 seconds (20 mathematical/oracle cases,
+16 integration cases and 17 artifact-contract cases). It includes all 256
+sentinel input/target combinations, whole complex states and clean workspace,
+large-static no-execution guards, helper/operand-order cases, three-way target
+costs, forced child timeout, and refusal of altered domains, Boolean widths,
+overstated verification, corrupted histograms/memory and incomplete cost claims.
+The user example runs successfully and prints all sixteen named outcomes.
+
+Retained integration files pass in separate fresh processes: multiplication
+12/12, existing user workflow 26/26, checked execution 17/17. An initial combined
+91-case invocation had 75 passes and 16 failures due to the existing user-workflow
+file leaving a patched lazy-root `fq.plan` visible to the subsequent execution
+file. The unmodified main archive reproduces the same 16 failures/27 passes for
+those two files in that order. No old fixture, assertion or production API was
+changed to hide this ordering issue; the combined run is not claimed green.
+
+Strict mypy passes all 879 production-package/new-example sources and the seven
+benchmark/new-example sources. Black 24.1 and 26.10.1, Ruff, architecture,
+dependency policy, unchanged public API guard, capability maturity, generated
+document consistency, English-language policy, local links, hygiene and
+whitespace checks pass. This is not a whole-historical-examples typing claim.
+
+### Broader checks and baseline limitations
+
+The full default smoke/unit run records 17437 passed, 527 skipped, 27 failed,
+six errors and 6037 deselected in 870.92 seconds. This is not a green default
+run. Its 33 failure/error node identities exactly match the previously captured
+unmodified `ef95c04f...` main reproduction and UP-01's default run. The implicated
+production/test files are unchanged. Existing failures include local installed
+optional-package discovery, Simulation fusion/dispatch/batch-initialization
+expectations, provenance context, and sandbox-denied local sockets.
+
+The benchmark-contract/release-gate tier records 976 passed, 91 skipped and one
+failure in 91.55 seconds. The failure is the existing MPS release-gate subprocess
+that deliberately removes PYTHONPATH and loads an older installed FlagQuantum
+from the shared environment, missing `_FORBIDDEN_FALLBACKS`. The same node fails
+on the unmodified main archive with the same ImportError; no environment or
+package installation was changed to bypass it.
+
+The CPU distributed tier first encounters sandbox loopback restrictions and is
+interrupted after one failure/10 passes/54 skips. Re-running with local loopback
+access records 317 passed, 170 skipped and one failure in 141.33 seconds. That
+existing abrupt-rank-loss test requires a peer-loss diagnostic string absent
+from the macOS elastic-launcher output despite the expected injected SIGKILL and
+ChildFailedError. The identical test fails on the unmodified main archive in
+1.24 seconds. This baseline does not modify distributed code, relax diagnostics
+or claim those tiers are green or scalability is established.
+
+Local logs: `/private/tmp/fq-ao00-{baseline,repeat,comparison,focused,default}.log`,
+`fq-ao00-retained-{multiplication,user-workflow,execution}.log`,
+`fq-ao00-main-order-baseline.log`, `fq-ao00-benchmark-tier.log`,
+`fq-ao00-main-benchmark-baseline.log`, `fq-ao00-distributed-tier-unsandboxed.log`,
+`fq-ao00-main-distributed-baseline.log`, `fq-ao00-production-mypy.log`, and
+`fq-ao00-default-comparison.json`. These are local receipts, not portable artifact
+links. PR CI must independently check the final head in its installed runner
+context. No AO-01 optimization, UP-01 merge, release promotion or original-Qmod
+coverage increase is inferred from the baseline.

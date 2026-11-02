@@ -144,3 +144,9 @@ selected by recognizing this expression. See `manual_reference()` and the
 This evidence is local CPU static-resource/correctness evidence. It establishes
 neither optimality, runtime speed, process peak memory, hardware execution,
 release readiness, independent user trials nor distributed scalability.
+
+The checked AO-00 JSON is the historical starting point for later optimization
+PRs. Preserve it; record new optimizer results in a new artifact with their own
+source revision. Review any deliberate update to current-generator cost tests
+alongside equivalence evidence and comparison to this frozen baseline. Do not
+regenerate the old baseline merely to turn a resource regression green.
