@@ -45,11 +45,15 @@ qfunc main(output x:qnum<2>,output y:qnum<2>,output result:qnum) {
 ```
 
 Pass that string to `synth.synthesize(source, source_format="qmod")` and use the
-same run/read workflow. Python uses the existing pure-function convenience form;
-it does not imply that the still-separate UP-01 PR has been merged. AO-00 is
-based on main commit `ef95c04f08ddeb05c1c8469b51f4cfccb7c4fc62` and does not merge
-or require the new Python program frontend. UP and AO share existing Compiler
-semantics and execution; this baseline does not introduce an alternate engine.
+same run/read workflow. The measured AO-00 corpus uses the existing pure-function
+convenience form and was originally based on main commit
+`ef95c04f08ddeb05c1c8469b51f4cfccb7c4fc62`. UP-01 has since merged as #1004;
+the AO-00 branch now includes that mainline implementation. The original
+measurement and artifact remain unchanged. The new Python qfunc preparation and
+composition workflow is demonstrated in
+[the program example](../../examples/synthesis_python_program.py). UP and AO
+share existing Compiler semantics and execution; this baseline does not
+introduce an alternate engine. See the synchronization receipt below.
 
 The independent two-bit Circuit reference is:
 
@@ -204,3 +208,37 @@ Local logs: `/private/tmp/fq-ao00-{baseline,repeat,comparison,focused,default}.l
 links. PR CI must independently check the final head in its installed runner
 context. No AO-01 optimization, UP-01 merge, release promotion or original-Qmod
 coverage increase is inferred from the baseline.
+
+
+## Main synchronization after UP-01 merge
+
+At the user's request, #1004 merged normally at its fully checked head
+`eca15c0eb30e1749610d453ffeecbd64ed53401e` (57 successes, three configured skips),
+producing main commit `8bb4de1b78b47664cad90270a839b35e10e730d9`. AO-00 merged
+that latest main without conflict in
+`1fc10e0c5f2b6641b41814adab9a45d215bf82da`. This preserves both histories;
+there is no rebase or replacement measurement commit.
+
+The original `ao00.json` bytes and SHA256
+`c5f084ae48066f8055a94a3be02d0d30d71c233783c7fd1234ccb2b3d464c864` are unchanged.
+Its measured source revision remains
+`6fc0ad1f87b037dcbe1935d4546de5e1dbe841e6`, which is still an ancestor of this
+branch. The merged main commit is also an ancestor. No raw resource artifact,
+timeout status or historical receipt has been regenerated after synchronization.
+
+The synchronized tree passes 158 combined AO-00/UP-01/retained-multiplication
+acceptance cases in 19.94 seconds. These include the baseline reader, independent
+oracles, both Python entry forms, Qmod, coherent states, arbitrary-target XOR,
+clean workspaces, source/role/alias/budget refusal and the current resource
+sentinels. This targeted post-sync run is distinct from the full pre-sync
+baseline and default-tier receipts above. Final-head PR CI independently
+checks the complete merged tree.
+
+Post-sync strict mypy passes 882 production/two-example sources. Both
+`examples.synthesis_arithmetic_baseline` and `examples.synthesis_python_program`
+run successfully: the former preserves its original named-outcome/cost workflow,
+and the latter compares Python in-program preparation with Qmod on all sixteen
+outcomes. The public API guard and all 810 local Markdown links pass after the
+merge. Logs: `/private/tmp/fq-ao00-up01-sync-focused.log`,
+`fq-ao00-sync-mypy.log`, `fq-ao00-sync-example.log` and
+`fq-ao00-sync-program-example.log`.
