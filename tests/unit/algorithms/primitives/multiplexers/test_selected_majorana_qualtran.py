@@ -9,6 +9,8 @@ import torch
 from flagquantum import Circuit
 from flagquantum.algorithms.primitives.multiplexers import SelectedMajoranaFermion
 
+pytestmark = pytest.mark.unit
+
 
 @pytest.mark.parametrize("target_gate", ["X", "Y", "Z"])
 def test_qualtran_coherent_majorana_parity(target_gate: str) -> None:
