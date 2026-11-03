@@ -886,6 +886,7 @@ def state(circuit: Circuit, *, refresh: bool = False) -> torch.Tensor:
 
     if circuit._state_cache is not None and not refresh:
         return circuit._state_cache
+    instructions = circuit._statevector_instructions()
     with runtime_config(circuit.runtime_config):
         binding_source = getattr(circuit, "_parameter_bindings", None)
         parameter_bindings = None if binding_source is None else binding_source.values()
@@ -933,7 +934,7 @@ def state(circuit: Circuit, *, refresh: bool = False) -> torch.Tensor:
             )
             if cached_product_program is None:
                 product_program = _compile_statevector_program(
-                    circuit._instructions,
+                    instructions,
                     circuit.n_qubits,
                     enable_triton_loop=False,
                     enable_cpu_controlled_phase_decomposition=(
@@ -1010,14 +1011,14 @@ def state(circuit: Circuit, *, refresh: bool = False) -> torch.Tensor:
             and not _cpu_single_wire_elementwise_enabled()
         )
         enable_cpu_native_fixed_one_qubit_layer = native_fixed_layer_compile_enabled(
-            circuit._instructions,
+            instructions,
             parameter_bindings,
             output,
             batch_size=batch_size,
         )
         enable_cpu_native_parameterized_one_qubit_layer = (
             native_parameterized_layer_compile_enabled(
-                circuit._instructions,
+                instructions,
                 parameter_bindings,
                 output,
                 batch_size=batch_size,
@@ -1033,7 +1034,7 @@ def state(circuit: Circuit, *, refresh: bool = False) -> torch.Tensor:
             batch_size == 1 and enable_cpu_native_parameterized_one_qubit_layer
         )
         enable_cpu_native_clifford_matching = native_clifford_matching_compile_enabled(
-            circuit._instructions,
+            instructions,
             parameter_bindings,
             output,
             batch_size=batch_size,
@@ -1092,7 +1093,7 @@ def state(circuit: Circuit, *, refresh: bool = False) -> torch.Tensor:
         program = circuit._backend_programs.get(program_key)
         if program is None:
             program = _compile_statevector_program(
-                circuit._instructions,
+                instructions,
                 circuit.n_qubits,
                 enable_triton_loop=enable_triton_loop,
                 enable_cpu_cross_wire_diagonal=enable_cpu_cross_wire_diagonal,
