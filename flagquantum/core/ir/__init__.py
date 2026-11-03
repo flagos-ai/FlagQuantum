@@ -385,7 +385,10 @@ class Instruction:
         schema = get_operator_schema(name)
         is_channel = bool(self.metadata.get("is_channel"))
         is_dynamic = bool(self.metadata.get("is_dynamic"))
-        if name == "selected_majorana_fermion" and self.matrix is None:
+        if (
+            name in ("selected_majorana_fermion", "select_pauli_lcu")
+            and self.matrix is None
+        ):
             widths = tuple(
                 self.params.get(key)
                 for key in ("control_width", "selection_width", "target_width")
@@ -393,13 +396,40 @@ class Instruction:
             if (
                 any(type(width) is not int or width < 0 for width in widths)
                 or sum(widths) != len(self.wires)
-                or not 0 < widths[2] <= 2 ** widths[1]
+                or widths[2] == 0
                 or len(set(self.wires)) != len(self.wires)
-                or self.params.get("target_gate") not in ("X", "Y", "Z")
                 or is_channel
                 or is_dynamic
             ):
-                raise IRValidationError("invalid selected_majorana_fermion operands")
+                raise IRValidationError(f"invalid {name} operands")
+            control_width, selection_width, target_width = widths
+            if name == "selected_majorana_fermion":
+                if (target_width - 1).bit_length() > selection_width or self.params.get(
+                    "target_gate"
+                ) not in ("X", "Y", "Z"):
+                    raise IRValidationError(f"invalid {name} operands")
+            else:
+                words = self.params.get("select_unitaries")
+                control_val = self.params.get("control_val")
+                if (
+                    control_width != int(control_val is not None)
+                    or (
+                        control_val is not None
+                        and (type(control_val) is not int or control_val not in (0, 1))
+                    )
+                    or not isinstance(words, tuple)
+                    or not words
+                    or (len(words) - 1).bit_length() > selection_width
+                    or any(
+                        not isinstance(word, str)
+                        or len(word.removeprefix("-")) != target_width
+                        or any(
+                            letter not in "IXYZ" for letter in word.removeprefix("-")
+                        )
+                        for word in words
+                    )
+                ):
+                    raise IRValidationError(f"invalid {name} parameters")
         elif (
             schema is None and self.matrix is None and not is_channel and not is_dynamic
         ):
