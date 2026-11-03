@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import operator
 from collections.abc import Iterable, Mapping, Sequence
-from typing import TYPE_CHECKING, Any, TypedDict
+from typing import TYPE_CHECKING, Any, Protocol, TypedDict
 
 import torch
 
@@ -48,6 +48,10 @@ if TYPE_CHECKING:
     from .runtime.result import ExecutionResult
 else:
     _BuiltinGateMethods = object
+
+
+class _CircuitOperation(Protocol):
+    def append_to(self, circuit: Circuit, /) -> Circuit: ...
 
 
 def _count_argument(
@@ -383,6 +387,19 @@ class Circuit(_BuiltinGateMethods):
         """Qiskit-compatible alias for :attr:`n_qubits`."""
 
         return self.n_qubits
+
+    def append(self, op: _CircuitOperation, /) -> Circuit:
+        """Append an operation already bound to this circuit's qubit indices.
+
+        The operation records its instruction in the circuit IR. Compilation
+        and execution handle lowering. Use :meth:`compose` to insert a circuit
+        or remap its qubits.
+        """
+        append_to = getattr(op, "append_to", None)
+        if not callable(append_to):
+            raise TypeError("Circuit.append expects a bound circuit operation.")
+        append_to(self)
+        return self
 
     def gate(
         self,
