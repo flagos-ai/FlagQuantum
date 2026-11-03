@@ -27,6 +27,36 @@ from benchmarks.synthesis.performance_workloads import Prepared, Workload, workl
 pytestmark = pytest.mark.benchmark_contract
 
 
+@pytest.mark.parametrize(
+    "identifier,qmod_line",
+    [
+        ("unknown", False),
+        ("energy-2x2:qfunc:inline:logical:refused", False),
+        ("shared_square-8x8:qfunc:inline:logical:success", True),
+    ],
+)
+def test_rss_review_refuses_invalid_selection_before_worker_launch(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, identifier: str, qmod_line: bool
+) -> None:
+    from benchmarks.synthesis import performance_rss_review
+
+    def forbidden(*args: object, **kwargs: object) -> None:
+        raise AssertionError("invalid RSS selection must not launch a worker")
+
+    monkeypatch.setattr(performance_rss_review, "trial", forbidden)
+    output = tmp_path / "receipt.json"
+    with pytest.raises(ValueError, match="fixed successful workload"):
+        performance_rss_review.review(
+            tmp_path,
+            "0" * 40,
+            "0" * 40,
+            output,
+            qmod_line=qmod_line,
+            case=identifier,
+        )
+    assert not output.exists()
+
+
 @pytest.fixture(scope="module")
 def receipt(tmp_path_factory: pytest.TempPathFactory) -> dict[str, object]:
     path = tmp_path_factory.mktemp("pf00") / "trial.json"

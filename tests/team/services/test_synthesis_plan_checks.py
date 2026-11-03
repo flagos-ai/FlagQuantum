@@ -329,6 +329,20 @@ def test_serializer_override_cannot_authorize_changed_instruction_layers() -> No
     assert inspect_execution(plan).resources.n_operations == 1
 
 
+def test_batch_property_override_cannot_widen_the_sealed_profile() -> None:
+    class MisleadingBatch(ExecutionPlan):
+        @property
+        def batch_size(self) -> int:
+            return 1
+
+    plan = fq.plan(fq.Circuit(1, bsz=2).h(0), options=_options(batch_size=2))
+    misleading = MisleadingBatch(
+        **{field.name: getattr(plan, field.name) for field in fields(plan)}
+    )
+    with pytest.raises(ExecutionContractError, match="execution.profile"):
+        inspect_execution(misleading)
+
+
 @pytest.mark.parametrize(
     "damage",
     [
