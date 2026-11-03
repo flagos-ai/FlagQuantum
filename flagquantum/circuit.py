@@ -956,9 +956,16 @@ class Circuit(_BuiltinGateMethods):
         return _initial_state(self)
 
     def state(self, *, refresh: bool = False) -> torch.Tensor:
+        if self._state_cache is not None and not refresh:
+            return self._state_cache
+        from .compiler.deferred_operations import lower_deferred_operations
         from .simulation.statevector.local import state
 
-        return state(self, refresh=refresh)
+        return state(
+            self,
+            instructions=lower_deferred_operations(self._instructions),
+            refresh=refresh,
+        )
 
     wavefunction = state
 
