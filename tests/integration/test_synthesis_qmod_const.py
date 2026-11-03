@@ -150,6 +150,7 @@ def test_nested_global_sign_is_not_discarded(
 
 
 @pytest.mark.parametrize("objective", ["width", "depth"])
+@pytest.mark.usefixtures("legacy_register_selection")
 def test_repeated_calls_reuse_clean_work_and_initialize_distinct_outputs(
     objective: Literal["width", "depth"],
 ) -> None:

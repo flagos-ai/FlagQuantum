@@ -110,10 +110,18 @@ def test_native_and_qmod_complete_uniform_state_and_actual_costs(
             program.report["workspace_qubits"],
             resource.n_operations,
             resource.depth,
+        ) == (9, 1, 14, 9)
+        assert program.report["candidate"] == "boolean"
+        assert program.execution.state_bytes == 8192
+        old = program.selection.rows[0]
+        assert old.resources is not None and old.arithmetic is not None
+        assert (
+            old.resources.n_qubits,
+            old.arithmetic.peak_workspace,
+            old.resources.n_operations,
+            old.resources.depth,
         ) == (16, 8, 81, 59)
-        assert program.selection.selected is not None
-        assert program.selection.selected.arithmetic is not None
-        segment = program.selection.selected.arithmetic.segments[0]
+        segment = old.arithmetic.segments[0]
         assert {rule for _, rule in segment.implementation_rules} == {
             "square_symmetry",
             "terminal_xor_add",

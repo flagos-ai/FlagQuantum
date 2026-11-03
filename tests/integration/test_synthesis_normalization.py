@@ -20,6 +20,7 @@ pytestmark = pytest.mark.integration
 
 
 @pytest.mark.parametrize("objective", ["width", "depth"])
+@pytest.mark.usefixtures("legacy_register_selection")
 def test_unified_program_and_qmod_share_and_keep_all_complex_amplitudes(
     objective: Literal["width", "depth"],
 ) -> None:
