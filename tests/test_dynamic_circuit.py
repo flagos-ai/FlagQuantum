@@ -107,10 +107,6 @@ def test_seeded_dynamic_execution_is_reproducible_across_processes() -> None:
 
         import flagquantum as fq
         from flagquantum.dynamic import DynamicCircuit
-from flagquantum.experimental.controlled_pauli import (
-    controlled_pauli,
-    decode_controlled_pauli,
-)
 
         circuit = DynamicCircuit(2)
         circuit.h(0)
