@@ -390,6 +390,15 @@ not hidden options of `fq.train`. Training lifecycle types such as
 `flagquantum.training` namespace. Distributed training remains explicitly
 experimental under `flagquantum.experimental.distributed`.
 
+For supported captured builders, Module checkpoints use a v2 workload identity
+based on the symbolic circuit, its binding operations, and fixed constants.
+Dynamic inputs and parameter values may differ when preparing the restore target.
+Execute input-dependent targets with representative inputs before loading. V2
+requires matching Torch builds for the binding encoding. Other builders still
+write v1, and existing v1 files keep their original validation, which can reject
+dynamic angles with detached gradients. The checkpoint's `ir_hash` records the
+exact circuit consumed by the saved execution.
+
 `ExecutionResult.require_value()` returns the Module value or fails clearly.
 `ExecutionResult.diagnostics()` returns a versioned envelope containing
 `metrics`, `provenance`, `runtime`, and `compatibility`; keys inside those four
