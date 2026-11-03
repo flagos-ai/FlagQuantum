@@ -1,4 +1,4 @@
-"""TeX layout for named operations and register wires in circuit IR."""
+"""TeX layout for named operations and register rows in circuit IR."""
 
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
@@ -35,7 +35,7 @@ def register_circuit_tex(
     layout: RegisterLayout,
     comparison: tuple[object, RegisterLayout] | None = None,
     *,
-    wire_spacing: float = 4.5,
+    row_spacing: float = 4.5,
 ) -> str:
     """Render one circuit or an equality between two circuit panels."""
     source = r"""
@@ -53,9 +53,9 @@ def register_circuit_tex(
         if spec is not layout:
             left_end = layout.end if layout.end is not None else max(layout.columns) + 2
             separator = left_end + 0.36 * (spec.origin - left_end)
-            source += rf"\node at ({separator},{-wire_spacing}) {{\(=\)}};" + "\n"
+            source += rf"\node at ({separator},{-row_spacing}) {{\(=\)}};" + "\n"
         for wire, label in spec.labels.items():
-            row = -wire_spacing * wire
+            row = -row_spacing * wire
             source += rf"""
 \draw ({spec.origin},{row}) -- ({end},{row});
 \node[left] at ({spec.origin},{row}) {{{label}}};
@@ -89,7 +89,7 @@ def register_circuit_tex(
                     starts[wire] = column
                 elif name == stop_name:
                     start = starts.pop(wire)
-                    row = -wire_spacing * wire
+                    row = -row_spacing * wire
                     source += rf"\draw ({start},{row}) -- ({column},{row});" + "\n"
             if starts:
                 raise ValueError("Workspace lifetime has no closing instruction.")
@@ -112,7 +112,7 @@ def register_circuit_tex(
                 symbol = GateSymbol(
                     r"$\oplus$" if pauli == "X" else "$Z$", tuple(map(int, bits))
                 )
-            rows = [-wire_spacing * wire for wire in gate.wires]
+            rows = [-row_spacing * wire for wire in gate.wires]
             controls = rows[: len(symbol.controls)]
             targets = rows[len(controls) :]
             if not targets:
