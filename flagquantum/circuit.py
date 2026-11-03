@@ -955,17 +955,15 @@ class Circuit(_BuiltinGateMethods):
         # zero-fill allocation on every training step.
         return _initial_state(self)
 
-    def state(self, *, refresh: bool = False) -> torch.Tensor:
-        if self._state_cache is not None and not refresh:
-            return self._state_cache
+    def _statevector_instructions(self) -> tuple[Instruction, ...]:
         from .compiler.deferred_operations import lower_deferred_operations
+
+        return lower_deferred_operations(self._instructions)
+
+    def state(self, *, refresh: bool = False) -> torch.Tensor:
         from .simulation.statevector.local import state
 
-        return state(
-            self,
-            instructions=lower_deferred_operations(self._instructions),
-            refresh=refresh,
-        )
+        return state(self, refresh=refresh)
 
     wavefunction = state
 
