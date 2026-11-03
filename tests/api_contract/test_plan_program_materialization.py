@@ -31,7 +31,9 @@ def _plan() -> ExecutionPlan:
             "a": 1j,
         },
     )
-    return fq.plan(source, options=fq.ExecutionOptions(mode="statevector"))
+    plan = fq.plan(source, options=fq.ExecutionOptions(mode="statevector"))
+    assert isinstance(plan, ExecutionPlan)
+    return plan
 
 
 @pytest.mark.parametrize("canonical", [True, False])
@@ -46,7 +48,9 @@ def test_program_matches_canonical_transport_and_is_fresh(canonical: bool) -> No
         program["metadata"] = dict(reversed(tuple(metadata.items())))
         plan = replace(plan, _contract_payload_json=json.dumps(payload, indent=2))
     before = plan.to_json()
-    expected = CircuitIR.from_dict(plan_to_dict(plan)["program"])
+    canonical_program = plan_to_dict(plan)["program"]
+    assert isinstance(canonical_program, dict)
+    expected = CircuitIR.from_dict(canonical_program)
     actual = plan_program(plan)
     assert actual.to_json() == expected.to_json()
     assert list(actual.metadata) == list(expected.metadata)
@@ -93,8 +97,10 @@ def test_native_plan_validation_remains_separate_from_circuit_reading() -> None:
     before = plan.to_json()
     payload = plan_to_dict(plan)
     assert payload["version"] == "1.1"
+    program = payload["program"]
+    assert isinstance(program, dict)
     with pytest.raises(ValueError) as reference:
-        CircuitIR.from_dict(payload["program"])
+        CircuitIR.from_dict(program)
     with pytest.raises(type(reference.value)) as actual:
         plan_program(plan)
     assert str(actual.value) == str(reference.value)
