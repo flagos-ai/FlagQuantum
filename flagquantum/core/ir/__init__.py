@@ -385,7 +385,24 @@ class Instruction:
         schema = get_operator_schema(name)
         is_channel = bool(self.metadata.get("is_channel"))
         is_dynamic = bool(self.metadata.get("is_dynamic"))
-        if schema is None and self.matrix is None and not is_channel and not is_dynamic:
+        if name == "selected_majorana_fermion" and self.matrix is None:
+            widths = tuple(
+                self.params.get(key)
+                for key in ("control_width", "selection_width", "target_width")
+            )
+            if (
+                any(type(width) is not int or width < 0 for width in widths)
+                or sum(widths) != len(self.wires)
+                or not 0 < widths[2] <= 2 ** widths[1]
+                or len(set(self.wires)) != len(self.wires)
+                or self.params.get("target_gate") not in ("X", "Y", "Z")
+                or is_channel
+                or is_dynamic
+            ):
+                raise IRValidationError("invalid selected_majorana_fermion operands")
+        elif (
+            schema is None and self.matrix is None and not is_channel and not is_dynamic
+        ):
             raise IRValidationError(
                 f"unknown opcode {name!r}; custom operations require an explicit matrix"
             )

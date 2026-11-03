@@ -639,7 +639,10 @@ def compile(
             "admitted passes would not run, so the request is refused rather than "
             "answered with the program unchanged"
         )
+    from .deferred_operations import lower_deferred_operations
+
     ir = _as_ir(circuit_or_ir)
+    ir = replace(ir, instructions=lower_deferred_operations(ir.instructions))
     selected_config = config or get_runtime_config()
     metadata = dict(ir.metadata)
     metadata["runtime_config"] = selected_config.to_manifest()
