@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import ast
+import math
 from collections.abc import Sequence
 from copy import deepcopy
 from dataclasses import dataclass, replace
@@ -28,6 +29,7 @@ from .program_types import (
     _width_spec,
     allocate,
     hadamard_transform,
+    phase,
 )
 from .ranges import unsigned_width
 from .register_profile import register_type, register_width, verify_register_program
@@ -413,6 +415,18 @@ class _Body:
                 value=expr.value,
             )
             return
+        graph, actuals = self.capture_expression(expr, node)
+        width = _width(graph.body.blocks[0].operations[-1].operands[0].type, 256)
+        self.emit(
+            "qreg.compute",
+            node,
+            (self.register(node.target, width), *actuals),
+            callee=graph.name,
+        )
+
+    def capture_expression(
+        self, expr: ast.expr, statement: ast.AST
+    ) -> tuple[HybridProgram, tuple[Value, ...]]:
         allowed = (
             ast.BinOp,
             ast.Name,
@@ -456,7 +470,7 @@ class _Body:
         )
         function.decorator_list = []
         function.returns = None
-        function.body = [ast.copy_location(ast.Return(value=deepcopy(expr)), node)]
+        function.body = [ast.copy_location(ast.Return(value=deepcopy(expr)), statement)]
         graph = capture(
             _QuantumFunction(
                 _Source(
@@ -468,14 +482,8 @@ class _Body:
             ),
             {name: register_width(self.registers[name]) for name in names},
         )
-        width = _width(graph.body.blocks[0].operations[-1].operands[0].type, 256)
         self.owner.functions.append(graph)
-        self.emit(
-            "qreg.compute",
-            node,
-            (self.register(node.target, width), *actuals),
-            callee=graph.name,
-        )
+        return graph, actuals
 
     def call(self, node: ast.Call) -> None:
         if node.keywords or any(isinstance(a, ast.Starred) for a in node.args):
@@ -539,6 +547,29 @@ class _Body:
             destination = self.register(node.args[0])
             for bit in range(register_width(destination)):
                 self.emit("qreg.gate", node, (destination,), gate="h", index=bit)
+        elif function is phase:
+            if len(node.args) != 2:
+                _error(
+                    self.source,
+                    node,
+                    "program.signature",
+                    "phase takes an expression and coefficient",
+                )
+            expr, coefficient = node.args
+            value = (
+                coefficient.value
+                if isinstance(coefficient, ast.Constant)
+                else _resolve(self.definition, coefficient)
+            )
+            if type(value) is not float or value != math.pi:
+                _error(
+                    self.source,
+                    coefficient,
+                    "program.phase",
+                    "this phase profile requires a static pi coefficient",
+                )
+            graph, actuals = self.capture_expression(expr, node)
+            self.emit("qreg.phase", node, actuals, callee=graph.name)
         elif isinstance(function, _QuantumFunction) and function.source.program:
             formal = program_ports(function)
             if len(node.args) != len(formal):
