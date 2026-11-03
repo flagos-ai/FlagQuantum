@@ -1,0 +1,55 @@
+{
+  "artifacts": {
+    "after": {
+      "configurations": 22,
+      "file": "pf01-after.json.gz",
+      "sha256": "e55c5b3ee90c21cdb08a83673fd6bd884f68c8e64398c1b217dc4f33fa7e3ccd",
+      "source_revision": "a1c6308123c938a711fc036f54f1d3393f1aa07c"
+    },
+    "before": {
+      "configurations": 22,
+      "file": "pf01-before.json.gz",
+      "sha256": "10dcf837743ebf53cb39c499745b5613dcd3e09ab3cf58d9bb194356eb7d2af6",
+      "source_revision": "6bb1b7d9fa99719f326dd2106ff88ecdfc909f72"
+    },
+    "comparison": {
+      "file": "pf01-comparison.json",
+      "sha256": "1308c54a9e1729cab39e9d4e353015ab9e868cf16a07b20d56c29aa8e2f026e8"
+    },
+    "rss-line-after": {
+      "configurations": 1,
+      "file": "pf01-rss-line-after.json.gz",
+      "sha256": "98cc67d0009d9f267548c41b0b576896a42e9ac90afa710eac1e0e12f59e6023",
+      "source_revision": "a1c6308123c938a711fc036f54f1d3393f1aa07c"
+    },
+    "rss-line-before": {
+      "configurations": 1,
+      "file": "pf01-rss-line-before.json.gz",
+      "sha256": "2bd74cd741fc4964c2652d320286fc54d75b2fb1ea2a7188edfc4b5988ad3ffe",
+      "source_revision": "6bb1b7d9fa99719f326dd2106ff88ecdfc909f72"
+    },
+    "rss-line-comparison": {
+      "file": "pf01-rss-line-comparison.json",
+      "sha256": "c10e36105c62a01c4735e2cc2750718b2f0bed444fab2c20b5bfe32e0f5b1061"
+    },
+    "rss-review-after": {
+      "configurations": 1,
+      "file": "pf01-rss-review-after.json.gz",
+      "sha256": "548df0b35fede9c23f0e5602eac2b8eade1acbc2ccd0430b650939d9b284abe7",
+      "source_revision": "a1c6308123c938a711fc036f54f1d3393f1aa07c"
+    },
+    "rss-review-before": {
+      "configurations": 1,
+      "file": "pf01-rss-review-before.json.gz",
+      "sha256": "1dbfa309a107977e13e19f24f5175b7709706f57c857599f251f7652c1da40c4",
+      "source_revision": "6bb1b7d9fa99719f326dd2106ff88ecdfc909f72"
+    },
+    "rss-review-comparison": {
+      "file": "pf01-rss-review-comparison.json",
+      "sha256": "e00f01bc7e8a13fcb364b9149578a6fc77dcb5d4427a4b5827da2b0b38c75ebc"
+    }
+  },
+  "primary": "Twenty-two configurations, five timing samples and three separate RSS samples each; all original raw samples retained",
+  "rss_review": "Two flagged scalar groups repeated separately with five timing and five RSS samples each; supplementary, never replacement",
+  "scope": "PF-01 Services-local conversion reuse; paired development observations, no Rust/release/scalability claim"
+}

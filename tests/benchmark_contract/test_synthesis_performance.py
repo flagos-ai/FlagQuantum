@@ -27,6 +27,36 @@ from benchmarks.synthesis.performance_workloads import Prepared, Workload, workl
 pytestmark = pytest.mark.benchmark_contract
 
 
+@pytest.mark.parametrize(
+    "identifier,qmod_line",
+    [
+        ("unknown", False),
+        ("energy-2x2:qfunc:inline:logical:refused", False),
+        ("shared_square-8x8:qfunc:inline:logical:success", True),
+    ],
+)
+def test_rss_review_refuses_invalid_selection_before_worker_launch(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, identifier: str, qmod_line: bool
+) -> None:
+    from benchmarks.synthesis import performance_rss_review
+
+    def forbidden(*args: object, **kwargs: object) -> None:
+        raise AssertionError("invalid RSS selection must not launch a worker")
+
+    monkeypatch.setattr(performance_rss_review, "trial", forbidden)
+    output = tmp_path / "receipt.json"
+    with pytest.raises(ValueError, match="fixed successful workload"):
+        performance_rss_review.review(
+            tmp_path,
+            "0" * 40,
+            "0" * 40,
+            output,
+            qmod_line=qmod_line,
+            case=identifier,
+        )
+    assert not output.exists()
+
+
 @pytest.fixture(scope="module")
 def receipt(tmp_path_factory: pytest.TempPathFactory) -> dict[str, object]:
     path = tmp_path_factory.mktemp("pf00") / "trial.json"
@@ -64,6 +94,66 @@ def test_full_corpus_and_native_equivalents_are_retained() -> None:
     assert len({w.identifier for w in inventory}) == len(inventory)
     with pytest.raises(ValueError):
         Workload("arbitrary_source")
+
+
+@pytest.mark.parametrize(
+    "damage,message",
+    [
+        ("none", None),
+        ("protocol", "protocol"),
+        ("observer", "implementation"),
+        ("timeout", "incomplete primary"),
+        ("circuit", "selected circuit"),
+        ("execution_scope", "verification scope"),
+    ],
+)
+def test_comparison_requires_same_complete_workflow_and_measurement(
+    receipt: dict[str, object],
+    monkeypatch: pytest.MonkeyPatch,
+    damage: str,
+    message: str | None,
+) -> None:
+    from benchmarks.synthesis import performance_compare
+    from benchmarks.synthesis.performance_bundle import objects
+    from benchmarks.synthesis.results import _object
+
+    # The reader's independent validation is covered above; exercise comparison
+    # against a real measured workflow and changes that invalidate comparability.
+    after = copy.deepcopy(receipt)
+    row = objects(after["rows"])[0]
+    timing = [s for s in objects(row["raw"]) if s["mode"] == "timing"]
+    if damage == "protocol":
+        _object(after["configuration"])["warmups_per_fresh_worker"] = 3
+    elif damage == "observer":
+        _object(after["source_hashes"])["benchmarks/synthesis/performance.py"] = (
+            "0" * 64
+        )
+    elif damage == "timeout":
+        timing[0]["status"] = "timeout"
+    elif damage == "circuit":
+        resources = _object(_object(timing[0]["verification"])["resources"])
+        resources["circuit_hash"] = "0" * 64
+    elif damage == "execution_scope":
+        for sample in timing:
+            _object(_object(sample["verification"])["e1"])[
+                "status"
+            ] = "not_run_state_budget"
+
+    def supplied(path: Path) -> dict[str, object]:
+        return receipt if path.name == "before" else after
+
+    monkeypatch.setattr(performance_compare, "read", supplied)
+    if message:
+        with pytest.raises(ValueError, match=message):
+            performance_compare.compare(Path("before"), Path("after"))
+    else:
+        result = performance_compare.compare(Path("before"), Path("after"))
+        for value in _object(result["rows"]).values():
+            for metric in _object(value).values():
+                if metric is not None:
+                    change = _object(_object(metric)["reduction"])
+                    assert change["absolute"] == 0
+                    assert change["meets_review_line"] is False
 
 
 @pytest.mark.parametrize("frontend", ["scalar", "qfunc", "qmod"])

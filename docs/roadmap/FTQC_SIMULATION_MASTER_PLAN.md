@@ -423,6 +423,31 @@ Subsequent reports should state verified capability gains, closed requirements, 
 
 ### Delivery Tracking
 
+The fixed Surface sweep example composes the existing C/007 experiment without
+adding a library API. Its eight points are X/Z times distances 3/5 times the
+named low/high profiles. Low uses X/Z/measurement rates 0.005/0.007/0.009;
+high uses 0.010/0.014/0.018, with Y rate zero in both. Three rounds, 35 shots,
+batch size 16 and the explicit point-keyed seeds 53 through 60 are fixed.
+These are two complete noise configurations, not a depolarizing error-rate axis.
+
+```bash
+python -m pip install -e '.[stim,pymatching]'
+PYTHONPATH=. python examples/qec/surface_memory_sweep.py
+```
+
+On CPU the example prints one configuration record with software versions,
+eight per-point JSON records and a completion record with eight points and
+280 requested shots. Each row retains original memory sampling provenance,
+counts and its marginal 95% Wilson interval. A first failure propagates and
+prevents completion; earlier rows remain partial diagnostics. No pooled rate,
+simultaneous confidence guarantee, adaptive stopping, fit, threshold, distance
+trend or performance claim follows. Output is illustrative, not a library
+persistence schema. Physical fault semantics, decoding and chunk lifecycle
+reuse the admitted Surface and decoder evidence; same-source single-shot
+references independently check composition only. Final reviewed-head and
+actual-main admission remain gates. This is preparatory FTS-08 composition;
+formal FUNCTIONAL-008 statistics/API approval and R01-R15/M1/M2 remain partial.
+
 The chunk-schedule conformance follow-up reuses the admitted Surface composition
 and coherent decoder records. Controlled mixed rows check order, denominator,
 one compilation and close for batch sizes 1, 7, 35 and 64. Late sample,
