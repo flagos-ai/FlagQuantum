@@ -386,14 +386,18 @@ class Instruction:
         is_channel = bool(self.metadata.get("is_channel"))
         is_dynamic = bool(self.metadata.get("is_dynamic"))
         if name == "selected_majorana_fermion" and self.matrix is None:
-            widths = tuple(
-                self.params.get(key)
-                for key in ("control_width", "selection_width", "target_width")
-            )
+            control_width = self.params.get("control_width")
+            selection_width = self.params.get("selection_width")
+            target_width = self.params.get("target_width")
             if (
-                any(type(width) is not int or width < 0 for width in widths)
-                or sum(widths) != len(self.wires)
-                or not 0 < widths[2] <= 2 ** widths[1]
+                type(control_width) is not int
+                or type(selection_width) is not int
+                or type(target_width) is not int
+                or control_width < 0
+                or selection_width < 0
+                or target_width <= 0
+                or control_width + selection_width + target_width != len(self.wires)
+                or (target_width - 1).bit_length() > selection_width
                 or len(set(self.wires)) != len(self.wires)
                 or self.params.get("target_gate") not in ("X", "Y", "Z")
                 or is_channel

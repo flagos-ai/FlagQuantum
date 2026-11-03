@@ -868,10 +868,15 @@ def _execute_statevector_program(
 
 
 def state(
-    circuit: Circuit, *, instructions: Sequence[Instruction], refresh: bool = False
+    circuit: Circuit,
+    *,
+    instructions: Sequence[Instruction] | None = None,
+    refresh: bool = False,
 ) -> torch.Tensor:
     """Execute one Circuit through the Simulation-owned statevector loop."""
 
+    if instructions is None:
+        return circuit.state(refresh=refresh)
     if circuit._state_cache is not None and not refresh:
         return circuit._state_cache
     with runtime_config(circuit.runtime_config):
