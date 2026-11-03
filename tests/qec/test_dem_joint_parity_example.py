@@ -24,3 +24,19 @@ def test_joint_parity_probabilities(capsys: pytest.CaptureFixture[str]) -> None:
     assert sum(probabilities.values()) == 1
     assert probabilities["10"] + probabilities["11"] == Fraction(5, 16)
     assert probabilities["01"] + probabilities["11"] == Fraction(1, 8)
+
+
+def test_exclusive_joint_parity_probabilities(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    main(exclusive=True)
+    probabilities = json.loads(capsys.readouterr().out, parse_float=Fraction)
+    assert probabilities == {
+        "00": Fraction(5, 8),
+        "01": Fraction(0),
+        "10": Fraction(1, 4),
+        "11": Fraction(1, 8),
+    }
+    assert sum(probabilities.values()) == 1
+    assert probabilities["10"] + probabilities["11"] == Fraction(3, 8)
+    assert probabilities["01"] + probabilities["11"] == Fraction(1, 8)

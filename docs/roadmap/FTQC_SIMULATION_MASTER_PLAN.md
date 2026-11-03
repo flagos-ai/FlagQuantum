@@ -969,3 +969,16 @@ marginals against the DEM rate methods.
 ```json
 {"00": 0.65625, "01": 0.03125, "10": 0.21875, "11": 0.09375}
 ```
+
+Use the same fault probabilities with a shared error ID to make the faults
+mutually exclusive.
+
+```bash
+PYTHONPATH=. python examples/qec/dem_joint_parity.py --exclusive
+```
+
+Only one alternative can fire, so the joint state `01` has zero probability.
+
+```json
+{"00": 0.625, "01": 0.0, "10": 0.25, "11": 0.125}
+```
