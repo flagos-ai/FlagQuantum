@@ -29,7 +29,7 @@ coverage against a pinned upstream revision before reporting full-library parity
 
 [FlagQuantum #1035](https://github.com/flagos-ai/FlagQuantum/pull/1035) remains
 in review. Three parity cases passed against [Qualtran 0.7.0](https://pypi.org/project/qualtran/0.7.0/)
-with Cirq 1.4.0 and NumPy 1.26.4. Four existing local cases also passed.
+with Cirq 1.4.0 and NumPy 1.26.4. Five local cases also passed.
 
 The parity test uses one control, two index qubits and four targets. A seeded
 complex input has amplitudes across both control branches and all four

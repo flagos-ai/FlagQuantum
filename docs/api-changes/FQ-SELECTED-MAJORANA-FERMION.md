@@ -38,6 +38,30 @@ lowering and the explicit typed register constructor remain follow-up work.
 The factory accepts a flat binary address, which covers QC-003's two one-bit
 selection registers.
 
+## Circuit integration
+
+Evaluate `Circuit.compose(other, qubits=...)` as the first integration path
+for reusable Majorana programs. It already binds operands, appends IR
+instructions, and returns the receiving circuit. A general
+`Circuit.append(operation)` entry point requires a concrete need beyond this
+component and a separate API review.
+
+Build the logical operation with a canonical operand order of control,
+selection, then target. Store role widths and Pauli parameters independently
+of absolute qubit IDs. This lets composition remap instruction operands
+without leaving stale qubit IDs in the parameters.
+
+Construction validates the binding and records the instruction. Serialization
+preserves its logical representation. Compilation or execution selects a
+supported lowering and performs any required matrix construction. The existing
+schema registry assumes fixed arity and custom opcodes require a matrix.
+Review the variable-arity representation and lowering contract before
+replacing the current dense reference path.
+
+Acceptance includes construction and JSON round-trip without matrix
+allocation, composition onto reordered qubits, and complex-amplitude parity
+through the normal execution entry points against Qualtran 0.7.0.
+
 ## Semantics
 
 Selection registers encode unsigned integers in most-significant-bit order.

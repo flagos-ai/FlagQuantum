@@ -36,9 +36,9 @@ def test_coherent_selection_survives_ir_round_trip(target_gate: str) -> None:
     )
     restored = CircuitIR.from_dict(json.loads(json.dumps(circuit.to_ir().to_dict())))
     assert restored.instructions[0].params == {
-        "selection": (1, 2),
-        "target": (3, 4, 5),
-        "control": (0,),
+        "selection_width": 2,
+        "target_width": 3,
+        "control_width": 1,
         "target_gate": target_gate,
     }
     torch.testing.assert_close(circuit.state(), expected.T)
@@ -56,3 +56,18 @@ def test_invalid_binding_leaves_circuit_unchanged() -> None:
     with pytest.raises(ValidationError, match="disjoint"):
         operation.append_to(circuit)
     assert not circuit.to_ir().instructions
+
+def test_compose_remaps_operands_without_stale_register_ids() -> None:
+    operation = SelectedMajoranaFermion.make_on(
+        control=(0,), selection=(1,), target=(2, 3)
+    )
+    local = operation.append_to(Circuit(4))
+    combined = Circuit(5).x(4).x(2).compose(local, qubits=(4, 2, 0, 3))
+    ir = CircuitIR.from_dict(json.loads(json.dumps(combined.to_ir().to_dict())))
+    instruction = ir.instructions[-1]
+    assert instruction.wires == (4, 2, 0, 3)
+    assert instruction.params == local.to_ir().instructions[0].params
+
+    expected = torch.zeros(32, dtype=torch.complex64)
+    expected[7] = 1j
+    torch.testing.assert_close(Circuit.from_ir(ir).state().reshape(-1), expected)

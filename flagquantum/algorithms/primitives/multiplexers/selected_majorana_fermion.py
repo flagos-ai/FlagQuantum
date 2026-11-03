@@ -79,9 +79,9 @@ class SelectedMajoranaFermion:
             qubits,
             matrix=matrix,
             params={
-                "selection": self.selection,
-                "target": self.target,
-                "control": self.control,
+                "selection_width": len(self.selection),
+                "target_width": len(self.target),
+                "control_width": len(self.control),
                 "target_gate": self.target_gate,
             },
         )
