@@ -281,3 +281,18 @@ The native high-level counterpart is an ordinary Python float-return phase
 function, not a Qmod string or Circuit gate wrapper. Run
 `python -m examples.synthesis_native_and_qmod_rz`; see
 [the native-first delivery](../../../docs/roadmap/SYNTH_LITERAL_RZ_DELIVERY.md).
+
+## Scalar pair gate originals
+
+`CX(control, target)`, `SWAP(first, second)`, and
+`CRX(angle, control, target)` accept distinct initialized scalar qbits.
+CRX uses the same bounded literal angle syntax as PHASE and RZ. CX and CRX
+preserve the control's basis value. SWAP changes both operands. Writable
+operands must have the Output role. These calls remain outside the
+within/apply subset. Compiler validates the two-register effect and lowers
+to the existing Core gates.
+
+Run `python -m examples.synthesis_qmod_pair_gates` to compare the pinned
+originals with a native qfunc and a Circuit. All three originals start in
+and preserve the zero pair. Coherent regression cases test control order,
+SWAP movement, and CRX phase against independent amplitudes.

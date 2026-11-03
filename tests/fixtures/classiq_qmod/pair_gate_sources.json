@@ -1,0 +1,26 @@
+{
+  "repository": "https://github.com/Classiq/classiq-library",
+  "commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "license_file": "LICENSE.txt",
+  "license_sha256": "241f68c9f35357f97e8a2a195e447d4f80098c140f0b3b3c770a11eed96f58e0",
+  "fixtures": [
+    {
+      "file": "CX.qmod",
+      "upstream_path": "functions/qmod_library_reference/qmod_core_library/standard_gates/CX.qmod",
+      "git_blob_sha1": "3e4f9c88d041931f66405dd805c36cb51350ac54",
+      "sha256": "d1137ef45b570e6283be17fc616bd836387f54b71482e33b0fba9582fa183bf3"
+    },
+    {
+      "file": "SWAP.qmod",
+      "upstream_path": "functions/qmod_library_reference/qmod_core_library/standard_gates/SWAP.qmod",
+      "git_blob_sha1": "0a733958bc25b479d7f679f41e0e2d7ba793a50a",
+      "sha256": "2e37c3cefa75dd52af1292b4790b5698654428e4ad6f3b6272afbbf90e537ad2"
+    },
+    {
+      "file": "CRX.qmod",
+      "upstream_path": "functions/qmod_library_reference/qmod_core_library/standard_gates/CRX.qmod",
+      "git_blob_sha1": "179ffc6a933a392afe254ad9602f7e6015a7fe82",
+      "sha256": "eebfba2ef3f88d6360b0e0a250122276bd85c1e2b6a64aa7fafdd29f45b598bc"
+    }
+  ]
+}

@@ -27,6 +27,7 @@ _ATTRIBUTES = MappingProxyType(
         "qreg.release": frozenset(),
         "qreg.allocate": frozenset(),
         "qreg.initialize": frozenset({"value"}),
+        "qreg.pair_gate": frozenset({"gate"}),
         "qreg.gate": frozenset({"gate", "index"}),
         "qreg.compute": frozenset({"callee"}),
         "qreg.uncompute": frozenset(),
@@ -35,6 +36,7 @@ _ATTRIBUTES = MappingProxyType(
         "qreg.return": frozenset(),
     }
 )
+_PAIR_GATES = frozenset({"cx", "swap", "crx"})
 _ANGLE_GATES = frozenset({"phase", "rz"})
 _GATES = frozenset({"x", "h", "s", "z"}) | _ANGLE_GATES
 
@@ -256,6 +258,9 @@ def _verify_body(
         ):
             assert attributes is not None
             attributes = attributes | {"angle"}
+        if op.name == "qreg.pair_gate" and op.attributes.get("gate") == "crx":
+            assert attributes is not None
+            attributes = attributes | {"angle"}
         if op.name == "qreg.phase" and "angle" in op.attributes:
             angle = op.attributes["angle"]
             if type(angle) is not float or not math.isfinite(angle):
@@ -399,6 +404,35 @@ def _verify_body(
                     )
                 initialized.remove(destination.id)
                 changed = (destination,)
+            elif op.name == "qreg.pair_gate":
+                gate = op.attributes["gate"]
+                if (
+                    not isinstance(gate, str)
+                    or gate not in _PAIR_GATES
+                    or len(operands) != 2
+                    or len(set(operands)) != 2
+                    or any(register_width(value) != 1 for value in operands)
+                ):
+                    _fail(
+                        "register.gate",
+                        "pair gates require two distinct scalar registers",
+                        op,
+                    )
+                if gate == "crx":
+                    angle = op.attributes["angle"]
+                    if type(angle) is not float or not math.isfinite(angle):
+                        _fail(
+                            "register.gate",
+                            "gate angle must be a finite float in radians",
+                            op,
+                        )
+                changed = tuple(operands if gate == "swap" else arguments)
+                if any(value in borrowed for value in changed):
+                    _fail("register.const", "Const cannot be a gate target", op)
+                if any(value.id not in initialized for value in operands):
+                    _fail(
+                        "register.uninitialized", "gate reads uninitialized storage", op
+                    )
             elif op.name == "qreg.gate":
                 if destination in borrowed:
                     _fail("register.const", "Const cannot be a gate target", op)

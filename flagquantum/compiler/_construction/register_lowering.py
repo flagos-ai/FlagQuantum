@@ -75,6 +75,16 @@ def schedule_register_program(
         gates: tuple[Instruction, ...] = ()
         if op.name == "qreg.initialize":
             gates = _copy(op.attributes["value"], bindings[op.operands[1].id])
+        elif op.name == "qreg.pair_gate":
+            gates = (
+                Instruction(
+                    op.attributes["gate"],
+                    tuple(bindings[value.id][0] for value in op.operands[1:]),
+                    params={"theta": op.attributes["angle"]}
+                    if "angle" in op.attributes
+                    else {},
+                ),
+            )
         elif op.name == "qreg.gate":
             ports = bindings[op.operands[1].id]
             gates = (
