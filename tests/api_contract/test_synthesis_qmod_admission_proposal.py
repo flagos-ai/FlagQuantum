@@ -45,6 +45,9 @@ def test_proposal_does_not_activate_or_change_the_existing_public_api():
         "within",
         "apply",
         "adjoint",
+        "CX",
+        "SWAP",
+        "CRX",
     )
     assert str(inspect.signature(synth.synthesize)) == active["synthesize_signature"]
     assert str(inspect.signature(fq.run)) == active["run_signature"]

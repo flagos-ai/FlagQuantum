@@ -87,6 +87,21 @@ def phase(expression: QNum | float, coefficient: float, /) -> None:
     raise TypeError("phase is captured inside qfunc")
 
 
+def cx(control: QBit, target: QBit, /) -> None:
+    """Apply controlled X to initialized scalar operands inside qfunc."""
+    raise TypeError("CX is captured inside qfunc")
+
+
+def swap(first: QBit, second: QBit, /) -> None:
+    """Swap two initialized scalar operands inside qfunc."""
+    raise TypeError("SWAP is captured inside qfunc")
+
+
+def crx(angle: float, control: QBit, target: QBit, /) -> None:
+    """Apply controlled X rotation with a static angle in radians inside qfunc."""
+    raise TypeError("CRX is captured inside qfunc")
+
+
 def within() -> AbstractContextManager[None]:
     """Capture local arithmetic preparation for the following apply block."""
     raise TypeError("within is captured inside qfunc")

@@ -35,6 +35,9 @@ def test_namespace_reexports_one_authoritative_services_implementation() -> None
         "within",
         "apply",
         "adjoint",
+        "CX",
+        "SWAP",
+        "CRX",
     )
     assert all(
         getattr(synth, name) is getattr(synthesis, name) for name in synth.__all__

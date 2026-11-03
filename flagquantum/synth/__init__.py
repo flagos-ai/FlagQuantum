@@ -5,6 +5,9 @@ CPU statevectors. See README.md for scope and the independent user-trial gate.
 """
 
 from ..services.synthesis import (
+    CRX,
+    CX,
+    SWAP,
     Const,
     ConstructionBudget,
     InputState,
@@ -42,4 +45,7 @@ __all__ = (
     "within",
     "apply",
     "adjoint",
+    "CX",
+    "SWAP",
+    "CRX",
 )

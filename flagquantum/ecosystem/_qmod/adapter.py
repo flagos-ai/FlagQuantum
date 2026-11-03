@@ -41,7 +41,8 @@ from .syntax import (
 SUPPORTED_SOURCE_VERSION = "2bfd835e73b6882fcc515a725098b04766c238e7"
 MAX_EFFECT_OPERATIONS = 4096
 _GATE_CALLS = frozenset({"X", "H", "S", "Z", "hadamard_transform"})
-_INTRINSICS = _GATE_CALLS | {"allocate", "phase", "pi"} | ANGLE_CALLS
+_PAIR_CALLS = frozenset({"CX", "SWAP", "CRX"})
+_INTRINSICS = _GATE_CALLS | _PAIR_CALLS | {"allocate", "phase", "pi"} | ANGLE_CALLS
 _RELATIONS = MappingProxyType(
     {
         "==": ("qint.equal", False, False),
@@ -542,35 +543,43 @@ class _Adapt:
                     "allocation size must agree with the declared width",
                 )
             self.effect_op("qreg.allocate", token, (destination,))
-        elif token.text in ANGLE_CALLS:
-            if len(args) != 2:
+        elif token.text in ANGLE_CALLS or token.text in _PAIR_CALLS:
+            pair = token.text in _PAIR_CALLS
+            angled = token.text in ANGLE_CALLS
+            if len(args) != (2 if pair else 1) + angled:
                 reject(
                     token,
                     "signature",
-                    f"{token.text} requires a literal angle and qbit target",
+                    f"{token.text} has the wrong number of arguments",
                 )
-            angle = args[0]
-            if (
-                angle.children
-                or not re.fullmatch(r"[0-9]+(?:\.[0-9]+)?", angle.token.text)
-                or Decimal(angle.token.text) > 2**53
-            ):
-                reject(
-                    angle.token,
-                    "angle",
-                    f"{token.text} angle must be a literal in 0..2**53 radians",
-                )
-            target = self.atom(args[1])
-            destination = self.register(target)
-            if self.parameters[target.text].kind != "qbit":
-                reject(target, "type", f"{token.text} requires a scalar qbit target")
+            attributes: dict[str, str | int | float] = {"gate": token.text.lower()}
+            if angled:
+                angle = args[0]
+                if (
+                    angle.children
+                    or not re.fullmatch(r"[0-9]+(?:\.[0-9]+)?", angle.token.text)
+                    or Decimal(angle.token.text) > 2**53
+                ):
+                    reject(
+                        angle.token,
+                        "angle",
+                        f"{token.text} angle must be a literal in 0..2**53 radians",
+                    )
+                attributes["angle"] = float(angle.token.text)
+            targets = tuple(self.atom(arg) for arg in args[int(angled) :])
+            registers = tuple(self.register(target) for target in targets)
+            for target in targets:
+                if self.parameters[target.text].kind != "qbit":
+                    reject(
+                        target, "type", f"{token.text} requires scalar qbit operands"
+                    )
+            if not pair:
+                attributes["index"] = 0
             self.effect_op(
-                "qreg.gate",
+                "qreg.pair_gate" if pair else "qreg.gate",
                 token,
-                (destination,),
-                gate=token.text.lower(),
-                index=0,
-                angle=float(angle.token.text),
+                registers,
+                **attributes,
             )
         elif token.text in _GATE_CALLS:
             if len(args) != 1:
