@@ -10,6 +10,8 @@ from flagquantum.algorithms.primitives.multiplexers import SelectedMajoranaFermi
 from flagquantum.core.ir import CircuitIR
 from flagquantum.errors import ValidationError
 
+pytestmark = pytest.mark.unit
+
 
 @pytest.mark.parametrize("target_gate", ["X", "Y", "Z"])
 def test_coherent_selection_survives_ir_round_trip(target_gate: str) -> None:

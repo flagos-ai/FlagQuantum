@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, cast
 
 import torch
 
-from ...core.ir import CircuitIR, Instruction
+from ...core.ir import CircuitIR
 from ...core.operator_schema import canonical_opcode
 from ...core.runtime_config import runtime_config
 from ..gate_matrix import gate_matrix as _gate_matrix
@@ -867,18 +867,12 @@ def _execute_statevector_program(
     return output
 
 
-def state(
-    circuit: Circuit,
-    *,
-    instructions: Sequence[Instruction] | None = None,
-    refresh: bool = False,
-) -> torch.Tensor:
+def state(circuit: Circuit, *, refresh: bool = False) -> torch.Tensor:
     """Execute one Circuit through the Simulation-owned statevector loop."""
 
-    if instructions is None:
-        return circuit.state(refresh=refresh)
     if circuit._state_cache is not None and not refresh:
         return circuit._state_cache
+    instructions = circuit._statevector_instructions()
     with runtime_config(circuit.runtime_config):
         binding_source = getattr(circuit, "_parameter_bindings", None)
         parameter_bindings = None if binding_source is None else binding_source.values()

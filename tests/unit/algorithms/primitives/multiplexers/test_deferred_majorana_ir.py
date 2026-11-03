@@ -8,6 +8,8 @@ import torch
 import flagquantum as fq
 from flagquantum.core.ir import CircuitIR, IRValidationError
 
+pytestmark = pytest.mark.unit
+
 
 def test_deferred_majorana_roundtrip_and_legacy_execution() -> None:
     local = fq.Circuit(2).gate(
