@@ -5,6 +5,9 @@ CPU statevectors. See README.md for scope and the independent user-trial gate.
 """
 
 from ..services.synthesis import (
+    CRX,
+    CX,
+    SWAP,
     Const,
     ConstructionBudget,
     InputState,
@@ -36,4 +39,7 @@ __all__ = (
     "allocate",
     "hadamard_transform",
     "phase",
+    "CX",
+    "SWAP",
+    "CRX",
 )

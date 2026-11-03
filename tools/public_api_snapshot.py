@@ -747,7 +747,7 @@ def _validate_authorized_synthesis_run(contract: dict[str, Any]) -> list[str]:
         errors.append(
             "synthesis run signature exceeds the approved single input addition"
         )
-    active_exports = (*_SYNTH_PROGRAM_EXPORTS, "phase")
+    active_exports = (*_SYNTH_PROGRAM_EXPORTS, "phase", "CX", "SWAP", "CRX")
     if (
         tuple(synth.__all__) != active_exports
         or tuple(synthesis.__all__) != active_exports
@@ -918,7 +918,7 @@ def _validate_authorized_synthesis_phase(contract: Any) -> list[str]:
         errors.append("predicate phase implementation authorization is missing")
     if str(inspect.signature(synth.synthesize)) != expected["synthesize_signature"]:
         errors.append("predicate phase signature exceeds approved admission")
-    if tuple(synth.__all__) != (*_SYNTH_PROGRAM_EXPORTS, "phase"):
+    if tuple(synth.__all__) != (*_SYNTH_PROGRAM_EXPORTS, "phase", "CX", "SWAP", "CRX"):
         errors.append("phase namespace differs from the authorized program successor")
     program_contract = json.loads(
         (ROOT / "contracts/synthesis-python-program-v1-candidate.json").read_text()
@@ -959,7 +959,7 @@ def _validate_authorized_synthesis_python_program(contract: Any) -> list[str]:
             errors.append("Python program must preserve historical synthesis contracts")
     if tuple(contract["namespace_exports"]) != _SYNTH_PROGRAM_EXPORTS:
         errors.append("Python program export delta exceeds authorization")
-    exports = (*_SYNTH_PROGRAM_EXPORTS, "phase")
+    exports = (*_SYNTH_PROGRAM_EXPORTS, "phase", "CX", "SWAP", "CRX")
     if tuple(synth.__all__) != exports or tuple(synthesis.__all__) != exports:
         errors.append("Python program namespace differs from its reviewed scope")
     if any(
@@ -983,6 +983,28 @@ def _validate_authorized_synthesis_python_program(contract: Any) -> list[str]:
         or not (ROOT / phase_contract["authorization_record"]).is_file()
     ):
         errors.append("native program phase differs from its UP-02 authorization")
+    pair_contract = json.loads(
+        (ROOT / "contracts/synthesis-python-pair-gates-candidate.json").read_text()
+    )
+    pair_signatures = {
+        "CX": "(control: 'QBit', target: 'QBit', /) -> 'None'",
+        "SWAP": "(first: 'QBit', second: 'QBit', /) -> 'None'",
+        "CRX": "(angle: 'float', control: 'QBit', target: 'QBit', /) -> 'None'",
+    }
+    if (
+        pair_contract.get("namespace") != "flagquantum.synth"
+        or pair_contract.get("signatures") != pair_signatures
+        or pair_contract.get("implementation_authorized") is not True
+        or pair_contract.get("release_authorized") is not False
+        or pair_contract.get("authorization_record")
+        != "docs/api-changes/FQ-SYNTH-PYTHON-PAIR-GATES-20261103.md"
+        or not (ROOT / pair_contract["authorization_record"]).is_file()
+        or any(
+            str(inspect.signature(getattr(synth, name))) != signature
+            for name, signature in pair_signatures.items()
+        )
+    ):
+        errors.append("native pair gates differ from their authorization")
     for field, value in (
         ("synthesize_signature", synth.synthesize),
         ("run_signature", fq.run),

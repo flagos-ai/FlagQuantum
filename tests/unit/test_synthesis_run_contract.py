@@ -29,7 +29,13 @@ def test_namespace_reexports_one_authoritative_services_implementation() -> None
         (ROOT / "contracts/synthesis-python-program-v1-candidate.json").read_text()
     )
     assert contract["namespace_exports"] == program["previous_namespace_exports"]
-    assert tuple(synth.__all__) == (*program["namespace_exports"], "phase")
+    assert tuple(synth.__all__) == (
+        *program["namespace_exports"],
+        "phase",
+        "CX",
+        "SWAP",
+        "CRX",
+    )
     assert all(
         getattr(synth, name) is getattr(synthesis, name) for name in synth.__all__
     )

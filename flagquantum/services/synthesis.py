@@ -10,6 +10,7 @@ from types import MappingProxyType
 from typing import Literal, overload
 
 from ..compiler import estimate_resources
+from ..compiler._construction import program_types
 from ..compiler._construction.constraints import CircuitLimits
 from ..compiler._construction.frontend_python import (
     Definition,
@@ -64,6 +65,11 @@ from ._synthesis_execution import CheckedExecution, inspect_execution
 from ._synthesis_readout import Distribution
 from ._synthesis_readout import probabilities as _probabilities
 
+# Preserve the Qmod spelling for the captured Python operations.
+CX = program_types.cx
+SWAP = program_types.swap
+CRX = program_types.crx
+
 __all__ = (
     "ConstructionBudget",
     "InputState",
@@ -79,6 +85,9 @@ __all__ = (
     "allocate",
     "hadamard_transform",
     "phase",
+    "CX",
+    "SWAP",
+    "CRX",
 )
 
 

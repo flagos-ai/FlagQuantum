@@ -29,8 +29,11 @@ from .program_types import (
     _width_spec,
     allocate,
     apply,
+    crx,
+    cx,
     hadamard_transform,
     phase,
+    swap,
     within,
 )
 from .ranges import unsigned_width
@@ -573,6 +576,25 @@ class _Body:
             destination = self.register(node.args[0])
             for bit in range(register_width(destination)):
                 self.emit("qreg.gate", node, (destination,), gate="h", index=bit)
+        elif function is cx or function is swap or function is crx:
+            angled = function is crx
+            if len(node.args) != 2 + angled:
+                _error(
+                    self.source, node, "program.signature", "invalid pair gate arity"
+                )
+            attributes: dict[str, str | float] = {"gate": function.__name__}
+            if angled:
+                angle = self.phase_number(node.args[0])
+                if angle is None:
+                    _error(
+                        self.source,
+                        node.args[0],
+                        "program.angle",
+                        "CRX requires a finite static real angle",
+                    )
+                attributes["angle"] = angle
+            operands = tuple(self.register(arg) for arg in node.args[int(angled) :])
+            self.emit("qreg.pair_gate", node, operands, **attributes)
         elif function is phase:
             if len(node.args) != 2:
                 _error(
@@ -649,7 +671,7 @@ class _Body:
                 self.source,
                 node.func,
                 "program.call",
-                "call allocate, hadamard_transform or a typed qfunc; host calls are not executed",
+                "use a captured operation or a typed qfunc; host calls are not executed",
             )
 
     def region_marker(self, block: ast.With) -> object:

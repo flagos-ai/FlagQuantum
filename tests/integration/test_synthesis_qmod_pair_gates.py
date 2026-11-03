@@ -9,10 +9,11 @@ import pytest
 import torch
 
 import flagquantum as fq
-from examples.synthesis_qmod_pair_gates import bell, zero_pair
+from examples.synthesis_qmod_pair_gates import QMOD_PAIR, native_pair, pair_circuit
 from flagquantum import synth
 from flagquantum.compiler._hybrid.verifier import HybridVerificationError
 from flagquantum.ecosystem import InteropConversionError
+from flagquantum.synth import CRX, CX, SWAP, Output, QBit, allocate, qfunc
 from tests.integration.test_synthesis_register_workflow import check_state
 
 pytestmark = pytest.mark.integration
@@ -33,8 +34,6 @@ def test_original_pair_gate(item):
     assert hashlib.sha256(license_bytes).hexdigest() == MANIFEST["license_sha256"]
     program = synth.synthesize(path, source_format="qmod")
     check_state(program, fq.run(program), {(0, 0): 1})
-    native = synth.synthesize(zero_pair)
-    check_state(native, fq.run(native), {(0, 0): 1})
     assert program.report["workspace_qubits"] == 0
 
 
@@ -61,15 +60,55 @@ def test_coherent_pair_gates(action, expected):
     check_state(program, fq.run(program), expected)
 
 
-def test_native_fresh_assignment_matches_bell_circuit():
-    program = synth.synthesize(bell)
-    reference = fq.Circuit(2, dtype=torch.complex128).h(1).cx(1, 0)
+def test_native_direct_calls_match_qmod_circuit_and_oracle():
+    native = synth.synthesize(native_pair)
+    imported = synth.synthesize(QMOD_PAIR, source_format="qmod")
+    expected = {
+        (0, 0): 2**-0.5,
+        (1, 1): math.cos(0.625) * 2**-0.5,
+        (1, 0): -1j * math.sin(0.625) * 2**-0.5,
+    }
+    for program in (native, imported):
+        check_state(program, fq.run(program), expected)
+    assert native.circuit.instructions == imported.circuit.instructions
     torch.testing.assert_close(
-        fq.run(program).statevector(),
-        fq.run(reference).statevector(),
+        fq.run(native).statevector(),
+        fq.run(pair_circuit()).statevector(),
         atol=1e-12,
         rtol=0,
     )
+
+
+def test_native_uses_shared_alias_and_initialization_checks():
+    @qfunc
+    def aliased(a: Output[QBit]) -> None:
+        allocate(a)
+        SWAP(a, a)
+
+    @qfunc
+    def uninitialized(a: Output[QBit], b: Output[QBit]) -> None:
+        allocate(a)
+        CX(a, b)
+
+    for source, diagnostic in (
+        (aliased, "register.gate"),
+        (uninitialized, "register.uninitialized"),
+    ):
+        with pytest.raises(HybridVerificationError, match=diagnostic):
+            synth.synthesize(source)
+
+
+def test_native_crx_requires_finite_static_angle():
+    angle = math.inf
+
+    @qfunc
+    def invalid(a: Output[QBit], b: Output[QBit]) -> None:
+        allocate(a)
+        allocate(b)
+        CRX(angle, a, b)
+
+    with pytest.raises(HybridVerificationError, match="program.angle"):
+        synth.synthesize(invalid)
 
 
 @pytest.mark.parametrize(

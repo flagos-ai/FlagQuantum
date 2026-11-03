@@ -48,7 +48,13 @@ def test_proposal_records_current_api_and_precise_pending_delta_without_fake_app
         (ROOT / "contracts/synthesis-python-program-v1-candidate.json").read_text()
     )
     assert PROPOSAL["namespace_exports"] == program["previous_namespace_exports"]
-    assert list(synth.__all__) == [*program["namespace_exports"], "phase"]
+    assert list(synth.__all__) == [
+        *program["namespace_exports"],
+        "phase",
+        "CX",
+        "SWAP",
+        "CRX",
+    ]
     assert str(inspect.signature(fq.run)) == PROPOSAL["unchanged_run_signature"]
     assert (
         str(inspect.signature(synth.Program.probabilities))
