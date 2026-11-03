@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from contextlib import AbstractContextManager
 from types import GenericAlias
 from typing import Annotated, TypeAlias, TypeVar
 
@@ -84,3 +85,13 @@ def hadamard_transform(out: QNum, /) -> None:
 def phase(expression: QNum | float, coefficient: float, /) -> None:
     """Apply exp(i * coefficient * expression) inside a captured qfunc."""
     raise TypeError("phase is captured inside qfunc")
+
+
+def within() -> AbstractContextManager[None]:
+    """Capture local arithmetic preparation for the following apply block."""
+    raise TypeError("within is captured inside qfunc")
+
+
+def apply() -> AbstractContextManager[None]:
+    """Capture an operation between preparation and its checked inverse."""
+    raise TypeError("apply is captured inside qfunc")
