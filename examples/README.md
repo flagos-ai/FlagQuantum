@@ -254,6 +254,9 @@ These examples do not use that alias:
   subpackage surface, because a mixed-check code record, its memory circuit, its
   detector error model and the matching decoder all live there and none has a
   root-level `fq.` name.
+- [`catalytic-controlled-hadamard.py`](plot_gallery/quantum_circuits/catalytic-controlled-hadamard.py)
+  uses the dynamic circuit and experimental trajectory interfaces to verify
+  classical feedback and catalyst reuse in Lee et al. Figure 17.
 - [`dynamic_density_matrix.py`](dynamic_density_matrix.py) — it imports
   `flagquantum.dynamic` and `flagquantum.simulation.density_matrix`, because the
   exact mixed-state route for a mid-circuit measurement is reached through
