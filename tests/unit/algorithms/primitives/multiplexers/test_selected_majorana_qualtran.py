@@ -1,4 +1,4 @@
-"""Optional parity tests against the Qualtran 0.5.0 release."""
+"""Optional parity tests against the Qualtran 0.7.0 release."""
 
 from importlib.metadata import version
 
@@ -13,7 +13,7 @@ from flagquantum.algorithms.primitives.multiplexers import SelectedMajoranaFermi
 @pytest.mark.parametrize("target_gate", ["X", "Y", "Z"])
 def test_qualtran_coherent_majorana_parity(target_gate: str) -> None:
     pytest.importorskip("qualtran")
-    assert version("qualtran") == "0.5.0", "Install qualtran==0.5.0 for parity tests."
+    assert version("qualtran") == "0.7.0", "Install qualtran==0.7.0 for parity tests."
     import cirq
     from qualtran.bloqs.multiplexers.selected_majorana_fermion import (
         SelectedMajoranaFermion as QualtranMajorana,

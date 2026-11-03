@@ -4,7 +4,7 @@ PrepareTHC,bloq_supplement,planned,https://qualtran.readthedocs.io/en/latest/blo
 SelectPauliLCU,bloq_supplement,planned,https://qualtran.readthedocs.io/en/latest/bloqs/multiplexers/select_pauli_lcu.html,
 SelectSparse,bloq_supplement,planned,https://github.com/quantumlib/Qualtran/blob/main/qualtran/bloqs/chemistry/sparse/select_bloq.py,
 SelectTHC,bloq_supplement,planned,https://qualtran.readthedocs.io/en/latest/bloqs/chemistry/thc/thc.html,
-SelectedMajoranaFermion,bloq_supplement,in_review,https://github.com/quantumlib/Qualtran/blob/main/qualtran/bloqs/multiplexers/selected_majorana_fermion.py,https://github.com/flagos-ai/FlagQuantum/pull/1035 (Qualtran 0.5.0 X/Y/Z complex-amplitude parity passed. See QUALTRAN_API_PROGRESS.md for scope and differences.)
+SelectedMajoranaFermion,bloq_supplement,in_review,https://github.com/quantumlib/Qualtran/blob/main/qualtran/bloqs/multiplexers/selected_majorana_fermion.py,https://github.com/flagos-ai/FlagQuantum/pull/1035 (Qualtran 0.7.0 X/Y/Z complex-amplitude parity passed. See QUALTRAN_API_PROGRESS.md for scope and differences.)
 qualtran.AddControlledT,api_reference,unassessed,https://qualtran.readthedocs.io/en/latest/reference/qualtran/AddControlledT.html,
 qualtran.Adjoint,api_reference,unassessed,https://qualtran.readthedocs.io/en/latest/reference/qualtran/Adjoint.html,
 qualtran.BQUInt,api_reference,unassessed,https://qualtran.readthedocs.io/en/latest/reference/qualtran/BQUInt.html,
