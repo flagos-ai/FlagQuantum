@@ -1,0 +1,10 @@
+{
+  "schema": "flagquantum.synthesis_python_cleanup_up03_admission",
+  "version": "1.0",
+  "namespace": "flagquantum.synth",
+  "added_exports": ["within", "apply", "adjoint"],
+  "marker_signature": "() -> 'AbstractContextManager[None]'",
+  "authorization_record": "docs/api-changes/FQ-SYNTH-PYTHON-CLEANUP-UP03-20261103.md",
+  "implementation_authorized": true,
+  "release_authorized": false
+}

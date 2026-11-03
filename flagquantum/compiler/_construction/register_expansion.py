@@ -49,6 +49,70 @@ def expand_register_calls(
         counter += 1
         return Value(identifier, kind)
 
+    def inverse_operations(operations: Sequence[Operation]) -> None:
+        nonlocal effect, visits
+        declarations = {
+            op.results[0]: op for op in operations if op.name == "qreg.local"
+        }
+        active_computations: dict[Value, Operation] = {}
+        computations: dict[int, Operation] = {}
+        for index, op in enumerate(operations):
+            if op.name == "qreg.compute":
+                active_computations[op.operands[1]] = op
+            elif op.name == "qreg.uncompute" and op.operands[1] in active_computations:
+                computations[index] = active_computations.pop(op.operands[1])
+        for index, op in reversed(tuple(enumerate(operations))):
+            visits += 1
+            if visits > max_nodes:
+                _fail(
+                    "register.budget",
+                    "register call expansion exceeds visit budget",
+                    op,
+                )
+            if op.name == "qreg.release" and op.operands[1] in declarations:
+                emitted.append(declarations[op.operands[1]])
+                continue
+            following = fresh(effect.type)
+            if op.name == "qreg.local":
+                inverted = Operation(
+                    "qreg.release",
+                    (effect, op.results[0]),
+                    (following,),
+                    location=op.location,
+                )
+            elif op.name == "qreg.uncompute" and index in computations:
+                forward = computations[index]
+                inverted = replace(
+                    forward,
+                    operands=(effect, *forward.operands[1:]),
+                    results=(following,),
+                )
+            elif op.name == "qreg.compute" and op.operands[1] in declarations:
+                inverted = Operation(
+                    "qreg.uncompute",
+                    (effect, op.operands[1]),
+                    (following,),
+                    location=op.location,
+                )
+            elif op.name == "qreg.phase":
+                attributes = dict(op.attributes)
+                if "angle" in attributes:
+                    attributes["angle"] = -attributes["angle"]
+                inverted = replace(
+                    op,
+                    operands=(effect, *op.operands[1:]),
+                    results=(following,),
+                    attributes=attributes,
+                )
+            else:
+                _fail(
+                    "register.adjoint",
+                    "callee effects are outside the checked inverse subset",
+                    op,
+                )
+            emitted.append(inverted)
+            effect = following
+
     def emit(op: Operation, bindings: dict[Value, Value]) -> None:
         nonlocal effect, visits
         visits += 1
@@ -70,9 +134,15 @@ def expand_register_calls(
                 *(q.results[0] for q in callee.operations if q.name == "qreg.declare"),
             )
             nested = dict(zip(formal, actual, strict=True))
+            start, incoming = len(emitted), effect
             for child in callee.operations:
                 if child.name not in {"qreg.declare", "qreg.return"}:
                     emit(replace(child, location=op.location), nested)
+            if op.attributes.get("inverse"):
+                forward = emitted[start:]
+                del emitted[start:]
+                effect = incoming
+                inverse_operations(forward)
         else:
             following = fresh(effect.type)
             emitted.append(

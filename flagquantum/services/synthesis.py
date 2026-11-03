@@ -32,13 +32,22 @@ from ..compiler._construction.program_types import (
     QNum as QNum,
 )
 from ..compiler._construction.program_types import (
+    adjoint as adjoint,
+)
+from ..compiler._construction.program_types import (
     allocate as allocate,
+)
+from ..compiler._construction.program_types import (
+    apply as apply,
 )
 from ..compiler._construction.program_types import (
     hadamard_transform as hadamard_transform,
 )
 from ..compiler._construction.program_types import (
     phase as phase,
+)
+from ..compiler._construction.program_types import (
+    within as within,
 )
 from ..compiler._construction.register_profile import register_ports
 from ..compiler._construction.selection import (
@@ -79,6 +88,9 @@ __all__ = (
     "allocate",
     "hadamard_transform",
     "phase",
+    "within",
+    "apply",
+    "adjoint",
 )
 
 
