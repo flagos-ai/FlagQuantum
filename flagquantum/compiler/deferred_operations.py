@@ -82,7 +82,7 @@ def _lower_select_pauli_lcu(instruction: Instruction) -> Instruction:
 def lower_select_pauli_lcu_to_gates(instruction: Instruction) -> Circuit:
     """Decompose a structured SELECT into a circuit in operand order.
 
-    The first qubits correspond to `instruction.wires`. Any remaining qubits
+    The first qubits follow the instruction’s operand order. Any remaining qubits
     are ladder workspace and must start in zero. The circuit restores them to
     zero. Use `Circuit.compose` to bind operands and workspace to a larger
     circuit.
