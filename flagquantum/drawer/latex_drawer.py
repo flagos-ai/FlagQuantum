@@ -173,7 +173,7 @@ def draw_latex(
     *,
     layout: RegisterLayout | None = None,
     comparison: tuple[object, RegisterLayout] | None = None,
-    wire_spacing: float = 4.5,
+    row_spacing: float = 4.5,
     inputs: Mapping[int, str] | None = None,
     outputs: Mapping[int, str] | None = None,
     standalone: bool = True,
@@ -187,9 +187,9 @@ def draw_latex(
         program: A native circuit, IR, or serialized IR mapping.
         layout: Register geometry and symbols for named operations.
         comparison: Optional second circuit and layout, drawn to the right.
-        wire_spacing: Distance between register wires in millimetres.
-        inputs: Trusted LaTeX labels keyed by input wire.
-        outputs: Trusted LaTeX labels keyed by output wire.
+        row_spacing: Distance between register rows in millimetres.
+        inputs: Trusted LaTeX labels keyed by input qubit.
+        outputs: Trusted LaTeX labels keyed by output qubit.
         standalone: Include a complete LaTeX document rather than a fragment.
         display: Immediately display through IPython, compiling on demand.
         engine: Optional executable name/path for rendering later.
@@ -234,7 +234,7 @@ def draw_latex(
             from .register_tex import register_circuit_tex
 
             body = register_circuit_tex(
-                ir, layout, comparison, wire_spacing=wire_spacing
+                ir, layout, comparison, row_spacing=row_spacing
             )
         source = (
             "\\documentclass[border=2pt]{standalone}\n"

@@ -8,7 +8,7 @@ from .ir_adapter import to_drawable_circuit
 if TYPE_CHECKING:
     from matplotlib.figure import Figure
 
-# Gate label, target wire, and (control wire, required bit) pairs.
+# Gate label, target qubit, and (control qubit, required bit) pairs.
 CircuitGate = tuple[str, int, tuple[tuple[int, int], ...]]
 
 
@@ -173,7 +173,7 @@ def draw_paper_circuit(
 
 
 def _circuit_columns(operations: Sequence[dict[str, Any]]) -> list[CircuitGate]:
-    """Resolve classical bit IDs to the wires that supplied their values."""
+    """Resolve classical bit IDs to the qubits measured to obtain their values."""
     from flagquantum.errors import ValidationError
     from flagquantum.experimental.controlled_pauli import decode_controlled_pauli
 
