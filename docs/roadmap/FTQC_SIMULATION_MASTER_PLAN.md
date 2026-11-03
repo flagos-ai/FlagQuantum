@@ -937,3 +937,17 @@ old 193-attempt evidence remains separate. This tooling change authorizes no
 further research probe, retry, continuation or matrix. R01-R15, FTS-02/09/10/11
 and M2 remain partial. Reviewed-head and actual-main delivery gates are required
 before declaring this development item admitted.
+
+## Paired Surface Memory Decoder Outcomes
+
+Run the fixed distance-three Z memory example with Python 3.12 on CPU
+after installing the existing Stim and PyMatching extras.
+
+```bash
+PYTHONPATH=. python examples/qec/paired_surface_decoder_outcomes.py
+```
+
+The two decoders share the strict undecomposed DEM and detector rows for
+the same 35 shots, sampled in batches of 16, 16 and 3. The four outcome
+counts partition the completed shots and expose shared and decoder-specific
+errors. The example makes no decoder ranking or statistical claim.
