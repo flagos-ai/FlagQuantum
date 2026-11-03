@@ -41,6 +41,7 @@ def test_isolation_rejects_host_packages_and_reuses_no_previous_environment(
         RUNNER_TEMP=str(tmp_path),
         PYTHONPATH=str(host_packages),
         PYTHONHOME="/unavailable-host-python",
+        PIP_INDEX_URL="https://incomplete.example/simple",
         LD_LIBRARY_PATH=(
             "/usr/local/lib/python3.12/dist-packages/torch/lib:"
             "/opt/venv/lib/python3.12/site-packages/torch_tensorrt/lib:"
@@ -66,12 +67,7 @@ def test_isolation_rejects_host_packages_and_reuses_no_previous_environment(
         exported = dict(
             line.split("=", 1) for line in env_file.read_text().splitlines()
         )
-        if runner_environment == "self-hosted":
-            assert (
-                exported["PIP_INDEX_URL"] == "https://pypi.tuna.tsinghua.edu.cn/simple"
-            )
-        else:
-            assert exported["PIP_INDEX_URL"] == "https://pypi.org/simple"
+        assert exported["PIP_INDEX_URL"] == "https://pypi.org/simple"
         assert exported["LD_LIBRARY_PATH"] == runtime_library_path
         venv = Path(exported["VIRTUAL_ENV"])
         environments.append(venv)
@@ -312,10 +308,7 @@ def test_package_indexes_match_routing_before_runner_assignment(job: str) -> Non
         "github.event.pull_request.head.repo.full_name == github.repository)"
     )
     selected = document["jobs"][job]
-    assert selected["env"]["PIP_INDEX_URL"] == (
-        "${{ " + trusted + " && "
-        "'https://pypi.tuna.tsinghua.edu.cn/simple' || 'https://pypi.org/simple' }}"
-    )
+    assert selected["env"]["PIP_INDEX_URL"] == "https://pypi.org/simple"
     # Manual validation is trusted too; fork PRs retain the hosted fallback.
     assert selected["runs-on"] == (
         "${{ fromJSON(" + trusted + " && "
