@@ -38,7 +38,7 @@ def paper_circuit_tex(
     end = x + previous_width / 2 + 1.4
     measured = {
         target: x
-        for x, (label, target, _) in zip(positions, columns)
+        for x, (label, target, _) in zip(positions, columns, strict=True)
         if label == "measure"
     }
 
@@ -53,7 +53,9 @@ def paper_circuit_tex(
         lines.append(rf"\draw (0,{wire}) -- ({split:g},{wire});")
         if wire in measured:
             lines.append(rf"\draw[doublewire] ({split:g},{wire}) -- ({end:g},{wire});")
-    for step, (x, (label, target, controls)) in enumerate(zip(positions, columns)):
+    for step, (x, (label, target, controls)) in enumerate(
+        zip(positions, columns, strict=True)
+    ):
         lines.append(source_link(f"gate-0-{step}", x, target, 4, 3))
         for wire, bit in controls:
             split = measured.get(wire, end)
