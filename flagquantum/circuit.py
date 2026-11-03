@@ -391,20 +391,27 @@ class Circuit(_BuiltinGateMethods):
         *,
         params: Mapping[str, Any] | None = None,
         matrix: Any | None = None,
+        controls: Mapping[int, int] | None = None,
         **kwargs: Any,
     ) -> "Circuit":
         merged_params = dict(params or {})
         merged_params.update(kwargs)
         normalized_qubits = normalize_qubits(qubits, owner=f"Gate {name!r}")
+        opcode = canonical_opcode(name)
+        metadata: dict[str, Any] = {}
+        if controls:
+            from .experimental.controlled_pauli import lower_controls
+
+            opcode, normalized_qubits, matrix, metadata = lower_controls(
+                opcode, normalized_qubits, controls, merged_params, matrix
+            )
         outside = tuple(qubit for qubit in normalized_qubits if qubit >= self.n_qubits)
         if outside:
             raise ValidationError(
                 f"Gate {name!r} references qubit(s) {outside} outside circuit "
                 f"range [0, {self.n_qubits - 1}]."
             )
-        opcode = canonical_opcode(name)
         schema = get_operator_schema(opcode)
-        metadata: dict[str, Any] = {}
         if schema is not None and schema.channel:
             if matrix is not None:
                 raise ValidationError(

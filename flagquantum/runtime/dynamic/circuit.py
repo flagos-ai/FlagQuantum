@@ -83,6 +83,7 @@ class DynamicCircuit(Circuit):
         any_of: Iterable[Mapping[int, int]] | None = None,
         params: Mapping[str, Any] | None = None,
         matrix: Any | None = None,
+        controls: Mapping[int, int] | None = None,
     ) -> DynamicCircuit:
         """Append a gate that runs on the classical register's contents.
 
@@ -103,6 +104,7 @@ class DynamicCircuit(Circuit):
                 what ``conditions`` states.
             params: Gate parameters.
             matrix: Explicit matrix for an opcode no schema describes.
+            controls: Quantum control qubits and their required values for a Pauli gate.
 
         Raises:
             ValidationError: If no condition is stated, if a clause tests a bit
@@ -158,6 +160,13 @@ class DynamicCircuit(Circuit):
             if isinstance(qubits, int)
             else tuple(int(qubit) for qubit in qubits)
         )
+        if controls:
+            from ...experimental.controlled_pauli import lower_controls
+
+            name, qubit_tuple, matrix, control_metadata = lower_controls(
+                name, qubit_tuple, controls, params, matrix
+            )
+            metadata = {**metadata, **control_metadata}
         return self._append_dynamic(
             Instruction(
                 name,
