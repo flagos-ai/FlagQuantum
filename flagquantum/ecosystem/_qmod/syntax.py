@@ -13,7 +13,7 @@ MAX_BYTES = 262144
 MAX_TOKENS = 4096
 MAX_DEPTH = 32
 MAX_FUNCTIONS = 32
-ANGLE_CALLS = frozenset({"PHASE", "RZ", "CRX"})
+ANGLE_CALLS = frozenset({"PHASE", "RZ", "CRX", "R"})
 _TOKEN = re.compile(
     r"(?P<space>\s+)|(?P<comment>//[^\n]*|/\*[\s\S]*?\*/)"
     r"|(?P<number>[0-9]+)|(?P<name>[A-Za-z_][A-Za-z_0-9]*)"
@@ -400,7 +400,11 @@ class Parser:
                     )
                     while self.current.text == ",":
                         self.take(",")
-                        args.append(self.expression())
+                        args.append(
+                            self.angle_argument()
+                            if target.text == "R" and len(args) == 1
+                            else self.expression()
+                        )
                 self.take(")")
                 arguments = tuple(args)
             else:
