@@ -58,6 +58,7 @@ def test_invalid_binding_leaves_circuit_unchanged() -> None:
         operation.append_to(circuit)
     assert not circuit.to_ir().instructions
 
+
 def test_compose_remaps_operands_without_stale_register_ids() -> None:
     operation = SelectedMajoranaFermion.make_on(
         control=(0,), selection=(1,), target=(2, 3)
