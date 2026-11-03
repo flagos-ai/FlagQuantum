@@ -16,8 +16,8 @@ Inventory SHA-256: `ce0637e400dd9281d4049524f2ac10c58cbda18b75ef364b222dca0d1186
 | Status | Count | Meaning |
 | --- | ---: | --- |
 | Unassessed | 226 | FlagQuantum mapping and evidence need review |
-| Planned | 5 | Tracked in the algorithm roadmap |
-| In review | 1 | Implementation has a PR |
+| Planned | 4 | Tracked in the algorithm roadmap |
+| In review | 2 | Implementation has a PR |
 | Verified | 0 | Merged and supported by parity or equivalent contract evidence |
 
 Update the CSV with each PR. Record the FlagQuantum symbol and evidence link.
@@ -51,3 +51,11 @@ python -m pip install 'qualtran==0.7.0'
 python -m pytest -q tests/unit/algorithms/primitives/multiplexers
 python -m pytest -q tools/qualtran_parity
 ```
+
+## SelectPauliLCU
+
+[FlagQuantum #1037](https://github.com/flagos-ai/FlagQuantum/pull/1037) passed
+three complex-amplitude comparisons against Qualtran 0.7.0 on reordered
+registers with no control, control on zero, and control on one. The cases use
+a signed Pauli table. The local round-trip test also verifies identity on an
+unused address. The current dense lowering supports ten operand qubits.
