@@ -105,6 +105,7 @@ SCRIPTS = (
     "trotter",
     "block_encoding",
     "linear_combination",
+    "pauli_lcu_block_encoding",
     "logical_resources",
     "arithmetic",
     "synthesis_trial",
@@ -297,6 +298,7 @@ PREMISE_PHRASES: dict[str, tuple[str, ...]] = {
     # Pinning only the first would leave the ownership deletable, and an
     # exponential-in-the-index-register construction read as a cost claim is the
     # misreading the second half prevents.
+    "pauli_lcu_block_encoding": ("before further synthesis",),
     "linear_combination": (
         "exponential in the index",
         "belongs to the caller's",
@@ -1436,6 +1438,13 @@ def test_block_encoding_example_reads_its_block_back_out_of_the_circuit() -> Non
     assert "NOT REFUSED" not in output
     _assert_premise("block_encoding", output)
     assert "take away" in output
+
+
+def test_pauli_lcu_block_encoding_example_runs_the_gate_level_walk() -> None:
+    output = _run("pauli_lcu_block_encoding")
+    assert "5 qubits (1 workspace), 11 Toffoli gates" in output
+    assert "alpha = 2" in output
+    _assert_premise("pauli_lcu_block_encoding", output)
 
 
 def test_linear_combination_example_encodes_the_pauli_sum_from_its_coefficients() -> (

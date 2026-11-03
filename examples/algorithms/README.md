@@ -29,6 +29,7 @@ python -m examples.algorithms.cobyla_optimizer
 python -m examples.algorithms.trotter
 python -m examples.algorithms.block_encoding
 python -m examples.algorithms.linear_combination
+python -m examples.algorithms.pauli_lcu_block_encoding
 python -m examples.algorithms.logical_resources
 python -m examples.algorithms.arithmetic
 python -m examples.algorithms.synthesis_trial
@@ -135,6 +136,7 @@ What they show:
   spectrum from a different routine, a second implementation that holds no matrix
   read by the same consumer, and the ten construction and three register refusals
   printed by name.
+- [`pauli_lcu_block_encoding.py`](pauli_lcu_block_encoding.py): verifies the target block and eigenphases of a gate-level qubitization walk.
 - [`linear_combination.py`](linear_combination.py): a six-term Pauli sum block
   encoded from its coefficients alone, with `alpha` printed beside the spectral
   and Frobenius norms it deliberately is not, the block read back out of the
