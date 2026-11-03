@@ -3,6 +3,7 @@
 import torch
 
 from flagquantum.dynamic import DynamicCircuit
+from flagquantum.experimental.controlled_pauli import controlled_pauli
 from flagquantum.experimental.dynamic import run_dynamic
 
 
@@ -18,11 +19,14 @@ ancilla, catalyst, target, control = range(4)
 m = 0
 program = DynamicCircuit(4, bsz=2, inputs=initial)
 program.h(target).s(target).h(target)
-program.x(catalyst, controls={target: 0})
-program.x(ancilla, controls={catalyst: 1, control: 0})
+name, matrix = controlled_pauli("0", "X")
+program.gate(name, (target, catalyst), matrix=matrix)
+name, matrix = controlled_pauli("10", "X")
+program.gate(name, (catalyst, control, ancilla), matrix=matrix)
 program.cx(target, ancilla).s(ancilla).cx(target, ancilla).h(ancilla)
 program.measure(ancilla, classical_bit=m)
-program.conditional("z", catalyst, classical_bit=m, controls={control: 0})
+name, matrix = controlled_pauli("0", "Z")
+program.conditional(name, (control, catalyst), classical_bit=m, matrix=matrix)
 program.cx(control, target).cx(target, catalyst).h(target).sd(target).h(target)
 
 # Compare each measured branch with the expected target and returned catalyst.
