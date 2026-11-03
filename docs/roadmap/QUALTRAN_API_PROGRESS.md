@@ -59,3 +59,31 @@ three complex-amplitude comparisons against Qualtran 0.7.0 on reordered
 registers with no control, control on zero, and control on one. The cases use
 a signed Pauli table. The local round-trip test also verifies identity on an
 unused address. The current dense lowering supports ten operand qubits.
+
+### Gate-level Pauli LCU walk
+
+Run the comparison with Qualtran 0.7.0, Cirq Core 1.4.0, and NumPy 1.26.4:
+
+```sh
+python -m pytest -qs tools/qualtran_parity/test_pauli_lcu_walk_qualtran.py
+```
+
+For H = X − 0.6Y + 0.4Z, both walks use three index qubits, one data
+qubit and one clean work qubit. Both reproduce the target block H/2 and
+eigenphases ±arccos(λ/2) for the eigenvalues λ of H within 1e-7. The work
+qubit returns to zero for all clean-workspace basis inputs within 1e-12.
+The Qualtran check also simulates a coherent complex input and compares
+it with the linear action reconstructed from the basis outputs.
+
+| Stage | FlagQuantum | Qualtran SELECT reference |
+| --- | --- | --- |
+| PREPARE | 26 operations | Same circuit |
+| PREPARE inverse | 26 operations | Same circuit |
+| Index reflection | 13 operations, including one Toffoli | Same circuit |
+| SELECT | 30 operations, including ten Toffolis | Cirq decomposition retains no explicit Toffolis and emits one measurement, one classically controlled operation, and one reset |
+
+The reference shares FlagQuantum's PREPARE and reflection to isolate SELECT.
+Cirq decomposes the Qualtran SELECT while retaining explicit Toffolis if
+present. The script prints each stage's emitted operations. These are
+decomposition-level counts. Comparing T costs requires a common synthesis
+policy for rotations, Toffolis, and measurement-based uncomputation.
