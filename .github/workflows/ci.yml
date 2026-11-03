@@ -369,7 +369,7 @@ jobs:
       MKL_NUM_THREADS: "1"
       OPENBLAS_NUM_THREADS: "1"
       CUDA_VISIBLE_DEVICES: ""
-      PIP_INDEX_URL: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'https://pypi.tuna.tsinghua.edu.cn/simple' || 'https://pypi.org/simple' }}
+      PIP_INDEX_URL: https://pypi.org/simple
     concurrency:
       group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('self-hosted-{0}-cpu-core-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-${{ github.event.pull_request.number || github.ref_name }}-cpucore-${{ matrix.python-version }}
       queue: max
@@ -508,7 +508,7 @@ jobs:
       MKL_NUM_THREADS: "1"
       OPENBLAS_NUM_THREADS: "1"
       CUDA_VISIBLE_DEVICES: ""
-      PIP_INDEX_URL: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'https://pypi.tuna.tsinghua.edu.cn/simple' || 'https://pypi.org/simple' }}
+      PIP_INDEX_URL: https://pypi.org/simple
     concurrency:
       group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('self-hosted-{0}-cpu-core-3-12-tests-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-${{ github.event.pull_request.number || github.ref_name }}-cpucore-3.12
       queue: max
@@ -611,7 +611,7 @@ jobs:
       MKL_NUM_THREADS: "1"
       OPENBLAS_NUM_THREADS: "1"
       CUDA_VISIBLE_DEVICES: ""
-      PIP_INDEX_URL: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'https://pypi.tuna.tsinghua.edu.cn/simple' || 'https://pypi.org/simple' }}
+      PIP_INDEX_URL: https://pypi.org/simple
     concurrency:
       group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('self-hosted-{0}-cpu-runtime-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-${{ github.event.pull_request.number || github.ref_name }}-runtime
       queue: max

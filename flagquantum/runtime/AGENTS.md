@@ -18,3 +18,9 @@ compiler imports in executors or Simulation.
 plan-aware execution lifecycles but delegates numerical kernels to Simulation.
 During migration, `target_execution.py` belongs to Remote; its
 nested rules take precedence.
+
+The user separately approved the qualified v2 checkpoint writer and strict v1/v2
+reader on 2026-11-03. Follow
+`docs/development/TRAINING_CHECKPOINT_IDENTITY_CONTRACT.md`; land that contract
+and fake before implementation. This permits no additional Compiler import or
+Simulation dependency and preserves legacy v1 validation.

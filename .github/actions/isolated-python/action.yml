@@ -40,11 +40,10 @@ runs:
           echo "$job_venv/bin" >> "$GITHUB_PATH"
           echo "VIRTUAL_ENV=$job_venv" >> "$GITHUB_ENV"
         fi
-        if [ "${RUNNER_ENVIRONMENT:-}" = "self-hosted" ]; then
-          echo "PIP_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple" >> "$GITHUB_ENV"
-        else
-          echo "PIP_INDEX_URL=https://pypi.org/simple" >> "$GITHUB_ENV"
-        fi
+        # General dependencies must resolve against their authoritative index.
+        # The local CPU wheel cache and explicit Torch CPU mirror/fallback are
+        # independent; an incomplete general mirror must not block every job.
+        echo "PIP_INDEX_URL=https://pypi.org/simple" >> "$GITHUB_ENV"
     - name: Measure CPU and memory limits and select pytest workers
       shell: bash
       run: python -I tools/ci_cpu_budget.py

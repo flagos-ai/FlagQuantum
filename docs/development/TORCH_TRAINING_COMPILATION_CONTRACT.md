@@ -151,3 +151,12 @@ must not be used to remove an unfavorable held-out case or change these budgets.
 Include the existing no-grad/parameter/input/both derivative conformance even
 where a training optimizer is inapplicable. This reservation is not a claim that
 all six cases or any route already pass.
+
+## Separately approved checkpoint version extension
+
+On 2026-11-03 the user separately approved the narrow v2 checkpoint identity
+change in `TRAINING_CHECKPOINT_IDENTITY_CONTRACT.md`. That contract supersedes
+this document's checkpoint-schema preservation only for its qualified v2 writer
+and strict versioned v1/v2 reader. Its contract and fake must land before the
+Compiler/Runtime implementation. Other public APIs, Torch defaults and optimizer
+arithmetic remain unchanged.
