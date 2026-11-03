@@ -485,6 +485,28 @@ class _Body:
         self.owner.functions.append(graph)
         return graph, actuals
 
+    def phase_number(self, node: ast.expr) -> float | None:
+        sign = 1
+        if isinstance(node, ast.UnaryOp) and isinstance(node.op, (ast.UAdd, ast.USub)):
+            sign = -1 if isinstance(node.op, ast.USub) else 1
+            node = node.operand
+        value: object
+        if isinstance(node, ast.Constant):
+            value = node.value
+        elif isinstance(node, (ast.Name, ast.Attribute)):
+            if isinstance(node, ast.Name) and node.id in self.ports:
+                return None
+            value = _resolve(self.definition, node)
+        else:
+            return None
+        if type(value) is not int and type(value) is not float:
+            return None
+        try:
+            converted = sign * float(value)
+        except OverflowError:
+            return None
+        return converted if math.isfinite(converted) else None
+
     def call(self, node: ast.Call) -> None:
         if node.keywords or any(isinstance(a, ast.Starred) for a in node.args):
             _error(
@@ -556,20 +578,32 @@ class _Body:
                     "phase takes an expression and coefficient",
                 )
             expr, coefficient = node.args
-            value = (
-                coefficient.value
-                if isinstance(coefficient, ast.Constant)
-                else _resolve(self.definition, coefficient)
-            )
-            if type(value) is not float or value != math.pi:
+            angle = self.phase_number(coefficient)
+            if angle is None:
                 _error(
                     self.source,
                     coefficient,
                     "program.phase",
-                    "this phase profile requires a static pi coefficient",
+                    "phase coefficient must be a finite static real",
                 )
-            graph, actuals = self.capture_expression(expr, node)
-            self.emit("qreg.phase", node, actuals, callee=graph.name)
+            constant = self.phase_number(expr)
+            if constant is not None:
+                radians = constant * angle
+                if not math.isfinite(radians):
+                    _error(
+                        self.source,
+                        expr,
+                        "program.phase",
+                        "constant phase angle must be finite",
+                    )
+                self.emit("qreg.phase", node, (), angle=radians)
+            else:
+                graph, actuals = self.capture_expression(expr, node)
+                width = _width(
+                    graph.body.blocks[0].operations[-1].operands[0].type, 256
+                )
+                attributes = {"angle": angle} if angle != math.pi or width != 1 else {}
+                self.emit("qreg.phase", node, actuals, callee=graph.name, **attributes)
         elif isinstance(function, _QuantumFunction) and function.source.program:
             formal = program_ports(function)
             if len(node.args) != len(formal):

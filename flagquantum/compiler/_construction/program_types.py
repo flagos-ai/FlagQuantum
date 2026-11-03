@@ -81,6 +81,6 @@ def hadamard_transform(out: QNum, /) -> None:
     raise TypeError("hadamard_transform is captured inside qfunc")
 
 
-def phase(expression: QNum, coefficient: float, /) -> None:
-    """Mark a captured quantum expression with a phase coefficient."""
+def phase(expression: QNum | float, coefficient: float, /) -> None:
+    """Apply exp(i * coefficient * expression) inside a captured qfunc."""
     raise TypeError("phase is captured inside qfunc")

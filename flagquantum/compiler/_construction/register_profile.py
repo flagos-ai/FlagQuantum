@@ -238,7 +238,7 @@ def _verify_body(
         returned = body.operations[-1].operands[0]
         result_width = _width(returned.type, max_qubits)
         if destination is None:
-            if result_width != 1:
+            if "angle" not in op.attributes and result_width != 1:
                 _fail(
                     "register.phase",
                     "phase call requires an exactly one-bit return",
@@ -256,6 +256,15 @@ def _verify_body(
         ):
             assert attributes is not None
             attributes = attributes | {"angle"}
+        if op.name == "qreg.phase" and "angle" in op.attributes:
+            angle = op.attributes["angle"]
+            if type(angle) is not float or not math.isfinite(angle):
+                _fail("register.phase", "phase angle must be a finite float", op)
+            attributes = (
+                frozenset({"angle", "callee"})
+                if len(op.operands) > 1
+                else frozenset({"angle"})
+            )
         if attributes is None or set(op.attributes) != attributes or op.regions:
             _fail(
                 "register.operation", "unsupported register operation or attributes", op
@@ -314,6 +323,12 @@ def _verify_body(
                 _fail(
                     "register.effect", "operation must produce one quantum effect", op
                 )
+            if not operands and op.name == "qreg.phase" and "angle" in op.attributes:
+                effect = op.results[0]
+                if effect.id in known:
+                    _fail("register.ssa", "duplicate register/effect definition", op)
+                known[effect.id] = effect
+                continue
             if not operands:
                 _fail(
                     "register.signature",

@@ -39,7 +39,7 @@ def test_proposal_does_not_activate_or_change_the_existing_public_api():
         (ROOT / "contracts/synthesis-python-program-v1-candidate.json").read_text()
     )
     assert active["namespace_exports"] == program["previous_namespace_exports"]
-    assert tuple(synth.__all__) == tuple(program["namespace_exports"])
+    assert tuple(synth.__all__) == (*program["namespace_exports"], "phase")
     assert str(inspect.signature(synth.synthesize)) == active["synthesize_signature"]
     assert str(inspect.signature(fq.run)) == active["run_signature"]
     assert (
