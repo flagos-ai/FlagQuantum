@@ -1,0 +1,44 @@
+{
+  "adopted": false,
+  "artifacts": {
+    "after": {
+      "file": "pf01-runtime-after.json.gz",
+      "sha256": "e78d5798ac6216069cfef0216e1e0fdc1cadccab3684a6c65a4224922bf9061b",
+      "source_revision": "c44d7a7807f553786a53308e3d8ebbf2ebbe5b95"
+    },
+    "before": {
+      "file": "pf01-runtime-before.json.gz",
+      "sha256": "e745fa80eb43e417b9fcb3e819213ca03951b1c6d1dc0157b301ee5ae9094d94",
+      "source_revision": "92ad9bf6de0a644cde81423ed601d5a0475695c4"
+    },
+    "comparison": {
+      "file": "pf01-runtime-comparison.json",
+      "sha256": "dfa8a5cc57824095073aca35befb6919640f4b0b649155fbd7d2e2b705ca9163"
+    },
+    "confirm-after": {
+      "file": "pf01-runtime-confirm-after.json.gz",
+      "sha256": "27086be014ee859074fa1b8a85c839fe15cad8440c7f0d542b8591825d365f81",
+      "source_revision": "c44d7a7807f553786a53308e3d8ebbf2ebbe5b95"
+    },
+    "confirm-before": {
+      "file": "pf01-runtime-confirm-before.json.gz",
+      "sha256": "f005a5d1b94e8711e947482c00b4d0e7c14baf688c2d68d7f7609238562bfb53",
+      "source_revision": "92ad9bf6de0a644cde81423ed601d5a0475695c4"
+    },
+    "confirm-comparison": {
+      "file": "pf01-runtime-confirm-comparison.json",
+      "sha256": "11921bb24ae84fffc5c86f264cf3c0bccbde6bcd1330e0867e46d73837fb491a"
+    }
+  },
+  "before_revision": "92ad9bf6de0a644cde81423ed601d5a0475695c4",
+  "confirmation_configurations": 1,
+  "confirmation_successes_per_side": 9,
+  "experimental_revision": "c44d7a7807f553786a53308e3d8ebbf2ebbe5b95",
+  "failures_discarded": 0,
+  "primary_configurations": 10,
+  "primary_expected_refusals_per_side": 9,
+  "primary_successes_per_side": 81,
+  "reason": "No E0 group met review line; sole qualifying primary E1 basis group (11.25%,38.78ms) fell below 10% in independent confirmation (6.54%,21.52ms). No confirmed RSS benefit. Constructor count reduction alone is insufficient.",
+  "reversion_revision": "d40336f50ffd3f099ffe09ed4638bb7c1a450c49",
+  "scope": "PF-01 Runtime materialization audit; experimental fast path NOT adopted; final production package equals merged #1023"
+}
