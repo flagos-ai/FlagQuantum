@@ -1,0 +1,13 @@
+{
+  "schema": "flagquantum.synthesis_python_pair_gates_admission",
+  "version": "1.0",
+  "namespace": "flagquantum.synth",
+  "signatures": {
+    "CX": "(control: 'QBit', target: 'QBit', /) -> 'None'",
+    "SWAP": "(first: 'QBit', second: 'QBit', /) -> 'None'",
+    "CRX": "(angle: 'float', control: 'QBit', target: 'QBit', /) -> 'None'"
+  },
+  "authorization_record": "docs/api-changes/FQ-SYNTH-PYTHON-PAIR-GATES-20261103.md",
+  "implementation_authorized": true,
+  "release_authorized": false
+}
