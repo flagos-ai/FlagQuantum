@@ -389,20 +389,22 @@ class Instruction:
             name in ("selected_majorana_fermion", "select_pauli_lcu")
             and self.matrix is None
         ):
-            widths = tuple(
-                self.params.get(key)
-                for key in ("control_width", "selection_width", "target_width")
-            )
+            control_width = self.params.get("control_width")
+            selection_width = self.params.get("selection_width")
+            target_width = self.params.get("target_width")
             if (
-                any(type(width) is not int or width < 0 for width in widths)
-                or sum(widths) != len(self.wires)
-                or widths[2] == 0
+                type(control_width) is not int
+                or type(selection_width) is not int
+                or type(target_width) is not int
+                or control_width < 0
+                or selection_width < 0
+                or target_width <= 0
+                or control_width + selection_width + target_width != len(self.wires)
                 or len(set(self.wires)) != len(self.wires)
                 or is_channel
                 or is_dynamic
             ):
                 raise IRValidationError(f"invalid {name} operands")
-            control_width, selection_width, target_width = widths
             if name == "selected_majorana_fermion":
                 if (target_width - 1).bit_length() > selection_width or self.params.get(
                     "target_gate"
