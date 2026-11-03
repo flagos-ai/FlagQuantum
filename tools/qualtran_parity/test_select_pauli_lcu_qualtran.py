@@ -7,6 +7,7 @@ import torch
 
 import flagquantum as fq
 from flagquantum.algorithms.primitives.multiplexers import SelectPauliLCU
+from flagquantum.compiler.deferred_operations import lower_select_pauli_lcu_to_gates
 
 
 @pytest.mark.parametrize("control_val", [None, 0, 1])
@@ -68,3 +69,18 @@ def test_select_pauli_lcu_qualtran_parity(control_val: int | None) -> None:
     np.testing.assert_allclose(
         circuit.state().numpy().reshape(-1), expected[:, 0], atol=1e-12, rtol=0
     )
+
+    instruction = circuit.to_ir().instructions[0]
+    lowered = lower_select_pauli_lcu_to_gates(instruction)
+    workspace = tuple(range(width, lowered.n_qubits))
+    padded = np.zeros((state.size, 2 ** len(workspace)), dtype=np.complex128)
+    padded[:, 0] = state
+    gates = fq.Circuit(
+        lowered.n_qubits,
+        dtype=torch.complex128,
+        inputs=torch.from_numpy(padded.ravel()),
+    )
+    gates.compose(lowered, qubits=(*instruction.wires, *workspace))
+    observed = gates.state().numpy().reshape(padded.shape)
+    np.testing.assert_allclose(observed[:, 0], expected[:, 0], atol=1e-12, rtol=0)
+    np.testing.assert_allclose(observed[:, 1:], 0, atol=1e-12, rtol=0)
