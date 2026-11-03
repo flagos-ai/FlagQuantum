@@ -32,8 +32,12 @@ def draw_paper_circuit(
         raise ValueError("Provide wires, gates, and a positive figure width.")
     for column, (label, target, controls) in enumerate(gates, 1):
         wires = [target, *(wire for wire, _ in controls)]
-        if any(wire not in wire_range for wire in wires) or len(set(wires)) != len(wires):
-            raise ValueError("Each gate needs distinct, valid target and control wires.")
+        if any(wire not in wire_range for wire in wires) or len(set(wires)) != len(
+            wires
+        ):
+            raise ValueError(
+                "Each gate needs distinct, valid target and control wires."
+            )
         if target in measured or any(bit not in (0, 1) for _, bit in controls):
             raise ValueError("Invalid measured target or control bit.")
         if label == "measure":
@@ -46,44 +50,122 @@ def draw_paper_circuit(
 
     end = len(gates) + 0.65
     ink = "#18232d"
-    fig = plt.figure(figsize=(width_mm / 25.4, width_mm / 25.4 *
-                              (wire_count + 0.5) / (end + 1.9)))
+    fig = plt.figure(
+        figsize=(width_mm / 25.4, width_mm / 25.4 * (wire_count + 0.5) / (end + 1.9))
+    )
     ax = fig.add_axes((0, 0, 1, 1))
-    ax.set(xlim=(-0.95, end + 0.95), ylim=(wire_count - 0.25, -0.75),
-           aspect="equal")
+    ax.set(xlim=(-0.95, end + 0.95), ylim=(wire_count - 0.25, -0.75), aspect="equal")
     ax.axis("off")
     for wire in wire_range:
         split = measured.get(wire, end)
         ax.plot((0.48, split), (wire, wire), color=ink, lw=0.8, ls="-", marker="")
         if wire in measured:
             for offset in (-0.052, 0.052):
-                ax.plot((split, end), (wire + offset,) * 2, color=ink, lw=0.65, ls="-", marker="")
+                ax.plot(
+                    (split, end),
+                    (wire + offset,) * 2,
+                    color=ink,
+                    lw=0.65,
+                    ls="-",
+                    marker="",
+                )
     for column, (label, target, controls) in enumerate(gates, 1):
         for wire, bit in controls:
             classical = measured.get(wire, column) < column
             offsets = (-0.052, 0.052) if classical else (0,)
             for offset in offsets:
-                ax.plot((column + offset,) * 2, (wire, target), color=ink, lw=0.75, ls="-", marker="")
-            ax.add_patch(Circle((column, wire), 0.09, facecolor=ink if bit else "white",
-                                edgecolor=ink, lw=0.75, zorder=4))
+                ax.plot(
+                    (column + offset,) * 2,
+                    (wire, target),
+                    color=ink,
+                    lw=0.75,
+                    ls="-",
+                    marker="",
+                )
+            ax.add_patch(
+                Circle(
+                    (column, wire),
+                    0.09,
+                    facecolor=ink if bit else "white",
+                    edgecolor=ink,
+                    lw=0.75,
+                    zorder=4,
+                )
+            )
         if label == "X" and controls:
-            ax.add_patch(Circle((column, target), 0.21, facecolor="white",
-                                edgecolor=ink, lw=0.8, zorder=3))
-            ax.plot((column - 0.21, column + 0.21), (target,) * 2,
-                    color=ink, lw=0.8, ls="-", marker="", zorder=4)
-            ax.plot((column,) * 2, (target - 0.21, target + 0.21),
-                    color=ink, lw=0.8, ls="-", marker="", zorder=4)
+            ax.add_patch(
+                Circle(
+                    (column, target),
+                    0.21,
+                    facecolor="white",
+                    edgecolor=ink,
+                    lw=0.8,
+                    zorder=3,
+                )
+            )
+            ax.plot(
+                (column - 0.21, column + 0.21),
+                (target,) * 2,
+                color=ink,
+                lw=0.8,
+                ls="-",
+                marker="",
+                zorder=4,
+            )
+            ax.plot(
+                (column,) * 2,
+                (target - 0.21, target + 0.21),
+                color=ink,
+                lw=0.8,
+                ls="-",
+                marker="",
+                zorder=4,
+            )
             continue
-        ax.add_patch(Rectangle((column - 0.41, target - 0.31), 0.82, 0.62,
-                               facecolor="white", edgecolor=ink, lw=0.8, zorder=3))
+        ax.add_patch(
+            Rectangle(
+                (column - 0.41, target - 0.31),
+                0.82,
+                0.62,
+                facecolor="white",
+                edgecolor=ink,
+                lw=0.8,
+                zorder=3,
+            )
+        )
         if label == "measure":
-            ax.add_patch(Arc((column, target + 0.16), 0.55, 0.34,
-                             theta1=180, theta2=360, color=ink, lw=0.8, zorder=4))
-            ax.plot((column, column + 0.16), (target + 0.16, target - 0.19),
-                    color=ink, lw=0.8, ls="-", marker="", zorder=4)
+            ax.add_patch(
+                Arc(
+                    (column, target + 0.16),
+                    0.55,
+                    0.34,
+                    theta1=180,
+                    theta2=360,
+                    color=ink,
+                    lw=0.8,
+                    zorder=4,
+                )
+            )
+            ax.plot(
+                (column, column + 0.16),
+                (target + 0.16, target - 0.19),
+                color=ink,
+                lw=0.8,
+                ls="-",
+                marker="",
+                zorder=4,
+            )
         else:
-            ax.text(column, target, label, ha="center", va="center",
-                    fontsize=7, color=ink, zorder=4)
+            ax.text(
+                column,
+                target,
+                label,
+                ha="center",
+                va="center",
+                fontsize=7,
+                color=ink,
+                zorder=4,
+            )
     for labels, x, align in ((inputs, 0.25, "right"), (outputs, end + 0.15, "left")):
         for wire, label in (labels or {}).items():
             ax.text(x, wire, label, ha=align, va="center", fontsize=7, color=ink)
@@ -102,7 +184,9 @@ def _circuit_columns(operations: Sequence[dict[str, Any]]) -> list[CircuitGate]:
         wires = op["qubits"]
         metadata = op["metadata"]
         if op["params"] or metadata.get("condition_clauses"):
-            raise ValidationError("Paper circuit drawing does not support this instruction.")
+            raise ValidationError(
+                "Paper circuit drawing does not support this instruction."
+            )
         if name == "measure":
             measured_bits[metadata["classical_bit"]] = wires[0]
         pattern = decode_controlled_pauli(name)
@@ -117,15 +201,21 @@ def _circuit_columns(operations: Sequence[dict[str, Any]]) -> list[CircuitGate]:
             controls = tuple(zip(wires[:-1], map(int, bits), strict=True))
         elif len(wires) == 1 and op["matrix"] is None:
             controls = ()
-            label = {"sd": r"$S^\dagger$", "sdg": r"$S^\dagger$", "measure": "measure"}.get(
-                name, name.upper()
-            )
+            label = {
+                "sd": r"$S^\dagger$",
+                "sdg": r"$S^\dagger$",
+                "measure": "measure",
+            }.get(name, name.upper())
         else:
             raise ValidationError(f"Paper circuit drawing does not support {name!r}.")
         try:
-            classical = tuple((measured_bits[bit], value)
-                              for bit, value in metadata.get("conditions", ()))
+            classical = tuple(
+                (measured_bits[bit], value)
+                for bit, value in metadata.get("conditions", ())
+            )
         except KeyError as error:
-            raise ValidationError("Classical control has no preceding measurement.") from error
+            raise ValidationError(
+                "Classical control has no preceding measurement."
+            ) from error
         columns.append((label, wires[-1], classical + controls))
     return columns
