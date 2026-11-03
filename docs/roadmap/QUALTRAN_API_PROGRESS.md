@@ -87,3 +87,22 @@ Cirq decomposes the Qualtran SELECT while retaining explicit Toffolis if
 present. The script prints each stage's emitted operations. These are
 decomposition-level counts. Comparing T costs requires a common synthesis
 policy for rotations, Toffolis, and measurement-based uncomputation.
+
+### Native PREPARE and walk comparison
+
+Run `python -m pytest -qs tools/qualtran_parity/test_native_pauli_lcu_walk.py`
+with the same pinned reference environment. For the same signed Hamiltonian,
+Qualtran's native alias PREPARE uses a two-bit address and coefficient
+precision 0.17. Its native LCU block differs from H/2 by 0.04714045 in
+operator norm. FlagQuantum's example uses a three-bit address to exercise
+its SELECT workspace and reports a maximum element error of 2.9e-8.
+
+With this alias PREPARE, the v0.7.0 QubitizationWalkOperator reflects on
+the index alone. Its second spectral moment differs by 0.11111111 from the
+moment predicted by its own encoded block. Composing the same native LCU
+block with a Qualtran zero reflection on index plus alias junk gives the
+predicted first three moments to 1e-10. That reference uses 16 qubits and
+emits 5673 Cirq operations, including the decomposition's bookkeeping and
+feedback. The FlagQuantum example reports five qubits and eleven explicit
+Toffolis. Different index widths, preparation precision, and decomposition
+levels make these counts descriptive rather than a common Clifford+T cost.
