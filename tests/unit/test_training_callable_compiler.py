@@ -160,6 +160,20 @@ def test_functional_objectives_are_admitted_without_executing_them(objective):
     torch.testing.assert_close(compiled(value), objective(value))
 
 
+def test_builtin_sum_is_still_rejected():
+    diagnostics = {}
+
+    def objective(value):
+        return sum(value)
+
+    compiled = compile_training_callable(
+        objective, backend="eager", diagnostics=diagnostics, objective=objective
+    )
+
+    assert compiled is objective
+    assert diagnostics["reason"] == "objective_python_call_not_certified"
+
+
 def test_stateful_objective_is_eager_and_called_once_per_actual_step():
     calls = []
     diagnostics = {}
