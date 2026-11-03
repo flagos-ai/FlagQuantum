@@ -60,7 +60,7 @@ class ArithmeticCandidate:
     normalized_cost: tuple[int, int, int] | None = None
     normalization_errors: tuple[Diagnostic, ...] = ()
     baseline_errors: tuple[Diagnostic, ...] = ()
-    implementation: Literal["conservative", "arithmetic"] = "conservative"
+    implementation: Literal["conservative", "arithmetic", "boolean"] = "conservative"
     implementation_rules: tuple[tuple[ValueId, str], ...] = ()
     conservative: ArithmeticCandidate | None = field(default=None, repr=False)
     implementation_cost: tuple[int, int, int] | None = None
@@ -95,7 +95,11 @@ def adjoint_value_candidate(candidate: ArithmeticCandidate) -> ArithmeticCandida
             instructions=tuple(reversed(candidate.circuit.instructions)),
         ),
         events=events,
-        recomputations=sum(count - 1 for count in cleans.values()),
+        recomputations=(
+            0
+            if candidate.implementation == "boolean"
+            else sum(count - 1 for count in cleans.values())
+        ),
         conservative=(
             adjoint_value_candidate(candidate.conservative)
             if candidate.conservative is not None
