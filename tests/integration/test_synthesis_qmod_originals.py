@@ -34,6 +34,7 @@ CORPUS = Path(__file__).resolve().parents[1] / "fixtures/classiq_qmod"
     ],
 )
 @pytest.mark.parametrize("input_kind", ["file", "text"])
+@pytest.mark.usefixtures("legacy_register_selection")
 def test_unmodified_originals_at_actual_dimensions(
     filename, widths, total, expected, input_kind
 ):

@@ -72,6 +72,7 @@ def test_larger_case_is_static_and_does_not_execute_a_quantum_state(
     assert row.verification.maximum_amplitude_error is None
 
 
+@pytest.mark.usefixtures("legacy_register_selection")
 def test_qmod_manual_and_python_costs_include_preparation_and_target_rewrites() -> None:
     rows = sentinel_targets()
     assert len(rows) == 9
@@ -168,4 +169,4 @@ def test_primary_qfunc_example_prepares_composes_and_improves_frozen_costs() -> 
             resource.workspace_qubits,
             resource.operations,
             resource.depth,
-        ) == (16, 8, 81, 59)
+        ) == (9, 1, 14, 9)

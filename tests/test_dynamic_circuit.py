@@ -16,6 +16,10 @@ from flagquantum.compiler import CouplingMap
 from flagquantum.core.ir import CircuitIR, Instruction
 from flagquantum.deployment import CloudBackendProfile
 from flagquantum.dynamic import DynamicCircuit
+from flagquantum.experimental.controlled_pauli import (
+    controlled_pauli,
+    decode_controlled_pauli,
+)
 from flagquantum.runtime.dynamic import (
     create_dynamic_deployment_package,
     deploy_dynamic_circuit,
@@ -40,6 +44,35 @@ def test_mid_circuit_measurement_collapses_and_controls_a_later_gate() -> None:
     assert torch.equal(result.samples[:, 1], result.classical_bits[:, 0])
     assert set(result.classical_bits[:, 0].tolist()) == {0, 1}
     assert result.execution_semantics == "local_statevector_trajectory"
+
+
+def test_controlled_pauli_executes_with_classical_feedback() -> None:
+    circuit = DynamicCircuit(3)
+    circuit.x(0)
+    circuit.measure(0, classical_bit=0)
+    name, matrix = controlled_pauli("0", "X")
+    circuit.conditional(name, (1, 2), classical_bit=0, matrix=matrix)
+    result = fq.experimental.dynamic.run_dynamic(circuit, shots=4, seed=7)
+
+    assert decode_controlled_pauli(name) == ("0", "X")
+    assert result.samples.tolist() == [[1, 0, 1]] * 4
+
+
+def test_controlled_z_changes_phase_only_for_matching_control_qubits() -> None:
+    name, matrix = controlled_pauli("10", "Z")
+    expected = torch.eye(8, dtype=torch.complex64)
+    expected[5, 5] = -1
+
+    assert decode_controlled_pauli(name) == ("10", "Z")
+    torch.testing.assert_close(matrix, expected)
+
+
+@pytest.mark.parametrize(("bits", "pauli"), [("", "X"), ("2", "Z"), ("1", "Y")])
+def test_controlled_pauli_rejects_invalid_patterns_and_gates(
+    bits: str, pauli: str
+) -> None:
+    with pytest.raises(ValueError, match="nonempty binary pattern"):
+        controlled_pauli(bits, pauli)
 
 
 def test_reset_returns_measured_qubit_to_zero() -> None:

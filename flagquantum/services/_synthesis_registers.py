@@ -50,6 +50,7 @@ def synthesize_registers(
         budget=budget,
         target=target,
         objective=objective,
+        include_boolean=source_format in {"python", "qmod"},
     )
     report: dict[str, object] = {
         "function": program.name,

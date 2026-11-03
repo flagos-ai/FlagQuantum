@@ -216,6 +216,10 @@ These examples do not use that alias:
   eight point records and a completion record only on full success. The JSON
   lines are example output, not a persistence API. Wilson intervals are
   marginal per point; counts do not establish suppression or a threshold.
+- [`qec/paired_surface_decoder_outcomes.py`](qec/paired_surface_decoder_outcomes.py)
+  compares native matching and PyMatching on the same 35 distance-three Z
+  memory shots. It uses the existing Stim and PyMatching extras on CPU and
+  reports four paired outcome counts after all three batches complete.
 - [`qec/memory_experiment.py`](qec/memory_experiment.py) composes the approved
   fixed-shot experiment through its canonical QEC execution import. It uses one
   original source and exact final partial batches with five default decoders;

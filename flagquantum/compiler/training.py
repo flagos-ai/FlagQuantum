@@ -75,7 +75,13 @@ def _objective_exclusion(objective: Callable[..., Any]) -> str:
         return "opaque_objective"
     if objective.__code__.co_flags & (inspect.CO_GENERATOR | inspect.CO_COROUTINE):
         return "objective_control_flow"
+    global_names: set[str] = set()
+    attribute_names: set[str] = set()
     for instruction in dis.get_instructions(objective):
+        if instruction.opname in {"LOAD_GLOBAL", "LOAD_NAME"}:
+            global_names.add(str(instruction.argval))
+        elif instruction.opname in {"LOAD_ATTR", "LOAD_METHOD"}:
+            attribute_names.add(str(instruction.argval))
         if instruction.opname.startswith(
             ("DELETE_", "IMPORT_", "JUMP", "POP_JUMP", "INPLACE_")
         ) or instruction.opname in {
@@ -97,9 +103,14 @@ def _objective_exclusion(objective: Callable[..., Any]) -> str:
         if instruction.opname == "BINARY_OP" and instruction.argrepr.endswith("="):
             return "objective_inplace_operation"
     captured = inspect.getclosurevars(objective)
+    # getclosurevars may include attribute names when resolving globals and builtins.
+    global_values = {
+        name: value for name, value in captured.globals.items() if name in global_names
+    }
+    builtin_names = global_names.intersection(captured.builtins)
     if any(
         not _safe_objective_capture(value)
-        for value in (*captured.globals.values(), *captured.nonlocals.values())
+        for value in (*global_values.values(), *captured.nonlocals.values())
     ):
         return "objective_state_not_certified"
     if any(
@@ -110,15 +121,15 @@ def _objective_exclusion(objective: Callable[..., Any]) -> str:
         )
     ):
         return "objective_defaults_not_certified"
-    if set(captured.builtins) - {"abs", "len"}:
+    if builtin_names - {"abs", "len"}:
         return "objective_python_call_not_certified"
     if any(
         isinstance(value, tuple) and "out" in value
         for value in objective.__code__.co_consts
     ):
         return "objective_out_mutation"
-    known = set(captured.globals) | set(captured.nonlocals) | set(captured.builtins)
-    for name in set(objective.__code__.co_names) - known:
+    known = set(global_values) | set(captured.nonlocals) | builtin_names
+    for name in (set(objective.__code__.co_names) - known) | attribute_names:
         if name in {"shape", "ndim", "dtype", "device"} or isinstance(
             getattr(torch, name, None), torch.dtype
         ):

@@ -49,6 +49,7 @@ To run the optional test from a FlagQuantum development environment:
 ```sh
 python -m pip install 'qualtran==0.7.0'
 python -m pytest -q tests/unit/algorithms/primitives/multiplexers
+python -m pytest -q tools/qualtran_parity
 ```
 
 ## SelectPauliLCU

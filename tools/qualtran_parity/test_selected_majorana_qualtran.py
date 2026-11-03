@@ -2,21 +2,18 @@
 
 from importlib.metadata import version
 
-import numpy as np
 import pytest
 import torch
 
 from flagquantum import Circuit
 from flagquantum.algorithms.primitives.multiplexers import SelectedMajoranaFermion
 
-pytestmark = pytest.mark.unit
-
 
 @pytest.mark.parametrize("target_gate", ["X", "Y", "Z"])
 def test_qualtran_coherent_majorana_parity(target_gate: str) -> None:
-    pytest.importorskip("qualtran")
     assert version("qualtran") == "0.7.0", "Install qualtran==0.7.0 for parity tests."
-    import cirq
+    np = pytest.importorskip("numpy")
+    cirq = pytest.importorskip("cirq")
     from qualtran.bloqs.multiplexers.selected_majorana_fermion import (
         SelectedMajoranaFermion as QualtranMajorana,
     )

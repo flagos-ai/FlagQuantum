@@ -2533,3 +2533,30 @@ def test_owned_zero_state_has_an_environment_rollback(monkeypatch) -> None:
     circuit.state(refresh=True)
 
     assert circuit._initial_state_workspace is not None
+
+
+@pytest.mark.parametrize("dtype", (torch.complex64, torch.complex128))
+def test_batched_disjoint_one_wire_regions_preserve_state_and_gradients(
+    monkeypatch: pytest.MonkeyPatch, dtype: torch.dtype
+) -> None:
+    monkeypatch.setenv("FQ_CPU_NATIVE_PARAMETERIZED_ONE_QUBIT_LAYER", "0")
+    generator = torch.Generator().manual_seed(1784)
+    initial = torch.randn((64, 16), dtype=dtype, generator=generator)
+    weights = torch.randn((64, 16), dtype=dtype, generator=generator)
+    angles = torch.randn((64, 4), dtype=initial.real.dtype, generator=generator)
+    results = []
+    for enabled in ("0", "1"):
+        monkeypatch.setenv("FQ_CPU_DISJOINT_SINGLE_WIRE_FUSION", enabled)
+        state = initial.clone().requires_grad_()
+        parameters = angles.clone().requires_grad_()
+        circuit = Circuit(4, dtype=dtype, inputs=state)
+        for wire in range(4):
+            circuit.ry(wire, theta=parameters[:, wire])
+        value = circuit.state(refresh=True)
+        if enabled == "1":
+            assert (1, 1, 1, 1) in _disjoint_dense_region_shapes(circuit)
+        gradients = torch.autograd.grad(
+            (value * weights.conj()).real.sum(), (state, parameters)
+        )
+        results.append((value, gradients))
+    torch.testing.assert_close(*results)

@@ -28,7 +28,9 @@ CASES = (
 ROOT = Path(__file__).resolve().parents[3]
 
 
-def worker(case: int, kind: str, output: Path) -> None:
+def worker(
+    case: int, kind: str, output: Path, *, measure_invalidation: bool = False
+) -> None:
     imported = time.perf_counter()
     import jax
     import jax.numpy as jnp
@@ -139,6 +141,7 @@ def worker(case: int, kind: str, output: Path) -> None:
             record["updates"].append(
                 {
                     "loss": float(value),
+                    "elapsed_seconds": now - started,
                     "parameters": np.asarray(get(state)).tolist(),
                     "gradients": np.asarray(gradient).tolist(),
                 }
@@ -169,6 +172,25 @@ def worker(case: int, kind: str, output: Path) -> None:
         record["recovery_parameter_max_error"] = error
         if error > 1e-10:
             raise AssertionError("checkpoint replay differs")
+        if measure_invalidation:
+
+            def probe(index, current, value):
+                begin = time.perf_counter()
+                _, _, result = step(index, current, value)
+                get(result).block_until_ready()
+                return result, time.perf_counter() - begin
+
+            changed = base[:1] if batch > 1 else jnp.tile(base, (2, 1))
+            current, warm = probe(60, state, base)
+            current, cold = probe(61, current, changed)
+            _, repeated = probe(62, current, changed)
+            record["shape_probe"] = {
+                "batch_before": batch,
+                "batch_after": changed.shape[0],
+                "same_shape": {"seconds": warm},
+                "first_changed_shape": {"seconds": cold},
+                "repeated_changed_shape": {"seconds": repeated},
+            }
         record["status"] = "passed"
     except Exception:
         record.update(status="failed", error=traceback.format_exc())

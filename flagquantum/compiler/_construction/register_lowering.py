@@ -9,12 +9,15 @@ precondition, not a claim inferred from an arbitrary external state.
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, replace
 from types import MappingProxyType
+from typing import Literal
 
 from ...core.ir import CircuitIR, Instruction
 from .._hybrid.model import Block, HybridProgram, Operation, Region, Value, ValueId
+from .boolean_lowering import BooleanCandidateError, lower_boolean_value
 from .lowering import (
     ArithmeticCandidate,
     Schedule,
+    ScheduleEvent,
     _copy,
     adjoint_value_candidate,
     schedule_arithmetic,
@@ -48,6 +51,7 @@ def schedule_register_program(
     n_qubits: int = 256,
     max_operations: int = 100_000,
     scheduling: Schedule = "retain",
+    boolean_values: bool = False,
 ) -> RegisterCandidate:
     """Lower verified fresh outputs without executing or inspecting any state."""
     _positive_integer(max_operations, "max_operations")
@@ -64,6 +68,7 @@ def schedule_register_program(
     instructions: list[Instruction] = []
     segments: list[ArithmeticCandidate] = []
     computed: dict[ValueId, ArithmeticCandidate] = {}
+    used_boolean = False
     symbols = {f.name: f for f in functions}
     for ordinal, op in enumerate(program.body.blocks[0].operations):
         gates: tuple[Instruction, ...] = ()
@@ -130,24 +135,66 @@ def schedule_register_program(
                 _fail(
                     "lowering.operations", "whole program exceeds operation budget", op
                 )
-            segment = schedule_arithmetic(
-                (*functions, wrapper),
-                {new.id: bindings[old.id] for old, new in replacements.items()},
-                # Value calls bind the fresh destination's low-weight slice;
-                # phase calls have no externally bound value-result storage.
-                (
-                    ()
-                    if phase
-                    else bindings[op.operands[1].id][-_width(returned.type, n_qubits) :]
-                ),
-                entry=name,
-                n_qubits=n_qubits,
-                workspace=tuple(range(position, n_qubits)),
-                workspace_state="fresh_zero",
-                max_operations=remaining,
-                scheduling=scheduling,
-                output_mode="phase" if phase else "value",
+            segment_functions = (*functions, wrapper)
+            inputs = {new.id: bindings[old.id] for old, new in replacements.items()}
+            output = (
+                ()
+                if phase
+                else bindings[op.operands[1].id][-_width(returned.type, n_qubits) :]
             )
+            workspace = tuple(range(position, n_qubits))
+            if boolean_values and not phase:
+                boolean = lower_boolean_value(
+                    segment_functions,
+                    inputs,
+                    output,
+                    entry=name,
+                    n_qubits=n_qubits,
+                    workspace=workspace,
+                    workspace_state="fresh_zero",
+                    max_operations=remaining,
+                )
+                # Each cubic write has exactly one compute/write/uncompute triple.
+                trace: list[ScheduleEvent] = []
+                for gate in boolean.circuit.instructions:
+                    if boolean.workspace and gate.wires[-1:] == boolean.workspace:
+                        action: Literal["compute", "uncompute"] = (
+                            "uncompute" if len(trace) % 2 else "compute"
+                        )
+                        trace.append(
+                            ScheduleEvent(
+                                action,
+                                boolean.source_result,
+                                (),
+                                boolean.workspace,
+                                1,
+                                1,
+                            )
+                        )
+                segment = ArithmeticCandidate(
+                    boolean.circuit,
+                    scheduling,
+                    boolean.lifetimes,
+                    tuple(trace),
+                    len(boolean.workspace),
+                    0,
+                    implementation="boolean",
+                    implementation_rules=((boolean.source_result, "bounded_anf_xor"),),
+                )
+                used_boolean = True
+            else:
+                segment = schedule_arithmetic(
+                    segment_functions,
+                    inputs,
+                    output,
+                    entry=name,
+                    n_qubits=n_qubits,
+                    workspace=workspace,
+                    workspace_state="fresh_zero",
+                    max_operations=remaining,
+                    scheduling=scheduling,
+                    output_mode="phase" if phase else "value",
+                )
             segment = replace(
                 segment,
                 circuit=replace(
@@ -161,6 +208,8 @@ def schedule_register_program(
         if len(instructions) + len(gates) > max_operations:
             _fail("lowering.operations", "whole program exceeds operation budget", op)
         instructions.extend(gates)
+    if boolean_values and not used_boolean:
+        raise BooleanCandidateError("unsupported: no unsigned value segment")
     return RegisterCandidate(
         CircuitIR(n_qubits, tuple(instructions), dtype="complex128"),
         scheduling,
