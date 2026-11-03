@@ -1,8 +1,8 @@
-name: Attach MetaX core dependencies
+name: Attach host-local core dependencies
 description: Reuse a host-local read-only core environment with a job-private install target
 outputs:
   attached:
-    description: Whether an exact compatible MetaX dependency seed was attached
+    description: Whether an exact compatible dependency seed was attached
     value: ${{ steps.attach.outputs.attached }}
 runs:
   using: composite
@@ -10,17 +10,32 @@ runs:
     - id: attach
       shell: bash
       run: |
-        if [[ "${RUNNER_ENVIRONMENT:-}" != self-hosted || ! "${FQ_MC550_SLOT:-}" =~ ^cpu[0-9]{2}$ ]]; then
+        if [[ "${RUNNER_ENVIRONMENT:-}" != self-hosted ]]; then
+          echo "attached=false" >> "$GITHUB_OUTPUT"
+          exit 0
+        fi
+        if [[ "${FQ_MC550_SLOT:-}" =~ ^cpu[0-9]{2}$ ]]; then
+          pool=MetaX
+          seed_root=/liuwei01/flagquantum-runners/tools/ci-envs
+        elif [[ "${RUNNER_NAME:-}" =~ ^a800-17[12]-flagquantum-cpu-[1-8]$ ]]; then
+          pool=A800
+          seed_root=/opt/flagquantum-runners/tools/ci-envs-ro
+        else
           echo "attached=false" >> "$GITHUB_OUTPUT"
           exit 0
         fi
 
         python_version="$(python -c 'import platform; print(platform.python_version())')"
         project_hash="$(sha256sum pyproject.toml | cut -d' ' -f1)"
-        seed="/liuwei01/flagquantum-runners/tools/ci-envs/core-$python_version/$project_hash"
+        seed="$seed_root/core-$python_version/$project_hash"
         python_minor="${python_version%.*}"
         packages="$seed/lib/python$python_minor/site-packages"
         if [[ ! -d "$packages" || ! -r "$seed/requirements.lock" || -w "$packages" ]]; then
+          echo "attached=false" >> "$GITHUB_OUTPUT"
+          exit 0
+        fi
+
+        if [[ "$pool" == A800 ]] && ! findmnt --mountpoint "$seed" -n -o OPTIONS | grep -Eq '(^|,)ro(,|$)'; then
           echo "attached=false" >> "$GITHUB_OUTPUT"
           exit 0
         fi
@@ -31,4 +46,4 @@ runs:
         echo "$job_venv/bin" >> "$GITHUB_PATH"
         echo "VIRTUAL_ENV=$job_venv" >> "$GITHUB_ENV"
         echo "attached=true" >> "$GITHUB_OUTPUT"
-        echo "Attached read-only MetaX core seed for Python $python_version ($project_hash)"
+        echo "Attached read-only $pool core seed for Python $python_version ($project_hash)"
