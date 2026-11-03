@@ -427,13 +427,6 @@ def _validate_plan_payload(
     payload: Mapping[str, Any], *, compiler_identity: Mapping[str, str]
 ) -> dict[str, Any]:
     """Validate a historical data snapshot without authorizing its execution."""
-    return _validated_plan_parts(payload, compiler_identity=compiler_identity)[0]
-
-
-def _validated_plan_parts(
-    payload: Mapping[str, Any], *, compiler_identity: Mapping[str, str]
-) -> tuple[dict[str, Any], CircuitIR | None, str | None]:
-    """Keep the decoded circuit and canonical text local to complete validation."""
     if not isinstance(payload, Mapping):
         raise TypeError("execution plan payload must be a mapping")
     values = dict(payload)
@@ -441,7 +434,7 @@ def _validated_plan_parts(
     if values["version"] in ("1.1", "1.2", "1.3"):
         from ._ising_plan import validate_ising_payload
 
-        return validate_ising_payload(values), None, None
+        return validate_ising_payload(values)
 
     program_payload = _require_mapping("program", values["program"])
     try:
@@ -483,13 +476,12 @@ def _validated_plan_parts(
         decision=decision,
         compiler_identity=compiler_identity,
     )
-    encoded = canonical_json(values)
-    normalized: object = json.loads(encoded)
+    normalized: object = json.loads(canonical_json(values))
     if not isinstance(normalized, dict):
         raise ExecutionPlanContractError(
             "unsupported_schema", "serialized ExecutionPlan must be a JSON object"
         )
-    return normalized, program, encoded
+    return normalized
 
 
 def validate_plan_environment(plan: ExecutionPlan) -> None:
@@ -532,16 +524,8 @@ def validate_plan_environment(plan: ExecutionPlan) -> None:
 
 
 def plan_program(plan: ExecutionPlan) -> CircuitIR:
-    normalized, program, encoded = _validated_plan_parts(
-        _payload(plan), compiler_identity=_compiler_identity()
-    )
-    if program is not None and plan._contract_payload_json == encoded:
-        return program
-    # Preserve canonical metadata ordering for noncanonical internal JSON and
-    # the existing native-plan refusal path. Never retain a circuit across calls.
-    del program, encoded
     return CircuitIR.from_dict(
-        _require_mapping("ExecutionPlan.program", normalized["program"])
+        _require_mapping("ExecutionPlan.program", plan_to_dict(plan)["program"])
     )
 
 
