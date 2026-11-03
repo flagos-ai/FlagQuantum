@@ -318,9 +318,14 @@ def test_cuda_public_train_keeps_eager_ownership_and_checkpoint_recovery(
             == "device_not_certified"
         )
         if step == 3:
-            model.save_checkpoint(
+            checkpoint = model.save_checkpoint(
                 tmp_path / "step3.pt", optimizer=optimizer, step=3, seed=11
             )
+            payload = torch.load(checkpoint, map_location="cpu", weights_only=True)
+            assert payload["version"] == "flagquantum.training_state.v2"
+            assert payload["ir_hash"] == execution.provenance["ir_hash"]
+            record["checkpoint_version"] = payload["version"]
+            record["checkpoint_ir_hash"] = payload["ir_hash"]
 
     try:
         result = fq.train(

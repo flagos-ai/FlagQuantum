@@ -506,6 +506,77 @@ def test_unobserved_eager_steps_preserve_consumed_ir_and_checkpoint_recovery(tmp
     )
 
 
+@pytest.mark.parametrize("kind", ("SGD", "Adam"))
+@pytest.mark.parametrize("grad", (False, True))
+def test_checkpoint_v2_recovers_dynamic_detached_bindings(tmp_path, kind, grad):
+    def workload(p, x):
+        return build(p, x).rx(0, p[0].detach() * x[:, 0])
+
+    def new_module():
+        return fq.Module(
+            workload,
+            2,
+            dtype=torch.float64,
+            init=torch.tensor([0.23, -0.31], dtype=torch.float64),
+        )
+
+    def features(index, requires_grad=grad):
+        return (
+            torch.tensor([[0.1], [0.3]], dtype=torch.float64) + index * 0.01
+        ).requires_grad_(requires_grad)
+
+    source = new_module()
+    optimizer_type = getattr(torch.optim, kind)
+    optimizer = optimizer_type(source.parameters(), lr=0.03)
+    checkpoint = tmp_path / "step3.pt"
+
+    def objective(value):
+        return value.square().mean()
+
+    def save(step, loss, execution):
+        if step == 3:
+            source.save_checkpoint(checkpoint, optimizer=optimizer, seed=11, step=step)
+            payload = torch.load(checkpoint, weights_only=True)
+            assert payload["version"] == "flagquantum.training_state.v2"
+            assert payload["ir_hash"] == execution.provenance["ir_hash"]
+            assert payload["ir_hash"] != payload["workload_signature"]
+
+    uninterrupted = fq.train(
+        source,
+        optimizer=optimizer,
+        objective=objective,
+        inputs=features,
+        steps=6,
+        callback=save,
+    )
+    target = new_module()
+    target_optimizer = optimizer_type(target.parameters(), lr=0.03)
+    parameter = target.parameters_tensor
+    # Prime with a different feature value and grad mask than the source.
+    target.execute(features(0, not grad))
+    receipt = target.load_checkpoint(checkpoint, optimizer=target_optimizer)
+    assert receipt["step"] == 3
+    assert target.parameters_tensor is parameter
+    replay = fq.train(
+        target,
+        optimizer=target_optimizer,
+        objective=objective,
+        inputs=lambda index: features(index + 3),
+        steps=3,
+    )
+    torch.testing.assert_close(replay.losses, uninterrupted.losses[3:], atol=0, rtol=0)
+    torch.testing.assert_close(
+        target.parameters_tensor, source.parameters_tensor, atol=0, rtol=0
+    )
+    torch.testing.assert_close(
+        target_optimizer.state_dict(), optimizer.state_dict(), atol=0, rtol=0
+    )
+    assert (
+        replay.last_execution.provenance["ir_hash"]
+        == uninterrupted.last_execution.provenance["ir_hash"]
+    )
+
+
 def test_execute_overrides_remain_observable_without_a_training_callback():
     class Observed(fq.Module):
         calls = 0
