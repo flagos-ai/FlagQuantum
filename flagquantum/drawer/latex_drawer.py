@@ -93,7 +93,10 @@ def _gate(instruction: Instruction) -> str:
             metadata.get(key)
             for key in ("is_channel", "is_dynamic", "inverse", "adjoint")
         )
-        or any(key in metadata for key in ("condition", "conditions", "condition_clauses", "controls"))
+        or any(
+            key in metadata
+            for key in ("condition", "conditions", "condition_clauses", "controls")
+        )
     ):
         raise ValueError(
             f"LaTeX drawing does not support gate {name!r} with these semantics"
@@ -208,26 +211,36 @@ def draw_latex(
     ir = _as_ir(program)
     if comparison is not None and layout is None:
         raise ValueError("A comparison requires a layout for the first circuit.")
-    if layout is not None or inputs is not None or outputs is not None or any(
-        instruction.name == "measure"
-        or instruction.metadata.get("conditions")
-        or instruction.metadata.get("quantum_controls")
-        for instruction in ir.instructions
+    if (
+        layout is not None
+        or inputs is not None
+        or outputs is not None
+        or any(
+            instruction.name == "measure"
+            or instruction.metadata.get("conditions")
+            or instruction.metadata.get("quantum_controls")
+            for instruction in ir.instructions
+        )
     ):
         from .paper_tex import paper_circuit_tex
 
         if ir.observables or ir.measurements:
-            raise ValueError("Paper layout requires readout to be represented as circuit instructions.")
+            raise ValueError(
+                "Paper layout requires readout to be represented as circuit instructions."
+            )
         if layout is None:
             body = paper_circuit_tex(ir, inputs or {}, outputs or {})
         else:
             from .register_tex import register_circuit_tex
 
-            body = register_circuit_tex(ir, layout, comparison, wire_spacing=wire_spacing)
+            body = register_circuit_tex(
+                ir, layout, comparison, wire_spacing=wire_spacing
+            )
         source = (
             "\\documentclass[border=2pt]{standalone}\n"
             "\\usepackage{tikz}\n\\begin{document}\n" + body + "\\end{document}\n"
-            if standalone else body
+            if standalone
+            else body
         )
     else:
         body = "\\begin{tikzpicture}\n\\begin{yquant}\n" + _circuit_body(ir)

@@ -61,9 +61,17 @@ def register_circuit_tex(
 \node[left] at ({spec.origin},{row}) {{{label}}};
 """
             if label:
-                source += source_link(f"input-{panel_index}-{wire}", spec.origin - 3, row, 5, 3) + "\n"
+                source += (
+                    source_link(
+                        f"input-{panel_index}-{wire}", spec.origin - 3, row, 5, 3
+                    )
+                    + "\n"
+                )
             if wire in spec.buses:
-                source += rf"\draw ({spec.origin + 1.6},{row}) ++(-.4mm,-.9mm) -- ++(.8mm,1.8mm);" + "\n"
+                source += (
+                    rf"\draw ({spec.origin + 1.6},{row}) ++(-.4mm,-.9mm) -- ++(.8mm,1.8mm);"
+                    + "\n"
+                )
         if spec.workspace_pairs is not None:
             start_name, stop_name = spec.workspace_pairs
             starts: dict[int, float] = {}
@@ -71,7 +79,9 @@ def register_circuit_tex(
                 wire = gate.wires[-1]
                 name = gate.name
                 if gate.metadata.get("quantum_controls"):
-                    bits = "".join(str(bit) for _, bit in gate.metadata["quantum_controls"])
+                    bits = "".join(
+                        str(bit) for _, bit in gate.metadata["quantum_controls"]
+                    )
                     name = f'c{bits}{gate.metadata["target_gate"]}'
                 if name == start_name:
                     if wire in starts:
@@ -89,16 +99,22 @@ def register_circuit_tex(
             if symbol is None:
                 controls = gate.metadata.get("quantum_controls")
                 pattern = (
-                    ("".join(str(bit) for _, bit in controls), gate.metadata["target_gate"].upper())
-                    if controls else decode_controlled_pauli(gate.name)
+                    (
+                        "".join(str(bit) for _, bit in controls),
+                        gate.metadata["target_gate"].upper(),
+                    )
+                    if controls
+                    else decode_controlled_pauli(gate.name)
                 )
                 if pattern is None or gate.matrix is None:
                     raise ValueError(f"No drawing symbol for {gate.name}.")
                 bits, pauli = pattern
-                symbol = GateSymbol(r"$\oplus$" if pauli == "X" else "$Z$", tuple(map(int, bits)))
+                symbol = GateSymbol(
+                    r"$\oplus$" if pauli == "X" else "$Z$", tuple(map(int, bits))
+                )
             rows = [-wire_spacing * wire for wire in gate.wires]
-            controls = rows[:len(symbol.controls)]
-            targets = rows[len(controls):]
+            controls = rows[: len(symbol.controls)]
+            targets = rows[len(controls) :]
             if not targets:
                 raise ValueError(f"No drawing target for {gate.name}.")
             middle = (min(targets) + max(targets)) / 2
@@ -109,10 +125,15 @@ def register_circuit_tex(
             for row in controls:
                 source += source_link(key, column, row, 2.3, 2.3) + "\n"
             if controls:
-                source += rf"\draw ({column},{min(rows)}) -- ({column},{max(rows)});" + "\n"
+                source += (
+                    rf"\draw ({column},{min(rows)}) -- ({column},{max(rows)});" + "\n"
+                )
             for row, bit in zip(controls, symbol.controls, strict=True):
                 fill = "black" if bit else "white"
-                source += rf"\filldraw[fill={fill}] ({column},{row}) circle[radius=.39mm];" + "\n"
+                source += (
+                    rf"\filldraw[fill={fill}] ({column},{row}) circle[radius=.39mm];"
+                    + "\n"
+                )
             if symbol.label == r"$\oplus$":
                 source += rf"""
 \filldraw[fill=white] ({column},{middle}) circle[radius=.83mm];
@@ -121,7 +142,11 @@ def register_circuit_tex(
 """
             else:
                 dimension = "width" if symbol.rotate else "height"
-                rotation = "rotate=90,font=\\fontsize{6.5}{8}\\selectfont," if symbol.rotate else ""
+                rotation = (
+                    "rotate=90,font=\\fontsize{6.5}{8}\\selectfont,"
+                    if symbol.rotate
+                    else ""
+                )
                 source += rf"""
 \node[box,{rotation}minimum {dimension}={span + 2.9}mm] at ({column},{middle}) {{{symbol.label}}};
 """

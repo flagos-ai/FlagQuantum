@@ -23,15 +23,22 @@ def paper_circuit_tex(
     previous_width = 0.0
     x = 0.0
     for label, _, controls in columns:
-        width = 5.2 if label == "measure" else 4.7 if label.startswith("$") else (
-            2.0 if label == "X" and controls else 3.8
+        width = (
+            5.2
+            if label == "measure"
+            else (
+                4.7
+                if label.startswith("$")
+                else (2.0 if label == "X" and controls else 3.8)
+            )
         )
         x += (previous_width + width) / 2 + 1.05
         positions.append(x)
         previous_width = width
     end = x + previous_width / 2 + 1.4
     measured = {
-        target: x for x, (label, target, _) in zip(positions, columns)
+        target: x
+        for x, (label, target, _) in zip(positions, columns)
         if label == "measure"
     }
 
@@ -54,39 +61,51 @@ def paper_circuit_tex(
             kind = "classical" if classical else "quantum" if bit == 0 else "gate"
             lines.append(source_link(f"{kind}-0-{step}", x, wire, 2.2, 2.2))
             if classical:
-                lines.append(source_link(
-                    f"classical-0-{step}", x, (wire + target) / 2, 2, 2.6
-                ))
-                left = split + 2.8  # Leave the measurement symbol independently clickable.
+                lines.append(
+                    source_link(f"classical-0-{step}", x, (wire + target) / 2, 2, 2.6)
+                )
+                left = (
+                    split + 2.8
+                )  # Leave the measurement symbol independently clickable.
                 if left < x:
-                    lines.append(source_link(
-                        f"classical-0-{step}", (left + x) / 2, wire, x - left, 1.6
-                    ))
+                    lines.append(
+                        source_link(
+                            f"classical-0-{step}", (left + x) / 2, wire, x - left, 1.6
+                        )
+                    )
             style = "[doublewire]" if classical else ""
             lines.append(rf"\draw{style} ({x:g},{wire}) -- ({x:g},{target});")
         for wire, bit in controls:
             fill = "black" if bit else "white"
-            lines.append(rf"\filldraw[fill={fill}] ({x:g},{wire}) circle[radius=.43mm];")
+            lines.append(
+                rf"\filldraw[fill={fill}] ({x:g},{wire}) circle[radius=.43mm];"
+            )
         if label == "X" and controls:
-            lines.extend([
-                rf"\filldraw[fill=white] ({x:g},{target}) circle[radius=1mm];",
-                rf"\draw ({x:g},{target}) ++(-1mm,0) -- ++(2mm,0);",
-                rf"\draw ({x:g},{target}) ++(0,-1mm) -- ++(0,2mm);",
-            ])
+            lines.extend(
+                [
+                    rf"\filldraw[fill=white] ({x:g},{target}) circle[radius=1mm];",
+                    rf"\draw ({x:g},{target}) ++(-1mm,0) -- ++(2mm,0);",
+                    rf"\draw ({x:g},{target}) ++(0,-1mm) -- ++(0,2mm);",
+                ]
+            )
         elif label == "measure":
-            lines.extend([
-                rf"\node[gate,minimum width=4.6mm] (meter) at ({x:g},{target}) {{\phantom{{M}}}};",
-                r"\draw (meter.center) ++(-1.35mm,-.65mm) to[bend left=55] ++(2.7mm,0);",
-                r"\draw (meter.center) ++(-.25mm,-.8mm) -- ++(1.35mm,1.85mm);",
-            ])
+            lines.extend(
+                [
+                    rf"\node[gate,minimum width=4.6mm] (meter) at ({x:g},{target}) {{\phantom{{M}}}};",
+                    r"\draw (meter.center) ++(-1.35mm,-.65mm) to[bend left=55] ++(2.7mm,0);",
+                    r"\draw (meter.center) ++(-.25mm,-.8mm) -- ++(1.35mm,1.85mm);",
+                ]
+            )
         else:
             math_label = label if label.startswith("$") else f"${label}$"
             lines.append(rf"\node[gate] at ({x:g},{target}) {{{math_label}}};")
-    for labels, x, anchor in ((inputs, -0.7, "east"), (outputs, end + .7, "west")):
+    for labels, x, anchor in ((inputs, -0.7, "east"), (outputs, end + 0.7, "west")):
         for wire, label in labels.items():
             if wire not in range(circuit.n_qubits):
                 raise ValueError("Wire labels must reference existing wires.")
             if anchor == "east":
                 lines.append(source_link(f"input-0-{wire}", x - 2, wire, 4, 3))
-            lines.append(rf"\node[anchor={anchor},inner sep=.4mm] at ({x:g},{wire}) {{{label}}};")
+            lines.append(
+                rf"\node[anchor={anchor},inner sep=.4mm] at ({x:g},{wire}) {{{label}}};"
+            )
     return "\n".join([*lines, r"\end{tikzpicture}", ""])
