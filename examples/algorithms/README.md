@@ -29,6 +29,7 @@ python -m examples.algorithms.cobyla_optimizer
 python -m examples.algorithms.trotter
 python -m examples.algorithms.block_encoding
 python -m examples.algorithms.linear_combination
+python -m examples.algorithms.pauli_lcu_block_encoding
 python -m examples.algorithms.logical_resources
 python -m examples.algorithms.arithmetic
 python -m examples.algorithms.synthesis_trial
