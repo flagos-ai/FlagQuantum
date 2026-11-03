@@ -14,11 +14,14 @@ from ..services.synthesis import (
     QNum,
     SynthesisError,
     UInt,
+    adjoint,
     allocate,
+    apply,
     hadamard_transform,
     phase,
     qfunc,
     synthesize,
+    within,
 )
 
 __all__ = (
@@ -36,4 +39,7 @@ __all__ = (
     "allocate",
     "hadamard_transform",
     "phase",
+    "within",
+    "apply",
+    "adjoint",
 )
