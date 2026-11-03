@@ -122,7 +122,7 @@ def consumed_hash_checks(records: list[dict[str, Any]]) -> int:
 
 def summary() -> dict[str, Any]:
     capsules = load_capsules()
-    callback = capsules["callback.tar.gz"]["campaign.json"]["records"]
+    callback = capsules["callback-summary.tar.gz"]["campaign.json"]["records"]
     paired = capsules["unobserved.tar.gz"]["paired.json"]
     unobserved = paired["records"]
     external = capsules["whole_jax.tar.gz"]["campaign.json"]["records"]

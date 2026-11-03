@@ -69,7 +69,7 @@ both SGD and Adam, 60 updates and a checkpoint at update 30. Each case/optimizer
 route has three serial fresh processes, a 120-second deadline and a 2 GiB worker
 RSS budget. All 180 processes completed; none was removed or replaced.
 
-`callback.tar.gz` retains 72 FQ processes with per-update losses, gradients,
+`callback-summary.tar.gz` and `callback-workers.tar.gz` retain 72 FQ processes with per-update losses, gradients,
 parameters and consumed hashes. Route order reverses in trial two. Each process
 has an isolated empty Inductor filesystem cache. `unobserved.tar.gz` retains
 72 FQ processes without callbacks, alternating before/after phase order across
