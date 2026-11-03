@@ -20,7 +20,8 @@ from ..compute import get_platform_runtime
 from ..core.ir import IR_VERSION, ensure_circuit_ir
 from ..errors import ExecutionError
 
-TRAINING_STATE_VERSION = "flagquantum.training_state.v1"
+_LEGACY_TRAINING_STATE_VERSION = "flagquantum.training_state.v1"
+TRAINING_STATE_VERSION = "flagquantum.training_state.v2"
 TRAINING_RESTORE_SCHEMA = "flagquantum.training_checkpoint_restore"
 TRAINING_RESTORE_VERSION = "1.0"
 
@@ -309,6 +310,21 @@ def _optimizer_contract(
     return {"module": cls.__module__, "qualname": cls.__qualname__}
 
 
+def _captured_workload_signature(
+    owner: torch.nn.Module, *, prepare: bool = False
+) -> str | None:
+    signature = getattr(owner, "_checkpoint_signature", None)
+    if not callable(signature):
+        return None
+    try:
+        result = signature(prepare=prepare)
+    except Exception as error:
+        raise TrainingStateError(
+            "execute the target module with representative inputs before restore"
+        ) from error
+    return result if isinstance(result, str) else None
+
+
 def save_training_checkpoint(
     path: str | Path,
     *,
@@ -328,8 +344,13 @@ def save_training_checkpoint(
     plan_payload = (
         runtime_plan.to_dict() if hasattr(runtime_plan, "to_dict") else runtime_plan
     )
+    workload_signature = _captured_workload_signature(owner)
     payload = {
-        "version": TRAINING_STATE_VERSION,
+        "version": (
+            TRAINING_STATE_VERSION
+            if workload_signature is not None
+            else _LEGACY_TRAINING_STATE_VERSION
+        ),
         "step": int(step),
         "module_state": module.state_dict(),
         "optimizer_state": optimizer.state_dict() if optimizer is not None else None,
@@ -338,7 +359,7 @@ def save_training_checkpoint(
         "runtime_plan": plan_payload,
         "ir_version": getattr(ir, "version", IR_VERSION),
         "ir_hash": getattr(ir, "content_hash", ""),
-        "workload_signature": _workload_signature(ir),
+        "workload_signature": workload_signature or _workload_signature(ir),
         "seed_state": _rng_state(seed, module),
         "precision": precision.to_dict(),
         "topology": _topology(module),
@@ -384,14 +405,23 @@ def _validate_training_checkpoint(
     if missing:
         names = ", ".join(sorted(missing))
         raise TrainingStateError(f"training checkpoint is missing fields: {names}")
-    if payload.get("version") != TRAINING_STATE_VERSION:
+    version = payload.get("version")
+    if version not in (_LEGACY_TRAINING_STATE_VERSION, TRAINING_STATE_VERSION):
         raise TrainingStateError(
             f"unsupported training state {payload.get('version')!r}"
         )
     if payload.get("ir_version") != IR_VERSION:
         raise TrainingStateError("checkpoint IR version requires explicit migration")
     owner = _quantum_owner(module)
-    if payload.get("workload_signature") != _current_workload_signature(owner):
+    workload_signature = (
+        _captured_workload_signature(owner, prepare=True)
+        if version == TRAINING_STATE_VERSION
+        else _current_workload_signature(owner)
+    )
+    if (
+        workload_signature is None
+        or payload["workload_signature"] != workload_signature
+    ):
         raise TrainingStateError("checkpoint workload does not match the target module")
     if dict(payload["topology"]) != _topology(module):
         raise TopologyMismatchError(
@@ -420,8 +450,8 @@ def _restore_training_checkpoint(
     module: torch.nn.Module,
     owner: torch.nn.Module,
     optimizer: torch.optim.Optimizer | None,
-    precision: PrecisionPolicy,
-) -> SeedContract:
+    precision: PrecisionPolicy | None,
+) -> tuple[SeedContract, PrecisionPolicy]:
     original_module_state = copy.deepcopy(module.state_dict())
     original_optimizer_state = (
         copy.deepcopy(optimizer.state_dict()) if optimizer is not None else None
@@ -430,6 +460,11 @@ def _restore_training_checkpoint(
     rollback_seed = SeedContract(0, 0, 0, (0, 0))
     original_rng = _rng_state(rollback_seed, module)
     try:
+        if payload["version"] == TRAINING_STATE_VERSION:
+            _, precision = _validate_training_checkpoint(
+                payload, module=module, optimizer=optimizer, precision=precision
+            )
+        assert precision is not None
         precision.apply(module)
         setattr(owner, "precision", precision)
         module.load_state_dict(payload["module_state"])
@@ -445,7 +480,7 @@ def _restore_training_checkpoint(
             optimizer.load_state_dict(original_optimizer_state)
         _restore_rng(original_rng)
         raise
-    return seed
+    return seed, precision
 
 
 def load_training_checkpoint(
@@ -456,18 +491,18 @@ def load_training_checkpoint(
     precision: PrecisionPolicy | None = None,
 ) -> TrainingCheckpointRestore:
     payload = _load_training_checkpoint_payload(path)
-    owner, saved_precision = _validate_training_checkpoint(
-        payload,
-        module=module,
-        optimizer=optimizer,
-        precision=precision,
-    )
-    seed = _restore_training_checkpoint(
+    if payload.get("version") == TRAINING_STATE_VERSION:
+        owner = _quantum_owner(module)
+    else:
+        owner, precision = _validate_training_checkpoint(
+            payload, module=module, optimizer=optimizer, precision=precision
+        )
+    seed, saved_precision = _restore_training_checkpoint(
         payload,
         module=module,
         owner=owner,
         optimizer=optimizer,
-        precision=saved_precision,
+        precision=precision,
     )
     return {
         "schema": TRAINING_RESTORE_SCHEMA,

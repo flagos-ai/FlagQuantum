@@ -557,9 +557,15 @@ def architecture_errors() -> tuple[str, ...]:
 
         if relative.startswith("flagquantum/runtime/"):
             imports_compiler = any(
-                any(
-                    part in {"_compiler", "compilation", "compiler"}
-                    for part in module.split(".")
+                (
+                    any(
+                        part in {"_compiler", "compilation", "compiler"}
+                        for part in module.split(".")
+                    )
+                    or (
+                        module in {"", "flagquantum"}
+                        and name in {"_compiler", "compilation", "compiler"}
+                    )
                 )
                 and not _approved_module_capture_import(relative, module, name)
                 and not _approved_training_compile_import(relative, module, name)
@@ -603,8 +609,13 @@ def architecture_errors() -> tuple[str, ...]:
             and relative not in simulation_runtime_import_allowed
         ):
             forbidden = tuple(boundaries["simulation_forbidden"])
-            for module, _ in imports:
-                if any(part in module.split(".") for part in forbidden):
+            for module, name in imports:
+                own_compiler = module.removeprefix("flagquantum.").split(".")[
+                    0
+                ] == "compiler" or (
+                    module in {"", "flagquantum"} and name == "compiler"
+                )
+                if own_compiler or any(part in module.split(".") for part in forbidden):
                     errors.append(
                         f"{relative}: simulation primitive imports forbidden layer {module}"
                     )
