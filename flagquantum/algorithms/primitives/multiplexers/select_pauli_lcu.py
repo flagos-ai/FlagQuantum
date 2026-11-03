@@ -33,7 +33,9 @@ class SelectPauliLCU:
         control: Sequence[int] = (),
     ) -> _BoundSelectPauliLCU:
         """Bind qubit indices for use with :meth:`Circuit.append`."""
-        return _BoundSelectPauliLCU(self, tuple(selection), tuple(target), tuple(control))
+        return _BoundSelectPauliLCU(
+            self, tuple(selection), tuple(target), tuple(control)
+        )
 
     def append_to(
         self,
@@ -59,7 +61,6 @@ class SelectPauliLCU:
             select_unitaries=self.select_unitaries,
             control_val=self.control_val,
         )
-
 
 
 @dataclass(frozen=True)
