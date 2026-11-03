@@ -35,7 +35,7 @@ from .builder_compilation import (
 )
 from .policy import RuntimePolicy
 from .result import ExecutionResult, normalize_execution_result
-from .result_adapters import LiveRuntimeSummary
+from .result_adapters import LiveRuntimeSummary, _module_execution_result
 
 if TYPE_CHECKING:
     from ..algorithms import Hamiltonian
@@ -49,6 +49,7 @@ if TYPE_CHECKING:
         MPSProductionPlan,
     )
     from .parallel import HybridParallelPlan
+    from .training_compilation import _TrainingProgram
     from .training_state import PrecisionPolicy, TrainingCheckpointRestore
 
 CircuitBuilder = Callable[..., Circuit | CircuitIR]
@@ -184,6 +185,7 @@ class Module(torch.nn.Module):
         self._builder_slots: tuple[tuple[int, str], ...] = ()
         self._builder_compile_count = 0
         self._builder_cache_hits = 0
+        self._training_program: _TrainingProgram | None = None
         self._local_snapshot_eligibility: tuple[int, bool, int] = (-1, False, 0)
         self._jax_kernel: JAXQuantumKernel | None = None
         self._jax_kernel_build_count = 0
@@ -277,6 +279,7 @@ class Module(torch.nn.Module):
             raise TypeError("fq.Module runtime policy must be a RuntimePolicy")
         self._require_policy_precision(policy, self.precision.complex_dtype)
         self.policy = policy
+        self._training_program = None
         self._jax_kernel = None
         self._jax_kernel_signature = None
         self._jax_ir_template = None
@@ -322,6 +325,7 @@ class Module(torch.nn.Module):
         object.__setattr__(self, "_builder_program", None)
         self._builder_program_signature = None
         self._captured_builder = None
+        self._training_program = None
         self._jax_constant_snapshots.clear()
         self._builder_bound_circuit = None
         self._builder_bindings.clear()
@@ -361,15 +365,7 @@ class Module(torch.nn.Module):
         signature = tuple(
             (tuple(tensor.shape), tensor.dtype, tensor.device)
             for tensor in tensor_inputs
-        ) + (
-            names,
-            has_inputs,
-            id(self.circuit_builder),
-            self.policy,
-            self.precision,
-            id(self.hamiltonian),
-            id(None if self.hamiltonian is None else self.hamiltonian.terms),
-        )
+        ) + (names, has_inputs, self._builder_context())
         if (
             self._builder_program is None
             or self._builder_program_signature != signature
@@ -381,6 +377,15 @@ class Module(torch.nn.Module):
             self._builder_cache_hits += 1
 
         return _bind_current_builder(self, tensor_inputs)
+
+    def _builder_context(self) -> tuple[Any, ...]:
+        return (
+            id(self.circuit_builder),
+            self.policy,
+            self.precision,
+            id(self.hamiltonian),
+            id(None if self.hamiltonian is None else self.hamiltonian.terms),
+        )
 
     def _compile_builder_program(
         self,
@@ -410,6 +415,31 @@ class Module(torch.nn.Module):
         self._builder_bound_circuit = bound
         self._builder_slots = slots
         self._builder_compile_count += 1
+
+    def _checkpoint_signature(self, *, prepare: bool = False) -> str | None:
+        capture = self._captured_builder
+        signature = self._builder_program_signature
+        if (
+            capture is not None
+            and signature is not None
+            and signature[-1] == self._builder_context()
+        ):
+            return capture.checkpoint_signature()
+        if not prepare or isinstance(self.circuit_builder, Circuit):
+            return None
+        if capture is not None and capture.has_inputs:
+            return None
+        try:
+            self._build(None, self._owned_parameters())
+        finally:
+            self._builder_bindings.clear()
+        capture = self._captured_builder
+        return capture.checkpoint_signature() if capture is not None else None
+
+    def _training_template(self) -> tuple[CircuitIR, tuple[str, ...]] | None:
+        if self._captured_builder is None:
+            return None
+        return self._captured_builder.template, self._captured_builder.binding_names
 
     @staticmethod
     def _builder_accepts_inputs(builder: CircuitBuilder) -> bool:
@@ -801,11 +831,15 @@ class Module(torch.nn.Module):
         self,
         inputs: torch.Tensor | None = None,
         parameters: torch.Tensor | Mapping[str, torch.Tensor] | None = None,
+        *,
+        _program: Circuit | CircuitIR | None = None,
     ) -> ExecutionResult:
         selected_parameters = (
             self._owned_parameters() if parameters is None else parameters
         )
-        circuit = self._build(inputs, selected_parameters)
+        circuit = (
+            self._build(inputs, selected_parameters) if _program is None else _program
+        )
         ir = ensure_circuit_ir(circuit)
         self._last_ir = detached_ir_snapshot(ir)
         program_runtime = self._observe_topology(ir)
@@ -955,57 +989,17 @@ class Module(torch.nn.Module):
                 "builder_lowering": "torch_fx_bindings",
                 "builder_lowering_reason": "",
             }
-        input_batch_size = 1 if inputs is None or inputs.ndim == 0 else inputs.shape[0]
-        parameter_batch_size = 1
-        if isinstance(selected_parameters, torch.Tensor):
-            parameter_batch_size = (
-                selected_parameters.shape[0] if selected_parameters.ndim > 1 else 1
-            )
-        observable_count = (
-            self.hamiltonian.n_terms
-            if self.policy.observable == "hamiltonian" and self.hamiltonian is not None
-            else len(qubits)
-        )
-        if self.policy.observable == "hamiltonian" and self.hamiltonian is not None:
-            from .parallel import group_observables
-
-            observable_group_count = len(group_observables(self.hamiltonian.terms))
-        else:
-            observable_group_count = 1
-        parallel = (
-            self._parallel_plan.summary()
-            if self._parallel_plan
-            else {
-                "parallel_dimensions": {
-                    "input_batch": input_batch_size,
-                    "parameter_batch": parameter_batch_size,
-                    "observable_batch": observable_count,
-                    "data_parallel": 1,
-                    "state_parallel": reverse.world_size if distributed else 1,
-                    "model_parallel": 1,
-                },
-                "distribution_semantics": (
-                    "sharded_across_ranks"
-                    if distributed and reverse.world_size > 1
-                    else "single_device_fast_path"
-                ),
-            }
-        )
-        result = ExecutionResult(
+        result = _module_execution_result(
+            self,
+            ir,
             value=value,
             state=state,
-            metrics={
-                "training": self.training,
-                "input_batch_size": input_batch_size,
-                "parameter_batch_size": parameter_batch_size,
-                "observable_count": observable_count,
-                "observable_group_count": observable_group_count,
-                "parallelism": parallel,
-                "precision": self.precision.to_dict(),
-            },
-            provenance={"ir_hash": ir.content_hash},
+            inputs=inputs,
+            parameters=selected_parameters,
+            qubits=qubits,
             runtime=runtime,
             compatibility=compatibility,
+            state_world_size=reverse.world_size if distributed else 1,
         )
         if self.policy.correctness_debug:
             from .training_state import assert_finite_training

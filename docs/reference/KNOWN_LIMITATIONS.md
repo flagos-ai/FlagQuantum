@@ -249,3 +249,18 @@ Ising and dynamics results, opaque handles, autograd/optimizer checkpoints and
 automatic Web publication are not supported by this format version. Files are
 bounded to 256 members, 16 MiB per JSON member, 64 MiB per tensor and 256 MiB
 total uncompressed data. See [experiment files](EXPERIMENT_FILES.md).
+
+## Unpromoted Torch training compilation (#936)
+
+The approved private `fq.train` candidate can reuse canonical-IR-derived CPU
+Torch numerical, scalar-objective and reverse-VJP regions. It is **not enabled
+by default**: cold compilation must amortize before ordinary training benefits.
+The diagnostic runner explicitly forces the candidate and must not be presented
+as the default user experience. Adam updates retain the original eager optimizer
+because compiled float64 optimizer arithmetic has not passed certification.
+Hooks, opaque/stateful objectives, unsupported tensor/optimizer behavior,
+Hamiltonians, non-CPU devices and parallel plans retain eager execution with a
+reason in `last_execution.runtime["training_compilation"]`. This does not change
+explicit JAX policy, manual Module loops, checkpoint schemas or capability level.
+See `TORCH_TRAINING_COMPILATION_CONTRACT.md` in `docs/development/`; #936 and
+#918 remain open pending performance/adoption and the stronger comparisons.

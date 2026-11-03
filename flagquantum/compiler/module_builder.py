@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import hashlib
+import json
 import operator
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass, replace
@@ -12,7 +14,7 @@ import torch
 from torch.fx import GraphModule, Interpreter, Node
 
 from ..circuit import Circuit
-from ..core.ir import CircuitIR, Instruction
+from ..core.ir import CircuitIR, Instruction, IRSerializationError, _encode_value
 from ..core.parameters import Parameter
 from ..errors import CapabilityError, ExecutionError
 
@@ -192,6 +194,92 @@ class CapturedModuleBuilder:
     has_inputs: bool
     tensor_constants: tuple[torch.Tensor, ...]
     group_names: tuple[str, ...]
+
+    def checkpoint_signature(self) -> str | None:
+        """Fingerprint the symbolic program and the certified binding computation."""
+        if self.circuit_type is not Circuit:
+            return None
+        indices: dict[Node, int] = {}
+
+        def encode(value: Any) -> Any:
+            if isinstance(value, Node):
+                return {"node": indices[value]}
+            if isinstance(value, Mapping):
+                if any(not isinstance(key, str) for key in value):
+                    raise ValueError("unsupported binding mapping key")
+                return {"mapping": {key: encode(item) for key, item in value.items()}}
+            if isinstance(value, (tuple, list)):
+                kind = "tuple" if isinstance(value, tuple) else "list"
+                return {kind: [encode(item) for item in value]}
+            if isinstance(
+                value, (torch.dtype, torch.device, torch.layout, torch.memory_format)
+            ):
+                return {type(value).__name__: str(value)}
+            return _encode_value(value)
+
+        nodes: list[list[Any]] = []
+        try:
+            for node in self.binding_graph.graph.nodes:
+                if node.op == "placeholder":
+                    value = node.meta.get("val")
+                    if not isinstance(value, torch.Tensor):
+                        return None
+                    entry = [list(value.shape), str(value.dtype)]
+                elif node.op == "get_attr":
+                    value = self.binding_graph
+                    for part in str(node.target).split("."):
+                        value = getattr(value, part)
+                    if not isinstance(value, torch.Tensor) or value.requires_grad:
+                        return None
+                    entry = encode(value)
+                elif node.op == "call_function":
+                    target = node.target
+                    if target is operator.getitem:
+                        operation = "operator.getitem"
+                    elif (
+                        isinstance(target, torch._ops.OpOverload)
+                        and (
+                            _operation(target) is not None
+                            or target is torch.ops.aten.lift_fresh_copy.default
+                        )
+                        and not target._schema.is_mutable
+                        and torch.Tag.nondeterministic_seeded not in target.tags
+                        and torch.Tag.nondeterministic_bitwise not in target.tags
+                    ):
+                        operation = str(target)
+                    else:
+                        return None
+                    entry = [operation, encode(node.args), encode(node.kwargs)]
+                elif node.op == "output":
+                    entry = encode(node.args)
+                else:
+                    return None
+                indices[node] = len(nodes)
+                nodes.append([node.op, entry])
+            payload = json.dumps(
+                {
+                    "encoding": 1,
+                    "torch": str(torch.__version__),
+                    "template": self.template.to_dict(),
+                    "groups": self.group_names,
+                    "has_inputs": self.has_inputs,
+                    "slots": self.slots,
+                    "bindings": self.binding_names,
+                    "nodes": nodes,
+                },
+                sort_keys=True,
+                separators=(",", ":"),
+                allow_nan=False,
+            )
+        except (
+            AttributeError,
+            IRSerializationError,
+            RuntimeError,
+            TypeError,
+            ValueError,
+        ):
+            return None
+        return hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
     def jax_builder(self) -> tuple[Callable[..., Circuit] | None, str]:
         """Return canonical lowering, or an explicit legacy compatibility reason."""

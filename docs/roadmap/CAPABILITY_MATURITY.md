@@ -261,3 +261,12 @@ distributed execution remain gated future work. A separate fail-closed domestic
 single-card harness now collects provisioner-attested P0-P5 execution candidates;
 no domestic capability is promoted until a real-card result is reviewed and
 checked in.
+
+## Private training compilation development status
+
+The approved #936 boundary has a reusable CPU Torch training candidate behind a
+closed private promotion gate. Numerical/recovery conformance and candidate
+measurements do not promote default training performance or a new capability
+level. In particular, ordinary short jobs remain eager, Adam optimizer updates
+remain eager, and no GPU/distributed performance or whole-step fusion is claimed.
+The parent #918 acceptance remains separate from this implementation slice.

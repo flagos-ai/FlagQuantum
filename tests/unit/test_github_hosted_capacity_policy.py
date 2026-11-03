@@ -293,11 +293,7 @@ def test_cpu_pytest_tiers_use_sixteen_bounded_work_stealing_workers() -> None:
         )
         assert definition["env"]["CUDA_VISIBLE_DEVICES"] == ""
         assert definition["env"]["OMP_NUM_THREADS"] == "1"
-        assert definition["env"]["PIP_INDEX_URL"] == (
-            "${{ (github.event_name != 'pull_request' || "
-            "github.event.pull_request.head.repo.full_name == github.repository) && "
-            "'https://pypi.tuna.tsinghua.edu.cn/simple' || 'https://pypi.org/simple' }}"
-        )
+        assert definition["env"]["PIP_INDEX_URL"] == "https://pypi.org/simple"
         commands = "\n".join(str(step.get("run", "")) for step in _steps("ci.yml", job))
         assert "assert torch.version.cuda is None" in commands
         assert "python -m pip check" in commands
