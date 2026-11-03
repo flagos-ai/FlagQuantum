@@ -43,7 +43,13 @@ def git(*arguments: str) -> str:
 
 
 def worker(
-    case: int, kind: str, route: str, output: Path, without_callback: bool
+    case: int,
+    kind: str,
+    route: str,
+    output: Path,
+    without_callback: bool,
+    *,
+    measure_invalidation: bool = False,
 ) -> None:
     imported = time.perf_counter()
     import torch
@@ -131,7 +137,7 @@ def worker(
         current = model()
         optimizer = getattr(torch.optim, kind)(current.parameters(), lr=0.01)
         record["setup_seconds"] = time.perf_counter() - imported - imports
-        previous = time.perf_counter()
+        training_started = previous = time.perf_counter()
         intervals: list[float] = []
         checkpoint_seconds = 0.0
         deliveries: list[float] = []
@@ -157,6 +163,7 @@ def worker(
             record["updates"].append(
                 {
                     "loss": loss,
+                    "elapsed_seconds": now - training_started,
                     "parameters": current.parameters_tensor.detach().tolist(),
                     "gradients": current.parameters_tensor.grad.detach().tolist(),
                     "ir_hash": execution.provenance["ir_hash"],
@@ -176,7 +183,7 @@ def worker(
             previous = now
 
         try:
-            started = time.perf_counter()
+            started = training_started = time.perf_counter()
             result = fq.train(
                 current,
                 optimizer=optimizer,
@@ -258,6 +265,33 @@ def worker(
                 replay.last_execution.provenance["ir_hash"]
                 == result.last_execution.provenance["ir_hash"]
             )
+            if measure_invalidation:
+
+                def probe(value):
+                    begin = time.perf_counter()
+                    receipt = fq.train(
+                        current,
+                        optimizer=optimizer,
+                        objective=objective,
+                        inputs=value,
+                        steps=1,
+                    )
+                    return {
+                        "seconds": time.perf_counter() - begin,
+                        "diagnostics": receipt.last_execution.runtime[
+                            "training_compilation"
+                        ],
+                    }
+
+                normal = inputs(60)
+                changed = normal[:1] if batch > 1 else normal.repeat(2, 1)
+                record["shape_probe"] = {
+                    "batch_before": batch,
+                    "batch_after": changed.shape[0],
+                    "same_shape": probe(normal),
+                    "first_changed_shape": probe(changed),
+                    "repeated_changed_shape": probe(changed),
+                }
             record.update(
                 status="passed",
                 recovery_parameter_max_error=float(

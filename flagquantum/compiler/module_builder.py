@@ -386,8 +386,8 @@ def capture_module_builder(
             "Module builder compilation requires static circuit topology; "
             "do not branch on Tensor values when choosing gates or qubits"
         ) from error
-    graph.graph.eliminate_dead_code()
-    graph.recompile()
+    if graph.graph.eliminate_dead_code():
+        graph.recompile()
     if not captured:
         raise ExecutionError("compiled builder did not capture a Circuit")
     circuit = captured[-1]
