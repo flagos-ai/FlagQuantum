@@ -95,7 +95,7 @@ def schedule_register_program(
         elif op.name == "qreg.phase" and "callee" not in op.attributes:
             angle = op.attributes["angle"]
             if angle:
-                # P(theta) X P(theta) X = exp(i theta) I on any existing wire.
+                # P(theta) X P(theta) X = exp(i theta) I on any existing qubit.
                 rotation = Instruction("phase", (0,), params={"theta": angle})
                 flip = Instruction("x", (0,))
                 gates = (flip, rotation, flip, rotation)
