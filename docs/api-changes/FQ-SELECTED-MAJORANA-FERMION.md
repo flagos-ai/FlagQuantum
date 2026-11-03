@@ -30,13 +30,11 @@ serialization are part of the contract review.
 
 ## First implementation
 
-Append the bound component with `operation.append_to(circuit)`. This first
-slice uses the existing custom-matrix execution and serialization contract,
-with named, structured parameters for selection, target, control and Pauli.
-It caps the dense reference at ten operand qubits. A matrix-free compiler
-lowering and the explicit typed register constructor remain follow-up work.
-The factory accepts a flat binary address, which covers QC-003's two one-bit
-selection registers.
+Append the bound component with `operation.append_to(circuit)`. The component
+records a logical instruction with register widths and the Pauli. The
+[deferred IR contract](FQ-DEFERRED-MAJORANA-IR.md) defines how the compiler
+materializes it. The factory accepts a flat binary address, which covers
+QC-003's two one-bit selection registers.
 
 ## Circuit integration
 
@@ -52,11 +50,8 @@ of absolute qubit IDs. This lets composition remap instruction operands
 without leaving stale qubit IDs in the parameters.
 
 Construction validates the binding and records the instruction. Serialization
-preserves its logical representation. Compilation or execution selects a
-supported lowering and performs any required matrix construction. The existing
-schema registry assumes fixed arity and custom opcodes require a matrix.
-Review the variable-arity representation and lowering contract before
-replacing the current dense reference path.
+preserves its logical representation. Compilation or execution materializes
+the dense reference matrix, with a limit of ten operand qubits.
 
 Acceptance includes construction and JSON round-trip without matrix
 allocation, composition onto reordered qubits, and complex-amplitude parity

@@ -35,6 +35,7 @@ def test_coherent_selection_survives_ir_round_trip(target_gate: str) -> None:
         torch.eye(8, dtype=dtype),
     )
     restored = CircuitIR.from_dict(json.loads(json.dumps(circuit.to_ir().to_dict())))
+    assert restored.instructions[0].matrix is None
     assert restored.instructions[0].params == {
         "selection_width": 2,
         "target_width": 3,

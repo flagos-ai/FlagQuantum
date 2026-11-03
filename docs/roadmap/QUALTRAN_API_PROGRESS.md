@@ -40,8 +40,9 @@ to zero.
 FlagQuantum defines unused binary addresses as identity and verifies that
 behavior locally. The upstream comparison covers the declared iteration domain.
 Qualtran exposes typed selection registers and uses unary iteration.
-FlagQuantum's reference path accepts flat binary bindings and materializes a
-matrix capped at ten operand qubits.
+FlagQuantum's reference path accepts flat binary bindings and materializes a matrix at
+compile or execution time, capped at ten operand qubits. The stacked test
+run passed all ten cases, including legacy IR and deferred lowering.
 
 To run the optional test from a FlagQuantum development environment:
 
