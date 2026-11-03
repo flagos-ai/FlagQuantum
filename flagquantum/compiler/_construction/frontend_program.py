@@ -34,11 +34,17 @@ from .program_types import (
     cx,
     hadamard_transform,
     phase,
+    r,
     swap,
     within,
 )
 from .ranges import unsigned_width
-from .register_profile import register_type, register_width, verify_register_program
+from .register_profile import (
+    equatorial_rotation,
+    register_type,
+    register_width,
+    verify_register_program,
+)
 
 
 @dataclass(frozen=True)
@@ -607,6 +613,30 @@ class _Body:
                 attributes["angle"] = angle
             operands = tuple(self.register(arg) for arg in node.args[int(angled) :])
             self.emit("qreg.pair_gate", node, operands, **attributes)
+        elif function is r:
+            if len(node.args) != 3:
+                _error(
+                    self.source,
+                    node,
+                    "program.signature",
+                    "R requires two angles and a target",
+                )
+            theta = self.phase_number(node.args[0])
+            phi = self.phase_number(node.args[1])
+            if theta is None or phi is None:
+                _error(
+                    self.source,
+                    node,
+                    "program.angle",
+                    "R requires finite static real angles",
+                )
+            target = self.register(node.args[2])
+            if register_width(target) != 1:
+                _error(
+                    self.source, node, "program.width", "R requires a one-bit target"
+                )
+            for gate, angle in equatorial_rotation(theta, phi):
+                self.emit("qreg.gate", node, (target,), gate=gate, index=0, angle=angle)
         elif function is phase:
             if len(node.args) != 2:
                 _error(

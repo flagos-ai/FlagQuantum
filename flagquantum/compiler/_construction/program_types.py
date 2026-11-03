@@ -102,6 +102,11 @@ def crx(angle: float, control: QBit, target: QBit, /) -> None:
     raise TypeError("CRX is captured inside qfunc")
 
 
+def r(theta: float, phi: float, target: QBit, /) -> None:
+    """Apply an equatorial rotation with static angles in radians."""
+    raise TypeError("R is captured inside qfunc")
+
+
 def within() -> AbstractContextManager[None]:
     """Capture local arithmetic preparation for the following apply block."""
     raise TypeError("within is captured inside qfunc")

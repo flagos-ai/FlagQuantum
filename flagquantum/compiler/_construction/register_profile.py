@@ -41,6 +41,11 @@ _ANGLE_GATES = frozenset({"phase", "rx", "rz"})
 _GATES = frozenset({"x", "h", "s", "z"}) | _ANGLE_GATES
 
 
+def equatorial_rotation(theta: float, phi: float) -> tuple[tuple[str, float], ...]:
+    """Return the exact single-qubit rotation in execution order."""
+    return (("rz", -phi), ("rx", theta), ("rz", phi))
+
+
 def register_type(width: int) -> IRType:
     """Describe a register reference, distinct from an arithmetic value."""
     _positive_integer(width, "width")

@@ -15,6 +15,7 @@ from ..services.synthesis import (
     Program,
     QBit,
     QNum,
+    R,
     SynthesisError,
     UInt,
     adjoint,
@@ -48,4 +49,5 @@ __all__ = (
     "CX",
     "SWAP",
     "CRX",
+    "R",
 )

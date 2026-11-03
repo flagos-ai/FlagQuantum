@@ -12,7 +12,7 @@ import torch
 import flagquantum as fq
 from flagquantum import synth
 from flagquantum.ecosystem import InteropConversionError
-from flagquantum.synth import Output, QBit, allocate, hadamard_transform, phase, qfunc
+from flagquantum.synth import Output, QBit, R, allocate, qfunc
 from tests.integration.test_synthesis_register_workflow import check_state
 
 pytestmark = pytest.mark.integration
@@ -22,12 +22,7 @@ CORPUS = Path(__file__).resolve().parents[1] / "fixtures/classiq_qmod"
 @qfunc
 def native_rotation(q: Output[QBit]) -> None:
     allocate(q)
-    phase(q, -2.0)
-    hadamard_transform(q)
-    phase(q, 1.0)
-    phase(1.0, -0.5)
-    hadamard_transform(q)
-    phase(q, 2.0)
+    R(1, 2, q)
 
 
 def test_pinned_original_matches_native_and_circuit() -> None:
