@@ -951,3 +951,21 @@ The two decoders share the strict undecomposed DEM and detector rows for
 the same 35 shots, sampled in batches of 16, 16 and 3. The four outcome
 counts partition the completed shots and expose shared and decoder-specific
 errors. The example makes no decoder ranking or statistical claim.
+
+## Joint Detector and Logical Parity
+
+Run the deterministic example with Python 3.12 and the core Torch dependency
+on CPU.
+
+```bash
+PYTHONPATH=. python examples/qec/dem_joint_parity.py
+```
+
+The keys are the detector bit followed by the logical bit. A shared fault
+flips both bits and a second independent fault flips the detector only.
+The example enumerates four fault combinations and verifies the resulting
+marginals against the DEM rate methods.
+
+```json
+{"00": 0.65625, "01": 0.03125, "10": 0.21875, "11": 0.09375}
+```
