@@ -209,6 +209,13 @@ These examples do not use that alias:
   corrections, mathematical ties and precision caveats; minimum configuration
   cost and logical-class MAP are distinct objectives. BP+OSD need not minimize
   cost, and different logical predictions need not indicate a decoding defect.
+- [`qec/surface_memory_sweep.py`](qec/surface_memory_sweep.py) reports eight
+  fixed CPU Surface points: X/Z, distances 3/5 and two explicit noise profiles.
+  Install the existing Stim/PyMatching extras. Each point uses 35 shots in
+  batches 16, 16, 3 and a declared keyed seed; stdout contains configuration,
+  eight point records and a completion record only on full success. The JSON
+  lines are example output, not a persistence API. Wilson intervals are
+  marginal per point; counts do not establish suppression or a threshold.
 - [`qec/memory_experiment.py`](qec/memory_experiment.py) composes the approved
   fixed-shot experiment through its canonical QEC execution import. It uses one
   original source and exact final partial batches with five default decoders;
