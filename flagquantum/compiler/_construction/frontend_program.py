@@ -28,8 +28,10 @@ from .program_types import (
     QNum,
     _width_spec,
     allocate,
+    apply,
     hadamard_transform,
     phase,
+    within,
 )
 from .ranges import unsigned_width
 from .register_profile import register_type, register_width, verify_register_program
@@ -210,6 +212,8 @@ def program_ports(definition: _QuantumFunction) -> tuple[_Port, ...]:
             and isinstance(statement.op, ast.BitOr)
             and isinstance(statement.target, ast.Name)
         ):
+            continue
+        if isinstance(statement, ast.With):
             continue
         if isinstance(statement, ast.Expr) and isinstance(statement.value, ast.Call):
             continue
@@ -648,10 +652,135 @@ class _Body:
                 "call allocate, hadamard_transform or a typed qfunc; host calls are not executed",
             )
 
+    def region_marker(self, block: ast.With) -> object:
+        if len(block.items) == 1:
+            item = block.items[0]
+            expression = item.context_expr
+            if (
+                item.optional_vars is None
+                and isinstance(expression, ast.Call)
+                and not expression.args
+                and not expression.keywords
+            ):
+                return _resolve(self.definition, expression.func)
+        return None
+
+    def declare_local(self, node: ast.AnnAssign) -> str:
+        if not isinstance(node.target, ast.Name) or node.value is None:
+            _error(
+                self.source,
+                node,
+                "program.local",
+                "assign an arithmetic expression to a fresh sized QNum local",
+            )
+        name = node.target.id
+        if name in self.ports:
+            _error(
+                self.source,
+                node,
+                "program.local",
+                "a local cannot shadow a quantum name",
+            )
+        annotation = _annotation_node(self.source, node.annotation)
+        if (
+            not isinstance(annotation, ast.Subscript)
+            or _resolve(self.definition, annotation.value, annotation=True) is not QNum
+            or not isinstance(annotation.slice, ast.Constant)
+        ):
+            _error(
+                self.source,
+                node,
+                "program.local",
+                "local declaration requires QNum[literal width]",
+            )
+        try:
+            width = _width_spec(annotation.slice.value)
+        except (TypeError, ValueError) as error:
+            _error(self.source, node, "program.local", str(error))
+        value = Value(ValueId(self.name, self.counter), register_type(width))
+        self.counter += 1
+        self.ports[name] = _Port(name, "output", "qnum", width)
+        self.widths[name] = width
+        self.registers[name] = value
+        self.operations.append(
+            Operation(
+                "qreg.local",
+                results=(value,),
+                attributes={"name": f"{name}.{value.id.index}"},
+                location=self.source.location(node),
+            )
+        )
+        graph, actuals = self.capture_expression(node.value, node)
+        self.emit("qreg.compute", node, (value, *actuals), callee=graph.name)
+        return name
+
+    def within_apply(self, prepare: ast.With, action: ast.stmt | None) -> None:
+        if (
+            self.region_marker(prepare) is not within
+            or not isinstance(action, ast.With)
+            or self.region_marker(action) is not apply
+        ):
+            _error(
+                self.source,
+                prepare,
+                "program.region",
+                "pair with within() with a following with apply()",
+            )
+        locals_in_order: list[str] = []
+        for statement in prepare.body:
+            if isinstance(statement, ast.AnnAssign):
+                locals_in_order.append(self.declare_local(statement))
+            else:
+                _error(
+                    self.source,
+                    statement,
+                    "program.within",
+                    "within prepares fresh arithmetic locals only",
+                )
+        if not locals_in_order:
+            _error(
+                self.source,
+                prepare,
+                "program.within",
+                "within requires a local computation",
+            )
+        for statement in action.body:
+            if not isinstance(statement, ast.Expr) or not isinstance(
+                statement.value, ast.Call
+            ):
+                _error(
+                    self.source,
+                    statement,
+                    "program.apply",
+                    "apply accepts phase and Const-only qfunc calls",
+                )
+            function = _resolve(self.definition, statement.value.func)
+            if function is not phase and (
+                not isinstance(function, _QuantumFunction)
+                or not function.source.program
+                or any(p.role != "const" for p in program_ports(function))
+            ):
+                _error(
+                    self.source,
+                    statement,
+                    "program.apply",
+                    "apply accepts phase and Const-only qfunc calls",
+                )
+            self.call(statement.value)
+        for name in reversed(locals_in_order):
+            value = self.registers.pop(name)
+            self.emit("qreg.uncompute", prepare, (value,))
+            self.emit("qreg.release", prepare, (value,))
+            del self.ports[name]
+            del self.widths[name]
+
     def finish(self) -> HybridProgram:
-        for statement in self.source.node.body:
+        statements = iter(self.source.node.body)
+        for statement in statements:
             if isinstance(statement, ast.AugAssign):
                 self.assign(statement)
+            elif isinstance(statement, ast.With):
+                self.within_apply(statement, next(statements, None))
             elif isinstance(statement, ast.Expr) and isinstance(
                 statement.value, ast.Call
             ):
