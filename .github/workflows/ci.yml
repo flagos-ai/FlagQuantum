@@ -1215,6 +1215,8 @@ jobs:
         with:
           python-version: "3.12"
       - uses: ./.github/actions/isolated-python
+        with:
+          self-hosted-pypi-index: ${{ vars.FQ_CI_PYPI_MIRROR || 'https://pypi.tuna.tsinghua.edu.cn/simple' }}
       - run: python -m pip install --upgrade pip 'setuptools>=77.0.3' wheel
       - uses: ./.github/actions/install-cpu-torch
         timeout-minutes: 8
