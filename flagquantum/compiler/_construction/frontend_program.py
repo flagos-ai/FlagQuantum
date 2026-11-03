@@ -630,13 +630,15 @@ class _Body:
                     "program.angle",
                     "R requires finite static real angles",
                 )
-            target = self.register(node.args[2])
-            if register_width(target) != 1:
+            destination = self.register(node.args[2])
+            if register_width(destination) != 1:
                 _error(
                     self.source, node, "program.width", "R requires a one-bit target"
                 )
             for gate, angle in equatorial_rotation(theta, phi):
-                self.emit("qreg.gate", node, (target,), gate=gate, index=0, angle=angle)
+                self.emit(
+                    "qreg.gate", node, (destination,), gate=gate, index=0, angle=angle
+                )
         elif function is phase:
             if len(node.args) != 2:
                 _error(
