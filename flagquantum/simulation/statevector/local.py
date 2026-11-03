@@ -474,6 +474,20 @@ def _apply_disjoint_dense_step(
             else region.wires
         )
     )
+    if (
+        state.device.type == "cpu"
+        and state.shape[0] >= 64
+        and torch.is_grad_enabled()
+        and len(wires) >= 4
+        and len(wires) == len(matrices)
+        and circuit.n_qubits <= 2 * len(wires)
+        and (state.requires_grad or any(matrix.requires_grad for matrix in matrices))
+    ):
+        # Applying disjoint one-wire matrices separately avoids the dense
+        # Kronecker product and its batched matrix-gradient computation.
+        for wire, matrix in zip(wires, matrices, strict=True):
+            state = _apply_matrix(state, matrix, (wire,), circuit.n_qubits)
+        return state
     matrix = _batched_kronecker_product(matrices, batch_size=state.shape[0])
     return _apply_matrix(state, matrix, wires, circuit.n_qubits)
 
