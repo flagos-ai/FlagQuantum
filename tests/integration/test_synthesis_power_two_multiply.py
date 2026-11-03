@@ -111,6 +111,7 @@ def test_shared_rematerialized_dependencies_preserve_complex_reference_state(
 
 @pytest.mark.parametrize("objective", ["width", "depth"])
 @pytest.mark.parametrize("producer", ["python", "native"])
+@pytest.mark.usefixtures("legacy_register_selection")
 def test_wide_constant_executes_under_existing_public_memory_limit(
     objective: Literal["width", "depth"], producer: str
 ) -> None:

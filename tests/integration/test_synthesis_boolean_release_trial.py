@@ -1,6 +1,4 @@
-"""Cross-frontend release evidence with the existing internal Boolean switch."""
-
-from functools import partial
+"""Cross-frontend release evidence with default Boolean selection."""
 
 import pytest
 
@@ -8,24 +6,8 @@ from benchmarks.synthesis.performance_workloads import Prepared, Workload
 from examples.synthesis_arithmetic_implementations import main
 from flagquantum import synth
 from flagquantum.errors import PlanningError
-from flagquantum.services import _synthesis_registers
 
 pytestmark = pytest.mark.integration
-
-
-@pytest.fixture
-def enable_boolean(monkeypatch):
-    """Exercise the real public entry and Runtime admission under trial policy."""
-    selector = _synthesis_registers.select_register_program
-
-    def enable() -> None:
-        monkeypatch.setattr(
-            _synthesis_registers,
-            "select_register_program",
-            partial(selector, include_boolean=True),
-        )
-
-    return enable
 
 
 @pytest.mark.parametrize("frontend", ["qfunc", "qmod"])
@@ -41,10 +23,21 @@ def enable_boolean(monkeypatch):
         "constant_product-3",
     ],
 )
-def test_trial_improves_complete_domain_cases(case, frontend, enable_boolean) -> None:
+def test_trial_improves_complete_domain_cases(case, frontend, monkeypatch) -> None:
     workload = Prepared(Workload(case, frontend))
-    legacy = workload.compile()
-    enable_boolean()
+    with monkeypatch.context() as legacy_policy:
+        from flagquantum.services import _synthesis_registers
+
+        select = _synthesis_registers.select_register_program
+
+        def select_legacy(*args, **kwargs):
+            kwargs["include_boolean"] = False
+            return select(*args, **kwargs)
+
+        legacy_policy.setattr(
+            _synthesis_registers, "select_register_program", select_legacy
+        )
+        legacy = workload.compile()
     trial = workload.compile()
     assert trial.report["candidate"] == "boolean"
     assert (
@@ -68,11 +61,8 @@ def test_trial_improves_complete_domain_cases(case, frontend, enable_boolean) ->
 
 @pytest.mark.parametrize("frontend", ["qfunc", "qmod"])
 @pytest.mark.parametrize("target", ["basis", "line"])
-def test_trial_verifies_exact_basis_and_routing(
-    frontend, target, enable_boolean
-) -> None:
+def test_trial_verifies_exact_basis_and_routing(frontend, target) -> None:
     workload = Prepared(Workload("energy-2x2", frontend, target=target))
-    enable_boolean()
     trial = workload.compile()
     assert trial.report["candidate"] == "boolean"
     verification = workload.verify(trial)
@@ -83,8 +73,7 @@ def test_trial_verifies_exact_basis_and_routing(
     )
 
 
-def test_trial_respects_whole_program_limits_and_runtime_memory(enable_boolean) -> None:
-    enable_boolean()
+def test_trial_respects_whole_program_limits_and_runtime_memory() -> None:
     limits = dict(max_qubits=9, max_workspace=1, max_operations=24, max_depth=20)
     program = synth.synthesize(main, memory_limit_bytes=8192, **limits)
     assert program.execution.state_bytes == 8192
