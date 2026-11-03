@@ -4,11 +4,15 @@ inputs:
   torch-spec:
     description: CPU PyTorch requirement to seed from the verified local wheel cache
     default: "torch>=2.13,<2.14"
+  self-hosted-pypi-index:
+    description: PyPI mirror for this job on self-hosted Linux runners
+    default: ""
 runs:
   using: composite
   steps:
     - shell: bash
       env:
+        FQ_SELF_HOSTED_PYPI_INDEX: ${{ inputs.self-hosted-pypi-index }}
         FQ_TORCH_SPEC: ${{ inputs.torch-spec }}
       run: |
         unset PYTHONPATH PYTHONHOME
@@ -40,10 +44,14 @@ runs:
           echo "$job_venv/bin" >> "$GITHUB_PATH"
           echo "VIRTUAL_ENV=$job_venv" >> "$GITHUB_ENV"
         fi
-        # General dependencies must resolve against their authoritative index.
-        # The local CPU wheel cache and explicit Torch CPU mirror/fallback are
-        # independent; an incomplete general mirror must not block every job.
-        echo "PIP_INDEX_URL=https://pypi.org/simple" >> "$GITHUB_ENV"
+        index=https://pypi.org/simple
+        if [ "${RUNNER_ENVIRONMENT:-}" = self-hosted ] && [ "${RUNNER_OS:-}" = Linux ]; then
+          index="${FQ_SELF_HOSTED_PYPI_INDEX:-$index}"
+          # Reuse wheel downloads across job-local virtual environments.
+          echo "PIP_CACHE_DIR=${PIP_CACHE_DIR:-${XDG_CACHE_HOME:-$HOME/.cache}/pip}" >> "$GITHUB_ENV"
+          echo "PIP_NO_CACHE_DIR=" >> "$GITHUB_ENV"
+        fi
+        echo "PIP_INDEX_URL=$index" >> "$GITHUB_ENV"
     - name: Measure CPU and memory limits and select pytest workers
       shell: bash
       run: python -I tools/ci_cpu_budget.py
