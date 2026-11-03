@@ -235,7 +235,8 @@ These examples do not use that alias:
   sample-call schedules need not produce identical samples or failure counts.
 - [`qec/dem_joint_parity.py`](qec/dem_joint_parity.py) enumerates four fault
   combinations to show the joint parity of one detector and one logical
-  observable. Run on CPU with the core Torch dependency.
+  observable. Pass `--exclusive` to group both faults as alternatives and
+  enumerate the three allowed outcomes. Run on CPU with the core Torch dependency.
 - [`qec/circuit_noise_dem.py`](qec/circuit_noise_dem.py) builds and samples a
   distance-five circuit-location surface-code DEM without a dense statevector
   or optional SDK; the physical circuit has 49 qubits.
