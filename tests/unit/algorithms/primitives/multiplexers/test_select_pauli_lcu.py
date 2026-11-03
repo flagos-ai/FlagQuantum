@@ -11,6 +11,8 @@ import flagquantum as fq
 from flagquantum.algorithms.primitives.multiplexers import SelectPauliLCU
 from flagquantum.core.ir import CircuitIR
 
+pytestmark = pytest.mark.unit
+
 
 def test_partial_table_roundtrip_and_composition() -> None:
     component = SelectPauliLCU(1, 1, ("-Y",), control_val=0)
