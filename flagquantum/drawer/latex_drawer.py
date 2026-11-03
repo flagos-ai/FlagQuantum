@@ -233,9 +233,7 @@ def draw_latex(
         else:
             from .register_tex import register_circuit_tex
 
-            body = register_circuit_tex(
-                ir, layout, comparison, row_spacing=row_spacing
-            )
+            body = register_circuit_tex(ir, layout, comparison, row_spacing=row_spacing)
         source = (
             "\\documentclass[border=2pt]{standalone}\n"
             "\\usepackage{tikz}\n\\begin{document}\n" + body + "\\end{document}\n"
