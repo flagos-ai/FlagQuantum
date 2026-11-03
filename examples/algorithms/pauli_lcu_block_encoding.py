@@ -79,6 +79,7 @@ def main() -> None:
 
     counts = Counter(gate.name for gate in walk.to_ir().instructions)
     print(f"walk: {walk.n_qubits} qubits (1 workspace), {counts['ccx']} Toffoli gates")
+    print("premise: Gate counts describe this circuit before further synthesis.")
     print(f"alpha = {alpha:g}; max block error = {(block - expected).abs().max():.3g}")
 
 
