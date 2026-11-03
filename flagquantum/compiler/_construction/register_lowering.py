@@ -6,6 +6,7 @@ The returned circuit requires an all-zero entry state; this is an allocation
 precondition, not a claim inferred from an arbitrary external state.
 """
 
+import math
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, replace
 from types import MappingProxyType
@@ -91,6 +92,13 @@ def schedule_register_program(
             segment = adjoint_value_candidate(computed.pop(op.operands[1].id))
             segments.append(segment)
             gates = segment.circuit.instructions
+        elif op.name == "qreg.phase" and "callee" not in op.attributes:
+            angle = op.attributes["angle"]
+            if angle:
+                # P(theta) X P(theta) X = exp(i theta) I on any existing qubit.
+                rotation = Instruction("phase", (0,), params={"theta": angle})
+                flip = Instruction("x", (0,))
+                gates = (flip, rotation, flip, rotation)
         elif op.name in {"qreg.compute", "qreg.phase"}:
             phase = op.name == "qreg.phase"
             actual = op.operands[1:] if phase else op.operands[2:]
@@ -143,7 +151,57 @@ def schedule_register_program(
                 else bindings[op.operands[1].id][-_width(returned.type, n_qubits) :]
             )
             workspace = tuple(range(position, n_qubits))
-            if boolean_values and not phase:
+            if phase and "angle" in op.attributes:
+                angle = op.attributes["angle"]
+                if not angle:
+                    continue
+                width = _width(returned.type, n_qubits)
+                if width > len(workspace):
+                    _fail(
+                        "lowering.workspace", "phase result exceeds clean workspace", op
+                    )
+                try:
+                    angles = tuple(math.ldexp(angle, bit) for bit in range(width))
+                except OverflowError:
+                    _fail(
+                        "register.phase",
+                        "weighted phase angle exceeds finite range",
+                        op,
+                    )
+                value_output = workspace[:width]
+                segment = schedule_arithmetic(
+                    segment_functions,
+                    inputs,
+                    value_output,
+                    entry=name,
+                    n_qubits=n_qubits,
+                    workspace=workspace[width:],
+                    workspace_state="fresh_zero",
+                    max_operations=remaining,
+                    scheduling=scheduling,
+                )
+                adjoint = adjoint_value_candidate(segment)
+                rotations = tuple(
+                    Instruction("phase", (wire,), params={"theta": radians})
+                    for wire, radians in zip(
+                        reversed(value_output), angles, strict=True
+                    )
+                )
+                segment = replace(
+                    segment,
+                    circuit=replace(
+                        segment.circuit,
+                        instructions=(
+                            *segment.circuit.instructions,
+                            *rotations,
+                            *adjoint.circuit.instructions,
+                        ),
+                    ),
+                    events=(*segment.events, *adjoint.events),
+                    peak_workspace=width + segment.peak_workspace,
+                    recomputations=segment.recomputations + adjoint.recomputations,
+                )
+            elif boolean_values and not phase:
                 boolean = lower_boolean_value(
                     segment_functions,
                     inputs,

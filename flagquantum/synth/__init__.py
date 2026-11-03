@@ -16,6 +16,7 @@ from ..services.synthesis import (
     UInt,
     allocate,
     hadamard_transform,
+    phase,
     qfunc,
     synthesize,
 )
@@ -34,4 +35,5 @@ __all__ = (
     "QBit",
     "allocate",
     "hadamard_transform",
+    "phase",
 )

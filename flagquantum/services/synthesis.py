@@ -37,6 +37,9 @@ from ..compiler._construction.program_types import (
 from ..compiler._construction.program_types import (
     hadamard_transform as hadamard_transform,
 )
+from ..compiler._construction.program_types import (
+    phase as phase,
+)
 from ..compiler._construction.register_profile import register_ports
 from ..compiler._construction.selection import (
     Constraints,
@@ -75,6 +78,7 @@ __all__ = (
     "QBit",
     "allocate",
     "hadamard_transform",
+    "phase",
 )
 
 

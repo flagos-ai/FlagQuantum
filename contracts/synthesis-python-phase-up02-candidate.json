@@ -1,0 +1,10 @@
+{
+  "schema": "flagquantum.synthesis_python_phase_up02_admission",
+  "version": "1.0",
+  "namespace": "flagquantum.synth",
+  "added_exports": ["phase"],
+  "phase_signature": "(expression: 'QNum | float', coefficient: 'float', /) -> 'None'",
+  "authorization_record": "docs/api-changes/FQ-SYNTH-PYTHON-PHASE-UP02-20261103.md",
+  "implementation_authorized": true,
+  "release_authorized": false
+}
