@@ -22,6 +22,8 @@ from flagquantum.qec.decoders.registry import get_decoder
 from flagquantum.qec.dem import DetectorErrorModel
 from flagquantum.qec.noise import PhenomenologicalNoise
 
+pytestmark = pytest.mark.unit
+
 
 @pytest.fixture
 def controlled(monkeypatch: pytest.MonkeyPatch) -> tuple[Mock, Mock]:
