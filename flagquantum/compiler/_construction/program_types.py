@@ -79,3 +79,8 @@ def hadamard_transform(out: QNum, /) -> None:
     run in the host interpreter; use synthesize and fq.run.
     """
     raise TypeError("hadamard_transform is captured inside qfunc")
+
+
+def phase(expression: QNum, coefficient: float, /) -> None:
+    """Mark a captured quantum expression with a phase coefficient."""
+    raise TypeError("phase is captured inside qfunc")
