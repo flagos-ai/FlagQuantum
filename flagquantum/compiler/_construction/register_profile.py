@@ -270,6 +270,10 @@ def _verify_body(
                 if len(op.operands) > 1
                 else frozenset({"angle"})
             )
+        if op.name == "qreg.call" and "inverse" in op.attributes:
+            if op.attributes["inverse"] is not True:
+                _fail("register.adjoint", "inverse call marker must be true", op)
+            attributes = frozenset({"callee", "inverse"})
         if attributes is None or set(op.attributes) != attributes or op.regions:
             _fail(
                 "register.operation", "unsupported register operation or attributes", op
@@ -351,6 +355,12 @@ def _verify_body(
                 outputs = tuple(
                     q.results[0] for q in body.operations if q.name == "qreg.declare"
                 )
+                if op.attributes.get("inverse") and outputs:
+                    _fail(
+                        "register.adjoint",
+                        "inverse call requires a Const-only callee",
+                        op,
+                    )
                 formal = (*const, *outputs)
                 if len(operands) != len(formal) or any(
                     actual.type != expected.type

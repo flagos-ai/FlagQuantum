@@ -42,6 +42,9 @@ def test_proposal_does_not_activate_or_change_the_existing_public_api():
     assert tuple(synth.__all__) == (
         *program["namespace_exports"],
         "phase",
+        "within",
+        "apply",
+        "adjoint",
         "CX",
         "SWAP",
         "CRX",

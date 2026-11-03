@@ -27,6 +27,7 @@ from .program_types import (
     QBit,
     QNum,
     _width_spec,
+    adjoint,
     allocate,
     apply,
     crx,
@@ -514,7 +515,7 @@ class _Body:
             return None
         return converted if math.isfinite(converted) else None
 
-    def call(self, node: ast.Call) -> None:
+    def call(self, node: ast.Call, *, inverse: bool = False) -> None:
         if node.keywords or any(isinstance(a, ast.Starred) for a in node.args):
             _error(
                 self.source,
@@ -530,6 +531,17 @@ class _Body:
                 "a quantum port cannot shadow a callable",
             )
         function = _resolve(self.definition, node.func)
+        if inverse and (
+            not isinstance(function, _QuantumFunction)
+            or not function.source.program
+            or any(port.role != "const" for port in program_ports(function))
+        ):
+            _error(
+                self.source,
+                node,
+                "program.adjoint",
+                "adjoint requires a static Const-only qfunc",
+            )
         if function is allocate:
             if len(node.args) not in {1, 2}:
                 _error(
@@ -665,7 +677,10 @@ class _Body:
                 (reads if port.role == "const" else writes).append(
                     self.register(argument, port.width)
                 )
-            self.emit("qreg.call", node, (*reads, *writes), callee=program.name)
+            call_attributes: dict[str, object] = {"callee": program.name}
+            if inverse:
+                call_attributes["inverse"] = True
+            self.emit("qreg.call", node, (*reads, *writes), **call_attributes)
         else:
             _error(
                 self.source,
@@ -767,6 +782,12 @@ class _Body:
                 "within requires a local computation",
             )
         for statement in action.body:
+            if (
+                isinstance(statement, ast.With)
+                and self.region_marker(statement) is adjoint
+            ):
+                self.adjoint_scope(statement)
+                continue
             if not isinstance(statement, ast.Expr) or not isinstance(
                 statement.value, ast.Call
             ):
@@ -796,13 +817,29 @@ class _Body:
             del self.ports[name]
             del self.widths[name]
 
+    def adjoint_scope(self, block: ast.With) -> None:
+        for statement in reversed(block.body):
+            if not isinstance(statement, ast.Expr) or not isinstance(
+                statement.value, ast.Call
+            ):
+                _error(
+                    self.source,
+                    statement,
+                    "program.adjoint",
+                    "adjoint requires static qfunc calls",
+                )
+            self.call(statement.value, inverse=True)
+
     def finish(self) -> HybridProgram:
         statements = iter(self.source.node.body)
         for statement in statements:
             if isinstance(statement, ast.AugAssign):
                 self.assign(statement)
             elif isinstance(statement, ast.With):
-                self.within_apply(statement, next(statements, None))
+                if self.region_marker(statement) is adjoint:
+                    self.adjoint_scope(statement)
+                else:
+                    self.within_apply(statement, next(statements, None))
             elif isinstance(statement, ast.Expr) and isinstance(
                 statement.value, ast.Call
             ):

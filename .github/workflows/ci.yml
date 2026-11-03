@@ -426,19 +426,27 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
+      - uses: ./.github/actions/metax-core-dependencies
+        id: core-seed
       - name: Create an isolated environment for this job
+        if: steps.core-seed.outputs.attached != 'true'
         run: |
           python -m venv "${RUNNER_TEMP}/venv-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
           echo "${RUNNER_TEMP}/venv-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}/bin" >> "$GITHUB_PATH"
       - name: Measure dedicated CPU service limits
         run: python -I tools/ci_cpu_budget.py --dedicated
-      - run: python -m pip install --upgrade pip 'setuptools>=77.0.3' wheel
+      - if: steps.core-seed.outputs.attached != 'true'
+        run: python -m pip install --upgrade pip 'setuptools>=77.0.3' wheel
       - name: Install CPU PyTorch through the shared mirror policy
+        if: steps.core-seed.outputs.attached != 'true'
         uses: ./.github/actions/install-cpu-torch
         timeout-minutes: 8
         with:
           torch-spec: "torch>=2.13,<2.14"
-      - run: python -m pip install --no-build-isolation -e '.[dev]'
+      - if: steps.core-seed.outputs.attached != 'true'
+        run: python -m pip install --no-build-isolation -e '.[dev]'
+      - if: steps.core-seed.outputs.attached == 'true'
+        run: python -m pip install --no-index --no-build-isolation --no-deps -e .
       - name: Verify dependency consistency and the CPU-only PyTorch build
         run: |
           python -m pip check
@@ -561,19 +569,27 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+      - uses: ./.github/actions/metax-core-dependencies
+        id: core-seed
       - name: Create an isolated environment for this job
+        if: steps.core-seed.outputs.attached != 'true'
         run: |
           python -m venv "${RUNNER_TEMP}/venv-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
           echo "${RUNNER_TEMP}/venv-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}/bin" >> "$GITHUB_PATH"
       - name: Measure dedicated CPU service limits
         run: python -I tools/ci_cpu_budget.py --dedicated
-      - run: python -m pip install --upgrade pip 'setuptools>=77.0.3' wheel
+      - if: steps.core-seed.outputs.attached != 'true'
+        run: python -m pip install --upgrade pip 'setuptools>=77.0.3' wheel
       - name: Install CPU PyTorch through the shared mirror policy
+        if: steps.core-seed.outputs.attached != 'true'
         uses: ./.github/actions/install-cpu-torch
         timeout-minutes: 8
         with:
           torch-spec: "torch>=2.13,<2.14"
-      - run: python -m pip install --no-build-isolation -e '.[dev]'
+      - if: steps.core-seed.outputs.attached != 'true'
+        run: python -m pip install --no-build-isolation -e '.[dev]'
+      - if: steps.core-seed.outputs.attached == 'true'
+        run: python -m pip install --no-index --no-build-isolation --no-deps -e .
       - name: Verify dependency consistency and the CPU-only PyTorch build
         run: |
           python -m pip check
@@ -766,7 +782,21 @@ jobs:
         with:
           python-version: "3.12"
       - uses: ./.github/actions/isolated-python
+        with:
+          self-hosted-pypi-index: ${{ vars.FQ_CI_PYPI_MIRROR || 'https://pypi.tuna.tsinghua.edu.cn/simple' }}
       - uses: ./.github/actions/install-cpu-torch
+      - name: Warm the runner's jaxlib wheel cache
+        if: runner.environment == 'self-hosted' && runner.os == 'Linux'
+        run: |
+          cache="${PIP_CACHE_DIR}/fq-jaxlib-wheels"
+          mkdir -p "$cache"
+          staging="$(mktemp -d "$cache/.download.XXXXXX")"
+          trap 'rm -rf "$staging"' EXIT
+          requirement="$(python -c 'import tomllib; from pathlib import Path; print(tomllib.loads(Path("pyproject.toml").read_text())["project"]["optional-dependencies"]["jax"][0])')"
+          timeout --kill-after=15s 300s python -m pip download --only-binary=:all: \
+            --find-links "$cache" --dest "$staging" "$requirement"
+          mv "$staging"/jaxlib-*.whl "$cache/"
+          echo "PIP_FIND_LINKS=${PIP_FIND_LINKS:+$PIP_FIND_LINKS }$cache" >> "$GITHUB_ENV"
       - run: python -m pip install --no-build-isolation -e '.[dev,jax]'
       - run: python -m pytest tests/test_hybrid_jax.py tests/test_jax_distributed_plan.py -q
       - name: Retain resource limits and pytest timing reports
@@ -1131,6 +1161,8 @@ jobs:
         with:
           python-version: "3.12"
       - uses: ./.github/actions/isolated-python
+        with:
+          self-hosted-pypi-index: ${{ vars.FQ_CI_PYPI_MIRROR || 'https://pypi.tuna.tsinghua.edu.cn/simple' }}
       - run: python -m pip install --upgrade pip 'setuptools>=77.0.3' wheel
       - uses: ./.github/actions/install-cpu-torch
         timeout-minutes: 8
@@ -1215,6 +1247,8 @@ jobs:
         with:
           python-version: "3.12"
       - uses: ./.github/actions/isolated-python
+        with:
+          self-hosted-pypi-index: ${{ vars.FQ_CI_PYPI_MIRROR || 'https://pypi.tuna.tsinghua.edu.cn/simple' }}
       - run: python -m pip install --upgrade pip 'setuptools>=77.0.3' wheel
       - uses: ./.github/actions/install-cpu-torch
         timeout-minutes: 8
@@ -1863,6 +1897,8 @@ jobs:
         with:
           python-version: "3.12"
       - uses: ./.github/actions/isolated-python
+        with:
+          self-hosted-pypi-index: ${{ vars.FQ_CI_PYPI_MIRROR || 'https://pypi.tuna.tsinghua.edu.cn/simple' }}
       - uses: ./.github/actions/install-cpu-torch
       - run: python -m pip install --no-build-isolation -e '.[dev,jax,viz,braket,cirq,pennylane,cotengra,stim,pymatching,kaiwu]'
       - name: Verify dependency consistency and CPU frameworks

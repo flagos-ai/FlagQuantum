@@ -25,6 +25,18 @@ class SelectPauliLCU:
     def __post_init__(self) -> None:
         object.__setattr__(self, "select_unitaries", tuple(self.select_unitaries))
 
+    def make_on(
+        self,
+        *,
+        selection: Sequence[int],
+        target: Sequence[int],
+        control: Sequence[int] = (),
+    ) -> _BoundSelectPauliLCU:
+        """Bind qubit indices for use with :meth:`Circuit.append`."""
+        return _BoundSelectPauliLCU(
+            self, tuple(selection), tuple(target), tuple(control)
+        )
+
     def append_to(
         self,
         circuit: Circuit,
@@ -48,4 +60,17 @@ class SelectPauliLCU:
             target_width=self.target_bitsize,
             select_unitaries=self.select_unitaries,
             control_val=self.control_val,
+        )
+
+
+@dataclass(frozen=True)
+class _BoundSelectPauliLCU:
+    operation: SelectPauliLCU
+    selection: tuple[int, ...]
+    target: tuple[int, ...]
+    control: tuple[int, ...]
+
+    def append_to(self, circuit: Circuit) -> Circuit:
+        return self.operation.append_to(
+            circuit, selection=self.selection, target=self.target, control=self.control
         )

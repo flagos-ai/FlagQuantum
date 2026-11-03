@@ -649,6 +649,15 @@ _SYNTH_PROGRAM_EXPORTS = (
     "hadamard_transform",
 )
 
+_SYNTH_CLEANUP_EXPORTS = ("within", "apply", "adjoint")
+_SYNTH_PAIR_EXPORTS = ("CX", "SWAP", "CRX")
+_SYNTH_ACTIVE_EXPORTS = (
+    *_SYNTH_PROGRAM_EXPORTS,
+    "phase",
+    *_SYNTH_CLEANUP_EXPORTS,
+    *_SYNTH_PAIR_EXPORTS,
+)
+
 
 def _validate_authorized_synthesis_run(contract: dict[str, Any]) -> list[str]:
     """Protect the exact reviewed synthesis extension, not arbitrary input types."""
@@ -747,7 +756,7 @@ def _validate_authorized_synthesis_run(contract: dict[str, Any]) -> list[str]:
         errors.append(
             "synthesis run signature exceeds the approved single input addition"
         )
-    active_exports = (*_SYNTH_PROGRAM_EXPORTS, "phase", "CX", "SWAP", "CRX")
+    active_exports = _SYNTH_ACTIVE_EXPORTS
     if (
         tuple(synth.__all__) != active_exports
         or tuple(synthesis.__all__) != active_exports
@@ -918,7 +927,7 @@ def _validate_authorized_synthesis_phase(contract: Any) -> list[str]:
         errors.append("predicate phase implementation authorization is missing")
     if str(inspect.signature(synth.synthesize)) != expected["synthesize_signature"]:
         errors.append("predicate phase signature exceeds approved admission")
-    if tuple(synth.__all__) != (*_SYNTH_PROGRAM_EXPORTS, "phase", "CX", "SWAP", "CRX"):
+    if tuple(synth.__all__) != _SYNTH_ACTIVE_EXPORTS:
         errors.append("phase namespace differs from the authorized program successor")
     program_contract = json.loads(
         (ROOT / "contracts/synthesis-python-program-v1-candidate.json").read_text()
@@ -959,7 +968,7 @@ def _validate_authorized_synthesis_python_program(contract: Any) -> list[str]:
             errors.append("Python program must preserve historical synthesis contracts")
     if tuple(contract["namespace_exports"]) != _SYNTH_PROGRAM_EXPORTS:
         errors.append("Python program export delta exceeds authorization")
-    exports = (*_SYNTH_PROGRAM_EXPORTS, "phase", "CX", "SWAP", "CRX")
+    exports = _SYNTH_ACTIVE_EXPORTS
     if tuple(synth.__all__) != exports or tuple(synthesis.__all__) != exports:
         errors.append("Python program namespace differs from its reviewed scope")
     if any(
@@ -983,6 +992,27 @@ def _validate_authorized_synthesis_python_program(contract: Any) -> list[str]:
         or not (ROOT / phase_contract["authorization_record"]).is_file()
     ):
         errors.append("native program phase differs from its UP-02 authorization")
+    cleanup = json.loads(
+        (ROOT / "contracts/synthesis-python-cleanup-up03-candidate.json").read_text()
+    )
+    cleanup_record = "docs/api-changes/FQ-SYNTH-PYTHON-CLEANUP-UP03-20261103.md"
+    marker_signature = "() -> 'AbstractContextManager[None]'"
+    if (
+        cleanup.get("schema") != "flagquantum.synthesis_python_cleanup_up03_admission"
+        or cleanup.get("version") != "1.0"
+        or cleanup.get("namespace") != "flagquantum.synth"
+        or cleanup.get("added_exports") != list(_SYNTH_CLEANUP_EXPORTS)
+        or cleanup.get("marker_signature") != marker_signature
+        or cleanup.get("implementation_authorized") is not True
+        or cleanup.get("release_authorized") is not False
+        or cleanup.get("authorization_record") != cleanup_record
+        or not (ROOT / cleanup_record).is_file()
+        or any(
+            str(inspect.signature(getattr(synth, name))) != marker_signature
+            for name in _SYNTH_CLEANUP_EXPORTS
+        )
+    ):
+        errors.append("native program cleanup differs from its UP-03 authorization")
     pair_contract = json.loads(
         (ROOT / "contracts/synthesis-python-pair-gates-candidate.json").read_text()
     )
@@ -994,6 +1024,7 @@ def _validate_authorized_synthesis_python_program(contract: Any) -> list[str]:
     if (
         pair_contract.get("namespace") != "flagquantum.synth"
         or pair_contract.get("signatures") != pair_signatures
+        or tuple(pair_signatures) != _SYNTH_PAIR_EXPORTS
         or pair_contract.get("implementation_authorized") is not True
         or pair_contract.get("release_authorized") is not False
         or pair_contract.get("authorization_record")

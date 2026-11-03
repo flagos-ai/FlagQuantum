@@ -123,9 +123,7 @@ class _Expression:
                 bound = (
                     left & right
                     if text == "&"
-                    else left | right
-                    if text == "|"
-                    else left ^ right
+                    else left | right if text == "|" else left ^ right
                 )
                 result = (1 if lq or rq else bound, lq or rq)
             elif text in _RELATIONS:

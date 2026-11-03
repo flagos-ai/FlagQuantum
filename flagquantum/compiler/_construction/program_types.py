@@ -110,3 +110,8 @@ def within() -> AbstractContextManager[None]:
 def apply() -> AbstractContextManager[None]:
     """Capture an operation between preparation and its checked inverse."""
     raise TypeError("apply is captured inside qfunc")
+
+
+def adjoint() -> AbstractContextManager[None]:
+    """Capture the checked inverse of static Const-only qfunc calls."""
+    raise TypeError("adjoint is captured inside qfunc")

@@ -32,6 +32,9 @@ def test_namespace_reexports_one_authoritative_services_implementation() -> None
     assert tuple(synth.__all__) == (
         *program["namespace_exports"],
         "phase",
+        "within",
+        "apply",
+        "adjoint",
         "CX",
         "SWAP",
         "CRX",

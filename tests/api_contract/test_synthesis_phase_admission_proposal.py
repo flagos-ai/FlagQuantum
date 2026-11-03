@@ -51,6 +51,9 @@ def test_proposal_records_current_api_and_precise_pending_delta_without_fake_app
     assert list(synth.__all__) == [
         *program["namespace_exports"],
         "phase",
+        "within",
+        "apply",
+        "adjoint",
         "CX",
         "SWAP",
         "CRX",

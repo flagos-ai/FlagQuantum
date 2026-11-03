@@ -80,9 +80,11 @@ def schedule_register_program(
                 Instruction(
                     op.attributes["gate"],
                     tuple(bindings[value.id][0] for value in op.operands[1:]),
-                    params={"theta": op.attributes["angle"]}
-                    if "angle" in op.attributes
-                    else {},
+                    params=(
+                        {"theta": op.attributes["angle"]}
+                        if "angle" in op.attributes
+                        else {}
+                    ),
                 ),
             )
         elif op.name == "qreg.gate":
