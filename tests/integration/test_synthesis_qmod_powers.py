@@ -94,12 +94,14 @@ def test_power_width_guard_and_literal_folding() -> None:
         )
         == 7
     )
-    with pytest.raises(synth.SynthesisError):
-        synth.synthesize(
-            "qfunc main(output x:qnum<2>,output result:qnum) {allocate(x);result=x**3;}",
-            source_format="qmod",
-            max_workspace=0,
-        )
+    cube = synth.synthesize(
+        "qfunc main(output x:qnum<2>,output result:qnum) {"
+        "allocate(x);hadamard_transform(x);result=x**3;}",
+        source_format="qmod",
+        max_workspace=0,
+    )
+    assert cube.report["workspace_qubits"] == 0
+    check_state(cube, fq.run(cube), {(x, x**3): 0.5 for x in range(4)})
 
 
 def test_quantum_dependent_constant_power_keeps_initialization_and_coherence() -> None:

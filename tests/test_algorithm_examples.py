@@ -1715,7 +1715,7 @@ def test_synthesis_source_trial_runs_text_and_local_file(
     else:
         output = _run("synthesis_source_trial")
         expected = {(x, x * x + 1): 0.25 for x in range(4)}
-        qubits, operations, depth = 14, 74, 57
+        qubits, operations, depth = 6, 8, 5
     observed = ast.literal_eval(_labelled(output, "distribution"))
     assert observed == pytest.approx(expected, abs=1e-12)
     resources = _labelled(output, "resources")

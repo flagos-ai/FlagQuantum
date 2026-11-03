@@ -19,6 +19,7 @@ CORPUS = Path(__file__).resolve().parents[1] / "fixtures/classiq_qmod"
     "filename", ["classiq_overview_tutorial.qmod", "execution_tutorial.qmod"]
 )
 @pytest.mark.parametrize("input_kind", ["file", "text"])
+@pytest.mark.usefixtures("legacy_register_selection")
 def test_original_tutorial_full_state_and_clean_workspace(
     filename: str, input_kind: str
 ) -> None:

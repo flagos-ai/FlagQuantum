@@ -15,7 +15,7 @@ from ...core.ir import CircuitIR, Instruction
 from .._hybrid.model import HybridProgram, ValueId
 from .arithmetic_rewrites import normalize_arithmetic
 from .bindings import verify_bindings
-from .lifetimes import analyze_lifetimes
+from .lifetimes import LifetimeAnalysis, analyze_lifetimes
 from .profile import _positive_integer
 
 _Poly = frozenset[int]
@@ -31,6 +31,10 @@ _MAX_PRODUCTS = 20_000
 class BooleanCandidateError(ValueError):
     """The optional Boolean family cannot supply a candidate."""
 
+    def __init__(self, message: str, *, exhausted: bool = False) -> None:
+        super().__init__(message)
+        self.exhausted = exhausted
+
 
 @dataclass(frozen=True)
 class BooleanValueCandidate:
@@ -39,6 +43,7 @@ class BooleanValueCandidate:
     input_wires: tuple[int, ...]
     workspace: tuple[int, ...]
     source_result: ValueId
+    lifetimes: LifetimeAnalysis
 
 
 class _Expansion:
@@ -156,7 +161,9 @@ def lower_boolean_value(
                     "mapping: requires more workspace or factoring"
                 )
             if len(gates) + (3 if degree == 3 else 1) > min(max_operations, 256):
-                raise BooleanCandidateError("budget: Boolean mapped operations")
+                raise BooleanCandidateError(
+                    "budget: Boolean mapped operations", exhausted=max_operations < 256
+                )
             if degree == 3:
                 scratch = workspace[0]
                 used_workspace = (scratch,)
@@ -178,4 +185,5 @@ def lower_boolean_value(
         tuple(wires),
         used_workspace,
         original.operations[-1].operands[0].id,
+        analysis,
     )

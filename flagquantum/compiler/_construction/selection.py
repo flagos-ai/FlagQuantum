@@ -1,4 +1,4 @@
-"""Finite, deterministic selection over the two existing arithmetic schedules."""
+"""Finite, deterministic selection of checked target circuits."""
 
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, field, replace
@@ -14,6 +14,7 @@ from .._hybrid.model import HybridProgram
 from .._hybrid.verifier import Diagnostic, HybridVerificationError
 from ..resource_estimation import ResourceEstimate, estimate_resources
 from .bindings import OutputMode
+from .boolean_lowering import BooleanCandidateError
 from .constraints import CircuitLimits
 from .lowering import ArithmeticCandidate, Schedule, schedule_arithmetic
 from .profile import verify_construction
@@ -68,9 +69,12 @@ class ConstructionBudget:
                 )
 
 
+CandidateStrategy = Literal["retain", "recompute", "boolean"]
+
+
 @dataclass(frozen=True)
 class CandidateRow:
-    strategy: Schedule
+    strategy: CandidateStrategy
     source_identities: tuple[str, ...]
     arithmetic: ArithmeticCandidate | RegisterCandidate | None
     target: TargetProduct | None
@@ -86,7 +90,7 @@ class CandidateRow:
 
 @dataclass(frozen=True)
 class Recovery:
-    strategy: Schedule
+    strategy: CandidateStrategy
     constraints: Constraints
     message: str = "Feasible for this checked candidate; not a global lower bound."
 
@@ -113,7 +117,7 @@ def _rank(row: CandidateRow, objective: str) -> tuple[int, ...]:
         if objective == "width"
         else (r.depth, r.n_operations, r.n_qubits)
     )
-    return (*costs, row.arithmetic.peak_workspace, 0 if row.strategy == "retain" else 1)
+    return (*costs, row.arithmetic.peak_workspace, _STRATEGY_RANK[row.strategy])
 
 
 def _recover(row: CandidateRow, constraints: Constraints) -> Recovery:
@@ -138,7 +142,7 @@ def _recover(row: CandidateRow, constraints: Constraints) -> Recovery:
 _DEFAULT_CONSTRAINTS = Constraints()
 _DEFAULT_BUDGET = ConstructionBudget()
 _DEFAULT_TARGET = Target()
-_STRATEGIES: tuple[Schedule, ...] = ("retain", "recompute")
+_STRATEGY_RANK = {"retain": 0, "recompute": 1, "boolean": 2}
 
 
 def _check_phase_target(target: Target) -> None:
@@ -301,6 +305,7 @@ def select_register_program(
     budget: ConstructionBudget = _DEFAULT_BUDGET,
     target: Target = _DEFAULT_TARGET,
     objective: Literal["width", "depth"] = "width",
+    include_boolean: bool = False,
 ) -> Selection:
     """Check complete fresh-register programs through the same candidate consumer."""
     if (
@@ -332,8 +337,25 @@ def select_register_program(
             scheduling=strategy,
         )
 
+    def build_boolean() -> RegisterCandidate:
+        return schedule_register_program(
+            program,
+            functions,
+            n_qubits=budget.qubits,
+            max_operations=budget.operations,
+            boolean_values=True,
+        )
+
     return _select_candidates(
-        build, identities, mapping, position, constraints, budget, target, objective
+        build,
+        identities,
+        mapping,
+        position,
+        constraints,
+        budget,
+        target,
+        objective,
+        optional_boolean=build_boolean if include_boolean else None,
     )
 
 
@@ -348,18 +370,29 @@ def _select_candidates(
     objective: Literal["width", "depth"],
     *,
     preparation: tuple[Instruction, ...] = (),
+    optional_boolean: Callable[[], RegisterCandidate] | None = None,
 ) -> Selection:
     """Share target checks, final costs, ranking and recovery across both builders."""
     rows: list[CandidateRow] = []
     complete = True
-    for index, strategy in enumerate(_STRATEGIES):
+    builders: list[
+        tuple[CandidateStrategy, Callable[[], ArithmeticCandidate | RegisterCandidate]]
+    ] = [
+        ("retain", lambda: build("retain")),
+        ("recompute", lambda: build("recompute")),
+    ]
+    if optional_boolean is not None:
+        builders.append(("boolean", optional_boolean))
+    for index, (strategy, build_candidate) in enumerate(builders):
         start = perf_counter()
         arithmetic = None
         product = None
         resources = None
         stages: tuple[tuple[str, ResourceEstimate], ...] = ()
         diagnostics: tuple[Diagnostic, ...] = ()
-        if index >= budget.candidate_checks or position > budget.qubits:
+        # The internal experiment adds one fixed slot after both legacy checks.
+        checked_legacy = min(index, 1)
+        if checked_legacy >= budget.candidate_checks or position > budget.qubits:
             diagnostics = (
                 Diagnostic(
                     "selection.budget",
@@ -369,7 +402,7 @@ def _select_candidates(
             complete = False
         else:
             try:
-                arithmetic = build(strategy)
+                arithmetic = build_candidate()
                 # Contiguous fresh pool: trim unused trailing capacity, not costs.
                 circuit = replace(
                     arithmetic.circuit,
@@ -392,6 +425,14 @@ def _select_candidates(
                 diagnostics = constraints.violations(
                     resources, arithmetic.peak_workspace
                 )
+            except BooleanCandidateError as error:
+                code = (
+                    "selection.budget"
+                    if error.exhausted
+                    else "selection.boolean.refused"
+                )
+                diagnostics = (Diagnostic(code, str(error)),)
+                complete = complete and not error.exhausted
             except HybridVerificationError as error:
                 diagnostics = error.diagnostics
                 complete = False
