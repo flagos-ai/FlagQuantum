@@ -106,6 +106,7 @@ SCRIPTS = (
     "block_encoding",
     "linear_combination",
     "pauli_lcu_block_encoding",
+    "sparse_select",
     "logical_resources",
     "arithmetic",
     "synthesis_trial",
@@ -299,6 +300,7 @@ PREMISE_PHRASES: dict[str, tuple[str, ...]] = {
     # exponential-in-the-index-register construction read as a cost claim is the
     # misreading the second half prevents.
     "pauli_lcu_block_encoding": ("before further synthesis",),
+    "sparse_select": ("requires mid-circuit measurement and feedback",),
     "linear_combination": (
         "exponential in the index",
         "belongs to the caller's",
@@ -1445,6 +1447,14 @@ def test_pauli_lcu_block_encoding_example_runs_the_gate_level_walk() -> None:
     assert "5 qubits (1 workspace), 11 Toffoli gates" in output
     assert "alpha = 2" in output
     _assert_premise("pauli_lcu_block_encoding", output)
+
+
+def test_sparse_select_example_runs_dynamic_and_unitary_paths() -> None:
+    output = _run("sparse_select")
+    assert "Sampling path: dynamic_unary_iteration" in output
+    assert "Sampling workspace: 3 qubits" in output
+    assert "Gate-level SELECT verified with 1 work qubit." in output
+    _assert_premise("sparse_select", output)
 
 
 def test_linear_combination_example_encodes_the_pauli_sum_from_its_coefficients() -> (

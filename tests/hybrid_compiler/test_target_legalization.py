@@ -347,3 +347,43 @@ def test_static_target_lowers_select_to_unitary_gates() -> None:
         result.program.metadata["select_lowering"]["operations"][0]["path"]
         == "unitary_ladder"
     )
+
+
+def test_sparse_select_legalizes_to_unitary_gates_with_shared_workspace() -> None:
+    from flagquantum import Circuit
+    from flagquantum.algorithms.primitives.multiplexers import SelectSparse
+
+    circuit = Circuit(11, dtype=torch.complex128)
+    circuit.append(
+        SelectSparse.make_on(
+            p=(0,),
+            q=(1,),
+            r=(2,),
+            s=(3,),
+            alpha=4,
+            beta=5,
+            flag_1b=6,
+            sys=(7, 8, 9, 10),
+        )
+    )
+    gates = {"s", "sdg", "x", "h", "cx", "ccx"}
+    snapshot = _snapshot(
+        **{
+            "qubits.logical_capacity": 12,
+            "ancillas.policy": "compiler_allocated",
+            "ancillas.maximum_compiler": 1,
+            "limits.maximum_program_operations": 1024,
+            "gates.native": tuple(
+                {"name": name, "parameters": ()} for name in sorted(gates)
+            ),
+        }
+    )
+    result = legalize_circuit_for_target(
+        circuit, backend="pytorch", snapshot=snapshot, evaluated_at=_NOW
+    )
+
+    assert result.program.n_wires == 12
+    assert {item.name for item in result.program.instructions} <= gates
+    report = result.program.metadata["select_lowering"]
+    assert report["workspace_qubits"] == 1
+    assert len(report["operations"]) == 4

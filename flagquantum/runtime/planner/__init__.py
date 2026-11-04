@@ -14,6 +14,7 @@ from ...compiler.select_lowering import (
     SELECT_REPORT,
     is_structured_select,
     lower_select_program,
+    supports_dynamic_select,
 )
 from ...core.classical_control import validate_classical_control
 from ...core.ir import CircuitIR, MeasurementNode
@@ -958,7 +959,7 @@ def plan(
         and not (
             isinstance(construction, Mapping) and construction.get("inputs") is not None
         )
-        and any(map(is_structured_select, source_ir.instructions))
+        and any(map(supports_dynamic_select, source_ir.instructions))
     ):
         candidate = lower_select_program(source_ir, "dynamic_unary_iteration")
         if any(instruction_is_dynamic(op) for op in candidate.instructions):
