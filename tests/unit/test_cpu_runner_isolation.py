@@ -130,7 +130,6 @@ def test_source_hygiene_checkout_does_not_require_unneeded_git_lfs() -> None:
 
 
 @pytest.mark.parametrize("cache_state", ["absent", "hit", "miss"])
-@pytest.mark.parametrize("dependency_mirror_failure", [False, True])
 @pytest.mark.parametrize("torch_spec", ["torch>=2.13,<2.14", "torch>=2.10,<2.11"])
 @pytest.mark.parametrize(
     ("runner_environment", "mirror_failure"),
@@ -147,7 +146,6 @@ def test_cpu_wheel_mirror_fallback_preserves_the_official_hosted_route(
     mirror_failure: str,
     torch_spec: str,
     cache_state: str,
-    dependency_mirror_failure: bool,
 ) -> None:
     action = yaml.safe_load(
         (ROOT / ".github/actions/install-cpu-torch/action.yml").read_text()
@@ -171,8 +169,6 @@ def test_cpu_wheel_mirror_fallback_preserves_the_official_hosted_route(
         "        raise SystemExit(1)\n"
         "    destination = pathlib.Path(sys.argv[sys.argv.index('--dest') + 1])\n"
         "    (destination / 'torch-2.13.0+cpu.whl').touch()\n"
-        "if sys.argv[1:] == ['-m', 'pip', 'install', os.environ['FQ_TORCH_SPEC']]:\n"
-        "    raise SystemExit(int(os.environ['DEPENDENCY_MIRROR_FAILURE']))\n"
     )
     fake_python.chmod(0o755)
     fake_timeout = tmp_path / "timeout"
@@ -180,11 +176,11 @@ def test_cpu_wheel_mirror_fallback_preserves_the_official_hosted_route(
         "#!/bin/bash\n"
         'test "$1" = --kill-after=10s || exit 2\n'
         'case "$2" in\n'
-        "180s|300s) ;;\n"
+        '180s) if [ "$MIRROR_FAILURE" = timeout ]; then exit 124; fi ;;\n'
+        "300s) ;;\n"
         "*) exit 2 ;;\n"
         "esac\n"
         "shift 2\n"
-        'if [ "$4" = download ] && [ "$MIRROR_FAILURE" = timeout ]; then exit 124; fi\n'
         'exec "$@"\n'
     )
     fake_timeout.chmod(0o755)
@@ -195,8 +191,6 @@ def test_cpu_wheel_mirror_fallback_preserves_the_official_hosted_route(
             "PATH": str(tmp_path) + os.pathsep + os.environ["PATH"],
             "PIP_CALL_LOG": str(log),
             "MIRROR_FAILURE": mirror_failure,
-            "DEPENDENCY_MIRROR_FAILURE": str(int(dependency_mirror_failure)),
-            "PIP_INDEX_URL": "https://mirror.example/simple",
             "CACHE_STATE": cache_state,
             "FQ_CPU_WHEEL_CACHE": str(cache),
             "FQ_TORCH_SPEC": torch_spec,
@@ -208,15 +202,6 @@ def test_cpu_wheel_mirror_fallback_preserves_the_official_hosted_route(
     )
     commands = [json.loads(line) for line in log.read_text().splitlines()]
     pip_calls = [command for command in commands if command[:2] == ["-m", "pip"]]
-    if dependency_mirror_failure:
-        assert pip_calls.pop() == [
-            "-m",
-            "pip",
-            "install",
-            "--index-url",
-            "https://pypi.org/simple",
-            torch_spec,
-        ]
     cached = [call for call in pip_calls if str(cache) in call]
     if runner_environment == "self-hosted" and cache_state != "absent":
         assert cached == [

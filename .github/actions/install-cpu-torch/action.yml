@@ -39,12 +39,5 @@ runs:
           timeout --kill-after=10s 300s python -m pip install --no-deps "$FQ_TORCH_SPEC" \
             --index-url https://download.pytorch.org/whl/cpu
         fi
-        if ! timeout --kill-after=10s 180s python -m pip install "$FQ_TORCH_SPEC"; then
-          if [ "${PIP_INDEX_URL:-https://pypi.org/simple}" = https://pypi.org/simple ]; then
-            exit 1
-          fi
-          echo "::warning::CPU PyTorch dependency installation failed on the configured PyPI mirror; retrying official PyPI"
-          timeout --kill-after=10s 180s python -m pip install \
-            --index-url https://pypi.org/simple "$FQ_TORCH_SPEC"
-        fi
+        python -m pip install "$FQ_TORCH_SPEC"
         python -c "import torch; assert torch.version.cuda is None, torch.version.cuda; assert '+cpu' in torch.__version__, torch.__version__; print('CPU PyTorch:', torch.__version__)"
