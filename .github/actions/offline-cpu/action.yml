@@ -1,0 +1,40 @@
+name: Attach locked offline CPU environment
+description: Pull a prebuilt image and run all Python commands without external networking
+inputs:
+  profile:
+    description: Image profile and Python version
+    required: true
+  registry-token:
+    description: Read-only GitHub package token
+    required: true
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      env:
+        FQ_CI_PROFILE: ${{ inputs.profile }}
+        FQ_REGISTRY_TOKEN: ${{ inputs.registry-token }}
+      run: |
+        image="$(awk -v profile="$FQ_CI_PROFILE" '$1 == profile { print $2 }' docker/ci/images.lock)"
+        [[ "$image" =~ ^ghcr\.io/flagos-ai/flagquantum-ci@sha256:[a-f0-9]{64}$ ]]
+        export DOCKER_CONFIG
+        DOCKER_CONFIG="$(mktemp -d "$RUNNER_TEMP/fq-registry.XXXXXXXX")"
+        trap 'rm -rf "$DOCKER_CONFIG"' EXIT
+        printf '%s' "$FQ_REGISTRY_TOKEN" | docker login ghcr.io --username "$GITHUB_ACTOR" --password-stdin
+        docker pull "$image"
+        rm -rf "$DOCKER_CONFIG"
+        unset DOCKER_CONFIG FQ_REGISTRY_TOKEN
+        trap - EXIT
+        echo "Using locked CPU CI image $image"
+
+        export FQ_CI_IMAGE="$image"
+        export FQ_CI_PRIVATE
+        FQ_CI_PRIVATE="$(mktemp -d "$RUNNER_TEMP/fq-offline.XXXXXXXX")"
+        mkdir "$FQ_CI_PRIVATE/bin"
+        for command in python torchrun; do
+          ln -s "$GITHUB_WORKSPACE/.github/actions/offline-cpu/run" "$FQ_CI_PRIVATE/bin/$command"
+        done
+        "$FQ_CI_PRIVATE/bin/python" --prepare
+        echo "FQ_CI_IMAGE=$FQ_CI_IMAGE" >> "$GITHUB_ENV"
+        echo "FQ_CI_PRIVATE=$FQ_CI_PRIVATE" >> "$GITHUB_ENV"
+        echo "$FQ_CI_PRIVATE/bin" >> "$GITHUB_PATH"

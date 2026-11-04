@@ -23,7 +23,6 @@ def test_self_hosted_jobs_have_no_matrix_parallelism_limit() -> None:
             found.append((path.name, name))
             assert "max-parallel" not in job.get("strategy", {}), (path.name, name)
     assert ("ci.yml", "dependency-bounds") in found
-    assert ("ci.yml", "coverage-shard") in found
     assert ("scheduled-hardware.yml", "local-scale-scheduled") in found
 
 
@@ -83,4 +82,4 @@ def test_self_hosted_cpu_capacity_groups_do_not_serialize_ready_work() -> None:
                         group not in groups
                     ), f"Ready jobs share a capacity lock: {group}"
                     groups.add(group)
-    assert {"dependency-bounds", "coverage-shard", "pre-commit"} <= set(found)
+    assert {"dependency-bounds", "distributed-cpu-shard", "pre-commit"} <= set(found)
