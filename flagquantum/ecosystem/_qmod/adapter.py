@@ -13,6 +13,7 @@ from ...compiler._construction.profile import uint_type
 from ...compiler._construction.ranges import unsigned_width
 from ...compiler._construction.register_profile import (
     equatorial_rotation,
+    euler_rotation,
     register_type,
     verify_register_program,
 )
@@ -692,6 +693,19 @@ class _Adapt:
             self.effect_op(
                 "qreg.uniform_interval", token, (destination,), start=start, stop=stop
             )
+        elif token.text == "U":
+            if len(args) != 5:
+                reject(token, "signature", "U requires four angles and a qbit target")
+            theta, phi, lam, gamma = (_literal_angle(arg, token) for arg in args[:4])
+            target = self.atom(args[4])
+            destination = self.register(target)
+            if self.parameters[target.text].kind != "qbit":
+                reject(target, "type", "U requires a scalar qbit target")
+            for gate, angle in euler_rotation(theta, phi, lam):
+                self.effect_op(
+                    "qreg.gate", token, (destination,), gate=gate, index=0, angle=angle
+                )
+            self.effect_op("qreg.phase", token, (), angle=gamma)
         elif token.text == "R":
             if len(args) != 3:
                 reject(token, "signature", "R requires two angles and a qbit target")

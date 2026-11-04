@@ -16,7 +16,7 @@ from ..resource_estimation import ResourceEstimate, estimate_resources
 from .bindings import OutputMode
 from .boolean_lowering import BooleanCandidateError
 from .constraints import CircuitLimits
-from .lowering import ArithmeticCandidate, Schedule, schedule_arithmetic
+from .lowering import ArithmeticCandidate, BoundArithmetic, Schedule
 from .profile import verify_construction
 from .register_expansion import expand_register_calls
 from .register_lowering import RegisterCandidate, schedule_register_program
@@ -269,20 +269,21 @@ def select_arithmetic(
         f.semantic_identity for f in sorted(functions, key=lambda f: f.name)
     )
 
+    effect = BoundArithmetic(
+        functions,
+        entry,
+        bindings,
+        output,
+        tuple(range(position, budget.qubits)),
+        output_mode,
+    )
+
     def build(strategy: Schedule) -> ArithmeticCandidate:
-        arithmetic = schedule_arithmetic(
-            functions,
-            bindings,
-            output,
-            entry=entry,
+        return effect.lower(
             n_qubits=budget.qubits,
-            workspace=tuple(range(position, budget.qubits)),
-            workspace_state="fresh_zero",
             max_operations=budget.operations,
             scheduling=strategy,
-            output_mode=output_mode,
         )
-        return arithmetic
 
     return _select_candidates(
         build,

@@ -657,6 +657,7 @@ _SYNTH_ACTIVE_EXPORTS = (
     *_SYNTH_CLEANUP_EXPORTS,
     *_SYNTH_PAIR_EXPORTS,
     "R",
+    "U",
     "prepare_uniform_interval_state",
     "control",
 )
@@ -1019,6 +1020,12 @@ def _validate_authorized_synthesis_python_program(contract: Any) -> list[str]:
     pair_contract = json.loads(
         (ROOT / "contracts/synthesis-python-pair-gates-candidate.json").read_text()
     )
+    if (
+        str(inspect.signature(synth.U))
+        != "(theta: 'float', phi: 'float', lam: 'float', gamma: 'float', target: 'QBit', /) -> 'None'"
+        or not (ROOT / "docs/api-changes/FQ-SYNTH-PYTHON-U-UP06.md").is_file()
+    ):
+        errors.append("native U differs from its authorization")
     if (
         str(inspect.signature(synth.R))
         != "(theta: 'float', phi: 'float', target: 'QBit', /) -> 'None'"

@@ -17,6 +17,7 @@ from ..services.synthesis import (
     QNum,
     R,
     SynthesisError,
+    U,
     UInt,
     adjoint,
     allocate,
@@ -52,6 +53,7 @@ __all__ = (
     "SWAP",
     "CRX",
     "R",
+    "U",
     "prepare_uniform_interval_state",
     "control",
 )

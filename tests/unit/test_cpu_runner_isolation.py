@@ -52,17 +52,31 @@ def test_isolation_rejects_host_packages_and_reuses_no_previous_environment(
         ACTIONS_RUNNER_HOOK_JOB_STARTED="/unavailable-hook",
         PATH=str(Path(sys.executable).parent) + os.pathsep + base_env["PATH"],
     )
+    curl = tmp_path / "curl"
+    curl.write_text(
+        "#!/bin/bash\n"
+        'test "$MIRROR_STATE" = healthy || exit 22\n'
+        'printf "%s\\n" "filelock-1.0.whl setuptools-77.0.3.whl"\n'
+    )
+    curl.chmod(0o755)
     environments = []
-    for attempt in range(2):
+    for attempt, (runner_environment, mirror_state) in enumerate(
+        [
+            ("self-hosted", "healthy"),
+            ("self-hosted", "unavailable"),
+            ("github-hosted", "unavailable"),
+        ]
+    ):
         path_file = tmp_path / f"path-{attempt}"
         env_file = tmp_path / f"env-{attempt}"
-        runner_environment = "self-hosted" if attempt == 0 else "github-hosted"
         env = {
             **base_env,
             "GITHUB_PATH": str(path_file),
             "GITHUB_ENV": str(env_file),
             "RUNNER_ENVIRONMENT": runner_environment,
             "RUNNER_OS": "Linux",
+            "PATH": str(tmp_path) + os.pathsep + base_env["PATH"],
+            "MIRROR_STATE": mirror_state,
             "FQ_SELF_HOSTED_PYPI_INDEX": "https://mirror.example/simple",
             "PIP_CACHE_DIR": str(tmp_path / "pip-cache"),
             "PIP_NO_CACHE_DIR": "1",
@@ -71,12 +85,15 @@ def test_isolation_rejects_host_packages_and_reuses_no_previous_environment(
         exported = dict(
             line.split("=", 1) for line in env_file.read_text().splitlines()
         )
+        assert exported["PIP_INDEX_URL"] == (
+            "https://mirror.example/simple"
+            if mirror_state == "healthy"
+            else "https://pypi.org/simple"
+        )
         if runner_environment == "self-hosted":
-            assert exported["PIP_INDEX_URL"] == "https://mirror.example/simple"
             assert exported["PIP_CACHE_DIR"] == env["PIP_CACHE_DIR"]
             assert exported["PIP_NO_CACHE_DIR"] == ""
         else:
-            assert exported["PIP_INDEX_URL"] == "https://pypi.org/simple"
             assert "PIP_CACHE_DIR" not in exported
         assert exported["LD_LIBRARY_PATH"] == runtime_library_path
         venv = Path(exported["VIRTUAL_ENV"])
@@ -97,7 +114,7 @@ def test_isolation_rejects_host_packages_and_reuses_no_previous_environment(
             check=True,
             timeout=10,
         )
-    assert environments[0] != environments[1]
+    assert len(set(environments)) == len(environments)
 
 
 def test_source_hygiene_checkout_does_not_require_unneeded_git_lfs() -> None:

@@ -47,6 +47,15 @@ runs:
         index=https://pypi.org/simple
         if [ "${RUNNER_ENVIRONMENT:-}" = self-hosted ] && [ "${RUNNER_OS:-}" = Linux ]; then
           index="${FQ_SELF_HOSTED_PYPI_INDEX:-$index}"
+          if [ "$index" != https://pypi.org/simple ]; then
+            for package in filelock setuptools; do
+              if ! curl -fsSL --max-time 5 "${index%/}/$package/" | grep -F "$package-" >/dev/null; then
+                echo "::warning::Configured PyPI mirror is missing $package; using official PyPI for this job."
+                index=https://pypi.org/simple
+                break
+              fi
+            done
+          fi
           # Reuse wheel downloads across job-local virtual environments.
           echo "PIP_CACHE_DIR=${PIP_CACHE_DIR:-${XDG_CACHE_HOME:-$HOME/.cache}/pip}" >> "$GITHUB_ENV"
           echo "PIP_NO_CACHE_DIR=" >> "$GITHUB_ENV"
