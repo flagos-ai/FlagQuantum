@@ -1794,7 +1794,11 @@ jobs:
 
   coverage-shard:
     needs: prepare-source
-    runs-on: ubuntu-latest
+    runs-on: >-
+      ${{ fromJSON(
+        (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)
+        && '["self-hosted","linux","x64","flagquantum-cpu"]' || '["ubuntu-latest"]'
+      ) }}
     permissions:
       contents: read
       packages: read
@@ -1807,7 +1811,10 @@ jobs:
       JAX_PLATFORMS: cpu
       COVERAGE_FILE: .coverage.${{ matrix.shard }}
     concurrency:
-      group: flagquantum-gh-${{ github.event.pull_request.number || github.ref_name }}-coverage-${{ matrix.hosted-bucket }}
+      group: >-
+        ${{ (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)
+          && format('flagquantum-self-hosted-{0}-{1}-coverage-shard-{2}', github.run_id, github.run_attempt, matrix.shard)
+          || format('flagquantum-gh-{0}-coverage-{1}', github.event.pull_request.number || github.ref_name, matrix.hosted-bucket) }}
       queue: max
     strategy:
       fail-fast: false
