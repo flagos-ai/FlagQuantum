@@ -188,3 +188,26 @@ source instruction and the number of compiler work qubits. Target
 legalization records the same report in the compiled program metadata.
 Compiler work qubits and intermediate feedback bits are excluded from
 the automatic dynamic path's returned samples.
+
+### PREPARE for signed Pauli LCU
+
+`prepare_lcu` reuses FlagQuantum's arbitrary state preparation, pads unused
+addresses with zero amplitude, and returns the circuit and L1 normalization.
+SELECT carries the signs. The optional comparison
+`python -m pytest -qs tools/qualtran_parity/test_pauli_lcu_prepare.py`
+uses Qualtran 0.7.0 and weights (1, -1/2, 1/4, 1/4) on (X, Y, Z, I).
+Both preparations give index probabilities (1/2, 1/4, 1/8, 1/8), and both
+complete block encodings reproduce the signed H/2, including its complex
+off-diagonal entries. This fixture is exactly representable by alias sampling.
+
+| Measured resource | FlagQuantum | Qualtran alias sampling |
+| --- | --- | --- |
+| PREPARE index qubits | 2 | 2 |
+| PREPARE total qubits in emitted circuit | 2 | 14 |
+| PREPARE operations | 3 RY, 3 RZ, 4 CX | 171 one-qubit, 54 two-qubit, 2 three-qubit, and 4 each of measurement, feedback and reset |
+| Full block encoding qubits | 3 | 15 |
+
+FlagQuantum counts native operations and Qualtran counts its Cirq
+decomposition with greedy workspace reuse. These counts are descriptive.
+A common rotation synthesis and error budget are needed for a T-cost
+comparison or a scaling claim.
