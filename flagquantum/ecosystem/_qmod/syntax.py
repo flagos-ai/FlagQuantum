@@ -424,12 +424,42 @@ class Parser:
             "IndexedPauli", {"pauli": self.pauli_axis, "index": self.expression}
         )
 
+    def sparse_pauli_coefficient(self) -> Expression:
+        grouped = self.current.text == "("
+        if grouped:
+            self.take("(")
+        sign = self.take("-") if self.current.text == "-" else None
+        token = self.current
+        if token.text.isdecimal() and self.tokens[self.position + 1].text != ".":
+            self.position += 1
+            real = Expression(token)
+        else:
+            real = self.angle_argument()
+        if grouped:
+            self.take(")")
+        if self.current.text == "+":
+            suffix = self.take("+")
+            zero = self.take("0")
+            unit = self.take("j")
+            if (
+                not re.fullmatch(r"[0-9]+(?:\.[0-9]+)?", real.token.text)
+                or real.children
+                or unit.location.line != zero.location.line
+                or unit.location.column != zero.location.column + 1
+            ):
+                reject(
+                    suffix,
+                    "pauli",
+                    "Pauli coefficients admit only a literal + 0j suffix",
+                )
+        return real if sign is None else Expression(sign, (real,))
+
     def sparse_pauli_term(self) -> Expression:
         return self.pauli_record(
             "SparsePauliTerm",
             {
                 "paulis": lambda: self.literal_array(self.indexed_pauli),
-                "coefficient": self.signed_angle_argument,
+                "coefficient": self.sparse_pauli_coefficient,
             },
         )
 

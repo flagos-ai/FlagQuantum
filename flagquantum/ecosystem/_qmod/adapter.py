@@ -1231,11 +1231,12 @@ class _Adapt:
                     "pauli",
                     "num_qubits must match the target array width",
                 )
-        if self.parameters[target.text].kind != "qbit[]" or not terms.children:
+        kind = self.parameters[target.text].kind
+        if not terms.children or (kind != "qbit[]" and not (sparse and kind == "qnum")):
             reject(
                 token,
                 "evolution",
-                "evolution requires a nonempty Pauli sum and qubit array",
+                "evolution requires a nonempty Pauli sum and a qubit array or sparse qnum target",
             )
         prepared = []
         for term in terms.children:

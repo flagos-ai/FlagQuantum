@@ -325,10 +325,11 @@ SWAP movement, and CRX phase against independent amplitudes.
 
 `exponentiate(operator, t, q)` accepts an inline `SparsePauliOp` with
 `SparsePauliTerm` and `IndexedPauli` records. Its `num_qubits` must match the
-allocated `qbit[]` target. Each term's indices must be distinct and in bounds.
+allocated `qbit[]` or `qnum` target. Each term's indices must be distinct and in bounds.
 Index zero is the low bit of the output register. Empty support is an identity
 term and contributes global phase. Time and coefficients can be signed literals
-or bound classical `real` values.
+or bound classical `real` values. Sparse coefficient literals also accept
+an optional `+ 0j` suffix, as in `(-20) + 0j`.
 
 Following the [Classiq guide](https://docs.classiq.io/explore/algorithms/hamiltonian_simulation/hamiltonian_simulation_guide/hamiltonian_simulation_guide#exponentiate),
 `exponentiate` runs one first-order Suzuki–Trotter step. FlagQuantum applies the
