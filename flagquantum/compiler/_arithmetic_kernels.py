@@ -19,6 +19,13 @@ def ripple_add(
     return _ripple_add(a, b, carry, carry_out)
 
 
+def ripple_subtract_mod(
+    a: tuple[int, ...], b: tuple[int, ...], carry: int
+) -> tuple[Instruction, ...]:
+    """Subtract a from b modulo its width, preserving a and restoring carry."""
+    return tuple(reversed(_ripple_add(a, b, carry, None)))
+
+
 def _ripple_add(
     a: tuple[int, ...], b: tuple[int, ...], carry: int, carry_out: int | None
 ) -> tuple[Instruction, ...]:

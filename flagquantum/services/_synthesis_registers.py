@@ -32,6 +32,7 @@ def synthesize_registers(
     source_name: str | None = None,
     source_version: str | None = None,
     fractional_bits: Mapping[str, int] | None = None,
+    signed_registers: tuple[str, ...] = (),
 ) -> Program:
     """Plan verified owned records; require an explicit Runtime memory ceiling.
 
@@ -73,6 +74,8 @@ def synthesize_registers(
         report.update(source_name=source_name, source_version=source_version)
         if fractional_bits:
             report["qmod_fractional_bits"] = fractional_bits
+        if signed_registers:
+            report["qmod_signed_registers"] = signed_registers
     return _complete(
         selection,
         report,

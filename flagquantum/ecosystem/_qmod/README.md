@@ -255,8 +255,8 @@ still require an initialized `x`.
 as the equivalent signedness literals. Signed allocation and signed expression
 outputs are scoped to `main`. Bitwise operators sign-extend signed operands
 and zero-extend unsigned operands where needed. Register reads expose the
-raw basis encoding. Signed arithmetic, signed helper ports and fractional
-allocations remain outside this subset.
+raw basis encoding. Signed arithmetic is limited to subtraction and negation. Signed helper ports
+and fractional allocations remain outside this subset.
 
 `target ^= mask` toggles the selected bits of an initialized writable integer.
 A negative literal mask requires a signed target. A distinct initialized
@@ -289,7 +289,7 @@ fixed-decimal literal k<=2**53 in radians and an initialized scalar qbit. Exact
 decimal bounds are checked before float64 conversion; source literals are at
 most 78 characters. Both are reserved intrinsics. Negative, exponent-form,
 symbolic, computed and quantum angles remain refused, as do numeric/array and
-Const gate targets. Decimal data expressions are limited to the extrema profile below.
+Const gate targets. Decimal data expressions are limited to the extrema and subtraction profiles below.
 Lowercase
 `phase(expression, pi)` remains the separate predicate operation. Within/apply
 actions and role rules are unchanged.
@@ -489,8 +489,8 @@ decimal literal such as `3.5` or `1.25`. The importer aligns the binary point
 exactly across operands. A fractional result requires a terminal,
 inferred-width `main` output of type `qnum`. Its named probabilities use raw
 unsigned basis values, with the number of fractional bits recorded in
-`program.report["qmod_fractional_bits"]`. Fractional arithmetic beyond
-extrema and signed extrema are outside this profile.
+`program.report["qmod_fractional_bits"]`. Fractional arithmetic beyond extrema and subtraction, and signed extrema,
+are outside this profile.
 
 ```python
 from pathlib import Path
@@ -507,4 +507,35 @@ for (a, raw), probability in program.probabilities(
 ).items():
     assert raw / scale == max(3.5, a)
     print(a, raw / scale, probability)
+```
+
+### Subtraction and negation
+
+Fresh numeric assignments admit `a - b` and `-a`. The importer derives the
+result domain from the operand widths and signedness. It preserves enough
+bits for negative results and for negating the most negative input. The same
+subtraction accepts exactly representable binary decimals and aligns the
+operands to a common binary point. Fractional results require a terminal
+inferred-width main output.
+
+Named probabilities expose the raw basis encoding. For a register in
+`program.report.get("qmod_signed_registers", ())`, decode the raw value as
+two's complement before dividing by `2**fractional_bits`.
+
+```python
+from pathlib import Path
+
+import flagquantum as fq
+from flagquantum import synth
+
+source = Path("tests/fixtures/classiq_qmod/subtraction_2vars_example.qmod")
+program = synth.synthesize(source)
+result = fq.run(program)
+width = len(program.registers["res"])
+for (a, b, raw), probability in program.probabilities(
+    result, registers=("a", "b", "res")
+).items():
+    difference = raw - (1 << width) if raw >> (width - 1) else raw
+    assert difference == a - b
+    print(a, b, difference, probability)
 ```

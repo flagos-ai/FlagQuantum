@@ -182,13 +182,16 @@ class Parser:
         *,
         static: bool = False,
         decimal: bool = False,
+        difference: bool = False,
     ) -> Expression:
         token = self.current
         if nesting >= MAX_DEPTH:
             reject(token, "budget.depth", f"expression nesting exceeds {MAX_DEPTH}")
-        if token.text == "~" and not static:
-            self.take("~")
-            operand = self.expression(25, nesting + 1)
+        if not static and (token.text == "~" or (difference and token.text == "-")):
+            self.take(token.text)
+            operand = self.expression(
+                25, nesting + 1, decimal=decimal, difference=difference
+            )
             if operand.depth >= MAX_DEPTH:
                 reject(
                     token, "budget.depth", f"expression tree exceeds depth {MAX_DEPTH}"
@@ -196,7 +199,12 @@ class Parser:
             left = Expression(token, (operand,), operand.depth + 1)
         elif token.text == "(":
             self.take("(")
-            left = self.expression(nesting=nesting + 1, static=static)
+            left = self.expression(
+                nesting=nesting + 1,
+                static=static,
+                decimal=decimal,
+                difference=difference,
+            )
             self.take(")")
         elif token.text.isdecimal():
             if decimal and self.tokens[self.position + 1].text == ".":
@@ -219,9 +227,13 @@ class Parser:
                 left = Expression(dot, (left,), 2)
             elif not static and token.text in EXTREMA and self.current.text == "(":
                 self.take("(")
-                first = self.expression(nesting=nesting + 1, decimal=True)
+                first = self.expression(
+                    nesting=nesting + 1, decimal=True, difference=difference
+                )
                 self.take(",")
-                second = self.expression(nesting=nesting + 1, decimal=True)
+                second = self.expression(
+                    nesting=nesting + 1, decimal=True, difference=difference
+                )
                 self.take(")")
                 depth = max(first.depth, second.depth) + 1
                 if depth > MAX_DEPTH:
@@ -248,6 +260,8 @@ class Parser:
         }
         if static:
             precedence = {"+": 10, "-": 10}
+        elif difference:
+            precedence["-"] = 10
         compared = False
         while precedence.get(self.current.text, -1) >= minimum:
             operator = self.current
@@ -265,6 +279,8 @@ class Parser:
                 level if operator.text == "**" else level + 1,
                 nesting + 1,
                 static=static,
+                decimal=decimal,
+                difference=difference,
             )
             if operator.text == "**" and (
                 right.children
@@ -284,7 +300,9 @@ class Parser:
                     f"expression tree exceeds depth {MAX_DEPTH}",
                 )
             left = Expression(operator, (left, right), depth)
-        if self.current.text in {"-", "/", "[", ".", "("}:
+        if self.current.text in {"/", "[", ".", "("} or (
+            self.current.text == "-" and not (static or difference)
+        ):
             reject(
                 self.current,
                 "operator",
@@ -603,7 +621,9 @@ class Parser:
                 rhs = (
                     self.signed_angle_argument()
                     if operator.text == "^=" and self.current.text == "-"
-                    else self.expression()
+                    else self.expression(
+                        decimal=operator.text == "=", difference=operator.text == "="
+                    )
                 )
                 arguments = (Expression(target), rhs)
             elif self.current.text == "(":

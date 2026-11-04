@@ -172,7 +172,10 @@ def test_xor_update_sign_extends_distinct_source_and_is_reversible():
         ("allocate(2,a); allocate(2,b); a ^= -1;", "fit the signed target"),
         ("allocate(2,a); allocate(2,b); a ^= a;", "distinct integer"),
         ("allocate(2,a); b ^= 0;", "uninitialized"),
-        ("allocate(2,SIGNED,0,a); b = a + 1;", "only in bitwise expressions"),
+        (
+            "allocate(2,SIGNED,0,a); b = a + 1;",
+            "require bitwise operations, subtraction or negation",
+        ),
     ],
 )
 def test_typed_allocate_and_xor_refuse_unsupported_semantics(body, diagnostic):

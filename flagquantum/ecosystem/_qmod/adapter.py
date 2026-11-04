@@ -160,10 +160,11 @@ class QmodImport:
     inferred_widths: Mapping[str, int]
     source_name: str
     fractional_bits: Mapping[str, int]
+    signed_registers: tuple[str, ...]
 
 
 class _Expression:
-    """Infer unsigned arithmetic/predicate domains and emit existing qint records."""
+    """Infer bounded arithmetic/predicate domains and emit existing qint records."""
 
     def __init__(
         self,
@@ -175,6 +176,7 @@ class _Expression:
         self.node, self.widths, self.name = node, widths, name
         self.facts: dict[Expression, tuple[int, bool]] = {}
         self.fractional_bits: dict[Expression, int] = {}
+        self.difference_ranges: dict[Expression, tuple[int, int]] = {}
         self.word_widths: dict[Expression, int] = {}
         self.signed_names = signed_names
         self.signed_words: set[Expression] = set()
@@ -202,7 +204,7 @@ class _Expression:
                     reject(
                         node.token,
                         "precision",
-                        "extremum decimals must be exactly binary representable",
+                        "decimal operands must be exactly binary representable",
                     )
                 self.fractional_bits[node] = denominator.bit_length() - 1
                 result = (numerator, False)
@@ -221,10 +223,14 @@ class _Expression:
                 if text in self.signed_names:
                     self.signed_words.add(node)
                 result = ((1 << width) - 1, True)
+        elif text == "-":
+            result = self.infer_difference(node)
         elif text == "~":
             operand = node.children[0]
             value, quantum = self.infer(operand)
-            if self.fractional_bits.get(operand):
+            if self.fractional_bits.get(operand) or (
+                "." in operand.token.text and not operand.children
+            ):
                 reject(
                     node.token, "precision", "bitwise complement requires an integer"
                 )
@@ -242,11 +248,17 @@ class _Expression:
             scale = max(
                 self.fractional_bits.get(lhs, 0), self.fractional_bits.get(rhs, 0)
             )
-            if scale and text not in EXTREMA:
+            if text not in EXTREMA and (
+                scale
+                or any(
+                    "." in child.token.text and not child.children
+                    for child in node.children
+                )
+            ):
                 reject(
                     node.token,
                     "precision",
-                    "fractional expressions are supported only in min/max",
+                    "fractional expressions are supported only in min/max and subtraction",
                 )
             if text in _WORD_OPERATORS:
                 widths = self.word_widths[lhs], self.word_widths[rhs]
@@ -284,7 +296,7 @@ class _Expression:
                 reject(
                     node.token,
                     "type",
-                    "signed operands are supported only in bitwise expressions",
+                    "signed operands require bitwise operations, subtraction or negation",
                 )
             elif text in EXTREMA:
                 self.fractional_bits[node] = scale
@@ -320,6 +332,49 @@ class _Expression:
         self.word_widths.setdefault(node, unsigned_width(result[0]))
         self.facts[node] = result
         return result
+
+    def integer_value(self, node: Expression) -> int:
+        raw = self.facts[node][0]
+        width = self.word_widths[node]
+        if node in self.signed_words and raw >> (width - 1):
+            return raw - (1 << width)
+        return raw
+
+    def infer_difference(self, node: Expression) -> tuple[int, bool]:
+        for child in node.children:
+            self.infer(child)
+        scale = max(self.fractional_bits.get(child, 0) for child in node.children)
+        self.fractional_bits[node] = scale
+        intervals = []
+        for child in node.children:
+            bound, quantum = self.facts[child]
+            if not quantum:
+                low = high = self.integer_value(child)
+            elif child in self.difference_ranges:
+                low, high = self.difference_ranges[child]
+            elif child in self.signed_words:
+                sign_bit = 1 << (self.word_widths[child] - 1)
+                low, high = -sign_bit, sign_bit - 1
+            else:
+                low, high = 0, bound
+            shift = scale - self.fractional_bits.get(child, 0)
+            intervals.append((low << shift, high << shift))
+        (a_min, a_max), (b_min, b_max) = (
+            ((0, 0), intervals[0]) if len(intervals) == 1 else intervals
+        )
+        low, high = a_min - b_max, a_max - b_min
+        self.difference_ranges[node] = low, high
+        if low < 0:
+            self.signed_words.add(node)
+            width = max((~low).bit_length(), max(0, high).bit_length()) + 1
+        else:
+            width = unsigned_width(high)
+        quantum = any(self.facts[child][1] for child in node.children)
+        if width > 256:
+            reject(node.token, "width", "difference exceeds the supported word width")
+        self.word_widths[node] = width
+        mask = (1 << width) - 1
+        return (mask if quantum else low & mask), quantum
 
     def operation(
         self,
@@ -385,6 +440,59 @@ class _Expression:
             operator="&",
         )
 
+    def emit_difference(self, node: Expression) -> Value:
+        width = self.word_widths[node]
+        scale = self.fractional_bits[node]
+
+        def constant(value: int) -> Value:
+            return self.operation("arith.constant", (), INDEX, node.token, value=value)
+
+        def mask_word(value: Value, bits: int, *, signed: bool = False) -> Value:
+            return self.operation(
+                "qint.bitwise",
+                (value, constant((1 << bits) - 1)),
+                uint_type(bits),
+                node.token,
+                operator="&",
+                **({"signed": (True, False)} if signed else {}),
+            )
+
+        def operand(child: Expression) -> Value:
+            shift = scale - self.fractional_bits.get(child, 0)
+            if not self.facts[child][1]:
+                return constant(
+                    (self.integer_value(child) << shift) & ((1 << width) - 1)
+                )
+            value = self.emit(child)
+            bits = width - shift
+            signed = child in self.signed_words
+            if bits <= 0:
+                # Keep the read in the graph even when every shifted bit is discarded.
+                return self.operation(
+                    "qint.bitwise",
+                    (value, constant(0)),
+                    uint_type(1),
+                    node.token,
+                    operator="&",
+                )
+            if (shift or signed) and self.word_widths[child] != bits:
+                value = mask_word(value, bits, signed=signed)
+            if shift:
+                value = self.operation(
+                    "qint.multiply",
+                    (value, constant(1 << shift)),
+                    uint_type(width),
+                    node.token,
+                )
+            return value
+
+        operands = tuple(operand(child) for child in node.children)
+        if len(operands) == 1:
+            operands = (constant(0), *operands)
+        return self.operation(
+            "qint.subtract_mod", operands, uint_type(width), node.token
+        )
+
     def emit(self, node: Expression) -> Value:
         bound, quantum = self.facts[node]
         if not quantum:
@@ -393,6 +501,8 @@ class _Expression:
             return self.inputs[node.token.text]
         if node.token.text in EXTREMA:
             return self.emit_extremum(node, bound)
+        if node.token.text == "-":
+            return self.emit_difference(node)
         signed = tuple(child in self.signed_words for child in node.children)
         if node.token.text in {"~", *_WORD_OPERATORS} and (
             any(signed) or any(self.word_widths[child] > 1 for child in node.children)
@@ -1305,6 +1415,21 @@ class _Adapt:
             self.within(statement, index)
         elif token.text == "=":
             target = self.atom(args[0])
+            if "." in args[1].token.text and not args[1].children:
+                reject(
+                    args[1].token,
+                    "operator",
+                    "decimal assignment requires min/max or subtraction",
+                )
+            if (
+                args[1].token.text == "-"
+                and len(args[1].children) == 1
+                and target.text in self.parameters
+                and self.parameters[target.text].kind == "qbit"
+            ):
+                reject(
+                    args[1].token, "expression", "negation requires a numeric output"
+                )
             expression = _Expression(
                 args[1], self.widths, f"{self.scope}.expr{index}", self.signed
             )
@@ -1316,7 +1441,7 @@ class _Adapt:
                 )
             inferred_width = (
                 expression.word_widths[args[1]]
-                if args[1].token.text == "%"
+                if args[1].token.text in {"%", "-"}
                 else unsigned_width(expression.bound)
             )
             destination = self.register(target, inferred_width)
@@ -1345,7 +1470,7 @@ class _Adapt:
                     reject(
                         target,
                         "precision",
-                        "fractional extrema require an inferred-width main qnum output",
+                        "fractional results require an inferred-width main qnum output",
                     )
             if expression.quantum:
                 graph = expression.function()
@@ -1885,4 +2010,5 @@ def parse_qmod(
         MappingProxyType(adapter.inferred),
         filename,
         MappingProxyType(adapter.fractional_bits),
+        tuple(p.name.text for p in main.parameters if p.name.text in adapter.signed),
     )
