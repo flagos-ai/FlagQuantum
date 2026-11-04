@@ -8,6 +8,7 @@ import torch
 import flagquantum as fq
 from flagquantum.core.ir import CircuitIR, Instruction
 from flagquantum.errors import CapabilityError
+from flagquantum.simulation.stabilizer import pauli_readout
 from flagquantum.simulation.stabilizer._fault_signatures import (
     _clifford_fault_signatures,
 )
@@ -134,4 +135,51 @@ def test_invalid_fault_locations_are_refused(fault: tuple[int, int, str]) -> Non
             CircuitIR(n_wires=1, instructions=(Instruction("i", (0,)),)),
             parities=(((), (0,)),),
             faults=(fault,),
+        )
+
+
+@pytest.mark.parametrize("n_wires", [2, 3], ids=["bell", "ghz"])
+@pytest.mark.parametrize("fault", ["ideal", "early-x", "late-x", "late-z"])
+def test_w1b_positioned_fault_reference(n_wires: int, fault: str) -> None:
+    circuit = fq.Circuit(n_wires).h(0)
+    if fault == "early-x":
+        circuit = circuit.x(0)
+    for wire in range(n_wires - 1):
+        circuit = circuit.cx(wire, wire + 1)
+    if fault == "late-x":
+        circuit = circuit.x(0)
+    if fault == "late-z":
+        circuit = circuit.z(0)
+
+    wires = tuple(range(n_wires))
+    options = fq.ExecutionOptions(
+        mode="statevector", device="cpu", precision="complex128"
+    )
+    probabilities = fq.run(
+        fq.plan(circuit, outputs=fq.probabilities(list(wires)), options=options)
+    ).probabilities[0]
+    expected = torch.zeros_like(probabilities)
+    flip_mask = 1 << (n_wires - 1) if fault == "late-x" else 0
+    expected[flip_mask] = 0.5
+    expected[((1 << n_wires) - 1) ^ flip_mask] = 0.5
+    torch.testing.assert_close(probabilities, expected, atol=1e-12, rtol=0)
+
+    expected_phase = -1 if fault == "late-z" else 1
+    amplitudes = circuit.state().reshape(-1)
+    dense_phase = torch.vdot(amplitudes, amplitudes.flip(0)).real.item()
+    assert dense_phase == pytest.approx(expected_phase, abs=1e-6, rel=0)
+    assert pauli_readout(circuit, x=wires).expectation == expected_phase
+
+
+@pytest.mark.parametrize("n_wires", [2, 3], ids=["bell", "ghz"])
+def test_w1b_invalid_position_is_refused(n_wires: int) -> None:
+    instructions = (
+        Instruction("h", (0,)),
+        *(Instruction("cx", (wire, wire + 1)) for wire in range(n_wires - 1)),
+    )
+    with pytest.raises(ValueError, match="fault instruction index"):
+        _clifford_fault_signatures(
+            CircuitIR(n_wires=n_wires, instructions=instructions),
+            parities=(((), (0, 1)),),
+            faults=((len(instructions), 0, "X"),),
         )
