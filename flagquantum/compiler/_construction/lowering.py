@@ -70,7 +70,7 @@ class ArithmeticCandidate:
 
 @dataclass(frozen=True)
 class BoundArithmetic:
-    """A HybridProgram invocation on owned or externally prepared wires.
+    """A HybridProgram invocation on owned or externally prepared qubits.
 
     Entry and definitions describe the same verified arithmetic language for
     scalar Python and register effects. Output mode records whether to XOR
