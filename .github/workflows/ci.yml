@@ -1400,7 +1400,7 @@ jobs:
           python-version: "3.12"
       - uses: ./.github/actions/isolated-python
         with:
-          self-hosted-pypi-index: ${{ vars.FQ_CI_PYPI_MIRROR || 'https://pypi.tuna.tsinghua.edu.cn/simple' }}
+          self-hosted-pypi-index: ${{ vars.FQ_CI_PYPI_MIRROR || 'https://mirrors.aliyun.com/pypi/simple' }}
       - uses: ./.github/actions/install-cpu-torch
       - run: python -m pip install --no-build-isolation -e '.[dev]'
       - name: Verify both certified PennyLane versions
