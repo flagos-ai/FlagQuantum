@@ -5,7 +5,9 @@ import torch
 
 import flagquantum as fq
 from flagquantum.algorithms.primitives.multiplexers import SelectPauliLCU
-from flagquantum.compiler.pauli_select import lower_select_pauli_lcu_to_unary_iteration
+from flagquantum.algorithms.primitives.multiplexers.pauli_select import (
+    lower_select_pauli_lcu_to_unary_iteration,
+)
 
 pytestmark = pytest.mark.unit
 

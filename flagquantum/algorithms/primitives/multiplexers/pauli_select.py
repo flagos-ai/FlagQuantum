@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from ..core.ir import Instruction
-from ..errors import ValidationError
-from ..runtime.dynamic.circuit import DynamicCircuit
+from ....core.ir import Instruction
+from ....errors import ValidationError
+from ....runtime.dynamic.circuit import DynamicCircuit
 
 
 def _and(circuit: DynamicCircuit, left: int, right: int, work: int) -> None:
