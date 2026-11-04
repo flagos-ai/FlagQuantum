@@ -133,6 +133,7 @@ jobs:
       packages: write
     strategy:
       fail-fast: false
+      max-parallel: 2
       matrix:
         include:
           - {profile: core, python: '3.10'}
