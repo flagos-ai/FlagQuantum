@@ -231,7 +231,9 @@ def test_phase_targets_refuse_before_capture_or_basis_iteration(target, monkeypa
     from flagquantum.services import synthesis
 
     monkeypatch.setattr(
-        synthesis, "capture_named", lambda *a, **k: pytest.fail("captured unsupported target")
+        synthesis,
+        "capture_named",
+        lambda *a, **k: pytest.fail("captured unsupported target"),
     )
     monkeypatch.setattr(
         _api, "plan", lambda *a, **k: pytest.fail("planned unsupported target")
