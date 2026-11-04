@@ -99,6 +99,23 @@ def _literal_angle(angle: Expression, gate: Token) -> float:
     return float(angle.token.text)
 
 
+def _preparation_value(node: Expression) -> float:
+    if node.token.text == "/":
+        numerator, denominator = (int(part.token.text) for part in node.children)
+        if not denominator:
+            reject(
+                node.children[1].token,
+                "probabilities",
+                "fraction denominator must be positive",
+            )
+        return numerator / denominator
+    negative = node.token.text == "-"
+    value = node.children[0] if negative else node
+    if value.children or not re.fullmatch(r"[0-9]+(?:\.[0-9]+)?", value.token.text):
+        reject(value.token, "amplitudes", "expected a real decimal literal")
+    return float(value.token.text) * (-1 if negative else 1)
+
+
 def _pauli_support(
     axes: Expression, width: int, *, sparse: bool
 ) -> tuple[tuple[int, str], ...]:
@@ -1284,6 +1301,10 @@ class _Adapt:
             if operator.token.text not in self.constants:
                 reject(operator.token, "pauli", "unknown SparsePauliOp constant")
             operator = self.constants[operator.token.text]
+            if operator.token.text != "SparsePauliOp":
+                reject(
+                    target_arg.token, "pauli", "operator constant must be SparsePauliOp"
+                )
         sparse = operator.token.text == "SparsePauliOp"
         terms = operator
         if sparse:
@@ -1362,6 +1383,16 @@ class _Adapt:
                 f"{token.text} requires a vector, bound and output",
             )
         vector, bound_arg, output = args
+        if vector.token.text != "[":
+            constant = self.constants.get(vector.token.text)
+            if constant is None or constant.token.text != "[":
+                reject(vector.token, "amplitudes", "expected a declared real[] vector")
+            vector = constant
+        if not bound_arg.children and bound_arg.token.text in self.constants:
+            constant = self.constants[bound_arg.token.text]
+            if constant.token.text in {"[", "SparsePauliOp"}:
+                reject(bound_arg.token, "amplitudes", "bound requires a scalar real")
+            bound_arg = constant
         count = len(vector.children)
         if not 2 <= count <= MAX_PREPARED_AMPLITUDES or count & (count - 1):
             reject(
@@ -1370,28 +1401,8 @@ class _Adapt:
                 "amplitude count must be a power of two in 2..256",
             )
 
-        def literal(node: Expression) -> float:
-            if node.token.text == "/":
-                numerator, denominator = (
-                    int(part.token.text) for part in node.children
-                )
-                if not denominator:
-                    reject(
-                        node.children[1].token,
-                        "probabilities",
-                        "fraction denominator must be positive",
-                    )
-                return numerator / denominator
-            negative = node.token.text == "-"
-            value = node.children[0] if negative else node
-            if value.children or not re.fullmatch(
-                r"[0-9]+(?:\.[0-9]+)?", value.token.text
-            ):
-                reject(value.token, "amplitudes", "expected a real decimal literal")
-            return float(value.token.text) * (-1 if negative else 1)
-
-        amplitudes = tuple(literal(item) for item in vector.children)
-        bound = literal(bound_arg)
+        amplitudes = tuple(_preparation_value(item) for item in vector.children)
+        bound = _preparation_value(bound_arg)
         if token.text == "prepare_state":
             if any(value < 0 for value in amplitudes) or not math.isclose(
                 math.fsum(amplitudes), 1.0, rel_tol=0, abs_tol=1e-12
@@ -1960,7 +1971,15 @@ def parse_qmod(
     for name_token, operator in declarations:
         name = name_token.text
         if name in constants or name in _INTRINSICS or name == "main":
-            reject(name_token, "name", "duplicate or reserved SparsePauliOp constant")
+            reject(name_token, "name", "duplicate or reserved top-level constant")
+        if operator.token.text != "SparsePauliOp":
+            if operator.token.text == "[":
+                for item in operator.children:
+                    _preparation_value(item)
+            else:
+                _preparation_value(operator)
+            constants[name] = operator
+            continue
         terms, width_arg = operator.children
         width = _sparse_width(width_arg)
         if not terms.children:
@@ -1981,12 +2000,10 @@ def parse_qmod(
         if name in definitions or name in _INTRINSICS:
             reject(syntax.name, "name", "duplicate function or intrinsic redefinition")
         if name in constants:
-            reject(syntax.name, "name", "function shadows a SparsePauliOp constant")
+            reject(syntax.name, "name", "function shadows a top-level constant")
         for parameter in syntax.parameters:
             if parameter.name.text in constants:
-                reject(
-                    parameter.name, "name", "parameter shadows a SparsePauliOp constant"
-                )
+                reject(parameter.name, "name", "parameter shadows a top-level constant")
         definitions[name] = syntax
     if "main" not in definitions:
         reject(tokens[0], "entry", "source requires one qfunc main")

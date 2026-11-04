@@ -613,3 +613,10 @@ from flagquantum import synth
 program = synth.synthesize(Path("tests/fixtures/classiq_qmod/qct_qst_type1.qmod"))
 print(fq.run(program).statevector())
 ```
+
+### Named state preparation constants
+
+`prepare_state` and `prepare_amplitudes` accept a top-level `real[]` literal
+constant as the vector and a top-level `real` literal constant as the bound.
+These are immutable source values. Named vectors use the same width and
+normalization checks as inline vectors.

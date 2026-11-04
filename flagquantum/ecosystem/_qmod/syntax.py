@@ -680,6 +680,8 @@ class Parser:
                                     allow_fraction=target.text == "prepare_state",
                                 )
                             )
+                            if self.current.text == "["
+                            else Expression(self.name())
                         )
                     elif target.text in ANGLE_CALLS:
                         args.append(self.angle_argument())
@@ -736,15 +738,33 @@ class Parser:
                 reject(
                     self.current, "budget.functions", "source exceeds 32 definitions"
                 )
-            if self.current.text != "qfunc" and tuple(
-                token.text
-                for token in self.tokens[self.position + 1 : self.position + 3]
-            ) == (":", "SparsePauliOp"):
+            kind = (
+                self.tokens[self.position + 2].text
+                if self.position + 2 < len(self.tokens)
+                else ""
+            )
+            if (
+                self.current.text != "qfunc"
+                and self.tokens[self.position + 1].text == ":"
+                and kind in {"SparsePauliOp", "real"}
+            ):
                 name = self.name()
                 self.take(":")
-                self.take("SparsePauliOp")
+                self.take(kind)
+                array = kind == "real" and self.current.text == "["
+                if array:
+                    self.take("[")
+                    self.take("]")
                 self.take("=")
-                constants.append((name, self.sparse_pauli_op()))
+                if kind == "SparsePauliOp":
+                    value = self.sparse_pauli_op()
+                elif array:
+                    value = self.literal_array(
+                        partial(self.preparation_literal, allow_fraction=False)
+                    )
+                else:
+                    value = self.signed_angle_argument()
+                constants.append((name, value))
                 self.take(";")
             else:
                 functions.append(self.function())
