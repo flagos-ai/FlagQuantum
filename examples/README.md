@@ -993,3 +993,6 @@ to partition and reassemble a fixed three-layer DEM on CPU.
 
 Run `PYTHONPATH=. python examples/qec/dem_model_and_chunks.py --sparse-projection`
 to display the detector and logical rows in the same fault-column order.
+
+Run `PYTHONPATH=. python examples/qec/dem_model_and_chunks.py --decode-rounds`
+to feed fixed detector events in round-local order and inspect the decoder records.

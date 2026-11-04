@@ -37,6 +37,51 @@ The table distinguishes runnable existing workflows, proposed measurements, and 
 | W7 | Two device-appropriate classes from W2/W4/W6 on one named domestic device. | Existing Compute/Kernels/FlagOS boundaries plus accepted CPU references. | Device identity, operator coverage, precision, transfer and end-to-end time. | Device, software stack, resource owner and allocation are not yet selected. A800 CUDA evidence is not domestic certification. |
 | W8 | One licensed experimental dataset with circuits, raw records, mappings, rounds and calibration metadata. | Partner/public raw data, independently reconstructed detectors, and held-out predictions. | Detector means/correlations and logical counts, with separate calibration/validation/test sets. | Dataset, permission and owner pending. Synthetic data or publication figures do not close this item. |
 
+## W1-B reference coverage
+
+The following cases are present at source revision
+`668562685a0416585eaaa878ff9de879eaf277f6`. The linked tests describe the
+existing coverage. The public example below provides a separate analytic
+check of ideal probabilities.
+
+| Case | Input and output | Reference and coverage |
+| --- | --- | --- |
+| Ideal Bell and three-wire GHZ | Zero initial state, H on wire 0 followed by a CX chain, full computational-basis probabilities in wire order | The analytic distribution has probability 1/2 on each of the two uniform bit strings. The public example prints the full distribution. |
+| Ideal Clifford sampling | GHZ terminal samples and bounded Clifford circuits | [Stabilizer sampling tests](../../tests/team/simulation/test_stabilizer_sampling.py) check GHZ support and compare sampled distributions with dense probabilities in separate cases. The GHZ support assertion alone does not check phase. |
+| Prepared measurement records | Repeated native samples with joint readouts | [Prepared sampler tests](../../tests/team/simulation/test_prepared_stabilizer_sampling.py) use independently authored Stim records as a distribution reference. |
+| Positioned Pauli fault response | X, Y or Z after each instruction on either wire in two-wire Clifford circuits with inverse gates, followed by terminal bit and parity readout | [Fault signature tests](../../tests/team/simulation/test_clifford_fault_signatures.py) explicitly insert Pauli gates for the dense reference and check invalid positions. This is component evidence for fault propagation. |
+| Positioned noise and refusal | Pauli flips around readout and between gates, plus channel and unitary controls | [Positioned noise tests](../../tests/team/simulation/test_stabilizer_positioned_noise.py) check placement, record order and refusal outside the supported frame domain. |
+
+W1-B still needs a direct mapping for selected positioned faults on the Bell
+and GHZ circuits, including a phase-sensitive readout where a Z fault leaves
+computational-basis probabilities unchanged. That combination belongs in the
+later conformance review. FTS-02 remains partial.
+
+Save the following as `/tmp/ftqc_w1b.py` and run
+`python /tmp/ftqc_w1b.py` with a core FlagQuantum installation on CPU. From a
+source checkout with the core dependencies installed, run
+`PYTHONPATH=. python /tmp/ftqc_w1b.py`.
+
+```python
+import flagquantum as fq
+
+options = fq.ExecutionOptions(mode="statevector", device="cpu", precision="complex128")
+for label, circuit, wires in (
+    ("Bell", fq.Circuit(2).h(0).cx(0, 1), [0, 1]),
+    ("GHZ", fq.Circuit(3).h(0).cx(0, 1).cx(1, 2), [0, 1, 2]),
+):
+    plan = fq.plan(circuit, outputs=fq.probabilities(wires), options=options)
+    probabilities = fq.run(plan).probabilities[0]
+    print(label, *(f"{float(p):.8f}" for p in probabilities))
+```
+
+Expected stdout:
+
+```text
+Bell 0.50000000 0.00000000 0.00000000 0.50000000
+GHZ 0.50000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.50000000
+```
+
 ## Independent-reference policy
 
 1. W1-A uses a closed-form interference probability, not a second call to the same simulator. Both normalization and non-Clifford phase effects must be observed.

@@ -37,3 +37,14 @@ def test_sparse_projection_shares_fault_columns(
         "((0,), (0, 1, 2), (2,))",
         "((1,),)",
     ]
+
+
+def test_round_decoding_commits_the_shared_fault_once(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    example._decode_rounds()
+    assert capsys.readouterr().out.splitlines() == [
+        "buffering",
+        "1 False (1,) (0,)",
+        "2 True (1,) (0,)",
+    ]

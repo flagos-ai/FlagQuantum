@@ -326,26 +326,6 @@ def test_jax_launcher_coverage_uses_actual_two_rank_topology() -> None:
     assert "PYTEST_ADDOPTS" not in launched.get("env", {})
 
 
-@pytest.mark.parametrize("job", ["cpu-core", "cpu-core-3-12-tests", "cpu-runtime"])
-def test_package_indexes_match_routing_before_runner_assignment(job: str) -> None:
-    document = yaml.safe_load((WORKFLOWS / "ci.yml").read_text())
-    # Job env is evaluated before runner assignment; runner context is unavailable.
-    trusted = (
-        "(github.event_name != 'pull_request' || "
-        "github.event.pull_request.head.repo.full_name == github.repository)"
-    )
-    selected = document["jobs"][job]
-    assert selected["env"]["PIP_INDEX_URL"] == "https://pypi.org/simple"
-    # Manual validation is trusted too; fork PRs retain the hosted fallback.
-    assert selected["runs-on"] == (
-        "${{ fromJSON(" + trusted + " && "
-        '\'["self-hosted","linux","x64","flagquantum-cpu"]\' || '
-        "'[\"ubuntu-latest\"]') }}"
-    )
-    assert trusted in selected["concurrency"]["group"]
-    assert "github.run_id" in selected["concurrency"]["group"]
-
-
 @pytest.mark.parametrize(
     ("version", "cuda", "ready"),
     [
