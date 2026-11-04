@@ -52,7 +52,7 @@ class SelectTHC:
         networks: Sequence[_Network],
         one_body_networks: Sequence[_Network],
     ) -> SelectTHC:
-        """Bind both reflections to the prepared selection and system wires."""
+        """Bind both reflections to the prepared selection and system qubits."""
         return cls(
             tuple(mu),
             tuple(nu),
