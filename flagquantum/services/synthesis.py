@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import inspect
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass, field, replace
 from os import PathLike
@@ -15,7 +14,7 @@ from ..compiler._construction.constraints import CircuitLimits
 from ..compiler._construction.frontend_python import (
     Definition,
     _QuantumFunction,
-    capture,
+    capture_named,
 )
 from ..compiler._construction.frontend_python import qfunc as qfunc
 from ..compiler._construction.lowering import ArithmeticCandidate
@@ -620,6 +619,14 @@ def synthesize(
         else require_basis(basis)
     )
     is_file = isinstance(function, PathLike)
+    is_native_source = isinstance(function, (PathLike, str))
+    if not is_native_source and any(
+        value is not None for value in (source_format, source_name, source_version)
+    ):
+        raise ValueError("source_format/name/version apply only to native source")
+    owned_source: Literal["qmod", "python"]
+    owned_name: str | None = None
+    owned_version: str | None = None
     if isinstance(function, (PathLike, str)):
         if not is_file and source_format != "qmod":
             raise ValueError("text requires source_format='qmod'; use Path for files")
@@ -640,33 +647,14 @@ def synthesize(
                 "native source owns preparation and inputs; omit Python inputs/state/constants/functions/preparation"
             )
         from ..ecosystem._qmod.source import load_qmod
-        from ._synthesis_registers import synthesize_registers
 
         imported = load_qmod(
             function, source_name=source_name, source_version=source_version
         )
-        _, _, position = register_ports(imported.program)
-        effective_memory = (
-            512 * 1024**2 if memory_limit_bytes is None else memory_limit_bytes
-        )
-        return synthesize_registers(
-            imported.program,
-            imported.functions,
-            constraints=constraints,
-            budget=construction_budget,
-            target=_target(position, construction_budget, selected_basis, topology),
-            objective=objective,
-            memory_limit_bytes=effective_memory,
-            memory_limit_origin=(
-                "profile_default" if memory_limit_bytes is None else "explicit"
-            ),
-            source_format="qmod",
-            source_name=imported.source_name,
-            source_version=imported.source_version,
-        )
-    if any(value is not None for value in (source_format, source_name, source_version)):
-        raise ValueError("source_format/name/version apply only to native source")
-    if isinstance(function, _QuantumFunction) and function.source.program:
+        owned_program, owned_functions = imported.program, imported.functions
+        owned_source = "qmod"
+        owned_name, owned_version = imported.source_name, imported.source_version
+    elif isinstance(function, _QuantumFunction) and function.source.program:
         if (
             output_mode != "value"
             or functions
@@ -686,13 +674,18 @@ def synthesize(
                 "inputs/state/constants/functions/preparation and use value mode"
             )
         from ..compiler._construction.frontend_program import capture_program
+
+        owned_program, owned_functions = capture_program(function)
+        owned_source = "python"
+    else:
+        owned_program = None
+    if owned_program is not None:
         from ._synthesis_registers import synthesize_registers
 
-        program, definitions = capture_program(function)
-        _, _, position = register_ports(program)
+        _, _, position = register_ports(owned_program)
         return synthesize_registers(
-            program,
-            definitions,
+            owned_program,
+            owned_functions,
             constraints=constraints,
             budget=construction_budget,
             target=_target(position, construction_budget, selected_basis, topology),
@@ -703,8 +696,11 @@ def synthesize(
             memory_limit_origin=(
                 "profile_default" if memory_limit_bytes is None else "explicit"
             ),
-            source_format="python",
+            source_format=owned_source,
+            source_name=owned_name,
+            source_version=owned_version,
         )
+    assert not isinstance(function, (PathLike, str))
     if not isinstance(inputs, Mapping) or (
         constants is not None and not isinstance(constants, Mapping)
     ):
@@ -721,23 +717,12 @@ def synthesize(
         )
     if preparation is None and preparation_map is not None:
         raise ValueError("preparation_map requires an existing preparation IR")
-    graph = capture(
+    graph, names = capture_named(
         function,
         {name: spec.width for name, spec in inputs.items()},
         constants=constants,
         functions=functions,
     )
-    if isinstance(function, _QuantumFunction):
-        parameters = tuple(
-            arg.arg
-            for arg in (
-                *function.source.node.args.posonlyargs,
-                *function.source.node.args.args,
-            )
-        )
-    else:
-        parameters = tuple(inspect.signature(function).parameters)
-    names = tuple(name for name in parameters if name in inputs)
     mapping: dict[str, tuple[int, ...]] = {}
     position = 0
     for name in names:

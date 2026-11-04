@@ -265,7 +265,19 @@ def capture(
     constants: Mapping[str, int] | None = None,
     functions: Sequence[Definition] = (),
 ) -> HybridProgram:
-    """Infer exact widths into existing SSA; explicitly supplied helpers inline.
+    """Capture a scalar definition into verified construction SSA."""
+    graph, _ = capture_named(function, inputs, constants=constants, functions=functions)
+    return graph
+
+
+def capture_named(
+    function: Definition,
+    inputs: Mapping[str, int],
+    *,
+    constants: Mapping[str, int] | None = None,
+    functions: Sequence[Definition] = (),
+) -> tuple[HybridProgram, tuple[str, ...]]:
+    """Infer exact widths and return the source-ordered public input names.
 
     The subset includes unsigned arithmetic, comparison chains, one-bit
     and/or/not, conditional values, static ranges, assignments, helpers and return.
@@ -344,16 +356,15 @@ def capture(
         counter += 1
         return result
 
+    names = tuple(name for name in parameters if name in inputs)
     arguments = tuple(
         Value(ValueId(name, index), uint_type(inputs[name]))
-        for index, name in enumerate(n for n in parameters if n in inputs)
+        for index, name in enumerate(names)
     )
     counter = len(arguments)
     environment: dict[str, _Expression] = {
         name: (argument, (1 << inputs[name]) - 1)
-        for name, argument in zip(
-            (n for n in parameters if n in inputs), arguments, strict=True
-        )
+        for name, argument in zip(names, arguments, strict=True)
     }
 
     def emit(operation: Operation, source: _Source, node: ast.expr | ast.stmt) -> None:
@@ -848,4 +859,4 @@ def capture(
     program = HybridProgram(
         main.node.name, Region((Block(arguments, tuple(operations)),))
     )
-    return verify_construction((program,), entry=program.name)
+    return verify_construction((program,), entry=program.name), names
