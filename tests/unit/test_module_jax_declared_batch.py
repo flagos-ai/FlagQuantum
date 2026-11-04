@@ -230,3 +230,59 @@ def test_bad_declared_batch_shape_is_refused() -> None:
     )
     with pytest.raises(ValidationError, match="batch of 8"):
         module(torch.zeros(7))
+
+
+@pytest.mark.parametrize("batch", [1, 8, 64])
+@pytest.mark.parametrize("mode", ["statevector", "tensor_network", "mps"])
+def test_execute_batch_matches_torch_serial_values_and_vjps(
+    mode: str, batch: int
+) -> None:
+    def builder(parameters: torch.Tensor, features: torch.Tensor) -> fq.Circuit:
+        return (
+            fq.Circuit(2, bsz=features.shape[0])
+            .ry(0, parameters[0] + parameters[1] * features[:, 0])
+            .rz(0, parameters[1:2])
+            .ry(1, features[:, 1] + parameters[0].square())
+            .cx(0, 1)
+        )
+
+    def new_module(backend: str) -> fq.Module:
+        return fq.Module(
+            builder,
+            2,
+            init=torch.tensor([0.23, -0.31], dtype=torch.float64),
+            dtype=torch.float64,
+            policy=fq.RuntimePolicy(
+                execution_options=fq.ExecutionOptions(backend=backend, mode=mode),
+                observable="z_sum",
+                observable_qubits=(0, 1),
+            ),
+        )
+
+    jax_module = new_module("jax").eval()
+    torch_module = new_module("pytorch").eval()
+    features = (
+        torch.linspace(-0.37, 0.43, batch * 4, dtype=torch.float64)
+        .reshape(batch, 4)[:, ::2]
+        .requires_grad_()
+    )
+    weights = torch.linspace(-0.7, 1.3, batch, dtype=features.dtype)
+
+    for inputs in (features, features + 0.13):
+        actual = jax_module.execute(inputs).value
+        batched = torch_module.execute(inputs).value
+        serial = torch.cat([torch_module(row.unsqueeze(0)) for row in inputs])
+        assert actual is not None and batched is not None
+        assert actual.shape == (batch,)
+        for reference in (serial, batched):
+            torch.testing.assert_close(actual, reference, atol=1e-10, rtol=1e-10)
+
+        actual_vjp = torch.autograd.grad(
+            actual, (jax_module.parameters_tensor, inputs), weights
+        )
+        for reference in (serial, batched):
+            expected_vjp = torch.autograd.grad(
+                reference, (torch_module.parameters_tensor, inputs), weights
+            )
+            for gradient, expected in zip(actual_vjp, expected_vjp, strict=True):
+                torch.testing.assert_close(gradient, expected, atol=1e-10, rtol=1e-10)
