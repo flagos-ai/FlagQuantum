@@ -729,7 +729,7 @@ jobs:
 
   jax-optional:
     needs: prepare-source
-    runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'flagquantum-cpu-general' || 'ubuntu-latest' }}
+    runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'flagquantum-cpu-sdk-preinstalled' || 'ubuntu-latest' }}
     concurrency:
       group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('a100-cpu-{0}-jax-optional-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-${{ github.event.pull_request.number || github.ref_name }}-light-a
       queue: max
@@ -779,26 +779,35 @@ jobs:
           git clean -ffdx
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
       - uses: actions/setup-python@v5
+        if: runner.environment != 'self-hosted'
         with:
           python-version: "3.12"
       - uses: ./.github/actions/isolated-python
+        if: runner.environment != 'self-hosted'
         with:
           self-hosted-pypi-index: ${{ vars.FQ_CI_PYPI_MIRROR || 'https://pypi.tuna.tsinghua.edu.cn/simple' }}
       - uses: ./.github/actions/install-cpu-torch
-      - name: Warm the runner's jaxlib wheel cache
-        if: runner.environment == 'self-hosted' && runner.os == 'Linux'
-        run: |
-          cache="${PIP_CACHE_DIR}/fq-jaxlib-wheels"
-          mkdir -p "$cache"
-          staging="$(mktemp -d "$cache/.download.XXXXXX")"
-          trap 'rm -rf "$staging"' EXIT
-          requirement="$(python -c 'import tomllib; from pathlib import Path; print(tomllib.loads(Path("pyproject.toml").read_text())["project"]["optional-dependencies"]["jax"][0])')"
-          timeout --kill-after=15s 300s python -m pip download --only-binary=:all: \
-            --find-links "$cache" --dest "$staging" "$requirement"
-          mv "$staging"/jaxlib-*.whl "$cache/"
-          echo "PIP_FIND_LINKS=${PIP_FIND_LINKS:+$PIP_FIND_LINKS }$cache" >> "$GITHUB_ENV"
+        if: runner.environment != 'self-hosted'
       - run: python -m pip install --no-build-isolation -e '.[dev,jax]'
-      - run: python -m pytest tests/test_hybrid_jax.py tests/test_jax_distributed_plan.py -q
+        if: runner.environment != 'self-hosted'
+      - name: Verify the installed JAX runtime
+        run: |
+          if [[ "$RUNNER_ENVIRONMENT" == self-hosted ]]; then
+            source .github/scripts/attach-preinstalled-sdk.sh
+            fq_attach_preinstalled_sdk jax
+          fi
+          python - <<'PY'
+          import tomllib
+          from importlib.metadata import version
+          from pathlib import Path
+          from packaging.requirements import Requirement
+          import jax
+          for spec in tomllib.loads(Path("pyproject.toml").read_text())["project"]["optional-dependencies"]["jax"]:
+              requirement = Requirement(spec)
+              assert version(requirement.name) in requirement.specifier, requirement
+          assert jax.devices("cpu")
+          PY
+          python -m pytest tests/test_hybrid_jax.py tests/test_jax_distributed_plan.py -q
       - name: Retain resource limits and pytest timing reports
         if: ${{ always() && env.FQ_CI_REPORT_DIR != '' }}
         uses: actions/upload-artifact@v4
@@ -1106,7 +1115,7 @@ jobs:
 
   cirq-optional:
     needs: prepare-source
-    runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'flagquantum-cpu-general' || 'ubuntu-latest' }}
+    runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'flagquantum-cpu-sdk-preinstalled' || 'ubuntu-latest' }}
     timeout-minutes: 30
     concurrency:
       group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('a100-cpu-{0}-cirq-optional-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-${{ github.event.pull_request.number || github.ref_name }}-light-b
@@ -1160,28 +1169,43 @@ jobs:
           git clean -ffdx
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
       - uses: actions/setup-python@v5
+        if: runner.environment != 'self-hosted'
         with:
           python-version: "3.12"
       - uses: ./.github/actions/isolated-python
+        if: runner.environment != 'self-hosted'
         with:
           self-hosted-pypi-index: ${{ vars.FQ_CI_PYPI_MIRROR || 'https://pypi.tuna.tsinghua.edu.cn/simple' }}
       - run: python -m pip install --upgrade pip 'setuptools>=77.0.3' wheel
+        if: runner.environment != 'self-hosted'
       - uses: ./.github/actions/install-cpu-torch
+        if: runner.environment != 'self-hosted'
         timeout-minutes: 8
       - run: python -m pip install --no-build-isolation -e '.[dev]'
+        if: runner.environment != 'self-hosted'
       - name: Validate the CPU runtime before SDK certification
         run: |
+          if [[ "$RUNNER_ENVIRONMENT" == self-hosted ]]; then
+            source .github/scripts/attach-preinstalled-sdk.sh
+            fq_attach_preinstalled_sdk cirq-1.6.1
+          fi
           python -c "import torch; from flagquantum.simulation.native_cpu import adjoint; assert torch.version.cuda is None; assert adjoint.native_cpu_adjoint_available(), repr(adjoint._EXTENSION_ERROR)"
           python -m pytest tests/test_native_circuit.py tests/test_backends.py tests/smoke/test_smoke_baseline.py -q
       - name: Verify both certified Cirq Core versions
         run: |
           set -euxo pipefail
-          for version in ${OPTIONAL_VERSIONS}; do
-            python -m pip install --upgrade "cirq-core==${version}"
+          for version in ${OPTIONAL_VERSIONS}; do (
+            if [[ "$RUNNER_ENVIRONMENT" == self-hosted ]]; then
+              source .github/scripts/attach-preinstalled-sdk.sh
+              fq_attach_preinstalled_sdk "cirq-$version"
+            else
+              python -m pip install --upgrade "cirq-core==${version}"
+            fi
+            python -c 'from importlib.metadata import version; import sys; assert version("cirq-core") == sys.argv[1]' "$version"
             python tools/check_cirq_interop_contract.py --verify-sdk
             python -m pytest tests/test_cirq_interop.py tests/test_cirq_interop_conformance.py -m cirq -q
             python -c "import sys, flagquantum; assert not any(name == 'cirq' or name.startswith('cirq.') for name in sys.modules)"
-          done
+          ); done
       - name: Retain resource limits and pytest timing reports
         if: ${{ always() && env.FQ_CI_REPORT_DIR != '' }}
         uses: actions/upload-artifact@v4
