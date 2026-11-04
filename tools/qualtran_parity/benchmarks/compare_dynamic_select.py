@@ -6,7 +6,13 @@ from importlib.metadata import version
 from statistics import median
 from time import perf_counter_ns
 
-import cirq
+try:
+    import cirq
+except ModuleNotFoundError as exc:
+    raise SystemExit(
+        "Install the optional benchmark dependencies listed in README.md."
+    ) from exc
+
 import torch
 from qualtran.bloqs.multiplexers.select_pauli_lcu import SelectPauliLCU as Reference
 

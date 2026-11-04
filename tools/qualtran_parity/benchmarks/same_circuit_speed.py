@@ -4,8 +4,14 @@ import json
 from statistics import median
 from time import perf_counter_ns
 
-import cirq
-import numpy as np
+try:
+    import cirq
+    import numpy as np
+except ModuleNotFoundError as exc:
+    raise SystemExit(
+        "Install the optional benchmark dependencies listed in README.md."
+    ) from exc
+
 import torch
 
 import flagquantum as fq
