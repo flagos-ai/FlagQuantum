@@ -107,6 +107,11 @@ def r(theta: float, phi: float, target: QBit, /) -> None:
     raise TypeError("R is captured inside qfunc")
 
 
+def prepare_uniform_interval_state(start: int, stop: int, target: QNum, /) -> None:
+    """Prepare a uniform superposition over a half-open integer interval."""
+    raise TypeError("uniform preparation is captured inside qfunc")
+
+
 def within() -> AbstractContextManager[None]:
     """Capture local arithmetic preparation for the following apply block."""
     raise TypeError("within is captured inside qfunc")

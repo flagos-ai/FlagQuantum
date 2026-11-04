@@ -43,7 +43,16 @@ SUPPORTED_SOURCE_VERSION = "2bfd835e73b6882fcc515a725098b04766c238e7"
 MAX_EFFECT_OPERATIONS = 4096
 _GATE_CALLS = frozenset({"X", "H", "S", "Z", "hadamard_transform"})
 _PAIR_CALLS = frozenset({"CX", "SWAP", "CRX"})
-_INTRINSICS = _GATE_CALLS | _PAIR_CALLS | {"allocate", "phase", "pi"} | ANGLE_CALLS
+_UNIFORM_CALLS = frozenset(
+    {"prepare_uniform_interval_state", "prepare_uniform_trimmed_state"}
+)
+_INTRINSICS = (
+    _UNIFORM_CALLS
+    | _GATE_CALLS
+    | _PAIR_CALLS
+    | {"allocate", "phase", "pi"}
+    | ANGLE_CALLS
+)
 
 
 def _literal_angle(angle: Expression, gate: Token) -> float:
@@ -560,6 +569,25 @@ class _Adapt:
                     "allocation size must agree with the declared width",
                 )
             self.effect_op("qreg.allocate", token, (destination,))
+        elif token.text in _UNIFORM_CALLS:
+            trimmed = token.text == "prepare_uniform_trimmed_state"
+            if len(args) != (2 if trimmed else 3):
+                reject(token, "signature", "invalid uniform preparation arity")
+            bounds = args[:-1]
+            if any(
+                bound.children or not bound.token.text.isdecimal() for bound in bounds
+            ):
+                reject(
+                    token,
+                    "signature",
+                    "uniform preparation requires literal integer bounds",
+                )
+            start = 0 if trimmed else int(bounds[0].token.text)
+            stop = int(bounds[-1].token.text)
+            destination = self.register(self.atom(args[-1]))
+            self.effect_op(
+                "qreg.uniform_interval", token, (destination,), start=start, stop=stop
+            )
         elif token.text == "R":
             if len(args) != 3:
                 reject(token, "signature", "R requires two angles and a qbit target")
