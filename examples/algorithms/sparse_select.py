@@ -27,7 +27,12 @@ def main() -> None:
         circuit, options=fq.ExecutionOptions(target="samples", shots=16, seed=5)
     )
     assert sampled.plan is not None
-    print(sampled.plan.summary()["select_lowering"])
+    report = sampled.plan.summary()["select_lowering"]
+    print(f"Sampling path: {report['operations'][0]['path']}")
+    print(f"Sampling workspace: {report['workspace_qubits']} qubits")
+    print()
+    print("premise: The dynamic path requires mid-circuit measurement and feedback.")
+    print()
 
     # Target compilation uses this same unitary lowering before gate legalization.
     gate_ir = lower_select_program(circuit.to_ir(), "unitary_ladder")
