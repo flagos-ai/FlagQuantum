@@ -320,7 +320,7 @@ def test_linux_prerequisites_keep_forks_off_private_cpu_runners(
 ) -> None:
     document = yaml.safe_load((WORKFLOWS / workflow).read_text())
     job = document["jobs"][name]
-    if workflow == "local-gpu.yml":
+    if workflow in {"ci.yml", "local-gpu.yml"}:
         assert job["runs-on"] == (
             "${{ (github.event_name != 'pull_request' || "
             "github.event.pull_request.head.repo.full_name == github.repository) "
