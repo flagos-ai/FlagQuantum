@@ -106,6 +106,12 @@ def schedule_register_program(
         gates: tuple[Instruction, ...] = ()
         if op.name == "qreg.initialize":
             gates = _copy(op.attributes["value"], bindings[op.operands[1].id])
+        elif op.name == "qreg.prepare_ghz":
+            first, *rest = bindings[op.operands[1].id]
+            gates = (
+                Instruction("h", (first,)),
+                *(Instruction("cx", (first, target)) for target in rest),
+            )
         elif op.name == "qreg.control_h":
             control, target = (bindings[value.id][0] for value in op.operands[1:])
             gates = controlled_instruction(Instruction("h", (target,)), (control,))

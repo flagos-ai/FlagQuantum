@@ -28,6 +28,7 @@ _ATTRIBUTES = MappingProxyType(
         "qreg.uniform_interval": frozenset({"start", "stop"}),
         "qreg.allocate": frozenset(),
         "qreg.initialize": frozenset({"value"}),
+        "qreg.prepare_ghz": frozenset(),
         "qreg.pair_gate": frozenset({"gate"}),
         "qreg.control_h": frozenset(),
         "qreg.control_phase": frozenset({"angle"}),
@@ -599,7 +600,7 @@ def _verify_body(
                     _fail(
                         "register.initialized", "destination is already initialized", op
                     )
-                if op.name in {"qreg.allocate", "qreg.initialize"}:
+                if op.name in {"qreg.allocate", "qreg.initialize", "qreg.prepare_ghz"}:
                     if arguments:
                         _fail(
                             "register.signature",

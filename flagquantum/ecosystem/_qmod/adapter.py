@@ -52,7 +52,7 @@ _INTRINSICS = (
     _UNIFORM_CALLS
     | _GATE_CALLS
     | _PAIR_CALLS
-    | {"allocate", "phase", "pi", "control"}
+    | {"allocate", "phase", "pi", "control", "prepare_ghz_state"}
     | ANGLE_CALLS
 )
 
@@ -686,6 +686,29 @@ class _Adapt:
                     "allocation size must agree with the declared width",
                 )
             self.effect_op("qreg.allocate", token, (destination,))
+        elif token.text == "prepare_ghz_state":
+            if len(args) != 2:
+                reject(
+                    token, "signature", "prepare_ghz_state requires a size and output"
+                )
+            size_arg, output = args
+            if size_arg.children or not size_arg.token.text.isdecimal():
+                reject(size_arg.token, "width", "GHZ size requires a literal in 1..256")
+            size = int(size_arg.token.text)
+            if not 1 <= size <= 256:
+                reject(size_arg.token, "width", "GHZ size requires a literal in 1..256")
+            target = self.atom(output)
+            if (
+                target.text not in self.parameters
+                or self.parameters[target.text].kind != "qbit[]"
+            ):
+                reject(
+                    target, "type", "prepare_ghz_state requires a qubit array output"
+                )
+            destination = self.register(target, size, allow_qubit_array=True)
+            if self.widths[target.text] != size:
+                reject(target, "width", "GHZ size must agree with the output width")
+            self.effect_op("qreg.prepare_ghz", token, (destination,))
         elif token.text in _UNIFORM_CALLS:
             trimmed = token.text == "prepare_uniform_trimmed_state"
             if len(args) != (2 if trimmed else 3):
