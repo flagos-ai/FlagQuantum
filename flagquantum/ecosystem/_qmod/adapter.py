@@ -52,7 +52,7 @@ _INTRINSICS = (
     _UNIFORM_CALLS
     | _GATE_CALLS
     | _PAIR_CALLS
-    | {"allocate", "phase", "pi", "control", "prepare_ghz_state"}
+    | {"allocate", "phase", "pi", "control", "prepare_ghz_state", "prepare_bell_state"}
     | ANGLE_CALLS
 )
 
@@ -686,6 +686,31 @@ class _Adapt:
                     "allocation size must agree with the declared width",
                 )
             self.effect_op("qreg.allocate", token, (destination,))
+        elif token.text == "prepare_bell_state":
+            if len(args) != 2:
+                reject(
+                    token, "signature", "prepare_bell_state requires a state and output"
+                )
+            state, output = args
+            if state.children or state.token.text != "2":
+                reject(
+                    state.token,
+                    "prepare",
+                    "only the documented Bell state 2 is admitted",
+                )
+            target = self.atom(output)
+            if (
+                target.text not in self.parameters
+                or self.parameters[target.text].kind != "qbit[]"
+            ):
+                reject(
+                    target, "type", "prepare_bell_state requires a qubit array output"
+                )
+            destination = self.register(target, 2, allow_qubit_array=True)
+            if self.widths[target.text] != 2:
+                reject(target, "width", "Bell preparation requires exactly two qubits")
+            self.effect_op("qreg.prepare_ghz", token, (destination,))
+            self.effect_op("qreg.gate", token, (destination,), gate="x", index=0)
         elif token.text == "prepare_ghz_state":
             if len(args) != 2:
                 reject(
