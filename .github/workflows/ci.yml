@@ -946,6 +946,8 @@ jobs:
         with:
           python-version: "3.12"
       - uses: ./.github/actions/isolated-python
+        with:
+          self-hosted-pypi-index: ${{ vars.FQ_CI_PYPI_MIRROR || 'https://pypi.tuna.tsinghua.edu.cn/simple' }}
       - uses: ./.github/actions/install-cpu-torch
       - name: Select a private Triton wheel cache
         run: |
