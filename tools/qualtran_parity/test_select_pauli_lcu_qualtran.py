@@ -9,6 +9,7 @@ import torch
 import flagquantum as fq
 from flagquantum.algorithms.primitives.multiplexers import SelectPauliLCU
 from flagquantum.compiler.deferred_operations import lower_select_pauli_lcu_to_gates
+from flagquantum.compiler.pauli_select import lower_select_pauli_lcu_to_unary_iteration
 
 
 @pytest.mark.parametrize(
@@ -165,4 +166,42 @@ def test_select_pauli_lcu_qualtran_parity(
     reference_cost = clifford_t_counts(decomposition.all_operations())
     print(
         f"  Clifford+T: FlagQuantum {dict(local_cost)}; Qualtran {dict(reference_cost)}"
+    )
+
+    unary = lower_select_pauli_lcu_to_unary_iteration(instruction)
+    unary_ir = unary.to_ir()
+    counts = Counter(gate.name for gate in unary_ir.instructions)
+    assert counts["t"] + counts["tdg"] == reference_cost["t"]
+    assert counts["measure"] == reference_cost["measurement"]
+    assert counts["reset"] == reference_cost["reset"]
+    feedback = sum("conditions" in gate.metadata for gate in unary_ir.instructions)
+    assert feedback == reference_cost["feedback"]
+    cliffords = (
+        len(unary_ir.instructions)
+        - sum(counts[name] for name in ("t", "tdg", "measure", "reset"))
+        - feedback
+    )
+    print(f"  FlagQuantum unary iteration: {cliffords} Clifford operations")
+    assert unary.n_qubits - width == len(ancillas)
+
+    if selection_width > 3:
+        return  # Keep exact dynamic simulation bounded.
+
+    # Compare the complete density matrix to a pure reference, including
+    # coherence between addresses and zeroed work qubits after feedback.
+    unary_workspace = tuple(range(width, unary.n_qubits))
+    initial = np.zeros((state.size, 2 ** len(unary_workspace)), dtype=np.complex128)
+    initial[:, 0] = state
+    dynamic = type(unary)(
+        unary.n_qubits, dtype=torch.complex128, inputs=torch.from_numpy(initial.ravel())
+    )
+    dynamic.compose(unary, qubits=(*instruction.wires, *unary_workspace))
+    expected_clean = np.zeros_like(initial)
+    expected_clean[:, 0] = expected[:, 0]
+    vector = torch.from_numpy(expected_clean.ravel())
+    torch.testing.assert_close(
+        dynamic.density_matrix().reshape(vector.numel(), vector.numel()),
+        torch.outer(vector, vector.conj()),
+        atol=1e-12,
+        rtol=0,
     )

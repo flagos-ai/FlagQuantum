@@ -148,3 +148,26 @@ FlagQuantum emits no measurement, feedback or reset in these cases.
 The counts compare the current coherent Toffoli ladder against Qualtran's
 measurement-assisted unary iteration. They do not estimate physical time,
 magic-state factory throughput, or the best possible synthesis.
+
+### FlagQuantum measurement-assisted unary iteration
+
+`lower_select_pauli_lcu_to_unary_iteration` emits a native DynamicCircuit from
+the existing structured instruction. It follows the prefix iteration and
+temporary logical AND construction used in Qualtran v0.7.0. The coherent
+lowering remains available for static callers. Partial tables preserve identity
+on unused binary addresses.
+
+| Entries | Control | T / T† on both sides | Measurements / feedback / resets on both sides | Emitted Clifford operations, FlagQuantum / Qualtran |
+| ---: | --- | ---: | --- | --- |
+| 4 | None | 8 | 2 / 2 / 2 | 35 / 113 |
+| 4 | 0 | 12 | 3 / 3 / 3 | 48 / 141 |
+| 4 | 1 | 12 | 3 / 3 / 3 | 46 / 139 |
+| 8 | None | 24 | 6 / 6 / 6 | 94 / 280 |
+| 16 | None | 56 | 14 / 14 / 14 | 212 / 614 |
+
+The emitted Clifford counts use the native gate representation on the
+FlagQuantum side and Cirq's expanded representation on the Qualtran side.
+Workspace counts match in all five cases. Exact dynamic density-matrix
+parity, including coherence and workspace reset, is checked through eight
+entries. At sixteen entries the dynamic comparison checks resource counts,
+and the coherent comparison still checks complex amplitudes.
