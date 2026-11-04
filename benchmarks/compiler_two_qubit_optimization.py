@@ -83,10 +83,13 @@ from benchmarks.compiler_two_qubit_synthesis import (
     Basis,
     snapshot,
 )
-from flagquantum.compiler import commutation_cancellation, two_qubit_optimization
 from flagquantum.compiler.lowering.native_gate_legalization import (
     NativeGateLegalizationError,
     legalize_native_gates,
+)
+from flagquantum.compiler.optimization import (
+    commutation_cancellation,
+    two_qubit_optimization,
 )
 from flagquantum.compiler.optimization.two_qubit_optimization import (
     _FAMILIES,
