@@ -263,19 +263,7 @@ def test_cpu_pytest_tiers_use_sixteen_bounded_work_stealing_workers() -> None:
     tier_steps = []
     for job in ("cpu-core", "cpu-core-3-12-tests", "cpu-runtime"):
         definition = _document("ci.yml")["jobs"][job]
-        assert '"flagquantum-cpu"' in definition["runs-on"]
-        assert (
-            "github.event.pull_request.head.repo.full_name == github.repository"
-            in definition["runs-on"]
-        )
-        assert '["ubuntu-latest"]' in definition["runs-on"]
         assert definition["timeout-minutes"] == 30
-        setup_python = next(
-            step
-            for step in _steps("ci.yml", job)
-            if step.get("uses") == "actions/setup-python@v5"
-        )
-        assert "cache" not in setup_python["with"]
         assert definition["needs"] == "prepare-source"
         download = next(
             step
@@ -293,25 +281,9 @@ def test_cpu_pytest_tiers_use_sixteen_bounded_work_stealing_workers() -> None:
         )
         assert definition["env"]["CUDA_VISIBLE_DEVICES"] == ""
         assert definition["env"]["OMP_NUM_THREADS"] == "1"
-        assert definition["env"]["PIP_INDEX_URL"] == "https://pypi.org/simple"
         commands = "\n".join(str(step.get("run", "")) for step in _steps("ci.yml", job))
         assert "assert torch.version.cuda is None" in commands
         assert "python -m pip check" in commands
-        steps = _steps("ci.yml", job)
-        installer = next(
-            step
-            for step in steps
-            if step.get("uses") == "./.github/actions/install-cpu-torch"
-        )
-        assert installer["with"]["torch-spec"] == "torch>=2.13,<2.14"
-        project_install = next(
-            step
-            for step in steps
-            if "python -m pip install --no-build-isolation" in step.get("run", "")
-        )
-        assert steps.index(installer) < steps.index(project_install)
-        assert 'python -m venv "${RUNNER_TEMP}/venv-' in commands
-        assert '>> "$GITHUB_PATH"' in commands
         assert 'test "$sha" = "$GITHUB_SHA"' in commands
         assert 'git checkout --force --detach "$sha"' in commands
         assert 'test "$(git rev-parse HEAD)" = "$GITHUB_SHA"' in commands
@@ -350,13 +322,14 @@ def test_migrated_cpu_jobs_keep_frameworks_and_processes_isolated(job: str) -> N
     assert "python -m pip check" in commands
     assert "torch.version.cuda is None" in commands
     assert "jax.default_backend() == 'cpu'" in commands
-    assert definition["runs-on"] == A800_CPU_ROUTE
-    assert definition["timeout-minutes"] == (
-        60 if job == "distributed-cpu-shard" else 30
-    )
-    assert any(
-        step.get("uses") == "./.github/actions/isolated-python" for step in steps
-    )
+    if job == "distributed-cpu-shard":
+        assert definition["runs-on"] == A800_CPU_ROUTE
+        assert definition["timeout-minutes"] == 60
+        assert any(
+            step.get("uses") == "./.github/actions/isolated-python" for step in steps
+        )
+    else:
+        assert definition["timeout-minutes"] == 30
     if job == "coverage-shard":
         assert [
             row["shard"] for row in definition["strategy"]["matrix"]["include"]
@@ -429,18 +402,6 @@ def test_expensive_cpu_runtime_proofs_run_once_on_the_newest_python() -> None:
         or "torchrun" in str(step.get("run", ""))
     ]
     assert len(expensive_steps) == 3
-
-    document = _document("ci.yml")
-    jobs = document.get("jobs")
-    assert isinstance(jobs, dict)
-    runtime = jobs["cpu-runtime"]
-    assert isinstance(runtime, dict)
-    setup = next(
-        step
-        for step in runtime["steps"]
-        if isinstance(step, dict) and step.get("uses") == "actions/setup-python@v5"
-    )
-    assert setup["with"]["python-version"] == "3.12"
 
 
 def test_launched_distributed_steps_never_inherit_xdist_workers() -> None:

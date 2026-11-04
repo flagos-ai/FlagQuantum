@@ -4,6 +4,7 @@ import argparse
 import pickle
 
 from flagquantum.qec import (
+    BELIEF_PROPAGATION_NAME,
     ChunkLayout,
     DecodingGraph,
     DemChunk,
@@ -11,6 +12,7 @@ from flagquantum.qec import (
     DemChunksSpec,
     DetectorErrorModel,
     PhaseId,
+    SlidingWindowDecoder,
     dem_chunk_from_spec,
     dem_chunks_from_spec,
     dem_chunks_to_o_sparse,
@@ -44,7 +46,7 @@ def _inspect_single_chunk() -> None:
     print("Same class:", type(restored) is DetectorErrorModel)
 
 
-def _fixed_chunks() -> tuple[DetectorErrorModel, tuple[DemChunk, ...]]:
+def _fixed_spec() -> DemChunksSpec:
     model = DetectorErrorModel.from_stim_text(
         "error(0.125) D0 D1\n"
         "error(0.25) D1 L0\n"
@@ -52,8 +54,12 @@ def _fixed_chunks() -> tuple[DetectorErrorModel, tuple[DemChunk, ...]]:
         "detector D0\ndetector D1\ndetector D2\nlogical_observable L0\n"
     )
     layout = ChunkLayout(model=model, widths=(1, 1, 1))
-    chunks = dem_chunks_from_spec(DemChunksSpec(layout=layout, window=2))
-    return model, chunks
+    return DemChunksSpec(layout=layout, window=2)
+
+
+def _fixed_chunks() -> tuple[DetectorErrorModel, tuple[DemChunk, ...]]:
+    spec = _fixed_spec()
+    return spec.layout.model, dem_chunks_from_spec(spec)
 
 
 def _round_trip() -> None:
@@ -68,13 +74,31 @@ def _sparse_projection() -> None:
     print(dem_chunks_to_o_sparse(chunks))
 
 
+def _decode_rounds() -> None:
+    decoder = SlidingWindowDecoder(_fixed_spec(), BELIEF_PROPAGATION_NAME)
+    for events in ((), (0,), ()):
+        record = decoder.decode_round(events)
+        if record is None:
+            print("buffering")
+        else:
+            print(
+                record.windows_decoded,
+                record.complete,
+                record.faults,
+                record.observables,
+            )
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     modes = parser.add_mutually_exclusive_group()
     modes.add_argument("--round-trip", action="store_true")
     modes.add_argument("--sparse-projection", action="store_true")
+    modes.add_argument("--decode-rounds", action="store_true")
     args = parser.parse_args()
-    if args.sparse_projection:
+    if args.decode_rounds:
+        _decode_rounds()
+    elif args.sparse_projection:
         _sparse_projection()
     elif args.round_trip:
         _round_trip()

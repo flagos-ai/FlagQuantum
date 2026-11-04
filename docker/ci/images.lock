@@ -1,0 +1,4 @@
+core-py3.10 ghcr.io/flagos-ai/flagquantum-ci@sha256:51017f35d09d1d012aba6ca70b57d878dcc5978a8785301cdd797ba02124b703
+core-py3.11 ghcr.io/flagos-ai/flagquantum-ci@sha256:1cd3cbbe6ad3c83486b7f641741f20172e1137af819d5e12333c3b6908f62b3b
+core-py3.12 ghcr.io/flagos-ai/flagquantum-ci@sha256:35672e1bbe246c6a1a0ce7389cc6ce8fae97d4f239e91e8c595675efe1fb1e3c
+coverage-py3.12 ghcr.io/flagos-ai/flagquantum-ci@sha256:1f5d6aa7b1b1d6313d787c7fbeaf269179a39d031b1010b1b521162baceb5ba6

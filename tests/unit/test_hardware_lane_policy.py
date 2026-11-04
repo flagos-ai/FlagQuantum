@@ -414,10 +414,9 @@ def test_cpu_route_rejects_missing_guards_and_other_untrusted_events(
 
 def test_dedicated_cpu_lanes_keep_fork_code_on_hosted_runners() -> None:
     jobs = _jobs(WORKFLOWS / "ci.yml")
-    for name in ("cpu-core", "cpu-core-3-12-tests", "cpu-runtime"):
-        assert jobs[name]["runs-on"] == A800_CPU_ROUTE
-        assert _is_self_hosted(jobs[name])
-        assert not _allows_untrusted_code(jobs[name], frozenset({"pull_request"}))
+    for name in ("cpu-core", "cpu-core-3-12-tests", "cpu-runtime", "coverage-shard"):
+        assert jobs[name]["runs-on"] == "ubuntu-latest"
+        assert not _is_self_hosted(jobs[name])
     triton = jobs["triton-optional"]
     assert triton["runs-on"] == MC550_CPU_ROUTE
     assert _is_self_hosted(triton)
