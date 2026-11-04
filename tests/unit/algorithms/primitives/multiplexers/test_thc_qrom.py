@@ -20,6 +20,7 @@ from flagquantum.dynamic import DynamicCircuit
 from flagquantum.runtime.dynamic.execution import run_dynamic
 
 np = pytest.importorskip("numpy")
+pytestmark = pytest.mark.unit
 
 
 def _execute_sparse(
