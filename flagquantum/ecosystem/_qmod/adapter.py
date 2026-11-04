@@ -300,10 +300,22 @@ class _Adapt:
         self.functions: list[HybridProgram] = []
         self.local_scope: list[tuple[str, Token]] | None = None
 
-    def register(self, token: Token, inferred: int | None = None) -> Value:
+    def register(
+        self,
+        token: Token,
+        inferred: int | None = None,
+        *,
+        allow_qubit_array: bool = False,
+    ) -> Value:
         name = token.text
         if name not in self.parameters:
             reject(token, "name", f"unknown output {name!r}")
+        if self.parameters[name].kind == "qbit[]" and not allow_qubit_array:
+            reject(
+                token,
+                "type",
+                "qubit arrays support allocation and whole-array Hadamard",
+            )
         local = self.parameters[name].role == "local"
         if local and self.local_scope is None:
             reject(
@@ -666,7 +678,7 @@ class _Adapt:
                         "allocation size must be a literal in 1..256",
                     )
             target = self.atom(args[-1])
-            destination = self.register(target, size)
+            destination = self.register(target, size, allow_qubit_array=True)
             if size is not None and self.widths[target.text] != size:
                 reject(
                     target,
@@ -749,7 +761,9 @@ class _Adapt:
             if len(args) != 1:
                 reject(token, "signature", f"{token.text} requires one output variable")
             target = self.atom(args[0])
-            destination = self.register(target)
+            destination = self.register(
+                target, allow_qubit_array=token.text == "hadamard_transform"
+            )
             if (
                 token.text != "hadamard_transform"
                 and self.parameters[target.text].kind != "qbit"
@@ -785,7 +799,9 @@ class _Adapt:
         borrowed = tuple(
             self.register(p.name) for p in self.syntax.parameters if p.role == "const"
         )
-        declared = tuple(self.register(p.name) for p in output_parameters)
+        declared = tuple(
+            self.register(p.name, allow_qubit_array=True) for p in output_parameters
+        )
         declarations = tuple(
             Operation(
                 "qreg.declare",
