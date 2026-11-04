@@ -640,9 +640,9 @@ def _conformance_identity(
         "emission_identity": emission.emission_identity,
         "profile": emission.profile,
         "parser": (
-            "flagquantum.compiler.artifacts.target_conformance.v2"
+            "flagquantum.compiler.target_conformance.v2"
             if _allocated_result_wires(reconstructed) is not None
-            else "flagquantum.compiler.artifacts.target_conformance.v1"
+            else "flagquantum.compiler.target_conformance.v1"
         ),
         "reconstructed_circuit_hash": reconstructed.content_hash,
     }
