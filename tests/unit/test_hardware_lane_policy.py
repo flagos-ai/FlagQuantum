@@ -34,6 +34,13 @@ MC550_CPU_ROUTE = A800_CPU_ROUTE.replace(
     '"flagquantum-cpu"]', '"flagquantum-cpu","flagquantum-mc550-cpu"]'
 )
 
+COVERAGE_CPU_ROUTE = (
+    "${{ fromJSON(\n"
+    "  (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)\n"
+    "  && '[\"self-hosted\",\"linux\",\"x64\",\"flagquantum-cpu\"]' || '[\"ubuntu-latest\"]'\n"
+    ") }}"
+)
+
 TRUSTED_CPU_ROUTE = (
     "${{ (github.event_name != 'pull_request' || "
     "github.event.pull_request.head.repo.full_name == github.repository) "
@@ -175,6 +182,7 @@ def _allows_untrusted_code(job: dict[str, object], reaching: frozenset[str]) -> 
             PORTABLE_CPU_ROUTE,
             A800_CPU_ROUTE,
             MC550_CPU_ROUTE,
+            COVERAGE_CPU_ROUTE,
         )
     )
 
@@ -414,9 +422,13 @@ def test_cpu_route_rejects_missing_guards_and_other_untrusted_events(
 
 def test_dedicated_cpu_lanes_keep_fork_code_on_hosted_runners() -> None:
     jobs = _jobs(WORKFLOWS / "ci.yml")
-    for name in ("cpu-core", "cpu-core-3-12-tests", "cpu-runtime", "coverage-shard"):
+    for name in ("cpu-core", "cpu-core-3-12-tests", "cpu-runtime"):
         assert jobs[name]["runs-on"] == "ubuntu-latest"
         assert not _is_self_hosted(jobs[name])
+    coverage = jobs["coverage-shard"]
+    assert coverage["runs-on"] == COVERAGE_CPU_ROUTE
+    assert _is_self_hosted(coverage)
+    assert not _allows_untrusted_code(coverage, frozenset({"pull_request"}))
     triton = jobs["triton-optional"]
     assert triton["runs-on"] == MC550_CPU_ROUTE
     assert _is_self_hosted(triton)

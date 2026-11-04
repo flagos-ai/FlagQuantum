@@ -146,7 +146,7 @@ def _groups(job: dict[str, object]) -> set[str]:
     # Evaluate the hosted fallback of both trusted-pool selectors. Their CPU
     # arms have independent groups and do not consume hosted capacity.
     group = re.sub(
-        r"\$\{\{ \(github\.event_name != 'pull_request' \|\| "
+        r"\$\{\{ \(github\.event_name (?:!= 'pull_request' \|\||== 'pull_request' &&) "
         r"github\.event\.pull_request\.head\.repo\.full_name == github\.repository\) "
         r"&& format\('(?:a100-cpu|self-hosted)-\{0\}-[a-z0-9-]+-\{1\}', "
         r"github\.run_id, strategy\.job-index \|\| 0\) \|\| 'gh' \}\}",

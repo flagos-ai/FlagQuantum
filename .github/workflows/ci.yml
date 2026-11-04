@@ -1811,10 +1811,7 @@ jobs:
       JAX_PLATFORMS: cpu
       COVERAGE_FILE: .coverage.${{ matrix.shard }}
     concurrency:
-      group: >-
-        ${{ (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)
-          && format('flagquantum-self-hosted-{0}-{1}-coverage-shard-{2}', github.run_id, github.run_attempt, matrix.shard)
-          || format('flagquantum-gh-{0}-coverage-{1}', github.event.pull_request.number || github.ref_name, matrix.hosted-bucket) }}
+      group: flagquantum-${{ (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository) && format('self-hosted-{0}-coverage-shard-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-${{ github.event.pull_request.number || github.ref_name }}-coverage-${{ matrix.hosted-bucket }}
       queue: max
     strategy:
       fail-fast: false

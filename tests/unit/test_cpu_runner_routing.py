@@ -292,7 +292,8 @@ def test_r300_is_not_a_dependency_of_pr_source_preparation() -> None:
 def test_cpu_suites_attach_the_locked_image(job: str, profile: str) -> None:
     jobs = yaml.safe_load((WORKFLOWS / "ci.yml").read_text())["jobs"]
     suite = jobs[job]
-    assert suite["runs-on"] == "ubuntu-latest"
+    if job != "coverage-shard":
+        assert suite["runs-on"] == "ubuntu-latest"
     steps = suite["steps"]
     attach = next(
         step for step in steps if step.get("uses") == "./.github/actions/offline-cpu"

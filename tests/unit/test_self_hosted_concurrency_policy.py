@@ -57,6 +57,8 @@ def test_self_hosted_cpu_capacity_groups_do_not_serialize_ready_work() -> None:
                 ):
                     assert "concurrency" not in job, (workflow, name)
                 continue
+            if name == "coverage-shard":
+                guard = guard.replace("!= 'pull_request' ||", "== 'pull_request' &&")
             found.append(name)
             selector = (
                 "${{ ("
@@ -82,4 +84,4 @@ def test_self_hosted_cpu_capacity_groups_do_not_serialize_ready_work() -> None:
                         group not in groups
                     ), f"Ready jobs share a capacity lock: {group}"
                     groups.add(group)
-    assert {"dependency-bounds", "distributed-cpu-shard", "pre-commit"} <= set(found)
+    assert {"coverage-shard", "dependency-bounds", "distributed-cpu-shard", "pre-commit"} <= set(found)
