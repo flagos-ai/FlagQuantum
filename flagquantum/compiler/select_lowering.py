@@ -11,7 +11,7 @@ from .deferred_operations import (
     lower_majorana_to_gates,
     lower_select_pauli_lcu_to_gates,
 )
-from .unary_iteration import append_unary_iteration, unary_iteration_workspace
+from .registers.unary_iteration import append_unary_iteration, unary_iteration_workspace
 
 SelectPath = Literal["dense", "dynamic_unary_iteration", "unitary_ladder"]
 SELECT_REPORT = "select_lowering"

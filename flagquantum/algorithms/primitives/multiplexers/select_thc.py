@@ -6,7 +6,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 
 from ....circuit import Circuit
-from ....compiler.phase_gradient import phase_gradient_state_ir
+from ....compiler.registers.phase_gradient import phase_gradient_state_ir
 from ....core.classical_control import validate_classical_control
 from ....errors import ValidationError
 from ....runtime.dynamic.circuit import DynamicCircuit

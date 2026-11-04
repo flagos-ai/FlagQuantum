@@ -2,7 +2,7 @@
 
 from collections.abc import Callable
 
-from ..core.ir import Instruction
+from ...core.ir import Instruction
 
 
 def unary_iteration_workspace(selection_width: int, control_value: int | None) -> int:

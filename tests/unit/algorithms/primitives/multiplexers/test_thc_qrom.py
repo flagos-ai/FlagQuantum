@@ -11,7 +11,7 @@ import torch
 
 import flagquantum as fq
 from flagquantum.algorithms.primitives.multiplexers import SelectTHC
-from flagquantum.compiler.qrom import controlled_qrom_ir
+from flagquantum.compiler.registers.qrom import controlled_qrom_ir
 from flagquantum.core.classical_control import (
     instruction_condition_clauses,
     validate_classical_control,
@@ -221,10 +221,8 @@ def test_qualtran_v070_component_decompositions() -> None:
     from qualtran.bloqs.data_loading import QROM, QROAMClean
     from qualtran.bloqs.rotations.phase_gradient import PhaseGradientState
 
-    from flagquantum.compiler.phase_gradient import (
-        controlled_add_or_subtract_ir,
-        phase_gradient_state_ir,
-    )
+    from flagquantum.compiler.registers.arithmetic import controlled_add_or_subtract_ir
+    from flagquantum.compiler.registers.phase_gradient import phase_gradient_state_ir
 
     words = (6, 1, 5, 0)
     for blocked in (False, True):

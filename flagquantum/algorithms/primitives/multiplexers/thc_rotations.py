@@ -7,8 +7,8 @@ from dataclasses import dataclass, replace
 from math import isfinite, tau
 
 from ....circuit import Circuit
-from ....compiler.phase_gradient import controlled_add_or_subtract_ir
-from ....compiler.qrom import controlled_qrom_ir
+from ....compiler.registers.arithmetic import controlled_add_or_subtract_ir
+from ....compiler.registers.qrom import controlled_qrom_ir
 from ....errors import ValidationError
 
 
