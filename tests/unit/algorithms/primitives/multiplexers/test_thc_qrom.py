@@ -1,4 +1,4 @@
-"""Check the full 8-bit circuit without a dense 33-qubit statevector."""
+"""Check the full 8-bit circuit without a dense statevector."""
 
 from cmath import exp
 from collections import Counter, defaultdict
@@ -85,9 +85,18 @@ def _execute_sparse(
 
 
 @pytest.mark.parametrize(
-    "measurement_erasure, seed", [(False, 0), (True, 0), (True, 7)]
+    "blocked, measurement_erasure, seed",
+    [
+        (False, False, 0),
+        (False, True, 0),
+        (False, True, 7),
+        (True, False, 0),
+        (True, True, 7),
+    ],
 )
-def test_select_thc_qrom_phase_gradient(measurement_erasure: bool, seed: int) -> None:
+def test_select_thc_qrom_phase_gradient(
+    blocked: bool, measurement_erasure: bool, seed: int
+) -> None:
     op = SelectTHC.make_on(
         mu=(0, 1),
         nu=(2, 3),
@@ -131,30 +140,37 @@ def test_select_thc_qrom_phase_gradient(measurement_erasure: bool, seed: int) ->
         networks=quantized(op.networks),
         one_body_networks=quantized(op.one_body_networks),
     )
+    workspace = 28 if blocked else 20
     builder = DynamicCircuit if measurement_erasure else fq.Circuit
     ir = (
-        builder(33, dtype=torch.complex128)
-        .append(replace(op, measurement_erasure=measurement_erasure))
+        builder(13 + workspace, dtype=torch.complex128)
+        .append(
+            replace(
+                op,
+                workspace=tuple(range(13, 13 + workspace)),
+                measurement_erasure=measurement_erasure,
+            )
+        )
         .to_ir()
     )
-    assert validate_classical_control(ir.instructions, n_qubits=33) == (
-        8 if measurement_erasure else 0
+    assert validate_classical_control(ir.instructions, n_qubits=ir.n_wires) == (
+        (16 if blocked else 8) if measurement_erasure else 0
     )
     counts = Counter(item.name for item in ir.instructions)
-    assert counts["measure"] == (32 if measurement_erasure else 0)
-    assert counts["ccx"] == (113 if measurement_erasure else 129)
+    assert counts["measure"] == ((64 if blocked else 32) if measurement_erasure else 0)
+    assert counts["ccx"] == (97 if blocked else (113 if measurement_erasure else 129))
     result = _execute_sparse(
         ir,
-        {int(i) << 20: complex(inputs[i]) for i in np.flatnonzero(inputs)},
+        {int(i) << workspace: complex(inputs[i]) for i in np.flatnonzero(inputs)},
         seed=seed,
     )
     logical = np.zeros_like(inputs)
     leakage = 0.0
     for basis, value in result.items():
-        if basis & ((1 << 20) - 1):
+        if basis & ((1 << workspace) - 1):
             leakage += abs(value) ** 2
         else:
-            logical[basis >> 20] = value
+            logical[basis >> workspace] = value
     expected, unrounded = (
         fq.Circuit(13, dtype=torch.complex128, inputs=torch.from_numpy(inputs))
         .append(reference)
@@ -188,4 +204,71 @@ def test_paired_qrom_erasure_on_native_dynamic_runtime() -> None:
         expected.expand(16, -1),
         rtol=0,
         atol=1e-12,
+    )
+
+
+def test_qualtran_v070_component_decompositions() -> None:
+    from importlib.metadata import version
+    from itertools import product
+
+    cirq = pytest.importorskip("cirq")
+    pytest.importorskip("qualtran")
+    assert version("qualtran") == "0.7.0"
+    from qualtran import QUInt
+    from qualtran.bloqs.arithmetic.controlled_add_or_subtract import (
+        ControlledAddOrSubtract,
+    )
+    from qualtran.bloqs.data_loading import QROM, QROAMClean
+    from qualtran.bloqs.rotations.phase_gradient import PhaseGradientState
+
+    from flagquantum.compiler.phase_gradient import (
+        controlled_add_or_subtract_ir,
+        phase_gradient_state_ir,
+    )
+
+    words = (6, 1, 5, 0)
+    for blocked in (False, True):
+        options = {"log_block_sizes": (1,)} if blocked else {}
+        upstream = (
+            (QROAMClean if blocked else QROM)
+            .build_from_data(
+                np.asarray(words), num_controls=1, target_bitsizes=(3,), **options
+            )
+            .decompose_bloq()
+        )
+        ir = controlled_qrom_ir(2, 3, words, blocked=blocked)
+        for enable, address in product(range(2), range(4)):
+            kwargs = {"control": enable, "selection": address}
+            if not blocked:
+                kwargs["target0_"] = 0
+            reference = upstream.on_classical_vals(**kwargs)
+            result = _execute_sparse(
+                ir, {(enable * 4 + address) << (ir.n_wires - 3): 1}, seed=0
+            )
+            word = int(reference["target0_"])
+            if blocked:
+                word = (word << 3) | int(reference["junk_target0_"][0])
+            assert result == {
+                ((enable * 4 + address) << (ir.n_wires - 3)) | (word << 2): 1
+            }
+
+    add = ControlledAddOrSubtract(QUInt(3), QUInt(3), add_when_ctrl_is_on=False)
+    upstream_add = add.decompose_bloq()
+    ir = CircuitIR(8, controlled_add_or_subtract_ir(0, (1, 2, 3), (4, 5, 6), 7))
+    for control, a, b in product(range(2), range(8), range(8)):
+        reference = upstream_add.on_classical_vals(ctrl=control, a=a, b=b)
+        result = _execute_sparse(ir, {(control << 7) | (a << 4) | (b << 1): 1}, seed=0)
+        assert result == {(control << 7) | (a << 4) | (int(reference["b"]) << 1): 1}
+
+    wires = tuple(cirq.LineQubit.range(8))
+    phase_state = PhaseGradientState(8, exponent=1).on_registers(phase_grad=wires)
+    expected = (
+        cirq.Simulator(dtype=np.complex128)
+        .simulate(cirq.Circuit(cirq.decompose(phase_state)), qubit_order=wires)
+        .final_state_vector
+    )
+    ir = CircuitIR(8, phase_gradient_state_ir(tuple(range(8))))
+    result = _execute_sparse(ir, {0: 1}, seed=0)
+    np.testing.assert_allclose(
+        [result[i] for i in range(256)], expected, atol=1e-12, rtol=0
     )

@@ -4,9 +4,9 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from dataclasses import dataclass
-from math import tau
 
 from ....circuit import Circuit
+from ....compiler.phase_gradient import phase_gradient_state_ir
 from ....core.classical_control import validate_classical_control
 from ....errors import ValidationError
 from ....runtime.dynamic.circuit import DynamicCircuit
@@ -65,7 +65,8 @@ class SelectTHC:
 
         Pass 18 + len(mu) clean workspace qubits to use the 8-bit QROM and
         phase-gradient path. All workspace returns to zero. Without workspace,
-        the operation uses exact rotations. With workspace and a DynamicCircuit,
+        the operation uses exact rotations. Pass eight additional clean wires
+        to use the two-row QROAM load with a junk word. With workspace and a DynamicCircuit,
         measurement_erasure=True uses paired-block phase corrections to erase
         the loaded angles. The default uses reversible XOR unlookup.
         """
@@ -102,9 +103,10 @@ class SelectTHC:
                 "THC address, orbital, and rotation table widths disagree."
             )
         workspace_size = 2 * _ANGLE_BITS + width + 2
-        if self.workspace and len(self.workspace) != workspace_size:
+        blocked = len(self.workspace) == workspace_size + _ANGLE_BITS
+        if self.workspace and len(self.workspace) != workspace_size and not blocked:
             raise ValidationError(
-                f"THC QROM requires {workspace_size} clean workspace qubits."
+                f"THC lookup requires {workspace_size} or {workspace_size + _ANGLE_BITS} clean work qubits."
             )
         measurement_bits: tuple[int, ...] = ()
         if self.measurement_erasure:
@@ -115,7 +117,9 @@ class SelectTHC:
             next_bit = validate_classical_control(
                 circuit.to_ir().instructions, n_qubits=circuit.n_qubits
             )
-            measurement_bits = tuple(range(next_bit, next_bit + _ANGLE_BITS))
+            measurement_bits = tuple(
+                range(next_bit, next_bit + _ANGLE_BITS * (2 if blocked else 1))
+            )
         wires = (
             *self.mu,
             *self.nu,
@@ -140,9 +144,10 @@ class SelectTHC:
                 range(logical_width + _ANGLE_BITS, logical_width + 2 * _ANGLE_BITS)
             )
             carry = logical_width + 2 * _ANGLE_BITS
-            scratch = tuple(range(carry + 1, len(wires)))
-            for bit, wire in enumerate(gradient):
-                fragment.h(wire).phase(wire, theta=tau / (1 << (bit + 1)))
+            scratch = tuple(range(carry + 1, logical_width + workspace_size))
+            junk = tuple(range(logical_width + workspace_size, len(wires)))
+            for gate in phase_gradient_state_ir(gradient):
+                fragment.gate(gate.name, gate.wires, params=gate.params)
         padding = ((),) * ((1 << width) - len(self.networks))
 
         for address, spin, networks, first in (
@@ -161,7 +166,13 @@ class SelectTHC:
                 fragment.cswap(spin, a, b)
             if self.workspace:
                 rotations._append_qrom(
-                    fragment, angle_data, gradient, carry, scratch, measurement_bits
+                    fragment,
+                    angle_data,
+                    gradient,
+                    carry,
+                    scratch,
+                    measurement_bits,
+                    junk,
                 )
             else:
                 fragment.append(rotations)
@@ -173,7 +184,13 @@ class SelectTHC:
                 fragment.h(sys_a[0]).x(one_body)
             if self.workspace:
                 rotations.adjoint()._append_qrom(
-                    fragment, angle_data, gradient, carry, scratch, measurement_bits
+                    fragment,
+                    angle_data,
+                    gradient,
+                    carry,
+                    scratch,
+                    measurement_bits,
+                    junk,
                 )
             else:
                 fragment.append(rotations.adjoint())
@@ -185,6 +202,6 @@ class SelectTHC:
             fragment.cswap(one_body, left, right)
         fragment.x(one_body)
         if self.workspace:
-            for bit, wire in enumerate(gradient):
-                fragment.phase(wire, theta=-tau / (1 << (bit + 1))).h(wire)
+            for gate in phase_gradient_state_ir(gradient, inverse=True):
+                fragment.gate(gate.name, gate.wires, params=gate.params)
         return circuit.compose(fragment, qubits=wires)

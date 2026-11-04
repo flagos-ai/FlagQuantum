@@ -7,7 +7,7 @@ from dataclasses import dataclass, replace
 from math import isfinite, tau
 
 from ....circuit import Circuit
-from ....compiler._arithmetic_kernels import ripple_add_modular
+from ....compiler.phase_gradient import controlled_add_or_subtract_ir
 from ....compiler.qrom import controlled_qrom_ir
 from ....errors import ValidationError
 
@@ -88,6 +88,7 @@ class THCRotations:
         carry: int,
         scratch: tuple[int, ...],
         measurement_bits: tuple[int, ...],
+        junk: tuple[int, ...],
     ) -> None:
         width = len(self.selection)
         modulus = 1 << len(angle_data)
@@ -101,33 +102,33 @@ class THCRotations:
                     table = tables.setdefault((slot, left), [0] * len(self.networks))
                     table[address] = (-word if self.is_adjoint else word) % modulus
 
-        adder = ripple_add_modular(angle_data, gradient, carry)
         for slot in sorted(tables, reverse=self.is_adjoint):
             _, left = slot
             target, parity = self.target[left : left + 2]
-            operands = (parity, *self.selection, *angle_data, *scratch[:width])
+            operands = (parity, *self.selection, *angle_data, *junk, *scratch[:width])
             qrom = Circuit.from_ir(
-                controlled_qrom_ir(width, len(angle_data), tables[slot]),
+                controlled_qrom_ir(
+                    width, len(angle_data), tables[slot], blocked=bool(junk)
+                ),
                 dtype=circuit.dtype,
                 bsz=circuit.bsz,
             )
             circuit.cx(target, parity).compose(qrom, qubits=operands)
             circuit.sdg(target).h(target)
-            # Complementing both sides of the modular add implements subtraction.
-            for wire in gradient:
-                circuit.cx(target, wire)
-            for gate in adder:
+            for gate in controlled_add_or_subtract_ir(
+                target, angle_data, gradient, carry
+            ):
                 circuit.gate(gate.name, gate.wires)
-            for wire in gradient:
-                circuit.cx(target, wire)
             circuit.h(target).s(target)
-            if measurement_bits:
+            if measurement_bits or junk:
                 qrom = Circuit.from_ir(
                     controlled_qrom_ir(
                         width,
                         len(angle_data),
                         tables[slot],
                         measurement_bits=measurement_bits,
+                        blocked=bool(junk),
+                        inverse=True,
                     ),
                     dtype=circuit.dtype,
                     bsz=circuit.bsz,
