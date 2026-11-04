@@ -71,6 +71,7 @@ _INTRINSICS = (
         "prepare_state",
         "prepare_bell_state",
         "suzuki_trotter",
+        "single_pauli_exponent",
         "exponentiate",
         "qdrift",
         "qft",
@@ -1108,6 +1109,26 @@ class _Adapt:
             return -self.angle(node.children[0], token)
         return self.angle(node, token)
 
+    def single_pauli_exponent(self, token: Token, args: tuple[Expression, ...]) -> None:
+        if len(args) != 3:
+            reject(
+                token,
+                "signature",
+                "single_pauli_exponent requires a Pauli word, coefficient and target",
+            )
+        axes, coefficient, target_arg = args
+        target = self.atom(target_arg)
+        register = self.register(target, allow_qubit_array=True)
+        if self.parameters[target.text].kind != "qbit[]":
+            reject(target, "type", "single_pauli_exponent requires a qubit array")
+        support = _pauli_support(axes, register_width(register), sparse=False)
+        angle = self.evolution_angle(coefficient, token)
+        if support and not math.isfinite(2 * angle):
+            reject(
+                coefficient.token, "angle", "Pauli rotation angle exceeds finite range"
+            )
+        self.pauli_exponential(token, register, support, angle)
+
     def suzuki_trotter(self, token: Token, args: tuple[Expression, ...]) -> None:
         if len(args) != 5:
             reject(
@@ -1692,6 +1713,8 @@ class _Adapt:
             self.effect_op(
                 "qreg.uniform_interval", token, (destination,), start=start, stop=stop
             )
+        elif token.text == "single_pauli_exponent":
+            self.single_pauli_exponent(token, args)
         elif token.text == "suzuki_trotter":
             self.suzuki_trotter(token, args)
         elif token.text == "exponentiate":

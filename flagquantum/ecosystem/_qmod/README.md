@@ -560,3 +560,26 @@ state = fq.run(program).statevector()
 assert state.numel() == 16
 print(program.report["resources"])
 ```
+
+### Single Pauli exponentiation
+
+`single_pauli_exponent(paulis, coefficient, target)` applies
+`exp(-i * coefficient * P)` in place using the Pauli evolution convention.
+Use a literal array of `Pauli::I`, `Pauli::X`, `Pauli::Y`, and `Pauli::Z`
+with one entry per qubit, indexed in Qmod array order. The coefficient can
+be a supported numeric literal, bound real, or literal-index read from a bound
+real array. Identity words preserve the global phase.
+
+```python
+from pathlib import Path
+
+import flagquantum as fq
+from flagquantum import synth
+
+source = Path("tests/fixtures/classiq_qmod/variational_quantum_imaginary_time_evolution.qmod")
+program = synth.synthesize(
+    source, classical_inputs={"angles": [0.13, -0.29, 0.41, -0.57, 0.68, -0.83]}
+)
+state = fq.run(program).statevector()
+assert state.numel() == 16
+```
