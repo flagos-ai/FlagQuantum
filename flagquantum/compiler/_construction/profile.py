@@ -13,7 +13,7 @@ from typing import NoReturn
 
 from .._hybrid.model import INDEX, HybridProgram, IRType, Operation, ValueId
 from .._hybrid.verifier import Diagnostic, HybridVerificationError
-from .ranges import unsigned_width
+from .ranges import bitwise_width, unsigned_width
 
 _ATTRIBUTES = MappingProxyType(
     {
@@ -132,6 +132,8 @@ def verify_construction(
                     f"unsupported operation {operation.name!r}",
                     operation,
                 )
+            if operation.name == "qint.bitwise" and "signed" in operation.attributes:
+                expected_attributes = expected_attributes | {"signed"}
             actual_attributes = set(operation.attributes)
             if actual_attributes != expected_attributes:
                 _fail(
@@ -222,14 +224,28 @@ def verify_construction(
                 ):
                     _fail(
                         "bitwise.signature",
-                        "bitwise operation requires unsigned operands and a quantum value",
+                        "bitwise operation requires integer encodings and a quantum value",
                         operation,
                     )
-                widths = [
+                signed = operation.attributes.get("signed", (False,) * len(operands))
+                if (
+                    not isinstance(signed, tuple)
+                    or len(signed) != len(operands)
+                    or any(
+                        type(sign) is not bool or (sign and kind == INDEX)
+                        for sign, (kind, _) in zip(signed, operands, strict=True)
+                    )
+                ):
+                    _fail(
+                        "bitwise.signature",
+                        "sign extension requires quantum word operands",
+                        operation,
+                    )
+                widths = tuple(
                     unsigned_width(bound) if kind == INDEX else _width(kind, max_width)
                     for kind, bound in operands
-                ]
-                required = min(widths) if operator == "&" else max(widths)
+                )
+                required = bitwise_width(operator, widths, signed)
                 if width < required or (operator == "~" and width != required):
                     _fail(
                         "bitwise.width",

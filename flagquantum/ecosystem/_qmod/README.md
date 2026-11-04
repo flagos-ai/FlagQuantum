@@ -242,14 +242,26 @@ quantum dependencies. Existing phase, Const, local cleanup and resource limits
 still apply. This is bounded support, not optimal addition-chain selection.
 Run python -m examples.synthesis_qmod_powers for the complete cube workflow.
 
-## Unsigned bitwise expressions
+## Integer allocation and bitwise expressions
 
 Use `&`, `|`, `^` and unary `~` on unsigned integer expressions, including
 one-bit comparison flags. AND uses the narrower operand width. OR and XOR
 zero-extend to the wider width. Inversion complements exactly the operand's
 inferred width. The operators are eager and coherent, so `0&x` and `1|x`
-still require an initialized `x`. Signed, fractional and in-place bitwise
-updates are outside this subset.
+still require an initialized `x`.
+
+`allocate(width, SIGNED, 0, target)` declares a two's-complement integer.
+`UNSIGNED` selects an unsigned integer, and `True` and `False` are accepted
+as the equivalent signedness literals. Signed allocation and signed expression
+outputs are scoped to `main`. Bitwise operators sign-extend signed operands
+and zero-extend unsigned operands where needed. Register reads expose the
+raw basis encoding. Signed arithmetic, signed helper ports and fractional
+allocations remain outside this subset.
+
+`target ^= mask` toggles the selected bits of an initialized writable integer.
+A negative literal mask requires a signed target. A distinct initialized
+integer may also supply the mask when its width fits the target. The source
+is preserved and the update reuses X or CX gates without workspace.
 
 Precedence (highest first) is **, ~, *, +, &, ^, |, comparisons. Parenthesize
 comparison operands, for example phase((x<2)|(x==3),pi). Unary depth counts

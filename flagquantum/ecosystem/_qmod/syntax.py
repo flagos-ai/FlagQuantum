@@ -541,9 +541,14 @@ class Parser:
                     )
                 )
                 continue
-            if self.current.text == "=":
-                operator = self.take("=")
-                arguments = (Expression(target), self.expression())
+            if self.current.text in {"=", "^="}:
+                operator = self.take(self.current.text)
+                rhs = (
+                    self.signed_angle_argument()
+                    if operator.text == "^=" and self.current.text == "-"
+                    else self.expression()
+                )
+                arguments = (Expression(target), rhs)
             elif self.current.text == "(":
                 operator = target
                 self.take("(")

@@ -169,8 +169,19 @@ def _copy(value: _WireValue, target: tuple[int, ...]) -> tuple[Instruction, ...]
 
 
 def _bitwise(
-    operator: str, words: tuple[_WireValue, ...], target: tuple[int, ...]
+    operator: str,
+    words: tuple[_WireValue, ...],
+    target: tuple[int, ...],
+    signed: tuple[bool, ...],
 ) -> Iterable[Instruction]:
+    words = tuple(
+        (
+            (word[0],) * max(0, len(target) - len(word)) + word
+            if sign and isinstance(word, tuple)
+            else word
+        )
+        for word, sign in zip(words, signed, strict=True)
+    )
     if operator in {"~", "|", "^"}:
         for word in words:
             yield from _copy(word, target)
@@ -387,6 +398,7 @@ def _emit_arithmetic(
                 op.attributes["operator"],
                 tuple(encoding(value.id) for value in op.operands),
                 allocation.result,
+                op.attributes.get("signed", (False,) * len(op.operands)),
             )
         if op.name == "qint.select":
             predicate, yes, no = (encoding(value.id) for value in op.operands)

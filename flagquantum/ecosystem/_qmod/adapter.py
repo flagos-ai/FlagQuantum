@@ -12,7 +12,7 @@ from operator import and_, or_, xor
 from types import MappingProxyType
 
 from ...compiler._construction.profile import uint_type
-from ...compiler._construction.ranges import unsigned_width
+from ...compiler._construction.ranges import bitwise_width, unsigned_width
 from ...compiler._construction.register_profile import (
     equatorial_rotation,
     euler_rotation,
@@ -155,11 +155,17 @@ class _Expression:
     """Infer unsigned arithmetic/predicate domains and emit existing qint records."""
 
     def __init__(
-        self, node: Expression, widths: Mapping[str, int | None], name: str
+        self,
+        node: Expression,
+        widths: Mapping[str, int | None],
+        name: str,
+        signed_names: set[str],
     ) -> None:
         self.node, self.widths, self.name = node, widths, name
         self.facts: dict[Expression, tuple[int, bool]] = {}
         self.word_widths: dict[Expression, int] = {}
+        self.signed_names = signed_names
+        self.signed_words: set[Expression] = set()
         self.names: list[str] = []
         self.bound, self.quantum = self.infer(node)
         arguments: list[Value] = []
@@ -190,6 +196,8 @@ class _Expression:
                     )
                 if text not in self.names:
                     self.names.append(text)
+                if text in self.signed_names:
+                    self.signed_words.add(node)
                 result = ((1 << width) - 1, True)
         elif text == "~":
             operand = node.children[0]
@@ -197,14 +205,21 @@ class _Expression:
             width = self.word_widths[operand]
             mask = (1 << width) - 1
             self.word_widths[node] = width
+            if operand in self.signed_words:
+                self.signed_words.add(node)
             result = (mask if quantum else mask ^ value, quantum)
         else:
             lhs, rhs = node.children
             left, lq = self.infer(lhs)
             right, rq = self.infer(rhs)
+            signed = lhs in self.signed_words, rhs in self.signed_words
             if text in _WORD_OPERATORS:
                 widths = self.word_widths[lhs], self.word_widths[rhs]
-                width = min(widths) if text == "&" else max(widths)
+                width = bitwise_width(text, widths, signed)
+                signed_result = all(signed) if text == "&" else any(signed)
+                if signed_result:
+                    self.signed_words.add(node)
+
                 self.word_widths[node] = width
                 result = (
                     (
@@ -213,6 +228,12 @@ class _Expression:
                         else _WORD_OPERATORS[text](left, right)
                     ),
                     lq or rq,
+                )
+            elif any(signed):
+                reject(
+                    node.token,
+                    "type",
+                    "signed operands are supported only in bitwise expressions",
                 )
             elif text in _RELATIONS:
                 opcode, swap, invert = _RELATIONS[text]
@@ -262,8 +283,9 @@ class _Expression:
             return self.operation("arith.constant", (), INDEX, node.token, value=bound)
         if not node.children:
             return self.inputs[node.token.text]
-        if node.token.text in {"~", *_WORD_OPERATORS} and any(
-            self.word_widths[child] > 1 for child in node.children
+        signed = tuple(child in self.signed_words for child in node.children)
+        if node.token.text in {"~", *_WORD_OPERATORS} and (
+            any(signed) or any(self.word_widths[child] > 1 for child in node.children)
         ):
             return self.operation(
                 "qint.bitwise",
@@ -271,6 +293,7 @@ class _Expression:
                 uint_type(self.word_widths[node]),
                 node.token,
                 operator=node.token.text,
+                **({"signed": signed} if any(signed) else {}),
             )
         left = self.emit(node.children[0])
         if node.token.text == "~":
@@ -368,6 +391,7 @@ class _Adapt:
             self.parameters[name] = parameter
         self.widths = {name: p.width for name, p in self.parameters.items()}
         self.inferred: dict[str, int] = {}
+        self.signed: set[str] = set()
         self.registers: dict[str, Value] = {}
         self.counter = len(self.parameters) + 1
         self.entry = Value(ValueId(self.scope, 0), QUANTUM_EFFECT)
@@ -615,7 +639,8 @@ class _Adapt:
                 actual_name, None if borrowed else formal.type.parameters[0]
             )
             if (
-                self.parameters[actual_name.text].kind != parameter.kind
+                actual_name.text in self.signed
+                or self.parameters[actual_name.text].kind != parameter.kind
                 or actual.type != formal.type
             ):
                 reject(
@@ -641,8 +666,14 @@ class _Adapt:
         if len(statement.arguments) != 1 or body is None or len(body) != 1:
             reject(token, "control", "control requires one condition and one operation")
         condition = statement.arguments[0]
-        expression = _Expression(condition, self.widths, f"{self.scope}.control{index}")
-        if not expression.quantum or unsigned_width(expression.bound) != 1:
+        expression = _Expression(
+            condition, self.widths, f"{self.scope}.control{index}", self.signed
+        )
+        if (
+            condition in expression.signed_words
+            or not expression.quantum
+            or unsigned_width(expression.bound) != 1
+        ):
             reject(token, "control", "control requires a quantum one-bit condition")
         inputs = tuple(
             self.register(self.parameters[name].name) for name in expression.names
@@ -925,6 +956,63 @@ class _Adapt:
             elif axis == "Y":
                 gate("rx", index, angle=-math.pi / 2)
 
+    def xor_update(
+        self, token: Token, destination: Expression, source: Expression
+    ) -> None:
+        target = self.atom(destination)
+        register = self.register(target)
+        if self.local_scope is not None or self.parameters[target.text].kind != "qnum":
+            reject(
+                token,
+                "statement",
+                "in-place XOR requires an integer output at function scope",
+            )
+        width = register_width(register)
+        magnitude = source.children[0] if source.token.text == "-" else source
+        if not magnitude.children and magnitude.token.text.isdecimal():
+            mask = int(magnitude.token.text)
+            if source.token.text == "-":
+                if target.text not in self.signed or mask > 1 << (width - 1):
+                    reject(
+                        source.token,
+                        "width",
+                        "negative XOR mask must fit the signed target",
+                    )
+                mask = (-mask) & ((1 << width) - 1)
+            if mask >= 1 << width:
+                reject(source.token, "width", "XOR mask must fit the target width")
+            for bit in range(width):
+                if mask & (1 << bit):
+                    self.effect_op("qreg.gate", token, (register,), gate="x", index=bit)
+            if not mask:
+                # The verifier must still check that the target is writable and initialized.
+                self.effect_op(
+                    "qreg.gate", token, (register,), gate="rz", index=0, angle=0.0
+                )
+            return
+        other = self.atom(source)
+        operand = self.register(other)
+        operand_width = register_width(operand)
+        if (
+            operand == register
+            or operand_width > width
+            or self.parameters[other.text].kind != "qnum"
+        ):
+            reject(
+                source.token,
+                "signature",
+                "XOR source must be a distinct integer fitting the target",
+            )
+        count = width if other.text in self.signed else operand_width
+        for bit in range(count):
+            self.effect_op(
+                "qreg.pair_gate",
+                token,
+                (operand, register),
+                gate="cx",
+                indices=(min(bit, operand_width - 1), bit),
+            )
+
     def statement(self, statement: Statement, index: str) -> None:
         token, args = statement.token, statement.arguments
         if statement.repeat_index is not None:
@@ -946,7 +1034,9 @@ class _Adapt:
             self.within(statement, index)
         elif token.text == "=":
             target = self.atom(args[0])
-            expression = _Expression(args[1], self.widths, f"{self.scope}.expr{index}")
+            expression = _Expression(
+                args[1], self.widths, f"{self.scope}.expr{index}", self.signed
+            )
             if self.local_scope is not None and not expression.quantum:
                 reject(
                     token,
@@ -954,6 +1044,20 @@ class _Adapt:
                     "within preparation requires a quantum-dependent expression",
                 )
             destination = self.register(target, unsigned_width(expression.bound))
+            if args[1] in expression.signed_words:
+                if (
+                    self.scope != "main"
+                    or self.local_scope is not None
+                    or self.parameters[target.text].kind != "qnum"
+                    or register_width(destination) != expression.word_widths[args[1]]
+                ):
+                    reject(
+                        target,
+                        "type",
+                        "signed results require a matching-width main output",
+                    )
+                self.signed.add(target.text)
+
             if expression.quantum:
                 graph = expression.function()
                 self.functions.append(graph)
@@ -989,9 +1093,13 @@ class _Adapt:
                     "coefficient",
                     "phase requires unshadowed pi or a decimal literal",
                 )
-            expression = _Expression(args[0], self.widths, f"{self.scope}.phase{index}")
-            if not expression.quantum or (
-                angle is None and unsigned_width(expression.bound) != 1
+            expression = _Expression(
+                args[0], self.widths, f"{self.scope}.phase{index}", self.signed
+            )
+            if (
+                args[0] in expression.signed_words
+                or not expression.quantum
+                or (angle is None and unsigned_width(expression.bound) != 1)
             ):
                 reject(
                     args[0].token,
@@ -1007,15 +1115,17 @@ class _Adapt:
             self.effect_op(
                 "qreg.phase", token, inputs, callee=graph.name, **phase_attributes
             )
+        elif token.text == "^=":
+            self.xor_update(token, args[0], args[1])
         elif token.text == "allocate":
-            if len(args) not in {1, 2}:
+            if len(args) not in {1, 2, 4}:
                 reject(
                     token,
                     "signature",
-                    "allocate accepts an output or a literal size and output",
+                    "allocate accepts an output, size and output, or size, signedness, zero and output",
                 )
             size = None
-            if len(args) == 2:
+            if len(args) > 1:
                 if args[0].children or not args[0].token.text.isdecimal():
                     reject(
                         args[0].token,
@@ -1037,6 +1147,28 @@ class _Adapt:
                     "width",
                     "allocation size must agree with the declared width",
                 )
+            if len(args) == 4:
+                sign, fraction = args[1:3]
+                if (
+                    sign.children
+                    or sign.token.text not in {"True", "False", "SIGNED", "UNSIGNED"}
+                    or fraction.children
+                    or fraction.token.text != "0"
+                    or self.parameters[target.text].kind != "qnum"
+                ):
+                    reject(
+                        token,
+                        "type",
+                        "typed allocate requires a qnum, literal signedness and zero fractional bits",
+                    )
+                if sign.token.text in {"True", "SIGNED"}:
+                    if self.scope != "main" or self.local_scope is not None:
+                        reject(
+                            token,
+                            "scope",
+                            "signed allocation is supported only at main scope",
+                        )
+                    self.signed.add(target.text)
             self.effect_op("qreg.allocate", token, (destination,))
         elif token.text == "prepare_bell_state":
             if len(args) != 2:
