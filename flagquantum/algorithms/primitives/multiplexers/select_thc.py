@@ -7,7 +7,9 @@ from dataclasses import dataclass
 from math import tau
 
 from ....circuit import Circuit
+from ....core.classical_control import validate_classical_control
 from ....errors import ValidationError
+from ....runtime.dynamic.circuit import DynamicCircuit
 from .thc_rotations import THCRotations
 
 _ANGLE_BITS = 8
@@ -39,6 +41,7 @@ class SelectTHC:
     networks: tuple[tuple[tuple[int, int, float], ...], ...]
     one_body_networks: tuple[tuple[tuple[int, int, float], ...], ...]
     workspace: tuple[int, ...] = ()
+    measurement_erasure: bool = False
 
     @classmethod
     def make_on(
@@ -56,12 +59,15 @@ class SelectTHC:
         networks: Sequence[_Network],
         one_body_networks: Sequence[_Network],
         workspace: Sequence[int] = (),
+        measurement_erasure: bool = False,
     ) -> SelectTHC:
         """Bind both reflections to the prepared selection and system qubits.
 
         Pass 18 + len(mu) clean workspace qubits to use the 8-bit QROM and
         phase-gradient path. All workspace returns to zero. Without workspace,
-        the operation uses exact rotations.
+        the operation uses exact rotations. With workspace and a DynamicCircuit,
+        measurement_erasure=True uses paired-block phase corrections to erase
+        the loaded angles. The default uses reversible XOR unlookup.
         """
         return cls(
             tuple(mu),
@@ -76,6 +82,7 @@ class SelectTHC:
             tuple(map(tuple, networks)),
             tuple(map(tuple, one_body_networks)),
             tuple(workspace),
+            measurement_erasure,
         )
 
     def append_to(self, circuit: Circuit) -> Circuit:
@@ -99,6 +106,16 @@ class SelectTHC:
             raise ValidationError(
                 f"THC QROM requires {workspace_size} clean workspace qubits."
             )
+        measurement_bits: tuple[int, ...] = ()
+        if self.measurement_erasure:
+            if not self.workspace or not isinstance(circuit, DynamicCircuit):
+                raise ValidationError(
+                    "THC measurement erasure requires workspace and a DynamicCircuit."
+                )
+            next_bit = validate_classical_control(
+                circuit.to_ir().instructions, n_qubits=circuit.n_qubits
+            )
+            measurement_bits = tuple(range(next_bit, next_bit + _ANGLE_BITS))
         wires = (
             *self.mu,
             *self.nu,
@@ -143,7 +160,9 @@ class SelectTHC:
             for a, b in zip(sys_a, sys_b, strict=True):
                 fragment.cswap(spin, a, b)
             if self.workspace:
-                rotations._append_qrom(fragment, angle_data, gradient, carry, scratch)
+                rotations._append_qrom(
+                    fragment, angle_data, gradient, carry, scratch, measurement_bits
+                )
             else:
                 fragment.append(rotations)
             if first:
@@ -154,7 +173,7 @@ class SelectTHC:
                 fragment.h(sys_a[0]).x(one_body)
             if self.workspace:
                 rotations.adjoint()._append_qrom(
-                    fragment, angle_data, gradient, carry, scratch
+                    fragment, angle_data, gradient, carry, scratch, measurement_bits
                 )
             else:
                 fragment.append(rotations.adjoint())

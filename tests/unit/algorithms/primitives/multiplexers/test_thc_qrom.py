@@ -6,16 +6,34 @@ from dataclasses import replace
 from math import sqrt, tau
 
 import numpy as np
+import pytest
 import torch
 
 import flagquantum as fq
 from flagquantum.algorithms.primitives.multiplexers import SelectTHC
+from flagquantum.compiler.qrom import controlled_qrom_ir
+from flagquantum.core.classical_control import (
+    instruction_condition_clauses,
+    validate_classical_control,
+)
 from flagquantum.core.ir import CircuitIR
+from flagquantum.dynamic import DynamicCircuit
+from flagquantum.runtime.dynamic.execution import run_dynamic
 
 
-def _execute_sparse(ir: CircuitIR, state: dict[int, complex]) -> dict[int, complex]:
+def _execute_sparse(
+    ir: CircuitIR, state: dict[int, complex], *, seed: int
+) -> dict[int, complex]:
     """Execute the emitted gate set directly on occupied computational states."""
+    rng = np.random.default_rng(seed)
+    outcomes: dict[int, int] = {}
     for op in ir.instructions:
+        clauses = instruction_condition_clauses(op)
+        if clauses and not any(
+            all(outcomes[bit] == expected for bit, expected in clause)
+            for clause in clauses
+        ):
+            continue
         masks = tuple(1 << (ir.n_wires - q - 1) for q in op.wires)
         name = op.name
         if name == "h":
@@ -25,9 +43,21 @@ def _execute_sparse(ir: CircuitIR, state: dict[int, complex]) -> dict[int, compl
                 updated[basis & ~mask] += value / sqrt(2)
                 updated[basis | mask] += (-value if basis & mask else value) / sqrt(2)
             state = dict(updated)
-        elif name in ("phase", "s", "sdg", "cz"):
+        elif name == "measure":
+            (mask,) = masks
+            outcome = int(rng.integers(2))
+            outcomes[op.metadata["classical_bit"]] = outcome
+            state = {
+                basis: value
+                for basis, value in state.items()
+                if bool(basis & mask) == outcome
+            }
+            probability = sum(abs(value) ** 2 for value in state.values())
+            assert probability == pytest.approx(0.5, abs=1e-12)
+            state = {basis: value / sqrt(probability) for basis, value in state.items()}
+        elif name in ("phase", "s", "sdg", "z", "cz"):
             mask = sum(masks)
-            phases = {"s": 1j, "sdg": -1j, "cz": -1}
+            phases = {"s": 1j, "sdg": -1j, "z": -1, "cz": -1}
             phase = phases[name] if name in phases else exp(1j * op.params["theta"])
             state = {
                 basis: phase * value if basis & mask == mask else value
@@ -54,7 +84,10 @@ def _execute_sparse(ir: CircuitIR, state: dict[int, complex]) -> dict[int, compl
     return state
 
 
-def test_select_thc_qrom_phase_gradient() -> None:
+@pytest.mark.parametrize(
+    "measurement_erasure, seed", [(False, 0), (True, 0), (True, 7)]
+)
+def test_select_thc_qrom_phase_gradient(measurement_erasure: bool, seed: int) -> None:
     op = SelectTHC.make_on(
         mu=(0, 1),
         nu=(2, 3),
@@ -98,9 +131,22 @@ def test_select_thc_qrom_phase_gradient() -> None:
         networks=quantized(op.networks),
         one_body_networks=quantized(op.one_body_networks),
     )
-    ir = fq.Circuit(33, dtype=torch.complex128).append(op).to_ir()
+    builder = DynamicCircuit if measurement_erasure else fq.Circuit
+    ir = (
+        builder(33, dtype=torch.complex128)
+        .append(replace(op, measurement_erasure=measurement_erasure))
+        .to_ir()
+    )
+    assert validate_classical_control(ir.instructions, n_qubits=33) == (
+        8 if measurement_erasure else 0
+    )
+    counts = Counter(item.name for item in ir.instructions)
+    assert counts["measure"] == (32 if measurement_erasure else 0)
+    assert counts["ccx"] == (113 if measurement_erasure else 129)
     result = _execute_sparse(
-        ir, {int(i) << 20: complex(inputs[i]) for i in np.flatnonzero(inputs)}
+        ir,
+        {int(i) << 20: complex(inputs[i]) for i in np.flatnonzero(inputs)},
+        seed=seed,
     )
     logical = np.zeros_like(inputs)
     leakage = 0.0
@@ -126,3 +172,20 @@ def test_select_thc_qrom_phase_gradient() -> None:
     print("Unquantized amplitude error", np.max(np.abs(logical - unrounded)))
     print("Workspace leakage probability", leakage)
     print("Emitted gates", dict(Counter(op.name for op in ir.instructions)))
+
+
+def test_paired_qrom_erasure_on_native_dynamic_runtime() -> None:
+    # Three words give a partial final block; the unused address loads zero.
+    words = (0b110, 0b001, 0b101)
+    circuit = DynamicCircuit(8, dtype=torch.complex128)
+    circuit.h(0).h(1).h(2).s(1)
+    expected = circuit.state().flatten()
+    circuit.compose(controlled_qrom_ir(2, 3, words))
+    circuit.compose(controlled_qrom_ir(2, 3, words, measurement_bits=(0, 1, 2)))
+    result = run_dynamic(circuit, shots=16, seed=21, strategy="trajectory")
+    torch.testing.assert_close(
+        result.final_states.reshape(16, -1),
+        expected.expand(16, -1),
+        rtol=0,
+        atol=1e-12,
+    )

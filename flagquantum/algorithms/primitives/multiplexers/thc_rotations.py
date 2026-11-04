@@ -8,8 +8,7 @@ from math import isfinite, tau
 
 from ....circuit import Circuit
 from ....compiler._arithmetic_kernels import ripple_add_modular
-from ....compiler.unary_iteration import append_unary_iteration
-from ....core.ir import CircuitIR, Instruction
+from ....compiler.qrom import controlled_qrom_ir
 from ....errors import ValidationError
 
 
@@ -88,6 +87,7 @@ class THCRotations:
         gradient: tuple[int, ...],
         carry: int,
         scratch: tuple[int, ...],
+        measurement_bits: tuple[int, ...],
     ) -> None:
         width = len(self.selection)
         modulus = 1 << len(angle_data)
@@ -107,8 +107,9 @@ class THCRotations:
             target, parity = self.target[left : left + 2]
             operands = (parity, *self.selection, *angle_data, *scratch[:width])
             qrom = Circuit.from_ir(
-                _angle_lookup(width, len(angle_data), tables[slot], len(operands)),
+                controlled_qrom_ir(width, len(angle_data), tables[slot]),
                 dtype=circuit.dtype,
+                bsz=circuit.bsz,
             )
             circuit.cx(target, parity).compose(qrom, qubits=operands)
             circuit.sdg(target).h(target)
@@ -120,7 +121,18 @@ class THCRotations:
             for wire in gradient:
                 circuit.cx(target, wire)
             circuit.h(target).s(target)
-            # XOR lookup is its own inverse and the address and parity are intact.
+            if measurement_bits:
+                qrom = Circuit.from_ir(
+                    controlled_qrom_ir(
+                        width,
+                        len(angle_data),
+                        tables[slot],
+                        measurement_bits=measurement_bits,
+                    ),
+                    dtype=circuit.dtype,
+                    bsz=circuit.bsz,
+                )
+            # The address and orbital parity still select the same word.
             circuit.compose(qrom, qubits=operands).cx(target, parity)
 
     def _validate_rotation(self, left: int, right: int, angle: float) -> None:
@@ -133,26 +145,3 @@ class THCRotations:
             raise ValidationError(
                 "THC needs adjacent orbital offsets and finite angles."
             )
-
-
-def _angle_lookup(
-    width: int, angle_bits: int, table: list[int], wires: int
-) -> CircuitIR:
-    instructions: list[Instruction] = []
-
-    def load(address: int, predicate: int | None) -> None:
-        assert predicate is not None  # The orbital parity bit is always a control.
-        for bit in range(angle_bits):
-            if table[address] & (1 << (angle_bits - 1 - bit)):
-                instructions.append(Instruction("cx", (predicate, width + 1 + bit)))
-
-    append_unary_iteration(
-        instructions,
-        operand_count=width + 1 + angle_bits,
-        width=width,
-        entries=len(table),
-        control_value=1,
-        apply_branch=load,
-        coherent=True,
-    )
-    return CircuitIR(wires, tuple(instructions))
