@@ -6,12 +6,15 @@ import pickle
 from flagquantum.qec import (
     ChunkLayout,
     DecodingGraph,
+    DemChunk,
     DemChunkSpec,
     DemChunksSpec,
     DetectorErrorModel,
     PhaseId,
     dem_chunk_from_spec,
     dem_chunks_from_spec,
+    dem_chunks_to_o_sparse,
+    dem_chunks_to_pcm,
     dem_close,
     dem_close_all,
 )
@@ -41,7 +44,7 @@ def _inspect_single_chunk() -> None:
     print("Same class:", type(restored) is DetectorErrorModel)
 
 
-def _round_trip() -> None:
+def _fixed_chunks() -> tuple[DetectorErrorModel, tuple[DemChunk, ...]]:
     model = DetectorErrorModel.from_stim_text(
         "error(0.125) D0 D1\n"
         "error(0.25) D1 L0\n"
@@ -50,14 +53,30 @@ def _round_trip() -> None:
     )
     layout = ChunkLayout(model=model, widths=(1, 1, 1))
     chunks = dem_chunks_from_spec(DemChunksSpec(layout=layout, window=2))
+    return model, chunks
+
+
+def _round_trip() -> None:
+    model, chunks = _fixed_chunks()
     print([chunk.model.num_errors for chunk in chunks])
     print(dem_close_all(chunks) == model)
 
 
+def _sparse_projection() -> None:
+    _, chunks = _fixed_chunks()
+    print(dem_chunks_to_pcm(chunks))
+    print(dem_chunks_to_o_sparse(chunks))
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--round-trip", action="store_true")
-    if parser.parse_args().round_trip:
+    modes = parser.add_mutually_exclusive_group()
+    modes.add_argument("--round-trip", action="store_true")
+    modes.add_argument("--sparse-projection", action="store_true")
+    args = parser.parse_args()
+    if args.sparse_projection:
+        _sparse_projection()
+    elif args.round_trip:
         _round_trip()
     else:
         _inspect_single_chunk()

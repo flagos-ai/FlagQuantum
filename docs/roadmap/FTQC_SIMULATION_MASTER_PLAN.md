@@ -1002,3 +1002,8 @@ The fixed DEM example prints `[2, 1]` and `True` in round-trip mode. The
 first window owns the shared-layer fault and closing both windows restores
 the original model. This exercises the DEM composition prerequisite for
 FTS-07 and R08.
+
+The `--sparse-projection` mode reuses those windows and displays detector
+rows and logical rows in a shared fault-column order. Column 1 appears
+in both the D1 and L0 rows for the shared-layer fault. This exercises
+chunked decoder-input preparation for FTS-07 and R08.

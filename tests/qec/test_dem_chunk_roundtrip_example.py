@@ -27,3 +27,13 @@ def test_round_trip_keeps_shared_fault_once(
     ]
     assert [error.probability for error in second.model.errors] == [0.375]
     assert capsys.readouterr().out.splitlines() == ["[2, 1]", "True"]
+
+
+def test_sparse_projection_shares_fault_columns(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    example._sparse_projection()
+    assert capsys.readouterr().out.splitlines() == [
+        "((0,), (0, 1, 2), (2,))",
+        "((1,),)",
+    ]
