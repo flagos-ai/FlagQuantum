@@ -168,6 +168,34 @@ def _copy(value: _WireValue, target: tuple[int, ...]) -> tuple[Instruction, ...]
     )
 
 
+def _bitwise(
+    operator: str, words: tuple[_WireValue, ...], target: tuple[int, ...]
+) -> Iterable[Instruction]:
+    if operator in {"~", "|", "^"}:
+        for word in words:
+            yield from _copy(word, target)
+    if operator == "~":
+        for wire in target:
+            yield Instruction("x", (wire,))
+    if operator not in {"&", "|"}:
+        return
+
+    for bit, wire in enumerate(reversed(target)):
+        controls = []
+        for word in words:
+            if isinstance(word, int):
+                if not word & (1 << bit):
+                    break
+            elif bit < len(word):
+                controls.append(word[-1 - bit])
+            else:
+                break
+        else:
+            # A repeated control is idempotent, including x & x and x | x.
+            ports = (*dict.fromkeys(controls), wire)
+            yield Instruction(("x", "cx", "ccx")[len(ports) - 1], ports)
+
+
 def _emit_arithmetic(
     functions: Sequence[HybridProgram],
     inputs: Mapping[ValueId, Sequence[int]],
@@ -339,6 +367,7 @@ def _emit_arithmetic(
             "qint.less",
             "qint.multiply",
             "qint.select",
+            "qint.bitwise",
         } or carry_free_add(op):
             owned = allocate(unsigned_width(bound(key)), op)
             return _Allocation(owned, owned)
@@ -353,6 +382,12 @@ def _emit_arithmetic(
     def kernel(
         key: ValueId, allocation: _Allocation, op: Operation, scratch: tuple[int, ...]
     ) -> Iterable[Instruction]:
+        if op.name == "qint.bitwise":
+            return _bitwise(
+                op.attributes["operator"],
+                tuple(encoding(value.id) for value in op.operands),
+                allocation.result,
+            )
         if op.name == "qint.select":
             predicate, yes, no = (encoding(value.id) for value in op.operands)
             assert isinstance(predicate, tuple) and len(predicate) == 1

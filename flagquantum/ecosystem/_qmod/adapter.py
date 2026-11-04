@@ -8,6 +8,7 @@ import re
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from decimal import Decimal
+from operator import and_, or_, xor
 from types import MappingProxyType
 
 from ...compiler._construction.profile import uint_type
@@ -125,6 +126,8 @@ def _sparse_width(node: Expression) -> int:
     return width
 
 
+_WORD_OPERATORS = {"&": and_, "|": or_, "^": xor}
+
 _RELATIONS = MappingProxyType(
     {
         "==": ("qint.equal", False, False),
@@ -156,6 +159,7 @@ class _Expression:
     ) -> None:
         self.node, self.widths, self.name = node, widths, name
         self.facts: dict[Expression, tuple[int, bool]] = {}
+        self.word_widths: dict[Expression, int] = {}
         self.names: list[str] = []
         self.bound, self.quantum = self.infer(node)
         arguments: list[Value] = []
@@ -188,28 +192,28 @@ class _Expression:
                     self.names.append(text)
                 result = ((1 << width) - 1, True)
         elif text == "~":
-            value, quantum = self.infer(node.children[0])
-            if value > 1:
-                reject(
-                    node.token, "width", "bitwise operands must have one-bit domains"
-                )
-            result = (1 if quantum else 1 ^ value, quantum)
+            operand = node.children[0]
+            value, quantum = self.infer(operand)
+            width = self.word_widths[operand]
+            mask = (1 << width) - 1
+            self.word_widths[node] = width
+            result = (mask if quantum else mask ^ value, quantum)
         else:
-            left, lq = self.infer(node.children[0])
-            right, rq = self.infer(node.children[1])
-            if text in {"&", "|", "^"}:
-                if left > 1 or right > 1:
-                    reject(
-                        node.token,
-                        "width",
-                        "bitwise operands must have one-bit domains",
-                    )
-                bound = (
-                    left & right
-                    if text == "&"
-                    else left | right if text == "|" else left ^ right
+            lhs, rhs = node.children
+            left, lq = self.infer(lhs)
+            right, rq = self.infer(rhs)
+            if text in _WORD_OPERATORS:
+                widths = self.word_widths[lhs], self.word_widths[rhs]
+                width = min(widths) if text == "&" else max(widths)
+                self.word_widths[node] = width
+                result = (
+                    (
+                        (1 << width) - 1
+                        if lq or rq
+                        else _WORD_OPERATORS[text](left, right)
+                    ),
+                    lq or rq,
                 )
-                result = (1 if lq or rq else bound, lq or rq)
             elif text in _RELATIONS:
                 opcode, swap, invert = _RELATIONS[text]
                 a, b = (right, left) if swap else (left, right)
@@ -232,6 +236,7 @@ class _Expression:
                 "width",
                 "expression domain exceeds the 256-bit unsigned profile",
             )
+        self.word_widths.setdefault(node, unsigned_width(result[0]))
         self.facts[node] = result
         return result
 
@@ -257,6 +262,16 @@ class _Expression:
             return self.operation("arith.constant", (), INDEX, node.token, value=bound)
         if not node.children:
             return self.inputs[node.token.text]
+        if node.token.text in {"~", *_WORD_OPERATORS} and any(
+            self.word_widths[child] > 1 for child in node.children
+        ):
+            return self.operation(
+                "qint.bitwise",
+                tuple(self.emit(child) for child in node.children),
+                uint_type(self.word_widths[node]),
+                node.token,
+                operator=node.token.text,
+            )
         left = self.emit(node.children[0])
         if node.token.text == "~":
             zero = self.operation("arith.constant", (), INDEX, node.token, value=0)

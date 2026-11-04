@@ -242,21 +242,33 @@ quantum dependencies. Existing phase, Const, local cleanup and resource limits
 still apply. This is bounded support, not optimal addition-chain selection.
 Run python -m examples.synthesis_qmod_powers for the complete cube workflow.
 
-## One-bit logical composition
+## Unsigned bitwise expressions
 
-Use &, |, ^ and unary ~ on complete one-bit unsigned expression domains,
-including comparison flags and literals 0/1. Multibit values are refused even
-when initialized to zero. These are eager coherent operations: 0&x and 1|x
-still require x initialized. No measurement, host Boolean conversion, signed
-complement, keyword and/or/not or in-place ^= is introduced.
+Use `&`, `|`, `^` and unary `~` on unsigned integer expressions, including
+one-bit comparison flags. AND uses the narrower operand width. OR and XOR
+zero-extend to the wider width. Inversion complements exactly the operand's
+inferred width. The operators are eager and coherent, so `0&x` and `1|x`
+still require an initialized `x`. Signed, fractional and in-place bitwise
+updates are outside this subset.
 
 Precedence (highest first) is **, ~, *, +, &, ^, |, comparisons. Parenthesize
-comparison operands, for example phase((x<2)|(y==3),pi). Unary depth counts
-against existing expression limits. Translation reuses multiplication, equality,
-addition and less-than; Compiler owns cleanup and budgets.
-Run python -m examples.synthesis_qmod_bit_predicates. Direct comparisons in
-phase remain the previously documented FlagQuantum-native extension, separate
-from upstream original-source compatibility evidence.
+comparison operands, for example phase((x<2)|(x==3),pi). Unary depth counts
+against existing expression limits. The one-bit path keeps its existing
+arithmetic lowering. Multi-bit expressions use bitwise reversible gates and
+the existing compute and cleanup scheduler.
+
+Run the original unsigned AND program from the repository root:
+
+```python
+from pathlib import Path
+
+import flagquantum as fq
+from flagquantum import synth
+
+source = Path("tests/fixtures/classiq_qmod/bitwise_and_2vars_example.qmod")
+program = synth.synthesize(source)
+print(dict(program.probabilities(fq.run(program), registers=("a", "b", "res"))))
+```
 
 ## Literal-angle PHASE and RZ originals
 

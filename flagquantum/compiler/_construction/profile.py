@@ -23,6 +23,7 @@ _ATTRIBUTES = MappingProxyType(
         "qint.equal": frozenset(),
         "qint.less": frozenset(),
         "qint.select": frozenset(),
+        "qint.bitwise": frozenset({"operator"}),
         "qint.call": frozenset({"callee"}),
         "qint.return": frozenset(),
     }
@@ -211,6 +212,31 @@ def verify_construction(
                         operation,
                     )
                 bound = 1
+            elif operation.name == "qint.bitwise":
+                operator = operation.attributes["operator"]
+                if (
+                    not isinstance(operator, str)
+                    or operator not in {"~", "&", "|", "^"}
+                    or len(operands) != (1 if operator == "~" else 2)
+                    or all(kind == INDEX for kind, _ in operands)
+                ):
+                    _fail(
+                        "bitwise.signature",
+                        "bitwise operation requires unsigned operands and a quantum value",
+                        operation,
+                    )
+                widths = [
+                    unsigned_width(bound) if kind == INDEX else _width(kind, max_width)
+                    for kind, bound in operands
+                ]
+                required = min(widths) if operator == "&" else max(widths)
+                if width < required or (operator == "~" and width != required):
+                    _fail(
+                        "bitwise.width",
+                        "bitwise result has incompatible width",
+                        operation,
+                    )
+                bound = (1 << width) - 1
             elif operation.name == "qint.select":
                 if len(operands) != 3 or operands[0][0] != uint_type(1):
                     _fail(
