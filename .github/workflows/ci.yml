@@ -17,7 +17,7 @@ on:
 # Distributed suites use the dedicated CPU pool.
 # Portable trusted Ubuntu checks share the general CPU runner pool.
 # SDK compatibility checks use the accepted fixed CPU pool; R300 keeps manual diagnostics.
-# Full-history quality checks retain A100; fork jobs use hosted runners.
+# Source checkout and full-history quality checks use fresh hosted runners.
 # Trusted manual validation uses the same A800 routing as same-repository PRs.
 # A800 jobs use up to 16 quota-aware workers and a private environment per run.
 # Hosted fallback jobs share sixteen scoped concurrency buckets. Self-hosted CPU
@@ -56,16 +56,16 @@ jobs:
       - uses: ./.github/actions/isolated-python
       - uses: ./.github/actions/source-hygiene
 
-  # Trusted source preparation unlocks A800 jobs without a hosted runner slot.
+  # Publish the verified source tree for jobs on all runner pools.
   prepare-source:
     outputs:
       artifact-key: ${{ steps.pack-source.outputs.artifact-key }}
-    runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'flagquantum-a100-cpu-entry' || 'ubuntu-latest' }}
+    runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
       contents: read
     concurrency:
-      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('a100-cpu-{0}-prepare-source-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-${{ github.event.pull_request.number || github.ref_name }}-cpucore-3.12
+      group: flagquantum-gh-${{ github.event.pull_request.number || github.ref_name }}-cpucore-3.12
       queue: max
     steps:
       - name: Clear sparse checkout state from a previous job
@@ -110,9 +110,9 @@ jobs:
 
   quality:
     needs: prepare-source
-    runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'flagquantum-a100-cpu' || 'ubuntu-latest' }}
+    runs-on: ubuntu-latest
     concurrency:
-      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('a100-cpu-{0}-quality-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-${{ github.event.pull_request.number || github.ref_name }}-light-a
+      group: flagquantum-gh-${{ github.event.pull_request.number || github.ref_name }}-light-a
       queue: max
     steps:
       # The evidence provenance gates below ask whether each recorded source

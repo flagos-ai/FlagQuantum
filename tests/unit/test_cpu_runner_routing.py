@@ -193,7 +193,7 @@ def test_portable_cpu_work_uses_general_or_validated_scale_sets() -> None:
     )
     # CUDA-Q stays hosted because cold SDK downloads time out on the shared pool.
     assert jobs["cudaq-optional"]["runs-on"] == "ubuntu-latest"
-    assert "'flagquantum-a100-cpu'" in jobs["quality"]["runs-on"]
+    assert jobs["quality"]["runs-on"] == "ubuntu-latest"
     assert any(
         step.get("with", {}).get("fetch-depth") == 0
         for step in jobs["quality"]["steps"]
@@ -325,7 +325,7 @@ def test_linux_prerequisites_keep_forks_off_private_cpu_runners(
         "github.event.pull_request.head.repo.full_name == github.repository) "
         "&& 'flagquantum-a100-cpu' || 'ubuntu-latest' }}"
     )
-    if (workflow, name) == ("ci.yml", "pre-commit"):
+    if workflow == "ci.yml":
         assert job["runs-on"] == "ubuntu-latest"
     else:
         assert job["runs-on"] == (
