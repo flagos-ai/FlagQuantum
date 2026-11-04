@@ -8,6 +8,7 @@ from ..core.ir import CircuitIR, Instruction
 from ..errors import ValidationError
 from .deferred_operations import (
     lower_deferred_operations,
+    lower_majorana_to_gates,
     lower_select_pauli_lcu_to_gates,
 )
 
@@ -17,6 +18,12 @@ SELECT_REPORT = "select_lowering"
 
 def is_structured_select(instruction: Instruction) -> bool:
     return instruction.name == "select_pauli_lcu" and instruction.matrix is None
+
+
+def _is_structured_majorana(instruction: Instruction) -> bool:
+    return (
+        instruction.name == "selected_majorana_fermion" and instruction.matrix is None
+    )
 
 
 def unary_select_ir(instruction: Instruction) -> CircuitIR:
@@ -109,7 +116,13 @@ def unary_select_ir(instruction: Instruction) -> CircuitIR:
 
 def lower_select_program(ir: CircuitIR, path: SelectPath) -> CircuitIR:
     """Expand SELECT operations and record the path and reusable workspace."""
-    if not any(map(is_structured_select, ir.instructions)):
+
+    def should_lower(instruction: Instruction) -> bool:
+        return is_structured_select(instruction) or (
+            path == "unitary_ladder" and _is_structured_majorana(instruction)
+        )
+
+    if not any(map(should_lower, ir.instructions)):
         return ir
     instructions: list[Instruction] = []
     workspace = 0
@@ -131,18 +144,19 @@ def lower_select_program(ir: CircuitIR, path: SelectPath) -> CircuitIR:
         default=-1,
     )
     for index, op in enumerate(ir.instructions):
-        if not is_structured_select(op):
+        if not should_lower(op):
             instructions.append(op)
             continue
         if path == "dense":
             instructions.extend(lower_deferred_operations((op,)))
             needed = 0
         else:
-            fragment = (
-                unary_select_ir(op)
-                if path == "dynamic_unary_iteration"
-                else lower_select_pauli_lcu_to_gates(op).to_ir()
-            )
+            if path == "dynamic_unary_iteration":
+                fragment = unary_select_ir(op)
+            elif _is_structured_majorana(op):
+                fragment = lower_majorana_to_gates(op).to_ir()
+            else:
+                fragment = lower_select_pauli_lcu_to_gates(op).to_ir()
             needed = fragment.n_wires - len(op.wires)
             mapping = (*op.wires, *range(ir.n_wires, ir.n_wires + needed))
             for item in fragment.instructions:

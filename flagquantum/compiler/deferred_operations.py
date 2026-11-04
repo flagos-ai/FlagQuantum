@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Iterable, Sequence
 from dataclasses import replace
 from typing import TYPE_CHECKING
 
@@ -87,11 +87,32 @@ def lower_select_pauli_lcu_to_gates(instruction: Instruction) -> Circuit:
     zero. Use `Circuit.compose` to bind operands and workspace to a larger
     circuit.
     """
-    from ..algorithms.primitives.oracle import append_multi_controlled_x
-    from ..circuit import Circuit
-
     if instruction.name != "select_pauli_lcu" or instruction.matrix is not None:
         raise ValidationError("Expected a structured select_pauli_lcu instruction.")
+
+    return _lower_pauli_words(
+        instruction,
+        instruction.params["select_unitaries"],
+        instruction.params["control_val"] or 0,
+    )
+
+
+def lower_majorana_to_gates(instruction: Instruction) -> Circuit:
+    """Lower a Jordan–Wigner SELECT with clean, reusable ladder workspace."""
+    params = instruction.params
+    target_width = params["target_width"]
+    pauli = params["target_gate"]
+    words = (
+        "Z" * j + pauli + "I" * (target_width - j - 1) for j in range(target_width)
+    )
+    return _lower_pauli_words(instruction, words, (1 << params["control_width"]) - 1)
+
+
+def _lower_pauli_words(
+    instruction: Instruction, words: Iterable[str], control_value: int
+) -> Circuit:
+    from ..algorithms.primitives.oracle import append_multi_controlled_x
+    from ..circuit import Circuit
 
     params = instruction.params
     operand_count = len(instruction.wires)
@@ -102,8 +123,8 @@ def lower_select_pauli_lcu_to_gates(instruction: Instruction) -> Circuit:
     circuit = Circuit(operand_count + len(scratch))
     basis_change = {"Y": ("sdg", "s"), "Z": ("h", "h")}
 
-    for address, word in enumerate(params["select_unitaries"]):
-        pattern = ((params["control_val"] or 0) << params["selection_width"]) | address
+    for address, word in enumerate(words):
+        pattern = (control_value << params["selection_width"]) | address
         flips = [q for q in controls if not (pattern >> (control_count - q - 1)) & 1]
         for qubit in flips:
             circuit.x(qubit)

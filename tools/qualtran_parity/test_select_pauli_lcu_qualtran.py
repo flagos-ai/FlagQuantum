@@ -12,6 +12,7 @@ from flagquantum.algorithms.primitives.multiplexers.pauli_select import (
     lower_select_pauli_lcu_to_unary_iteration,
 )
 from flagquantum.compiler.deferred_operations import lower_select_pauli_lcu_to_gates
+from tools.qualtran_parity.clifford_t_counts import clifford_t_counts
 
 
 @pytest.mark.parametrize(
@@ -122,33 +123,6 @@ def test_select_pauli_lcu_qualtran_parity(
 
     # Use the same Cirq decomposition for both sources. A quarter turn
     # about any Pauli axis has one T-equivalent after Clifford conjugation.
-    def clifford_t_counts(operations):
-        counts = Counter()
-        for operation in operations:
-            gate = operation.gate
-            if isinstance(operation, cirq.ClassicallyControlledOperation):
-                assert cirq.has_stabilizer_effect(
-                    operation.without_classical_controls()
-                )
-                category = "feedback"
-            elif cirq.is_measurement(operation):
-                category = "measurement"
-            elif isinstance(gate, cirq.ResetChannel):
-                category = "reset"
-            elif isinstance(gate, cirq.GlobalPhaseGate):
-                continue
-            elif cirq.has_stabilizer_effect(operation):
-                category = "clifford"
-            else:
-                assert isinstance(
-                    gate, (cirq.XPowGate, cirq.YPowGate, cirq.ZPowGate)
-                ), operation
-                quarters = 4 * float(gate.exponent)
-                assert abs(quarters - round(quarters)) < 1e-9, operation
-                category = "t" if round(quarters) % 2 else "clifford"
-            counts[category] += 1
-        return counts
-
     gate_map = {
         "x": cirq.X,
         "y": cirq.Y,
@@ -164,8 +138,8 @@ def test_select_pauli_lcu_qualtran_parity(
         gate_map[gate.name].on(*(local_qubits[q] for q in gate.wires))
         for gate in lowered.to_ir().instructions
     ]
-    local_cost = clifford_t_counts(cirq.decompose(local_operations))
-    reference_cost = clifford_t_counts(decomposition.all_operations())
+    local_cost = clifford_t_counts(cirq, cirq.decompose(local_operations))
+    reference_cost = clifford_t_counts(cirq, decomposition.all_operations())
     print(
         f"  Clifford+T: FlagQuantum {dict(local_cost)}; Qualtran {dict(reference_cost)}"
     )
