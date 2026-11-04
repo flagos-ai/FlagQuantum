@@ -757,7 +757,7 @@ def rule_contract() -> dict[str, Any]:
     )
     return {
         "pass_module": "flagquantum/compiler/pipeline.py",
-        "predicate_module": "flagquantum/compiler/one_qubit_synthesis.py",
+        "predicate_module": "flagquantum/compiler/optimization/one_qubit_synthesis.py",
         "pass_module_line_count": len(
             Path("flagquantum/compiler/pipeline.py")
             .read_text(encoding="utf-8")
