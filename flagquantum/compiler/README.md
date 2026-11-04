@@ -82,30 +82,30 @@ admits a transformation this repository does not ship; see
 | Change | Entry point |
 | --- | --- |
 | Canonical optimization | [pipeline.py](pipeline.py) |
-| Declared optimization levels and the pass order each one runs | [optimization_levels.py](optimization_levels.py) |
+| Declared optimization levels and the pass order each one runs | [optimization_levels.py](optimization/optimization_levels.py) |
 | The pass registry, the pass binding, and the fixed point | [pass_manager.py](pass_manager.py) |
-| Cancellation of a declared inverse pair | [inverse_cancellation.py](inverse_cancellation.py) |
-| Resets on a wire still in the zero state | [zero_state_reset.py](zero_state_reset.py) |
-| Commutation rules and the block partition | [commutation.py](commutation.py) |
-| Cancellation across a proven commuting gap | [commutation_cancellation.py](commutation_cancellation.py) |
-| Diagonal gates before a measurement | [diagonal_before_measure.py](diagonal_before_measure.py) |
-| Connectivity and routing | [coupling.py](coupling.py), [directed_topology.py](directed_topology.py), [routing.py](routing.py), [routing_cost.py](routing_cost.py), [sabre.py](sabre.py), [topology_legalization.py](topology_legalization.py) |
+| Cancellation of a declared inverse pair | [inverse_cancellation.py](optimization/inverse_cancellation.py) |
+| Resets on a wire still in the zero state | [zero_state_reset.py](optimization/zero_state_reset.py) |
+| Commutation rules and the block partition | [commutation.py](optimization/commutation.py) |
+| Cancellation across a proven commuting gap | [commutation_cancellation.py](optimization/commutation_cancellation.py) |
+| Diagonal gates before a measurement | [diagonal_before_measure.py](optimization/diagonal_before_measure.py) |
+| Connectivity and routing | [coupling.py](topology/coupling.py), [directed_topology.py](topology/directed_topology.py), [routing.py](routing.py), [routing_cost.py](topology/routing_cost.py), [sabre.py](topology/sabre.py), [topology_legalization.py](topology/topology_legalization.py) |
 | Qubit layouts and the layout restore | [layout.py](layout.py) |
 | Initial placement on a device | [layout_planning.py](layout_planning.py) |
-| Native-gate and target requirements | [native_gate_legalization.py](native_gate_legalization.py), [target_legalization.py](target_legalization.py) |
+| Native-gate and target requirements | [native_gate_legalization.py](lowering/native_gate_legalization.py), [target_legalization.py](lowering/target_legalization.py) |
 | Named-gate identities and the basis search | [basis_translation.py](basis_translation.py) |
 | Conversion into a named basis | [basis_conversion.py](basis_conversion.py) |
 | Exact quarter-turn rotations | [angle_synthesis.py](angle_synthesis.py) |
-| One-qubit Euler angles | [one_qubit_synthesis.py](one_qubit_synthesis.py) |
-| One-qubit run folding | [one_qubit_optimization.py](one_qubit_optimization.py) |
-| Two-qubit block folding | [two_qubit_optimization.py](two_qubit_optimization.py) |
-| Two-qubit block splitting | [two_qubit_optimization.py](two_qubit_optimization.py) |
-| Two-qubit KAK angles and entangler cost | [two_qubit_synthesis.py](two_qubit_synthesis.py) |
-| State-preparation ladders from amplitudes | [state_preparation_synthesis.py](state_preparation_synthesis.py) |
+| One-qubit Euler angles | [one_qubit_synthesis.py](optimization/one_qubit_synthesis.py) |
+| One-qubit run folding | [one_qubit_optimization.py](optimization/one_qubit_optimization.py) |
+| Two-qubit block folding | [two_qubit_optimization.py](optimization/two_qubit_optimization.py) |
+| Two-qubit block splitting | [two_qubit_optimization.py](optimization/two_qubit_optimization.py) |
+| Two-qubit KAK angles and entangler cost | [two_qubit_synthesis.py](optimization/two_qubit_synthesis.py) |
+| State-preparation ladders from amplitudes | [state_preparation_synthesis.py](optimization/state_preparation_synthesis.py) |
 | The runnable path through all three synthesis entry points | `python -m examples.compiler_synthesis` |
-| Dependency scheduling | [schedule_legalization.py](schedule_legalization.py) |
-| Emission and round-trip checks | [target_emission.py](target_emission.py), [target_conformance.py](target_conformance.py) |
-| OpenQASM interchange | [openqasm.py](openqasm.py), [openqasm_gates.py](openqasm_gates.py), [openqasm_import.py](openqasm_import.py) |
+| Dependency scheduling | [schedule_legalization.py](lowering/schedule_legalization.py) |
+| Emission and round-trip checks | [target_emission.py](formats/target_emission.py), [target_conformance.py](artifacts/target_conformance.py) |
+| OpenQASM interchange | [openqasm.py](openqasm.py), [openqasm_gates.py](formats/openqasm_gates.py), [openqasm_import.py](openqasm_import.py) |
 | Structured hybrid programs | [_hybrid/](_hybrid/README.md) |
 | Static resource estimation | [resource_estimation.py](resource_estimation.py) |
 | QIR base-profile emission | [qir.py](qir.py) |
@@ -485,7 +485,7 @@ code growth. An optimization must not remove a trainable gate solely because
 its present angle is zero.
 
 A reduction is only as strong as the reordering it is allowed to perform, so
-[commutation.py](commutation.py) answers whether two instructions commute and
+[commutation.py](optimization/commutation.py) answers whether two instructions commute and
 partitions a program into commuting blocks, one ordered partition per qubit. It is
 a rule source of proof rather than of record: there is no shipped rule table, and
 no rule reads a parameter value, so a trainable angle and a batch of angles are
@@ -494,7 +494,7 @@ against the runtime's gate matrices by `tests/unit/test_compilation_commutation.
 which is why the reach is measured rather than asserted -- over every placement of
 every declared arity-one and arity-two unitary pair it answers 3602 of the 3826
 pairs that really do commute and never answers a pair that does not.
-[commutation_cancellation.py](commutation_cancellation.py) is the only consumer:
+[commutation_cancellation.py](optimization/commutation_cancellation.py) is the only consumer:
 it removes a parameter-free self-inverse pair whose two occurrences share a proven
 commuting block, which is the case `merge_self_inverse` cannot see because a gate
 stands between them. On a chain of six controlled gates interleaved with rotations
@@ -509,7 +509,7 @@ Canonical optimization removes identities, cancels self-inverse pairs, adds up
 adjacent rotations that share one opcode, and folds a same-wire run that *mixes*
 opcodes -- `x rz(0.4) x`, four `t` gates spelling one `z`, the `h` that routing
 walked between two rotations -- into the shortest sequence that reproduces it.
-[one_qubit_optimization.py](one_qubit_optimization.py) is that last pass, and it
+[one_qubit_optimization.py](optimization/one_qubit_optimization.py) is that last pass, and it
 is the Compiler-layer counterpart of Qiskit's `Optimize1qGates`. It is exact
 rather than exact-up-to-phase: a bare `u3` cannot carry a determinant, so the
 leftover is emitted on the same wire as `phase` or `rz` instead of being dropped,
@@ -560,7 +560,7 @@ neither this pass's two-qubit-run predecessor nor `collapse_one_qubit_runs` can 
 The conjugated wire has to be the one whose role changes, because the operand order
 `(0, 1)` and its reverse `(1, 0)` are different blocks: the same three gates with the `h`s on `0`
 compose to `cx(1, 0)` and are declined rather than relabelled.
-[two_qubit_optimization.py](two_qubit_optimization.py) is the pass, and it is the
+[two_qubit_optimization.py](optimization/two_qubit_optimization.py) is the pass, and it is the
 Compiler-layer counterpart of Qiskit's `ConsolidateBlocks` run at the granularity
 this IR can prove. It is exact rather than exact-up-to-phase, and it emits at most
 one gate: a block whose product is no declared opcode is left where it was, and a
@@ -619,7 +619,7 @@ route over the same input has an overlap magnitude of 1 and a raw difference abo
 A gate that is its own inverse is one thing; a gate whose inverse is a *different*
 opcode is another, and `merge_self_inverse` only saw the first kind, so it left
 `s(0) sdg(0)` standing as two instructions although the pair is the identity.
-[inverse_cancellation.py](inverse_cancellation.py) closes that with
+[inverse_cancellation.py](optimization/inverse_cancellation.py) closes that with
 `merge_inverse_pairs`, and it holds no opcode table of its own: it reads the
 `OperatorSchema.adjoint` declaration through `operator_schema.inverse_operator`,
 the same declaration `Circuit.adjoint` already consumes. That keeps the inverse
@@ -652,7 +652,7 @@ One identity is a property of the IR rather than of any opcode table. A `reset`
 is not in the operator schema at all, yet a reset on a wire that is still in
 `|0>` computes its own outcome -- which can only be zero -- and leaves the wire
 where it already was, so it is the identity.
-[zero_state_reset.py](zero_state_reset.py) is the rule that sees that, and it is
+[zero_state_reset.py](optimization/zero_state_reset.py) is the rule that sees that, and it is
 one sentence long: a `reset` is removed when no instruction that survives before
 it touches its wire. It reads no matrix and no parameter, so the module holds
 exactly one gate name and imports neither the operator schema nor a matrix
@@ -698,12 +698,12 @@ A measurement ends a wire's contribution to the recorded outcome: whatever a lat
 gate does on that wire cannot reach the classical bits the measurement already
 wrote. A gate that commutes with the measurement -- one whose operator is diagonal
 in the computational basis -- therefore leaves the outcome distribution exactly as
-it was, and [diagonal_before_measure.py](diagonal_before_measure.py) removes it.
+it was, and [diagonal_before_measure.py](optimization/diagonal_before_measure.py) removes it.
 The rule is a declaration rather than a matrix read, and for a structural reason:
 this layer may not import `simulation/**`, and no `OperatorSchema` field records
 diagonality, so the pass asks the operator instead. A one-wire gate is diagonal
 when the polar angle of its canonical Euler triple -- the table
-[one_qubit_synthesis.py](one_qubit_synthesis.py) already owns -- is exactly zero,
+[one_qubit_synthesis.py](optimization/one_qubit_synthesis.py) already owns -- is exactly zero,
 and a two-wire gate when its opcode is one of four. Both rules are state
 independent: an `x` that happens to be invisible behind a Hadamard preparation is
 still not diagonal and is still kept.
@@ -934,7 +934,7 @@ The roster the suite checks is the loop's own composition, not a copy of it:
 so the suite records the calls the loop actually makes and compares the recording
 with its enumeration. A pass added to the loop and not to this file fails there.
 Since the composition is named rather than written inline, the enumeration is the
-declaration in [optimization_levels.py](optimization_levels.py) and the recording
+declaration in [optimization_levels.py](optimization/optimization_levels.py) and the recording
 is still what proves the loop runs it.
 
 ## How much optimization runs
@@ -966,7 +966,7 @@ never be a stage of this ladder: it rewrites each instruction it cannot keep int
 a *target's* native gates, so it needs a target basis, while `optimize` is
 target-independent by contract and is handed no target. The capability is in the
 package and not in this entry point --
-[`native_gate_legalization.legalize_native_gates`](native_gate_legalization.py)
+[`native_gate_legalization.legalize_native_gates`](lowering/native_gate_legalization.py)
 performs that same rewrite against a `TargetCapabilitySnapshot` -- so "write the
 missing pass" is not the work that would unblock level 3, and the refusal says so
 rather than leaving a reader to look for a pass that already exists. Answering a
@@ -1061,7 +1061,7 @@ becomes an alias of one candidate or quietly widens its scope.
 Everything above prices a route in SWAPs, because a `CouplingMap` states which
 qubit pairs a device couples and says nothing about how well it couples them. So
 the cheapest route and the cleanest route are the same route, and a hop count is
-the only price there is. [routing_cost.py](routing_cost.py) `LinkErrorRates` is the
+the only price there is. [routing_cost.py](topology/routing_cost.py) `LinkErrorRates` is the
 same couplings with one measured two-qubit error probability per link, and it is
 what makes those two questions different questions. Each link carries an
 independent error `e` in `[0, 1)` and a route costs the sum of the `e` of the links
