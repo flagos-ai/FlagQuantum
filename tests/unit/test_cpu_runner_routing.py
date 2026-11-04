@@ -145,11 +145,9 @@ def test_dependency_matrix_separates_cpu_wheels_from_ordinary_dependencies() -> 
 def test_portable_cpu_work_uses_general_or_validated_scale_sets() -> None:
     jobs = yaml.safe_load((WORKFLOWS / "ci.yml").read_text())["jobs"]
     portable = {
-        "jax-optional",
         "azure-optional",
         "qiskit-optional",
         "qiskit-compat",
-        "cirq-optional",
         "braket-optional",
         "pennylane-optional",
         "dependency-bounds",
@@ -202,11 +200,30 @@ def test_portable_cpu_work_uses_general_or_validated_scale_sets() -> None:
     ), "Evidence provenance still needs full Git history"
 
 
+def test_jax_and_cirq_use_preinstalled_self_hosted_profiles() -> None:
+    jobs = yaml.safe_load((WORKFLOWS / "ci.yml").read_text())["jobs"]
+    for name in ("jax-optional", "cirq-optional"):
+        job = jobs[name]
+        assert "'flagquantum-cpu-sdk-preinstalled'" in job["runs-on"]
+        assert "'ubuntu-latest'" in job["runs-on"]
+        assert any(
+            "fq_attach_preinstalled_sdk" in step.get("run", "") for step in job["steps"]
+        )
+    assert not any(
+        "pip download" in step.get("run", "") for step in jobs["jax-optional"]["steps"]
+    )
+
+
 def test_sdk_jobs_use_accepted_fixed_capacity() -> None:
     jobs = yaml.safe_load((WORKFLOWS / "ci.yml").read_text())["jobs"]
     for name in ("qiskit-compat", "cirq-optional", "braket-optional"):
         job = jobs[name]
-        assert "'flagquantum-cpu-general'" in job["runs-on"]
+        label = (
+            "flagquantum-cpu-sdk-preinstalled"
+            if name == "cirq-optional"
+            else "flagquantum-cpu-general"
+        )
+        assert f"'{label}'" in job["runs-on"]
         assert "'ubuntu-latest'" in job["runs-on"]
         assert job["timeout-minutes"] == 30
         assert job["env"]["MAX_JOBS"] == "2"
