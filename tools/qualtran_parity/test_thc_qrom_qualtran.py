@@ -8,7 +8,6 @@ from flagquantum.compiler.registers.qrom import controlled_qrom_ir
 from flagquantum.core.ir import CircuitIR
 from tests.unit.algorithms.primitives.multiplexers.test_thc_qrom import _execute_sparse
 
-
 np = pytest.importorskip("numpy")
 
 
