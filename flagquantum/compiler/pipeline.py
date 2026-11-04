@@ -640,8 +640,9 @@ def compile(
             "answered with the program unchanged"
         )
     from .deferred_operations import lower_deferred_operations
+    from .select_lowering import lower_select_program
 
-    ir = _as_ir(circuit_or_ir)
+    ir = lower_select_program(_as_ir(circuit_or_ir), "dense")
     ir = replace(ir, instructions=lower_deferred_operations(ir.instructions))
     selected_config = config or get_runtime_config()
     metadata = dict(ir.metadata)

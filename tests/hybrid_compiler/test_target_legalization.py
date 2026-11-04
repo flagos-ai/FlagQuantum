@@ -311,3 +311,39 @@ def test_final_legalized_program_is_scheduled_and_depth_is_bounded() -> None:
             evaluated_at=_NOW,
             max_schedule_depth=0,
         )
+
+
+def test_static_target_lowers_select_to_unitary_gates() -> None:
+    from flagquantum import Circuit
+    from flagquantum.algorithms.primitives.multiplexers import SelectPauliLCU
+
+    circuit = Circuit(4, dtype=torch.complex128)
+    circuit.append(
+        SelectPauliLCU(3, 1, ("X", "-Y", "Z")).make_on(selection=(0, 1, 2), target=(3,))
+    )
+    gates = ("x", "h", "z", "s", "sdg", "cx", "ccx")
+    with pytest.raises(TargetLegalizationError, match="ancillas"):
+        legalize_circuit_for_target(
+            circuit,
+            backend="pytorch",
+            snapshot=_snapshot(**{"gates.native": gates}),
+            evaluated_at=_NOW,
+        )
+    result = legalize_circuit_for_target(
+        circuit,
+        backend="pytorch",
+        snapshot=_snapshot(
+            **{
+                "gates.native": gates,
+                "ancillas.policy": "compiler_allocated",
+                "ancillas.maximum_compiler": 1,
+            }
+        ),
+        evaluated_at=_NOW,
+    )
+    assert result.program.n_wires == 5
+    assert {op.name for op in result.program.instructions} <= set(gates)
+    assert (
+        result.program.metadata["select_lowering"]["operations"][0]["path"]
+        == "unitary_ladder"
+    )

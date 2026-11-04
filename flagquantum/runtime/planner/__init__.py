@@ -10,6 +10,11 @@ from typing import TYPE_CHECKING, Any
 from ...compiler import compile as compile_program
 from ...compiler import lower_noise_model as lower_noise_model
 from ...compiler import schedule_layers as schedule_layers
+from ...compiler.select_lowering import (
+    SELECT_REPORT,
+    is_structured_select,
+    lower_select_program,
+)
 from ...core.classical_control import validate_classical_control
 from ...core.ir import CircuitIR, MeasurementNode
 from ...core.ising import IsingBraidProgram
@@ -929,6 +934,36 @@ def plan(
         runtime_config=runtime_config,
     )
     world_size = resolve_distributed_backend_policy().effective_world_size
+    construction = getattr(program, "circuit_param", {})
+    if (
+        not is_dynamic
+        and not source_ir.measurements
+        and not source_ir.observables
+        and resolved.shots is not None
+        and resolved.target in {"auto", "samples"}
+        and resolved.mode == "auto"
+        and resolved.backend in {"auto", "pytorch"}
+        and str(resolved.device).split(":", 1)[0] in {"auto", "cpu"}
+        and resolved.batch_size == 1
+        and options is not None
+        and options.precision is None
+        and options.batch_size is None
+        and world_size == 1
+        and noise_model is None
+        and not carries_noise_channels(source_ir)
+        and not resolved.require_gradients
+        and not _requires_dynamic_gradients(program, source_ir)
+        and not resolved.allow_approximate
+        and not resolved.allow_backend_fallback
+        and not (
+            isinstance(construction, Mapping) and construction.get("inputs") is not None
+        )
+        and any(map(is_structured_select, source_ir.instructions))
+    ):
+        candidate = lower_select_program(source_ir, "dynamic_unary_iteration")
+        if any(instruction_is_dynamic(op) for op in candidate.instructions):
+            source_ir = candidate
+            is_dynamic = True
     if is_dynamic:
         _validate_dynamic_plan_request(
             program,
@@ -1090,6 +1125,21 @@ def plan(
         )
     from ..execution_plan_contract import attach_execution_contract
 
+    if SELECT_REPORT not in source_ir.metadata and any(
+        map(is_structured_select, source_ir.instructions)
+    ):
+        reported = {
+            "logical_qubits": source_ir.n_wires,
+            "workspace_qubits": 0,
+            "operations": [
+                {"instruction_index": index, "path": "dense", "workspace_qubits": 0}
+                for index, instruction in enumerate(source_ir.instructions)
+                if is_structured_select(instruction)
+            ],
+        }
+        source_ir = replace(
+            source_ir, metadata={**source_ir.metadata, SELECT_REPORT: reported}
+        )
     return attach_execution_contract(
         internal_plan,
         program=source_ir,

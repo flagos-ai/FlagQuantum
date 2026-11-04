@@ -171,3 +171,20 @@ Workspace counts match in all five cases. Exact dynamic density-matrix
 parity, including coherence and workspace reset, is checked through eight
 entries. At sixteen entries the dynamic comparison checks resource counts,
 and the coherent comparison still checks complex amplitudes.
+
+### Automatic SELECT lowering
+
+Append a bound SELECT to an ordinary circuit and run it through the usual
+FlagQuantum entry point. An exact local state request uses the dense
+reference. An eligible local PyTorch CPU sample request with shots uses
+measurement-assisted unary iteration. The existing dynamic execution
+constraints apply. Static target legalization uses the unitary ladder
+and checks the target's native gate and compiler workspace evidence.
+Remote target capability snapshots currently describe native gates and
+workspace rather than mid-circuit feedback execution.
+
+Use `result.plan.summary()["select_lowering"]` to see the chosen path by
+source instruction and the number of compiler work qubits. Target
+legalization records the same report in the compiled program metadata.
+Compiler work qubits and intermediate feedback bits are excluded from
+the automatic dynamic path's returned samples.
