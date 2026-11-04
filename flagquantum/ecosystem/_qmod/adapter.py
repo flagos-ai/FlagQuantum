@@ -65,6 +65,7 @@ _INTRINSICS = (
         "control",
         "prepare_ghz_state",
         "prepare_amplitudes",
+        "prepare_state",
         "prepare_bell_state",
         "suzuki_trotter",
         "exponentiate",
@@ -990,12 +991,12 @@ class _Adapt:
             elif axis == "Y":
                 gate("rx", index, angle=-math.pi / 2)
 
-    def prepare_amplitudes(self, token: Token, args: tuple[Expression, ...]) -> None:
+    def prepare_state_vector(self, token: Token, args: tuple[Expression, ...]) -> None:
         if len(args) != 3:
             reject(
                 token,
                 "signature",
-                "prepare_amplitudes requires amplitudes, bound and output",
+                f"{token.text} requires a vector, bound and output",
             )
         vector, bound_arg, output = args
         count = len(vector.children)
@@ -1007,6 +1008,17 @@ class _Adapt:
             )
 
         def literal(node: Expression) -> float:
+            if node.token.text == "/":
+                numerator, denominator = (
+                    int(part.token.text) for part in node.children
+                )
+                if not denominator:
+                    reject(
+                        node.children[1].token,
+                        "probabilities",
+                        "fraction denominator must be positive",
+                    )
+                return numerator / denominator
             negative = node.token.text == "-"
             value = node.children[0] if negative else node
             if value.children or not re.fullmatch(
@@ -1017,6 +1029,24 @@ class _Adapt:
 
         amplitudes = tuple(literal(item) for item in vector.children)
         bound = literal(bound_arg)
+        if token.text == "prepare_state":
+            if any(value < 0 for value in amplitudes) or not math.isclose(
+                math.fsum(amplitudes), 1.0, rel_tol=0, abs_tol=1e-12
+            ):
+                reject(
+                    vector.token,
+                    "probabilities",
+                    "probabilities must be nonnegative and sum to one",
+                )
+            if bound < 0:
+                reject(
+                    bound_arg.token,
+                    "probabilities",
+                    "probability bound must be nonnegative",
+                )
+            amplitudes = tuple(math.sqrt(value) for value in amplitudes)
+            # The shared preparation is exact, independent of the probability tolerance.
+            bound = 0.0
         target = self.atom(output)
         width = count.bit_length() - 1
         destination = self.register(target, width, allow_qubit_array=True)
@@ -1249,8 +1279,8 @@ class _Adapt:
                         )
                     self.signed.add(target.text)
             self.effect_op("qreg.allocate", token, (destination,))
-        elif token.text == "prepare_amplitudes":
-            self.prepare_amplitudes(token, args)
+        elif token.text in {"prepare_amplitudes", "prepare_state"}:
+            self.prepare_state_vector(token, args)
         elif token.text == "prepare_bell_state":
             if len(args) != 2:
                 reject(

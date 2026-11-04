@@ -5,6 +5,7 @@ from __future__ import annotations
 import re
 from collections.abc import Callable
 from dataclasses import dataclass
+from functools import partial
 from typing import Literal, NoReturn
 
 from ...compiler._hybrid.model import SourceLocation
@@ -298,12 +299,31 @@ class Parser:
             return Expression(self.take("-"), (self.angle_argument(),))
         return self.angle_argument()
 
-    def amplitude_literal(self) -> Expression:
-        if self.current.text != "(":
-            return self.signed_angle_argument()
-        self.take("(")
-        value = self.signed_angle_argument()
-        self.take(")")
+    def preparation_literal(self, *, allow_fraction: bool) -> Expression:
+        grouped = self.current.text == "("
+        if grouped:
+            self.take("(")
+        numerator = self.current
+        if (
+            allow_fraction
+            and numerator.text.isdecimal()
+            and self.tokens[self.position + 1].text == "/"
+        ):
+            self.position += 1
+            slash = self.take("/")
+            denominator = self.current
+            if not denominator.text.isdecimal():
+                reject(
+                    denominator,
+                    "probabilities",
+                    "fraction requires an integer denominator",
+                )
+            self.position += 1
+            value = Expression(slash, (Expression(numerator), Expression(denominator)))
+        else:
+            value = self.signed_angle_argument()
+        if grouped:
+            self.take(")")
         return value
 
     def pauli_axis(self) -> Expression:
@@ -572,8 +592,15 @@ class Parser:
                             args.append(self.pauli_terms())
                         else:
                             args.append(Expression(self.name()))
-                    elif target.text == "prepare_amplitudes":
-                        args.append(self.literal_array(self.amplitude_literal))
+                    elif target.text in {"prepare_amplitudes", "prepare_state"}:
+                        args.append(
+                            self.literal_array(
+                                partial(
+                                    self.preparation_literal,
+                                    allow_fraction=target.text == "prepare_state",
+                                )
+                            )
+                        )
                     elif target.text in ANGLE_CALLS:
                         args.append(self.angle_argument())
                     else:
@@ -584,6 +611,7 @@ class Parser:
                             "exponentiate",
                             "qdrift",
                             "prepare_amplitudes",
+                            "prepare_state",
                             "suzuki_trotter",
                         }:
                             args.append(self.signed_angle_argument())

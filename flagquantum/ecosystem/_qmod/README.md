@@ -420,3 +420,17 @@ source = Path("tests/fixtures/classiq_qmod/example_prepare_amplitudes.qmod")
 program = synth.synthesize(source)
 print(fq.run(program).statevector())
 ```
+
+### Probability preparation
+
+`prepare_state([p0, p1, ...], bound, out)` accepts a power-of-two array of
+nonnegative probabilities that sum to one, from 2 to 256 entries. Entries
+may be decimal or integer literals, or fractions such as `1/2` with a positive
+integer denominator. Fraction syntax is local to the probability array.
+The output must be fresh and its width must match the array length.
+
+The prepared amplitudes are the nonnegative square roots of the probabilities.
+`bound` limits L₂ error in the probability vector. The shared real-amplitude
+lowering uses exact preparation to floating-point precision for any admitted
+bound. The pinned `example_prepare_state.qmod` and `add_bell_states.qmod`
+fixtures show probability literals and fraction literals, respectively.
