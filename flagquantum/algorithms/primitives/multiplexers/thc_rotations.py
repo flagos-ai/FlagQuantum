@@ -7,8 +7,12 @@ from dataclasses import dataclass, replace
 from math import isfinite, tau
 
 from ....circuit import Circuit
-from ....compiler.registers.arithmetic import controlled_add_or_subtract_ir
+from ....compiler.registers.arithmetic import (
+    controlled_add_or_subtract_ir,
+    measurement_add_or_subtract_ir,
+)
 from ....compiler.registers.qrom import controlled_qrom_ir
+from ....core.ir import CircuitIR
 from ....errors import ValidationError
 
 
@@ -85,7 +89,7 @@ class THCRotations:
         circuit: Circuit,
         angle_data: tuple[int, ...],
         gradient: tuple[int, ...],
-        carry: int,
+        carries: tuple[int, ...],
         scratch: tuple[int, ...],
         measurement_bits: tuple[int, ...],
         junk: tuple[int, ...],
@@ -115,10 +119,24 @@ class THCRotations:
             )
             circuit.cx(target, parity).compose(qrom, qubits=operands)
             circuit.sdg(target).h(target)
-            for gate in controlled_add_or_subtract_ir(
-                target, angle_data, gradient, carry
-            ):
-                circuit.gate(gate.name, gate.wires)
+            if len(carries) > 1:
+                first_bit = measurement_bits[-1] + 1
+                bits = tuple(range(first_bit, first_bit + len(carries)))
+                adder = measurement_add_or_subtract_ir(
+                    target, angle_data, gradient, carries, bits
+                )
+                circuit.compose(
+                    Circuit.from_ir(
+                        CircuitIR(circuit.n_qubits, adder),
+                        dtype=circuit.dtype,
+                        bsz=circuit.bsz,
+                    )
+                )
+            else:
+                for gate in controlled_add_or_subtract_ir(
+                    target, angle_data, gradient, carries[0]
+                ):
+                    circuit.gate(gate.name, gate.wires)
             circuit.h(target).s(target)
             if measurement_bits or junk:
                 qrom = Circuit.from_ir(

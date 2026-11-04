@@ -68,7 +68,9 @@ class SelectTHC:
         the operation uses exact rotations. Pass eight additional clean wires
         to use the two-row QROAM load with a junk word. With workspace and a DynamicCircuit,
         measurement_erasure=True uses paired-block phase corrections to erase
-        the loaded angles. The default uses reversible XOR unlookup.
+        the loaded angles. The default uses reversible XOR unlookup. With
+        measurement erasure, six more clean wires select Qualtran's 8-bit
+        carry chain, for either lookup layout.
         """
         return cls(
             tuple(mu),
@@ -103,8 +105,14 @@ class SelectTHC:
                 "THC address, orbital, and rotation table widths disagree."
             )
         workspace_size = 2 * _ANGLE_BITS + width + 2
-        blocked = len(self.workspace) == workspace_size + _ANGLE_BITS
-        if self.workspace and len(self.workspace) != workspace_size and not blocked:
+        extra_carries = _ANGLE_BITS - 2
+        measured_add = self.measurement_erasure and len(self.workspace) in (
+            workspace_size + extra_carries,
+            workspace_size + _ANGLE_BITS + extra_carries,
+        )
+        lookup_size = len(self.workspace) - (extra_carries if measured_add else 0)
+        blocked = lookup_size == workspace_size + _ANGLE_BITS
+        if self.workspace and lookup_size != workspace_size and not blocked:
             raise ValidationError(
                 f"THC lookup requires {workspace_size} or {workspace_size + _ANGLE_BITS} clean work qubits."
             )
@@ -145,7 +153,10 @@ class SelectTHC:
             )
             carry = logical_width + 2 * _ANGLE_BITS
             scratch = tuple(range(carry + 1, logical_width + workspace_size))
-            junk = tuple(range(logical_width + workspace_size, len(wires)))
+            junk = tuple(
+                range(logical_width + workspace_size, logical_width + lookup_size)
+            )
+            carries = (carry, *range(logical_width + lookup_size, len(wires)))
             for gate in phase_gradient_state_ir(gradient):
                 fragment.gate(gate.name, gate.wires, params=gate.params)
         padding = ((),) * ((1 << width) - len(self.networks))
@@ -169,7 +180,7 @@ class SelectTHC:
                     fragment,
                     angle_data,
                     gradient,
-                    carry,
+                    carries,
                     scratch,
                     measurement_bits,
                     junk,
@@ -187,7 +198,7 @@ class SelectTHC:
                     fragment,
                     angle_data,
                     gradient,
-                    carry,
+                    carries,
                     scratch,
                     measurement_bits,
                     junk,

@@ -42,7 +42,9 @@ def _execute_sparse(
             for basis, value in state.items():
                 updated[basis & ~mask] += value / sqrt(2)
                 updated[basis | mask] += (-value if basis & mask else value) / sqrt(2)
-            state = dict(updated)
+            state = {
+                basis: value for basis, value in updated.items() if abs(value) > 1e-16
+            }
         elif name == "measure":
             (mask,) = masks
             outcome = int(rng.integers(2))
@@ -55,9 +57,19 @@ def _execute_sparse(
             probability = sum(abs(value) ** 2 for value in state.values())
             assert probability == pytest.approx(0.5, abs=1e-12)
             state = {basis: value / sqrt(probability) for basis, value in state.items()}
-        elif name in ("phase", "s", "sdg", "z", "cz"):
+        elif name == "reset":
+            (mask,) = masks
+            state = {basis & ~mask: value for basis, value in state.items()}
+        elif name in ("phase", "s", "sdg", "z", "cz", "t", "tdg"):
             mask = sum(masks)
-            phases = {"s": 1j, "sdg": -1j, "z": -1, "cz": -1}
+            phases = {
+                "s": 1j,
+                "sdg": -1j,
+                "z": -1,
+                "cz": -1,
+                "t": exp(1j * tau / 8),
+                "tdg": exp(-1j * tau / 8),
+            }
             phase = phases[name] if name in phases else exp(1j * op.params["theta"])
             state = {
                 basis: phase * value if basis & mask == mask else value
@@ -85,17 +97,18 @@ def _execute_sparse(
 
 
 @pytest.mark.parametrize(
-    "blocked, measurement_erasure, seed",
+    "blocked, measurement_erasure, seed, upstream_add",
     [
-        (False, False, 0),
-        (False, True, 0),
-        (False, True, 7),
-        (True, False, 0),
-        (True, True, 7),
+        (False, False, 0, False),
+        (False, True, 0, False),
+        (False, True, 7, False),
+        (True, False, 0, False),
+        (True, True, 7, False),
+        (False, True, 11, True),
     ],
 )
 def test_select_thc_qrom_phase_gradient(
-    blocked: bool, measurement_erasure: bool, seed: int
+    blocked: bool, measurement_erasure: bool, seed: int, upstream_add: bool
 ) -> None:
     op = SelectTHC.make_on(
         mu=(0, 1),
@@ -140,7 +153,7 @@ def test_select_thc_qrom_phase_gradient(
         networks=quantized(op.networks),
         one_body_networks=quantized(op.one_body_networks),
     )
-    workspace = 28 if blocked else 20
+    workspace = (28 if blocked else 20) + (6 if upstream_add else 0)
     builder = DynamicCircuit if measurement_erasure else fq.Circuit
     ir = (
         builder(13 + workspace, dtype=torch.complex128)
@@ -154,11 +167,19 @@ def test_select_thc_qrom_phase_gradient(
         .to_ir()
     )
     assert validate_classical_control(ir.instructions, n_qubits=ir.n_wires) == (
-        (16 if blocked else 8) if measurement_erasure else 0
+        (16 if blocked else 8) + (7 if upstream_add else 0)
+        if measurement_erasure
+        else 0
     )
     counts = Counter(item.name for item in ir.instructions)
-    assert counts["measure"] == ((64 if blocked else 32) if measurement_erasure else 0)
-    assert counts["ccx"] == (97 if blocked else (113 if measurement_erasure else 129))
+    assert counts["measure"] == (
+        (64 if blocked else 32) + (28 if upstream_add else 0)
+        if measurement_erasure
+        else 0
+    )
+    assert counts["ccx"] == (
+        97 if blocked else (113 if measurement_erasure else 129)
+    ) - (64 if upstream_add else 0)
     result = _execute_sparse(
         ir,
         {int(i) << workspace: complex(inputs[i]) for i in np.flatnonzero(inputs)},
@@ -269,4 +290,104 @@ def test_qualtran_v070_component_decompositions() -> None:
     result = _execute_sparse(ir, {0: 1}, seed=0)
     np.testing.assert_allclose(
         [result[i] for i in range(256)], expected, atol=1e-12, rtol=0
+    )
+
+
+def test_qualtran_add_gate_sequence_and_complex_amplitudes() -> None:
+    cirq = pytest.importorskip("cirq")
+    pytest.importorskip("qualtran")
+    from qualtran import QUInt
+    from qualtran.bloqs.arithmetic import Add
+    from qualtran.bloqs.mcmt.and_bloq import And
+
+    from flagquantum.compiler.registers.arithmetic import (
+        add_ir,
+        measurement_add_or_subtract_ir,
+    )
+
+    for width in (1, 3, 8):
+        wires = cirq.LineQubit.range(2 * width)
+        context = cirq.DecompositionContext(cirq.SimpleQubitManager())
+        upstream = Add(QUInt(width)).decompose_from_registers(
+            context=context, a=np.asarray(wires[:width]), b=np.asarray(wires[width:])
+        )
+        decomposed = []
+        for gate in cirq.flatten_op_tree(upstream):
+            if isinstance(gate.gate, And):
+                decomposed.extend(
+                    cirq.flatten_op_tree(
+                        gate.gate.decompose_from_registers(
+                            context=context,
+                            ctrl=np.asarray(gate.qubits[:2]).reshape(2, 1),
+                            target=np.asarray(gate.qubits[2:]),
+                        )
+                    )
+                )
+            else:
+                decomposed.append(cirq.CNOT.on(*gate.qubits))
+
+        labels = {wire: i for i, wire in enumerate(wires)}
+        for gate in decomposed:
+            for wire in gate.qubits:
+                labels.setdefault(wire, len(labels))
+        gate_names = {
+            cirq.H: "h",
+            cirq.T: "t",
+            cirq.T**-1: "tdg",
+            cirq.S: "s",
+            cirq.CNOT: "cx",
+            cirq.CZ: "cz",
+        }
+        measured = {}
+        expected = []
+        for gate in decomposed:
+            metadata = {}
+            if isinstance(gate, cirq.ClassicallyControlledOperation):
+                (key,) = cirq.control_keys(gate)
+                metadata["conditions"] = ((measured[key], 1),)
+                gate = gate.without_classical_controls()
+            operands = tuple(labels[wire] for wire in gate.qubits)
+            if cirq.is_measurement(gate):
+                key = cirq.measurement_key_obj(gate)
+                measured[key] = operands[0]
+                metadata = {"is_dynamic": True, "classical_bit": operands[0]}
+                name = "measure"
+            elif isinstance(gate.gate, cirq.ResetChannel):
+                name = "reset"
+                metadata = {"is_dynamic": True}
+            else:
+                name = gate_names[gate.gate]
+            expected.append((name, operands, metadata))
+
+        carries = tuple(range(2 * width, 3 * width - 1))
+        actual = add_ir(
+            tuple(range(width)), tuple(range(width, 2 * width)), carries, carries
+        )
+        assert [
+            (gate.name, gate.wires, dict(gate.metadata)) for gate in actual
+        ] == expected
+        assert sum(gate.name in ("t", "tdg") for gate in actual) == 4 * (width - 1)
+
+    # A dense, complex superposition exercises every 3-bit operand and both
+    # control values, including preservation of relative phase across outcomes.
+    rng = np.random.default_rng(70)
+    state = rng.normal(size=128) + 1j * rng.normal(size=128)
+    state /= np.linalg.norm(state)
+    inputs = np.zeros(512, dtype=np.complex128)
+    inputs[::4] = state
+    expected_state = np.zeros_like(inputs)
+    for index, value in enumerate(state):
+        control, a, b = index >> 6, (index >> 3) & 7, index & 7
+        destination = (control << 6) | (a << 3) | ((b + (-a if control else a)) & 7)
+        expected_state[destination << 2] = value
+    adder = measurement_add_or_subtract_ir(0, (1, 2, 3), (4, 5, 6), (7, 8), (0, 1))
+    circuit = DynamicCircuit.from_ir(
+        CircuitIR(9, adder), dtype=torch.complex128, inputs=torch.from_numpy(inputs)
+    )
+    result = run_dynamic(circuit, shots=8, seed=11, strategy="trajectory")
+    torch.testing.assert_close(
+        result.final_states.reshape(8, -1),
+        torch.from_numpy(expected_state).expand(8, -1),
+        atol=1e-12,
+        rtol=0,
     )
