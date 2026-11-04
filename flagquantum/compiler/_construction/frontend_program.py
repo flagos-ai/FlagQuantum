@@ -533,7 +533,14 @@ class _Body:
             return None
         return converted if math.isfinite(converted) else None
 
-    def call(self, node: ast.Call, *, inverse: bool = False) -> None:
+    def call(
+        self,
+        node: ast.Call,
+        *,
+        inverse: bool = False,
+        control_bit: Value | None = None,
+        condition_inputs: tuple[Value, ...] = (),
+    ) -> None:
         if node.keywords or any(isinstance(a, ast.Starred) for a in node.args):
             _error(
                 self.source,
@@ -719,6 +726,13 @@ class _Body:
                 self.emit("qreg.phase", node, actuals, callee=graph.name, **attributes)
         elif isinstance(function, _QuantumFunction) and function.source.program:
             formal = program_ports(function)
+            if control_bit is not None and any(port.role != "const" for port in formal):
+                _error(
+                    self.source,
+                    node,
+                    "program.control",
+                    "controlled helpers require Const-only ports",
+                )
             if len(node.args) != len(formal):
                 _error(
                     self.source,
@@ -755,7 +769,21 @@ class _Body:
             call_attributes: dict[str, object] = {"callee": program.name}
             if inverse:
                 call_attributes["inverse"] = True
-            self.emit("qreg.call", node, (*reads, *writes), **call_attributes)
+            if control_bit is None:
+                self.emit("qreg.call", node, (*reads, *writes), **call_attributes)
+            else:
+                if len(set(reads)) != len(reads) or set(reads).intersection(
+                    condition_inputs
+                ):
+                    _error(
+                        self.source,
+                        node,
+                        "program.control",
+                        "controlled helper arguments must be disjoint",
+                    )
+                self.emit(
+                    "qreg.control_call", node, (control_bit, *reads), **call_attributes
+                )
         else:
             _error(
                 self.source,
@@ -995,6 +1023,8 @@ class _Body:
                         "controlled phase angle exceeds finite range",
                     )
             self.emit("qreg.control_phase", node, operands, angle=angle)
+        elif isinstance(operation, _QuantumFunction) and operation.source.program:
+            self.call(body, control_bit=predicate, condition_inputs=inputs)
         else:
             _error(
                 self.source,
