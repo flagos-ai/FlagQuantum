@@ -37,7 +37,7 @@ jobs:
     permissions:
       contents: read
     concurrency:
-      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('a100-cpu-{0}-prepare-source-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-${{ github.event.pull_request.number || github.ref_name }}-cpucore-3.12
+      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('a100-cpu-{0}-prepare-source-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-5
       queue: max
     steps:
       - name: Clear sparse checkout state from a previous job

@@ -60,6 +60,9 @@ jobs:
             extras: dev,viz,examples,quafu,cuda
             torch-index: https://download.pytorch.org/whl/cu130
     runs-on: ubuntu-latest
+    concurrency:
+      group: flagquantum-gh-6
+      queue: max
     timeout-minutes: 120
     permissions:
       contents: read
@@ -127,6 +130,9 @@ jobs:
   publish-ci-cpu:
     if: github.event_name == 'workflow_dispatch' && inputs.ci-cpu
     runs-on: ubuntu-latest
+    concurrency:
+      group: flagquantum-gh-7
+      queue: max
     timeout-minutes: 45
     permissions:
       contents: read
