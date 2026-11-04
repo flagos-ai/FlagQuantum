@@ -23,7 +23,7 @@ fi
 
 exec docker run --rm --pull never --network none --read-only --tmpfs /tmp:exec --shm-size 1g \
   --cap-drop ALL --security-opt no-new-privileges \
-  --user "$(id -u):$(id -g)" --workdir "$GITHUB_WORKSPACE" \
+  --user "${FQ_CI_CONTAINER_USER:?}" --workdir "$GITHUB_WORKSPACE" \
   --volume "$GITHUB_WORKSPACE:$GITHUB_WORKSPACE" \
   --volume "$RUNNER_TEMP:$RUNNER_TEMP" \
   --env "HOME=$FQ_CI_PRIVATE" --env USER --env LOGNAME \
