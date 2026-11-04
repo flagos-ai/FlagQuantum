@@ -106,3 +106,25 @@ emits 5673 Cirq operations, including the decomposition's bookkeeping and
 feedback. The FlagQuantum example reports five qubits and eleven explicit
 Toffolis. Different index widths, preparation precision, and decomposition
 levels make these counts descriptive rather than a common Clifford+T cost.
+
+### SELECT table-size sweep
+
+Run `python -m pytest -qs tools/qualtran_parity/test_select_pauli_lcu_qualtran.py`
+in the pinned reference environment. The sweep reuses the existing SELECT
+parity test and appends each bound operation with `Circuit.append`. For each
+case, the dense executor and gate lowering agree with Qualtran on complex
+amplitudes at absolute tolerance 1e-12, with clean workspace on both sides.
+
+Uncontrolled SELECT on two data qubits with a repeated signed Pauli pattern:
+
+| Entries | FlagQuantum work / 1q / 2q / 3q | Qualtran work / 1q / 2q | Qualtran measurements / feedback / resets |
+| ---: | --- | --- | --- |
+| 4 | 0 / 18 / 1 / 6 | 1 / 97 / 24 | 2 / 2 / 2 |
+| 8 | 1 / 44 / 0 / 38 | 2 / 242 / 62 | 6 / 6 / 6 |
+| 16 | 2 / 104 / 0 / 132 | 3 / 532 / 138 | 14 / 14 / 14 |
+
+Work counts refer to the extra qubits in the emitted circuits. Qualtran uses
+Cirq's greedy qubit reuse. FlagQuantum retains Toffolis, while Cirq lowers
+the reference further. These are emitted-operation counts, so the table
+does not rank Clifford+T cost. Both control polarities also pass at four
+entries.

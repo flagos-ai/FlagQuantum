@@ -1,5 +1,6 @@
 """Exercise deferred Pauli table selection on remapped registers."""
 
+from collections import Counter
 from importlib.metadata import version
 
 import pytest
@@ -10,21 +11,26 @@ from flagquantum.algorithms.primitives.multiplexers import SelectPauliLCU
 from flagquantum.compiler.deferred_operations import lower_select_pauli_lcu_to_gates
 
 
-@pytest.mark.parametrize("control_val", [None, 0, 1])
-def test_select_pauli_lcu_qualtran_parity(control_val: int | None) -> None:
+@pytest.mark.parametrize(
+    ("selection_width", "control_val"),
+    [(2, None), (2, 0), (2, 1), (3, None), (4, None)],
+)
+def test_select_pauli_lcu_qualtran_parity(
+    selection_width: int, control_val: int | None
+) -> None:
     assert version("qualtran") == "0.7.0", "Install qualtran==0.7.0 for parity tests."
     np = pytest.importorskip("numpy")
     cirq = pytest.importorskip("cirq")
     from qualtran.bloqs.multiplexers.select_pauli_lcu import SelectPauliLCU as Reference
 
-    words = ("XI", "-YZ", "IX", "ZY")
+    words = ("XI", "-YZ", "IX", "ZY") * (2 ** (selection_width - 2))
     control_width = int(control_val is not None)
-    width = 4 + control_width
+    width = selection_width + 2 + control_width
     order = (width - 1, *range(width - 1))
     qubits = cirq.LineQubit.range(width)
     operands = [qubits[index] for index in order]
     reference = Reference(
-        2,
+        selection_width,
         2,
         tuple(
             cirq.DensePauliString(
@@ -35,12 +41,17 @@ def test_select_pauli_lcu_qualtran_parity(control_val: int | None) -> None:
         control_val=control_val,
     )
     bindings = {
-        "selection": operands[control_width : control_width + 2],
+        "selection": operands[control_width : control_width + selection_width],
         "target": operands[-2:],
     }
     if control_width:
         bindings["control"] = operands[:1]
-    decomposition = cirq.Circuit(cirq.decompose(reference.on_registers(**bindings)))
+    context = cirq.DecompositionContext(
+        cirq.GreedyQubitManager(prefix="work", maximize_reuse=True)
+    )
+    decomposition = cirq.Circuit(
+        cirq.decompose(reference.on_registers(**bindings), context=context)
+    )
     ancillas = sorted(decomposition.all_qubits().difference(qubits))
     rng = np.random.default_rng(42)
     state = rng.normal(size=2**width) + 1j * rng.normal(size=2**width)
@@ -58,14 +69,13 @@ def test_select_pauli_lcu_qualtran_parity(control_val: int | None) -> None:
     )
     np.testing.assert_allclose(expected[:, 1:], 0, atol=1e-12)
 
-    local = SelectPauliLCU(2, 2, words, control_val).append_to(
-        fq.Circuit(width),
-        control=tuple(range(control_width)),
-        selection=(control_width, control_width + 1),
-        target=(width - 2, width - 1),
-    )
     circuit = fq.Circuit(width, dtype=torch.complex128, inputs=torch.from_numpy(state))
-    circuit.compose(local, qubits=order)
+    op = SelectPauliLCU(selection_width, 2, words, control_val).make_on(
+        control=order[:control_width],
+        selection=order[control_width:-2],
+        target=order[-2:],
+    )
+    circuit.append(op)
     np.testing.assert_allclose(
         circuit.state().numpy().reshape(-1), expected[:, 0], atol=1e-12, rtol=0
     )
@@ -84,3 +94,25 @@ def test_select_pauli_lcu_qualtran_parity(control_val: int | None) -> None:
     observed = gates.state().numpy().reshape(padded.shape)
     np.testing.assert_allclose(observed[:, 0], expected[:, 0], atol=1e-12, rtol=0)
     np.testing.assert_allclose(observed[:, 1:], 0, atol=1e-12, rtol=0)
+
+    # Report emitted operations by arity. Keep feedback, measurement, and
+    # reset separate rather than interpreting them as unitary gates.
+    reference_counts: Counter[str] = Counter()
+    for operation in decomposition.all_operations():
+        if isinstance(operation, cirq.ClassicallyControlledOperation):
+            category = "feedback"
+        elif cirq.is_measurement(operation):
+            category = "measurement"
+        elif isinstance(operation.gate, cirq.ResetChannel):
+            category = "reset"
+        else:
+            category = f"{len(operation.qubits)}q"
+        reference_counts[category] += 1
+    local_counts = Counter(
+        f"{len(gate.wires)}q" for gate in lowered.to_ir().instructions
+    )
+    print(
+        f"entries={len(words)} control={control_val}: "
+        f"FlagQuantum work={len(workspace)} {dict(local_counts)}; "
+        f"Qualtran work={len(ancillas)} {dict(reference_counts)}"
+    )
