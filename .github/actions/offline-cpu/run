@@ -8,8 +8,8 @@ if [[ "${1:-}" == --prepare && "${0##*/}" == python ]]; then
     cmp docker/ci/profiles.json /opt/flagquantum/profiles.json
     python -c "import sys; assert sys.argv[1] == \".\".join(map(str, sys.version_info[:2]))" "$1"
     python -c "import os; assert set(os.listdir(\"/sys/class/net\")) == {\"lo\"}"
-    python -m venv --without-pip "$FQ_CI_PRIVATE/venv"
-    seed="$(python -c "import sysconfig; print(sysconfig.get_path(\"purelib\"))")"
+    /opt/ci/bin/python -m venv --without-pip "$FQ_CI_PRIVATE/venv"
+    seed="$(/opt/ci/bin/python -c "import sysconfig; print(sysconfig.get_path(\"purelib\"))")"
     private="$("$FQ_CI_PRIVATE/venv/bin/python" -c "import sysconfig; print(sysconfig.get_path(\"purelib\"))")"
     printf "%s\n" "$seed" > "$private/locked-dependencies.pth"
     "$FQ_CI_PRIVATE/venv/bin/python" -m pip --isolated install --no-index --no-deps --no-build-isolation -e .
