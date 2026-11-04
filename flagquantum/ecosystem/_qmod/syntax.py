@@ -345,7 +345,11 @@ class Parser:
         return Function(name, tuple(parameters), self.block())
 
     def block(
-        self, *, allow_scopes: bool = True, scope_depth: int = 0
+        self,
+        *,
+        allow_scopes: bool = True,
+        scope_depth: int = 0,
+        control_region: bool = False,
     ) -> tuple[Statement, ...]:
         self.take("{")
         statements: list[Statement] = []
@@ -403,7 +407,11 @@ class Parser:
                         self.take(",")
                         args.append(
                             self.angle_argument()
-                            if target.text == "R" and len(args) == 1
+                            if len(args) == 1
+                            and (
+                                target.text == "R"
+                                or (control_region and target.text == "phase")
+                            )
                             else self.expression()
                         )
                 self.take(")")
@@ -419,7 +427,9 @@ class Parser:
                     reject(
                         operator, "scope", "control is admitted only at function scope"
                     )
-                body = self.block(allow_scopes=False, scope_depth=scope_depth + 1)
+                body = self.block(
+                    allow_scopes=False, scope_depth=scope_depth + 1, control_region=True
+                )
                 statements.append(Statement(operator, arguments, control_body=body))
             else:
                 self.take(";")

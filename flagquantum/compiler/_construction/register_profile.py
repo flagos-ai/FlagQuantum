@@ -397,12 +397,12 @@ def _verify_body(
             elif op.name in {"qreg.control_h", "qreg.control_phase"}:
                 if (
                     len(arguments) > 1
-                    or any(register_width(value) != 1 for value in operands)
+                    or register_width(destination) != 1
                     or any(value.id not in initialized for value in operands)
                 ):
                     _fail(
                         "register.control",
-                        "control requires initialized one-bit registers",
+                        "control requires an initialized condition bit and an initialized target",
                         op,
                     )
                 if destination in arguments:
@@ -410,7 +410,11 @@ def _verify_body(
                         "register.control", "condition and target must be disjoint", op
                     )
                 if op.name == "qreg.control_h":
-                    if len(arguments) != 1 or arguments[0] in borrowed:
+                    if (
+                        len(arguments) != 1
+                        or arguments[0] in borrowed
+                        or register_width(arguments[0]) != 1
+                    ):
                         _fail(
                             "register.control",
                             "controlled Hadamard requires a writable target",
@@ -421,6 +425,22 @@ def _verify_body(
                     angle = op.attributes["angle"]
                     if type(angle) is not float or not math.isfinite(angle):
                         _fail("register.control", "phase requires a finite angle", op)
+                    if arguments:
+                        width = register_width(arguments[0])
+                        if width > 8:
+                            _fail(
+                                "register.control",
+                                "phase target exceeds eight bits",
+                                op,
+                            )
+                        try:
+                            math.ldexp(angle, width - 1)
+                        except OverflowError:
+                            _fail(
+                                "register.control",
+                                "weighted phase angle exceeds finite range",
+                                op,
+                            )
             elif op.name == "qreg.phase":
                 check_call(op, operands)
             elif op.name == "qreg.release":
