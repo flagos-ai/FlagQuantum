@@ -35,6 +35,7 @@ _ATTRIBUTES = MappingProxyType(
         "qreg.compute": frozenset({"callee"}),
         "qreg.uncompute": frozenset(),
         "qreg.phase": frozenset({"callee"}),
+        "qreg.control_call": frozenset({"callee"}),
         "qreg.call": frozenset({"callee"}),
         "qreg.return": frozenset(),
     }
@@ -159,7 +160,7 @@ def verify_register_program(
             active.add(name)
             depth = 1
             for op in helpers[name].body.blocks[0].operations:
-                if op.name == "qreg.call":
+                if op.name in {"qreg.call", "qreg.control_call"}:
                     callee = op.attributes.get("callee")
                     if not isinstance(callee, str) or callee not in helpers:
                         _fail(
@@ -354,7 +355,27 @@ def _verify_body(
                 )
             destination, *arguments = operands
             changed: tuple[Value, ...] = ()
-            if op.name == "qreg.call":
+            if op.name in {"qreg.call", "qreg.control_call"}:
+                controlled = op.name == "qreg.control_call"
+                if controlled:
+                    if (
+                        register_width(destination) != 1
+                        or destination.id not in initialized
+                    ):
+                        _fail(
+                            "register.control",
+                            "controlled call requires an initialized bit",
+                            op,
+                        )
+                    if destination in arguments or len(set(arguments)) != len(
+                        arguments
+                    ):
+                        _fail(
+                            "register.alias",
+                            "controlled call arguments must be disjoint",
+                            op,
+                        )
+                    operands = tuple(arguments)
                 callee = op.attributes["callee"]
                 if not isinstance(callee, str) or callee not in helpers:
                     _fail("register.callee", "call requires a register function", op)
@@ -363,6 +384,12 @@ def _verify_body(
                 outputs = tuple(
                     q.results[0] for q in body.operations if q.name == "qreg.declare"
                 )
+                if controlled and outputs:
+                    _fail(
+                        "register.control",
+                        "controlled calls require a Const-only callee",
+                        op,
+                    )
                 if op.attributes.get("inverse") and outputs:
                     _fail(
                         "register.adjoint",

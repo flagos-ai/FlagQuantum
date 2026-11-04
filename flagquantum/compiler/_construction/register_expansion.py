@@ -1,5 +1,6 @@
 """Bounded substitution of verified register callees into an owned root model."""
 
+import math
 from collections.abc import Sequence
 from dataclasses import replace
 
@@ -23,7 +24,9 @@ def expand_register_calls(
 ) -> HybridProgram:
     """Substitute only after the caller has verified every definition and role."""
     block = program.body.blocks[0]
-    if not any(op.name == "qreg.call" for op in block.operations):
+    if not any(
+        op.name in {"qreg.call", "qreg.control_call"} for op in block.operations
+    ):
         return program
     symbols = {f.name: f for f in functions}
     occupied = {
@@ -127,6 +130,46 @@ def expand_register_calls(
                 label += ".local"
             labels.add(label)
             emitted.append(replace(op, results=(value,), attributes={"name": label}))
+        elif op.name == "qreg.control_call":
+            callee = symbols[op.attributes["callee"]].body.blocks[0]
+            effects = callee.operations[:-1]
+            if len(effects) != 1 or effects[0].name != "qreg.phase":
+                _fail(
+                    "register.control",
+                    "controlled helper requires one register or constant phase",
+                    op,
+                )
+            phase = effects[0]
+            condition, *operands = actual
+            nested = dict(zip(callee.arguments[1:], operands, strict=True))
+            angle = phase.attributes.get("angle", math.pi)
+            targets: tuple[Value, ...] = ()
+            if "callee" in phase.attributes:
+                expression = symbols[phase.attributes["callee"]].body.blocks[0]
+                if (
+                    len(expression.arguments) != 1
+                    or len(expression.operations) != 1
+                    or expression.operations[0].name != "qint.return"
+                    or expression.operations[0].operands != expression.arguments
+                    or len(phase.operands) != 2
+                ):
+                    _fail(
+                        "register.control",
+                        "controlled helper phase must read one whole register",
+                        op,
+                    )
+                targets = (nested[phase.operands[1]],)
+            following = fresh(effect.type)
+            emitted.append(
+                replace(
+                    op,
+                    name="qreg.control_phase",
+                    operands=(effect, condition, *targets),
+                    results=(following,),
+                    attributes={"angle": angle},
+                )
+            )
+            effect = following
         elif op.name == "qreg.call":
             callee = symbols[op.attributes["callee"]].body.blocks[0]
             formal = (

@@ -388,10 +388,16 @@ class _Adapt:
         arguments: tuple[Expression, ...],
         *,
         const_only: bool = False,
+        control_bit: Value | None = None,
+        condition_inputs: tuple[Value, ...] = (),
     ) -> None:
         if token.text in self.parameters:
             reject(token, "call", "an output variable shadows this helper call")
         syntax, program = self.resolve(token)
+        if control_bit is not None and any(
+            p.role != "const" for p in syntax.parameters
+        ):
+            reject(token, "control", "controlled helpers require Const-only ports")
         if const_only and any(p.role != "const" for p in syntax.parameters):
             reject(token, "scope", "apply helper calls require Const-only parameters")
         if len(arguments) != len(syntax.parameters):
@@ -421,7 +427,16 @@ class _Adapt:
                     "helper argument kind/width must match exactly",
                 )
             (reads if borrowed else writes).append(actual)
-        self.effect_op("qreg.call", token, (*reads, *writes), callee=program.name)
+        if control_bit is None:
+            self.effect_op("qreg.call", token, (*reads, *writes), callee=program.name)
+        else:
+            if len(set(reads)) != len(reads) or set(reads).intersection(
+                condition_inputs
+            ):
+                reject(token, "control", "controlled helper arguments must be disjoint")
+            self.effect_op(
+                "qreg.control_call", token, (control_bit, *reads), callee=program.name
+            )
 
     def scalar_control(self, statement: Statement, index: str) -> None:
         token = statement.token
@@ -460,6 +475,12 @@ class _Adapt:
             else:
                 targets = (self.register(self.atom(value)),)
             opcode = "qreg.control_phase"
+        elif operation.token.text not in _INTRINSICS and operation.token.text not in {
+            "measure",
+            "release",
+            "consume",
+        }:
+            opcode = "qreg.control_call"
         else:
             reject(token, "control", "expected a scalar Hadamard or phase")
         if any(target in inputs for target in targets):
@@ -484,8 +505,13 @@ class _Adapt:
             )
         else:
             predicate = inputs[0]
-        attributes = {} if angle is None else {"angle": angle}
-        self.effect_op(opcode, token, (predicate, *targets), **attributes)
+        phase_attributes = {} if angle is None else {"angle": angle}
+        if opcode == "qreg.control_call":
+            self.call(
+                operation.token, args, control_bit=predicate, condition_inputs=inputs
+            )
+        else:
+            self.effect_op(opcode, token, (predicate, *targets), **phase_attributes)
         if computed:
             self.effect_op("qreg.uncompute", token, (predicate,))
             self.effect_op("qreg.release", token, (predicate,))
@@ -585,7 +611,10 @@ class _Adapt:
                     "phase requires an expression and unshadowed pi coefficient",
                 )
             coefficient = args[1]
-            if (
+            angle = None
+            if "." in coefficient.token.text:
+                angle = _literal_angle(coefficient, token)
+            elif (
                 coefficient.children
                 or coefficient.token.text != "pi"
                 or "pi" in self.parameters
@@ -593,21 +622,26 @@ class _Adapt:
                 reject(
                     coefficient.token,
                     "coefficient",
-                    "phase supports only the unshadowed symbolic coefficient pi",
+                    "phase requires unshadowed pi or a decimal literal",
                 )
             expression = _Expression(args[0], self.widths, f"{self.scope}.phase{index}")
-            if not expression.quantum or unsigned_width(expression.bound) != 1:
+            if not expression.quantum or (
+                angle is None and unsigned_width(expression.bound) != 1
+            ):
                 reject(
                     args[0].token,
                     "phase",
-                    "phase requires a quantum expression with exactly one-bit result",
+                    "phase requires a quantum expression and pi requires a one-bit result",
                 )
             graph = expression.function()
             self.functions.append(graph)
             inputs = tuple(
                 self.register(self.parameters[name].name) for name in expression.names
             )
-            self.effect_op("qreg.phase", token, inputs, callee=graph.name)
+            phase_attributes = {} if angle is None else {"angle": angle}
+            self.effect_op(
+                "qreg.phase", token, inputs, callee=graph.name, **phase_attributes
+            )
         elif token.text == "allocate":
             if len(args) not in {1, 2}:
                 reject(

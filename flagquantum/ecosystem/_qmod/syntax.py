@@ -286,6 +286,17 @@ class Parser:
                 reject(self.current, "type", "qbit has no numeric modifiers")
             self.take("<")
             width = self.width()
+            if self.current.text == ",":
+                self.take(",")
+                if self.current.text != "False":
+                    reject(self.current, "type", "signed modifiers are not admitted")
+                self.take("False")
+                self.take(",")
+                if self.current.text != "0":
+                    reject(
+                        self.current, "type", "fractional modifiers are not admitted"
+                    )
+                self.take("0")
             if self.current.text != ">":
                 reject(
                     self.current,
@@ -349,7 +360,6 @@ class Parser:
         *,
         allow_scopes: bool = True,
         scope_depth: int = 0,
-        control_region: bool = False,
     ) -> tuple[Statement, ...]:
         self.take("{")
         statements: list[Statement] = []
@@ -408,10 +418,7 @@ class Parser:
                         args.append(
                             self.angle_argument()
                             if len(args) == 1
-                            and (
-                                target.text == "R"
-                                or (control_region and target.text == "phase")
-                            )
+                            and (target.text == "R" or target.text == "phase")
                             else self.expression()
                         )
                 self.take(")")
@@ -427,9 +434,7 @@ class Parser:
                     reject(
                         operator, "scope", "control is admitted only at function scope"
                     )
-                body = self.block(
-                    allow_scopes=False, scope_depth=scope_depth + 1, control_region=True
-                )
+                body = self.block(allow_scopes=False, scope_depth=scope_depth + 1)
                 statements.append(Statement(operator, arguments, control_body=body))
             else:
                 self.take(";")
