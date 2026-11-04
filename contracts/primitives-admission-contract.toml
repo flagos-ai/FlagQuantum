@@ -293,7 +293,7 @@ admission_basis = "confirmed"
 # Measured from the import graph. The basis above is derived from these and from the
 # test/example callers the gate also counts, so a consumer that moves fails this contract.
 framework_consumers = ["flagquantum/algorithms/data_encoding.py"]
-package_consumers = ["flagquantum/algorithms/primitives/linear_combination.py"]
+package_consumers = ["flagquantum/algorithms/primitives/lcu_prepare.py", "flagquantum/algorithms/primitives/linear_combination.py"]
 distribution_semantics = "single_device_fast_path"
 accepts_tensor = true
 differentiability_shape = "classical_tensor_input"
