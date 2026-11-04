@@ -987,3 +987,6 @@ It demonstrates local scratch cleanup/reuse and quantum basis-constant borrowing
 Its IR producer is not public Python/Qmod syntax; ordinary users keep the
 existing high-level predicate entry. Full complex-state tests verify the signs
 and external reference; probabilities alone cannot establish them.
+
+Run `PYTHONPATH=. python examples/qec/dem_model_and_chunks.py --round-trip`
+to partition and reassemble a fixed three-layer DEM on CPU.

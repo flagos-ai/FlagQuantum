@@ -995,3 +995,10 @@ Two independent faults with the same detector and logical signature consolidate
 to an odd-parity probability of 5/16, preserving both marginals. When the same
 faults share an error ID, their probabilities sum to 3/8 and the independent
 merge refuses the model.
+
+## Multi-chunk DEM round trip
+
+The fixed DEM example prints `[2, 1]` and `True` in round-trip mode. The
+first window owns the shared-layer fault and closing both windows restores
+the original model. This exercises the DEM composition prerequisite for
+FTS-07 and R08.
