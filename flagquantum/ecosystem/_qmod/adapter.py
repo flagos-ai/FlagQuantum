@@ -15,6 +15,7 @@ from ...compiler._construction.register_profile import (
     equatorial_rotation,
     euler_rotation,
     register_type,
+    register_width,
     verify_register_program,
 )
 from ...compiler._hybrid.model import (
@@ -60,6 +61,7 @@ _INTRINSICS = (
         "prepare_ghz_state",
         "prepare_bell_state",
         "suzuki_trotter",
+        "exponentiate",
     }
     | ANGLE_CALLS
 )
@@ -696,6 +698,45 @@ class _Adapt:
                 self.registers.pop(name, None)
             self.local_scope = parent_scope
 
+    def evolution_angle(self, node: Expression, token: Token) -> float:
+        if node.token.text == "-":
+            return -self.angle(node.children[0], token)
+        return self.angle(node, token)
+
+    def pauli_support(
+        self, axes: Expression, width: int, *, sparse: bool
+    ) -> tuple[tuple[int, str], ...]:
+        if not sparse:
+            if len(axes.children) != width:
+                reject(
+                    axes.token, "pauli", "Pauli word length must match the array width"
+                )
+            return tuple(
+                (index, axis.token.text)
+                for index, axis in enumerate(axes.children)
+                if axis.token.text != "I"
+            )
+        seen = set()
+        support = []
+        for indexed in axes.children:
+            axis, index_arg = indexed.children
+            index_token = index_arg.token
+            if index_arg.children or not index_token.text.isdecimal():
+                reject(
+                    index_token,
+                    "pauli",
+                    "Pauli index must be a nonnegative integer literal",
+                )
+            index = int(index_token.text)
+            if index >= width or index in seen:
+                reject(
+                    index_token, "pauli", "Pauli indices must be distinct and in bounds"
+                )
+            seen.add(index)
+            if axis.token.text != "I":
+                support.append((index, axis.token.text))
+        return tuple(support)
+
     def suzuki_trotter(self, token: Token, args: tuple[Expression, ...]) -> None:
         if len(args) != 5:
             reject(
@@ -713,36 +754,56 @@ class _Adapt:
         repetitions = int(repetitions_arg.token.text)
         if order not in {1, 2} or not 1 <= repetitions <= 256:
             reject(token, "evolution", "use order 1 or 2 and 1..256 repetitions")
+        self.pauli_evolution(token, terms, time_arg, target_arg, order, repetitions)
+
+    def exponentiate(self, token: Token, args: tuple[Expression, ...]) -> None:
+        if len(args) != 3:
+            reject(
+                token, "signature", "exponentiate requires an operator, time and target"
+            )
+        operator, time_arg, target_arg = args
+        # Classiq's Hamiltonian Simulation guide specifies a first-order single step.
+        self.pauli_evolution(token, operator, time_arg, target_arg, 1, 1)
+
+    def pauli_evolution(
+        self,
+        token: Token,
+        operator: Expression,
+        time_arg: Expression,
+        target_arg: Expression,
+        order: int,
+        repetitions: int,
+    ) -> None:
         target = self.atom(target_arg)
         register = self.register(target, allow_qubit_array=True)
-        width = self.widths[target.text]
+        width = register_width(register)
+        sparse = operator.token.text == "SparsePauliOp"
+        terms = operator
+        if sparse:
+            terms, width_arg = operator.children
+            declared = width_arg.token
+            if (
+                width_arg.children
+                or not declared.text.isdecimal()
+                or int(declared.text) != width
+            ):
+                reject(
+                    declared, "pauli", "num_qubits must match the target array width"
+                )
         if self.parameters[target.text].kind != "qbit[]" or not terms.children:
             reject(
                 token,
                 "evolution",
                 "evolution requires a nonempty Pauli sum and qubit array",
             )
-        step = self.angle(time_arg, token) / repetitions
+        step = self.evolution_angle(time_arg, token) / repetitions
         if order == 2:
             step /= 2
         prepared = []
         for term in terms.children:
             axes, coefficient = term.children
-            if len(axes.children) != width:
-                reject(
-                    axes.token, "pauli", "Pauli word length must match the array width"
-                )
-            weight = (
-                -self.angle(coefficient.children[0], token)
-                if coefficient.token.text == "-"
-                else self.angle(coefficient, token)
-            )
-            support = tuple(
-                (index, axis.token.text)
-                for index, axis in enumerate(axes.children)
-                if axis.token.text != "I"
-            )
-            prepared.append((support, step * weight))
+            support = self.pauli_support(axes, width, sparse=sparse)
+            prepared.append((support, step * self.evolution_angle(coefficient, token)))
         sequence = prepared if order == 1 else [*prepared, *reversed(prepared)]
         for _ in range(repetitions):
             for support, angle in sequence:
@@ -976,6 +1037,8 @@ class _Adapt:
             )
         elif token.text == "suzuki_trotter":
             self.suzuki_trotter(token, args)
+        elif token.text == "exponentiate":
+            self.exponentiate(token, args)
         elif token.text == "RZZ":
             if len(args) != 2:
                 reject(token, "signature", "RZZ requires an angle and a qubit array")

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Literal, NoReturn
 
@@ -291,51 +292,85 @@ class Parser:
         self.position += 1
         return Expression(Token(text, integer.location))
 
-    def pauli_terms(self) -> Expression:
+    def signed_angle_argument(self) -> Expression:
+        if self.current.text == "-":
+            return Expression(self.take("-"), (self.angle_argument(),))
+        return self.angle_argument()
+
+    def pauli_axis(self) -> Expression:
+        self.take("Pauli")
+        self.take(":")
+        self.take(":")
+        axis = self.name()
+        if axis.text not in {"I", "X", "Y", "Z"}:
+            reject(axis, "pauli", "expected Pauli::I, X, Y or Z")
+        return Expression(axis)
+
+    def pauli_array(self, item: Callable[[], Expression]) -> Expression:
         start = self.take("[")
-        terms = []
+        items = []
         while self.current.text != "]":
-            term = self.take("PauliTerm")
-            self.take("{")
-            fields: dict[str, Expression] = {}
-            for position in range(2):
-                if position:
-                    self.take(",")
-                field = self.name()
-                if field.text in fields or field.text not in {"pauli", "coefficient"}:
-                    reject(
-                        field, "pauli", "expected distinct pauli and coefficient fields"
-                    )
-                self.take("=")
-                if field.text == "pauli":
-                    axes_start = self.take("[")
-                    axes = []
-                    while self.current.text != "]":
-                        self.take("Pauli")
-                        self.take(":")
-                        self.take(":")
-                        axis = self.name()
-                        if axis.text not in {"I", "X", "Y", "Z"}:
-                            reject(axis, "pauli", "expected Pauli::I, X, Y or Z")
-                        axes.append(Expression(axis))
-                        if self.current.text != ",":
-                            break
-                        self.take(",")
-                    self.take("]")
-                    fields[field.text] = Expression(axes_start, tuple(axes))
-                else:
-                    if self.current.text == "-":
-                        sign = self.take("-")
-                        fields[field.text] = Expression(sign, (self.angle_argument(),))
-                    else:
-                        fields[field.text] = self.angle_argument()
-            self.take("}")
-            terms.append(Expression(term, (fields["pauli"], fields["coefficient"])))
+            items.append(item())
             if self.current.text != ",":
                 break
             self.take(",")
         self.take("]")
-        return Expression(start, tuple(terms))
+        return Expression(start, tuple(items))
+
+    def pauli_record(
+        self, kind: str, fields: dict[str, Callable[[], Expression]]
+    ) -> Expression:
+        record = self.take(kind)
+        self.take("{")
+        values = {}
+        for position in range(len(fields)):
+            if position:
+                self.take(",")
+            field = self.name()
+            if field.text in values or field.text not in fields:
+                reject(
+                    field,
+                    "pauli",
+                    f"{kind} requires distinct fields: {', '.join(fields)}",
+                )
+            self.take("=")
+            values[field.text] = fields[field.text]()
+        self.take("}")
+        return Expression(record, tuple(values[name] for name in fields))
+
+    def pauli_terms(self) -> Expression:
+        return self.pauli_array(
+            lambda: self.pauli_record(
+                "PauliTerm",
+                {
+                    "pauli": lambda: self.pauli_array(self.pauli_axis),
+                    "coefficient": self.signed_angle_argument,
+                },
+            )
+        )
+
+    def indexed_pauli(self) -> Expression:
+        return self.pauli_record(
+            "IndexedPauli", {"pauli": self.pauli_axis, "index": self.expression}
+        )
+
+    def sparse_pauli_term(self) -> Expression:
+        return self.pauli_record(
+            "SparsePauliTerm",
+            {
+                "paulis": lambda: self.pauli_array(self.indexed_pauli),
+                "coefficient": self.signed_angle_argument,
+            },
+        )
+
+    def sparse_pauli_op(self) -> Expression:
+        return self.pauli_record(
+            "SparsePauliOp",
+            {
+                "terms": lambda: self.pauli_array(self.sparse_pauli_term),
+                "num_qubits": self.expression,
+            },
+        )
 
     def scalar_type(self, *, allow_qubit_array: bool = False) -> tuple[str, int | None]:
         kind = self.current
@@ -514,21 +549,29 @@ class Parser:
                 self.take("(")
                 args: list[Expression] = []
                 if self.current.text != ")":
-                    if target.text == "suzuki_trotter":
-                        args.append(self.pauli_terms())
+                    if target.text in {"exponentiate", "suzuki_trotter"}:
+                        args.append(
+                            self.sparse_pauli_op()
+                            if target.text == "exponentiate"
+                            or self.current.text == "SparsePauliOp"
+                            else self.pauli_terms()
+                        )
                     elif target.text in ANGLE_CALLS:
                         args.append(self.angle_argument())
                     else:
                         args.append(self.expression())
                     while self.current.text == ",":
                         self.take(",")
+                        if len(args) == 1 and target.text in {
+                            "exponentiate",
+                            "suzuki_trotter",
+                        }:
+                            args.append(self.signed_angle_argument())
+                            continue
                         args.append(
                             self.angle_argument()
                             if (target.text == "U" and len(args) < 4)
-                            or (
-                                len(args) == 1
-                                and target.text in {"R", "phase", "suzuki_trotter"}
-                            )
+                            or (len(args) == 1 and target.text in {"R", "phase"})
                             else self.expression()
                         )
                 self.take(")")
