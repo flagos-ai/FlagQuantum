@@ -22,9 +22,9 @@ def clifford_t_counts(cirq: Any, operations: Iterable[Any]) -> Counter[str]:
         elif cirq.has_stabilizer_effect(operation):
             category = "clifford"
         else:
-            assert isinstance(gate, (cirq.XPowGate, cirq.YPowGate, cirq.ZPowGate)), (
-                operation
-            )
+            assert isinstance(
+                gate, (cirq.XPowGate, cirq.YPowGate, cirq.ZPowGate)
+            ), operation
             quarters = 4 * float(gate.exponent)
             assert abs(quarters - round(quarters)) < 1e-9, operation
             category = "t" if round(quarters) % 2 else "clifford"
