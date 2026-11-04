@@ -447,17 +447,18 @@ class _Adapt:
         elif operation.token.text == "phase" and len(args) == 2:
             coefficient = args[1]
             if (
-                coefficient.children
-                or coefficient.token.text != "pi"
-                or "pi" in self.parameters
+                not coefficient.children
+                and coefficient.token.text == "pi"
+                and "pi" not in self.parameters
             ):
-                reject(token, "control", "controlled phase requires unshadowed pi")
+                angle = math.pi
+            else:
+                angle = _literal_angle(coefficient, operation.token)
             value = args[0]
             if not value.children and value.token.text in {"0", "1"}:
-                angle = int(value.token.text) * math.pi
+                angle *= int(value.token.text)
             else:
                 targets = (self.register(self.atom(value)),)
-                angle = math.pi
             opcode = "qreg.control_phase"
         else:
             reject(token, "control", "expected a scalar Hadamard or phase")
