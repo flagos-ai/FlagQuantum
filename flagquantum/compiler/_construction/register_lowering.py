@@ -106,6 +106,13 @@ def schedule_register_program(
         gates: tuple[Instruction, ...] = ()
         if op.name == "qreg.initialize":
             gates = _copy(op.attributes["value"], bindings[op.operands[1].id])
+        elif op.name == "qreg.control_h":
+            control, target = (bindings[value.id][0] for value in op.operands[1:])
+            gates = controlled_instruction(Instruction("h", (target,)), (control,))
+        elif op.name == "qreg.control_phase":
+            ports = tuple(bindings[value.id][0] for value in op.operands[1:])
+            opcode = "phase" if len(ports) == 1 else "cphase"
+            gates = (Instruction(opcode, ports, {"theta": op.attributes["angle"]}),)
         elif op.name == "qreg.uniform_interval":
             gates = _uniform_interval(
                 bindings[op.operands[1].id],

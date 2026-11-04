@@ -21,6 +21,7 @@ from ..services.synthesis import (
     adjoint,
     allocate,
     apply,
+    control,
     hadamard_transform,
     phase,
     prepare_uniform_interval_state,
@@ -52,4 +53,5 @@ __all__ = (
     "CRX",
     "R",
     "prepare_uniform_interval_state",
+    "control",
 )
