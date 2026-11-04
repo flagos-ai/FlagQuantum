@@ -5,7 +5,6 @@ from collections import Counter, defaultdict
 from dataclasses import replace
 from math import sqrt, tau
 
-import numpy as np
 import pytest
 import torch
 
@@ -19,6 +18,8 @@ from flagquantum.core.classical_control import (
 from flagquantum.core.ir import CircuitIR
 from flagquantum.dynamic import DynamicCircuit
 from flagquantum.runtime.dynamic.execution import run_dynamic
+
+np = pytest.importorskip("numpy")
 
 
 def _execute_sparse(
