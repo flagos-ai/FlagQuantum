@@ -49,7 +49,7 @@ _ATTRIBUTES = MappingProxyType(
     }
 )
 _PAIR_GATES = frozenset({"cx", "swap", "crx"})
-_ANGLE_GATES = frozenset({"phase", "rx", "rz"})
+_ANGLE_GATES = frozenset({"phase", "rx", "ry", "rz"})
 _GATES = frozenset({"x", "h", "s", "z"}) | _ANGLE_GATES
 
 

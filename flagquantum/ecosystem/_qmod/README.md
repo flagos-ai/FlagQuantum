@@ -462,3 +462,15 @@ The combined form requires a distinct initialized scalar selector.
 
 The bounded lowering uses registered gates and requires no workspace. Its
 gate count grows with the transform matrix dimension.
+
+### Fixed real arrays and encoding
+
+Entry parameters declared as `real[N]` accept fixed-length sequences of
+finite real values through `classical_inputs`. Rotation angles can read
+elements at literal indices, as in `RY(data[0], q)`.
+
+`encode_in_angle(data, out)` prepares one output qubit per element using
+`RY(pi * data[i])`. `encode_on_bloch(data, out)` uses one qubit per pair,
+applying RX and then RZ with angles scaled by pi. An odd final element uses
+RX with an angle scaled by 2 pi. Both operations initialize a fresh qubit
+array, with element zero on its least significant qubit.

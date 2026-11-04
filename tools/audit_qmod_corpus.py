@@ -7,7 +7,7 @@ import hashlib
 import json
 import math
 from collections import Counter
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import cast
 
@@ -22,7 +22,7 @@ def probe(
     revision: str,
     memory_bytes: int,
     execute: bool,
-    classical_inputs: Mapping[str, float] | None = None,
+    classical_inputs: Mapping[str, float | Sequence[float]] | None = None,
 ) -> dict[str, str | int]:
     try:
         load_qmod(path, source_version=revision, classical_inputs=classical_inputs)

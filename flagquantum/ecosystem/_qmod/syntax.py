@@ -15,7 +15,7 @@ MAX_BYTES = 262144
 MAX_TOKENS = 4096
 MAX_DEPTH = 32
 MAX_FUNCTIONS = 32
-ANGLE_CALLS = frozenset({"PHASE", "RX", "RZ", "RZZ", "CRX", "R", "U"})
+ANGLE_CALLS = frozenset({"PHASE", "RX", "RY", "RZ", "RZZ", "CRX", "R", "U"})
 _TOKEN = re.compile(
     r"(?P<space>\s+)|(?P<comment>//[^\n]*|/\*[\s\S]*?\*/)"
     r"|(?P<number>[0-9]+)|(?P<name>[A-Za-z_][A-Za-z_0-9]*)"
@@ -489,6 +489,11 @@ class Parser:
             if role == "real":
                 self.take("real")
                 kind, width = "real", None
+                if name.text == "main" and self.current.text == "[":
+                    self.take("[")
+                    width = self.width()
+                    self.take("]")
+                    kind = "real[]"
             else:
                 kind, width = self.scalar_type(
                     allow_qubit_array=name.text == "main" or role == "inout"

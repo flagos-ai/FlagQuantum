@@ -5,7 +5,7 @@ from __future__ import annotations
 import math
 import random
 import re
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from decimal import Decimal
 from operator import and_, or_, xor
@@ -60,6 +60,8 @@ _INTRINSICS = (
     | _PAIR_CALLS
     | {
         "allocate",
+        "encode_in_angle",
+        "encode_on_bloch",
         "phase",
         "pi",
         "control",
@@ -420,6 +422,7 @@ class _Adapt:
         self.definitions = definitions
         self.constants = constants
         self.classical_values: dict[str, float] = {}
+        self.classical_arrays: dict[str, tuple[float, ...]] = {}
         self.scope = syntax.name.text
         self.parameters: dict[str, Parameter] = {}
         for parameter in syntax.parameters:
@@ -602,7 +605,59 @@ class _Adapt:
     def angle(self, node: Expression, gate: Token) -> float:
         if not node.children and node.token.text in self.classical_values:
             return self.classical_values[node.token.text]
+        if node.token.text == "[":
+            array, index = node.children
+            values = self.classical_arrays.get(array.token.text)
+            if values is not None and not array.children:
+                if index.children or not index.token.text.isdecimal():
+                    reject(
+                        index.token,
+                        "binding",
+                        "real array index requires an integer literal",
+                    )
+                offset = int(index.token.text)
+                if offset >= len(values):
+                    reject(index.token, "binding", "real array index is out of bounds")
+                return values[offset]
         return _literal_angle(node, gate)
+
+    def encode_data(self, token: Token, args: tuple[Expression, ...]) -> None:
+        if len(args) != 2:
+            reject(token, "signature", "data encoding requires a real array and output")
+        source, output = (self.atom(arg) for arg in args)
+        values = self.classical_arrays.get(source.text)
+        if values is None:
+            reject(source, "binding", "encoding requires a bound real array")
+        if (
+            output.text not in self.parameters
+            or self.parameters[output.text].kind != "qbit[]"
+        ):
+            reject(output, "type", "encoding requires a qubit array output")
+        bloch = token.text == "encode_on_bloch"
+        width = (len(values) + 1) // 2 if bloch else len(values)
+        target = self.register(output, width, allow_qubit_array=True)
+        if register_width(target) != width:
+            reject(output, "width", "encoding output width must match its data")
+        self.effect_op("qreg.allocate", token, (target,))
+        for index, value in enumerate(values):
+            if bloch:
+                gate = "rz" if index % 2 else "rx"
+                scale = (
+                    math.tau
+                    if index == len(values) - 1 and len(values) % 2
+                    else math.pi
+                )
+                wire = index // 2
+            else:
+                gate, scale, wire = "ry", math.pi, index
+            self.effect_op(
+                "qreg.gate",
+                token,
+                (target,),
+                gate=gate,
+                index=wire,
+                angle=scale * value,
+            )
 
     def call_bound_helper(
         self, syntax: Function, token: Token, arguments: tuple[Expression, ...]
@@ -1247,6 +1302,8 @@ class _Adapt:
             )
         elif token.text == "^=":
             self.xor_update(token, args[0], args[1])
+        elif token.text in {"encode_in_angle", "encode_on_bloch"}:
+            self.encode_data(token, args)
         elif token.text == "allocate":
             if len(args) not in {1, 2, 4}:
                 reject(
@@ -1551,7 +1608,7 @@ def parse_qmod(
     *,
     filename: str = "<qmod>",
     source_version: str,
-    classical_inputs: Mapping[str, float] | None = None,
+    classical_inputs: Mapping[str, float | Sequence[float]] | None = None,
 ) -> QmodImport:
     """Adapt the pinned unsigned scalar native subset to verified owned records.
 
@@ -1598,14 +1655,19 @@ def parse_qmod(
     if "main" not in definitions:
         reject(tokens[0], "entry", "source requires one qfunc main")
     main = definitions["main"]
-    names = {p.name.text for p in main.parameters if p.role == "real"}
+    parameters = {p.name.text: p for p in main.parameters if p.role == "real"}
     inputs = {} if classical_inputs is None else classical_inputs
-    if not isinstance(inputs, Mapping) or set(inputs) != names:
-        reject(main.name, "binding", f"classical inputs must match {sorted(names)}")
+    if not isinstance(inputs, Mapping) or set(inputs) != set(parameters):
+        reject(
+            main.name, "binding", f"classical inputs must match {sorted(parameters)}"
+        )
     bindings: dict[str, float] = {}
-    for name, value in inputs.items():
+    arrays: dict[str, tuple[float, ...]] = {}
+
+    def checked_real(value: object, name: str) -> float:
         if (
             type(value) not in {float, int}
+            or not isinstance(value, (float, int))
             or abs(value) > 2**53
             or not math.isfinite(value)
         ):
@@ -1614,7 +1676,24 @@ def parse_qmod(
                 "binding",
                 f"classical input {name!r} must be a finite real in ±2**53",
             )
-        bindings[name] = float(value)
+        return float(value)
+
+    for name, value in inputs.items():
+        array_width = parameters[name].width
+        if array_width is None:
+            bindings[name] = checked_real(value, name)
+        else:
+            if (
+                not isinstance(value, Sequence)
+                or isinstance(value, (str, bytes))
+                or len(value) != array_width
+            ):
+                reject(
+                    main.name,
+                    "binding",
+                    f"classical input {name!r} requires exactly {array_width} real elements",
+                )
+            arrays[name] = tuple(checked_real(item, name) for item in value)
 
     for name, syntax in definitions.items():
         if name == "main" or not _bound_helper(syntax):
@@ -1657,6 +1736,7 @@ def parse_qmod(
             adapter = _Adapt(syntax, resolve, definitions, constants)
             if name == "main":
                 adapter.classical_values.update(bindings)
+                adapter.classical_arrays.update(arrays)
             program = adapter.adapt()
             compiled[name] = adapter, program
             active.remove(name)

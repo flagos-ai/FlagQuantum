@@ -454,7 +454,7 @@ def synthesize(
     source_format: Literal["qmod"],
     source_name: str | None = None,
     source_version: str | None = None,
-    classical_inputs: Mapping[str, float] | None = None,
+    classical_inputs: Mapping[str, float | Sequence[float]] | None = None,
     memory_limit_bytes: int | None = None,
     output_mode: Literal["value"] = "value",
 ) -> Program: ...
@@ -481,7 +481,7 @@ def synthesize(
     source_format: Literal["qmod"] | None = None,
     source_name: None = None,
     source_version: str | None = None,
-    classical_inputs: Mapping[str, float] | None = None,
+    classical_inputs: Mapping[str, float | Sequence[float]] | None = None,
     memory_limit_bytes: int | None = None,
     output_mode: Literal["value"] = "value",
 ) -> Program: ...
@@ -533,7 +533,7 @@ def synthesize(
     source_format: Literal["qmod"] | None = None,
     source_name: str | None = None,
     source_version: str | None = None,
-    classical_inputs: Mapping[str, float] | None = None,
+    classical_inputs: Mapping[str, float | Sequence[float]] | None = None,
     memory_limit_bytes: int | None = None,
     output_mode: Literal["value", "phase"] = "value",
 ) -> Program:
