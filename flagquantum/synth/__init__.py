@@ -23,6 +23,7 @@ from ..services.synthesis import (
     apply,
     hadamard_transform,
     phase,
+    prepare_uniform_interval_state,
     qfunc,
     synthesize,
     within,
@@ -50,4 +51,5 @@ __all__ = (
     "SWAP",
     "CRX",
     "R",
+    "prepare_uniform_interval_state",
 )

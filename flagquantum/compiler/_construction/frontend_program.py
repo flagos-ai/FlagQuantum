@@ -34,6 +34,7 @@ from .program_types import (
     cx,
     hadamard_transform,
     phase,
+    prepare_uniform_interval_state,
     r,
     swap,
     within,
@@ -613,6 +614,35 @@ class _Body:
                 attributes["angle"] = angle
             operands = tuple(self.register(arg) for arg in node.args[int(angled) :])
             self.emit("qreg.pair_gate", node, operands, **attributes)
+        elif function is prepare_uniform_interval_state:
+            if len(node.args) != 3:
+                _error(
+                    self.source,
+                    node,
+                    "program.signature",
+                    "expected two bounds and a target",
+                )
+            start, stop, output = node.args
+            if (
+                not isinstance(start, ast.Constant)
+                or type(start.value) is not int
+                or not isinstance(stop, ast.Constant)
+                or type(stop.value) is not int
+            ):
+                _error(
+                    self.source,
+                    node,
+                    "program.prepare",
+                    "uniform preparation requires literal integer bounds",
+                )
+            destination = self.register(output)
+            self.emit(
+                "qreg.uniform_interval",
+                node,
+                (destination,),
+                start=start.value,
+                stop=stop.value,
+            )
         elif function is r:
             if len(node.args) != 3:
                 _error(

@@ -79,6 +79,7 @@ CX = program_types.cx
 SWAP = program_types.swap
 CRX = program_types.crx
 R = program_types.r
+prepare_uniform_interval_state = program_types.prepare_uniform_interval_state
 
 __all__ = (
     "ConstructionBudget",
@@ -102,6 +103,7 @@ __all__ = (
     "SWAP",
     "CRX",
     "R",
+    "prepare_uniform_interval_state",
 )
 
 

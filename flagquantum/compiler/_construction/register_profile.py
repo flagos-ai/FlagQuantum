@@ -25,6 +25,7 @@ _ATTRIBUTES = MappingProxyType(
         "qreg.declare": frozenset({"name"}),
         "qreg.local": frozenset({"name"}),
         "qreg.release": frozenset(),
+        "qreg.uniform_interval": frozenset({"start", "stop"}),
         "qreg.allocate": frozenset(),
         "qreg.initialize": frozenset({"value"}),
         "qreg.pair_gate": frozenset({"gate"}),
@@ -448,6 +449,33 @@ def _verify_body(
                     _fail(
                         "register.uninitialized", "gate reads uninitialized storage", op
                     )
+            elif op.name == "qreg.uniform_interval":
+                start, stop = op.attributes["start"], op.attributes["stop"]
+                size = register_width(destination)
+                previous = block.operations[position - 1]
+                if (
+                    arguments
+                    or destination in borrowed
+                    or previous.name != "qreg.allocate"
+                    or previous.operands[1:] != (destination,)
+                ):
+                    _fail(
+                        "register.prepare",
+                        "uniform preparation requires a fresh allocation",
+                        op,
+                    )
+                if (
+                    type(start) is not int
+                    or type(stop) is not int
+                    or size > 8
+                    or not 0 <= start < stop <= 1 << size
+                ):
+                    _fail(
+                        "register.prepare",
+                        "invalid uniform interval or width above eight",
+                        op,
+                    )
+                changed = (destination,)
             elif op.name == "qreg.gate":
                 if destination in borrowed:
                     _fail("register.const", "Const cannot be a gate target", op)
