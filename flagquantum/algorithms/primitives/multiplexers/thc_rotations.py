@@ -4,9 +4,12 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from dataclasses import dataclass, replace
-from math import isfinite
+from math import isfinite, tau
 
 from ....circuit import Circuit
+from ....compiler._arithmetic_kernels import ripple_add_modular
+from ....compiler.unary_iteration import append_unary_iteration
+from ....core.ir import CircuitIR, Instruction
 from ....errors import ValidationError
 
 
@@ -62,15 +65,7 @@ class THCRotations:
                 fragment.x(q)
             rotations = reversed(network) if self.is_adjoint else iter(network)
             for left, right, angle in rotations:
-                if (
-                    type(left) is not int
-                    or type(right) is not int
-                    or not 0 <= left < right == left + 1 < len(self.target)
-                    or not isfinite(angle)
-                ):
-                    raise ValidationError(
-                        "THC needs adjacent orbital offsets and finite angles."
-                    )
+                self._validate_rotation(left, right, angle)
                 theta = -2 * angle if self.is_adjoint else 2 * angle
                 rotation = Circuit(1, bsz=circuit.bsz, dtype=circuit.dtype).ry(
                     0, theta=theta
@@ -85,3 +80,79 @@ class THCRotations:
             for q in flips:
                 fragment.x(q)
         return circuit.compose(fragment, qubits=qubits)
+
+    def _append_qrom(
+        self,
+        circuit: Circuit,
+        angle_data: tuple[int, ...],
+        gradient: tuple[int, ...],
+        carry: int,
+        scratch: tuple[int, ...],
+    ) -> None:
+        width = len(self.selection)
+        modulus = 1 << len(angle_data)
+        tables: dict[tuple[int, int], list[int]] = {}
+        for address, network in enumerate(self.networks):
+            for slot, (left, right, angle) in enumerate(network):
+                self._validate_rotation(left, right, angle)
+                # Reduce before scaling so any finite input angle is supported.
+                word = round((angle % tau) / tau * modulus) % modulus
+                if word:
+                    table = tables.setdefault((slot, left), [0] * len(self.networks))
+                    table[address] = (-word if self.is_adjoint else word) % modulus
+
+        adder = ripple_add_modular(angle_data, gradient, carry)
+        for slot in sorted(tables, reverse=self.is_adjoint):
+            _, left = slot
+            target, parity = self.target[left : left + 2]
+            operands = (parity, *self.selection, *angle_data, *scratch[:width])
+            qrom = Circuit.from_ir(
+                _angle_lookup(width, len(angle_data), tables[slot], len(operands)),
+                dtype=circuit.dtype,
+            )
+            circuit.cx(target, parity).compose(qrom, qubits=operands)
+            circuit.sdg(target).h(target)
+            # Complementing both sides of the modular add implements subtraction.
+            for wire in gradient:
+                circuit.cx(target, wire)
+            for gate in adder:
+                circuit.gate(gate.name, gate.wires)
+            for wire in gradient:
+                circuit.cx(target, wire)
+            circuit.h(target).s(target)
+            # XOR lookup is its own inverse and the address and parity are intact.
+            circuit.compose(qrom, qubits=operands).cx(target, parity)
+
+    def _validate_rotation(self, left: int, right: int, angle: float) -> None:
+        if (
+            type(left) is not int
+            or type(right) is not int
+            or not 0 <= left < right == left + 1 < len(self.target)
+            or not isfinite(angle)
+        ):
+            raise ValidationError(
+                "THC needs adjacent orbital offsets and finite angles."
+            )
+
+
+def _angle_lookup(
+    width: int, angle_bits: int, table: list[int], wires: int
+) -> CircuitIR:
+    instructions: list[Instruction] = []
+
+    def load(address: int, predicate: int | None) -> None:
+        assert predicate is not None  # The orbital parity bit is always a control.
+        for bit in range(angle_bits):
+            if table[address] & (1 << (angle_bits - 1 - bit)):
+                instructions.append(Instruction("cx", (predicate, width + 1 + bit)))
+
+    append_unary_iteration(
+        instructions,
+        operand_count=width + 1 + angle_bits,
+        width=width,
+        entries=len(table),
+        control_value=1,
+        apply_branch=load,
+        coherent=True,
+    )
+    return CircuitIR(wires, tuple(instructions))

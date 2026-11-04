@@ -4,10 +4,13 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from dataclasses import dataclass
+from math import tau
 
 from ....circuit import Circuit
 from ....errors import ValidationError
 from .thc_rotations import THCRotations
+
+_ANGLE_BITS = 8
 
 _Network = Sequence[tuple[int, int, float]]
 
@@ -35,6 +38,7 @@ class SelectTHC:
     sys_b: tuple[int, ...]
     networks: tuple[tuple[tuple[int, int, float], ...], ...]
     one_body_networks: tuple[tuple[tuple[int, int, float], ...], ...]
+    workspace: tuple[int, ...] = ()
 
     @classmethod
     def make_on(
@@ -51,8 +55,14 @@ class SelectTHC:
         sys_b: Sequence[int],
         networks: Sequence[_Network],
         one_body_networks: Sequence[_Network],
+        workspace: Sequence[int] = (),
     ) -> SelectTHC:
-        """Bind both reflections to the prepared selection and system qubits."""
+        """Bind both reflections to the prepared selection and system qubits.
+
+        Pass 18 + len(mu) clean workspace qubits to use the 8-bit QROM and
+        phase-gradient path. All workspace returns to zero. Without workspace,
+        the operation uses exact rotations.
+        """
         return cls(
             tuple(mu),
             tuple(nu),
@@ -65,6 +75,7 @@ class SelectTHC:
             tuple(sys_b),
             tuple(map(tuple, networks)),
             tuple(map(tuple, one_body_networks)),
+            tuple(workspace),
         )
 
     def append_to(self, circuit: Circuit) -> Circuit:
@@ -83,6 +94,11 @@ class SelectTHC:
             raise ValidationError(
                 "THC address, orbital, and rotation table widths disagree."
             )
+        workspace_size = 2 * _ANGLE_BITS + width + 2
+        if self.workspace and len(self.workspace) != workspace_size:
+            raise ValidationError(
+                f"THC QROM requires {workspace_size} clean workspace qubits."
+            )
         wires = (
             *self.mu,
             *self.nu,
@@ -93,12 +109,23 @@ class SelectTHC:
             self.plus_b,
             *self.sys_a,
             *self.sys_b,
+            *self.workspace,
         )
         fragment = Circuit(len(wires), dtype=circuit.dtype, bsz=circuit.bsz)
         mu, nu = tuple(range(width)), tuple(range(width, 2 * width))
         succ, one_body, order, spin_mu, spin_nu = range(2 * width, 2 * width + 5)
         sys_a = tuple(range(2 * width + 5, 2 * width + 5 + orbitals))
-        sys_b = tuple(range(2 * width + 5 + orbitals, len(wires)))
+        logical_width = 2 * width + 5 + 2 * orbitals
+        sys_b = tuple(range(2 * width + 5 + orbitals, logical_width))
+        if self.workspace:
+            angle_data = tuple(range(logical_width, logical_width + _ANGLE_BITS))
+            gradient = tuple(
+                range(logical_width + _ANGLE_BITS, logical_width + 2 * _ANGLE_BITS)
+            )
+            carry = logical_width + 2 * _ANGLE_BITS
+            scratch = tuple(range(carry + 1, len(wires)))
+            for bit, wire in enumerate(gradient):
+                fragment.h(wire).phase(wire, theta=tau / (1 << (bit + 1)))
         padding = ((),) * ((1 << width) - len(self.networks))
 
         for address, spin, networks, first in (
@@ -115,14 +142,22 @@ class SelectTHC:
             )
             for a, b in zip(sys_a, sys_b, strict=True):
                 fragment.cswap(spin, a, b)
-            fragment.append(rotations)
+            if self.workspace:
+                rotations._append_qrom(fragment, angle_data, gradient, carry, scratch)
+            else:
+                fragment.append(rotations)
             if first:
                 fragment.cz(succ, sys_a[0])
             else:
                 fragment.x(one_body).h(sys_a[0])
                 fragment.ccx(succ, one_body, sys_a[0])
                 fragment.h(sys_a[0]).x(one_body)
-            fragment.append(rotations.adjoint())
+            if self.workspace:
+                rotations.adjoint()._append_qrom(
+                    fragment, angle_data, gradient, carry, scratch
+                )
+            else:
+                fragment.append(rotations.adjoint())
             for a, b in zip(sys_a, sys_b, strict=True):
                 fragment.cswap(spin, a, b)
         fragment.x(one_body).cx(one_body, order)
@@ -130,4 +165,7 @@ class SelectTHC:
         for left, right in zip(mu, nu, strict=True):
             fragment.cswap(one_body, left, right)
         fragment.x(one_body)
+        if self.workspace:
+            for bit, wire in enumerate(gradient):
+                fragment.phase(wire, theta=-tau / (1 << (bit + 1))).h(wire)
         return circuit.compose(fragment, qubits=wires)
