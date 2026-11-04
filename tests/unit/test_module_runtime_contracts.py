@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import io
+import sys
 from dataclasses import replace
 from pathlib import Path
 
@@ -11,6 +12,7 @@ import flagquantum as fq
 import flagquantum.runtime as fqr
 import flagquantum.training as fqt
 from flagquantum.algorithms import zz_chain_hamiltonian
+from flagquantum.errors import ExecutionError
 
 pytestmark = pytest.mark.unit
 
@@ -204,6 +206,47 @@ def test_execution_result_fields_and_backend_selection_are_stable() -> None:
                 execution_options=fq.ExecutionOptions(backend="unknown")
             ),
         ).execute()
+
+
+@pytest.mark.parametrize("allow_fallback", [False, True])
+def test_missing_jax_respects_explicit_module_fallback(
+    monkeypatch: pytest.MonkeyPatch, allow_fallback: bool
+) -> None:
+    monkeypatch.setitem(sys.modules, "jax", None)
+    initial = torch.tensor([0.2, -0.3])
+    module = fq.Module(
+        build_circuit,
+        2,
+        init=initial,
+        policy=fq.RuntimePolicy(
+            execution_options=fq.ExecutionOptions(
+                backend="jax", allow_backend_fallback=allow_fallback
+            )
+        ),
+    )
+    if not allow_fallback:
+        with pytest.raises(
+            ExecutionError, match="JAX module execution failed"
+        ) as error:
+            module.execute()
+        assert isinstance(error.value.__cause__, ModuleNotFoundError)
+        return
+
+    result = module.execute()
+    reference = fq.Module(build_circuit, 2, init=initial)
+    assert result.value is not None
+    assert result.compatibility["fallback_used"] is True
+    assert result.compatibility["requested_backend"] == "jax"
+    assert result.compatibility["selected_backend"] == "pytorch"
+    assert (
+        result.compatibility["reason"] == "jax_kernel_unavailable:ModuleNotFoundError"
+    )
+    torch.testing.assert_close(result.value, reference())
+    actual_grad = torch.autograd.grad(result.value.sum(), module.parameters_tensor)[0]
+    expected_grad = torch.autograd.grad(reference().sum(), reference.parameters_tensor)[
+        0
+    ]
+    torch.testing.assert_close(actual_grad, expected_grad)
 
 
 def test_circuit_run_matches_uniform_execution_entry_point() -> None:

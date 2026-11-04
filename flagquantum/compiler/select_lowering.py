@@ -11,6 +11,7 @@ from .deferred_operations import (
     lower_majorana_to_gates,
     lower_select_pauli_lcu_to_gates,
 )
+from .registers.unary_iteration import append_unary_iteration, unary_iteration_workspace
 
 SelectPath = Literal["dense", "dynamic_unary_iteration", "unitary_ladder"]
 SELECT_REPORT = "select_lowering"
@@ -45,7 +46,8 @@ def unary_select_ir(instruction: Instruction) -> CircuitIR:
     operands = len(instruction.wires)
     targets = range(controlled + width, operands)
     entries = len(targets) if majorana else len(params["select_unitaries"])
-    ladder_width = max(width + controlled - 1, 0)
+    control_value = (1 if majorana else params["control_val"]) if controlled else None
+    ladder_width = unary_iteration_workspace(width, control_value)
     # A full address space guarantees exactly one accumulator toggle on
     # each enabled branch. Partial tables use explicit Jordan–Wigner strings.
     use_accumulator = majorana and width > 0 and entries == 1 << width
@@ -80,67 +82,20 @@ def unary_select_ir(instruction: Instruction) -> CircuitIR:
                 else:
                     emit("c" + pauli.lower(), control, target)
 
-    def visit(control: int, depth: int, start: int, size: int) -> None:
-        if start >= entries:
-            return
-        if size == 1:
-            apply_word(start, control)
-            return
-        right = controlled + depth
-        work = operands + depth - (1 - controlled)
-        half = size // 2
-        # Compute a clean temporary AND of the prefix and the inverted bit.
-        emit("x", right)
-        emit("h", work)
-        emit("t", work)
-        for parent in (control, right):
-            emit("cx", parent, work)
-        for parent in (control, right):
-            emit("cx", work, parent)
-        for parent in (control, right):
-            emit("tdg", parent)
-        emit("t", work)
-        for parent in (control, right):
-            emit("cx", work, parent)
-        emit("h", work)
-        emit("s", work)
-        emit("x", right)
-        visit(work, depth + 1, start, half)
-        emit("cx", control, work)
-        visit(work, depth + 1, start + half, half)
-        emit("h", work)
-        instructions.append(
-            Instruction(
-                "measure", (work,), metadata={"is_dynamic": True, "classical_bit": work}
-            )
-        )
-        instructions.append(
-            Instruction("cz", (control, right), metadata={"conditions": ((work, 1),)})
-        )
-        instructions.append(
-            Instruction("reset", (work,), metadata={"is_dynamic": True})
-        )
-
     if use_accumulator:
         if controlled:
             emit("cx", 0, accumulator)
         else:
             emit("x", accumulator)
 
-    if controlled:
-        if not majorana and params["control_val"] == 0:
-            emit("x", 0)
-        visit(0, 0, 0, 1 << width)
-        if not majorana and params["control_val"] == 0:
-            emit("x", 0)
-    elif width:
-        half = 1 << (width - 1)
-        emit("x", 0)
-        visit(0, 1, 0, half)
-        emit("x", 0)
-        visit(0, 1, half, half)
-    else:
-        apply_word(0, None)
+    append_unary_iteration(
+        instructions,
+        operand_count=operands,
+        width=width,
+        entries=entries,
+        control_value=control_value,
+        apply_branch=apply_word,
+    )
     return CircuitIR(accumulator + int(use_accumulator), tuple(instructions))
 
 

@@ -86,7 +86,7 @@ jobs:
     if: ${{ inputs.platform == 'ascend-910c' }}
     runs-on: ubuntu-latest
     concurrency:
-      group: flagquantum-gh-${{ github.ref_name }}-light-c
+      group: flagquantum-gh-2
       queue: max
     timeout-minutes: 5
     steps:

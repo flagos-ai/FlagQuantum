@@ -1,46 +1,4 @@
-"""The GitHub-hosted share one FlagQuantum workflow run is allowed to hold.
-
-flagos-ai runs every repository from one pool of 20 concurrent GitHub-hosted
-jobs. A job that joins no concurrency group holds a slot of that pool for as
-long as it runs, so a workflow that is unconstrained here is a workflow that
-queues every other repository in the organisation behind it.
-
-The ceiling is expressed the way GitHub expresses it. A concurrency group
-admits one job at a time, so the number of distinct groups one workflow run
-uses *is* the number of GitHub-hosted runners that run can hold at once.
-`ci.yml` and `pre-commit.yaml` partition their jobs across the sixteen scoped
-buckets below, and this module holds that partition still. The pull-request or
-branch scope prevents an unrelated older run from serializing a newer run;
-the organisation's 20-runner pool remains the aggregate ceiling.
-
-Six invariants:
-
-1. Every GitHub-hosted Ubuntu job joins one of the buckets, and every bucket
-   is used: an unused bucket is a ceiling lower than the comment claims, and
-   an undeclared one is a ceiling higher than it.
-2. The buckets carry `queue: max`. The default keeps only the newest waiting
-   job in a group and cancels the ones behind it, so without it a bucket drops
-   work rather than delaying it.
-3. The bucket count is the ceiling, so it is asserted rather than counted. The
-   `cpucore` bucket carries the matrix value in its name, which means a fourth
-   interpreter would be a fourth bucket: the set is spelled out so that is a
-   decision about the ceiling and not a side effect of a matrix edit.
-4. Both workflows cancel a superseded run of the same pull request, and neither
-   cancels a superseded run of `main`. A pull request's older tree is a tree
-   nobody will merge; a revision of `main` has already been merged, so cancelling
-   its run leaves a merge commit that no gate ever read. On 2026-10-08 two merges
-   landed 17 seconds apart and all 23 check runs attached to the first of them
-   were `cancelled` (issue #579), so the distinction is asserted here. Both halves
-   of the expression are asserted, because a group keyed to the commit for every
-   event satisfies "a push is never superseded" while cancelling nothing at all.
-5. `publish-dev-container.yml` caps its own matrix instead of joining a bucket,
-   because its legs build container images and serializing them all would cost
-   more than the slots are worth. It keeps cancelling a superseded run of `main`:
-   a superseded container build is superseded work, and no merge gate reads it.
-6. `cd.yml` runs only for a release, but its cross-platform wheel matrix is
-   still capped at four concurrent builders. Together with the one sdist build,
-   a release can hold at most five runners after validation completes.
-"""
+"""Repository-wide capacity policy for GitHub-hosted runners."""
 
 from __future__ import annotations
 
@@ -60,46 +18,11 @@ pytestmark = pytest.mark.unit
 ROOT = Path(__file__).resolve().parents[2]
 WORKFLOWS = ROOT / ".github" / "workflows"
 
-# Workflows whose GitHub-hosted jobs share the bounded runner pool.
-BUCKETED_WORKFLOWS = ("ci.yml", "pre-commit.yaml")
-
-# One concurrency group admits one job, so these sixteen scoped names are a
-# ceiling of sixteen concurrent GitHub-hosted runners for one run.
-#
-# The scope is the pull request number where there is one and the branch name
-# otherwise, so an unrelated branch's older run cannot serialize a newer one.
-# Two pushes to `main` do share these groups, and deliberately so: a push run of
-# `main` is no longer cancelled when the next push arrives, which means its jobs
-# have to wait somewhere instead. `queue: max` turns that group into a queue
-# rather than a drop, so the later revision is read after the earlier one instead
-# of deleting it.
-RUN_SCOPE = "${{ github.event.pull_request.number || github.ref_name }}"
-BUCKETS = frozenset(
-    {
-        f"flagquantum-gh-{RUN_SCOPE}-cpucore-3.10",
-        f"flagquantum-gh-{RUN_SCOPE}-cpucore-3.11",
-        f"flagquantum-gh-{RUN_SCOPE}-runtime",
-        f"flagquantum-gh-{RUN_SCOPE}-cpucore-3.12",
-        f"flagquantum-gh-{RUN_SCOPE}-coverage-0",
-        f"flagquantum-gh-{RUN_SCOPE}-coverage-1",
-        f"flagquantum-gh-{RUN_SCOPE}-coverage-2",
-        f"flagquantum-gh-{RUN_SCOPE}-coverage-3",
-        f"flagquantum-gh-{RUN_SCOPE}-coverage-4",
-        f"flagquantum-gh-{RUN_SCOPE}-coverage-5",
-        f"flagquantum-gh-{RUN_SCOPE}-coverage-6",
-        f"flagquantum-gh-{RUN_SCOPE}-coverage-7",
-        f"flagquantum-gh-{RUN_SCOPE}-distributed",
-        f"flagquantum-gh-{RUN_SCOPE}-light-a",
-        f"flagquantum-gh-{RUN_SCOPE}-light-b",
-        f"flagquantum-gh-{RUN_SCOPE}-light-c",
-    }
-)
-
-CEILING = 16
+CEILING = 8
+BUCKETS = frozenset(f"flagquantum-gh-{slot}" for slot in range(CEILING))
 TRUSTED_CPU_ROUTE = "${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'flagquantum-cpu-general' || 'ubuntu-latest' }}"
 A800_CPU_ROUTE = '${{ fromJSON((github.event_name != \'pull_request\' || github.event.pull_request.head.repo.full_name == github.repository) && \'["self-hosted","linux","x64","flagquantum-cpu"]\' || \'["ubuntu-latest"]\') }}'
 BOUNDED_PYTEST_ADDOPTS = "-n 16 --dist=worksteal --durations=50"
-GITHUB_HOSTED_UBUNTU_RUNNERS = frozenset({"ubuntu-latest", "ubuntu-22.04"})
 
 _MATRIX_REFERENCE = re.compile(r"\$\{\{\s*matrix\.([A-Za-z0-9_-]+)\s*\}\}")
 
@@ -118,25 +41,17 @@ def _github_hosted_jobs(workflow: str) -> dict[str, dict[str, object]]:
     found: dict[str, dict[str, object]] = {}
     for name, job in jobs.items():
         assert isinstance(job, dict), f"{workflow}:{name}: not a job mapping"
-        if isinstance(job.get("runs-on"), str) and (
-            job["runs-on"] in GITHUB_HOSTED_UBUNTU_RUNNERS
-            or "'ubuntu-latest'" in job["runs-on"]
-            or '["ubuntu-latest"]' in job["runs-on"]
+        runner = job.get("runs-on")
+        if isinstance(runner, str) and (
+            re.search(r"\b(?:ubuntu|macos|windows)-", runner)
+            or runner == "${{ matrix.os }}"
         ):
             found[name] = job
     return found
 
 
 def _groups(job: dict[str, object]) -> set[str]:
-    """The group names a job can produce, with its matrix reference resolved.
-
-    The cpucore group is one bucket per interpreter, so the name in the
-    workflow is not the name GitHub sees. The matrix reference is resolved
-    against the values the same job declares, which is also what makes a
-    widened matrix show up here as a widened ceiling. The run scope is retained
-    verbatim because it is the boundary this policy is asserting.
-    """
-
+    """Resolve the hosted group for every declared matrix value."""
     concurrency = job.get("concurrency")
     if not isinstance(concurrency, dict):
         return set()
@@ -170,7 +85,9 @@ def _groups(job: dict[str, object]) -> set[str]:
 
 def _bucketed_jobs() -> dict[str, dict[str, object]]:
     found: dict[str, dict[str, object]] = {}
-    for workflow in BUCKETED_WORKFLOWS:
+    for workflow in sorted(
+        path.name for path in WORKFLOWS.iterdir() if path.suffix in {".yml", ".yaml"}
+    ):
         for name, job in _github_hosted_jobs(workflow).items():
             found[f"{workflow}:{name}"] = job
     return found
@@ -195,6 +112,9 @@ def test_the_scan_finds_the_github_hosted_jobs_it_is_meant_to_police() -> None:
         "ci.yml:coverage",
         "ci.yml:package",
         "pre-commit.yaml:pre-commit",
+        "main-smoke.yml:installed-wheel-smoke",
+        "cd.yml:build-wheels",
+        "publish-dev-container.yml:publish",
     } <= found
 
 
@@ -207,9 +127,8 @@ def test_every_github_hosted_job_joins_a_bucket() -> None:
         for group in sorted(groups - BUCKETS):
             offenders.append(f"{key} joins {group!r}")
     assert not offenders, (
-        "every GitHub-hosted job must join one of the scoped buckets, so that "
-        "one run's share of the organisation's runner pool stays bounded:\n"
-        + "\n".join(offenders)
+        "every GitHub-hosted job must join one of the shared buckets, so that "
+        "the repository stays within eight hosted runners:\n" + "\n".join(offenders)
     )
 
 
@@ -546,7 +465,9 @@ def test_each_optional_compatibility_matrix_reuses_one_runner() -> None:
 
 
 def test_no_github_hosted_lane_uses_unbounded_auto_workers() -> None:
-    for workflow in BUCKETED_WORKFLOWS:
+    for workflow in sorted(
+        path.name for path in WORKFLOWS.iterdir() if path.suffix in {".yml", ".yaml"}
+    ):
         text = (WORKFLOWS / workflow).read_text(encoding="utf-8")
         assert "-n auto" not in text
 
