@@ -450,3 +450,15 @@ all-ones branch. For larger arrays, synthesis groups the controls and reuses
 the existing clean Toffoli ladder across groups. It clears the group flags and
 scratch before the next operation. The workspace counts against the ordinary
 synthesis budget.
+
+### Type II cosine and sine transforms
+
+`qct_type2(x)` and `qst_type2(x)` apply orthonormal Type II transforms in the
+frequency-row convention used by the Classiq executable tutorial.
+`qct_qst_type2(x, q)` applies the cosine block for selector zero and the
+negative sine block for selector one, preserving their relative phase.
+The data register must be initialized and writable, with one to four qubits.
+The combined form requires a distinct initialized scalar selector.
+
+The bounded lowering uses registered gates and requires no workspace. Its
+gate count grows with the transform matrix dimension.

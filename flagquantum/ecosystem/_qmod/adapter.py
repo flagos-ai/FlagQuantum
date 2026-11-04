@@ -70,6 +70,9 @@ _INTRINSICS = (
         "suzuki_trotter",
         "exponentiate",
         "qdrift",
+        "qct_type2",
+        "qst_type2",
+        "qct_qst_type2",
     }
     | ANGLE_CALLS
 )
@@ -1299,6 +1302,25 @@ class _Adapt:
             self.effect_op("qreg.allocate", token, (destination,))
         elif token.text in {"prepare_amplitudes", "prepare_state"}:
             self.prepare_state_vector(token, args)
+        elif token.text in {"qct_type2", "qst_type2", "qct_qst_type2"}:
+            kind = {
+                "qct_type2": "cosine",
+                "qst_type2": "sine",
+                "qct_qst_type2": "combined",
+            }[token.text]
+            if len(args) != 1 + (kind == "combined"):
+                reject(
+                    token,
+                    "signature",
+                    "Type II transform requires a data register and, for the combined form, a selector",
+                )
+            data = self.register(self.atom(args[0]), allow_qubit_array=True)
+            selectors: tuple[Value, ...] = ()
+            if kind == "combined":
+                self.atom(args[1])
+                selector, _ = self.gate_target(args[1])
+                selectors = (selector,)
+            self.effect_op("qreg.type2_transform", token, (data, *selectors), kind=kind)
         elif token.text == "prepare_bell_state":
             if len(args) != 2:
                 reject(

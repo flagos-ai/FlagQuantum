@@ -21,6 +21,7 @@ from .profile import _fail, _positive_integer, _width, verify_construction
 from .register_expansion import expand_register_calls, is_register_function
 
 MAX_PREPARED_AMPLITUDES = 256
+MAX_TYPE2_WIDTH = 4
 
 _ATTRIBUTES = MappingProxyType(
     {
@@ -32,6 +33,7 @@ _ATTRIBUTES = MappingProxyType(
         "qreg.initialize": frozenset({"value"}),
         "qreg.prepare_ghz": frozenset(),
         "qreg.prepare_amplitudes": frozenset({"amplitudes", "bound"}),
+        "qreg.type2_transform": frozenset({"kind"}),
         "qreg.rzz": frozenset({"angle"}),
         "qreg.pair_gate": frozenset({"gate"}),
         "qreg.control_h": frozenset(),
@@ -437,6 +439,33 @@ def _verify_body(
                     )
                 initialized.update(v.id for v in writes)
                 changed = tuple(writes)
+            elif op.name == "qreg.type2_transform":
+                kind = op.attributes["kind"]
+                if (
+                    not isinstance(kind, str)
+                    or kind not in {"cosine", "sine", "combined"}
+                    or len(arguments) != int(kind == "combined")
+                    or (arguments and register_width(arguments[0]) != 1)
+                    or not 1 <= register_width(destination) <= MAX_TYPE2_WIDTH
+                ):
+                    _fail(
+                        "register.transform",
+                        "invalid bounded Type II transform operands",
+                        op,
+                    )
+                if destination in borrowed or destination in arguments:
+                    _fail(
+                        "register.transform",
+                        "transform requires a writable target disjoint from its selector",
+                        op,
+                    )
+                if any(value.id not in initialized for value in operands):
+                    _fail(
+                        "register.uninitialized",
+                        "transform requires initialized registers",
+                        op,
+                    )
+                changed = (destination,)
             elif op.name in {"qreg.control_h", "qreg.control_x", "qreg.control_phase"}:
                 if (
                     len(arguments) > 1

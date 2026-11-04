@@ -128,6 +128,83 @@ def _array_controlled_x(
     return tuple(gates), workspace_width
 
 
+def _pattern_gate(
+    gate: Instruction, wires: tuple[int, ...], pattern: int
+) -> tuple[Instruction, ...]:
+    """Apply a single-wire gate on a specified pattern of the other wires."""
+    controls = tuple(wire for wire in wires if wire != gate.wires[0])
+    flips = tuple(
+        Instruction("x", (wire,))
+        for index, wire in enumerate(wires)
+        if wire in controls and not pattern & (1 << (len(wires) - 1 - index))
+    )
+    middle = controlled_instruction(gate, controls) if controls else (gate,)
+    return (*flips, *middle, *flips)
+
+
+def _type2_instructions(
+    kind: str, data: tuple[int, ...], selector: tuple[int, ...]
+) -> tuple[Instruction, ...]:
+    """Factor a bounded real Type II transform into registered gates."""
+    size = 1 << len(data)
+
+    def matrix(*, sine: bool) -> list[list[float]]:
+        trig = math.sin if sine else math.cos
+        return [
+            [
+                math.sqrt((1 if row == (size - 1 if sine else 0) else 2) / size)
+                * trig(math.pi * (row + int(sine)) * (column + 0.5) / size)
+                for column in range(size)
+            ]
+            for row in range(size)
+        ]
+
+    if kind == "combined":
+        zeros = [0.0] * size
+        values = [row + zeros for row in matrix(sine=False)]
+        values.extend(zeros + [-value for value in row] for row in matrix(sine=True))
+    else:
+        values = matrix(sine=kind == "sine")
+
+    wires = (*selector, *data)
+    dimension = len(values)
+    gray = tuple(index ^ (index >> 1) for index in range(dimension))
+    rotations: list[tuple[int, int, float]] = []
+    # Eliminating in Gray order makes each adjacent row rotation differ in one bit.
+    for column_index, column in enumerate(gray):
+        for index in range(dimension - 1, column_index, -1):
+            upper, lower = gray[index - 1], gray[index]
+            x, y = values[upper][column], values[lower][column]
+            if abs(y) < 1e-15:
+                continue
+            angle = math.atan2(y, x)
+            cosine, sine = math.cos(angle), math.sin(angle)
+            for k, (left, right) in enumerate(
+                zip(values[upper], values[lower], strict=True)
+            ):
+                values[upper][k] = cosine * left + sine * right
+                values[lower][k] = -sine * left + cosine * right
+            bit = upper ^ lower
+            target = wires[len(wires) - bit.bit_length()]
+            rotations.append((upper, target, -2 * angle if upper & bit else 2 * angle))
+
+    gates: list[Instruction] = []
+    for pattern in range(dimension):
+        if values[pattern][pattern] >= 0:
+            continue
+        target = wires[0]
+        phase = Instruction("phase", (target,), {"theta": math.pi})
+        flip = () if pattern & (dimension >> 1) else (Instruction("x", (target,)),)
+        gates.extend((*flip, *_pattern_gate(phase, wires, pattern), *flip))
+    for pattern, target, angle in reversed(rotations):
+        gates.extend(
+            _pattern_gate(
+                Instruction("ry", (target,), {"theta": angle}), wires, pattern
+            )
+        )
+    return tuple(gates)
+
+
 def schedule_register_program(
     program: HybridProgram,
     functions: Sequence[HybridProgram] = (),
@@ -162,6 +239,11 @@ def schedule_register_program(
         elif op.name == "qreg.prepare_amplitudes":
             gates = _synthesize_real_state(
                 op.attributes["amplitudes"], bindings[op.operands[1].id]
+            )
+        elif op.name == "qreg.type2_transform":
+            data, *selectors = (bindings[value.id] for value in op.operands[1:])
+            gates = _type2_instructions(
+                op.attributes["kind"], data, selectors[0] if selectors else ()
             )
         elif op.name == "qreg.prepare_ghz":
             first, *rest = bindings[op.operands[1].id]
