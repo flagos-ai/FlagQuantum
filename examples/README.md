@@ -233,6 +233,9 @@ These examples do not use that alias:
   respectively 35 single-shot batches, one full batch or one capped batch.
   The default remains 16. Each setting advances one seeded stream; different
   sample-call schedules need not produce identical samples or failure counts.
+- [`qec/dem_duplicate_merge.py`](qec/dem_duplicate_merge.py) consolidates two
+  independent faults with the same signature and reports the refusal for an
+  exclusive group. Run on CPU with the core Torch dependency.
 - [`qec/dem_joint_parity.py`](qec/dem_joint_parity.py) enumerates four fault
   combinations to show the joint parity of one detector and one logical
   observable. Pass `--exclusive` to group both faults as alternatives and
