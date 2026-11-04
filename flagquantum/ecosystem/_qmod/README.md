@@ -296,7 +296,7 @@ Run `python -m examples.synthesis_qmod_pair_gates` to compare the pinned
 originals with a native qfunc and a Circuit. All three originals start in
 and preserve the zero pair. Coherent regression cases test control order,
 SWAP movement, and CRX phase against independent amplitudes.
-## Inline sparse Pauli evolution
+## Sparse Pauli evolution
 
 `exponentiate(operator, t, q)` accepts an inline `SparsePauliOp` with
 `SparsePauliTerm` and `IndexedPauli` records. Its `num_qubits` must match the
@@ -320,5 +320,21 @@ from flagquantum import synth
 
 source = Path("tests/fixtures/classiq_qmod/hamiltonian_simulation_guide.qmod")
 program = synth.synthesize(source, classical_inputs={"t": 0.37})
+print(fq.run(program).statevector())
+```
+
+A top-level `name: SparsePauliOp = SparsePauliOp { ... };` declaration
+binds an immutable operator with literal coefficients. Pass its name as the
+first argument to `suzuki_trotter` or `exponentiate`. The pinned Trotter guide
+uses this form with ten first-order steps:
+
+```python
+from pathlib import Path
+
+import flagquantum as fq
+from flagquantum import synth
+
+source = Path("tests/fixtures/classiq_qmod/hamiltonian_simulation_guide_trotter.qmod")
+program = synth.synthesize(source)
 print(fq.run(program).statevector())
 ```

@@ -81,6 +81,46 @@ def _literal_angle(angle: Expression, gate: Token) -> float:
     return float(angle.token.text)
 
 
+def _pauli_support(
+    axes: Expression, width: int, *, sparse: bool
+) -> tuple[tuple[int, str], ...]:
+    if not sparse:
+        if len(axes.children) != width:
+            reject(axes.token, "pauli", "Pauli word length must match the array width")
+        return tuple(
+            (index, axis.token.text)
+            for index, axis in enumerate(axes.children)
+            if axis.token.text != "I"
+        )
+    seen = set()
+    support = []
+    for indexed in axes.children:
+        axis, index_arg = indexed.children
+        index_token = index_arg.token
+        if index_arg.children or not index_token.text.isdecimal():
+            reject(
+                index_token,
+                "pauli",
+                "Pauli index must be a nonnegative integer literal",
+            )
+        index = int(index_token.text)
+        if index >= width or index in seen:
+            reject(index_token, "pauli", "Pauli indices must be distinct and in bounds")
+        seen.add(index)
+        if axis.token.text != "I":
+            support.append((index, axis.token.text))
+    return tuple(support)
+
+
+def _sparse_width(node: Expression) -> int:
+    if node.children or not node.token.text.isdecimal():
+        reject(node.token, "pauli", "num_qubits must be an integer literal in 1..256")
+    width = int(node.token.text)
+    if not 1 <= width <= 256:
+        reject(node.token, "pauli", "num_qubits must be an integer literal in 1..256")
+    return width
+
+
 _RELATIONS = MappingProxyType(
     {
         "==": ("qint.equal", False, False),
@@ -293,10 +333,12 @@ class _Adapt:
         syntax: Function,
         resolve: Callable[[Token], tuple[Function, HybridProgram]],
         definitions: Mapping[str, Function],
+        constants: Mapping[str, Expression],
     ) -> None:
         self.syntax = syntax
         self.resolve = resolve
         self.definitions = definitions
+        self.constants = constants
         self.classical_values: dict[str, float] = {}
         self.scope = syntax.name.text
         self.parameters: dict[str, Parameter] = {}
@@ -457,7 +499,7 @@ class _Adapt:
         variable = statement.repeat_index
         assert variable is not None
         name = variable.text
-        if name in self.parameters or name in _INTRINSICS:
+        if name in self.parameters or name in _INTRINSICS or name in self.constants:
             reject(variable, "name", "loop index cannot shadow a register or intrinsic")
         count = self.static_integer(statement.arguments[0])
         if not 0 <= count <= 256:
@@ -486,7 +528,7 @@ class _Adapt:
     ) -> None:
         if len(arguments) != len(syntax.parameters):
             reject(token, "signature", "helper argument count disagrees")
-        child = _Adapt(syntax, self.resolve, self.definitions)
+        child = _Adapt(syntax, self.resolve, self.definitions, self.constants)
         for argument, parameter in zip(arguments, syntax.parameters, strict=True):
             name = parameter.name.text
             if parameter.role == "real":
@@ -703,40 +745,6 @@ class _Adapt:
             return -self.angle(node.children[0], token)
         return self.angle(node, token)
 
-    def pauli_support(
-        self, axes: Expression, width: int, *, sparse: bool
-    ) -> tuple[tuple[int, str], ...]:
-        if not sparse:
-            if len(axes.children) != width:
-                reject(
-                    axes.token, "pauli", "Pauli word length must match the array width"
-                )
-            return tuple(
-                (index, axis.token.text)
-                for index, axis in enumerate(axes.children)
-                if axis.token.text != "I"
-            )
-        seen = set()
-        support = []
-        for indexed in axes.children:
-            axis, index_arg = indexed.children
-            index_token = index_arg.token
-            if index_arg.children or not index_token.text.isdecimal():
-                reject(
-                    index_token,
-                    "pauli",
-                    "Pauli index must be a nonnegative integer literal",
-                )
-            index = int(index_token.text)
-            if index >= width or index in seen:
-                reject(
-                    index_token, "pauli", "Pauli indices must be distinct and in bounds"
-                )
-            seen.add(index)
-            if axis.token.text != "I":
-                support.append((index, axis.token.text))
-        return tuple(support)
-
     def suzuki_trotter(self, token: Token, args: tuple[Expression, ...]) -> None:
         if len(args) != 5:
             reject(
@@ -777,18 +785,19 @@ class _Adapt:
         target = self.atom(target_arg)
         register = self.register(target, allow_qubit_array=True)
         width = register_width(register)
+        if not operator.children and operator.token.text != "[":
+            if operator.token.text not in self.constants:
+                reject(operator.token, "pauli", "unknown SparsePauliOp constant")
+            operator = self.constants[operator.token.text]
         sparse = operator.token.text == "SparsePauliOp"
         terms = operator
         if sparse:
             terms, width_arg = operator.children
-            declared = width_arg.token
-            if (
-                width_arg.children
-                or not declared.text.isdecimal()
-                or int(declared.text) != width
-            ):
+            if _sparse_width(width_arg) != width:
                 reject(
-                    declared, "pauli", "num_qubits must match the target array width"
+                    width_arg.token,
+                    "pauli",
+                    "num_qubits must match the target array width",
                 )
         if self.parameters[target.text].kind != "qbit[]" or not terms.children:
             reject(
@@ -802,7 +811,7 @@ class _Adapt:
         prepared = []
         for term in terms.children:
             axes, coefficient = term.children
-            support = self.pauli_support(axes, width, sparse=sparse)
+            support = _pauli_support(axes, width, sparse=sparse)
             prepared.append((support, step * self.evolution_angle(coefficient, token)))
         sequence = prepared if order == 1 else [*prepared, *reversed(prepared)]
         for _ in range(repetitions):
@@ -862,7 +871,7 @@ class _Adapt:
         elif statement.declaration is not None:
             parameter = statement.declaration
             name = parameter.name.text
-            if name in self.parameters or name in _INTRINSICS:
+            if name in self.parameters or name in _INTRINSICS or name in self.constants:
                 reject(
                     parameter.name,
                     "name",
@@ -1201,10 +1210,38 @@ def parse_qmod(
     tokens = tokenize(source, filename)
     check_source_version(source_version, tokens[0])
     definitions: dict[str, Function] = {}
-    for syntax in Parser(tokens).parse():
+    functions_syntax, declarations = Parser(tokens).parse()
+    constants: dict[str, Expression] = {}
+    for name_token, operator in declarations:
+        name = name_token.text
+        if name in constants or name in _INTRINSICS or name == "main":
+            reject(name_token, "name", "duplicate or reserved SparsePauliOp constant")
+        terms, width_arg = operator.children
+        width = _sparse_width(width_arg)
+        if not terms.children:
+            reject(
+                terms.token,
+                "pauli",
+                "SparsePauliOp constant requires a nonempty Pauli sum",
+            )
+        for term in terms.children:
+            axes, coefficient = term.children
+            _pauli_support(axes, width, sparse=True)
+            if coefficient.token.text == "-":
+                coefficient = coefficient.children[0]
+            _literal_angle(coefficient, name_token)
+        constants[name] = operator
+    for syntax in functions_syntax:
         name = syntax.name.text
         if name in definitions or name in _INTRINSICS:
             reject(syntax.name, "name", "duplicate function or intrinsic redefinition")
+        if name in constants:
+            reject(syntax.name, "name", "function shadows a SparsePauliOp constant")
+        for parameter in syntax.parameters:
+            if parameter.name.text in constants:
+                reject(
+                    parameter.name, "name", "parameter shadows a SparsePauliOp constant"
+                )
         definitions[name] = syntax
     if "main" not in definitions:
         reject(tokens[0], "entry", "source requires one qfunc main")
@@ -1265,7 +1302,7 @@ def parse_qmod(
             )
         if name not in compiled:
             active.add(name)
-            adapter = _Adapt(syntax, resolve, definitions)
+            adapter = _Adapt(syntax, resolve, definitions, constants)
             if name == "main":
                 adapter.classical_values.update(bindings)
             program = adapter.adapt()

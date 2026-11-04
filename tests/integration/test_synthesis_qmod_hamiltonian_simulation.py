@@ -103,3 +103,52 @@ def test_inline_sparse_operator_also_works_with_suzuki_trotter():
         atol=1e-12,
         rtol=0,
     )
+
+
+TROTTER_SOURCE = SOURCE.with_name("hamiltonian_simulation_guide_trotter.qmod")
+
+
+def test_original_trotter_guide_matches_full_statevector():
+    raw = TROTTER_SOURCE.read_bytes()
+    blob = f"blob {len(raw)}\0".encode() + raw
+    assert hashlib.sha1(blob).hexdigest() == "cf13420cf09c2303b39f07d77dae9066392371c2"
+
+    # The fixture lists ZZ, X on array index 0, then X on array index 1.
+    # Circuit addresses the low bit as qubit 1. Rotation angles are twice t*h/r.
+    reference = fq.Circuit(2, dtype=DTYPE)
+    for _ in range(10):
+        reference.rzz(0, 1, theta=2 * 0.3 / 10)
+        reference.rx(1, theta=2 * 0.7 / 10)
+        reference.rx(0, theta=2 * 0.2 / 10)
+
+    program = synth.synthesize(TROTTER_SOURCE)
+    torch.testing.assert_close(
+        fq.run(program).statevector(),
+        fq.run(reference).statevector(),
+        atol=1e-12,
+        rtol=0,
+    )
+    assert program.report["workspace_qubits"] == 0
+
+
+@pytest.mark.parametrize(
+    ("old", "new", "diagnostic"),
+    [
+        ("    hamiltonian,", "    missing,", "unknown SparsePauliOp constant"),
+        ("qfunc main(", "qfunc hamiltonian() {} qfunc main(", "function shadows"),
+        ("output qba:", "hamiltonian: real, output qba:", "parameter shadows"),
+        ("coefficient=0.3", "coefficient=t", "must be a literal"),
+        ("index=1", "index=2", "distinct and in bounds"),
+    ],
+)
+def test_top_level_sparse_operator_diagnostics(old, new, diagnostic):
+    source = TROTTER_SOURCE.read_text().replace(old, new, 1)
+    with pytest.raises(InteropConversionError, match=diagnostic):
+        synth.synthesize(source, source_format="qmod")
+
+
+def test_duplicate_top_level_sparse_operator_is_rejected():
+    source = TROTTER_SOURCE.read_text()
+    declaration = source.split("qfunc main", 1)[0]
+    with pytest.raises(InteropConversionError, match="duplicate or reserved"):
+        synth.synthesize(declaration + source, source_format="qmod")

@@ -550,12 +550,14 @@ class Parser:
                 args: list[Expression] = []
                 if self.current.text != ")":
                     if target.text in {"exponentiate", "suzuki_trotter"}:
-                        args.append(
-                            self.sparse_pauli_op()
-                            if target.text == "exponentiate"
-                            or self.current.text == "SparsePauliOp"
-                            else self.pauli_terms()
-                        )
+                        if self.current.text == "SparsePauliOp":
+                            args.append(self.sparse_pauli_op())
+                        elif (
+                            target.text == "suzuki_trotter" and self.current.text == "["
+                        ):
+                            args.append(self.pauli_terms())
+                        else:
+                            args.append(Expression(self.name()))
                     elif target.text in ANGLE_CALLS:
                         args.append(self.angle_argument())
                     else:
@@ -595,13 +597,29 @@ class Parser:
         self.take("}")
         return tuple(statements)
 
-    def parse(self) -> tuple[Function, ...]:
-        functions = [self.function()]
+    def parse(
+        self,
+    ) -> tuple[tuple[Function, ...], tuple[tuple[Token, Expression], ...]]:
+        if self.current.text == "<eof>":
+            self.take("qfunc")
+        functions: list[Function] = []
+        constants: list[tuple[Token, Expression]] = []
         while self.current.text != "<eof>":
-            if len(functions) >= MAX_FUNCTIONS:
+            if len(functions) + len(constants) >= MAX_FUNCTIONS:
                 reject(
                     self.current, "budget.functions", "source exceeds 32 definitions"
                 )
-            functions.append(self.function())
+            if self.current.text != "qfunc" and tuple(
+                token.text
+                for token in self.tokens[self.position + 1 : self.position + 3]
+            ) == (":", "SparsePauliOp"):
+                name = self.name()
+                self.take(":")
+                self.take("SparsePauliOp")
+                self.take("=")
+                constants.append((name, self.sparse_pauli_op()))
+                self.take(";")
+            else:
+                functions.append(self.function())
         self.take("<eof>")
-        return tuple(functions)
+        return tuple(functions), tuple(constants)
