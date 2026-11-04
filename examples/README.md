@@ -990,3 +990,6 @@ and external reference; probabilities alone cannot establish them.
 
 Run `PYTHONPATH=. python examples/qec/dem_model_and_chunks.py --round-trip`
 to partition and reassemble a fixed three-layer DEM on CPU.
+
+Run `PYTHONPATH=. python examples/qec/dem_model_and_chunks.py --sparse-projection`
+to display the detector and logical rows in the same fault-column order.
