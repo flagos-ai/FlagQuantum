@@ -25,9 +25,12 @@ _ATTRIBUTES = MappingProxyType(
         "qreg.declare": frozenset({"name"}),
         "qreg.local": frozenset({"name"}),
         "qreg.release": frozenset(),
+        "qreg.uniform_interval": frozenset({"start", "stop"}),
         "qreg.allocate": frozenset(),
         "qreg.initialize": frozenset({"value"}),
         "qreg.pair_gate": frozenset({"gate"}),
+        "qreg.control_h": frozenset(),
+        "qreg.control_phase": frozenset({"angle"}),
         "qreg.gate": frozenset({"gate", "index"}),
         "qreg.compute": frozenset({"callee"}),
         "qreg.uncompute": frozenset(),
@@ -37,8 +40,13 @@ _ATTRIBUTES = MappingProxyType(
     }
 )
 _PAIR_GATES = frozenset({"cx", "swap", "crx"})
-_ANGLE_GATES = frozenset({"phase", "rz"})
+_ANGLE_GATES = frozenset({"phase", "rx", "rz"})
 _GATES = frozenset({"x", "h", "s", "z"}) | _ANGLE_GATES
+
+
+def equatorial_rotation(theta: float, phi: float) -> tuple[tuple[str, float], ...]:
+    """Return the exact single-qubit rotation in execution order."""
+    return (("rz", -phi), ("rx", theta), ("rz", phi))
 
 
 def register_type(width: int) -> IRType:
@@ -386,6 +394,33 @@ def _verify_body(
                     )
                 initialized.update(v.id for v in writes)
                 changed = tuple(writes)
+            elif op.name in {"qreg.control_h", "qreg.control_phase"}:
+                if (
+                    len(arguments) > 1
+                    or any(register_width(value) != 1 for value in operands)
+                    or any(value.id not in initialized for value in operands)
+                ):
+                    _fail(
+                        "register.control",
+                        "control requires initialized one-bit registers",
+                        op,
+                    )
+                if destination in arguments:
+                    _fail(
+                        "register.control", "condition and target must be disjoint", op
+                    )
+                if op.name == "qreg.control_h":
+                    if len(arguments) != 1 or arguments[0] in borrowed:
+                        _fail(
+                            "register.control",
+                            "controlled Hadamard requires a writable target",
+                            op,
+                        )
+                    changed = tuple(arguments)
+                else:
+                    angle = op.attributes["angle"]
+                    if type(angle) is not float or not math.isfinite(angle):
+                        _fail("register.control", "phase requires a finite angle", op)
             elif op.name == "qreg.phase":
                 check_call(op, operands)
             elif op.name == "qreg.release":
@@ -443,6 +478,33 @@ def _verify_body(
                     _fail(
                         "register.uninitialized", "gate reads uninitialized storage", op
                     )
+            elif op.name == "qreg.uniform_interval":
+                start, stop = op.attributes["start"], op.attributes["stop"]
+                size = register_width(destination)
+                previous = block.operations[position - 1]
+                if (
+                    arguments
+                    or destination in borrowed
+                    or previous.name != "qreg.allocate"
+                    or previous.operands[1:] != (destination,)
+                ):
+                    _fail(
+                        "register.prepare",
+                        "uniform preparation requires a fresh allocation",
+                        op,
+                    )
+                if (
+                    type(start) is not int
+                    or type(stop) is not int
+                    or size > 8
+                    or not 0 <= start < stop <= 1 << size
+                ):
+                    _fail(
+                        "register.prepare",
+                        "invalid uniform interval or width above eight",
+                        op,
+                    )
+                changed = (destination,)
             elif op.name == "qreg.gate":
                 if destination in borrowed:
                     _fail("register.const", "Const cannot be a gate target", op)
@@ -456,7 +518,7 @@ def _verify_body(
                 ):
                     _fail(
                         "register.gate",
-                        "use X/H/S/Z/phase/rz and an in-range numeric bit index",
+                        "use X/H/S/Z/phase/rx/rz and an in-range numeric bit index",
                         op,
                     )
                 if op.attributes["gate"] in _ANGLE_GATES:

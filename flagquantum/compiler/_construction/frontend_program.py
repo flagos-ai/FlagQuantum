@@ -30,15 +30,23 @@ from .program_types import (
     adjoint,
     allocate,
     apply,
+    control,
     crx,
     cx,
     hadamard_transform,
     phase,
+    prepare_uniform_interval_state,
+    r,
     swap,
     within,
 )
 from .ranges import unsigned_width
-from .register_profile import register_type, register_width, verify_register_program
+from .register_profile import (
+    equatorial_rotation,
+    register_type,
+    register_width,
+    verify_register_program,
+)
 
 
 @dataclass(frozen=True)
@@ -542,7 +550,9 @@ class _Body:
                 "program.adjoint",
                 "adjoint requires a static Const-only qfunc",
             )
-        if function is allocate:
+        if function is control:
+            self.scalar_control(node)
+        elif function is allocate:
             if len(node.args) not in {1, 2}:
                 _error(
                     self.source,
@@ -607,6 +617,61 @@ class _Body:
                 attributes["angle"] = angle
             operands = tuple(self.register(arg) for arg in node.args[int(angled) :])
             self.emit("qreg.pair_gate", node, operands, **attributes)
+        elif function is prepare_uniform_interval_state:
+            if len(node.args) != 3:
+                _error(
+                    self.source,
+                    node,
+                    "program.signature",
+                    "expected two bounds and a target",
+                )
+            start, stop, output = node.args
+            if (
+                not isinstance(start, ast.Constant)
+                or type(start.value) is not int
+                or not isinstance(stop, ast.Constant)
+                or type(stop.value) is not int
+            ):
+                _error(
+                    self.source,
+                    node,
+                    "program.prepare",
+                    "uniform preparation requires literal integer bounds",
+                )
+            destination = self.register(output)
+            self.emit(
+                "qreg.uniform_interval",
+                node,
+                (destination,),
+                start=start.value,
+                stop=stop.value,
+            )
+        elif function is r:
+            if len(node.args) != 3:
+                _error(
+                    self.source,
+                    node,
+                    "program.signature",
+                    "R requires two angles and a target",
+                )
+            theta = self.phase_number(node.args[0])
+            phi = self.phase_number(node.args[1])
+            if theta is None or phi is None:
+                _error(
+                    self.source,
+                    node,
+                    "program.angle",
+                    "R requires finite static real angles",
+                )
+            destination = self.register(node.args[2])
+            if register_width(destination) != 1:
+                _error(
+                    self.source, node, "program.width", "R requires a one-bit target"
+                )
+            for gate, angle in equatorial_rotation(theta, phi):
+                self.emit(
+                    "qreg.gate", node, (destination,), gate=gate, index=0, angle=angle
+                )
         elif function is phase:
             if len(node.args) != 2:
                 _error(
@@ -816,6 +881,80 @@ class _Body:
             self.emit("qreg.release", prepare, (value,))
             del self.ports[name]
             del self.widths[name]
+
+    def scalar_control(self, node: ast.Call) -> None:
+        if len(node.args) != 2 or not isinstance(node.args[1], ast.Lambda):
+            _error(
+                self.source,
+                node,
+                "program.control",
+                "expected control(bit, lambda: operation)",
+            )
+        condition, callback = node.args
+        assert isinstance(callback, ast.Lambda)
+        args = callback.args
+        body = callback.body
+        if (
+            args.posonlyargs
+            or args.args
+            or args.kwonlyargs
+            or args.vararg
+            or args.kwarg
+            or not isinstance(body, ast.Call)
+            or body.keywords
+            or any(isinstance(arg, ast.Starred) for arg in body.args)
+        ):
+            _error(
+                self.source,
+                callback,
+                "program.control",
+                "expected one static operation in a zero-argument lambda",
+            )
+        assert isinstance(body, ast.Call)
+        if isinstance(body.func, ast.Name) and body.func.id in self.ports:
+            _error(
+                self.source,
+                body.func,
+                "program.control",
+                "a quantum port cannot shadow a callable",
+            )
+        operation = _resolve(self.definition, body.func)
+        predicate = self.register(condition)
+        if operation is hadamard_transform and len(body.args) == 1:
+            target = self.register(body.args[0])
+            self.emit("qreg.control_h", node, (predicate, target))
+        elif operation is phase and len(body.args) == 2:
+            expression, coefficient = body.args
+            angle = self.phase_number(coefficient)
+            if angle is None:
+                _error(
+                    self.source,
+                    coefficient,
+                    "program.control",
+                    "expected a finite static phase coefficient",
+                )
+            constant = self.phase_number(expression)
+            operands: tuple[Value, ...]
+            if constant is None:
+                operands = (predicate, self.register(expression))
+            else:
+                operands = (predicate,)
+                angle *= constant
+                if not math.isfinite(angle):
+                    _error(
+                        self.source,
+                        expression,
+                        "program.control",
+                        "controlled phase angle exceeds finite range",
+                    )
+            self.emit("qreg.control_phase", node, operands, angle=angle)
+        else:
+            _error(
+                self.source,
+                body,
+                "program.control",
+                "expected scalar phase or Hadamard",
+            )
 
     def adjoint_scope(self, block: ast.With) -> None:
         for statement in reversed(block.body):

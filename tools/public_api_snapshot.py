@@ -656,6 +656,9 @@ _SYNTH_ACTIVE_EXPORTS = (
     "phase",
     *_SYNTH_CLEANUP_EXPORTS,
     *_SYNTH_PAIR_EXPORTS,
+    "R",
+    "prepare_uniform_interval_state",
+    "control",
 )
 
 
@@ -1016,6 +1019,24 @@ def _validate_authorized_synthesis_python_program(contract: Any) -> list[str]:
     pair_contract = json.loads(
         (ROOT / "contracts/synthesis-python-pair-gates-candidate.json").read_text()
     )
+    if (
+        str(inspect.signature(synth.R))
+        != "(theta: 'float', phi: 'float', target: 'QBit', /) -> 'None'"
+        or not (ROOT / "docs/api-changes/FQ-SYNTH-PYTHON-R-20261104.md").is_file()
+    ):
+        errors.append("native R differs from its authorization")
+    if (
+        str(inspect.signature(synth.prepare_uniform_interval_state))
+        != "(start: 'int', stop: 'int', target: 'QNum', /) -> 'None'"
+        or not (ROOT / "docs/api-changes/FQ-SYNTH-UNIFORM-INTERVAL.md").is_file()
+    ):
+        errors.append("native uniform interval differs from its authorization")
+    if (
+        str(inspect.signature(synth.control))
+        != "(condition: 'QBit', body: 'Callable[[], None]', /) -> 'None'"
+        or not (ROOT / "docs/api-changes/FQ-SYNTH-SCALAR-CONTROL.md").is_file()
+    ):
+        errors.append("native scalar control differs from its authorization")
     pair_signatures = {
         "CX": "(control: 'QBit', target: 'QBit', /) -> 'None'",
         "SWAP": "(first: 'QBit', second: 'QBit', /) -> 'None'",

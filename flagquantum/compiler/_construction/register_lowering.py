@@ -12,6 +12,7 @@ from dataclasses import dataclass, replace
 from types import MappingProxyType
 from typing import Literal
 
+from ...core._composition import controlled_instruction
 from ...core.ir import CircuitIR, Instruction
 from .._hybrid.model import Block, HybridProgram, Operation, Region, Value, ValueId
 from .boolean_lowering import BooleanCandidateError, lower_boolean_value
@@ -45,6 +46,36 @@ class RegisterCandidate:
     recomputations: int
 
 
+def _uniform_interval(
+    register: tuple[int, ...], start: int, stop: int
+) -> tuple[Instruction, ...]:
+    """Split the real amplitudes by the populations in each binary prefix."""
+    gates: list[Instruction] = []
+    for depth, target in enumerate(register):
+        half = 1 << (len(register) - depth - 1)
+        controls = register[:depth]
+        for prefix in range(start // (2 * half), (stop - 1) // (2 * half) + 1):
+            left = 2 * half * prefix
+            middle = left + half
+            zeros = max(0, min(stop, middle) - max(start, left))
+            ones = max(0, min(stop, middle + half) - max(start, middle))
+            if not ones:
+                continue
+            angle = 2 * math.atan2(math.sqrt(ones), math.sqrt(zeros))
+            rotation = Instruction("ry", (target,), {"theta": angle})
+            flips = tuple(
+                Instruction("x", (bit,))
+                for index, bit in enumerate(controls)
+                if not prefix & (1 << (depth - index - 1))
+            )
+            gates.extend(flips)
+            gates.extend(
+                controlled_instruction(rotation, controls) if controls else (rotation,)
+            )
+            gates.extend(flips)
+    return tuple(gates)
+
+
 def schedule_register_program(
     program: HybridProgram,
     functions: Sequence[HybridProgram] = (),
@@ -75,6 +106,19 @@ def schedule_register_program(
         gates: tuple[Instruction, ...] = ()
         if op.name == "qreg.initialize":
             gates = _copy(op.attributes["value"], bindings[op.operands[1].id])
+        elif op.name == "qreg.control_h":
+            control, target = (bindings[value.id][0] for value in op.operands[1:])
+            gates = controlled_instruction(Instruction("h", (target,)), (control,))
+        elif op.name == "qreg.control_phase":
+            ports = tuple(bindings[value.id][0] for value in op.operands[1:])
+            opcode = "phase" if len(ports) == 1 else "cphase"
+            gates = (Instruction(opcode, ports, {"theta": op.attributes["angle"]}),)
+        elif op.name == "qreg.uniform_interval":
+            gates = _uniform_interval(
+                bindings[op.operands[1].id],
+                op.attributes["start"],
+                op.attributes["stop"],
+            )
         elif op.name == "qreg.pair_gate":
             gates = (
                 Instruction(

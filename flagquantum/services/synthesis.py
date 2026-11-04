@@ -78,6 +78,9 @@ from ._synthesis_readout import probabilities as _probabilities
 CX = program_types.cx
 SWAP = program_types.swap
 CRX = program_types.crx
+R = program_types.r
+control = program_types.control
+prepare_uniform_interval_state = program_types.prepare_uniform_interval_state
 
 __all__ = (
     "ConstructionBudget",
@@ -100,6 +103,9 @@ __all__ = (
     "CX",
     "SWAP",
     "CRX",
+    "R",
+    "prepare_uniform_interval_state",
+    "control",
 )
 
 

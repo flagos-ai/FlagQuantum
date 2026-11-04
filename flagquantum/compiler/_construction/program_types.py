@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from contextlib import AbstractContextManager
 from types import GenericAlias
 from typing import Annotated, TypeAlias, TypeVar
@@ -100,6 +101,21 @@ def swap(first: QBit, second: QBit, /) -> None:
 def crx(angle: float, control: QBit, target: QBit, /) -> None:
     """Apply controlled X rotation with a static angle in radians inside qfunc."""
     raise TypeError("CRX is captured inside qfunc")
+
+
+def r(theta: float, phi: float, target: QBit, /) -> None:
+    """Apply an equatorial rotation with static angles in radians."""
+    raise TypeError("R is captured inside qfunc")
+
+
+def prepare_uniform_interval_state(start: int, stop: int, target: QNum, /) -> None:
+    """Prepare a uniform superposition over a half-open integer interval."""
+    raise TypeError("uniform preparation is captured inside qfunc")
+
+
+def control(condition: QBit, body: Callable[[], None], /) -> None:
+    """Apply a supported scalar operation coherently when condition is one."""
+    raise TypeError("control is captured inside qfunc")
 
 
 def within() -> AbstractContextManager[None]:
