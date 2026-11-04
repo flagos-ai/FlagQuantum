@@ -55,6 +55,8 @@ class THCRotations:
         fragment = Circuit(len(qubits), bsz=circuit.bsz, dtype=circuit.dtype)
         controls = tuple(range(1, width + 2))
         for address, network in enumerate(self.networks):
+            if not network:
+                continue
             flips = [q for q in range(width) if not (address >> (width - q - 1)) & 1]
             for q in flips:
                 fragment.x(q)
