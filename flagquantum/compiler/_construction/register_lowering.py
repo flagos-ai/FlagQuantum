@@ -15,6 +15,7 @@ from typing import Literal
 from ...core._composition import controlled_instruction
 from ...core.controlled import _clean_mcx_instructions
 from ...core.ir import CircuitIR, Instruction
+from .._fourier_kernels import qft_instructions
 from .._hybrid.model import Block, HybridProgram, Operation, Region, Value, ValueId
 from ..state_preparation_synthesis import _synthesize_real_state
 from .boolean_lowering import BooleanCandidateError, lower_boolean_value
@@ -240,6 +241,8 @@ def schedule_register_program(
             gates = _synthesize_real_state(
                 op.attributes["amplitudes"], bindings[op.operands[1].id]
             )
+        elif op.name == "qreg.qft":
+            gates = qft_instructions(bindings[op.operands[1].id])
         elif op.name == "qreg.type2_transform":
             data, *selectors = (bindings[value.id] for value in op.operands[1:])
             gates = _type2_instructions(

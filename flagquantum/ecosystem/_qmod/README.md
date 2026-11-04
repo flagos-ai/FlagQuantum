@@ -539,3 +539,24 @@ for (a, b, raw), probability in program.probabilities(
     assert difference == a - b
     print(a, b, difference, probability)
 ```
+
+### Quantum Fourier transform
+
+`qft(target)` applies the exact forward quantum Fourier transform in place
+to an initialized writable qubit array. It uses the same gate sequence as
+the FlagQuantum Circuit primitive, including bit reversal. On the array in
+register order, the first wire is the most significant bit. Qmod index
+`target[0]` addresses the least significant bit. The transform does not
+allocate work qubits.
+
+```python
+from pathlib import Path
+
+import flagquantum as fq
+from flagquantum import synth
+
+program = synth.synthesize(Path("tests/fixtures/classiq_qmod/qft.qmod"))
+state = fq.run(program).statevector()
+assert state.numel() == 16
+print(program.report["resources"])
+```

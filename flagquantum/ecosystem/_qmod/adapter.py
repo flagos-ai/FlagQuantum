@@ -73,6 +73,7 @@ _INTRINSICS = (
         "suzuki_trotter",
         "exponentiate",
         "qdrift",
+        "qft",
         "qct_type2",
         "qst_type2",
         "qct_qst_type2",
@@ -1591,6 +1592,14 @@ class _Adapt:
             self.effect_op("qreg.allocate", token, (destination,))
         elif token.text in {"prepare_amplitudes", "prepare_state"}:
             self.prepare_state_vector(token, args)
+        elif token.text == "qft":
+            if len(args) != 1:
+                reject(token, "signature", "qft requires one qubit array")
+            target = self.atom(args[0])
+            register = self.register(target, allow_qubit_array=True)
+            if self.parameters[target.text].kind != "qbit[]":
+                reject(target, "type", "qft requires a qubit array")
+            self.effect_op("qreg.qft", token, (register,))
         elif token.text in {"qct_type2", "qst_type2", "qct_qst_type2"}:
             kind = {
                 "qct_type2": "cosine",

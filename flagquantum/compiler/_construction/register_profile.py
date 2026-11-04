@@ -33,6 +33,7 @@ _ATTRIBUTES = MappingProxyType(
         "qreg.initialize": frozenset({"value"}),
         "qreg.prepare_ghz": frozenset(),
         "qreg.prepare_amplitudes": frozenset({"amplitudes", "bound"}),
+        "qreg.qft": frozenset(),
         "qreg.type2_transform": frozenset({"kind"}),
         "qreg.rzz": frozenset({"angle"}),
         "qreg.pair_gate": frozenset({"gate"}),
@@ -439,6 +440,18 @@ def _verify_body(
                     )
                 initialized.update(v.id for v in writes)
                 changed = tuple(writes)
+            elif op.name == "qreg.qft":
+                if arguments:
+                    _fail("register.transform", "QFT requires one register", op)
+                if destination in borrowed:
+                    _fail("register.const", "QFT requires a writable register", op)
+                if destination.id not in initialized:
+                    _fail(
+                        "register.uninitialized",
+                        "QFT requires an initialized register",
+                        op,
+                    )
+                changed = (destination,)
             elif op.name == "qreg.type2_transform":
                 kind = op.attributes["kind"]
                 if (
