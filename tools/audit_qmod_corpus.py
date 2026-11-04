@@ -7,6 +7,7 @@ import hashlib
 import json
 import math
 from collections import Counter
+from collections.abc import Mapping
 from pathlib import Path
 from typing import cast
 
@@ -17,10 +18,14 @@ from flagquantum.services import synthesis
 
 
 def probe(
-    path: Path, revision: str, memory_bytes: int, execute: bool
+    path: Path,
+    revision: str,
+    memory_bytes: int,
+    execute: bool,
+    classical_inputs: Mapping[str, float] | None = None,
 ) -> dict[str, str | int]:
     try:
-        load_qmod(path, source_version=revision)
+        load_qmod(path, source_version=revision, classical_inputs=classical_inputs)
     except InteropConversionError as error:
         return {"stage": "frontend_refused", "detail": str(error)}
     if not execute:
@@ -29,7 +34,12 @@ def probe(
     from flagquantum import run
 
     try:
-        program = synthesis.synthesize(path, memory_limit_bytes=memory_bytes)
+        program = synthesis.synthesize(
+            path,
+            source_version=revision,
+            memory_limit_bytes=memory_bytes,
+            classical_inputs=classical_inputs,
+        )
     except (synthesis.SynthesisError, ValueError, RuntimeError) as error:
         return {"stage": "planning_refused", "detail": str(error)}
     resources = cast(ResourceEstimate, program.report["resources"])
@@ -62,10 +72,18 @@ def main() -> None:
         "--execute", action="store_true", help="plan and run admitted files"
     )
     parser.add_argument("--memory-mib", type=int, default=512)
+    parser.add_argument(
+        "--bindings", type=Path, help="JSON mapping of source paths to real inputs"
+    )
     args = parser.parse_args()
     if args.memory_mib < 1:
         parser.error("--memory-mib must be positive")
     manifest = json.loads((args.corpus / "qmod_compatibility_tracker.json").read_text())
+    bindings = {} if args.bindings is None else json.loads(args.bindings.read_text())
+    if not isinstance(bindings, dict) or not set(bindings) <= {
+        entry["path"] for entry in manifest["files"]
+    }:
+        parser.error("--bindings must map known corpus paths to real inputs")
     rows = []
     for entry in manifest["files"]:
         relative = entry["path"]
@@ -75,9 +93,16 @@ def main() -> None:
         if blob != entry["source_blob_sha"]:
             raise ValueError(f"corpus blob mismatch for {relative}")
         result = probe(
-            path, entry["source_commit"], args.memory_mib * 1024**2, args.execute
+            path,
+            entry["source_commit"],
+            args.memory_mib * 1024**2,
+            args.execute,
+            bindings.get(relative),
         )
-        rows.append({"path": relative, "blob": blob, **result})
+        row = {"path": relative, "blob": blob, **result}
+        if relative in bindings:
+            row["classical_inputs"] = bindings[relative]
+        rows.append(row)
     counts = Counter(row["stage"] for row in rows)
     args.output.write_text(
         json.dumps({"counts": counts, "files": rows}, indent=2) + "\n"

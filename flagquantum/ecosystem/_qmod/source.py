@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 import stat
+from collections.abc import Mapping
 from os import PathLike
 from pathlib import Path
 from typing import NoReturn
@@ -42,6 +43,7 @@ def load_qmod(
     *,
     source_name: str | None = None,
     source_version: str | None = None,
+    classical_inputs: Mapping[str, float] | None = None,
 ) -> QmodImport:
     """Read a regular UTF-8 file or adapt text without execution or network I/O.
 
@@ -96,7 +98,12 @@ def load_qmod(
         else:
             assert isinstance(source, str)
             text = source
-        return parse_qmod(text, filename=filename, source_version=version)
+        return parse_qmod(
+            text,
+            filename=filename,
+            source_version=version,
+            classical_inputs=classical_inputs,
+        )
     except UnicodeError:
         _conversion(
             HybridVerificationError(

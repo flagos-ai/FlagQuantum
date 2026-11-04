@@ -13,7 +13,7 @@ MAX_BYTES = 262144
 MAX_TOKENS = 4096
 MAX_DEPTH = 32
 MAX_FUNCTIONS = 32
-ANGLE_CALLS = frozenset({"PHASE", "RZ", "RZZ", "CRX", "R", "U"})
+ANGLE_CALLS = frozenset({"PHASE", "RX", "RZ", "RZZ", "CRX", "R", "U"})
 _TOKEN = re.compile(
     r"(?P<space>\s+)|(?P<comment>//[^\n]*|/\*[\s\S]*?\*/)"
     r"|(?P<number>[0-9]+)|(?P<name>[A-Za-z_][A-Za-z_0-9]*)"
@@ -114,7 +114,7 @@ class Parameter:
     name: Token
     kind: str
     width: int | None
-    role: Literal["output", "const", "local"] = "output"
+    role: Literal["output", "const", "local", "real", "inout"] = "output"
 
 
 @dataclass(frozen=True)
@@ -345,7 +345,7 @@ class Parser:
         self.take("(")
         parameters: list[Parameter] = []
         while self.current.text != ")":
-            role: Literal["output", "const"]
+            role: Literal["output", "const", "real", "inout"]
             if self.current.text == "output":
                 self.take("output")
                 role = "output"
@@ -358,15 +358,31 @@ class Parser:
             elif self.current.text == "const" and name.text != "main":
                 self.take("const")
                 role = "const"
+            elif [
+                token.text
+                for token in self.tokens[self.position + 1 : self.position + 3]
+            ] == [":", "real"]:
+                role = "real"
+            elif name.text != "main" and [
+                token.text
+                for token in self.tokens[self.position + 1 : self.position + 5]
+            ] == [":", "qbit", "[", "]"]:
+                role = "inout"
             else:
                 reject(
                     self.current,
                     "role",
-                    "main requires Output; helpers admit Output or fixed-width Const only",
+                    "expected an Output, a classical real, or a supported helper port",
                 )
             parameter = self.name()
             self.take(":")
-            kind, width = self.scalar_type(allow_qubit_array=name.text == "main")
+            if role == "real":
+                self.take("real")
+                kind, width = "real", None
+            else:
+                kind, width = self.scalar_type(
+                    allow_qubit_array=name.text == "main" or role == "inout"
+                )
             if role == "const" and width is None:
                 reject(
                     parameter, "width", "Const qnum requires an explicit unsigned width"

@@ -282,9 +282,12 @@ class _Adapt:
         self,
         syntax: Function,
         resolve: Callable[[Token], tuple[Function, HybridProgram]],
+        definitions: Mapping[str, Function],
     ) -> None:
         self.syntax = syntax
         self.resolve = resolve
+        self.definitions = definitions
+        self.classical_values: dict[str, float] = {}
         self.scope = syntax.name.text
         self.parameters: dict[str, Parameter] = {}
         for parameter in syntax.parameters:
@@ -319,6 +322,8 @@ class _Adapt:
                 "type",
                 "qubit arrays support allocation and whole-array Hadamard",
             )
+        if self.parameters[name].role == "real":
+            reject(token, "type", "classical real is not a quantum register")
         local = self.parameters[name].role == "local"
         if local and self.local_scope is None:
             reject(
@@ -461,6 +466,34 @@ class _Adapt:
                 self.statement(item, f"{index}.{iteration}.{ordinal}")
         self.loop_indices.pop(name, None)
 
+    def angle(self, node: Expression, gate: Token) -> float:
+        if not node.children and node.token.text in self.classical_values:
+            return self.classical_values[node.token.text]
+        return _literal_angle(node, gate)
+
+    def call_bound_helper(
+        self, syntax: Function, token: Token, arguments: tuple[Expression, ...]
+    ) -> None:
+        if len(arguments) != len(syntax.parameters):
+            reject(token, "signature", "helper argument count disagrees")
+        child = _Adapt(syntax, self.resolve, self.definitions)
+        for argument, parameter in zip(arguments, syntax.parameters, strict=True):
+            name = parameter.name.text
+            if parameter.role == "real":
+                child.classical_values[name] = self.angle(argument, token)
+            else:
+                target = self.atom(argument)
+                value = self.register(target, allow_qubit_array=True)
+                if self.parameters[target.text].kind != "qbit[]":
+                    reject(target, "type", "helper requires a qubit array")
+                child.registers[name] = value
+                child.widths[name] = self.widths[target.text]
+        for index, statement in enumerate(syntax.statements):
+            child.statement(statement, str(index))
+        for op in child.operations:
+            # Replay the specialized gates with the caller's linear effect.
+            self.effect_op(op.name, token, op.operands[1:], **op.attributes)
+
     def call(
         self,
         token: Token,
@@ -472,6 +505,20 @@ class _Adapt:
     ) -> None:
         if token.text in self.parameters:
             reject(token, "call", "an output variable shadows this helper call")
+        definition = self.definitions.get(token.text)
+        if (
+            definition is not None
+            and token.text != "main"
+            and _bound_helper(definition)
+        ):
+            if const_only or control_bit is not None:
+                reject(
+                    token,
+                    "scope",
+                    "classical and writable-array helpers require ordinary calls",
+                )
+            self.call_bound_helper(definition, token, arguments)
+            return
         syntax, program = self.resolve(token)
         if control_bit is not None and any(
             p.role != "const" for p in syntax.parameters
@@ -824,7 +871,7 @@ class _Adapt:
         elif token.text == "RZZ":
             if len(args) != 2:
                 reject(token, "signature", "RZZ requires an angle and a qubit array")
-            angle = _literal_angle(args[0], token)
+            angle = self.angle(args[0], token)
             target = self.atom(args[1])
             destination = self.register(target, allow_qubit_array=True)
             if (
@@ -836,7 +883,7 @@ class _Adapt:
         elif token.text == "U":
             if len(args) != 5:
                 reject(token, "signature", "U requires four angles and a qbit target")
-            theta, phi, lam, gamma = (_literal_angle(arg, token) for arg in args[:4])
+            theta, phi, lam, gamma = (self.angle(arg, token) for arg in args[:4])
             target = self.atom(args[4])
             destination = self.register(target)
             if self.parameters[target.text].kind != "qbit":
@@ -849,7 +896,7 @@ class _Adapt:
         elif token.text == "R":
             if len(args) != 3:
                 reject(token, "signature", "R requires two angles and a qbit target")
-            theta, phi = (_literal_angle(arg, token) for arg in args[:2])
+            theta, phi = (self.angle(arg, token) for arg in args[:2])
             target = self.atom(args[2])
             destination = self.register(target)
             if self.parameters[target.text].kind != "qbit":
@@ -869,7 +916,7 @@ class _Adapt:
                 )
             attributes: dict[str, object] = {"gate": token.text.lower()}
             if angled:
-                attributes["angle"] = _literal_angle(args[0], token)
+                attributes["angle"] = self.angle(args[0], token)
             targets = args[int(angled) :]
             locations = tuple(self.gate_target(arg) for arg in targets)
             registers, indices = zip(*locations, strict=True)
@@ -963,8 +1010,16 @@ def check_source_version(source_version: str, token: Token) -> None:
         )
 
 
+def _bound_helper(syntax: Function) -> bool:
+    return any(port.role in {"real", "inout"} for port in syntax.parameters)
+
+
 def parse_qmod(
-    source: str, *, filename: str = "<qmod>", source_version: str
+    source: str,
+    *,
+    filename: str = "<qmod>",
+    source_version: str,
+    classical_inputs: Mapping[str, float] | None = None,
 ) -> QmodImport:
     """Adapt the pinned unsigned scalar native subset to verified owned records.
 
@@ -982,6 +1037,45 @@ def parse_qmod(
         definitions[name] = syntax
     if "main" not in definitions:
         reject(tokens[0], "entry", "source requires one qfunc main")
+    main = definitions["main"]
+    names = {p.name.text for p in main.parameters if p.role == "real"}
+    inputs = {} if classical_inputs is None else classical_inputs
+    if not isinstance(inputs, Mapping) or set(inputs) != names:
+        reject(main.name, "binding", f"classical inputs must match {sorted(names)}")
+    bindings: dict[str, float] = {}
+    for name, value in inputs.items():
+        if (
+            type(value) not in {float, int}
+            or abs(value) > 2**53
+            or not math.isfinite(value)
+        ):
+            reject(
+                main.name,
+                "binding",
+                f"classical input {name!r} must be a finite real in ±2**53",
+            )
+        bindings[name] = float(value)
+
+    for name, syntax in definitions.items():
+        if name == "main" or not _bound_helper(syntax):
+            continue
+        if len({port.name.text for port in syntax.parameters}) != len(
+            syntax.parameters
+        ):
+            reject(syntax.name, "name", "duplicate helper parameter")
+        if any(port.role not in {"real", "inout"} for port in syntax.parameters):
+            reject(
+                syntax.name,
+                "role",
+                "bound helpers require real or writable qubit array ports",
+            )
+        for statement in syntax.statements:
+            if (
+                statement.declaration is not None
+                or statement.token.text not in _GATE_CALLS | _PAIR_CALLS | ANGLE_CALLS
+            ):
+                reject(statement.token, "scope", "bound helper bodies admit only gates")
+
     compiled: dict[str, tuple[_Adapt, HybridProgram]] = {}
     active: set[str] = set()
 
@@ -1000,15 +1094,18 @@ def parse_qmod(
             )
         if name not in compiled:
             active.add(name)
-            adapter = _Adapt(syntax, resolve)
+            adapter = _Adapt(syntax, resolve, definitions)
+            if name == "main":
+                adapter.classical_values.update(bindings)
             program = adapter.adapt()
             compiled[name] = adapter, program
             active.remove(name)
         return compiled[name]
 
-    # Unused definitions must obey the same contract as reachable helpers.
+    # Bound helpers are checked structurally above and specialized at call sites.
     for syntax in definitions.values():
-        build(syntax)
+        if syntax is main or not _bound_helper(syntax):
+            build(syntax)
     adapter, program = compiled["main"]
     records: dict[str, HybridProgram] = {}
     for name, (producer, model) in compiled.items():
