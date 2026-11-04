@@ -115,6 +115,8 @@ class _Expression:
 
     def infer(self, node: Expression) -> tuple[int, bool]:
         text = node.token.text
+        if text == "[":
+            reject(node.token, "operator", "indexed values require a gate operand")
         if not node.children:
             if text.isdecimal():
                 result = (int(text), False)
@@ -298,6 +300,7 @@ class _Adapt:
         self.effect = self.entry
         self.operations: list[Operation] = []
         self.functions: list[HybridProgram] = []
+        self.loop_indices: dict[str, int] = {}
         self.local_scope: list[tuple[str, Token]] | None = None
 
     def register(
@@ -394,6 +397,69 @@ class _Adapt:
         if node.children or node.token.text.isdecimal():
             reject(node.token, "signature", "this argument must be one output variable")
         return node.token
+
+    def static_integer(self, node: Expression) -> int:
+        text = node.token.text
+        if text.isdecimal():
+            return int(text)
+        if text in {"+", "-"}:
+            left, right = (self.static_integer(child) for child in node.children)
+            return left + right if text == "+" else left - right
+        if text == ".":
+            name = node.children[0].token.text
+            width = self.widths.get(name)
+            if width is None or self.parameters[name].kind != "qbit[]":
+                reject(
+                    node.token, "width", "len requires a qubit array with a known width"
+                )
+            return width
+        if text in self.loop_indices:
+            return self.loop_indices[text]
+        reject(node.token, "expression", "expected a static integer or loop index")
+
+    def gate_target(self, node: Expression) -> tuple[Value, int]:
+        if node.token.text == "[":
+            array, offset = node.children
+            target = self.atom(array)
+            value = self.register(target, allow_qubit_array=True)
+            if self.parameters[target.text].kind != "qbit[]":
+                reject(target, "operator", "indexing requires a qubit array")
+            index = self.static_integer(offset)
+            width = self.widths[target.text]
+            assert width is not None
+            if not 0 <= index < width:
+                reject(offset.token, "width", "qubit array index is out of bounds")
+            return value, index
+        target = self.atom(node)
+        value = self.register(target)
+        if self.parameters[target.text].kind != "qbit":
+            reject(
+                target, "type", "gate operand requires a scalar qubit or array element"
+            )
+        return value, 0
+
+    def repeat(self, statement: Statement, index: str) -> None:
+        variable = statement.repeat_index
+        assert variable is not None
+        name = variable.text
+        if name in self.parameters or name in _INTRINSICS:
+            reject(variable, "name", "loop index cannot shadow a register or intrinsic")
+        count = self.static_integer(statement.arguments[0])
+        if not 0 <= count <= 256:
+            reject(
+                statement.token, "budget.expansion", "repeat count must be in 0..256"
+            )
+        for item in statement.repeat_body:
+            if (
+                item.declaration is not None
+                or item.token.text not in _GATE_CALLS | _PAIR_CALLS | ANGLE_CALLS
+            ):
+                reject(item.token, "scope", "repeat bodies admit only gates")
+        for iteration in range(count):
+            self.loop_indices[name] = iteration
+            for ordinal, item in enumerate(statement.repeat_body):
+                self.statement(item, f"{index}.{iteration}.{ordinal}")
+        self.loop_indices.pop(name, None)
 
     def call(
         self,
@@ -577,7 +643,9 @@ class _Adapt:
 
     def statement(self, statement: Statement, index: str) -> None:
         token, args = statement.token, statement.arguments
-        if statement.declaration is not None:
+        if statement.repeat_index is not None:
+            self.repeat(statement, index)
+        elif statement.declaration is not None:
             parameter = statement.declaration
             name = parameter.name.text
             if name in self.parameters or name in _INTRINSICS:
@@ -799,18 +867,16 @@ class _Adapt:
                     "signature",
                     f"{token.text} has the wrong number of arguments",
                 )
-            attributes: dict[str, str | int | float] = {"gate": token.text.lower()}
+            attributes: dict[str, object] = {"gate": token.text.lower()}
             if angled:
                 attributes["angle"] = _literal_angle(args[0], token)
-            targets = tuple(self.atom(arg) for arg in args[int(angled) :])
-            registers = tuple(self.register(target) for target in targets)
-            for target in targets:
-                if self.parameters[target.text].kind != "qbit":
-                    reject(
-                        target, "type", f"{token.text} requires scalar qbit operands"
-                    )
+            targets = args[int(angled) :]
+            locations = tuple(self.gate_target(arg) for arg in targets)
+            registers, indices = zip(*locations, strict=True)
+            if pair and any(arg.token.text == "[" for arg in targets):
+                attributes["indices"] = indices
             if not pair:
-                attributes["index"] = 0
+                attributes["index"] = indices[0]
             self.effect_op(
                 "qreg.pair_gate" if pair else "qreg.gate",
                 token,
@@ -820,22 +886,16 @@ class _Adapt:
         elif token.text in _GATE_CALLS:
             if len(args) != 1:
                 reject(token, "signature", f"{token.text} requires one output variable")
-            target = self.atom(args[0])
-            destination = self.register(
-                target, allow_qubit_array=token.text == "hadamard_transform"
-            )
-            if (
-                token.text != "hadamard_transform"
-                and self.parameters[target.text].kind != "qbit"
-            ):
-                reject(
-                    target,
-                    "type",
-                    "single-qubit gates require qbit; numeric/array views are not admitted",
-                )
-            width = self.widths[target.text]
-            assert width is not None
-            for bit in range(width if token.text == "hadamard_transform" else 1):
+            if token.text == "hadamard_transform":
+                target = self.atom(args[0])
+                destination = self.register(target, allow_qubit_array=True)
+                width = self.widths[target.text]
+                assert width is not None
+                bits = range(width)
+            else:
+                destination, bit = self.gate_target(args[0])
+                bits = range(bit, bit + 1)
+            for bit in bits:
                 self.effect_op(
                     "qreg.gate",
                     token,

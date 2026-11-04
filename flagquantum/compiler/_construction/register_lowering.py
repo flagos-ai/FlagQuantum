@@ -143,10 +143,16 @@ def schedule_register_program(
                 ),
             )
         elif op.name == "qreg.pair_gate":
+            operands = op.operands[1:]
+            indices = op.attributes.get("indices", (0, 0))
+            ports = tuple(
+                bindings[value.id][-1 - index]
+                for value, index in zip(operands, indices, strict=True)
+            )
             gates = (
                 Instruction(
                     op.attributes["gate"],
-                    tuple(bindings[value.id][0] for value in op.operands[1:]),
+                    ports,
                     params=(
                         {"theta": op.attributes["angle"]}
                         if "angle" in op.attributes

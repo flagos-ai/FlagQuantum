@@ -125,6 +125,8 @@ class Statement:
     within: tuple[Statement, ...] | None = None
     apply: tuple[Statement, ...] = ()
     control_body: tuple[Statement, ...] | None = None
+    repeat_index: Token | None = None
+    repeat_body: tuple[Statement, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -170,11 +172,13 @@ class Parser:
         self.position += 1
         return int(token.text)
 
-    def expression(self, minimum: int = 0, nesting: int = 0) -> Expression:
+    def expression(
+        self, minimum: int = 0, nesting: int = 0, *, static: bool = False
+    ) -> Expression:
         token = self.current
         if nesting >= MAX_DEPTH:
             reject(token, "budget.depth", f"expression nesting exceeds {MAX_DEPTH}")
-        if token.text == "~":
+        if token.text == "~" and not static:
             self.take("~")
             operand = self.expression(25, nesting + 1)
             if operand.depth >= MAX_DEPTH:
@@ -184,7 +188,7 @@ class Parser:
             left = Expression(token, (operand,), operand.depth + 1)
         elif token.text == "(":
             self.take("(")
-            left = self.expression(nesting=nesting + 1)
+            left = self.expression(nesting=nesting + 1, static=static)
             self.take(")")
         elif token.text.isdecimal():
             self.position += 1
@@ -197,6 +201,16 @@ class Parser:
                     "expected a nonnegative integer, output name or parentheses",
                 )
             left = Expression(self.name())
+        if not left.children and not left.token.text.isdecimal():
+            if static and self.current.text == ".":
+                dot = self.take(".")
+                self.take("len")
+                left = Expression(dot, (left,), 2)
+            elif not static and self.current.text == "[":
+                bracket = self.take("[")
+                index = self.expression(nesting=nesting + 1, static=True)
+                self.take("]")
+                left = Expression(bracket, (left, index), index.depth + 1)
         precedence = {
             **dict.fromkeys(_COMPARISONS, 5),
             "|": 6,
@@ -206,6 +220,8 @@ class Parser:
             "*": 20,
             "**": 30,
         }
+        if static:
+            precedence = {"+": 10, "-": 10}
         compared = False
         while precedence.get(self.current.text, -1) >= minimum:
             operator = self.current
@@ -220,7 +236,9 @@ class Parser:
             self.position += 1
             level = precedence[operator.text]
             right = self.expression(
-                level if operator.text == "**" else level + 1, nesting + 1
+                level if operator.text == "**" else level + 1,
+                nesting + 1,
+                static=static,
             )
             if operator.text == "**" and (
                 right.children
@@ -391,6 +409,23 @@ class Parser:
                 actions = self.block(scope_depth=scope_depth + 1)
                 statements.append(
                     Statement(token, (), within=preparation, apply=actions)
+                )
+                continue
+            if (
+                self.current.text == "repeat"
+                and self.tokens[self.position + 1].text == "("
+            ):
+                token = self.take("repeat")
+                if scope_depth:
+                    reject(token, "scope", "repeat is admitted only at function scope")
+                self.take("(")
+                index = self.name()
+                self.take(":")
+                count = self.expression(static=True)
+                self.take(")")
+                body = self.block(allow_scopes=False, scope_depth=scope_depth + 1)
+                statements.append(
+                    Statement(token, (count,), repeat_index=index, repeat_body=body)
                 )
                 continue
             target = self.name()

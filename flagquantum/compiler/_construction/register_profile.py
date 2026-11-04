@@ -276,9 +276,12 @@ def _verify_body(
         ):
             assert attributes is not None
             attributes = attributes | {"angle"}
-        if op.name == "qreg.pair_gate" and op.attributes.get("gate") == "crx":
+        if op.name == "qreg.pair_gate":
             assert attributes is not None
-            attributes = attributes | {"angle"}
+            if op.attributes.get("gate") == "crx":
+                attributes = attributes | {"angle"}
+            if "indices" in op.attributes:
+                attributes = attributes | {"indices"}
         if op.name == "qreg.phase" and "angle" in op.attributes:
             angle = op.attributes["angle"]
             if type(angle) is not float or not math.isfinite(angle):
@@ -531,12 +534,34 @@ def _verify_body(
                     not isinstance(gate, str)
                     or gate not in _PAIR_GATES
                     or len(operands) != 2
-                    or len(set(operands)) != 2
-                    or any(register_width(value) != 1 for value in operands)
                 ):
                     _fail(
                         "register.gate",
                         "pair gates require two distinct scalar registers",
+                        op,
+                    )
+                indices = op.attributes.get("indices")
+                if "indices" not in op.attributes:
+                    if len(set(operands)) != 2 or any(
+                        register_width(value) != 1 for value in operands
+                    ):
+                        _fail(
+                            "register.gate",
+                            "pair gates require distinct scalar registers",
+                            op,
+                        )
+                elif (
+                    not isinstance(indices, tuple)
+                    or len(indices) != 2
+                    or any(
+                        type(index) is not int or not 0 <= index < register_width(value)
+                        for value, index in zip(operands, indices, strict=True)
+                    )
+                    or len(set(zip(operands, indices, strict=True))) != 2
+                ):
+                    _fail(
+                        "register.gate",
+                        "pair gate indices must be in bounds and distinct",
                         op,
                     )
                 if gate == "crx":
