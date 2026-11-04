@@ -37,8 +37,13 @@ _ATTRIBUTES = MappingProxyType(
     }
 )
 _PAIR_GATES = frozenset({"cx", "swap", "crx"})
-_ANGLE_GATES = frozenset({"phase", "rz"})
+_ANGLE_GATES = frozenset({"phase", "rx", "rz"})
 _GATES = frozenset({"x", "h", "s", "z"}) | _ANGLE_GATES
+
+
+def equatorial_rotation(theta: float, phi: float) -> tuple[tuple[str, float], ...]:
+    """Return the exact single-qubit rotation in execution order."""
+    return (("rz", -phi), ("rx", theta), ("rz", phi))
 
 
 def register_type(width: int) -> IRType:
@@ -456,7 +461,7 @@ def _verify_body(
                 ):
                     _fail(
                         "register.gate",
-                        "use X/H/S/Z/phase/rz and an in-range numeric bit index",
+                        "use X/H/S/Z/phase/rx/rz and an in-range numeric bit index",
                         op,
                     )
                 if op.attributes["gate"] in _ANGLE_GATES:

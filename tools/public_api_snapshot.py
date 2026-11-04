@@ -656,6 +656,7 @@ _SYNTH_ACTIVE_EXPORTS = (
     "phase",
     *_SYNTH_CLEANUP_EXPORTS,
     *_SYNTH_PAIR_EXPORTS,
+    "R",
 )
 
 
@@ -1016,6 +1017,12 @@ def _validate_authorized_synthesis_python_program(contract: Any) -> list[str]:
     pair_contract = json.loads(
         (ROOT / "contracts/synthesis-python-pair-gates-candidate.json").read_text()
     )
+    if (
+        str(inspect.signature(synth.R))
+        != "(theta: 'float', phi: 'float', target: 'QBit', /) -> 'None'"
+        or not (ROOT / "docs/api-changes/FQ-SYNTH-PYTHON-R-20261104.md").is_file()
+    ):
+        errors.append("native R differs from its authorization")
     pair_signatures = {
         "CX": "(control: 'QBit', target: 'QBit', /) -> 'None'",
         "SWAP": "(first: 'QBit', second: 'QBit', /) -> 'None'",
