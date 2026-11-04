@@ -250,17 +250,21 @@ class _Expression:
             scale = max(
                 self.fractional_bits.get(lhs, 0), self.fractional_bits.get(rhs, 0)
             )
-            if text not in EXTREMA and (
-                scale
-                or any(
-                    "." in child.token.text and not child.children
-                    for child in node.children
+            if (
+                text not in EXTREMA
+                and text != "*"
+                and (
+                    scale
+                    or any(
+                        "." in child.token.text and not child.children
+                        for child in node.children
+                    )
                 )
             ):
                 reject(
                     node.token,
                     "precision",
-                    "fractional expressions are supported only in min/max and subtraction",
+                    "fractional expressions are supported only in min/max, subtraction and unsigned multiplication",
                 )
             if text in _WORD_OPERATORS:
                 widths = self.word_widths[lhs], self.word_widths[rhs]
@@ -316,6 +320,11 @@ class _Expression:
                     "type",
                     "signed operands require bitwise operations, subtraction or negation",
                 )
+            elif text == "*":
+                self.fractional_bits[node] = self.fractional_bits.get(
+                    lhs, 0
+                ) + self.fractional_bits.get(rhs, 0)
+                result = (left * right, lq or rq)
             elif text in EXTREMA:
                 self.fractional_bits[node] = scale
                 left <<= scale - self.fractional_bits.get(lhs, 0)
@@ -334,11 +343,7 @@ class _Expression:
                 bound = (
                     left + right
                     if text == "+"
-                    else (
-                        left ** int(node.children[1].token.text)
-                        if text == "**"
-                        else left * right
-                    )
+                    else left ** int(node.children[1].token.text)
                 )
                 result = (bound, lq or rq)
         if unsigned_width(result[0]) > 256:
@@ -708,7 +713,7 @@ class _Adapt:
     ) -> Value:
         name = token.text
         if name in self.fractional_bits and not allow_fractional_output:
-            reject(token, "precision", "a fractional extremum is a terminal output")
+            reject(token, "precision", "a fractional result is a terminal output")
         if name not in self.parameters:
             reject(token, "name", f"unknown output {name!r}")
         if self.parameters[name].kind == "qbit[]" and not allow_qubit_array:
@@ -1499,7 +1504,7 @@ class _Adapt:
                 reject(
                     args[1].token,
                     "operator",
-                    "decimal assignment requires min/max or subtraction",
+                    "decimal assignment requires min/max, subtraction or multiplication",
                 )
             if (
                 args[1].token.text == "-"

@@ -291,7 +291,7 @@ fixed-decimal literal k<=2**53 in radians and an initialized scalar qbit. Exact
 decimal bounds are checked before float64 conversion; source literals are at
 most 78 characters. Both are reserved intrinsics. Negative, exponent-form,
 symbolic, computed and quantum angles remain refused, as do numeric/array and
-Const gate targets. Decimal data expressions are limited to the extrema and subtraction profiles below.
+Const gate targets. Decimal data expressions are limited to the extrema, subtraction and multiplication profiles below.
 Lowercase
 `phase(expression, pi)` remains the separate predicate operation. Within/apply
 actions and role rules are unchanged.
@@ -492,7 +492,7 @@ decimal literal such as `3.5` or `1.25`. The importer aligns the binary point
 exactly across operands. A fractional result requires a terminal,
 inferred-width `main` output of type `qnum`. Its named probabilities use raw
 unsigned basis values, with the number of fractional bits recorded in
-`program.report["qmod_fractional_bits"]`. Fractional arithmetic beyond extrema and subtraction, and signed extrema,
+`program.report["qmod_fractional_bits"]`. Fractional arithmetic beyond extrema, subtraction and multiplication, and signed extrema,
 are outside this profile.
 
 ```python
@@ -586,3 +586,12 @@ program = synth.synthesize(
 state = fq.run(program).statevector()
 assert state.numel() == 16
 ```
+
+### Unsigned fixed-point multiplication
+
+A fresh assignment can multiply unsigned values and binary-exact decimal
+operands. The compiler multiplies the raw integers and adds their fractional
+bit counts. A fractional result requires a terminal inferred-width `main`
+output. For example, `3.5 * a` multiplies by the raw integer 7 and reports one
+fractional bit. Divide the named probability key's raw result by two to read
+the numeric value.
