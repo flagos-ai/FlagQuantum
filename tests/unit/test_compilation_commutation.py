@@ -546,8 +546,8 @@ def test_the_rule_source_carries_no_import_of_the_simulation_layer() -> None:
         "dataclasses",
         "types",
         "typing",
-        "..core.ir",
-        "..core.operator_schema",
+        "...core.ir",
+        "...core.operator_schema",
     ]
     # The reach of the rule source, as a fact rather than as a guess.
     assert len(_RULE_OPCODES) == 30
