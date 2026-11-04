@@ -1,0 +1,31 @@
+{"cirq": "1.4.0", "torch": "2.13.0", "repeats": 3, "warmups": 1, "threads": 1}
+{"entries": 4, "build_ms": 0.862, "conversion_ms": 0.5295, "instructions": 57, "parity": "passed_three_seeds"}
+{"entries": 4, "shots": 32, "engine": "trajectory", "sample_ms": 20.073208}
+{"entries": 4, "shots": 32, "engine": "batched", "sample_ms": 1.324666}
+{"entries": 4, "shots": 32, "engine": "cirq", "sample_ms": 18.8215}
+{"entries": 4, "shots": 256, "engine": "trajectory", "sample_ms": 158.778}
+{"entries": 4, "shots": 256, "engine": "batched", "sample_ms": 2.424709}
+{"entries": 4, "shots": 256, "engine": "cirq", "sample_ms": 142.737584}
+{"entries": 4, "shots": 1024, "engine": "trajectory", "sample_ms": 632.436625}
+{"entries": 4, "shots": 1024, "engine": "batched", "sample_ms": 6.518458}
+{"entries": 4, "shots": 1024, "engine": "cirq", "sample_ms": 570.514542}
+{"entries": 8, "build_ms": 1.786125, "conversion_ms": 0.54475, "instructions": 146, "parity": "passed_three_seeds"}
+{"entries": 8, "shots": 32, "engine": "trajectory", "sample_ms": 51.836125}
+{"entries": 8, "shots": 32, "engine": "batched", "sample_ms": 4.399666}
+{"entries": 8, "shots": 32, "engine": "cirq", "sample_ms": 63.892792}
+{"entries": 8, "shots": 256, "engine": "trajectory", "sample_ms": 415.499458}
+{"entries": 8, "shots": 256, "engine": "batched", "sample_ms": 15.176416}
+{"entries": 8, "shots": 256, "engine": "cirq", "sample_ms": 477.704334}
+{"entries": 8, "shots": 1024, "engine": "trajectory", "sample_ms": 1651.434625}
+{"entries": 8, "shots": 1024, "engine": "batched", "sample_ms": 54.424167}
+{"entries": 8, "shots": 1024, "engine": "cirq", "sample_ms": 1921.255416}
+{"entries": 16, "build_ms": 4.690917, "conversion_ms": 0.944583, "instructions": 322, "parity": "passed_three_seeds"}
+{"entries": 16, "shots": 32, "engine": "trajectory", "sample_ms": 118.472375}
+{"entries": 16, "shots": 32, "engine": "batched", "sample_ms": 18.558375}
+{"entries": 16, "shots": 32, "engine": "cirq", "sample_ms": 162.380625}
+{"entries": 16, "shots": 256, "engine": "trajectory", "sample_ms": 963.551417}
+{"entries": 16, "shots": 256, "engine": "batched", "sample_ms": 106.238166}
+{"entries": 16, "shots": 256, "engine": "cirq", "sample_ms": 1283.887375}
+{"entries": 16, "shots": 1024, "engine": "trajectory", "sample_ms": 3841.260459}
+{"entries": 16, "shots": 1024, "engine": "batched", "sample_ms": 436.982}
+{"entries": 16, "shots": 1024, "engine": "cirq", "sample_ms": 5161.538459}

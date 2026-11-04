@@ -1,0 +1,10 @@
+{"qualtran": "0.7.0", "cirq": "1.4.0", "torch": "2.13.0"}
+{"entries": 4, "backend": "flagquantum", "strategy": "trajectory", "shots": 32, "bind_ms": 0.061708, "decompose_ms": 0.2805, "setup_ms": 0.127834, "sample_ms": 25.0645}
+{"entries": 4, "backend": "flagquantum", "strategy": "batched", "shots": 32, "bind_ms": 0.035209, "decompose_ms": 0.250041, "setup_ms": 0.119542, "sample_ms": 1.672708}
+{"entries": 4, "backend": "qualtran", "strategy": "cirq", "shots": 32, "bind_ms": 0.064042, "decompose_ms": 2.551458, "setup_ms": 0.222, "sample_ms": 65.804625}
+{"entries": 8, "backend": "flagquantum", "strategy": "trajectory", "shots": 32, "bind_ms": 0.05375, "decompose_ms": 1.1675, "setup_ms": 0.315833, "sample_ms": 62.318959}
+{"entries": 8, "backend": "flagquantum", "strategy": "batched", "shots": 32, "bind_ms": 0.043416, "decompose_ms": 1.175083, "setup_ms": 0.303, "sample_ms": 11.1835}
+{"entries": 8, "backend": "qualtran", "strategy": "cirq", "shots": 32, "bind_ms": 0.071208, "decompose_ms": 5.234167, "setup_ms": 0.292917, "sample_ms": 221.015042}
+{"entries": 16, "backend": "flagquantum", "strategy": "trajectory", "shots": 32, "bind_ms": 0.064459, "decompose_ms": 4.366416, "setup_ms": 0.653583, "sample_ms": 145.884125}
+{"entries": 16, "backend": "flagquantum", "strategy": "batched", "shots": 32, "bind_ms": 0.070667, "decompose_ms": 4.305916, "setup_ms": 0.6505, "sample_ms": 40.875084}
+{"entries": 16, "backend": "qualtran", "strategy": "cirq", "shots": 32, "bind_ms": 0.089375, "decompose_ms": 11.193709, "setup_ms": 0.453916, "sample_ms": 589.429083}
