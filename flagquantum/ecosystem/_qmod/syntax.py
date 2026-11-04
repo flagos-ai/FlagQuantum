@@ -33,6 +33,7 @@ _RESERVED = frozenset(
         "false",
     }
 )
+EXTREMA = frozenset({"min", "max"})
 _COMPARISONS = frozenset({"==", "!=", "<", "<=", ">", ">="})
 
 
@@ -175,7 +176,12 @@ class Parser:
         return int(token.text)
 
     def expression(
-        self, minimum: int = 0, nesting: int = 0, *, static: bool = False
+        self,
+        minimum: int = 0,
+        nesting: int = 0,
+        *,
+        static: bool = False,
+        decimal: bool = False,
     ) -> Expression:
         token = self.current
         if nesting >= MAX_DEPTH:
@@ -193,8 +199,11 @@ class Parser:
             left = self.expression(nesting=nesting + 1, static=static)
             self.take(")")
         elif token.text.isdecimal():
-            self.position += 1
-            left = Expression(token)
+            if decimal and self.tokens[self.position + 1].text == ".":
+                left = self.angle_argument()
+            else:
+                self.position += 1
+                left = Expression(token)
         else:
             if not re.fullmatch(r"[A-Za-z_][A-Za-z_0-9]*", token.text):
                 reject(
@@ -208,6 +217,20 @@ class Parser:
                 dot = self.take(".")
                 self.take("len")
                 left = Expression(dot, (left,), 2)
+            elif not static and token.text in EXTREMA and self.current.text == "(":
+                self.take("(")
+                first = self.expression(nesting=nesting + 1, decimal=True)
+                self.take(",")
+                second = self.expression(nesting=nesting + 1, decimal=True)
+                self.take(")")
+                depth = max(first.depth, second.depth) + 1
+                if depth > MAX_DEPTH:
+                    reject(
+                        token,
+                        "budget.depth",
+                        f"expression tree exceeds depth {MAX_DEPTH}",
+                    )
+                left = Expression(token, (first, second), depth)
             elif not static and self.current.text == "[":
                 bracket = self.take("[")
                 index = self.expression(nesting=nesting + 1, static=True)

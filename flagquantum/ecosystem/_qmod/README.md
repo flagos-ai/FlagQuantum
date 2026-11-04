@@ -289,7 +289,8 @@ fixed-decimal literal k<=2**53 in radians and an initialized scalar qbit. Exact
 decimal bounds are checked before float64 conversion; source literals are at
 most 78 characters. Both are reserved intrinsics. Negative, exponent-form,
 symbolic, computed and quantum angles remain refused, as do numeric/array and
-Const gate targets. Decimal data arithmetic remains refused. Lowercase
+Const gate targets. Decimal data expressions are limited to the extrema profile below.
+Lowercase
 `phase(expression, pi)` remains the separate predicate operation. Within/apply
 actions and role rules are unchanged.
 
@@ -474,3 +475,36 @@ elements at literal indices, as in `RY(data[0], q)`.
 applying RX and then RZ with angles scaled by pi. An odd final element uses
 RX with an angle scaled by 2 pi. Both operations initialize a fresh qubit
 array, with element zero on its least significant qubit.
+
+### Unsigned extrema
+
+Arithmetic expressions can call the unshadowed two-operand intrinsics
+`min(a,b)` and `max(a,b)` with unsigned integer literals, initialized
+registers, or other admitted expressions. They compare and select coherently,
+preserving the inputs and cleaning temporary qubits. Nested integer extrema
+compose with arithmetic and comparisons.
+
+An extremum operand can also be a nonnegative, exactly binary-representable
+decimal literal such as `3.5` or `1.25`. The importer aligns the binary point
+exactly across operands. A fractional result requires a terminal,
+inferred-width `main` output of type `qnum`. Its named probabilities use raw
+unsigned basis values, with the number of fractional bits recorded in
+`program.report["qmod_fractional_bits"]`. Fractional arithmetic beyond
+extrema and signed extrema are outside this profile.
+
+```python
+from pathlib import Path
+
+import flagquantum as fq
+from flagquantum import synth
+
+source = Path("tests/fixtures/classiq_qmod/maximum_float_example.qmod")
+program = synth.synthesize(source)
+result = fq.run(program)
+scale = 1 << program.report["qmod_fractional_bits"]["res"]
+for (a, raw), probability in program.probabilities(
+    result, registers=("a", "res")
+).items():
+    assert raw / scale == max(3.5, a)
+    print(a, raw / scale, probability)
+```

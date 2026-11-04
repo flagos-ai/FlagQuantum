@@ -35,6 +35,7 @@ from ...compiler._hybrid.model import (
 from ...compiler._hybrid.verifier import Diagnostic, HybridVerificationError
 from .syntax import (
     ANGLE_CALLS,
+    EXTREMA,
     Expression,
     Function,
     Parameter,
@@ -76,6 +77,7 @@ _INTRINSICS = (
         "qst_type2",
         "qct_qst_type2",
     }
+    | EXTREMA
     | ANGLE_CALLS
 )
 
@@ -157,6 +159,7 @@ class QmodImport:
     source_version: str
     inferred_widths: Mapping[str, int]
     source_name: str
+    fractional_bits: Mapping[str, int]
 
 
 class _Expression:
@@ -171,6 +174,7 @@ class _Expression:
     ) -> None:
         self.node, self.widths, self.name = node, widths, name
         self.facts: dict[Expression, tuple[int, bool]] = {}
+        self.fractional_bits: dict[Expression, int] = {}
         self.word_widths: dict[Expression, int] = {}
         self.signed_names = signed_names
         self.signed_words: set[Expression] = set()
@@ -192,6 +196,16 @@ class _Expression:
         if not node.children:
             if text.isdecimal():
                 result = (int(text), False)
+            elif "." in text:
+                numerator, denominator = Decimal(text).as_integer_ratio()
+                if denominator & (denominator - 1):
+                    reject(
+                        node.token,
+                        "precision",
+                        "extremum decimals must be exactly binary representable",
+                    )
+                self.fractional_bits[node] = denominator.bit_length() - 1
+                result = (numerator, False)
             else:
                 if text not in self.widths:
                     reject(node.token, "name", f"unknown output {text!r}")
@@ -210,6 +224,10 @@ class _Expression:
         elif text == "~":
             operand = node.children[0]
             value, quantum = self.infer(operand)
+            if self.fractional_bits.get(operand):
+                reject(
+                    node.token, "precision", "bitwise complement requires an integer"
+                )
             width = self.word_widths[operand]
             mask = (1 << width) - 1
             self.word_widths[node] = width
@@ -221,6 +239,15 @@ class _Expression:
             left, lq = self.infer(lhs)
             right, rq = self.infer(rhs)
             signed = lhs in self.signed_words, rhs in self.signed_words
+            scale = max(
+                self.fractional_bits.get(lhs, 0), self.fractional_bits.get(rhs, 0)
+            )
+            if scale and text not in EXTREMA:
+                reject(
+                    node.token,
+                    "precision",
+                    "fractional expressions are supported only in min/max",
+                )
             if text in _WORD_OPERATORS:
                 widths = self.word_widths[lhs], self.word_widths[rhs]
                 width = bitwise_width(text, widths, signed)
@@ -259,6 +286,15 @@ class _Expression:
                     "type",
                     "signed operands are supported only in bitwise expressions",
                 )
+            elif text in EXTREMA:
+                self.fractional_bits[node] = scale
+                left <<= scale - self.fractional_bits.get(lhs, 0)
+                right <<= scale - self.fractional_bits.get(rhs, 0)
+                if unsigned_width(max(left, right)) > 256:
+                    reject(
+                        node.token, "width", "scaled extremum operands exceed 256 bits"
+                    )
+                result = ((min if text == "min" else max)(left, right), lq or rq)
             elif text in _RELATIONS:
                 opcode, swap, invert = _RELATIONS[text]
                 a, b = (right, left) if swap else (left, right)
@@ -301,12 +337,62 @@ class _Expression:
         )
         return result
 
+    def emit_extremum(self, node: Expression, bound: int) -> Value:
+        scale = self.fractional_bits[node]
+        operands = []
+        bounds = []
+        for child in node.children:
+            shift = scale - self.fractional_bits.get(child, 0)
+            upper, quantum = self.facts[child]
+            bounds.append(upper << shift)
+            if not quantum:
+                value = self.operation(
+                    "arith.constant", (), INDEX, child.token, value=upper << shift
+                )
+            else:
+                value = self.emit(child)
+                if shift:
+                    factor = self.operation(
+                        "arith.constant", (), INDEX, node.token, value=1 << shift
+                    )
+                    value = self.operation(
+                        "qint.multiply",
+                        (value, factor),
+                        uint_type(unsigned_width(upper << shift)),
+                        node.token,
+                    )
+            operands.append(value)
+        left, right = operands
+        predicate = self.operation("qint.less", (left, right), uint_type(1), node.token)
+        branches = (left, right) if node.token.text == "min" else (right, left)
+        width = unsigned_width(max(bounds))
+        selected = self.operation(
+            "qint.select", (predicate, *branches), uint_type(width), node.token
+        )
+        result_width = unsigned_width(bound)
+        if result_width == width:
+            return selected
+        # The generic selector sees either branch's full domain. For min, the
+        # comparator proves that the selected value fits the smaller bound.
+        mask = self.operation(
+            "arith.constant", (), INDEX, node.token, value=(1 << result_width) - 1
+        )
+        return self.operation(
+            "qint.bitwise",
+            (selected, mask),
+            uint_type(result_width),
+            node.token,
+            operator="&",
+        )
+
     def emit(self, node: Expression) -> Value:
         bound, quantum = self.facts[node]
         if not quantum:
             return self.operation("arith.constant", (), INDEX, node.token, value=bound)
         if not node.children:
             return self.inputs[node.token.text]
+        if node.token.text in EXTREMA:
+            return self.emit_extremum(node, bound)
         signed = tuple(child in self.signed_words for child in node.children)
         if node.token.text in {"~", *_WORD_OPERATORS} and (
             any(signed) or any(self.word_widths[child] > 1 for child in node.children)
@@ -433,6 +519,7 @@ class _Adapt:
         self.widths = {name: p.width for name, p in self.parameters.items()}
         self.inferred: dict[str, int] = {}
         self.signed: set[str] = set()
+        self.fractional_bits: dict[str, int] = {}
         self.registers: dict[str, Value] = {}
         self.counter = len(self.parameters) + 1
         self.entry = Value(ValueId(self.scope, 0), QUANTUM_EFFECT)
@@ -448,8 +535,11 @@ class _Adapt:
         inferred: int | None = None,
         *,
         allow_qubit_array: bool = False,
+        allow_fractional_output: bool = False,
     ) -> Value:
         name = token.text
+        if name in self.fractional_bits and not allow_fractional_output:
+            reject(token, "precision", "a fractional extremum is a terminal output")
         if name not in self.parameters:
             reject(token, "name", f"unknown output {name!r}")
         if self.parameters[name].kind == "qbit[]" and not allow_qubit_array:
@@ -782,6 +872,7 @@ class _Adapt:
         )
         if (
             condition in expression.signed_words
+            or expression.fractional_bits.get(condition, 0)
             or not expression.quantum
             or unsigned_width(expression.bound) != 1
         ):
@@ -1243,6 +1334,19 @@ class _Adapt:
                     )
                 self.signed.add(target.text)
 
+            fractional_bits = expression.fractional_bits.get(args[1], 0)
+            if fractional_bits:
+                if (
+                    self.scope != "main"
+                    or self.local_scope is not None
+                    or self.parameters[target.text].kind != "qnum"
+                    or self.parameters[target.text].width is not None
+                ):
+                    reject(
+                        target,
+                        "precision",
+                        "fractional extrema require an inferred-width main qnum output",
+                    )
             if expression.quantum:
                 graph = expression.function()
                 self.functions.append(graph)
@@ -1257,6 +1361,8 @@ class _Adapt:
                 self.effect_op(
                     "qreg.initialize", token, (destination,), value=expression.bound
                 )
+            if fractional_bits:
+                self.fractional_bits[target.text] = fractional_bits
         elif token.text == "phase":
             if len(args) != 2 or "phase" in self.parameters:
                 reject(
@@ -1283,6 +1389,7 @@ class _Adapt:
             )
             if (
                 args[0] in expression.signed_words
+                or expression.fractional_bits.get(args[0], 0)
                 or not expression.quantum
                 or (angle is None and unsigned_width(expression.bound) != 1)
             ):
@@ -1556,7 +1663,8 @@ class _Adapt:
             self.register(p.name) for p in self.syntax.parameters if p.role == "const"
         )
         declared = tuple(
-            self.register(p.name, allow_qubit_array=True) for p in output_parameters
+            self.register(p.name, allow_qubit_array=True, allow_fractional_output=True)
+            for p in output_parameters
         )
         declarations = tuple(
             Operation(
@@ -1771,5 +1879,10 @@ def parse_qmod(
         )
         raise HybridVerificationError(diagnostics) from error
     return QmodImport(
-        program, functions, source_version, MappingProxyType(adapter.inferred), filename
+        program,
+        functions,
+        source_version,
+        MappingProxyType(adapter.inferred),
+        filename,
+        MappingProxyType(adapter.fractional_bits),
     )

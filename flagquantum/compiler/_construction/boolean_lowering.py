@@ -107,6 +107,26 @@ class _Expansion:
             equal = self.multiply(equal, mismatch ^ _ONE)
         return (equal,)
 
+    def less_words(self, left: _Bits, right: _Bits) -> _Bits:
+        # Visit from least to most significant: the highest mismatch wins.
+        width = max(len(left), len(right))
+        left += (_ZERO,) * (width - len(left))
+        right += (_ZERO,) * (width - len(right))
+        less = _ZERO
+        for a, b in zip(left, right, strict=True):
+            less ^= self.multiply(a ^ b, less ^ b)
+        return (less,)
+
+    def select_words(
+        self, predicate: _Poly, yes: _Bits, no: _Bits, width: int
+    ) -> _Bits:
+        yes += (_ZERO,) * (width - len(yes))
+        no += (_ZERO,) * (width - len(no))
+        return tuple(
+            b ^ self.multiply(predicate, a ^ b)
+            for a, b in zip(yes[:width], no[:width], strict=True)
+        )
+
 
 def lower_boolean_value(
     functions: Sequence[HybridProgram],
@@ -142,6 +162,8 @@ def lower_boolean_value(
     supported = {"arith.constant", "qint.add", "qint.multiply"}
     if any(op.name == "qint.bitwise" for op in original.operations[:-1]):
         supported.update({"qint.bitwise", "qint.equal"})
+    if any(op.name == "qint.select" for op in original.operations[:-1]):
+        supported.update({"qint.select", "qint.less", "qint.equal"})
     if any(
         op.name not in supported or any(op.attributes.get("signed", ()))
         for op in original.operations[:-1]
@@ -176,12 +198,17 @@ def lower_boolean_value(
                 values[key] = expand.bitwise_words(
                     op.attributes["operator"], operands, width
                 )
+            elif op.name == "qint.select":
+                predicate, yes, no = operands
+                values[key] = expand.select_words(predicate[0], yes, no, width)
             else:
                 a, b = operands
                 if op.name == "qint.add":
                     values[key] = expand.add_words(a, b, width)
                 elif op.name == "qint.equal":
                     values[key] = expand.equal_words(a, b)
+                elif op.name == "qint.less":
+                    values[key] = expand.less_words(a, b)
                 else:
                     values[key] = expand.multiply_words(a, b, width)
 

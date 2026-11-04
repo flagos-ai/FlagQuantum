@@ -1,6 +1,6 @@
 """Private fresh-register producer for the shared checked synthesis workflow."""
 
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from typing import Literal
 
 from ..compiler._construction.selection import (
@@ -31,6 +31,7 @@ def synthesize_registers(
     source_format: Literal["register", "qmod", "python"] = "register",
     source_name: str | None = None,
     source_version: str | None = None,
+    fractional_bits: Mapping[str, int] | None = None,
 ) -> Program:
     """Plan verified owned records; require an explicit Runtime memory ceiling.
 
@@ -70,6 +71,8 @@ def synthesize_registers(
     }
     if source_format == "qmod":
         report.update(source_name=source_name, source_version=source_version)
+        if fractional_bits:
+            report["qmod_fractional_bits"] = fractional_bits
     return _complete(
         selection,
         report,
