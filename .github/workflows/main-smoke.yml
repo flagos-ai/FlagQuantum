@@ -1,55 +1,24 @@
-name: Direct OCI coverage cache pilot
+name: Seed locked coverage image from GHCR
 on: workflow_dispatch
 permissions:
-  contents: read
   packages: read
 jobs:
-  offline-coverage-pilot:
-    timeout-minutes: 45
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - node: mc550-rootless
-            labels: '["self-hosted","fq-coverage-rootless-pilot"]'
-          - node: a800-171
-            labels: '["self-hosted","a800-171","flagquantum-a800-cpu"]'
-          - node: a800-172
-            labels: '["self-hosted","a800-172","flagquantum-a800-cpu"]'
-    runs-on: ${{ fromJSON(matrix.labels) }}
+  seed:
+    runs-on: [self-hosted, fq-coverage-rootless-pilot]
+    timeout-minutes: 330
     steps:
-      - name: Pull the locked image and verify the offline container
+      - name: Download and verify OCI content into persistent local storage
         shell: bash
         env:
-          FQ_REGISTRY_TOKEN: ${{ github.token }}
-          EXPECTED_NODE: ${{ matrix.node }}
+          FQ_TOKEN: ${{ github.token }}
         run: |
-          image=ghcr.io/flagos-ai/flagquantum-ci@sha256:1f5d6aa7b1b1d6313d787c7fbeaf269179a39d031b1010b1b521162baceb5ba6
-          lock_dir="${XDG_CACHE_HOME:-$HOME/.cache}/flagquantum-ci"
-          mkdir -p -m 700 "$lock_dir"
-          exec 9>"$lock_dir/${image##*@}.lock"
-          flock -w 480 9
-          scratch=$(mktemp -d "$RUNNER_TEMP/fq-pilot.XXXXXXXX")
-          trap 'rm -rf "$scratch"' EXIT
-          if ! docker image inspect "$image" >/dev/null 2>&1; then
-            (
-              cd "$scratch"
-              printf '%s' 'aW1wb3J0IGJhc2U2NAppbXBvcnQgY29uY3VycmVudC5mdXR1cmVzCmltcG9ydCBoYXNobGliCmltcG9ydCBqc29uCmltcG9ydCBvcwpmcm9tIHBhdGhsaWIgaW1wb3J0IFBhdGgKaW1wb3J0IHRpbWUKaW1wb3J0IHVybGxpYi5yZXF1ZXN0CgpSRVBPU0lUT1JZID0gImZsYWdvcy1haS9mbGFncXVhbnR1bS1jaSIKRElHRVNUID0gInNoYTI1NjoxZjVkNmFhN2IxYjFkNjMxM2Q3ODdjN2ZiZWFmMjY5MTc5YTM5ZDAzMWIxMDEwYjFiNTIxMTYyYmFjZWI1YmE2IgpNRURJQSA9ICgKICAgICJhcHBsaWNhdGlvbi92bmQub2NpLmltYWdlLmluZGV4LnYxK2pzb24iLAogICAgImFwcGxpY2F0aW9uL3ZuZC5vY2kuaW1hZ2UubWFuaWZlc3QudjEranNvbiIsCiAgICAiYXBwbGljYXRpb24vdm5kLmRvY2tlci5kaXN0cmlidXRpb24ubWFuaWZlc3QubGlzdC52Mitqc29uIiwKICAgICJhcHBsaWNhdGlvbi92bmQuZG9ja2VyLmRpc3RyaWJ1dGlvbi5tYW5pZmVzdC52Mitqc29uIiwKKQpzb3VyY2UgPSBQYXRoKCJvY2kiKQpibG9iX2RpciA9IHNvdXJjZSAvICJibG9icy9zaGEyNTYiCmJsb2JfZGlyLm1rZGlyKHBhcmVudHM9VHJ1ZSwgZXhpc3Rfb2s9VHJ1ZSkKCnJlcXVlc3QgPSB1cmxsaWIucmVxdWVzdC5SZXF1ZXN0KGYiaHR0cHM6Ly9naGNyLmlvL3Rva2VuP3NlcnZpY2U9Z2hjci5pbyZzY29wZT1yZXBvc2l0b3J5OntSRVBPU0lUT1JZfTpwdWxsIikKYmFzaWMgPSBmJ3tvcy5lbnZpcm9uWyJHSVRIVUJfQUNUT1IiXX06e29zLmVudmlyb24ucG9wKCJGUV9SRUdJU1RSWV9UT0tFTiIpfScKcmVxdWVzdC5hZGRfdW5yZWRpcmVjdGVkX2hlYWRlcigiQXV0aG9yaXphdGlvbiIsICJCYXNpYyAiICsgYmFzZTY0LmI2NGVuY29kZShiYXNpYy5lbmNvZGUoKSkuZGVjb2RlKCkpCndpdGggdXJsbGliLnJlcXVlc3QudXJsb3BlbihyZXF1ZXN0LCB0aW1lb3V0PTMwKSBhcyByZXNwb25zZToKICAgIGF1dGggPSBqc29uLmxvYWQocmVzcG9uc2UpWyJ0b2tlbiJdCgoKZGVmIGRvd25sb2FkKGtpbmQsIGRpZ2VzdCk6CiAgICBhbGdvcml0aG0sIGNoZWNrc3VtID0gZGlnZXN0LnNwbGl0KCI6IiwgMSkKICAgIGFzc2VydCBhbGdvcml0aG0gPT0gInNoYTI1NiIgYW5kIGxlbihjaGVja3N1bSkgPT0gNjQKICAgIHRhcmdldCA9IGJsb2JfZGlyIC8gY2hlY2tzdW0KICAgIGlmIHRhcmdldC5pc19maWxlKCk6CiAgICAgICAgcmV0dXJuIHRhcmdldAogICAgcmVxID0gdXJsbGliLnJlcXVlc3QuUmVxdWVzdCgKICAgICAgICBmImh0dHBzOi8vZ2hjci5pby92Mi97UkVQT1NJVE9SWX0ve2tpbmR9L3tkaWdlc3R9IiwKICAgICAgICBoZWFkZXJzPXsiQWNjZXB0IjogIiwiLmpvaW4oTUVESUEpfSBpZiBraW5kID09ICJtYW5pZmVzdHMiIGVsc2Uge30sCiAgICApCiAgICByZXEuYWRkX3VucmVkaXJlY3RlZF9oZWFkZXIoIkF1dGhvcml6YXRpb24iLCBmIkJlYXJlciB7YXV0aH0iKQogICAgc3RhZ2luZyA9IHRhcmdldC53aXRoX3N1ZmZpeCgiLnBhcnRpYWwiKQogICAgZm9yIGF0dGVtcHQgaW4gcmFuZ2UoMyk6CiAgICAgICAgdHJ5OgogICAgICAgICAgICBjaGVja3N1bV9zdGF0ZSA9IGhhc2hsaWIuc2hhMjU2KCkKICAgICAgICAgICAgd2l0aCB1cmxsaWIucmVxdWVzdC51cmxvcGVuKHJlcSwgdGltZW91dD03NSkgYXMgcmVzcG9uc2UsIHN0YWdpbmcub3Blbigid2IiKSBhcyBmaWxlOgogICAgICAgICAgICAgICAgd2hpbGUgZGF0YSA6PSByZXNwb25zZS5yZWFkKDQgKiAxMDI0ICogMTAyNCk6CiAgICAgICAgICAgICAgICAgICAgY2hlY2tzdW1fc3RhdGUudXBkYXRlKGRhdGEpCiAgICAgICAgICAgICAgICAgICAgZmlsZS53cml0ZShkYXRhKQogICAgICAgICAgICBpZiBjaGVja3N1bV9zdGF0ZS5oZXhkaWdlc3QoKSAhPSBjaGVja3N1bToKICAgICAgICAgICAgICAgIHJhaXNlIFZhbHVlRXJyb3IoIkJsb2IgZGlnZXN0IG1pc21hdGNoIikKICAgICAgICAgICAgc3RhZ2luZy5yZW5hbWUodGFyZ2V0KQogICAgICAgICAgICBwcmludChmIlZlcmlmaWVkIHtkaWdlc3RbOjIwXX0gKHt0YXJnZXQuc3RhdCgpLnN0X3NpemV9IGJ5dGVzKSIsIGZsdXNoPVRydWUpCiAgICAgICAgICAgIHJldHVybiB0YXJnZXQKICAgICAgICBleGNlcHQgRXhjZXB0aW9uIGFzIGVycm9yOgogICAgICAgICAgICBpZiBhdHRlbXB0ID09IDI6CiAgICAgICAgICAgICAgICByYWlzZSBSdW50aW1lRXJyb3IoZiJ7a2luZH0ge2RpZ2VzdFs6MjBdfSBkb3dubG9hZCBmYWlsZWQ6IHt0eXBlKGVycm9yKS5fX25hbWVfX30iKSBmcm9tIE5vbmUKICAgICAgICAgICAgdGltZS5zbGVlcCgyKQoKCnJvb3QgPSBkb3dubG9hZCgibWFuaWZlc3RzIiwgRElHRVNUKQpvYmplY3RzID0gc2V0KCkKCgpkZWYgcmVzb2x2ZShwYXRoKToKICAgIG1hbmlmZXN0ID0ganNvbi5sb2FkcyhwYXRoLnJlYWRfYnl0ZXMoKSkKICAgIGZvciBjaGlsZCBpbiBtYW5pZmVzdC5nZXQoIm1hbmlmZXN0cyIsIFtdKToKICAgICAgICByZXNvbHZlKGRvd25sb2FkKCJtYW5pZmVzdHMiLCBjaGlsZFsiZGlnZXN0Il0pKQogICAgaWYgImNvbmZpZyIgaW4gbWFuaWZlc3Q6CiAgICAgICAgb2JqZWN0cy5hZGQobWFuaWZlc3RbImNvbmZpZyJdWyJkaWdlc3QiXSkKICAgICAgICBvYmplY3RzLnVwZGF0ZShsYXllclsiZGlnZXN0Il0gZm9yIGxheWVyIGluIG1hbmlmZXN0WyJsYXllcnMiXSkKCgpyZXNvbHZlKHJvb3QpCndpdGggY29uY3VycmVudC5mdXR1cmVzLlRocmVhZFBvb2xFeGVjdXRvcihtYXhfd29ya2Vycz04KSBhcyBleGVjdXRvcjoKICAgIGxpc3QoZXhlY3V0b3IubWFwKGxhbWJkYSBkaWdlc3Q6IGRvd25sb2FkKCJibG9icyIsIGRpZ2VzdCksIHNvcnRlZChvYmplY3RzKSkpCihzb3VyY2UgLyAib2NpLWxheW91dCIpLndyaXRlX3RleHQoJ3siaW1hZ2VMYXlvdXRWZXJzaW9uIjoiMS4wLjAifScpCihzb3VyY2UgLyAiaW5kZXguanNvbiIpLndyaXRlX3RleHQoCiAgICBqc29uLmR1bXBzKHsKICAgICAgICAic2NoZW1hVmVyc2lvbiI6IDIsCiAgICAgICAgIm1hbmlmZXN0cyI6IFt7CiAgICAgICAgICAgICJtZWRpYVR5cGUiOiBqc29uLmxvYWRzKHJvb3QucmVhZF9ieXRlcygpKVsibWVkaWFUeXBlIl0sCiAgICAgICAgICAgICJkaWdlc3QiOiBESUdFU1QsCiAgICAgICAgICAgICJzaXplIjogcm9vdC5zdGF0KCkuc3Rfc2l6ZSwKICAgICAgICAgICAgImFubm90YXRpb25zIjogewogICAgICAgICAgICAgICAgIm9yZy5vcGVuY29udGFpbmVycy5pbWFnZS5yZWYubmFtZSI6IGYiZ2hjci5pby97UkVQT1NJVE9SWX1Ae0RJR0VTVH0iLAogICAgICAgICAgICAgICAgImlvLmNvbnRhaW5lcmQuaW1hZ2UubmFtZSI6IGYiZ2hjci5pby97UkVQT1NJVE9SWX1Ae0RJR0VTVH0iLAogICAgICAgICAgICB9LAogICAgICAgIH1dLAogICAgfSkKKQo=' | base64 -d > fetch.py
-              timeout 2100s python3 fetch.py
-              tar -C oci -cf - . | docker load
-            )
-            docker image inspect "$image" >/dev/null
-          fi
-          unset FQ_REGISTRY_TOKEN
-          exec 9>&-
-          user="$(id -u):$(id -g)"
-          if docker info --format '{{range .SecurityOptions}}{{println .}}{{end}}' | grep -Fxq name=rootless; then
-            user=0:0
-          fi
-          if [[ "$EXPECTED_NODE" == mc550-rootless ]]; then
-            test "$user" = 0:0
-            test "$(id -u)" != 0
-          fi
-          docker run --rm --pull never --network none --read-only --tmpfs /tmp:exec --shm-size 1g --cap-drop ALL --security-opt no-new-privileges --user "$user" -v "$scratch:/pilot" "$image" /opt/ci/bin/python -c 'import os, pathlib, torch, jax; assert set(os.listdir("/sys/class/net")) == {"lo"}; assert torch.version.cuda is None; assert jax.default_backend() == "cpu"; pathlib.Path("/pilot/result").write_text("ok")'
-          test "$(cat "$scratch/result")" = ok
-          test "$(stat -c %u "$scratch/result")" = "$(id -u)"
+          umask 077
+          seed_dir="$HOME/.cache/flagquantum-ci/coverage-seed-1079"
+          mkdir -p "$seed_dir"
+          cd "$seed_dir"
+          exec 9>seed.lock
+          flock -w 20 9
+          printf '%s' 'aW1wb3J0IGJhc2U2NAppbXBvcnQgY29uY3VycmVudC5mdXR1cmVzCmltcG9ydCBoYXNobGliCmltcG9ydCBqc29uCmltcG9ydCBvcwpmcm9tIHBhdGhsaWIgaW1wb3J0IFBhdGgKaW1wb3J0IHRpbWUKaW1wb3J0IHVybGxpYi5yZXF1ZXN0CgpSRVBPU0lUT1JZID0gImZsYWdvcy1haS9mbGFncXVhbnR1bS1jaSIKRElHRVNUID0gInNoYTI1NjoxZjVkNmFhN2IxYjFkNjMxM2Q3ODdjN2ZiZWFmMjY5MTc5YTM5ZDAzMWIxMDEwYjFiNTIxMTYyYmFjZWI1YmE2IgpNRURJQSA9ICgKICAgICJhcHBsaWNhdGlvbi92bmQub2NpLmltYWdlLmluZGV4LnYxK2pzb24iLAogICAgImFwcGxpY2F0aW9uL3ZuZC5vY2kuaW1hZ2UubWFuaWZlc3QudjEranNvbiIsCiAgICAiYXBwbGljYXRpb24vdm5kLmRvY2tlci5kaXN0cmlidXRpb24ubWFuaWZlc3QubGlzdC52Mitqc29uIiwKICAgICJhcHBsaWNhdGlvbi92bmQuZG9ja2VyLmRpc3RyaWJ1dGlvbi5tYW5pZmVzdC52Mitqc29uIiwKKQpzb3VyY2UgPSBQYXRoKCJvY2kiKQpibG9iX2RpciA9IHNvdXJjZSAvICJibG9icy9zaGEyNTYiCmJsb2JfZGlyLm1rZGlyKHBhcmVudHM9VHJ1ZSwgZXhpc3Rfb2s9VHJ1ZSkKCnJlcXVlc3QgPSB1cmxsaWIucmVxdWVzdC5SZXF1ZXN0KGYiaHR0cHM6Ly9naGNyLmlvL3Rva2VuP3NlcnZpY2U9Z2hjci5pbyZzY29wZT1yZXBvc2l0b3J5OntSRVBPU0lUT1JZfTpwdWxsIikKYmFzaWMgPSBmJ3tvcy5lbnZpcm9uWyJHSVRIVUJfQUNUT1IiXX06e29zLmVudmlyb24ucG9wKCJGUV9UT0tFTiIpfScKcmVxdWVzdC5hZGRfdW5yZWRpcmVjdGVkX2hlYWRlcigiQXV0aG9yaXphdGlvbiIsICJCYXNpYyAiICsgYmFzZTY0LmI2NGVuY29kZShiYXNpYy5lbmNvZGUoKSkuZGVjb2RlKCkpCndpdGggdXJsbGliLnJlcXVlc3QudXJsb3BlbihyZXF1ZXN0LCB0aW1lb3V0PTMwKSBhcyByZXNwb25zZToKICAgIGF1dGggPSBqc29uLmxvYWQocmVzcG9uc2UpWyJ0b2tlbiJdCgoKZGVmIGRvd25sb2FkKGtpbmQsIGRpZ2VzdCk6CiAgICBhbGdvcml0aG0sIGNoZWNrc3VtID0gZGlnZXN0LnNwbGl0KCI6IiwgMSkKICAgIGFzc2VydCBhbGdvcml0aG0gPT0gInNoYTI1NiIgYW5kIGxlbihjaGVja3N1bSkgPT0gNjQKICAgIHRhcmdldCA9IGJsb2JfZGlyIC8gY2hlY2tzdW0KICAgIGlmIHRhcmdldC5pc19maWxlKCk6CiAgICAgICAgcmV0dXJuIHRhcmdldAogICAgc3RhZ2luZyA9IHRhcmdldC53aXRoX3N1ZmZpeCgiLnBhcnRpYWwiKQogICAgZm9yIGF0dGVtcHQgaW4gcmFuZ2UoOCk6CiAgICAgICAgdHJ5OgogICAgICAgICAgICBvZmZzZXQgPSBzdGFnaW5nLnN0YXQoKS5zdF9zaXplIGlmIGtpbmQgPT0gImJsb2JzIiBhbmQgc3RhZ2luZy5leGlzdHMoKSBlbHNlIDAKICAgICAgICAgICAgaGVhZGVycyA9IHsiQWNjZXB0IjogIiwiLmpvaW4oTUVESUEpfSBpZiBraW5kID09ICJtYW5pZmVzdHMiIGVsc2Uge30KICAgICAgICAgICAgaWYgb2Zmc2V0OgogICAgICAgICAgICAgICAgaGVhZGVyc1siUmFuZ2UiXSA9IGYiYnl0ZXM9e29mZnNldH0tIgogICAgICAgICAgICByZXEgPSB1cmxsaWIucmVxdWVzdC5SZXF1ZXN0KGYiaHR0cHM6Ly9naGNyLmlvL3YyL3tSRVBPU0lUT1JZfS97a2luZH0ve2RpZ2VzdH0iLCBoZWFkZXJzPWhlYWRlcnMpCiAgICAgICAgICAgIHJlcS5hZGRfdW5yZWRpcmVjdGVkX2hlYWRlcigiQXV0aG9yaXphdGlvbiIsIGYiQmVhcmVyIHthdXRofSIpCiAgICAgICAgICAgIHdpdGggdXJsbGliLnJlcXVlc3QudXJsb3BlbihyZXEsIHRpbWVvdXQ9OTApIGFzIHJlc3BvbnNlOgogICAgICAgICAgICAgICAgYXBwZW5kID0gb2Zmc2V0IGFuZCByZXNwb25zZS5zdGF0dXMgPT0gMjA2CiAgICAgICAgICAgICAgICBpZiBhcHBlbmQgYW5kIG5vdCByZXNwb25zZS5oZWFkZXJzLmdldCgiQ29udGVudC1SYW5nZSIsICIiKS5zdGFydHN3aXRoKGYiYnl0ZXMge29mZnNldH0tIik6CiAgICAgICAgICAgICAgICAgICAgcmFpc2UgVmFsdWVFcnJvcigiVW5leHBlY3RlZCByYW5nZSByZXNwb25zZSIpCiAgICAgICAgICAgICAgICB3aXRoIHN0YWdpbmcub3BlbigiYWIiIGlmIGFwcGVuZCBlbHNlICJ3YiIpIGFzIGZpbGU6CiAgICAgICAgICAgICAgICAgICAgd2hpbGUgZGF0YSA6PSByZXNwb25zZS5yZWFkKDI1NiAqIDEwMjQpOgogICAgICAgICAgICAgICAgICAgICAgICBmaWxlLndyaXRlKGRhdGEpCiAgICAgICAgICAgIGNoZWNrc3VtX3N0YXRlID0gaGFzaGxpYi5zaGEyNTYoKQogICAgICAgICAgICB3aXRoIHN0YWdpbmcub3BlbigicmIiKSBhcyBmaWxlOgogICAgICAgICAgICAgICAgd2hpbGUgZGF0YSA6PSBmaWxlLnJlYWQoNCAqIDEwMjQgKiAxMDI0KToKICAgICAgICAgICAgICAgICAgICBjaGVja3N1bV9zdGF0ZS51cGRhdGUoZGF0YSkKICAgICAgICAgICAgaWYgY2hlY2tzdW1fc3RhdGUuaGV4ZGlnZXN0KCkgIT0gY2hlY2tzdW06CiAgICAgICAgICAgICAgICBzdGFnaW5nLnVubGluaygpCiAgICAgICAgICAgICAgICByYWlzZSBWYWx1ZUVycm9yKCJCbG9iIGRpZ2VzdCBtaXNtYXRjaCIpCiAgICAgICAgICAgIHN0YWdpbmcucmVuYW1lKHRhcmdldCkKICAgICAgICAgICAgcHJpbnQoZiJWZXJpZmllZCB7ZGlnZXN0WzoyMF19ICh7dGFyZ2V0LnN0YXQoKS5zdF9zaXplfSBieXRlcykiLCBmbHVzaD1UcnVlKQogICAgICAgICAgICByZXR1cm4gdGFyZ2V0CiAgICAgICAgZXhjZXB0IEV4Y2VwdGlvbiBhcyBlcnJvcjoKICAgICAgICAgICAgaWYgYXR0ZW1wdCA9PSA3OgogICAgICAgICAgICAgICAgcmFpc2UgUnVudGltZUVycm9yKGYie2tpbmR9IHtkaWdlc3RbOjIwXX0gZG93bmxvYWQgZmFpbGVkOiB7dHlwZShlcnJvcikuX19uYW1lX199IikgZnJvbSBOb25lCiAgICAgICAgICAgIHByaW50KGYiUmV0cnlpbmcge2RpZ2VzdFs6MjBdfSBhZnRlciB7dHlwZShlcnJvcikuX19uYW1lX199IiwgZmx1c2g9VHJ1ZSkKICAgICAgICAgICAgdGltZS5zbGVlcChtaW4oMzAsIDIgKiogYXR0ZW1wdCkpCgoKcm9vdCA9IGRvd25sb2FkKCJtYW5pZmVzdHMiLCBESUdFU1QpCm9iamVjdHMgPSBzZXQoKQoKCmRlZiByZXNvbHZlKHBhdGgpOgogICAgbWFuaWZlc3QgPSBqc29uLmxvYWRzKHBhdGgucmVhZF9ieXRlcygpKQogICAgZm9yIGNoaWxkIGluIG1hbmlmZXN0LmdldCgibWFuaWZlc3RzIiwgW10pOgogICAgICAgIHJlc29sdmUoZG93bmxvYWQoIm1hbmlmZXN0cyIsIGNoaWxkWyJkaWdlc3QiXSkpCiAgICBpZiAiY29uZmlnIiBpbiBtYW5pZmVzdDoKICAgICAgICBvYmplY3RzLmFkZChtYW5pZmVzdFsiY29uZmlnIl1bImRpZ2VzdCJdKQogICAgICAgIG9iamVjdHMudXBkYXRlKGxheWVyWyJkaWdlc3QiXSBmb3IgbGF5ZXIgaW4gbWFuaWZlc3RbImxheWVycyJdKQoKCnJlc29sdmUocm9vdCkKd2l0aCBjb25jdXJyZW50LmZ1dHVyZXMuVGhyZWFkUG9vbEV4ZWN1dG9yKG1heF93b3JrZXJzPTgpIGFzIGV4ZWN1dG9yOgogICAgbGlzdChleGVjdXRvci5tYXAobGFtYmRhIGRpZ2VzdDogZG93bmxvYWQoImJsb2JzIiwgZGlnZXN0KSwgc29ydGVkKG9iamVjdHMpKSkKKHNvdXJjZSAvICJvY2ktbGF5b3V0Iikud3JpdGVfdGV4dCgneyJpbWFnZUxheW91dFZlcnNpb24iOiIxLjAuMCJ9JykKKHNvdXJjZSAvICJpbmRleC5qc29uIikud3JpdGVfdGV4dCgKICAgIGpzb24uZHVtcHMoewogICAgICAgICJzY2hlbWFWZXJzaW9uIjogMiwKICAgICAgICAibWFuaWZlc3RzIjogW3sKICAgICAgICAgICAgIm1lZGlhVHlwZSI6IGpzb24ubG9hZHMocm9vdC5yZWFkX2J5dGVzKCkpWyJtZWRpYVR5cGUiXSwKICAgICAgICAgICAgImRpZ2VzdCI6IERJR0VTVCwKICAgICAgICAgICAgInNpemUiOiByb290LnN0YXQoKS5zdF9zaXplLAogICAgICAgICAgICAiYW5ub3RhdGlvbnMiOiB7CiAgICAgICAgICAgICAgICAib3JnLm9wZW5jb250YWluZXJzLmltYWdlLnJlZi5uYW1lIjogZiJnaGNyLmlvL3tSRVBPU0lUT1JZfUB7RElHRVNUfSIsCiAgICAgICAgICAgICAgICAiaW8uY29udGFpbmVyZC5pbWFnZS5uYW1lIjogZiJnaGNyLmlvL3tSRVBPU0lUT1JZfUB7RElHRVNUfSIsCiAgICAgICAgICAgIH0sCiAgICAgICAgfV0sCiAgICB9KQopCg==' | base64 -d > fetch.py
+          python3 fetch.py
+          unset FQ_TOKEN
+          printf 'verified\n' > ready
