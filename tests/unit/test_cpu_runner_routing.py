@@ -320,20 +320,15 @@ def test_linux_prerequisites_keep_forks_off_private_cpu_runners(
 ) -> None:
     document = yaml.safe_load((WORKFLOWS / workflow).read_text())
     job = document["jobs"][name]
-    route = (
-        "${{ (github.event_name != 'pull_request' || "
-        "github.event.pull_request.head.repo.full_name == github.repository) "
-        "&& 'flagquantum-a100-cpu' || 'ubuntu-latest' }}"
-    )
-    if workflow == "ci.yml":
-        assert job["runs-on"] == "ubuntu-latest"
-    else:
+    if workflow == "local-gpu.yml":
         assert job["runs-on"] == (
-            route
-            if workflow == "main-smoke.yml"
-            else route.replace("flagquantum-a100-cpu", "flagquantum-a100-cpu-entry")
+            "${{ (github.event_name != 'pull_request' || "
+            "github.event.pull_request.head.repo.full_name == github.repository) "
+            "&& 'flagquantum-a100-cpu-entry' || 'ubuntu-latest' }}"
         )
         assert "github.run_id" in job["concurrency"]["group"]
+    else:
+        assert job["runs-on"] == "ubuntu-latest"
     assert "pull_request_target" not in document.get("on", document.get(True, {}))
     assert job["concurrency"]["queue"] == "max"
     assert not job.get("continue-on-error", False)
