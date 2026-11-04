@@ -40,6 +40,7 @@ def test_namespace_reexports_one_authoritative_services_implementation() -> None
         "CRX",
         "R",
         "prepare_uniform_interval_state",
+        "control",
     )
     assert all(
         getattr(synth, name) is getattr(synthesis, name) for name in synth.__all__

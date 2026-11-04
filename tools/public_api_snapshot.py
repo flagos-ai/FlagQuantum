@@ -658,6 +658,7 @@ _SYNTH_ACTIVE_EXPORTS = (
     *_SYNTH_PAIR_EXPORTS,
     "R",
     "prepare_uniform_interval_state",
+    "control",
 )
 
 
@@ -1030,6 +1031,12 @@ def _validate_authorized_synthesis_python_program(contract: Any) -> list[str]:
         or not (ROOT / "docs/api-changes/FQ-SYNTH-UNIFORM-INTERVAL.md").is_file()
     ):
         errors.append("native uniform interval differs from its authorization")
+    if (
+        str(inspect.signature(synth.control))
+        != "(condition: 'QBit', body: 'Callable[[], None]', /) -> 'None'"
+        or not (ROOT / "docs/api-changes/FQ-SYNTH-SCALAR-CONTROL.md").is_file()
+    ):
+        errors.append("native scalar control differs from its authorization")
     pair_signatures = {
         "CX": "(control: 'QBit', target: 'QBit', /) -> 'None'",
         "SWAP": "(first: 'QBit', second: 'QBit', /) -> 'None'",

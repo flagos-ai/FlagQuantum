@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from contextlib import AbstractContextManager
 from types import GenericAlias
 from typing import Annotated, TypeAlias, TypeVar
@@ -110,6 +111,11 @@ def r(theta: float, phi: float, target: QBit, /) -> None:
 def prepare_uniform_interval_state(start: int, stop: int, target: QNum, /) -> None:
     """Prepare a uniform superposition over a half-open integer interval."""
     raise TypeError("uniform preparation is captured inside qfunc")
+
+
+def control(condition: QBit, body: Callable[[], None], /) -> None:
+    """Apply a supported scalar operation coherently when condition is one."""
+    raise TypeError("control is captured inside qfunc")
 
 
 def within() -> AbstractContextManager[None]:

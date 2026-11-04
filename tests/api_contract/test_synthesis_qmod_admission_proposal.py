@@ -50,6 +50,7 @@ def test_proposal_does_not_activate_or_change_the_existing_public_api():
         "CRX",
         "R",
         "prepare_uniform_interval_state",
+        "control",
     )
     assert str(inspect.signature(synth.synthesize)) == active["synthesize_signature"]
     assert str(inspect.signature(fq.run)) == active["run_signature"]

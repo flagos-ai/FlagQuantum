@@ -29,6 +29,8 @@ _ATTRIBUTES = MappingProxyType(
         "qreg.allocate": frozenset(),
         "qreg.initialize": frozenset({"value"}),
         "qreg.pair_gate": frozenset({"gate"}),
+        "qreg.control_h": frozenset(),
+        "qreg.control_phase": frozenset({"angle"}),
         "qreg.gate": frozenset({"gate", "index"}),
         "qreg.compute": frozenset({"callee"}),
         "qreg.uncompute": frozenset(),
@@ -392,6 +394,33 @@ def _verify_body(
                     )
                 initialized.update(v.id for v in writes)
                 changed = tuple(writes)
+            elif op.name in {"qreg.control_h", "qreg.control_phase"}:
+                if (
+                    len(arguments) > 1
+                    or any(register_width(value) != 1 for value in operands)
+                    or any(value.id not in initialized for value in operands)
+                ):
+                    _fail(
+                        "register.control",
+                        "control requires initialized one-bit registers",
+                        op,
+                    )
+                if destination in arguments:
+                    _fail(
+                        "register.control", "condition and target must be disjoint", op
+                    )
+                if op.name == "qreg.control_h":
+                    if len(arguments) != 1 or arguments[0] in borrowed:
+                        _fail(
+                            "register.control",
+                            "controlled Hadamard requires a writable target",
+                            op,
+                        )
+                    changed = tuple(arguments)
+                else:
+                    angle = op.attributes["angle"]
+                    if type(angle) is not float or not math.isfinite(angle):
+                        _fail("register.control", "phase requires a finite angle", op)
             elif op.name == "qreg.phase":
                 check_call(op, operands)
             elif op.name == "qreg.release":
