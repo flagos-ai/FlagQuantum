@@ -434,3 +434,10 @@ The prepared amplitudes are the nonnegative square roots of the probabilities.
 lowering uses exact preparation to floating-point precision for any admitted
 bound. The pinned `example_prepare_state.qmod` and `add_bell_states.qmod`
 fixtures show probability literals and fraction literals, respectively.
+
+### Bell preparation
+
+`prepare_bell_state(1, out)` prepares the normalized state
+`(|00> - |11>) / sqrt(2)`. `prepare_bell_state(2, out)` prepares
+`(|01> + |10>) / sqrt(2)`. Both use a fresh two-qubit array and reuse
+the GHZ preparation with a final Z or X gate, respectively.

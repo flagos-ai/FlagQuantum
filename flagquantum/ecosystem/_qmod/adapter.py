@@ -1287,11 +1287,11 @@ class _Adapt:
                     token, "signature", "prepare_bell_state requires a state and output"
                 )
             state, output = args
-            if state.children or state.token.text != "2":
+            if state.children or state.token.text not in {"1", "2"}:
                 reject(
                     state.token,
                     "prepare",
-                    "only the documented Bell state 2 is admitted",
+                    "only literal Bell states 1 and 2 are admitted",
                 )
             target = self.atom(output)
             if (
@@ -1305,7 +1305,13 @@ class _Adapt:
             if self.widths[target.text] != 2:
                 reject(target, "width", "Bell preparation requires exactly two qubits")
             self.effect_op("qreg.prepare_ghz", token, (destination,))
-            self.effect_op("qreg.gate", token, (destination,), gate="x", index=0)
+            self.effect_op(
+                "qreg.gate",
+                token,
+                (destination,),
+                gate="z" if state.token.text == "1" else "x",
+                index=0,
+            )
         elif token.text == "prepare_ghz_state":
             if len(args) != 2:
                 reject(
