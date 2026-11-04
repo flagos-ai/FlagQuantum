@@ -943,3 +943,19 @@ contractions, with dense-state materialization explicitly refused.
 
 The stable `distributed-cpu` check aggregates every `distributed-cpu-shard` job
 and rejects a failed, cancelled or skipped partition.
+
+### Locked CPU CI environments
+
+The core, CPU runtime, and coverage shards use the images pinned by digest in
+`docker/ci/images.lock`. Each job starts on a fresh hosted runner, pulls its
+image from the repository's GitHub container package, and installs the current
+checkout in a private environment inside the image. The installer and test
+processes run with Docker networking disabled. The host runner still exchanges
+source and result artifacts with GitHub.
+
+For a dependency change, dispatch `publish-dev-container.yml` on the proposed
+branch with `ci-cpu=true`. The publisher resolves the core and coverage profiles,
+records their exact installed distributions, and checks them with networking
+disabled. Copy the four resulting image digests into the lock file and validate
+the PR. An outdated image is rejected when its dependency manifest differs from
+the checkout.

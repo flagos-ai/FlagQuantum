@@ -68,6 +68,39 @@ class ArithmeticCandidate:
     conservative_errors: tuple[Diagnostic, ...] = ()
 
 
+@dataclass(frozen=True)
+class BoundArithmetic:
+    """A HybridProgram invocation on owned or externally prepared qubits.
+
+    Entry and definitions describe the same verified arithmetic language for
+    scalar Python and register effects. Output mode records whether to XOR
+    the result into storage or apply a one-bit phase and clean the workspace.
+    """
+
+    functions: Sequence[HybridProgram]
+    entry: str
+    inputs: Mapping[ValueId, Sequence[int]]
+    output: Sequence[int]
+    workspace: Sequence[int]
+    output_mode: OutputMode = "value"
+
+    def lower(
+        self, *, n_qubits: int, max_operations: int, scheduling: Schedule
+    ) -> ArithmeticCandidate:
+        return schedule_arithmetic(
+            self.functions,
+            self.inputs,
+            self.output,
+            entry=self.entry,
+            n_qubits=n_qubits,
+            workspace=self.workspace,
+            workspace_state="fresh_zero",
+            max_operations=max_operations,
+            scheduling=scheduling,
+            output_mode=self.output_mode,
+        )
+
+
 def _self_adjoint_gates(gates: Sequence[Instruction]) -> bool:
     return all(
         gate.name in {"x", "cx", "ccx"}

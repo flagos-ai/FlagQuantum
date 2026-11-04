@@ -65,11 +65,11 @@ class SelectTHC:
 
         Pass 18 + len(mu) clean workspace qubits to use the 8-bit QROM and
         phase-gradient path. All workspace returns to zero. Without workspace,
-        the operation uses exact rotations. Pass eight additional clean wires
+        the operation uses exact rotations. Pass eight additional clean qubits
         to use the two-row QROAM load with a junk word. With workspace and a DynamicCircuit,
         measurement_erasure=True uses paired-block phase corrections to erase
         the loaded angles. The default uses reversible XOR unlookup. With
-        measurement erasure, six more clean wires select Qualtran's 8-bit
+        measurement erasure, six more clean qubits select Qualtran's 8-bit
         carry chain, for either lookup layout.
         """
         return cls(

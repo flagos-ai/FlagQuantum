@@ -106,13 +106,13 @@ class THCRotations:
                     table = tables.setdefault((slot, left), [0] * len(self.networks))
                     table[address] = (-word if self.is_adjoint else word) % modulus
 
-        for slot in sorted(tables, reverse=self.is_adjoint):
-            _, left = slot
+        for table_key in sorted(tables, reverse=self.is_adjoint):
+            _, left = table_key
             target, parity = self.target[left : left + 2]
             operands = (parity, *self.selection, *angle_data, *junk, *scratch[:width])
             qrom = Circuit.from_ir(
                 controlled_qrom_ir(
-                    width, len(angle_data), tables[slot], blocked=bool(junk)
+                    width, len(angle_data), tables[table_key], blocked=bool(junk)
                 ),
                 dtype=circuit.dtype,
                 bsz=circuit.bsz,
@@ -143,7 +143,7 @@ class THCRotations:
                     controlled_qrom_ir(
                         width,
                         len(angle_data),
-                        tables[slot],
+                        tables[table_key],
                         measurement_bits=measurement_bits,
                         blocked=bool(junk),
                         inverse=True,

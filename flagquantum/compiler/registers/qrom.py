@@ -24,7 +24,7 @@ def controlled_qrom_ir(
 ) -> CircuitIR:
     """Emit lookup, or erase loaded data using X measurement and feedback.
 
-    Wires are the enable, big-endian address, data, optional junk bank, and
+    Qubits are the enable, big-endian address, data, optional junk bank, and
     clean traversal scratch. Blocked mode loads two words and swaps the
     addressed word into the data bank. Its inverse swaps before XOR lookup.
     Erasure requires the data to still hold the word selected by the same

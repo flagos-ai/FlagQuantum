@@ -5,38 +5,20 @@ on:
     branches: [main, "refactor/qec-restructure-*"]
   workflow_dispatch:
 
-# flagos-ai runs every repository from one pool of 20 concurrent GitHub-hosted
-# jobs, and this workflow fans out beyond the share one repository should hold.
-# Two constraints bound this repository's share of it.
-#
-# PR pushes cancel that PR's superseded checks. Manual full validation is
-# independent per run. Main pushes use main-smoke.yml instead of repeating
-# the full PR matrix, and strict required checks protect the merge base.
-#
-# CPU smoke/unit, runtime, coverage and distributed suites use A800 CPU runners.
-# Portable trusted Ubuntu checks share the general CPU runner pool.
-# SDK compatibility checks use the accepted fixed CPU pool; R300 keeps manual diagnostics.
-# Full-history quality checks retain A100; fork jobs use hosted runners.
-# Trusted manual validation uses the same A800 routing as same-repository PRs.
-# A800 jobs use up to 16 quota-aware workers and a private environment per run.
-# Hosted fallback jobs share sixteen scoped concurrency buckets. Self-hosted CPU
-# jobs instead include run ID, job ID and matrix index in their groups, so the
-# provisioned runner count bounds concurrency without serializing unrelated
-# checks or matrix legs behind the hosted light-a/b/c buckets.
-#
-# `queue: max` is what makes a bucket a cap instead of a drop: the default
-# keeps only the newest waiting job and cancels the ones behind it, which would
-# report nothing at all for the job that was dropped.
+# Hosted jobs share eight repository-wide concurrency groups across workflows.
+# queue: max keeps waiting jobs in the queue instead of replacing them.
+# Self-hosted CPU jobs keep independent groups keyed by run and matrix index.
+# Main pushes use Main smoke. PR pushes cancel superseded runs of the same PR.
 concurrency:
   group: flagquantum-ci-${{ github.event.pull_request.number || github.run_id }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   pre-commit:
-    runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'flagquantum-a100-cpu-entry' || 'ubuntu-latest' }}
+    runs-on: ubuntu-latest
     timeout-minutes: 15
     concurrency:
-      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('a100-cpu-{0}-pre-commit-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-${{ github.event.pull_request.number || github.ref_name }}-light-c
+      group: flagquantum-gh-2
       queue: max
     steps:
       - name: Clear sparse checkout state from a previous job
@@ -55,16 +37,16 @@ jobs:
       - uses: ./.github/actions/isolated-python
       - uses: ./.github/actions/source-hygiene
 
-  # Trusted source preparation unlocks A800 jobs without a hosted runner slot.
+  # Publish the verified source tree for jobs on all runner pools.
   prepare-source:
     outputs:
       artifact-key: ${{ steps.pack-source.outputs.artifact-key }}
-    runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'flagquantum-a100-cpu-entry' || 'ubuntu-latest' }}
+    runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
       contents: read
     concurrency:
-      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('a100-cpu-{0}-prepare-source-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-${{ github.event.pull_request.number || github.ref_name }}-cpucore-3.12
+      group: flagquantum-gh-5
       queue: max
     steps:
       - name: Clear sparse checkout state from a previous job
@@ -109,9 +91,9 @@ jobs:
 
   quality:
     needs: prepare-source
-    runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'flagquantum-a100-cpu' || 'ubuntu-latest' }}
+    runs-on: ubuntu-latest
     concurrency:
-      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('a100-cpu-{0}-quality-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-${{ github.event.pull_request.number || github.ref_name }}-light-a
+      group: flagquantum-gh-0
       queue: max
     steps:
       # The evidence provenance gates below ask whether each recorded source
@@ -361,17 +343,18 @@ jobs:
 
   cpu-core:
     needs: prepare-source
-    runs-on: >-
-      ${{ fromJSON((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","linux","x64","flagquantum-cpu"]' || '["ubuntu-latest"]') }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
     timeout-minutes: 30
     env:
       OMP_NUM_THREADS: "1"
       MKL_NUM_THREADS: "1"
       OPENBLAS_NUM_THREADS: "1"
       CUDA_VISIBLE_DEVICES: ""
-      PIP_INDEX_URL: https://pypi.org/simple
     concurrency:
-      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('self-hosted-{0}-cpu-core-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-${{ github.event.pull_request.number || github.ref_name }}-cpucore-${{ matrix.python-version }}
+      group: flagquantum-gh-6
       queue: max
     strategy:
       fail-fast: false
@@ -422,31 +405,12 @@ jobs:
           git checkout --force --detach "$sha"
           git clean -ffdx
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
-      # Persistent A800 hosts already retain pip downloads locally.
-      - uses: actions/setup-python@v5
+      - uses: ./.github/actions/offline-cpu
         with:
-          python-version: ${{ matrix.python-version }}
-      - uses: ./.github/actions/metax-core-dependencies
-        id: core-seed
-      - name: Create an isolated environment for this job
-        if: steps.core-seed.outputs.attached != 'true'
-        run: |
-          python -m venv "${RUNNER_TEMP}/venv-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
-          echo "${RUNNER_TEMP}/venv-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}/bin" >> "$GITHUB_PATH"
-      - name: Measure dedicated CPU service limits
-        run: python -I tools/ci_cpu_budget.py --dedicated
-      - if: steps.core-seed.outputs.attached != 'true'
-        run: python -m pip install --upgrade pip 'setuptools>=77.0.3' wheel
-      - name: Install CPU PyTorch through the shared mirror policy
-        if: steps.core-seed.outputs.attached != 'true'
-        uses: ./.github/actions/install-cpu-torch
-        timeout-minutes: 8
-        with:
-          torch-spec: "torch>=2.13,<2.14"
-      - if: steps.core-seed.outputs.attached != 'true'
-        run: python -m pip install --no-build-isolation -e '.[dev]'
-      - if: steps.core-seed.outputs.attached == 'true'
-        run: python -m pip install --no-index --no-build-isolation --no-deps -e .
+          profile: core-py${{ matrix.python-version }}
+          registry-token: ${{ github.token }}
+      - name: Measure CPU and memory limits
+        run: python -I tools/ci_cpu_budget.py
       - name: Verify dependency consistency and the CPU-only PyTorch build
         run: |
           python -m pip check
@@ -508,17 +472,18 @@ jobs:
 
   cpu-core-3-12-tests:
     needs: prepare-source
-    runs-on: >-
-      ${{ fromJSON((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","linux","x64","flagquantum-cpu"]' || '["ubuntu-latest"]') }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
     timeout-minutes: 30
     env:
       OMP_NUM_THREADS: "1"
       MKL_NUM_THREADS: "1"
       OPENBLAS_NUM_THREADS: "1"
       CUDA_VISIBLE_DEVICES: ""
-      PIP_INDEX_URL: https://pypi.org/simple
     concurrency:
-      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('self-hosted-{0}-cpu-core-3-12-tests-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-${{ github.event.pull_request.number || github.ref_name }}-cpucore-3.12
+      group: flagquantum-gh-5
       queue: max
     steps:
       - uses: actions/download-artifact@v8.0.2
@@ -565,31 +530,12 @@ jobs:
           git checkout --force --detach "$sha"
           git clean -ffdx
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
-      # Persistent A800 hosts already retain pip downloads locally.
-      - uses: actions/setup-python@v5
+      - uses: ./.github/actions/offline-cpu
         with:
-          python-version: "3.12"
-      - uses: ./.github/actions/metax-core-dependencies
-        id: core-seed
-      - name: Create an isolated environment for this job
-        if: steps.core-seed.outputs.attached != 'true'
-        run: |
-          python -m venv "${RUNNER_TEMP}/venv-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
-          echo "${RUNNER_TEMP}/venv-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}/bin" >> "$GITHUB_PATH"
-      - name: Measure dedicated CPU service limits
-        run: python -I tools/ci_cpu_budget.py --dedicated
-      - if: steps.core-seed.outputs.attached != 'true'
-        run: python -m pip install --upgrade pip 'setuptools>=77.0.3' wheel
-      - name: Install CPU PyTorch through the shared mirror policy
-        if: steps.core-seed.outputs.attached != 'true'
-        uses: ./.github/actions/install-cpu-torch
-        timeout-minutes: 8
-        with:
-          torch-spec: "torch>=2.13,<2.14"
-      - if: steps.core-seed.outputs.attached != 'true'
-        run: python -m pip install --no-build-isolation -e '.[dev]'
-      - if: steps.core-seed.outputs.attached == 'true'
-        run: python -m pip install --no-index --no-build-isolation --no-deps -e .
+          profile: core-py3.12
+          registry-token: ${{ github.token }}
+      - name: Measure CPU and memory limits
+        run: python -I tools/ci_cpu_budget.py
       - name: Verify dependency consistency and the CPU-only PyTorch build
         run: |
           python -m pip check
@@ -619,17 +565,18 @@ jobs:
 
   cpu-runtime:
     needs: prepare-source
-    runs-on: >-
-      ${{ fromJSON((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","linux","x64","flagquantum-cpu"]' || '["ubuntu-latest"]') }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
     timeout-minutes: 30
     env:
       OMP_NUM_THREADS: "1"
       MKL_NUM_THREADS: "1"
       OPENBLAS_NUM_THREADS: "1"
       CUDA_VISIBLE_DEVICES: ""
-      PIP_INDEX_URL: https://pypi.org/simple
     concurrency:
-      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('self-hosted-{0}-cpu-runtime-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-${{ github.event.pull_request.number || github.ref_name }}-runtime
+      group: flagquantum-gh-3
       queue: max
     steps:
       - uses: actions/download-artifact@v8.0.2
@@ -676,23 +623,12 @@ jobs:
           git checkout --force --detach "$sha"
           git clean -ffdx
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
-      # Persistent A800 hosts already retain pip downloads locally.
-      - uses: actions/setup-python@v5
+      - uses: ./.github/actions/offline-cpu
         with:
-          python-version: "3.12"
-      - name: Create an isolated environment for this job
-        run: |
-          python -m venv "${RUNNER_TEMP}/venv-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
-          echo "${RUNNER_TEMP}/venv-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}/bin" >> "$GITHUB_PATH"
-      - name: Measure dedicated CPU service limits
-        run: python -I tools/ci_cpu_budget.py --dedicated
-      - run: python -m pip install --upgrade pip 'setuptools>=77.0.3' wheel
-      - name: Install CPU PyTorch through the shared mirror policy
-        uses: ./.github/actions/install-cpu-torch
-        timeout-minutes: 8
-        with:
-          torch-spec: "torch>=2.13,<2.14"
-      - run: python -m pip install --no-build-isolation -e '.[dev]'
+          profile: core-py3.12
+          registry-token: ${{ github.token }}
+      - name: Measure CPU and memory limits
+        run: python -I tools/ci_cpu_budget.py
       - name: Verify dependency consistency and the CPU-only PyTorch build
         run: |
           python -m pip check
@@ -719,7 +655,7 @@ jobs:
     if: ${{ always() }}
     runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'flagquantum-cpu-general' || 'ubuntu-latest' }}
     concurrency:
-      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('a100-cpu-{0}-cpu-core-3-12-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-${{ github.event.pull_request.number || github.ref_name }}-cpucore-3.12
+      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('a100-cpu-{0}-cpu-core-3-12-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-5
       queue: max
     steps:
       - name: Require Python 3.12 unit and runtime suites to pass
@@ -731,7 +667,7 @@ jobs:
     needs: prepare-source
     runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'flagquantum-cpu-sdk-preinstalled' || 'ubuntu-latest' }}
     concurrency:
-      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('a100-cpu-{0}-jax-optional-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-${{ github.event.pull_request.number || github.ref_name }}-light-a
+      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('a100-cpu-{0}-jax-optional-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-0
       queue: max
     steps:
       - uses: actions/download-artifact@v8.0.2
@@ -820,7 +756,7 @@ jobs:
     needs: prepare-source
     runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'flagquantum-cpu-general' || 'ubuntu-latest' }}
     concurrency:
-      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('a100-cpu-{0}-azure-optional-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-${{ github.event.pull_request.number || github.ref_name }}-light-a
+      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('a100-cpu-{0}-azure-optional-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-0
       queue: max
     env:
       OPTIONAL_VERSIONS: "1.32.3 1.32.*"
@@ -904,7 +840,7 @@ jobs:
       ${{ fromJSON((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","linux","x64","flagquantum-cpu","flagquantum-mc550-cpu"]' || '["ubuntu-latest"]') }}
     timeout-minutes: 15
     concurrency:
-      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('self-hosted-{0}-triton-optional-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-${{ github.event.pull_request.number || github.ref_name }}-light-b
+      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('self-hosted-{0}-triton-optional-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-1
       queue: max
     steps:
       - uses: actions/download-artifact@v8.0.2
@@ -992,7 +928,7 @@ jobs:
     runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'flagquantum-cpu-general' || 'ubuntu-latest' }}
     timeout-minutes: 30
     concurrency:
-      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('a100-cpu-{0}-qiskit-compat-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-${{ github.event.pull_request.number || github.ref_name }}-light-b
+      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('a100-cpu-{0}-qiskit-compat-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-1
       queue: max
     strategy:
       fail-fast: false
@@ -1107,7 +1043,7 @@ jobs:
     runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'flagquantum-cpu-general' || 'ubuntu-latest' }}
     timeout-minutes: 5
     concurrency:
-      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('a100-cpu-{0}-qiskit-optional-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-${{ github.event.pull_request.number || github.ref_name }}-light-b
+      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('a100-cpu-{0}-qiskit-optional-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-1
       queue: max
     steps:
       - name: Require both certified Qiskit pairs to pass
@@ -1118,7 +1054,7 @@ jobs:
     runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'flagquantum-cpu-sdk-preinstalled' || 'ubuntu-latest' }}
     timeout-minutes: 30
     concurrency:
-      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('a100-cpu-{0}-cirq-optional-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-${{ github.event.pull_request.number || github.ref_name }}-light-b
+      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('a100-cpu-{0}-cirq-optional-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-1
       queue: max
     env:
       MAX_JOBS: "2"
@@ -1219,7 +1155,7 @@ jobs:
     runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'flagquantum-cpu-general' || 'ubuntu-latest' }}
     timeout-minutes: 30
     concurrency:
-      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('a100-cpu-{0}-braket-optional-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-${{ github.event.pull_request.number || github.ref_name }}-light-c
+      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('a100-cpu-{0}-braket-optional-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-2
       queue: max
     env:
       MAX_JOBS: "2"
@@ -1306,7 +1242,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     concurrency:
-      group: flagquantum-gh-${{ github.event.pull_request.number || github.ref_name }}-light-c
+      group: flagquantum-gh-2
       queue: max
     env:
       OPTIONAL_VERSIONS: "0.15.1 0.16.0.post1"
@@ -1391,7 +1327,7 @@ jobs:
     needs: prepare-source
     runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'flagquantum-cpu-general' || 'ubuntu-latest' }}
     concurrency:
-      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('a100-cpu-{0}-pennylane-optional-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-${{ github.event.pull_request.number || github.ref_name }}-light-b
+      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('a100-cpu-{0}-pennylane-optional-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-1
       queue: max
     env:
       OPTIONAL_VERSIONS: "0.44.1 0.45.1"
@@ -1445,7 +1381,7 @@ jobs:
           python-version: "3.12"
       - uses: ./.github/actions/isolated-python
         with:
-          self-hosted-pypi-index: ${{ vars.FQ_CI_PYPI_MIRROR || 'https://pypi.tuna.tsinghua.edu.cn/simple' }}
+          self-hosted-pypi-index: ${{ vars.FQ_CI_PYPI_MIRROR || 'https://mirrors.aliyun.com/pypi/simple' }}
       - uses: ./.github/actions/install-cpu-torch
       - run: python -m pip install --no-build-isolation -e '.[dev]'
       - name: Verify both certified PennyLane versions
@@ -1476,7 +1412,7 @@ jobs:
       CUDA_VISIBLE_DEVICES: ""
       JAX_PLATFORMS: cpu
     concurrency:
-      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('a100-cpu-{0}-dependency-bounds-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-${{ github.event.pull_request.number || github.ref_name }}-light-c
+      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('a100-cpu-{0}-dependency-bounds-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-2
       queue: max
     strategy:
       fail-fast: false
@@ -1588,7 +1524,7 @@ jobs:
     timeout-minutes: 30
     # One of the five GitHub-hosted buckets -- see the capacity note above.
     concurrency:
-      group: flagquantum-gh-${{ github.event.pull_request.number || github.ref_name }}-light-a
+      group: flagquantum-gh-0
       queue: max
     steps:
       - uses: actions/checkout@v4
@@ -1703,7 +1639,7 @@ jobs:
     # Reuse an existing light bucket rather than increasing the repository's
     # share of the organisation-wide runner pool.
     concurrency:
-      group: flagquantum-gh-${{ github.event.pull_request.number || github.ref_name }}-light-c
+      group: flagquantum-gh-2
       queue: max
     steps:
       - uses: actions/checkout@v4
@@ -1744,7 +1680,7 @@ jobs:
       CUDA_VISIBLE_DEVICES: ""
       JAX_PLATFORMS: cpu
     concurrency:
-      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('self-hosted-{0}-distributed-cpu-shard-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-${{ github.event.pull_request.number || github.ref_name }}-distributed
+      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('self-hosted-{0}-distributed-cpu-shard-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-4
       queue: max
     steps:
       - uses: actions/download-artifact@v8.0.2
@@ -1831,7 +1767,7 @@ jobs:
     runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'flagquantum-cpu-general' || 'ubuntu-latest' }}
     timeout-minutes: 5
     concurrency:
-      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('a100-cpu-{0}-distributed-cpu-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-${{ github.event.pull_request.number || github.ref_name }}-distributed
+      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('a100-cpu-{0}-distributed-cpu-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-4
       queue: max
     steps:
       - name: Require every partition and the two-rank probe to pass
@@ -1839,8 +1775,10 @@ jobs:
 
   coverage-shard:
     needs: prepare-source
-    runs-on: >-
-      ${{ fromJSON((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","linux","x64","flagquantum-cpu"]' || '["ubuntu-latest"]') }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
     timeout-minutes: 30
     env:
       OMP_NUM_THREADS: "1"
@@ -1850,12 +1788,12 @@ jobs:
       JAX_PLATFORMS: cpu
       COVERAGE_FILE: .coverage.${{ matrix.shard }}
     concurrency:
-      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('self-hosted-{0}-coverage-shard-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-${{ github.event.pull_request.number || github.ref_name }}-coverage-${{ matrix.hosted-bucket }}
+      group: flagquantum-gh-${{ matrix.hosted-bucket }}
       queue: max
     strategy:
       fail-fast: false
       matrix:
-        # Reuse eight hosted buckets; trusted CPU slots remain independent.
+        # Assign the 16 shards to eight shared hosted groups.
         include:
           - {shard: 0, hosted-bucket: 0}
           - {shard: 1, hosted-bucket: 1}
@@ -1919,14 +1857,12 @@ jobs:
           git checkout --force --detach "$sha"
           git clean -ffdx
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
-      - uses: actions/setup-python@v5
+      - uses: ./.github/actions/offline-cpu
         with:
-          python-version: "3.12"
-      - uses: ./.github/actions/isolated-python
-        with:
-          self-hosted-pypi-index: ${{ vars.FQ_CI_PYPI_MIRROR || 'https://pypi.tuna.tsinghua.edu.cn/simple' }}
-      - uses: ./.github/actions/install-cpu-torch
-      - run: python -m pip install --no-build-isolation -e '.[dev,jax,viz,braket,cirq,pennylane,cotengra,stim,pymatching,kaiwu]'
+          profile: coverage-py3.12
+          registry-token: ${{ github.token }}
+      - name: Measure CPU and memory limits
+        run: python -I tools/ci_cpu_budget.py
       - name: Verify dependency consistency and CPU frameworks
         run: |
           python -m pip check
@@ -1971,7 +1907,7 @@ jobs:
     if: ${{ always() }}
     runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'flagquantum-a100-cpu' || 'ubuntu-latest' }}
     concurrency:
-      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('a100-cpu-{0}-coverage-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-${{ github.event.pull_request.number || github.ref_name }}-coverage-0
+      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('a100-cpu-{0}-coverage-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-0
       queue: max
     steps:
       - name: Require every coverage shard to pass
@@ -2042,7 +1978,7 @@ jobs:
     timeout-minutes: 20
     runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'flagquantum-cpu-general' || 'ubuntu-latest' }}
     concurrency:
-      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('a100-cpu-{0}-supply-chain-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-${{ github.event.pull_request.number || github.ref_name }}-light-c
+      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('a100-cpu-{0}-supply-chain-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-2
       queue: max
     permissions:
       contents: read
@@ -2159,7 +2095,7 @@ jobs:
     if: ${{ always() }}
     runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'flagquantum-cpu-general' || 'ubuntu-latest' }}
     concurrency:
-      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('a100-cpu-{0}-ci-complete-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-${{ github.event.pull_request.number || github.ref_name }}-light-a
+      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('a100-cpu-{0}-ci-complete-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-0
       queue: max
     steps:
       - name: Require every CI job to succeed before merging

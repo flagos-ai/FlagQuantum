@@ -50,6 +50,7 @@ seen too.
 from __future__ import annotations
 
 import ast
+import json
 import re
 from pathlib import Path
 from typing import NamedTuple
@@ -285,6 +286,11 @@ def _installed_extras(text: str) -> frozenset[str]:
         # A pinned package names the extra carrying it.
         for word in DISTRIBUTION.findall(command):
             extras.update(extras_for(word))
+    if "./.github/actions/offline-cpu" in text:
+        profile = re.search(r"(?m)^\s+profile: (\w+)-py", text)
+        assert profile is not None
+        profiles = json.loads((ROOT / "docker/ci/profiles.json").read_text())
+        extras.update(profiles[profile.group(1)])
     return frozenset(extras)
 
 

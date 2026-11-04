@@ -13,7 +13,7 @@ MAX_BYTES = 262144
 MAX_TOKENS = 4096
 MAX_DEPTH = 32
 MAX_FUNCTIONS = 32
-ANGLE_CALLS = frozenset({"PHASE", "RZ", "CRX", "R"})
+ANGLE_CALLS = frozenset({"PHASE", "RZ", "CRX", "R", "U"})
 _TOKEN = re.compile(
     r"(?P<space>\s+)|(?P<comment>//[^\n]*|/\*[\s\S]*?\*/)"
     r"|(?P<number>[0-9]+)|(?P<name>[A-Za-z_][A-Za-z_0-9]*)"
@@ -273,7 +273,7 @@ class Parser:
         self.position += 1
         return Expression(Token(text, integer.location))
 
-    def scalar_type(self) -> tuple[str, int | None]:
+    def scalar_type(self, *, allow_qubit_array: bool = False) -> tuple[str, int | None]:
         kind = self.current
         if kind.text not in {"qbit", "qnum"}:
             reject(
@@ -304,6 +304,15 @@ class Parser:
                     "signed and fractional modifiers are not admitted",
                 )
             self.take(">")
+        if (
+            allow_qubit_array
+            and kind.text == "qbit"
+            and self.current.text == "["
+            and self.tokens[self.position + 1].text == "]"
+        ):
+            self.take("[")
+            self.take("]")
+            return "qbit[]", None
         if self.current.text == "[":
             reject(
                 self.current,
@@ -339,7 +348,7 @@ class Parser:
                 )
             parameter = self.name()
             self.take(":")
-            kind, width = self.scalar_type()
+            kind, width = self.scalar_type(allow_qubit_array=name.text == "main")
             if role == "const" and width is None:
                 reject(
                     parameter, "width", "Const qnum requires an explicit unsigned width"
@@ -417,8 +426,8 @@ class Parser:
                         self.take(",")
                         args.append(
                             self.angle_argument()
-                            if len(args) == 1
-                            and (target.text == "R" or target.text == "phase")
+                            if (target.text == "U" and len(args) < 4)
+                            or (len(args) == 1 and target.text in {"R", "phase"})
                             else self.expression()
                         )
                 self.take(")")
