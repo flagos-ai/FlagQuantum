@@ -299,6 +299,7 @@ def test_cpu_suites_attach_the_locked_image(job: str, profile: str) -> None:
     )
     assert "if" not in attach
     assert attach["with"]["profile"] == profile
+    assert attach["with"]["registry-token"] == "${{ github.token }}"
     assert not any(
         "setup-python" in step.get("uses", "") or "pip install" in step.get("run", "")
         for step in steps
@@ -324,13 +325,16 @@ def test_linux_prerequisites_keep_forks_off_private_cpu_runners(
         "github.event.pull_request.head.repo.full_name == github.repository) "
         "&& 'flagquantum-a100-cpu' || 'ubuntu-latest' }}"
     )
-    assert job["runs-on"] == (
-        route
-        if workflow == "main-smoke.yml"
-        else route.replace("flagquantum-a100-cpu", "flagquantum-a100-cpu-entry")
-    )
+    if (workflow, name) == ("ci.yml", "pre-commit"):
+        assert job["runs-on"] == "ubuntu-latest"
+    else:
+        assert job["runs-on"] == (
+            route
+            if workflow == "main-smoke.yml"
+            else route.replace("flagquantum-a100-cpu", "flagquantum-a100-cpu-entry")
+        )
+        assert "github.run_id" in job["concurrency"]["group"]
     assert "pull_request_target" not in document.get("on", document.get(True, {}))
-    assert "github.run_id" in job["concurrency"]["group"]
     assert job["concurrency"]["queue"] == "max"
     assert not job.get("continue-on-error", False)
     assert job["timeout-minutes"] <= 15

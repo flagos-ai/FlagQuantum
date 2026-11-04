@@ -34,10 +34,10 @@ concurrency:
 
 jobs:
   pre-commit:
-    runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'flagquantum-a100-cpu-entry' || 'ubuntu-latest' }}
+    runs-on: ubuntu-latest
     timeout-minutes: 15
     concurrency:
-      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('a100-cpu-{0}-pre-commit-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-${{ github.event.pull_request.number || github.ref_name }}-light-c
+      group: flagquantum-gh-${{ github.event.pull_request.number || github.ref_name }}-light-c
       queue: max
     steps:
       - name: Clear sparse checkout state from a previous job
@@ -427,7 +427,7 @@ jobs:
       - uses: ./.github/actions/offline-cpu
         with:
           profile: core-py${{ matrix.python-version }}
-          registry-token: ${ github.token }
+          registry-token: ${{ github.token }}
       - name: Measure CPU and memory limits
         run: python -I tools/ci_cpu_budget.py
       - name: Verify dependency consistency and the CPU-only PyTorch build
@@ -552,7 +552,7 @@ jobs:
       - uses: ./.github/actions/offline-cpu
         with:
           profile: core-py3.12
-          registry-token: ${ github.token }
+          registry-token: ${{ github.token }}
       - name: Measure CPU and memory limits
         run: python -I tools/ci_cpu_budget.py
       - name: Verify dependency consistency and the CPU-only PyTorch build
@@ -645,7 +645,7 @@ jobs:
       - uses: ./.github/actions/offline-cpu
         with:
           profile: core-py3.12
-          registry-token: ${ github.token }
+          registry-token: ${{ github.token }}
       - name: Measure CPU and memory limits
         run: python -I tools/ci_cpu_budget.py
       - name: Verify dependency consistency and the CPU-only PyTorch build
@@ -1879,7 +1879,7 @@ jobs:
       - uses: ./.github/actions/offline-cpu
         with:
           profile: coverage-py3.12
-          registry-token: ${ github.token }
+          registry-token: ${{ github.token }}
       - name: Measure CPU and memory limits
         run: python -I tools/ci_cpu_budget.py
       - name: Verify dependency consistency and CPU frameworks
