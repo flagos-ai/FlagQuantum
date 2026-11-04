@@ -14,6 +14,8 @@ finite check.
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
 import torch
 
@@ -175,6 +177,57 @@ def test_a_refused_forward_leaves_the_parameter_and_optimizer_untouched() -> Non
     module().backward()
     optimizer.step()
     assert torch.isfinite(module.parameters_tensor).all()
+
+
+def test_invalid_training_input_preserves_last_successful_checkpoint(
+    tmp_path: Path,
+) -> None:
+    def builder(parameters: torch.Tensor, features: torch.Tensor) -> fq.Circuit:
+        angle = parameters[0] * features.square()
+        return fq.Circuit(1, dtype=torch.complex128).ry(0, theta=angle)
+
+    def new_module() -> fq.Module:
+        return fq.Module(
+            builder,
+            1,
+            init=torch.tensor([0.2], dtype=torch.float64),
+            dtype=torch.float64,
+        )
+
+    module = new_module()
+    optimizer = torch.optim.Adam(module.parameters(), lr=0.1)
+    checkpoint = tmp_path / "last-success.pt"
+    successful_hashes = []
+
+    def save(step: int, _loss: float, execution: fq.ExecutionResult) -> None:
+        successful_hashes.append(execution.provenance["ir_hash"])
+        module.save_checkpoint(checkpoint, optimizer=optimizer, seed=11, step=step)
+
+    features = torch.tensor([0.5, 1e200], dtype=torch.float64)
+    with pytest.raises(IRValidationError):
+        fq.train(
+            module,
+            optimizer=optimizer,
+            objective=lambda value: value.sum(),
+            inputs=lambda step: features[step],
+            steps=2,
+            callback=save,
+        )
+
+    (successful_hash,) = successful_hashes
+    after_refusal = module.save_checkpoint(
+        tmp_path / "after-refusal.pt", optimizer=optimizer, seed=11, step=1
+    )
+    assert torch.load(after_refusal, weights_only=True)["ir_hash"] == successful_hash
+
+    restored = new_module()
+    restored.execute(features[0])
+    restored_optimizer = torch.optim.Adam(restored.parameters(), lr=0.1)
+    metadata = restored.load_checkpoint(checkpoint, optimizer=restored_optimizer)
+    assert metadata["step"] == 1
+    assert metadata["ir_hash"] == successful_hash
+    torch.testing.assert_close(module.parameters_tensor, restored.parameters_tensor)
+    torch.testing.assert_close(optimizer.state_dict(), restored_optimizer.state_dict())
 
 
 @pytest.mark.parametrize("mode", MODES)
