@@ -255,7 +255,9 @@ still require an initialized `x`.
 as the equivalent signedness literals. Signed allocation and signed expression
 outputs are scoped to `main`. Bitwise operators sign-extend signed operands
 and zero-extend unsigned operands where needed. Register reads expose the
-raw basis encoding. Signed arithmetic is limited to subtraction and negation. Signed helper ports
+raw basis encoding. Signed arithmetic is limited to subtraction and negation. Equality and
+inequality compare integer values after sign- or zero-extension. Ordered
+comparisons with signed operands remain outside the profile. Signed helper ports
 and fractional allocations remain outside this subset.
 
 `target ^= mask` toggles the selected bits of an initialized writable integer.

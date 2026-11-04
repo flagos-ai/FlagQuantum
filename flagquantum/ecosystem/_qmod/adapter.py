@@ -294,6 +294,22 @@ class _Expression:
                 mask = right - 1
                 self.word_widths[node] = unsigned_width(mask)
                 result = (mask if lq else left & mask, lq)
+            elif text in {"==", "!="} and any(signed):
+                width = self.equality_width(node)
+                if width > 256:
+                    reject(node.token, "width", "signed equality exceeds 256 bits")
+                quantum = lq or rq
+                result = (
+                    (
+                        1
+                        if quantum
+                        else int(
+                            (self.integer_value(lhs) == self.integer_value(rhs))
+                            == (text == "==")
+                        )
+                    ),
+                    quantum,
+                )
             elif any(signed):
                 reject(
                     node.token,
@@ -334,6 +350,11 @@ class _Expression:
         self.word_widths.setdefault(node, unsigned_width(result[0]))
         self.facts[node] = result
         return result
+
+    def equality_width(self, node: Expression) -> int:
+        widths = tuple(self.word_widths[child] for child in node.children)
+        signed = tuple(child in self.signed_words for child in node.children)
+        return bitwise_width("^", widths, signed)
 
     def integer_value(self, node: Expression) -> int:
         raw = self.facts[node][0]
@@ -495,6 +516,29 @@ class _Expression:
             "qint.subtract_mod", operands, uint_type(width), node.token
         )
 
+    def emit_equality_operand(self, child: Expression, width: int) -> Value:
+        if child not in self.signed_words or self.word_widths[child] == width:
+            return self.emit(child)
+        mask = (1 << width) - 1
+        if not self.facts[child][1]:
+            return self.operation(
+                "arith.constant",
+                (),
+                INDEX,
+                child.token,
+                value=self.integer_value(child) & mask,
+            )
+        value = self.emit(child)
+        extension = self.operation("arith.constant", (), INDEX, child.token, value=mask)
+        return self.operation(
+            "qint.bitwise",
+            (value, extension),
+            uint_type(width),
+            child.token,
+            operator="&",
+            signed=(True, False),
+        )
+
     def emit(self, node: Expression) -> Value:
         bound, quantum = self.facts[node]
         if not quantum:
@@ -517,7 +561,16 @@ class _Expression:
                 operator=node.token.text,
                 **({"signed": signed} if any(signed) else {}),
             )
-        left = self.emit(node.children[0])
+        equality_width = (
+            self.equality_width(node)
+            if node.token.text in {"==", "!="} and any(signed)
+            else 0
+        )
+        left = (
+            self.emit_equality_operand(node.children[0], equality_width)
+            if equality_width
+            else self.emit(node.children[0])
+        )
         if node.token.text == "%":
             divisor = node.children[1]
             mask = self.operation(
@@ -548,7 +601,11 @@ class _Expression:
                     node.token,
                 )
             return result
-        right = self.emit(node.children[1])
+        right = (
+            self.emit_equality_operand(node.children[1], equality_width)
+            if equality_width
+            else self.emit(node.children[1])
+        )
         if node.token.text in {"&", "|", "^"}:
             if node.token.text == "&":
                 return self.operation(
