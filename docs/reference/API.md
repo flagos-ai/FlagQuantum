@@ -293,7 +293,7 @@ rotations across a proven commuting gap. Level `3` is declared and reserved and
 raises `CompilationError`: the unitary-synthesis stage it would add needs a target
 basis to rewrite into, and `optimize` is target-independent. Target-aware unitary
 synthesis is the separate entry point
-`flagquantum.compiler.native_gate_legalization.legalize_native_gates(program,
+`flagquantum.compiler.lowering.native_gate_legalization.legalize_native_gates(program,
 snapshot=...)`. Any other value is refused the same way. The level that ran is
 recorded in `optimized_ir.metadata["optimization"]`.
 
