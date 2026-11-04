@@ -327,6 +327,10 @@ class ExecutionPlan:
             ),
         }
         if self._contract_payload_json is not None:
+            program = self.to_dict().get("program")
+            metadata = program.get("metadata") if isinstance(program, Mapping) else None
+            if isinstance(metadata, Mapping) and "select_lowering" in metadata:
+                summary["select_lowering"] = metadata["select_lowering"]
             summary.update(
                 {
                     "identity": self.identity,

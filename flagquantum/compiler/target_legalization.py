@@ -44,6 +44,7 @@ from .schedule_legalization import (
     ScheduleLegalizationError,
     schedule_circuit_dependencies,
 )
+from .select_lowering import SELECT_REPORT, lower_select_program
 from .topology_legalization import (
     TopologyLegalizationError,
     TopologyLegalizationResult,
@@ -123,6 +124,20 @@ def circuit_target_requirements(program: object) -> RequirementSet:
             observed=True,
         ),
     ]
+
+    select_report = ir.metadata.get(SELECT_REPORT, {})
+    workspace = select_report.get("workspace_qubits", 0)
+    if workspace:
+        requirements.extend(
+            (
+                _requirement(
+                    "ancillas.policy", ComparisonOperator.EQUALS, "compiler_allocated"
+                ),
+                _requirement(
+                    "ancillas.maximum_compiler", ComparisonOperator.AT_LEAST, workspace
+                ),
+            )
+        )
 
     result_kinds = {
         str(item.metadata.get("fq_output_kind", item.kind)) for item in ir.measurements
@@ -216,7 +231,7 @@ def legalize_circuit_for_target(
     IR.
     """
 
-    source_ir = ensure_circuit_ir(program)
+    source_ir = lower_select_program(ensure_circuit_ir(program), "unitary_ladder")
     topology_legalization = None
     if coupling_map is not None:
         try:

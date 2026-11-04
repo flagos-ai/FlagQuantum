@@ -352,6 +352,26 @@ def execute_plan(execution_plan: ExecutionPlan) -> ExecutionResult:
                 memory_limit_bytes if memory_limit_bytes is not None else 256 * 1024**2
             ),
         )
+        report = source_ir.metadata.get("select_lowering")
+        if report and report["operations"][0]["path"] == "dynamic_unary_iteration":
+            logical_qubits = report["logical_qubits"]
+            result = cast(ExecutionResult, native.to_execution_result())
+            final = result.measurements[0]
+            samples = native.samples[:, :logical_qubits]
+            return replace(
+                result,
+                samples=samples,
+                measurements=(
+                    replace(final, qubits=tuple(range(logical_qubits)), value=samples),
+                ),
+                runtime={
+                    **result.runtime,
+                    "select_lowering": report,
+                    "mid_circuit_measurements_available": False,
+                },
+                plan=execution_plan,
+                provenance={},
+            )
         return replace(
             cast(ExecutionResult, native.to_execution_result()),
             plan=execution_plan,
