@@ -2,6 +2,11 @@ name: Publish development containers
 
 on:
   workflow_dispatch:
+    inputs:
+      ci-cpu:
+        description: Publish locked CPU CI environments
+        type: boolean
+        default: false
   pull_request:
     paths:
       - docker/dev/**
@@ -23,6 +28,7 @@ concurrency:
 
 jobs:
   publish:
+    if: github.event_name != 'workflow_dispatch' || !inputs.ci-cpu
     strategy:
       fail-fast: false
       # Four container builds land on one push to main. Two at a time keeps
@@ -117,3 +123,42 @@ jobs:
           cache-to: ${{ github.event_name != 'pull_request' && format('type=gha,mode=max,scope=flagquantum-dev-{0}', matrix.variant) || '' }}
           provenance: mode=max
           sbom: true
+
+  publish-ci-cpu:
+    if: github.event_name == 'workflow_dispatch' && inputs.ci-cpu
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {profile: core, python: '3.10'}
+          - {profile: core, python: '3.11'}
+          - {profile: core, python: '3.12'}
+          - {profile: coverage, python: '3.12'}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build and verify the CI environment
+        env:
+          PROFILE: ${{ matrix.profile }}
+          PYTHON_VERSION: ${{ matrix.python }}
+        run: |
+          image="ghcr.io/${GITHUB_REPOSITORY,,}-ci:${PROFILE}-py${PYTHON_VERSION}-${GITHUB_SHA}"
+          docker build -f docker/ci/Dockerfile --build-arg PROFILE="$PROFILE" \
+            --build-arg PYTHON_VERSION="$PYTHON_VERSION" -t "$image" .
+          docker run --rm --network none "$image" python -m pip check
+          docker run --rm --network none "$image" python -c \
+            'import torch; assert torch.version.cuda is None'
+          echo "FQ_CI_IMAGE=$image" >> "$GITHUB_ENV"
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Publish and report the immutable image
+        run: |
+          docker push "$FQ_CI_IMAGE"
+          docker image inspect --format '{{index .RepoDigests 0}}' "$FQ_CI_IMAGE" | tee -a "$GITHUB_STEP_SUMMARY"
