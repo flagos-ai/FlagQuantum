@@ -6,24 +6,24 @@ from datetime import datetime, timedelta, timezone
 import pytest
 import torch
 
-from flagquantum.compiler.artifact_compilation import (
+from flagquantum.compiler.artifacts.artifact_compilation import (
     compile_circuit_artifact_for_target,
 )
-from flagquantum.compiler.compilation_evidence import (
+from flagquantum.compiler.artifacts.compilation_evidence import (
     build_compilation_evidence_bundle,
     verify_compilation_evidence_bundle,
 )
-from flagquantum.compiler.directed_topology import DirectedCouplingMap
-from flagquantum.compiler.physical_plan import (
+from flagquantum.compiler.artifacts.physical_plan import (
     PhysicalPlanError,
     build_physical_circuit_plan,
 )
-from flagquantum.compiler.routing import CouplingMap
-from flagquantum.compiler.target_legalization import (
+from flagquantum.compiler.lowering.target_legalization import (
     TargetLegalizationError,
     legalize_circuit_for_target,
 )
-from flagquantum.compiler.topology_legalization import (
+from flagquantum.compiler.routing import CouplingMap
+from flagquantum.compiler.topology.directed_topology import DirectedCouplingMap
+from flagquantum.compiler.topology.topology_legalization import (
     TopologyLegalizationError,
     legalize_circuit_topology,
 )

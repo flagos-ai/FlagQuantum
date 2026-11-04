@@ -41,7 +41,7 @@ from benchmarks.compiler_routing_quality import (
 )
 from flagquantum.compiler import compile as compile_program
 from flagquantum.compiler import optimize
-from flagquantum.compiler.optimization_levels import (
+from flagquantum.compiler.optimization.optimization_levels import (
     DEFAULT_OPTIMIZATION_LEVEL,
     optimization_level_stages,
 )

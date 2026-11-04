@@ -11,7 +11,9 @@ from flagquantum.algorithms.primitives.multiplexers import SelectPauliLCU
 from flagquantum.algorithms.primitives.multiplexers.pauli_select import (
     lower_select_pauli_lcu_to_unary_iteration,
 )
-from flagquantum.compiler.deferred_operations import lower_select_pauli_lcu_to_gates
+from flagquantum.compiler.lowering.deferred_operations import (
+    lower_select_pauli_lcu_to_gates,
+)
 from tools.qualtran_parity.clifford_t_counts import clifford_t_counts
 
 

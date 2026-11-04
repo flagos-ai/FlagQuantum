@@ -20,7 +20,7 @@ import pytest
 import torch
 
 import flagquantum.compiler as compiler
-from flagquantum.compiler.one_qubit_optimization import (
+from flagquantum.compiler.optimization.one_qubit_optimization import (
     _IDENTITY,
     _declines_vocabulary,
     _emit,
@@ -665,7 +665,7 @@ def test_a_unitary_operand_still_joins_the_fold() -> None:
 def test_the_unitarity_test_is_what_declines_not_the_shape() -> None:
     """The two operands differ only in unitarity, and that is what separates them."""
 
-    from flagquantum.compiler.one_qubit_optimization import _is_foldable
+    from flagquantum.compiler.optimization.one_qubit_optimization import _is_foldable
 
     bearing = Instruction("any", (0,), matrix=_NON_UNITARY_OPERANDS["shear"])
     unitary = Instruction("any", (0,), matrix=_UNITARY_OPERAND)

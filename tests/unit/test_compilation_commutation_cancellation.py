@@ -22,8 +22,8 @@ import pytest
 import torch
 
 from flagquantum.compiler import optimize
-from flagquantum.compiler.commutation import analyze_commutation, commute
-from flagquantum.compiler.commutation_cancellation import (
+from flagquantum.compiler.optimization.commutation import analyze_commutation, commute
+from flagquantum.compiler.optimization.commutation_cancellation import (
     _is_cancellable,
     _repeats_a_rotation,
     _repeats_an_opcode,
@@ -33,7 +33,7 @@ from flagquantum.compiler.commutation_cancellation import (
     merge_commuting_rotations,
     rotation_groups,
 )
-from flagquantum.compiler.optimization_levels import (
+from flagquantum.compiler.optimization.optimization_levels import (
     DEFAULT_OPTIMIZATION_LEVEL,
     OPTIMIZATION_LEVEL_STAGES,
 )
@@ -481,7 +481,7 @@ def test_the_pass_is_wired_into_the_fixed_point_loop_exactly_once() -> None:
 def test_the_analysis_is_asked_for_once_per_call() -> None:
     """The pass is a pass, not a pass manager: it analyzes when it is called."""
 
-    import flagquantum.compiler.commutation_cancellation as module
+    import flagquantum.compiler.optimization.commutation_cancellation as module
 
     ir = CircuitIR(
         2,

@@ -1,5 +1,13 @@
 # Compiler
 
+The compiler groups implementation modules by responsibility. `optimization/`
+owns circuit rewrites and synthesis. `topology/` owns connectivity and routing
+heuristics. `lowering/` owns gate and target legalization. `formats/` owns
+internal format tables and emission profiles. `artifacts/` owns physical
+plans, evidence, and target artifacts. `registers/` owns register-level
+decompositions. Documented compiler entry modules remain importable at their
+existing paths.
+
 Transform quantum programs while preserving their numerical meaning,
 measurement behavior, and required gradients. The design direction is one
 verified path from quantum-classical source to target-legal output.

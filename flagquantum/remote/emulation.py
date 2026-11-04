@@ -60,17 +60,17 @@ from typing import Any
 
 import torch
 
-from ..compiler.directed_topology import DirectedCouplingMap
-from ..compiler.native_gate_legalization import GateDecompositionRecord
-from ..compiler.physical_plan import build_physical_circuit_plan
-from ..compiler.routing import CouplingMap
-from ..compiler.target_conformance import verify_target_emission
-from ..compiler.target_emission import (
+from ..compiler.artifacts.physical_plan import build_physical_circuit_plan
+from ..compiler.artifacts.target_conformance import verify_target_emission
+from ..compiler.formats.target_emission import (
     EMISSION_PROFILES,
     TargetEmissionProfile,
     emit_legalized_target,
 )
-from ..compiler.target_legalization import legalize_circuit_for_target
+from ..compiler.lowering.native_gate_legalization import GateDecompositionRecord
+from ..compiler.lowering.target_legalization import legalize_circuit_for_target
+from ..compiler.routing import CouplingMap
+from ..compiler.topology.directed_topology import DirectedCouplingMap
 from ..compute.cpu_target_capabilities import probe_local_cpu_target_capabilities
 from ..core.ir import CircuitIR, MeasurementNode, ensure_circuit_ir
 from ..core.operator_schema import canonical_opcode, get_operator_schema

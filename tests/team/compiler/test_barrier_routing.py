@@ -22,18 +22,18 @@ from __future__ import annotations
 import pytest
 import torch
 
-from flagquantum.compiler.directed_topology import (
-    DirectedCouplingMap,
-    route_to_directed_topology,
-)
-from flagquantum.compiler.ordering_barrier import is_ordering_barrier
+from flagquantum.compiler.optimization.ordering_barrier import is_ordering_barrier
 from flagquantum.compiler.routing import (
     ROUTING_STRATEGIES,
     CouplingMap,
     estimate_routing_cost,
     route_to_topology,
 )
-from flagquantum.compiler.sabre import plan_sabre_swaps
+from flagquantum.compiler.topology.directed_topology import (
+    DirectedCouplingMap,
+    route_to_directed_topology,
+)
+from flagquantum.compiler.topology.sabre import plan_sabre_swaps
 from flagquantum.core.ir import CircuitIR, Instruction
 
 pytestmark = pytest.mark.unit

@@ -83,7 +83,7 @@ from benchmarks.compiler_two_qubit_synthesis import (
     snapshot,
 )
 from flagquantum.compiler.basis_translation import EQUIVALENCE_RULES, _gate
-from flagquantum.compiler.native_gate_legalization import (
+from flagquantum.compiler.lowering.native_gate_legalization import (
     NativeGateLegalizationError,
     legalize_native_gates,
 )
@@ -485,8 +485,8 @@ def _qiskit_gates() -> dict[str, Any]:
         CRXGate,
         CRYGate,
         CRZGate,
-        CSXGate,
         CSwapGate,
+        CSXGate,
         CXGate,
         CYGate,
         CZGate,

@@ -12,7 +12,7 @@ from dataclasses import dataclass
 from datetime import datetime
 
 from ..compiler import CouplingMap
-from ..compiler.directed_topology import DirectedCouplingMap
+from ..compiler.topology.directed_topology import DirectedCouplingMap
 from ..core.target_capabilities import (
     CapabilityBlocker,
     CapabilityRequirement,

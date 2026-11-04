@@ -9,7 +9,7 @@ import torch
 from flagquantum.compiler.basis_conversion import (
     GateDecompositionRecord as MovedRecord,
 )
-from flagquantum.compiler.native_gate_legalization import (
+from flagquantum.compiler.lowering.native_gate_legalization import (
     GateDecompositionRecord,
     NativeGateLegalizationError,
     legalize_native_gates,

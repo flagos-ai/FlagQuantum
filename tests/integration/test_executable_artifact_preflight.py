@@ -5,13 +5,15 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 
-from flagquantum.compiler.target_artifact import (
+from flagquantum.compiler.artifacts.target_artifact import (
     TargetArtifactError,
     build_target_artifact,
 )
-from flagquantum.compiler.target_conformance import verify_target_emission
-from flagquantum.compiler.target_emission import emit_legalized_target
-from flagquantum.compiler.target_legalization import legalize_circuit_for_target
+from flagquantum.compiler.artifacts.target_conformance import verify_target_emission
+from flagquantum.compiler.formats.target_emission import emit_legalized_target
+from flagquantum.compiler.lowering.target_legalization import (
+    legalize_circuit_for_target,
+)
 from flagquantum.core._artifacts import read_program_artifact_json
 from flagquantum.core.ir import CircuitIR, Instruction, MeasurementNode
 from flagquantum.core.target_capabilities import (

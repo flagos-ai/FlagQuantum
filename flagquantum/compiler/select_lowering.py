@@ -6,7 +6,7 @@ from typing import Literal
 from ..core.classical_control import instruction_condition_clauses
 from ..core.ir import CircuitIR, Instruction
 from ..errors import ValidationError
-from .deferred_operations import (
+from .lowering.deferred_operations import (
     lower_deferred_operations,
     lower_majorana_to_gates,
     lower_select_pauli_lcu_to_gates,

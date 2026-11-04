@@ -929,7 +929,9 @@ def test_intermediate_measurements_are_not_erased_by_the_benchmark() -> None:
 
 def test_the_counterfactual_zero_tolerance_is_frozen() -> None:
     from benchmarks.compiler_identity_elimination import _gate, _superseded_rule
-    from flagquantum.compiler.one_qubit_synthesis import is_identity_one_qubit
+    from flagquantum.compiler.optimization.one_qubit_synthesis import (
+        is_identity_one_qubit,
+    )
 
     gate = _gate("rz", (0,), theta=1e-13)
     assert _superseded_rule(gate)

@@ -11,17 +11,19 @@ import pytest
 import torch
 
 from flagquantum import Circuit
-from flagquantum.compiler.qir import ENTRY_POINT_NAME, emit_qir
-from flagquantum.compiler.target_conformance import (
+from flagquantum.compiler.artifacts.target_conformance import (
     TargetConformanceError,
     _parse_qir,
     verify_target_emission,
 )
-from flagquantum.compiler.target_emission import (
+from flagquantum.compiler.formats.target_emission import (
     TargetEmissionError,
     emit_legalized_target,
 )
-from flagquantum.compiler.target_legalization import legalize_circuit_for_target
+from flagquantum.compiler.lowering.target_legalization import (
+    legalize_circuit_for_target,
+)
+from flagquantum.compiler.qir import ENTRY_POINT_NAME, emit_qir
 from flagquantum.core.ir import CircuitIR, Instruction, MeasurementNode
 from flagquantum.core.operator_schema import OPERATOR_SCHEMAS
 from flagquantum.core.target_capabilities import (

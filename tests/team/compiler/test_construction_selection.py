@@ -15,7 +15,7 @@ from flagquantum.compiler._construction.selection import (
 )
 from flagquantum.compiler._construction.target import Target, compile_target
 from flagquantum.compiler.basis_conversion import BasisConversionError
-from flagquantum.compiler.coupling import CouplingMap
+from flagquantum.compiler.topology.coupling import CouplingMap
 from flagquantum.core.ir import CircuitIR, Instruction, MeasurementNode
 
 pytestmark = pytest.mark.unit

@@ -16,8 +16,8 @@ from flagquantum.compiler import compile as compile_program
 from flagquantum.compiler import estimate_resources
 from flagquantum.compiler._construction.constraints import CircuitLimits
 from flagquantum.compiler.basis_conversion import BasisConversionError, convert_basis
-from flagquantum.compiler.coupling import CouplingMap
 from flagquantum.compiler.layout import remove_layout_restore
+from flagquantum.compiler.topology.coupling import CouplingMap
 from flagquantum.core.ir import CircuitIR, MeasurementNode
 from flagquantum.runtime.execution_plan import ExecutionPlan
 from flagquantum.runtime.execution_plan_contract import plan_execution_program

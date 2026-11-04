@@ -23,7 +23,7 @@ import torch
 
 import flagquantum as fq
 from flagquantum.compiler import CouplingMap
-from flagquantum.compiler.target_legalization import (
+from flagquantum.compiler.lowering.target_legalization import (
     TargetLegalizationError,
     legalize_circuit_for_target,
 )
@@ -323,7 +323,9 @@ def test_declared_gate_errors_damp_the_measured_correlator_as_reported(
 
 
 def test_the_declared_topology_is_the_one_the_router_honours(declared_target):
-    from flagquantum.compiler.target_legalization import TargetLegalizationError
+    from flagquantum.compiler.lowering.target_legalization import (
+        TargetLegalizationError,
+    )
 
     _, description, snapshot = declared_target
     program = fq.Circuit(4).h(0).ry(3, _ROTATION).cx(0, 3)
@@ -354,7 +356,9 @@ def test_the_declared_topology_is_the_one_the_router_honours(declared_target):
 
 
 def test_a_circuit_beyond_the_declared_capacity_is_refused(declared_target):
-    from flagquantum.compiler.target_legalization import TargetLegalizationError
+    from flagquantum.compiler.lowering.target_legalization import (
+        TargetLegalizationError,
+    )
 
     _, description, snapshot = declared_target
     couplings = tuple(description.coupling_edges)

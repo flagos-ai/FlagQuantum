@@ -55,14 +55,16 @@ from typing import Any
 import torch
 
 from flagquantum.compiler.basis_translation import translate
-from flagquantum.compiler.native_gate_legalization import (
+from flagquantum.compiler.lowering.native_gate_legalization import (
     NativeGateLegalizationError,
     _native_descriptors,
     _supports,
     legalize_native_gates,
 )
-from flagquantum.compiler.two_qubit_optimization import split_two_qubit_blocks
-from flagquantum.compiler.two_qubit_synthesis import (
+from flagquantum.compiler.optimization.two_qubit_optimization import (
+    split_two_qubit_blocks,
+)
+from flagquantum.compiler.optimization.two_qubit_synthesis import (
     SUPERCONTROLLED_ENTANGLERS,
     synthesize_two_qubit,
 )

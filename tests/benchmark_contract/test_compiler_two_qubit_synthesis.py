@@ -29,7 +29,7 @@ from benchmarks.compiler_two_qubit_synthesis import (
     run_benchmark,
     two_qubit_instruction,
 )
-from flagquantum.compiler.two_qubit_synthesis import synthesize_two_qubit
+from flagquantum.compiler.optimization.two_qubit_synthesis import synthesize_two_qubit
 from tests.benchmark_contract.qiskit_lane import require_certified_lane
 
 pytestmark = pytest.mark.benchmark_contract

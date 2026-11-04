@@ -1100,7 +1100,7 @@ def test_phase29_gates_existing_text_emitters_without_a_new_envelope() -> None:
 
     assert contract["status"] == ("phase41_directional_evidence_handoff_complete")
     assert phase29["input"] == (
-        "flagquantum.compiler.target_legalization.TargetLegalizationResult"
+        "flagquantum.compiler.lowering.target_legalization.TargetLegalizationResult"
     )
     assert phase29["output"] == "private_in_process_emission_result_and_audit"
     assert phase29["profiles"] == {
@@ -1135,8 +1135,8 @@ def test_phase30_strictly_reconstructs_emitted_text_without_executing_it() -> No
 
     assert contract["status"] == ("phase41_directional_evidence_handoff_complete")
     assert phase30["inputs"] == [
-        "flagquantum.compiler.target_emission.TargetEmissionResult",
-        "flagquantum.compiler.target_legalization.TargetLegalizationResult",
+        "flagquantum.compiler.formats.target_emission.TargetEmissionResult",
+        "flagquantum.compiler.lowering.target_legalization.TargetLegalizationResult",
     ]
     assert phase30["reproduction_policy"] == ("exact_complete_emission_result_match")
     assert phase30["parsers"] == [
@@ -1279,7 +1279,7 @@ def test_phase33_connects_artifacts_without_reinterpreting_target_text() -> None
 
     assert contract["status"] == ("phase41_directional_evidence_handoff_complete")
     assert phase33["compiler_target_artifact_adapter"] == (
-        "flagquantum.compiler.target_artifact.build_target_artifact"
+        "flagquantum.compiler.artifacts.target_artifact.build_target_artifact"
     )
     assert phase33["runtime_target_preflight"] == (
         "flagquantum.runtime.artifact_preflight.preflight_executable_artifact"
@@ -1339,11 +1339,11 @@ def test_phase35_makes_the_complete_artifact_compilation_chain_mandatory() -> No
 
     assert contract["status"] == ("phase41_directional_evidence_handoff_complete")
     assert phase35["entrypoint"] == (
-        "flagquantum.compiler.artifact_compilation."
+        "flagquantum.compiler.artifacts.artifact_compilation."
         "compile_circuit_artifact_for_target"
     )
     assert phase35["result"] == (
-        "flagquantum.compiler.artifact_compilation.ArtifactCompilationResult"
+        "flagquantum.compiler.artifacts.artifact_compilation.ArtifactCompilationResult"
     )
     assert phase35["accepted_inputs"] == [
         "fully_bound_circuit-ir-1.0",
@@ -1379,10 +1379,10 @@ def test_phase36_composes_physical_evidence_without_a_second_ir() -> None:
 
     assert contract["status"] == "phase41_directional_evidence_handoff_complete"
     assert phase36["builder"] == (
-        "flagquantum.compiler.physical_plan.build_physical_circuit_plan"
+        "flagquantum.compiler.artifacts.physical_plan.build_physical_circuit_plan"
     )
     assert phase36["result"] == (
-        "flagquantum.compiler.physical_plan.PhysicalCircuitPlan"
+        "flagquantum.compiler.artifacts.physical_plan.PhysicalCircuitPlan"
     )
     assert phase36["authoritative_program"] == "flagquantum.core.ir.CircuitIR"
     assert phase36["source_program_objects_retained"] is True
@@ -1481,10 +1481,10 @@ def test_phase39_completes_directional_compiler_slice() -> None:
 
     assert contract["status"] == "phase41_directional_evidence_handoff_complete"
     assert phase39["directed_topology"] == (
-        "flagquantum.compiler.directed_topology.DirectedCouplingMap"
+        "flagquantum.compiler.topology.directed_topology.DirectedCouplingMap"
     )
     assert phase39["direction_legalization"] == (
-        "flagquantum.compiler.direction_legalization.legalize_directed_cx"
+        "flagquantum.compiler.topology.direction_legalization.legalize_directed_cx"
     )
     assert phase39["authoritative_program"] == "flagquantum.core.ir.CircuitIR"
     assert phase39["explicit_initial_layout"] is True

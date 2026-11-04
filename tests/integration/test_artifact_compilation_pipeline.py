@@ -5,12 +5,12 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 
-from flagquantum.compiler.artifact_compilation import (
+from flagquantum.compiler.artifacts.artifact_compilation import (
     ArtifactCompilationError,
     ArtifactCompilationResult,
     compile_circuit_artifact_for_target,
 )
-from flagquantum.compiler.compilation_evidence import (
+from flagquantum.compiler.artifacts.compilation_evidence import (
     CompilationEvidenceError,
     build_compilation_evidence_bundle,
     verify_compilation_evidence_bundle,

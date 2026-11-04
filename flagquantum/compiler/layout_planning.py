@@ -14,7 +14,7 @@ reports through :func:`~flagquantum.compiler.layout.final_layout`.
 The distinction from :class:`~flagquantum.compiler.layout.Layout` carries the
 whole contract. Every routed program in this package restores its logical output
 order, so a placement that starts off the identity survives that restore only on
-a :class:`~flagquantum.compiler.directed_topology.DirectedCouplingMap`, whose
+a :class:`~flagquantum.compiler.topology.directed_topology.DirectedCouplingMap`, whose
 physical workspace owns the idle slots and is cleaned by the inverse routing
 SWAPs. A plain :class:`~flagquantum.compiler.routing.CouplingMap` refuses
 ``initial_layout`` outright, because routing one there may not reach through a
@@ -54,8 +54,8 @@ from typing import Any
 
 from ..core.ir import ensure_circuit_ir
 from ..errors import CompilationError
-from .directed_topology import DirectedCouplingMap
 from .routing import CouplingMap
+from .topology.directed_topology import DirectedCouplingMap
 
 __all__ = (
     "LayoutPlanningError",

@@ -84,18 +84,18 @@ from benchmarks.compiler_two_qubit_synthesis import (
     snapshot,
 )
 from flagquantum.compiler import commutation_cancellation, two_qubit_optimization
-from flagquantum.compiler.native_gate_legalization import (
+from flagquantum.compiler.lowering.native_gate_legalization import (
     NativeGateLegalizationError,
     legalize_native_gates,
 )
-from flagquantum.compiler.pipeline import optimize
-from flagquantum.compiler.two_qubit_optimization import (
+from flagquantum.compiler.optimization.two_qubit_optimization import (
     _FAMILIES,
     _IDENTITY,
     _block_product,
     _replacement,
     _same,
 )
+from flagquantum.compiler.pipeline import optimize
 from flagquantum.core.ir import CircuitIR, Instruction
 from flagquantum.core.operator_schema import get_operator_schema
 from flagquantum.simulation.gate_matrix import gate_matrix

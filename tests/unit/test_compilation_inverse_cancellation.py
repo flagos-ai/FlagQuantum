@@ -22,16 +22,18 @@ from pathlib import Path
 import pytest
 import torch
 
-import flagquantum.compiler.inverse_cancellation as inverse_cancellation_module
+import flagquantum.compiler.optimization.inverse_cancellation as inverse_cancellation_module
 import flagquantum.compiler.pipeline as pipeline_module
 from flagquantum.compiler import optimize
-from flagquantum.compiler.commutation_cancellation import cancel_commuting_self_inverse
-from flagquantum.compiler.inverse_cancellation import (
+from flagquantum.compiler.optimization.commutation_cancellation import (
+    cancel_commuting_self_inverse,
+)
+from flagquantum.compiler.optimization.inverse_cancellation import (
     _declared_partner,
     inverse_pairs,
     merge_inverse_pairs,
 )
-from flagquantum.compiler.optimization_levels import (
+from flagquantum.compiler.optimization.optimization_levels import (
     DEFAULT_OPTIMIZATION_LEVEL,
     OPTIMIZATION_LEVEL_STAGES,
 )

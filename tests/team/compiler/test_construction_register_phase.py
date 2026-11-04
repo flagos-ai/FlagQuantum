@@ -26,7 +26,7 @@ from flagquantum.compiler._hybrid.model import (
     Value,
 )
 from flagquantum.compiler._hybrid.verifier import HybridVerificationError
-from flagquantum.compiler.coupling import CouplingMap
+from flagquantum.compiler.topology.coupling import CouplingMap
 from tests.register_program_cases import Registers
 
 pytestmark = pytest.mark.unit

@@ -23,7 +23,7 @@ from flagquantum.compiler.basis_translation import (
     validate_equivalence_rule,
     with_equivalence_rule,
 )
-from flagquantum.compiler.native_gate_legalization import (
+from flagquantum.compiler.lowering.native_gate_legalization import (
     NativeGateLegalizationError,
     _native_descriptors,
     _supports,

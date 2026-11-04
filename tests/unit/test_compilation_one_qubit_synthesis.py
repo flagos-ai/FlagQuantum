@@ -7,7 +7,7 @@ import math
 import pytest
 import torch
 
-from flagquantum.compiler.one_qubit_synthesis import (
+from flagquantum.compiler.optimization.one_qubit_synthesis import (
     synthesize_one_qubit,
     synthesize_one_qubit_matrix,
 )
@@ -126,7 +126,9 @@ def test_an_rx_pulse_replaces_sx_without_changing_the_unitary(z_rotation: str) -
 def test_parameter_free_table_covers_exactly_the_opcodes_that_need_it() -> None:
     """The table is not a second source of truth for parameterized opcodes."""
 
-    from flagquantum.compiler.one_qubit_synthesis import _FIXED_EULER_ANGLES
+    from flagquantum.compiler.optimization.one_qubit_synthesis import (
+        _FIXED_EULER_ANGLES,
+    )
 
     tabulated = set(_FIXED_EULER_ANGLES)
     parameter_free = {

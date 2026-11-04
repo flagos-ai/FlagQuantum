@@ -6,7 +6,9 @@ import pytest
 import torch
 
 from flagquantum.compiler import optimize
-from flagquantum.compiler.one_qubit_optimization import collapse_one_qubit_runs
+from flagquantum.compiler.optimization.one_qubit_optimization import (
+    collapse_one_qubit_runs,
+)
 from flagquantum.compiler.pipeline import (
     _ROTATION_PARAM,
     _SELF_INVERSE,
@@ -178,16 +180,20 @@ def _reference_optimize(circuit_or_ir: object) -> CircuitIR:
     one the implementation runs for the round-by-round comparison to mean anything.
     """
 
-    from flagquantum.compiler.commutation_cancellation import (
+    from flagquantum.compiler.optimization.commutation_cancellation import (
         cancel_commuting_self_inverse,
         merge_commuting_rotations,
     )
-    from flagquantum.compiler.diagonal_before_measure import (
+    from flagquantum.compiler.optimization.diagonal_before_measure import (
         remove_diagonal_gates_before_measure,
     )
-    from flagquantum.compiler.inverse_cancellation import merge_inverse_pairs
+    from flagquantum.compiler.optimization.inverse_cancellation import (
+        merge_inverse_pairs,
+    )
+    from flagquantum.compiler.optimization.zero_state_reset import (
+        remove_zero_state_resets,
+    )
     from flagquantum.compiler.pipeline import remove_identity_gates
-    from flagquantum.compiler.zero_state_reset import remove_zero_state_resets
 
     ir = ensure_circuit_ir(circuit_or_ir)
     for _ in range(len(ir) + 1):

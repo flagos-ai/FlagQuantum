@@ -51,13 +51,15 @@ import torch
 
 import flagquantum as fq
 import flagquantum.compiler.pipeline as compiler_pipeline
-import flagquantum.compiler.topology_legalization as topology_legalization
+import flagquantum.compiler.topology.topology_legalization as topology_legalization
 import flagquantum.runtime.dynamic.routing as dynamic_routing
 from flagquantum.compiler import CouplingMap, compile, route_to_topology
-from flagquantum.compiler.directed_topology import DirectedCouplingMap
 from flagquantum.compiler.layout import Layout
-from flagquantum.compiler.sabre import plan_sabre_swaps
-from flagquantum.compiler.topology_legalization import legalize_circuit_topology
+from flagquantum.compiler.topology.directed_topology import DirectedCouplingMap
+from flagquantum.compiler.topology.sabre import plan_sabre_swaps
+from flagquantum.compiler.topology.topology_legalization import (
+    legalize_circuit_topology,
+)
 from flagquantum.core.ir import (
     CircuitIR,
     Instruction,

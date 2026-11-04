@@ -10,12 +10,12 @@ from flagquantum.compiler._hybrid import (
     scalar_type,
     specialize_and_lower,
 )
-from flagquantum.compiler.routing import CouplingMap
-from flagquantum.compiler.target_legalization import (
+from flagquantum.compiler.lowering.target_legalization import (
     TargetLegalizationError,
     circuit_target_requirements,
     legalize_circuit_for_target,
 )
+from flagquantum.compiler.routing import CouplingMap
 from flagquantum.core.ir import (
     CircuitIR,
     Instruction,

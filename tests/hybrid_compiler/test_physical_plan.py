@@ -5,12 +5,14 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 
-from flagquantum.compiler.physical_plan import (
+from flagquantum.compiler.artifacts.physical_plan import (
     PhysicalPlanError,
     build_physical_circuit_plan,
 )
+from flagquantum.compiler.lowering.target_legalization import (
+    legalize_circuit_for_target,
+)
 from flagquantum.compiler.routing import CouplingMap
-from flagquantum.compiler.target_legalization import legalize_circuit_for_target
 from flagquantum.core.ir import CircuitIR, Instruction
 from flagquantum.core.target_capabilities import (
     CapabilityFact,

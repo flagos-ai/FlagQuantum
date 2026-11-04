@@ -50,7 +50,7 @@ import torch
 import flagquantum as fq
 import flagquantum.compiler.pipeline as compiler_pipeline
 from flagquantum.compiler import compile, optimize
-from flagquantum.compiler.optimization_levels import (
+from flagquantum.compiler.optimization.optimization_levels import (
     DECLARED_OPTIMIZATION_LEVELS,
     DEFAULT_OPTIMIZATION_LEVEL,
     IMPLEMENTED_OPTIMIZATION_LEVELS,
@@ -523,7 +523,9 @@ def test_the_reserved_level_blames_the_contract_and_not_a_missing_pass() -> None
     # the artifact it points at.
     assert "legalize_native_gates" in message
     assert "snapshot=" in message
-    from flagquantum.compiler.native_gate_legalization import legalize_native_gates
+    from flagquantum.compiler.lowering.native_gate_legalization import (
+        legalize_native_gates,
+    )
 
     parameters = inspect.signature(legalize_native_gates).parameters
     assert (

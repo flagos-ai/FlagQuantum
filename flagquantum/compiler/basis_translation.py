@@ -83,7 +83,7 @@ from ..core.ir import Instruction
 from ..core.operator_schema import canonical_opcode, get_operator_schema
 from ..errors import CompilationError
 from .angle_synthesis import quarter_turn_words
-from .one_qubit_synthesis import synthesize_one_qubit
+from .optimization.one_qubit_synthesis import synthesize_one_qubit
 
 _HALF = 0.5
 

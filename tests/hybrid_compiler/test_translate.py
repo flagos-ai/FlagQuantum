@@ -4,11 +4,11 @@ import pytest
 
 import flagquantum as fq
 from flagquantum.compiler import TRANSLATION_FORMATS, translate
+from flagquantum.compiler.formats.target_emission import EMISSION_PROFILES
 from flagquantum.compiler.openqasm import emit_openqasm
 from flagquantum.compiler.operator_lowering import UnsupportedLoweringError
 from flagquantum.compiler.qcis import emit_qcis
 from flagquantum.compiler.qir import emit_qir
-from flagquantum.compiler.target_emission import EMISSION_PROFILES
 from flagquantum.core.ir import CircuitIR, Instruction, ObservableNode
 
 pytestmark = pytest.mark.integration

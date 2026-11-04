@@ -86,11 +86,11 @@ from benchmarks.compiler_two_qubit_synthesis import (
     snapshot,
 )
 from flagquantum.compiler import one_qubit_optimization
-from flagquantum.compiler.native_gate_legalization import (
+from flagquantum.compiler.lowering.native_gate_legalization import (
     NativeGateLegalizationError,
     legalize_native_gates,
 )
-from flagquantum.compiler.one_qubit_optimization import (
+from flagquantum.compiler.optimization.one_qubit_optimization import (
     _emit,
     _fold_run,
     _run_product,

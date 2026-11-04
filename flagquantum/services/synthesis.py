@@ -60,7 +60,7 @@ from ..compiler._construction.selection import (
 from ..compiler._construction.target import Target
 from ..compiler._hybrid.verifier import Diagnostic, HybridVerificationError
 from ..compiler.basis_conversion import require_basis
-from ..compiler.coupling import CouplingMap
+from ..compiler.topology.coupling import CouplingMap
 from ..core.ir import CircuitIR, Instruction
 from ..core.operator_schema import get_operator_schema
 from ..core.parameters import parameter_names_in_value

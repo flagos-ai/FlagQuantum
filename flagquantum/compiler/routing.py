@@ -16,21 +16,21 @@ from types import MappingProxyType
 from typing import Any
 
 from ..core.ir import CircuitIR, Instruction, ensure_circuit_ir
-from .coupling import UNREACHABLE_DISTANCE as UNREACHABLE_DISTANCE
-from .coupling import CouplingMap as CouplingMap
-from .operand_semantics import (
+from .lowering.operand_semantics import (
     _require_multi_qubit_device_local,
 )
-from .ordering_barrier import is_ordering_barrier
-from .routing_cost import LinkErrorRates as LinkErrorRates
-from .routing_cost import (
+from .optimization.ordering_barrier import is_ordering_barrier
+from .topology.coupling import UNREACHABLE_DISTANCE as UNREACHABLE_DISTANCE
+from .topology.coupling import CouplingMap as CouplingMap
+from .topology.routing_cost import LinkErrorRates as LinkErrorRates
+from .topology.routing_cost import (
     _PricedDevice,
     _topology_cost_model,
     _TopologyCostModel,
     emitted_link_faults,
     require_weight_reading_strategy,
 )
-from .sabre import plan_restore_swaps, plan_sabre_layout, plan_sabre_swaps
+from .topology.sabre import plan_restore_swaps, plan_sabre_layout, plan_sabre_swaps
 
 # The routing strategies a caller may request. This is the authoritative
 # vocabulary: the `program_compilation` limitations in `capability-maturity.toml`
