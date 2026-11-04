@@ -982,3 +982,16 @@ Only one alternative can fire, so the joint state `01` has zero probability.
 ```json
 {"00": 0.625, "01": 0.0, "10": 0.25, "11": 0.125}
 ```
+
+## Duplicate DEM Fault Consolidation
+
+Run on CPU with Python 3.12 and the core Torch dependency.
+
+```bash
+PYTHONPATH=. python examples/qec/dem_duplicate_merge.py
+```
+
+Two independent faults with the same detector and logical signature consolidate
+to an odd-parity probability of 5/16, preserving both marginals. When the same
+faults share an error ID, their probabilities sum to 3/8 and the independent
+merge refuses the model.
