@@ -38,11 +38,13 @@ from .program_types import (
     prepare_uniform_interval_state,
     r,
     swap,
+    u,
     within,
 )
 from .ranges import unsigned_width
 from .register_profile import (
     equatorial_rotation,
+    euler_rotation,
     register_type,
     register_width,
     verify_register_program,
@@ -689,6 +691,32 @@ class _Body:
                 self.emit(
                     "qreg.gate", node, (destination,), gate=gate, index=0, angle=angle
                 )
+        elif function is u:
+            if len(node.args) != 5:
+                _error(
+                    self.source,
+                    node,
+                    "program.signature",
+                    "U requires four angles and a target",
+                )
+            theta, phi, lam, gamma = (self.phase_number(arg) for arg in node.args[:4])
+            if theta is None or phi is None or lam is None or gamma is None:
+                _error(
+                    self.source,
+                    node,
+                    "program.angle",
+                    "U requires finite static real angles",
+                )
+            destination = self.register(node.args[4])
+            if register_width(destination) != 1:
+                _error(
+                    self.source, node, "program.width", "U requires a one-bit target"
+                )
+            for gate, angle in euler_rotation(theta, phi, lam):
+                self.emit(
+                    "qreg.gate", node, (destination,), gate=gate, index=0, angle=angle
+                )
+            self.emit("qreg.phase", node, (), angle=gamma)
         elif function is phase:
             if len(node.args) != 2:
                 _error(

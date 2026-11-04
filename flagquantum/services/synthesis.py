@@ -78,6 +78,7 @@ CX = program_types.cx
 SWAP = program_types.swap
 CRX = program_types.crx
 R = program_types.r
+U = program_types.u
 control = program_types.control
 prepare_uniform_interval_state = program_types.prepare_uniform_interval_state
 
@@ -103,6 +104,7 @@ __all__ = (
     "SWAP",
     "CRX",
     "R",
+    "U",
     "prepare_uniform_interval_state",
     "control",
 )
