@@ -21,7 +21,7 @@ from .profile import _fail, _positive_integer, _width, verify_construction
 from .register_expansion import expand_register_calls, is_register_function
 
 MAX_PREPARED_AMPLITUDES = 256
-MAX_TYPE2_WIDTH = 4
+MAX_TRANSFORM_WIDTH = 4
 
 _ATTRIBUTES = MappingProxyType(
     {
@@ -34,6 +34,7 @@ _ATTRIBUTES = MappingProxyType(
         "qreg.prepare_ghz": frozenset(),
         "qreg.prepare_amplitudes": frozenset({"amplitudes", "bound"}),
         "qreg.qft": frozenset(),
+        "qreg.type1_transform": frozenset(),
         "qreg.type2_transform": frozenset({"kind"}),
         "qreg.rzz": frozenset({"angle"}),
         "qreg.pair_gate": frozenset({"gate"}),
@@ -452,18 +453,23 @@ def _verify_body(
                         op,
                     )
                 changed = (destination,)
-            elif op.name == "qreg.type2_transform":
-                kind = op.attributes["kind"]
+            elif op.name in {"qreg.type1_transform", "qreg.type2_transform"}:
+                type1 = op.name == "qreg.type1_transform"
+                kind = "type1" if type1 else op.attributes["kind"]
                 if (
                     not isinstance(kind, str)
-                    or kind not in {"cosine", "sine", "combined"}
+                    or (not type1 and kind not in {"cosine", "sine", "combined"})
                     or len(arguments) != int(kind == "combined")
                     or (arguments and register_width(arguments[0]) != 1)
-                    or not 1 <= register_width(destination) <= MAX_TYPE2_WIDTH
+                    or not 1 <= register_width(destination) <= MAX_TRANSFORM_WIDTH
                 ):
                     _fail(
                         "register.transform",
-                        "invalid bounded Type II transform operands",
+                        (
+                            "invalid bounded Type I transform operands"
+                            if type1
+                            else "invalid bounded Type II transform operands"
+                        ),
                         op,
                     )
                 if destination in borrowed or destination in arguments:

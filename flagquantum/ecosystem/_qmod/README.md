@@ -595,3 +595,21 @@ bit counts. A fractional result requires a terminal inferred-width `main`
 output. For example, `3.5 * a` multiplies by the raw integer 7 and reports one
 fractional bit. Divide the named probability key's raw result by two to read
 the numeric value.
+
+### Combined Type I cosine and sine transform
+
+`qct_qst_type1(x)` applies an in-place transform on one initialized writable
+register of one to four qubits. For a register of width n, the low
+`2**(n-1)+1` basis indices form the normalized cosine block. The remaining
+indices form the normalized sine block multiplied by `i`. The transform
+reuses the bounded gate decomposition and requires no auxiliary qubits.
+
+```python
+from pathlib import Path
+
+import flagquantum as fq
+from flagquantum import synth
+
+program = synth.synthesize(Path("tests/fixtures/classiq_qmod/qct_qst_type1.qmod"))
+print(fq.run(program).statevector())
+```

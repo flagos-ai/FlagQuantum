@@ -75,6 +75,7 @@ _INTRINSICS = (
         "exponentiate",
         "qdrift",
         "qft",
+        "qct_qst_type1",
         "qct_type2",
         "qst_type2",
         "qct_qst_type2",
@@ -1684,6 +1685,13 @@ class _Adapt:
             if self.parameters[target.text].kind != "qbit[]":
                 reject(target, "type", "qft requires a qubit array")
             self.effect_op("qreg.qft", token, (register,))
+        elif token.text == "qct_qst_type1":
+            if len(args) != 1:
+                reject(
+                    token, "signature", "Type I transform requires one data register"
+                )
+            data = self.register(self.atom(args[0]), allow_qubit_array=True)
+            self.effect_op("qreg.type1_transform", token, (data,))
         elif token.text in {"qct_type2", "qst_type2", "qct_qst_type2"}:
             kind = {
                 "qct_type2": "cosine",

@@ -167,7 +167,41 @@ def _type2_instructions(
     else:
         values = matrix(sine=kind == "sine")
 
-    wires = (*selector, *data)
+    return _real_transform_instructions(values, (*selector, *data))
+
+
+def _type1_instructions(wires: tuple[int, ...]) -> tuple[Instruction, ...]:
+    half = 1 << (len(wires) - 1)
+    boundary = half + 1
+    size = half * 2
+    scale = math.sqrt(2 / half)
+    weights = [math.sqrt(0.5), *([1.0] * (half - 1)), math.sqrt(0.5)]
+    values = [
+        [
+            scale
+            * weights[row]
+            * weights[column]
+            * math.cos(math.pi * row * column / half)
+            for column in range(boundary)
+        ]
+        + [0.0] * (size - boundary)
+        for row in range(boundary)
+    ]
+    values.extend(
+        [0.0] * boundary
+        + [scale * math.sin(math.pi * row * column / half) for column in range(1, half)]
+        for row in range(1, half)
+    )
+    return _real_transform_instructions(values, wires, imaginary_start=boundary)
+
+
+def _real_transform_instructions(
+    values: list[list[float]],
+    wires: tuple[int, ...],
+    *,
+    imaginary_start: int | None = None,
+) -> tuple[Instruction, ...]:
+    """Factor a real orthogonal matrix, with optional phase i on its final block."""
     dimension = len(values)
     gray = tuple(index ^ (index >> 1) for index in range(dimension))
     rotations: list[tuple[int, int, float]] = []
@@ -191,10 +225,14 @@ def _type2_instructions(
 
     gates: list[Instruction] = []
     for pattern in range(dimension):
-        if values[pattern][pattern] >= 0:
+        angle = math.pi if values[pattern][pattern] < 0 else 0.0
+        # The final block phase commutes with the exact block-diagonal transform.
+        if imaginary_start is not None and pattern >= imaginary_start:
+            angle += math.pi / 2
+        if not angle:
             continue
         target = wires[0]
-        phase = Instruction("phase", (target,), {"theta": math.pi})
+        phase = Instruction("phase", (target,), {"theta": angle})
         flip = () if pattern & (dimension >> 1) else (Instruction("x", (target,)),)
         gates.extend((*flip, *_pattern_gate(phase, wires, pattern), *flip))
     for pattern, target, angle in reversed(rotations):
@@ -243,6 +281,8 @@ def schedule_register_program(
             )
         elif op.name == "qreg.qft":
             gates = qft_instructions(bindings[op.operands[1].id])
+        elif op.name == "qreg.type1_transform":
+            gates = _type1_instructions(bindings[op.operands[1].id])
         elif op.name == "qreg.type2_transform":
             data, *selectors = (bindings[value.id] for value in op.operands[1:])
             gates = _type2_instructions(
