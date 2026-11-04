@@ -16,6 +16,9 @@ env:
 jobs:
   validate:
     runs-on: ubuntu-latest
+    concurrency:
+      group: flagquantum-gh-4
+      queue: max
     timeout-minutes: 45
     permissions:
       contents: read
@@ -48,6 +51,9 @@ jobs:
   build-sdist:
     needs: validate
     runs-on: ubuntu-latest
+    concurrency:
+      group: flagquantum-gh-5
+      queue: max
     timeout-minutes: 10
     permissions:
       contents: read
@@ -77,6 +83,9 @@ jobs:
   build-wheels:
     needs: validate
     runs-on: ${{ matrix.os }}
+    concurrency:
+      group: flagquantum-gh-6
+      queue: max
     timeout-minutes: 60
     permissions:
       contents: read
@@ -115,6 +124,9 @@ jobs:
   publish:
     needs: [build-sdist, build-wheels]
     runs-on: ubuntu-latest
+    concurrency:
+      group: flagquantum-gh-7
+      queue: max
     timeout-minutes: 10
     permissions:
       contents: read
