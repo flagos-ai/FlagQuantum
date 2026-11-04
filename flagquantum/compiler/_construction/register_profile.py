@@ -35,6 +35,7 @@ _ATTRIBUTES = MappingProxyType(
         "qreg.rzz": frozenset({"angle"}),
         "qreg.pair_gate": frozenset({"gate"}),
         "qreg.control_h": frozenset(),
+        "qreg.control_x": frozenset(),
         "qreg.control_phase": frozenset({"angle"}),
         "qreg.gate": frozenset({"gate", "index"}),
         "qreg.compute": frozenset({"callee"}),
@@ -436,10 +437,12 @@ def _verify_body(
                     )
                 initialized.update(v.id for v in writes)
                 changed = tuple(writes)
-            elif op.name in {"qreg.control_h", "qreg.control_phase"}:
+            elif op.name in {"qreg.control_h", "qreg.control_x", "qreg.control_phase"}:
                 if (
                     len(arguments) > 1
-                    or register_width(destination) != 1
+                    or (
+                        op.name != "qreg.control_x" and register_width(destination) != 1
+                    )
                     or any(value.id not in initialized for value in operands)
                 ):
                     _fail(
@@ -451,7 +454,7 @@ def _verify_body(
                     _fail(
                         "register.control", "condition and target must be disjoint", op
                     )
-                if op.name == "qreg.control_h":
+                if op.name in {"qreg.control_h", "qreg.control_x"}:
                     if (
                         len(arguments) != 1
                         or arguments[0] in borrowed
@@ -459,7 +462,7 @@ def _verify_body(
                     ):
                         _fail(
                             "register.control",
-                            "controlled Hadamard requires a writable target",
+                            "controlled gate requires a writable scalar target",
                             op,
                         )
                     changed = tuple(arguments)

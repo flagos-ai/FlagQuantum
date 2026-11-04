@@ -13,6 +13,7 @@ from types import MappingProxyType
 from typing import Literal
 
 from ...core._composition import controlled_instruction
+from ...core.controlled import _clean_mcx_instructions
 from ...core.ir import CircuitIR, Instruction
 from .._hybrid.model import Block, HybridProgram, Operation, Region, Value, ValueId
 from ..state_preparation_synthesis import _synthesize_real_state
@@ -77,6 +78,56 @@ def _uniform_interval(
     return tuple(gates)
 
 
+def _array_controlled_x(
+    controls: tuple[int, ...],
+    target: int,
+    workspace_start: int,
+    n_qubits: int,
+    op: Operation,
+) -> tuple[tuple[Instruction, ...], int]:
+    """Reuse clean ladders and share their scratch across conjunction groups."""
+    count = len(controls)
+    scratch_width = max(count - 2, 0)
+    group_size = count
+    flags_width = 0
+    # A flag holds each group result while its ladder scratch can be reused.
+    # Use the direct ladder on a tie to avoid extra compute/uncompute.
+    for size in range(2, count):
+        flag_count = (count + size - 1) // size
+        scratch = max(size - 2, flag_count - 2)
+        if flag_count + scratch < flags_width + scratch_width:
+            group_size, flags_width, scratch_width = size, flag_count, scratch
+
+    workspace_width = flags_width + scratch_width
+    if workspace_start + workspace_width > n_qubits:
+        _fail("lowering.workspace", "array control exceeds clean workspace", op)
+    flags = tuple(range(workspace_start, workspace_start + flags_width))
+    scratch_wires = tuple(
+        range(workspace_start + flags_width, workspace_start + workspace_width)
+    )
+    gates: list[Instruction] = []
+
+    def append(source: tuple[int, ...], destination: int) -> None:
+        gates.extend(
+            _clean_mcx_instructions(
+                source, destination, scratch_wires[: max(len(source) - 2, 0)]
+            )
+        )
+
+    if flags:
+        groups = tuple(
+            controls[i : i + group_size] for i in range(0, count, group_size)
+        )
+        for group, flag in zip(groups, flags, strict=True):
+            append(group, flag)
+        append(flags, target)
+        for group, flag in zip(reversed(groups), reversed(flags), strict=True):
+            append(group, flag)
+    else:
+        append(controls, target)
+    return tuple(gates), workspace_width
+
+
 def schedule_register_program(
     program: HybridProgram,
     functions: Sequence[HybridProgram] = (),
@@ -102,6 +153,7 @@ def schedule_register_program(
     segments: list[ArithmeticCandidate] = []
     computed: dict[ValueId, ArithmeticCandidate] = {}
     used_boolean = False
+    control_workspace = 0
     symbols = {f.name: f for f in functions}
     for ordinal, op in enumerate(program.body.blocks[0].operations):
         gates: tuple[Instruction, ...] = ()
@@ -120,6 +172,12 @@ def schedule_register_program(
         elif op.name == "qreg.control_h":
             control, target = (bindings[value.id][0] for value in op.operands[1:])
             gates = controlled_instruction(Instruction("h", (target,)), (control,))
+        elif op.name == "qreg.control_x":
+            controls, target_ports = (bindings[value.id] for value in op.operands[1:])
+            gates, used_workspace = _array_controlled_x(
+                controls, target_ports[0], position, n_qubits, op
+            )
+            control_workspace = max(control_workspace, used_workspace)
         elif op.name == "qreg.control_phase":
             condition = bindings[op.operands[1].id][0]
             angle = op.attributes["angle"]
@@ -355,6 +413,7 @@ def schedule_register_program(
         scheduling,
         MappingProxyType(labels),
         tuple(segments),
-        local_width + max((s.peak_workspace for s in segments), default=0),
+        local_width
+        + max(control_workspace, max((s.peak_workspace for s in segments), default=0)),
         sum(s.recomputations for s in segments),
     )

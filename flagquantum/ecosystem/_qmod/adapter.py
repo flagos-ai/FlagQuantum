@@ -701,6 +701,24 @@ class _Adapt:
         if len(statement.arguments) != 1 or body is None or len(body) != 1:
             reject(token, "control", "control requires one condition and one operation")
         condition = statement.arguments[0]
+        parameter = self.parameters.get(condition.token.text)
+        if (
+            not condition.children
+            and parameter is not None
+            and parameter.kind == "qbit[]"
+        ):
+            operation = body[0]
+            if operation.token.text != "X" or len(operation.arguments) != 1:
+                reject(
+                    token, "control", "array control requires a single scalar X target"
+                )
+            target = self.atom(operation.arguments[0])
+            if target.text == parameter.name.text:
+                reject(token, "control", "condition and target must be disjoint")
+            control = self.register(parameter.name, allow_qubit_array=True)
+            destination, _ = self.gate_target(operation.arguments[0])
+            self.effect_op("qreg.control_x", token, (control, destination))
+            return
         expression = _Expression(
             condition, self.widths, f"{self.scope}.control{index}", self.signed
         )

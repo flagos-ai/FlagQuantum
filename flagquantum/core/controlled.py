@@ -106,6 +106,30 @@ _LADDER_ANGLE: Mapping[str, float] = {
 }
 
 
+def _clean_mcx_instructions(
+    controls: Sequence[int], target: int, scratch: Sequence[int]
+) -> tuple[Instruction, ...]:
+    """Emit an X on the all-ones branch using verified clean scratch.
+
+    The caller supplies distinct wires and exactly max(len(controls) - 2, 0)
+    clean work wires. Every work wire is restored before the ladder returns.
+    """
+    count = len(controls)
+    if count == 1:
+        return (Instruction("cx", (controls[0], target)),)
+    if count == 2:
+        return (Instruction("ccx", (controls[0], controls[1], target)),)
+    prefix = [Instruction("ccx", (controls[0], controls[1], scratch[0]))]
+    for index in range(2, count - 1):
+        prefix.append(
+            Instruction(
+                "ccx", (scratch[index - 2], controls[index], scratch[index - 1])
+            )
+        )
+    flip = Instruction("ccx", (scratch[-1], controls[-1], target))
+    return (*prefix, flip, *reversed(prefix))
+
+
 def controlled_instructions(
     schema: OperatorSchema,
     params: Mapping[str, Any],

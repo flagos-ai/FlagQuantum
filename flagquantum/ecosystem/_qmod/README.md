@@ -441,3 +441,12 @@ fixtures show probability literals and fraction literals, respectively.
 `(|00> - |11>) / sqrt(2)`. `prepare_bell_state(2, out)` prepares
 `(|01> + |10>) / sqrt(2)`. Both use a fresh two-qubit array and reuse
 the GHZ preparation with a final Z or X gate, respectively.
+
+### Array-controlled X
+
+`control (controls) { X(target); }` accepts a whole initialized qubit array and
+a distinct initialized writable scalar target. The target flips only on the
+all-ones branch. For larger arrays, synthesis groups the controls and reuses
+the existing clean Toffoli ladder across groups. It clears the group flags and
+scratch before the next operation. The workspace counts against the ordinary
+synthesis budget.
