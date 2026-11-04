@@ -170,7 +170,7 @@ def test_portable_cpu_work_uses_general_or_validated_scale_sets() -> None:
             ), f"{name} must not need A800's unavailable HTTPS checkout"
     # Long suites and cache-dependent Triton setup use the isolated CPU pool;
     # the other portable environment checks stay on the general pool.
-    for name in ("distributed-cpu-shard", "coverage-shard", "triton-optional"):
+    for name in ("distributed-cpu-shard", "triton-optional"):
         job = jobs[name]
         labels = '["self-hosted","linux","x64","flagquantum-cpu"]'
         if name == "triton-optional":
@@ -280,18 +280,27 @@ def test_r300_is_not_a_dependency_of_pr_source_preparation() -> None:
     )
 
 
-@pytest.mark.parametrize("job", ["cpu-core", "cpu-core-3-12-tests", "cpu-runtime"])
-def test_core_cpu_downloads_use_the_bounded_shared_mirror_policy(job: str) -> None:
+@pytest.mark.parametrize(
+    ("job", "profile"),
+    [
+        ("cpu-core", "core-py${{ matrix.python-version }}"),
+        ("cpu-core-3-12-tests", "core-py3.12"),
+        ("cpu-runtime", "core-py3.12"),
+        ("coverage-shard", "coverage-py3.12"),
+    ],
+)
+def test_cpu_suites_attach_the_locked_image(job: str, profile: str) -> None:
     jobs = yaml.safe_load((WORKFLOWS / "ci.yml").read_text())["jobs"]
-    steps = jobs[job]["steps"]
-    installer = next(
-        step
-        for step in steps
-        if step.get("uses") == "./.github/actions/install-cpu-torch"
+    suite = jobs[job]
+    assert suite["runs-on"] == "ubuntu-latest"
+    steps = suite["steps"]
+    attach = next(
+        step for step in steps if step.get("uses") == "./.github/actions/offline-cpu"
     )
-    assert installer["timeout-minutes"] == 8
+    assert "if" not in attach
+    assert attach["with"]["profile"] == profile
     assert not any(
-        "/root/liuwei/fq-ci-bootstrap/cpu-wheels" in step.get("run", "")
+        "setup-python" in step.get("uses", "") or "pip install" in step.get("run", "")
         for step in steps
     )
 

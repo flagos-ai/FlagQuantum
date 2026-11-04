@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+python="$FQ_CI_PRIVATE/venv/bin/python"
+if [[ "${1:-}" == --prepare && "${0##*/}" == python ]]; then
+  command=(bash -euc '
+    cmp pyproject.toml /opt/flagquantum/pyproject.toml
+    cmp docker/ci/profiles.json /opt/flagquantum/profiles.json
+    python -c "import sys; assert sys.argv[1] == \".\".join(map(str, sys.version_info[:2]))" "$1"
+    python -c "import os; assert set(os.listdir(\"/sys/class/net\")) == {\"lo\"}"
+    python -m venv --without-pip "$FQ_CI_PRIVATE/venv"
+    seed="$(python -c "import sysconfig; print(sysconfig.get_path(\"purelib\"))")"
+    private="$("$FQ_CI_PRIVATE/venv/bin/python" -c "import sysconfig; print(sysconfig.get_path(\"purelib\"))")"
+    printf "%s\n" "$seed" > "$private/locked-dependencies.pth"
+    "$FQ_CI_PRIVATE/venv/bin/python" -m pip --isolated install --no-index --no-deps --no-build-isolation -e .
+    echo "Verified loopback-only network and installed the checkout offline"
+  ' prepare "${FQ_CI_PROFILE##*-py}")
+elif [[ "${0##*/}" == torchrun ]]; then
+  command=("$python" -m torch.distributed.run "$@")
+else
+  command=("$python" "$@")
+fi
+
+exec docker run --rm --pull never --network none --read-only --tmpfs /tmp:exec --shm-size 1g \
+  --cap-drop ALL --security-opt no-new-privileges \
+  --user "$(id -u):$(id -g)" --workdir "$GITHUB_WORKSPACE" \
+  --volume "$GITHUB_WORKSPACE:$GITHUB_WORKSPACE" \
+  --volume "$RUNNER_TEMP:$RUNNER_TEMP" \
+  --env "HOME=$FQ_CI_PRIVATE" --env USER --env LOGNAME \
+  --env "PATH=$FQ_CI_PRIVATE/venv/bin:/opt/ci/bin:/usr/local/bin:/usr/bin:/bin" \
+  --env FQ_CI_PRIVATE --env FQ_CI_REPORT_DIR --env FQ_PYTEST_WORKERS \
+  --env GITHUB_ENV --env GITHUB_STEP_SUMMARY --env RUNNER_TEMP --env RUNNER_NAME --env RUNNER_ENVIRONMENT \
+  --env OMP_NUM_THREADS --env MKL_NUM_THREADS --env OPENBLAS_NUM_THREADS \
+  --env CUDA_VISIBLE_DEVICES --env JAX_PLATFORMS --env COVERAGE_FILE --env PYTEST_ADDOPTS \
+  "$FQ_CI_IMAGE" "${command[@]}"
