@@ -291,6 +291,52 @@ class Parser:
         self.position += 1
         return Expression(Token(text, integer.location))
 
+    def pauli_terms(self) -> Expression:
+        start = self.take("[")
+        terms = []
+        while self.current.text != "]":
+            term = self.take("PauliTerm")
+            self.take("{")
+            fields: dict[str, Expression] = {}
+            for position in range(2):
+                if position:
+                    self.take(",")
+                field = self.name()
+                if field.text in fields or field.text not in {"pauli", "coefficient"}:
+                    reject(
+                        field, "pauli", "expected distinct pauli and coefficient fields"
+                    )
+                self.take("=")
+                if field.text == "pauli":
+                    axes_start = self.take("[")
+                    axes = []
+                    while self.current.text != "]":
+                        self.take("Pauli")
+                        self.take(":")
+                        self.take(":")
+                        axis = self.name()
+                        if axis.text not in {"I", "X", "Y", "Z"}:
+                            reject(axis, "pauli", "expected Pauli::I, X, Y or Z")
+                        axes.append(Expression(axis))
+                        if self.current.text != ",":
+                            break
+                        self.take(",")
+                    self.take("]")
+                    fields[field.text] = Expression(axes_start, tuple(axes))
+                else:
+                    if self.current.text == "-":
+                        sign = self.take("-")
+                        fields[field.text] = Expression(sign, (self.angle_argument(),))
+                    else:
+                        fields[field.text] = self.angle_argument()
+            self.take("}")
+            terms.append(Expression(term, (fields["pauli"], fields["coefficient"])))
+            if self.current.text != ",":
+                break
+            self.take(",")
+        self.take("]")
+        return Expression(start, tuple(terms))
+
     def scalar_type(self, *, allow_qubit_array: bool = False) -> tuple[str, int | None]:
         kind = self.current
         if kind.text not in {"qbit", "qnum"}:
@@ -468,17 +514,21 @@ class Parser:
                 self.take("(")
                 args: list[Expression] = []
                 if self.current.text != ")":
-                    args.append(
-                        self.angle_argument()
-                        if target.text in ANGLE_CALLS
-                        else self.expression()
-                    )
+                    if target.text == "suzuki_trotter":
+                        args.append(self.pauli_terms())
+                    elif target.text in ANGLE_CALLS:
+                        args.append(self.angle_argument())
+                    else:
+                        args.append(self.expression())
                     while self.current.text == ",":
                         self.take(",")
                         args.append(
                             self.angle_argument()
                             if (target.text == "U" and len(args) < 4)
-                            or (len(args) == 1 and target.text in {"R", "phase"})
+                            or (
+                                len(args) == 1
+                                and target.text in {"R", "phase", "suzuki_trotter"}
+                            )
                             else self.expression()
                         )
                 self.take(")")

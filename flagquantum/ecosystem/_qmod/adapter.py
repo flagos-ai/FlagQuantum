@@ -52,7 +52,15 @@ _INTRINSICS = (
     _UNIFORM_CALLS
     | _GATE_CALLS
     | _PAIR_CALLS
-    | {"allocate", "phase", "pi", "control", "prepare_ghz_state", "prepare_bell_state"}
+    | {
+        "allocate",
+        "phase",
+        "pi",
+        "control",
+        "prepare_ghz_state",
+        "prepare_bell_state",
+        "suzuki_trotter",
+    }
     | ANGLE_CALLS
 )
 
@@ -688,6 +696,104 @@ class _Adapt:
                 self.registers.pop(name, None)
             self.local_scope = parent_scope
 
+    def suzuki_trotter(self, token: Token, args: tuple[Expression, ...]) -> None:
+        if len(args) != 5:
+            reject(
+                token,
+                "signature",
+                "suzuki_trotter requires terms, time, order, repetitions and target",
+            )
+        terms, time_arg, order_arg, repetitions_arg, target_arg = args
+        if any(
+            arg.children or not arg.token.text.isdecimal()
+            for arg in (order_arg, repetitions_arg)
+        ):
+            reject(token, "evolution", "order and repetitions must be integer literals")
+        order = int(order_arg.token.text)
+        repetitions = int(repetitions_arg.token.text)
+        if order not in {1, 2} or not 1 <= repetitions <= 256:
+            reject(token, "evolution", "use order 1 or 2 and 1..256 repetitions")
+        target = self.atom(target_arg)
+        register = self.register(target, allow_qubit_array=True)
+        width = self.widths[target.text]
+        if self.parameters[target.text].kind != "qbit[]" or not terms.children:
+            reject(
+                token,
+                "evolution",
+                "evolution requires a nonempty Pauli sum and qubit array",
+            )
+        step = self.angle(time_arg, token) / repetitions
+        if order == 2:
+            step /= 2
+        prepared = []
+        for term in terms.children:
+            axes, coefficient = term.children
+            if len(axes.children) != width:
+                reject(
+                    axes.token, "pauli", "Pauli word length must match the array width"
+                )
+            weight = (
+                -self.angle(coefficient.children[0], token)
+                if coefficient.token.text == "-"
+                else self.angle(coefficient, token)
+            )
+            support = tuple(
+                (index, axis.token.text)
+                for index, axis in enumerate(axes.children)
+                if axis.token.text != "I"
+            )
+            prepared.append((support, step * weight))
+        sequence = prepared if order == 1 else [*prepared, *reversed(prepared)]
+        for _ in range(repetitions):
+            for support, angle in sequence:
+                self.pauli_exponential(token, register, support, angle)
+
+    def pauli_exponential(
+        self,
+        token: Token,
+        register: Value,
+        support: tuple[tuple[int, str], ...],
+        angle: float,
+    ) -> None:
+        def gate(name: str, index: int, **attributes: object) -> None:
+            self.effect_op(
+                "qreg.gate", token, (register,), gate=name, index=index, **attributes
+            )
+
+        if not support:
+            gate("rz", 0, angle=0.0)
+            self.effect_op("qreg.phase", token, (), angle=-angle)
+            return
+
+        for index, axis in support:
+            if axis == "X":
+                gate("h", index)
+            elif axis == "Y":
+                gate("rx", index, angle=math.pi / 2)
+        anchor = support[0][0]
+        for index, _ in support[1:]:
+            self.effect_op(
+                "qreg.pair_gate",
+                token,
+                (register, register),
+                gate="cx",
+                indices=(index, anchor),
+            )
+        gate("rz", anchor, angle=2 * angle)
+        for index, _ in reversed(support[1:]):
+            self.effect_op(
+                "qreg.pair_gate",
+                token,
+                (register, register),
+                gate="cx",
+                indices=(index, anchor),
+            )
+        for index, axis in reversed(support):
+            if axis == "X":
+                gate("h", index)
+            elif axis == "Y":
+                gate("rx", index, angle=-math.pi / 2)
+
     def statement(self, statement: Statement, index: str) -> None:
         token, args = statement.token, statement.arguments
         if statement.repeat_index is not None:
@@ -868,6 +974,8 @@ class _Adapt:
             self.effect_op(
                 "qreg.uniform_interval", token, (destination,), start=start, stop=stop
             )
+        elif token.text == "suzuki_trotter":
+            self.suzuki_trotter(token, args)
         elif token.text == "RZZ":
             if len(args) != 2:
                 reject(token, "signature", "RZZ requires an angle and a qubit array")
