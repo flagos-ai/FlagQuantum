@@ -18,7 +18,7 @@ ANGLE_CALLS = frozenset({"PHASE", "RX", "RZ", "RZZ", "CRX", "R", "U"})
 _TOKEN = re.compile(
     r"(?P<space>\s+)|(?P<comment>//[^\n]*|/\*[\s\S]*?\*/)"
     r"|(?P<number>[0-9]+)|(?P<name>[A-Za-z_][A-Za-z_0-9]*)"
-    r"|(?P<symbol>\*\*|\^=|\+=|->|==|!=|<=|>=|[{}()<>,:;=+*\[\].^/\-&|~])"
+    r"|(?P<symbol>\*\*|\^=|\+=|->|==|!=|<=|>=|[{}()<>,:;=+*%\[\].^/\-&|~])"
 )
 _RESERVED = frozenset(
     {
@@ -219,6 +219,7 @@ class Parser:
             "&": 8,
             "+": 10,
             "*": 20,
+            "%": 20,
             "**": 30,
         }
         if static:

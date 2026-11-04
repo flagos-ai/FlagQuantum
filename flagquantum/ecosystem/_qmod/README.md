@@ -385,3 +385,15 @@ source = Path("tests/fixtures/classiq_qmod/hamiltonian_simulation_guide_qdrift.q
 program = synth.synthesize(source)
 print(fq.run(program).statevector())
 ```
+
+### Power-of-two remainder
+
+`x % n` accepts an unsigned integer expression and a positive power-of-two
+literal divisor. It keeps the low `log2(n)` bits, with a one-bit zero for
+`n == 1`. Its precedence matches multiplication. The remainder reuses the
+unsigned AND lowering with a low-bit mask. Bounded Boolean synthesis can
+combine it with surrounding arithmetic, bitwise operations and equality.
+
+Run `tests/fixtures/classiq_qmod/modulo_example.qmod` through
+`synth.synthesize(Path(...))`. Its result register contains 3 for inputs 4
+and 7 with divisor 4.

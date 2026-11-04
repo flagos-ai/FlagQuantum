@@ -229,6 +229,22 @@ class _Expression:
                     ),
                     lq or rq,
                 )
+            elif text == "%":
+                if (
+                    any(signed)
+                    or rhs.children
+                    or not rhs.token.text.isdecimal()
+                    or right < 1
+                    or right & (right - 1)
+                ):
+                    reject(
+                        node.token,
+                        "modulo",
+                        "modulo requires an unsigned dividend and a positive power-of-two literal divisor",
+                    )
+                mask = right - 1
+                self.word_widths[node] = unsigned_width(mask)
+                result = (mask if lq else left & mask, lq)
             elif any(signed):
                 reject(
                     node.token,
@@ -296,6 +312,22 @@ class _Expression:
                 **({"signed": signed} if any(signed) else {}),
             )
         left = self.emit(node.children[0])
+        if node.token.text == "%":
+            divisor = node.children[1]
+            mask = self.operation(
+                "arith.constant",
+                (),
+                INDEX,
+                divisor.token,
+                value=int(divisor.token.text) - 1,
+            )
+            return self.operation(
+                "qint.bitwise",
+                (left, mask),
+                uint_type(self.word_widths[node]),
+                node.token,
+                operator="&",
+            )
         if node.token.text == "~":
             zero = self.operation("arith.constant", (), INDEX, node.token, value=0)
             return self.operation("qint.equal", (left, zero), uint_type(1), node.token)
@@ -1043,7 +1075,12 @@ class _Adapt:
                     "scope",
                     "within preparation requires a quantum-dependent expression",
                 )
-            destination = self.register(target, unsigned_width(expression.bound))
+            inferred_width = (
+                expression.word_widths[args[1]]
+                if args[1].token.text == "%"
+                else unsigned_width(expression.bound)
+            )
+            destination = self.register(target, inferred_width)
             if args[1] in expression.signed_words:
                 if (
                     self.scope != "main"
