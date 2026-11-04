@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 import re
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
@@ -50,7 +51,7 @@ _INTRINSICS = (
     _UNIFORM_CALLS
     | _GATE_CALLS
     | _PAIR_CALLS
-    | {"allocate", "phase", "pi"}
+    | {"allocate", "phase", "pi", "control"}
     | ANGLE_CALLS
 )
 
@@ -422,6 +423,72 @@ class _Adapt:
             (reads if borrowed else writes).append(actual)
         self.effect_op("qreg.call", token, (*reads, *writes), callee=program.name)
 
+    def scalar_control(self, statement: Statement, index: str) -> None:
+        token = statement.token
+        body = statement.control_body
+        if len(statement.arguments) != 1 or body is None or len(body) != 1:
+            reject(token, "control", "control requires one condition and one operation")
+        condition = statement.arguments[0]
+        expression = _Expression(condition, self.widths, f"{self.scope}.control{index}")
+        if not expression.quantum or unsigned_width(expression.bound) != 1:
+            reject(token, "control", "control requires a quantum one-bit condition")
+        inputs = tuple(
+            self.register(self.parameters[name].name) for name in expression.names
+        )
+        if sum(value.type.parameters[0] for value in inputs) > 8:
+            reject(token, "control", "control predicate exceeds eight input bits")
+        operation = body[0]
+        args = operation.arguments
+        targets: tuple[Value, ...] = ()
+        angle = None
+        if operation.token.text in {"H", "hadamard_transform"} and len(args) == 1:
+            targets = (self.register(self.atom(args[0])),)
+            opcode = "qreg.control_h"
+        elif operation.token.text == "phase" and len(args) == 2:
+            coefficient = args[1]
+            if (
+                coefficient.children
+                or coefficient.token.text != "pi"
+                or "pi" in self.parameters
+            ):
+                reject(token, "control", "controlled phase requires unshadowed pi")
+            value = args[0]
+            if not value.children and value.token.text in {"0", "1"}:
+                angle = int(value.token.text) * math.pi
+            else:
+                targets = (self.register(self.atom(value)),)
+                angle = math.pi
+            opcode = "qreg.control_phase"
+        else:
+            reject(token, "control", "expected a scalar Hadamard or phase")
+        if any(target in inputs for target in targets):
+            reject(token, "control", "condition and target must be disjoint")
+        computed = bool(condition.children)
+        if computed:
+            graph = expression.function()
+            self.functions.append(graph)
+            predicate = Value(ValueId(self.scope, self.counter), register_type(1))
+            self.counter += 1
+            self.append_op(
+                token,
+                Operation(
+                    "qreg.local",
+                    results=(predicate,),
+                    attributes={"name": f"control.{predicate.id.index}"},
+                    location=token.location,
+                ),
+            )
+            self.effect_op(
+                "qreg.compute", token, (predicate, *inputs), callee=graph.name
+            )
+        else:
+            predicate = inputs[0]
+        attributes = {} if angle is None else {"angle": angle}
+        self.effect_op(opcode, token, (predicate, *targets), **attributes)
+        if computed:
+            self.effect_op("qreg.uncompute", token, (predicate,))
+            self.effect_op("qreg.release", token, (predicate,))
+
     def within(self, statement: Statement, index: str) -> None:
         if not statement.within:
             reject(
@@ -481,6 +548,8 @@ class _Adapt:
                 )
             self.parameters[name] = parameter
             self.widths[name] = parameter.width
+        elif statement.control_body is not None:
+            self.scalar_control(statement, index)
         elif statement.within is not None:
             self.within(statement, index)
         elif token.text == "=":

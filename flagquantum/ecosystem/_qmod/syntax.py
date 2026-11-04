@@ -124,6 +124,7 @@ class Statement:
     declaration: Parameter | None = None
     within: tuple[Statement, ...] | None = None
     apply: tuple[Statement, ...] = ()
+    control_body: tuple[Statement, ...] | None = None
 
 
 @dataclass(frozen=True)
@@ -413,8 +414,16 @@ class Parser:
                     "statement",
                     "only fresh assignment, scalar declarations and admitted calls are supported",
                 )
-            self.take(";")
-            statements.append(Statement(operator, arguments))
+            if operator.text == "control" and self.current.text == "{":
+                if scope_depth:
+                    reject(
+                        operator, "scope", "control is admitted only at function scope"
+                    )
+                body = self.block(allow_scopes=False, scope_depth=scope_depth + 1)
+                statements.append(Statement(operator, arguments, control_body=body))
+            else:
+                self.take(";")
+                statements.append(Statement(operator, arguments))
         self.take("}")
         return tuple(statements)
 

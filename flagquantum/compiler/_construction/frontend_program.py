@@ -441,9 +441,9 @@ class _Body:
         )
 
     def capture_expression(
-        self, expr: ast.expr, statement: ast.AST
+        self, expr: ast.expr, statement: ast.AST, *, predicate: bool = False
     ) -> tuple[HybridProgram, tuple[Value, ...]]:
-        allowed = (
+        allowed: tuple[type[ast.AST], ...] = (
             ast.BinOp,
             ast.Name,
             ast.Load,
@@ -452,6 +452,16 @@ class _Body:
             ast.Mult,
             ast.Pow,
         )
+        if predicate:
+            allowed += (
+                ast.Compare,
+                ast.Eq,
+                ast.NotEq,
+                ast.Lt,
+                ast.LtE,
+                ast.Gt,
+                ast.GtE,
+            )
         if any(not isinstance(child, allowed) for child in ast.walk(expr)):
             _error(
                 self.source,
@@ -919,9 +929,38 @@ class _Body:
                 "a quantum port cannot shadow a callable",
             )
         operation = _resolve(self.definition, body.func)
-        predicate = self.register(condition)
+        if isinstance(condition, ast.Compare):
+            graph, inputs = self.capture_expression(condition, node, predicate=True)
+            if sum(register_width(value) for value in inputs) > 8:
+                _error(
+                    self.source,
+                    condition,
+                    "program.control",
+                    "control predicate exceeds eight input bits",
+                )
+            predicate = Value(ValueId(self.name, self.counter), register_type(1))
+            self.counter += 1
+            self.operations.append(
+                Operation(
+                    "qreg.local",
+                    results=(predicate,),
+                    attributes={"name": f"control.{predicate.id.index}"},
+                    location=self.source.location(node),
+                )
+            )
+            self.emit("qreg.compute", node, (predicate, *inputs), callee=graph.name)
+        else:
+            predicate = self.register(condition)
+            inputs = (predicate,)
         if operation is hadamard_transform and len(body.args) == 1:
             target = self.register(body.args[0])
+            if target in inputs:
+                _error(
+                    self.source,
+                    node,
+                    "program.control",
+                    "condition and target must be disjoint",
+                )
             self.emit("qreg.control_h", node, (predicate, target))
         elif operation is phase and len(body.args) == 2:
             expression, coefficient = body.args
@@ -936,7 +975,15 @@ class _Body:
             constant = self.phase_number(expression)
             operands: tuple[Value, ...]
             if constant is None:
-                operands = (predicate, self.register(expression))
+                target = self.register(expression)
+                if target in inputs:
+                    _error(
+                        self.source,
+                        node,
+                        "program.control",
+                        "condition and target must be disjoint",
+                    )
+                operands = (predicate, target)
             else:
                 operands = (predicate,)
                 angle *= constant
@@ -955,6 +1002,10 @@ class _Body:
                 "program.control",
                 "expected scalar phase or Hadamard",
             )
+
+        if isinstance(condition, ast.Compare):
+            self.emit("qreg.uncompute", node, (predicate,))
+            self.emit("qreg.release", node, (predicate,))
 
     def adjoint_scope(self, block: ast.With) -> None:
         for statement in reversed(block.body):
