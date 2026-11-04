@@ -8,6 +8,8 @@ import torch
 from flagquantum import Circuit
 from flagquantum.algorithms.primitives.multiplexers import SelectSparse
 from flagquantum.compiler.select_lowering import lower_select_program
+from flagquantum.runtime.dynamic.circuit import DynamicCircuit
+from flagquantum.runtime.dynamic.execution import run_dynamic
 from tools.qualtran_parity.clifford_t_counts import clifford_t_counts
 
 
@@ -16,6 +18,7 @@ def test_select_sparse_qualtran() -> None:
     assert version("qualtran") == "0.7.0"
     np = pytest.importorskip("numpy")
     cirq = pytest.importorskip("cirq")
+    from qualtran.bloqs.basic_gates import CNOT, XGate
     from qualtran.bloqs.chemistry.sparse.select_bloq import SelectSparse as Reference
 
     width = (num_spin_orb // 2 - 1).bit_length()
@@ -96,6 +99,21 @@ def test_select_sparse_qualtran() -> None:
         actual[:, 0], circuit.state().detach().numpy().reshape(-1), atol=1e-12, rtol=0
     )
 
+    dynamic_ir = lower_select_program(circuit.to_ir(), "dynamic_unary_iteration")
+    workspace = dynamic_ir.n_wires - n_qubits
+    assert workspace == len(ancillas) == 3
+    padded_state = np.zeros((state.size, 1 << workspace), dtype=np.complex128)
+    padded_state[:, 0] = state
+    dynamic = DynamicCircuit.from_ir(
+        dynamic_ir, inputs=torch.from_numpy(padded_state.ravel())
+    )
+    trajectories = run_dynamic(dynamic, shots=8, seed=31).final_states
+    for trajectory in trajectories.detach().numpy().reshape(8, state.size, -1):
+        np.testing.assert_allclose(trajectory[:, 1:], 0, atol=1e-12, rtol=0)
+        np.testing.assert_allclose(
+            trajectory[:, 0], reference[:, 0], atol=1e-12, rtol=0
+        )
+
     gate_map = {
         "x": cirq.X,
         "h": cirq.H,
@@ -109,7 +127,44 @@ def test_select_sparse_qualtran() -> None:
         gate_map[item.name].on(*(local_qubits[q] for q in item.wires))
         for item in lowered.instructions
     ]
-    local_cost = clifford_t_counts(cirq, cirq.decompose(local_operations))
-    reference_cost = clifford_t_counts(cirq, decomposition.all_operations())
-    print(f"FlagQuantum: {local_workspace} workspace qubits, {dict(local_cost)}")
+    unitary_cost = clifford_t_counts(cirq, cirq.decompose(local_operations))
+    gate_map.update(
+        {
+            "cy": cirq.Y.controlled(),
+            "cz": cirq.CZ,
+            "t": cirq.T,
+            "tdg": cirq.T**-1,
+            "reset": cirq.ResetChannel(),
+        }
+    )
+    local_qubits = cirq.LineQubit.range(dynamic_ir.n_wires)
+    operations = []
+    for item in dynamic_ir.instructions:
+        wires = tuple(local_qubits[q] for q in item.wires)
+        if item.name == "measure":
+            operation = cirq.measure(*wires, key=str(item.metadata["classical_bit"]))
+        else:
+            operation = gate_map[item.name].on(*wires)
+            if "conditions" in item.metadata:
+                ((bit, value),) = item.metadata["conditions"]
+                assert value == 1
+                operation = operation.with_classical_controls(str(bit))
+        operations.append(operation)
+    dynamic_cost = clifford_t_counts(cirq, cirq.decompose(operations))
+    # Qualtran exposes some Clifford gates as atomic bloq wrappers. Translate
+    # those wrappers before the shared Cirq decomposition so a CNOT costs the
+    # same in both columns.
+    reference_cliffords = {CNOT(): cirq.CNOT, XGate(): cirq.X}
+    reference_operations = []
+    for operation in decomposition.all_operations():
+        equivalent = reference_cliffords.get(getattr(operation.gate, "bloq", None))
+        reference_operations.append(
+            operation if equivalent is None else equivalent.on(*operation.qubits)
+        )
+    reference_cost = clifford_t_counts(cirq, cirq.decompose(reference_operations))
+    assert dynamic_cost == reference_cost
+    print(
+        f"FlagQuantum unitary: {local_workspace} workspace qubits, {dict(unitary_cost)}"
+    )
+    print(f"FlagQuantum dynamic: {workspace} workspace qubits, {dict(dynamic_cost)}")
     print(f"Qualtran: {len(ancillas)} workspace wires, {dict(reference_cost)}")

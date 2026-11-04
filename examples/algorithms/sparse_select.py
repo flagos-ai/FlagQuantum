@@ -23,6 +23,12 @@ def main() -> None:
         )
     )
 
+    sampled = fq.run(
+        circuit, options=fq.ExecutionOptions(target="samples", shots=16, seed=5)
+    )
+    assert sampled.plan is not None
+    print(sampled.plan.summary()["select_lowering"])
+
     # Target compilation uses this same unitary lowering before gate legalization.
     gate_ir = lower_select_program(circuit.to_ir(), "unitary_ladder")
     gate_circuit = fq.Circuit.from_ir(gate_ir)

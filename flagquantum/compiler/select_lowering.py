@@ -26,23 +26,47 @@ def _is_structured_majorana(instruction: Instruction) -> bool:
     )
 
 
+def supports_dynamic_select(instruction: Instruction) -> bool:
+    """Return whether the instruction can use the measurement-assisted traversal."""
+    return is_structured_select(instruction) or (
+        _is_structured_majorana(instruction)
+        and instruction.params["control_width"] <= 1
+    )
+
+
 def unary_select_ir(instruction: Instruction) -> CircuitIR:
     """Build the measurement-assisted decomposition in operand order."""
-    if not is_structured_select(instruction):
-        raise ValidationError("Expected a structured select_pauli_lcu instruction.")
+    if not supports_dynamic_select(instruction):
+        raise ValidationError("Expected a structured SELECT with at most one control.")
     params = instruction.params
     width = params["selection_width"]
     controlled = params["control_width"]
-    words = params["select_unitaries"]
+    majorana = _is_structured_majorana(instruction)
     operands = len(instruction.wires)
     targets = range(controlled + width, operands)
+    entries = len(targets) if majorana else len(params["select_unitaries"])
+    ladder_width = max(width + controlled - 1, 0)
+    # A full address space guarantees exactly one accumulator toggle on
+    # each enabled branch. Partial tables use explicit Jordan–Wigner strings.
+    use_accumulator = majorana and width > 0 and entries == 1 << width
+    accumulator = operands + ladder_width
     instructions: list[Instruction] = []
 
     def emit(name: str, *qubits: int) -> None:
         instructions.append(Instruction(name, qubits))
 
     def apply_word(address: int, control: int | None) -> None:
-        word = words[address]
+        if majorana:
+            pauli = params["target_gate"].lower()
+            if use_accumulator:
+                assert control is not None
+                emit("cx", control, accumulator)
+                emit("c" + pauli, control, targets[address])
+                emit("cz", accumulator, targets[address])
+                return
+            word = "Z" * address + pauli.upper() + "I" * (entries - address - 1)
+        else:
+            word = params["select_unitaries"][address]
         if word.startswith("-"):
             if control is None:
                 for name in ("x", "z", "x", "z"):
@@ -57,7 +81,7 @@ def unary_select_ir(instruction: Instruction) -> CircuitIR:
                     emit("c" + pauli.lower(), control, target)
 
     def visit(control: int, depth: int, start: int, size: int) -> None:
-        if start >= len(words):
+        if start >= entries:
             return
         if size == 1:
             apply_word(start, control)
@@ -97,11 +121,17 @@ def unary_select_ir(instruction: Instruction) -> CircuitIR:
             Instruction("reset", (work,), metadata={"is_dynamic": True})
         )
 
+    if use_accumulator:
+        if controlled:
+            emit("cx", 0, accumulator)
+        else:
+            emit("x", accumulator)
+
     if controlled:
-        if params["control_val"] == 0:
+        if not majorana and params["control_val"] == 0:
             emit("x", 0)
         visit(0, 0, 0, 1 << width)
-        if params["control_val"] == 0:
+        if not majorana and params["control_val"] == 0:
             emit("x", 0)
     elif width:
         half = 1 << (width - 1)
@@ -111,7 +141,7 @@ def unary_select_ir(instruction: Instruction) -> CircuitIR:
         visit(0, 1, half, half)
     else:
         apply_word(0, None)
-    return CircuitIR(operands + max(width + controlled - 1, 0), tuple(instructions))
+    return CircuitIR(accumulator + int(use_accumulator), tuple(instructions))
 
 
 def lower_select_program(ir: CircuitIR, path: SelectPath) -> CircuitIR:
@@ -119,7 +149,7 @@ def lower_select_program(ir: CircuitIR, path: SelectPath) -> CircuitIR:
 
     def should_lower(instruction: Instruction) -> bool:
         return is_structured_select(instruction) or (
-            path == "unitary_ladder" and _is_structured_majorana(instruction)
+            path != "dense" and _is_structured_majorana(instruction)
         )
 
     if not any(map(should_lower, ir.instructions)):
@@ -147,13 +177,15 @@ def lower_select_program(ir: CircuitIR, path: SelectPath) -> CircuitIR:
         if not should_lower(op):
             instructions.append(op)
             continue
+        chosen_path = path
         if path == "dense":
             instructions.extend(lower_deferred_operations((op,)))
             needed = 0
         else:
-            if path == "dynamic_unary_iteration":
+            if path == "dynamic_unary_iteration" and supports_dynamic_select(op):
                 fragment = unary_select_ir(op)
             elif _is_structured_majorana(op):
+                chosen_path = "unitary_ladder"
                 fragment = lower_majorana_to_gates(op).to_ir()
             else:
                 fragment = lower_select_pauli_lcu_to_gates(op).to_ir()
@@ -179,7 +211,11 @@ def lower_select_program(ir: CircuitIR, path: SelectPath) -> CircuitIR:
                 )
         workspace = max(workspace, needed)
         records.append(
-            {"instruction_index": index, "path": path, "workspace_qubits": needed}
+            {
+                "instruction_index": index,
+                "path": chosen_path,
+                "workspace_qubits": needed,
+            }
         )
     width = ir.n_wires + workspace
     metadata = {

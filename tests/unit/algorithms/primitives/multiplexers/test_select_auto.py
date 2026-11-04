@@ -4,7 +4,7 @@ import pytest
 import torch
 
 import flagquantum as fq
-from flagquantum.algorithms.primitives.multiplexers import SelectPauliLCU
+from flagquantum.algorithms.primitives.multiplexers import SelectPauliLCU, SelectSparse
 
 pytestmark = pytest.mark.unit
 
@@ -37,3 +37,31 @@ def test_run_reports_dense_and_dynamic_select() -> None:
     # A serialized plan carries the chosen implementation and logical width.
     restored = type(sampled.plan).from_dict(sampled.plan.to_dict())
     torch.testing.assert_close(fq.run(restored).require_samples(), expected)
+
+
+def test_sparse_select_uses_dynamic_sampling_with_shared_workspace() -> None:
+    circuit = fq.Circuit(11)
+    circuit.append(
+        SelectSparse.make_on(
+            p=(0,),
+            q=(1,),
+            r=(2,),
+            s=(3,),
+            alpha=4,
+            beta=5,
+            flag_1b=6,
+            sys=(7, 8, 9, 10),
+        )
+    )
+    sampled = fq.run(
+        circuit, options=fq.ExecutionOptions(target="samples", shots=4, seed=5)
+    )
+    assert sampled.plan is not None
+    report = sampled.plan.summary()["select_lowering"]
+    assert report["workspace_qubits"] == 3
+    assert [operation["path"] for operation in report["operations"]] == [
+        "dynamic_unary_iteration"
+    ] * 4
+    torch.testing.assert_close(
+        sampled.require_samples(), torch.zeros(4, 11, dtype=torch.int64)
+    )
