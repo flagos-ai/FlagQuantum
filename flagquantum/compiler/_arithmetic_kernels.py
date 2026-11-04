@@ -19,6 +19,13 @@ def ripple_add(
     return _ripple_add(a, b, carry, carry_out)
 
 
+def ripple_add_modular(
+    a: tuple[int, ...], b: tuple[int, ...], carry: int
+) -> tuple[Instruction, ...]:
+    """Add a into b modulo its width and restore the clean carry."""
+    return _ripple_add(a, b, carry, None)
+
+
 def _ripple_add(
     a: tuple[int, ...], b: tuple[int, ...], carry: int, carry_out: int | None
 ) -> tuple[Instruction, ...]:

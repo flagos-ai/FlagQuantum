@@ -2,7 +2,7 @@
 
 from collections.abc import Callable
 
-from ..core.ir import Instruction
+from ...core.ir import Instruction
 
 
 def unary_iteration_workspace(selection_width: int, control_value: int | None) -> int:
@@ -18,6 +18,7 @@ def append_unary_iteration(
     entries: int,
     control_value: int | None,
     apply_branch: Callable[[int, int | None], None],
+    coherent: bool = False,
 ) -> None:
     """Visit populated addresses in ascending order and clear all workspace.
 
@@ -43,6 +44,14 @@ def append_unary_iteration(
         half = size // 2
         # Compute a clean temporary AND of the prefix and the inverted bit.
         emit("x", right)
+        if coherent:
+            emit("ccx", control, right, work)
+            emit("x", right)
+            visit(work, depth + 1, start, half)
+            emit("cx", control, work)
+            visit(work, depth + 1, start + half, half)
+            emit("ccx", control, right, work)
+            return
         emit("h", work)
         emit("t", work)
         for parent in (control, right):
