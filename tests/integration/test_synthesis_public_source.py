@@ -137,7 +137,9 @@ def test_python_does_not_ignore_native_options(monkeypatch, options):
     from flagquantum.services import synthesis
 
     monkeypatch.setattr(
-        synthesis, "capture", lambda *a, **k: pytest.fail("capture before refusal")
+        synthesis,
+        "capture_named",
+        lambda *a, **k: pytest.fail("capture before refusal"),
     )
     with pytest.raises(ValueError):
         synth.synthesize(polynomial, inputs={"x": synth.UInt(1)}, **options)
