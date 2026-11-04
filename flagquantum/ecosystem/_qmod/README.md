@@ -397,3 +397,26 @@ combine it with surrounding arithmetic, bitwise operations and equality.
 Run `tests/fixtures/classiq_qmod/modulo_example.qmod` through
 `synth.synthesize(Path(...))`. Its result register contains 3 for inputs 4
 and 7 with divisor 4.
+
+### Real amplitude preparation
+
+`prepare_amplitudes([a0, a1, ...], bound, out)` initializes a fresh numeric or
+qubit output in computational basis order. The normalized real literal vector
+must have a power-of-two length from 2 to 256. Its length determines the output
+width. Negative entries preserve their signs, including their relative phases.
+A declared width must match the vector.
+
+`bound` is a nonnegative L₂ error ceiling. Both zero and positive ceilings
+use the exact real RY/CX preparation to floating-point precision. A positive
+ceiling does not currently select a smaller approximate circuit.
+
+```python
+from pathlib import Path
+
+import flagquantum as fq
+from flagquantum import synth
+
+source = Path("tests/fixtures/classiq_qmod/example_prepare_amplitudes.qmod")
+program = synth.synthesize(source)
+print(fq.run(program).statevector())
+```

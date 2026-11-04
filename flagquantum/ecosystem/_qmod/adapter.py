@@ -14,6 +14,7 @@ from types import MappingProxyType
 from ...compiler._construction.profile import uint_type
 from ...compiler._construction.ranges import bitwise_width, unsigned_width
 from ...compiler._construction.register_profile import (
+    MAX_PREPARED_AMPLITUDES,
     equatorial_rotation,
     euler_rotation,
     register_type,
@@ -63,6 +64,7 @@ _INTRINSICS = (
         "pi",
         "control",
         "prepare_ghz_state",
+        "prepare_amplitudes",
         "prepare_bell_state",
         "suzuki_trotter",
         "exponentiate",
@@ -988,6 +990,46 @@ class _Adapt:
             elif axis == "Y":
                 gate("rx", index, angle=-math.pi / 2)
 
+    def prepare_amplitudes(self, token: Token, args: tuple[Expression, ...]) -> None:
+        if len(args) != 3:
+            reject(
+                token,
+                "signature",
+                "prepare_amplitudes requires amplitudes, bound and output",
+            )
+        vector, bound_arg, output = args
+        count = len(vector.children)
+        if not 2 <= count <= MAX_PREPARED_AMPLITUDES or count & (count - 1):
+            reject(
+                vector.token,
+                "amplitudes",
+                "amplitude count must be a power of two in 2..256",
+            )
+
+        def literal(node: Expression) -> float:
+            negative = node.token.text == "-"
+            value = node.children[0] if negative else node
+            if value.children or not re.fullmatch(
+                r"[0-9]+(?:\.[0-9]+)?", value.token.text
+            ):
+                reject(value.token, "amplitudes", "expected a real decimal literal")
+            return float(value.token.text) * (-1 if negative else 1)
+
+        amplitudes = tuple(literal(item) for item in vector.children)
+        bound = literal(bound_arg)
+        target = self.atom(output)
+        width = count.bit_length() - 1
+        destination = self.register(target, width, allow_qubit_array=True)
+        if register_width(destination) != width:
+            reject(target, "width", "amplitude vector must match the output width")
+        self.effect_op(
+            "qreg.prepare_amplitudes",
+            token,
+            (destination,),
+            amplitudes=amplitudes,
+            bound=bound,
+        )
+
     def xor_update(
         self, token: Token, destination: Expression, source: Expression
     ) -> None:
@@ -1207,6 +1249,8 @@ class _Adapt:
                         )
                     self.signed.add(target.text)
             self.effect_op("qreg.allocate", token, (destination,))
+        elif token.text == "prepare_amplitudes":
+            self.prepare_amplitudes(token, args)
         elif token.text == "prepare_bell_state":
             if len(args) != 2:
                 reject(

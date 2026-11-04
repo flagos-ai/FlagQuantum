@@ -298,6 +298,14 @@ class Parser:
             return Expression(self.take("-"), (self.angle_argument(),))
         return self.angle_argument()
 
+    def amplitude_literal(self) -> Expression:
+        if self.current.text != "(":
+            return self.signed_angle_argument()
+        self.take("(")
+        value = self.signed_angle_argument()
+        self.take(")")
+        return value
+
     def pauli_axis(self) -> Expression:
         self.take("Pauli")
         self.take(":")
@@ -307,7 +315,7 @@ class Parser:
             reject(axis, "pauli", "expected Pauli::I, X, Y or Z")
         return Expression(axis)
 
-    def pauli_array(self, item: Callable[[], Expression]) -> Expression:
+    def literal_array(self, item: Callable[[], Expression]) -> Expression:
         start = self.take("[")
         items = []
         while self.current.text != "]":
@@ -340,11 +348,11 @@ class Parser:
         return Expression(record, tuple(values[name] for name in fields))
 
     def pauli_terms(self) -> Expression:
-        return self.pauli_array(
+        return self.literal_array(
             lambda: self.pauli_record(
                 "PauliTerm",
                 {
-                    "pauli": lambda: self.pauli_array(self.pauli_axis),
+                    "pauli": lambda: self.literal_array(self.pauli_axis),
                     "coefficient": self.signed_angle_argument,
                 },
             )
@@ -359,7 +367,7 @@ class Parser:
         return self.pauli_record(
             "SparsePauliTerm",
             {
-                "paulis": lambda: self.pauli_array(self.indexed_pauli),
+                "paulis": lambda: self.literal_array(self.indexed_pauli),
                 "coefficient": self.signed_angle_argument,
             },
         )
@@ -368,7 +376,7 @@ class Parser:
         return self.pauli_record(
             "SparsePauliOp",
             {
-                "terms": lambda: self.pauli_array(self.sparse_pauli_term),
+                "terms": lambda: self.literal_array(self.sparse_pauli_term),
                 "num_qubits": self.expression,
             },
         )
@@ -564,6 +572,8 @@ class Parser:
                             args.append(self.pauli_terms())
                         else:
                             args.append(Expression(self.name()))
+                    elif target.text == "prepare_amplitudes":
+                        args.append(self.literal_array(self.amplitude_literal))
                     elif target.text in ANGLE_CALLS:
                         args.append(self.angle_argument())
                     else:
@@ -573,6 +583,7 @@ class Parser:
                         if len(args) == 1 and target.text in {
                             "exponentiate",
                             "qdrift",
+                            "prepare_amplitudes",
                             "suzuki_trotter",
                         }:
                             args.append(self.signed_angle_argument())

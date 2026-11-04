@@ -20,6 +20,8 @@ from .._hybrid.model import (
 from .profile import _fail, _positive_integer, _width, verify_construction
 from .register_expansion import expand_register_calls, is_register_function
 
+MAX_PREPARED_AMPLITUDES = 256
+
 _ATTRIBUTES = MappingProxyType(
     {
         "qreg.declare": frozenset({"name"}),
@@ -29,6 +31,7 @@ _ATTRIBUTES = MappingProxyType(
         "qreg.allocate": frozenset(),
         "qreg.initialize": frozenset({"value"}),
         "qreg.prepare_ghz": frozenset(),
+        "qreg.prepare_amplitudes": frozenset({"amplitudes", "bound"}),
         "qreg.rzz": frozenset({"angle"}),
         "qreg.pair_gate": frozenset({"gate"}),
         "qreg.control_h": frozenset(),
@@ -646,13 +649,43 @@ def _verify_body(
                     _fail(
                         "register.initialized", "destination is already initialized", op
                     )
-                if op.name in {"qreg.allocate", "qreg.initialize", "qreg.prepare_ghz"}:
+                if op.name in {
+                    "qreg.allocate",
+                    "qreg.initialize",
+                    "qreg.prepare_ghz",
+                    "qreg.prepare_amplitudes",
+                }:
                     if arguments:
                         _fail(
                             "register.signature",
                             "initialization has no register inputs",
                             op,
                         )
+                    if op.name == "qreg.prepare_amplitudes":
+                        amplitudes = op.attributes["amplitudes"]
+                        bound = op.attributes["bound"]
+                        if (
+                            not isinstance(amplitudes, tuple)
+                            or not 2 <= len(amplitudes) <= MAX_PREPARED_AMPLITUDES
+                            or len(amplitudes) & (len(amplitudes) - 1)
+                            or len(amplitudes).bit_length() - 1
+                            != register_width(destination)
+                            or any(
+                                type(value) is not float or not math.isfinite(value)
+                                for value in amplitudes
+                            )
+                            or not math.isclose(
+                                math.hypot(*amplitudes), 1.0, rel_tol=0, abs_tol=1e-12
+                            )
+                            or type(bound) is not float
+                            or not math.isfinite(bound)
+                            or bound < 0
+                        ):
+                            _fail(
+                                "register.amplitudes",
+                                "preparation requires a normalized finite real vector matching the target and a nonnegative finite bound",
+                                op,
+                            )
                     if op.name == "qreg.initialize":
                         constant = op.attributes["value"]
                         if (

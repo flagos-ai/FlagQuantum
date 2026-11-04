@@ -15,6 +15,7 @@ from typing import Literal
 from ...core._composition import controlled_instruction
 from ...core.ir import CircuitIR, Instruction
 from .._hybrid.model import Block, HybridProgram, Operation, Region, Value, ValueId
+from ..state_preparation_synthesis import _synthesize_real_state
 from .boolean_lowering import BooleanCandidateError, lower_boolean_value
 from .lowering import (
     ArithmeticCandidate,
@@ -106,6 +107,10 @@ def schedule_register_program(
         gates: tuple[Instruction, ...] = ()
         if op.name == "qreg.initialize":
             gates = _copy(op.attributes["value"], bindings[op.operands[1].id])
+        elif op.name == "qreg.prepare_amplitudes":
+            gates = _synthesize_real_state(
+                op.attributes["amplitudes"], bindings[op.operands[1].id]
+            )
         elif op.name == "qreg.prepare_ghz":
             first, *rest = bindings[op.operands[1].id]
             gates = (
