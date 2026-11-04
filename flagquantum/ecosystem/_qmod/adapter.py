@@ -728,6 +728,18 @@ class _Adapt:
             self.effect_op(
                 "qreg.uniform_interval", token, (destination,), start=start, stop=stop
             )
+        elif token.text == "RZZ":
+            if len(args) != 2:
+                reject(token, "signature", "RZZ requires an angle and a qubit array")
+            angle = _literal_angle(args[0], token)
+            target = self.atom(args[1])
+            destination = self.register(target, allow_qubit_array=True)
+            if (
+                self.parameters[target.text].kind != "qbit[]"
+                or self.widths[target.text] != 2
+            ):
+                reject(target, "type", "RZZ requires a two-qubit array")
+            self.effect_op("qreg.rzz", token, (destination,), angle=angle)
         elif token.text == "U":
             if len(args) != 5:
                 reject(token, "signature", "U requires four angles and a qbit target")

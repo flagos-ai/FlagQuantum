@@ -29,6 +29,7 @@ _ATTRIBUTES = MappingProxyType(
         "qreg.allocate": frozenset(),
         "qreg.initialize": frozenset({"value"}),
         "qreg.prepare_ghz": frozenset(),
+        "qreg.rzz": frozenset({"angle"}),
         "qreg.pair_gate": frozenset({"gate"}),
         "qreg.control_h": frozenset(),
         "qreg.control_phase": frozenset({"angle"}),
@@ -503,6 +504,26 @@ def _verify_body(
                         op,
                     )
                 initialized.remove(destination.id)
+                changed = (destination,)
+            elif op.name == "qreg.rzz":
+                angle = op.attributes["angle"]
+                if (
+                    arguments
+                    or register_width(destination) != 2
+                    or type(angle) is not float
+                    or not math.isfinite(angle)
+                ):
+                    _fail(
+                        "register.gate",
+                        "RZZ requires a two-bit register and finite angle",
+                        op,
+                    )
+                if destination in borrowed:
+                    _fail("register.const", "Const cannot be a gate target", op)
+                if destination.id not in initialized:
+                    _fail(
+                        "register.uninitialized", "gate reads uninitialized storage", op
+                    )
                 changed = (destination,)
             elif op.name == "qreg.pair_gate":
                 gate = op.attributes["gate"]

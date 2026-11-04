@@ -134,6 +134,14 @@ def schedule_register_program(
                 op.attributes["start"],
                 op.attributes["stop"],
             )
+        elif op.name == "qreg.rzz":
+            gates = (
+                Instruction(
+                    "rzz",
+                    bindings[op.operands[1].id],
+                    {"theta": op.attributes["angle"]},
+                ),
+            )
         elif op.name == "qreg.pair_gate":
             gates = (
                 Instruction(
