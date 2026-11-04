@@ -338,3 +338,26 @@ source = Path("tests/fixtures/classiq_qmod/hamiltonian_simulation_guide_trotter.
 program = synth.synthesize(source)
 print(fq.run(program).statevector())
 ```
+
+### qDRIFT
+
+`qdrift(operator, t, count, q)` takes an inline or named `SparsePauliOp`
+and a literal sample count in 1..1024. The existing effect budget also applies.
+Each sample is drawn with replacement using probability `abs(h) / lambda`,
+where `lambda = sum(abs(h))`. Its Pauli rotation uses signed evolution angle
+`sign(h) * t * lambda / count`. Zero total weight or zero time gives identity.
+
+FlagQuantum seeds a local Python RNG with 0 per call during synthesis to make
+the sampled Circuit reproducible. Running it applies that fixed sequence.
+This seed and draw sequence are FlagQuantum conventions.
+
+```python
+from pathlib import Path
+
+import flagquantum as fq
+from flagquantum import synth
+
+source = Path("tests/fixtures/classiq_qmod/hamiltonian_simulation_guide_qdrift.qmod")
+program = synth.synthesize(source)
+print(fq.run(program).statevector())
+```

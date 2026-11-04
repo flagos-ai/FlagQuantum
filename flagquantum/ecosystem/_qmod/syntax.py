@@ -549,7 +549,7 @@ class Parser:
                 self.take("(")
                 args: list[Expression] = []
                 if self.current.text != ")":
-                    if target.text in {"exponentiate", "suzuki_trotter"}:
+                    if target.text in {"exponentiate", "qdrift", "suzuki_trotter"}:
                         if self.current.text == "SparsePauliOp":
                             args.append(self.sparse_pauli_op())
                         elif (
@@ -566,6 +566,7 @@ class Parser:
                         self.take(",")
                         if len(args) == 1 and target.text in {
                             "exponentiate",
+                            "qdrift",
                             "suzuki_trotter",
                         }:
                             args.append(self.signed_angle_argument())

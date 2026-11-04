@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import math
+import random
 import re
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
@@ -44,6 +45,8 @@ from .syntax import (
 
 SUPPORTED_SOURCE_VERSION = "2bfd835e73b6882fcc515a725098b04766c238e7"
 MAX_EFFECT_OPERATIONS = 4096
+MAX_QDRIFT_SAMPLES = 1024
+QDRIFT_SEED = 0
 _GATE_CALLS = frozenset({"X", "H", "S", "Z", "hadamard_transform"})
 _PAIR_CALLS = frozenset({"CX", "SWAP", "CRX"})
 _UNIFORM_CALLS = frozenset(
@@ -62,6 +65,7 @@ _INTRINSICS = (
         "prepare_bell_state",
         "suzuki_trotter",
         "exponentiate",
+        "qdrift",
     }
     | ANGLE_CALLS
 )
@@ -782,6 +786,54 @@ class _Adapt:
         order: int,
         repetitions: int,
     ) -> None:
+        register, terms = self.pauli_terms(token, operator, target_arg)
+        step = self.evolution_angle(time_arg, token) / repetitions
+        if order == 2:
+            step /= 2
+        sequence = terms if order == 1 else [*terms, *reversed(terms)]
+        for _ in range(repetitions):
+            for support, weight in sequence:
+                self.pauli_exponential(token, register, support, step * weight)
+
+    def qdrift(self, token: Token, args: tuple[Expression, ...]) -> None:
+        if len(args) != 4:
+            reject(
+                token,
+                "signature",
+                "qdrift requires an operator, time, samples and target",
+            )
+        operator, time_arg, count_arg, target_arg = args
+        if (
+            count_arg.children
+            or not count_arg.token.text.isdecimal()
+            or not 1 <= int(count_arg.token.text) <= MAX_QDRIFT_SAMPLES
+        ):
+            reject(
+                count_arg.token,
+                "evolution",
+                f"qdrift requires a literal sample count in 1..{MAX_QDRIFT_SAMPLES}",
+            )
+        count = int(count_arg.token.text)
+        register, terms = self.pauli_terms(token, operator, target_arg)
+        time = self.evolution_angle(time_arg, token)
+        weights = [abs(coefficient) for _, coefficient in terms]
+        total = sum(weights)
+        if not total or not time:
+            self.effect_op(
+                "qreg.gate", token, (register,), gate="rz", index=0, angle=0.0
+            )
+            return
+        angle = time * total / count
+        for support, coefficient in random.Random(QDRIFT_SEED).choices(
+            terms, weights=weights, k=count
+        ):
+            self.pauli_exponential(
+                token, register, support, angle if coefficient > 0 else -angle
+            )
+
+    def pauli_terms(
+        self, token: Token, operator: Expression, target_arg: Expression
+    ) -> tuple[Value, list[tuple[tuple[tuple[int, str], ...], float]]]:
         target = self.atom(target_arg)
         register = self.register(target, allow_qubit_array=True)
         width = register_width(register)
@@ -805,18 +857,12 @@ class _Adapt:
                 "evolution",
                 "evolution requires a nonempty Pauli sum and qubit array",
             )
-        step = self.evolution_angle(time_arg, token) / repetitions
-        if order == 2:
-            step /= 2
         prepared = []
         for term in terms.children:
             axes, coefficient = term.children
             support = _pauli_support(axes, width, sparse=sparse)
-            prepared.append((support, step * self.evolution_angle(coefficient, token)))
-        sequence = prepared if order == 1 else [*prepared, *reversed(prepared)]
-        for _ in range(repetitions):
-            for support, angle in sequence:
-                self.pauli_exponential(token, register, support, angle)
+            prepared.append((support, self.evolution_angle(coefficient, token)))
+        return register, prepared
 
     def pauli_exponential(
         self,
@@ -1048,6 +1094,8 @@ class _Adapt:
             self.suzuki_trotter(token, args)
         elif token.text == "exponentiate":
             self.exponentiate(token, args)
+        elif token.text == "qdrift":
+            self.qdrift(token, args)
         elif token.text == "RZZ":
             if len(args) != 2:
                 reject(token, "signature", "RZZ requires an angle and a qubit array")

@@ -3,6 +3,7 @@
 import cmath
 import hashlib
 import math
+import random
 from pathlib import Path
 
 import pytest
@@ -152,3 +153,67 @@ def test_duplicate_top_level_sparse_operator_is_rejected():
     declaration = source.split("qfunc main", 1)[0]
     with pytest.raises(InteropConversionError, match="duplicate or reserved"):
         synth.synthesize(declaration + source, source_format="qmod")
+
+
+QDRIFT_SOURCE = SOURCE.with_name("hamiltonian_simulation_guide_qdrift.qmod")
+
+
+def test_original_qdrift_matches_fixed_sequence_circuit():
+    raw = QDRIFT_SOURCE.read_bytes()
+    blob = f"blob {len(raw)}\0".encode() + raw
+    assert hashlib.sha1(blob).hexdigest() == "b0a9536f8aecdbf011467984598b9d564ee4f9ef"
+
+    # Build the same draws by inverting the original Hamiltonian's CDF directly.
+    # The oracle shares the RNG seed, with independent sampling and gate code.
+    rng = random.Random(0)
+    reference = fq.Circuit(2, dtype=DTYPE)
+    angle = 2 * 1.2 / 288
+    for _ in range(288):
+        draw = rng.random() * 1.2
+        if draw < 0.3:
+            reference.rzz(0, 1, theta=angle)
+        elif draw < 1.0:
+            reference.rx(1, theta=angle)
+        else:
+            reference.rx(0, theta=angle)
+
+    program = synth.synthesize(QDRIFT_SOURCE)
+    actual = fq.run(program).statevector()
+    torch.testing.assert_close(
+        actual, fq.run(reference).statevector(), atol=1e-12, rtol=0
+    )
+    repeated = fq.run(synth.synthesize(QDRIFT_SOURCE)).statevector()
+    torch.testing.assert_close(actual, repeated, atol=0, rtol=0)
+    assert program.report["workspace_qubits"] == 0
+
+
+@pytest.mark.parametrize("coefficient", [-0.75, 0.0])
+def test_qdrift_preserves_sign_and_ignores_zero_weight(coefficient):
+    source = f"""qfunc main(output q: qbit[]) {{
+        allocate(1, q);
+        qdrift(SparsePauliOp {{
+            num_qubits=1,
+            terms=[
+                SparsePauliTerm {{coefficient=0, paulis=[]}},
+                SparsePauliTerm {{
+                    coefficient={coefficient},
+                    paulis=[IndexedPauli {{pauli=Pauli::X, index=0}}]
+                }}
+            ]
+        }}, 0.5, 7, q);
+    }}"""
+    program = synth.synthesize(source, source_format="qmod")
+    reference = fq.Circuit(1, dtype=DTYPE).rx(0, theta=coefficient)
+    torch.testing.assert_close(
+        fq.run(program).statevector(),
+        fq.run(reference).statevector(),
+        atol=1e-12,
+        rtol=0,
+    )
+
+
+@pytest.mark.parametrize("count", ["0", "1025", "1+1"])
+def test_qdrift_rejects_invalid_sample_counts(count):
+    source = QDRIFT_SOURCE.read_text().replace("288,", f"{count},")
+    with pytest.raises(InteropConversionError, match="literal sample count"):
+        synth.synthesize(source, source_format="qmod")
