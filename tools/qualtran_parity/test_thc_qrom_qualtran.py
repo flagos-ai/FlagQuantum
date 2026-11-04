@@ -2,18 +2,21 @@
 
 from importlib.metadata import version
 
-import numpy as np
+import pytest
 
 from flagquantum.compiler.registers.qrom import controlled_qrom_ir
 from flagquantum.core.ir import CircuitIR
 from tests.unit.algorithms.primitives.multiplexers.test_thc_qrom import _execute_sparse
 
 
+np = pytest.importorskip("numpy")
+
+
 def test_qualtran_v070_component_decompositions() -> None:
     from itertools import product
 
     assert version("qualtran") == "0.7.0"
-    import cirq
+    cirq = pytest.importorskip("cirq")
     from qualtran import QUInt
     from qualtran.bloqs.arithmetic.controlled_add_or_subtract import (
         ControlledAddOrSubtract,
@@ -74,7 +77,7 @@ def test_qualtran_v070_component_decompositions() -> None:
 
 def test_qualtran_add_gate_sequence_and_complex_amplitudes() -> None:
     assert version("qualtran") == "0.7.0"
-    import cirq
+    cirq = pytest.importorskip("cirq")
     from qualtran import QUInt
     from qualtran.bloqs.arithmetic import Add
     from qualtran.bloqs.mcmt.and_bloq import And
