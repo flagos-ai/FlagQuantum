@@ -13,6 +13,7 @@ from ...compiler._construction.profile import uint_type
 from ...compiler._construction.ranges import unsigned_width
 from ...compiler._construction.register_profile import (
     equatorial_rotation,
+    euler_rotation,
     register_type,
     verify_register_program,
 )
@@ -700,11 +701,7 @@ class _Adapt:
             destination = self.register(target)
             if self.parameters[target.text].kind != "qbit":
                 reject(target, "type", "U requires a scalar qbit target")
-            for gate, angle in (
-                ("phase", lam),
-                *equatorial_rotation(theta, math.pi / 2),
-                ("phase", phi),
-            ):
+            for gate, angle in euler_rotation(theta, phi, lam):
                 self.effect_op(
                     "qreg.gate", token, (destination,), gate=gate, index=0, angle=angle
                 )

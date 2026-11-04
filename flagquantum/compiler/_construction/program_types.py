@@ -108,6 +108,11 @@ def r(theta: float, phi: float, target: QBit, /) -> None:
     raise TypeError("R is captured inside qfunc")
 
 
+def u(theta: float, phi: float, lam: float, gamma: float, target: QBit, /) -> None:
+    """Apply a single-qubit Euler rotation with an explicit global phase."""
+    raise TypeError("U is captured inside qfunc")
+
+
 def prepare_uniform_interval_state(start: int, stop: int, target: QNum, /) -> None:
     """Prepare a uniform superposition over a half-open integer interval."""
     raise TypeError("uniform preparation is captured inside qfunc")

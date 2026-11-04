@@ -50,6 +50,13 @@ def equatorial_rotation(theta: float, phi: float) -> tuple[tuple[str, float], ..
     return (("rz", -phi), ("rx", theta), ("rz", phi))
 
 
+def euler_rotation(
+    theta: float, phi: float, lam: float
+) -> tuple[tuple[str, float], ...]:
+    """Return the non-global part of the U gate in execution order."""
+    return (("phase", lam), *equatorial_rotation(theta, math.pi / 2), ("phase", phi))
+
+
 def register_type(width: int) -> IRType:
     """Describe a register reference, distinct from an arithmetic value."""
     _positive_integer(width, "width")

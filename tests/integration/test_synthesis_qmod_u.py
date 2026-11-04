@@ -3,7 +3,6 @@
 import cmath
 import hashlib
 import json
-import math
 from pathlib import Path
 
 import pytest
@@ -12,21 +11,17 @@ import torch
 import flagquantum as fq
 from flagquantum import synth
 from flagquantum.ecosystem import InteropConversionError
-from flagquantum.synth import Output, QBit, R, allocate, phase, qfunc
+from flagquantum.synth import Output, QBit, U, allocate, qfunc
 from tests.integration.test_synthesis_register_workflow import check_state
 
 pytestmark = pytest.mark.integration
 SOURCE = Path(__file__).resolve().parents[1] / "fixtures/classiq_qmod/U.qmod"
-HALF_PI = math.pi / 2
 
 
 @qfunc
 def native(q: Output[QBit]) -> None:
     allocate(q)
-    phase(q, 1.5)
-    R(1, HALF_PI, q)
-    phase(q, 2)
-    phase(1, 1.1)
+    U(1, 2, 1.5, 1.1, q)
 
 
 @pytest.mark.parametrize("coherent", [False, True])
