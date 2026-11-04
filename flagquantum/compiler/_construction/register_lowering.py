@@ -18,11 +18,11 @@ from .._hybrid.model import Block, HybridProgram, Operation, Region, Value, Valu
 from .boolean_lowering import BooleanCandidateError, lower_boolean_value
 from .lowering import (
     ArithmeticCandidate,
+    BoundArithmetic,
     Schedule,
     ScheduleEvent,
     _copy,
     adjoint_value_candidate,
-    schedule_arithmetic,
 )
 from .profile import _fail, _positive_integer, _width, uint_type
 from .register_expansion import expand_register_calls, is_register_function
@@ -234,16 +234,10 @@ def schedule_register_program(
                         op,
                     )
                 value_output = workspace[:width]
-                segment = schedule_arithmetic(
-                    segment_functions,
-                    inputs,
-                    value_output,
-                    entry=name,
-                    n_qubits=n_qubits,
-                    workspace=workspace[width:],
-                    workspace_state="fresh_zero",
-                    max_operations=remaining,
-                    scheduling=scheduling,
+                segment = BoundArithmetic(
+                    segment_functions, name, inputs, value_output, workspace[width:]
+                ).lower(
+                    n_qubits=n_qubits, max_operations=remaining, scheduling=scheduling
                 )
                 adjoint = adjoint_value_candidate(segment)
                 rotations = tuple(
@@ -306,17 +300,15 @@ def schedule_register_program(
                 )
                 used_boolean = True
             else:
-                segment = schedule_arithmetic(
+                segment = BoundArithmetic(
                     segment_functions,
+                    name,
                     inputs,
                     output,
-                    entry=name,
-                    n_qubits=n_qubits,
-                    workspace=workspace,
-                    workspace_state="fresh_zero",
-                    max_operations=remaining,
-                    scheduling=scheduling,
-                    output_mode="phase" if phase else "value",
+                    workspace,
+                    "phase" if phase else "value",
+                ).lower(
+                    n_qubits=n_qubits, max_operations=remaining, scheduling=scheduling
                 )
             segment = replace(
                 segment,

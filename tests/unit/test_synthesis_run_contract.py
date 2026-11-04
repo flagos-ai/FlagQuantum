@@ -39,6 +39,7 @@ def test_namespace_reexports_one_authoritative_services_implementation() -> None
         "SWAP",
         "CRX",
         "R",
+        "U",
         "prepare_uniform_interval_state",
         "control",
     )
