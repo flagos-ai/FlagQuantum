@@ -128,3 +128,23 @@ Cirq's greedy qubit reuse. FlagQuantum retains Toffolis, while Cirq lowers
 the reference further. These are emitted-operation counts, so the table
 does not rank Clifford+T cost. Both control polarities also pass at four
 entries.
+
+### Clifford+T counts for SELECT
+
+The same sweep also decomposes both circuits through Cirq Core 1.4.0.
+Each odd Pauli quarter turn counts as one T or T inverse after Clifford
+conjugation. No cross-operation optimization is applied. Classical
+feedback in these cases controls Clifford operations.
+
+| Entries | Control | FlagQuantum T | Qualtran T | Qualtran measurements / feedback / resets |
+| ---: | --- | ---: | ---: | --- |
+| 4 | None | 42 | 8 | 2 / 2 / 2 |
+| 4 | 0 | 133 | 12 | 3 / 3 / 3 |
+| 4 | 1 | 133 | 12 | 3 / 3 / 3 |
+| 8 | None | 266 | 24 | 6 / 6 / 6 |
+| 16 | None | 924 | 56 | 14 / 14 / 14 |
+
+FlagQuantum emits no measurement, feedback or reset in these cases.
+The counts compare the current coherent Toffoli ladder against Qualtran's
+measurement-assisted unary iteration. They do not estimate physical time,
+magic-state factory throughput, or the best possible synthesis.
