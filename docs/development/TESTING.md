@@ -959,3 +959,32 @@ records their exact installed distributions, and checks them with networking
 disabled. Copy the four resulting image digests into the lock file and validate
 the PR. An outdated image is rejected when its dependency manifest differs from
 the checkout.
+
+
+## CPU runner routing and reliability
+
+Trusted same-repository PRs run the CPU core, runtime, distributed, and coverage
+suites on the self-hosted CPU pool. Each matrix leg has a run-specific concurrency
+group, so unrelated PRs do not serialize behind one hosted-capacity bucket.
+Source preparation and pre-commit use the separate CPU entry pool. Fork PRs
+continue to use GitHub-hosted runners.
+
+The long CPU suites use the digest-pinned images in `docker/ci/images.lock`.
+Cold image pulls are serialized per image on each host, while test processes
+remain isolated and resource-budgeted. Source cache repair verifies Git objects
+and the exact workflow commit before any tests run; an incomplete cache falls
+back to the full source artifact. No tests or required checks are removed.
+
+SDK jobs that install dependencies online (JAX, Cirq, Azure, Braket, and PennyLane)
+use hosted Linux runners with 30-minute job limits. They do not depend on the
+two preinstalled SDK slots, and external download failures do not occupy the
+CPU suite pool. Move an SDK suite into that pool only after a locked image or
+verified complete wheel closure passes the same dependency and test checks.
+Qiskit uses its verified wheel preparation path; Triton retains its MC550 pool.
+
+Contributor workflow: open or update an internal PR, then inspect its CI run.
+Expected behavior: source preparation starts independently of coverage; ready
+CPU matrix legs can use separate available CPU runners; every existing required
+check still has to pass. For acceptance, compare source queue time, suite wall
+time, and infrastructure failures across runs. Runner busy counts alone are
+not evidence of CPU efficiency or test reliability.

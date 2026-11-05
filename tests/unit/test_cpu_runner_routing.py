@@ -8,6 +8,7 @@ import yaml
 
 pytestmark = pytest.mark.unit
 WORKFLOWS = Path(__file__).resolve().parents[2] / ".github/workflows"
+FULL_CPU_ROUTE = '${{ fromJSON((github.event_name != \'pull_request\' || github.event.pull_request.head.repo.full_name == github.repository) && \'["self-hosted","linux","x64","flagquantum-cpu"]\' || \'["ubuntu-latest"]\') }}'
 
 
 def _inventoried_r300_labels() -> set[str]:
@@ -26,6 +27,7 @@ def test_cpu_pool_routes_require_a_same_repository_pull_request(workflow: str) -
             for label in (
                 "flagquantum-a100-cpu",
                 "flagquantum-cpu-general",
+                "fromJSON(",
                 "flagcicd-r300-",
             )
         )
@@ -37,8 +39,15 @@ def test_cpu_pool_routes_require_a_same_repository_pull_request(workflow: str) -
         "&& 'flagquantum-a100-cpu' || 'ubuntu-latest' }}"
     )
     for job in routed:
-        assert job["runs-on"] in (
+        assert " ".join(job["runs-on"].split()).replace(
+            "fromJSON( ", "fromJSON("
+        ).replace(" " + ") }}", ") }}") in (
             expected,
+            FULL_CPU_ROUTE,
+            FULL_CPU_ROUTE.replace(
+                '"flagquantum-cpu"]', '"flagquantum-cpu","flagquantum-mc550-cpu"]'
+            ),
+            FULL_CPU_ROUTE.replace("!= 'pull_request' ||", "== 'pull_request' &&"),
             expected.replace("flagquantum-a100-cpu", "flagquantum-a100-cpu-entry"),
             expected.replace("flagquantum-a100-cpu", "flagquantum-cpu-general"),
             *(
@@ -82,11 +91,18 @@ def test_trusted_cpu_jobs_and_matrix_legs_do_not_share_hosted_buckets() -> None:
                 for label in (
                     "flagquantum-a100-cpu",
                     "flagquantum-cpu-general",
+                    "fromJSON(",
                     "flagcicd-r300-",
                 )
             ):
                 continue
-            prefix = "self-hosted" if "flagcicd-r300-" in job["runs-on"] else "a100-cpu"
+            if name == "coverage-shard":
+                continue
+            prefix = (
+                "self-hosted"
+                if ("flagcicd-r300-" in job["runs-on"] or "fromJSON(" in job["runs-on"])
+                else "a100-cpu"
+            )
             selector = (
                 "${{ (github.event_name != 'pull_request' || "
                 "github.event.pull_request.head.repo.full_name == github.repository) "
@@ -145,11 +161,8 @@ def test_dependency_matrix_separates_cpu_wheels_from_ordinary_dependencies() -> 
 def test_portable_cpu_work_uses_general_or_validated_scale_sets() -> None:
     jobs = yaml.safe_load((WORKFLOWS / "ci.yml").read_text())["jobs"]
     portable = {
-        "azure-optional",
         "qiskit-optional",
         "qiskit-compat",
-        "braket-optional",
-        "pennylane-optional",
         "dependency-bounds",
         "distributed-cpu",
         "supply-chain",
@@ -158,10 +171,13 @@ def test_portable_cpu_work_uses_general_or_validated_scale_sets() -> None:
     }
     for name in portable:
         job = jobs[name]
-        assert any(
-            f"'{label}'" in job["runs-on"]
-            for label in {"flagquantum-cpu-general", *_inventoried_r300_labels()}
-        ), name
+        if name == "qiskit-compat":
+            assert job["runs-on"] == FULL_CPU_ROUTE
+        else:
+            assert any(
+                f"'{label}'" in job["runs-on"]
+                for label in {"flagquantum-cpu-general", *_inventoried_r300_labels()}
+            ), name
         assert "flagquantum-a100-cpu" not in job["runs-on"], name
         if "flagcicd-r300-" not in job["runs-on"]:
             assert not any(
@@ -170,7 +186,13 @@ def test_portable_cpu_work_uses_general_or_validated_scale_sets() -> None:
             ), f"{name} must not need A800's unavailable HTTPS checkout"
     # Long suites and cache-dependent Triton setup use the isolated CPU pool;
     # the other portable environment checks stay on the general pool.
-    for name in ("distributed-cpu-shard", "triton-optional"):
+    for name in (
+        "distributed-cpu-shard",
+        "triton-optional",
+        "cpu-core",
+        "cpu-core-3-12-tests",
+        "cpu-runtime",
+    ):
         job = jobs[name]
         labels = '["self-hosted","linux","x64","flagquantum-cpu"]'
         if name == "triton-optional":
@@ -200,15 +222,21 @@ def test_portable_cpu_work_uses_general_or_validated_scale_sets() -> None:
     ), "Evidence provenance still needs full Git history"
 
 
-def test_jax_and_cirq_use_preinstalled_self_hosted_profiles() -> None:
+def test_network_dependent_sdks_do_not_wait_for_the_preinstalled_pool() -> None:
     jobs = yaml.safe_load((WORKFLOWS / "ci.yml").read_text())["jobs"]
-    for name in ("jax-optional", "cirq-optional"):
+    for name in (
+        "jax-optional",
+        "cirq-optional",
+        "azure-optional",
+        "braket-optional",
+        "pennylane-optional",
+    ):
         job = jobs[name]
-        assert "'flagquantum-cpu-sdk-preinstalled'" in job["runs-on"]
-        assert "'ubuntu-latest'" in job["runs-on"]
-        assert any(
-            "fq_attach_preinstalled_sdk" in step.get("run", "") for step in job["steps"]
-        )
+        assert job["runs-on"] == "ubuntu-latest"
+        assert job["concurrency"]["group"] in {"flagquantum-gh-3", "flagquantum-gh-4"}
+        assert job["timeout-minutes"] <= 30
+        assert not any(step.get("continue-on-error") for step in job["steps"])
+
     assert not any(
         "pip download" in step.get("run", "") for step in jobs["jax-optional"]["steps"]
     )
@@ -218,13 +246,11 @@ def test_sdk_jobs_use_accepted_fixed_capacity() -> None:
     jobs = yaml.safe_load((WORKFLOWS / "ci.yml").read_text())["jobs"]
     for name in ("qiskit-compat", "cirq-optional", "braket-optional"):
         job = jobs[name]
-        label = (
-            "flagquantum-cpu-sdk-preinstalled"
-            if name == "cirq-optional"
-            else "flagquantum-cpu-general"
-        )
-        assert f"'{label}'" in job["runs-on"]
-        assert "'ubuntu-latest'" in job["runs-on"]
+        if name == "qiskit-compat":
+            assert job["runs-on"] == FULL_CPU_ROUTE
+        else:
+            assert job["runs-on"] == "ubuntu-latest"
+        assert "ubuntu-latest" in job["runs-on"]
         assert job["timeout-minutes"] == 30
         assert job["env"]["MAX_JOBS"] == "2"
         installer = next(
@@ -292,7 +318,8 @@ def test_r300_is_not_a_dependency_of_pr_source_preparation() -> None:
 def test_cpu_suites_attach_the_locked_image(job: str, profile: str) -> None:
     jobs = yaml.safe_load((WORKFLOWS / "ci.yml").read_text())["jobs"]
     suite = jobs[job]
-    assert suite["runs-on"] == "ubuntu-latest"
+    if job != "coverage-shard":
+        assert suite["runs-on"] == FULL_CPU_ROUTE
     steps = suite["steps"]
     attach = next(
         step for step in steps if step.get("uses") == "./.github/actions/offline-cpu"
@@ -320,7 +347,18 @@ def test_linux_prerequisites_keep_forks_off_private_cpu_runners(
 ) -> None:
     document = yaml.safe_load((WORKFLOWS / workflow).read_text())
     job = document["jobs"][name]
-    if workflow == "local-gpu.yml":
+    if workflow == "ci.yml":
+        assert job["runs-on"] == (
+            "${{ (github.event_name != 'pull_request' || "
+            "github.event.pull_request.head.repo.full_name == github.repository) "
+            "&& 'flagquantum-a100-cpu-entry' || 'ubuntu-latest' }}"
+        )
+        assert f"a100-cpu-{{0}}-{name}-{{1}}" in job["concurrency"]["group"]
+        assert "github.run_id" in job["concurrency"]["group"]
+        assert job["env"]["GIT_CONFIG_COUNT"] == "1"
+        assert job["env"]["GIT_CONFIG_KEY_0"] == "http.version"
+        assert job["env"]["GIT_CONFIG_VALUE_0"] == "HTTP/1.1"
+    elif workflow == "local-gpu.yml":
         assert job["runs-on"] == (
             "${{ (github.event_name != 'pull_request' || "
             "github.event.pull_request.head.repo.full_name == github.repository) "
@@ -340,11 +378,46 @@ def test_linux_prerequisites_keep_forks_off_private_cpu_runners(
         if str(step.get("uses", "")).startswith("actions/checkout@")
     )
     assert steps[checkout]["with"]["persist-credentials"] is False
+    if workflow == "ci.yml":
+        assert steps[checkout]["with"]["fetch-depth"] == 16
     clearing = "\n".join(step.get("run", "") for step in steps[:checkout])
     assert "git sparse-checkout disable" in clearing
     assert "rm -f .git/info/sparse-checkout" in clearing
     assert "git config --local --unset core.sparseCheckout" in clearing
+    if workflow == "ci.yml":
+        assert (
+            'git config --local remote.origin.url "https://github.com/${{ github.repository }}"'
+            in clearing
+        )
     for index, step in enumerate(steps):
         if str(step.get("uses", "")).startswith("actions/setup-python@"):
             assert "cache" not in step.get("with", {})
             assert steps[index + 1]["uses"] == "./.github/actions/isolated-python"
+
+
+@pytest.mark.parametrize(
+    "workflow,name",
+    [
+        ("ci.yml", "pre-commit"),
+        ("ci.yml", "prepare-source"),
+        ("local-gpu.yml", "prepare-source"),
+    ],
+)
+def test_api_source_bootstrap_preserves_checkout_fallback(
+    workflow: str, name: str
+) -> None:
+    jobs = yaml.safe_load((WORKFLOWS / workflow).read_text())["jobs"]
+    steps = jobs[name]["steps"]
+    bootstrap = next(step for step in steps if step.get("id") == "archive-source")
+    assert bootstrap["if"] == (
+        "runner.environment == 'self-hosted' && github.event_name == 'pull_request'"
+    )
+    assert bootstrap["continue-on-error"] is True
+    assert bootstrap["timeout-minutes"] == 10
+    checkout = next(
+        step for step in steps if "actions/checkout@" in step.get("uses", "")
+    )
+    assert checkout["if"] == "steps.archive-source.outcome != 'success'"
+    commands = bootstrap["run"]
+    assert 'digest.hexdigest() != metadata["sha"]' in commands
+    assert commands.index("digest.hexdigest()") < commands.index("runpy.run_path")
