@@ -8,6 +8,7 @@
 
 from dataclasses import dataclass
 
+from ...core.classical_dataflow import ClassicalXor
 from ...core.ir import Instruction
 from .field_multiplication import _remainder, _validate_field, _validate_registers
 from .measurement import ParityPhase, measure_x_clear_ir
@@ -21,16 +22,29 @@ class FieldProductErasure:
     corrections: tuple[ParityPhase, ...]
     parities: tuple[tuple[int, ...], ...]
 
-    def lower(self) -> tuple[Instruction, ...]:
-        """Emit existing dynamic IR with zero quantum workspace."""
-        return (
-            *(
-                gate
-                for wire, bit in self.measurements
-                for gate in measure_x_clear_ir(wire, bit)
-            ),
-            *(gate for correction in self.corrections for gate in correction.lower()),
-        )
+    def lower(self, *, parity_bit: int) -> tuple[Instruction, ...]:
+        """Emit source calls with one reusable caller-owned classical parity slot."""
+        ClassicalXor((), parity_bit)  # Validate without reserving a quantum wire.
+        if any(parity_bit == bit for _, bit in self.measurements):
+            raise ValueError("Parity scratch must be distinct from measurement slots")
+        instructions = [
+            gate
+            for wire, bit in self.measurements
+            for gate in measure_x_clear_ir(wire, bit)
+        ]
+        width = len(self.measurements)
+        offset = width * (width + 1) // 2
+        for correction in self.corrections[:offset]:
+            instructions.extend(correction.lower())
+        for i, sources in enumerate(self.parities):
+            instructions.append(ClassicalXor(sources, parity_bit).instruction())
+            count = width - i - 1
+            for correction in self.corrections[offset : offset + count]:
+                instructions.extend(
+                    ParityPhase(correction.wires, (parity_bit,)).lower()
+                )
+            offset += count
+        return tuple(instructions)
 
 
 def gf2_product_erasure(

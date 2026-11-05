@@ -8,6 +8,7 @@
 
 from dataclasses import dataclass
 
+from ...core.classical_dataflow import ClassicalXor
 from ...core.ir import Instruction
 
 
@@ -32,9 +33,8 @@ def measure_x_clear_ir(wire: int, classical_bit: int) -> tuple[Instruction, ...]
 class ParityPhase:
     """A Z-family phase controlled by XOR of measured classical bits.
 
-    This compiler-local record retains logical parity without requiring a new
-    classical runtime operation. Its target expansion uses one phase per bit:
-    (-1)**((b0 XOR b1)*p) = (-1)**(b0*p) * (-1)**(b1*p).
+    Multiple inputs compute one shared classical XOR result and apply one phase.
+    The caller owns its scratch bit. Singleton feedback needs no computation.
     """
 
     wires: tuple[int, ...]
@@ -50,10 +50,21 @@ class ParityPhase:
                 "Parity phase operands require distinct nonnegative integer bits"
             )
 
-    def lower(self) -> tuple[Instruction, ...]:
-        """Expand to positive single-bit feedback accepted by dynamic IR and KMX."""
+    def lower(self, *, parity_bit: int | None = None) -> tuple[Instruction, ...]:
+        """Compute parity in a classical slot, preserving one quantum phase gate."""
+        if not self.bits:
+            return ()
         name = ("z", "cz")[len(self.wires) - 1]
-        return tuple(
-            Instruction(name, self.wires, metadata={"conditions": ((bit, 1),)})
-            for bit in self.bits
+        prefix: tuple[Instruction, ...] = ()
+        bit = self.bits[0]
+        if len(self.bits) > 1:
+            if parity_bit is None:
+                raise ValueError(
+                    "Multi-bit parity requires a caller-owned classical result slot"
+                )
+            prefix = (ClassicalXor(self.bits, parity_bit).instruction(),)
+            bit = parity_bit
+        return (
+            *prefix,
+            Instruction(name, self.wires, metadata={"conditions": ((bit, 1),)}),
         )

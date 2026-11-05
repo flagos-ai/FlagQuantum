@@ -65,7 +65,7 @@ def main() -> None:
     print("Emitted clean-inverse gates:", dict(Counter(g.name for g in gates)))
 
     erase = gf2_product_erasure(x, y, plan.outputs[2], (0, 1, 2), modulus=0b1011)
-    compute_erase = (*plan.instructions, *erase.lower())
+    compute_erase = (*plan.instructions, *erase.lower(parity_bit=3))
     state = torch.zeros(512, dtype=torch.complex128)
     state[(3 << 6) | (5 << 3)] = 1
     circuit = DynamicCircuit(9, inputs=state, dtype=torch.complex128).append(
@@ -80,7 +80,10 @@ def main() -> None:
     )
     print("GF(8): compute and measured product erasure preserve all 16 trajectories")
     print("Erasure logical CZ calls:", len(erase.corrections))
-    print("Emitted erasure gates:", dict(Counter(g.name for g in erase.lower())))
+    print(
+        "Emitted erasure gates:",
+        dict(Counter(g.name for g in erase.lower(parity_bit=3))),
+    )
 
 
 if __name__ == "__main__":

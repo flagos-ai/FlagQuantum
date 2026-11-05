@@ -17,6 +17,7 @@ from flagquantum.compiler.lowering.reversible_phase import lower_reversible_phas
 from flagquantum.compiler.registers.field_erasure import gf2_product_erasure
 from flagquantum.compiler.registers.field_multiplication import gf2_multiplication
 from flagquantum.compiler.registers.measurement import ParityPhase, measure_x_clear_ir
+from flagquantum.core.classical_dataflow import parse_classical_xor
 from flagquantum.core.ir import CircuitIR
 from flagquantum.runtime.dynamic.circuit import DynamicCircuit
 from flagquantum.runtime.dynamic.execution import run_dynamic
@@ -42,6 +43,8 @@ def test_erasure_matches_unmodified_source_calls(width: int, modulus: int) -> No
     measurements = []
     corrections = []
     parities = []
+    source_events = []
+    parity_bit = 20 + width
 
     class Recorder:
         """Bind the real upstream method to labels, without reimplementing its loops."""
@@ -57,10 +60,12 @@ def test_erasure_matches_unmodified_source_calls(width: int, modulus: int) -> No
                 wire = int(registers["q"])
                 bit = slots[product.index(wire)]
                 measurements.append((wire, bit))
+                source_events.append(("hmr", (wire,), bit))
                 return bit
             if isinstance(bloq, Parity):
                 bits = tuple(int(b) for b in registers["x"])
                 parities.append(bits)
+                source_events.append(("classical_xor", bits, parity_bit))
                 return registers["x"], bits
             if isinstance(bloq, Discard):
                 return None
@@ -69,6 +74,13 @@ def test_erasure_matches_unmodified_source_calls(width: int, modulus: int) -> No
             bits = control if isinstance(control, tuple) else (int(control),)
             corrections.append(
                 ParityPhase((int(registers["q1"]), int(registers["q2"])), bits)
+            )
+            source_events.append(
+                (
+                    "cz",
+                    (int(registers["q1"]), int(registers["q2"])),
+                    parity_bit if isinstance(control, tuple) else int(control),
+                )
             )
             return control, registers["q1"], registers["q2"]
 
@@ -79,12 +91,31 @@ def test_erasure_matches_unmodified_source_calls(width: int, modulus: int) -> No
     assert actual.corrections == tuple(corrections)
     assert actual.parities == tuple(parities)
     assert len(parities) == width
+    # Normalize source MeasureX+discard to physical HMR; map each source Parity
+    # result to the same explicitly reusable classical slot on both sides.
+    lowered = actual.lower(parity_bit=parity_bit)
+    events = [("hmr", (wire,), bit) for wire, bit in actual.measurements]
+    for instruction in lowered[3 * width :]:
+        if instruction.name == "classical_xor":
+            assignment = parse_classical_xor(instruction)
+            events.append(("classical_xor", assignment.sources, assignment.target))
+        else:
+            ((bit, value),) = instruction.metadata["conditions"]
+            assert value == 1
+            events.append((instruction.name, instruction.wires, bit))
+    assert events == source_events
     assert len(corrections) == width**2
     assert get_cost_value(upstream, QECGatesCost()).clifford == width**2
-    emitted = Counter(g.name for g in actual.lower())
-    assert emitted["cz"] == sum(len(c.bits) for c in corrections)
+    emitted = Counter(g.name for g in actual.lower(parity_bit=20 + width))
+    assert emitted["cz"] == width**2
+    assert emitted["classical_xor"] == width
     assert emitted["measure"] == emitted["h"] == emitted["x"] == width
     assert emitted["ccx"] == emitted["t"] == emitted["tdg"] == 0
+    target = lower_reversible_phase(CircuitIR(3 * width, lowered))
+    native_counts = Counter(op.opcode for op in target.operations)
+    assert native_counts["cz"] == width**2
+    assert native_counts["hmr"] == native_counts["bit_store0"] == width
+    assert native_counts["bit_invert"] == sum(map(len, parities))
 
 
 def _compute_erase(width: int, modulus: int) -> CircuitIR:
@@ -95,7 +126,7 @@ def _compute_erase(width: int, modulus: int) -> CircuitIR:
     erase = gf2_product_erasure(
         x, y, forward.outputs[2], tuple(range(width)), modulus=modulus
     )
-    return CircuitIR(4 * width, (*forward.instructions, *erase.lower()))
+    return CircuitIR(4 * width, (*forward.instructions, *erase.lower(parity_bit=width)))
 
 
 @pytest.mark.parametrize("width,modulus", [(1, 3), (2, 7), (3, 11), (5, 37), (8, 283)])
@@ -121,16 +152,24 @@ def test_all_input_pairs_all_branch_phases_and_workspace(
     # Each bit of phase_mask is the exponent coefficient of one independent
     # measurement result. A zero mask proves +1 phase for EVERY branch at once.
     phase_mask = np.zeros(size**2, dtype=np.int64)
+    classical_masks: dict[int, int] = {}
     for op in program.operations:
         if op.opcode == "hmr":
             assert op.result_bit is not None
+            classical_masks[op.result_bit] = 1 << op.result_bit
             phase_mask ^= states[op.wires[0]] << op.result_bit
             states[op.wires[0]] = np.zeros_like(phase_mask)
+        elif op.opcode == "bit_store0":
+            assert op.result_bit is not None
+            classical_masks[op.result_bit] = 0
+        elif op.opcode == "bit_invert":
+            assert op.result_bit is not None and op.condition_bit is not None
+            classical_masks[op.result_bit] ^= classical_masks[op.condition_bit]
         elif op.opcode == "cz":
             assert op.condition_bit is not None
-            phase_mask ^= (
-                states[op.wires[0]] & states[op.wires[1]]
-            ) << op.condition_bit
+            phase_mask ^= (states[op.wires[0]] & states[op.wires[1]]) * classical_masks[
+                op.condition_bit
+            ]
         else:
             assert op.opcode in {"cx", "ccx"} and op.condition_bit is None
             *controls, target = op.wires
@@ -223,6 +262,10 @@ def test_erasure_and_shared_primitive_validation() -> None:
         gf2_product_erasure((0, 1), (2, 3), (4, 5), (0, 0), modulus=7)
     with pytest.raises(ValueError, match="distinct"):
         gf2_product_erasure((0, 1), (2, 3), (4, 5), (0, -1), modulus=7)
+    with pytest.raises(ValueError, match="distinct"):
+        gf2_product_erasure((0, 1), (2, 3), (4, 5), (0, 1), modulus=7).lower(
+            parity_bit=0
+        )
     with pytest.raises(ValueError, match="nonnegative"):
         measure_x_clear_ir(0, -1)
     with pytest.raises(ValueError, match="one or two"):
@@ -230,7 +273,12 @@ def test_erasure_and_shared_primitive_validation() -> None:
     with pytest.raises(ValueError, match="distinct"):
         ParityPhase((0,), (1, 1))
     assert ParityPhase((0,), ()).lower() == ()
-    assert [g.name for g in ParityPhase((0,), (1, 3)).lower()] == ["z", "z"]
+    assert [g.name for g in ParityPhase((0,), (1, 3)).lower(parity_bit=9)] == [
+        "classical_xor",
+        "z",
+    ]
+    with pytest.raises(ValueError, match="caller-owned"):
+        ParityPhase((0,), (1, 3)).lower()
     with pytest.raises(ValueError, match="one or two"):
         ParityPhase((0, 1, 2), (7, 9))
 

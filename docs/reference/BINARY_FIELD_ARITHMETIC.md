@@ -133,49 +133,86 @@ passed. These results do not constitute final whole-PR CI or GPU acceptance.
 measurement order, all classical parity input lists, and ordered phase correction
 calls. It uses no linear adjoint and is unaffected by the defect above. Inputs
 and the known product are big-endian words in the same polynomial basis. Each
-classical slot corresponds to the product wire at the same position. The product
-must contain `left * right`; an arbitrary target is outside the erasure contract.
-Every branch preserves the two inputs and clears all product slots to zero.
-There is no additional quantum workspace, and the measurement record remains
-available to the caller.
+classical measurement slot corresponds to its product wire. The product must
+contain `left * right`; an arbitrary target is outside the erasure contract.
+Every branch preserves the inputs and clears the product slots. No extra quantum
+workspace is required; measurement records remain available.
 
-The compiler-local result retains measurement order, logical `ParityPhase`
-calls, and every upstream parity input list, including an unused final parity.
-Its `lower()` method emits existing dynamic IR. Shared `measurement.py` primitives
-provide X-basis clearing and XOR-controlled Z/CZ phases; paired QROAM lookup and
-erasure use the same helpers. Four representative QROAM instruction streams were
-compared with the pre-refactor source and were unchanged. A replacement test
-substitutes independent measurement/phase emitters without changing the consumer.
-Higher-arity phases are explicitly rejected at this boundary.
+The caller supplies a separate, reusable classical result slot:
 
-For the current target, `(-1)^((a XOR b)*p)` is emitted as the product of two
-single-bit-controlled phases. This linear-size expansion uses existing classical
-control metadata, avoiding an exponential Boolean expansion or a new runtime
-operation. Qualtran has a classical `Parity` operation here, but no gate-level
-decomposition for it. Consequently source **logical calls**, target **emitted
-instructions**, and source **resource estimates** are separate evidence levels.
+```python
+erase = gf2_product_erasure(left, right, product, measurement_bits, modulus=0x11B)
+instructions = erase.lower(parity_bit=8)  # measurement slots are 0 through 7
+```
 
-| Degree / modulus | Source logical CZ calls | Source modeled CZ | Emitted single-bit-controlled CZ | Target HMR | Extra quantum work | T gates |
-|---|---:|---:|---:|---:|---:|---:|
-| 2 / `0x7` | 4 | 4 | 5 | 2 | 0 | 0 |
-| 3 / `0xB` | 9 | 9 | 12 | 3 | 0 | 0 |
-| 4 / `0x13` | 16 | 16 | 22 | 4 | 0 | 0 |
-| 5 / `0x25` | 25 | 25 | 36 | 5 | 0 | 0 |
-| 8 / `0x11B` | 64 | 64 | 151 | 8 | 0 | 0 |
+The existing `circuit.append(op)` example binds these instructions without a new
+public circuit method. The source's final unused parity computation is retained
+as well, so optimization does not obscure the call-chain comparison.
 
-HMR is the target representation of adjacent H, measurement, and result-controlled
-X clearing. The raw dynamic IR has one of each per product bit. These counts
-exclude forward multiplication and include no T substitution estimates. Classical
-storage is one retained measurement bit per product bit; logical classical parity
-is fused into phase feedback instead of allocating additional parity slots.
+## Shared classical execution
 
-The runnable example includes compute followed by measured erasure using
-`circuit.append(op)` and checks all returned trajectories. The erasure tests
-compare source calls for degrees 2, 3, 5, and 8. Exact phase-polynomial evaluation
-covers every operand pair and every measurement branch at degrees 1, 2, 3, 5,
-and 8, including nonuniform complex input amplitudes. At degree 8 this covers
-65,536 input pairs and all 256 outcomes. Independent dynamic complex128 execution
-checks degrees 2 and 3; KMX execution on the pinned native reference checks
-degrees 3 and 8, all quantum slots, exact zero phase, and observed coverage of
-every outcome. The new erasure suite has 15 tests; both new compiler modules have
-100% statement coverage. The seven-file G1/G2 regression has 124 passing tests.
+The [internal classical dataflow contract](../development/CLASSICAL_DATAFLOW_CONTRACT.md)
+precedes implementation. Core owns `ClassicalXor` and read-before-definition
+validation. Its zero-quantum-wire instruction reads old source values and assigns
+one result slot. Empty inputs write zero, duplicate sources cancel, and destination
+aliases read the old value. Source slots may be measured or previously computed.
+
+Scalar and batched dynamic trajectories execute the operation; density ensembles
+track source measurements transitively and compute each branch's XOR. Boolean SSA
+records represent `bool_zero` and binary `bool_xor` definitions, with type/def-use
+verification and exact public IR round trips. Classical work consumes no quantum
+noise or RNG draws and does not increase measurement counts. OpenQASM 3 exports
+boolean assignments; unsupported provider profiles explicitly refuse the operation.
+There are no added public dataclass fields or root exports.
+
+KMX uses native `BIT_STORE0` and condition-controlled `BIT_INVERT`, including
+correct alias handling. This keeps the classical cost executable and visible.
+Shared `measurement.py` parity-controlled phases emit one XOR assignment followed
+by **one** Z/CZ. Singleton feedback remains direct, so QROAM's existing quantum
+instruction streams are unchanged. Multi-bit parity requires a caller-owned
+classical result slot; no quantum phase expansion remains.
+
+## Resource comparison at the same layer
+
+The previous target lacked computed classical results. It expanded each parity
+into multiple conditional CZ instructions: for degree 8, 64 source logical CZ
+calls became 151 emitted CZ instructions. That expansion is superseded by the
+shared executable XOR layer. Current source-call and emitted quantum counts are:
+
+| Degree / modulus | Qualtran CZ calls/model | Previous expanded CZ | Current emitted CZ | HMR | Classical XOR assignments | Native bit stores | Native conditional bit inversions | Peak classical slots |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| 2 / `0x7` | 4 | 5 | 4 | 2 | 2 | 2 | 3 | 3 |
+| 3 / `0xB` | 9 | 12 | 9 | 3 | 3 | 3 | 7 | 4 |
+| 4 / `0x13` | 16 | 22 | 16 | 4 | 4 | 4 | 9 | 5 |
+| 5 / `0x25` | 25 | 36 | 25 | 5 | 5 | 5 | 12 | 6 |
+| 8 / `0x11B` | 64 | 151 | **64** | 8 | 8 | 8 | 34 | **9** |
+
+Every erasure row has zero T gates and zero extra quantum workspace. Peak
+classical storage is `degree` measurement slots plus one reusable parity slot.
+HMR represents H, measurement, and result-controlled X clearing. Counts exclude
+forward multiplication and count emitted conditional instructions, rather than
+claiming that every condition fires in each trajectory. Qualtran's quantum model
+omits classical execution cost; the classical columns therefore remain separate.
+The XOR assignments and native bit operations are two levels of the same work,
+and must not be added together as independent operations.
+
+## Acceptance evidence
+
+The real unmodified upstream `build_composite_bloq` is bound to a label recorder.
+Both sides use the same explicit reusable parity slot and physical X-measurement
+cleanup boundary. The **entire ordered measurement/XOR/CZ event stream** matches,
+including the unused final parity. Emitted CZ counts match the source model;
+native stores/inversions close against the actual parity input lists.
+
+Tests cover every operand pair and every measurement branch at degrees 1, 2, 3,
+5, and 8 with nonuniform complex amplitudes; degree 8 covers 65,536 pairs and 256
+measurement outcomes. Dynamic complex128 trajectories and KMX execution on the
+pinned native reference verify quantum cleanup and phase preservation. QROAM's
+existing G1 reference tests and independent emitter replacement test remain in
+place. The executable example checks compute/erase trajectories as well.
+
+The classical suite also covers empty, duplicated, aliased and overwritten
+sources, undefined reads, both trajectory strategies, density ensembles, SSA
+verification, IR/KMX round trips, native execution, preserved RNG streams and
+measurement counts, and restricted provider refusal. These are local CPU checks;
+final whole-PR CI and GPU acceptance remain separate.
