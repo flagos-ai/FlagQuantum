@@ -99,8 +99,11 @@ def reference_arithmetic_gates(
     if cirq_style and hasattr(source, "decompose_from_registers"):
         # Retain original allocation/generator order instead of a DAG export that
         # may reorder independent allocations and change their temporary names.
+        registers = {reg.name: reg for reg in source.signature}
         quregs = {
-            name: np.array([cirq.LineQubit(w) for w in wires])
+            name: np.array([cirq.LineQubit(w) for w in wires]).reshape(
+                (*registers[name].shape, int(registers[name].bitsize))
+            )
             for name, wires in inputs.items()
         }
         operation = source.decompose_from_registers(context=context, **quregs)
@@ -196,6 +199,23 @@ def reference_arithmetic_gates(
                 )
             )
             return tuple(bound.all_operations())
+        if cirq_style:
+            from qualtran._infra.adjoint import Adjoint
+            from qualtran._infra.gate_with_registers import split_qubits
+            from qualtran.bloqs.mcmt.and_bloq import MultiAnd
+
+            base = bloq.subbloq if isinstance(bloq, Adjoint) else bloq
+            if isinstance(base, MultiAnd):
+                # Preserve the explicit junk/target binding of the Cirq-style
+                # ladder. The generic export otherwise allocates replacement
+                # RIGHT outputs even though the caller supplied those wires.
+                quregs = split_qubits(base.signature, op.qubits)
+                ladder = tuple(
+                    cirq.flatten_op_tree(
+                        base.decompose_from_registers(context=context, **quregs)
+                    )
+                )
+                return cirq.inverse(ladder) if isinstance(bloq, Adjoint) else ladder
         if not preserve_components or not isinstance(bloq, Bloq):
             return NotImplemented
         basis_bloq = bloq.subbloq if type(bloq).__name__ == "Adjoint" else bloq
