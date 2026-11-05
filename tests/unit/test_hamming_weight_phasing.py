@@ -27,6 +27,54 @@ from tests.unit.test_register_subtraction import assert_source
 pytestmark = pytest.mark.unit
 
 
+def source_count_leaf(
+    bloq: Any, inputs: SourcePorts, parts: SourcePorts, bits: tuple[int, ...]
+) -> SourceResult | None:
+    """Read a pinned Hamming count or its measured adjoint."""
+    from qualtran import Adjoint
+    from qualtran.bloqs.arithmetic.hamming_weight import HammingWeightCompute
+
+    x, junk = parts["x"], parts["junk"]
+    n = len(x)
+    if isinstance(bloq, HammingWeightCompute):
+        assert bloq.bitsize == n and inputs == {"x": x}
+        return (
+            reference_arithmetic_gates(bloq, parts, (), {}, cirq_style=True),
+            parts,
+        )
+    if isinstance(bloq, Adjoint) and isinstance(bloq.subbloq, HammingWeightCompute):
+        assert inputs == parts and bloq.subbloq.bitsize == n
+        output = {"x": x}
+        if n == 1:
+            with pytest.raises(KeyError):
+                bloq.decompose_bloq()
+            # Empty source junk cannot be bound by its adjoint adapter.
+            # The one-bit forward source is a single self-inverse CX.
+            return (
+                reference_arithmetic_gates(
+                    bloq.subbloq,
+                    parts,
+                    (),
+                    {},
+                    cirq_style=True,
+                ),
+                output,
+            )
+        return (
+            reference_arithmetic_gates(
+                bloq.decompose_bloq(),
+                inputs,
+                (),
+                dict(zip(junk, bits, strict=True)),
+                cirq_style=True,
+                expected_outputs=output,
+                reuse_allocations=False,
+            ),
+            output,
+        )
+    return None
+
+
 @pytest.mark.parametrize(
     "n,exponent",
     [(1, 0.25), (2, 1.0), (3, -0.375), (4, 0.125), (7, -0.375), (8, 0.625)],
@@ -35,8 +83,6 @@ def test_hamming_phasing_source_graph_and_complete_complex_state(
     n: int, exponent: float
 ) -> None:
     pytest.importorskip("qualtran")
-    from qualtran import Adjoint
-    from qualtran.bloqs.arithmetic.hamming_weight import HammingWeightCompute
     from qualtran.bloqs.basic_gates.rotation import ZPowGate
     from qualtran.bloqs.rotations.hamming_weight_phasing import HammingWeightPhasing
     from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
@@ -51,44 +97,9 @@ def test_hamming_phasing_source_graph_and_complete_complex_state(
         def leaf(
             bloq: Any, inputs: SourcePorts, desired: SourcePorts
         ) -> SourceResult | None:
-            if isinstance(bloq, HammingWeightCompute):
-                assert bloq.bitsize == n and inputs == {"x": x}
-                return (
-                    reference_arithmetic_gates(bloq, parts, (), {}, cirq_style=True),
-                    parts,
-                )
-            if isinstance(bloq, Adjoint) and isinstance(
-                bloq.subbloq, HammingWeightCompute
-            ):
-                assert inputs == parts and bloq.subbloq.bitsize == n
-                output = {"x": x}
-                if n == 1:
-                    with pytest.raises(KeyError):
-                        bloq.decompose_bloq()
-                    # Empty source junk cannot be bound by its adjoint adapter.
-                    # The one-bit forward source is a single self-inverse CX.
-                    return (
-                        reference_arithmetic_gates(
-                            bloq.subbloq,
-                            parts,
-                            (),
-                            {},
-                            cirq_style=True,
-                        ),
-                        output,
-                    )
-                return (
-                    reference_arithmetic_gates(
-                        bloq.decompose_bloq(),
-                        inputs,
-                        (),
-                        dict(zip(junk, bits, strict=True)),
-                        cirq_style=True,
-                        expected_outputs=output,
-                        reuse_allocations=False,
-                    ),
-                    output,
-                )
+            count_leaf = source_count_leaf(bloq, inputs, parts, bits)
+            if count_leaf is not None:
+                return count_leaf
             if isinstance(bloq, ZPowGate):
                 assert bloq.eps == pytest.approx(src.eps / len(count))
                 return (
