@@ -235,8 +235,9 @@ def test_api_truncated_tree_requires_archive(tmp_path: Path, source: _Source) ->
 
 
 @pytest.mark.parametrize("remove_failure", [False, True])
+@pytest.mark.parametrize("imported_image", [False, True])
 def test_cleanup_only_removes_previous_container_for_this_runner_and_workspace(
-    tmp_path, monkeypatch, remove_failure
+    tmp_path, monkeypatch, remove_failure, imported_image
 ):
     import json
 
@@ -246,7 +247,9 @@ def test_cleanup_only_removes_previous_container_for_this_runner_and_workspace(
     monkeypatch.setenv("RUNNER_NAME", "cpu01")
     monkeypatch.setenv("GITHUB_WORKSPACE", str(tmp_path))
     monkeypatch.setattr(archive.shutil, "which", lambda _: "/usr/bin/docker")
-    image = "ghcr.io/flagos-ai/flagquantum-ci@sha256:" + "f" * 64
+    image = "sha256:" + "f" * 64
+    if not imported_image:
+        image = "ghcr.io/flagos-ai/flagquantum-ci@" + image
     ids = [letter * 64 for letter in "abcd"]
 
     def container(identifier, runner, workspace):

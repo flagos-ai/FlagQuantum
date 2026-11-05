@@ -45,6 +45,9 @@ def test_cpu_pool_routes_require_a_same_repository_pull_request(workflow: str) -
             expected,
             FULL_CPU_ROUTE,
             FULL_CPU_ROUTE.replace(
+                '"flagquantum-cpu"]', '"flagquantum-cpu","flagquantum-a800-cpu"]'
+            ),
+            FULL_CPU_ROUTE.replace(
                 '"flagquantum-cpu"]', '"flagquantum-cpu","flagquantum-mc550-cpu"]'
             ),
             FULL_CPU_ROUTE.replace("!= 'pull_request' ||", "== 'pull_request' &&"),
@@ -243,6 +246,7 @@ def test_network_dependent_sdks_do_not_wait_for_the_preinstalled_pool() -> None:
         assert job["concurrency"]["group"] not in core_groups
         assert job["concurrency"]["group"] in {
             "flagquantum-gh-1",
+            "flagquantum-gh-2",
             "flagquantum-gh-4",
             "flagquantum-gh-7",
         }
@@ -328,12 +332,15 @@ def test_cpu_suites_attach_the_locked_image(job: str, profile: str) -> None:
     jobs = yaml.safe_load((WORKFLOWS / "ci.yml").read_text())["jobs"]
     suite = jobs[job]
     if job != "coverage-shard":
-        assert suite["runs-on"] == "ubuntu-latest"
+        assert '"flagquantum-a800-cpu"' in suite["runs-on"]
     steps = suite["steps"]
     attach = next(
         step for step in steps if step.get("uses") == "./.github/actions/offline-cpu"
     )
     assert "if" not in attach
+    assert (
+        attach["with"]["require-cached"] == "${{ runner.environment == 'self-hosted' }}"
+    )
     assert attach["with"]["profile"] == profile
     assert attach["with"]["registry-token"] == "${{ github.token }}"
     assert not any(
@@ -430,3 +437,47 @@ def test_api_source_bootstrap_preserves_checkout_fallback(
     commands = bootstrap["run"]
     assert 'digest.hexdigest() != metadata["sha"]' in commands
     assert commands.index("digest.hexdigest()") < commands.index("runpy.run_path")
+
+
+def test_image_provisioning_keeps_credentials_off_the_import_hosts() -> None:
+    document = yaml.safe_load((WORKFLOWS / "prewarm-ci-cpu.yml").read_text())
+    export = document["jobs"]["export"]
+    assert (
+        export["if"]
+        == "github.event_name == 'workflow_dispatch' && inputs.export-bundle"
+    )
+    assert "pull_request_target" not in document.get("on", document.get(True, {}))
+    assert export["runs-on"] == "ubuntu-latest"
+    assert export["concurrency"] == {"group": "flagquantum-gh-6", "queue": "max"}
+    imported = document["jobs"]["prewarm"]
+    assert imported["needs"] == "export"
+    assert "flagquantum-a800-cpu" in imported["runs-on"]
+    assert imported["strategy"]["matrix"]["host"] == ["a800-171", "a800-172"]
+    assert "head.repo.full_name == github.repository" in imported["if"]
+    assert "needs.export.result == 'skipped'" in imported["if"]
+    commands = "\n".join(step.get("run", "") for step in imported["steps"])
+    assert 'docker image inspect "$archive_digest"' in commands
+    assert "--pull never --network none" in commands
+    assert "docker login" not in commands
+    assert "docker pull" not in commands
+    assert not any(
+        "download-artifact" in step.get("uses", "")
+        or "FQ_REGISTRY_TOKEN" in step.get("env", {})
+        for step in imported["steps"]
+    )
+
+
+def test_quality_capacity_is_independent_of_platform_and_package_builds() -> None:
+    jobs = yaml.safe_load((WORKFLOWS / "ci.yml").read_text())["jobs"]
+    quality_group = jobs["quality"]["concurrency"]["group"]
+    platform = jobs["release-wheel-platform"]
+    platform_groups = {
+        platform["concurrency"]["group"].replace(
+            "${{ matrix.hosted-bucket }}", str(row["hosted-bucket"])
+        )
+        for row in platform["strategy"]["matrix"]["include"]
+    }
+    build_groups = platform_groups | {jobs["package"]["concurrency"]["group"]}
+    assert len(build_groups) == 3
+    assert quality_group not in build_groups
+    assert build_groups <= {f"flagquantum-gh-{slot}" for slot in range(8)}

@@ -236,7 +236,10 @@ def test_isolated_launcher_budget_fits_all_child_ranks(
     )
 
 
-def test_container_inherits_stricter_host_service_budget(tmp_path, monkeypatch):
+@pytest.mark.parametrize("physical_gib", [12, 32])
+def test_container_inherits_stricter_host_service_budget(
+    tmp_path, monkeypatch, physical_gib
+):
     import json
 
     from tools import ci_cpu_budget as budget
@@ -262,6 +265,11 @@ def test_container_inherits_stricter_host_service_budget(tmp_path, monkeypatch):
     monkeypatch.setattr(
         budget.os, "sched_getaffinity", lambda _: set(range(64)), raising=False
     )
+    monkeypatch.setattr(
+        budget.os,
+        "sysconf",
+        lambda key: 4096 if key == "SC_PAGE_SIZE" else physical_gib * GIB // 4096,
+    )
     monkeypatch.setenv("RUNNER_ENVIRONMENT", "self-hosted")
     monkeypatch.setenv("RUNNER_NAME", "cpu01")
     monkeypatch.setenv("FQ_CI_HOST_BUDGET", str(host))
@@ -273,7 +281,7 @@ def test_container_inherits_stricter_host_service_budget(tmp_path, monkeypatch):
         next(tmp_path.glob("fq-ci-report-*/resources.json")).read_text()
     )
     assert report["effective_cpus"] == 4
-    assert report["memory_limit_bytes"] == 16 * GIB
+    assert report["memory_limit_bytes"] == min(physical_gib, 16) * GIB
     assert report["workers"] == 4
     assert f"FQ_CI_HOST_BUDGET={host}\n" in (tmp_path / "env").read_text()
     monkeypatch.setenv("RUNNER_NAME", "cpu02")

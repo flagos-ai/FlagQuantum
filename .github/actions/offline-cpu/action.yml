@@ -7,6 +7,9 @@ inputs:
   registry-token:
     description: Read-only GitHub package token
     required: true
+  require-cached:
+    description: Fail before registry access when a provisioned image is missing
+    default: "false"
   wheel-directory:
     description: Optional read-only SDK wheel cache mounted into the job container
     default: ""
@@ -18,18 +21,31 @@ runs:
       run: python3 -I tools/ci_cpu_budget.py
     - shell: bash
       env:
+        FQ_CI_REQUIRE_CACHED: ${{ inputs.require-cached }}
         FQ_CI_PROFILE: ${{ inputs.profile }}
         FQ_REGISTRY_TOKEN: ${{ inputs.registry-token }}
         FQ_CI_WHEEL_DIRECTORY: ${{ inputs.wheel-directory }}
       run: |
         image="$(awk -v profile="$FQ_CI_PROFILE" '$1 == profile { print $2 }' docker/ci/images.lock)"
         [[ "$image" =~ ^ghcr\.io/flagos-ai/flagquantum-ci@sha256:[a-f0-9]{64}$ ]]
+        # OCI archives preserve manifest digests without requiring registry names.
+        # Resolve an imported manifest only by the digest pinned in the lock.
+        archive_digest="$(awk -v profile="$FQ_CI_PROFILE" '$1 == profile { print $3 }' docker/ci/images.lock)"
+        if ! docker image inspect "$image" >/dev/null 2>&1 && [[ "$archive_digest" =~ ^sha256:[a-f0-9]{64}$ ]]; then
+          if docker image inspect "$archive_digest" >/dev/null 2>&1; then
+            image="$archive_digest"
+          fi
+        fi
         # Concurrent runners using the same daemon share one pull of a cold image.
         lock_dir="${XDG_CACHE_HOME:-$HOME/.cache}/flagquantum-ci"
         mkdir -p -m 700 "$lock_dir"
         exec 9>"$lock_dir/${image##*@}.lock"
         flock -w 480 9
         if ! docker image inspect "$image" >/dev/null 2>&1; then
+          if [[ "$FQ_CI_REQUIRE_CACHED" == true ]]; then
+            echo "::error::Locked image $FQ_CI_PROFILE is not provisioned on $RUNNER_NAME. Provision its offline bundle and rerun Prewarm locked CPU environments; see docs/development/TESTING.md."
+            exit 1
+          fi
           export DOCKER_CONFIG
           DOCKER_CONFIG="$(mktemp -d "$RUNNER_TEMP/fq-registry.XXXXXXXX")"
           trap 'rm -rf "$DOCKER_CONFIG"' EXIT

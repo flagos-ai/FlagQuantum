@@ -259,7 +259,7 @@ def cleanup_runner_containers() -> None:
     for line in listing.stdout.splitlines():
         identifier, _, image = line.partition(" ")
         if re.fullmatch(r"[a-f0-9]{64}", identifier) and re.fullmatch(
-            r"ghcr\.io/flagos-ai/flagquantum-ci@sha256:[a-f0-9]{64}", image
+            r"(?:ghcr\.io/flagos-ai/flagquantum-ci@)?sha256:[a-f0-9]{64}", image
         ):
             candidates.append(identifier)
     if not candidates:
