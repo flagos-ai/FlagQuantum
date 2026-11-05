@@ -65,3 +65,9 @@ max_workspace=0 omission for an algorithm's retained internal ancilla. No new
 opcode, physical realization or unproved early release is introduced. Test the
 owned marker validation, retained allocation, exact candidate workspace count
 and synthesis budget refusal independently from source-level acceptance.
+
+A close scalar alone is insufficient near amplitude one or a rotation boundary.
+Admission also proves the residual bad-subspace amplitude after the specified
+rotation is at most 1e-12, using the enumerated actual mass and the supplied
+scalar. Otherwise refuse rather than claiming exact cleanup. In particular,
+a supplied amplitude one must not hide a small but nonzero bad population.
