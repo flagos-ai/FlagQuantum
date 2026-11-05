@@ -157,8 +157,13 @@ def test_explicit_zero_assignment_is_a_valid_zero_proof() -> None:
 
 def test_near_product_probabilities_do_not_hide_large_amplitude_defect() -> None:
     text = "qfunc main(output q:qnum<2>) {allocate(q);inplace_prepare_state([0.5,0,0.0000000000001,0.4999999999999],0,q);}"
-    with pytest.raises(ValueError, match="product distribution"):
-        synth.synthesize(text, source_format="qmod")
+    program = synth.synthesize(text, source_format="qmod")
+    expected = torch.tensor(
+        [0.5, 0, 1e-13, 0.4999999999999], dtype=torch.complex128
+    ).sqrt()
+    torch.testing.assert_close(
+        fq.run(program).statevector().reshape(-1), expected, atol=1e-12, rtol=0
+    )
 
 
 @pytest.mark.parametrize("amount", [-257, 257])

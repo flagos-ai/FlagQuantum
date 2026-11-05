@@ -65,7 +65,7 @@ def number(
     return value
 
 
-def product_angles(
+def checked_probabilities(
     vector: Expression, bound: Expression, constants: Mapping[str, Expression]
 ) -> tuple[float, ...]:
     vector = constants.get(vector.token.text, vector) if not vector.children else vector
@@ -94,7 +94,11 @@ def product_angles(
             "amplification.preparation",
             "probabilities must be normalized and nonnegative with nonnegative bound",
         )
-    values = tuple(v / total for v in values)
+    return tuple(v / total for v in values)
+
+
+def product_rotation_angles(values: tuple[float, ...]) -> tuple[float, ...] | None:
+    size = len(values)
     width = size.bit_length() - 1
     marginals = tuple(
         math.fsum(v for word, v in enumerate(values) if word & (1 << bit))
@@ -111,12 +115,21 @@ def product_angles(
         )
     )
     if defect > 1e-12:
+        return None
+    return tuple(2 * math.asin(math.sqrt(min(1, max(0, p)))) for p in marginals)
+
+
+def product_angles(
+    vector: Expression, bound: Expression, constants: Mapping[str, Expression]
+) -> tuple[float, ...]:
+    angles = product_rotation_angles(checked_probabilities(vector, bound, constants))
+    if angles is None:
         reject(
             vector.token,
             "amplification.preparation",
             "this preparation requires a product distribution with amplitude L2 defect at most 1e-12",
         )
-    return tuple(2 * math.asin(math.sqrt(min(1, max(0, p)))) for p in marginals)
+    return angles
 
 
 def substitute(

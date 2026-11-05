@@ -33,7 +33,7 @@ from ...compiler._hybrid.model import (
     ValueId,
 )
 from ...compiler._hybrid.verifier import Diagnostic, HybridVerificationError
-from .amplification import expand_amplification, lower_amplification, product_angles
+from .amplification import expand_amplification, lower_amplification
 from .bindings import (
     is_binding_scope,
     lower_binding_scope,
@@ -51,8 +51,10 @@ from .permutations import verify_permutations
 from .phase import MAX_PHASE_INPUT_BITS, expand_phase
 from .phase_factors import Cube, preserve_factors
 from .predicates import expand_predicate_oracles
+from .preparation import lower_inplace_preparation
 from .qpe import infer_phase_allocation, lower_qpe
 from .quantum_callbacks import specialize_quantum_callbacks
+from .scope_control import lower_fourier_control
 from .swap_test import lower_swap_test
 from .syntax import (
     ANGLE_CALLS,
@@ -67,7 +69,7 @@ from .syntax import (
     reject,
     tokenize,
 )
-from .unitary_effects import emit_inverse
+from .unitary_effects import emit_inverse, is_reversible_scope, lower_reversible_scope
 
 SUPPORTED_SOURCE_VERSION = "2bfd835e73b6882fcc515a725098b04766c238e7"
 MAX_EFFECT_OPERATIONS = 4096
@@ -97,6 +99,7 @@ _INTRINSICS = (
         "prepare_ghz_state",
         "prepare_exponential_state",
         "inplace_prepare_state",
+        "IDENTITY",
         "exact_amplitude_amplification",
         "amplitude_amplification",
         "prepare_amplitudes",
@@ -1962,6 +1965,8 @@ class _Adapt:
         condition = statement.arguments[0]
         if controlled_evolution(self, statement, index):
             return
+        if lower_fourier_control(self, statement):
+            return
         if self.coherent_helper_control(statement, index):
             return
         if len(body) != 1:
@@ -2006,18 +2011,6 @@ class _Adapt:
             and args[0].token.text == "pi"
             and "pi" not in self.parameters
         )
-        if operation.token.text == "qft" and len(args) == 1:
-            control, _ = self.gate_target(condition)
-            if condition.children:
-                reject(
-                    token, "control", "controlled QFT requires a scalar control port"
-                )
-            target = self.atom(args[0])
-            data = self.register(target, allow_qubit_array=True)
-            if self.parameters[target.text].kind != "qbit[]":
-                reject(target, "type", "controlled QFT requires a qubit array")
-            self.effect_op("qreg.control_qft", token, (control, data))
-            return
         if flip_phase and condition.token.text == "[":
             register, wire = self.gate_target(condition)
             self.effect_op("qreg.gate", token, (register,), gate="z", index=wire)
@@ -2145,29 +2138,24 @@ class _Adapt:
                 "scope",
                 "within requires at least one local computation",
             )
-        if len(statement.within) == 1 and statement.within[0].token.text == "H":
-            preparation = statement.within[0]
-            if len(statement.apply) != 1:
-                reject(
-                    statement.token,
-                    "scope",
-                    "Hadamard within requires one bound helper in apply",
-                )
+        if (
+            len(statement.within) == 1
+            and statement.within[0].token.text == "H"
+            and len(statement.apply) == 1
+        ):
             action = statement.apply[0]
             helper = self.definitions.get(action.token.text)
             if (
-                helper is None
-                or not _bound_helper(helper)
-                or action.control_body is not None
+                helper is not None
+                and _bound_helper(helper)
+                and action.control_body is None
             ):
-                reject(
-                    action.token,
-                    "scope",
-                    "Hadamard within requires one bound helper in apply",
-                )
-            self.statement(preparation, index)
-            self.call(action.token, action.arguments)
-            self.statement(preparation, index)
+                self.statement(statement.within[0], index)
+                self.call(action.token, action.arguments)
+                self.statement(statement.within[0], index)
+                return
+        if is_reversible_scope(statement):
+            lower_reversible_scope(self, statement, index)
             return
         parent_scope = self.local_scope
         self.local_scope = []
@@ -2691,27 +2679,7 @@ class _Adapt:
             lower_swap_test(self, token, args)
             return
         if token.text == "inplace_prepare_state":
-            if len(args) != 3:
-                reject(
-                    token,
-                    "signature",
-                    "inplace preparation requires probabilities, bound and target",
-                )
-            angles = product_angles(args[0], args[1], self.constants)
-            prepared_register = self.register(
-                self.atom(args[2]), allow_qubit_array=True
-            )
-            if register_width(prepared_register) != len(angles):
-                reject(token, "width", "product probability vector width disagrees")
-            for bit, preparation_angle in enumerate(angles):
-                self.effect_op(
-                    "qreg.gate",
-                    token,
-                    (prepared_register,),
-                    gate="ry",
-                    index=bit,
-                    angle=preparation_angle,
-                )
+            lower_inplace_preparation(self, token, args)
             return
         if statement.map_callback is not None:
             variable, body = statement.map_callback
@@ -2769,6 +2737,8 @@ class _Adapt:
                 "RY",
                 "RZ",
                 "inplace_encode_on_bloch",
+                "inplace_prepare_state",
+                "qft",
             }
             if not body or any(
                 child.token.text not in allowed
@@ -3080,13 +3050,18 @@ class _Adapt:
             destination = self.register(target, allow_qubit_array=True)
             self.effect_op("qreg.drop", token, (destination,))
             self.dropped.add(target.text)
+        elif token.text == "IDENTITY":
+            if len(args) != 1:
+                reject(token, "signature", "IDENTITY requires one register")
+            identity_target = self.register(self.atom(args[0]), allow_qubit_array=True)
+            self.effect_op("qreg.gate", token, (identity_target,), gate="i", index=0)
         elif token.text == "qft":
             if len(args) != 1:
                 reject(token, "signature", "qft requires one qubit array")
             target = self.atom(args[0])
             register = self.register(target, allow_qubit_array=True)
-            if self.parameters[target.text].kind != "qbit[]":
-                reject(target, "type", "qft requires a qubit array")
+            if self.parameters[target.text].kind not in {"qbit[]", "qnum"}:
+                reject(target, "type", "qft requires a qubit array or integer register")
             self.effect_op("qreg.qft", token, (register,))
         elif token.text == "qct_qst_type1":
             if len(args) != 1:
@@ -3634,6 +3609,7 @@ def parse_qmod(
                 and not controlled_qft
                 and not hadamard_within
                 and not is_binding_scope(statement)
+                and not is_reversible_scope(statement)
                 and statement.repeat_index is None
                 and statement.static_if_body is None
                 and statement.map_callback is None

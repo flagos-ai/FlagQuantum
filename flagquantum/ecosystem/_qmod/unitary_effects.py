@@ -7,7 +7,7 @@ from collections.abc import Sequence
 from typing import TYPE_CHECKING
 
 from ...compiler._hybrid.model import Operation
-from .syntax import Token, reject
+from .syntax import Statement, Token, reject
 
 if TYPE_CHECKING:
     from .adapter import _Adapt
@@ -21,15 +21,26 @@ PURE_EFFECTS = frozenset(
         "qreg.phase",
         "qreg.control_phase",
         "qreg.pauli_rotation",
+        "qreg.qft",
+        "qreg.inverse_qft",
+        "qreg.control_qft",
+        "qreg.inplace_prepare_amplitudes",
     }
 )
 
 
 def emit_inverse(owner: _Adapt, token: Token, operations: Sequence[Operation]) -> None:
-    inverses: list[tuple[Operation, dict[str, object]]] = []
+    inverses: list[tuple[str, Operation, dict[str, object]]] = []
     for op in reversed(operations):
         attributes: dict[str, object] = dict(op.attributes)
-        if op.name == "qreg.gate":
+        opcode = op.name
+        if op.name in {"qreg.qft", "qreg.inverse_qft"}:
+            opcode = "qreg.inverse_qft" if op.name == "qreg.qft" else "qreg.qft"
+        elif op.name in {
+            "qreg.gate",
+            "qreg.control_qft",
+            "qreg.inplace_prepare_amplitudes",
+        }:
             if attributes.pop("inverse", False) is not True:
                 attributes["inverse"] = True
         elif op.name == "qreg.array_phase_flip" or (
@@ -58,6 +69,40 @@ def emit_inverse(owner: _Adapt, token: Token, operations: Sequence[Operation]) -
                 "scope",
                 "invert cannot allocate or change ownership and requires checked reversible gates",
             )
-        inverses.append((op, attributes))
-    for op, attributes in inverses:
-        owner.effect_op(op.name, token, op.operands[1:], **attributes)
+        inverses.append((opcode, op, attributes))
+    for opcode, op, attributes in inverses:
+        owner.effect_op(opcode, token, op.operands[1:], **attributes)
+
+
+def is_reversible_scope(statement: Statement) -> bool:
+    return bool(statement.within) and all(
+        child.token.text not in {"=", "->"} for child in statement.within or ()
+    )
+
+
+def lower_reversible_scope(owner: _Adapt, statement: Statement, index: str) -> None:
+    assert statement.within is not None
+    bindings = dict(owner.registers), dict(owner.views), set(owner.suspended)
+
+    def checked_effects(
+        label: str, body: tuple[Statement, ...]
+    ) -> tuple[Operation, ...]:
+        start = len(owner.operations)
+        for ordinal, child in enumerate(body):
+            owner.statement(child, f"{index}.{label}{ordinal}")
+        effects = tuple(owner.operations[start:])
+        if any(op.name not in PURE_EFFECTS for op in effects) or bindings != (
+            owner.registers,
+            owner.views,
+            owner.suspended,
+        ):
+            reject(
+                statement.token,
+                "scope",
+                "reversible within/apply requires pure effects on existing storage",
+            )
+        return effects
+
+    forward = checked_effects("within", statement.within)
+    checked_effects("apply", statement.apply)
+    emit_inverse(owner, statement.token, forward)

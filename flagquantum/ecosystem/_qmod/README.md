@@ -1369,3 +1369,25 @@ complete array is reassembled from views of the same owner.
 Run the unchanged symmetric compression and Qmod tutorial part 2 fixtures
 against independent dense references with
 `python -m pytest tests/integration/test_synthesis_qmod_indexed_control.py`.
+
+## Reversible scopes and coherent Fourier selection
+
+A reversible quantum within/apply scope expands to its forward preparation,
+the apply body and the adjoint of the preparation. The scope checks that
+both bodies use pure effects on existing storage. The separate arithmetic
+uncomputation and binding-only paths continue to check their respective
+lifetime and alias rules.
+
+Inplace probability preparation accepts a normalized, finite real
+distribution on up to seven initialized bits. Product distributions retain
+their original rotations. A nonproduct distribution uses the Compiler's
+real-amplitude ladder, and inversion reverses the same ladder.
+
+Equality on a whole unsigned selector supports a conditional QFT or its
+adjoint on disjoint initialized storage. The explicit basis-word form admits
+selector and target widths of up to eight bits. The original single-bit
+Fourier control remains available.
+
+The pinned linear combination of unitaries fixture checks the complete
+complex state and the weighted zero-selector projection. Run it with
+`python -m pytest tests/integration/test_synthesis_qmod_reversible_scopes.py`.
