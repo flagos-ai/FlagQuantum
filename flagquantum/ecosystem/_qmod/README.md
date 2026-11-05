@@ -1435,3 +1435,31 @@ to eight selector bits, with array index zero as the least-significant bit.
 power patterns. Four-qubit matrix decomposition uses the existing verified
 Givens construction and may reuse up to three clean scratch bits for controlled
 powers. Synthesis includes those bits in its workspace and qubit budgets.
+
+### Diagonal QAOA and bounded classical workflows
+
+Top-level `PauliTerm[]` declarations can drive `qaoa_penalty`. Each angle
+pair gives one first-order cost step with the even-position value as time
+and an RX mixer with the odd-position value as its angle. The target is
+prepared with Hadamards. The source array index zero is the least-significant
+basis bit, including in Hamiltonian terms. Identity terms retain their
+absolute phase.
+
+For the original QAOA/VQE workflow profile, a final fenced `cscope` holds a
+typed `vqe(... optimizer=Optimizer.COBYLA ...)` assignment and one `save`
+mapping. The importer accepts a sized QAOA angle vector and an I/Z
+Hamiltonian for exact diagonal CVaR. The scope is parsed as data. Run the
+quantum circuit at the source's initial point with `synth.synthesize`, or
+override that point with `classical_inputs`. Run the complete workflow with
+the repository's local command.
+
+```sh
+python -m tools.run_qmod_cscope tests/fixtures/classiq_qmod/qaoa_in_qaoa.qmod
+```
+
+The command prints the saved Hamiltonian and optimization summary as JSON.
+The local profile uses exact
+CPU probabilities and bounds the number of objective evaluations by
+`max_iteration`. Zero step size and tolerance select FlagQuantum's COBYLA
+defaults. `alpha_cvar=1` computes the expectation, while values below one
+select the lower or upper probability tail according to `maximize`.

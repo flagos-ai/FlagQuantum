@@ -1,0 +1,50 @@
+{
+  "repository": "https://github.com/Classiq/classiq-library",
+  "commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "license_file": "LICENSE.txt",
+  "license_sha256": "241f68c9f35357f97e8a2a195e447d4f80098c140f0b3b3c770a11eed96f58e0",
+  "fixtures": [
+    {
+      "file": "link_monitoring.qmod",
+      "source_path": "applications/cybersecurity/link_monitoring/link_monitoring.qmod",
+      "git_blob_sha1": "765ba91742a18f541dcac74da4b9d24fdc01453d",
+      "sha256": "387eea491283597dc063d0d759828acf2968776658a04c831f3f59ce076eef42"
+    },
+    {
+      "file": "task_scheduling_problem.qmod",
+      "source_path": "applications/logistics/task_scheduling_problem/task_scheduling_problem.qmod",
+      "git_blob_sha1": "b605c29e54863d145fed2ecf7b66af2759b4952e",
+      "sha256": "e2f05ede7be9bb9520aff145db7cf2f67124d3b6d141f1e1418e23cb12a34eb2"
+    },
+    {
+      "file": "evidence_scaling_labs.qmod",
+      "source_path": "applications/optimization/low_autocorrelation_binary_sequences_problem/evidence_scaling_labs.qmod",
+      "git_blob_sha1": "2d9bf8493ad546b495cf53a4541e0d4232b5f9c8",
+      "sha256": "ef09e4c4cbdef9b75d6731725869d66c6281d423eca46069c8bab8325a3d5a70"
+    },
+    {
+      "file": "qaoa_in_qaoa.qmod",
+      "source_path": "applications/optimization/qaoa_in_qaoa/qaoa_in_qaoa.qmod",
+      "git_blob_sha1": "87ab06279ae12b2ae5d052df27558b229b77812c",
+      "sha256": "a5de2295ec5484ce708ab519b7081fc149b08f196a067360fe89b574f55ceab6"
+    },
+    {
+      "file": "rectangles_packing_grid.qmod",
+      "source_path": "applications/optimization/rectangles_packing/rectangles_packing_grid.qmod",
+      "git_blob_sha1": "149826034d817b538b3e64c9f6524337acc84d71",
+      "sha256": "5f8f6c8e5d84aa2897cf4e7b52b01b300b4ef01d86907c91c414388d5959f9a0"
+    },
+    {
+      "file": "radio_access_network_positioning_antennas.qmod",
+      "source_path": "applications/telecom/radio_access_network/radio_access_network_positioning_antennas.qmod",
+      "git_blob_sha1": "78b568faaa020655af03f5804054c4e6f693c082",
+      "sha256": "5214a49242595d1fce3e1a86a13a1e76263a480494eab232e09d942f75b4a85c"
+    },
+    {
+      "file": "qaoa_demonstration.qmod",
+      "source_path": "tutorials/technology_demonstrations/qaoa/qaoa_demonstration.qmod",
+      "git_blob_sha1": "00cad4dca54d78e70b9ad0e7da57f4128fb5d022",
+      "sha256": "05490b57fc4fa2b0c85e490647c612e7f3424f43759a4dd3e55282d2321cd742"
+    }
+  ]
+}

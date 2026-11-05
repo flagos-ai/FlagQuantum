@@ -318,7 +318,11 @@ class Parser:
         while True:
             if not left.children and left.token.text.isdecimal():
                 break
-            if self.current.text == "." and (static or self.records):
+            if self.current.text == "." and (
+                static
+                or self.records
+                or (real and self.tokens[self.position + 1].text == "len")
+            ):
                 dot = self.take(".")
                 if static and not self.records:
                     self.take("len")
@@ -1236,7 +1240,7 @@ class Parser:
             if (
                 self.current.text != "qfunc"
                 and self.tokens[self.position + 1].text == ":"
-                and kind in {"SparsePauliOp", "real", "int"}
+                and kind in {"PauliTerm", "SparsePauliOp", "real", "int"}
             ):
                 name = self.name()
                 self.take(":")
@@ -1250,6 +1254,9 @@ class Parser:
                     self.take("[")
                     self.take("]")
                     self.matrix_constants.add(name.text)
+                if kind == "PauliTerm":
+                    self.take("[")
+                    self.take("]")
                 self.take("=")
                 if matrix:
                     value = self.literal_array(
@@ -1257,6 +1264,11 @@ class Parser:
                     )
                 elif kind == "SparsePauliOp":
                     value = self.sparse_pauli_op()
+                elif kind == "PauliTerm":
+                    literal = self.pauli_terms()
+                    value = Expression(
+                        Token("PauliTerm[]", literal.token.location), literal.children
+                    )
                 elif array:
                     value = self.literal_array(
                         partial(self.preparation_literal, allow_fraction=False)

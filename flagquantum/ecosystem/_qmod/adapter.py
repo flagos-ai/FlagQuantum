@@ -42,6 +42,7 @@ from .bindings import (
     record_view,
 )
 from .controlled_evolution import EVOLUTION_CALLS, controlled_evolution
+from .cscope import QaoaWorkflow, VqeSettings, split_cscope
 from .decisions import lower_decision_phase
 from .indexed_control import lower_indexed_control
 from .integers import checked_integer, checked_integer_array, integer_operation
@@ -73,6 +74,7 @@ from .syntax import (
     tokenize,
 )
 from .unitary_effects import emit_inverse, is_reversible_scope, lower_reversible_scope
+from .variational import lower_qaoa_penalty
 
 SUPPORTED_SOURCE_VERSION = "2bfd835e73b6882fcc515a725098b04766c238e7"
 MAX_EFFECT_OPERATIONS = 4096
@@ -117,6 +119,7 @@ _INTRINSICS = (
         "unitary",
         "exponentiate",
         "qdrift",
+        "qaoa_penalty",
         "qft",
         "swap_test",
         "drop",
@@ -233,6 +236,7 @@ class QmodImport:
     source_name: str
     fractional_bits: Mapping[str, int]
     signed_registers: tuple[str, ...]
+    workflow: QaoaWorkflow | None = None
 
 
 class _Expression:
@@ -2559,11 +2563,14 @@ class _Adapt:
         width = len(view)
         if not operator.children and operator.token.text != "[":
             if operator.token.text not in self.constants:
-                reject(operator.token, "pauli", "unknown SparsePauliOp constant")
+                family = (
+                    "PauliTerm[]" if token.text == "qaoa_penalty" else "SparsePauliOp"
+                )
+                reject(operator.token, "pauli", f"unknown {family} constant")
             operator = self.constants[operator.token.text]
-            if operator.token.text != "SparsePauliOp":
+            if operator.token.text not in {"SparsePauliOp", "PauliTerm[]"}:
                 reject(
-                    target_arg.token, "pauli", "operator constant must be SparsePauliOp"
+                    target_arg.token, "pauli", "operator constant must be a Pauli sum"
                 )
         sparse = operator.token.text == "SparsePauliOp"
         terms = operator
@@ -2852,6 +2859,9 @@ class _Adapt:
         if token.text == "select_rotation":
             lower_select_rotation(self, token, args)
             return
+        if token.text == "qaoa_penalty":
+            lower_qaoa_penalty(self, token, args)
+            return
         if token.text == "CPHASE":
             if len(args) != 3:
                 reject(token, "signature", "CPHASE requires an angle and two qubits")
@@ -3138,7 +3148,7 @@ class _Adapt:
                 if (
                     args[0].token.text == "."
                     and len(args[0].children) == 2
-                    and args[0].children[1].token.text == "size"
+                    and args[0].children[1].token.text in {"size", "len"}
                 ):
                     size = self.static_integer(args[0])
                 elif not args[0].children and args[0].token.text.isdecimal():
@@ -3629,6 +3639,65 @@ def _bound_helper(syntax: Function) -> bool:
     )
 
 
+def _qaoa_workflow(
+    settings: VqeSettings, main: Function, constants: Mapping[str, Expression]
+) -> QaoaWorkflow:
+    token = Token("cscope", settings.location)
+    inputs = [p for p in main.parameters if p.role == "real" and p.kind == "real[]"]
+    outputs = [p for p in main.parameters if p.role == "output" and p.kind == "qbit[]"]
+    if (
+        len(main.parameters) != 2
+        or len(inputs) != 1
+        or len(outputs) != 1
+        or inputs[0].width != len(settings.initial_point)
+        or outputs[0].width is None
+        or len(main.statements) != 2
+    ):
+        reject(
+            token,
+            "cscope",
+            "VQE requires a sized QAOA parameter vector and bit-array output",
+        )
+    initial, ansatz = main.statements
+    parameter, output = inputs[0].name.text, outputs[0].name.text
+    width = outputs[0].width
+    assert width is not None
+    if (
+        initial.token.text != "allocate"
+        or not initial.arguments
+        or initial.arguments[-1].children
+        or initial.arguments[-1].token.text != output
+        or ansatz.token.text != "qaoa_penalty"
+        or len(ansatz.arguments) != 4
+        or any(arg.children for arg in ansatz.arguments[1:])
+        or tuple(arg.token.text for arg in ansatz.arguments[1:])
+        != (parameter, settings.operator, output)
+    ):
+        reject(
+            token,
+            "cscope",
+            "VQE requires fresh QAOA preparation with its declared Hamiltonian",
+        )
+    operator = constants.get(settings.operator)
+    if operator is None or operator.token.text != "PauliTerm[]":
+        reject(token, "cscope", "VQE requires a declared PauliTerm[] Hamiltonian")
+    diagonal = []
+    for term in operator.children:
+        axes, coefficient = term.children
+        support = _pauli_support(axes, width, sparse=False)
+        if any(axis != "Z" for _, axis in support):
+            reject(
+                axes.token, "cscope", "exact CVaR requires a diagonal I/Z Hamiltonian"
+            )
+        negative = coefficient.token.text == "-"
+        magnitude = coefficient.children[0] if negative else coefficient
+        value = _literal_angle(magnitude, token)
+        diagonal.append(
+            (sum(1 << bit for bit, _ in support), -value if negative else value)
+        )
+    return QaoaWorkflow(settings, parameter, output, width, tuple(diagonal))
+
+
 def parse_qmod(
     source: str,
     *,
@@ -3642,6 +3711,7 @@ def parse_qmod(
     Originals are independently checked against their retained source manifest.
     No files, SDKs, synthesis, execution, eval or generated Python are involved.
     """
+    source, settings = split_cscope(source, filename)
     tokens = tokenize(source, filename)
     check_source_version(source_version, tokens[0])
     definitions: dict[str, Function] = {}
@@ -3659,6 +3729,20 @@ def parse_qmod(
             continue
         if name in parser.matrix_constants:
             validate_matrix_constant(name_token, operator)
+            constants[name] = operator
+            continue
+        if operator.token.text == "PauliTerm[]":
+            if not operator.children:
+                reject(operator.token, "pauli", "PauliTerm[] constant cannot be empty")
+            width = len(operator.children[0].children[0].children)
+            if not 1 <= width <= 256:
+                reject(operator.token, "pauli", "Pauli word width must be in 1..256")
+            for term in operator.children:
+                axes, coefficient = term.children
+                _pauli_support(axes, width, sparse=False)
+                if coefficient.token.text == "-":
+                    coefficient = coefficient.children[0]
+                _literal_angle(coefficient, name_token)
             constants[name] = operator
             continue
         if operator.token.text != "SparsePauliOp":
@@ -3703,9 +3787,14 @@ def parse_qmod(
     definitions = expand_predicate_oracles(definitions, constants, parser.records)
     definitions = expand_static_oracles(definitions, constants, parser.records)
     main = definitions["main"]
+    workflow = (
+        _qaoa_workflow(settings, main, constants) if settings is not None else None
+    )
     parameters = {
         p.name.text: p for p in main.parameters if p.role in {"real", "integer"}
     }
+    if classical_inputs is None and workflow is not None:
+        classical_inputs = {workflow.parameter: workflow.settings.initial_point}
     inputs = {} if classical_inputs is None else classical_inputs
     if not isinstance(inputs, Mapping) or set(inputs) != set(parameters):
         reject(
@@ -3930,4 +4019,5 @@ def parse_qmod(
         filename,
         MappingProxyType(adapter.fractional_bits),
         tuple(p.name.text for p in main.parameters if p.name.text in adapter.signed),
+        workflow,
     )
