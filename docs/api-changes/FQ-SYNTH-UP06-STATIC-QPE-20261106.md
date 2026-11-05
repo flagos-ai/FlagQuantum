@@ -46,6 +46,10 @@ Signed phase metadata uses the existing two's-complement convention and preserve
 the same physical circuit. Distribution keys remain the existing raw integer words;
 examples decode signed fixed-point values explicitly from report metadata. This
 slice does not change the public Distribution key schema. Partial fractional arithmetic is outside this slice.
+A named Grover oracle may expose an inplace array/record port when the same
+closed diagonal-body validator proves its complete body contains phase effects
+only. Do not infer read-only behavior from a name or unchecked helper declaration;
+mutation, capture, allocation and Output escape still refuse.
 No unsupported definition or zero-iteration case may bypass validation.
 
 ## Acceptance and migration
