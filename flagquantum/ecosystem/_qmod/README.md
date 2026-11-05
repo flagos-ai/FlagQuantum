@@ -627,3 +627,11 @@ normalization checks as inline vectors.
 initialized qubit array. `control(x[i]) { phase(pi); }` flips the phase when the
 indexed qubit is one, using the existing Qmod index order. A multi-qubit phase
 flip reuses the bounded array-control lowering and its clean workspace budget.
+
+### In-place exponential state preparation
+
+`prepare_exponential_state(rate, q)` applies one `RY` per qubit of an
+initialized array. On zero input, the output probabilities are proportional
+to `exp(-rate * k)` for basis integer `k`. An existing state receives the
+same rotations without resetting the register. A signed real literal or a
+bound finite real rate within the existing ±2**53 input range is accepted.

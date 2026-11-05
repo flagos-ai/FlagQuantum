@@ -670,6 +670,8 @@ class Parser:
                             args.append(self.pauli_terms())
                         else:
                             args.append(Expression(self.name()))
+                    elif target.text == "prepare_exponential_state":
+                        args.append(self.signed_angle_argument())
                     elif target.text == "single_pauli_exponent":
                         args.append(self.literal_array(self.pauli_axis))
                     elif target.text in {"prepare_amplitudes", "prepare_state"}:

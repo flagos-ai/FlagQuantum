@@ -67,6 +67,7 @@ _INTRINSICS = (
         "pi",
         "control",
         "prepare_ghz_state",
+        "prepare_exponential_state",
         "prepare_amplitudes",
         "prepare_state",
         "prepare_bell_state",
@@ -1392,6 +1393,30 @@ class _Adapt:
             elif axis == "Y":
                 gate("rx", index, angle=-math.pi / 2)
 
+    def prepare_exponential_state(
+        self, token: Token, args: tuple[Expression, ...]
+    ) -> None:
+        if len(args) != 2:
+            reject(
+                token,
+                "signature",
+                "prepare_exponential_state requires a rate and qubit array",
+            )
+        rate = self.evolution_angle(args[0], token)
+        target = self.atom(args[1])
+        register = self.register(target, allow_qubit_array=True)
+        if self.parameters[target.text].kind != "qbit[]":
+            reject(target, "type", "prepare_exponential_state requires a qubit array")
+        # The bit of weight 2**index has amplitude ratio exp(-rate * 2**index / 2).
+        for index in range(register_width(register)):
+            magnitude = abs(rate) * math.ldexp(1.0, index - 1)
+            angle = 2 * math.atan(math.exp(-magnitude))
+            if rate < 0:
+                angle = math.pi - angle
+            self.effect_op(
+                "qreg.gate", token, (register,), gate="ry", index=index, angle=angle
+            )
+
     def prepare_state_vector(self, token: Token, args: tuple[Expression, ...]) -> None:
         if len(args) != 3:
             reject(
@@ -1705,6 +1730,8 @@ class _Adapt:
             self.effect_op("qreg.allocate", token, (destination,))
         elif token.text in {"prepare_amplitudes", "prepare_state"}:
             self.prepare_state_vector(token, args)
+        elif token.text == "prepare_exponential_state":
+            self.prepare_exponential_state(token, args)
         elif token.text == "qft":
             if len(args) != 1:
                 reject(token, "signature", "qft requires one qubit array")
