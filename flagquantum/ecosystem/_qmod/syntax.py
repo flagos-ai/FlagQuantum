@@ -949,33 +949,9 @@ class Parser:
             target = self.name()
             arguments: tuple[Expression, ...]
             if target.text == "grover_operator" and self.current.text == "(":
-                self.take("(")
-                callback = None
-                if self.current.text == "lambda":
-                    marker = self.take("lambda")
-                    self.take("(")
-                    parameter = self.name()
-                    self.take(")")
-                    callback = (
-                        parameter,
-                        self.block(allow_scopes=False, scope_depth=scope_depth + 1),
-                    )
-                    oracle = Expression(marker)
-                else:
-                    oracle = Expression(self.name())
-                self.take(",")
-                grover_preparation = Expression(self.name())
-                self.take(",")
-                destination = self.call_argument()
-                self.take(")")
-                self.take(";")
-                statements.append(
-                    Statement(
-                        target,
-                        (oracle, grover_preparation, destination),
-                        oracle_callback=callback,
-                    )
-                )
+                from .oracles import parse_grover_call
+
+                statements.append(parse_grover_call(self, target, scope_depth))
                 continue
             if (
                 target.text == "apply_to_all"

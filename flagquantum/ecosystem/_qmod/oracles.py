@@ -5,11 +5,42 @@ from __future__ import annotations
 import re
 from collections.abc import Mapping
 from dataclasses import replace
+from typing import TYPE_CHECKING
 
 from .integers import checked_integer
 from .syntax import Expression, Function, Parameter, Statement, Token, reject
 
+if TYPE_CHECKING:
+    from .syntax import Parser
+
 MAX_ORACLE_EXPANSIONS = 4096
+
+
+def parse_grover_call(parser: Parser, target: Token, scope_depth: int) -> Statement:
+    """Read the static callback form within the shared bounded source parser."""
+    parser.take("(")
+    callback = None
+    if parser.current.text == "lambda":
+        marker = parser.take("lambda")
+        parser.take("(")
+        parameter = parser.name()
+        parser.take(")")
+        callback = (
+            parameter,
+            parser.block(allow_scopes=False, scope_depth=scope_depth + 1),
+        )
+        oracle = Expression(marker)
+    else:
+        oracle = Expression(parser.name())
+    parser.take(",")
+    preparation = Expression(parser.name())
+    parser.take(",")
+    destination = parser.call_argument()
+    parser.take(")")
+    parser.take(";")
+    return Statement(
+        target, (oracle, preparation, destination), oracle_callback=callback
+    )
 
 
 def expand_static_oracles(
