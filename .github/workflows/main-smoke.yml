@@ -1,5 +1,5 @@
-name: BW1100 CPU runner pilot
-run-name: BW1100-${{ inputs.node }} runner validation
+name: BW1100 16x4 CPU 16x4 validation
+run-name: BW1100-${{ inputs.node }} 16x4 validation
 on:
   workflow_dispatch:
     inputs:
@@ -7,29 +7,13 @@ on:
         description: BW1100 pilot host
         required: true
         type: choice
-        options: ['2', '10', '11', '12', '14', '15', '17']
+        options: ['2', '10', '11', '12', '14', '15', '16', '17']
 permissions: {}
 env:
   FQ_PILOT_SOURCE_SHA: eb04d9ffd36c40b167c9ebbd72eb66c11d39e43a
 jobs:
-  dispatch-probe:
-    runs-on: fq-bw1100-${{ inputs.node }}-pilot
-    timeout-minutes: 3
-    steps:
-      - run: test "$RUNNER_NAME" = fq-bw1100-${{ inputs.node }}-cpu-pilot
-  offline-probe:
-    needs: dispatch-probe
-    runs-on: fq-bw1100-${{ inputs.node }}-pilot
-    timeout-minutes: 4
-    steps:
-      - name: Verify rootless and the offline locked image
-        run: |
-          test "$RUNNER_NAME" = fq-bw1100-${{ inputs.node }}-cpu-pilot
-          docker info --format '{{json .SecurityOptions}}' | grep -F '"name=rootless"'
-          docker run --rm --pull never --network none --read-only --cap-drop ALL --security-opt no-new-privileges ghcr.io/flagos-ai/flagquantum-ci@sha256:1f5d6aa7b1b1d6313d787c7fbeaf269179a39d031b1010b1b521162baceb5ba6 /opt/ci/bin/python -c 'import socket; assert {n for _, n in socket.if_nameindex()} == {"lo"}'
   coverage-shard:
-    needs: offline-probe
-    runs-on: fq-bw1100-${{ inputs.node }}-pilot
+    runs-on: fq-bw1100-${{ inputs.node }}-cpu${{ matrix.slot }}-validation
     permissions:
       contents: read
       packages: read
@@ -44,8 +28,35 @@ jobs:
     strategy:
       matrix:
         include:
-          - {shard: 0}
+          - {shard: 0, slot: '01', first: 0}
+          - {shard: 1, slot: '02', first: 4}
+          - {shard: 2, slot: '03', first: 8}
+          - {shard: 3, slot: '04', first: 12}
+          - {shard: 4, slot: '05', first: 16}
+          - {shard: 5, slot: '06', first: 20}
+          - {shard: 6, slot: '07', first: 24}
+          - {shard: 7, slot: '08', first: 28}
+          - {shard: 8, slot: '09', first: 96}
+          - {shard: 9, slot: '10', first: 100}
+          - {shard: 10, slot: '11', first: 104}
+          - {shard: 11, slot: '12', first: 108}
+          - {shard: 12, slot: '13', first: 112}
+          - {shard: 13, slot: '14', first: 116}
+          - {shard: 14, slot: '15', first: 120}
+          - {shard: 15, slot: '16', first: 124}
     steps:
+      - name: Verify dedicated dispatch, rootless Docker and four-core offline image
+        env:
+          EXPECTED_PREFIX: fq-bw1100-${{ inputs.node }}-cpu
+          EXPECTED_SLOT: ${{ matrix.slot }}
+        run: |
+          if test "$EXPECTED_SLOT" = 01; then
+            test "$RUNNER_NAME" = "$EXPECTED_PREFIX-pilot"
+          else
+            test "$RUNNER_NAME" = "$EXPECTED_PREFIX$EXPECTED_SLOT"
+          fi
+          docker info --format '{{json .SecurityOptions}}' | grep -F '"name=rootless"'
+          docker run --rm --pull never --network none --read-only --cap-drop ALL --security-opt no-new-privileges ghcr.io/flagos-ai/flagquantum-ci@sha256:1f5d6aa7b1b1d6313d787c7fbeaf269179a39d031b1010b1b521162baceb5ba6 /opt/ci/bin/python -c 'import os,socket; assert os.sched_getaffinity(0)==set(range(${{ matrix.first }},${{ matrix.first }}+4)); assert {n for _,n in socket.if_nameindex()}=={"lo"}'
       - name: Restore the verified pilot source from the local Git cache
         run: |
           test -d .git
