@@ -34,6 +34,7 @@ from ...compiler._hybrid.model import (
 )
 from ...compiler._hybrid.verifier import Diagnostic, HybridVerificationError
 from .amplification import expand_amplification, lower_amplification, product_angles
+from .bindings import is_binding_scope, lower_binding_scope
 from .controlled_evolution import EVOLUTION_CALLS, controlled_evolution
 from .decisions import lower_decision_phase
 from .integers import checked_integer, checked_integer_array
@@ -1080,7 +1081,15 @@ class _Adapt:
             assert resolved is not None
             return resolved[1]
         if node.token.text == "{":
-            return tuple(self.gate_target(item) for item in node.children)
+            return tuple(
+                location
+                for item in node.children
+                for location in (
+                    (self.gate_target(item),)
+                    if item.token.text == "["
+                    else self.array_view(item)
+                )
+            )
         source = node.children[0] if node.token.text == ":" else node
         target = self.atom(source)
         if target.text in self.suspended:
@@ -1132,7 +1141,12 @@ class _Adapt:
         variable = statement.repeat_index
         assert variable is not None
         name = variable.text
-        if name in self.parameters or name in _INTRINSICS or name in self.constants:
+        if (
+            name in self.parameters
+            or name in _INTRINSICS
+            or name in self.constants
+            or name in self.loop_indices
+        ):
             reject(variable, "name", "loop index cannot shadow a register or intrinsic")
         count = self.static_integer(statement.arguments[0])
         if not 0 <= count <= 256:
@@ -2100,6 +2114,8 @@ class _Adapt:
             self.effect_op("qreg.release", token, (predicate,))
 
     def within(self, statement: Statement, index: str) -> None:
+        if lower_binding_scope(self, statement, index):
+            return
         if not statement.within:
             reject(
                 statement.token,
@@ -3584,6 +3600,13 @@ def parse_qmod(
                 "bound helpers require real or writable qubit array ports",
             )
         for statement in syntax.statements:
+            declaration = statement.declaration
+            if (
+                declaration is not None
+                and declaration.kind == "qbit[]"
+                and declaration.width is None
+            ):
+                continue
             controlled_qft = (
                 statement.control_body is not None
                 and len(statement.control_body) == 1
@@ -3616,6 +3639,7 @@ def parse_qmod(
                 }
                 and not controlled_qft
                 and not hadamard_within
+                and not is_binding_scope(statement)
                 and statement.repeat_index is None
                 and statement.static_if_body is None
                 and statement.map_callback is None

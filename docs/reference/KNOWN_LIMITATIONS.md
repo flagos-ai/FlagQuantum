@@ -521,3 +521,27 @@ one-bit Qmod, existing native phase/CX qfunc composition and Circuit comparison.
 Dropped input states are retained semantic data, not clean workspace. This is
 local CPU correctness evidence only. Existing partial-exponential source-amplitude
 refusal and historical baselines remain unchanged.
+
+
+## Lexical binding-only within/apply
+
+The experimental Qmod adapter supports a within preparation consisting only of
+register -> bindings, followed by bounded static gates and specialized gate
+helpers in apply. It restores incoming view, width and suspended-name metadata
+on scope exit; temporary aliases cannot escape. This is a lexical view scope,
+not allocation, numerical inversion or a proof that arbitrary quantum data is
+zero. Allocation, initialization, release and other ownership-changing apply
+effects refuse after specialization. Existing arithmetic and Hadamard within
+paths retain their contracts. Static loops in other quantum scopes are unchanged.
+
+Whole registers and scalar/static indexed locations can concatenate into one
+helper array actual, preserving low-to-high source order and existing alias
+checks. Bound helpers may declare an unallocated unsized qbit[] alias. All
+source initialization, Const mutation, width, loop shadow and resource budgets
+remain checked. Run tools/validate_qmod_binding_scopes.py --case 0 --output
+/tmp/autoencoder.json (also case 1) for the unchanged quantum_autoencoder.qmod
+with two nonzero parameter bindings and independent Circuit full-state comparison.
+Run python -m examples.synthesis_autoencoder for the original Qmod, existing
+scalar native qfunc composition and Circuit comparison. No native array/loop
+export or numerical kernel is added. Dropped coded data retains physical state;
+it is not zero workspace. Existing source-semantic refusals and baselines remain.

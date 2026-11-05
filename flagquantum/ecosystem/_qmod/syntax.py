@@ -824,12 +824,14 @@ class Parser:
         scope_depth: int = 0,
         power_body: bool = False,
         static_loop_body: bool = False,
+        binding_preparation: bool = False,
+        binding_actions: bool = False,
     ) -> tuple[Statement, ...]:
         self.take("{")
         statements: list[Statement] = []
         while self.current.text != "}":
             if self.current.text == "{" or self.tokens[self.position + 1].text == "->":
-                if scope_depth:
+                if scope_depth and not binding_preparation:
                     reject(self.current, "scope", "bindings require function scope")
                 source = self.binding_group()
                 operator = self.take("->")
@@ -856,32 +858,16 @@ class Parser:
                 self.current.text == "within"
                 and self.tokens[self.position + 1].text == "{"
             ):
-                token = self.take("within")
-                if not allow_scopes:
-                    reject(
-                        token, "scope", "nested scopes belong in apply, not preparation"
-                    )
-                if scope_depth >= MAX_SCOPE_DEPTH:
-                    reject(
-                        token,
-                        "budget.depth",
-                        f"scope nesting exceeds depth {MAX_SCOPE_DEPTH}",
-                    )
-                preparation = self.block(
-                    allow_scopes=False, scope_depth=scope_depth + 1
-                )
-                self.take("apply")
-                actions = self.block(scope_depth=scope_depth + 1)
-                statements.append(
-                    Statement(token, (), within=preparation, apply=actions)
-                )
+                from .bindings import parse_within
+
+                statements.append(parse_within(self, allow_scopes, scope_depth))
                 continue
             if (
                 self.current.text in {"repeat", "power"}
                 and self.tokens[self.position + 1].text == "("
             ):
                 token = self.take(self.current.text)
-                if scope_depth:
+                if scope_depth and not binding_actions:
                     reject(
                         token,
                         "scope",
@@ -902,6 +888,7 @@ class Parser:
                     allow_scopes=False,
                     scope_depth=scope_depth + 1,
                     static_loop_body=True,
+                    binding_actions=binding_actions,
                 )
                 statements.append(
                     Statement(token, (count,), repeat_index=index, repeat_body=body)
