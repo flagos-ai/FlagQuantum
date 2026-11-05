@@ -14,6 +14,7 @@
 from ...core.ir import Instruction
 from .._arithmetic_kernels import ripple_add_modular
 from .and_compute import and_compute_ir, and_uncompute_ir
+from .bitwise import bitwise_not_ir
 
 
 def controlled_add_or_subtract_ir(
@@ -170,4 +171,4 @@ def negate_ir(
     source network, including its constant loading and measured carries.
     """
     addition = add_constant_ir(target, 1, constant, carries, classical_bits)
-    return (*(Instruction("x", (wire,)) for wire in target), *addition)
+    return (*bitwise_not_ir(target), *addition)

@@ -7,6 +7,7 @@
 """Register and constant equality through the same multi-controlled X primitive."""
 
 from ...core.ir import Instruction
+from .bitwise import xor_ir
 from .multi_control import multi_control_x_ir
 
 
@@ -46,5 +47,5 @@ def equality_ir(
     middle = multi_control_x_ir(
         right, (0,) * len(right), target, workspace, classical_bits
     )
-    xor = tuple(Instruction("cx", (a, b)) for a, b in zip(left, right, strict=True))
+    xor = xor_ir(left, right)
     return (*xor, *middle, *xor)
