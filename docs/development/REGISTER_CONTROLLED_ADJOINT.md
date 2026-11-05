@@ -103,3 +103,71 @@ identical instruments with different-length classical histories.
 
 Inherited source bounds, unequal-width signed-model inconsistency, symbolic and
 generic multi-control paths remain explicitly outside this concrete acceptance.
+
+## Constant, subtraction and scaled modular adjoints
+
+Run `python -m examples.algorithms.register_modular_constant_adjoint` for the
+original CModAddK and CModSub inverse paths, including both CModSub control
+polarities. Run `python -m examples.algorithms.register_modular_scaled_addition`
+for constant/scaled forward then exact-adjoint restoration. Both examples use
+`circuit.append(op)`, coherent complex inputs and the existing dynamic runtime;
+no Qualtran or NumPy is required to execute them.
+
+The following compiler entries share the existing validation and physical pools
+with their forward entries. Big-endian ports are unchanged; quantum work starts
+and ends zero. Classical slots retain the latest random outcomes.
+
+- `controlled_modular_subtract_adjoint_ir` in controlled_modular_subtraction:
+  the same signature as controlled_modular_subtract_ir, including control_value.
+  Both coherent branches require x,y in [0,p), with p+1 fitting n bits. Preserve
+  BitwiseNot, AddK(p+1), CModAdd adjoint, AddK(p+1) adjoint, BitwiseNot. This
+  original conjugation is shared between directions, rather than copied.
+  Mathematically it adds x, but it is not the source forward CModAdd stream.
+- `controlled_modular_add_constant_adjoint_ir` in modular_constant_addition:
+  the same signature as the forward constant entry, positive control only.
+  Both branches require y in [0,p), 0<=k<=p. Share the original k load/unload
+  and replace only the middle component by exact CModAdd adjoint. Do not load
+  p-k instead. The source inverse's IntEffect-adjoint/IntState-adjoint tensors
+  are independently checked before binding the original basis to caller work.
+  As with the forward adapter, this does not claim a native Cirq exporter for
+  ZeroEffect; the complete quantum work-zero channel supplies its clean effect.
+- `controlled_modular_scaled_add_adjoint_ir` in modular_scaled_addition:
+  the forward signature, positive control, arbitrary n-bit x and y in [0,p).
+  Keep each original normalized (k*2**i)%p constant, including zero stages;
+  traverse low to high, with And, CModAddK adjoint, measured And erasure.
+  Validation, traversal body and pool are shared. Running the forward algorithm
+  with negative k has the same ideal subtraction but a different source stream.
+
+The inverse reference adapter expands original Adjoint component objects, not
+reversed dynamic gates. Existing forward source regressions remain unchanged.
+The tests cover all valid basis inputs through n=8, full complex amplitudes
+with an entangled spectator, work zero and restoration. The all-branch proof
+uses independently verified literal And columns and both erasure outcomes;
+small raw inverse constant channels enumerate all 64 n=1 histories, and scaled
+channels all 128 n=1 histories. Larger raw channels test zero, one and alternating
+outcomes in addition to the compositional certificate. This is not dense
+trajectory enumeration of 2**336 histories.
+
+### Measured inverse resources and independent source models
+
+At n=8,p=251,k=173 (where relevant), T includes T-dagger. Conditional CZ is an
+emitted feedback instruction; actual execution depends on measurement outcomes.
+Each measured And erasure contributes one reset, and the full streams have
+H=3m and S=m. Work/slots are caller-owned and reused across clean stages.
+
+| Original inverse | cv | CX | X | T | Measurements m | Clean work | Total qubits | Classical slots |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| CModSub adjoint | 1 | 641 | 85 | 220 | 55 | 18 | 35 | 16 |
+| CModSub adjoint | 0 | 641 | 121 | 220 | 55 | 18 | 35 | 16 |
+| CModAddK adjoint | 1 | 479 | 55 | 164 | 41 | 26 | 35 | 16 |
+| CtrlScaleModAdd adjoint | 1 | 3,880 | 422 | 1,344 | 336 | 27 | 44 | 16 |
+
+Independently evaluated pinned QECGatesCost gives respectively 28n-4 / 7n-1,
+20n+4 / 5n+1, and n*(20n+8) / n*(5n+2) T/measurements. QubitCount agrees on
+the tested layouts. Its abstract and_bloq/clifford fields are respectively
+55/452, 41/320, and 336/2568 at positive control. These model fields remain
+separate from the primitive Clifford inventories in the table and IR scans.
+Equal forward/inverse totals do not imply equal ordered streams or instruments.
+Source all-ones-modulus loading and out-of-promise residues/constants retain
+their separately documented limitations; symbolic/general controls are outside
+this concrete acceptance.

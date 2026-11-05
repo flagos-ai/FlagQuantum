@@ -11,9 +11,11 @@ import torch
 
 import flagquantum as fq
 from flagquantum.compiler.registers.modular_constant_addition import (
+    controlled_modular_add_constant_adjoint_ir,
     controlled_modular_add_constant_ir,
 )
 from flagquantum.compiler.registers.modular_scaled_addition import (
+    controlled_modular_scaled_add_adjoint_ir,
     controlled_modular_scaled_add_ir,
 )
 from flagquantum.core.ir import CircuitIR
@@ -27,14 +29,25 @@ class ModularAccumulation:
 
     operation: Literal["constant", "scaled"]
     value: int
+    inverse: bool = False
 
     def append_to(self, circuit: fq.Circuit) -> fq.Circuit:
         if self.operation == "constant":
-            gates = controlled_modular_add_constant_ir(
+            emit_constant = (
+                controlled_modular_add_constant_adjoint_ir
+                if self.inverse
+                else controlled_modular_add_constant_ir
+            )
+            gates = emit_constant(
                 0, (3, 4), self.value, 3, tuple(range(6, 16)), (0, 1, 2, 3)
             )
         else:
-            gates = controlled_modular_scaled_add_ir(
+            emit_scaled = (
+                controlled_modular_scaled_add_adjoint_ir
+                if self.inverse
+                else controlled_modular_scaled_add_ir
+            )
+            gates = emit_scaled(
                 0, (1, 2), (3, 4), self.value, 3, tuple(range(5, 16)), (0, 1, 2, 3)
             )
         return circuit.compose(CircuitIR(circuit.n_qubits, gates))
@@ -56,9 +69,8 @@ def main() -> None:
             delta = value * (x if operation == "scaled" else 1)
             result = (y + delta) % 3 if c else y
             expected[((c << 4) | (x << 2) | result) << 11] = amp
-        circuit = DynamicCircuit(16, inputs=inputs, dtype=torch.complex128).append(
-            ModularAccumulation(operation, value)
-        )
+        circuit = DynamicCircuit(16, inputs=inputs, dtype=torch.complex128)
+        circuit.append(ModularAccumulation(operation, value))
         output = run_dynamic(circuit, shots=8, seed=41, strategy="trajectory")
         torch.testing.assert_close(
             output.final_states.reshape(8, -1),
@@ -67,9 +79,9 @@ def main() -> None:
             atol=1e-12,
         )
         counts = Counter(g.name for g in circuit.to_ir().instructions)
-        inverse = (-value) % 3 if operation == "constant" else -value
+        circuit.append(ModularAccumulation(operation, value, inverse=True))
         restored = run_dynamic(
-            circuit.append(ModularAccumulation(operation, inverse)),
+            circuit,
             shots=8,
             seed=41,
             strategy="trajectory",
