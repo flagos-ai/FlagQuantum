@@ -964,19 +964,58 @@ the checkout.
 ## CPU runner routing and reliability
 
 Trusted same-repository PRs run distributed and coverage suites on the
-self-hosted CPU pool. Core and runtime profiles remain hosted until their
-locked images are prewarmed and verified on the target pool. A rollout trial
-showed that an uncached core image timed out after 450 seconds on an A800
-node; allocating the job successfully did not make the environment ready. Each matrix leg has a run-specific concurrency
-group, so unrelated PRs do not serialize behind one hosted-capacity bucket.
-Source preparation and pre-commit use the separate CPU entry pool. Fork PRs
-continue to use GitHub-hosted runners.
+self-hosted CPU pool. Core compatibility, Python 3.12 unit tests, and runtime
+suites use the 16 A800 CPU slots with qualified locked image caches. Each
+matrix leg has a run-specific concurrency group. Source preparation and
+pre-commit use the separate CPU entry pool. Fork PRs use GitHub-hosted runners.
 
-The long coverage suites use the digest-pinned images in `docker/ci/images.lock`.
-Cold image pulls are serialized per image on each host, while test processes
-remain isolated and resource-budgeted. Source cache repair verifies Git objects
-and the exact workflow commit before any tests run; an incomplete cache falls
-back to the full source artifact. No tests or required checks are removed.
+The images in `docker/ci/images.lock` pin both the registry manifest digest and
+the OCI manifest digest in its offline archive. **Prewarm locked CPU environments** verifies both A800
+hosts by default. Its explicitly requested `export-bundle` mode pulls the exact
+images on one hosted runner and exports a checksummed offline archive. Registry
+credentials stay in a temporary config on that hosted runner. The export uses
+one of the same eight global hosted concurrency groups.
+
+An administrator provisions that archive over the runner management connection,
+then runs qualification. This separates image lifecycle management from PR test
+execution: neither qualification nor core/runtime tests download image archives,
+log in to registries, or pull images. Missing caches fail with an explicit
+provisioning error. Docker archives do not preserve registry manifest references,
+so the launcher accepts the exact archive manifest digest pinned beside the
+registry manifest digest; a
+mutable cache tag alone is never sufficient. The archive manifest is read and hash-verified from the OCI index, independently
+of the Docker image store's local ID display. Qualification checks dependencies,
+CPU-only PyTorch, and the absence of optional frameworks from core with networking
+disabled.
+
+For a new lock or replacement A800 host:
+
+1. Request an offline export:
+   `gh workflow run prewarm-ci-cpu.yml --ref <branch> -f export-bundle=true`.
+   Record its run ID and the `locked-cpu-images` artifact SHA-256 from the API.
+2. Download the artifact on the provisioning workstation with
+   `gh run download <run-id> -n locked-cpu-images -D <bundle-directory>`.
+   Verify the downloaded archive files against `SHA256SUMS`. When downloading the
+   artifact ZIP directly, also verify its digest against the API artifact digest.
+3. Transfer the bundle once through the SSH management connection, then use the
+   existing trusted internal SSH connection to distribute it to the other A800
+   host. Use private temporary directories. On each host, run
+   `sha256sum --check SHA256SUMS`, then
+   `timeout --kill-after=15s 300s docker load --input images.tar.gz`.
+   Remove only that provisioning directory after a successful import. GitHub
+   credentials must not be copied to the hosts.
+4. Run `gh workflow run prewarm-ci-cpu.yml --ref <branch>` without export mode,
+   and require both host qualification jobs to succeed before rerunning CPU CI.
+
+The lock's archive manifest digests must match the export metadata before changing CPU routes.
+Keep the A800 CPU routing label off an unqualified replacement host. Lock changes
+also trigger qualification on trusted PRs. Coverage retains its already
+provisioned general CPU pool and the same locked environment. Test processes
+remain isolated and resource-budgeted.
+
+Source cache repair verifies Git objects and the exact workflow commit before
+any tests run; an incomplete cache falls back to the full source artifact. No
+tests or required checks are removed.
 
 SDK jobs that install dependencies online (JAX, Cirq, Azure, Braket, PennyLane, and Qiskit)
 use hosted Linux runners with 30-minute job limits. They do not depend on the
@@ -989,7 +1028,7 @@ Triton retains its MC550 pool.
 
 Contributor workflow: open or update an internal PR, then inspect its CI run.
 Expected behavior: source preparation starts independently of coverage; ready
-coverage and distributed matrix legs can use separate available CPU runners; every existing required
+core, runtime, coverage, and distributed matrix legs can use available CPU runners; every existing required
 check still has to pass. For acceptance, compare source queue time, suite wall
 time, and infrastructure failures across runs. Runner busy counts alone are
 not evidence of CPU efficiency or test reliability.
@@ -1003,9 +1042,11 @@ The required `CI complete` gate is the exception: it always runs with a
 two-minute limit and rejects failed, skipped, or cancelled dependencies. It must
 never become a skipped required check when a run is cancelled.
 
-Network-dependent SDK jobs share hosted groups 1, 4, and 7. Core runtime,
-Python 3.12 unit tests, and Python compatibility checks use groups 3, 5, and 6
-respectively, so SDK downloads cannot occupy their concurrency groups. The
+Network-dependent SDK jobs share hosted groups 1, 2, 4, and 7. Fork PR runtime,
+Python 3.12 unit tests, and Python compatibility checks use hosted groups 3, 5,
+and 6 respectively. Trusted core/runtime jobs use independent self-hosted groups.
+Quality keeps group 0; Linux packaging uses group 6 and the Windows/macOS
+builds use groups 3/5. Long builds cannot occupy the quality group. The
 repository-wide hosted ceiling remains eight.
 
 CI and GPU artifact uploads retry a transient service failure at most twice,
