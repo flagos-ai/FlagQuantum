@@ -760,7 +760,7 @@ def test_distributed_cpu_retains_its_stable_check_and_rejects_a_failed_partition
 def test_coverage_data_stays_outside_the_source_tree_copied_by_mutation_tests():
     job = _document("ci.yml")["jobs"]["coverage-shard"]
     expected = "${{ runner.temp }}/fq-coverage/.coverage.${{ matrix.shard }}"
-    assert job["env"]["COVERAGE_FILE"] == expected
+    assert "COVERAGE_FILE" not in job["env"]
     upload = next(
         s
         for s in job["steps"]
@@ -772,3 +772,8 @@ def test_coverage_data_stays_outside_the_source_tree_copied_by_mutation_tests():
     ]
     assert len(commands) == 2
     assert all('mkdir -p "$RUNNER_TEMP/fq-coverage"' in command for command in commands)
+    assert all(
+        'export COVERAGE_FILE="$RUNNER_TEMP/fq-coverage/.coverage.${{ matrix.shard }}"'
+        in command
+        for command in commands
+    )
