@@ -524,6 +524,7 @@ def specialize_quantum_callbacks(
                         s,
                         arguments=args,
                         predicate_callback=pred,
+                        qpe_body=optional(s.qpe_body),
                         within=optional(s.within),
                         apply=scope(s.apply, bindings, callbacks, stack),
                         control_body=optional(s.control_body),

@@ -476,6 +476,7 @@ def expand_predicate_oracles(
                     replace(
                         statement,
                         oracle_callback=callback,
+                        qpe_body=optional(statement.qpe_body),
                         within=optional(statement.within),
                         apply=scope(statement.apply, parameters),
                         control_body=optional(statement.control_body),

@@ -1303,3 +1303,49 @@ explicit; no native amplification, array or mutable helper export is added.
 Dropped problem data remains semantic, not clean workspace. Actual scratch is
 checked separately. Source-semantic refusals and historical baselines are retained;
 this is local CPU correctness evidence only.
+
+## Bounded ordinary QPE composition
+
+Ordinary qpe(lambda(){...},phase) captures a static zero-argument callback over
+initialized surrounding data. The phase output must be freshly allocated,
+otherwise unused and all-fractional, with at most eight bits. Signed metadata
+uses two's complement; Distribution keys remain raw integer words and examples
+explicitly scale them. Typed allocate(size,sign,size,phase) may infer that metadata
+on an unsized main output. Partial fractional arithmetic is not added.
+
+The current callback profile covers X/H/S/Z/I/SX, scalar phase and RX/RY/RZ,
+indexed CX/CZ, indexed controlled-X/phase, whole-array phase flips, uncontrolled
+Pauli rotations and one-to-three-data-qubit unitary matrices. Global callback
+phase is controlled explicitly. Allocations, drop/release, counter/data overlap,
+Output escape, nested QPE and unsupported controlled effects refuse. This is not
+an arbitrary unitary-callback or native array-QPE API. Existing effect/helper and
+physical budgets remain authoritative. A singleton matrix callback uses bounded
+classical powers 1..128; other accepted callbacks expand finite repeated effects.
+
+Literal global integer constants can supply widths and equal-width fractional
+points. Finite rectangular real[][] constants are bounded to 8x8; unitary use
+still verifies exact dimensions and numerical unitarity. No source matrix or
+state is normalized or repaired. Named inplace Grover callbacks require the same
+closed diagonal proof as borrowed phase oracles, with no writes or escaping ports.
+
+Compiler emits registered gates, including all matrix phase corrections, and
+owns controlled Givens/Gray-path synthesis. Its commutation analysis groups
+structurally identical predicates while preserving the original partitions and
+logical counters. Ecosystem owns only source translation and metadata.
+
+Run the three unchanged originals against independent matrix-power and explicit
+inverse-Fourier Circuits, with absolute complex phase and zero workspace checks:
+
+```sh
+python tools/validate_qmod_static_qpe.py --case quantum_counting_qpe --output /tmp/counting-qpe.json
+python tools/validate_qmod_static_qpe.py --case qpe_for_matrix --output /tmp/matrix-qpe.json
+python tools/validate_qmod_static_qpe.py --case qpe_for_unitary_matrix --output /tmp/unitary-qpe.json
+python -m examples.synthesis_static_qpe
+```
+
+The example compares ordinary Qmod QPE with existing scalar native qfunc
+preparation/phase/H composition and Circuit. A Qmod one-bit fractional counter
+word 1 denotes 1/2; its native QBit counterpart exposes the raw bit. No native QPE,
+array, mutable-helper export or hardware-performance claim follows from these
+local CPU comparisons. Historical resource baselines and invalid original-source
+parameter cases remain separately recorded.

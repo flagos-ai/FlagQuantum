@@ -39,11 +39,13 @@ from .controlled_evolution import EVOLUTION_CALLS, controlled_evolution
 from .decisions import lower_decision_phase
 from .integers import checked_integer, checked_integer_array
 from .iterations import expand_iterations
+from .matrices import lower_unitary, validate_matrix_constant
 from .oracles import expand_static_oracles
 from .permutations import verify_permutations
 from .phase import MAX_PHASE_INPUT_BITS, expand_phase
 from .phase_factors import Cube, preserve_factors
 from .predicates import expand_predicate_oracles
+from .qpe import infer_phase_allocation, lower_qpe
 from .quantum_callbacks import specialize_quantum_callbacks
 from .swap_test import lower_swap_test
 from .syntax import (
@@ -106,6 +108,7 @@ _INTRINSICS = (
         "drop",
         "modular_exp",
         "qpe_flexible",
+        "qpe",
         "qct_qst_type1",
         "qct_type2",
         "qst_type2",
@@ -148,19 +151,6 @@ def _preparation_value(node: Expression) -> float:
     if value.children or not re.fullmatch(r"[0-9]+(?:\.[0-9]+)?", value.token.text):
         reject(value.token, "amplitudes", "expected a real decimal literal")
     return float(value.token.text) * (-1 if negative else 1)
-
-
-def _matrix_value(node: Expression) -> complex:
-    text = node.token.text
-    if not node.children:
-        return complex(float(text))
-    left = _matrix_value(node.children[0])
-    if text == "j":
-        return 1j * left
-    right = _matrix_value(node.children[1]) if len(node.children) == 2 else None
-    if right is None:
-        return -left if text == "-" else left
-    return left - right if text == "-" else left + right
 
 
 def _pauli_support(
@@ -762,7 +752,9 @@ class _Adapt:
             self.parameters[name] = parameter
         self.widths = {name: p.width for name, p in self.parameters.items()}
         self.inferred: dict[str, int] = {}
-        self.signed: set[str] = set()
+        self.signed: set[str] = {
+            name for name, p in self.parameters.items() if p.kind == "qphase_signed"
+        }
         self.fractional_bits: dict[str, int] = {}
         self.registers: dict[str, Value] = {}
         self.views: dict[str, tuple[tuple[Value, int], ...]] = {}
@@ -797,7 +789,10 @@ class _Adapt:
             reject(token, "precision", "a fractional result is a terminal output")
         if name not in self.parameters:
             reject(token, "name", f"unknown output {name!r}")
-        if self.parameters[name].kind == "qphase" and not allow_fractional_output:
+        if (
+            self.parameters[name].kind in {"qphase", "qphase_signed"}
+            and not allow_fractional_output
+        ):
             reject(
                 token, "precision", "fixed-point phase register requires qpe_flexible"
             )
@@ -2778,6 +2773,8 @@ class _Adapt:
             del self.operations[start:]
             self.effect = incoming
             emit_inverse(self, token, forward)
+        elif statement.qpe_body is not None:
+            lower_qpe(self, statement, index)
         elif statement.power_callback is not None:
             self.qpe_flexible(statement)
         elif statement.repeat_index is not None:
@@ -2989,6 +2986,7 @@ class _Adapt:
                         "allocation size must be a literal in 1..256",
                     )
             target = self.atom(args[-1])
+            phase_allocation = infer_phase_allocation(self, token, args, size)
             phase_parameter = self.parameters.get(target.text)
             destination = self.register(
                 target,
@@ -2996,7 +2994,7 @@ class _Adapt:
                 allow_qubit_array=True,
                 allow_fractional_output=(
                     phase_parameter is not None
-                    and phase_parameter.kind == "qphase"
+                    and phase_parameter.kind in {"qphase", "qphase_signed"}
                     and target.text not in self.fractional_bits
                 ),
             )
@@ -3006,7 +3004,7 @@ class _Adapt:
                     "width",
                     "allocation size must agree with the declared width",
                 )
-            if len(args) == 4:
+            if len(args) == 4 and not phase_allocation:
                 sign, fraction = args[1:3]
                 if (
                     sign.children
@@ -3194,37 +3192,7 @@ class _Adapt:
                     index=wire,
                 )
         elif token.text == "unitary":
-            if len(args) != 2:
-                reject(token, "signature", "unitary requires a matrix and qubit array")
-            matrix, target_arg = args
-            view = self.array_view(target_arg)
-            if len(view) not in {1, 2} or len(set(view)) != len(view):
-                reject(
-                    target_arg.token,
-                    "unitary",
-                    "unitary requires one or two distinct qubit locations",
-                )
-            view_attributes: dict[str, object] = {}
-            if target_arg.children or target_arg.token.text in self.views:
-                # Qmod array position zero is the least-significant matrix bit.
-                wires = tuple(reversed(view))
-                operands = tuple(register for register, _ in wires)
-                view_attributes["indices"] = tuple(index for _, index in wires)
-            else:
-                operands = (view[0][0],)
-            self.effect_op(
-                "qreg.unitary",
-                token,
-                operands,
-                matrix=tuple(
-                    tuple(
-                        (value.real, value.imag)
-                        for value in map(_matrix_value, row.children)
-                    )
-                    for row in matrix.children
-                ),
-                **view_attributes,
-            )
+            lower_unitary(self, token, args)
         elif token.text == "linear_pauli_rotations":
             self.linear_pauli_rotations(token, args)
         elif token.text == "single_pauli_exponent":
@@ -3366,7 +3334,7 @@ class _Adapt:
         )
         for parameter in output_parameters:
             if (
-                parameter.kind == "qphase"
+                self.parameters[parameter.name.text].kind in {"qphase", "qphase_signed"}
                 and parameter.name.text not in self.fractional_bits
             ):
                 reject(
@@ -3478,6 +3446,10 @@ def parse_qmod(
             constant_integers[name] = checked_integer(
                 (-1 if negative else 1) * int(magnitude.token.text), name_token
             )
+            constants[name] = operator
+            continue
+        if name in parser.matrix_constants:
+            validate_matrix_constant(name_token, operator)
             constants[name] = operator
             continue
         if operator.token.text != "SparsePauliOp":

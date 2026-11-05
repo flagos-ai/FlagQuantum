@@ -106,10 +106,13 @@ def expand_static_oracles(
 
     def borrowed(function: Function) -> Parameter:
         if (
-            sum(p.role == "const" and p.kind == "qbit[]" for p in function.parameters)
+            sum(
+                p.role in {"const", "inout"} and p.kind == "qbit[]"
+                for p in function.parameters
+            )
             != 1
             or any(
-                not (p.role == "const" and p.kind == "qbit[]")
+                not (p.role in {"const", "inout"} and p.kind == "qbit[]")
                 and not (p.role == "integer" and p.kind == "int")
                 for p in function.parameters
             )
@@ -121,7 +124,7 @@ def expand_static_oracles(
                 "oracle",
                 "phase oracle requires one Const array and distinct integer ports; Output and alias ports cannot escape",
             )
-        return next(p for p in function.parameters if p.role == "const")
+        return next(p for p in function.parameters if p.role in {"const", "inout"})
 
     def closed(
         expression: Expression,
@@ -369,7 +372,7 @@ def expand_static_oracles(
         symbolic: frozenset[str] = frozenset(),
         record: str | None = None,
     ) -> tuple[Statement, ...]:
-        function = oracles.get(token.text)
+        function = oracles.get(token.text, definitions.get(token.text))
         if function is None or token.text == "main":
             reject(
                 token,
@@ -640,6 +643,7 @@ def expand_static_oracles(
                 result.append(
                     replace(
                         statement,
+                        qpe_body=optional(statement.qpe_body),
                         within=optional(statement.within),
                         apply=scope(statement.apply, parameters),
                         control_body=optional(statement.control_body),

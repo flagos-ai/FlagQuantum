@@ -95,7 +95,7 @@ def verify_permutations(definitions: Mapping[str, Function]) -> None:
                 "if",
             }:
                 call(statement.token)
-            if statement.power_callback is not None:
+            if statement.power_callback is not None or statement.qpe_body is not None:
                 reject(
                     statement.token,
                     "permutation",

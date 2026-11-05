@@ -154,6 +154,7 @@ class Statement:
     repeat_index: Token | None = None
     repeat_body: tuple[Statement, ...] = ()
     power_callback: tuple[Token, tuple[Statement, ...]] | None = None
+    qpe_body: tuple[Statement, ...] | None = None
     inverse_body: tuple[Statement, ...] | None = None
     static_if_body: tuple[Statement, ...] | None = None
     map_callback: tuple[Token, tuple[Statement, ...]] | None = None
@@ -179,6 +180,8 @@ class Parser:
         self.callback_depth = 0
         self.records: dict[str, Record] = {}
         self.integer_constants: set[str] = set()
+        self.integer_values: dict[str, int] = {}
+        self.matrix_constants: set[str] = set()
 
     @property
     def current(self) -> Token:
@@ -204,10 +207,19 @@ class Parser:
 
     def width(self) -> int:
         token = self.current
-        if not token.text.isdecimal() or not 1 <= int(token.text) <= 256:
-            reject(token, "width", "width must be a literal integer in 1..256")
+        value = (
+            int(token.text)
+            if token.text.isdecimal()
+            else self.integer_values.get(token.text)
+        )
+        if value is None or not 1 <= value <= 256:
+            reject(
+                token,
+                "width",
+                "width must be a literal integer in 1..256 or a bound integer constant",
+            )
         self.position += 1
-        return int(token.text)
+        return value
 
     def expression(
         self,
@@ -640,22 +652,11 @@ class Parser:
             width = self.width()
             if self.current.text == ",":
                 self.take(",")
-                phase = allow_phase and self.current.text == "UNSIGNED"
-                unsigned_integer = allow_phase and self.current.text == "UNSIGNED"
-                if not phase and not unsigned_integer and self.current.text != "False":
-                    reject(self.current, "type", "signed modifiers are not admitted")
-                self.take(self.current.text)
-                self.take(",")
-                if phase and self.current.text != "0":
-                    assert width is not None
-                    self.take(str(width))
-                    self.take(">")
-                    return "qphase", width
-                if self.current.text != "0":
-                    reject(
-                        self.current, "type", "fractional modifiers are not admitted"
-                    )
-                self.take("0")
+                from .qpe import parse_fraction
+
+                phase_kind = parse_fraction(self, width, allow_phase)
+                if phase_kind is not None:
+                    return phase_kind, width
             if self.current.text != ">":
                 reject(
                     self.current,
@@ -952,22 +953,10 @@ class Parser:
                     Statement(target, (target_array,), map_callback=(parameter, body))
                 )
                 continue
-            if target.text == "qpe_flexible" and self.current.text == "(":
-                if scope_depth:
-                    reject(target, "scope", "qpe_flexible requires function scope")
-                self.take("(")
-                self.take("lambda")
-                self.take("(")
-                power = self.name()
-                self.take(")")
-                body = self.block(allow_scopes=False, scope_depth=1, power_body=True)
-                self.take(",")
-                destination = Expression(self.name())
-                self.take(")")
-                self.take(";")
-                statements.append(
-                    Statement(target, (destination,), power_callback=(power, body))
-                )
+            if target.text in {"qpe", "qpe_flexible"} and self.current.text == "(":
+                from .qpe import parse_qpe_call
+
+                statements.append(parse_qpe_call(self, target, scope_depth))
                 continue
             if self.current.text == ":":
                 token = self.take(":")
@@ -1031,6 +1020,8 @@ class Parser:
                             self.literal_array(
                                 lambda: self.literal_array(self.matrix_entry)
                             )
+                            if self.current.text == "["
+                            else Expression(self.name())
                         )
                     elif target.text == "linear_pauli_rotations":
                         args.append(self.literal_array(self.linear_rotation_basis))
@@ -1203,8 +1194,17 @@ class Parser:
                 if array:
                     self.take("[")
                     self.take("]")
+                matrix = array and self.current.text == "["
+                if matrix:
+                    self.take("[")
+                    self.take("]")
+                    self.matrix_constants.add(name.text)
                 self.take("=")
-                if kind == "SparsePauliOp":
+                if matrix:
+                    value = self.literal_array(
+                        lambda: self.literal_array(self.matrix_entry)
+                    )
+                elif kind == "SparsePauliOp":
                     value = self.sparse_pauli_op()
                 elif array:
                     value = self.literal_array(
@@ -1221,6 +1221,9 @@ class Parser:
                             "int constants require an exact integer literal",
                         )
                     self.take(literal.text)
+                    self.integer_values[name.text] = int(literal.text) * (
+                        -1 if negative else 1
+                    )
                     value = (
                         Expression(literal)
                         if negative is None

@@ -148,6 +148,7 @@ def expand_iterations(definitions: Mapping[str, Function]) -> dict[str, Function
                 result.append(
                     replace(
                         statement,
+                        qpe_body=optional(statement.qpe_body),
                         within=optional(statement.within),
                         apply=scope(statement.apply),
                         control_body=optional(statement.control_body),
