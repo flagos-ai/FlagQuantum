@@ -334,10 +334,12 @@ def schedule_register_program(
         gates: tuple[Instruction, ...] = ()
         if op.name == "qreg.initialize":
             gates = _copy(op.attributes["value"], bindings[op.operands[1].id])
-        elif op.name == "qreg.prepare_amplitudes":
+        elif op.name in {"qreg.prepare_amplitudes", "qreg.inplace_prepare_amplitudes"}:
             gates = _synthesize_real_state(
                 op.attributes["amplitudes"], bindings[op.operands[1].id]
             )
+            if op.attributes.get("inverse"):
+                gates = tuple(inverted_instruction(gate) for gate in reversed(gates))
         elif op.name == "qreg.unitary":
             unitary_data = op.operands[1:]
             control = None
@@ -386,10 +388,25 @@ def schedule_register_program(
             control_workspace = max(control_workspace, used_workspace)
         elif op.name == "qreg.control_qft":
             control_ports, data = (bindings[v.id] for v in op.operands[1:])
-            gates = tuple(
-                leaf
-                for gate in qft_instructions(data)
-                for leaf in controlled_instruction(gate, control_ports)
+            transform = qft_instructions(data)
+            if op.attributes.get("inverse"):
+                transform = tuple(
+                    inverted_instruction(gate) for gate in reversed(transform)
+                )
+            control_value = op.attributes.get("control_value", 1)
+            flips = tuple(
+                Instruction("x", (qubit,))
+                for bit, qubit in enumerate(reversed(control_ports))
+                if not (control_value >> bit) & 1
+            )
+            gates = (
+                *flips,
+                *(
+                    leaf
+                    for gate in transform
+                    for leaf in controlled_instruction(gate, control_ports)
+                ),
+                *reversed(flips),
             )
         elif op.name == "qreg.control_h":
             control, target = (bindings[value.id][0] for value in op.operands[1:])

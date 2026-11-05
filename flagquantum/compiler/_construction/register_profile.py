@@ -41,6 +41,7 @@ _ATTRIBUTES = MappingProxyType(
         "qreg.initialize": frozenset({"value"}),
         "qreg.prepare_ghz": frozenset(),
         "qreg.prepare_amplitudes": frozenset({"amplitudes", "bound"}),
+        "qreg.inplace_prepare_amplitudes": frozenset({"amplitudes", "bound"}),
         "qreg.unitary": frozenset({"matrix"}),
         "qreg.qft": frozenset(),
         "qreg.inverse_qft": frozenset(),
@@ -91,6 +92,29 @@ def unitary_matrix(entries: object, width: int, op: Operation) -> torch.Tensor:
             op,
         )
     return torch.view_as_complex(torch.tensor(entries, dtype=torch.float64))
+
+
+def _check_real_preparation(op: Operation, destination: Value) -> None:
+    amplitudes = op.attributes["amplitudes"]
+    bound = op.attributes["bound"]
+    if (
+        not isinstance(amplitudes, tuple)
+        or not 2 <= len(amplitudes) <= MAX_PREPARED_AMPLITUDES
+        or len(amplitudes) & (len(amplitudes) - 1)
+        or len(amplitudes).bit_length() - 1 != register_width(destination)
+        or any(
+            type(value) is not float or not math.isfinite(value) for value in amplitudes
+        )
+        or not math.isclose(math.hypot(*amplitudes), 1.0, rel_tol=0, abs_tol=1e-12)
+        or type(bound) is not float
+        or not math.isfinite(bound)
+        or bound < 0
+    ):
+        _fail(
+            "register.amplitudes",
+            "preparation requires a normalized finite real vector matching the target and a nonnegative finite bound",
+            op,
+        )
 
 
 def equatorial_rotation(theta: float, phi: float) -> tuple[tuple[str, float], ...]:
@@ -401,11 +425,18 @@ def _verify_body(
         ):
             assert attributes is not None
             attributes = attributes | {"angle"}
-        if op.name == "qreg.gate" and "inverse" in op.attributes:
+        if (
+            op.name
+            in {"qreg.gate", "qreg.control_qft", "qreg.inplace_prepare_amplitudes"}
+            and "inverse" in op.attributes
+        ):
             if op.attributes["inverse"] is not True:
-                _fail("register.adjoint", "inverse gate marker must be true", op)
+                _fail("register.adjoint", "inverse marker must be true", op)
             assert attributes is not None
             attributes = attributes | {"inverse"}
+        if op.name == "qreg.control_qft" and "control_value" in op.attributes:
+            assert attributes is not None
+            attributes = attributes | {"control_value"}
         if op.name == "qreg.pauli_rotation" and "control_index" in op.attributes:
             assert attributes is not None
             attributes = attributes | {"control_index"}
@@ -903,19 +934,51 @@ def _verify_body(
                     )
                 changed = (destination,)
             elif op.name == "qreg.control_qft":
+                control_width = register_width(destination)
                 if (
                     len(arguments) != 1
-                    or register_width(destination) != 1
                     or destination in arguments
                     or arguments[0] in borrowed
                     or any(v.id not in initialized for v in operands)
                 ):
                     _fail(
                         "register.control",
-                        "controlled QFT needs an initialized control bit and disjoint writable target",
+                        "controlled QFT needs an initialized selector and disjoint writable target",
+                        op,
+                    )
+                if "control_value" in op.attributes:
+                    control_value = op.attributes["control_value"]
+                    if (
+                        not 1 <= control_width <= 8
+                        or not 1 <= register_width(arguments[0]) <= 8
+                        or type(control_value) is not int
+                        or not 0 <= control_value < (1 << control_width)
+                    ):
+                        _fail(
+                            "register.control",
+                            "controlled QFT basis word or register width is out of range",
+                            op,
+                        )
+                elif control_width != 1:
+                    _fail(
+                        "register.control",
+                        "controlled QFT without a basis word needs a control bit",
                         op,
                     )
                 changed = tuple(arguments)
+            elif op.name == "qreg.inplace_prepare_amplitudes":
+                if (
+                    arguments
+                    or destination in borrowed
+                    or destination.id not in initialized
+                ):
+                    _fail(
+                        "register.amplitudes",
+                        "inplace preparation requires one initialized writable register",
+                        op,
+                    )
+                _check_real_preparation(op, destination)
+                changed = (destination,)
             elif op.name == "qreg.drop":
                 if (
                     arguments
@@ -1106,30 +1169,7 @@ def _verify_body(
                             op,
                         )
                     if op.name == "qreg.prepare_amplitudes":
-                        amplitudes = op.attributes["amplitudes"]
-                        bound = op.attributes["bound"]
-                        if (
-                            not isinstance(amplitudes, tuple)
-                            or not 2 <= len(amplitudes) <= MAX_PREPARED_AMPLITUDES
-                            or len(amplitudes) & (len(amplitudes) - 1)
-                            or len(amplitudes).bit_length() - 1
-                            != register_width(destination)
-                            or any(
-                                type(value) is not float or not math.isfinite(value)
-                                for value in amplitudes
-                            )
-                            or not math.isclose(
-                                math.hypot(*amplitudes), 1.0, rel_tol=0, abs_tol=1e-12
-                            )
-                            or type(bound) is not float
-                            or not math.isfinite(bound)
-                            or bound < 0
-                        ):
-                            _fail(
-                                "register.amplitudes",
-                                "preparation requires a normalized finite real vector matching the target and a nonnegative finite bound",
-                                op,
-                            )
+                        _check_real_preparation(op, destination)
                     if op.name == "qreg.initialize":
                         constant = op.attributes["value"]
                         if (
