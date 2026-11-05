@@ -138,7 +138,7 @@ and this entry point, preserving pending checks and scope boundaries.
 | 004 | Merged in [#789](https://github.com/flagos-ai/FlagQuantum/pull/789) after explicit merge authorization | [Proposal 088](../development/API_CHANGE_PROPOSAL_088_QEC_CORRELATED_PAULI_FAULTS.md) specifies the channel grammar, exclusive distributions, compatibility and independent numerical acceptance. [Implementation](../development/QEC_FUNCTIONAL_004.md) covers exclusive circuit-noise construction and sampling; [post-merge acceptance](../development/QEC_FUNCTIONAL_004_MAINLINE_ACCEPTANCE.md) records exact main, fresh artifacts and checks. |
 | 005 | Approved 2026-10-26; merged and accepted in [#904](https://github.com/flagos-ai/FlagQuantum/pull/904) | [Batch delivery contract](../development/QEC_FUNCTIONAL_005_BATCH_CONTRACT.md) preserves complete single-shot results, specifies the supported concrete types and differing duplicate semantics, and refuses unknown/stateful plugins. Actual five-type SDK and source/wheel/sdist installation profiles passed; full reviewed-head CI/GPU and exact-merge Main smoke succeeded. The central ledger preserves local default/build and container-publishing limits; no speed claim. |
 | 006 | Existing logical-only native batch path; broader optimization pending | The approved PyMatching Tensor operation already exists. Do not reimplement it or use it to invent full correction records; any further optimization must preserve the approved 005 result contract. |
-| 007 | Complete fixed-shot contract approved; implementation candidate under verification | [Decision C refinement](../development/QEC_FUNCTIONAL_007_EXPERIMENT_DESIGN.md) proposes explicit batch size, default-only decoder configuration and caller-owned evidence without persistence. #784/#788 sampling and fixed-shot counts/Wilson intervals do not activate this public API or adaptive stopping. Implementation remains deferred. |
+| 007 | Implemented in [#932](https://github.com/flagos-ai/FlagQuantum/pull/932); later noisy Surface X/Z acceptance in [#1012](https://github.com/flagos-ai/FlagQuantum/pull/1012) | The existing memory report remains default-only and fixed-shot. External Stim text now has a separately approved contract; final delivery of that extension is pending. Adaptive stopping, threshold fitting and persistence remain separate. |
 | 008–009 | Pending respective contracts | No threshold, broad experiment API or performance claim follows from the partial deliveries above. |
 | 010–012 | Candidate tranche | Separate contract review required. |
 
@@ -185,3 +185,18 @@ changed. Zero-noise PyMatching isolated-detector refusal remains explicit.
 Focused correctness and actual-SDK acceptance are in progress; exact-head full
 CI/GPU, reviews/rules, normal pinned merge and exact merge/Main smoke acceptance
 are still required. No performance, threshold, GPU or capacity claim is made.
+
+
+## November 5 integration progress
+
+The existing memory experiment and complete-result batch APIs are delivered;
+older C design-only/candidate paragraphs record their historical state. The
+next approved vertical slice is a fixed-shot report from user-owned supported
+Stim circuit text, in the same canonical experiments module. It preserves the
+existing memory result and source label, adds no root exports and reuses the
+same statistics and lifecycle. See the
+[external-text contract](../development/QEC_STIM_TEXT_EXPERIMENT_CONTRACT.md)
+and [delivery status](QEC_STIM_PYMATCHING_DELIVERY_PLAN.md#november-5-external-stim-experiment-integration).
+Implementation acceptance remains pending until the final head and actual-main
+gates pass. This extension contributes to FTS-06/07 and R08 without completing
+FTS-02/09 research, general threshold analysis or the entire FTQC roadmap.

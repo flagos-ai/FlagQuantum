@@ -352,7 +352,12 @@ def test_opt_in_surface_only() -> None:
     import flagquantum.qec as qec
     import flagquantum.qec.execution as execution
 
-    assert ex.__all__ == ("MemoryExperimentResult", "run_memory_experiment")
+    assert ex.__all__ == (
+        "MemoryExperimentResult",
+        "run_memory_experiment",
+        "StimExperimentResult",
+        "run_stim_experiment",
+    )
     assert not hasattr(qec, "run_memory_experiment")
     assert not hasattr(execution, "run_memory_experiment")
     assert list(inspect.signature(ex.run_memory_experiment).parameters) == [

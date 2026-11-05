@@ -11,7 +11,7 @@ from pathlib import Path
 import pytest
 
 from tools.check_qec_installed_profiles import _run
-from tools.qec_installed_smoke import PROFILES, _exercise
+from tools.qec_installed_smoke import PROFILES, _exercise, _exercise_stim_experiment
 
 pytestmark = pytest.mark.unit
 
@@ -28,6 +28,16 @@ def test_public_workflow_in_the_available_source_profile(profile: str) -> None:
     for record in records:
         assert record["shots"] == 35
         assert record["observables"] == 1
+    experiment = _exercise_stim_experiment(profile)
+    if not available[0]:
+        assert experiment is None
+    else:
+        assert experiment is not None
+        assert experiment["shots"] == 35
+        assert experiment["logical_failures"] == 0
+        assert experiment["observable_failures"] == [0, 0]
+        assert experiment["sampling_source"] == "stim_circuit"
+        assert experiment["reference_ones_verified"] is True
 
 
 def test_installer_child_cannot_import_through_caller_python_paths(

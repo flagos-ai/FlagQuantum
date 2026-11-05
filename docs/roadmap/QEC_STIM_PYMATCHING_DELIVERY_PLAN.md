@@ -717,3 +717,26 @@ changed. Zero-noise PyMatching isolated-detector refusal remains explicit.
 Focused correctness and actual-SDK acceptance are in progress; exact-head full
 CI/GPU, reviews/rules, normal pinned merge and exact merge/Main smoke acceptance
 are still required. No performance, threshold, GPU or capacity claim is made.
+
+
+## November 5 external Stim experiment integration
+
+C/007's original fixed-shot memory implementation was merged in
+[#932](https://github.com/flagos-ai/FlagQuantum/pull/932); its earlier candidate
+wording is historical. The noisy Surface X/Z composition and actual-main
+acceptance were delivered in [#1012](https://github.com/flagos-ai/FlagQuantum/pull/1012).
+The complete-result batch contract through #904 and existing four optional
+installed profiles are reused, not reimplemented.
+
+The owner approved the separate
+[Stim-text experiment contract](../development/QEC_STIM_TEXT_EXPERIMENT_CONTRACT.md)
+on 2026-11-05. `run_stim_experiment` and `StimExperimentResult` compose the existing
+strict bridge, original-circuit sampler, complete-result decoder and fixed-shot
+statistics without root re-exports. Final reviewed-head CI/GPU and actual-main
+admission are pending. The new user script and installed smoke check an
+asymmetric two-observable source; the original four installed sample cells stay
+unchanged and the report has its own field.
+
+This closes no scientific study or release-wide parity claim. FTS-02/09
+measurements, FTS-08 threshold analysis, general performance/capacity, arbitrary
+plugins/configuration, hardware feedback and other unapproved scope remain open.

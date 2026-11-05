@@ -134,6 +134,70 @@ def _exercise(profile: str) -> list[dict[str, object]]:
     return records
 
 
+def _exercise_stim_experiment(profile: str) -> dict[str, object] | None:
+    from flagquantum.qec.execution.experiments import run_stim_experiment
+    from flagquantum.simulation.stabilizer import StabilizerDependencyError
+
+    source = (
+        "R 0 1\nX_ERROR(0.125) 0\nX_ERROR(0.25) 1\nM 0 1\n"
+        "DETECTOR rec[-2]\nDETECTOR rec[-1]\n"
+        "OBSERVABLE_INCLUDE(0) rec[-1]\nOBSERVABLE_INCLUDE(1) rec[-2]\n"
+    )
+    stim_available, matching = PROFILES[profile]
+    decoder = "pymatching" if stim_available and matching else "minimum_weight_matching"
+    if not stim_available:
+        try:
+            run_stim_experiment(
+                source, decoder=decoder, shots=35, batch_size=16, seed=53
+            )
+        except StabilizerDependencyError:
+            return None
+        raise AssertionError("missing Stim did not refuse the experiment")
+
+    result = run_stim_experiment(
+        source, decoder=decoder, shots=35, batch_size=16, seed=53
+    )
+    assert result.shots == 35 and result.logical_failures == 0
+    assert result.observable_failures == (0, 0)
+    assert result.logical_error_rate == 0.0
+    assert result.sampling_source == "stim_circuit"
+    assert result.seed == 53
+    assert result.confidence_interval[0] == 0.0
+    assert 0.0 < result.confidence_interval[1] < 1.0
+
+    # Independent Stim buffers must carry the swapped logical columns. The
+    # report comparison is based on the analytic two-independent-fault law.
+    import stim
+
+    reference = stim.Circuit(source).compile_detector_sampler(seed=53)
+    for size in (16, 16, 3):
+        detectors, observables = reference.sample(shots=size, separate_observables=True)
+        assert (detectors[:, ::-1] == observables).all()
+    # The second logical has ideal raw value one but no logical *flip*.
+    # Treating measurement bits as flips would create a false logical failure.
+    reference_ones = (
+        "R 0 1\nX 1\nX_ERROR(0.125) 0\nM 0 1\n"
+        "DETECTOR rec[-2]\nOBSERVABLE_INCLUDE(0) rec[-2]\n"
+        "OBSERVABLE_INCLUDE(1) rec[-1]\n"
+    )
+    ideal = stim.Circuit(reference_ones).compile_sampler(seed=53).sample(shots=1)
+    assert bool(ideal[0, 1])
+    normalized = run_stim_experiment(
+        reference_ones, decoder=decoder, shots=35, batch_size=16, seed=53
+    )
+    assert normalized.logical_failures == 0
+    assert normalized.observable_failures == (0, 0)
+    assert normalized.sampling_source == "stim_circuit"
+    return {
+        "shots": result.shots,
+        "logical_failures": result.logical_failures,
+        "observable_failures": list(result.observable_failures),
+        "sampling_source": result.sampling_source,
+        "decoder": decoder,
+        "reference_ones_verified": True,
+    }
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("profile", choices=PROFILES)
@@ -165,6 +229,7 @@ def main() -> int:
     )
     assert adjoint.native_cpu_adjoint_available()
     records = _exercise(args.profile)
+    experiment = _exercise_stim_experiment(args.profile)
     print(
         json.dumps(
             {
@@ -183,6 +248,7 @@ def main() -> int:
                     if present
                 },
                 "cells": records,
+                "stim_experiment": experiment,
             },
             sort_keys=True,
         )
