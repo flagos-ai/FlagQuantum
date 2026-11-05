@@ -9,25 +9,41 @@ runs:
         : "${FQ_QISKIT_WHEEL_DIRECTORY:?Set the private Qiskit wheel directory}"
         : "${QISKIT_VERSION:?Set the certified Qiskit version range}"
         mkdir -p "$FQ_QISKIT_WHEEL_DIRECTORY"
+        resolver="${FQ_QISKIT_RESOLVER_PYTHON:-python}"
+        resolver_options=(--disable-pip-version-check)
+        if [ -n "${FQ_QISKIT_CONSTRAINTS:-}" ]; then
+          resolver_options+=(--constraint "$FQ_QISKIT_CONSTRAINTS")
+        fi
         links=(--find-links "$FQ_QISKIT_WHEEL_DIRECTORY")
         public_cache="${FQ_QISKIT_PUBLIC_WHEELS:-/opt/flagquantum-runners/tools/public-wheels}"
         if [ "$RUNNER_ENVIRONMENT" = self-hosted ] && [ -d "$public_cache" ]; then
           links+=(--find-links "$public_cache")
         fi
+        # find-links does not guarantee that pip prefers a local wheel over
+        # an equal version from an index. Seed only immutable wheel responses;
+        # never seed index metadata or suppress live version discovery.
+        if [ "$RUNNER_ENVIRONMENT" = self-hosted ] && [ -d "$public_cache/pip-http/http-v2" ]; then
+          cache="${PIP_CACHE_DIR:-${XDG_CACHE_HOME:-$HOME/.cache}/pip}"
+          "$resolver" tools/ci_pip_wheel_cache.py "$public_cache/pip-http" "$cache"
+        fi
         requirements=("qiskit[qasm3-import]==${QISKIT_VERSION}" 'qiskit-aer==0.17.*' 'sympy>=1.13,<2')
         index="${PIP_INDEX_URL:-https://pypi.org/simple}"
+        resolution_timeout=180s
+        if [ "${index%/}" = https://pypi.org/simple ]; then
+          resolution_timeout=300s
+        fi
         # Resolve against the live index even on cache hits: wildcard lanes must
         # still discover certified patch releases and dependency updates.
-        if ! timeout --kill-after=15s 180s python -m pip wheel \
+        if ! timeout --kill-after=15s "$resolution_timeout" "$resolver" -m pip wheel "${resolver_options[@]}" \
           --index-url "$index" "${links[@]}" \
           --wheel-dir "$FQ_QISKIT_WHEEL_DIRECTORY" "${requirements[@]}"; then
           if [ "${index%/}" = https://pypi.org/simple ]; then
             exit 1
           fi
           echo "::warning::Qiskit mirror resolution failed; trying official PyPI"
-          timeout --kill-after=15s 300s python -m pip wheel \
+          timeout --kill-after=15s 300s "$resolver" -m pip wheel "${resolver_options[@]}" \
             --index-url https://pypi.org/simple "${links[@]}" \
             --wheel-dir "$FQ_QISKIT_WHEEL_DIRECTORY" "${requirements[@]}"
         fi
-        python -m pip install --dry-run --ignore-installed --no-index \
+        "$resolver" -m pip install "${resolver_options[@]}" --dry-run --ignore-installed --no-index \
           --find-links "$FQ_QISKIT_WHEEL_DIRECTORY" "${requirements[@]}"

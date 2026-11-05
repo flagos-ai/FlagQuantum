@@ -102,6 +102,8 @@ def test_invalid_partition_is_refused_before_any_mutation(invalid: str) -> None:
 
 def test_only_source_producers_and_hygiene_can_target_entry_slots() -> None:
     expected = {
+        ("ci.yml", "pre-commit"),
+        ("ci.yml", "prepare-source"),
         ("local-gpu.yml", "prepare-source"),
         ("pre-commit.yaml", "pre-commit"),
     }

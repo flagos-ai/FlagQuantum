@@ -6,6 +6,9 @@ on:
   workflow_dispatch:
 
 # Hosted jobs share eight repository-wide concurrency groups across workflows.
+# Trusted coverage uses prewarmed locked images on the CPU pool.
+# Core profiles and SDK downloads stay hosted until their caches are qualified.
+# Entry jobs use a separate pool and never wait behind coverage or SDK checks.
 # queue: max keeps waiting jobs in the queue instead of replacing them.
 # Self-hosted CPU jobs keep independent groups keyed by run and matrix index.
 # Main pushes use Main smoke. PR pushes cancel superseded runs of the same PR.
@@ -15,22 +18,65 @@ concurrency:
 
 jobs:
   pre-commit:
-    runs-on: ubuntu-latest
+    runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'flagquantum-a100-cpu-entry' || 'ubuntu-latest' }}
     timeout-minutes: 15
+    env:
+      # Self-hosted GitHub connections can reset HTTP/2 streams.
+      GIT_CONFIG_COUNT: "1"
+      GIT_CONFIG_KEY_0: http.version
+      GIT_CONFIG_VALUE_0: HTTP/1.1
     concurrency:
-      group: flagquantum-gh-2
+      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('a100-cpu-{0}-pre-commit-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-2
       queue: max
     steps:
+      - name: Restore verified source through the GitHub API
+        id: archive-source
+        if: runner.environment == 'self-hosted' && github.event_name == 'pull_request'
+        continue-on-error: true
+        timeout-minutes: 10
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python3 - <<'PYTHON'
+          import base64
+          import hashlib
+          import json
+          import os
+          import runpy
+          from pathlib import Path
+          from urllib.request import Request, urlopen
+
+          api = os.environ["GITHUB_API_URL"].rstrip("/")
+          repo = os.environ["GITHUB_REPOSITORY"]
+          sha = os.environ["GITHUB_SHA"]
+          request = Request(
+              f"{api}/repos/{repo}/contents/tools/ci_source_archive.py?ref={sha}",
+              headers={"Authorization": f"Bearer {os.environ['GH_TOKEN']}"},
+          )
+          with urlopen(request, timeout=30) as response:
+              metadata = json.load(response)
+          code = base64.b64decode(metadata["content"])
+          digest = hashlib.sha1(b"blob " + str(len(code)).encode() + b"\0" + code)
+          if digest.hexdigest() != metadata["sha"]:
+              raise ValueError("The source helper does not match its Git blob SHA")
+          helper = Path(os.environ["RUNNER_TEMP"]) / "ci_source_archive.py"
+          helper.write_bytes(code)
+          runpy.run_path(str(helper), run_name="__main__")
+          PYTHON
       - name: Clear sparse checkout state from a previous job
+        if: steps.archive-source.outcome != 'success'
         run: |
           if [ -d .git ]; then
             git sparse-checkout disable
             rm -f .git/info/sparse-checkout
             git config --local --unset core.sparseCheckout || true
+            git config --local remote.origin.url "https://github.com/${{ github.repository }}"
           fi
       - uses: actions/checkout@v5
+        if: steps.archive-source.outcome != 'success'
         with:
           persist-credentials: false
+          fetch-depth: 16
       - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
@@ -41,22 +87,64 @@ jobs:
   prepare-source:
     outputs:
       artifact-key: ${{ steps.pack-source.outputs.artifact-key }}
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
+    runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'flagquantum-a100-cpu-entry' || 'ubuntu-latest' }}
+    timeout-minutes: 15
+    env:
+      # Self-hosted GitHub connections can reset HTTP/2 streams.
+      GIT_CONFIG_COUNT: "1"
+      GIT_CONFIG_KEY_0: http.version
+      GIT_CONFIG_VALUE_0: HTTP/1.1
     permissions:
       contents: read
     concurrency:
-      group: flagquantum-gh-5
+      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('a100-cpu-{0}-prepare-source-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-5
       queue: max
     steps:
+      - name: Restore verified source through the GitHub API
+        id: archive-source
+        if: runner.environment == 'self-hosted' && github.event_name == 'pull_request'
+        continue-on-error: true
+        timeout-minutes: 10
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python3 - <<'PYTHON'
+          import base64
+          import hashlib
+          import json
+          import os
+          import runpy
+          from pathlib import Path
+          from urllib.request import Request, urlopen
+
+          api = os.environ["GITHUB_API_URL"].rstrip("/")
+          repo = os.environ["GITHUB_REPOSITORY"]
+          sha = os.environ["GITHUB_SHA"]
+          request = Request(
+              f"{api}/repos/{repo}/contents/tools/ci_source_archive.py?ref={sha}",
+              headers={"Authorization": f"Bearer {os.environ['GH_TOKEN']}"},
+          )
+          with urlopen(request, timeout=30) as response:
+              metadata = json.load(response)
+          code = base64.b64decode(metadata["content"])
+          digest = hashlib.sha1(b"blob " + str(len(code)).encode() + b"\0" + code)
+          if digest.hexdigest() != metadata["sha"]:
+              raise ValueError("The source helper does not match its Git blob SHA")
+          helper = Path(os.environ["RUNNER_TEMP"]) / "ci_source_archive.py"
+          helper.write_bytes(code)
+          runpy.run_path(str(helper), run_name="__main__")
+          PYTHON
       - name: Clear sparse checkout state from a previous job
+        if: steps.archive-source.outcome != 'success'
         run: |
           if [ -d .git ]; then
             git sparse-checkout disable
             rm -f .git/info/sparse-checkout
             git config --local --unset core.sparseCheckout || true
+            git config --local remote.origin.url "https://github.com/${{ github.repository }}"
           fi
       - uses: actions/checkout@v4
+        if: steps.archive-source.outcome != 'success'
         with:
           persist-credentials: false
           fetch-depth: 16
@@ -71,18 +159,22 @@ jobs:
           git rev-list --objects --no-walk HEAD | git pack-objects --stdout > "$RUNNER_TEMP/ci-source/source.pack"
           mkdir "$RUNNER_TEMP/ci-source-incremental"
           cp "$RUNNER_TEMP/ci-source/source.sha" "$RUNNER_TEMP/ci-source-incremental/source.sha"
-          base="$(git rev-list --first-parent --max-count=9 HEAD | tail -n 1)"
+          base="${FQ_CI_SOURCE_BASE:-$(git rev-list --first-parent --max-count=9 HEAD | tail -n 1)}"
           {
             git rev-parse HEAD
             git rev-list --objects 'HEAD^{tree}' "^${base}^{tree}"
+            # Carry the Git path proof for bounded API repair of cache misses.
+            git rev-parse 'HEAD^{tree}' 'HEAD:tools' 'HEAD:tools/ci_source_archive.py'
           } | git pack-objects --stdout > "$RUNNER_TEMP/ci-source-incremental/source.pack"
-      - uses: actions/upload-artifact@v4
+      - uses: ./.github/actions/upload-artifact
+        timeout-minutes: 6
         with:
           name: ci-source-incremental-${{ github.run_id }}-${{ github.run_attempt }}
           path: ${{ runner.temp }}/ci-source-incremental/
           retention-days: 1
           compression-level: 0
-      - uses: actions/upload-artifact@v4
+      - uses: ./.github/actions/upload-artifact
+        timeout-minutes: 6
         with:
           name: ci-source-${{ github.run_id }}-${{ github.run_attempt }}
           path: ${{ runner.temp }}/ci-source/
@@ -335,7 +427,8 @@ jobs:
         run: python tools/check_import_time.py
       - name: Retain resource limits and pytest timing reports
         if: ${{ always() && env.FQ_CI_REPORT_DIR != '' }}
-        uses: actions/upload-artifact@v4
+        uses: ./.github/actions/upload-artifact
+        timeout-minutes: 6
         with:
           name: cpu-report-${{ github.job }}-${{ strategy.job-index || '0' }}
           path: ${{ env.FQ_CI_REPORT_DIR }}
@@ -382,8 +475,22 @@ jobs:
             fi
           fi
           echo "complete=$complete" >> "$GITHUB_OUTPUT"
+      - name: Repair missing cached source objects through the GitHub API
+        id: source-repair
+        if: runner.environment == 'self-hosted' && steps.source-cache.outputs.complete != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          sha="$(cat "$RUNNER_TEMP/ci-source/source.sha")"
+          test "$sha" = "$GITHUB_SHA"
+          git show "$sha:tools/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/repair-source.py"
+          if timeout --kill-after=15s 120s python3 "$RUNNER_TEMP/ci-source/repair-source.py"; then
+            echo "complete=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "complete=false" >> "$GITHUB_OUTPUT"
+          fi
       - uses: actions/download-artifact@v8.0.2
-        if: steps.source-cache.outputs.complete != 'true'
+        if: steps.source-cache.outputs.complete != 'true' && steps.source-repair.outputs.complete != 'true'
         with:
           digest-mismatch: error
           name: ci-source-${{ needs.prepare-source.outputs.artifact-key }}
@@ -464,7 +571,8 @@ jobs:
         run: python -m pytest tests/smoke/test_no_jax_core.py -q
       - name: Retain resource limits and pytest timing reports
         if: ${{ always() && env.FQ_CI_REPORT_DIR != '' }}
-        uses: actions/upload-artifact@v4
+        uses: ./.github/actions/upload-artifact
+        timeout-minutes: 6
         with:
           name: cpu-report-${{ github.job }}-${{ strategy.job-index || '0' }}
           path: ${{ env.FQ_CI_REPORT_DIR }}
@@ -507,8 +615,22 @@ jobs:
             fi
           fi
           echo "complete=$complete" >> "$GITHUB_OUTPUT"
+      - name: Repair missing cached source objects through the GitHub API
+        id: source-repair
+        if: runner.environment == 'self-hosted' && steps.source-cache.outputs.complete != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          sha="$(cat "$RUNNER_TEMP/ci-source/source.sha")"
+          test "$sha" = "$GITHUB_SHA"
+          git show "$sha:tools/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/repair-source.py"
+          if timeout --kill-after=15s 120s python3 "$RUNNER_TEMP/ci-source/repair-source.py"; then
+            echo "complete=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "complete=false" >> "$GITHUB_OUTPUT"
+          fi
       - uses: actions/download-artifact@v8.0.2
-        if: steps.source-cache.outputs.complete != 'true'
+        if: steps.source-cache.outputs.complete != 'true' && steps.source-repair.outputs.complete != 'true'
         with:
           digest-mismatch: error
           name: ci-source-${{ needs.prepare-source.outputs.artifact-key }}
@@ -557,7 +679,8 @@ jobs:
         run: python -m pytest tests/smoke/test_no_jax_core.py -q
       - name: Retain resource limits and pytest timing reports
         if: ${{ always() && env.FQ_CI_REPORT_DIR != '' }}
-        uses: actions/upload-artifact@v4
+        uses: ./.github/actions/upload-artifact
+        timeout-minutes: 6
         with:
           name: cpu-report-${{ github.job }}-${{ strategy.job-index || '0' }}
           path: ${{ env.FQ_CI_REPORT_DIR }}
@@ -600,8 +723,22 @@ jobs:
             fi
           fi
           echo "complete=$complete" >> "$GITHUB_OUTPUT"
+      - name: Repair missing cached source objects through the GitHub API
+        id: source-repair
+        if: runner.environment == 'self-hosted' && steps.source-cache.outputs.complete != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          sha="$(cat "$RUNNER_TEMP/ci-source/source.sha")"
+          test "$sha" = "$GITHUB_SHA"
+          git show "$sha:tools/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/repair-source.py"
+          if timeout --kill-after=15s 120s python3 "$RUNNER_TEMP/ci-source/repair-source.py"; then
+            echo "complete=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "complete=false" >> "$GITHUB_OUTPUT"
+          fi
       - uses: actions/download-artifact@v8.0.2
-        if: steps.source-cache.outputs.complete != 'true'
+        if: steps.source-cache.outputs.complete != 'true' && steps.source-repair.outputs.complete != 'true'
         with:
           digest-mismatch: error
           name: ci-source-${{ needs.prepare-source.outputs.artifact-key }}
@@ -643,7 +780,8 @@ jobs:
         run: torchrun --standalone --nproc-per-node=2 -m pytest -m distributed_launch -q
       - name: Retain resource limits and pytest timing reports
         if: ${{ always() && env.FQ_CI_REPORT_DIR != '' }}
-        uses: actions/upload-artifact@v4
+        uses: ./.github/actions/upload-artifact
+        timeout-minutes: 6
         with:
           name: cpu-report-${{ github.job }}-${{ strategy.job-index || '0' }}
           path: ${{ env.FQ_CI_REPORT_DIR }}
@@ -652,7 +790,7 @@ jobs:
   cpu-core-3-12:
     name: cpu-core (3.12)
     needs: [cpu-core-3-12-tests, cpu-runtime]
-    if: ${{ always() }}
+    if: ${{ !cancelled() }}
     runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'flagquantum-cpu-general' || 'ubuntu-latest' }}
     concurrency:
       group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('a100-cpu-{0}-cpu-core-3-12-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-5
@@ -665,9 +803,10 @@ jobs:
 
   jax-optional:
     needs: prepare-source
-    runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'flagquantum-cpu-sdk-preinstalled' || 'ubuntu-latest' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
     concurrency:
-      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('a100-cpu-{0}-jax-optional-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-0
+      group: flagquantum-gh-4
       queue: max
     steps:
       - uses: actions/download-artifact@v8.0.2
@@ -691,8 +830,22 @@ jobs:
             fi
           fi
           echo "complete=$complete" >> "$GITHUB_OUTPUT"
+      - name: Repair missing cached source objects through the GitHub API
+        id: source-repair
+        if: runner.environment == 'self-hosted' && steps.source-cache.outputs.complete != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          sha="$(cat "$RUNNER_TEMP/ci-source/source.sha")"
+          test "$sha" = "$GITHUB_SHA"
+          git show "$sha:tools/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/repair-source.py"
+          if timeout --kill-after=15s 120s python3 "$RUNNER_TEMP/ci-source/repair-source.py"; then
+            echo "complete=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "complete=false" >> "$GITHUB_OUTPUT"
+          fi
       - uses: actions/download-artifact@v8.0.2
-        if: steps.source-cache.outputs.complete != 'true'
+        if: steps.source-cache.outputs.complete != 'true' && steps.source-repair.outputs.complete != 'true'
         with:
           digest-mismatch: error
           name: ci-source-${{ needs.prepare-source.outputs.artifact-key }}
@@ -746,7 +899,8 @@ jobs:
           python -m pytest tests/test_hybrid_jax.py tests/test_jax_distributed_plan.py -q
       - name: Retain resource limits and pytest timing reports
         if: ${{ always() && env.FQ_CI_REPORT_DIR != '' }}
-        uses: actions/upload-artifact@v4
+        uses: ./.github/actions/upload-artifact
+        timeout-minutes: 6
         with:
           name: cpu-report-${{ github.job }}-${{ strategy.job-index || '0' }}
           path: ${{ env.FQ_CI_REPORT_DIR }}
@@ -754,9 +908,10 @@ jobs:
 
   azure-optional:
     needs: prepare-source
-    runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'flagquantum-cpu-general' || 'ubuntu-latest' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
     concurrency:
-      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('a100-cpu-{0}-azure-optional-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-0
+      group: flagquantum-gh-7
       queue: max
     env:
       OPTIONAL_VERSIONS: "1.32.3 1.32.*"
@@ -782,8 +937,22 @@ jobs:
             fi
           fi
           echo "complete=$complete" >> "$GITHUB_OUTPUT"
+      - name: Repair missing cached source objects through the GitHub API
+        id: source-repair
+        if: runner.environment == 'self-hosted' && steps.source-cache.outputs.complete != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          sha="$(cat "$RUNNER_TEMP/ci-source/source.sha")"
+          test "$sha" = "$GITHUB_SHA"
+          git show "$sha:tools/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/repair-source.py"
+          if timeout --kill-after=15s 120s python3 "$RUNNER_TEMP/ci-source/repair-source.py"; then
+            echo "complete=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "complete=false" >> "$GITHUB_OUTPUT"
+          fi
       - uses: actions/download-artifact@v8.0.2
-        if: steps.source-cache.outputs.complete != 'true'
+        if: steps.source-cache.outputs.complete != 'true' && steps.source-repair.outputs.complete != 'true'
         with:
           digest-mismatch: error
           name: ci-source-${{ needs.prepare-source.outputs.artifact-key }}
@@ -828,7 +997,8 @@ jobs:
           done
       - name: Retain resource limits and pytest timing reports
         if: ${{ always() && env.FQ_CI_REPORT_DIR != '' }}
-        uses: actions/upload-artifact@v4
+        uses: ./.github/actions/upload-artifact
+        timeout-minutes: 6
         with:
           name: cpu-report-${{ github.job }}-${{ strategy.job-index || '0' }}
           path: ${{ env.FQ_CI_REPORT_DIR }}
@@ -864,8 +1034,22 @@ jobs:
             fi
           fi
           echo "complete=$complete" >> "$GITHUB_OUTPUT"
+      - name: Repair missing cached source objects through the GitHub API
+        id: source-repair
+        if: runner.environment == 'self-hosted' && steps.source-cache.outputs.complete != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          sha="$(cat "$RUNNER_TEMP/ci-source/source.sha")"
+          test "$sha" = "$GITHUB_SHA"
+          git show "$sha:tools/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/repair-source.py"
+          if timeout --kill-after=15s 120s python3 "$RUNNER_TEMP/ci-source/repair-source.py"; then
+            echo "complete=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "complete=false" >> "$GITHUB_OUTPUT"
+          fi
       - uses: actions/download-artifact@v8.0.2
-        if: steps.source-cache.outputs.complete != 'true'
+        if: steps.source-cache.outputs.complete != 'true' && steps.source-repair.outputs.complete != 'true'
         with:
           digest-mismatch: error
           name: ci-source-${{ needs.prepare-source.outputs.artifact-key }}
@@ -903,7 +1087,7 @@ jobs:
           fi
           mkdir -p "$directory"
           echo "FQ_TRITON_WHEEL_DIRECTORY=$directory" >> "$GITHUB_ENV"
-      - uses: actions/cache@v4
+      - uses: ./.github/actions/hosted-cache
         if: runner.environment == 'github-hosted'
         with:
           path: ${{ env.FQ_TRITON_WHEEL_DIRECTORY }}
@@ -917,7 +1101,8 @@ jobs:
         run: python -m pytest tests/test_statevector_triton_gates.py tests/unit/test_hva_forward_tangent_triton.py tests/unit/test_mps_two_site_triton.py tests/unit/test_real_imag_kernels.py tests/unit/test_single_qubit_loop_triton.py tests/unit/test_statevector_pauli_expectation_triton.py tests/unit/test_statevector_probabilities_triton.py tests/unit/test_statevector_triton.py tests/unit/test_triton_complex_bmm.py tests/unit/test_two_qubit_pauli_tangent_triton.py -m triton -q -rs
       - name: Retain resource limits and pytest timing reports
         if: ${{ always() && env.FQ_CI_REPORT_DIR != '' }}
-        uses: actions/upload-artifact@v4
+        uses: ./.github/actions/upload-artifact
+        timeout-minutes: 6
         with:
           name: cpu-report-${{ github.job }}-${{ strategy.job-index || '0' }}
           path: ${{ env.FQ_CI_REPORT_DIR }}
@@ -925,10 +1110,13 @@ jobs:
 
   qiskit-compat:
     needs: prepare-source
-    runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'flagquantum-cpu-general' || 'ubuntu-latest' }}
+    runs-on: ubuntu-latest
     timeout-minutes: 30
+    permissions:
+      contents: read
+      packages: read
     concurrency:
-      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('a100-cpu-{0}-qiskit-compat-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-1
+      group: flagquantum-gh-7
       queue: max
     strategy:
       fail-fast: false
@@ -959,8 +1147,22 @@ jobs:
             fi
           fi
           echo "complete=$complete" >> "$GITHUB_OUTPUT"
+      - name: Repair missing cached source objects through the GitHub API
+        id: source-repair
+        if: runner.environment == 'self-hosted' && steps.source-cache.outputs.complete != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          sha="$(cat "$RUNNER_TEMP/ci-source/source.sha")"
+          test "$sha" = "$GITHUB_SHA"
+          git show "$sha:tools/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/repair-source.py"
+          if timeout --kill-after=15s 120s python3 "$RUNNER_TEMP/ci-source/repair-source.py"; then
+            echo "complete=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "complete=false" >> "$GITHUB_OUTPUT"
+          fi
       - uses: actions/download-artifact@v8.0.2
-        if: steps.source-cache.outputs.complete != 'true'
+        if: steps.source-cache.outputs.complete != 'true' && steps.source-repair.outputs.complete != 'true'
         with:
           digest-mismatch: error
           name: ci-source-${{ needs.prepare-source.outputs.artifact-key }}
@@ -987,15 +1189,14 @@ jobs:
           python-version: "3.12"
       - uses: ./.github/actions/isolated-python
         with:
-          self-hosted-pypi-index: ${{ vars.FQ_CI_PYPI_MIRROR || 'https://pypi.tuna.tsinghua.edu.cn/simple' }}
-      - run: python -m pip install --upgrade pip 'setuptools>=77.0.3' wheel
+          self-hosted-pypi-index: ${{ vars.FQ_CI_PYPI_MIRROR || 'https://pypi.org/simple' }}
+      - if: runner.environment == 'github-hosted'
+        run: python -m pip install --upgrade pip 'setuptools>=77.0.3' wheel
       - uses: ./.github/actions/install-cpu-torch
+        if: runner.environment == 'github-hosted'
         timeout-minutes: 8
-      - run: python -m pip install --no-build-isolation -e '.[dev]'
-      - name: Validate the CPU runtime before SDK certification
-        run: |
-          python -c "import torch; from flagquantum.simulation.native_cpu import adjoint; assert torch.version.cuda is None; assert adjoint.native_cpu_adjoint_available(), repr(adjoint._EXTENSION_ERROR)"
-          python -m pytest tests/test_native_circuit.py tests/test_backends.py tests/smoke/test_smoke_baseline.py -q
+      - if: runner.environment == 'github-hosted'
+        run: python -m pip install --no-build-isolation -e '.[dev]'
       - name: Select a private Qiskit wheel cache
         run: |
           if [ "$RUNNER_ENVIRONMENT" = self-hosted ]; then
@@ -1005,12 +1206,29 @@ jobs:
           fi
           mkdir -p "$directory"
           echo "FQ_QISKIT_WHEEL_DIRECTORY=$directory" >> "$GITHUB_ENV"
-      - uses: actions/cache@v4
+      - uses: ./.github/actions/hosted-cache
         if: runner.environment == 'github-hosted'
         with:
           path: ${{ env.FQ_QISKIT_WHEEL_DIRECTORY }}
           key: qiskit-wheels-${{ runner.os }}-${{ runner.arch }}-py312-${{ matrix.qiskit }}-${{ hashFiles('dependency-policy.toml', '.github/actions/prepare-qiskit-wheels/action.yml') }}
+      - name: Preserve the online wheel resolver interpreter
+        run: echo "FQ_QISKIT_RESOLVER_PYTHON=$(command -v python)" >> "$GITHUB_ENV"
+      - uses: ./.github/actions/offline-cpu
+        if: runner.environment == 'self-hosted'
+        with:
+          profile: coverage-py3.12
+          registry-token: ${{ github.token }}
+          wheel-directory: ${{ env.FQ_QISKIT_WHEEL_DIRECTORY }}
+      - name: Constrain SDK wheels to the locked CPU environment
+        if: runner.environment == 'self-hosted'
+        run: |
+          python -m pip freeze --exclude-editable > "$RUNNER_TEMP/qiskit-base-constraints.txt"
+          echo "FQ_QISKIT_CONSTRAINTS=$RUNNER_TEMP/qiskit-base-constraints.txt" >> "$GITHUB_ENV"
       - uses: ./.github/actions/prepare-qiskit-wheels
+      - name: Validate the CPU runtime before SDK certification
+        run: |
+          python -c "import torch; from flagquantum.simulation.native_cpu import adjoint; assert torch.version.cuda is None; assert adjoint.native_cpu_adjoint_available(), repr(adjoint._EXTENSION_ERROR)"
+          python -m pytest tests/test_native_circuit.py tests/test_backends.py tests/smoke/test_smoke_baseline.py -q
       - name: Verify this certified Qiskit and Aer pair
         # Keep module-scoped benchmark fixtures on one worker per file.
         env:
@@ -1018,7 +1236,11 @@ jobs:
         run: |
           set -euxo pipefail
           version="$QISKIT_VERSION"
-          python -m pip install --no-index --find-links "$FQ_QISKIT_WHEEL_DIRECTORY" --upgrade \
+          install_options=(--upgrade)
+          if [ -n "${FQ_QISKIT_CONSTRAINTS:-}" ]; then
+            install_options+=(--constraint "$FQ_QISKIT_CONSTRAINTS")
+          fi
+          python -m pip install --no-index --find-links "$FQ_QISKIT_WHEEL_DIRECTORY" "${install_options[@]}" \
             "qiskit[qasm3-import]==${version}" \
             'qiskit-aer==0.17.*' \
             'sympy>=1.13,<2'
@@ -1031,14 +1253,15 @@ jobs:
           python -c "import sys, flagquantum; assert not any(name == 'qiskit' or name.startswith('qiskit.') or name == 'qiskit_aer' or name.startswith('qiskit_aer.') for name in sys.modules)"
       - name: Retain resource limits and pytest timing reports
         if: ${{ always() && env.FQ_CI_REPORT_DIR != '' }}
-        uses: actions/upload-artifact@v4
+        uses: ./.github/actions/upload-artifact
+        timeout-minutes: 6
         with:
           name: cpu-report-${{ github.job }}-${{ strategy.job-index || '0' }}
           path: ${{ env.FQ_CI_REPORT_DIR }}
           retention-days: 7
 
   qiskit-optional:
-    if: ${{ always() }}
+    if: ${{ !cancelled() }}
     needs: qiskit-compat
     runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'flagquantum-cpu-general' || 'ubuntu-latest' }}
     timeout-minutes: 5
@@ -1051,10 +1274,10 @@ jobs:
 
   cirq-optional:
     needs: prepare-source
-    runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'flagquantum-cpu-sdk-preinstalled' || 'ubuntu-latest' }}
+    runs-on: ubuntu-latest
     timeout-minutes: 30
     concurrency:
-      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('a100-cpu-{0}-cirq-optional-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-1
+      group: flagquantum-gh-4
       queue: max
     env:
       MAX_JOBS: "2"
@@ -1081,8 +1304,22 @@ jobs:
             fi
           fi
           echo "complete=$complete" >> "$GITHUB_OUTPUT"
+      - name: Repair missing cached source objects through the GitHub API
+        id: source-repair
+        if: runner.environment == 'self-hosted' && steps.source-cache.outputs.complete != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          sha="$(cat "$RUNNER_TEMP/ci-source/source.sha")"
+          test "$sha" = "$GITHUB_SHA"
+          git show "$sha:tools/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/repair-source.py"
+          if timeout --kill-after=15s 120s python3 "$RUNNER_TEMP/ci-source/repair-source.py"; then
+            echo "complete=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "complete=false" >> "$GITHUB_OUTPUT"
+          fi
       - uses: actions/download-artifact@v8.0.2
-        if: steps.source-cache.outputs.complete != 'true'
+        if: steps.source-cache.outputs.complete != 'true' && steps.source-repair.outputs.complete != 'true'
         with:
           digest-mismatch: error
           name: ci-source-${{ needs.prepare-source.outputs.artifact-key }}
@@ -1144,7 +1381,8 @@ jobs:
           ); done
       - name: Retain resource limits and pytest timing reports
         if: ${{ always() && env.FQ_CI_REPORT_DIR != '' }}
-        uses: actions/upload-artifact@v4
+        uses: ./.github/actions/upload-artifact
+        timeout-minutes: 6
         with:
           name: cpu-report-${{ github.job }}-${{ strategy.job-index || '0' }}
           path: ${{ env.FQ_CI_REPORT_DIR }}
@@ -1152,10 +1390,10 @@ jobs:
 
   braket-optional:
     needs: prepare-source
-    runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'flagquantum-cpu-general' || 'ubuntu-latest' }}
+    runs-on: ubuntu-latest
     timeout-minutes: 30
     concurrency:
-      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('a100-cpu-{0}-braket-optional-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-2
+      group: flagquantum-gh-1
       queue: max
     env:
       MAX_JOBS: "2"
@@ -1182,8 +1420,22 @@ jobs:
             fi
           fi
           echo "complete=$complete" >> "$GITHUB_OUTPUT"
+      - name: Repair missing cached source objects through the GitHub API
+        id: source-repair
+        if: runner.environment == 'self-hosted' && steps.source-cache.outputs.complete != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          sha="$(cat "$RUNNER_TEMP/ci-source/source.sha")"
+          test "$sha" = "$GITHUB_SHA"
+          git show "$sha:tools/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/repair-source.py"
+          if timeout --kill-after=15s 120s python3 "$RUNNER_TEMP/ci-source/repair-source.py"; then
+            echo "complete=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "complete=false" >> "$GITHUB_OUTPUT"
+          fi
       - uses: actions/download-artifact@v8.0.2
-        if: steps.source-cache.outputs.complete != 'true'
+        if: steps.source-cache.outputs.complete != 'true' && steps.source-repair.outputs.complete != 'true'
         with:
           digest-mismatch: error
           name: ci-source-${{ needs.prepare-source.outputs.artifact-key }}
@@ -1230,7 +1482,8 @@ jobs:
           done
       - name: Retain resource limits and pytest timing reports
         if: ${{ always() && env.FQ_CI_REPORT_DIR != '' }}
-        uses: actions/upload-artifact@v4
+        uses: ./.github/actions/upload-artifact
+        timeout-minutes: 6
         with:
           name: cpu-report-${{ github.job }}-${{ strategy.job-index || '0' }}
           path: ${{ env.FQ_CI_REPORT_DIR }}
@@ -1317,7 +1570,8 @@ jobs:
           done
       - name: Retain resource limits and pytest timing reports
         if: ${{ always() && env.FQ_CI_REPORT_DIR != '' }}
-        uses: actions/upload-artifact@v4
+        uses: ./.github/actions/upload-artifact
+        timeout-minutes: 6
         with:
           name: cpu-report-${{ github.job }}-${{ strategy.job-index || '0' }}
           path: ${{ env.FQ_CI_REPORT_DIR }}
@@ -1325,9 +1579,10 @@ jobs:
 
   pennylane-optional:
     needs: prepare-source
-    runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'flagquantum-cpu-general' || 'ubuntu-latest' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
     concurrency:
-      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('a100-cpu-{0}-pennylane-optional-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-1
+      group: flagquantum-gh-4
       queue: max
     env:
       OPTIONAL_VERSIONS: "0.44.1 0.45.1"
@@ -1353,8 +1608,22 @@ jobs:
             fi
           fi
           echo "complete=$complete" >> "$GITHUB_OUTPUT"
+      - name: Repair missing cached source objects through the GitHub API
+        id: source-repair
+        if: runner.environment == 'self-hosted' && steps.source-cache.outputs.complete != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          sha="$(cat "$RUNNER_TEMP/ci-source/source.sha")"
+          test "$sha" = "$GITHUB_SHA"
+          git show "$sha:tools/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/repair-source.py"
+          if timeout --kill-after=15s 120s python3 "$RUNNER_TEMP/ci-source/repair-source.py"; then
+            echo "complete=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "complete=false" >> "$GITHUB_OUTPUT"
+          fi
       - uses: actions/download-artifact@v8.0.2
-        if: steps.source-cache.outputs.complete != 'true'
+        if: steps.source-cache.outputs.complete != 'true' && steps.source-repair.outputs.complete != 'true'
         with:
           digest-mismatch: error
           name: ci-source-${{ needs.prepare-source.outputs.artifact-key }}
@@ -1395,7 +1664,8 @@ jobs:
           done
       - name: Retain resource limits and pytest timing reports
         if: ${{ always() && env.FQ_CI_REPORT_DIR != '' }}
-        uses: actions/upload-artifact@v4
+        uses: ./.github/actions/upload-artifact
+        timeout-minutes: 6
         with:
           name: cpu-report-${{ github.job }}-${{ strategy.job-index || '0' }}
           path: ${{ env.FQ_CI_REPORT_DIR }}
@@ -1454,8 +1724,22 @@ jobs:
             fi
           fi
           echo "complete=$complete" >> "$GITHUB_OUTPUT"
+      - name: Repair missing cached source objects through the GitHub API
+        id: source-repair
+        if: runner.environment == 'self-hosted' && steps.source-cache.outputs.complete != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          sha="$(cat "$RUNNER_TEMP/ci-source/source.sha")"
+          test "$sha" = "$GITHUB_SHA"
+          git show "$sha:tools/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/repair-source.py"
+          if timeout --kill-after=15s 120s python3 "$RUNNER_TEMP/ci-source/repair-source.py"; then
+            echo "complete=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "complete=false" >> "$GITHUB_OUTPUT"
+          fi
       - uses: actions/download-artifact@v8.0.2
-        if: steps.source-cache.outputs.complete != 'true'
+        if: steps.source-cache.outputs.complete != 'true' && steps.source-repair.outputs.complete != 'true'
         with:
           digest-mismatch: error
           name: ci-source-${{ needs.prepare-source.outputs.artifact-key }}
@@ -1510,7 +1794,8 @@ jobs:
           mypy --strict --python-version 3.12 --ignore-missing-imports flagquantum
       - name: Retain resource limits and pytest timing reports
         if: ${{ always() && env.FQ_CI_REPORT_DIR != '' }}
-        uses: actions/upload-artifact@v4
+        uses: ./.github/actions/upload-artifact
+        timeout-minutes: 6
         with:
           name: cpu-report-${{ github.job }}-${{ strategy.job-index || '0' }}
           path: ${{ env.FQ_CI_REPORT_DIR }}
@@ -1608,12 +1893,14 @@ jobs:
           --report-dir "${{ runner.temp }}/qec-installed-reports"
       - name: Retain installed QEC evidence
         if: ${{ always() }}
-        uses: actions/upload-artifact@v4
+        uses: ./.github/actions/upload-artifact
+        timeout-minutes: 6
         with:
           name: qec-installed-${{ github.sha }}
           path: ${{ runner.temp }}/qec-installed-reports/
           retention-days: 7
-      - uses: actions/upload-artifact@v4
+      - uses: ./.github/actions/upload-artifact
+        timeout-minutes: 6
         with:
           name: flagquantum-distributions-${{ github.sha }}
           path: dist/
@@ -1653,7 +1940,8 @@ jobs:
           output-dir: wheelhouse
       - name: Verify release wheel contents
         run: python tools/verify_distribution_artifacts.py wheelhouse
-      - uses: actions/upload-artifact@v4
+      - uses: ./.github/actions/upload-artifact
+        timeout-minutes: 6
         with:
           name: flagquantum-${{ matrix.artifact }}-${{ github.sha }}
           path: wheelhouse/
@@ -1663,6 +1951,9 @@ jobs:
     runs-on: >-
       ${{ fromJSON((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","linux","x64","flagquantum-cpu"]' || '["ubuntu-latest"]') }}
     timeout-minutes: 60
+    permissions:
+      contents: read
+      packages: read
     strategy:
       fail-fast: false
       matrix:
@@ -1704,8 +1995,22 @@ jobs:
             fi
           fi
           echo "complete=$complete" >> "$GITHUB_OUTPUT"
+      - name: Repair missing cached source objects through the GitHub API
+        id: source-repair
+        if: runner.environment == 'self-hosted' && steps.source-cache.outputs.complete != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          sha="$(cat "$RUNNER_TEMP/ci-source/source.sha")"
+          test "$sha" = "$GITHUB_SHA"
+          git show "$sha:tools/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/repair-source.py"
+          if timeout --kill-after=15s 120s python3 "$RUNNER_TEMP/ci-source/repair-source.py"; then
+            echo "complete=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "complete=false" >> "$GITHUB_OUTPUT"
+          fi
       - uses: actions/download-artifact@v8.0.2
-        if: steps.source-cache.outputs.complete != 'true'
+        if: steps.source-cache.outputs.complete != 'true' && steps.source-repair.outputs.complete != 'true'
         with:
           digest-mismatch: error
           name: ci-source-${{ needs.prepare-source.outputs.artifact-key }}
@@ -1727,14 +2032,12 @@ jobs:
           git checkout --force --detach "$sha"
           git clean -ffdx
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
-      - uses: actions/setup-python@v5
+      - uses: ./.github/actions/offline-cpu
         with:
-          python-version: "3.12"
-      - uses: ./.github/actions/isolated-python
+          profile: coverage-py3.12
+          registry-token: ${{ github.token }}
       - name: Budget launchers for this isolated CPU service
         run: python -I tools/ci_cpu_budget.py --dedicated
-      - uses: ./.github/actions/install-cpu-torch
-      - run: python -m pip install --no-build-isolation -e '.[dev,jax]'
       - name: Verify dependency consistency and CPU frameworks
         run: |
           python -m pip check
@@ -1754,7 +2057,8 @@ jobs:
         run: torchrun --standalone --nproc-per-node=2 -m pytest tests/distributed/test_hybrid_jax_runtime.py -q
       - name: Retain resource limits and pytest timing reports
         if: ${{ always() && env.FQ_CI_REPORT_DIR != '' }}
-        uses: actions/upload-artifact@v4
+        uses: ./.github/actions/upload-artifact
+        timeout-minutes: 6
         with:
           name: cpu-report-${{ github.job }}-${{ strategy.job-index || '0' }}
           path: ${{ env.FQ_CI_REPORT_DIR }}
@@ -1762,7 +2066,7 @@ jobs:
 
 
   distributed-cpu:
-    if: ${{ always() }}
+    if: ${{ !cancelled() }}
     needs: distributed-cpu-shard
     runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'flagquantum-cpu-general' || 'ubuntu-latest' }}
     timeout-minutes: 5
@@ -1775,7 +2079,11 @@ jobs:
 
   coverage-shard:
     needs: prepare-source
-    runs-on: ubuntu-latest
+    runs-on: >-
+      ${{ fromJSON(
+        (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)
+        && '["self-hosted","linux","x64","flagquantum-cpu"]' || '["ubuntu-latest"]'
+      ) }}
     permissions:
       contents: read
       packages: read
@@ -1788,7 +2096,7 @@ jobs:
       JAX_PLATFORMS: cpu
       COVERAGE_FILE: .coverage.${{ matrix.shard }}
     concurrency:
-      group: flagquantum-gh-${{ matrix.hosted-bucket }}
+      group: flagquantum-${{ (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository) && format('self-hosted-{0}-coverage-shard-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-${{ matrix.hosted-bucket }}
       queue: max
     strategy:
       fail-fast: false
@@ -1834,8 +2142,22 @@ jobs:
             fi
           fi
           echo "complete=$complete" >> "$GITHUB_OUTPUT"
+      - name: Repair missing cached source objects through the GitHub API
+        id: source-repair
+        if: runner.environment == 'self-hosted' && steps.source-cache.outputs.complete != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          sha="$(cat "$RUNNER_TEMP/ci-source/source.sha")"
+          test "$sha" = "$GITHUB_SHA"
+          git show "$sha:tools/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/repair-source.py"
+          if timeout --kill-after=15s 120s python3 "$RUNNER_TEMP/ci-source/repair-source.py"; then
+            echo "complete=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "complete=false" >> "$GITHUB_OUTPUT"
+          fi
       - uses: actions/download-artifact@v8.0.2
-        if: steps.source-cache.outputs.complete != 'true'
+        if: steps.source-cache.outputs.complete != 'true' && steps.source-repair.outputs.complete != 'true'
         with:
           digest-mismatch: error
           name: ci-source-${{ needs.prepare-source.outputs.artifact-key }}
@@ -1889,37 +2211,90 @@ jobs:
           --fq-shard-count 16 --fq-shard-index ${{ matrix.shard }}
           --cov=flagquantum
           --cov-report=
-      - uses: actions/upload-artifact@v4
+      - uses: ./.github/actions/upload-artifact
+        timeout-minutes: 6
         with:
           name: coverage-shard-${{ matrix.shard }}-${{ github.sha }}
           path: .coverage.${{ matrix.shard }}
           include-hidden-files: true
       - name: Retain resource limits and pytest timing reports
         if: ${{ always() && env.FQ_CI_REPORT_DIR != '' }}
-        uses: actions/upload-artifact@v4
+        uses: ./.github/actions/upload-artifact
+        timeout-minutes: 6
         with:
           name: cpu-report-${{ github.job }}-${{ strategy.job-index || '0' }}
           path: ${{ env.FQ_CI_REPORT_DIR }}
           retention-days: 7
 
   coverage:
-    needs: coverage-shard
-    if: ${{ always() }}
-    runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'flagquantum-a100-cpu' || 'ubuntu-latest' }}
+    needs: [prepare-source, coverage-shard]
+    if: ${{ !cancelled() }}
+    runs-on: ${{ fromJSON((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","linux","x64","flagquantum-cpu"]' || '["ubuntu-latest"]') }}
+    timeout-minutes: 20
     concurrency:
-      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('a100-cpu-{0}-coverage-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-0
+      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('self-hosted-{0}-coverage-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-0
       queue: max
     steps:
       - name: Require every coverage shard to pass
         run: test '${{ needs.coverage-shard.result }}' = success
-      - name: Clear sparse checkout state from a previous job
+      - uses: actions/download-artifact@v8.0.2
+        with:
+          digest-mismatch: error
+          name: ci-source-incremental-${{ needs.prepare-source.outputs.artifact-key }}
+          path: ${{ runner.temp }}/ci-source
+      - name: Check whether cached Git objects complete the source tree
+        id: source-cache
         run: |
-          if [ -d .git ]; then
-            git sparse-checkout disable
-            rm -f .git/info/sparse-checkout
-            git config --local --unset core.sparseCheckout || true
+          sha="$(cat "$RUNNER_TEMP/ci-source/source.sha")"
+          test "$sha" = "$GITHUB_SHA"
+          if [ ! -d .git ]; then
+            git init .
           fi
-      - uses: actions/checkout@v4
+          git index-pack --stdin < "$RUNNER_TEMP/ci-source/source.pack"
+          complete=false
+          if objects="$(git rev-list --objects --missing=print --no-walk "$sha")"; then
+            if ! printf '%s\n' "$objects" | grep -q '^?'; then
+              complete=true
+            fi
+          fi
+          echo "complete=$complete" >> "$GITHUB_OUTPUT"
+      - name: Repair missing cached source objects through the GitHub API
+        id: source-repair
+        if: runner.environment == 'self-hosted' && steps.source-cache.outputs.complete != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          sha="$(cat "$RUNNER_TEMP/ci-source/source.sha")"
+          test "$sha" = "$GITHUB_SHA"
+          git show "$sha:tools/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/repair-source.py"
+          if timeout --kill-after=15s 120s python3 "$RUNNER_TEMP/ci-source/repair-source.py"; then
+            echo "complete=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "complete=false" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/download-artifact@v8.0.2
+        if: steps.source-cache.outputs.complete != 'true' && steps.source-repair.outputs.complete != 'true'
+        with:
+          digest-mismatch: error
+          name: ci-source-${{ needs.prepare-source.outputs.artifact-key }}
+          path: ${{ runner.temp }}/ci-source
+      - name: Restore and verify this run's exact source commit
+        run: |
+          sha="$(cat "$RUNNER_TEMP/ci-source/source.sha")"
+          test "$sha" = "$GITHUB_SHA"
+          if [ ! -d .git ]; then
+            git init .
+          fi
+          git index-pack --stdin < "$RUNNER_TEMP/ci-source/source.pack"
+          printf '%s\n' "$sha" >> .git/shallow
+          sort -u .git/shallow -o .git/shallow
+          git config --worktree core.sparseCheckout false
+          git config --worktree core.sparseCheckoutCone false
+          rm -f .git/info/sparse-checkout
+          git read-tree --empty
+          git checkout --force --detach "$sha"
+          git clean -ffdx
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
@@ -1961,13 +2336,15 @@ jobs:
           python -m coverage xml
       - name: Enforce coverage policy
         run: python tools/check_coverage.py
-      - uses: actions/upload-artifact@v4
+      - uses: ./.github/actions/upload-artifact
+        timeout-minutes: 6
         with:
           name: coverage-${{ github.sha }}
           path: coverage.xml
       - name: Retain resource limits and pytest timing reports
         if: ${{ always() && env.FQ_CI_REPORT_DIR != '' }}
-        uses: actions/upload-artifact@v4
+        uses: ./.github/actions/upload-artifact
+        timeout-minutes: 6
         with:
           name: cpu-report-${{ github.job }}-${{ strategy.job-index || '0' }}
           path: ${{ env.FQ_CI_REPORT_DIR }}
@@ -2004,8 +2381,22 @@ jobs:
             fi
           fi
           echo "complete=$complete" >> "$GITHUB_OUTPUT"
+      - name: Repair missing cached source objects through the GitHub API
+        id: source-repair
+        if: runner.environment == 'self-hosted' && steps.source-cache.outputs.complete != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          sha="$(cat "$RUNNER_TEMP/ci-source/source.sha")"
+          test "$sha" = "$GITHUB_SHA"
+          git show "$sha:tools/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/repair-source.py"
+          if timeout --kill-after=15s 120s python3 "$RUNNER_TEMP/ci-source/repair-source.py"; then
+            echo "complete=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "complete=false" >> "$GITHUB_OUTPUT"
+          fi
       - uses: actions/download-artifact@v8.0.2
-        if: steps.source-cache.outputs.complete != 'true'
+        if: steps.source-cache.outputs.complete != 'true' && steps.source-repair.outputs.complete != 'true'
         with:
           digest-mismatch: error
           name: ci-source-${{ needs.prepare-source.outputs.artifact-key }}
@@ -2053,13 +2444,15 @@ jobs:
         run: cyclonedx-py environment --output-format JSON --output-file sbom.cdx.json
       - name: Validate SBOM
         run: python tools/validate_sbom.py sbom.cdx.json
-      - uses: actions/upload-artifact@v4
+      - uses: ./.github/actions/upload-artifact
+        timeout-minutes: 6
         with:
           name: sbom-${{ github.sha }}
           path: sbom.cdx.json
       - name: Retain resource limits and pytest timing reports
         if: ${{ always() && env.FQ_CI_REPORT_DIR != '' }}
-        uses: actions/upload-artifact@v4
+        uses: ./.github/actions/upload-artifact
+        timeout-minutes: 6
         with:
           name: cpu-report-${{ github.job }}-${{ strategy.job-index || '0' }}
           path: ${{ env.FQ_CI_REPORT_DIR }}
@@ -2092,7 +2485,9 @@ jobs:
       - coverage-shard
       - coverage
       - supply-chain
+    # Required checks must reject cancelled/skipped dependencies, never skip.
     if: ${{ always() }}
+    timeout-minutes: 2
     runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'flagquantum-cpu-general' || 'ubuntu-latest' }}
     concurrency:
       group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('a100-cpu-{0}-ci-complete-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-0
