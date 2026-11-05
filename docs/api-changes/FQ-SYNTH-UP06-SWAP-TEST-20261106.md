@@ -8,7 +8,7 @@ Output contract, not an XOR update to an arbitrary marker. Const inputs refuse
 because controlled swaps temporarily change their storage. Dropped data states
 retain their physical state and are not certified zero auxiliary registers.
 
-Reuse existing amplitude preparation, qreg.init, qreg.gate, qreg.pair_gate and
+Reuse existing amplitude preparation, qreg.allocate, qreg.gate, qreg.pair_gate and
 indexed qreg.control_x. Compose H(test), the existing three-controlled-X Fredkin
 identity for each matched low-to-high input bit, and H(test). No IR opcode,
 physical kernel, stable export or approximation is added. Bound existing source
