@@ -64,6 +64,7 @@ _INTRINSICS = (
     | _PAIR_CALLS
     | {
         "allocate",
+        "apply_to_all",
         "encode_in_angle",
         "encode_on_bloch",
         "inplace_encode_on_bloch",
@@ -737,6 +738,7 @@ class _Adapt:
         self.fractional_bits: dict[str, int] = {}
         self.registers: dict[str, Value] = {}
         self.views: dict[str, tuple[tuple[Value, int], ...]] = {}
+        self.suspended: set[str] = set()
         self.counter = len(self.parameters) + 1
         self.entry = Value(ValueId(self.scope, 0), QUANTUM_EFFECT)
         self.effect = self.entry
@@ -757,6 +759,8 @@ class _Adapt:
         allow_fractional_output: bool = False,
     ) -> Value:
         name = token.text
+        if name in self.suspended:
+            reject(token, "binding", "a bound source name is suspended")
         if name in self.views:
             reject(token, "view", "this operation requires a whole register")
         if name in self.dropped:
@@ -882,6 +886,8 @@ class _Adapt:
     def gate_target(self, node: Expression) -> tuple[Value, int]:
         indexed = node.token.text == "["
         target = self.atom(node.children[0] if indexed else node)
+        if target.text in self.suspended:
+            reject(target, "binding", "a bound source name is suspended")
         parameter = self.parameters.get(target.text)
         view = self.views.get(target.text)
         if indexed and (parameter is None or parameter.kind != "qbit[]"):
@@ -909,8 +915,10 @@ class _Adapt:
             return tuple(self.gate_target(item) for item in node.children)
         source = node.children[0] if node.token.text == ":" else node
         target = self.atom(source)
+        if target.text in self.suspended:
+            reject(target, "binding", "a bound source name is suspended")
         parameter = self.parameters.get(target.text)
-        if parameter is None or parameter.kind not in {"qbit[]", "qnum"}:
+        if parameter is None or parameter.kind not in {"qbit[]", "qnum", "qbit"}:
             reject(target, "type", "expected an unsigned quantum register or view")
         if target.text in self.signed or target.text in self.fractional_bits:
             reject(target, "type", "views require an unsigned integer register")
@@ -1219,6 +1227,115 @@ class _Adapt:
                 "qreg.control_call", token, (control_bit, *reads), callee=program.name
             )
 
+    def bind_registers(
+        self, token: Token, source: Expression, destination: Expression
+    ) -> None:
+        sources = source.children if source.token.text == "{" else (source,)
+        destinations = (
+            destination.children if destination.token.text == "{" else (destination,)
+        )
+        source_names = tuple(self.atom(item).text for item in sources)
+        destination_names = tuple(self.atom(item).text for item in destinations)
+        if len(set(source_names + destination_names)) != len(
+            source_names + destination_names
+        ):
+            reject(token, "binding", "binding names must be distinct")
+        locations = tuple(
+            location for item in sources for location in self.array_view(item)
+        )
+        if len(set(locations)) != len(locations):
+            reject(token, "binding", "binding source locations must be disjoint")
+        offset = 0
+        assignments: list[tuple[str, tuple[tuple[Value, int], ...]]] = []
+        for item in destinations:
+            name = self.atom(item).text
+            parameter = self.parameters.get(name)
+            if parameter is None or parameter.role not in {"local", "output"}:
+                reject(
+                    item.token,
+                    "binding",
+                    "binding destination must be a declared local or output",
+                )
+            if name in self.views and name not in self.suspended:
+                reject(
+                    item.token, "binding", "binding destination already owns storage"
+                )
+            width = self.widths[name]
+            if width is None:
+                if len(destinations) != 1:
+                    reject(
+                        item.token,
+                        "binding",
+                        "split destinations require explicit widths",
+                    )
+                width = len(locations)
+            view = locations[offset : offset + width]
+            offset += width
+            if len(view) != width:
+                reject(
+                    item.token,
+                    "binding",
+                    "binding widths must cover the source exactly",
+                )
+            if name in self.registers:
+                value = self.registers[name]
+                expected = tuple(
+                    (value, index) for index in range(register_width(value))
+                )
+                if name not in self.suspended or view != expected:
+                    reject(
+                        item.token,
+                        "binding",
+                        "restored storage must match the original wire order",
+                    )
+            elif parameter.role != "local":
+                reject(
+                    item.token,
+                    "binding",
+                    "fresh output binding requires an allocated storage owner",
+                )
+            assignments.append((name, view))
+        if offset != len(locations):
+            reject(token, "binding", "binding widths must cover the source exactly")
+        # Identity effects let the shared verifier check source initialization.
+        checked: set[Value] = set()
+        for value, wire in locations:
+            if value not in checked:
+                self.effect_op("qreg.gate", token, (value,), gate="i", index=wire)
+                checked.add(value)
+        self.suspended.update(source_names)
+        for name, view in assignments:
+            self.widths[name] = len(view)
+            self.suspended.discard(name)
+            if name in self.registers:
+                self.views.pop(name, None)
+            else:
+                self.views[name] = view
+
+    def increment(self, token: Token, target: Expression, amount: Expression) -> None:
+        name = self.atom(target).text
+        parameter = self.parameters.get(name)
+        if parameter is None or parameter.kind != "qnum":
+            reject(
+                target.token, "type", "in-place increment requires an unsigned integer"
+            )
+        negative = amount.token.text == "-"
+        magnitude = amount.children[0] if negative else amount
+        if magnitude.children or magnitude.token.text != "1":
+            reject(
+                amount.token,
+                "arithmetic",
+                "in-place increment currently requires 1 or -1",
+            )
+        view = self.array_view(target)
+        order = range(len(view)) if negative else reversed(range(len(view)))
+        for bit in order:
+            if bit:
+                self.emit_indexed_x(token, (*view[:bit], view[bit]))
+            else:
+                value, wire = view[0]
+                self.effect_op("qreg.gate", token, (value,), gate="x", index=wire)
+
     def emit_indexed_x(
         self, token: Token, locations: tuple[tuple[Value, int], ...]
     ) -> None:
@@ -1238,14 +1355,20 @@ class _Adapt:
         if condition.token.text not in {"==", "!="} or len(condition.children) != 2:
             return False
         source, expected = condition.children
-        if (
-            source.children
-            or expected.children
-            or expected.token.text not in {"0", "1"}
-        ):
+        if expected.children or expected.token.text not in {"0", "1"}:
             return False
-        parameter = self.parameters.get(source.token.text)
-        if parameter is None or parameter.kind != "qbit":
+        if source.token.text == "[":
+            control = self.gate_target(source)
+        elif not source.children:
+            parameter = self.parameters.get(source.token.text)
+            if (
+                parameter is None
+                or parameter.kind not in {"qbit", "qnum"}
+                or self.widths[source.token.text] != 1
+            ):
+                return False
+            control = self.array_view(source)[0]
+        else:
             return False
         body = statement.control_body
         assert body is not None
@@ -1256,14 +1379,25 @@ class _Adapt:
             branches = ((1 - int(expected.token.text), body),)
         if statement.control_else is not None:
             branches += ((1 - branches[0][0], statement.control_else),)
-        # Keep existing scalar control behavior unless this is a helper composition.
-        if not any(
-            child.inverse_body is not None or child.token.text in self.definitions
-            for _, children in branches
-            for child in children
-        ):
+
+        # Nested control blocks enter this path when they contain a helper composition.
+        def contains_composition(children: tuple[Statement, ...]) -> bool:
+            return any(
+                child.inverse_body is not None
+                or child.token.text in self.definitions
+                or (
+                    child.control_body is not None
+                    and contains_composition(child.control_body)
+                )
+                or (
+                    child.control_else is not None
+                    and contains_composition(child.control_else)
+                )
+                for child in children
+            )
+
+        if not any(contains_composition(children) for _, children in branches):
             return False
-        control = self.gate_target(source)
         for value, children in branches:
             start, incoming = len(self.operations), self.effect
             for ordinal, child in enumerate(children):
@@ -1306,11 +1440,13 @@ class _Adapt:
     def scalar_control(self, statement: Statement, index: str) -> None:
         token = statement.token
         body = statement.control_body
-        if len(statement.arguments) != 1 or body is None or len(body) != 1:
+        if len(statement.arguments) != 1 or body is None:
             reject(token, "control", "control requires one condition and one operation")
         condition = statement.arguments[0]
         if self.coherent_helper_control(statement, index):
             return
+        if len(body) != 1:
+            reject(token, "control", "control requires one condition and one operation")
         if statement.control_else is not None:
             reject(
                 token, "control", "control else requires a supported reversible helper"
@@ -2003,6 +2139,12 @@ class _Adapt:
 
     def statement(self, statement: Statement, index: str) -> None:
         token, args = statement.token, statement.arguments
+        if token.text == "->":
+            self.bind_registers(token, args[0], args[1])
+            return
+        if token.text == "+=":
+            self.increment(token, args[0], args[1])
+            return
         if statement.static_if_body is not None:
             if any(
                 item.declaration is not None or item.token.text not in _STATIC_GATES
@@ -2411,6 +2553,25 @@ class _Adapt:
             self.effect_op(
                 "qreg.uniform_interval", token, (destination,), start=start, stop=stop
             )
+        elif token.text == "apply_to_all":
+            if (
+                len(args) != 2
+                or args[0].children
+                or args[0].token.text not in {"H", "Z"}
+            ):
+                reject(
+                    token,
+                    "signature",
+                    "apply_to_all currently requires H or Z and a register",
+                )
+            for value, wire in self.array_view(args[1]):
+                self.effect_op(
+                    "qreg.gate",
+                    token,
+                    (value,),
+                    gate=args[0].token.text.lower(),
+                    index=wire,
+                )
         elif token.text == "unitary":
             if len(args) != 2:
                 reject(token, "signature", "unitary requires a matrix and qubit array")
@@ -2556,6 +2717,22 @@ class _Adapt:
     def adapt(self) -> HybridProgram:
         for index, statement in enumerate(self.syntax.statements):
             self.statement(statement, str(index))
+        if any(
+            parameter.role == "output" and name in self.suspended
+            for name, parameter in self.parameters.items()
+        ):
+            reject(self.syntax.name, "binding", "restore every output before return")
+        if any(
+            parameter.role == "local"
+            and name in self.views
+            and name not in self.suspended
+            for name, parameter in self.parameters.items()
+        ):
+            reject(
+                self.syntax.name,
+                "binding",
+                "merge or restore every local view before return",
+            )
         output_parameters = tuple(
             p for p in self.syntax.parameters if p.role == "output"
         )
@@ -2751,7 +2928,7 @@ def parse_qmod(
             )
             if statement.declaration is not None or (
                 statement.token.text
-                not in _STATIC_GATES | {"suzuki_trotter", "unitary"}
+                not in _STATIC_GATES | {"suzuki_trotter", "unitary", "+="}
                 and not controlled_qft
                 and not hadamard_within
                 and statement.repeat_index is None

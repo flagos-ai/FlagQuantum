@@ -741,3 +741,25 @@ expansions, taking registered single-qubit adjoints and retaining the
 self-inverse indexed controlled-X operations. Neither composition admits
 allocation or changes of register ownership. Scratch space uses the
 existing clean multi-controlled-X scheduler and is included in budgets.
+
+### Modular increments and storage bindings
+
+A writable unsigned `qnum` supports `a += 1` and `a += -1` modulo its
+declared or bound width. Both operations reuse indexed controlled-X gates
+and can appear in reversible helper compositions. `apply_to_all(H, a)`
+and `apply_to_all(Z, a)` act on all physical locations of a register/view.
+
+Function-scope bindings can move an allocated owner into declared local
+views, as in `x -> {low, high}`, and restore it with
+`{low, high} -> x`. The first part receives the least-significant
+locations. All split widths must be explicit and cover the source
+exactly. A single unsized local array can infer the full source width.
+Sources become unavailable until restored. A merge must reproduce the
+original allocated owner's wire order. Restore outputs and close local
+views before return. Destination owners cannot be overwritten. Bindings
+reuse storage and preserve initialization checks through the shared
+register verifier.
+
+Nested coherent controls can select reversible helper compositions using
+array elements or one-bit unsigned numeric selectors. Their physical
+controls must remain disjoint from every target in the expanded helper.

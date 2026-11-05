@@ -693,6 +693,17 @@ class Parser:
             return Expression(opening, tuple(items))
         return self.expression(allow_slice=True)
 
+    def binding_group(self) -> Expression:
+        if self.current.text != "{":
+            return Expression(self.name())
+        token = self.take("{")
+        elements = [Expression(self.name())]
+        while self.current.text == ",":
+            self.take(",")
+            elements.append(Expression(self.name()))
+        self.take("}")
+        return Expression(token, tuple(elements))
+
     def block(
         self,
         *,
@@ -703,6 +714,15 @@ class Parser:
         self.take("{")
         statements: list[Statement] = []
         while self.current.text != "}":
+            if self.current.text == "{" or self.tokens[self.position + 1].text == "->":
+                if scope_depth:
+                    reject(self.current, "scope", "bindings require function scope")
+                source = self.binding_group()
+                operator = self.take("->")
+                destination = self.binding_group()
+                self.take(";")
+                statements.append(Statement(operator, (source, destination)))
+                continue
             if (
                 self.current.text == "invert"
                 and self.tokens[self.position + 1].text == "{"
@@ -796,7 +816,9 @@ class Parser:
                     reject(
                         token, "scope", "declare locals at function level before within"
                     )
-                kind, width = self.scalar_type(allow_fixed_array=True)
+                kind, width = self.scalar_type(
+                    allow_fixed_array=True, allow_qubit_array=True
+                )
                 self.take(";")
                 statements.append(
                     Statement(
@@ -804,11 +826,11 @@ class Parser:
                     )
                 )
                 continue
-            if self.current.text in {"=", "^="}:
+            if self.current.text in {"=", "^=", "+="}:
                 operator = self.take(self.current.text)
                 rhs = (
                     self.signed_angle_argument()
-                    if operator.text == "^=" and self.current.text == "-"
+                    if operator.text in {"^=", "+="} and self.current.text == "-"
                     else self.expression(
                         decimal=operator.text == "=", difference=operator.text == "="
                     )
