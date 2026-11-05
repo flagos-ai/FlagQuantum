@@ -358,13 +358,9 @@ def schedule_register_program(
             matrix = unitary_matrix(op.attributes["matrix"], len(wires), op)
             if "power" in op.attributes:
                 matrix = torch.linalg.matrix_power(matrix, op.attributes["power"])
-            gates = unitary_instructions(matrix, wires, op)
-            if control is not None:
-                gates = tuple(
-                    controlled
-                    for gate in gates
-                    for controlled in controlled_instruction(gate, (control,))
-                )
+            gates = unitary_instructions(
+                matrix, wires, op, () if control is None else (control,)
+            )
         elif op.name in {"qreg.qft", "qreg.inverse_qft"}:
             gates = qft_instructions(bindings[op.operands[1].id])
             if op.name == "qreg.inverse_qft":

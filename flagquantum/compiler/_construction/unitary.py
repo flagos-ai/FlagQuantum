@@ -9,23 +9,51 @@ from ...core._composition import controlled_instruction
 from ...core.ir import Instruction
 from .._hybrid.model import Operation
 from ..one_qubit_optimization import _instruction_matrix as _one_qubit_matrix
-from ..one_qubit_synthesis import synthesize_one_qubit_matrix
+from ..one_qubit_synthesis import _zyz_angles, synthesize_one_qubit_matrix
 from ..two_qubit_optimization import _block_product
 from ..two_qubit_synthesis import synthesize_two_qubit
 from .profile import _fail
 
 
 def unitary_instructions(
-    matrix: torch.Tensor, wires: tuple[int, ...], op: Operation
+    matrix: torch.Tensor,
+    wires: tuple[int, ...],
+    op: Operation,
+    controls: tuple[int, ...] = (),
 ) -> tuple[Instruction, ...]:
     """Synthesize registered gates and restore the decomposition's global phase."""
     if len(wires) == 3:
-        return _three_qubit_instructions(matrix, wires, op)
+        return _three_qubit_instructions(matrix, wires, op, controls)
+    gates, angle = _small_decomposition(matrix, wires, op)
+    if abs(angle) > 1e-15:
+        phase = Instruction("phase", (wires[0],), {"theta": angle})
+        flip = Instruction("x", (wires[0],))
+        gates = (*gates, flip, phase, flip, phase)
+    return (
+        tuple(leaf for gate in gates for leaf in controlled_instruction(gate, controls))
+        if controls
+        else gates
+    )
+
+
+def _small_decomposition(
+    matrix: torch.Tensor, wires: tuple[int, ...], op: Operation, *, zyz: bool = False
+) -> tuple[tuple[Instruction, ...], float]:
+    gates: tuple[Instruction, ...] | None
     if len(wires) == 1:
-        gates = synthesize_one_qubit_matrix(
-            matrix.tolist(), qubit=wires[0], z_rotation="rz"
-        )
-        assert gates is not None
+        if zyz:
+            rows = [[complex(value.item()) for value in row] for row in matrix]
+            theta, phi, lam = _zyz_angles(rows)
+            gates = tuple(
+                Instruction(name, wires, {"theta": angle})
+                for name, angle in (("rz", lam), ("ry", theta), ("rz", phi))
+                if angle != 0.0
+            )
+        else:
+            gates = synthesize_one_qubit_matrix(
+                matrix.tolist(), qubit=wires[0], z_rotation="rz"
+            )
+            assert gates is not None
         product = torch.eye(2, dtype=torch.complex128)
         for gate in gates:
             leaf = _one_qubit_matrix(gate)
@@ -46,17 +74,16 @@ def unitary_instructions(
             "registered gate decomposition failed matrix verification",
             op,
         )
-    if abs(angle) <= 1e-15:
-        return gates
-    phase = Instruction("phase", (wires[0],), {"theta": angle})
-    flip = Instruction("x", (wires[0],))
-    return (*gates, flip, phase, flip, phase)
+    return gates, angle
 
 
 def _pattern_gate(
-    gate: Instruction, wires: tuple[int, ...], pattern: int
+    gate: Instruction,
+    wires: tuple[int, ...],
+    pattern: int,
+    external_controls: tuple[int, ...] = (),
 ) -> tuple[Instruction, ...]:
-    controls = tuple(wire for wire in wires if wire not in gate.wires)
+    controls = (*external_controls, *(wire for wire in wires if wire not in gate.wires))
     flips = tuple(
         Instruction("x", (wire,))
         for position, wire in enumerate(wires)
@@ -71,7 +98,9 @@ def _two_level_instructions(
     second: int,
     wires: tuple[int, ...],
     op: Operation,
+    controls: tuple[int, ...],
 ) -> tuple[Instruction, ...]:
+    # Permutations commute with external controls and cancel on the inactive branch.
     # Permute the first basis word along a Gray path, leaving the second fixed.
     path = [first]
     for bit in range(len(wires)):
@@ -88,8 +117,22 @@ def _two_level_instructions(
     if left & (1 << bit):
         matrix = matrix.flip((0, 1))
     gates = [gate for permutation in permutations for gate in permutation]
-    for gate in unitary_instructions(matrix, (target,), op):
-        gates.extend(_pattern_gate(gate, wires, left))
+    local, angle = _small_decomposition(matrix, (target,), op, zyz=True)
+    for gate in local:
+        gates.extend(_pattern_gate(gate, wires, left, controls))
+    if abs(angle) > 1e-15:
+        # A two-level global phase acts on both target values. Condition it on
+        # the other bits once instead of controlling four phase-repair gates.
+        condition = (*controls, *(wire for wire in wires if wire != target))
+        flips = tuple(
+            Instruction("x", (wire,))
+            for position, wire in enumerate(wires)
+            if wire != target and not left & (1 << (len(wires) - position - 1))
+        )
+        phase = Instruction("phase", (condition[-1],), {"theta": angle})
+        gates.extend(
+            (*flips, *controlled_instruction(phase, condition[:-1]), *reversed(flips))
+        )
     # Each transposition is self-inverse, including its negative-control flips.
     for permutation in reversed(permutations):
         gates.extend(permutation)
@@ -97,7 +140,10 @@ def _two_level_instructions(
 
 
 def _three_qubit_instructions(
-    matrix: torch.Tensor, wires: tuple[int, ...], op: Operation
+    matrix: torch.Tensor,
+    wires: tuple[int, ...],
+    op: Operation,
+    controls: tuple[int, ...] = (),
 ) -> tuple[Instruction, ...]:
     reduced = matrix.clone()
     rotations: list[tuple[int, int, torch.Tensor]] = []
@@ -129,7 +175,9 @@ def _three_qubit_instructions(
             continue
         flip = () if pattern & 1 else (Instruction("x", (wires[-1],)),)
         phase = Instruction("phase", (wires[-1],), {"theta": angle})
-        gates.extend((*flip, *_pattern_gate(phase, wires, pattern), *flip))
+        gates.extend((*flip, *_pattern_gate(phase, wires, pattern, controls), *flip))
     for first, second, rotation in reversed(rotations):
-        gates.extend(_two_level_instructions(rotation.mH, first, second, wires, op))
+        gates.extend(
+            _two_level_instructions(rotation.mH, first, second, wires, op, controls)
+        )
     return tuple(gates)

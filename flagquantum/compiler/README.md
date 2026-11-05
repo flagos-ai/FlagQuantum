@@ -1140,3 +1140,18 @@ python -m pytest tests/integration/test_synthesis_unitary_decomposition.py tests
 
 The first test exercises the owned representation directly; native qfunc array
 unitaries and ordinary Qmod QPE are not introduced by this compiler change.
+
+The three-qubit controlled path combines external controls directly with each
+two-level rotation. Gray-path permutations remain unconditional and cancel on
+the inactive branch. ZYZ rotations reuse the existing Euler-angle extraction,
+and each two-level global phase is conditioned once on the other bits. This
+avoids controlling pulse decompositions and their phase repairs repeatedly.
+
+Commutation analysis retains one representative per structural predicate class
+inside each open block. Its parameter-blind rules depend on opcode, ordered
+qubits, presence of a matrix override and whether parameters are empty. Logical
+pair counters, the first failing member and every block match the ungrouped
+sweep; representatives are discarded when the block closes. This improves long
+repeated blocks without changing rule reach or storing a process-wide cache.
+Run tests/unit/test_compiler_commutation_scaling.py and the existing commutation
+matrix/conformance tests when modifying that grouping.
