@@ -63,7 +63,7 @@ def test_phase_decimal_extension_preserves_old_parenthesized_integers(
         "1e-3",
         "-1.9",
         "1.9+1",
-        "pi",
+        "unknown_angle",
         "q",
         "1 .9",
         "1. 9",
