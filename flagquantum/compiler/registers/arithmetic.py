@@ -21,7 +21,7 @@ def controlled_add_or_subtract_ir(
     control: int, angle: tuple[int, ...], gradient: tuple[int, ...], carry: int
 ) -> tuple[Instruction, ...]:
     """Add on zero and subtract on one by conjugating with controlled NOT."""
-    complement = tuple(Instruction("cx", (control, wire)) for wire in gradient)
+    complement = controlled_xor_constant_ir(control, gradient, (1 << len(gradient)) - 1)
     return (*complement, *ripple_add_modular(angle, gradient, carry), *complement)
 
 
@@ -124,13 +124,28 @@ def measurement_add_or_subtract_ir(
     *,
     add_when_ctrl_is_on: bool = False,
 ) -> tuple[Instruction, ...]:
-    """Add or subtract according to the control bit, using measured carries."""
-    complement = tuple(Instruction("cx", (control, wire)) for wire in right)
+    """Emit the original controlled complement/Add/complement program.
+
+    Equal-width or left-narrower registers are big-endian bit patterns. Carries
+    start and end in zero; one classical slot per carry is caller-owned. The
+    control may be coherent. Toggling add_when_ctrl_is_on emits the source
+    adjoint. Narrow signed operands retain the source Add's zero extension,
+    rather than silently gaining mathematical sign extension.
+    """
+    if type(add_when_ctrl_is_on) is not bool:
+        raise ValueError("Add/subtract control mode must be boolean")
+    wires = (control, *left, *right, *carries)
+    if any(type(w) is not int or w < 0 for w in wires) or len(set(wires)) != len(wires):
+        raise ValueError("Add/subtract requires distinct nonnegative quantum wires")
+    if any(type(bit) is not int or bit < 0 for bit in classical_bits):
+        raise ValueError("Add/subtract requires nonnegative concrete classical slots")
+    body = add_ir(left, right, carries, classical_bits)
+    complement = controlled_xor_constant_ir(control, right, (1 << len(right)) - 1)
     flip = (Instruction("x", (control,)),) if add_when_ctrl_is_on else ()
     return (
         *flip,
         *complement,
-        *add_ir(left, right, carries, classical_bits),
+        *body,
         *complement,
         *flip,
     )
