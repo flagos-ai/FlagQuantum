@@ -1349,3 +1349,23 @@ word 1 denotes 1/2; its native QBit counterpart exposes the raw bit. No native Q
 array, mutable-helper export or hardware-performance claim follows from these
 local CPU comparisons. Historical resource baselines and invalid original-source
 parameter cases remain separately recorded.
+
+## Indexed coherent control and array output binding
+
+A single indexed bit or a conjunction of distinct scalar bits can control
+X, H, or RY. An unsigned numeric view can also control these operations by
+equality to a static integer that fits the view. The condition may contain
+up to eight bits and must be disjoint from the target at the resolved physical
+locations. Equality reads the view in its declared least-significant-bit-first
+order. Existing registered gates and conditional phases implement these
+operations, including the relative phase between active and inactive branches.
+
+At main scope, a binding may transfer a complete initialized local array
+to a fresh array output. It must preserve the owner's element order and cover
+one storage owner exactly. The output owns the existing allocation, and
+consumed source names become suspended. This rule also applies when the
+complete array is reassembled from views of the same owner.
+
+Run the unchanged symmetric compression and Qmod tutorial part 2 fixtures
+against independent dense references with
+`python -m pytest tests/integration/test_synthesis_qmod_indexed_control.py`.

@@ -34,9 +34,15 @@ from ...compiler._hybrid.model import (
 )
 from ...compiler._hybrid.verifier import Diagnostic, HybridVerificationError
 from .amplification import expand_amplification, lower_amplification, product_angles
-from .bindings import is_binding_scope, lower_binding_scope, record_view
+from .bindings import (
+    is_binding_scope,
+    lower_binding_scope,
+    publish_bound_array,
+    record_view,
+)
 from .controlled_evolution import EVOLUTION_CALLS, controlled_evolution
 from .decisions import lower_decision_phase
+from .indexed_control import lower_indexed_control
 from .integers import checked_integer, checked_integer_array
 from .iterations import expand_iterations
 from .matrices import lower_unitary, validate_matrix_constant
@@ -68,7 +74,7 @@ MAX_EFFECT_OPERATIONS = 4096
 MAX_HELPER_EXPANSIONS = 4096
 MAX_QDRIFT_SAMPLES = 2048
 QDRIFT_SEED = 0
-_GATE_CALLS = frozenset({"X", "H", "S", "Z", "I", "SX", "hadamard_transform"})
+_GATE_CALLS = frozenset({"X", "Y", "H", "S", "Z", "I", "SX", "hadamard_transform"})
 _PAIR_CALLS = frozenset({"CX", "CZ", "SWAP", "CRX"})
 _STATIC_COMPARISONS = {"==": eq, "!=": ne, "<": lt, "<=": le, ">": gt, ">=": ge}
 _STATIC_GATES = _GATE_CALLS | _PAIR_CALLS | ANGLE_CALLS
@@ -1716,7 +1722,12 @@ class _Adapt:
         self.effect_op("qreg.compute", token, (value, *owners), callee=graph.name)
 
     def bind_registers(
-        self, token: Token, source: Expression, destination: Expression
+        self,
+        token: Token,
+        source: Expression,
+        destination: Expression,
+        *,
+        publish_output: bool = False,
     ) -> None:
         sources = source.children if source.token.text == "{" else (source,)
         destinations = (
@@ -1777,11 +1788,13 @@ class _Adapt:
                         "restored storage must match the original wire order",
                     )
             elif parameter.role != "local":
-                reject(
-                    item.token,
-                    "binding",
-                    "fresh output binding requires an allocated storage owner",
-                )
+                if not publish_output or len(destinations) != 1:
+                    reject(
+                        item.token,
+                        "binding",
+                        "fresh output binding requires an allocated storage owner",
+                    )
+                publish_bound_array(self, item.token, view)
             assignments.append((name, view))
         if offset != len(locations):
             reject(token, "binding", "binding widths must cover the source exactly")
@@ -1960,6 +1973,8 @@ class _Adapt:
         operation = body[0]
         if operation.control_body is not None:
             reject(token, "scope", "nested scalar control requires function scope")
+        if lower_indexed_control(self, condition, operation):
+            return
         if condition.token.text == ":":
             if operation.token.text != "X" or len(operation.arguments) != 1:
                 reject(token, "control", "slice control requires one X target")
@@ -2729,7 +2744,7 @@ class _Adapt:
                 self.widths.pop(name)
             return
         if token.text == "->":
-            self.bind_registers(token, args[0], args[1])
+            self.bind_registers(token, args[0], args[1], publish_output=True)
             return
         if token.text == "+=":
             self.increment(token, args[0], args[1])
@@ -3293,6 +3308,21 @@ class _Adapt:
             else:
                 gate_locations = (self.gate_target(args[0]),)
             for destination, bit in gate_locations:
+                if token.text == "Y":
+                    for gate, gate_attributes in (
+                        ("s", {"inverse": True}),
+                        ("x", {}),
+                        ("s", {}),
+                    ):
+                        self.effect_op(
+                            "qreg.gate",
+                            token,
+                            (destination,),
+                            gate=gate,
+                            index=bit,
+                            **gate_attributes,
+                        )
+                    continue
                 self.effect_op(
                     "qreg.gate",
                     token,

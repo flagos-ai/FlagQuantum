@@ -4,7 +4,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from .syntax import MAX_SCOPE_DEPTH, Expression, Parameter, Statement, reject
+from ...compiler._construction.register_profile import register_width
+from .syntax import MAX_SCOPE_DEPTH, Expression, Parameter, Statement, Token, reject
 from .unitary_effects import PURE_EFFECTS
 
 if TYPE_CHECKING:
@@ -89,3 +90,31 @@ def record_view(
             argument.token, "width", "record view must match its exact declared width"
         )
     return view
+
+
+def publish_bound_array(
+    owner: _Adapt, token: Token, view: tuple[tuple[Value, int], ...]
+) -> None:
+    value = view[0][0]
+    declaration = next(
+        (
+            op
+            for op in owner.operations
+            if op.name == "qreg.hidden" and op.results == (value,)
+        ),
+        None,
+    )
+    if (
+        owner.scope != "main"
+        or owner.parameters[token.text].kind != "qbit[]"
+        or declaration is None
+        or view != tuple((value, index) for index in range(register_width(value)))
+    ):
+        reject(
+            token,
+            "binding",
+            "fresh output binding requires a whole local array in its original order",
+        )
+    # The output declaration introduces this value before its existing allocation.
+    owner.operations.remove(declaration)
+    owner.registers[token.text] = value

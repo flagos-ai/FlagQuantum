@@ -357,6 +357,7 @@ class Parser:
                     f"expression tree exceeds depth {MAX_EXPRESSION_DEPTH}",
                 )
         precedence = {
+            "and": 3,
             **dict.fromkeys(_COMPARISONS, 5),
             "|": 6,
             "^": 7,
