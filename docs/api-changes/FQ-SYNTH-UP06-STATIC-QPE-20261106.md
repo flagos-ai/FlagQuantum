@@ -42,8 +42,10 @@ a callback's global minus sign is observable on the phase counter.
 Resolve literal global integer width constants without spelling-specific rules.
 Accept finite bounded real[][] matrix constants and existing complex literals;
 verify unitarity at use. Infer all-fractional phase metadata from typed allocate.
-Signed phase readout uses the existing two's-complement convention and preserves
-the same physical circuit. Partial fractional arithmetic is outside this slice.
+Signed phase metadata uses the existing two's-complement convention and preserves
+the same physical circuit. Distribution keys remain the existing raw integer words;
+examples decode signed fixed-point values explicitly from report metadata. This
+slice does not change the public Distribution key schema. Partial fractional arithmetic is outside this slice.
 No unsupported definition or zero-iteration case may bypass validation.
 
 ## Acceptance and migration
