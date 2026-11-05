@@ -221,11 +221,14 @@ def reference_arithmetic_gates(
             "Controlled",
             "ControlledViaAnd",
             "MultiControlX",
+            "ModAdd",
+            "ModSub",
             "CModAdd",
             "CModSub",
             "CModAddK",
             "CtrlScaleModAdd",
             "CLinearDepthGreaterThan",
+            "LinearDepthGreaterThan",
         }:
             return NotImplemented
         from qualtran._infra.gate_with_registers import split_qubits
@@ -233,6 +236,8 @@ def reference_arithmetic_gates(
         quregs = split_qubits(bloq.signature, op.qubits)
         component = bloq.decompose_bloq()
         if kind not in {
+            "ModAdd",
+            "ModSub",
             "CModAdd",
             "CModSub",
             "CModAddK",

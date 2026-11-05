@@ -7,8 +7,11 @@
 """Modular register addition through the original sign-correction call chain."""
 
 from ...core.ir import Instruction
-from .arithmetic import add_constant_ir, add_ir
-from .controlled_addition import controlled_add_constant_ir
+from .arithmetic import add_adjoint_ir, add_constant_adjoint_ir, add_constant_ir, add_ir
+from .controlled_addition import (
+    controlled_add_constant_adjoint_ir,
+    controlled_add_constant_ir,
+)
 from .linear_comparison import linear_greater_ir
 
 
@@ -99,4 +102,35 @@ def modular_add_ir(
         ),
         *linear_greater_ir(left, right, sign, compare, classical_bits),
         Instruction("x", (sign,)),
+    )
+
+
+def modular_add_adjoint_ir(
+    left: tuple[int, ...],
+    right: tuple[int, ...],
+    modulus: int,
+    workspace: tuple[int, ...],
+    classical_bits: tuple[int, ...],
+) -> tuple[Instruction, ...]:
+    """Subtract x modulo p using the original ModAdd adjoint component order.
+
+    Big-endian x lies in [0,p], y in [0,p). Reuse the forward work layout and
+    original constants. The unsigned comparator's source component palindrome
+    is independently checked before reuse. Quantum work starts/ends zero;
+    classical slots retain latest outcomes. This is distinct from ModSub.
+    """
+    n = len(left)
+    junk, sign, constant, carry, compare = _modular_workspace(
+        left, right, modulus, workspace, classical_bits
+    )
+    return (
+        Instruction("x", (sign,)),
+        *linear_greater_ir(left, right, sign, compare, classical_bits),
+        *controlled_add_constant_adjoint_ir(
+            sign, right, modulus, constant[:n], carry[: n - 1], classical_bits[: n - 1]
+        ),
+        *add_constant_adjoint_ir(
+            (sign, *right), -modulus, constant, carry, classical_bits
+        ),
+        *add_adjoint_ir((junk, *left), (sign, *right), carry, classical_bits),
     )
