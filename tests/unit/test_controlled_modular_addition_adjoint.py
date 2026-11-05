@@ -28,17 +28,10 @@ from tests.unit.test_register_subtraction import assert_source
 pytestmark = pytest.mark.unit
 
 
-@pytest.mark.parametrize("n,p", CASES)
-@pytest.mark.parametrize("montgomery", [False, True])
-@pytest.mark.parametrize("cv", [0, 1])
-def test_full_source_adjoint_and_models(
-    n: int, p: int, montgomery: bool, cv: int
-) -> None:
-    pytest.importorskip("qualtran")
-    from qualtran import QMontgomeryUInt, QUInt
-    from qualtran.bloqs.mod_arithmetic.mod_addition import CModAdd
-    from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
-
+def adjoint_reference_binding(
+    n: int, p: int, cv: int
+) -> tuple[tuple[int, ...], dict[int, int]]:
+    """Bind original reversed component allocations to the shared physical pool."""
     a, b, w, bits = layout(n)
     sign, k, c, comp = _controlled_modular_workspace(0, a, b, p, w, bits, cv)
     _, measured = reference_binding(n, p, cv)
@@ -55,6 +48,22 @@ def test_full_source_adjoint_and_models(
         *k[:n],
         *c,
     )
+    return alloc, measured
+
+
+@pytest.mark.parametrize("n,p", CASES)
+@pytest.mark.parametrize("montgomery", [False, True])
+@pytest.mark.parametrize("cv", [0, 1])
+def test_full_source_adjoint_and_models(
+    n: int, p: int, montgomery: bool, cv: int
+) -> None:
+    pytest.importorskip("qualtran")
+    from qualtran import QMontgomeryUInt, QUInt
+    from qualtran.bloqs.mod_arithmetic.mod_addition import CModAdd
+    from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
+
+    a, b, w, bits = layout(n)
+    alloc, measured = adjoint_reference_binding(n, p, cv)
     source = CModAdd((QMontgomeryUInt if montgomery else QUInt)(n), p, cv).adjoint()
     expected = reference_arithmetic_gates(
         source,
