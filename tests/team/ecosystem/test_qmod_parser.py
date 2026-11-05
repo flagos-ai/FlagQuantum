@@ -157,7 +157,7 @@ def test_relabelled_source_is_compiled_generically_without_filename_dispatch() -
         ("qfunc main(output q:qbit,) {}", "qmod.syntax"),
         ("qfunc main(output q:qbit) { local:qbit; allocate(local); }", "qmod.scope"),
         ("qfunc main(output q:qbit) { q^=1; }", "qmod.statement"),
-        ("qfunc main(output q:qbit) { q+=1; }", "qmod.statement"),
+        ("qfunc main(output q:qbit) { q+=1; }", "qmod.type"),
         ("qfunc main(output q:qbit) { q=-1; }", "qmod.expression"),
         ("qfunc main(output q:qbit) { q=true; }", "qmod.name"),
         ("qfunc main(output q:qbit) { q=missing; }", "qmod.name"),
