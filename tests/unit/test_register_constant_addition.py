@@ -28,7 +28,9 @@ def layout(width: int) -> tuple[tuple[int, ...], ...]:
     )
 
 
-def source_gates(width: int, value: int) -> tuple[tuple[Instruction, ...], Any]:
+def source_gates(
+    width: int, value: int, *, source: Any = None
+) -> tuple[tuple[Instruction, ...], Any]:
     pytest.importorskip("qualtran")
     if version("qualtran") != "0.7.0":
         pytest.skip("Reference gate stream requires Qualtran v0.7.0")
@@ -57,7 +59,7 @@ def source_gates(width: int, value: int) -> tuple[tuple[Instruction, ...], Any]:
 
     manager = Manager()
     context = cirq.DecompositionContext(manager)
-    source = AddK(QUInt(width), value)
+    source = AddK(QUInt(width), value) if source is None else source
     operation, outputs = (
         source.decompose_bloq()
         .flatten()

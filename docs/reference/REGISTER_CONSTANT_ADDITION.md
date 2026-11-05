@@ -67,3 +67,49 @@ addition, polynomial, field, classical and native-phase regression cases pass.
 The shared arithmetic module has 97% statement coverage; the new constant-add
 function is fully covered. Strict mypy passes on 926 source files. Final whole-PR
 remote checks and review remain independent of this local module acceptance.
+
+## Two's-complement negation
+
+`arithmetic.negate_ir(target, constant, carries, classical_bits)` ports the
+unmodified v0.7.0 `Negate` call chain: `BitwiseNot`, followed by `AddK(1)`.
+It flips each target wire and calls the same `add_constant_ir` implementation;
+there is no separate carry or cleanup algorithm. Work registers and classical
+slots have the exact same ownership and validation as constant addition.
+
+The operation is the n-bit permutation `x -> (-x) mod 2**n`. The same bit pattern
+represents signed two's-complement negation or unsigned modular negation. Zero
+and the most negative signed value map to themselves. It does not attach a
+signed dtype to IR or change any public constructor. The example also runs
+`circuit.append(Negation())`: three-bit `|2>` becomes `|6>` (signed -2), with
+all five quantum work wires zero; a second negation restores the input.
+
+| Width | Measured CNOT | Measured X | Measured T/TDG | Model And at 4 T each | Measured / model measurements | Clean quantum work |
+|---|---:|---:|---:|---:|---:|---:|
+| 1 | 1 | 3 | 0 | 0 | 0 / 0 | 1 |
+| 3 | 21 | 5 | 8 | 8 | 2 / 2 | 5 |
+| 5 | 45 | 7 | 16 | 16 | 4 / 4 | 9 |
+| 8 | 81 | 10 | 28 | 28 | 7 / 7 | 15 |
+
+The gate set remains the measured Clifford+T decomposition of the preceding
+section, with conditional CZ, explicit measurements and resets. Executable
+upstream and native per-wire instruction streams agree, including operands and
+classical conditions. The independent `QECGatesCost` model retains And nodes;
+T values above use its explicit `total_t_count()` conversion. Its raw Clifford
+field is still not treated as a complete executable count.
+
+The 24-case negation suite includes source comparison for QUInt and
+QMontgomeryUInt at widths 1, 2, 3, 5 and 8, and QInt at widths 2, 3, 5 and 8.
+The remaining case records an actual pinned-source failure: `Negate(QInt(1))`
+cannot load positive 1 into its signed one-bit work register. Native bit-level
+negation at width one is mathematically valid and tested, but is not claimed
+identical to that failing source entry. This exception remains open; controlled
+and symbolic entry points are also not accepted as complete.
+
+Native append tests at widths 1 through 4 compare every complex amplitude with
+an entangled spectator, for both one and two negations. Every carry outcome
+appears in the 64 sampled trajectories, and every trajectory preserves the
+expected complex state and clears all quantum work. These are branch-semantic
+checks; they do not assert exact branch probabilities from a finite sample.
+The combined local regression passes 337 tests. Arithmetic statement coverage
+is 97%, and both new arithmetic entry points are fully covered. Strict mypy
+passes on 926 source files. The example needs neither reference package.

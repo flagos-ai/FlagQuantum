@@ -10,7 +10,7 @@ from dataclasses import dataclass
 import torch
 
 import flagquantum as fq
-from flagquantum.compiler.registers.arithmetic import add_constant_ir
+from flagquantum.compiler.registers.arithmetic import add_constant_ir, negate_ir
 from flagquantum.core.ir import CircuitIR
 from flagquantum.dynamic import DynamicCircuit
 from flagquantum.runtime.dynamic.execution import run_dynamic
@@ -24,6 +24,14 @@ class ConstantAddition:
 
     def append_to(self, circuit: fq.Circuit) -> fq.Circuit:
         gates = add_constant_ir((0, 1, 2), self.value, (3, 4, 5), (6, 7), (0, 1))
+        return circuit.compose(CircuitIR(8, gates))
+
+
+class Negation:
+    """Use the same clean work allocation for two's-complement negation."""
+
+    def append_to(self, circuit: fq.Circuit) -> fq.Circuit:
+        gates = negate_ir((0, 1, 2), (3, 4, 5), (6, 7), (0, 1))
         return circuit.compose(CircuitIR(8, gates))
 
 
@@ -45,6 +53,22 @@ def main() -> None:
     print("Measured gate counts:", dict(counts))
     print("T/TDG total:", counts["t"] + counts["tdg"])
     print("Measurements:", counts["measure"])
+
+    circuit = DynamicCircuit(8, inputs=state, dtype=torch.complex128).append(Negation())
+    expected = torch.zeros_like(state)
+    expected[6 << 5] = 1
+    result = run_dynamic(circuit, shots=16, seed=31, strategy="trajectory")
+    torch.testing.assert_close(
+        result.final_states.reshape(16, -1), expected.expand(16, -1), rtol=0, atol=1e-12
+    )
+    print("3-bit negation: -2 mod 8 = 6 (signed -2); all 5 work wires are zero")
+    restored = run_dynamic(
+        circuit.append(Negation()), shots=16, seed=31, strategy="trajectory"
+    )
+    torch.testing.assert_close(
+        restored.final_states.reshape(16, -1), state.expand(16, -1), rtol=0, atol=1e-12
+    )
+    print("A second negation restores the input and clean workspace")
 
 
 if __name__ == "__main__":

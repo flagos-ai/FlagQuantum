@@ -6,7 +6,8 @@
 # Sources: https://github.com/quantumlib/Qualtran/blob/v0.7.0/qualtran/bloqs/arithmetic/addition.py
 #          https://github.com/quantumlib/Qualtran/blob/v0.7.0/qualtran/bloqs/mcmt/and_bloq.py
 # AddK load/add/unload: https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/bloqs/arithmetic/addition.py
-# Changes: emit native IR for unsigned addition and bind scratch explicitly.
+# Negate: https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/bloqs/arithmetic/negate.py
+# Changes: emit native IR for register arithmetic and bind scratch explicitly.
 
 """Register-level arithmetic decompositions."""
 
@@ -165,3 +166,19 @@ def add_constant_ir(
         if normalized >> (width - i - 1) & 1
     )
     return (*load, *add_ir(constant, target, carries, classical_bits), *load)
+
+
+def negate_ir(
+    target: tuple[int, ...],
+    constant: tuple[int, ...],
+    carries: tuple[int, ...],
+    classical_bits: tuple[int, ...],
+) -> tuple[Instruction, ...]:
+    """Two's-complement negation using the pinned BitwiseNot -> AddK(1) chain.
+
+    Interpret the same n-bit permutation as signed negation or unsigned modular
+    negation. Work ownership and cleanup follow add_constant_ir. Preserve the
+    source network, including its constant loading and measured carries.
+    """
+    addition = add_constant_ir(target, 1, constant, carries, classical_bits)
+    return (*(Instruction("x", (wire,)) for wire in target), *addition)
