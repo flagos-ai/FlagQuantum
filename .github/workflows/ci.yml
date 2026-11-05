@@ -1766,7 +1766,7 @@ jobs:
       - name: Verify the JAX rank-local gradient contract under two actual ranks
         if: matrix.command == 0 && matrix.shard == 0
         timeout-minutes: 10
-        run: torchrun --standalone --nproc-per-node=2 -m pytest tests/distributed/test_hybrid_jax_runtime.py -q
+        run: python -m torch.distributed.run --standalone --nproc-per-node=2 -m pytest tests/distributed/test_hybrid_jax_runtime.py -q
       - name: Retain resource limits and pytest timing reports
         if: ${{ always() && env.FQ_CI_REPORT_DIR != '' }}
         uses: actions/upload-artifact@v4

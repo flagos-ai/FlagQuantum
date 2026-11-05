@@ -705,7 +705,9 @@ def test_distributed_matrix_runs_both_complete_selections_and_one_rank_probe() -
     assert "--shard-count ${{ matrix.shards }}" in commands
     assert "--shard-index ${{ matrix.shard }}" in commands
     probe = next(
-        s for s in job["steps"] if str(s.get("run", "")).startswith("torchrun")
+        s
+        for s in job["steps"]
+        if "tests/distributed/test_hybrid_jax_runtime.py" in str(s.get("run", ""))
     )
     assert probe["if"] == "matrix.command == 0 && matrix.shard == 0"
     assert sum(row["command"] == 0 and row["shard"] == 0 for row in rows) == 1

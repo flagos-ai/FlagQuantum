@@ -319,7 +319,7 @@ def test_jax_launcher_coverage_uses_actual_two_rank_topology() -> None:
         if "test_hybrid_jax_runtime.py" in str(step.get("run", ""))
     )
     assert launched["run"] == (
-        "torchrun --standalone --nproc-per-node=2 -m pytest "
+        "python -m torch.distributed.run --standalone --nproc-per-node=2 -m pytest "
         "tests/distributed/test_hybrid_jax_runtime.py -q"
     )
     assert launched["timeout-minutes"] == 10
