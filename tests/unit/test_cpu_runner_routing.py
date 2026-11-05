@@ -321,7 +321,16 @@ def test_linux_prerequisites_keep_forks_off_private_cpu_runners(
 ) -> None:
     document = yaml.safe_load((WORKFLOWS / workflow).read_text())
     job = document["jobs"][name]
-    if workflow == "local-gpu.yml":
+    if workflow == "ci.yml":
+        assert job["runs-on"] == (
+            "${{ fromJSON((github.event_name != 'pull_request' || "
+            "github.event.pull_request.head.repo.full_name == github.repository) "
+            '&& \'["self-hosted","linux","x64","flagquantum-cpu"]\' '
+            "|| '[\"ubuntu-latest\"]') }}"
+        )
+        assert f"self-hosted-{{0}}-{name}-{{1}}" in job["concurrency"]["group"]
+        assert "github.run_id" in job["concurrency"]["group"]
+    elif workflow == "local-gpu.yml":
         assert job["runs-on"] == (
             "${{ (github.event_name != 'pull_request' || "
             "github.event.pull_request.head.repo.full_name == github.repository) "

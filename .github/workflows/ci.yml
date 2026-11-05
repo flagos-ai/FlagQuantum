@@ -15,10 +15,11 @@ concurrency:
 
 jobs:
   pre-commit:
-    runs-on: ubuntu-latest
+    runs-on: >-
+      ${{ fromJSON((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","linux","x64","flagquantum-cpu"]' || '["ubuntu-latest"]') }}
     timeout-minutes: 15
     concurrency:
-      group: flagquantum-gh-2
+      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('self-hosted-{0}-pre-commit-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-2
       queue: max
     steps:
       - name: Clear sparse checkout state from a previous job
@@ -41,12 +42,13 @@ jobs:
   prepare-source:
     outputs:
       artifact-key: ${{ steps.pack-source.outputs.artifact-key }}
-    runs-on: ubuntu-latest
+    runs-on: >-
+      ${{ fromJSON((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","linux","x64","flagquantum-cpu"]' || '["ubuntu-latest"]') }}
     timeout-minutes: 5
     permissions:
       contents: read
     concurrency:
-      group: flagquantum-gh-5
+      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('self-hosted-{0}-prepare-source-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-5
       queue: max
     steps:
       - name: Clear sparse checkout state from a previous job
