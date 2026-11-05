@@ -367,3 +367,22 @@ def test_linux_prerequisites_keep_forks_off_private_cpu_runners(
         if str(step.get("uses", "")).startswith("actions/setup-python@"):
             assert "cache" not in step.get("with", {})
             assert steps[index + 1]["uses"] == "./.github/actions/isolated-python"
+
+
+@pytest.mark.parametrize("name", ["pre-commit", "prepare-source"])
+def test_api_source_bootstrap_preserves_checkout_fallback(name: str) -> None:
+    jobs = yaml.safe_load((WORKFLOWS / "ci.yml").read_text())["jobs"]
+    steps = jobs[name]["steps"]
+    bootstrap = next(step for step in steps if step.get("id") == "archive-source")
+    assert bootstrap["if"] == (
+        "runner.environment == 'self-hosted' && github.event_name == 'pull_request'"
+    )
+    assert bootstrap["continue-on-error"] is True
+    assert bootstrap["timeout-minutes"] == 10
+    checkout = next(
+        step for step in steps if "actions/checkout@" in step.get("uses", "")
+    )
+    assert checkout["if"] == "steps.archive-source.outcome != 'success'"
+    commands = bootstrap["run"]
+    assert 'digest.hexdigest() != metadata["sha"]' in commands
+    assert commands.index("digest.hexdigest()") < commands.index("runpy.run_path")
