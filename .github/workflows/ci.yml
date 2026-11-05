@@ -18,6 +18,11 @@ jobs:
     runs-on: >-
       ${{ fromJSON((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","linux","x64","flagquantum-cpu"]' || '["ubuntu-latest"]') }}
     timeout-minutes: 15
+    env:
+      # Self-hosted GitHub connections can reset HTTP/2 streams.
+      GIT_CONFIG_COUNT: "1"
+      GIT_CONFIG_KEY_0: http.version
+      GIT_CONFIG_VALUE_0: HTTP/1.1
     concurrency:
       group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('self-hosted-{0}-pre-commit-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-2
       queue: max
@@ -28,6 +33,7 @@ jobs:
             git sparse-checkout disable
             rm -f .git/info/sparse-checkout
             git config --local --unset core.sparseCheckout || true
+            git config --local remote.origin.url "https://github.com/${{ github.repository }}"
           fi
       - uses: actions/checkout@v5
         with:
@@ -45,6 +51,11 @@ jobs:
     runs-on: >-
       ${{ fromJSON((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","linux","x64","flagquantum-cpu"]' || '["ubuntu-latest"]') }}
     timeout-minutes: 5
+    env:
+      # Self-hosted GitHub connections can reset HTTP/2 streams.
+      GIT_CONFIG_COUNT: "1"
+      GIT_CONFIG_KEY_0: http.version
+      GIT_CONFIG_VALUE_0: HTTP/1.1
     permissions:
       contents: read
     concurrency:
@@ -57,6 +68,7 @@ jobs:
             git sparse-checkout disable
             rm -f .git/info/sparse-checkout
             git config --local --unset core.sparseCheckout || true
+            git config --local remote.origin.url "https://github.com/${{ github.repository }}"
           fi
       - uses: actions/checkout@v4
         with:

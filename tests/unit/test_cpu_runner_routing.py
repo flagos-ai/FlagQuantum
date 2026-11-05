@@ -330,6 +330,9 @@ def test_linux_prerequisites_keep_forks_off_private_cpu_runners(
         )
         assert f"self-hosted-{{0}}-{name}-{{1}}" in job["concurrency"]["group"]
         assert "github.run_id" in job["concurrency"]["group"]
+        assert job["env"]["GIT_CONFIG_COUNT"] == "1"
+        assert job["env"]["GIT_CONFIG_KEY_0"] == "http.version"
+        assert job["env"]["GIT_CONFIG_VALUE_0"] == "HTTP/1.1"
     elif workflow == "local-gpu.yml":
         assert job["runs-on"] == (
             "${{ (github.event_name != 'pull_request' || "
@@ -354,6 +357,11 @@ def test_linux_prerequisites_keep_forks_off_private_cpu_runners(
     assert "git sparse-checkout disable" in clearing
     assert "rm -f .git/info/sparse-checkout" in clearing
     assert "git config --local --unset core.sparseCheckout" in clearing
+    if workflow == "ci.yml":
+        assert (
+            'git config --local remote.origin.url "https://github.com/${{ github.repository }}"'
+            in clearing
+        )
     for index, step in enumerate(steps):
         if str(step.get("uses", "")).startswith("actions/setup-python@"):
             assert "cache" not in step.get("with", {})
