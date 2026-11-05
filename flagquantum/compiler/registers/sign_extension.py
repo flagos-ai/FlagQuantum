@@ -9,27 +9,7 @@
 """Sign-extension/truncation gates on a caller-owned prefix."""
 
 from ...core.ir import Instruction
-
-
-def _fanout_ir(control: int, targets: tuple[int, ...]) -> tuple[Instruction, ...]:
-    """Retain MultiTargetCNOT's depth-layer ordering, including dirty-target fanout."""
-    depth = len(targets).bit_length()
-    layers = [
-        tuple(
-            Instruction("cx", (c, t))
-            for c, t in zip(
-                targets[: 2**i],
-                targets[2**i : min(len(targets), 2 ** (i + 1))],
-                strict=False,
-            )
-        )
-        for i in range(depth)
-    ]
-    return (
-        *(gate for layer in reversed(layers) for gate in layer),
-        Instruction("cx", (control, targets[0])),
-        *(gate for layer in layers for gate in layer),
-    )
+from .bitwise import fanout_ir
 
 
 def sign_extend_ir(
@@ -46,4 +26,4 @@ def sign_extend_ir(
         raise ValueError("Sign extension requires nonempty source and prefix")
     if any(type(w) is not int or w < 0 for w in wires) or len(set(wires)) != len(wires):
         raise ValueError("Sign extension requires distinct nonnegative quantum wires")
-    return _fanout_ir(source[0], prefix)
+    return fanout_ir(source[0], prefix)

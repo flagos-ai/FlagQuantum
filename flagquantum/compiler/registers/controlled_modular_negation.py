@@ -8,13 +8,13 @@
 
 from ...core.ir import Instruction
 from .and_compute import and_compute_ir, and_uncompute_ir
+from .bitwise import fanout_ir
 from .controlled_addition import (
     controlled_add_constant_adjoint_ir,
     controlled_add_constant_ir,
 )
 from .modular_negation import _negation_layout, modular_negation_requirements
 from .multi_control import multi_control_x_ir
-from .sign_extension import _fanout_ir
 
 
 def controlled_modular_negation_requirements(width: int) -> tuple[int, int]:
@@ -94,7 +94,7 @@ def _controlled_modular_negation_ir(
     zero = multi_control_x_ir(target, (0,) * len(target), flag, carry, bits)
     emit = controlled_add_constant_adjoint_ir if adjoint else controlled_add_constant_ir
     add = emit(apply, target, modulus + 1, constant, carry, bits)
-    fanout = _fanout_ir(apply, target)
+    fanout = fanout_ir(apply, target)
     middle = (*add, *fanout) if adjoint else (*fanout, *add)
     return (
         Instruction("x", (flag,)),

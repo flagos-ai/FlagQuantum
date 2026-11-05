@@ -7,13 +7,12 @@
 """Modular negation through the original zero-detection and correction stages."""
 
 from ...core.ir import Instruction
-from .bitwise import _validate_wires
+from .bitwise import _validate_wires, fanout_ir
 from .controlled_addition import (
     controlled_add_constant_adjoint_ir,
     controlled_add_constant_ir,
 )
 from .multi_control import multi_control_x_ir
-from .sign_extension import _fanout_ir
 
 
 def modular_negation_requirements(width: int) -> tuple[int, int]:
@@ -99,7 +98,7 @@ def _modular_negation_ir(
     zero = multi_control_x_ir(target, (0,) * len(target), flag, carry, classical_bits)
     emit = controlled_add_constant_adjoint_ir if adjoint else controlled_add_constant_ir
     add = emit(flag, target, modulus + 1, constant, carry, classical_bits)
-    fanout = _fanout_ir(flag, target)
+    fanout = fanout_ir(flag, target)
     middle = (*add, *fanout) if adjoint else (*fanout, *add)
     return (
         Instruction("x", (flag,)),

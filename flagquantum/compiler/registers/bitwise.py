@@ -1,7 +1,9 @@
+# Copyright 2023 Google LLC
 # Copyright 2024 Google LLC
 # SPDX-License-Identifier: Apache-2.0
 # Adapted from Qualtran v0.7.0 Xor, XorK and BitwiseNot.
 # Source: https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/bloqs/arithmetic/bitwise.py
+# Fanout source: https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/bloqs/mcmt/multi_target_cnot.py
 # Changes: explicit big-endian wire tuples, concrete unsigned constants and
 # one positive controlled XorK, all emitting native IR.
 
@@ -55,3 +57,24 @@ def controlled_xor_constant_ir(
     if type(control) is not int or control < 0 or control in target:
         raise ValueError("Controlled XOR requires a distinct nonnegative control")
     return tuple(Instruction("cx", (control, gate.wires[0])) for gate in flips)
+
+
+def fanout_ir(control: int, targets: tuple[int, ...]) -> tuple[Instruction, ...]:
+    """Retain MultiTargetCNOT's depth-layer ordering, including dirty-target fanout."""
+    depth = len(targets).bit_length()
+    layers = [
+        tuple(
+            Instruction("cx", (c, t))
+            for c, t in zip(
+                targets[: 2**i],
+                targets[2**i : min(len(targets), 2 ** (i + 1))],
+                strict=False,
+            )
+        )
+        for i in range(depth)
+    ]
+    return (
+        *(gate for layer in reversed(layers) for gate in layer),
+        Instruction("cx", (control, targets[0])),
+        *(gate for layer in layers for gate in layer),
+    )
