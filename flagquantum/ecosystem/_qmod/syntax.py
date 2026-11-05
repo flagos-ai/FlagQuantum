@@ -1001,7 +1001,7 @@ class Parser:
                             else Expression(self.name())
                         )
                     elif target.text == "control":
-                        args.append(self.expression(difference=True))
+                        args.append(self.expression(difference=True, allow_slice=True))
                     elif target.text == "phase":
                         args.append(
                             self.expression(decimal=True, difference=True, real=True)

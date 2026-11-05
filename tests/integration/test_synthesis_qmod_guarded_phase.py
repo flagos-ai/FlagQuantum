@@ -132,6 +132,25 @@ def test_slice_element_binding_and_loop_rotation() -> None:
     )
 
 
+def test_quantum_slice_control_composes_with_guarded_real_phase() -> None:
+    source = """qfunc main(alpha:real,output x:qbit[3],output target:qbit) {
+      allocate(x);allocate(target);hadamard_transform(x);
+      control(x[0:2]) {X(target);}
+      control(x[2]==1) {phase(x[0]+1,alpha);}
+    }"""
+    program = synth.synthesize(
+        source, source_format="qmod", classical_inputs={"alpha": 0.37}
+    )
+    expected = fq.Circuit(4, dtype=torch.complex128).h(0).h(1).h(2).ccx(2, 1, 3)
+    expected.phase(0, theta=0.37).cphase(0, 2, theta=0.37)
+    torch.testing.assert_close(
+        fq.run(program).statevector(),
+        fq.run(expected).statevector(),
+        atol=1e-12,
+        rtol=0,
+    )
+
+
 @pytest.mark.parametrize(
     "slice_expression", ["params[1:3][2]", "params[2:2][0]", "params[1:5][0]"]
 )
