@@ -238,6 +238,7 @@ def test_network_dependent_sdks_do_not_wait_for_the_preinstalled_pool() -> None:
         assert job["concurrency"]["group"] not in core_groups
         assert job["concurrency"]["group"] in {
             "flagquantum-gh-1",
+            "flagquantum-gh-2",
             "flagquantum-gh-4",
             "flagquantum-gh-7",
         }
@@ -456,3 +457,19 @@ def test_image_provisioning_keeps_credentials_off_the_import_hosts() -> None:
         or "FQ_REGISTRY_TOKEN" in step.get("env", {})
         for step in imported["steps"]
     )
+
+
+def test_quality_capacity_is_independent_of_platform_and_package_builds() -> None:
+    jobs = yaml.safe_load((WORKFLOWS / "ci.yml").read_text())["jobs"]
+    quality_group = jobs["quality"]["concurrency"]["group"]
+    platform = jobs["release-wheel-platform"]
+    platform_groups = {
+        platform["concurrency"]["group"].replace(
+            "${{ matrix.hosted-bucket }}", str(row["hosted-bucket"])
+        )
+        for row in platform["strategy"]["matrix"]["include"]
+    }
+    build_groups = platform_groups | {jobs["package"]["concurrency"]["group"]}
+    assert len(build_groups) == 3
+    assert quality_group not in build_groups
+    assert build_groups <= {f"flagquantum-gh-{slot}" for slot in range(8)}

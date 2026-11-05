@@ -914,7 +914,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     concurrency:
-      group: flagquantum-gh-7
+      group: flagquantum-gh-1
       queue: max
     env:
       OPTIONAL_VERSIONS: "1.32.3 1.32.*"
@@ -1280,7 +1280,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     concurrency:
-      group: flagquantum-gh-4
+      group: flagquantum-gh-2
       queue: max
     env:
       MAX_JOBS: "2"
@@ -1585,7 +1585,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     concurrency:
-      group: flagquantum-gh-4
+      group: flagquantum-gh-7
       queue: max
     env:
       OPTIONAL_VERSIONS: "0.44.1 0.45.1"
@@ -1810,9 +1810,9 @@ jobs:
     # which is still the default compiler on a maintained Linux LTS release.
     runs-on: ubuntu-22.04
     timeout-minutes: 30
-    # One of the five GitHub-hosted buckets -- see the capacity note above.
+    # Packaging uses a slot freed by the preinstalled CPU suites.
     concurrency:
-      group: flagquantum-gh-0
+      group: flagquantum-gh-6
       queue: max
     steps:
       - uses: actions/checkout@v4
@@ -1923,13 +1923,15 @@ jobs:
           - os: macos-15
             artifact: macos-arm64
             identifier: cp310-macosx_arm64
+            hosted-bucket: 5
           - os: windows-2022
             artifact: windows-amd64
             identifier: cp310-win_amd64
-    # Reuse an existing light bucket rather than increasing the repository's
-    # share of the organisation-wide runner pool.
+            hosted-bucket: 3
+    # Native builds use slots freed by trusted CPU suites, independently of
+    # the short quality gate and Linux packaging.
     concurrency:
-      group: flagquantum-gh-2
+      group: flagquantum-gh-${{ matrix.hosted-bucket }}
       queue: max
     steps:
       - uses: actions/checkout@v4

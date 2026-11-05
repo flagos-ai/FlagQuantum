@@ -1042,10 +1042,12 @@ The required `CI complete` gate is the exception: it always runs with a
 two-minute limit and rejects failed, skipped, or cancelled dependencies. It must
 never become a skipped required check when a run is cancelled.
 
-Network-dependent SDK jobs share hosted groups 1, 4, and 7. Fork PR runtime,
+Network-dependent SDK jobs share hosted groups 1, 2, 4, and 7. Fork PR runtime,
 Python 3.12 unit tests, and Python compatibility checks use hosted groups 3, 5,
 and 6 respectively. Trusted core/runtime jobs use independent self-hosted groups.
-The repository-wide hosted ceiling remains eight.
+Quality keeps group 0; Linux packaging uses group 6 and the Windows/macOS
+builds use groups 3/5. Long builds cannot occupy the quality group. The
+repository-wide hosted ceiling remains eight.
 
 CI and GPU artifact uploads retry a transient service failure at most twice,
 within a six-minute upload step budget. Each retry replaces only that job
