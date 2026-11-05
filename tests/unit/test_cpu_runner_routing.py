@@ -189,9 +189,6 @@ def test_portable_cpu_work_uses_general_or_validated_scale_sets() -> None:
     for name in (
         "distributed-cpu-shard",
         "triton-optional",
-        "cpu-core",
-        "cpu-core-3-12-tests",
-        "cpu-runtime",
     ):
         job = jobs[name]
         labels = '["self-hosted","linux","x64","flagquantum-cpu"]'
@@ -319,7 +316,7 @@ def test_cpu_suites_attach_the_locked_image(job: str, profile: str) -> None:
     jobs = yaml.safe_load((WORKFLOWS / "ci.yml").read_text())["jobs"]
     suite = jobs[job]
     if job != "coverage-shard":
-        assert suite["runs-on"] == FULL_CPU_ROUTE
+        assert suite["runs-on"] == "ubuntu-latest"
     steps = suite["steps"]
     attach = next(
         step for step in steps if step.get("uses") == "./.github/actions/offline-cpu"

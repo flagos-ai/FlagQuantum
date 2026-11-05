@@ -6,7 +6,8 @@ on:
   workflow_dispatch:
 
 # Hosted jobs share eight repository-wide concurrency groups across workflows.
-# Trusted CPU suites use locked images on the CPU pool; SDK downloads stay hosted.
+# Trusted coverage uses prewarmed locked images on the CPU pool.
+# Core profiles and SDK downloads stay hosted until their caches are qualified.
 # Entry jobs use a separate pool and never wait behind coverage or SDK checks.
 # queue: max keeps waiting jobs in the queue instead of replacing them.
 # Self-hosted CPU jobs keep independent groups keyed by run and matrix index.
@@ -432,7 +433,7 @@ jobs:
 
   cpu-core:
     needs: prepare-source
-    runs-on: ${{ fromJSON((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","linux","x64","flagquantum-cpu"]' || '["ubuntu-latest"]') }}
+    runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: read
@@ -443,7 +444,7 @@ jobs:
       OPENBLAS_NUM_THREADS: "1"
       CUDA_VISIBLE_DEVICES: ""
     concurrency:
-      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('self-hosted-{0}-cpu-core-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-6
+      group: flagquantum-gh-6
       queue: max
     strategy:
       fail-fast: false
@@ -575,7 +576,7 @@ jobs:
 
   cpu-core-3-12-tests:
     needs: prepare-source
-    runs-on: ${{ fromJSON((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","linux","x64","flagquantum-cpu"]' || '["ubuntu-latest"]') }}
+    runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: read
@@ -586,7 +587,7 @@ jobs:
       OPENBLAS_NUM_THREADS: "1"
       CUDA_VISIBLE_DEVICES: ""
     concurrency:
-      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('self-hosted-{0}-cpu-core-3-12-tests-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-5
+      group: flagquantum-gh-5
       queue: max
     steps:
       - uses: actions/download-artifact@v8.0.2
@@ -682,7 +683,7 @@ jobs:
 
   cpu-runtime:
     needs: prepare-source
-    runs-on: ${{ fromJSON((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","linux","x64","flagquantum-cpu"]' || '["ubuntu-latest"]') }}
+    runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: read
@@ -693,7 +694,7 @@ jobs:
       OPENBLAS_NUM_THREADS: "1"
       CUDA_VISIBLE_DEVICES: ""
     concurrency:
-      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('self-hosted-{0}-cpu-runtime-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-3
+      group: flagquantum-gh-3
       queue: max
     steps:
       - uses: actions/download-artifact@v8.0.2

@@ -963,13 +963,16 @@ the checkout.
 
 ## CPU runner routing and reliability
 
-Trusted same-repository PRs run the CPU core, runtime, distributed, and coverage
-suites on the self-hosted CPU pool. Each matrix leg has a run-specific concurrency
+Trusted same-repository PRs run distributed and coverage suites on the
+self-hosted CPU pool. Core and runtime profiles remain hosted until their
+locked images are prewarmed and verified on the target pool. A rollout trial
+showed that an uncached core image timed out after 450 seconds on an A800
+node; allocating the job successfully did not make the environment ready. Each matrix leg has a run-specific concurrency
 group, so unrelated PRs do not serialize behind one hosted-capacity bucket.
 Source preparation and pre-commit use the separate CPU entry pool. Fork PRs
 continue to use GitHub-hosted runners.
 
-The long CPU suites use the digest-pinned images in `docker/ci/images.lock`.
+The long coverage suites use the digest-pinned images in `docker/ci/images.lock`.
 Cold image pulls are serialized per image on each host, while test processes
 remain isolated and resource-budgeted. Source cache repair verifies Git objects
 and the exact workflow commit before any tests run; an incomplete cache falls
@@ -984,7 +987,7 @@ Qiskit uses its verified wheel preparation path; Triton retains its MC550 pool.
 
 Contributor workflow: open or update an internal PR, then inspect its CI run.
 Expected behavior: source preparation starts independently of coverage; ready
-CPU matrix legs can use separate available CPU runners; every existing required
+coverage and distributed matrix legs can use separate available CPU runners; every existing required
 check still has to pass. For acceptance, compare source queue time, suite wall
 time, and infrastructure failures across runs. Runner busy counts alone are
 not evidence of CPU efficiency or test reliability.
