@@ -168,7 +168,7 @@ def test_portable_cpu_work_uses_general_or_validated_scale_sets() -> None:
     for name in ("azure-optional", "pennylane-optional", "qiskit-compat"):
         job = jobs[name]
         assert job["runs-on"] == "ubuntu-latest"
-        assert job["concurrency"]["group"] in {"flagquantum-gh-0", "flagquantum-gh-1"}
+        assert job["concurrency"]["group"] in {"flagquantum-gh-2", "flagquantum-gh-3"}
         assert job["concurrency"]["queue"] == "max"
     # Long suites and cache-dependent Triton setup use the isolated CPU pool;
     # the other portable environment checks stay on the general pool.

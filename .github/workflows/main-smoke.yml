@@ -18,7 +18,7 @@ jobs:
     timeout-minutes: 15
     # Share the repository-wide hosted capacity limit.
     concurrency:
-      group: flagquantum-gh-0
+      group: flagquantum-gh-2
       queue: max
     env:
       OMP_NUM_THREADS: "2"

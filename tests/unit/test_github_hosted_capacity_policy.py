@@ -378,7 +378,7 @@ def test_coverage_shards_are_combined_before_the_policy_is_enforced() -> None:
     strategy = shard.get("strategy")
     assert isinstance(strategy, dict)
     assert strategy.get("matrix") == {
-        "include": [{"shard": i, "hosted-bucket": i % 8} for i in range(16)]
+        "include": [{"shard": i, "hosted-bucket": 4 + i % 4} for i in range(16)]
     }
 
     final = _github_hosted_jobs("ci.yml")["coverage"]
@@ -721,3 +721,25 @@ def test_distributed_cpu_retains_its_stable_check_and_rejects_a_failed_partition
             "run": "test '${{ needs.distributed-cpu-shard.result }}' = success",
         }
     ]
+
+
+def test_short_jobs_have_reserved_hosted_capacity() -> None:
+    jobs = _document("ci.yml")["jobs"]
+    assert _groups(jobs["prepare-source"]) == {"flagquantum-gh-0"}
+    assert _groups(jobs["pre-commit"]) == {"flagquantum-gh-1"}
+    assert _groups(jobs["ci-complete"]) == {"flagquantum-gh-0"}
+    assert _groups(jobs["coverage-shard"]) == {
+        f"flagquantum-gh-{slot}" for slot in range(4, 8)
+    }
+    for key, job in _bucketed_jobs().items():
+        if _groups(job) & {"flagquantum-gh-0", "flagquantum-gh-1"}:
+            assert key.split(":")[1] in {
+                "pre-commit",
+                "prepare-source",
+                "prepare-mps-source",
+                "ci-complete",
+                "cpu-core-3-12",
+                "qiskit-optional",
+                "distributed-cpu",
+                "coverage",
+            }, key

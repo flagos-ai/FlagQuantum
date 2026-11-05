@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     concurrency:
-      group: flagquantum-gh-2
+      group: flagquantum-gh-0
       queue: max
     steps:
       - uses: actions/checkout@v4
