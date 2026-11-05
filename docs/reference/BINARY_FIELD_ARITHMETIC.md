@@ -225,3 +225,47 @@ packages. The core XOR and both parity/erasure compiler modules reached 100%
 statement coverage in the focused run. Remote package admission remains blocked
 for unqualified classical-computation backends; OpenQASM textual export does not
 assert hardware support.
+
+## Constant and monomial scaling
+
+`field_linear.gf2_constant_multiplication(target, value, modulus=...)` ports
+forward `GF2MulK` using the existing PLU emitter. Constants must be nonzero and
+fit the register; multiplication by zero is not an invertible in-place map.
+`gf2_monomial_multiplication(target, power, modulus=...)` implements multiplication
+by `x**power`. Positive powers follow `GF2ShiftRight`; negative powers follow
+`GF2ShiftLeft`, including the reversed coefficient traversal. Zero power is the
+identity. Compilation preserves the source gate sequence rather than reducing
+the exponent modulo the field order, and scales with `abs(power)`.
+
+Both functions use big-endian polynomial coefficients, an explicit irreducible
+modulus, and `FieldDecomposition` output maps. They allocate no quantum or
+classical workspace, use only CNOTs, and emit no measurements or T gates. A
+consumer can feed the output map into the next operation without physical
+binding. The example demonstrates a forward/inverse monomial pair this way,
+and uses the same `circuit.append(op)` protocol for constant multiplication.
+
+The raw networks and output maps match **unmodified** Qualtran v0.7.0. In this
+scope no `SynthesizeLRCircuit.adjoint` is used; its earlier acceptance exception
+remains open. Multiplying by an explicitly inverted field constant is separately
+tested as a functional inverse, without claiming parity with that broken entry.
+
+| GF(256), modulus `0x11B` | Emitted CNOTs / Qualtran model | Optional fixed-wire binding SWAPs |
+|---|---:|---:|
+| Multiply by `0x53` | 18 / 18 | 0 |
+| Multiply by `x` | 3 / 3 | 7 |
+| Multiply by `x^-1` | 3 / 3 | 7 |
+| Multiply by `x^8` | 24 / 24 | 0 |
+
+The SWAP column is a separate physical-output requirement. The source graph's
+free output relabeling is retained, so these SWAPs are not inserted between
+consumers that propagate the map. Counts compare the same CNOT network and
+logical outputs; they do not compare a fixed-wire circuit against an unbound
+source graph as if their output contracts were identical.
+
+`test_field_linear.py` has 59 passing cases: selected constant/shift source
+networks and costs at degrees 1, 2, 3, 4, 5, and 8; every field input amplitude;
+all nonzero constants through degree 4 and selected larger constants; signed
+shifts, inverse round trips, invalid parameters, and unbound map composition.
+The module reached 100% statement coverage. The focused G1/G2 regression passed
+all 200 cases, and strict mypy passed on 925 source files. The standalone example
+runs without either reference package.

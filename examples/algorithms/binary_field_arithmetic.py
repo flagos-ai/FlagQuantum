@@ -15,6 +15,10 @@ from flagquantum.compiler.registers.field_inverse import (
     gf2_inverse_ir,
     gf2_inverse_workspace_size,
 )
+from flagquantum.compiler.registers.field_linear import (
+    gf2_constant_multiplication,
+    gf2_monomial_multiplication,
+)
 from flagquantum.compiler.registers.field_multiplication import (
     bind_field_outputs,
     gf2_multiplication,
@@ -84,6 +88,26 @@ def main() -> None:
         "Emitted erasure gates:",
         dict(Counter(g.name for g in erase.lower(parity_bit=3))),
     )
+
+    scale = gf2_constant_multiplication(x, 5, modulus=0b1011)
+    state = torch.zeros(8, dtype=torch.complex128)
+    state[3] = 1
+    result = fq.Circuit(3, inputs=state, dtype=torch.complex128).append(
+        FieldOperation(3, bind_field_outputs(scale, (x,)))
+    )
+    assert int(result.state().abs().argmax()) == 4
+    print("GF(8): in-place constant multiplication 3 * 5 = 4; no work wires")
+
+    forward = gf2_monomial_multiplication(x, 2, modulus=0b1011)
+    backward = gf2_monomial_multiplication(forward.outputs[0], -2, modulus=0b1011)
+    assert backward.outputs == (x,)
+    # Propagate logical wire maps between components; no intermediate SWAPs.
+    gates = (*forward.instructions, *backward.instructions)
+    restored = fq.Circuit(3, inputs=state, dtype=torch.complex128).append(
+        FieldOperation(3, gates)
+    )
+    torch.testing.assert_close(restored.state().flatten(), state, rtol=0, atol=1e-12)
+    print("GF(8): x^2 followed by x^-2 restores the input without binding SWAPs")
 
 
 if __name__ == "__main__":
