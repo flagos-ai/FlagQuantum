@@ -2460,7 +2460,9 @@ jobs:
       - coverage-shard
       - coverage
       - supply-chain
-    if: ${{ !cancelled() }}
+    # Required checks must reject cancelled/skipped dependencies, never skip.
+    if: ${{ always() }}
+    timeout-minutes: 2
     runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'flagquantum-cpu-general' || 'ubuntu-latest' }}
     concurrency:
       group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('a100-cpu-{0}-ci-complete-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-0

@@ -996,3 +996,7 @@ Job-level result aggregators use `!cancelled()` so failed dependencies still
 reach the required gate, while a superseded PR run releases its workflow slot
 instead of scheduling `always()` aggregators after cancellation. Step-level
 resource reports remain available on failure.
+
+The required `CI complete` gate is the exception: it always runs with a
+two-minute limit and rejects failed, skipped, or cancelled dependencies. It must
+never become a skipped required check when a run is cancelled.

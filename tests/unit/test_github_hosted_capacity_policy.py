@@ -599,7 +599,9 @@ def test_queue_uses_full_integration_suites_and_preserves_required_check_names()
     None
 ):
     jobs = _document("ci.yml")["jobs"]
-    assert all(job.get("if") in (None, "${{ !cancelled() }}") for job in jobs.values())
+    for name, job in jobs.items():
+        expected = "${{ always() }}" if name == "ci-complete" else "${{ !cancelled() }}"
+        assert job.get("if") in (None, expected)
     core_steps = _steps("ci.yml", "cpu-core")
     full = next(
         s for s in core_steps if s.get("run") == "python tools/ci_tier.py pr-default"
@@ -677,7 +679,8 @@ def test_merge_gate_waits_for_every_ci_job_including_source_hygiene(
     jobs = _document("ci.yml")["jobs"]
     complete = jobs["ci-complete"]
     assert complete["name"] == "CI complete"
-    assert complete["if"] == "${{ !cancelled() }}"
+    assert complete["if"] == "${{ always() }}"
+    assert complete["timeout-minutes"] == 2
     assert set(complete["needs"]) == set(jobs) - {"ci-complete"}
     step = complete["steps"][0]
     assert step["env"]["NEEDS_JSON"] == "${{ toJSON(needs) }}"
