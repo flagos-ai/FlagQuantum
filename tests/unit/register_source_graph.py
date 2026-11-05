@@ -16,10 +16,28 @@ def walk_source_graph(
     """Bind original Soquet connections; only the caller binds leaf physical work."""
     import numpy as np
     from qualtran import LeftDangle, Soquet
+    from qualtran.bloqs.bookkeeping import Join, Split
 
     result = leaf(bloq, inputs, desired)
     if result is not None:
         return result
+    if isinstance(bloq, (Split, Join)):
+        assert set(inputs) == {"reg"}
+        assert len(inputs["reg"]) == bloq.signature.get_left("reg").total_bits()
+        assert len(inputs["reg"]) == bloq.signature.get_right("reg").total_bits()
+        import cirq
+
+        register = bloq.signature.get_left("reg")
+        qureg = np.asarray(
+            [cirq.LineQubit(wire) for wire in inputs["reg"]], dtype=object
+        ).reshape((*register.shape, int(register.bitsize)))
+        operation, quregs = bloq.as_cirq_op(qubit_manager=None, reg=qureg)
+        assert operation is None
+        assert all(isinstance(wire, cirq.LineQubit) for wire in quregs["reg"].flat)
+        outputs = {"reg": tuple(wire.x for wire in quregs["reg"].flat)}
+        assert outputs == inputs
+        assert all(outputs[key] == value for key, value in desired.items())
+        return (), outputs
     cb = bloq.decompose_bloq()
     mapping: dict[Any, tuple[int, ...]] = {}
 
