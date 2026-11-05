@@ -1113,3 +1113,30 @@ where the idle slots are a workspace that the inverse routing SWAPs clean.
 [Implementation details](IMPLEMENTATION.md) document stage ownership and
 migration constraints. [Testing policy](../../docs/development/TESTING.md)
 defines the additional checks for each change.
+
+## Bounded construction matrices
+
+Private construction `qreg.unitary` verification owns finite unitary matrices on
+one to three data qubits, an optional integer power in 1..128, and an optional
+initialized disjoint control bit. Data indices are numeric least-significant-bit
+indices; matrix operands retain their declared most-significant-first order.
+The control may be borrowed, but data must be writable. Source adapters must
+still implement their own admission and cannot infer support from this profile.
+
+`_construction/unitary.py` preserves the established one/two-qubit decomposition.
+The three-qubit path uses complex Givens elimination, diagonal phases and Gray-path
+two-level rotations. Both paths verify matrix reconstruction at absolute error
+1e-12 and emit registered gates, including phase corrections under a control;
+Compiler never executes them. Matrix powers use the original validated matrix,
+without normalization or polar correction. Classical storage is bounded at 8x8,
+and emitted gates remain subject to the caller's normal planning budgets.
+
+Run the independent complete-column and coherent-state comparison before changing
+this numerical path:
+
+```sh
+python -m pytest tests/integration/test_synthesis_unitary_decomposition.py tests/integration/test_synthesis_qmod_unitary.py -q
+```
+
+The first test exercises the owned representation directly; native qfunc array
+unitaries and ordinary Qmod QPE are not introduced by this compiler change.

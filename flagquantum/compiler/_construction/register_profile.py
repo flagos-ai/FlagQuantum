@@ -70,8 +70,8 @@ _GATES = frozenset({"x", "h", "s", "z", "i", "sx"}) | _ANGLE_GATES
 
 def unitary_matrix(entries: object, width: int, op: Operation) -> torch.Tensor:
     """Decode a bounded dense matrix from immutable real/imaginary pairs."""
-    if not 1 <= width <= 2:
-        _fail("register.unitary", "matrix targets must have one or two qubits", op)
+    if not 1 <= width <= 3:
+        _fail("register.unitary", "matrix targets must have one to three qubits", op)
     size = 1 << width
     if (
         not isinstance(entries, tuple)
@@ -438,9 +438,11 @@ def _verify_body(
                 )
             assert attributes is not None
             attributes = attributes | {"workspace"}
-        if op.name == "qreg.unitary" and "indices" in op.attributes:
+        if op.name == "qreg.unitary":
             assert attributes is not None
-            attributes = attributes | {"indices"}
+            attributes = attributes | (
+                op.attributes.keys() & {"indices", "control_index", "power"}
+            )
         if op.name == "qreg.phase" and "angle" in op.attributes:
             angle = op.attributes["angle"]
             if type(angle) is not float or not math.isfinite(angle):
@@ -608,18 +610,46 @@ def _verify_body(
                 initialized.update(v.id for v in writes)
                 changed = tuple(writes)
             elif op.name == "qreg.unitary":
+                data = operands
+                if "control_index" in op.attributes:
+                    index = op.attributes["control_index"]
+                    if (
+                        len(operands) < 2
+                        or type(index) is not int
+                        or not 0 <= index < register_width(operands[-1])
+                    ):
+                        _fail(
+                            "register.unitary",
+                            "unitary control index must be in bounds",
+                            op,
+                        )
+                    data = operands[:-1]
+                    if operands[-1] in data:
+                        _fail(
+                            "register.unitary",
+                            "unitary control and data storage must be disjoint",
+                            op,
+                        )
+                if "power" in op.attributes:
+                    power = op.attributes["power"]
+                    if type(power) is not int or not 1 <= power <= 128:
+                        _fail(
+                            "register.unitary",
+                            "unitary power must be an integer in 1..128",
+                            op,
+                        )
                 if "indices" in op.attributes:
                     indices = op.attributes["indices"]
                     if (
                         not isinstance(indices, tuple)
-                        or len(indices) != len(operands)
-                        or len(indices) not in {1, 2}
+                        or len(indices) != len(data)
+                        or len(indices) not in {1, 2, 3}
                         or any(
                             type(index) is not int
                             or not 0 <= index < register_width(value)
-                            for value, index in zip(operands, indices, strict=True)
+                            for value, index in zip(data, indices, strict=True)
                         )
-                        or len(set(zip(operands, indices, strict=True))) != len(indices)
+                        or len(set(zip(data, indices, strict=True))) != len(indices)
                     ):
                         _fail(
                             "register.unitary",
@@ -628,14 +658,14 @@ def _verify_body(
                         )
                     width = len(indices)
                 else:
-                    if arguments:
+                    if len(data) != 1:
                         _fail(
                             "register.unitary",
                             "unitary requires one writable register",
                             op,
                         )
                     width = register_width(destination)
-                if any(value in borrowed for value in operands):
+                if any(value in borrowed for value in data):
                     _fail("register.unitary", "unitary requires writable qubits", op)
                 if any(value.id not in initialized for value in operands):
                     _fail(
@@ -646,7 +676,7 @@ def _verify_body(
                 matrix = unitary_matrix(op.attributes["matrix"], width, op)
                 if not _is_finite_unitary(matrix):
                     _fail("register.unitary", "matrix must be unitary", op)
-                changed = tuple(operands)
+                changed = tuple(data)
             elif op.name in {"qreg.qft", "qreg.inverse_qft"}:
                 if arguments:
                     _fail("register.transform", "QFT requires one register", op)
