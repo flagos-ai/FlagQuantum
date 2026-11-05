@@ -43,6 +43,7 @@ from .phase import MAX_PHASE_INPUT_BITS, expand_phase
 from .phase_factors import Cube, preserve_factors
 from .predicates import expand_predicate_oracles
 from .quantum_callbacks import specialize_quantum_callbacks
+from .swap_test import lower_swap_test
 from .syntax import (
     ANGLE_CALLS,
     EXTREMA,
@@ -97,6 +98,7 @@ _INTRINSICS = (
         "exponentiate",
         "qdrift",
         "qft",
+        "swap_test",
         "drop",
         "modular_exp",
         "qpe_flexible",
@@ -2646,6 +2648,9 @@ class _Adapt:
         if statement.amplification is not None:
             lower_amplification(self, token, args[0], statement.amplification)
             return
+        if token.text == "swap_test":
+            lower_swap_test(self, token, args)
+            return
         if token.text == "inplace_prepare_state":
             if len(args) != 3:
                 reject(
@@ -3570,6 +3575,7 @@ def parse_qmod(
             reject(syntax.name, "name", "duplicate helper parameter")
         if any(
             port.role not in {"real", "integer", "inout", "callable"}
+            and not (port.role == "output" and port.kind == "qbit")
             for port in syntax.parameters
         ):
             reject(
@@ -3602,6 +3608,7 @@ def parse_qmod(
                 not in _STATIC_GATES
                 | EVOLUTION_CALLS
                 | {
+                    "swap_test",
                     "unitary",
                     "+=",
                     "phase",

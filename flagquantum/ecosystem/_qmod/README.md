@@ -1229,3 +1229,24 @@ Hamiltonian-array export or Python for-loop support. The original's dropped
 Hamiltonian target is semantic data, not a promised zero auxiliary register.
 The separately recorded partial-exponential amplitude mismatch remains refused;
 no original corpus source or baseline is rewritten. Evidence is local CPU only.
+
+
+## Checked swap test and source-data refusal
+
+The experimental Qmod adapter composes swap_test from existing Hadamard and
+indexed controlled-X effects. Equal nonempty initialized writable input views
+and one fresh scalar qbit Output must have disjoint locations. Existing owned
+allocation and Const checks remain authoritative, including scalar Output
+forwarding through static helpers. No public native swap_test export is added.
+
+The pinned swap_test.qmod has amplitude squared norms 1.1072 and 1.1076 with
+zero preparation error bound, violating the official unit-norm contract. It
+remains refused; no automatic normalization or weakened verifier is introduced.
+A separately archived, normalized diagnostic copy checks the complete path
+against independent Circuit permutation and symmetric/antisymmetric algebra.
+It contributes zero original execution coverage. Run tools/validate_qmod_swap_test.py
+--output /tmp/swap-test.json. Run python -m examples.synthesis_swap_test for valid
+one-bit Qmod, existing native phase/CX qfunc composition and Circuit comparison.
+Dropped input states are retained semantic data, not clean workspace. This is
+local CPU correctness evidence only. Existing partial-exponential source-amplitude
+refusal and historical baselines remain unchanged.
