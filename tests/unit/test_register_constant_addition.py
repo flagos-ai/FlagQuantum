@@ -57,6 +57,7 @@ def reference_arithmetic_gates(
     cirq_style: bool = False,
     expected_outputs: dict[str, tuple[int, ...]] | None = None,
     reuse_allocations: bool = True,
+    preserve_components: bool = False,
 ) -> tuple[Instruction, ...]:
     """Read unmodified pinned arithmetic with explicit quantum/classical binding."""
     pytest.importorskip("qualtran")
@@ -108,7 +109,7 @@ def reference_arithmetic_gates(
             source if isinstance(source, CompositeBloq) else source.decompose_bloq()
         )
         operation, outputs = (
-            composite if cirq_style else composite.flatten()
+            composite if cirq_style or preserve_components else composite.flatten()
         ).to_cirq_circuit_and_quregs(
             qubit_manager=manager,
             **{
@@ -135,9 +136,54 @@ def reference_arithmetic_gates(
         BloqAsCirqGate(CNOT()): "cx",
         BloqAsCirqGate(XGate()): "x",
     }
+
+    def source_component(op: Any) -> Any:
+        # Keep caller stage lifetimes when physical work buffers are reused.
+        # Inside each stage use the original flattened Bloq decomposition.
+        from qualtran import Bloq, CtrlSpec
+
+        gate = getattr(op, "gate", None)
+        bloq = gate.bloq if isinstance(gate, BloqAsCirqGate) else gate
+        if (
+            preserve_components
+            and isinstance(gate, cirq.ControlledGate)
+            and isinstance(gate.sub_gate, BloqAsCirqGate)
+            and type(gate.sub_gate.bloq).__name__ == "AddK"
+        ):
+            # Controlled.as_cirq_op exports a Cirq control wrapper. Recover the
+            # same source Bloq's custom controlled decomposition before Cirq's
+            # generic controlled-unitary synthesis can change its primitive set.
+            ((cv,),) = tuple(gate.control_values)
+            bloq = gate.sub_gate.bloq.controlled(ctrl_spec=CtrlSpec(cvs=cv))
+        if not preserve_components or not isinstance(bloq, Bloq):
+            return NotImplemented
+        if type(bloq).__name__ not in {
+            "CAdd",
+            "AddK",
+            "Controlled",
+            "CModAdd",
+            "CModSub",
+            "CLinearDepthGreaterThan",
+        }:
+            return NotImplemented
+        from qualtran._infra.gate_with_registers import split_qubits
+
+        quregs = split_qubits(bloq.signature, op.qubits)
+        component = bloq.decompose_bloq()
+        if type(bloq).__name__ not in {"CModAdd", "CModSub"}:
+            component = component.flatten()
+        circuit, outputs = component.to_cirq_circuit_and_quregs(
+            qubit_manager=manager, **quregs
+        )
+        assert all(
+            np.array_equal(outputs[name], wires) for name, wires in quregs.items()
+        )
+        return tuple(circuit.all_operations())
+
     upstream = cirq.decompose(
         operation,
         context=context,
+        intercepting_decomposer=source_component,
         keep=lambda op: op.gate in names
         or cirq.is_measurement(op)
         or isinstance(op.gate, cirq.ResetChannel)

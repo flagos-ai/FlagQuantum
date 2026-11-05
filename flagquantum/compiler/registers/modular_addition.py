@@ -19,21 +19,23 @@ def modular_add_requirements(width: int) -> tuple[int, int]:
     return 2 * width + 2, width
 
 
-def _modular_workspace(
+def _validate_modular_layout(
     left: tuple[int, ...],
     right: tuple[int, ...],
     modulus: int,
     workspace: tuple[int, ...],
     classical_bits: tuple[int, ...],
-) -> tuple[int, int, tuple[int, ...], tuple[int, ...], tuple[int, ...]]:
-    """Validate and bind one shared layout for modular add/subtract consumers."""
-    n = len(left)
-    q, c = modular_add_requirements(n)
+    requirements: tuple[int, int],
+    *,
+    extra_wires: tuple[int, ...] = (),
+) -> None:
+    """Share operand/domain/layout validation across actual modular consumers."""
+    n, (q, c) = len(left), requirements
     if len(right) != n:
         raise ValueError("Modular arithmetic requires equal operand widths")
     if type(modulus) is not int or not 1 <= modulus < 1 << n:
         raise ValueError("Modulus must be a positive integer fitting the operand")
-    wires = (*left, *right, *workspace)
+    wires = (*extra_wires, *left, *right, *workspace)
     if any(type(w) is not int or w < 0 for w in wires) or len(set(wires)) != len(wires):
         raise ValueError(
             "Modular arithmetic requires distinct nonnegative quantum wires"
@@ -48,6 +50,19 @@ def _modular_workspace(
         raise ValueError(
             f"Modular arithmetic requires {c} distinct nonnegative classical slots"
         )
+
+
+def _modular_workspace(
+    left: tuple[int, ...],
+    right: tuple[int, ...],
+    modulus: int,
+    workspace: tuple[int, ...],
+    classical_bits: tuple[int, ...],
+) -> tuple[int, int, tuple[int, ...], tuple[int, ...], tuple[int, ...]]:
+    """Validate and bind one shared layout for modular add/subtract consumers."""
+    n = len(left)
+    q, c = modular_add_requirements(n)
+    _validate_modular_layout(left, right, modulus, workspace, classical_bits, (q, c))
     # The extended-left zero prefix dies after the first Add. Reuse it as
     # the constant MSB only after that component has restored it to zero.
     constant, carry = (workspace[0], *workspace[2 : n + 2]), workspace[n + 2 :]
