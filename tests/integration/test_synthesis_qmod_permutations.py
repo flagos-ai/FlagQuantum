@@ -169,8 +169,8 @@ OP = "SparsePauliOp {terms=[SparsePauliTerm {paulis=[IndexedPauli {pauli=Pauli::
 @pytest.mark.parametrize(
     ("operators", "times", "order", "repetitions", "diagnostic"),
     [
-        (f"[{OP},{OP}]", "[0.37]", "1", "1", "exactly one operator"),
-        (f"[{OP}]", "[0.37,0.81]", "1", "1", "exactly one time"),
+        (f"[{OP},{OP}]", "[0.37]", "1", "1", "equal lengths"),
+        (f"[{OP}]", "[0.37,0.81]", "1", "1", "equal lengths"),
         (f"[{OP}]", "[0.37]", "3", "1", "order 1 or 2"),
         (f"[{OP}]", "[0.37]", "1", "0", "repetitions"),
     ],

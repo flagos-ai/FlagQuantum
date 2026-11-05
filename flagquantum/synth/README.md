@@ -851,3 +851,34 @@ through native qfunc phase intent, Qmod and independent Circuit forms, including
 the absolute phase and each form's real workspace cost. It does not claim that
 Python qfunc accepts Hamiltonian arrays. The private compact operation is an
 implementation detail; normal users continue to call `synthesize` and `fq.run`.
+
+### Exact integer Qmod composition
+
+The Qmod entry can bind classical loop counts without floating-point coercion:
+
+```python
+import flagquantum as fq
+from flagquantum import synth
+
+source = """qfunc main(steps:int,output q:qbit[2]) {
+  allocate(q);hadamard_transform(q);
+  power(steps) {phase(0.6*q[0]*q[1]);}
+}"""
+program = synth.synthesize(source, source_format="qmod", classical_inputs={"steps": 2})
+result = fq.run(program)
+print(program.report["resources"])
+print(dict(program.probabilities(result, registers=("q",))))
+```
+
+The |11> amplitude has phase 1.2 radians; each output probability is 1/4.
+Run python -m examples.synthesis_integer_composition for the executable Qmod,
+static native qfunc and independent Circuit forms with real workspace costs.
+Python qfunc's parameter contract is unchanged. The adapter accepts exact int
+and int[] bindings, bounded static loops/if and finite classical-expression time
+arrays; it never reads quantum values to select host branches.
+
+Reproduce the unchanged originals with tools/validate_qmod_integer_composition.py:
+--case fermi_hubbard_1D --iterations 1 (then 2), --case credit_card_fraud
+--data-case 0 (then 1), or --case bb84_implementation, each with --output <path>.
+These source and MIT-license-checked runs compare complete complex128 vectors
+against independent Circuits, including global phase and numeric bit order.

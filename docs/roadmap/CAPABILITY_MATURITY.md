@@ -321,3 +321,11 @@ budgets and zero workspace are checked against independent references. Data
 budgets grow to 512 KiB/65536 tokens while the 4096 owned-node and 100000 final
 instruction caps remain. This is a local integration slice, not a complete
 Hamiltonian-language, classical-workflow or corpus-wide capability promotion.
+
+The integer-composition UP-06 slice adds exact bounded Qmod classical int/array
+bindings and checked static power/if composition. Single-owner Pauli views and
+bounded multi-operator first-order products reuse Compiler rotation semantics;
+default phase coefficients reuse the real phase path. Three unchanged originals
+have independent full-state Circuit checks: Fermi iterations 1/2, two nonzero
+credit-card data pairs and original BB84 bits. This is local integration evidence
+without a native Python integer-port or corpus-wide maturity promotion.

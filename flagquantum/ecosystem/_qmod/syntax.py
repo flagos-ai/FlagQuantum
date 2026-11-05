@@ -120,7 +120,9 @@ class Parameter:
     name: Token
     kind: str
     width: int | None
-    role: Literal["output", "const", "local", "real", "inout", "callable"] = "output"
+    role: Literal[
+        "output", "const", "local", "real", "integer", "inout", "callable"
+    ] = "output"
     record: str | None = None
     length: int | None = None
 
@@ -296,7 +298,7 @@ class Parser:
                     member = Expression(self.name())
                     left = Expression(dot, (left, member), left.depth + 1)
             elif self.current.text == "[" and (
-                (not static and not left.children)
+                (not left.children)
                 or (not static and left.token.text == ":")
                 or (
                     self.records
@@ -699,7 +701,7 @@ class Parser:
         self.take("(")
         parameters: list[Parameter] = []
         while self.current.text != ")":
-            role: Literal["output", "const", "real", "inout", "callable"]
+            role: Literal["output", "const", "real", "integer", "inout", "callable"]
             if self.current.text == "output":
                 self.take("output")
                 role = "output"
@@ -715,8 +717,12 @@ class Parser:
             elif [
                 token.text
                 for token in self.tokens[self.position + 1 : self.position + 3]
-            ] == [":", "real"]:
-                role = "real"
+            ] in ([":", "real"], [":", "int"]):
+                role = (
+                    "integer"
+                    if self.tokens[self.position + 2].text == "int"
+                    else "real"
+                )
             elif (
                 name.text != "main"
                 and self.position + 2 < len(self.tokens)
@@ -761,15 +767,16 @@ class Parser:
                 self.take("]")
                 self.take(")")
                 kind, width = "qfunc(real,qbit[])", None
-            elif role == "real":
-                self.take("real")
-                kind, width = "real", None
+            elif role in {"real", "integer"}:
+                kind = "int" if role == "integer" else "real"
+                self.take(kind)
+                width = None
                 if self.current.text == "[":
                     self.take("[")
                     if name.text == "main" or self.current.text != "]":
                         width = self.width()
                     self.take("]")
-                    kind = "real[]"
+                    kind += "[]"
             else:
                 kind, width = self.scalar_type(
                     allow_qubit_array=name.text == "main" or role == "inout",
@@ -794,7 +801,11 @@ class Parser:
 
     def call_argument(self) -> Expression:
         if self.current.text == "[":
-            array = self.literal_array(self.signed_angle_argument)
+            array = self.literal_array(
+                lambda: self.expression(
+                    decimal=True, difference=True, real=True, allow_slice=True
+                )
+            )
             return Expression(Token("[]", array.token.location), array.children)
         if self.current.text == "{":
             opening = self.take("{")
@@ -804,7 +815,9 @@ class Parser:
                 items.append(self.expression())
             self.take("}")
             return Expression(opening, tuple(items))
-        return self.expression(allow_slice=True)
+        return self.expression(
+            decimal=True, difference=True, real=True, allow_slice=True
+        )
 
     def binding_group(self) -> Expression:
         if self.current.text != "{":
@@ -823,6 +836,7 @@ class Parser:
         allow_scopes: bool = True,
         scope_depth: int = 0,
         power_body: bool = False,
+        static_loop_body: bool = False,
     ) -> tuple[Statement, ...]:
         self.take("{")
         statements: list[Statement] = []
@@ -876,26 +890,44 @@ class Parser:
                 )
                 continue
             if (
-                self.current.text == "repeat"
+                self.current.text in {"repeat", "power"}
                 and self.tokens[self.position + 1].text == "("
             ):
-                token = self.take("repeat")
+                token = self.take(self.current.text)
                 if scope_depth:
-                    reject(token, "scope", "repeat is admitted only at function scope")
+                    reject(
+                        token,
+                        "scope",
+                        "static loops are admitted only at function scope",
+                    )
                 self.take("(")
-                index = self.name()
-                self.take(":")
+                if token.text == "repeat":
+                    index = self.name()
+                    self.take(":")
+                else:
+                    index = Token(
+                        f"$power{token.location.line}_{token.location.column}",
+                        token.location,
+                    )
                 count = self.expression(static=True)
                 self.take(")")
-                body = self.block(allow_scopes=False, scope_depth=scope_depth + 1)
+                body = self.block(
+                    allow_scopes=False,
+                    scope_depth=scope_depth + 1,
+                    static_loop_body=True,
+                )
                 statements.append(
                     Statement(token, (count,), repeat_index=index, repeat_body=body)
                 )
                 continue
             if self.current.text == "if" and self.tokens[self.position + 1].text == "(":
                 token = self.take("if")
-                if scope_depth:
-                    reject(token, "scope", "static if requires function scope")
+                if scope_depth and not static_loop_body:
+                    reject(
+                        token,
+                        "scope",
+                        "static if requires function scope or a static loop",
+                    )
                 self.take("(")
                 left = self.expression(static=True)
                 comparison = self.current

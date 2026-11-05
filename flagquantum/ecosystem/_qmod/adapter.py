@@ -33,6 +33,7 @@ from ...compiler._hybrid.model import (
     ValueId,
 )
 from ...compiler._hybrid.verifier import Diagnostic, HybridVerificationError
+from .integers import checked_integer, checked_integer_array
 from .permutations import verify_permutations
 from .phase import MAX_PHASE_INPUT_BITS, expand_phase
 from .phase_factors import Cube, preserve_factors
@@ -733,6 +734,8 @@ class _Adapt:
         self.classical_values: dict[str, float] = {}
         self.callback_bindings: dict[str, Function] = {}
         self.classical_arrays: dict[str, tuple[float, ...]] = {}
+        self.classical_integers: dict[str, int] = {}
+        self.integer_arrays: dict[str, tuple[int, ...]] = {}
         self.scope = syntax.name.text
         self.parameters: dict[str, Parameter] = {}
         for parameter in syntax.parameters:
@@ -787,8 +790,8 @@ class _Adapt:
                 "type",
                 "qubit arrays support allocation and whole-array Hadamard",
             )
-        if self.parameters[name].role == "real":
-            reject(token, "type", "classical real is not a quantum register")
+        if self.parameters[name].role in {"real", "integer"}:
+            reject(token, "type", "classical parameter is not a quantum register")
         local = self.parameters[name].role == "local"
         hidden = local and self.parameters[name].kind == "qbit[]"
         if local and not hidden and self.local_scope is None:
@@ -921,7 +924,23 @@ class _Adapt:
     def static_integer(self, node: Expression) -> int:
         text = node.token.text
         if text.isdecimal():
-            return int(text)
+            return checked_integer(int(text), node.token)
+        if not node.children and text in self.classical_integers:
+            return self.classical_integers[text]
+        if text == "[" and not node.children[0].children:
+            values = self.integer_arrays.get(node.children[0].token.text)
+            if values is None:
+                reject(
+                    node.token,
+                    "expression",
+                    "static indices require an integer array, not quantum or real data",
+                )
+            offset = self.static_integer(node.children[1])
+            if not 0 <= offset < len(values):
+                reject(node.token, "binding", "integer array index is out of bounds")
+            return values[offset]
+        if text == "-" and len(node.children) == 1:
+            return checked_integer(-self.static_integer(node.children[0]), node.token)
         if text in {"+", "-", "*"}:
             left, right = (self.static_integer(child) for child in node.children)
             if text == "+":
@@ -967,6 +986,8 @@ class _Adapt:
             name = root.token.text
             if name in self.classical_arrays:
                 return len(self.classical_arrays[name])
+            if name in self.integer_arrays:
+                return len(self.integer_arrays[name])
             width = self.widths.get(name)
             if (
                 width is None
@@ -1067,12 +1088,22 @@ class _Adapt:
             reject(node.token, "width", "qubit array slice is out of bounds or empty")
         return view[start:stop]
 
+    def integer_array(self, node: Expression) -> tuple[int, ...]:
+        if node.token.text == "[]":
+            return checked_integer_array(
+                tuple(self.static_integer(child) for child in node.children), node.token
+            )
+        if not node.children and node.token.text in self.integer_arrays:
+            return self.integer_arrays[node.token.text]
+        reject(
+            node.token,
+            "binding",
+            "expected a classical integer array literal or binding",
+        )
+
     def real_array(self, node: Expression) -> tuple[float, ...]:
         if node.token.text == "[]":
-            return tuple(
-                self.angle(item, node.token, allow_signed=True)
-                for item in node.children
-            )
+            return tuple(self.classical_number(item) for item in node.children)
         source = node.children[0] if node.token.text == ":" else node
         values = self.classical_arrays.get(source.token.text)
         if values is None or source.children:
@@ -1105,10 +1136,13 @@ class _Adapt:
                 and _bound_helper(callee)
             )
             if item.declaration is not None or (
-                item.token.text not in _STATIC_GATES | {"phase"}
+                item.token.text
+                not in _STATIC_GATES
+                | {"phase", "suzuki_trotter", "multi_suzuki_trotter", "unitary"}
                 and not bound_call
                 and item.control_body is None
                 and item.map_callback is None
+                and item.static_if_body is None
             ):
                 reject(
                     item.token,
@@ -1124,6 +1158,15 @@ class _Adapt:
     def classical_number(self, node: Expression) -> float:
         text = node.token.text
         if not node.children:
+            if text in self.classical_integers:
+                value = self.classical_integers[text]
+                if abs(value) > 2**53:
+                    reject(
+                        node.token,
+                        "precision",
+                        "integer angle conversion exceeds exact real range",
+                    )
+                return float(value)
             if text in self.classical_values:
                 return self.classical_values[text]
             if text == "pi" and text not in self.parameters:
@@ -1131,6 +1174,15 @@ class _Adapt:
             return _literal_angle(node, node.token)
         if text == "[":
             source, offset = node.children
+            if not source.children and source.token.text in self.integer_arrays:
+                value = self.static_integer(node)
+                if abs(value) > 2**53:
+                    reject(
+                        node.token,
+                        "precision",
+                        "integer angle conversion exceeds exact real range",
+                    )
+                return float(value)
             values = (
                 self.real_array(source)
                 if source.token.text == ":"
@@ -1165,11 +1217,21 @@ class _Adapt:
     def angle(
         self, node: Expression, gate: Token, *, allow_signed: bool = False
     ) -> float:
+        if (not node.children and node.token.text in self.classical_integers) or (
+            node.token.text == "["
+            and node.children[0].token.text in self.integer_arrays
+        ):
+            return self.classical_number(node)
         if node.token.text == "[" and node.children[0].token.text == ":":
             return self.classical_number(node)
         if (
             self.helper_stack
-            and (self.classical_values or self.classical_arrays)
+            and (
+                self.classical_values
+                or self.classical_arrays
+                or self.classical_integers
+                or self.integer_arrays
+            )
             and node.token.text in {"+", "-", "*", "/"}
         ):
             return self.classical_number(node)
@@ -1313,6 +1375,17 @@ class _Adapt:
                         "callback requires a named (real, qbit[]) helper",
                     )
                 child.callback_bindings[name] = callback
+                continue
+            if parameter.role == "integer":
+                if parameter.kind == "int[]":
+                    values_int = self.integer_array(argument)
+                    child.integer_arrays[name] = checked_integer_array(
+                        values_int, argument.token, parameter.width
+                    )
+                else:
+                    child.classical_integers[name] = checked_integer(
+                        self.static_integer(argument), argument.token
+                    )
                 continue
             if parameter.role == "real":
                 if parameter.kind == "real[]":
@@ -1865,6 +1938,7 @@ class _Adapt:
             and (
                 args[0].children
                 or args[1].token.text in self.classical_values
+                or args[1].token.text in self.classical_integers
                 or args[1].token.text == "["
                 or any(
                     parameter.record is not None
@@ -2155,19 +2229,32 @@ class _Adapt:
             )
         terms, time_arg, order_arg, repetitions_arg, target_arg = args
         if token.text == "multi_suzuki_trotter":
-            if terms.token.text != "[" or len(terms.children) != 1:
+            if terms.token.text != "[" or not 1 <= len(terms.children) <= 16:
                 reject(
-                    token,
-                    "evolution",
-                    "multi_suzuki_trotter requires exactly one operator",
+                    token, "evolution", "multi_suzuki_trotter requires 1..16 operators"
                 )
             times = self.real_array(time_arg)
-            if len(times) != 1:
+            if len(times) != len(terms.children):
                 reject(
                     time_arg.token,
                     "evolution",
-                    "multi_suzuki_trotter requires exactly one time",
+                    "operator and time arrays must have equal lengths",
                 )
+            if len(times) > 1:
+                if any(
+                    arg.children or arg.token.text != "1"
+                    for arg in (order_arg, repetitions_arg)
+                ):
+                    reject(
+                        token,
+                        "evolution",
+                        "multiple operators require order 1 and one repetition",
+                    )
+                for operator, operator_time in zip(terms.children, times, strict=True):
+                    self.pauli_evolution(
+                        token, operator, operator_time, target_arg, 1, 1
+                    )
+                return
             terms, time = terms.children[0], times[0]
         else:
             time = self.evolution_angle(time_arg, token)
@@ -2250,9 +2337,16 @@ class _Adapt:
     def pauli_terms(
         self, token: Token, operator: Expression, target_arg: Expression
     ) -> tuple[Value, list[tuple[tuple[tuple[int, str], ...], float]]]:
-        target = self.atom(target_arg)
-        register = self.register(target, allow_qubit_array=True)
-        width = register_width(register)
+        view = self.array_view(target_arg)
+        owners = tuple(dict.fromkeys(value for value, _ in view))
+        if len(owners) != 1 or len(set(view)) != len(view):
+            reject(
+                target_arg.token,
+                "alias",
+                "Pauli view requires distinct locations within one storage owner",
+            )
+        register = owners[0]
+        width = len(view)
         if not operator.children and operator.token.text != "[":
             if operator.token.text not in self.constants:
                 reject(operator.token, "pauli", "unknown SparsePauliOp constant")
@@ -2271,7 +2365,11 @@ class _Adapt:
                     "pauli",
                     "num_qubits must match the target array width",
                 )
-        kind = self.parameters[target.text].kind
+        kind = (
+            self.parameters[target_arg.token.text].kind
+            if not target_arg.children
+            else "qbit[]"
+        )
         if not terms.children or (kind != "qbit[]" and not (sparse and kind == "qnum")):
             reject(
                 token,
@@ -2282,7 +2380,8 @@ class _Adapt:
         for term in terms.children:
             axes, coefficient = term.children
             support = _pauli_support(axes, width, sparse=sparse)
-            prepared.append((support, self.evolution_angle(coefficient, token)))
+            mapped_support = tuple((view[index][1], axis) for index, axis in support)
+            prepared.append((mapped_support, self.evolution_angle(coefficient, token)))
         return register, prepared
 
     def qpe_flexible(self, statement: Statement) -> None:
@@ -2714,6 +2813,9 @@ class _Adapt:
             if fractional_bits:
                 self.fractional_bits[target.text] = fractional_bits
         elif token.text == "phase":
+            default_coefficient = len(args) == 1
+            if default_coefficient:
+                args = (*args, Expression(Token("1.0", token.location)))
             if len(args) != 2 or "phase" in self.parameters:
                 reject(
                     token,
@@ -2729,16 +2831,23 @@ class _Adapt:
                     break
                 pending.extend(node.children)
             if (
-                indexed
+                default_coefficient
+                or indexed
                 or args[1].token.text == "["
                 or any(
                     parameter.record is not None
                     for parameter in self.parameters.values()
                 )
                 or args[1].token.text in self.classical_values
+                or args[1].token.text in self.classical_integers
                 or (
                     self.helper_stack
-                    and (self.classical_values or self.classical_arrays)
+                    and (
+                        self.classical_values
+                        or self.classical_arrays
+                        or self.classical_integers
+                        or self.integer_arrays
+                    )
                 )
             ):
                 self.real_phase(token, args[0], args[1])
@@ -3271,7 +3380,10 @@ def check_source_version(source_version: str, token: Token) -> None:
 
 
 def _bound_helper(syntax: Function) -> bool:
-    return any(port.role in {"real", "inout", "callable"} for port in syntax.parameters)
+    return any(
+        port.role in {"real", "integer", "inout", "callable"}
+        for port in syntax.parameters
+    )
 
 
 def parse_qmod(
@@ -3334,7 +3446,9 @@ def parse_qmod(
         reject(tokens[0], "entry", "source requires one qfunc main")
     verify_permutations(definitions)
     main = definitions["main"]
-    parameters = {p.name.text: p for p in main.parameters if p.role == "real"}
+    parameters = {
+        p.name.text: p for p in main.parameters if p.role in {"real", "integer"}
+    }
     inputs = {} if classical_inputs is None else classical_inputs
     if not isinstance(inputs, Mapping) or set(inputs) != set(parameters):
         reject(
@@ -3342,6 +3456,8 @@ def parse_qmod(
         )
     bindings: dict[str, float] = {}
     arrays: dict[str, tuple[float, ...]] = {}
+    integer_bindings: dict[str, int] = {}
+    integer_arrays: dict[str, tuple[int, ...]] = {}
 
     def checked_real(value: object, name: str) -> float:
         if (
@@ -3358,6 +3474,14 @@ def parse_qmod(
         return float(value)
 
     for name, value in inputs.items():
+        if parameters[name].role == "integer":
+            if parameters[name].kind == "int":
+                integer_bindings[name] = checked_integer(value, parameters[name].name)
+            else:
+                integer_arrays[name] = checked_integer_array(
+                    value, parameters[name].name, parameters[name].width
+                )
+            continue
         array_width = parameters[name].width
         if array_width is None:
             bindings[name] = checked_real(value, name)
@@ -3382,7 +3506,8 @@ def parse_qmod(
         ):
             reject(syntax.name, "name", "duplicate helper parameter")
         if any(
-            port.role not in {"real", "inout", "callable"} for port in syntax.parameters
+            port.role not in {"real", "integer", "inout", "callable"}
+            for port in syntax.parameters
         ):
             reject(
                 syntax.name,
@@ -3450,6 +3575,8 @@ def parse_qmod(
             if name == "main":
                 adapter.classical_values.update(bindings)
                 adapter.classical_arrays.update(arrays)
+                adapter.classical_integers.update(integer_bindings)
+                adapter.integer_arrays.update(integer_arrays)
             program = adapter.adapt()
             compiled[name] = adapter, program
             active.remove(name)

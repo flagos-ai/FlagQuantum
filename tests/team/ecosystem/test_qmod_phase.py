@@ -33,7 +33,7 @@ def test_native_phase_builds_owned_one_bit_callee(kind, allocation):
     "declaration,body,code",
     [
         ("output x:qbit", "allocate(x); phase();", "qmod.signature"),
-        ("output x:qbit", "allocate(x); phase(pi);", "qmod.signature"),
+        ("output x:qbit", "allocate(x); phase(pi,pi,pi);", "qmod.signature"),
         ("output x:qbit", "allocate(x); phase(x,pi,pi);", "qmod.signature"),
         ("output phase:qbit", "allocate(phase); phase(phase,pi);", "qmod.signature"),
         ("output x:qbit", "allocate(x); phase(x,1);", "qmod.coefficient"),

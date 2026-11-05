@@ -298,9 +298,10 @@ operations are rejected even in unused definitions or cancelling pairs. Existing
 Compiler initialization and ownership checks remain authoritative. Helpers can
 produce fixed one-dimensional qbit[N] outputs, preserving the array type for N=1.
 Unimplemented Input/Const array roles, unsized helper Output arrays and dynamic
-qperm callbacks remain unsupported. multi_suzuki_trotter currently admits exactly
-one inline sparse operator and one time, reusing existing order 1/2 evolution and
-1..256 repetitions. Additional operators and times are rejected. These are local
+qperm callbacks remain unsupported. multi_suzuki_trotter retains its singleton
+order 1/2, 1..256 repetition profile. Paired arrays of 2..16 operators/times also
+work with first order and one repetition; other multi-operator formulas and
+mismatched lengths are rejected. These are local
 integration slices pending the complete original corpus gate and integration CI.
 
 ## Compact Pauli evolution integration slice
@@ -341,3 +342,19 @@ unbounded expansion, guarded factorization or a global factor-search optimizer.
 The unchanged TSP and facility-location originals pass two nonzero parameter
 sets against independent exact-classical-cost Circuits, including absolute
 phase and clean workspace. This local slice does not complete the corpus gate.
+
+## Exact integer composition integration slice
+
+Qmod int/int[] main and helper bindings, 0..256 static power, loop-local integer
+if, default-coefficient phase and single-owner Pauli views are admitted under
+existing independent budgets. Classical int values exclude bool and float and
+have at most 256 magnitude bits. Arrays have 1..256 elements; main array lengths
+are declared exactly. Real expression arrays are finite bounded classical data.
+Paired multi-operator evolution supports 2..16 operators, first order and one
+repetition, in source order. The existing singleton profile is preserved.
+
+This is not arbitrary classical execution, general Input/Const view support,
+consuming ownership, a nested-loop language or a Python qfunc parameter extension.
+Original Fermi iteration counts 1/2, two nonzero credit-card data pairs and fixed
+BB84 data have independent full-state Circuit acceptance. The 216-original gate
+and complete integration CI remain outstanding.

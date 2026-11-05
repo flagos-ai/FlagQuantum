@@ -90,6 +90,7 @@ def verify_permutations(definitions: Mapping[str, Function]) -> None:
                 "within",
                 "control",
                 "repeat",
+                "power",
                 "invert",
                 "if",
             }:

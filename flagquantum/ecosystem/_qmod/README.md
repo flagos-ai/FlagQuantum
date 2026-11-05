@@ -972,11 +972,11 @@ actuals and escaped output storage are rejected. This does not introduce
 unsized Output arrays in helpers, Input ports or Const array/record ports.
 
 `multi_suzuki_trotter([SparsePauliOp {...}], times, order, repetitions, target)`
-accepts exactly one inline sparse operator and one real time. `times` can be a
-bound real array, a checked slice or a real array literal. Order 1 or 2 and 1..256
-repetitions reuse existing Suzuki-Trotter lowering, including target widths,
-finite real coefficients, global phases and expansion limits. Multiple operators
-or times are explicitly rejected; none are discarded.
+accepts one inline sparse operator with order 1/2 and 1..256 repetitions, or
+2..16 paired operators/times with order 1 and exactly one repetition. `times` can
+be a bound real array, a checked slice or a finite classical-expression array.
+The operator and time lengths must match. All forms reuse existing Pauli
+lowering, widths, global phases and expansion limits; no term is discarded.
 
 Run either unchanged molecular example with one nonzero time:
 
@@ -1027,3 +1027,32 @@ The finite absolute-weight normalization uses math.fsum. Sampling stays at the
 adapter boundary; no random state or external Qmod type enters Compiler.
 See docs/api-changes/FQ-SYNTH-UP06-PAULI-20261105.md and the independent tool
 `tools/validate_qmod_large_pauli.py`. This remains local corpus integration work.
+
+## Bounded exact integers and static composition
+
+Qmod main and ordinary bound helpers accept int and int[N] parameters. Helpers
+may use inferred-length int[] arrays. Values must be exact non-Boolean Python
+integers of at most 256 magnitude bits; arrays have 1..256 elements and exact
+main-port lengths. Main values use the existing classical_inputs mapping.
+No real-to-integer rounding or quantum-state read supplies a static value.
+
+power(count) repeats a checked static body 0..256 times without exposing an
+index. repeat retains its index. A loop may contain integer-comparison if
+statements with gate-only bodies, ordinary checked helper calls and admitted
+Pauli/unitary/phase operations. Allocation, consuming ownership, nested loops
+and quantum-dependent static conditions remain outside this profile. Existing
+scope, helper-expansion, owned-node and final resource caps are unchanged.
+
+phase(expression) uses coefficient 1.0, with constant/global and bounded real
+quantum phases sharing the existing lowering. Integer-to-real angle conversion
+is allowed only within the exact real range. Quantum arithmetic never becomes
+host classical data. Pauli targets can be static ordered views in a single
+writable owner, with distinct locations and checked local width/bit order.
+Mixed-owner Pauli targets and unsupported multi-operator formulas fail closed.
+
+The three unchanged Fermi, BB84 and credit-card originals have independent full
+state-vector acceptance. Run tools/validate_qmod_integer_composition.py or
+python -m examples.synthesis_integer_composition. The example also shows the
+existing native qfunc equivalent; Python qfunc parameter syntax is not extended
+by this Qmod adapter slice. Top-level int declarations, arbitrary classical
+execution and cscope/VQE/save remain separate unsupported dependencies.
