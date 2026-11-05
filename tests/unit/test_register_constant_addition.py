@@ -157,12 +157,26 @@ def reference_arithmetic_gates(
             bloq = gate.sub_gate.bloq.controlled(ctrl_spec=CtrlSpec(cvs=cv))
         if not preserve_components or not isinstance(bloq, Bloq):
             return NotImplemented
+        if type(bloq).__name__ in {"IntState", "IntEffect"}:
+            # States/effects have no complete Cirq export (ZeroEffect raises).
+            # Bind their unmodified basis tensors to zero-initialized/returned
+            # native work. Cleanup is independently proved on the whole channel.
+            bits = bloq.dtype.to_bits(bloq.val)
+            basis = np.zeros(1 << int(bloq.bitsize), dtype=np.complex128)
+            basis[int(bloq.val)] = 1
+            np.testing.assert_array_equal(
+                bloq.decompose_bloq().tensor_contract().reshape(-1), basis
+            )
+            return tuple(
+                cirq.X(q) for q, bit in zip(op.qubits, bits, strict=True) if bit
+            )
         if type(bloq).__name__ not in {
             "CAdd",
             "AddK",
             "Controlled",
             "CModAdd",
             "CModSub",
+            "CModAddK",
             "CLinearDepthGreaterThan",
         }:
             return NotImplemented
@@ -170,7 +184,7 @@ def reference_arithmetic_gates(
 
         quregs = split_qubits(bloq.signature, op.qubits)
         component = bloq.decompose_bloq()
-        if type(bloq).__name__ not in {"CModAdd", "CModSub"}:
+        if type(bloq).__name__ not in {"CModAdd", "CModSub", "CModAddK"}:
             component = component.flatten()
         circuit, outputs = component.to_cirq_circuit_and_quregs(
             qubit_manager=manager, **quregs
