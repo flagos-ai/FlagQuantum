@@ -150,3 +150,18 @@ def test_collected_plan_executes_the_same_selection_and_records_cpu(
         assert usage["wall_seconds"] > 0
         assert usage["assigned_ci_cpus"] == 2
     assert total == 9
+
+
+def test_large_untimed_file_is_spread_instead_of_forming_one_long_tail(
+    tmp_path, monkeypatch
+):
+    monkeypatch.setenv("GITHUB_SHA", "d" * 40)
+    monkeypatch.delenv("GITHUB_OUTPUT", raising=False)
+    nodes = tuple(f"tests/test_new_sweep.py::test_case[{i}]" for i in range(160))
+    assert write_plan(nodes, tmp_path / "plan", 192) == 10
+    shards = [
+        (tmp_path / "plan" / f"shard-{i}.txt").read_text().splitlines()
+        for i in range(10)
+    ]
+    assert all(len(shard) == 16 for shard in shards)
+    assert sorted(n for shard in shards for n in shard) == sorted(nodes)

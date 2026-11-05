@@ -622,7 +622,7 @@ The checked-in `ci.yml` defines twenty-six jobs:
 - `distributed-cpu-shard`: partitions of the `pr-distributed` tier — CPU
   distributed semantics and release-contract checks — run separately from the core matrix;
 - `coverage-plan`: one complete collection of the maintained coverage selection,
-  partitioned by file into at most 192 nonempty trusted PR shards or 16 hosted shards;
+  partitioned in bounded file batches into at most 192 nonempty trusted PR shards or 16 hosted shards;
 - `coverage-shard`: execute the explicit node list for each planned partition
   under the unchanged marker expression on separate runners;
 - `coverage`: the required aggregation gate, which combines all raw coverage
@@ -682,8 +682,9 @@ JAX regression remains outside pytest worker fan-out. Dependency-bound variants
 retain their declared Python and CPU Torch versions in separate private environments.
 CPU jobs hide GPUs and verify dependency consistency and CPU-only frameworks.
 
-Coverage uses checked-in duration hints from a cited CI run to assign whole files
-by estimated duration. The plan's union is the original marker selection. Raw
+Coverage uses checked-in duration hints from a cited CI run to assign file batches
+by estimated duration. Batches contain at most 16 tests, so a large untimed file
+can use several runners instead of creating one long tail. The plan's union is the original marker selection. Raw
 coverage is written outside the source tree, then combined before the unchanged
 coverage policy runs. Unmeasured tests receive the same positive default weight.
 Pull requests run complete smoke/unit coverage once on
@@ -1003,12 +1004,12 @@ from replacing another job artifact.
 ### Filling the existing CPU allocation
 
 The `coverage-plan` job collects the original marker selection once, then assigns
-whole test files by estimated duration to at most 192 nonempty shards for trusted
+file batches of at most 16 tests by estimated duration to at most 192 nonempty shards for trusted
 PRs (16 on hosted/manual runs). Each selected node appears exactly once in the
 plan. Coverage data stays under the runner temporary directory, outside the
 source tree copied by mutation tests. Shards verify the source SHA and content digest before running their explicit
-node list. Keeping files together avoids full-repository collection on every
-worker. The final coverage gate requires exactly the planned number of valid
+node list. Keeping bounded file batches together avoids full-repository collection on every
+worker while allowing a large test module to use several runners. The final coverage gate requires exactly the planned number of valid
 SQLite inputs; failed or missing shards remain failures.
 
 The offline action measures the runner service before entering Docker. Containers

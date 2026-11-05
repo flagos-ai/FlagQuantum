@@ -13,10 +13,11 @@ from tools.pytest_shard import balanced_assignments, load_duration_hints
 
 SCHEMA = "flagquantum_coverage_plan_v1"
 MAX_SHARDS = 192
+MAX_FILE_BATCH_TESTS = 16
 
 
 def write_plan(nodeids: tuple[str, ...], directory: Path, requested: int) -> int:
-    """Keep each file on one slot and preserve every collected node exactly once."""
+    """Bound file batches and preserve every collected node exactly once."""
     if not nodeids or len(nodeids) != len(set(nodeids)):
         raise ValueError("Coverage collection must be nonempty and unique")
     if not 1 <= requested <= MAX_SHARDS:
@@ -28,17 +29,26 @@ def write_plan(nodeids: tuple[str, ...], directory: Path, requested: int) -> int
             raise ValueError(f"Invalid collected test path: {filename}")
         files[filename].append(nodeid)
     default, hints = load_duration_hints()
+    # Large newly added files may have no timing hints yet. A bounded batch
+    # prevents one such file from concentrating all expensive tests on one slot.
+    batches = {
+        f"{filename}::batch-{offset // MAX_FILE_BATCH_TESTS}": nodes[
+            offset : offset + MAX_FILE_BATCH_TESTS
+        ]
+        for filename, nodes in sorted(files.items())
+        for offset in range(0, len(nodes), MAX_FILE_BATCH_TESTS)
+    }
     weights = {
         name: sum(hints.get(node, default) for node in nodes)
-        for name, nodes in files.items()
+        for name, nodes in batches.items()
     }
-    count = min(requested, len(files))
+    count = min(requested, len(batches))
     assignments = balanced_assignments(
-        tuple(files), count, default_seconds=default, durations=weights
+        tuple(batches), count, default_seconds=default, durations=weights
     )
     shards: list[list[str]] = [[] for _ in range(count)]
-    for filename in sorted(files):
-        shards[assignments[filename]].extend(files[filename])
+    for batch in sorted(batches):
+        shards[assignments[batch]].extend(batches[batch])
     assert all(shards)
     directory.mkdir(parents=True, exist_ok=False)
     for index, nodes in enumerate(shards):
