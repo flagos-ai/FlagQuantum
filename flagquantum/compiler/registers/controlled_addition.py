@@ -8,7 +8,7 @@
 
 from ...core.ir import Instruction
 from .and_compute import and_compute_ir, and_uncompute_ir
-from .arithmetic import add_ir
+from .arithmetic import _constant_addition_ir, add_ir
 
 
 def controlled_add_ir(
@@ -61,3 +61,34 @@ def controlled_add_ir(
         for gate in and_uncompute_ir(control, a, work, bit, values=values)
     )
     return (*compute, *addition, *erase)
+
+
+def controlled_add_constant_ir(
+    control: int,
+    target: tuple[int, ...],
+    value: int,
+    constant: tuple[int, ...],
+    carries: tuple[int, ...],
+    classical_bits: tuple[int, ...],
+    *,
+    control_value: int = 1,
+) -> tuple[Instruction, ...]:
+    """Conditionally add an unsigned constant by controlling only its load.
+
+    Work allocation and normalization match add_constant_ir. The shared Add
+    executes on both control branches, as in upstream Always(Add). Control-on-zero
+    retains the source's global X conjugation. All quantum work starts/ends zero.
+    """
+    if type(control_value) is not int or control_value not in (0, 1):
+        raise ValueError(
+            "Controlled constant addition control value must be zero or one"
+        )
+    if type(control) is not int or control < 0:
+        raise ValueError(
+            "Controlled constant addition requires a nonnegative control wire"
+        )
+    body = _constant_addition_ir(
+        target, value, constant, carries, classical_bits, control=control
+    )
+    flip = (Instruction("x", (control,)),) if control_value == 0 else ()
+    return (*flip, *body, *flip)

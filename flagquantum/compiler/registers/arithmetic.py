@@ -113,12 +113,27 @@ def add_constant_ir(
     Negative constants follow upstream unsigned normalization. Positive constants
     must fit n bits. No constant-specific gate simplification is performed.
     """
+    return _constant_addition_ir(
+        target, value, constant, carries, classical_bits, control=None
+    )
+
+
+def _constant_addition_ir(
+    target: tuple[int, ...],
+    value: int,
+    constant: tuple[int, ...],
+    carries: tuple[int, ...],
+    classical_bits: tuple[int, ...],
+    *,
+    control: int | None,
+) -> tuple[Instruction, ...]:
+    """One load/add/unload implementation for plain and controlled AddK."""
     width = len(target)
     if width < 1 or len(constant) != width:
         raise ValueError(
             "Constant addition requires equal nonempty target and load widths"
         )
-    wires = (*target, *constant, *carries)
+    wires = (*target, *constant, *carries, *((control,) if control is not None else ()))
     if any(type(w) is not int or w < 0 for w in wires) or len(set(wires)) != len(wires):
         raise ValueError(
             "Constant addition requires distinct nonnegative quantum wires"
@@ -131,7 +146,11 @@ def add_constant_ir(
         )
     normalized = value % (1 << width)
     load = tuple(
-        Instruction("x", (wire,))
+        (
+            Instruction("x", (wire,))
+            if control is None
+            else Instruction("cx", (control, wire))
+        )
         for i, wire in enumerate(constant)
         if normalized >> (width - i - 1) & 1
     )

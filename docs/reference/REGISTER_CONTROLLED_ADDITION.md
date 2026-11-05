@@ -89,3 +89,55 @@ All 444 combined regression tests pass. The And and controlled-addition modules
 have 100% statement coverage. Strict mypy passes on 929 source files. Both Black
 versions, Ruff, architecture boundaries and the multi-level IR contract pass.
 Whole-PR remote CI/GPU and review remain independent acceptance conditions.
+
+## Controlled unsigned constants
+
+`controlled_add_constant_ir(control, target, value, constant, carries,
+classical_bits, control_value=1)` ports the separate controlled `AddK` path:
+controlled `XorK` load, **uncontrolled** `Always(Add)`, controlled `XorK` unload.
+It does not replace the middle Add with CAdd. `arithmetic.py` owns a single
+internal load/add/unload implementation consumed by both plain and controlled
+constant addition. The existing `add_constant_ir` signature and emitted sequence
+remain unchanged.
+
+For an n-bit target, supply n clean constant wires, n-1 clean carries and n-1
+classical slots, all explicit and disjoint as required by the plain entry.
+Only loading and unloading use CNOTs from the control. The control-on-zero source
+wraps the whole operation in two X gates on the control; those are retained.
+Negative constants are normalized modulo `2**n`; nonnegative constants must fit.
+The supported interface is concrete and unsigned. Other dtypes, symbolic values
+and multiple controls are not counted as completed.
+
+The runnable example above also uses
+`circuit.append(ControlledConstantAddition(cv))`. With three-bit target 2 and
+constant -3, its active branch becomes 7 while the inactive branch remains 2.
+Both control polarities preserve the branches' imaginary relative phase and
+clear all five quantum work wires in every sampled trajectory.
+
+| n, k, control value | Measured CNOT | Measured X | Measured T/TDG | Model T at 4 T/And | Measured / model measurements | Clean quantum work |
+|---|---:|---:|---:|---:|---:|---:|
+| 3, -3, 1 | 25 | 0 | 8 | 8 | 2 / 2 | 5 |
+| 8, 83, 1 | 89 | 0 | 28 | 28 | 7 / 7 | 15 |
+| 8, 83, 0 | 89 | 2 | 28 | 28 | 7 / 7 | 15 |
+| 8, 0, 1 | 81 | 0 | 28 | 28 | 7 / 7 | 15 |
+
+These T and measurement estimates come independently from the pinned controlled
+AddK's `QECGatesCost`, with its explicit And-to-T conversion. Raw model fields
+are not primitive gate counts. The complete native instruction multiset and
+per-wire dependencies, including operands and all feedback metadata, match
+unmodified source. Zero constants retain the source's complete carry network;
+its functional identity is not used to silently remove T gates or measurements.
+
+65 new cases compare source networks at widths 1, 2, 3, 5 and 8, for zero, one,
+maximum and negative constants with both controls. Native widths 1 through 4
+check every target/control complex amplitude, an entangled spectator, clean
+work, and inverse-by-opposite-constant. Every carry outcome appears in the 64
+sampled trajectories used for these small cases; no exact probability claim is
+inferred from sampling. Validation rejects invalid controls, aliases, constants
+and workspace. Plain AddK and all earlier arithmetic consumers are rechecked.
+
+The combined suite passes 509 tests. Controlled-addition statement coverage is
+100%; arithmetic coverage is 97%, including full coverage of the shared constant
+body and the new entry. Strict mypy passes on 929 source files. Both Black
+versions, Ruff, architecture and multi-level IR checks pass. Whole-PR remote
+acceptance remains separate.
