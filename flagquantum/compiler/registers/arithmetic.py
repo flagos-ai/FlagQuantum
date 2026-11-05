@@ -32,6 +32,36 @@ def add_ir(
     classical_bits: tuple[int, ...],
 ) -> tuple[Instruction, ...]:
     """Lower Qualtran Add for unsigned big-endian registers."""
+    return _addition_ir(left, right, carries, classical_bits, adjoint=False)
+
+
+def add_adjoint_ir(
+    left: tuple[int, ...],
+    right: tuple[int, ...],
+    carries: tuple[int, ...],
+    classical_bits: tuple[int, ...],
+) -> tuple[Instruction, ...]:
+    """Port the exact Add adjoint, b-=a, with measured borrow-prefix cleanup.
+
+    Big-endian unsigned registers have 1 <= len(a) <= len(b). All n-1 caller
+    carry wires start and end in zero, with one distinct classical slot each.
+    Preserve the source component inverse, not a different subtraction network.
+    """
+    wires = (*left, *right, *carries)
+    if any(type(w) is not int or w < 0 for w in wires) or len(set(wires)) != len(wires):
+        raise ValueError("Add adjoint requires distinct nonnegative quantum wires")
+    return _addition_ir(left, right, carries, classical_bits, adjoint=True)
+
+
+def _addition_ir(
+    left: tuple[int, ...],
+    right: tuple[int, ...],
+    carries: tuple[int, ...],
+    classical_bits: tuple[int, ...],
+    *,
+    adjoint: bool,
+) -> tuple[Instruction, ...]:
+    """One source component sequence shared by Add and its abstract inverse."""
     width = len(right)
     if not 1 <= len(left) <= width or len(carries) != width - 1:
         raise ValueError(
@@ -41,16 +71,24 @@ def add_ir(
         raise ValueError("Add requires one distinct classical bit per carry")
 
     a, b = left[::-1], right[::-1]
-    instructions: list[Instruction] = []
+    blocks: list[tuple[Instruction, ...]] = []
 
     def cx(control: int, target: int) -> None:
-        instructions.append(Instruction("cx", (control, target)))
+        blocks.append((Instruction("cx", (control, target)),))
+
+    def logical_and(x: int, y: int, i: int, *, erase: bool = False) -> None:
+        # Invert abstract components before expanding their measured gates.
+        if erase ^ adjoint:
+            block = and_uncompute_ir(x, y, carries[i], classical_bits[i])
+        else:
+            block = and_compute_ir(x, y, carries[i])
+        blocks.append(block)
 
     if width == 1:
         cx(a[0], b[0])
-        return tuple(instructions)
+        return tuple(g for block in blocks for g in block)
 
-    instructions.extend(and_compute_ir(a[0], b[0], carries[0]))
+    logical_and(a[0], b[0], 0)
     for depth in range(1, width - 1):
         previous = carries[depth - 1]
         control = previous
@@ -58,7 +96,7 @@ def add_ir(
             control = a[depth]
             cx(previous, control)
         cx(previous, b[depth])
-        instructions.extend(and_compute_ir(control, b[depth], carries[depth]))
+        logical_and(control, b[depth], depth)
         cx(previous, carries[depth])
     cx(carries[-1], b[-1])
     if len(a) == width:
@@ -67,15 +105,14 @@ def add_ir(
         previous = carries[depth - 1]
         cx(previous, carries[depth])
         control = a[depth] if depth < len(a) else previous
-        instructions.extend(
-            and_uncompute_ir(control, b[depth], carries[depth], classical_bits[depth])
-        )
+        logical_and(control, b[depth], depth, erase=True)
         if depth < len(a):
             cx(previous, control)
             cx(control, b[depth])
-    instructions.extend(and_uncompute_ir(a[0], b[0], carries[0], classical_bits[0]))
+    logical_and(a[0], b[0], 0, erase=True)
     cx(a[0], b[0])
-    return tuple(instructions)
+    ordered = reversed(blocks) if adjoint else iter(blocks)
+    return tuple(g for block in ordered for g in block)
 
 
 def measurement_add_or_subtract_ir(
