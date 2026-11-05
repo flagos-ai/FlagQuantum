@@ -90,7 +90,7 @@ def reference_arithmetic_gates(
 
     manager = Manager()
     context = cirq.DecompositionContext(manager)
-    if cirq_style:
+    if cirq_style and hasattr(source, "decompose_from_registers"):
         # Retain original allocation/generator order instead of a DAG export that
         # may reorder independent allocations and change their temporary names.
         quregs = {
@@ -102,7 +102,9 @@ def reference_arithmetic_gates(
         composite = (
             source if isinstance(source, CompositeBloq) else source.decompose_bloq()
         )
-        operation, outputs = composite.flatten().to_cirq_circuit_and_quregs(
+        operation, outputs = (
+            composite if cirq_style else composite.flatten()
+        ).to_cirq_circuit_and_quregs(
             qubit_manager=manager,
             **{
                 name: np.array([cirq.LineQubit(w) for w in wires]).reshape(
