@@ -188,3 +188,18 @@ def test_iteration_products_keep_effect_expansion_budget() -> None:
     source = program(prepare="H(q[0]);PHASE(0.37,q[0]);CX(q[0],q[1]);" * 8, k=256)
     with pytest.raises(ValueError, match="4096"):
         synth.synthesize(source, source_format="qmod")
+
+
+@pytest.mark.parametrize("initial_flag", [0, 1])
+def test_asymmetric_record_fields_keep_declared_bit_order(initial_flag: int) -> None:
+    prefix = "X(q[3]);" if initial_flag else ""
+    source = f"qstruct Layout {{low:qnum<1>;high:qnum<2>;}} qperm predicate(const s:Layout,t:qbit) {{t ^= (s.low==1) & (s.high==2);}} qfunc act(s:Layout,t:qbit) {{hadamard_transform(s);predicate(s,t);}} qfunc main(output q:qbit[4]) {{allocate(q);{prefix}act(q[0:3],q[3]);}}"
+    program = synth.synthesize(source, source_format="qmod")
+    actual = fq.run(program).statevector().reshape(16, -1)
+    expected = torch.zeros(16, dtype=DTYPE)
+    for word in range(8):
+        # The first one-bit field is numeric bit 0; high occupies bits 1 and 2.
+        marked = (word & 1) == 1 and (word >> 1) == 2
+        expected[(initial_flag ^ marked) * 8 + word] = 1 / math.sqrt(8)
+    torch.testing.assert_close(actual[:, 0], expected, atol=1e-12, rtol=0)
+    assert float(actual[:, 1:].abs().square().sum()) < 1e-24
