@@ -53,6 +53,8 @@ def reference_arithmetic_gates(
     inputs: dict[str, tuple[int, ...]],
     allocations: tuple[int, ...],
     measurement_slots: dict[int, int],
+    *,
+    cirq_style: bool = False,
 ) -> tuple[Instruction, ...]:
     """Read unmodified pinned arithmetic with explicit quantum/classical binding."""
     pytest.importorskip("qualtran")
@@ -67,6 +69,7 @@ def reference_arithmetic_gates(
     class Manager(cirq.QubitManager):
         def __init__(self) -> None:
             self.available = list(reversed(allocations))
+            self.rank = {wire: i for i, wire in enumerate(allocations)}
 
         def qalloc(self, n: int, dim: int = 2) -> list[cirq.Qid]:
             assert dim == 2
@@ -77,25 +80,43 @@ def reference_arithmetic_gates(
 
         def qfree(self, qubits: list[cirq.Qid]) -> None:
             self.available.extend(reversed([q.x for q in qubits]))
+            if cirq_style:
+                # Bloq-to-Cirq may temporarily allocate replacement RIGHT outputs
+                # before mapping them onto supplied wires. Recycling these names
+                # must not reorder subsequent source-generator allocations.
+                self.available = sorted(
+                    set(self.available), key=self.rank.__getitem__, reverse=True
+                )
 
     manager = Manager()
     context = cirq.DecompositionContext(manager)
-    composite = source if isinstance(source, CompositeBloq) else source.decompose_bloq()
-    operation, outputs = composite.flatten().to_cirq_circuit_and_quregs(
-        qubit_manager=manager,
-        **{
-            name: np.array([cirq.LineQubit(w) for w in wires]).reshape(
-                (
-                    *source.signature.get_left(name).shape,
-                    int(source.signature.get_left(name).bitsize),
-                )
-            )
+    if cirq_style:
+        # Retain original allocation/generator order instead of a DAG export that
+        # may reorder independent allocations and change their temporary names.
+        quregs = {
+            name: np.array([cirq.LineQubit(w) for w in wires])
             for name, wires in inputs.items()
-        },
-    )
-    assert {
-        name: tuple(q.x for q in wires.flat) for name, wires in outputs.items()
-    } == inputs
+        }
+        operation = source.decompose_from_registers(context=context, **quregs)
+    else:
+        composite = (
+            source if isinstance(source, CompositeBloq) else source.decompose_bloq()
+        )
+        operation, outputs = composite.flatten().to_cirq_circuit_and_quregs(
+            qubit_manager=manager,
+            **{
+                name: np.array([cirq.LineQubit(w) for w in wires]).reshape(
+                    (
+                        *source.signature.get_left(name).shape,
+                        int(source.signature.get_left(name).bitsize),
+                    )
+                )
+                for name, wires in inputs.items()
+            },
+        )
+        assert {
+            name: tuple(q.x for q in wires.flat) for name, wires in outputs.items()
+        } == inputs
     names = {
         cirq.X: "x",
         cirq.H: "h",
