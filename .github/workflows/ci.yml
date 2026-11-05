@@ -2206,7 +2206,7 @@ jobs:
       OPENBLAS_NUM_THREADS: "1"
       CUDA_VISIBLE_DEVICES: ""
       JAX_PLATFORMS: cpu
-      COVERAGE_FILE: .coverage.${{ matrix.shard }}
+      COVERAGE_FILE: ${{ runner.temp }}/fq-coverage/.coverage.${{ matrix.shard }}
     concurrency:
       group: flagquantum-${{ (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository) && format('self-hosted-{0}-coverage-shard-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-${{ matrix.hosted-bucket }}
       queue: max
@@ -2292,6 +2292,7 @@ jobs:
       - name: Run this exact coverage partition (pull requests)
         if: github.event_name == 'pull_request'
         run: |
+          mkdir -p "$RUNNER_TEMP/fq-coverage"
           plan="$(python -m tools.ci_coverage_plan "$RUNNER_TEMP/coverage-plan" ${{ matrix.shard }})"
           python -m pytest "@$plan" -m "(smoke or unit or integration or jax) and not slow and not qiskit and not cudaq and not triton" \
             -n ${{ env.FQ_PYTEST_WORKERS }} --dist=worksteal --durations=50 \
@@ -2299,6 +2300,7 @@ jobs:
       - name: Run this exact coverage partition (integration revisions)
         if: github.event_name != 'pull_request'
         run: |
+          mkdir -p "$RUNNER_TEMP/fq-coverage"
           plan="$(python -m tools.ci_coverage_plan "$RUNNER_TEMP/coverage-plan" ${{ matrix.shard }})"
           python -m pytest "@$plan" -m "(smoke or unit or integration or jax) and not qiskit and not cudaq and not triton" \
             -n ${{ env.FQ_PYTEST_WORKERS }} --dist=worksteal --durations=50 \
@@ -2307,7 +2309,7 @@ jobs:
         timeout-minutes: 6
         with:
           name: coverage-shard-${{ matrix.shard }}-${{ github.sha }}
-          path: .coverage.${{ matrix.shard }}
+          path: ${{ runner.temp }}/fq-coverage/.coverage.${{ matrix.shard }}
           include-hidden-files: true
       - name: Retain resource limits and pytest timing reports
         if: ${{ always() && env.FQ_CI_REPORT_DIR != '' }}
