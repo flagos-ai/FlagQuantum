@@ -99,8 +99,6 @@ def test_trusted_cpu_jobs_and_matrix_legs_do_not_share_hosted_buckets() -> None:
                 )
             ):
                 continue
-            if name == "coverage-shard":
-                continue
             prefix = (
                 "self-hosted"
                 if ("flagcicd-r300-" in job["runs-on"] or "fromJSON(" in job["runs-on"])
@@ -112,9 +110,19 @@ def test_trusted_cpu_jobs_and_matrix_legs_do_not_share_hosted_buckets() -> None:
                 f"&& format('{prefix}-{{0}}-{name}-{{1}}', "
                 "github.run_id, strategy.job-index || 0) || 'gh' }}"
             )
+            if name in {"coverage-plan", "coverage-shard"}:
+                selector = selector.replace(
+                    "!= 'pull_request' ||", "== 'pull_request' &&"
+                )
             template = job["concurrency"]["group"]
             assert selector in template
             matrix = job.get("strategy", {}).get("matrix", {})
+            if matrix == "${{ fromJSON(needs.coverage-plan.outputs.matrix) }}":
+                matrix = {
+                    "include": [
+                        {"shard": i, "hosted-bucket": i % 8} for i in range(192)
+                    ]
+                }
             rows = matrix.get("include") or [
                 dict(zip(matrix, values, strict=True))
                 for values in product(*matrix.values())

@@ -87,3 +87,14 @@ def test_checked_in_slow_tests_are_balanced_across_eight_shards() -> None:
         loads[shard] += durations[nodeid]
 
     assert max(loads) - min(loads) < 5.0
+
+
+def test_shard_helper_does_not_require_posix_resource_on_windows(monkeypatch):
+    import sys
+    from types import SimpleNamespace
+
+    from tools import pytest_shard
+
+    monkeypatch.setattr(pytest_shard, "os", SimpleNamespace(name="nt"))
+    monkeypatch.setitem(sys.modules, "resource", None)
+    assert pytest_shard._cpu_seconds() >= 0

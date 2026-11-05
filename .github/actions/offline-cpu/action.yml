@@ -16,6 +16,9 @@ inputs:
 runs:
   using: composite
   steps:
+    - name: Capture the runner service budget before entering Docker
+      shell: bash
+      run: python3 -I tools/ci_cpu_budget.py
     - shell: bash
       env:
         FQ_CI_REQUIRE_CACHED: ${{ inputs.require-cached }}

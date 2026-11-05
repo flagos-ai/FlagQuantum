@@ -552,7 +552,7 @@ pushes run the installed-wheel acceptance job instead of another full matrix;
 manual full validation remains available. See [the PR and main policy](CI_MERGE_QUEUE.md).
 
 GPU and multi-node tiers must run on explicitly provisioned environments.
-The checked-in `ci.yml` defines twenty-five jobs:
+The checked-in `ci.yml` defines twenty-six jobs:
 
 - `pre-commit`: source-file hygiene hooks, using the same action as the manual
   diagnostics workflow;
@@ -621,9 +621,10 @@ The checked-in `ci.yml` defines twenty-five jobs:
   wheel inspection, and uploadable-artifact verification;
 - `distributed-cpu-shard`: partitions of the `pr-distributed` tier — CPU
   distributed semantics and release-contract checks — run separately from the core matrix;
-- `coverage-shard`: sixteen deterministic, duration-balanced partitions of the
-  maintained package measured under the same marker expression on separate
-  runners;
+- `coverage-plan`: one complete collection of the maintained coverage selection,
+  partitioned in bounded file batches into at most 192 nonempty trusted PR shards or 16 hosted shards;
+- `coverage-shard`: execute the explicit node list for each planned partition
+  under the unchanged marker expression on separate runners;
 - `coverage`: the required aggregation gate, which combines all raw coverage
   data files before enforcing the floors in `contracts/coverage-policy.toml`
   with `tools/check_coverage.py`;
@@ -640,13 +641,11 @@ FlagQuantum install happen once per framework instead of once per version. This
 preserves the certified compatibility matrix while reducing runner cold starts
 and the serial queue behind the `light-b` and `light-c` capacity buckets.
 
-The GitHub-hosted jobs are partitioned across sixteen concurrency buckets per
-pull request or manual workflow run. The scope is part of every bucket name: it keeps
-one run at sixteen concurrent jobs without forcing a new pull request to wait for
-an older pull request's coverage or interpreter lane. The organisation-level
-20-runner pool remains the aggregate admission limit. Superseding a run of the
-same pull request still cancels the older run. Already-merged main revisions
-retain their own lightweight installed-wheel acceptance run.
+GitHub-hosted jobs share eight repository-wide concurrency buckets across
+workflow runs. Trusted self-hosted CPU jobs use independent run and matrix
+indices, so these hosted admission limits do not serialize the CPU pool.
+Superseding a run of the same pull request cancels the older run. Already-merged
+main revisions retain their lightweight installed-wheel acceptance run.
 
 Optional integration jobs name the test files they own and retain the marker
 selector inside that file set. This prevents an unrelated module-level
@@ -660,47 +659,34 @@ checks are owned by the `quality` job and are not repeated in a second full
 project environment. The local pre-commit configuration remains broader so a
 developer still gets those checks before pushing.
 
-The CPU core and runtime tiers use the dedicated A800 CPU runners with up to
-16 xdist workers, bounded by measured affinity, nested cgroup CPU quotas and
-memory limits, and isolated per-job environments. Trusted manual validation uses
-the same A800 route as same-repository PRs, rather than the two-worker hosted
-fallback. Each A800 host runs eight independent CPU services, each capped at
-12 logical CPU time units, 64 GiB memory and 4096 tasks. The combined CPU ceiling
-remains 96 units per host; memory ceilings are limits, not reservations. Existing
-GPU services are unchanged. Fork PRs run these tiers on GitHub-hosted Ubuntu with
-at most two workers. Coverage shards and distributed CPU contracts use the isolated A800 and
-MC550 service queue (`flagquantum-cpu`). MC550 services admit four coverage
-workers and one distributed launcher within their four-CPU/16-GiB limits. On
-A800: the deployed services admit twelve core/runtime workers, six coverage
-workers, or one distributed launcher with up to eight child ranks. The tool
-admits two distributed launchers only when a service exposes at least sixteen
-CPU time units and sufficient memory. Eight services per host reduce queues
-when the thirteen heavy CPU jobs of a full run become ready together.
-Portable optional SDK, dependency-bound and supply-chain checks retain the
-general CPU pool; full-history quality and coverage aggregation retain A100.
-Fork pull requests use GitHub-hosted Ubuntu. The manual source-hygiene job
-also uses A100, while the short PR hygiene job retains its hosted budget. See
-[A100 runner operation](A100_RUNNERS.md) for pool isolation and validation.
-Coverage uses the measured CPU/memory budget for work-stealing workers
-(six on the verified A800 services, four on MC550, at most two on hosted runners).
-Other measured CPU jobs retain resource and timing reports. The distributed
-CPU selector clears inherited platform rank variables before running and uses
-a separate budget for launchers that may spawn eight ranks; an explicit
-two-rank JAX regression remains outside pytest worker fan-out.
-The seven dependency-bound variants retain their declared Python and CPU Torch
-versions and may run concurrently on separate A100 registrations. The private-environment action clears inherited Python and framework library
-paths, retains the verified A100 bootstrap and CPU wheel cache, and bounds the
-domestic wheel download before falling back to the official CPU index. CPU jobs
-hide GPUs and verify dependency consistency and CPU-only framework selection.
-Core tiers use the same CPU installer while retaining their empty private
-virtual environments: the installer reads each host's configured wheel cache,
-uses the bounded domestic fallback, and caps official CPU downloads at five
-minutes. The no-NumPy and no-optional-framework checks remain unchanged.
-The sixteen coverage shards use checked-in duration hints from a cited CI run and a
-deterministic least-loaded assignment, then merge raw data before applying the
-unchanged coverage policy; their union is the former selection, not a reduced
-test set. Unmeasured tests receive a small default weight, so new tests remain
-evenly distributed without making the historical timing data authoritative.
+Trusted core and runtime suites use the qualified A800 image caches. The
+locked core images still prove the absence of NumPy and optional frameworks.
+Quality and online SDK downloads use hosted runners. Coverage and distributed
+CPU work use the locked coverage image on the generic CPU pool.
+Source preparation and source hygiene use the separate A100 entry pool.
+Dependency-bound and supply-chain checks retain the general CPU pool.
+Fork PRs use hosted runners.
+
+The generic CPU pool includes isolated MC550, BW1100, and A800 services.
+MC550 services use four CPU time units and 16 GiB per slot, with a 64-CPU parent
+ceiling. BW1100 slots use four CPU time units and 24 GiB. Each A800 host has
+eight CPU services capped at 12 CPU time units and 64 GiB each. Worker selection
+uses the measured service quota without reserving half of an isolated slot again:
+four workers on the verified MC550/BW1100 slots, twelve on A800, and at most two
+on hosted runners. These ceilings are limits, not reservations. Existing service
+allocations and GPU services are unchanged.
+
+The distributed selector clears inherited platform rank variables before running
+and separately budgets launchers that may spawn eight ranks. An explicit two-rank
+JAX regression remains outside pytest worker fan-out. Dependency-bound variants
+retain their declared Python and CPU Torch versions in separate private environments.
+CPU jobs hide GPUs and verify dependency consistency and CPU-only frameworks.
+
+Coverage uses checked-in duration hints from a cited CI run to assign file batches
+by estimated duration. Batches contain at most 16 tests, so a large untimed file
+can use several runners instead of creating one long tail. The plan's union is the original marker selection. Raw
+coverage is written outside the source tree, then combined before the unchanged
+coverage policy runs. Unmeasured tests receive the same positive default weight.
 Pull requests run complete smoke/unit coverage once on
 Python 3.12 while Python 3.10 and 3.11 run the compatibility smoke; manual
 full CI retains complete smoke/unit coverage on all supported interpreters. The
@@ -1054,3 +1040,46 @@ within a six-minute upload step budget. Each retry replaces only that job
 artifact, including any partial upload. Persistent failure still fails the job;
 tests are not automatically retried. Job/matrix-unique names prevent one job
 from replacing another job artifact.
+
+
+### Filling the existing CPU allocation
+
+The `coverage-plan` job collects the original marker selection once, then assigns
+file batches of at most 16 tests by estimated duration to at most 192 nonempty shards for trusted
+PRs (16 on hosted/manual runs). Each selected node appears exactly once in the
+plan. Coverage data stays under the runner temporary directory, outside the
+source tree copied by mutation tests. Shards verify the source SHA and content digest before running their explicit
+node list. Keeping bounded file batches together avoids full-repository collection on every
+worker while allowing a large test module to use several runners. The final coverage gate requires exactly the planned number of valid
+SQLite inputs; failed or missing shards remain failures.
+
+The offline action measures the runner service before entering Docker. Containers
+inherit that CPU and memory budget and receive explicit CPU, memory, and affinity
+limits, including on shared Docker daemons. Recognized MC550, BW1100, and A800 CPU
+slot services use their own finite quota without reserving half of it again.
+No runner service quota or host allocation is increased.
+
+Resource artifacts include `test-usage.json`, which records pytest wall time,
+process CPU seconds including xdist children, and utilization relative to the
+assigned CI CPU quota. Whole-host CPU percentage is a different denominator:
+BW1100's existing CI slots account for about 16.7% of its logical CPUs and MC550's
+for about 40%. Idle time after the runnable test backlog drains is expected;
+runner occupancy alone does not prove improved throughput. Compare elapsed test
+time, CPU usage, queueing, and the unchanged correctness gates together.
+
+
+Container lifecycle is part of checkout isolation. The Python wrapper retains the
+container CID and removes that exact container when the command exits or receives
+cancellation, preserving the command's failure status. Before a reused self-hosted
+runner restores source, its verified source bootstrap removes previous locked CI
+containers only when both `RUNNER_NAME` and the mounted workspace match this
+exclusive registration. Containers belonging to another registration or workspace
+are left alone. This startup check also handles a hard-killed wrapper and legacy
+jobs that did not install an exit trap. Cleanup failures stop checkout rather than
+allowing an older test process to keep writing the new source tree.
+
+
+Coverage plan and result downloads use one bounded transport retry. Attempts
+stage in separate runner-temporary directories, so partial files from a failed
+transfer cannot enter the successful plan or coverage input set. Digest errors
+and a persistent transport failure still stop the job.
