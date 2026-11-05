@@ -786,6 +786,7 @@ class _Adapt:
         *,
         allow_qubit_array: bool = False,
         allow_fractional_output: bool = False,
+        allocate_local: bool = False,
     ) -> Value:
         name = token.text
         if name in self.suspended:
@@ -814,8 +815,21 @@ class _Adapt:
         if self.parameters[name].role in {"real", "integer"}:
             reject(token, "type", "classical parameter is not a quantum register")
         local = self.parameters[name].role == "local"
-        hidden = local and self.parameters[name].kind == "qbit[]"
-        if local and not hidden and self.local_scope is None:
+        hidden = local and (
+            self.parameters[name].kind == "qbit[]"
+            or (
+                allocate_local
+                and self.scope == "main"
+                and self.local_scope is None
+                and self.parameters[name].kind in {"qbit", "qnum"}
+            )
+        )
+        if (
+            local
+            and not hidden
+            and self.local_scope is None
+            and name not in self.registers
+        ):
             reject(
                 token,
                 "scope",
@@ -2977,6 +2991,7 @@ class _Adapt:
                 target,
                 size,
                 allow_qubit_array=True,
+                allocate_local=True,
                 allow_fractional_output=(
                     phase_parameter is not None
                     and phase_parameter.kind in {"qphase", "qphase_signed"}
@@ -3038,15 +3053,15 @@ class _Adapt:
             )
         elif token.text == "drop":
             if len(args) != 1 or self.scope != "main" or self.local_scope is not None:
-                reject(token, "drop", "drop requires one local qubit array in main")
+                reject(token, "drop", "drop requires one local register in main")
             target = self.atom(args[0])
             drop_parameter = self.parameters.get(target.text)
             if (
                 drop_parameter is None
                 or drop_parameter.role != "local"
-                or drop_parameter.kind != "qbit[]"
+                or drop_parameter.kind not in {"qbit", "qnum", "qbit[]"}
             ):
-                reject(target, "drop", "drop requires a local qubit array")
+                reject(target, "drop", "drop requires a local register")
             destination = self.register(target, allow_qubit_array=True)
             self.effect_op("qreg.drop", token, (destination,))
             self.dropped.add(target.text)

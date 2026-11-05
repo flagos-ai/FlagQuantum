@@ -38,14 +38,17 @@ def lower_indexed_control(
         expected = (1 << len(controls)) - 1
     elif condition.token.text == "==":
         source, literal = condition.children
-        if source.children or source.token.text not in owner.views:
+        if source.children or (gate != "X" and source.token.text not in owner.views):
             return False
-        if owner.parameters[source.token.text].kind != "qnum":
+        parameter = owner.parameters.get(source.token.text)
+        if parameter is None or parameter.kind != "qnum":
             return False
         controls = list(owner.array_view(source))
         expected = owner.static_integer(literal)
         if not 0 <= expected < (1 << len(controls)):
-            reject(literal.token, "control", "control equality value must fit its view")
+            reject(
+                literal.token, "control", "control equality value must fit its register"
+            )
         if len(controls) > 8:
             reject(
                 condition.token, "control", "indexed control exceeds eight input bits"

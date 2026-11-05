@@ -1391,3 +1391,15 @@ Fourier control remains available.
 The pinned linear combination of unitaries fixture checks the complete
 complex state and the weighted zero-selector projection. Run it with
 `python -m pytest tests/integration/test_synthesis_qmod_reversible_scopes.py`.
+
+Main-scope allocation also admits local scalar qubits and numeric registers.
+Explicit drop removes their source names from subsequent use. The underlying
+register remains part of the joint state, including any entanglement with
+outputs. The compiler continues to check allocation, initialization and drop
+through the existing register effects.
+
+A whole unsigned numeric register can control X through equality to a bounded
+static integer. The integer may come from a checked classical array and loop
+index. The original Grover QPE fixture exercises these rules through nested
+reversible scopes and checks the phase/data state and clean workspace against
+an independent dense recurrence and inverse Fourier transform.
