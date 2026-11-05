@@ -717,3 +717,15 @@ changed. Zero-noise PyMatching isolated-detector refusal remains explicit.
 Focused correctness and actual-SDK acceptance are in progress; exact-head full
 CI/GPU, reviews/rules, normal pinned merge and exact merge/Main smoke acceptance
 are still required. No performance, threshold, GPU or capacity claim is made.
+
+
+## Matrix-defined weighted matching capability candidate
+
+The approved13-path bundle adds neutral weighted graph records, explicit matrix
+column/boundary/merge semantics, signed-cost SDK decoding and an installed
+user route. It replaces private preparation behind the existing DEM adapter
+without widening its public graph type. The contract commit preceded implementation.
+Local validation and actual-main admission remain separate; no new candidate
+is accepted by reusing PR1087 evidence. Negative-cost and probability domains
+remain distinct. This is not full graph mutation, correlated decoding, all
+upstream input compatibility, native replacement or performance certification.

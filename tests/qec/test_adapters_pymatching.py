@@ -511,3 +511,35 @@ def test_the_cross_check_names_the_extra_when_it_is_missing(
         _pymatching()
     with pytest.raises(MatchingDependencyError, match=r"flagquantum\[pymatching\]"):
         PyMatchingDecoder(graph)
+
+
+def test_existing_consumer_accepts_a_replacement_graph_builder(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from types import SimpleNamespace
+
+    import torch
+
+    from flagquantum.qec.adapters import pymatching_graph
+    from flagquantum.qec.decoders.matching_graph import MatchingGraph
+
+    calls: list[bool] = []
+
+    def replacement(
+        graph: MatchingGraph, *, record_edge_ids: bool = False
+    ) -> SimpleNamespace:
+        assert graph.num_nodes == 1 and graph.num_fault_ids == 1
+        calls.append(record_edge_ids)
+
+        def decode(syndrome: list[int]) -> torch.Tensor:
+            assert syndrome == [1]
+            return torch.tensor([1, 1] if record_edge_ids else [1], dtype=torch.uint8)
+
+        return SimpleNamespace(num_detectors=1, decode=decode)
+
+    monkeypatch.setattr(pymatching_graph, "_build_matching", replacement)
+    model = DetectorErrorModel(1, 1, (DemError(0.1, (0,), (0,)),))
+    # The existing public consumer is unchanged; the SDK builder is replaced.
+    record = PyMatchingDecoder.from_detector_error_model(model).decode((0,))
+    assert record.observables == (0,) and len(record.error_edges) == 1
+    assert calls == [False, True]

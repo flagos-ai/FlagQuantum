@@ -1,7 +1,8 @@
 # Matching graph interoperability: complete capability-bundle API proposal
 
-Status: owner approved13 paths. Contract records/fake/conformance phase;
-matrix import and SDK implementation are not yet claimed implemented. This supersedes method-sized proposals for this gap.
+Status: owner approved13 paths; implementation candidate with local validation.
+The example-index14th-path amendment is separately pending approval. Fresh
+installed-candidate and actual-main acceptance remain pending. This supersedes method-sized proposals for this gap.
 Proposed title: feat(qec): support matrix-defined weighted matching workflows.
 Classification: single_device_fast_path, primary domain QEC.
 

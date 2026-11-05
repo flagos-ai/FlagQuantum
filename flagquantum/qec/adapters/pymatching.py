@@ -147,30 +147,28 @@ def _translate(
             "syndrome vector would not be this graph's"
         )
 
-    matching = _pymatching().Matching()
-    for index, edge in enumerate(graph.edges):
-        first, second = edge.detectors
-        labels = set(edge.observables)
-        if record_edge_ids:
-            labels.add(graph.num_observables + index)
-        if second == graph.boundary_node:
-            matching.add_boundary_edge(
-                first,
-                fault_ids=labels,
-                weight=edge.weight,
-                error_probability=edge.probability,
+    from flagquantum.qec.decoders.matching_graph import MatchingEdge, MatchingGraph
+
+    from .pymatching_graph import _build_matching
+
+    neutral = MatchingGraph(
+        graph.num_detectors,
+        graph.num_observables,
+        tuple(
+            MatchingEdge(
+                (
+                    (edge.detectors[0],)
+                    if edge.detectors[1] == graph.boundary_node
+                    else edge.detectors
+                ),
+                edge.weight,
+                edge.observables,
+                edge.probability,
             )
-        else:
-            matching.add_edge(
-                first,
-                second,
-                fault_ids=labels,
-                weight=edge.weight,
-                error_probability=edge.probability,
-            )
-    matching.ensure_num_fault_ids(
-        graph.num_observables + (graph.num_edges if record_edge_ids else 0)
+            for edge in graph.edges
+        ),
     )
+    matching = _build_matching(neutral, record_edge_ids=record_edge_ids)
     if matching.num_detectors != graph.num_detectors:
         raise CapabilityError(
             "PyMatching inferred "

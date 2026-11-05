@@ -134,6 +134,31 @@ def _exercise(profile: str) -> list[dict[str, object]]:
     return records
 
 
+def _exercise_matching_graph(profile: str) -> dict[str, object] | None:
+    if not PROFILES[profile][1]:
+        return None
+    import torch
+
+    from flagquantum.qec.adapters.pymatching_graph import PyMatchingGraphDecoder
+    from flagquantum.qec.decoders.matching_graph import MatchingGraph
+
+    checks = torch.tensor([[1, 0, 1], [0, 1, 1]], dtype=torch.uint8)
+    faults = torch.tensor([[1, 0, 0], [0, 1, 0]], dtype=torch.uint8)
+    graph, columns = MatchingGraph.from_check_matrix(
+        checks,
+        faults_matrix=faults,
+        weights=torch.tensor([2.0, 3.0, 1.0], dtype=torch.float64),
+    )
+    solution = PyMatchingGraphDecoder(graph).decode((0, 1))
+    assert columns == (0, 1, 2) and solution.edge_indices == (2,)
+    assert solution.fault_ids == () and solution.weight == 1.0
+    return {
+        "column_to_edge": list(columns),
+        "selected_edges": list(solution.edge_indices),
+        "weight": solution.weight,
+    }
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("profile", choices=PROFILES)
@@ -183,6 +208,7 @@ def main() -> int:
                     if present
                 },
                 "cells": records,
+                "matching_graph": _exercise_matching_graph(args.profile),
             },
             sort_keys=True,
         )
