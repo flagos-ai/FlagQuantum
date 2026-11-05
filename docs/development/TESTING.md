@@ -1025,3 +1025,14 @@ BW1100's existing CI slots account for about 16.7% of its logical CPUs and MC550
 for about 40%. Idle time after the runnable test backlog drains is expected;
 runner occupancy alone does not prove improved throughput. Compare elapsed test
 time, CPU usage, queueing, and the unchanged correctness gates together.
+
+
+Container lifecycle is part of checkout isolation. The Python wrapper retains the
+container CID and removes that exact container when the command exits or receives
+cancellation, preserving the command's failure status. Before a reused self-hosted
+runner restores source, its verified source bootstrap removes previous locked CI
+containers only when both `RUNNER_NAME` and the mounted workspace match this
+exclusive registration. Containers belonging to another registration or workspace
+are left alone. This startup check also handles a hard-killed wrapper and legacy
+jobs that did not install an exit trap. Cleanup failures stop checkout rather than
+allowing an older test process to keep writing the new source tree.

@@ -243,3 +243,27 @@ def test_partial_source_caches_get_bounded_verified_api_repair_before_full_trans
         "qiskit-compat",
         "dependency-bounds",
     } <= set(consumers)
+
+
+def test_source_cache_stops_previous_runner_writers_before_checkout():
+    for workflow in ("ci.yml", "local-gpu.yml"):
+        jobs = yaml.safe_load((ROOT / ".github/workflows" / workflow).read_text())[
+            "jobs"
+        ]
+        checked = 0
+        for job in jobs.values():
+            probe = next(
+                (
+                    s.get("run", "")
+                    for s in job["steps"]
+                    if s.get("id") == "source-cache"
+                ),
+                None,
+            )
+            if probe is None:
+                continue
+            checked += 1
+            assert 'git show "$sha:tools/ci_source_archive.py"' in probe
+            assert "--cleanup-containers" in probe
+            assert probe.index("--cleanup-containers") < probe.index("complete=false")
+        assert checked

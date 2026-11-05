@@ -39,7 +39,39 @@ print(r["effective_cpus"] / share, r["memory_limit_bytes"] // share,
   mounts+=(--cpus "$cpu_limit" --memory "$memory_limit" --cpuset-cpus "$cpu_affinity")
 fi
 
-exec docker run --rm --pull never --network none --read-only --tmpfs /tmp:exec --shm-size 1g \
+cidfile="$FQ_CI_PRIVATE/container-${BASHPID:-$$}-$RANDOM.cid"
+finished=false
+cleanup() {
+  status=$?
+  trap - EXIT INT TERM
+  if [[ -s "$cidfile" ]]; then
+    python3 -I -c '
+import pathlib, re, subprocess, sys
+try:
+    identifier = pathlib.Path(sys.argv[1]).read_text().strip()
+except OSError:
+    sys.exit(0)
+if re.fullmatch(r"[a-f0-9]{64}", identifier):
+    try:
+        subprocess.run(["docker", "rm", "--force", identifier],
+                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=10)
+    except (OSError, subprocess.TimeoutExpired):
+        pass
+' "$cidfile" || true
+  fi
+  if [[ "$finished" != true && -n "${docker_pid:-}" ]]; then
+    kill -TERM "$docker_pid" 2>/dev/null || true
+  fi
+  rm -f "$cidfile"
+  exit "$status"
+}
+trap cleanup EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
+
+docker run --rm --pull never --cidfile "$cidfile" \
+  --label "io.flagquantum.ci.runner=${RUNNER_NAME:-unknown}" \
+  --label "io.flagquantum.ci.run=${GITHUB_RUN_ID:-unknown}" --network none --read-only --tmpfs /tmp:exec --shm-size 1g \
   "${mounts[@]}" \
   --cap-drop ALL --security-opt no-new-privileges \
   --user "${FQ_CI_CONTAINER_USER:?}" --workdir "$GITHUB_WORKSPACE" \
@@ -47,8 +79,13 @@ exec docker run --rm --pull never --network none --read-only --tmpfs /tmp:exec -
   --env "PATH=$FQ_CI_PRIVATE/venv/bin:/opt/ci/bin:/usr/local/bin:/usr/bin:/bin" \
   --env FQ_CI_PRIVATE --env FQ_CI_HOST_BUDGET --env FQ_CI_REPORT_DIR --env FQ_PYTEST_WORKERS \
   --env FQ_DISTRIBUTED_WORKERS --env MAX_JOBS --env QISKIT_VERSION \
-  --env GITHUB_ENV --env GITHUB_OUTPUT --env GITHUB_SHA --env GITHUB_STEP_SUMMARY --env RUNNER_TEMP --env RUNNER_NAME --env RUNNER_ENVIRONMENT \
+  --env GITHUB_ENV --env GITHUB_OUTPUT --env GITHUB_RUN_ID --env GITHUB_RUN_ATTEMPT --env GITHUB_JOB --env GITHUB_SHA --env GITHUB_STEP_SUMMARY --env RUNNER_TEMP --env RUNNER_NAME --env RUNNER_ENVIRONMENT \
   --env PET_LOCAL_ADDR=127.0.0.1 --env GLOO_SOCKET_IFNAME=lo \
   --env OMP_NUM_THREADS --env MKL_NUM_THREADS --env OPENBLAS_NUM_THREADS \
   --env CUDA_VISIBLE_DEVICES --env JAX_PLATFORMS --env COVERAGE_FILE --env PYTEST_ADDOPTS \
-  "$FQ_CI_IMAGE" "${command[@]}"
+  "$FQ_CI_IMAGE" "${command[@]}" &
+docker_pid=$!
+status=0
+wait "$docker_pid" || status=$?
+finished=true
+exit "$status"

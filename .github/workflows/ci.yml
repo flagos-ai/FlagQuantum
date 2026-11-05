@@ -468,6 +468,10 @@ jobs:
             git init .
           fi
           git index-pack --stdin < "$RUNNER_TEMP/ci-source/source.pack"
+          if [ "$RUNNER_ENVIRONMENT" = self-hosted ]; then
+            git show "$sha:tools/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/cleanup-source.py"
+            python3 "$RUNNER_TEMP/ci-source/cleanup-source.py" --cleanup-containers
+          fi
           complete=false
           if objects="$(git rev-list --objects --missing=print --no-walk "$sha")"; then
             if ! printf '%s\n' "$objects" | grep -q '^?'; then
@@ -608,6 +612,10 @@ jobs:
             git init .
           fi
           git index-pack --stdin < "$RUNNER_TEMP/ci-source/source.pack"
+          if [ "$RUNNER_ENVIRONMENT" = self-hosted ]; then
+            git show "$sha:tools/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/cleanup-source.py"
+            python3 "$RUNNER_TEMP/ci-source/cleanup-source.py" --cleanup-containers
+          fi
           complete=false
           if objects="$(git rev-list --objects --missing=print --no-walk "$sha")"; then
             if ! printf '%s\n' "$objects" | grep -q '^?'; then
@@ -716,6 +724,10 @@ jobs:
             git init .
           fi
           git index-pack --stdin < "$RUNNER_TEMP/ci-source/source.pack"
+          if [ "$RUNNER_ENVIRONMENT" = self-hosted ]; then
+            git show "$sha:tools/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/cleanup-source.py"
+            python3 "$RUNNER_TEMP/ci-source/cleanup-source.py" --cleanup-containers
+          fi
           complete=false
           if objects="$(git rev-list --objects --missing=print --no-walk "$sha")"; then
             if ! printf '%s\n' "$objects" | grep -q '^?'; then
@@ -823,6 +835,10 @@ jobs:
             git init .
           fi
           git index-pack --stdin < "$RUNNER_TEMP/ci-source/source.pack"
+          if [ "$RUNNER_ENVIRONMENT" = self-hosted ]; then
+            git show "$sha:tools/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/cleanup-source.py"
+            python3 "$RUNNER_TEMP/ci-source/cleanup-source.py" --cleanup-containers
+          fi
           complete=false
           if objects="$(git rev-list --objects --missing=print --no-walk "$sha")"; then
             if ! printf '%s\n' "$objects" | grep -q '^?'; then
@@ -930,6 +946,10 @@ jobs:
             git init .
           fi
           git index-pack --stdin < "$RUNNER_TEMP/ci-source/source.pack"
+          if [ "$RUNNER_ENVIRONMENT" = self-hosted ]; then
+            git show "$sha:tools/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/cleanup-source.py"
+            python3 "$RUNNER_TEMP/ci-source/cleanup-source.py" --cleanup-containers
+          fi
           complete=false
           if objects="$(git rev-list --objects --missing=print --no-walk "$sha")"; then
             if ! printf '%s\n' "$objects" | grep -q '^?'; then
@@ -1027,6 +1047,10 @@ jobs:
             git init .
           fi
           git index-pack --stdin < "$RUNNER_TEMP/ci-source/source.pack"
+          if [ "$RUNNER_ENVIRONMENT" = self-hosted ]; then
+            git show "$sha:tools/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/cleanup-source.py"
+            python3 "$RUNNER_TEMP/ci-source/cleanup-source.py" --cleanup-containers
+          fi
           complete=false
           if objects="$(git rev-list --objects --missing=print --no-walk "$sha")"; then
             if ! printf '%s\n' "$objects" | grep -q '^?'; then
@@ -1140,6 +1164,10 @@ jobs:
             git init .
           fi
           git index-pack --stdin < "$RUNNER_TEMP/ci-source/source.pack"
+          if [ "$RUNNER_ENVIRONMENT" = self-hosted ]; then
+            git show "$sha:tools/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/cleanup-source.py"
+            python3 "$RUNNER_TEMP/ci-source/cleanup-source.py" --cleanup-containers
+          fi
           complete=false
           if objects="$(git rev-list --objects --missing=print --no-walk "$sha")"; then
             if ! printf '%s\n' "$objects" | grep -q '^?'; then
@@ -1297,6 +1325,10 @@ jobs:
             git init .
           fi
           git index-pack --stdin < "$RUNNER_TEMP/ci-source/source.pack"
+          if [ "$RUNNER_ENVIRONMENT" = self-hosted ]; then
+            git show "$sha:tools/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/cleanup-source.py"
+            python3 "$RUNNER_TEMP/ci-source/cleanup-source.py" --cleanup-containers
+          fi
           complete=false
           if objects="$(git rev-list --objects --missing=print --no-walk "$sha")"; then
             if ! printf '%s\n' "$objects" | grep -q '^?'; then
@@ -1413,6 +1445,10 @@ jobs:
             git init .
           fi
           git index-pack --stdin < "$RUNNER_TEMP/ci-source/source.pack"
+          if [ "$RUNNER_ENVIRONMENT" = self-hosted ]; then
+            git show "$sha:tools/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/cleanup-source.py"
+            python3 "$RUNNER_TEMP/ci-source/cleanup-source.py" --cleanup-containers
+          fi
           complete=false
           if objects="$(git rev-list --objects --missing=print --no-walk "$sha")"; then
             if ! printf '%s\n' "$objects" | grep -q '^?'; then
@@ -1601,6 +1637,10 @@ jobs:
             git init .
           fi
           git index-pack --stdin < "$RUNNER_TEMP/ci-source/source.pack"
+          if [ "$RUNNER_ENVIRONMENT" = self-hosted ]; then
+            git show "$sha:tools/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/cleanup-source.py"
+            python3 "$RUNNER_TEMP/ci-source/cleanup-source.py" --cleanup-containers
+          fi
           complete=false
           if objects="$(git rev-list --objects --missing=print --no-walk "$sha")"; then
             if ! printf '%s\n' "$objects" | grep -q '^?'; then
@@ -1717,6 +1757,10 @@ jobs:
             git init .
           fi
           git index-pack --stdin < "$RUNNER_TEMP/ci-source/source.pack"
+          if [ "$RUNNER_ENVIRONMENT" = self-hosted ]; then
+            git show "$sha:tools/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/cleanup-source.py"
+            python3 "$RUNNER_TEMP/ci-source/cleanup-source.py" --cleanup-containers
+          fi
           complete=false
           if objects="$(git rev-list --objects --missing=print --no-walk "$sha")"; then
             if ! printf '%s\n' "$objects" | grep -q '^?'; then
@@ -1988,6 +2032,10 @@ jobs:
             git init .
           fi
           git index-pack --stdin < "$RUNNER_TEMP/ci-source/source.pack"
+          if [ "$RUNNER_ENVIRONMENT" = self-hosted ]; then
+            git show "$sha:tools/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/cleanup-source.py"
+            python3 "$RUNNER_TEMP/ci-source/cleanup-source.py" --cleanup-containers
+          fi
           complete=false
           if objects="$(git rev-list --objects --missing=print --no-walk "$sha")"; then
             if ! printf '%s\n' "$objects" | grep -q '^?'; then
@@ -2117,6 +2165,10 @@ jobs:
             git init .
           fi
           git index-pack --stdin < "$RUNNER_TEMP/ci-source/source.pack"
+          if [ "$RUNNER_ENVIRONMENT" = self-hosted ]; then
+            git show "$sha:tools/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/cleanup-source.py"
+            python3 "$RUNNER_TEMP/ci-source/cleanup-source.py" --cleanup-containers
+          fi
           complete=false
           if objects="$(git rev-list --objects --missing=print --no-walk "$sha")"; then
             if ! printf '%s\n' "$objects" | grep -q '^?'; then
@@ -2228,6 +2280,10 @@ jobs:
             git init .
           fi
           git index-pack --stdin < "$RUNNER_TEMP/ci-source/source.pack"
+          if [ "$RUNNER_ENVIRONMENT" = self-hosted ]; then
+            git show "$sha:tools/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/cleanup-source.py"
+            python3 "$RUNNER_TEMP/ci-source/cleanup-source.py" --cleanup-containers
+          fi
           complete=false
           if objects="$(git rev-list --objects --missing=print --no-walk "$sha")"; then
             if ! printf '%s\n' "$objects" | grep -q '^?'; then
@@ -2348,6 +2404,10 @@ jobs:
             git init .
           fi
           git index-pack --stdin < "$RUNNER_TEMP/ci-source/source.pack"
+          if [ "$RUNNER_ENVIRONMENT" = self-hosted ]; then
+            git show "$sha:tools/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/cleanup-source.py"
+            python3 "$RUNNER_TEMP/ci-source/cleanup-source.py" --cleanup-containers
+          fi
           complete=false
           if objects="$(git rev-list --objects --missing=print --no-walk "$sha")"; then
             if ! printf '%s\n' "$objects" | grep -q '^?'; then
@@ -2475,6 +2535,10 @@ jobs:
             git init .
           fi
           git index-pack --stdin < "$RUNNER_TEMP/ci-source/source.pack"
+          if [ "$RUNNER_ENVIRONMENT" = self-hosted ]; then
+            git show "$sha:tools/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/cleanup-source.py"
+            python3 "$RUNNER_TEMP/ci-source/cleanup-source.py" --cleanup-containers
+          fi
           complete=false
           if objects="$(git rev-list --objects --missing=print --no-walk "$sha")"; then
             if ! printf '%s\n' "$objects" | grep -q '^?'; then

@@ -101,3 +101,65 @@ def test_container_wrapper_preserves_offline_runtime_and_read_only_wheels(
     if binary == "torchrun":
         expected.extend(["-m", "torch.distributed.run"])
     assert command == [*expected, *arguments]
+
+
+@pytest.mark.skipif(
+    os.name == "nt", reason="Linux container cancellation uses POSIX signals"
+)
+def test_cancelled_wrapper_removes_exact_container_and_preserves_failure(tmp_path):
+    import signal
+    import sys
+    import time
+
+    commands = tmp_path / "commands"
+    commands.mkdir()
+    docker = commands / "docker"
+    log = tmp_path / "operations"
+    docker.write_text(
+        "#!" + sys.executable + "\n"
+        "import os, pathlib, signal, sys, time\n"
+        "args = sys.argv[1:]\n"
+        "with open(os.environ['OPERATIONS'], 'a') as f: f.write(args[0] + '\\n')\n"
+        "if args[0] == 'run':\n"
+        "    pathlib.Path(args[args.index('--cidfile') + 1]).write_text('a' * 64)\n"
+        "    time.sleep(30)\n"
+        "elif args[0] == 'rm':\n"
+        "    assert args == ['rm', '--force', 'a' * 64]\n"
+    )
+    docker.chmod(0o755)
+    wrapper = commands / "python"
+    wrapper.symlink_to(ROOT / ".github/actions/offline-cpu/run")
+    private = tmp_path / "private"
+    private.mkdir()
+    process = subprocess.Popen(
+        ["bash", str(wrapper), "-c", "pass"],
+        env={
+            **os.environ,
+            "PATH": f"{commands}:{os.environ['PATH']}",
+            "OPERATIONS": str(log),
+            "GITHUB_WORKSPACE": str(tmp_path),
+            "RUNNER_TEMP": str(tmp_path),
+            "FQ_CI_PRIVATE": str(private),
+            "FQ_CI_HOST_BUDGET": "",
+            "FQ_CI_CONTAINER_USER": "0:0",
+            "FQ_CI_IMAGE": "fixture",
+            "FQ_CI_WHEEL_DIRECTORY": "",
+        },
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
+    try:
+        deadline = time.monotonic() + 5
+        while not any(path.stat().st_size for path in private.glob("*.cid")):
+            assert process.poll() is None
+            assert time.monotonic() < deadline
+            time.sleep(0.02)
+        process.send_signal(signal.SIGTERM)
+        stdout, stderr = process.communicate(timeout=15)
+        assert process.returncode == 143, (stdout, stderr)
+        assert log.read_text().splitlines() == ["run", "rm"]
+        assert not list(private.glob("*.cid"))
+    finally:
+        if process.poll() is None:
+            process.kill()
+            process.communicate(timeout=5)

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import argparse
 import base64
 import copy
 import gzip
@@ -230,7 +231,80 @@ class _Redirect(HTTPRedirectHandler):
         return result
 
 
+def cleanup_runner_containers() -> None:
+    """Stop leftover CI writers before this exclusive runner starts a new checkout."""
+    if os.environ.get("RUNNER_ENVIRONMENT") != "self-hosted" or not shutil.which(
+        "docker"
+    ):
+        return
+    runner = os.environ.get("RUNNER_NAME")
+    workspace_text = os.environ.get("GITHUB_WORKSPACE")
+    if not runner or not workspace_text:
+        raise RuntimeError(
+            "Runner identity and workspace are required for container cleanup"
+        )
+    workspace = Path(workspace_text).resolve()
+
+    def docker(*arguments: str, check: bool = True) -> subprocess.CompletedProcess[str]:
+        return subprocess.run(
+            ["docker", *arguments],
+            capture_output=True,
+            text=True,
+            check=check,
+            timeout=20,
+        )
+
+    listing = docker("ps", "--all", "--no-trunc", "--format", "{{.ID}} {{.Image}}")
+    candidates = []
+    for line in listing.stdout.splitlines():
+        identifier, _, image = line.partition(" ")
+        if re.fullmatch(r"[a-f0-9]{64}", identifier) and re.fullmatch(
+            r"ghcr\.io/flagos-ai/flagquantum-ci@sha256:[a-f0-9]{64}", image
+        ):
+            candidates.append(identifier)
+    if not candidates:
+        return
+    inspection = docker("inspect", *candidates, check=False)
+    # A --rm container may disappear between listing and inspection.
+    metadata = json.loads(inspection.stdout or "[]")
+    if inspection.returncode:
+        inspected = {container["Id"] for container in metadata}
+        remaining = docker("ps", "--all", "--no-trunc", "--format", "{{.ID}}")
+        if (set(candidates) - inspected).intersection(remaining.stdout.splitlines()):
+            raise RuntimeError("Cannot inspect previous CI containers")
+    owned = []
+    for container in metadata:
+        environment = dict(
+            value.split("=", 1)
+            for value in container["Config"].get("Env", [])
+            if "=" in value
+        )
+        mounts = container.get("Mounts", [])
+        if (
+            environment.get("RUNNER_NAME") == runner
+            and environment.get("FQ_CI_PRIVATE")
+            and any(
+                mount.get("Type") == "bind"
+                and Path(mount["Source"]).resolve() == workspace
+                for mount in mounts
+            )
+        ):
+            owned.append(container["Id"])
+    if not owned:
+        return
+    print(
+        f"Removing {len(owned)} previous CI containers for exclusive runner {runner}",
+        flush=True,
+    )
+    result = docker("rm", "--force", *owned, check=False)
+    if result.returncode:
+        remaining = docker("ps", "--all", "--no-trunc", "--format", "{{.ID}}")
+        if set(owned).intersection(remaining.stdout.splitlines()):
+            raise RuntimeError("Previous CI containers are still writing the checkout")
+
+
 def _main() -> None:
+    cleanup_runner_containers()
     sha = os.environ["GITHUB_SHA"]
     if not re.fullmatch(r"[0-9a-f]{40}", sha):
         raise ValueError("GITHUB_SHA must identify a Git commit")
@@ -286,4 +360,9 @@ def _main() -> None:
 
 
 if __name__ == "__main__":
-    _main()
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--cleanup-containers", action="store_true")
+    if parser.parse_args().cleanup_containers:
+        cleanup_runner_containers()
+    else:
+        _main()
