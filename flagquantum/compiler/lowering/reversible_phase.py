@@ -7,11 +7,12 @@ from ...core.classical_control import (
 from ...core.ir import CircuitIR, Instruction
 from ...errors import CapabilityError
 from ..artifacts.reversible_phase import (
+    REVERSIBLE_OPCODE_ARITIES,
     ReversiblePhaseOperation,
     ReversiblePhaseProgram,
 )
 
-_REVERSIBLE_OPCODES = frozenset({"x", "cx", "ccx", "swap", "cswap", "z", "cz", "ccz"})
+_REVERSIBLE_OPCODES = frozenset(REVERSIBLE_OPCODE_ARITIES) - {"hmr"}
 
 
 def _plain(instruction: Instruction) -> bool:

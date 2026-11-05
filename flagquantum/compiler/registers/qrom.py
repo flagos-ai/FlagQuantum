@@ -9,6 +9,7 @@
 from collections.abc import Sequence
 
 from ...core.ir import CircuitIR, Instruction
+from .._component_trace.trace import ComponentTrace
 from .qroam import paired_lookup_ir
 from .unary_iteration import append_unary_iteration
 
@@ -21,6 +22,8 @@ def controlled_qrom_ir(
     measurement_bits: tuple[int, ...] = (),
     blocked: bool = False,
     inverse: bool = False,
+    trace: ComponentTrace | None = None,
+    trace_offset: int = 0,
 ) -> CircuitIR:
     """Emit lookup, or erase loaded data using X measurement and feedback.
 
@@ -44,6 +47,8 @@ def controlled_qrom_ir(
     ):
         raise ValueError("QROM erasure requires a distinct classical bit per data wire")
 
+    if trace is not None and not blocked:
+        raise ValueError("Component recording currently requires paired lookup")
     if blocked or measurement_bits:
         return paired_lookup_ir(
             width,
@@ -52,6 +57,8 @@ def controlled_qrom_ir(
             measurement_bits=measurement_bits,
             blocked=blocked,
             inverse=inverse,
+            trace=trace,
+            trace_offset=trace_offset,
         )
 
     data_start = 1 + width

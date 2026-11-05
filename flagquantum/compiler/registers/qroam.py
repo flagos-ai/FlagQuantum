@@ -9,6 +9,7 @@
 from collections.abc import Sequence
 
 from ...core.ir import CircuitIR, Instruction
+from .._component_trace.trace import ComponentCall, ComponentTrace
 from .unary_iteration import append_unary_iteration
 
 
@@ -20,6 +21,8 @@ def paired_lookup_ir(
     measurement_bits: tuple[int, ...],
     blocked: bool,
     inverse: bool,
+    trace: ComponentTrace | None = None,
+    trace_offset: int = 0,
 ) -> CircuitIR:
     """Lower paired lookup or erasure for a validated QROM table."""
     banks = 2 if blocked else 1
@@ -41,6 +44,7 @@ def paired_lookup_ir(
                 )
             )
 
+    measurement_stop = len(instructions)
     swaps = (
         [
             Instruction("cswap", (width, data_start + i, data_start + data_width + i))
@@ -79,6 +83,7 @@ def paired_lookup_ir(
                     Instruction("cz", (predicate, width), metadata=condition)
                 )
 
+    traversal_start = len(instructions)
     append_unary_iteration(
         instructions,
         operand_count=operand_count,
@@ -88,6 +93,28 @@ def paired_lookup_ir(
         apply_branch=apply_block,
         coherent=True,
     )
+    traversal_stop = len(instructions)
     if not inverse and not measurement_bits:
         instructions.extend(swaps)
-    return CircuitIR(operand_count + width, tuple(instructions))
+    ir = CircuitIR(operand_count + width, tuple(instructions))
+    if trace is not None:
+        children = tuple(
+            ComponentCall(name, trace_offset + start, trace_offset + stop)
+            for name, start, stop in (
+                ("BankMeasurement", 0, measurement_stop),
+                ("BankExchange", measurement_stop, traversal_start),
+                ("AddressTraversal", traversal_start, traversal_stop),
+                ("BankExchange", traversal_stop, len(instructions)),
+            )
+            if stop > start
+        )
+        trace.calls.append(
+            ComponentCall(
+                "PairedErasure" if measurement_bits else "PairedLookup",
+                trace_offset,
+                trace_offset + len(instructions),
+                (width, data_width, tuple(words), inverse, measurement_bits),
+                children,
+            )
+        )
+    return ir
