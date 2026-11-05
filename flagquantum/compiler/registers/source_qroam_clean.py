@@ -10,12 +10,34 @@
 from dataclasses import dataclass
 from functools import cached_property
 from itertools import product
-from math import prod
+from math import ceil, floor, log2, prod
 
 from ...core.ir import Instruction
 from .bitwise import _validate_wires
 from .source_qrom import source_qrom_ir, source_qrom_workspace_size
 from .swap_with_zero import swap_with_zero_ir
+
+
+def optimal_qroam_clean_log_block_size(data_size: int, target_bits: int) -> int:
+    """Choose the original concrete forward block exponent."""
+    if (
+        type(data_size) is not int
+        or data_size < 1
+        or type(target_bits) is not int
+        or target_bits < 1
+    ):
+        raise ValueError(
+            "QROAM block selection requires positive data and target sizes"
+        )
+    estimate = 0.5 * log2(data_size / target_bits)
+    if estimate < 0:
+        return 0
+
+    def cost(log: int) -> float:
+        block = 1 << log
+        return data_size / block + target_bits * (block - 1)
+
+    return min((floor(estimate), ceil(estimate)), key=cost)
 
 
 @dataclass(frozen=True)
@@ -123,6 +145,40 @@ def source_qroam_clean_ir(
     The first word of each bank is the selected target. Remaining words are
     retained outputs. Only the caller-bound And workspace returns to zero.
     """
+    return _emit_clean_qroam(
+        table, controls, selections, banks, workspace, classical_bits, reverse=False
+    )
+
+
+def source_qroam_clean_uncompute_ir(
+    table: QroamCleanTable,
+    controls: tuple[int, ...],
+    selections: tuple[tuple[int, ...], ...],
+    banks: tuple[tuple[tuple[int, ...], ...], ...],
+    workspace: tuple[int, ...],
+    classical_bits: tuple[int, ...],
+) -> tuple[Instruction, ...]:
+    """Reverse the forward stages on their signed output banks.
+
+    Undo relative-phase routing before XORing the original batch load.
+    The temporary And work starts and ends at zero. The target and junk
+    words also end at zero when they carry the matching forward data.
+    """
+    return _emit_clean_qroam(
+        table, controls, selections, banks, workspace, classical_bits, reverse=True
+    )
+
+
+def _emit_clean_qroam(
+    table: QroamCleanTable,
+    controls: tuple[int, ...],
+    selections: tuple[tuple[int, ...], ...],
+    banks: tuple[tuple[tuple[int, ...], ...], ...],
+    workspace: tuple[int, ...],
+    classical_bits: tuple[int, ...],
+    *,
+    reverse: bool,
+) -> tuple[Instruction, ...]:
     high_widths = table._high_widths(tuple(map(len, selections)))
     high = tuple(
         wires[:width] for wires, width in zip(selections, high_widths, strict=True)
@@ -151,11 +207,10 @@ def source_qroam_clean_ir(
     )
     if not any(table.log_block_sizes):
         return load
-    return (
-        *load,
-        *(
-            gate
-            for bank in banks
-            for gate in swap_with_zero_ir(low, table.block_shape, bank)
-        ),
+    bank_order = reversed(banks) if reverse else iter(banks)
+    route = tuple(
+        gate
+        for bank in bank_order
+        for gate in swap_with_zero_ir(low, table.block_shape, bank, adjoint=reverse)
     )
+    return (*route, *load) if reverse else (*load, *route)

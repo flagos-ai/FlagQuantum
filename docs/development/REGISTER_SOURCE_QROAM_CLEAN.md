@@ -58,3 +58,31 @@ The dependency regression passed 138 tests. The final module run passed
 14 cases at 100% statement coverage. Strict types passed for 975
 production files. The locked QROAMClean and SelectSwapQROM blobs match
 the inventory.
+
+## Executable reversal of the forward stages
+
+`source_qroam_clean_uncompute_ir` visits banks in reverse order and
+uses each original SwapWithZero adjoint. It then executes the same
+self-adjoint QROM to clear the loaded words. Matching signed output
+banks return to zero with the source relative signs canceled. The
+address, controls and entangled spectator amplitudes are preserved.
+
+The uncompute stream matches the reversed sequence of original
+self-adjoint exchange leaves followed by the original QROM gates.
+Tests run each small measurement history in both directions, using
+the independently signed forward state as the uncompute input. Each
+branch returns the original complete vector scaled by its
+unnormalized branch factor. Forward and reverse use the same work,
+T-family, CX, measurement and reset counts. The five-row example
+therefore uses 16 T-family gates, 32 CX and two measured And cleanups
+per direction. The upstream QROAMCleanAdjoint cost remains a separate
+model for its measurement-based method.
+
+`optimal_qroam_clean_log_block_size` ports the original concrete
+forward cost minimization over floor and ceiling candidates, retaining
+the lower candidate on a tie. Six cases compare both the original
+selector and the default block exponent of an original QROAMClean.
+Callers supply the selected exponent to `QroamCleanTable`.
+
+This batch passed 21 module cases and 146 dependency cases. Statement
+coverage for the combined forward and reverse module reached 100%.

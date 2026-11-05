@@ -10,7 +10,9 @@ import torch
 
 from flagquantum.compiler.registers.source_qroam_clean import (
     QroamCleanTable,
+    optimal_qroam_clean_log_block_size,
     source_qroam_clean_ir,
+    source_qroam_clean_uncompute_ir,
 )
 from flagquantum.core.ir import Instruction
 from tests.unit.measurement_checks import certified_and_channel_map, forced_branch
@@ -187,6 +189,21 @@ def test_original_graph_signed_banks_and_branch_cleanup(
         source, ports, outputs, work, bits
     )
     assert_source(gates, original)
+    inverse = source_qroam_clean_uncompute_ir(
+        table, controls, selections, banks, work, bits
+    )
+    inverse_source = (
+        *(
+            gate
+            for exchange in reversed(exchanges)
+            for gate in source_relative_swap(
+                exchange["ctrl"][0], exchange["x"], exchange["y"]
+            )
+        ),
+        *original[:qrom_length],
+    )
+    assert_source(inverse, inverse_source)
+    assert Counter(g.name for g in inverse) == Counter(g.name for g in gates)
     counts = Counter(g.name for g in gates)
     events = counts["measure"]
     model = get_cost_value(source, QECGatesCost())
@@ -286,6 +303,11 @@ def test_original_graph_signed_banks_and_branch_cleanup(
             actual, expected * 2 ** (-events / 2), atol=2e-12, rtol=0
         )
 
+        recovered = forced_branch(expected, inverse, outcomes)
+        torch.testing.assert_close(
+            recovered, state * 2 ** (-events / 2), atol=2e-12, rtol=0
+        )
+
 
 @pytest.mark.parametrize(
     "shape,logs",
@@ -340,3 +362,23 @@ def test_source_adjoint_wrapper_and_padded_leaf_models() -> None:
     assert get_cost_value(leaf, QECGatesCost()).toffoli == 4
     with pytest.raises(DecomposeNotImplementedError):
         leaf.decompose_bloq()
+
+
+@pytest.mark.parametrize(
+    "size,bits", [(1, 8), (8, 8), (16, 8), (32, 8), (128, 16), (1000, 3)]
+)
+def test_original_forward_block_selection(size: int, bits: int) -> None:
+    from qualtran.bloqs.data_loading.qroam_clean import (
+        QROAMClean,
+        get_optimal_log_block_size_clean_ancilla,
+    )
+
+    actual = optimal_qroam_clean_log_block_size(size, bits)
+    assert actual == get_optimal_log_block_size_clean_ancilla(size, bits)
+    source = QROAMClean.build_from_data([0] * size, target_bitsizes=(bits,))
+    assert source.log_block_sizes == (actual,)
+
+
+def test_block_selection_rejects_invalid_sizes() -> None:
+    with pytest.raises(ValueError, match="positive"):
+        optimal_qroam_clean_log_block_size(8, 0)
