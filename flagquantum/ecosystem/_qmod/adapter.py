@@ -955,10 +955,10 @@ class _Adapt:
     def angle(
         self, node: Expression, gate: Token, *, allow_signed: bool = False
     ) -> float:
-        if node.token.text == "-" and (
-            allow_signed or (self.helper_stack and self.classical_arrays)
-        ):
-            return -_literal_angle(node.children[0], gate)
+        if node.token.text == "-":
+            if allow_signed or (self.helper_stack and self.classical_arrays):
+                return -_literal_angle(node.children[0], gate)
+            reject(node.token, "expression", "signed angles require an array helper")
         if (
             gate.text == "RZ"
             and not node.children
