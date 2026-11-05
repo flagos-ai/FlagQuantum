@@ -11,7 +11,12 @@ SourceLeaf = Callable[[Any, SourcePorts, SourcePorts], SourceResult | None]
 
 
 def walk_source_graph(
-    bloq: Any, inputs: SourcePorts, desired: SourcePorts, leaf: SourceLeaf
+    bloq: Any,
+    inputs: SourcePorts,
+    desired: SourcePorts,
+    leaf: SourceLeaf,
+    *,
+    bindings: dict[Any, tuple[int, ...]] | None = None,
 ) -> SourceResult:
     """Bind original Soquet connections; only the caller binds leaf physical work."""
     import numpy as np
@@ -39,7 +44,7 @@ def walk_source_graph(
         assert all(outputs[key] == value for key, value in desired.items())
         return (), outputs
     cb = bloq.decompose_bloq()
-    mapping: dict[Any, tuple[int, ...]] = {}
+    mapping: dict[Any, tuple[int, ...]] = dict(bindings or {})
 
     def soqs(value: Any) -> tuple[Any, ...]:
         return tuple(np.asarray(value, dtype=object).flat)
