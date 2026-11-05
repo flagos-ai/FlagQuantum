@@ -162,7 +162,6 @@ def test_portable_cpu_work_uses_general_or_validated_scale_sets() -> None:
     jobs = yaml.safe_load((WORKFLOWS / "ci.yml").read_text())["jobs"]
     portable = {
         "qiskit-optional",
-        "qiskit-compat",
         "dependency-bounds",
         "distributed-cpu",
         "supply-chain",
@@ -171,13 +170,10 @@ def test_portable_cpu_work_uses_general_or_validated_scale_sets() -> None:
     }
     for name in portable:
         job = jobs[name]
-        if name == "qiskit-compat":
-            assert job["runs-on"] == FULL_CPU_ROUTE
-        else:
-            assert any(
-                f"'{label}'" in job["runs-on"]
-                for label in {"flagquantum-cpu-general", *_inventoried_r300_labels()}
-            ), name
+        assert any(
+            f"'{label}'" in job["runs-on"]
+            for label in {"flagquantum-cpu-general", *_inventoried_r300_labels()}
+        ), name
         assert "flagquantum-a100-cpu" not in job["runs-on"], name
         if "flagcicd-r300-" not in job["runs-on"]:
             assert not any(
@@ -227,10 +223,15 @@ def test_network_dependent_sdks_do_not_wait_for_the_preinstalled_pool() -> None:
         "azure-optional",
         "braket-optional",
         "pennylane-optional",
+        "qiskit-compat",
     ):
         job = jobs[name]
         assert job["runs-on"] == "ubuntu-latest"
-        assert job["concurrency"]["group"] in {"flagquantum-gh-3", "flagquantum-gh-4"}
+        assert job["concurrency"]["group"] in {
+            "flagquantum-gh-3",
+            "flagquantum-gh-4",
+            "flagquantum-gh-7",
+        }
         assert job["timeout-minutes"] <= 30
         assert not any(step.get("continue-on-error") for step in job["steps"])
 
@@ -243,10 +244,7 @@ def test_sdk_jobs_use_accepted_fixed_capacity() -> None:
     jobs = yaml.safe_load((WORKFLOWS / "ci.yml").read_text())["jobs"]
     for name in ("qiskit-compat", "cirq-optional", "braket-optional"):
         job = jobs[name]
-        if name == "qiskit-compat":
-            assert job["runs-on"] == FULL_CPU_ROUTE
-        else:
-            assert job["runs-on"] == "ubuntu-latest"
+        assert job["runs-on"] == "ubuntu-latest"
         assert "ubuntu-latest" in job["runs-on"]
         assert job["timeout-minutes"] == 30
         assert job["env"]["MAX_JOBS"] == "2"

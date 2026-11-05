@@ -1101,13 +1101,13 @@ jobs:
 
   qiskit-compat:
     needs: prepare-source
-    runs-on: ${{ fromJSON((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","linux","x64","flagquantum-cpu"]' || '["ubuntu-latest"]') }}
+    runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
       contents: read
       packages: read
     concurrency:
-      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('self-hosted-{0}-qiskit-compat-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-1
+      group: flagquantum-gh-7
       queue: max
     strategy:
       fail-fast: false

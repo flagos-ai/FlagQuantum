@@ -978,12 +978,14 @@ remain isolated and resource-budgeted. Source cache repair verifies Git objects
 and the exact workflow commit before any tests run; an incomplete cache falls
 back to the full source artifact. No tests or required checks are removed.
 
-SDK jobs that install dependencies online (JAX, Cirq, Azure, Braket, and PennyLane)
+SDK jobs that install dependencies online (JAX, Cirq, Azure, Braket, PennyLane, and Qiskit)
 use hosted Linux runners with 30-minute job limits. They do not depend on the
 two preinstalled SDK slots, and external download failures do not occupy the
 CPU suite pool. Move an SDK suite into that pool only after a locked image or
 verified complete wheel closure passes the same dependency and test checks.
-Qiskit uses its verified wheel preparation path; Triton retains its MC550 pool.
+Qiskit retains its verified wheel preparation path on hosted runners: live
+metadata discovery can time out even when wheel bytes are cached locally.
+Triton retains its MC550 pool.
 
 Contributor workflow: open or update an internal PR, then inspect its CI run.
 Expected behavior: source preparation starts independently of coverage; ready
