@@ -33,7 +33,9 @@ readout bits. True-bit audit records are transformed separately where present.
 Classical work does not consume quantum noise, measurement counts, or RNG draws.
 Density ensembles retain measurements feeding XOR transitively and evaluate XOR
 per branch. OpenQASM 3 uses boolean XOR assignment; restricted provider dialects
-must explicitly refuse unsupported classical computation.
+must explicitly refuse unsupported classical computation. Backend package admission
+remains blocked until a qualified classical-computation capability is available;
+textual OpenQASM export alone is not hardware qualification.
 
 The program graph uses boolean `bool_zero` and binary `bool_xor` definitions;
 conditions reference those definitions through the existing `ConditionRef`.

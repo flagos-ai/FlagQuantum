@@ -271,10 +271,15 @@ def test_classical_work_preserves_rng_stream_and_measurement_counters(
 
 
 def test_restricted_provider_refuses_unimplemented_classical_computation() -> None:
+    from types import SimpleNamespace
+
     from flagquantum.runtime.dynamic.conformance import (
         LOCAL_TRAJECTORY_FEATURES,
         QISKIT_AER_DYNAMIC_FEATURES,
         assess_dynamic_features,
+    )
+    from flagquantum.runtime.dynamic.deployment import (
+        _assess_dynamic_package_compatibility,
     )
     from flagquantum.runtime.dynamic.dialects.braket_iqm import (
         export_braket_iqm_dynamic_qasm3,
@@ -292,3 +297,12 @@ def test_restricted_provider_refuses_unimplemented_classical_computation() -> No
     )
     with pytest.raises(ValueError, match="classical_computation_is_unsupported"):
         export_braket_iqm_dynamic_qasm3(circuit, qubit_groups=((0, 1),))
+    backend = SimpleNamespace(
+        n_qubits=2,
+        supports_openqasm=True,
+        supports_dynamic_circuits=True,
+        dynamic_dialect="openqasm3",
+    )
+    package = _assess_dynamic_package_compatibility(circuit, backend)
+    assert not package.compatible
+    assert "backend_classical_computation_is_unqualified" in package.blockers

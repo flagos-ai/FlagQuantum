@@ -216,3 +216,12 @@ sources, undefined reads, both trajectory strategies, density ensembles, SSA
 verification, IR/KMX round trips, native execution, preserved RNG streams and
 measurement counts, and restricted provider refusal. These are local CPU checks;
 final whole-PR CI and GPU acceptance remain separate.
+
+Current local verification: the extended 304-case run passed 300 tests and skipped
+four optional SDK cases. The subsequent 49-case classical/deployment regression
+passed. Black, Ruff, architecture boundaries, and the existing multi-level IR
+contract checker passed; the standalone append example passed without reference
+packages. The core XOR and both parity/erasure compiler modules reached 100%
+statement coverage in the focused run. Remote package admission remains blocked
+for unqualified classical-computation backends; OpenQASM textual export does not
+assert hardware support.
