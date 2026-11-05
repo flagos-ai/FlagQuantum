@@ -54,3 +54,14 @@ emitted effects and physical work count against existing budgets. Dynamic or
 quantum offsets and signed/fractional targets remain outside this extension.
 Test every small basis word, wraparound, coherent phase and cleanup. This shared
 constant-offset extension does not repair the original's amplitude mismatch.
+
+Owned accounting extension: qreg.hidden may carry the optional attribute
+workspace=True, which the register verifier checks as exactly the boolean True.
+Absent means existing hidden semantic data and preserves prior accounting.
+Marked storage remains physically allocated after qreg.drop; drop only removes
+its logical view. Register scheduling includes marked widths in peak_workspace,
+plus simultaneously needed existing Compiler scratch. This closes the observed
+max_workspace=0 omission for an algorithm's retained internal ancilla. No new
+opcode, physical realization or unproved early release is introduced. Test the
+owned marker validation, retained allocation, exact candidate workspace count
+and synthesis budget refusal independently from source-level acceptance.
