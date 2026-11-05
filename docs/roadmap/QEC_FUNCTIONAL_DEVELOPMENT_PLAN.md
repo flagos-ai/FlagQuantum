@@ -200,3 +200,29 @@ and [delivery status](QEC_STIM_PYMATCHING_DELIVERY_PLAN.md#november-5-external-s
 Implementation acceptance remains pending until the final head and actual-main
 gates pass. This extension contributes to FTS-06/07 and R08 without completing
 FTS-02/09 research, general threshold analysis or the entire FTQC roadmap.
+
+
+## Combined SI-01 through SI-06 delivery in PR 1087
+
+The owner requested completing the whole Stim/PyMatching integration tranche in
+[#1087](https://github.com/flagos-ai/FlagQuantum/pull/1087) before waiting for the
+final checks. Existing bridge and decoder implementations are reused with their
+bounded independent references. The software candidate includes the external
+report API, unified user guide, support/version table, example index and required
+installed-profile coverage of external reports, complete decoder records and
+native repetition/Surface X/Z reports. No additional public API is introduced.
+
+| Work package | Candidate state | Final acceptance |
+| --- | --- | --- |
+| SI-01 | Source/receipt inventory and stale progress reconciliation complete | No broader parity status is inferred |
+| SI-02 | Existing strict bridge/source semantics reused and regression-tested | Final-head checks remain required |
+| SI-03 | Existing logical/full-result decoder routes reused; real installed decoder-record checks added | Required profile results remain required |
+| SI-04 | Original-text report and unified native/external user workflows implemented | Final-head user code must run |
+| SI-05 | Existing four-wheel-profile/sdist gate now checks the integrated public workflows | Real final-candidate installations remain pending |
+| SI-06 | Quickstart, compatibility table, example index and delivery ledger connected | Actual-main receipt and separate release authorization remain pending |
+
+See the [quickstart](../guides/QEC_INTEGRATION_QUICKSTART.md). Original failure
+logs and older cancelled/superseded heads remain historical evidence. Final
+reviewed-head CI/GPU and normal actual-main acceptance still gate delivery; no
+force merge, check weakening, runner change or research execution is authorized
+by combining this tranche. No PyPI/tag publication is part of this PR.

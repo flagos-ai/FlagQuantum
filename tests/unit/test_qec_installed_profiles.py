@@ -11,7 +11,12 @@ from pathlib import Path
 import pytest
 
 from tools.check_qec_installed_profiles import _run
-from tools.qec_installed_smoke import PROFILES, _exercise, _exercise_stim_experiment
+from tools.qec_installed_smoke import (
+    PROFILES,
+    _exercise,
+    _exercise_decoder_records,
+    _exercise_stim_experiment,
+)
 
 pytestmark = pytest.mark.unit
 
@@ -28,6 +33,8 @@ def test_public_workflow_in_the_available_source_profile(profile: str) -> None:
     for record in records:
         assert record["shots"] == 35
         assert record["observables"] == 1
+    decoders = _exercise_decoder_records(profile)
+    assert len(decoders) == (5 if available[1] else 4)
     experiment = _exercise_stim_experiment(profile)
     if not available[0]:
         assert experiment is None
@@ -38,6 +45,15 @@ def test_public_workflow_in_the_available_source_profile(profile: str) -> None:
         assert experiment["observable_failures"] == [0, 0]
         assert experiment["sampling_source"] == "stim_circuit"
         assert experiment["reference_ones_verified"] is True
+        assert [record["entrance"] for record in experiment["memory_experiments"]] == [
+            "repetition_z",
+            "surface_z",
+            "surface_x",
+        ]
+        assert all(
+            record["shots"] == 35 and record["sampling_source"] == "memory_circuit"
+            for record in experiment["memory_experiments"]
+        )
 
 
 def test_installer_child_cannot_import_through_caller_python_paths(
