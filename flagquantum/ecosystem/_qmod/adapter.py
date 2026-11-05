@@ -1316,6 +1316,8 @@ class _Adapt:
                 token, "control", "control else requires a supported reversible helper"
             )
         operation = body[0]
+        if operation.control_body is not None:
+            reject(token, "scope", "nested scalar control requires function scope")
         if condition.token.text == ":":
             if operation.token.text != "X" or len(operation.arguments) != 1:
                 reject(token, "control", "slice control requires one X target")
