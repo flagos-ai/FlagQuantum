@@ -1,0 +1,63 @@
+# Copyright 2023 Google LLC
+# SPDX-License-Identifier: Apache-2.0
+# Adapted from Qualtran v0.7.0 CtrlScaleModAdd.build_composite_bloq.
+# Source: https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/bloqs/mod_arithmetic/mod_addition.py
+# Changes: native IR, explicit big-endian roles and a reused clean work pool.
+
+"""Controlled modular scale-add through the original ordered bit traversal."""
+
+from ...core.ir import Instruction
+from .and_compute import and_compute_ir, and_uncompute_ir
+from .modular_addition import _validate_modular_layout
+from .modular_constant_addition import (
+    controlled_modular_add_constant_ir,
+    modular_constant_requirements,
+)
+
+
+def modular_scaled_requirements(width: int) -> tuple[int, int]:
+    """Reserve one outer And target plus the shared constant-add work pool."""
+    quantum, classical = modular_constant_requirements(width)
+    return quantum + 1, classical
+
+
+def controlled_modular_scaled_add_ir(
+    control: int,
+    left: tuple[int, ...],
+    right: tuple[int, ...],
+    scale: int,
+    modulus: int,
+    workspace: tuple[int, ...],
+    classical_bits: tuple[int, ...],
+) -> tuple[Instruction, ...]:
+    """Preserve control/x and update y=(y+k*x)%p on the positive control branch.
+
+    Big-endian x may contain any n-bit unsigned value; y lies in [0,p) in both
+    coherent control branches. Concrete k may be negative. Do not omit zero-k
+    stages: source gate order and resource accounting include every bit.
+    Caller-owned work starts/ends zero. Classical slots hold latest outcomes.
+    """
+    requirements = modular_scaled_requirements(len(left))
+    _validate_modular_layout(
+        left,
+        right,
+        modulus,
+        workspace,
+        classical_bits,
+        requirements,
+        extra_wires=(control,),
+    )
+    if type(scale) is not int:
+        raise ValueError("Modular scale must be a concrete integer")
+    apply, inner = workspace[0], workspace[1:]
+    gates: list[Instruction] = []
+    for i, wire in enumerate(left):
+        value = (scale * (1 << (len(left) - 1 - i))) % modulus
+        gates.extend(and_compute_ir(control, wire, apply))
+        gates.extend(
+            controlled_modular_add_constant_ir(
+                apply, right, value, modulus, inner, classical_bits
+            )
+        )
+        gates.extend(and_uncompute_ir(control, wire, apply, classical_bits[0]))
+    return tuple(gates)
