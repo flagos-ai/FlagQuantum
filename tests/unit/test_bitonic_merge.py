@@ -16,6 +16,11 @@ from flagquantum.compiler.registers.comparison_layout import (
 )
 from flagquantum.core.ir import Instruction
 from tests.unit.measurement_checks import certified_and_channel_map, forced_branch
+from tests.unit.register_source_graph import (
+    SourcePorts,
+    SourceResult,
+    walk_source_graph,
+)
 from tests.unit.test_register_constant_addition import reference_arithmetic_gates
 from tests.unit.test_register_subtraction import assert_source
 
@@ -53,19 +58,11 @@ def reference_network(
     temporary birth order. Walk original component graphs instead; only wire
     names are bound here. All leaf gates come from unchanged Comparator objects.
     """
-    import numpy as np
-    from qualtran import LeftDangle, Soquet
-
     from flagquantum.compiler.registers.ordering import greater_ir
 
-    def soqs(value: Any) -> tuple[Any, ...]:
-        return tuple(np.asarray(value, dtype=object).flat)
-
-    def walk(
-        bloq: Any,
-        inputs: dict[str, tuple[int, ...]],
-        desired: dict[str, tuple[int, ...]],
-    ) -> tuple[tuple[Instruction, ...], dict[str, tuple[int, ...]]]:
+    def leaf(
+        bloq: Any, inputs: SourcePorts, desired: SourcePorts
+    ) -> SourceResult | None:
         underlying = getattr(bloq, "subbloq", bloq)
         if type(underlying).__name__ == "Comparator":
             outputs = {
@@ -93,55 +90,7 @@ def reference_network(
             )
             return gates, outputs
 
-        cb = bloq.decompose_bloq()
-        mapping: dict[Any, tuple[int, ...]] = {}
-
-        def bind(
-            register: Any, values: tuple[Any, ...], wires: tuple[int, ...]
-        ) -> None:
-            width = int(register.bitsize)
-            assert len(wires) == len(values) * width
-            for i, soq in enumerate(values):
-                word = wires[i * width : (i + 1) * width]
-                assert soq not in mapping or mapping[soq] == word
-                mapping[soq] = word
-
-        for register in cb.signature.lefts():
-            bind(
-                register,
-                tuple(Soquet(LeftDangle, register, idx) for idx in register.all_idxs()),
-                inputs[register.name],
-            )
-        final = cb.final_soqs()
-        for register in cb.signature.rights():
-            if register.name in desired:
-                bind(register, soqs(final[register.name]), desired[register.name])
-        gates = []
-        for instance, old_inputs, old_outputs in cb.iter_bloqsoqs():
-            child_inputs = {
-                name: tuple(wire for soq in soqs(value) for wire in mapping[soq])
-                for name, value in old_inputs.items()
-            }
-            child_outputs = {}
-            right_registers = tuple(instance.bloq.signature.rights())
-            for register, value in zip(right_registers, old_outputs, strict=True):
-                values = soqs(value)
-                if all(soq in mapping for soq in values):
-                    child_outputs[register.name] = tuple(
-                        wire for soq in values for wire in mapping[soq]
-                    )
-            child_gates, actual_outputs = walk(
-                instance.bloq, child_inputs, child_outputs
-            )
-            gates.extend(child_gates)
-            for register, value in zip(right_registers, old_outputs, strict=True):
-                bind(register, soqs(value), actual_outputs[register.name])
-        outputs = {
-            name: tuple(wire for soq in soqs(value) for wire in mapping[soq])
-            for name, value in final.items()
-        }
-        assert all(outputs[name] == wires for name, wires in desired.items())
-        return tuple(gates), outputs
+        return None
 
     root = source.adjoint() if adjoint else source
     flat = tuple(wire for word in words for wire in word)
@@ -160,7 +109,7 @@ def reference_network(
     else:
         inputs = {"xs": flat} | ({"junk": history} if adjoint else {})
         outputs = {"xs": flat} | ({} if adjoint else {"junk": history})
-    gates, actual_outputs = walk(root, inputs, outputs)
+    gates, actual_outputs = walk_source_graph(root, inputs, outputs, leaf)
     assert actual_outputs == outputs
     return gates
 
