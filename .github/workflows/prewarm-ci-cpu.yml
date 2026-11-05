@@ -12,15 +12,11 @@ permissions:
   packages: read
 
 jobs:
-  prewarm:
+  export:
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
-    runs-on: [self-hosted, linux, x64, flagquantum-a800-cpu, "${{ matrix.host }}"]
-    strategy:
-      fail-fast: false
-      matrix:
-        host: [a800-171, a800-172]
+    runs-on: ubuntu-latest
     concurrency:
-      group: prewarm-ci-cpu-${{ matrix.host }}
+      group: flagquantum-gh-6
       queue: max
     timeout-minutes: 30
     steps:
@@ -30,52 +26,91 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          python3 - <<'PYTHON'
-          import base64
-          import json
-          import os
-          from pathlib import Path
-          from urllib.request import Request, urlopen
-
-          url = (f"{os.environ['GITHUB_API_URL']}/repos/"
-                 f"{os.environ['GITHUB_REPOSITORY']}/contents/docker/ci/images.lock"
-                 f"?ref={os.environ['GITHUB_SHA']}")
-          request = Request(url, headers={"Authorization": f"Bearer {os.environ['GH_TOKEN']}"})
-          with urlopen(request, timeout=60) as response:
-              payload = json.load(response)
-          Path(os.environ["RUNNER_TEMP"], "ci-images.lock").write_bytes(
-              base64.b64decode(payload["content"], validate=False)
-          )
-          PYTHON
-      - name: Preinstall and qualify every locked profile
+          mkdir -p "$RUNNER_TEMP/ci-image-bundle"
+          gh api "repos/$GITHUB_REPOSITORY/contents/docker/ci/images.lock?ref=$GITHUB_SHA" --jq .content |
+            base64 -d > "$RUNNER_TEMP/ci-image-bundle/source.lock"
+      - name: Export the pinned images and their content identities
         env:
           FQ_REGISTRY_TOKEN: ${{ github.token }}
         shell: bash
         run: |
           set -euo pipefail
           export DOCKER_CONFIG
-          DOCKER_CONFIG="$(mktemp -d "$RUNNER_TEMP/fq-prewarm-registry.XXXXXXXX")"
+          DOCKER_CONFIG="$(mktemp -d "$RUNNER_TEMP/fq-export-registry.XXXXXXXX")"
           trap 'rm -rf "$DOCKER_CONFIG"' EXIT
           printf '%s' "$FQ_REGISTRY_TOKEN" | docker login ghcr.io --username "$GITHUB_ACTOR" --password-stdin
           unset FQ_REGISTRY_TOKEN
-          lock_dir="${XDG_CACHE_HOME:-$HOME/.cache}/flagquantum-ci"
-          mkdir -p -m 700 "$lock_dir"
-          while read -r profile image; do
+          cd "$RUNNER_TEMP/ci-image-bundle"
+          images=()
+          while read -r profile image expected_config; do
             [[ "$profile" =~ ^(core-py3\.(10|11|12)|coverage-py3\.12)$ ]]
             [[ "$image" =~ ^ghcr\.io/flagos-ai/flagquantum-ci@sha256:[a-f0-9]{64}$ ]]
-            echo "Prewarming $profile on $RUNNER_NAME"
-            exec 9>"$lock_dir/${image##*@}.lock"
-            flock -w 480 9
-            if ! docker image inspect "$image" >/dev/null 2>&1; then
-              timeout --kill-after=15s 450s docker pull "$image"
+            timeout --kill-after=15s 450s docker pull "$image"
+            config="$(docker image inspect --format '{{.Id}}' "$image")"
+            [[ "$config" =~ ^sha256:[a-f0-9]{64}$ ]]
+            if [[ -n "$expected_config" ]]; then
+              test "$config" = "$expected_config"
             fi
-            exec 9>&-
-            timeout --kill-after=5s 60s docker run --rm --network none "$image" python -m pip check
-            timeout --kill-after=5s 60s docker run --rm --network none "$image" python -c \
+            cache="flagquantum-ci-cache:${image##*:}"
+            docker tag "$image" "$cache"
+            images+=("$cache")
+            printf '%s %s %s\n' "$profile" "$image" "$config" >> images.lock
+          done < source.lock
+          test "${#images[@]}" -eq 4
+          timeout --kill-after=15s 300s docker save "${images[@]}" | gzip -1 > images.tar.gz
+          sha256sum images.tar.gz images.lock source.lock > SHA256SUMS
+          cat images.lock >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        timeout-minutes: 6
+        with:
+          name: locked-cpu-images
+          path: ${{ runner.temp }}/ci-image-bundle/
+          retention-days: 7
+          compression-level: 0
+          if-no-files-found: error
+
+  prewarm:
+    needs: export
+    runs-on: [self-hosted, linux, x64, flagquantum-a800-cpu, "${{ matrix.host }}"]
+    strategy:
+      fail-fast: false
+      matrix:
+        host: [a800-171, a800-172]
+    concurrency:
+      group: prewarm-ci-cpu-${{ matrix.host }}
+      queue: max
+    timeout-minutes: 20
+    steps:
+      - uses: actions/download-artifact@v8.0.2
+        with:
+          digest-mismatch: error
+          name: locked-cpu-images
+          path: ${{ runner.temp }}/ci-image-bundle
+      - name: Verify and import the offline bundle
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP/ci-image-bundle"
+          sha256sum --check SHA256SUMS
+          timeout --kill-after=15s 300s docker load --input images.tar.gz
+      - name: Qualify every imported profile without networking
+        shell: bash
+        run: |
+          set -euo pipefail
+          qualified=0
+          while read -r profile image config; do
+            [[ "$image" =~ ^ghcr\.io/flagos-ai/flagquantum-ci@sha256:[a-f0-9]{64}$ ]]
+            [[ "$config" =~ ^sha256:[a-f0-9]{64}$ ]]
+            cache="flagquantum-ci-cache:${image##*:}"
+            test "$(docker image inspect --format '{{.Id}}' "$cache")" = "$config"
+            timeout --kill-after=5s 60s docker run --rm --pull never --network none "$cache" python -m pip check
+            timeout --kill-after=5s 60s docker run --rm --pull never --network none "$cache" python -c \
               'import torch; assert torch.version.cuda is None'
             if [[ "$profile" == core-* ]]; then
-              timeout --kill-after=5s 60s docker run --rm --network none "$image" python -c \
+              timeout --kill-after=5s 60s docker run --rm --pull never --network none "$cache" python -c \
                 "import importlib.util as u; assert all(u.find_spec(name) is None for name in ('numpy', 'jax', 'cirq', 'qiskit', 'pennylane', 'braket', 'cudaq'))"
             fi
-            echo "Qualified $profile ($image)" >> "$GITHUB_STEP_SUMMARY"
-          done < "$RUNNER_TEMP/ci-images.lock"
+            qualified=$((qualified + 1))
+            echo "Qualified $profile ($image, $config)" >> "$GITHUB_STEP_SUMMARY"
+          done < "$RUNNER_TEMP/ci-image-bundle/images.lock"
+          test "$qualified" -eq 4
