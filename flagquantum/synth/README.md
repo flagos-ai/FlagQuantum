@@ -882,3 +882,18 @@ Reproduce the unchanged originals with tools/validate_qmod_integer_composition.p
 --data-case 0 (then 1), or --case bb84_implementation, each with --output <path>.
 These source and MIT-license-checked runs compare complete complex128 vectors
 against independent Circuits, including global phase and numeric bit order.
+# Checked Grover composition in the Qmod integration profile
+
+The Qmod adapter supports grover_operator with a checked one-register phase
+callback and the built-in hadamard_transform preparation. Top-level int literal
+constants and bounded integer specialization share the exact integer profile.
+The phase callback cannot capture other quantum values, modify or transfer its
+borrowed array, allocate outputs or escape. Validation checks callback structure
+even with zero repetitions. General higher-order callback ports, custom
+preparation and predicate-output phase_oracle are not implied by this slice.
+
+python -m examples.synthesis_grover shows runnable Qmod, existing native qfunc
+phase composition and independent Circuit forms. The two original Grover
+fixtures are verified separately at r=0/1/2, including absolute global phase,
+numeric bit order, all workspace bits and resource-budget refusal. No new
+native Python Grover callable is exported by this compatibility slice.

@@ -152,6 +152,7 @@ class Statement:
     inverse_body: tuple[Statement, ...] | None = None
     static_if_body: tuple[Statement, ...] | None = None
     map_callback: tuple[Token, tuple[Statement, ...]] | None = None
+    oracle_callback: tuple[Token, tuple[Statement, ...]] | None = None
 
 
 @dataclass(frozen=True)
@@ -169,6 +170,7 @@ class Parser:
         self.tokens = tokens
         self.position = 0
         self.records: dict[str, Record] = {}
+        self.integer_constants: set[str] = set()
 
     @property
     def current(self) -> Token:
@@ -779,12 +781,12 @@ class Parser:
                     kind += "[]"
             else:
                 kind, width = self.scalar_type(
-                    allow_qubit_array=name.text == "main" or role == "inout",
+                    allow_qubit_array=name.text == "main" or role in {"inout", "const"},
                     allow_phase=name.text == "main" and role == "output",
-                    allow_fixed_array=role in {"inout", "output"}
+                    allow_fixed_array=role in {"inout", "output", "const"}
                     or name.text == "main",
                 )
-            if role == "const" and width is None:
+            if role == "const" and width is None and kind != "qbit[]":
                 reject(
                     parameter, "width", "Const qnum requires an explicit unsigned width"
                 )
@@ -946,6 +948,35 @@ class Parser:
                 continue
             target = self.name()
             arguments: tuple[Expression, ...]
+            if target.text == "grover_operator" and self.current.text == "(":
+                self.take("(")
+                callback = None
+                if self.current.text == "lambda":
+                    marker = self.take("lambda")
+                    self.take("(")
+                    parameter = self.name()
+                    self.take(")")
+                    callback = (
+                        parameter,
+                        self.block(allow_scopes=False, scope_depth=scope_depth + 1),
+                    )
+                    oracle = Expression(marker)
+                else:
+                    oracle = Expression(self.name())
+                self.take(",")
+                grover_preparation = Expression(self.name())
+                self.take(",")
+                destination = self.call_argument()
+                self.take(")")
+                self.take(";")
+                statements.append(
+                    Statement(
+                        target,
+                        (oracle, grover_preparation, destination),
+                        oracle_callback=callback,
+                    )
+                )
+                continue
             if (
                 target.text == "apply_to_all"
                 and self.tokens[self.position + 1].text == "lambda"
@@ -1195,7 +1226,7 @@ class Parser:
             if (
                 self.current.text != "qfunc"
                 and self.tokens[self.position + 1].text == ":"
-                and kind in {"SparsePauliOp", "real"}
+                and kind in {"SparsePauliOp", "real", "int"}
             ):
                 name = self.name()
                 self.take(":")
@@ -1210,6 +1241,22 @@ class Parser:
                 elif array:
                     value = self.literal_array(
                         partial(self.preparation_literal, allow_fraction=False)
+                    )
+                elif kind == "int":
+                    self.integer_constants.add(name.text)
+                    negative = self.take("-") if self.current.text == "-" else None
+                    literal = self.current
+                    if not literal.text.isdecimal():
+                        reject(
+                            literal,
+                            "constant",
+                            "int constants require an exact integer literal",
+                        )
+                    self.take(literal.text)
+                    value = (
+                        Expression(literal)
+                        if negative is None
+                        else Expression(negative, (Expression(literal),))
                     )
                 else:
                     value = self.signed_angle_argument()

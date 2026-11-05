@@ -64,7 +64,7 @@ def test_source_order_is_translated_to_const_first_owned_call_abi(
         ("input const q:qbit", "", "qmod.role"),
         ("output const q:qbit", "", "qmod.role"),
         ("q:qbit", "allocate(q);", "qmod.scope"),
-        ("const q:qbit[]", "", "qmod.type"),
+        ("const q:qbit[]", "", "qmod.oracle"),
         ("const q:qbit,const q:qbit", "", "qmod.name"),
         ("const q:qbit", "H(q);", "construction.register.const"),
         ("const q:qbit", "Z(q);", "construction.register.const"),

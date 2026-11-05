@@ -969,7 +969,8 @@ A fresh helper Output may be a fixed one-dimensional `qbit[N]` array. Its array
 kind and width remain intact through the call, including N=1. Caller and callee
 must match exactly. Duplicate writes, overlapping outputs, already initialized
 actuals and escaped output storage are rejected. This does not introduce
-unsized Output arrays in helpers, Input ports or Const array/record ports.
+unsized Output arrays in helpers, Input ports or general Const array/record ports.
+The checked static phase-oracle profile below is the bounded Const-array exception.
 
 `multi_suzuki_trotter([SparsePauliOp {...}], times, order, repetitions, target)`
 accepts one inline sparse operator with order 1/2 and 1..256 repetitions, or
@@ -1054,5 +1055,36 @@ The three unchanged Fermi, BB84 and credit-card originals have independent full
 state-vector acceptance. Run tools/validate_qmod_integer_composition.py or
 python -m examples.synthesis_integer_composition. The example also shows the
 existing native qfunc equivalent; Python qfunc parameter syntax is not extended
-by this Qmod adapter slice. Top-level int declarations, arbitrary classical
-execution and cscope/VQE/save remain separate unsupported dependencies.
+by this Qmod adapter slice. Arbitrary classical execution and cscope/VQE/save
+remain separate unsupported dependencies. Top-level exact integer literal
+constants are admitted by the checked phase-oracle slice below.
+
+## Checked phase oracles and uniform Grover composition
+
+One whole Const qbit array may be borrowed by a phase-only function, optionally
+with exact scalar integer arguments specialized from literals or top-level int
+literal constants. Only phase effects, one-predicate phase controls and calls
+forwarding the same borrowed register are admitted. Writes, allocation, Output,
+ownership transfer, quantum captures, slices and additional array alias ports
+are refused. Definitions and callback structure are checked even at power(0).
+
+grover_operator accepts a named checked phase function or one-argument static
+lambda, the built-in hadamard_transform and one whole writable array. The caller
+prepares the initial state explicitly. Each round applies the oracle followed
+by 2|s><s|-I; its global minus sign is retained. This agrees with the Classiq
+[Grover definition](https://docs.classiq.io/sdk-reference/qmod/functions/open_library/grover).
+The adapter expands these constructs into existing owned phase and gate effects;
+Compiler still owns validation, workspace and physical costs. No truth-table
+oracle constructor or foreign SDK executes during synthesis. General callback
+ports, custom preparations and predicate-output phase_oracle calls are separate
+dependencies, not enabled by this profile.
+
+Run python -m examples.synthesis_grover for executable Qmod/native qfunc/Circuit
+comparisons. Native qfunc composes existing phase functions and Hadamard calls;
+this slice adds no Python Grover export. The unchanged 3_sat_grover.qmod and
+grover_max_cut.qmod fixtures use r=0/1/2 with independent dense Circuit and
+analytic full-vector references. Their bit order, absolute phase, clean scratch,
+source/license digests and real budget refusals are checked. Use
+tools/validate_qmod_grover.py --case 3_sat_grover --iterations 2 --output /tmp/sat.json
+and repeat for grover_max_cut. See the contract
+docs/api-changes/FQ-SYNTH-UP06-GROVER-20261105.md.

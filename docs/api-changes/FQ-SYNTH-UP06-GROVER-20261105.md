@@ -1,7 +1,10 @@
 # UP-06 checked static phase oracles and uniform Grover composition
 
 This private Qmod boundary profile changes no public export or serialized IR.
-One-register phase oracles borrow a fixed or caller-sized Const qbit array.
+One-register phase oracles borrow a fixed or caller-sized Const qbit array,
+optionally specializing additional scalar int parameters from exact integer
+literals or top-level literal constants. No integer-array or quantum capture
+is introduced by those parameters.
 They may apply constant phases under bounded predicates or call another checked
 phase oracle with exactly the same borrowed register. They cannot allocate,
 write a basis value, transfer ownership, declare outputs, capture a different
@@ -32,3 +35,11 @@ preparation, malformed constants and resource excess. Recheck all 216 originals
 without changing previous passing rows or resource baselines. Preserve source
 and license hashes. Update the ledger; no integration PR or full CI before the
 agreed all-original acceptance gate.
+
+The Classiq official Grover reference fixes the phase convention:
+https://docs.classiq.io/sdk-reference/qmod/functions/open_library/grover
+and https://docs.classiq.io/qmod-reference/library-reference/open-library-functions/grover_operator/grover_operator.
+The zero reflection is 2|0><0|-I and the uniform diffuser is 2|s><s|-I.
+Use the SDK reference's S0 convention consistently; the library tutorial writes
+the opposite S0 convention together with an explicit leading minus, yielding
+the same complete Grover operator.

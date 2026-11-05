@@ -329,3 +329,11 @@ default phase coefficients reuse the real phase path. Three unchanged originals
 have independent full-state Circuit checks: Fermi iterations 1/2, two nonzero
 credit-card data pairs and original BB84 bits. This is local integration evidence
 without a native Python integer-port or corpus-wide maturity promotion.
+The checked-Grover UP-06 slice admits one borrowed Const array with diagonal
+phase effects, bounded integer specialization and a closed static callback.
+Uniform-state reflection reuses existing owned gates and phase lowering,
+including its absolute minus sign. Two unchanged originals have six full-state
+Circuit and analytic checks (r=0/1/2), bit-order and clean-scratch acceptance,
+with alias/escape and budget refusals. This remains local integration evidence,
+not a general callback language, native Python Grover export or corpus-wide
+maturity promotion.

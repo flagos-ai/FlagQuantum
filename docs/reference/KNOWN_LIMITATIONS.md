@@ -297,7 +297,7 @@ check, permitting supported diagonal phases and basis operations. Unsupported
 operations are rejected even in unused definitions or cancelling pairs. Existing
 Compiler initialization and ownership checks remain authoritative. Helpers can
 produce fixed one-dimensional qbit[N] outputs, preserving the array type for N=1.
-Unimplemented Input/Const array roles, unsized helper Output arrays and dynamic
+Unimplemented Input/general Const array roles, unsized helper Output arrays and dynamic
 qperm callbacks remain unsupported. multi_suzuki_trotter retains its singleton
 order 1/2, 1..256 repetition profile. Paired arrays of 2..16 operators/times also
 work with first order and one repetition; other multi-operator formulas and
@@ -358,3 +358,21 @@ consuming ownership, a nested-loop language or a Python qfunc parameter extensio
 Original Fermi iteration counts 1/2, two nonzero credit-card data pairs and fixed
 BB84 data have independent full-state Circuit acceptance. The 216-original gate
 and complete integration CI remain outstanding.
+## Checked static phase-oracle integration slice
+
+Const arrays are admitted only for a one-register phase-only Qmod function,
+optionally specialized by exact scalar integer literals. Named callbacks and
+one-argument lambdas may compose such functions in grover_operator with the
+built-in hadamard_transform preparation. Custom preparations, callback arrays,
+quantum captures, extra array aliases, consuming ports and Output escape remain
+rejected. General Const array/record ports and predicate-output phase_oracle
+calls are not enabled. Existing source, helper, owned-node and physical budgets
+remain authoritative. Top-level int constants admit exact bounded signed
+integer literals; they do not introduce general classical execution.
+
+The two pinned Grover originals are tested at r=0/1/2 against independent public
+Circuits and analytic vectors, retaining absolute global phase. Working qubits
+required by the shared MCX kernel are included in the full-state comparison and
+must return to zero. Run tools/validate_qmod_grover.py or the three-form example
+python -m examples.synthesis_grover. This is local CPU integration evidence;
+there is no new native Grover export or complete Classiq-library claim.

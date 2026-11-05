@@ -34,6 +34,7 @@ from ...compiler._hybrid.model import (
 )
 from ...compiler._hybrid.verifier import Diagnostic, HybridVerificationError
 from .integers import checked_integer, checked_integer_array
+from .oracles import expand_static_oracles
 from .permutations import verify_permutations
 from .phase import MAX_PHASE_INPUT_BITS, expand_phase
 from .phase_factors import Cube, preserve_factors
@@ -96,6 +97,7 @@ _INTRINSICS = (
         "qct_type2",
         "qst_type2",
         "qct_qst_type2",
+        "grover_operator",
     }
     | EXTREMA
     | ANGLE_CALLS
@@ -1143,6 +1145,7 @@ class _Adapt:
                 and item.control_body is None
                 and item.map_callback is None
                 and item.static_if_body is None
+                and item.repeat_index is None
             ):
                 reject(
                     item.token,
@@ -3405,10 +3408,19 @@ def parse_qmod(
     parser = Parser(tokens)
     functions_syntax, declarations = parser.parse()
     constants: dict[str, Expression] = {}
+    constant_integers: dict[str, int] = {}
     for name_token, operator in declarations:
         name = name_token.text
         if name in constants or name in _INTRINSICS or name == "main":
             reject(name_token, "name", "duplicate or reserved top-level constant")
+        if name in parser.integer_constants:
+            negative = operator.token.text == "-"
+            magnitude = operator.children[0] if negative else operator
+            constant_integers[name] = checked_integer(
+                (-1 if negative else 1) * int(magnitude.token.text), name_token
+            )
+            constants[name] = operator
+            continue
         if operator.token.text != "SparsePauliOp":
             if operator.token.text == "[":
                 for item in operator.children:
@@ -3445,6 +3457,7 @@ def parse_qmod(
     if "main" not in definitions:
         reject(tokens[0], "entry", "source requires one qfunc main")
     verify_permutations(definitions)
+    definitions = expand_static_oracles(definitions, constants)
     main = definitions["main"]
     parameters = {
         p.name.text: p for p in main.parameters if p.role in {"real", "integer"}
@@ -3572,6 +3585,7 @@ def parse_qmod(
         if name not in compiled:
             active.add(name)
             adapter = _Adapt(syntax, resolve, definitions, constants, parser.records)
+            adapter.classical_integers.update(constant_integers)
             if name == "main":
                 adapter.classical_values.update(bindings)
                 adapter.classical_arrays.update(arrays)
