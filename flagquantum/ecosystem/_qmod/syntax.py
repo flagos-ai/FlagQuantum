@@ -131,6 +131,7 @@ class Statement:
     repeat_index: Token | None = None
     repeat_body: tuple[Statement, ...] = ()
     power_callback: tuple[Token, tuple[Statement, ...]] | None = None
+    inverse_body: tuple[Statement, ...] | None = None
 
 
 @dataclass(frozen=True)
@@ -677,6 +678,16 @@ class Parser:
         self.take("{")
         statements: list[Statement] = []
         while self.current.text != "}":
+            if (
+                self.current.text == "invert"
+                and self.tokens[self.position + 1].text == "{"
+            ):
+                token = self.take("invert")
+                if scope_depth:
+                    reject(token, "scope", "invert requires function scope")
+                body = self.block(allow_scopes=False, scope_depth=1)
+                statements.append(Statement(token, (), inverse_body=body))
+                continue
             if (
                 self.current.text == "within"
                 and self.tokens[self.position + 1].text == "{"

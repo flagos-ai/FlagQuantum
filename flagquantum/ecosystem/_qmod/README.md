@@ -679,3 +679,11 @@ exponent registers support up to four and eight qubits, respectively.
 The permutation fixes target encodings at or above the modulus. The
 `allocate(ceiling(log(n, 2)), x)` width form accepts a literal modulus and
 uses integer bit length.
+
+### In-place Bloch encoding and inversion
+
+`inplace_encode_on_bloch(data, target)` applies the Bloch rotations for
+complete pairs of bound real data to an initialized qubit array or a matching
+one-bit `qnum`. A function-scope `invert` containing one such call reverses
+the rotations and negates their angles. Both forms preserve the existing
+register ownership and require no temporary qubits.

@@ -63,6 +63,7 @@ _INTRINSICS = (
         "allocate",
         "encode_in_angle",
         "encode_on_bloch",
+        "inplace_encode_on_bloch",
         "phase",
         "pi",
         "control",
@@ -932,25 +933,44 @@ class _Adapt:
                 return values[offset]
         return _literal_angle(node, gate)
 
-    def encode_data(self, token: Token, args: tuple[Expression, ...]) -> None:
+    def encode_data(
+        self, token: Token, args: tuple[Expression, ...], *, inverse: bool = False
+    ) -> None:
         if len(args) != 2:
             reject(token, "signature", "data encoding requires a real array and output")
         source, output = (self.atom(arg) for arg in args)
         values = self.classical_arrays.get(source.text)
         if values is None:
             reject(source, "binding", "encoding requires a bound real array")
-        if (
-            output.text not in self.parameters
-            or self.parameters[output.text].kind != "qbit[]"
-        ):
-            reject(output, "type", "encoding requires a qubit array output")
-        bloch = token.text == "encode_on_bloch"
+        inplace = token.text == "inplace_encode_on_bloch"
+        bloch = token.text != "encode_in_angle"
         width = (len(values) + 1) // 2 if bloch else len(values)
-        target = self.register(output, width, allow_qubit_array=True)
+        parameter = self.parameters.get(output.text)
+        if parameter is None or (
+            parameter.kind != "qbit[]"
+            and not (inplace and parameter.kind == "qnum" and width == 1)
+        ):
+            reject(
+                output,
+                "type",
+                "encoding requires a qubit array or one-bit numeric in-place target",
+            )
+        if inplace and len(values) % 2:
+            reject(
+                source,
+                "binding",
+                "in-place Bloch encoding requires complete data pairs",
+            )
+        target = self.register(
+            output, None if inplace else width, allow_qubit_array=True
+        )
         if register_width(target) != width:
             reject(output, "width", "encoding output width must match its data")
-        self.effect_op("qreg.allocate", token, (target,))
-        for index, value in enumerate(values):
+        if not inplace:
+            self.effect_op("qreg.allocate", token, (target,))
+        indices = range(len(values))
+        for index in reversed(indices) if inverse else indices:
+            value = values[index]
             if bloch:
                 gate = "rz" if index % 2 else "rx"
                 scale = (
@@ -967,7 +987,7 @@ class _Adapt:
                 (target,),
                 gate=gate,
                 index=wire,
-                angle=scale * value,
+                angle=(-scale if inverse else scale) * value,
             )
 
     def call_bound_helper(
@@ -1766,7 +1786,18 @@ class _Adapt:
 
     def statement(self, statement: Statement, index: str) -> None:
         token, args = statement.token, statement.arguments
-        if statement.power_callback is not None:
+        if statement.inverse_body is not None:
+            body = statement.inverse_body
+            if (
+                len(body) != 1
+                or body[0].token.text != "inplace_encode_on_bloch"
+                or len(body[0].arguments) != 2
+            ):
+                reject(
+                    token, "scope", "invert requires one in-place Bloch encoding call"
+                )
+            self.encode_data(body[0].token, body[0].arguments, inverse=True)
+        elif statement.power_callback is not None:
             self.qpe_flexible(statement)
         elif statement.repeat_index is not None:
             self.repeat(statement, index)
@@ -1906,7 +1937,11 @@ class _Adapt:
             )
         elif token.text == "^=":
             self.xor_update(token, args[0], args[1])
-        elif token.text in {"encode_in_angle", "encode_on_bloch"}:
+        elif token.text in {
+            "encode_in_angle",
+            "encode_on_bloch",
+            "inplace_encode_on_bloch",
+        }:
             self.encode_data(token, args)
         elif token.text == "allocate":
             if len(args) not in {1, 2, 4}:
