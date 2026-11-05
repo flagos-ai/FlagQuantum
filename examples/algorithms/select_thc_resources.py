@@ -29,6 +29,20 @@ NETWORKS = (((0, 1, 0.2),), ((0, 1, 0.5),))
 ONE_BODY_NETWORKS = ((), ((0, 1, -0.4),))
 
 
+def _angle_tables(first: bool) -> Iterator[tuple[bool, tuple[int, ...]]]:
+    networks = (*NETWORKS, (), (), *ONE_BODY_NETWORKS) if first else NETWORKS
+    for inverse in (False, True):
+        words = tuple(
+            (
+                round(((-net[0][2] if inverse else net[0][2]) % tau) / tau * 256) % 256
+                if net
+                else 0
+            )
+            for net in networks
+        )
+        yield inverse, words
+
+
 def _stage_layout(measured: bool) -> Iterator[tuple[str, tuple[str, ...]]]:
     """Expected opcode spans for the two-row, single-slot example."""
     angle, gradient = tuple(range(1, 9)), tuple(range(9, 17))
@@ -45,21 +59,9 @@ def _stage_layout(measured: bool) -> Iterator[tuple[str, tuple[str, ...]]]:
         else controlled_add_or_subtract_ir(0, angle, gradient, carries[0])
     )
     yield "Gradient prepare", tuple(op.name for op in phase_gradient_state_ir(gradient))
-    for first, networks in (
-        (True, (*NETWORKS, (), (), *ONE_BODY_NETWORKS)),
-        (False, NETWORKS),
-    ):
+    for first in (True, False):
         yield "Spin swaps", ("cswap",) * 2
-        for inverse in (False, True):
-            words = tuple(
-                (
-                    round(((-net[0][2] if inverse else net[0][2]) % tau) / tau * 256)
-                    % 256
-                    if net
-                    else 0
-                )
-                for net in networks
-            )
+        for inverse, words in _angle_tables(first):
             width = 3 if first else 2
             load = controlled_qrom_ir(
                 width,
@@ -97,15 +99,18 @@ def _stage_layout(measured: bool) -> Iterator[tuple[str, tuple[str, ...]]]:
     )
 
 
-def _print_emitted_stages(ir: CircuitIR, *, measured: bool) -> None:
+def _print_emitted_stages(ir: CircuitIR, *, measured: bool) -> dict[str, Counter[str]]:
     stages: dict[str, Counter[str]] = defaultdict(Counter)
     conditioned: Counter[str] = Counter()
     offset = 0
+    erasure_ccx = []
     for stage, expected in _stage_layout(measured):
         span = ir.instructions[offset : offset + len(expected)]
         if tuple(op.name for op in span) != expected:
             raise RuntimeError(f"{stage} does not match emitted IR at offset {offset}")
         stages[stage].update(op.name for op in span)
+        if stage == "Erase":
+            erasure_ccx.append(sum(op.name == "ccx" for op in span))
         conditioned[stage] += sum(
             bool(instruction_condition_clauses(op)) for op in span
         )
@@ -123,6 +128,89 @@ def _print_emitted_stages(ir: CircuitIR, *, measured: bool) -> None:
             f"{counts['ccx']:>5} {counts['cswap']:>6} {counts['measure']:>6} "
             f"{conditioned[stage]:>6} {counts['phase']:>6} {subtotal:>10}"
         )
+
+    if measured:
+        print("  Erasure CCX by mu forward/inverse, nu forward/inverse:", erasure_ccx)
+    return dict(stages)
+
+
+def _print_qualtran_executable_counts(stages: dict[str, Counter[str]]) -> None:
+    import cirq
+    from qualtran import Bloq, QUInt
+    from qualtran.bloqs.arithmetic.controlled_add_or_subtract import (
+        ControlledAddOrSubtract,
+    )
+    from qualtran.bloqs.basic_gates import CNOT
+    from qualtran.bloqs.data_loading import QROAMClean
+    from qualtran.cirq_interop import BloqAsCirqGate
+
+    names = {
+        cirq.X: "x",
+        cirq.H: "h",
+        cirq.S: "s",
+        cirq.S**-1: "sdg",
+        cirq.T: "t",
+        cirq.T**-1: "tdg",
+        cirq.CNOT: "cx",
+        cirq.CZ: "cz",
+        BloqAsCirqGate(CNOT()): "cx",
+    }
+
+    def count(bloq: Bloq) -> Counter[str]:
+        gates = cirq.decompose(
+            bloq.decompose_bloq().to_cirq_circuit(),
+            keep=lambda op: (
+                op.gate in names
+                or cirq.is_measurement(op)
+                or isinstance(op.gate, cirq.ResetChannel)
+                or isinstance(op, cirq.ClassicallyControlledOperation)
+            ),
+        )
+        counts: Counter[str] = Counter()
+        for gate in gates:
+            if isinstance(gate, cirq.ClassicallyControlledOperation):
+                gate = gate.without_classical_controls()
+            if cirq.is_measurement(gate):
+                counts["measure"] += 1
+            elif isinstance(gate.gate, cirq.ResetChannel):
+                counts["reset"] += 1
+            else:
+                counts[names[gate.gate]] += 1
+        return counts
+
+    lookup: Counter[str] = Counter()
+    for first in (True, False):
+        width = 3 if first else 2
+        for _, words in _angle_tables(first):
+            lookup.update(
+                count(
+                    QROAMClean.build_from_data(
+                        (*words, *([0] * ((1 << width) - len(words)))),
+                        target_bitsizes=(ANGLE_BITS,),
+                        num_controls=1,
+                        log_block_sizes=(1,),
+                    )
+                )
+            )
+    dtype = QUInt(ANGLE_BITS)
+    arithmetic = count(ControlledAddOrSubtract(dtype, dtype, add_when_ctrl_is_on=False))
+    arithmetic = Counter({name: 4 * total for name, total in arithmetic.items()})
+    for label, actual, upstream in (
+        (
+            "Forward QROAM",
+            stages["Lookup XOR"] + stages["Lookup bank exchange"],
+            lookup,
+        ),
+        ("Controlled add/subtract", stages["Add/subtract"], arithmetic),
+    ):
+        if actual != upstream:
+            raise RuntimeError(
+                f"{label} opcode count mismatch: "
+                f"FlagQuantum excess {actual - upstream}; "
+                f"Qualtran excess {upstream - actual}"
+            )
+        print(f"  {label}: {dict(upstream)}")
+    print("  Executable counts match FlagQuantum for both stages.")
 
 
 def main() -> None:
@@ -167,11 +255,14 @@ def main() -> None:
             "  T-equivalent subtotal (7 per CCX/CSWAP, excluding phase synthesis):",
             counts["t"] + counts["tdg"] + 7 * (counts["ccx"] + counts["cswap"]),
         )
-        _print_emitted_stages(circuit.to_ir(), measured=measurement_erasure)
+        stages = _print_emitted_stages(circuit.to_ir(), measured=measurement_erasure)
+        if measurement_erasure and args.qualtran:
+            if version("qualtran") != "0.7.0":
+                parser.error("--qualtran requires Qualtran 0.7.0")
+            print("Qualtran 0.7.0 executable component counts:")
+            _print_qualtran_executable_counts(stages)
 
     if args.qualtran:
-        if version("qualtran") != "0.7.0":
-            parser.error("--qualtran requires Qualtran 0.7.0")
         from qualtran.bloqs.chemistry.thc.select_bloq import SelectTHC as CostModel
         from qualtran.bloqs.chemistry.thc.select_bloq import THCRotations
         from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
