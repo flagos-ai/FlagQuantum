@@ -241,6 +241,10 @@ These examples do not use that alias:
   compares native matching and PyMatching on the same 35 distance-three Z
   memory shots. It uses the existing Stim and PyMatching extras on CPU and
   reports four paired outcome counts after all three batches complete.
+- [`qec/stim_memory_experiment.py`](qec/stim_memory_experiment.py) runs an
+  external Stim circuit through the canonical QEC fixed-shot report entry,
+  using domain imports rather than the root-level alias. CPU and the existing
+  Stim/PyMatching extras are required; it prints `35 0 (0, 0)` and `stim_circuit`.
 - [`qec/memory_experiment.py`](qec/memory_experiment.py) composes the approved
   fixed-shot experiment through its canonical QEC execution import. It uses one
   original source and exact final partial batches with five default decoders;
