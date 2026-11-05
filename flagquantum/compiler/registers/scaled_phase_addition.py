@@ -12,6 +12,20 @@ from .bitwise import _validate_wires
 from .phase_addition import phase_add_ir, phase_add_workspace_size
 
 
+def _coefficient_word(coefficient: float, width: int, fraction_bits: int) -> int:
+    """Encode the truncated and saturated magnitude in an unsigned format."""
+    if type(coefficient) not in (int, float) or (
+        type(coefficient) is float and not isfinite(coefficient)
+    ):
+        raise ValueError("Scaled phase addition requires a finite coefficient")
+
+    numerator, denominator = abs(coefficient).as_integer_ratio()
+    return min(
+        (numerator << fraction_bits) // denominator,
+        (1 << width) - 1,
+    )
+
+
 def scaled_phase_add_terms(
     input_width: int,
     input_fraction_bits: int,
@@ -40,15 +54,8 @@ def scaled_phase_add_terms(
             raise ValueError("Scaled phase addition requires valid fixed-point formats")
     if type(gradient_width) is not int or gradient_width < 1:
         raise ValueError("Scaled phase addition requires a positive gradient width")
-    if type(coefficient) not in (int, float) or (
-        type(coefficient) is float and not isfinite(coefficient)
-    ):
-        raise ValueError("Scaled phase addition requires a finite coefficient")
-
-    numerator, denominator = abs(coefficient).as_integer_ratio()
-    magnitude = min(
-        (numerator << coefficient_fraction_bits) // denominator,
-        (1 << coefficient_width) - 1,
+    magnitude = _coefficient_word(
+        coefficient, coefficient_width, coefficient_fraction_bits
     )
     integer_bits = input_width - input_fraction_bits
     terms: list[tuple[slice, int]] = []
