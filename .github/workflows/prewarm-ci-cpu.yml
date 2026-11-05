@@ -14,7 +14,7 @@ permissions:
 jobs:
   prewarm:
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
-    runs-on: [self-hosted, linux, x64, "${{ matrix.host }}"]
+    runs-on: [self-hosted, linux, x64, flagquantum-a800-cpu, "${{ matrix.host }}"]
     strategy:
       fail-fast: false
       matrix:
