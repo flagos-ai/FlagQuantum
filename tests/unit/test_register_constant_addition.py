@@ -32,20 +32,40 @@ def source_gates(
     width: int, value: int, *, source: Any = None
 ) -> tuple[tuple[Instruction, ...], Any]:
     pytest.importorskip("qualtran")
+    from qualtran import QUInt
+    from qualtran.bloqs.arithmetic import AddK
+
+    target, constant, carries, bits = layout(width)
+    source = AddK(QUInt(width), value) if source is None else source
+    return (
+        reference_arithmetic_gates(
+            source,
+            {"x": target},
+            (*constant, *carries),
+            dict(zip(carries, bits, strict=True)),
+        ),
+        source,
+    )
+
+
+def reference_arithmetic_gates(
+    source: Any,
+    inputs: dict[str, tuple[int, ...]],
+    allocations: tuple[int, ...],
+    measurement_slots: dict[int, int],
+) -> tuple[Instruction, ...]:
+    """Read unmodified pinned arithmetic with explicit quantum/classical binding."""
+    pytest.importorskip("qualtran")
     if version("qualtran") != "0.7.0":
         pytest.skip("Reference gate stream requires Qualtran v0.7.0")
     import cirq
     import numpy as np
-    from qualtran import QUInt
-    from qualtran.bloqs.arithmetic import AddK
     from qualtran.bloqs.basic_gates import CNOT, XGate
     from qualtran.cirq_interop import BloqAsCirqGate
 
-    target, constant, carries, bits = layout(width)
-
     class Manager(cirq.QubitManager):
         def __init__(self) -> None:
-            self.available = list(reversed((*constant, *carries)))
+            self.available = list(reversed(allocations))
 
         def qalloc(self, n: int, dim: int = 2) -> list[cirq.Qid]:
             assert dim == 2
@@ -59,15 +79,20 @@ def source_gates(
 
     manager = Manager()
     context = cirq.DecompositionContext(manager)
-    source = AddK(QUInt(width), value) if source is None else source
     operation, outputs = (
         source.decompose_bloq()
         .flatten()
         .to_cirq_circuit_and_quregs(
-            qubit_manager=manager, x=np.array([cirq.LineQubit(w) for w in target])
+            qubit_manager=manager,
+            **{
+                name: np.array([cirq.LineQubit(w) for w in wires])
+                for name, wires in inputs.items()
+            },
         )
     )
-    assert tuple(q.x for q in outputs["x"]) == target
+    assert {
+        name: tuple(q.x for q in wires.flat) for name, wires in outputs.items()
+    } == inputs
     names = {
         cirq.X: "x",
         cirq.H: "h",
@@ -97,7 +122,7 @@ def source_gates(
             op = op.without_classical_controls()
         wires = tuple(q.x for q in op.qubits)
         if cirq.is_measurement(op):
-            bit = bits[carries.index(wires[0])]
+            bit = measurement_slots[wires[0]]
             measurements[cirq.measurement_key_obj(op)] = bit
             metadata = {"is_dynamic": True, "classical_bit": bit}
             name = "measure"
@@ -107,7 +132,7 @@ def source_gates(
         else:
             name = names[op.gate]
         gates.append(Instruction(name, wires, metadata=metadata))
-    return tuple(gates), source
+    return tuple(gates)
 
 
 @pytest.mark.parametrize("width,value", CASES)
