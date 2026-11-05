@@ -10,9 +10,13 @@ import torch
 
 import flagquantum as fq
 from flagquantum.compiler.registers.controlled_modular_negation import (
+    controlled_modular_negate_adjoint_ir,
     controlled_modular_negate_ir,
 )
-from flagquantum.compiler.registers.modular_negation import modular_negate_ir
+from flagquantum.compiler.registers.modular_negation import (
+    modular_negate_adjoint_ir,
+    modular_negate_ir,
+)
 from flagquantum.core.ir import CircuitIR
 from flagquantum.dynamic import DynamicCircuit
 from flagquantum.runtime.dynamic.execution import run_dynamic
@@ -23,13 +27,20 @@ class ModularNegation:
     """Bind a three-bit residue modulo five and explicit zero work wires."""
 
     control_value: int | None = None
+    inverse: bool = False
 
     def append_to(self, circuit: fq.Circuit) -> fq.Circuit:
         target = (1, 2, 3)
+        emit = modular_negate_adjoint_ir if self.inverse else modular_negate_ir
+        emit_controlled = (
+            controlled_modular_negate_adjoint_ir
+            if self.inverse
+            else controlled_modular_negate_ir
+        )
         gates = (
-            modular_negate_ir(target, 5, tuple(range(5, 11)), (0, 1))
+            emit(target, 5, tuple(range(5, 11)), (0, 1))
             if self.control_value is None
-            else controlled_modular_negate_ir(
+            else emit_controlled(
                 0,
                 target,
                 5,
@@ -54,31 +65,34 @@ def main() -> None:
         for (c, x), amp in zip(labels, amps, strict=True):
             y = (-x) % 5 if cv is None or c == cv else x
             expected[((c << 3) | y) << 7] = amp
-        op = ModularNegation(cv)
-        circuit = DynamicCircuit(11, inputs=state, dtype=torch.complex128).append(op)
-        result = run_dynamic(circuit, shots=8, seed=41, strategy="trajectory")
-        torch.testing.assert_close(
-            result.final_states.reshape(8, -1),
-            expected.expand(8, -1),
-            rtol=0,
-            atol=1e-12,
-        )
-        counts = Counter(g.name for g in circuit.to_ir().instructions)
-        restored = run_dynamic(
-            circuit.append(op), shots=8, seed=41, strategy="trajectory"
-        )
-        torch.testing.assert_close(
-            restored.final_states.reshape(8, -1),
-            state.expand(8, -1),
-            rtol=0,
-            atol=1e-12,
-        )
-        print(
-            "control value",
-            cv,
-            ": coherent amplitudes correct; work zero; involution verified",
-        )
-        print("Measured primitive gates:", dict(counts))
+        for inverse in (False, True):
+            op = ModularNegation(cv, inverse)
+            circuit = DynamicCircuit(11, inputs=state, dtype=torch.complex128)
+            circuit.append(op)
+            result = run_dynamic(circuit, shots=8, seed=41, strategy="trajectory")
+            torch.testing.assert_close(
+                result.final_states.reshape(8, -1),
+                expected.expand(8, -1),
+                rtol=0,
+                atol=1e-12,
+            )
+            counts = Counter(g.name for g in circuit.to_ir().instructions)
+            circuit.append(ModularNegation(cv, not inverse))
+            restored = run_dynamic(circuit, shots=8, seed=41, strategy="trajectory")
+            torch.testing.assert_close(
+                restored.final_states.reshape(8, -1),
+                state.expand(8, -1),
+                rtol=0,
+                atol=1e-12,
+            )
+            print(
+                "control value",
+                cv,
+                "inverse",
+                inverse,
+                ": coherent amplitudes correct; work zero; exact inverse restoration verified",
+            )
+            print("Measured primitive gates:", dict(counts))
     print(
         "Independent source model: ordinary 24 T/6 measurements; controlled 28 T/7 measurements."
     )
