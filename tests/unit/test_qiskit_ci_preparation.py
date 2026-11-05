@@ -24,7 +24,8 @@ def test_qiskit_gate_requires_both_complete_certified_lanes(result: str) -> None
         "matrix": {"qiskit": ["2.0", "2.5"]},
     }
     assert lane["env"]["QISKIT_VERSION"] == "${{ matrix.qiskit }}.*"
-    assert "'flagquantum-cpu-general'" in lane["runs-on"]
+    assert lane["runs-on"] == "ubuntu-latest"
+    assert lane["concurrency"]["group"] == "flagquantum-gh-7"
     preflight = next(
         s
         for s in lane["steps"]
@@ -53,7 +54,7 @@ def test_qiskit_gate_requires_both_complete_certified_lanes(result: str) -> None
         in commands["run"]
     )
     gate = jobs["qiskit-optional"]
-    assert gate["if"] == "${{ always() }}"
+    assert gate["if"] == "${{ !cancelled() }}"
     assert gate["needs"] == "qiskit-compat"
     command = gate["steps"][0]["run"].replace(
         "${{ needs.qiskit-compat.result }}", result
@@ -63,8 +64,9 @@ def test_qiskit_gate_requires_both_complete_certified_lanes(result: str) -> None
 
 
 @pytest.mark.parametrize("mirror_fails", [False, True])
+@pytest.mark.parametrize("locked_base", [False, True])
 def test_cached_wheels_still_resolve_live_versions_and_validate_offline_closure(
-    tmp_path: Path, mirror_fails: bool
+    tmp_path: Path, mirror_fails: bool, locked_base: bool
 ) -> None:
     action = yaml.safe_load(
         (ROOT / ".github/actions/prepare-qiskit-wheels/action.yml").read_text()
@@ -81,12 +83,19 @@ def test_cached_wheels_still_resolve_live_versions_and_validate_offline_closure(
     python.write_text(
         "#!/usr/bin/env python3\n"
         "import json, os, sys\n"
+        "if os.environ['LOCKED_BASE'] == '1' and os.path.basename(sys.argv[0]) == 'python':\n"
+        "    sys.exit(99)\n"
         "with open(os.environ['CALL_LOG'], 'a') as stream:\n"
         "    stream.write(json.dumps(sys.argv[1:]) + '\\n')\n"
         "sys.exit(1 if os.environ['MIRROR_FAILS'] == '1' and 'wheel' in sys.argv "
         "and 'https://mirror.example/simple' in sys.argv else 0)\n"
     )
     python.chmod(0o755)
+    online = executable / "online-python"
+    online.write_text(python.read_text())
+    online.chmod(0o755)
+    constraint = tmp_path / "locked-base.txt"
+    constraint.write_text("numpy==2.3.5\n")
     wheels = tmp_path / "private-wheels"
     wheels.mkdir()
     (wheels / "old-cached-wheel.whl").write_bytes(b"cached bytes")
@@ -99,6 +108,9 @@ def test_cached_wheels_still_resolve_live_versions_and_validate_offline_closure(
             "PATH": f"{executable}:{os.environ['PATH']}",
             "CALL_LOG": str(log),
             "MIRROR_FAILS": str(int(mirror_fails)),
+            "LOCKED_BASE": str(int(locked_base)),
+            "FQ_QISKIT_RESOLVER_PYTHON": str(online) if locked_base else "python",
+            "FQ_QISKIT_CONSTRAINTS": str(constraint) if locked_base else "",
             "RUNNER_ENVIRONMENT": "self-hosted",
             "FQ_QISKIT_WHEEL_DIRECTORY": str(wheels),
             "FQ_QISKIT_PUBLIC_WHEELS": str(public),
@@ -110,6 +122,10 @@ def test_cached_wheels_still_resolve_live_versions_and_validate_offline_closure(
     )
     calls = [json.loads(line) for line in log.read_text().splitlines()]
     assert len(calls) == (3 if mirror_fails else 2)
+    for call in calls:
+        assert ("--constraint" in call) == locked_base
+        if locked_base:
+            assert call[call.index("--constraint") + 1] == str(constraint)
     for call in calls[:-1]:
         assert call[:3] == ["-m", "pip", "wheel"]
         assert "--index-url" in call and "--no-index" not in call
@@ -125,7 +141,7 @@ def test_cached_wheels_still_resolve_live_versions_and_validate_offline_closure(
 def test_hosted_wheel_cache_does_not_restore_installed_environments() -> None:
     jobs = yaml.safe_load((ROOT / ".github/workflows/ci.yml").read_text())["jobs"]
     steps = jobs["qiskit-compat"]["steps"]
-    cache = next(s for s in steps if s.get("uses") == "actions/cache@v4")
+    cache = next(s for s in steps if s.get("uses") == "./.github/actions/hosted-cache")
     assert cache["if"] == "runner.environment == 'github-hosted'"
     assert cache["with"]["path"] == "${{ env.FQ_QISKIT_WHEEL_DIRECTORY }}"
     for component in (
@@ -137,3 +153,52 @@ def test_hosted_wheel_cache_does_not_restore_installed_environments() -> None:
     ):
         assert component in cache["with"]["key"]
     assert "restore-keys" not in cache["with"]
+
+
+def test_self_hosted_qiskit_uses_locked_runtime_and_preserves_host_resolver() -> None:
+    jobs = yaml.safe_load((ROOT / ".github/workflows/ci.yml").read_text())["jobs"]
+    steps = jobs["qiskit-compat"]["steps"]
+    offline = next(s for s in steps if s.get("uses") == "./.github/actions/offline-cpu")
+    assert offline["if"] == "runner.environment == 'self-hosted'"
+    assert offline["with"]["profile"] == "coverage-py3.12"
+    assert offline["with"]["wheel-directory"] == "${{ env.FQ_QISKIT_WHEEL_DIRECTORY }}"
+    resolver = next(
+        s
+        for s in steps
+        if s.get("name") == "Preserve the online wheel resolver interpreter"
+    )
+    assert steps.index(resolver) < steps.index(offline)
+    assert "FQ_QISKIT_RESOLVER_PYTHON=$(command -v python)" in resolver["run"]
+    for step in steps:
+        if (
+            "pip install --upgrade pip" in step.get("run", "")
+            or step.get("uses") == "./.github/actions/install-cpu-torch"
+            or "-e '.[dev]'" in step.get("run", "")
+        ):
+            assert step["if"] == "runner.environment == 'github-hosted'"
+    install = next(
+        s for s in steps if s.get("name") == "Verify this certified Qiskit and Aer pair"
+    )
+    assert 'install_options+=(--constraint "$FQ_QISKIT_CONSTRAINTS")' in install["run"]
+    assert '"${install_options[@]}"' in install["run"]
+
+
+def test_remote_cache_is_loaded_only_inside_a_guarded_local_action() -> None:
+    workflow = yaml.safe_load((ROOT / ".github/workflows/ci.yml").read_text())["jobs"]
+    for name in ("qiskit-compat", "triton-optional"):
+        steps = workflow[name]["steps"]
+        assert not any(s.get("uses") == "actions/cache@v4" for s in steps)
+        cache = next(
+            s for s in steps if s.get("uses") == "./.github/actions/hosted-cache"
+        )
+        assert cache["if"] == "runner.environment == 'github-hosted'"
+    wrapper = yaml.safe_load(
+        (ROOT / ".github/actions/hosted-cache/action.yml").read_text()
+    )
+    assert wrapper["runs"]["using"] == "composite"
+    assert wrapper["runs"]["steps"] == [
+        {
+            "uses": "actions/cache@v4",
+            "with": {"path": "${{ inputs.path }}", "key": "${{ inputs.key }}"},
+        }
+    ]

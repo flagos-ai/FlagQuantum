@@ -61,7 +61,7 @@ def _groups(job: dict[str, object]) -> set[str]:
     # Evaluate the hosted fallback of both trusted-pool selectors. Their CPU
     # arms have independent groups and do not consume hosted capacity.
     group = re.sub(
-        r"\$\{\{ \(github\.event_name != 'pull_request' \|\| "
+        r"\$\{\{ \(github\.event_name (?:!= 'pull_request' \|\||== 'pull_request' &&) "
         r"github\.event\.pull_request\.head\.repo\.full_name == github\.repository\) "
         r"&& format\('(?:a100-cpu|self-hosted)-\{0\}-[a-z0-9-]+-\{1\}', "
         r"github\.run_id, strategy\.job-index \|\| 0\) \|\| 'gh' \}\}",
@@ -245,8 +245,11 @@ def test_migrated_cpu_jobs_keep_frameworks_and_processes_isolated(job: str) -> N
         assert definition["runs-on"] == A800_CPU_ROUTE
         assert definition["timeout-minutes"] == 60
         assert any(
-            step.get("uses") == "./.github/actions/isolated-python" for step in steps
+            step.get("uses") == "./.github/actions/offline-cpu"
+            and step["with"]["profile"] == "coverage-py3.12"
+            for step in steps
         )
+        assert not any("pip install" in step.get("run", "") for step in steps)
     else:
         assert definition["timeout-minutes"] == 30
     if job == "coverage-shard":
@@ -382,7 +385,19 @@ def test_coverage_shards_are_combined_before_the_policy_is_enforced() -> None:
     }
 
     final = _github_hosted_jobs("ci.yml")["coverage"]
-    assert final.get("needs") == "coverage-shard"
+    assert final.get("needs") == ["prepare-source", "coverage-shard"]
+    assert final["runs-on"] == A800_CPU_ROUTE
+    assert final["timeout-minutes"] == 20
+    source_steps = final["steps"]
+    full_source = next(
+        step
+        for step in source_steps
+        if step.get("with", {}).get("name", "").startswith("ci-source-${{")
+    )
+    assert full_source["if"] == (
+        "steps.source-cache.outputs.complete != 'true' && steps.source-repair.outputs.complete != 'true'"
+    )
+    assert full_source["with"]["digest-mismatch"] == "error"
     commands = "\n".join(
         str(step.get("run", "")) for step in _steps("ci.yml", "coverage")
     )
@@ -391,6 +406,7 @@ def test_coverage_shards_are_combined_before_the_policy_is_enforced() -> None:
         step
         for step in _steps("ci.yml", "coverage")
         if step.get("uses") == "actions/download-artifact@v8.0.2"
+        and "pattern" in step.get("with", {})
     )
     assert download["with"]["digest-mismatch"] == "error"
     assert commands.index("rm -rf coverage-data") < commands.index("integrity_check")
@@ -583,7 +599,9 @@ def test_queue_uses_full_integration_suites_and_preserves_required_check_names()
     None
 ):
     jobs = _document("ci.yml")["jobs"]
-    assert all(job.get("if") in (None, "${{ always() }}") for job in jobs.values())
+    for name, job in jobs.items():
+        expected = "${{ always() }}" if name == "ci-complete" else "${{ !cancelled() }}"
+        assert job.get("if") in (None, expected)
     core_steps = _steps("ci.yml", "cpu-core")
     full = next(
         s for s in core_steps if s.get("run") == "python tools/ci_tier.py pr-default"
@@ -662,6 +680,7 @@ def test_merge_gate_waits_for_every_ci_job_including_source_hygiene(
     complete = jobs["ci-complete"]
     assert complete["name"] == "CI complete"
     assert complete["if"] == "${{ always() }}"
+    assert complete["timeout-minutes"] == 2
     assert set(complete["needs"]) == set(jobs) - {"ci-complete"}
     step = complete["steps"][0]
     assert step["env"]["NEEDS_JSON"] == "${{ toJSON(needs) }}"
@@ -713,7 +732,7 @@ def test_distributed_cpu_retains_its_stable_check_and_rejects_a_failed_partition
     None
 ):
     job = _document("ci.yml")["jobs"]["distributed-cpu"]
-    assert job["if"] == "${{ always() }}"
+    assert job["if"] == "${{ !cancelled() }}"
     assert job["needs"] == "distributed-cpu-shard"
     assert job["steps"] == [
         {

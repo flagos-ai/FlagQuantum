@@ -959,3 +959,57 @@ records their exact installed distributions, and checks them with networking
 disabled. Copy the four resulting image digests into the lock file and validate
 the PR. An outdated image is rejected when its dependency manifest differs from
 the checkout.
+
+
+## CPU runner routing and reliability
+
+Trusted same-repository PRs run distributed and coverage suites on the
+self-hosted CPU pool. Core and runtime profiles remain hosted until their
+locked images are prewarmed and verified on the target pool. A rollout trial
+showed that an uncached core image timed out after 450 seconds on an A800
+node; allocating the job successfully did not make the environment ready. Each matrix leg has a run-specific concurrency
+group, so unrelated PRs do not serialize behind one hosted-capacity bucket.
+Source preparation and pre-commit use the separate CPU entry pool. Fork PRs
+continue to use GitHub-hosted runners.
+
+The long coverage suites use the digest-pinned images in `docker/ci/images.lock`.
+Cold image pulls are serialized per image on each host, while test processes
+remain isolated and resource-budgeted. Source cache repair verifies Git objects
+and the exact workflow commit before any tests run; an incomplete cache falls
+back to the full source artifact. No tests or required checks are removed.
+
+SDK jobs that install dependencies online (JAX, Cirq, Azure, Braket, PennyLane, and Qiskit)
+use hosted Linux runners with 30-minute job limits. They do not depend on the
+two preinstalled SDK slots, and external download failures do not occupy the
+CPU suite pool. Move an SDK suite into that pool only after a locked image or
+verified complete wheel closure passes the same dependency and test checks.
+Qiskit retains its verified wheel preparation path on hosted runners: live
+metadata discovery can time out even when wheel bytes are cached locally.
+Triton retains its MC550 pool.
+
+Contributor workflow: open or update an internal PR, then inspect its CI run.
+Expected behavior: source preparation starts independently of coverage; ready
+coverage and distributed matrix legs can use separate available CPU runners; every existing required
+check still has to pass. For acceptance, compare source queue time, suite wall
+time, and infrastructure failures across runs. Runner busy counts alone are
+not evidence of CPU efficiency or test reliability.
+
+Job-level result aggregators use `!cancelled()` so failed dependencies still
+reach the required gate, while a superseded PR run releases its workflow slot
+instead of scheduling `always()` aggregators after cancellation. Step-level
+resource reports remain available on failure.
+
+The required `CI complete` gate is the exception: it always runs with a
+two-minute limit and rejects failed, skipped, or cancelled dependencies. It must
+never become a skipped required check when a run is cancelled.
+
+Network-dependent SDK jobs share hosted groups 1, 4, and 7. Core runtime,
+Python 3.12 unit tests, and Python compatibility checks use groups 3, 5, and 6
+respectively, so SDK downloads cannot occupy their concurrency groups. The
+repository-wide hosted ceiling remains eight.
+
+CI and GPU artifact uploads retry a transient service failure at most twice,
+within a six-minute upload step budget. Each retry replaces only that job
+artifact, including any partial upload. Persistent failure still fails the job;
+tests are not automatically retried. Job/matrix-unique names prevent one job
+from replacing another job artifact.

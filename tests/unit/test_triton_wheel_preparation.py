@@ -214,5 +214,5 @@ def test_workflow_prepares_wheels_before_installing_the_project() -> None:
     assert steps.index(preparation) < steps.index(install)
     assert preparation["timeout-minutes"] == 9
     assert install["timeout-minutes"] == 4
-    assert any(step.get("uses") == "actions/cache@v4" for step in steps)
+    assert any(step.get("uses") == "./.github/actions/hosted-cache" for step in steps)
     assert any("-m pip check" in step.get("run", "") for step in steps)
