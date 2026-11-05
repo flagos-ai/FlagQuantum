@@ -138,6 +138,16 @@ def assess_dynamic_features(
     blockers: list[str] = []
     measured: set[int] = set()
     for instruction in circuit._instructions:
+        if instruction.name == "classical_xor":
+            from ...core.classical_dataflow import parse_classical_xor
+
+            operation = parse_classical_xor(instruction)
+            if features != LOCAL_TRAJECTORY_FEATURES:
+                blockers.append("classical_computation_unsupported")
+            if set(operation.sources) - measured:
+                blockers.append("classical_bit_read_before_definition")
+            measured.add(operation.target)
+            continue
         blockers.extend(_measurement_feature_blockers(instruction, features, measured))
         blockers.extend(_condition_feature_blockers(instruction, features, measured))
         if instruction.name == "measure":

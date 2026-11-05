@@ -117,6 +117,8 @@ def export_braket_iqm_dynamic_qasm3(
     body: list[str] = []
 
     for instruction in circuit._instructions:
+        if instruction.name == "classical_xor":
+            raise ValueError("braket_iqm_classical_computation_is_unsupported")
         # An IQM feed-forward key names one measured bit, so a condition is either
         # one conjunction of one bit or it cannot be lowered to a control key.
         clauses = _instruction_condition_clauses(instruction)

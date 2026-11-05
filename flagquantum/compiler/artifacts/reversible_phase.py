@@ -12,6 +12,8 @@ REVERSIBLE_OPCODE_ARITIES = {
     "cz": 2,
     "ccz": 3,
     "hmr": 1,
+    "bit_store0": 0,
+    "bit_invert": 0,
 }
 
 
@@ -44,6 +46,19 @@ class ReversiblePhaseProgram:
                 or any(not 0 <= wire < self.n_wires for wire in op.wires)
             ):
                 raise ValueError(f"Invalid reversible-phase operation {op.opcode!r}")
+            if op.opcode in {"bit_store0", "bit_invert"}:
+                if op.result_bit is None or not 0 <= op.result_bit < self.n_bits:
+                    raise ValueError("Invalid classical result bit")
+                if op.opcode == "bit_store0" and op.condition_bit is not None:
+                    raise ValueError(
+                        "Conditional classical initialization is unsupported"
+                    )
+                if op.opcode == "bit_invert" and op.result_bit not in written:
+                    raise ValueError("Classical inversion reads an undefined bit")
+                if op.condition_bit is not None and op.condition_bit not in written:
+                    raise ValueError("Condition read before definition")
+                written.add(op.result_bit)
+                continue
             if op.opcode == "hmr":
                 if (
                     op.result_bit is None

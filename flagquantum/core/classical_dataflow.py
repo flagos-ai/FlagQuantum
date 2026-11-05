@@ -1,6 +1,6 @@
 """Core-owned internal classical XOR record and dynamic instruction spelling."""
 
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from functools import reduce
 from operator import xor
@@ -33,9 +33,16 @@ class ClassicalXor:
             metadata={"is_dynamic": True, "classical_bit": self.target},
         )
 
-    def evaluate(self, classical: Sequence[int]) -> int:
+    def evaluate(self, classical: Sequence[int] | Mapping[int, int]) -> int:
         """Evaluate old values, rejecting undefined bits before any assignment."""
-        values = tuple(classical[bit] for bit in self.sources)
+        values = tuple(
+            (
+                classical.get(bit, -1)
+                if isinstance(classical, Mapping)
+                else classical[bit] if bit < len(classical) else -1
+            )
+            for bit in self.sources
+        )
         if any(value not in (0, 1) for value in values):
             raise ValidationError("Classical XOR reads an undefined classical bit")
         return reduce(xor, values, 0)

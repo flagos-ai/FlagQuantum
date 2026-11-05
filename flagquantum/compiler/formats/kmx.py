@@ -42,7 +42,7 @@ def decode_kmx(text: str) -> ReversiblePhaseProgram:
             condition = _parse_operand(operands[-1], "b")
             del operands[-2:]
         result = None
-        if opcode == "HMR" and operands:
+        if opcode in {"HMR", "BIT_STORE0", "BIT_INVERT"} and operands:
             result = _parse_operand(operands.pop(), "b")
         operations.append(
             ReversiblePhaseOperation(
