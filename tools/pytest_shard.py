@@ -11,7 +11,6 @@ from __future__ import annotations
 import hashlib
 import json
 import os
-import resource
 import time
 from pathlib import Path
 
@@ -133,6 +132,10 @@ def pytest_collection_modifyitems(
 
 
 def _cpu_seconds() -> float:
+    if os.name != "posix":
+        return time.process_time()
+    import resource
+
     own = resource.getrusage(resource.RUSAGE_SELF)
     children = resource.getrusage(resource.RUSAGE_CHILDREN)
     return own.ru_utime + own.ru_stime + children.ru_utime + children.ru_stime
@@ -155,7 +158,14 @@ def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:
         "wall_seconds": elapsed,
         "process_cpu_seconds": cpu_seconds,
         "assigned_ci_cpus": assigned_cpus,
-        "ci_quota_utilization_percent": 100 * cpu_seconds / (elapsed * assigned_cpus),
+        "cpu_accounting": (
+            "process_and_children" if os.name == "posix" else "process_only"
+        ),
+        "ci_quota_utilization_percent": (
+            100 * cpu_seconds / (elapsed * assigned_cpus)
+            if os.name == "posix"
+            else None
+        ),
         "collected_tests": session.testscollected,
         "failed_tests": session.testsfailed,
         "exit_status": int(exitstatus),
