@@ -170,6 +170,7 @@ class Parser:
     def __init__(self, tokens: tuple[Token, ...]) -> None:
         self.tokens = tokens
         self.position = 0
+        self.callback_depth = 0
         self.records: dict[str, Record] = {}
         self.integer_constants: set[str] = set()
 

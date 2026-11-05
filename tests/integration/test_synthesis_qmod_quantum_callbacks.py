@@ -130,7 +130,7 @@ def test_unused_mutually_recursive_wrappers_refuse() -> None:
 
 def test_nested_callback_values_refuse() -> None:
     source = "qfunc wrap(f:qfunc(qbit[]),x:qbit[]) {f(x);} qfunc main(output x:qbit[1]) {allocate(x);wrap(lambda(a){hadamard_transform(a);},x);}"
-    for _ in range(17):
+    for _ in range(200):
         source = source.replace(
             "hadamard_transform(a);", "wrap(lambda(a){hadamard_transform(a);},a);", 1
         )

@@ -55,17 +55,20 @@ def parse_signature(parser: Parser) -> str:
 
 def parse_lambda(parser: Parser) -> Lambda:
     token = parser.take("lambda")
+    if parser.callback_depth:
+        reject(token, "callback.escape", "nested callback values are not admitted")
     parser.take("(")
     parameters = [parser.name()]
     while parser.current.text == ",":
         parser.take(",")
         parameters.append(parser.name())
     parser.take(")")
-    return Lambda(
-        token,
-        parameters=tuple(parameters),
-        body=parser.block(allow_scopes=False, scope_depth=1),
-    )
+    parser.callback_depth += 1
+    try:
+        body = parser.block(allow_scopes=False, scope_depth=1)
+    finally:
+        parser.callback_depth -= 1
+    return Lambda(token, parameters=tuple(parameters), body=body)
 
 
 def specialize_quantum_callbacks(
