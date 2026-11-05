@@ -27,7 +27,7 @@ class Lambda(Expression):
 
 
 def parse_signature(parser: Parser) -> str:
-    parser.take("qfunc")
+    token = parser.take("qfunc")
     parser.take("(")
     types = []
     while parser.current.text != ")":

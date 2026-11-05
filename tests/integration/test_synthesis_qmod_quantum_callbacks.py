@@ -147,3 +147,11 @@ def test_callback_expansion_limits_fail_closed(
     monkeypatch.setattr(quantum_callbacks, limit, 1)
     with pytest.raises(ValueError, match="callback|bounded"):
         synth.synthesize(BASE.replace("CALL", "wrap(pred,x,y)"), source_format="qmod")
+
+
+def test_empty_callback_signature_is_a_structured_refusal() -> None:
+    with pytest.raises(ValueError, match="callback.signature"):
+        synth.synthesize(
+            "qfunc wrap(f:qfunc()) {} qfunc main(output x:qbit) {allocate(x);}",
+            source_format="qmod",
+        )
