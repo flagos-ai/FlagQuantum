@@ -51,7 +51,8 @@ class FieldDecomposition:
     """Native gates and logical output wires, including upstream virtual relabeling.
 
     Scratch excludes logical outputs. Every listed scratch wire ends in zero.
-    The caller owns allocation and must initialize all output/scratch wires to zero.
+    The caller owns allocation. Newly allocated result and scratch wires must
+    start in zero; logical input wires can carry arbitrary quantum states.
     """
 
     instructions: tuple[Instruction, ...]
