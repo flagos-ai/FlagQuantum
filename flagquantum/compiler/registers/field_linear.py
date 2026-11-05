@@ -10,8 +10,8 @@ from .field_multiplication import (
     FieldDecomposition,
     _FieldEmitter,
     _validate_field,
-    _validate_registers,
 )
+from .polynomial import _validate_registers
 
 
 def gf2_constant_multiplication(

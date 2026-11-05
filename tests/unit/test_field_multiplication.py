@@ -74,7 +74,12 @@ def reference_gates(
             .to_cirq_circuit_and_quregs(
                 qubit_manager=Manager(),
                 **{
-                    name: np.array([cirq.LineQubit(w) for w in wires])
+                    name: np.array([cirq.LineQubit(w) for w in wires]).reshape(
+                        (
+                            *bloq.signature.get_left(name).shape,
+                            int(bloq.signature.get_left(name).bitsize),
+                        )
+                    )
                     for name, wires in inputs.items()
                 },
             )

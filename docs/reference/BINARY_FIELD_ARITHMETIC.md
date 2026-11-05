@@ -269,3 +269,53 @@ shifts, inverse round trips, invalid parameters, and unbound map composition.
 The module reached 100% statement coverage. The focused G1/G2 regression passed
 all 200 cases, and strict mypy passed on 925 source files. The standalone example
 runs without either reference package.
+
+## Polynomial product accumulation without field reduction
+
+`compiler/registers/polynomial.py` owns the shared recursive polynomial gate
+sink and clean-work allocation used by field multiplication. Field reduction,
+PLU synthesis and field-specific validation remain in `field_multiplication.py`.
+No second copy of the recursive gate algorithm is maintained.
+
+`binary_polynomial_product_ir(left, right, target, workspace, shift=None)` emits
+`h ^= f*g`. With a concrete `shift=k` in `[1,n+1]`, it emits
+`h ^= (1+x**k)*f*g`. Both n-bit inputs and the target use big-endian polynomial
+coefficients. The target has `2*n-1` bits, or
+`2*k+max(0,2*n-k-1)` bits for the shifted-factor variant. These are polynomial
+products, without reduction by a field modulus. The target may be nonzero or
+entangled with the inputs. Both inputs are preserved, and applying the same
+operation twice restores the complete state.
+
+`binary_polynomial_workspace_size(n)` reports the peak clean allocation of the
+literal source recursion. Callers supply these wires, initially zero; they are
+returned to zero. Padding that the source allocates is counted even when no gate
+touches it. These functions produce existing native `Instruction` tuples and
+need no runtime allocator or additional IR type. The runnable example uses the
+existing `circuit.append(op)` protocol and accumulates polynomial `3*2` into
+`h=1`, obtaining `h=7`, then restores `h=1` with a second accumulation.
+
+| Variant | Measured CNOT / upstream model | Measured Toffoli / upstream model | Clean allocated work wires |
+|---|---:|---:|---:|
+| n=3, ordinary | 28 / 28 | 7 / 7 | 1 |
+| n=5, ordinary | 88 / 88 | 17 / 17 | 1 |
+| n=8, ordinary | 176 / 176 | 27 / 27 | 0 |
+| n=8, k=4 | 206 / 206 | 27 / 27 | 0 |
+
+The comparison gate set is CNOT plus Toffoli, matching the executable source
+network. Toffoli is not silently equated with a T count: further decomposition
+and its work/measurement assumptions are outside this table. No SWAPs or
+measurements are emitted here.
+
+The 92-case acceptance suite compares unmodified Qualtran v0.7.0
+`BinaryPolynomialMultiplication` and `MultiplyPolyByOnePlusXk` at widths
+1, 2, 3, 4, 5, 6 and 8, for every declared shift at each width. It checks each
+wire's ordered gate dependencies, operand ordering, output maps and independent
+`QECGatesCost` estimates. Disjoint gates may commute in the upstream DAG export;
+no gates are cancelled or combined in the comparison. Sparse permutation tests
+cover every input pair at each width with nonzero targets, coherent amplitudes,
+clean scratch and repeated accumulation. Small native append tests compare the
+entire complex state across all inputs and all target values. The polynomial
+module reached 100% statement coverage; the combined addition, field, erasure,
+classical and native-phase regression passed 271 tests. Strict mypy passed on
+926 source files. Earlier linear-adjoint exceptions
+remain open and are not used in these two polynomial source chains.

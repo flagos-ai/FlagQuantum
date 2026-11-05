@@ -23,6 +23,7 @@ from flagquantum.compiler.registers.field_multiplication import (
     bind_field_outputs,
     gf2_multiplication,
 )
+from flagquantum.compiler.registers.polynomial import binary_polynomial_product_ir
 from flagquantum.core.ir import CircuitIR, Instruction
 from flagquantum.dynamic import DynamicCircuit
 from flagquantum.runtime.dynamic.execution import run_dynamic
@@ -108,6 +109,20 @@ def main() -> None:
     )
     torch.testing.assert_close(restored.state().flatten(), state, rtol=0, atol=1e-12)
     print("GF(8): x^2 followed by x^-2 restores the input without binding SWAPs")
+
+    # Polynomial multiplication has no field modulus; accumulate into nonzero h.
+    gates = binary_polynomial_product_ir((0, 1), (2, 3), (4, 5, 6), ())
+    state = torch.zeros(128, dtype=torch.complex128)
+    state[(3 << 5) | (2 << 3) | 1] = 1
+    circuit = fq.Circuit(7, inputs=state, dtype=torch.complex128).append(
+        FieldOperation(7, gates)
+    )
+    # (x+1)*x = x^2+x = 6; h=1 becomes 1 XOR 6 = 7.
+    assert int(circuit.state().abs().argmax()) == (3 << 5) | (2 << 3) | 7
+    restored = circuit.append(FieldOperation(7, gates)).state().flatten()
+    torch.testing.assert_close(restored, state, rtol=0, atol=1e-12)
+    print("Binary polynomials: h=1 XOR (3*2) = 7; second accumulation restores h")
+    print("Polynomial emitted gates:", dict(Counter(g.name for g in gates)))
 
 
 if __name__ == "__main__":

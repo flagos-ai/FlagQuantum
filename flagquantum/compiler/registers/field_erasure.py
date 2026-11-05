@@ -10,8 +10,9 @@ from dataclasses import dataclass
 
 from ...core.classical_dataflow import ClassicalXor
 from ...core.ir import Instruction
-from .field_multiplication import _remainder, _validate_field, _validate_registers
+from .field_multiplication import _remainder, _validate_field
 from .measurement import ParityPhase, measure_x_clear_ir
+from .polynomial import _validate_registers
 
 
 @dataclass(frozen=True)

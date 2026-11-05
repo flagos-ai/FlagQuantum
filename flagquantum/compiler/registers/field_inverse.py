@@ -12,8 +12,8 @@ from .field_multiplication import (
     _FieldEmitter,
     _product,
     _validate_field,
-    _validate_registers,
 )
+from .polynomial import _validate_registers
 
 
 def _square(
