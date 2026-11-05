@@ -286,3 +286,11 @@ UP-06 candidate; they do not promote general nested records or numeric matrices.
 The original electric-grid, induced-color-subgraph and minimum-coloring programs
 retain their source bytes, layer counts and independent full-state acceptance
 requirements. Remaining corpus blockers and the final integration gate stay open.
+
+The guarded-real-phase slice adds bounded integer predicates and classical
+slice-element binding for the three original Knapsack programs. Predicate and
+phase reads may share storage, and a guarded constant retains its conditional
+relative phase. Acceptance includes full complex128 state vectors against direct
+dense-diagonal Circuits, resource budgets, clean workspace and the existing
+216-original integration gate. This remains local integration work without a
+corpus-wide capability promotion.

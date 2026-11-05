@@ -277,3 +277,15 @@ fields, nested records, multidimensional numeric arrays and bit-array rank above
 two are rejected. General field assignment is not enabled by this slice.
 The 256-bit record layout and existing phase/memory budgets remain enforced.
 This local integration capability has not completed the 216-original release gate.
+
+## Qmod guarded real phase integration slice
+
+A single real phase can be controlled by a bounded integer predicate with up to
+eight input bits. Read-only predicate and phase operands may overlap, including
+record fields. Exact integer comparisons and Boolean combinations are supported;
+fractional predicate arithmetic and division are rejected. The resulting phase
+keeps the existing 24-bit input, degree-eight, 256-term and 20000-product limits.
+Nested or multi-operation control bodies are outside this slice. The existing
+alias rules for non-diagonal operations remain enforced. Classical real arrays
+admit a checked static half-open slice followed by one static/loop element index.
+The complete 216-original acceptance gate and integration CI remain outstanding.

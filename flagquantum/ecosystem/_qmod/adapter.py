@@ -1128,8 +1128,12 @@ class _Adapt:
             return _literal_angle(node, node.token)
         if text == "[":
             source, offset = node.children
-            values = self.classical_arrays.get(source.token.text)
-            if source.children or values is None:
+            values = (
+                self.real_array(source)
+                if source.token.text == ":"
+                else self.classical_arrays.get(source.token.text)
+            )
+            if (source.children and source.token.text != ":") or values is None:
                 reject(source.token, "binding", "expected a bound classical array")
             index = self.static_integer(offset)
             if not 0 <= index < len(values):
@@ -1158,6 +1162,8 @@ class _Adapt:
     def angle(
         self, node: Expression, gate: Token, *, allow_signed: bool = False
     ) -> float:
+        if node.token.text == "[" and node.children[0].token.text == ":":
+            return self.classical_number(node)
         if (
             self.helper_stack
             and (self.classical_values or self.classical_arrays)
@@ -1448,7 +1454,12 @@ class _Adapt:
             )
 
     def real_phase(
-        self, token: Token, expression: Expression, coefficient: Expression
+        self,
+        token: Token,
+        expression: Expression,
+        coefficient: Expression,
+        *,
+        condition: Expression | None = None,
     ) -> None:
         def quantum_word(node: Expression) -> tuple[tuple[Value, int], ...] | None:
             cell = self.record_bit(node)
@@ -1498,7 +1509,7 @@ class _Adapt:
             return view
 
         polynomial, locations = expand_phase(
-            expression, quantum_word, self.classical_number
+            expression, quantum_word, self.classical_number, condition=condition
         )
         angle = (
             math.pi
@@ -1765,6 +1776,21 @@ class _Adapt:
             self.emit_indexed_x(token, (*controls, target_location))
             return
         args = operation.arguments
+        if (
+            operation.token.text == "phase"
+            and len(args) == 2
+            and (
+                args[0].children
+                or args[1].token.text in self.classical_values
+                or args[1].token.text == "["
+                or any(
+                    parameter.record is not None
+                    for parameter in self.parameters.values()
+                )
+            )
+        ):
+            self.real_phase(operation.token, args[0], args[1], condition=condition)
+            return
         flip_phase = (
             operation.token.text == "phase"
             and len(args) == 1
@@ -1857,6 +1883,9 @@ class _Adapt:
         else:
             reject(token, "control", "expected a scalar Hadamard or phase")
         if any(target in inputs for target in targets):
+            if opcode == "qreg.control_phase" and len(args) == 2:
+                self.real_phase(operation.token, args[0], args[1], condition=condition)
+                return
             reject(token, "control", "condition and target must be disjoint")
         computed = bool(condition.children)
         if computed:

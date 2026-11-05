@@ -890,3 +890,63 @@ The tool uses Python's arithmetic AST parser and an independent closed
 classical evaluator, exact rational finite differences and directly
 constructed Circuits. It does not import the Qmod parser or phase
 normalizer for its reference costs.
+
+### Bounded predicates controlling real phases
+
+A single real phase operation may be guarded by a predicate over unsigned
+integer words, record fields or scalar bits. Supported comparisons are
+`==`, `!=`, `<`, `<=`, `>` and `>=`; Boolean comparisons/bits compose with
+`&`, `|`, `^` and `~`. Predicate arithmetic uses exact integers with bounded
+coefficients, including subtraction, multiplication and literal powers in 1..8.
+Classical thresholds must be integral. Fractional predicate arithmetic and
+division are rejected. Intermediate integer arithmetic has no implicit word-width
+wraparound. At most eight distinct predicate input bits are admitted, including
+reads removed by cancellation.
+
+The predicate and phase may read the same storage. This read sharing applies to
+the diagonal phase operation; non-diagonal controlled operations retain their
+existing alias rules. The real-expression path combines the Boolean indicator
+with the existing phase polynomial and reuses checked diagonal lowering. Its
+union of input bits, degree, terms and products retain the existing phase budgets.
+A constant cost is multiplied by the predicate, preserving relative phase
+between selected and unselected amplitudes. Reads remain initialization-checked
+when the cost or predicate cancels. Nested control and multi-operation control
+bodies remain outside this real-phase slice.
+
+```qmod
+control (2*v.a + 3*v.b <= 12) {
+    phase(-(3*v.a + 5*v.b), gamma);
+}
+```
+
+Classical real arrays support a static half-open slice followed by one element
+index, such as `params[0:3][i]`, in bound real helper arguments and gate angles.
+The element index may be an admitted loop index. Both the slice and its element
+are checked against their own bounds; empty slices and negative indices are
+rejected. This introduces no quantum-dependent host indexing.
+
+Run the unchanged original Knapsack program, including helpers and three layers:
+
+```python
+from pathlib import Path
+
+import flagquantum as fq
+from flagquantum import synth
+
+program = synth.synthesize(
+    Path("tests/fixtures/classiq_qmod/qaoa_knapsack.qmod"),
+    classical_inputs={"params": [0.003, -0.006, 0.009, -0.012, 0.015, -0.018]},
+    max_qubits=5,
+    max_workspace=0,
+    memory_limit_bytes=64 * 1024**2,
+)
+result = fq.run(program)
+print(dict(program.probabilities(result, registers=("v.a", "v.b"))))
+print(program.report["resources"])  # 5 qubits, 856 operations, depth 721.
+```
+
+`python tools/validate_qmod_knapsack.py --case qaoa_knapsack --scale 0.003 --output knapsack-validation.json`
+checks the complete original against a direct Circuit with dense 32-state
+diagonal phases and RX mixers. Its reference does not use the predicate or
+polynomial compiler. The other two retained cases are `qaoa` and
+`algo_design_QCE_tutorial_part_II`.

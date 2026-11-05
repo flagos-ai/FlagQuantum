@@ -287,6 +287,7 @@ class Parser:
                     left = Expression(dot, (left, member), left.depth + 1)
             elif self.current.text == "[" and (
                 (not static and not left.children)
+                or (not static and left.token.text == ":")
                 or (
                     self.records
                     and (
@@ -408,7 +409,7 @@ class Parser:
     def angle_argument(self) -> Expression:
         integer = self.current
         if not integer.text.isdecimal() or self.tokens[self.position + 1].text != ".":
-            return self.expression()
+            return self.expression(allow_slice=True)
         self.position += 1
         dot = self.take(".")
         fraction = self.current
@@ -999,6 +1000,8 @@ class Parser:
                             if self.current.text == "["
                             else Expression(self.name())
                         )
+                    elif target.text == "control":
+                        args.append(self.expression(difference=True))
                     elif target.text == "phase":
                         args.append(
                             self.expression(decimal=True, difference=True, real=True)
