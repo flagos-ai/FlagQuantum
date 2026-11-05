@@ -383,6 +383,16 @@ def test_coverage_shards_are_combined_before_the_policy_is_enforced() -> None:
 
     final = _github_hosted_jobs("ci.yml")["coverage"]
     assert final.get("needs") == ["prepare-source", "coverage-shard"]
+    assert final["runs-on"] == A800_CPU_ROUTE
+    assert final["timeout-minutes"] == 20
+    source_steps = final["steps"]
+    full_source = next(
+        step
+        for step in source_steps
+        if step.get("with", {}).get("name", "").startswith("ci-source-${{")
+    )
+    assert full_source["if"] == "steps.source-cache.outputs.complete != 'true'"
+    assert full_source["with"]["digest-mismatch"] == "error"
     commands = "\n".join(
         str(step.get("run", "")) for step in _steps("ci.yml", "coverage")
     )

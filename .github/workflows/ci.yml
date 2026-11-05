@@ -1994,14 +1994,37 @@ jobs:
   coverage:
     needs: [prepare-source, coverage-shard]
     if: ${{ always() }}
-    runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'flagquantum-a100-cpu' || 'ubuntu-latest' }}
+    runs-on: ${{ fromJSON((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","linux","x64","flagquantum-cpu"]' || '["ubuntu-latest"]') }}
+    timeout-minutes: 20
     concurrency:
-      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('a100-cpu-{0}-coverage-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-0
+      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('self-hosted-{0}-coverage-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-0
       queue: max
     steps:
       - name: Require every coverage shard to pass
         run: test '${{ needs.coverage-shard.result }}' = success
       - uses: actions/download-artifact@v8.0.2
+        with:
+          digest-mismatch: error
+          name: ci-source-incremental-${{ needs.prepare-source.outputs.artifact-key }}
+          path: ${{ runner.temp }}/ci-source
+      - name: Check whether cached Git objects complete the source tree
+        id: source-cache
+        run: |
+          sha="$(cat "$RUNNER_TEMP/ci-source/source.sha")"
+          test "$sha" = "$GITHUB_SHA"
+          if [ ! -d .git ]; then
+            git init .
+          fi
+          git index-pack --stdin < "$RUNNER_TEMP/ci-source/source.pack"
+          complete=false
+          if objects="$(git rev-list --objects --missing=print --no-walk "$sha")"; then
+            if ! printf '%s\n' "$objects" | grep -q '^?'; then
+              complete=true
+            fi
+          fi
+          echo "complete=$complete" >> "$GITHUB_OUTPUT"
+      - uses: actions/download-artifact@v8.0.2
+        if: steps.source-cache.outputs.complete != 'true'
         with:
           digest-mismatch: error
           name: ci-source-${{ needs.prepare-source.outputs.artifact-key }}
