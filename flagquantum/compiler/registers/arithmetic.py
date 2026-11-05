@@ -5,7 +5,7 @@
 # Source: https://github.com/quantumlib/Qualtran/blob/v0.7.0/qualtran/bloqs/arithmetic/controlled_add_or_subtract.py
 # Sources: https://github.com/quantumlib/Qualtran/blob/v0.7.0/qualtran/bloqs/arithmetic/addition.py
 #          https://github.com/quantumlib/Qualtran/blob/v0.7.0/qualtran/bloqs/mcmt/and_bloq.py
-# Changes: emit native IR for equal-width unsigned addition and bind scratch explicitly.
+# Changes: emit native IR for unsigned addition and bind scratch explicitly.
 
 """Register-level arithmetic decompositions."""
 
@@ -27,11 +27,11 @@ def add_ir(
     carries: tuple[int, ...],
     classical_bits: tuple[int, ...],
 ) -> tuple[Instruction, ...]:
-    """Lower Qualtran Add for equal-width unsigned big-endian registers."""
+    """Lower Qualtran Add for unsigned big-endian registers."""
     width = len(right)
-    if not width or len(left) != width or len(carries) != width - 1:
+    if not 1 <= len(left) <= width or len(carries) != width - 1:
         raise ValueError(
-            "Add requires equal-width inputs and one clean carry per lower bit"
+            "Add requires a nonempty input no wider than the output and one clean carry per lower bit"
         )
     if len(classical_bits) != len(carries) or len(set(classical_bits)) != len(carries):
         raise ValueError("Add requires one distinct classical bit per carry")
@@ -42,8 +42,7 @@ def add_ir(
     def cx(control: int, target: int) -> None:
         instructions.append(Instruction("cx", (control, target)))
 
-    def compute(depth: int) -> None:
-        x, y, target = a[depth], b[depth], carries[depth]
+    def compute(x: int, y: int, target: int) -> None:
         instructions.extend(
             (
                 Instruction("h", (target,)),
@@ -62,8 +61,7 @@ def add_ir(
             )
         )
 
-    def uncompute(depth: int) -> None:
-        target, bit = carries[depth], classical_bits[depth]
+    def uncompute(x: int, y: int, target: int, bit: int) -> None:
         instructions.extend(
             (
                 Instruction("h", (target,)),
@@ -72,9 +70,7 @@ def add_ir(
                     (target,),
                     metadata={"is_dynamic": True, "classical_bit": bit},
                 ),
-                Instruction(
-                    "cz", (a[depth], b[depth]), metadata={"conditions": ((bit, 1),)}
-                ),
+                Instruction("cz", (x, y), metadata={"conditions": ((bit, 1),)}),
                 Instruction("reset", (target,), metadata={"is_dynamic": True}),
             )
         )
@@ -83,22 +79,28 @@ def add_ir(
         cx(a[0], b[0])
         return tuple(instructions)
 
-    compute(0)
+    compute(a[0], b[0], carries[0])
     for depth in range(1, width - 1):
         previous = carries[depth - 1]
-        cx(previous, a[depth])
+        control = previous
+        if depth < len(a):
+            control = a[depth]
+            cx(previous, control)
         cx(previous, b[depth])
-        compute(depth)
+        compute(control, b[depth], carries[depth])
         cx(previous, carries[depth])
     cx(carries[-1], b[-1])
-    cx(a[-1], b[-1])
+    if len(a) == width:
+        cx(a[-1], b[-1])
     for depth in range(width - 2, 0, -1):
         previous = carries[depth - 1]
         cx(previous, carries[depth])
-        uncompute(depth)
-        cx(previous, a[depth])
-        cx(a[depth], b[depth])
-    uncompute(0)
+        control = a[depth] if depth < len(a) else previous
+        uncompute(control, b[depth], carries[depth], classical_bits[depth])
+        if depth < len(a):
+            cx(previous, control)
+            cx(control, b[depth])
+    uncompute(a[0], b[0], carries[0], classical_bits[0])
     cx(a[0], b[0])
     return tuple(instructions)
 
@@ -109,7 +111,16 @@ def measurement_add_or_subtract_ir(
     right: tuple[int, ...],
     carries: tuple[int, ...],
     classical_bits: tuple[int, ...],
+    *,
+    add_when_ctrl_is_on: bool = False,
 ) -> tuple[Instruction, ...]:
-    """Lower Qualtran ControlledAddOrSubtract with add on zero."""
+    """Add or subtract according to the control bit, using measured carries."""
     complement = tuple(Instruction("cx", (control, wire)) for wire in right)
-    return (*complement, *add_ir(left, right, carries, classical_bits), *complement)
+    flip = (Instruction("x", (control,)),) if add_when_ctrl_is_on else ()
+    return (
+        *flip,
+        *complement,
+        *add_ir(left, right, carries, classical_bits),
+        *complement,
+        *flip,
+    )
