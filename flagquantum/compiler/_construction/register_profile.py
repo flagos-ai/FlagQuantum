@@ -62,7 +62,7 @@ _ATTRIBUTES = MappingProxyType(
 )
 _PAIR_GATES = frozenset({"cx", "swap", "crx", "cry", "crz"})
 _ANGLE_GATES = frozenset({"phase", "rx", "ry", "rz"})
-_GATES = frozenset({"x", "h", "s", "z"}) | _ANGLE_GATES
+_GATES = frozenset({"x", "h", "s", "z", "i", "sx"}) | _ANGLE_GATES
 
 
 def unitary_matrix(entries: object, width: int, op: Operation) -> torch.Tensor:
@@ -326,6 +326,11 @@ def _verify_body(
         ):
             assert attributes is not None
             attributes = attributes | {"angle"}
+        if op.name == "qreg.gate" and "inverse" in op.attributes:
+            if op.attributes["inverse"] is not True:
+                _fail("register.adjoint", "inverse gate marker must be true", op)
+            assert attributes is not None
+            attributes = attributes | {"inverse"}
         if op.name == "qreg.pair_gate":
             assert attributes is not None
             if op.attributes.get("gate") in ("crx", "cry", "crz"):

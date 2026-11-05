@@ -68,7 +68,7 @@ def test_inplace_encoding_on_a_nonzero_input():
     ("replacement", "diagnostic"),
     [
         ("qba: qnum<2>", "encoding output width"),
-        ("encode_on_bloch(data2", "one in-place Bloch"),
+        ("encode_on_bloch(data2", "static single-qubit gates"),
         ("allocate(qba);", "uninitialized"),
     ],
 )

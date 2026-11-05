@@ -544,6 +544,7 @@ class Parser:
         allow_qubit_array: bool = False,
         allow_phase: bool = False,
         allow_fixed_array: bool = False,
+        allow_single_array: bool = False,
     ) -> tuple[str, int | None]:
         kind = self.current
         if kind.text not in {"qbit", "qnum"}:
@@ -590,7 +591,14 @@ class Parser:
             self.take("[")
             self.take("]")
             return "qbit[]", None
-        if allow_fixed_array and kind.text == "qbit" and self.current.text == "[":
+        if (
+            kind.text == "qbit"
+            and self.current.text == "["
+            and (
+                allow_fixed_array
+                or (allow_single_array and self.tokens[self.position + 1].text == "1")
+            )
+        ):
             self.take("[")
             width = self.width()
             self.take("]")
@@ -652,6 +660,7 @@ class Parser:
                 kind, width = self.scalar_type(
                     allow_qubit_array=name.text == "main" or role == "inout",
                     allow_phase=name.text == "main" and role == "output",
+                    allow_single_array=name.text == "main" and role == "output",
                 )
             if role == "const" and width is None:
                 reject(

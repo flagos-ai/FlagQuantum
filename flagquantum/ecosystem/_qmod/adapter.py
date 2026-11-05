@@ -50,7 +50,7 @@ SUPPORTED_SOURCE_VERSION = "2bfd835e73b6882fcc515a725098b04766c238e7"
 MAX_EFFECT_OPERATIONS = 4096
 MAX_QDRIFT_SAMPLES = 1024
 QDRIFT_SEED = 0
-_GATE_CALLS = frozenset({"X", "H", "S", "Z", "hadamard_transform"})
+_GATE_CALLS = frozenset({"X", "H", "S", "Z", "I", "SX", "hadamard_transform"})
 _PAIR_CALLS = frozenset({"CX", "SWAP", "CRX"})
 _UNIFORM_CALLS = frozenset(
     {"prepare_uniform_interval_state", "prepare_uniform_trimmed_state"}
@@ -884,8 +884,10 @@ class _Adapt:
                 reject(offset.token, "width", "qubit array index is out of bounds")
             return value, index
         target = self.atom(node)
-        value = self.register(target)
-        if self.parameters[target.text].kind != "qbit":
+        value = self.register(target, allow_qubit_array=True)
+        if self.parameters[target.text].kind != "qbit" and not (
+            self.parameters[target.text].kind == "qbit[]" and register_width(value) == 1
+        ):
             reject(
                 target, "type", "gate operand requires a scalar qubit or array element"
             )
@@ -915,6 +917,13 @@ class _Adapt:
         self.loop_indices.pop(name, None)
 
     def angle(self, node: Expression, gate: Token) -> float:
+        if (
+            gate.text == "RZ"
+            and not node.children
+            and node.token.text == "pi"
+            and "pi" not in self.parameters
+        ):
+            return math.pi
         if not node.children and node.token.text in self.classical_values:
             return self.classical_values[node.token.text]
         if node.token.text == "[":
@@ -933,9 +942,7 @@ class _Adapt:
                 return values[offset]
         return _literal_angle(node, gate)
 
-    def encode_data(
-        self, token: Token, args: tuple[Expression, ...], *, inverse: bool = False
-    ) -> None:
+    def encode_data(self, token: Token, args: tuple[Expression, ...]) -> None:
         if len(args) != 2:
             reject(token, "signature", "data encoding requires a real array and output")
         source, output = (self.atom(arg) for arg in args)
@@ -968,9 +975,7 @@ class _Adapt:
             reject(output, "width", "encoding output width must match its data")
         if not inplace:
             self.effect_op("qreg.allocate", token, (target,))
-        indices = range(len(values))
-        for index in reversed(indices) if inverse else indices:
-            value = values[index]
+        for index, value in enumerate(values):
             if bloch:
                 gate = "rz" if index % 2 else "rx"
                 scale = (
@@ -987,7 +992,7 @@ class _Adapt:
                 (target,),
                 gate=gate,
                 index=wire,
-                angle=(-scale if inverse else scale) * value,
+                angle=scale * value,
             )
 
     def call_bound_helper(
@@ -1788,15 +1793,35 @@ class _Adapt:
         token, args = statement.token, statement.arguments
         if statement.inverse_body is not None:
             body = statement.inverse_body
-            if (
-                len(body) != 1
-                or body[0].token.text != "inplace_encode_on_bloch"
-                or len(body[0].arguments) != 2
-            ):
+            allowed = _GATE_CALLS | {
+                "PHASE",
+                "RX",
+                "RY",
+                "RZ",
+                "inplace_encode_on_bloch",
+            }
+            if not body or any(child.token.text not in allowed for child in body):
                 reject(
-                    token, "scope", "invert requires one in-place Bloch encoding call"
+                    token,
+                    "scope",
+                    "invert requires static single-qubit gates or in-place Bloch encoding",
                 )
-            self.encode_data(body[0].token, body[0].arguments, inverse=True)
+            start, incoming = len(self.operations), self.effect
+            for ordinal, child in enumerate(body):
+                self.statement(child, f"{index}.invert{ordinal}")
+            forward = self.operations[start:]
+            if any(op.name != "qreg.gate" for op in forward):
+                reject(
+                    token,
+                    "scope",
+                    "invert cannot allocate or change register ownership",
+                )
+            del self.operations[start:]
+            self.effect = incoming
+            for op in reversed(forward):
+                self.effect_op(
+                    op.name, token, op.operands[1:], inverse=True, **op.attributes
+                )
         elif statement.power_callback is not None:
             self.qpe_flexible(statement)
         elif statement.repeat_index is not None:

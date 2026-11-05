@@ -490,6 +490,8 @@ def schedule_register_program(
                     ),
                 ),
             )
+            if op.attributes.get("inverse"):
+                gates = (inverted_instruction(gates[0]),)
         elif op.name == "qreg.uncompute":
             segment = adjoint_value_candidate(computed.pop(op.operands[1].id))
             segments.append(segment)

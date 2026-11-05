@@ -684,6 +684,14 @@ uses integer bit length.
 
 `inplace_encode_on_bloch(data, target)` applies the Bloch rotations for
 complete pairs of bound real data to an initialized qubit array or a matching
-one-bit `qnum`. A function-scope `invert` containing one such call reverses
+one-bit `qnum`. A function-scope `invert` reverses
 the rotations and negates their angles. Both forms preserve the existing
 register ownership and require no temporary qubits.
+
+### Static single-qubit inversion
+
+Function-scope `invert` reverses admitted static single-qubit gates and
+in-place Bloch rotations, using the registered gate inverses. The body must
+contain only gate operations. A one-element output array declared as
+`qbit[1]` can be passed directly to single-qubit gates. `I`, `SX`, and
+`RZ(pi, target)` are supported.
