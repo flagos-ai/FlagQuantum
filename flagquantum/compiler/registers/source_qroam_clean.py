@@ -179,6 +179,29 @@ def _emit_clean_qroam(
     *,
     reverse: bool,
 ) -> tuple[Instruction, ...]:
+    load, low = _source_qroam_batch_ir(
+        table, controls, selections, banks, workspace, classical_bits
+    )
+    if not any(table.log_block_sizes):
+        return load
+    bank_order = reversed(banks) if reverse else iter(banks)
+    route = tuple(
+        gate
+        for bank in bank_order
+        for gate in swap_with_zero_ir(low, table.block_shape, bank, adjoint=reverse)
+    )
+    return (*route, *load) if reverse else (*load, *route)
+
+
+def _source_qroam_batch_ir(
+    table: QroamCleanTable,
+    controls: tuple[int, ...],
+    selections: tuple[tuple[int, ...], ...],
+    banks: tuple[tuple[tuple[int, ...], ...], ...],
+    workspace: tuple[int, ...],
+    classical_bits: tuple[int, ...],
+) -> tuple[tuple[Instruction, ...], tuple[tuple[int, ...], ...]]:
+    """Validate the common batch layout and return its load and low selectors."""
     high_widths = table._high_widths(tuple(map(len, selections)))
     high = tuple(
         wires[:width] for wires, width in zip(selections, high_widths, strict=True)
@@ -205,12 +228,4 @@ def _emit_clean_qroam(
         workspace,
         classical_bits,
     )
-    if not any(table.log_block_sizes):
-        return load
-    bank_order = reversed(banks) if reverse else iter(banks)
-    route = tuple(
-        gate
-        for bank in bank_order
-        for gate in swap_with_zero_ir(low, table.block_shape, bank, adjoint=reverse)
-    )
-    return (*route, *load) if reverse else (*load, *route)
+    return load, low
