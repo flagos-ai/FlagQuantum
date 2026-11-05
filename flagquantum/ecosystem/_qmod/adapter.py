@@ -40,6 +40,7 @@ from .permutations import verify_permutations
 from .phase import MAX_PHASE_INPUT_BITS, expand_phase
 from .phase_factors import Cube, preserve_factors
 from .predicates import expand_predicate_oracles
+from .quantum_callbacks import specialize_quantum_callbacks
 from .syntax import (
     ANGLE_CALLS,
     EXTREMA,
@@ -3468,6 +3469,7 @@ def parse_qmod(
         definitions[name] = syntax
     if "main" not in definitions:
         reject(tokens[0], "entry", "source requires one qfunc main")
+    definitions = specialize_quantum_callbacks(definitions, constants)
     verify_permutations(definitions)
     definitions = expand_predicate_oracles(definitions, constants, parser.records)
     definitions = expand_static_oracles(definitions, constants, parser.records)

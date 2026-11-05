@@ -761,15 +761,9 @@ class Parser:
                 record = self.take(self.current.text).text
                 kind, width = "qbit[]", self.records[record].width
             elif role == "callable":
-                self.take("qfunc")
-                self.take("(")
-                self.take("real")
-                self.take(",")
-                self.take("qbit")
-                self.take("[")
-                self.take("]")
-                self.take(")")
-                kind, width = "qfunc(real,qbit[])", None
+                from .quantum_callbacks import parse_signature
+
+                kind, width = parse_signature(self), None
             elif role in {"real", "integer"}:
                 kind = "int" if role == "integer" else "real"
                 self.take(kind)
@@ -787,7 +781,7 @@ class Parser:
                     allow_fixed_array=role in {"inout", "output", "const"}
                     or name.text == "main",
                 )
-            if role == "const" and width is None and kind != "qbit[]":
+            if role == "const" and width is None and kind not in {"qbit[]", "qnum"}:
                 reject(
                     parameter, "width", "Const qnum requires an explicit unsigned width"
                 )
@@ -803,6 +797,10 @@ class Parser:
         return Function(name, tuple(parameters), self.block(), permutation=permutation)
 
     def call_argument(self) -> Expression:
+        if self.current.text == "lambda":
+            from .quantum_callbacks import parse_lambda
+
+            return parse_lambda(self)
         if self.current.text == "[":
             array = self.literal_array(
                 lambda: self.expression(

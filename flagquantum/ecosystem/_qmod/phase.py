@@ -79,7 +79,7 @@ def expand_phase(
                 )
             return result
         text = node.token.text
-        if integer and text in {"%", "&", "|", "^"}:
+        if integer and text in {"%", "&", "|", "^", "min", "max"}:
             left, right = (visit(child, integer=True) for child in node.children)
             if len(locations) > MAX_PHASE_PREDICATE_BITS:
                 reject(
@@ -103,17 +103,21 @@ def expand_phase(
             values = []
             for basis in range(1 << len(locations)):
                 a, b = integer_value(left, basis), integer_value(right, basis)
-                if a < 0 or b < 0:
+                if text not in {"min", "max"} and (a < 0 or b < 0):
                     reject(
                         node.token,
                         "type",
                         "predicate bitwise and modulo operands must be unsigned",
                     )
-                values.append(
-                    a % b
-                    if text == "%"
-                    else {"&": and_, "|": or_, "^": xor}[text](a, b)
-                )
+                if text == "min":
+                    evaluated = min(a, b)
+                elif text == "max":
+                    evaluated = max(a, b)
+                elif text == "%":
+                    evaluated = a % b
+                else:
+                    evaluated = {"&": and_, "|": or_, "^": xor}[text](a, b)
+                values.append(evaluated)
             for bit in range(len(locations)):
                 for basis in range(len(values)):
                     if basis & (1 << bit):
@@ -181,6 +185,8 @@ def expand_phase(
             ">=": ge,
         }
         text = node.token.text
+        if not node.children and text in {"0", "1"}:
+            return lambda basis: text == "1"
         if text in comparisons:
             left, right = (visit(child, integer=True) for child in node.children)
             comparison = comparisons[text]

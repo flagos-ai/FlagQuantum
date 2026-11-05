@@ -52,7 +52,9 @@ def expand_predicate_oracles(
     predicates: dict[str, Predicate] = {}
     for name, function in definitions.items():
         reads = [
-            p for p in function.parameters if p.role == "const" and p.kind == "qbit[]"
+            p
+            for p in function.parameters
+            if p.role == "const" and p.kind in {"qbit[]", "qnum"}
         ]
         writes = [p for p in function.parameters if p.role == "inout"]
         if not reads or not writes:
@@ -167,6 +169,8 @@ def expand_predicate_oracles(
             "*",
             "**",
             "%",
+            "min",
+            "max",
             "&",
             "|",
             "^",
@@ -268,7 +272,7 @@ def expand_predicate_oracles(
                 "callback must forward its distinct whole input and marker without capture or aliases",
             )
         if (
-            actual.kind != "qbit[]"
+            actual.kind != predicate.read.kind
             or actual.record != predicate.read.record
             or (
                 predicate.read.width is not None

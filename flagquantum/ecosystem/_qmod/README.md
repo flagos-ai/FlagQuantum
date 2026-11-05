@@ -1145,3 +1145,27 @@ References use an independent gate-level Grover Circuit and analytic amplitudes;
 production still executes every original round. The largest validation-only
 reference uses its own clean conjunction workspace and no dense operator matrix.
 This is local CPU correctness evidence, not a performance or corpus-wide claim.
+
+
+## Closed quantum callback composition
+
+The private Qmod adapter additionally admits borrowed `qfunc(qbit[])` and
+`qfunc(qnum,qbit)` parameters. Closed named functions and lambdas specialize to
+existing first-order statements before oracle normalization. Quantum captures,
+Output/ownership escape, aliases, wrong signatures, nested callback values and
+recursive wrappers refuse. Expansion remains bounded by 4096 statements and
+sixteen levels. Existing real callbacks keep their previous path. Only borrowed
+Hadamard preparation is admitted in this wrapper within/apply profile; it is
+self-inverse and emits preparation, apply, reverse preparation. Callback arrays
+and general captured lambdas are not supported.
+
+The unchanged hidden_shift.qmod and deutsch_jozsa.qmod originals have independent
+public Circuit and analytic full-state checks, including absolute phase, numeric
+bit order and clean workspace. Their numeric predicates reuse the local
+eight-input budget, including exact integer min/max; dynamic array widths are
+proven by literal allocation. Run tools/validate_qmod_quantum_callbacks.py with
+--case hidden_shift (or deutsch_jozsa) and --output /tmp/callback.json. Run
+python -m examples.synthesis_quantum_callbacks for the original Qmod, existing
+native qfunc phase-composition and Circuit comparison. This adds no higher-order
+Python qfunc annotations or native phase_oracle export. Evidence is local CPU
+correctness, not a performance or full-corpus claim.
