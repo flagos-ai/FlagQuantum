@@ -155,6 +155,21 @@ def reference_arithmetic_gates(
             # generic controlled-unitary synthesis can change its primitive set.
             ((cv,),) = tuple(gate.control_values)
             bloq = gate.sub_gate.bloq.controlled(ctrl_spec=CtrlSpec(cvs=cv))
+        if (
+            preserve_components
+            and isinstance(gate, cirq.ControlledGate)
+            and gate.sub_gate == cirq.X
+        ):
+            # Preserve the source encoded control pattern instead of letting
+            # Cirq replace a multi-control X with generic unitary synthesis.
+            from qualtran import QUInt
+
+            values = tuple(tuple(value) for value in gate.control_values)
+            assert all(len(value) == 1 for value in values)
+            pattern = sum(
+                value[0] << (len(values) - 1 - i) for i, value in enumerate(values)
+            )
+            bloq = XGate().controlled(CtrlSpec(qdtypes=QUInt(len(values)), cvs=pattern))
         if not preserve_components or not isinstance(bloq, Bloq):
             return NotImplemented
         if type(bloq).__name__ in {"IntState", "IntEffect"}:
@@ -174,6 +189,8 @@ def reference_arithmetic_gates(
             "CAdd",
             "AddK",
             "Controlled",
+            "ControlledViaAnd",
+            "MultiControlX",
             "CModAdd",
             "CModSub",
             "CModAddK",
