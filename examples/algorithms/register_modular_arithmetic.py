@@ -2,7 +2,7 @@
 
 Run: python -m examples.algorithms.register_modular_arithmetic
 Expected: all coherent valid-residue amplitudes correct, eight work wires zero,
-modular addition followed by literal source modular subtraction restoring input.
+each original operation followed by its exact component adjoint restores input.
 """
 
 from collections import Counter
@@ -12,8 +12,14 @@ from typing import Literal
 import torch
 
 import flagquantum as fq
-from flagquantum.compiler.registers.modular_addition import modular_add_ir
-from flagquantum.compiler.registers.modular_subtraction import modular_subtract_ir
+from flagquantum.compiler.registers.modular_addition import (
+    modular_add_adjoint_ir,
+    modular_add_ir,
+)
+from flagquantum.compiler.registers.modular_subtraction import (
+    modular_subtract_adjoint_ir,
+    modular_subtract_ir,
+)
 from flagquantum.core.ir import CircuitIR
 from flagquantum.dynamic import DynamicCircuit
 from flagquantum.runtime.dynamic.execution import run_dynamic
@@ -24,9 +30,15 @@ class ModularArithmetic:
     """Bind two three-bit residue words and eight explicitly zero work wires."""
 
     operation: Literal["add", "subtract"]
+    inverse: bool = False
 
     def append_to(self, circuit: fq.Circuit) -> fq.Circuit:
-        emit = {"add": modular_add_ir, "subtract": modular_subtract_ir}[self.operation]
+        emit = {
+            ("add", False): modular_add_ir,
+            ("add", True): modular_add_adjoint_ir,
+            ("subtract", False): modular_subtract_ir,
+            ("subtract", True): modular_subtract_adjoint_ir,
+        }[(self.operation, self.inverse)]
         gates = emit((0, 1, 2), (3, 4, 5), 3, tuple(range(6, 14)), (0, 1, 2))
         return circuit.compose(CircuitIR(circuit.n_qubits, gates))
 
@@ -39,44 +51,41 @@ def main() -> None:
     state = torch.zeros(1 << 14, dtype=torch.complex128)
     for (a, b), amp in zip(pairs, amps, strict=True):
         state[((a << 3) | b) << 8] = amp
-    counts: dict[str, Counter[str]] = {}
     operations: tuple[Literal["add", "subtract"], ...] = ("add", "subtract")
     for operation in operations:
-        expected = torch.zeros_like(state)
-        for (a, b), amp in zip(pairs, amps, strict=True):
-            value = (a + b if operation == "add" else b - a) % 3
-            expected[((a << 3) | value) << 8] = amp
-        circuit = DynamicCircuit(14, inputs=state, dtype=torch.complex128).append(
-            ModularArithmetic(operation)
-        )
-        actual = run_dynamic(circuit, shots=8, seed=41, strategy="trajectory")
-        torch.testing.assert_close(
-            actual.final_states.reshape(8, -1),
-            expected.expand(8, -1),
-            rtol=0,
-            atol=1e-12,
-        )
-        counts[operation] = Counter(g.name for g in circuit.to_ir().instructions)
-        if operation == "add":
-            restored = run_dynamic(
-                circuit.append(ModularArithmetic("subtract")),
-                shots=8,
-                seed=41,
-                strategy="trajectory",
+        for inverse in (False, True):
+            expected = torch.zeros_like(state)
+            for (a, b), amp in zip(pairs, amps, strict=True):
+                add = (operation == "add") != inverse
+                value = (b + a if add else b - a) % 3
+                expected[((a << 3) | value) << 8] = amp
+            circuit = DynamicCircuit(14, inputs=state, dtype=torch.complex128)
+            circuit.append(ModularArithmetic(operation, inverse))
+            actual = run_dynamic(circuit, shots=8, seed=41, strategy="trajectory")
+            torch.testing.assert_close(
+                actual.final_states.reshape(8, -1),
+                expected.expand(8, -1),
+                rtol=0,
+                atol=1e-12,
             )
+            counts = Counter(g.name for g in circuit.to_ir().instructions)
+            circuit.append(ModularArithmetic(operation, not inverse))
+            restored = run_dynamic(circuit, shots=8, seed=41, strategy="trajectory")
             torch.testing.assert_close(
                 restored.final_states.reshape(8, -1),
                 state.expand(8, -1),
                 rtol=0,
                 atol=1e-12,
             )
-        print(
-            operation,
-            ": all valid-residue complex amplitudes correct; eight work wires zero",
-        )
-        print("Measured gates:", dict(counts[operation]))
+            print(
+                operation,
+                "inverse",
+                inverse,
+                ": complex amplitudes correct; work zero; original inverse restored input",
+            )
+            print("Measured primitives:", dict(counts))
     print(
-        "Addition/subtraction round trip verified. Model: add 44 T/11 measurements; subtract 60 T/15 measurements."
+        "Independent source estimates per direction: ModAdd 44 T/11 measurements; ModSub 60 T/15 measurements."
     )
     print(
         "Work budget: eight quantum wires, three reused classical slots; input states must satisfy residue domains."
