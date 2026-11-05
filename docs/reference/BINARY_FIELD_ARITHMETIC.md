@@ -77,3 +77,52 @@ all operand pairs at degrees 5 and 8 (65,536 pairs at degree 8), checking every
 scratch bit. This covers an active recursive scratch allocation at degree 5.
 The multiplication file has 23 passing tests and 98% statement coverage in the
 local pinned-reference environment.
+
+## Inversion and workspace ownership
+
+`field_inverse.gf2_inverse_decomposition` ports the pinned `GF2Inverse`
+Itoh--Tsujii call chain: addition, repeated squaring through PLU linear networks,
+and Karatsuba multiplication. The same adjoint correction described above is
+applied. The output mapping contains `(source, result, *junk)`; logical junk
+registers are retained exactly as in upstream. They must not be mislabeled as
+clean scratch. Raw scratch excludes all logical outputs.
+
+`gf2_inverse_ir(source, target, workspace, modulus=...)` provides a fixed-wire
+clean interface. It computes the raw chain, XOR-copies the inverse into target,
+then reverses the entire physical gate stream. Source and every workspace bit
+are restored; target can contain arbitrary data. Zero maps to zero. The
+`gf2_inverse_workspace_size` query gives the exact required workspace for a
+concrete width and polynomial; supplying one fewer wire is tested to fail.
+The existing append protocol is used in the runnable example, which additionally
+checks `inverse(3) = 6` in GF(8) and returns all six workspace wires to zero.
+
+| Degree / modulus | Path | Emitted CCX | Emitted CX | Extra work / logical junk | Qualtran modeled Toffoli / Clifford |
+|---|---|---:|---:|---|---:|
+| 3 / `0xB` | Raw, adjoint repaired | 7 | 35 | result 3 + junk 3; clean scratch 0 | 7 / 35 |
+| 3 / `0xB` | Clean XOR output | 14 | 73 | clean workspace 6 | no matching clean upstream entry |
+| 4 / `0x13` | Raw, adjoint repaired | 18 | 104 | result 4 + junk 4; clean scratch 0 | 18 / 104 |
+| 4 / `0x13` | Clean XOR output | 36 | 212 | clean workspace 8 | no matching clean upstream entry |
+| 8 / `0x11B` | Raw, adjoint repaired | 108 | 943 | result 8 + junk 24; clean scratch 0 | 108 / 943 |
+| 8 / `0x11B` | Clean XOR output | 216 | 1,894 | clean workspace 32 | no matching clean upstream entry |
+
+All rows have zero measurements. Clean counts close exactly as
+`2 * raw counts + degree CX`; no output-binding SWAP is required because the
+copy reads the raw logical output map directly. The seven-T Toffoli model gives
+756 T for the degree-8 raw chain and 1,512 T for the clean chain. These are
+substitution estimates; this module does not emit or measure T gates. The raw
+upstream entry retains junk and therefore has a different output contract from
+the clean interface.
+
+`tests/unit/test_field_inverse.py` compares all ordered gate dependencies and
+output maps for degrees 1, 2, 3, 4, 5, 6, and 8 against the source with the one
+adjoint repair. It checks every field value, including zero, against `galois` and
+verifies every workspace bit. Complex128 statevector tests exercise arbitrary
+source/target superpositions at degrees 1--4 through `circuit.append(op)`, with
+an absolute amplitude tolerance of `1e-12`. Resource counts are compared directly
+with the pinned `QECGatesCost` model. Symbolic fields and a measurement-assisted
+clean inverse remain unimplemented.
+
+Local acceptance: 19 inversion tests passed with 100% statement coverage of
+`field_inverse.py`. The six-file G1/G2 regression run passed all 109 tests with
+both pinned references available. Black, Ruff, and the standalone example also
+passed. These results do not constitute final whole-PR CI or GPU acceptance.

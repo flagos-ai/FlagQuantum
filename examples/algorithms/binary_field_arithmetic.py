@@ -10,6 +10,10 @@ from dataclasses import dataclass
 import torch
 
 import flagquantum as fq
+from flagquantum.compiler.registers.field_inverse import (
+    gf2_inverse_ir,
+    gf2_inverse_workspace_size,
+)
 from flagquantum.compiler.registers.field_multiplication import (
     bind_field_outputs,
     gf2_multiplication,
@@ -41,6 +45,21 @@ def main() -> None:
     print("GF(8): 3 * 5 = 4; source registers preserved")
     print("Emitted gates:", dict(Counter(g.name for g in instructions)))
     print("Output binding SWAPs:", len(instructions) - len(plan.instructions))
+
+    work_count = gf2_inverse_workspace_size(3, modulus=0b1011)
+    count = 6 + work_count
+    gates = gf2_inverse_ir(x, (3, 4, 5), tuple(range(6, count)), modulus=0b1011)
+    state = torch.zeros(1 << count, dtype=torch.complex128)
+    state[3 << (3 + work_count)] = 1
+    result = (
+        fq.Circuit(count, inputs=state, dtype=torch.complex128)
+        .append(FieldOperation(count, gates))
+        .state()
+        .flatten()
+    )
+    assert int(result.abs().argmax()) == ((3 << 3) | 6) << work_count
+    print(f"GF(8): inverse(3) = 6; all {work_count} work wires returned to zero")
+    print("Emitted clean-inverse gates:", dict(Counter(g.name for g in gates)))
 
 
 if __name__ == "__main__":
