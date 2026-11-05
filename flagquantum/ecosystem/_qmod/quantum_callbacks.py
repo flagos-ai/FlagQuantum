@@ -254,6 +254,17 @@ def specialize_quantum_callbacks(
                         "callback.signature",
                         "Hadamard requires one whole borrowed quantum port",
                     )
+                if s.token.text == "phase_oracle" and s.predicate_callback is None:
+                    if (
+                        len(s.arguments) != 2
+                        or s.arguments[0].children
+                        or s.arguments[0].token.text not in definitions
+                    ):
+                        reject(
+                            s.token,
+                            "callback.signature",
+                            "wrapper phase oracle requires a known predicate",
+                        )
                 if s.predicate_callback is not None:
                     a, b, actions = s.predicate_callback
                     if (

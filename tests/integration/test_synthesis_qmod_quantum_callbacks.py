@@ -72,8 +72,8 @@ def test_unused_invalid_wrappers_refuse(body: str) -> None:
     "key,value",
     [
         ("max_qubits", 2),
-        ("max_operations", 0),
-        ("max_depth", 0),
+        ("max_operations", 1),
+        ("max_depth", 1),
         ("memory_limit_bytes", 64),
     ],
 )
@@ -155,3 +155,9 @@ def test_empty_callback_signature_is_a_structured_refusal() -> None:
             "qfunc wrap(f:qfunc()) {} qfunc main(output x:qbit) {allocate(x);}",
             source_format="qmod",
         )
+
+
+def test_unused_unknown_predicate_refuses() -> None:
+    source = "qfunc wrap(f:qfunc(qbit[]),x:qbit[]) {phase_oracle(missing,x);} qfunc main(output x:qbit) {allocate(x);}"
+    with pytest.raises(ValueError, match="callback.signature"):
+        synth.synthesize(source, source_format="qmod")
