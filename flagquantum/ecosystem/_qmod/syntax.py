@@ -239,10 +239,17 @@ class Parser:
                 "budget.depth",
                 f"expression nesting exceeds {MAX_EXPRESSION_DEPTH}",
             )
-        if not static and (token.text == "~" or (difference and token.text == "-")):
+        if (not static and token.text == "~") or (
+            (static or difference) and token.text == "-"
+        ):
             self.take(token.text)
             operand = self.expression(
-                25, nesting + 1, decimal=decimal, difference=difference, real=real
+                25,
+                nesting + 1,
+                static=static,
+                decimal=decimal,
+                difference=difference,
+                real=real,
             )
             if operand.depth >= MAX_EXPRESSION_DEPTH:
                 reject(
@@ -368,7 +375,7 @@ class Parser:
             "**": 30,
         }
         if static:
-            precedence = {"+": 10, "-": 10, "*": 20, "/": 20}
+            precedence = {"+": 10, "-": 10, "*": 20, "/": 20, "%": 20, "**": 30}
         elif difference:
             precedence["-"] = 10
         if real:
@@ -394,10 +401,14 @@ class Parser:
                 difference=difference,
                 real=real,
             )
-            if operator.text == "**" and (
-                right.children
-                or not right.token.text.isdecimal()
-                or not 1 <= int(right.token.text) <= 8
+            if (
+                operator.text == "**"
+                and not (static or real)
+                and (
+                    right.children
+                    or not right.token.text.isdecimal()
+                    or not 1 <= int(right.token.text) <= 8
+                )
             ):
                 reject(
                     operator,
@@ -875,7 +886,7 @@ class Parser:
                 and self.tokens[self.position + 1].text == "("
             ):
                 token = self.take(self.current.text)
-                if scope_depth and not binding_actions:
+                if scope_depth and not (static_loop_body or binding_actions):
                     reject(
                         token,
                         "scope",
@@ -928,6 +939,8 @@ class Parser:
                 continue
             target = self.name()
             arguments: tuple[Expression, ...]
+            if target.text == "free" and scope_depth:
+                reject(target, "scope", "free requires function scope")
             if (
                 target.text in {"grover_operator", "grover_search", "phase_oracle"}
                 and self.current.text == "("
@@ -1163,6 +1176,22 @@ class Parser:
             reject(name, "type", "record requires at least one field")
         self.records[name.text] = Record(name, tuple(fields))
 
+    def constant_integer(self, node: Expression) -> int:
+        from .integers import checked_integer, integer_operation
+
+        token = node.token
+        if not node.children:
+            if token.text.isdecimal():
+                return checked_integer(int(token.text), token)
+            if token.text in self.integer_values:
+                return self.integer_values[token.text]
+        if token.text == "-" and len(node.children) == 1:
+            return -self.constant_integer(node.children[0])
+        if token.text in {"+", "-", "*", "%", "**"}:
+            left, right = (self.constant_integer(child) for child in node.children)
+            return integer_operation(token, left, right)
+        reject(token, "constant", "int constants require a bounded integer expression")
+
     def parse(
         self,
     ) -> tuple[tuple[Function, ...], tuple[tuple[Token, Expression], ...]]:
@@ -1213,23 +1242,8 @@ class Parser:
                     )
                 elif kind == "int":
                     self.integer_constants.add(name.text)
-                    negative = self.take("-") if self.current.text == "-" else None
-                    literal = self.current
-                    if not literal.text.isdecimal():
-                        reject(
-                            literal,
-                            "constant",
-                            "int constants require an exact integer literal",
-                        )
-                    self.take(literal.text)
-                    self.integer_values[name.text] = int(literal.text) * (
-                        -1 if negative else 1
-                    )
-                    value = (
-                        Expression(literal)
-                        if negative is None
-                        else Expression(negative, (Expression(literal),))
-                    )
+                    value = self.expression(static=True, decimal=True)
+                    self.integer_values[name.text] = self.constant_integer(value)
                 else:
                     value = self.signed_angle_argument()
                 constants.append((name, value))

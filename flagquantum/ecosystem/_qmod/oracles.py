@@ -8,6 +8,7 @@ from dataclasses import replace
 from typing import TYPE_CHECKING
 
 from .integers import checked_integer
+from .permutations import is_const_cx_permutation
 from .syntax import Expression, Function, Parameter, Record, Statement, Token, reject
 
 if TYPE_CHECKING:
@@ -101,6 +102,7 @@ def expand_static_oracles(
         name: function
         for name, function in definitions.items()
         if any(p.role == "const" and p.kind == "qbit[]" for p in function.parameters)
+        and not is_const_cx_permutation(function)
     }
     count = 0
 

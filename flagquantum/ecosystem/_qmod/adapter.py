@@ -43,11 +43,12 @@ from .bindings import (
 from .controlled_evolution import EVOLUTION_CALLS, controlled_evolution
 from .decisions import lower_decision_phase
 from .indexed_control import lower_indexed_control
-from .integers import checked_integer, checked_integer_array
+from .integers import checked_integer, checked_integer_array, integer_operation
 from .iterations import expand_iterations
+from .local_cleanup import lower_free
 from .matrices import lower_unitary, validate_matrix_constant
 from .oracles import expand_static_oracles
-from .permutations import verify_permutations
+from .permutations import is_const_cx_permutation, verify_permutations
 from .phase import MAX_PHASE_INPUT_BITS, expand_phase
 from .phase_factors import Cube, preserve_factors
 from .predicates import expand_predicate_oracles
@@ -74,6 +75,7 @@ from .unitary_effects import emit_inverse, is_reversible_scope, lower_reversible
 SUPPORTED_SOURCE_VERSION = "2bfd835e73b6882fcc515a725098b04766c238e7"
 MAX_EFFECT_OPERATIONS = 4096
 MAX_HELPER_EXPANSIONS = 4096
+MAX_LOOP_ITERATIONS = 4096
 MAX_QDRIFT_SAMPLES = 2048
 QDRIFT_SEED = 0
 _GATE_CALLS = frozenset({"X", "Y", "H", "S", "Z", "I", "SX", "hadamard_transform"})
@@ -115,6 +117,7 @@ _INTRINSICS = (
         "qft",
         "swap_test",
         "drop",
+        "free",
         "modular_exp",
         "qpe_flexible",
         "qpe",
@@ -778,6 +781,7 @@ class _Adapt:
         self.dropped: set[str] = set()
         self.helper_stack: tuple[str, ...] = ()
         self.helper_expansions = 0
+        self.loop_iterations = 0
 
     def register(
         self,
@@ -819,7 +823,10 @@ class _Adapt:
             self.parameters[name].kind == "qbit[]"
             or (
                 allocate_local
-                and self.scope == "main"
+                and (
+                    self.scope == "main"
+                    or (self.helper_stack and self.parameters[name].kind == "qbit")
+                )
                 and self.local_scope is None
                 and self.parameters[name].kind in {"qbit", "qnum"}
             )
@@ -976,17 +983,9 @@ class _Adapt:
             return values[offset]
         if text == "-" and len(node.children) == 1:
             return checked_integer(-self.static_integer(node.children[0]), node.token)
-        if text in {"+", "-", "*"}:
+        if text in {"+", "-", "*", "%", "**"}:
             left, right = (self.static_integer(child) for child in node.children)
-            if text == "+":
-                result = left + right
-            elif text == "-":
-                result = left - right
-            else:
-                result = left * right
-            if abs(result).bit_length() > 256:
-                reject(node.token, "budget.number", "static integer exceeds 256 bits")
-            return result
+            return integer_operation(node.token, left, right)
         if text == "floor" and node.children[0].token.text == "/":
             numerator, denominator = (
                 self.static_integer(child) for child in node.children[0].children
@@ -1174,6 +1173,13 @@ class _Adapt:
             reject(
                 statement.token, "budget.expansion", "repeat count must be in 0..256"
             )
+        self.loop_iterations += count
+        if self.loop_iterations > MAX_LOOP_ITERATIONS:
+            reject(
+                statement.token,
+                "budget.expansion",
+                "static loops exceed 4096 iterations",
+            )
         for item in statement.repeat_body:
             callee = self.callback_bindings.get(
                 item.token.text
@@ -1214,8 +1220,8 @@ class _Adapt:
     def classical_number(self, node: Expression) -> float:
         text = node.token.text
         if not node.children:
-            if text in self.classical_integers:
-                value = self.classical_integers[text]
+            if text in self.classical_integers or text in self.loop_indices:
+                value = self.static_integer(node)
                 if abs(value) > 2**53:
                     reject(
                         node.token,
@@ -1250,7 +1256,16 @@ class _Adapt:
             if not 0 <= index < len(values):
                 reject(offset.token, "binding", "real array index is out of bounds")
             return values[index]
-        if text == "-" and len(node.children) == 1:
+        if text == "**":
+            value = self.static_integer(node)
+            if abs(value) > 2**53:
+                reject(
+                    node.token,
+                    "precision",
+                    "integer angle conversion exceeds exact real range",
+                )
+            result = float(value)
+        elif text == "-" and len(node.children) == 1:
             result = -self.classical_number(node.children[0])
         elif text in {"+", "-", "*", "/"}:
             left, right = (self.classical_number(child) for child in node.children)
@@ -1271,9 +1286,15 @@ class _Adapt:
         return result
 
     def angle(self, node: Expression, gate: Token) -> float:
-        if node.token.text in {"+", "-", "*", "/", "pi"}:
+        if node.token.text in {"+", "-", "*", "/", "**", "pi"}:
             return self.classical_number(node)
-        if (not node.children and node.token.text in self.classical_integers) or (
+        if (
+            not node.children
+            and (
+                node.token.text in self.classical_integers
+                or node.token.text in self.loop_indices
+            )
+        ) or (
             node.token.text == "["
             and node.children[0].token.text in self.integer_arrays
         ):
@@ -1377,6 +1398,12 @@ class _Adapt:
         )
         child.helper_stack = (*self.helper_stack, syntax.name.text)
         child.helper_expansions = self.helper_expansions + 1
+        child.loop_iterations = self.loop_iterations
+        child.classical_integers.update(
+            (name, value)
+            for name, value in self.classical_integers.items()
+            if name in self.constants
+        )
         actuals: set[tuple[Value, int]] = set()
         for argument, parameter in zip(arguments, syntax.parameters, strict=True):
             name = parameter.name.text
@@ -1468,7 +1495,10 @@ class _Adapt:
                 child.views[name] = view
         for index, statement in enumerate(syntax.statements):
             child.statement(statement, str(index))
+        if any(op.name == "qreg.hidden" for op in child.operations):
+            reject(token, "free", "bound helper must free each allocated local qbit")
         self.helper_expansions = child.helper_expansions
+        self.loop_iterations = child.loop_iterations
         for op in child.operations:
             # Replay the specialized operations with the caller's linear effect.
             self.effect_op(op.name, token, op.operands[1:], **op.attributes)
@@ -2985,6 +3015,12 @@ class _Adapt:
                         "allocation size must be a literal in 1..256",
                     )
             target = self.atom(args[-1])
+            if self.helper_stack and (
+                self.parameters.get(target.text) is None
+                or self.parameters[target.text].role != "local"
+                or self.parameters[target.text].kind != "qbit"
+            ):
+                reject(target, "free", "bound allocation requires a local qbit")
             phase_allocation = infer_phase_allocation(self, token, args, size)
             phase_parameter = self.parameters.get(target.text)
             destination = self.register(
@@ -3051,6 +3087,10 @@ class _Adapt:
             self.effect_op(
                 "qreg.modular_exp", token, registers, modulus=modulus, base=base
             )
+        elif token.text == "free":
+            if len(args) != 1:
+                reject(token, "signature", "free requires one local qbit")
+            lower_free(self, self.atom(args[0]))
         elif token.text == "drop":
             if len(args) != 1 or self.scope != "main" or self.local_scope is not None:
                 reject(token, "drop", "drop requires one local register in main")
@@ -3461,11 +3501,7 @@ def parse_qmod(
         if name in constants or name in _INTRINSICS or name == "main":
             reject(name_token, "name", "duplicate or reserved top-level constant")
         if name in parser.integer_constants:
-            negative = operator.token.text == "-"
-            magnitude = operator.children[0] if negative else operator
-            constant_integers[name] = checked_integer(
-                (-1 if negative else 1) * int(magnitude.token.text), name_token
-            )
+            constant_integers[name] = parser.integer_values[name]
             constants[name] = operator
             continue
         if name in parser.matrix_constants:
@@ -3576,6 +3612,7 @@ def parse_qmod(
         if any(
             port.role not in {"real", "integer", "inout", "callable"}
             and not (port.role == "output" and port.kind == "qbit")
+            and not (port.role == "const" and is_const_cx_permutation(syntax))
             for port in syntax.parameters
         ):
             reject(
@@ -3583,12 +3620,27 @@ def parse_qmod(
                 "role",
                 "bound helpers require real or writable qubit array ports",
             )
+        local_bits = {
+            statement.declaration.name.text
+            for statement in syntax.statements
+            if statement.declaration is not None
+            and statement.declaration.kind == "qbit"
+        }
         for statement in syntax.statements:
+            if statement.token.text in {"allocate", "free"} and (
+                not statement.arguments
+                or statement.arguments[-1].children
+                or statement.arguments[-1].token.text not in local_bits
+            ):
+                reject(
+                    statement.token,
+                    "scope",
+                    "bound allocation and free require a local qbit",
+                )
             declaration = statement.declaration
-            if (
-                declaration is not None
-                and declaration.kind == "qbit[]"
-                and declaration.width is None
+            if declaration is not None and (
+                declaration.kind == "qbit"
+                or (declaration.kind == "qbit[]" and declaration.width is None)
             ):
                 continue
             controlled_qft = (
@@ -3620,6 +3672,8 @@ def parse_qmod(
                     "+=",
                     "phase",
                     "inplace_prepare_state",
+                    "allocate",
+                    "free",
                 }
                 and not controlled_qft
                 and not hadamard_within

@@ -104,5 +104,7 @@ def test_repeat_bounds_even_empty_helper_expansion():
       qfunc layer(q:qbit) { repeat (j:256) { empty(q); } }
       qfunc main(output q:qbit) { allocate(q); repeat (i:256) { layer(q); } }
     """
-    with pytest.raises(InteropConversionError, match="4096 bound helper calls"):
+    with pytest.raises(
+        InteropConversionError, match="static loops exceed 4096 iterations"
+    ):
         synth.synthesize(source, source_format="qmod")

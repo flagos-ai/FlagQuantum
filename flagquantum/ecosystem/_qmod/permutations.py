@@ -24,6 +24,44 @@ _BASIS_OPERATIONS = frozenset(
 )
 
 
+def is_const_cx_permutation(function: Function) -> bool:
+    """Recognize static CX networks that read a borrowed array as controls."""
+    reads = [port for port in function.parameters if port.role == "const"]
+    writes = [port for port in function.parameters if port.role == "inout"]
+    if (
+        not function.permutation
+        or len(reads) != 1
+        or reads[0].kind != "qbit[]"
+        or reads[0].record is not None
+        or len(writes) != 1
+        or writes[0].kind != "qbit"
+        or any(
+            port not in reads + writes and port.role != "integer"
+            for port in function.parameters
+        )
+    ):
+        return False
+    read, write = reads[0].name.text, writes[0].name.text
+
+    def checked(statement: Statement) -> bool:
+        if statement.repeat_index is not None:
+            return all(checked(child) for child in statement.repeat_body)
+        if statement.static_if_body is not None:
+            return all(checked(child) for child in statement.static_if_body)
+        if statement.token.text != "CX" or len(statement.arguments) != 2:
+            return False
+        control, target = statement.arguments
+        return (
+            control.token.text == "["
+            and not control.children[0].children
+            and control.children[0].token.text == read
+            and not target.children
+            and target.token.text == write
+        )
+
+    return bool(function.statements) and all(checked(s) for s in function.statements)
+
+
 def verify_permutations(definitions: Mapping[str, Function]) -> None:
     """Keep qperm distinct from qfunc and prove the admitted call graph subset.
 

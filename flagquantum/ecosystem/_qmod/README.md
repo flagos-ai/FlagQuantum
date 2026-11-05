@@ -1403,3 +1403,18 @@ static integer. The integer may come from a checked classical array and loop
 index. The original Grover QPE fixture exercises these rules through nested
 reversible scopes and checks the phase/data state and clean workspace against
 an independent dense recurrence and inverse Fourier transform.
+
+### Static loop bounds and clean phase-kickback locals
+
+Nested static loops accept exact integer bounds with exponentiation and
+modulo. Each loop has at most 256 iterations and expanded calls share a
+4096-iteration limit. Integer powers accept exponents from 0 to 255 and
+results up to 256 bits. Angles may use exact integer powers within the
+existing finite real range.
+
+A checked `qperm` may use indexed elements of a Const qubit array as CX
+controls and a distinct writable bit as the target. For a local bit
+prepared by `X; H`, a sequence of CX operations targeting the bit leaves
+it in the same X eigenstate. If `H; X` restores zero before `free`, the
+importer can remove the local and retain the equivalent phase on each
+control. An unproven `free` is rejected.

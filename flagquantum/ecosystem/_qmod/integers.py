@@ -19,6 +19,28 @@ def checked_integer(value: object, token: Token) -> int:
     return value
 
 
+def integer_operation(token: Token, left: int, right: int) -> int:
+    operator = token.text
+    if operator == "+":
+        result = left + right
+    elif operator == "-":
+        result = left - right
+    elif operator == "*":
+        result = left * right
+    elif operator == "%":
+        if right <= 0:
+            reject(token, "expression", "static modulo requires a positive divisor")
+        result = left % right
+    else:
+        assert operator == "**"
+        if not 0 <= right <= 255:
+            reject(token, "budget.number", "static exponent must be in 0..255")
+        result = left**right
+    if abs(result).bit_length() > 256:
+        reject(token, "budget.number", "static integer exceeds 256 bits")
+    return result
+
+
 def checked_integer_array(
     value: object, token: Token, width: int | None = None
 ) -> tuple[int, ...]:
