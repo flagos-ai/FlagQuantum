@@ -405,3 +405,203 @@ frame, schedule contract, API or FTQC package. The next bounded
 [schedule/feedback conformance proposal](QEC_SCHEDULE_FEEDBACK_CONFORMANCE_PROPOSAL.md)
 reuses the delivered repetition workflow and requests a separate finite semantic
 matrix decision before implementation.
+
+## W2/W3/W6 bounded admission prerequisite
+
+This section specifies the next CPU baseline prerequisite after #1078's bounded
+Bell/GHZ fault/readout conformance delivery. It does not authorize native
+admission or collection. The accepted #805, #810 and #832 raw observations above
+remain unchanged and are not rerun. FTS-02 remains partial.
+
+The opt-in tooling under `tools/fts02_*`, `tools/launch_fts02_cpu.py` and
+`tools/check_fts02_linux_admission.py` reuses the maintained watchdog and existing
+producers. It adds no numerical engine, public QEC API, dependency declaration,
+runner deployment or performance threshold. Unit tests replace all process and
+native-filter operations; their success is not evidence of kernel enforcement.
+
+### Fixed remaining baseline points
+
+| Point | Existing producer | Meaning |
+| --- | --- | --- |
+| W2-X / W2-Z | `examples/qec/stim_pymatching_baseline.py --code surface --distance 9 --basis x` (then `z`) `--shots 4096 --batch-size 32` | Two fresh fixed-shot observations at the existing three-round schedule. |
+| W3 | `benchmarks/qec_clifford_dem_construction.py --distance 9 --rounds 5` | One construction observation, not whole-circuit capacity. |
+| W6-16/32/64 | `python -m flagquantum.benchmarking run qec_memory_sampling --shots 16384 --batch-size 16` (then `32`/`64`) `--warmup 3 --iterations 10` | Three processes; each retains three internal warmups and ten observations. |
+
+Keep seed 53 and existing noise/readout semantics. W2 must complete 4096 shots
+with one logical observable; W3 must identify distance 9 and rounds 5 without
+release/capacity promotion; W6 must retain all 13 records per invocation and
+1024/512/256 batches per record. Different chunk schedules need not yield
+bit-identical samples. Restarted seeded streams are not independent statistical
+trials. Use producer correctness checks and retain every failure. No threshold
+fit, 1.5x/2x target, large-scale memory bound or optimized timing is inferred.
+
+W2 d=3/5/7 X/Z and repetition d=3 already have accepted counts in #805. W3
+three-round d=3/5/7 and Stage A d=9 are reused. W6 initial 128/1024/4096-shot
+phase observations and Stage A 16384/65536-shot fixed-batch observations remain
+their original-source baselines. Their timings cannot be pooled with a new
+source or Linux environment. The first initial 128-shot process has no retained
+external wall duration; its pipeline measurements remain usable with that
+explicit limitation.
+
+### Creation accounting and one-shot reservation
+
+Every role is charged durably before its creation API call, including failed
+calls. The reservation locks **90,097 attempt slots**. Actual attempts, unused
+locked capacity and successful OS creations are distinct: a charge is not proof
+of a successful start. The receipt leaves successful OS creations unavailable
+rather than deriving them from charges. An interrupted or failed reservation
+cannot be reused or refunded. A stale lock or interrupted atomic update refuses
+further execution.
+
+| Role | Capacity |
+| --- | ---: |
+| Existing operator precharge for campaign coordinator | 1 |
+| Admission coordinator, native child, two Git children, negative Git child, reserved alias descendant attempt | 6 |
+| Deliberate raw clone, clone3 and libc-fork denial attempts during admission | 3 |
+| Five 120-second point allocations, excluding their in-process watchdog slots | 5 x 12,015 |
+| One 300-second allocation, excluding its in-process watchdog slot and the three reassigned denial slots | 30,012 |
+| Total | 90,097 |
+
+The six draft watchdog-process slots are not used to launch watchdog processes:
+the watchdog runs inside the coordinator. They fund the six admission slots.
+Three more regular W3 slots fund the explicit native denial attempts. This
+conservative refinement counts deliberate failed native creations as well;
+W3's regular allowance is 29,997. W2 regular limits are 12,002 each; W6 regular
+limits are 12,000 each. Each point separately retains initial/final RSS queries,
+its target slot, six cleanup checks and four diagnostic command slots. W3 and
+each W6 point also retain two Git provenance slots. Regular exhaustion cannot
+borrow cleanup or diagnostic capacity.
+
+The non-root namespace is a prerequisite, not something these tools provision.
+Require Linux x86-64 or AArch64, `libseccomp.so.2`, an offline environment with
+Torch/Stim/PyMatching, a pinned clean checkout and runtime on read-only mounts,
+network isolation and no inherited writable descriptors outside the evidence
+volume. One dedicated writable tmpfs is capped at **32 MiB**; admission and
+campaign share it. Other visible writable mounts refuse admission. Filter
+installation must deny process-form clone/fork/vfork, return ENOSYS for clone3,
+and refuse session/group changes while allowing required threads. Git runs
+without user/system configuration, filesystem monitoring or lazy object fetch.
+Thread creation is not represented as a numerical worker or process slot.
+
+The reservation binds the complete installed distribution/version map, Python
+version and executable SHA-256. The operator approves this identity together
+with the offline wheel closure and hashes before launch. Every coordinator and
+target checks the identical lock. No package is downloaded by these tools.
+The lock is not a substitute for a validated Linux wheel closure or a signature
+against malicious same-user changes. Source/runtime immutability and a trusted
+operator remain required.
+
+### Commands for an already-running authorized operator
+
+The following preparation is Python code for the existing operator, not an
+extra uncounted CLI process. Run it only after a separate exact-source,
+exact-environment and resource execution approval. Replace the source SHA and
+paths with that approved allocation. Do not start a helper process to run the
+precharge: if an operator process must be created, account for it separately
+before execution or stop for a revised allocation.
+
+```python
+from pathlib import Path
+from tools.fts02_process_budget import Reservation, runtime_identity
+
+approved_source = "<approved full 40-character source commit>"
+# Compare this identity to the approved offline closure before reserving.
+identity = runtime_identity()
+reservation = Reservation.create(Path("/evidence/reservation"), approved_source, identity)
+# Admission's coordinator attempt is now durably charged before its OS launch.
+print(reservation.summary()["creation_attempts"])  # 1
+```
+
+After separate execution approval and mount verification, start exactly once:
+
+```bash
+OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 PYTHONPATH=. \
+python -B -m tools.check_fts02_linux_admission \
+  --revision "$APPROVED_SOURCE_SHA" --evidence /evidence \
+  --reservation /evidence/reservation
+```
+
+Admission must return zero and record `native_admission_pass` with the locked
+versions, plus `git_provenance=pass git_descendant=EPERM evidence_mount=pass`.
+Keep original failure output. The same already-running operator may call
+`reservation.precharge_campaign()` only after admission passes and the six-point
+campaign is separately authorized. The campaign coordinator then starts once:
+
+```bash
+OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 PYTHONPATH=. \
+python -B -m tools.launch_fts02_cpu --revision "$APPROVED_SOURCE_SHA" \
+  --reservation /evidence/reservation --output /evidence/reservation/campaign
+```
+
+The operator must not automatically repeat either command. The launcher rejects
+replay, source/dependency mismatch or output outside the reservation directory.
+Its final receipt reports all point attempts, untouched points, locked/unused
+capacity, charged evidence and completion/failure. Kernel/native failure blocks
+collection; mocked tests do not waive this gate.
+
+### Evidence, timing and failure semantics
+
+Normal retained output leaves 1 MiB for diagnostics/control records. Diagnostics
+leave 64 KiB for the receipt, with another 64 KiB reserved for atomic ledger
+control files. Charges occur before managed writes; the filesystem ceiling also
+covers arbitrary target writes. Diagnostic truncation invalidates acceptance.
+No full shot tensors are retained. Preserve all prior evidence outside this new
+volume. No cleanup of historical files, caches or environments is performed.
+
+Target deadlines remain 120 seconds for W2/W6 and 300 seconds for W3, totaling
+900 seconds. Initial/final RSS queries keep 50 ms deadlines and observed sample
+gaps keep the original 100 ms limit. Sampled group RSS remains 2 GiB, not an
+allocator limit. Three cleanup entries can each wait up to 15 seconds and two
+diagnostics entries can each attempt two 10-second commands. Conservatively
+allow 900 + 6 x (45 + 40) + 8 x 10 + 4 x 15 = 1550 seconds of declared timed
+operations before operator/provisioning and untimed creation, scheduling, file
+I/O or import overhead. This sum is not an OS hard wall guarantee. The old
+1020-second total is not used or certified. Do not impose an outer kill deadline
+that prevents original cleanup; an absolute host deadline requires its own
+reviewed containment/cleanup contract before live execution.
+
+Durable per-query ledger writes add observation overhead; existing gaps can
+therefore still refuse a run. No overhead is subtracted and no reliability or
+performance repair is claimed. The default watchdog's command, thresholds,
+unknown/error handling and TERM/wait/KILL/wait cleanup are preserved. Failure
+stops the six-point sequence and retains remaining points as unattempted; no
+retry, fallback or more permissive monitor is selected.
+
+### Engineering verification and remaining resources
+
+The pure unit acceptance command is:
+
+```bash
+python -m pytest -q -p no:cacheprovider -m unit \
+  tests/unit/test_fts02_process_budget.py \
+  tests/unit/test_fts02_cpu_launcher.py \
+  tests/unit/test_fts02_linux_admission.py
+```
+
+The existing watchdog tests separately protect the unchanged default behavior.
+Native admission is never run automatically by imports or these mocked tests.
+No new runtime dependency or runner configuration is introduced. Native Linux
+execution still needs a named host/operator, approved compatible wheel closure,
+read-only mounts, capped evidence volume and syscall/runtime compatibility
+results. This PR supplies admission tooling, not those results. Long W2/W6
+schedules, W3 d=17/33 and longer histories, W4 route selection, W7 domestic-device
+resources and W8 licensed experimental data remain open. FTS-02 and M0 do not
+close with this prerequisite.
+
+The reservation's control space includes a bounded admission isolation stamp.
+Admission records validated mount/network namespace identities, a digest of
+validated mount permissions, evidence-device/path/capacity and the non-root UID.
+Campaign revalidates this identity before any Git, query or target launch;
+missing or changed identity consumes the one-shot claim and refuses collection.
+These checks read local identity files without creating a process or mount.
+They do not prevent an authorized external operator from changing a namespace
+later; the namespace must remain immutable during the separately approved run.
+
+Role-only charges and phase closure remain available after diagnostic evidence
+has entered its reserved tier. Only new positive-byte writes are checked against
+that write tier, with the global evidence ceiling still enforced. A reserved
+cleanup query cannot borrow regular capacity, and regular byte exhaustion cannot
+silently remove cleanup capacity. Admission TimeoutExpired preserves bounded
+partial stdout/stderr files, then propagates the original exception. If storing
+those files fails, the write failure is raised with the timeout as its cause.
+No timeout deadline, process charge or subprocess cleanup order is changed.
