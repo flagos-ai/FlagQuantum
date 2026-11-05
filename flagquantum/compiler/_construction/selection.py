@@ -324,6 +324,7 @@ def select_register_program(
     if any(
         op.name
         in {"qreg.phase", "qreg.unitary", "qreg.inverse_qft", "qreg.control_qft"}
+        or (op.name == "qreg.control_phase" and "indices" in op.attributes)
         for op in expanded.body.blocks[0].operations
     ):
         _check_phase_target(target)

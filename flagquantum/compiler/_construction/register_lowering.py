@@ -452,6 +452,23 @@ def schedule_register_program(
                 control_workspace = max(control_workspace, used_workspace)
             else:
                 gates = (Instruction("z", (target,)),)
+        elif op.name == "qreg.control_phase" and "indices" in op.attributes:
+            ports = tuple(
+                bindings[value.id][-1 - index]
+                for value, index in zip(
+                    op.operands[1:], op.attributes["indices"], strict=True
+                )
+            )
+            gates = (
+                controlled_instruction(
+                    Instruction(
+                        "phase", (ports[-1],), {"theta": op.attributes["angle"]}
+                    ),
+                    ports[:-1],
+                )
+                if len(ports) > 1
+                else (Instruction("phase", ports, {"theta": op.attributes["angle"]}),)
+            )
         elif op.name == "qreg.control_phase":
             condition = bindings[op.operands[1].id][0]
             angle = op.attributes["angle"]

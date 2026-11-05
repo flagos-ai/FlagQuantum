@@ -117,7 +117,7 @@ class Parameter:
     name: Token
     kind: str
     width: int | None
-    role: Literal["output", "const", "local", "real", "inout"] = "output"
+    role: Literal["output", "const", "local", "real", "inout", "callable"] = "output"
 
 
 @dataclass(frozen=True)
@@ -134,6 +134,7 @@ class Statement:
     power_callback: tuple[Token, tuple[Statement, ...]] | None = None
     inverse_body: tuple[Statement, ...] | None = None
     static_if_body: tuple[Statement, ...] | None = None
+    map_callback: tuple[Token, tuple[Statement, ...]] | None = None
 
 
 @dataclass(frozen=True)
@@ -188,6 +189,7 @@ class Parser:
         decimal: bool = False,
         difference: bool = False,
         allow_slice: bool = False,
+        real: bool = False,
     ) -> Expression:
         token = self.current
         if nesting >= MAX_DEPTH:
@@ -195,7 +197,7 @@ class Parser:
         if not static and (token.text == "~" or (difference and token.text == "-")):
             self.take(token.text)
             operand = self.expression(
-                25, nesting + 1, decimal=decimal, difference=difference
+                25, nesting + 1, decimal=decimal, difference=difference, real=real
             )
             if operand.depth >= MAX_DEPTH:
                 reject(
@@ -209,8 +211,19 @@ class Parser:
                 static=static,
                 decimal=decimal,
                 difference=difference,
+                real=real,
             )
             self.take(")")
+        elif (
+            static
+            and token.text == "floor"
+            and self.tokens[self.position + 1].text == "("
+        ):
+            self.take("floor")
+            self.take("(")
+            argument = self.expression(nesting=nesting + 1, static=True)
+            self.take(")")
+            left = Expression(token, (argument,), argument.depth + 1)
         elif token.text.isdecimal():
             if decimal and self.tokens[self.position + 1].text == ".":
                 left = self.angle_argument()
@@ -269,9 +282,11 @@ class Parser:
             "**": 30,
         }
         if static:
-            precedence = {"+": 10, "-": 10}
+            precedence = {"+": 10, "-": 10, "*": 20, "/": 20}
         elif difference:
             precedence["-"] = 10
+        if real:
+            precedence["/"] = 20
         compared = False
         while precedence.get(self.current.text, -1) >= minimum:
             operator = self.current
@@ -291,6 +306,7 @@ class Parser:
                 static=static,
                 decimal=decimal,
                 difference=difference,
+                real=real,
             )
             if operator.text == "**" and (
                 right.children
@@ -618,7 +634,7 @@ class Parser:
         self.take("(")
         parameters: list[Parameter] = []
         while self.current.text != ")":
-            role: Literal["output", "const", "real", "inout"]
+            role: Literal["output", "const", "real", "inout", "callable"]
             if self.current.text == "output":
                 self.take("output")
                 role = "output"
@@ -639,6 +655,11 @@ class Parser:
             elif name.text != "main" and [
                 token.text
                 for token in self.tokens[self.position + 1 : self.position + 3]
+            ] == [":", "qfunc"]:
+                role = "callable"
+            elif name.text != "main" and [
+                token.text
+                for token in self.tokens[self.position + 1 : self.position + 3]
             ] in ([":", "qbit"], [":", "qnum"]):
                 role = "inout"
             else:
@@ -649,7 +670,17 @@ class Parser:
                 )
             parameter = self.name()
             self.take(":")
-            if role == "real":
+            if role == "callable":
+                self.take("qfunc")
+                self.take("(")
+                self.take("real")
+                self.take(",")
+                self.take("qbit")
+                self.take("[")
+                self.take("]")
+                self.take(")")
+                kind, width = "qfunc(real,qbit[])", None
+            elif role == "real":
                 self.take("real")
                 kind, width = "real", None
                 if self.current.text == "[":
@@ -793,6 +824,24 @@ class Parser:
                 continue
             target = self.name()
             arguments: tuple[Expression, ...]
+            if (
+                target.text == "apply_to_all"
+                and self.tokens[self.position + 1].text == "lambda"
+            ):
+                self.take("(")
+                self.take("lambda")
+                self.take("(")
+                parameter = self.name()
+                self.take(")")
+                body = self.block(allow_scopes=False, scope_depth=scope_depth + 1)
+                self.take(",")
+                target_array = self.call_argument()
+                self.take(")")
+                self.take(";")
+                statements.append(
+                    Statement(target, (target_array,), map_callback=(parameter, body))
+                )
+                continue
             if target.text == "qpe_flexible" and self.current.text == "(":
                 if scope_depth:
                     reject(target, "scope", "qpe_flexible requires function scope")
@@ -874,6 +923,10 @@ class Parser:
                             )
                             if self.current.text == "["
                             else Expression(self.name())
+                        )
+                    elif target.text == "phase":
+                        args.append(
+                            self.expression(decimal=True, difference=True, real=True)
                         )
                     elif target.text in ANGLE_CALLS:
                         args.append(self.signed_angle_argument())

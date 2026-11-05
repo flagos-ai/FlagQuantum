@@ -33,6 +33,7 @@ from ...compiler._hybrid.model import (
     ValueId,
 )
 from ...compiler._hybrid.verifier import Diagnostic, HybridVerificationError
+from .phase import expand_phase
 from .syntax import (
     ANGLE_CALLS,
     EXTREMA,
@@ -724,6 +725,7 @@ class _Adapt:
         self.definitions = definitions
         self.constants = constants
         self.classical_values: dict[str, float] = {}
+        self.callback_bindings: dict[str, Function] = {}
         self.classical_arrays: dict[str, tuple[float, ...]] = {}
         self.scope = syntax.name.text
         self.parameters: dict[str, Parameter] = {}
@@ -866,9 +868,26 @@ class _Adapt:
         text = node.token.text
         if text.isdecimal():
             return int(text)
-        if text in {"+", "-"}:
+        if text in {"+", "-", "*"}:
             left, right = (self.static_integer(child) for child in node.children)
-            return left + right if text == "+" else left - right
+            if text == "+":
+                result = left + right
+            elif text == "-":
+                result = left - right
+            else:
+                result = left * right
+            if abs(result).bit_length() > 256:
+                reject(node.token, "budget.number", "static integer exceeds 256 bits")
+            return result
+        if text == "floor" and node.children[0].token.text == "/":
+            numerator, denominator = (
+                self.static_integer(child) for child in node.children[0].children
+            )
+            if denominator <= 0:
+                reject(
+                    node.token, "expression", "static floor requires a positive divisor"
+                )
+            return numerator // denominator
         if text == ".":
             name = node.children[0].token.text
             if name in self.classical_arrays:
@@ -962,14 +981,16 @@ class _Adapt:
                 statement.token, "budget.expansion", "repeat count must be in 0..256"
             )
         for item in statement.repeat_body:
-            callee = self.definitions.get(item.token.text)
+            callee = self.callback_bindings.get(
+                item.token.text
+            ) or self.definitions.get(item.token.text)
             bound_call = (
                 callee is not None
                 and callee.name.text != "main"
                 and _bound_helper(callee)
             )
             if item.declaration is not None or (
-                item.token.text not in _STATIC_GATES
+                item.token.text not in _STATIC_GATES | {"phase"}
                 and not bound_call
                 and item.control_body is None
             ):
@@ -984,29 +1005,52 @@ class _Adapt:
                 self.statement(item, f"{index}.{iteration}.{ordinal}")
         self.loop_indices.pop(name, None)
 
+    def classical_number(self, node: Expression) -> float:
+        text = node.token.text
+        if not node.children:
+            if text in self.classical_values:
+                return self.classical_values[text]
+            if text == "pi" and text not in self.parameters:
+                return math.pi
+            return _literal_angle(node, node.token)
+        if text == "[":
+            source, offset = node.children
+            values = self.classical_arrays.get(source.token.text)
+            if source.children or values is None:
+                reject(source.token, "binding", "expected a bound classical array")
+            index = self.static_integer(offset)
+            if not 0 <= index < len(values):
+                reject(offset.token, "binding", "real array index is out of bounds")
+            return values[index]
+        if text == "-" and len(node.children) == 1:
+            result = -self.classical_number(node.children[0])
+        elif text in {"+", "-", "*", "/"}:
+            left, right = (self.classical_number(child) for child in node.children)
+            if text == "/" and right == 0:
+                reject(node.token, "angle", "classical division by zero")
+            if text == "+":
+                result = left + right
+            elif text == "-":
+                result = left - right
+            elif text == "*":
+                result = left * right
+            else:
+                result = left / right
+        else:
+            reject(node.token, "angle", "expected a finite classical real expression")
+        if not math.isfinite(result) or abs(result) > 2**53:
+            reject(node.token, "angle", "classical real exceeds finite ±2**53 range")
+        return result
+
     def angle(
         self, node: Expression, gate: Token, *, allow_signed: bool = False
     ) -> float:
         if (
-            node.token.text == "*"
-            and gate.text in {"RX", "RY", "RZ"}
-            and self.helper_stack
-            and "pi" not in self.parameters
+            self.helper_stack
+            and (self.classical_values or self.classical_arrays)
+            and node.token.text in {"+", "-", "*", "/"}
         ):
-            factor, element = node.children
-            if (
-                not factor.children
-                and factor.token.text == "pi"
-                and element.token.text == "["
-            ):
-                array = element.children[0]
-                if not array.children and array.token.text in self.classical_arrays:
-                    angle = math.pi * self.angle(element, gate)
-                    if abs(angle) > 2**53:
-                        reject(
-                            node.token, "angle", "scaled angle exceeds ±2**53 radians"
-                        )
-                    return angle
+            return self.classical_number(node)
         if node.token.text == "-":
             if allow_signed or (self.helper_stack and self.classical_arrays):
                 return -_literal_angle(node.children[0], gate)
@@ -1024,8 +1068,10 @@ class _Adapt:
             array, index = node.children
             values = self.classical_arrays.get(array.token.text)
             if values is not None and not array.children:
-                if not self.helper_stack and (
-                    index.children or not index.token.text.isdecimal()
+                if (
+                    not self.helper_stack
+                    and not self.loop_indices
+                    and (index.children or not index.token.text.isdecimal())
                 ):
                     reject(
                         index.token,
@@ -1114,6 +1160,35 @@ class _Adapt:
         actuals: set[tuple[Value, int]] = set()
         for argument, parameter in zip(arguments, syntax.parameters, strict=True):
             name = parameter.name.text
+            if parameter.role == "callable":
+                actual = self.atom(argument)
+                callback = self.callback_bindings.get(
+                    actual.text
+                ) or self.definitions.get(actual.text)
+                if (
+                    callback is None
+                    or callback.name.text == "main"
+                    or len(callback.parameters) != 2
+                ):
+                    reject(
+                        actual,
+                        "signature",
+                        "callback requires a named (real, qbit[]) helper",
+                    )
+                first, second = callback.parameters
+                if (
+                    first.role != "real"
+                    or first.kind != "real"
+                    or second.role != "inout"
+                    or second.kind != "qbit[]"
+                ):
+                    reject(
+                        actual,
+                        "signature",
+                        "callback requires a named (real, qbit[]) helper",
+                    )
+                child.callback_bindings[name] = callback
+                continue
             if parameter.role == "real":
                 if parameter.kind == "real[]":
                     values = self.real_array(argument)
@@ -1165,6 +1240,12 @@ class _Adapt:
         control_bit: Value | None = None,
         condition_inputs: tuple[Value, ...] = (),
     ) -> None:
+        callback = self.callback_bindings.get(token.text)
+        if callback is not None:
+            if const_only or control_bit is not None:
+                reject(token, "scope", "callbacks require ordinary static calls")
+            self.call_bound_helper(callback, token, arguments)
+            return
         if token.text in self.parameters:
             reject(token, "call", "an output variable shadows this helper call")
         definition = self.definitions.get(token.text)
@@ -1225,6 +1306,57 @@ class _Adapt:
                 reject(token, "control", "controlled helper arguments must be disjoint")
             self.effect_op(
                 "qreg.control_call", token, (control_bit, *reads), callee=program.name
+            )
+
+    def real_phase(
+        self, token: Token, expression: Expression, coefficient: Expression
+    ) -> None:
+        def quantum_word(node: Expression) -> tuple[tuple[Value, int], ...] | None:
+            source = node.children[0] if node.token.text == "[" else node
+            if source.children:
+                return None
+            parameter = self.parameters.get(source.token.text)
+            if parameter is None or parameter.kind not in {"qbit", "qbit[]", "qnum"}:
+                return None
+            if parameter.kind == "qbit[]" and node.token.text != "[":
+                reject(
+                    node.token,
+                    "phase",
+                    "phase arithmetic requires indexed array elements",
+                )
+            view = self.array_view(source)
+            if node.token.text == "[":
+                index = self.static_integer(node.children[1])
+                if not 0 <= index < len(view):
+                    reject(node.token, "width", "phase bit index is out of bounds")
+                return (view[index],)
+            return view
+
+        polynomial, locations = expand_phase(
+            expression, quantum_word, self.classical_number
+        )
+        angle = self.classical_number(coefficient)
+        # Check reads even when algebraic cancellation removes their phase terms.
+        for value, wire in locations:
+            self.effect_op(
+                "qreg.control_phase", token, (value,), indices=(wire,), angle=0.0
+            )
+        for mask, coefficient_value in sorted(polynomial.items()):
+            radians = angle * coefficient_value
+            if not math.isfinite(radians) or abs(radians) > 2**53:
+                reject(token, "phase", "phase angle exceeds finite ±2**53 range")
+            if not mask:
+                self.effect_op("qreg.phase", token, (), angle=radians)
+                continue
+            selected = tuple(
+                location for bit, location in enumerate(locations) if mask & (1 << bit)
+            )
+            self.effect_op(
+                "qreg.control_phase",
+                token,
+                tuple(register for register, _ in selected),
+                indices=tuple(wire for _, wire in selected),
+                angle=radians,
             )
 
     def bind_registers(
@@ -2139,6 +2271,36 @@ class _Adapt:
 
     def statement(self, statement: Statement, index: str) -> None:
         token, args = statement.token, statement.arguments
+        if statement.map_callback is not None:
+            variable, body = statement.map_callback
+            name = variable.text
+            if (
+                name in self.parameters
+                or name in _INTRINSICS
+                or name in self.constants
+                or name in self.definitions
+                or name in self.loop_indices
+            ):
+                reject(variable, "name", "map callback cannot shadow a bound symbol")
+            if any(
+                child.declaration is not None
+                or child.token.text not in _GATE_CALLS | {"RX", "RY", "RZ"}
+                for child in body
+            ):
+                reject(token, "scope", "map callback admits only single-qubit gates")
+            locations = self.array_view(args[0])
+            self.parameters[name] = Parameter(variable, "qbit", 1, "inout")
+            self.widths[name] = 1
+            try:
+                for ordinal, location in enumerate(locations):
+                    self.views[name] = (location,)
+                    for gate_index, child in enumerate(body):
+                        self.statement(child, f"{index}.map{ordinal}.{gate_index}")
+            finally:
+                self.views.pop(name, None)
+                self.parameters.pop(name)
+                self.widths.pop(name)
+            return
         if token.text == "->":
             self.bind_registers(token, args[0], args[1])
             return
@@ -2300,6 +2462,16 @@ class _Adapt:
                     "signature",
                     "phase requires an expression and unshadowed pi coefficient",
                 )
+            if (
+                args[1].token.text == "["
+                or args[1].token.text in self.classical_values
+                or (
+                    self.helper_stack
+                    and (self.classical_values or self.classical_arrays)
+                )
+            ):
+                self.real_phase(token, args[0], args[1])
+                return
             coefficient = args[1]
             angle = None
             if "." in coefficient.token.text:
@@ -2795,7 +2967,7 @@ def check_source_version(source_version: str, token: Token) -> None:
 
 
 def _bound_helper(syntax: Function) -> bool:
-    return any(port.role in {"real", "inout"} for port in syntax.parameters)
+    return any(port.role in {"real", "inout", "callable"} for port in syntax.parameters)
 
 
 def parse_qmod(
@@ -2903,7 +3075,9 @@ def parse_qmod(
             syntax.parameters
         ):
             reject(syntax.name, "name", "duplicate helper parameter")
-        if any(port.role not in {"real", "inout"} for port in syntax.parameters):
+        if any(
+            port.role not in {"real", "inout", "callable"} for port in syntax.parameters
+        ):
             reject(
                 syntax.name,
                 "role",
@@ -2925,14 +3099,18 @@ def parse_qmod(
                 called is not None
                 and called.name.text != "main"
                 and _bound_helper(called)
+            ) or any(
+                port.role == "callable" and port.name.text == statement.token.text
+                for port in syntax.parameters
             )
             if statement.declaration is not None or (
                 statement.token.text
-                not in _STATIC_GATES | {"suzuki_trotter", "unitary", "+="}
+                not in _STATIC_GATES | {"suzuki_trotter", "unitary", "+=", "phase"}
                 and not controlled_qft
                 and not hadamard_within
                 and statement.repeat_index is None
                 and statement.static_if_body is None
+                and statement.map_callback is None
                 and statement.control_body is None
                 and statement.inverse_body is None
                 and not bound_call

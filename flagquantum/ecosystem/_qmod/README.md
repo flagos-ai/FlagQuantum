@@ -763,3 +763,22 @@ register verifier.
 Nested coherent controls can select reversible helper compositions using
 array elements or one-bit unsigned numeric selectors. Their physical
 controls must remain disjoint from every target in the expanded helper.
+
+### Bounded real phase programs and QAOA composition
+
+Specialized helpers can apply `phase(expression, gamma)` with a bound
+finite real coefficient. Expressions support indexed quantum bits,
+unsigned numeric values, finite classical constants and bound array
+elements, addition, subtraction, products, literal powers and division
+by a nonzero classical real. Constants retain their global phase. The
+adapter expands a real polynomial with the Boolean identity b*b=b,
+bounded to eight distinct quantum bits, 256 terms and 20000 intermediate
+monomial products. Indexed phase operations reuse registered phase-gate
+lowering and the phase-preserving target checks.
+
+A helper can map a single-qubit gate body with
+`apply_to_all(lambda(q) { RX(beta, q); }, qba)`. Static loops support
+bounded integer products and `floor(array.len / positive_integer)`.
+A `qfunc(real, qbit[])` parameter accepts a named helper with matching
+ports, specialized at ordinary call sites. Named callbacks retain the
+existing recursion, alias, width and expansion checks.

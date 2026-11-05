@@ -341,7 +341,10 @@ def _verify_body(
                 attributes = attributes | {"angle"}
             if "indices" in op.attributes:
                 attributes = attributes | {"indices"}
-        if op.name == "qreg.control_x" and "indices" in op.attributes:
+        if (
+            op.name in {"qreg.control_x", "qreg.control_phase"}
+            and "indices" in op.attributes
+        ):
             assert attributes is not None
             attributes = attributes | {"indices"}
         if op.name == "qreg.unitary" and "indices" in op.attributes:
@@ -593,6 +596,32 @@ def _verify_body(
                     _fail(
                         "register.control",
                         "phase flip requires one initialized register",
+                        op,
+                    )
+            elif op.name == "qreg.control_phase" and "indices" in op.attributes:
+                indices = op.attributes["indices"]
+                angle = op.attributes["angle"]
+                if (
+                    not isinstance(indices, tuple)
+                    or len(indices) != len(operands)
+                    or not 1 <= len(indices) <= 8
+                    or any(
+                        type(index) is not int or not 0 <= index < register_width(value)
+                        for value, index in zip(operands, indices, strict=True)
+                    )
+                    or len(set(zip(operands, indices, strict=True))) != len(indices)
+                ):
+                    _fail(
+                        "register.control",
+                        "phase indices must be bounded and distinct",
+                        op,
+                    )
+                if type(angle) is not float or not math.isfinite(angle):
+                    _fail("register.control", "phase angle must be finite", op)
+                if any(value.id not in initialized for value in operands):
+                    _fail(
+                        "register.uninitialized",
+                        "phase requires initialized qubits",
                         op,
                     )
             elif op.name == "qreg.control_x" and "indices" in op.attributes:
