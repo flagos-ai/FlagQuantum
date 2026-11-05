@@ -63,12 +63,22 @@ def train_classifier(
     return first, float(loss.detach())
 
 
+@pytest.mark.parametrize("backend", ["pytorch", "jax"])
 def test_classifier_local_training_evaluation_checkpoint_and_deployment(
     tmp_path,
+    backend: str,
 ) -> None:
+    if backend == "jax":
+        pytest.importorskip("jax", reason="JAX is an optional backend")
+    policy = fq.RuntimePolicy(
+        execution_options=fq.ExecutionOptions(
+            backend=backend, allow_backend_fallback=False
+        ),
+        observable_qubits=(1,),
+    )
     seed = fqt.seed_everything(48)
     model = HybridQuantumClassifier(
-        deployment_binding={"provider": "local", "target": "simulator"}
+        policy=policy, deployment_binding={"provider": "local", "target": "simulator"}
     )
     optimizer = torch.optim.Adam(model.parameters(), lr=0.08)
     started = time.perf_counter()
@@ -87,7 +97,8 @@ def test_classifier_local_training_evaluation_checkpoint_and_deployment(
         step=20,
     )
     restored = HybridQuantumClassifier(
-        deployment_binding={"provider": "different", "target": "discarded"}
+        policy=policy,
+        deployment_binding={"provider": "different", "target": "discarded"},
     )
     restored_optimizer = torch.optim.Adam(restored.parameters(), lr=0.08)
     metadata = load_training_checkpoint(
