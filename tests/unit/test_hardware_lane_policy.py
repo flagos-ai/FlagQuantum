@@ -37,7 +37,7 @@ MC550_CPU_ROUTE = A800_CPU_ROUTE.replace(
 COVERAGE_CPU_ROUTE = (
     "${{ fromJSON(\n"
     "  (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)\n"
-    "  && '[\"self-hosted\",\"linux\",\"x64\",\"flagquantum-cpu\"]' || '[\"ubuntu-latest\"]'\n"
+    '  && \'["self-hosted","linux","x64","flagquantum-cpu"]\' || \'["ubuntu-latest"]\'\n'
     ") }}"
 )
 

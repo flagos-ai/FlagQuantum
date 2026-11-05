@@ -353,6 +353,8 @@ def test_linux_prerequisites_keep_forks_off_private_cpu_runners(
         if str(step.get("uses", "")).startswith("actions/checkout@")
     )
     assert steps[checkout]["with"]["persist-credentials"] is False
+    if workflow == "ci.yml":
+        assert steps[checkout]["with"]["fetch-depth"] == 16
     clearing = "\n".join(step.get("run", "") for step in steps[:checkout])
     assert "git sparse-checkout disable" in clearing
     assert "rm -f .git/info/sparse-checkout" in clearing
