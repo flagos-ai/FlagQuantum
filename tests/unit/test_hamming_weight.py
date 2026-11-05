@@ -12,7 +12,7 @@ from flagquantum.compiler.registers.hamming_weight import (
     hamming_weight_ir,
     hamming_weight_requirements,
 )
-from flagquantum.core.ir import Instruction
+from tests.unit.measurement_checks import forced_branch
 from tests.unit.test_register_constant_addition import reference_arithmetic_gates
 from tests.unit.test_register_subtraction import assert_source
 
@@ -107,48 +107,6 @@ def logical_output(n: int, value: int) -> int:
         packed = (packed << 1) | bit
     assert packed & ((1 << len(out)) - 1) == value.bit_count()
     return packed
-
-
-def forced_branch(
-    state: torch.Tensor, gates: tuple[Instruction, ...], outcomes: tuple[int, ...]
-) -> torch.Tensor:
-    """Postselect actual primitive IR, retaining unnormalized branch amplitudes."""
-    width = state.numel().bit_length() - 1
-    data = torch.arange(state.numel(), dtype=torch.int64)
-    classical: dict[int, int] = {}
-    pending: list[Instruction] = []
-    measurements = iter(outcomes)
-
-    def flush() -> None:
-        nonlocal state
-        if pending:
-            state = (
-                Circuit(width, inputs=state, dtype=torch.complex128)
-                .append(FieldOperation(width, tuple(pending)))
-                .state()
-                .flatten()
-            )
-            pending.clear()
-
-    for gate in gates:
-        if gate.name == "measure":
-            flush()
-            outcome = next(measurements)
-            classical[int(gate.metadata["classical_bit"])] = outcome
-            mask = (data >> (width - 1 - gate.wires[0])) & 1
-            state = state * (mask == outcome)
-        elif gate.name == "reset":
-            flush()
-            mask = 1 << (width - 1 - gate.wires[0])
-            # Reset follows a projective measurement; sum the disjoint sectors.
-            state = torch.where((data & mask) == 0, state + state[data ^ mask], 0)
-        elif all(
-            classical[int(bit)] == value
-            for bit, value in gate.metadata.get("conditions", ())
-        ):
-            pending.append(Instruction(gate.name, gate.wires, gate.params))
-    flush()
-    return state
 
 
 @pytest.mark.parametrize("n", [1, 2, 3, 4, 5])

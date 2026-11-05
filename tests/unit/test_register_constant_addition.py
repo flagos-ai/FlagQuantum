@@ -55,6 +55,8 @@ def reference_arithmetic_gates(
     measurement_slots: dict[int, int],
     *,
     cirq_style: bool = False,
+    expected_outputs: dict[str, tuple[int, ...]] | None = None,
+    reuse_allocations: bool = True,
 ) -> tuple[Instruction, ...]:
     """Read unmodified pinned arithmetic with explicit quantum/classical binding."""
     pytest.importorskip("qualtran")
@@ -79,6 +81,9 @@ def reference_arithmetic_gates(
             return self.qalloc(n, dim)
 
         def qfree(self, qubits: list[cirq.Qid]) -> None:
+            if not reuse_allocations:
+                # Preserve dedicated caller output names across disjoint lifetimes.
+                return
             self.available.extend(reversed([q.x for q in qubits]))
             if cirq_style:
                 # Bloq-to-Cirq may temporarily allocate replacement RIGHT outputs
@@ -118,7 +123,7 @@ def reference_arithmetic_gates(
         )
         assert {
             name: tuple(q.x for q in wires.flat) for name, wires in outputs.items()
-        } == inputs
+        } == (inputs if expected_outputs is None else expected_outputs)
     names = {
         cirq.X: "x",
         cirq.H: "h",
