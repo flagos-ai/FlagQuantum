@@ -991,3 +991,8 @@ coverage and distributed matrix legs can use separate available CPU runners; eve
 check still has to pass. For acceptance, compare source queue time, suite wall
 time, and infrastructure failures across runs. Runner busy counts alone are
 not evidence of CPU efficiency or test reliability.
+
+Job-level result aggregators use `!cancelled()` so failed dependencies still
+reach the required gate, while a superseded PR run releases its workflow slot
+instead of scheduling `always()` aggregators after cancellation. Step-level
+resource reports remain available on failure.

@@ -53,7 +53,7 @@ def test_qiskit_gate_requires_both_complete_certified_lanes(result: str) -> None
         in commands["run"]
     )
     gate = jobs["qiskit-optional"]
-    assert gate["if"] == "${{ always() }}"
+    assert gate["if"] == "${{ !cancelled() }}"
     assert gate["needs"] == "qiskit-compat"
     command = gate["steps"][0]["run"].replace(
         "${{ needs.qiskit-compat.result }}", result

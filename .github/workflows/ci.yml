@@ -784,7 +784,7 @@ jobs:
   cpu-core-3-12:
     name: cpu-core (3.12)
     needs: [cpu-core-3-12-tests, cpu-runtime]
-    if: ${{ always() }}
+    if: ${{ !cancelled() }}
     runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'flagquantum-cpu-general' || 'ubuntu-latest' }}
     concurrency:
       group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('a100-cpu-{0}-cpu-core-3-12-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-5
@@ -1251,7 +1251,7 @@ jobs:
           retention-days: 7
 
   qiskit-optional:
-    if: ${{ always() }}
+    if: ${{ !cancelled() }}
     needs: qiskit-compat
     runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'flagquantum-cpu-general' || 'ubuntu-latest' }}
     timeout-minutes: 5
@@ -2047,7 +2047,7 @@ jobs:
 
 
   distributed-cpu:
-    if: ${{ always() }}
+    if: ${{ !cancelled() }}
     needs: distributed-cpu-shard
     runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'flagquantum-cpu-general' || 'ubuntu-latest' }}
     timeout-minutes: 5
@@ -2207,7 +2207,7 @@ jobs:
 
   coverage:
     needs: [prepare-source, coverage-shard]
-    if: ${{ always() }}
+    if: ${{ !cancelled() }}
     runs-on: ${{ fromJSON((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","linux","x64","flagquantum-cpu"]' || '["ubuntu-latest"]') }}
     timeout-minutes: 20
     concurrency:
@@ -2460,7 +2460,7 @@ jobs:
       - coverage-shard
       - coverage
       - supply-chain
-    if: ${{ always() }}
+    if: ${{ !cancelled() }}
     runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'flagquantum-cpu-general' || 'ubuntu-latest' }}
     concurrency:
       group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('a100-cpu-{0}-ci-complete-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-0
