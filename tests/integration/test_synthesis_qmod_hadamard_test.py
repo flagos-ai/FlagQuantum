@@ -46,7 +46,7 @@ def test_original_hadamard_test_full_joint_state(name: str) -> None:
 @pytest.mark.parametrize(
     ("body", "diagnostic"),
     [
-        ("allocate(x); drop(x);", "local qubit array"),
+        ("allocate(x); drop(x);", "requires a local register"),
         ("allocate(x); y:qbit[2]; drop(y);", "initialized hidden storage"),
         ("allocate(x); y:qbit[2]; allocate(y);", "drop every hidden register"),
         (
