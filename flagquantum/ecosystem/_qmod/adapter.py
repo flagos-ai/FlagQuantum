@@ -78,6 +78,7 @@ _INTRINSICS = (
         "exponentiate",
         "qdrift",
         "qft",
+        "drop",
         "qpe_flexible",
         "qct_qst_type1",
         "qct_type2",
@@ -737,6 +738,8 @@ class _Adapt:
         self.functions: list[HybridProgram] = []
         self.loop_indices: dict[str, int] = {}
         self.local_scope: list[tuple[str, Token]] | None = None
+        self.dropped: set[str] = set()
+        self.helper_stack: tuple[str, ...] = ()
 
     def register(
         self,
@@ -747,6 +750,8 @@ class _Adapt:
         allow_fractional_output: bool = False,
     ) -> Value:
         name = token.text
+        if name in self.dropped:
+            reject(token, "drop", "a dropped register cannot be used again")
         if name in self.fractional_bits and not allow_fractional_output:
             reject(token, "precision", "a fractional result is a terminal output")
         if name not in self.parameters:
@@ -764,7 +769,8 @@ class _Adapt:
         if self.parameters[name].role == "real":
             reject(token, "type", "classical real is not a quantum register")
         local = self.parameters[name].role == "local"
-        if local and self.local_scope is None:
+        hidden = local and self.parameters[name].kind == "qbit[]"
+        if local and not hidden and self.local_scope is None:
             reject(
                 token,
                 "scope",
@@ -797,12 +803,13 @@ class _Adapt:
                 ValueId(self.scope, index), register_type(width)
             )
             if local:
-                assert self.local_scope is not None
-                self.local_scope.append((name, token))
+                if not hidden:
+                    assert self.local_scope is not None
+                    self.local_scope.append((name, token))
                 self.append_op(
                     token,
                     Operation(
-                        "qreg.local",
+                        "qreg.hidden" if hidden else "qreg.local",
                         results=(self.registers[name],),
                         attributes={"name": f"{name}.within{index}"},
                         location=token.location,
@@ -967,7 +974,15 @@ class _Adapt:
     ) -> None:
         if len(arguments) != len(syntax.parameters):
             reject(token, "signature", "helper argument count disagrees")
+        if syntax.name.text in self.helper_stack or len(self.helper_stack) >= 16:
+            reject(
+                token,
+                "recursion",
+                "bound helper expansion must be acyclic and at most 16 levels",
+            )
         child = _Adapt(syntax, self.resolve, self.definitions, self.constants)
+        child.helper_stack = (*self.helper_stack, syntax.name.text)
+        actuals: set[Value] = set()
         for argument, parameter in zip(arguments, syntax.parameters, strict=True):
             name = parameter.name.text
             if parameter.role == "real":
@@ -975,8 +990,17 @@ class _Adapt:
             else:
                 target = self.atom(argument)
                 value = self.register(target, allow_qubit_array=True)
-                if self.parameters[target.text].kind != "qbit[]":
-                    reject(target, "type", "helper requires a qubit array")
+                if self.parameters[target.text].kind != parameter.kind:
+                    reject(
+                        target,
+                        "type",
+                        "helper requires a matching qubit or qubit array",
+                    )
+                if value in actuals:
+                    reject(
+                        target, "alias", "writable helper arguments must be disjoint"
+                    )
+                actuals.add(value)
                 child.registers[name] = value
                 child.widths[name] = self.widths[target.text]
         for index, statement in enumerate(syntax.statements):
@@ -1071,6 +1095,18 @@ class _Adapt:
             and args[0].token.text == "pi"
             and "pi" not in self.parameters
         )
+        if operation.token.text == "qft" and len(args) == 1:
+            control, _ = self.gate_target(condition)
+            if condition.children:
+                reject(
+                    token, "control", "controlled QFT requires a scalar control port"
+                )
+            target = self.atom(args[0])
+            data = self.register(target, allow_qubit_array=True)
+            if self.parameters[target.text].kind != "qbit[]":
+                reject(target, "type", "controlled QFT requires a qubit array")
+            self.effect_op("qreg.control_qft", token, (control, data))
+            return
         if flip_phase and condition.token.text == "[":
             register, wire = self.gate_target(condition)
             self.effect_op("qreg.gate", token, (register,), gate="z", index=wire)
@@ -1183,6 +1219,30 @@ class _Adapt:
                 "scope",
                 "within requires at least one local computation",
             )
+        if len(statement.within) == 1 and statement.within[0].token.text == "H":
+            preparation = statement.within[0]
+            if len(statement.apply) != 1:
+                reject(
+                    statement.token,
+                    "scope",
+                    "Hadamard within requires one bound helper in apply",
+                )
+            action = statement.apply[0]
+            helper = self.definitions.get(action.token.text)
+            if (
+                helper is None
+                or not _bound_helper(helper)
+                or action.control_body is not None
+            ):
+                reject(
+                    action.token,
+                    "scope",
+                    "Hadamard within requires one bound helper in apply",
+                )
+            self.statement(preparation, index)
+            self.call(action.token, action.arguments)
+            self.statement(preparation, index)
+            return
         parent_scope = self.local_scope
         self.local_scope = []
         try:
@@ -1914,6 +1974,20 @@ class _Adapt:
             self.prepare_state_vector(token, args)
         elif token.text == "prepare_exponential_state":
             self.prepare_exponential_state(token, args)
+        elif token.text == "drop":
+            if len(args) != 1 or self.scope != "main" or self.local_scope is not None:
+                reject(token, "drop", "drop requires one local qubit array in main")
+            target = self.atom(args[0])
+            drop_parameter = self.parameters.get(target.text)
+            if (
+                drop_parameter is None
+                or drop_parameter.role != "local"
+                or drop_parameter.kind != "qbit[]"
+            ):
+                reject(target, "drop", "drop requires a local qubit array")
+            destination = self.register(target, allow_qubit_array=True)
+            self.effect_op("qreg.drop", token, (destination,))
+            self.dropped.add(target.text)
         elif token.text == "qft":
             if len(args) != 1:
                 reject(token, "signature", "qft requires one qubit array")
@@ -2319,12 +2393,36 @@ def parse_qmod(
                 "role",
                 "bound helpers require real or writable qubit array ports",
             )
+        scoped_qft = False
         for statement in syntax.statements:
-            if (
-                statement.declaration is not None
-                or statement.token.text not in _GATE_CALLS | _PAIR_CALLS | ANGLE_CALLS
+            controlled_qft = (
+                statement.control_body is not None
+                and len(statement.control_body) == 1
+                and statement.control_body[0].token.text == "qft"
+            )
+            hadamard_within = (
+                statement.within is not None
+                and len(statement.within) == 1
+                and statement.within[0].token.text == "H"
+            )
+            scoped_qft |= controlled_qft or hadamard_within
+            if statement.declaration is not None or (
+                statement.token.text not in _GATE_CALLS | _PAIR_CALLS | ANGLE_CALLS
+                and not controlled_qft
+                and not hadamard_within
             ):
-                reject(statement.token, "scope", "bound helper bodies admit only gates")
+                reject(
+                    statement.token,
+                    "scope",
+                    "bound helper bodies admit only gates and scoped QFT",
+                )
+
+        if not scoped_qft and any(
+            port.role == "inout" and port.kind == "qbit" for port in syntax.parameters
+        ):
+            reject(
+                syntax.name, "role", "writable scalar helper ports require scoped QFT"
+            )
 
     compiled: dict[str, tuple[_Adapt, HybridProgram]] = {}
     active: set[str] = set()

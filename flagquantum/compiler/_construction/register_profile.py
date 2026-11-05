@@ -29,6 +29,9 @@ MAX_TRANSFORM_WIDTH = 4
 _ATTRIBUTES = MappingProxyType(
     {
         "qreg.declare": frozenset({"name"}),
+        "qreg.hidden": frozenset({"name"}),
+        "qreg.drop": frozenset(),
+        "qreg.control_qft": frozenset(),
         "qreg.local": frozenset({"name"}),
         "qreg.release": frozenset(),
         "qreg.uniform_interval": frozenset({"start", "stop"}),
@@ -138,6 +141,12 @@ def register_ports(
             values[value.id] = ports
             position += len(ports)
     following = position
+    for op in program.body.blocks[0].operations:
+        if op.name == "qreg.hidden":
+            value = op.results[0]
+            end = following + register_width(value)
+            values[value.id] = tuple(range(following, end))
+            following = end
     free: set[int] = set()
     for op in program.body.blocks[0].operations:
         if op.name == "qreg.local":
@@ -306,6 +315,7 @@ def _verify_body(
         elif register_width(destination) < result_width:
             _fail("register.width", "fresh assignment cannot truncate its result", op)
 
+    hidden: set[Value] = set()
     for position, op in enumerate(block.operations):
         attributes = _ATTRIBUTES.get(op.name)
         if (
@@ -340,7 +350,7 @@ def _verify_body(
             )
         if any(known.get(v.id) != v for v in op.operands):
             _fail("register.use", "undefined or mistyped operand", op)
-        if op.name in {"qreg.declare", "qreg.local"}:
+        if op.name in {"qreg.declare", "qreg.local", "qreg.hidden"}:
             if op.operands or len(op.results) != 1:
                 _fail(
                     "register.declare", "declaration requires one register result", op
@@ -359,8 +369,10 @@ def _verify_body(
             registers.append(value)
             if op.name == "qreg.declare":
                 returned.append(value)
-            else:
+            elif op.name == "qreg.local":
                 local_storage.add(value)
+            else:
+                hidden.add(value)
             labels.add(label)
         else:
             if not op.operands or op.operands[0] != effect:
@@ -375,6 +387,10 @@ def _verify_body(
             if op.name == "qreg.return":
                 if local_storage:
                     _fail("register.local", "release every local before return", op)
+                if hidden:
+                    _fail(
+                        "register.drop", "drop every hidden register before return", op
+                    )
                 if (
                     position != len(block.operations) - 1
                     or op.results
@@ -591,6 +607,33 @@ def _verify_body(
                             )
             elif op.name == "qreg.phase":
                 check_call(op, operands)
+            elif op.name == "qreg.control_qft":
+                if (
+                    len(arguments) != 1
+                    or register_width(destination) != 1
+                    or destination in arguments
+                    or arguments[0] in borrowed
+                    or any(v.id not in initialized for v in operands)
+                ):
+                    _fail(
+                        "register.control",
+                        "controlled QFT needs an initialized control bit and disjoint writable target",
+                        op,
+                    )
+                changed = tuple(arguments)
+            elif op.name == "qreg.drop":
+                if (
+                    arguments
+                    or destination not in hidden
+                    or destination.id not in initialized
+                ):
+                    _fail(
+                        "register.drop", "drop requires initialized hidden storage", op
+                    )
+                hidden.remove(destination)
+                registers.remove(destination)
+                initialized.remove(destination.id)
+                changed = (destination,)
             elif op.name == "qreg.release":
                 if destination in borrowed:
                     _fail("register.const", "Const cannot be released", op)

@@ -517,7 +517,11 @@ class Parser:
         )
 
     def scalar_type(
-        self, *, allow_qubit_array: bool = False, allow_phase: bool = False
+        self,
+        *,
+        allow_qubit_array: bool = False,
+        allow_phase: bool = False,
+        allow_fixed_array: bool = False,
     ) -> tuple[str, int | None]:
         kind = self.current
         if kind.text not in {"qbit", "qnum"}:
@@ -564,6 +568,11 @@ class Parser:
             self.take("[")
             self.take("]")
             return "qbit[]", None
+        if allow_fixed_array and kind.text == "qbit" and self.current.text == "[":
+            self.take("[")
+            width = self.width()
+            self.take("]")
+            return "qbit[]", width
         if self.current.text == "[":
             reject(
                 self.current,
@@ -598,8 +607,8 @@ class Parser:
                 role = "real"
             elif name.text != "main" and [
                 token.text
-                for token in self.tokens[self.position + 1 : self.position + 5]
-            ] == [":", "qbit", "[", "]"]:
+                for token in self.tokens[self.position + 1 : self.position + 3]
+            ] == [":", "qbit"]:
                 role = "inout"
             else:
                 reject(
@@ -709,7 +718,7 @@ class Parser:
                     reject(
                         token, "scope", "declare locals at function level before within"
                     )
-                kind, width = self.scalar_type()
+                kind, width = self.scalar_type(allow_fixed_array=True)
                 self.take(";")
                 statements.append(
                     Statement(

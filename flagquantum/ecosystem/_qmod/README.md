@@ -660,3 +660,12 @@ multiply numeric literals, `pi` and the static power parameter. The phase
 output uses `qnum<n, UNSIGNED, n>` with one to eight bits. Allocate it before
 the call and read the raw result divided by `2**n`. The controlled evolution
 retains the phase of identity Pauli terms, followed by an inverse QFT.
+
+### Hadamard test and hidden target storage
+
+Writable scalar and array helper ports support a bounded controlled QFT and
+a single-Hadamard `within` with one bound helper call in `apply`. A fixed-width
+local qubit array must be allocated before use and dropped before return.
+`drop` removes it from named readout while retaining its effect on the visible
+marginal. Its physical wires remain in the executable state and cannot be
+reused as clean work qubits.

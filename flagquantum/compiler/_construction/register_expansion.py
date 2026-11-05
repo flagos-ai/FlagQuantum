@@ -194,7 +194,7 @@ def expand_register_calls(
             effect = following
 
     for op in block.operations:
-        if op.name in {"qreg.declare", "qreg.local"}:
+        if op.name in {"qreg.declare", "qreg.local", "qreg.hidden"}:
             emitted.append(op)
         elif op.name == "qreg.return":
             emitted.append(replace(op, operands=(effect, *op.operands[1:])))

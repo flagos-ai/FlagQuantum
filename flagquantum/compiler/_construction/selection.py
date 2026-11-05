@@ -322,11 +322,17 @@ def select_register_program(
     verify_register_program(program, functions)
     expanded = expand_register_calls(program, functions)
     if any(
-        op.name in {"qreg.phase", "qreg.unitary", "qreg.inverse_qft"}
+        op.name
+        in {"qreg.phase", "qreg.unitary", "qreg.inverse_qft", "qreg.control_qft"}
         for op in expanded.body.blocks[0].operations
     ):
         _check_phase_target(target)
     mapping, _, position = register_ports(program)
+    position += sum(
+        op.results[0].type.parameters[0]
+        for op in expanded.body.blocks[0].operations
+        if op.name == "qreg.hidden"
+    )
     identities = (
         program.semantic_identity,
         *(f.semantic_identity for f in sorted(functions, key=lambda f: f.name)),

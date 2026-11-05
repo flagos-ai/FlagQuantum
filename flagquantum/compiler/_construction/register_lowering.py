@@ -308,7 +308,12 @@ def schedule_register_program(
     position = max(
         (max(ports) + 1 for ports in bindings.values()), default=output_width
     )
-    local_width = position - output_width
+    hidden_width = sum(
+        register_width(op.results[0])
+        for op in program.body.blocks[0].operations
+        if op.name == "qreg.hidden"
+    )
+    local_width = position - output_width - hidden_width
     instructions: list[Instruction] = []
     segments: list[ArithmeticCandidate] = []
     computed: dict[ValueId, ArithmeticCandidate] = {}
@@ -343,6 +348,13 @@ def schedule_register_program(
             gates = (
                 Instruction("h", (first,)),
                 *(Instruction("cx", (first, target)) for target in rest),
+            )
+        elif op.name == "qreg.control_qft":
+            control_ports, data = (bindings[v.id] for v in op.operands[1:])
+            gates = tuple(
+                leaf
+                for gate in qft_instructions(data)
+                for leaf in controlled_instruction(gate, control_ports)
             )
         elif op.name == "qreg.control_h":
             control, target = (bindings[value.id][0] for value in op.operands[1:])
