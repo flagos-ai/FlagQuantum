@@ -4,11 +4,11 @@
 # Source: https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/bloqs/arithmetic/controlled_addition.py
 # Changes: native IR and explicit quantum/classical workspace.
 
-"""Controlled unsigned register addition through shared And and Add emitters."""
+"""Controlled register addition and exact adjoints through shared source emitters."""
 
 from ...core.ir import Instruction
 from .and_compute import and_compute_ir, and_uncompute_ir
-from .arithmetic import _constant_addition_ir, add_ir
+from .arithmetic import _constant_addition_ir, add_adjoint_ir, add_ir
 
 
 def controlled_add_ir(
@@ -22,11 +22,72 @@ def controlled_add_ir(
     *,
     control_value: int = 1,
 ) -> tuple[Instruction, ...]:
-    """Add zero-extended a to b when control matches the selected value.
+    """Add a zero-extended word on the selected coherent control branch.
+
+    Work/classical roles match controlled_add_ir: one loaded wire/slot per
+    left bit plus len(right)-1 carries/slots, all initially and finally zero.
+    Unequal-width bit patterns use zero extension, not signed extension.
+    """
+    return _controlled_addition_ir(
+        control,
+        left,
+        right,
+        loaded,
+        carries,
+        load_bits,
+        carry_bits,
+        control_value=control_value,
+        adjoint=False,
+    )
+
+
+def controlled_add_adjoint_ir(
+    control: int,
+    left: tuple[int, ...],
+    right: tuple[int, ...],
+    loaded: tuple[int, ...],
+    carries: tuple[int, ...],
+    load_bits: tuple[int, ...],
+    carry_bits: tuple[int, ...],
+    *,
+    control_value: int = 1,
+) -> tuple[Instruction, ...]:
+    """Port CAdd.adjoint with original loaded bits and exact shared Add adjoint.
+
+    Work/classical roles match controlled_add_ir: one loaded wire/slot per
+    left bit plus len(right)-1 carries/slots, all initially and finally zero.
+    Unequal-width bit patterns use zero extension, not signed extension.
+    """
+    return _controlled_addition_ir(
+        control,
+        left,
+        right,
+        loaded,
+        carries,
+        load_bits,
+        carry_bits,
+        control_value=control_value,
+        adjoint=True,
+    )
+
+
+def _controlled_addition_ir(
+    control: int,
+    left: tuple[int, ...],
+    right: tuple[int, ...],
+    loaded: tuple[int, ...],
+    carries: tuple[int, ...],
+    load_bits: tuple[int, ...],
+    carry_bits: tuple[int, ...],
+    *,
+    control_value: int,
+    adjoint: bool,
+) -> tuple[Instruction, ...]:
+    """Share loaded-word validation, compute, exact Add/adjoint and erase stages.
 
     All registers are big-endian. Supply m clean loaded wires, n-1 clean carries
     for m<=n, and one distinct classical measurement slot for each work wire.
-    Both inputs and control retain their values; all quantum work is cleared.
+    Left and control retain their values; right is updated and all work cleared.
     Equal-width bit patterns also implement signed addition modulo 2**n.
     Unequal-width signed sign extension is not supplied by this entry point.
     """
@@ -48,7 +109,8 @@ def controlled_add_ir(
         raise ValueError(
             "Controlled addition requires distinct nonnegative classical slots"
         )
-    addition = add_ir(loaded, right, carries, carry_bits)
+    emit = add_adjoint_ir if adjoint else add_ir
+    addition = emit(loaded, right, carries, carry_bits)
     values = (control_value, 1)
     compute = tuple(
         gate
