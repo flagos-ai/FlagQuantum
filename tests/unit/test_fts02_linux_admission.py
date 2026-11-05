@@ -6,7 +6,7 @@ import os
 import subprocess
 import sys
 from pathlib import Path
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
 import pytest
 
@@ -276,3 +276,54 @@ def test_isolation_identity_binds_validated_namespace_and_mounts(
     text = mounts(root="rw").replace("/evidence", str(evidence))
     with pytest.raises(RuntimeError, match="writable"):
         isolation_identity(evidence)
+
+
+@pytest.mark.parametrize("missing", ["pymatching", "stim"])
+def test_native_runtime_requires_each_optional_sdk(missing: str) -> None:
+    modules: dict[str, object] = {
+        "pymatching": Mock(),
+        "stim": Mock(),
+        "torch": Mock(),
+    }
+    modules[missing] = None
+    with (
+        patch.dict(sys.modules, modules),
+        pytest.raises(RuntimeError, match="requires Stim and PyMatching") as captured,
+    ):
+        admission._check_native_runtime()
+    cause = captured.value.__cause__
+    assert isinstance(cause, ModuleNotFoundError)
+    assert cause.name == missing
+    for name in ("pymatching", "stim", "torch"):
+        module = modules[name]
+        if isinstance(module, Mock):
+            assert module.mock_calls == []
+
+
+def test_native_runtime_preserves_missing_transitive_dependency() -> None:
+    missing = ModuleNotFoundError("missing transitive runtime", name="numpy")
+    captured: RuntimeError | None = None
+    with patch("builtins.__import__", side_effect=missing):
+        try:
+            admission._check_native_runtime()
+        except RuntimeError as error:
+            captured = error
+    assert captured is not None
+    assert captured.__cause__ is missing
+    assert missing.name == "numpy"
+
+
+def test_native_runtime_uses_only_mocked_complete_dependencies() -> None:
+    matching = Mock()
+    stim = Mock()
+    torch = Mock()
+    torch.ones.return_value.item.return_value = 1
+    stim.Circuit.return_value.num_measurements = 1
+    with patch.dict(
+        sys.modules, {"pymatching": matching, "stim": stim, "torch": torch}
+    ):
+        admission._check_native_runtime()
+    torch.set_num_threads.assert_called_once_with(1)
+    torch.ones.assert_called_once_with(1)
+    stim.Circuit.assert_called_once_with("M 0")
+    matching.Matching.assert_called_once_with()

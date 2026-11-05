@@ -28,6 +28,23 @@ from tools.launch_fts02_cpu import Evidence
 CAPACITY = 32 * 1024 * 1024
 
 
+def _check_native_runtime() -> None:
+    """Require optional SDKs without installing, skipping or falling back."""
+    try:
+        import pymatching
+        import stim
+    except ModuleNotFoundError as error:
+        raise RuntimeError(
+            "native admission requires Stim and PyMatching runtime dependencies"
+        ) from error
+    import torch
+
+    torch.set_num_threads(1)
+    if torch.ones(1).item() != 1 or not stim.Circuit("M 0").num_measurements:
+        raise RuntimeError("native runtime smoke failed")
+    pymatching.Matching()
+
+
 def native_probe(evidence: Path, reservation: Reservation) -> None:
     if not hasattr(os, "posix_fallocate"):
         raise RuntimeError("native admission requires posix_fallocate")
@@ -73,14 +90,7 @@ def native_probe(evidence: Path, reservation: Reservation) -> None:
     if completed != [True] or thread.is_alive():
         raise RuntimeError("thread creation failed")
 
-    import pymatching
-    import stim
-    import torch
-
-    torch.set_num_threads(1)
-    if torch.ones(1).item() != 1 or not stim.Circuit("M 0").num_measurements:
-        raise RuntimeError("native runtime smoke failed")
-    pymatching.Matching()
+    _check_native_runtime()
     # Verify an actual capacity refusal in a disposable file. It is removed
     # on either outcome. The requested allocation exceeds the whole mount.
     trial = evidence / "fts02-admission-capacity-probe"
