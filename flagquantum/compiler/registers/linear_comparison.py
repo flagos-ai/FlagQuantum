@@ -1,21 +1,25 @@
 # Copyright 2023 Google LLC
 # SPDX-License-Identifier: Apache-2.0
-# Adapted from Qualtran v0.7.0 LinearDepthGreaterThan(signed=False).
+# Adapted from Qualtran v0.7.0 LinearDepthGreaterThan.
 # Source: https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/bloqs/arithmetic/comparison.py
 # Changes: native IR, explicit work/sign bits and shared And emitters.
 
-"""Unsigned linear-depth greater-than with measured carry cleanup."""
+"""Original linear comparison paths with measured carry cleanup."""
 
 from ...core.ir import Instruction
 from .and_compute import and_compute_ir, and_uncompute_ir
 from .multi_control import multi_control_x_ir
 
 
-def linear_greater_requirements(width: int) -> tuple[int, int]:
+def linear_greater_requirements(width: int, *, signed: bool = False) -> tuple[int, int]:
     """Return clean quantum work and classical slots for the concrete source path."""
     if type(width) is not int or width < 1:
         raise ValueError("Linear comparison width must be a positive concrete integer")
-    return (1, 1) if width == 1 else (width + 2, width)
+    if type(signed) is not bool:
+        raise ValueError("Linear comparison signed mode must be boolean")
+    if width == 1:
+        return 1, 1
+    return (width - 1, width - 1) if signed else (width + 2, width)
 
 
 def linear_greater_ir(
@@ -24,15 +28,20 @@ def linear_greater_ir(
     target: int,
     workspace: tuple[int, ...],
     classical_bits: tuple[int, ...],
+    *,
+    signed: bool = False,
 ) -> tuple[Instruction, ...]:
-    """XOR unsigned a>b into target using the original carry-only comparison.
+    """Emit the pinned comparator, restoring inputs and zero-initialized work.
 
-    Equal-width registers are big-endian. Work includes two zero sign bits and
-    clean carry flags; every wire is restored. The source's one-bit special
-    case uses the shared two-control X. Signed comparison is not this interface.
+    Equal-width registers are big-endian; target may start in either state.
+    Unsigned mode computes a>b using two clean sign prefixes. For width>=2,
+    signed=True copies the sign of (b-a) modulo 2**width, as the original source
+    does. This equals signed a>b only when subtraction does not overflow.
+    The source ignores signed at width one and computes unsigned a>b there.
+    See REGISTER_SIGNED_DIFFERENCE_SIGN.md for the source model discrepancies.
     """
     width = len(left)
-    q, b = linear_greater_requirements(width)
+    q, b = linear_greater_requirements(width, signed=signed)
     if len(right) != width:
         raise ValueError("Linear comparison requires equal input widths")
     wires = (*left, *right, target, *workspace)
@@ -54,9 +63,9 @@ def linear_greater_ir(
         return multi_control_x_ir(
             (*left, *right), (1, 0), target, workspace, classical_bits
         )
-    a = (workspace[0], *left)
-    rhs = (workspace[1], *right)
-    carries = workspace[2:]
+    a = left if signed else (workspace[0], *left)
+    rhs = right if signed else (workspace[1], *right)
+    carries = workspace if signed else workspace[2:]
     flips = tuple(Instruction("x", (wire,)) for wire in rhs)
     gates = list(flips)
     for i, carry in enumerate(carries):
@@ -82,7 +91,7 @@ def linear_greater_ir(
             Instruction("cx", (carries[-1], a[0])),
         )
     )
-    for i in reversed(range(width)):
+    for i in reversed(range(len(carries))):
         if i:
             gates.append(Instruction("cx", (carries[i - 1], carries[i])))
         gates.extend(
