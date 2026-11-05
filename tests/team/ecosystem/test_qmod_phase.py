@@ -36,12 +36,8 @@ def test_native_phase_builds_owned_one_bit_callee(kind, allocation):
         ("output x:qbit", "allocate(x); phase(pi,pi,pi);", "qmod.signature"),
         ("output x:qbit", "allocate(x); phase(x,pi,pi);", "qmod.signature"),
         ("output phase:qbit", "allocate(phase); phase(phase,pi);", "qmod.signature"),
-        ("output x:qbit", "allocate(x); phase(x,1);", "qmod.coefficient"),
-        ("output x:qbit", "allocate(x); phase(x,0);", "qmod.coefficient"),
-        ("output x:qbit", "allocate(x); phase(x,pi+0);", "qmod.coefficient"),
         ("output pi:qbit", "allocate(pi); phase(pi,pi);", "qmod.coefficient"),
         ("output x:qbit", "allocate(x); phase(x,missing);", "qmod.coefficient"),
-        ("output x:qbit", "allocate(x); phase(x,pi/2);", "qmod.operator"),
         ("output x:qbit", "allocate(x); phase(1,pi);", "qmod.phase"),
         ("output x:qbit", "allocate(x); phase(0,pi);", "qmod.phase"),
         ("output x:qbit", "allocate(x); phase(x+1,pi);", "qmod.phase"),
@@ -85,3 +81,22 @@ def test_quantum_dependent_constant_phase_keeps_its_quantum_argument():
         "qint.add",
         "qint.return",
     ]
+
+
+@pytest.mark.parametrize(
+    "coefficient,angle",
+    [("1", 1.0), ("0", 0.0), ("pi+0", 3.141592653589793), ("pi/2", 1.5707963267948966)],
+)
+def test_explicit_classical_coefficients_use_existing_indexed_phase(
+    coefficient: str, angle: float
+) -> None:
+    imported = parse_qmod(
+        f"qfunc main(output x:qbit) {{allocate(x);phase(x,{coefficient});}}",
+        source_version=SUPPORTED_SOURCE_VERSION,
+    )
+    effects = [
+        op
+        for op in imported.program.body.blocks[0].operations
+        if op.name == "qreg.control_phase"
+    ]
+    assert effects and effects[-1].attributes["angle"] == angle

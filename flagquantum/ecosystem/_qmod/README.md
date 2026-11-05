@@ -1205,3 +1205,27 @@ and the original refusal. Run python -m examples.synthesis_exact_amplification
 for original Qmod, existing native R/phase composition and Circuit comparison.
 Native rounds and its auxiliary output are explicit; this adds no native exact
 amplification export or native for-loop support. Evidence is local CPU correctness.
+
+
+## Scalar-controlled Pauli evolution and classical angles
+
+The experimental Qmod boundary supports one scalar unsigned bit (including an
+indexed qbit array element) controlling pure Pauli evolution, with literal
+zero/one polarity and an optional else branch. Static helpers reuse the same
+specialization and existing owned Pauli effects. Identity terms retain their
+relative phase. Nested controls, allocation or mixed effects inside these
+branches, overlapping control/target storage and signed numeric controls refuse.
+Positive Const controls borrow storage; negative/else controls require writable
+storage because the existing implementation uses paired X operations. Signed
+argument metadata is preserved through bound helper calls.
+
+Finite classical angle expressions support +, -, *, /, pi and bound real inputs.
+Matrix, probability and state-preparation literal domains retain their previous
+scanner and checks. No quantum-dependent angle is admitted by this profile.
+Run python -m examples.synthesis_controlled_evolution for the unchanged BPDE
+Qmod, native phase-composition qfunc and independent Circuit full-state comparison
+at two nonzero delta values. Native steps are explicit; this adds no native
+Hamiltonian-array export or Python for-loop support. The original's dropped
+Hamiltonian target is semantic data, not a promised zero auxiliary register.
+The separately recorded partial-exponential amplitude mismatch remains refused;
+no original corpus source or baseline is rewritten. Evidence is local CPU only.

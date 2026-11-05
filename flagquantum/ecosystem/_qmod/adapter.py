@@ -34,6 +34,7 @@ from ...compiler._hybrid.model import (
 )
 from ...compiler._hybrid.verifier import Diagnostic, HybridVerificationError
 from .amplification import expand_amplification, lower_amplification, product_angles
+from .controlled_evolution import EVOLUTION_CALLS, controlled_evolution
 from .decisions import lower_decision_phase
 from .integers import checked_integer, checked_integer_array
 from .oracles import expand_static_oracles
@@ -1225,9 +1226,9 @@ class _Adapt:
             reject(node.token, "angle", "classical real exceeds finite ±2**53 range")
         return result
 
-    def angle(
-        self, node: Expression, gate: Token, *, allow_signed: bool = False
-    ) -> float:
+    def angle(self, node: Expression, gate: Token) -> float:
+        if node.token.text in {"+", "-", "*", "/", "pi"}:
+            return self.classical_number(node)
         if (not node.children and node.token.text in self.classical_integers) or (
             node.token.text == "["
             and node.children[0].token.text in self.integer_arrays
@@ -1235,28 +1236,6 @@ class _Adapt:
             return self.classical_number(node)
         if node.token.text == "[" and node.children[0].token.text == ":":
             return self.classical_number(node)
-        if (
-            self.helper_stack
-            and (
-                self.classical_values
-                or self.classical_arrays
-                or self.classical_integers
-                or self.integer_arrays
-            )
-            and node.token.text in {"+", "-", "*", "/"}
-        ):
-            return self.classical_number(node)
-        if node.token.text == "-":
-            if allow_signed or (self.helper_stack and self.classical_arrays):
-                return -_literal_angle(node.children[0], gate)
-            reject(node.token, "expression", "signed angles require an array helper")
-        if (
-            gate.text == "RZ"
-            and not node.children
-            and node.token.text == "pi"
-            and "pi" not in self.parameters
-        ):
-            return math.pi
         if not node.children and node.token.text in self.classical_values:
             return self.classical_values[node.token.text]
         if node.token.text == "[":
@@ -1439,6 +1418,12 @@ class _Adapt:
                 )
             actuals.update(view)
             child.widths[name] = len(view)
+            if (
+                parameter.kind == "qnum"
+                and not argument.children
+                and argument.token.text in self.signed
+            ):
+                child.signed.add(name)
             value = view[0][0]
             if view == tuple((value, index) for index in range(register_width(value))):
                 child.registers[name] = value
@@ -1948,6 +1933,8 @@ class _Adapt:
         if len(statement.arguments) != 1 or body is None:
             reject(token, "control", "control requires one condition and one operation")
         condition = statement.arguments[0]
+        if controlled_evolution(self, statement, index):
+            return
         if self.coherent_helper_control(statement, index):
             return
         if len(body) != 1:
@@ -2893,6 +2880,8 @@ class _Adapt:
                 pending.extend(node.children)
             if (
                 default_coefficient
+                or bool(args[1].children)
+                or args[1].token.text.isdecimal()
                 or indexed
                 or args[1].token.text == "["
                 or any(
@@ -3611,9 +3600,8 @@ def parse_qmod(
             if statement.declaration is not None or (
                 statement.token.text
                 not in _STATIC_GATES
+                | EVOLUTION_CALLS
                 | {
-                    "suzuki_trotter",
-                    "multi_suzuki_trotter",
                     "unitary",
                     "+=",
                     "phase",

@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING, Literal, NoReturn
 
 from ...compiler._hybrid.model import SourceLocation
 from ...compiler._hybrid.verifier import Diagnostic, HybridVerificationError
+from .angles import parse_literal
 
 if TYPE_CHECKING:
     from .amplification import Amplification
@@ -430,29 +431,12 @@ class Parser:
         )
 
     def angle_argument(self) -> Expression:
-        integer = self.current
-        if not integer.text.isdecimal() or self.tokens[self.position + 1].text != ".":
-            return self.expression(allow_slice=True)
-        self.position += 1
-        dot = self.take(".")
-        fraction = self.current
-        if (
-            not fraction.text.isdecimal()
-            or dot.location.line != integer.location.line
-            or dot.location.column != integer.location.column + len(integer.text)
-            or fraction.location.line != dot.location.line
-            or fraction.location.column != dot.location.column + 1
-        ):
-            reject(
-                dot,
-                "angle",
-                "decimal angles require contiguous digits on both sides of the point",
-            )
-        text = integer.text + "." + fraction.text
-        if len(text) > 78:
-            reject(integer, "budget.number", "angle literal exceeds 78 characters")
-        self.position += 1
-        return Expression(Token(text, integer.location))
+        return parse_literal(self)
+
+    def real_angle(self) -> Expression:
+        return self.expression(
+            decimal=True, difference=True, real=True, allow_slice=True
+        )
 
     def signed_angle_argument(self) -> Expression:
         if self.current.text == "-":
@@ -1067,7 +1051,7 @@ class Parser:
                             self.expression(decimal=True, difference=True, real=True)
                         )
                     elif target.text in ANGLE_CALLS:
-                        args.append(self.signed_angle_argument())
+                        args.append(self.real_angle())
                     else:
                         args.append(self.call_argument())
                     while self.current.text == ",":
@@ -1090,13 +1074,13 @@ class Parser:
                             "single_pauli_exponent",
                         }:
                             args.append(
-                                self.expression(decimal=True, difference=True)
-                                if power_body and target.text == "suzuki_trotter"
-                                else self.signed_angle_argument()
+                                self.signed_angle_argument()
+                                if target.text in PREPARATIONS
+                                else self.real_angle()
                             )
                             continue
                         args.append(
-                            self.angle_argument()
+                            self.real_angle()
                             if (target.text == "U" and len(args) < 4)
                             or (len(args) == 1 and target.text in {"R", "phase"})
                             else self.call_argument()
