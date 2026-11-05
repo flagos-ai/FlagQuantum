@@ -68,6 +68,16 @@ def test_qperm_call_graph_recursion_is_rejected() -> None:
         synth.synthesize(source, source_format="qmod")
 
 
+def test_callback_shadowing_cannot_bypass_the_qperm_proof() -> None:
+    source = """qfunc cb(angle:real,q:qbit[]) {X(q[0]);}
+      qfunc superpose(angle:real,q:qbit[]) {H(q[0]);}
+      qperm invoke(cb:qfunc(real,qbit[]),q:qbit[]) {cb(0,q);}
+      qfunc main(output q:qbit[1]) {allocate(q);invoke(superpose,q);}
+    """
+    with pytest.raises(ValueError, match="dynamic callback"):
+        synth.synthesize(source, source_format="qmod")
+
+
 @pytest.mark.parametrize(
     "caller",
     [

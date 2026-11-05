@@ -34,6 +34,14 @@ def verify_permutations(definitions: Mapping[str, Function]) -> None:
     checked: set[str] = set()
     active: set[str] = set()
 
+    def check_parameters(function: Function) -> None:
+        if any(port.role == "callable" for port in function.parameters):
+            reject(
+                function.name,
+                "permutation",
+                "qperm proof does not admit dynamic callback ports",
+            )
+
     def call(token: Token) -> None:
         name = token.text
         if name in _BASIS_OPERATIONS and name not in definitions:
@@ -49,6 +57,7 @@ def verify_permutations(definitions: Mapping[str, Function]) -> None:
                 "permutation",
                 f"qperm cannot prove basis preservation of {name!r}",
             )
+        check_parameters(function)
         active.add(name)
         body(function.statements)
         active.remove(name)
@@ -97,6 +106,7 @@ def verify_permutations(definitions: Mapping[str, Function]) -> None:
 
     for name, function in definitions.items():
         if function.permutation:
+            check_parameters(function)
             active.add(name)
             body(function.statements)
             active.remove(name)
