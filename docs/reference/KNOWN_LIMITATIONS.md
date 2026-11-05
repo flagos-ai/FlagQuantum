@@ -395,3 +395,24 @@ clean scratch. See tools/validate_qmod_predicate_oracle.py and the runnable
 Qmod/native qfunc/Circuit example examples/synthesis_predicate_oracle.py.
 This remains local CPU integration evidence, not a new native predicate-oracle
 export or complete Classiq-library support.
+
+## Bounded decision predicates
+
+The integration profile retains the eight-bit local phase evaluator. A budget
+refusal can use a separate twelve-input decision profile with at most 262144
+integer evaluator steps, 4096 reduced decision nodes and 128 disjoint accepting
+paths. Eight-bit leaves and shared equal branches produce signed cubes. Groups
+of at most six literals reuse existing Boolean compute candidates. Each cube's
+flags are uncomputed and released before the next; Compiler clean-tail scheduling
+and clean MCX lowering own physical reuse. No new canonical IR or public export
+is introduced. Existing degree, indexed-phase width, owned-node and final costs
+remain independently bounded. Static eleven/twelve-bit Grover reflections reuse
+this path; smaller reflections preserve their previous resource template.
+
+The two unchanged graph-coloring and whitebox originals retain one and ten
+rounds. Run tools/validate_qmod_decision_predicates.py with --case
+whitebox_fuzzing (or grover_graph_coloring) and --output /tmp/decision.json.
+References use an independent full dense Grover power and analytic amplitudes;
+production still executes every original round. The largest validation-only
+reference matrix is 256 MiB, separate from the production 64 MiB state budget.
+This is local CPU correctness evidence, not a performance or corpus-wide claim.

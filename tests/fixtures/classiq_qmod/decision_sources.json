@@ -1,0 +1,20 @@
+{
+  "repository": "https://github.com/Classiq/classiq-library",
+  "commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "license_file": "LICENSE.txt",
+  "license_sha256": "241f68c9f35357f97e8a2a195e447d4f80098c140f0b3b3c770a11eed96f58e0",
+  "fixtures": [
+    {
+      "file": "grover_graph_coloring.qmod",
+      "upstream_path": "tutorials/basic_tutorials/grover_graph_coloring/grover_graph_coloring.qmod",
+      "git_blob_sha1": "4ca89b253622cd229e922f36b617b4420382ec50",
+      "sha256": "63f26e3c2bf50b9c0e5b0f3c5b7c83205118a0998e4f201969730f307023346a"
+    },
+    {
+      "file": "whitebox_fuzzing.qmod",
+      "upstream_path": "applications/cybersecurity/whitebox_fuzzing/whitebox_fuzzing.qmod",
+      "git_blob_sha1": "e3ce4a5d400dedd1de83cbdaf2b3ff1c0aa96662",
+      "sha256": "837a0d8b9863f29a6aaf1af4ec7670af42149187abaca1cde5e06545209cf98d"
+    }
+  ]
+}

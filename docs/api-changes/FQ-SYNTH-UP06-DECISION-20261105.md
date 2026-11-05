@@ -24,6 +24,9 @@ This is bounded sequential cleanup/recomputation, not a new canonical IR or a
 claim of globally optimal scheduling. Degree, phase-width, owned-effect and
 final resource caps remain independent and unchanged. An arbitrary phase
 polynomial still has to fit the existing final indexed-control width.
+Uniform Grover reflections on eleven to twelve statically known bits reuse the
+same zero-predicate factorization and retain their global sign; smaller existing
+reflections retain their previous template and measured resources.
 
 Accept unchanged grover_graph_coloring.qmod and whitebox_fuzzing.qmod against
 independent full-state Circuit and analytic references, including absolute

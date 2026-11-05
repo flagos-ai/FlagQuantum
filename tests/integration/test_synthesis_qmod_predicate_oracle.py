@@ -182,9 +182,9 @@ def test_modulo_refuses_zero_non_power_two_and_quantum_divisors(divisor: str) ->
         synth.synthesize(source, source_format="qmod")
 
 
-def test_predicate_input_budget_remains_eight_bits() -> None:
-    source = "qstruct Big {x:qnum<5>;y:qnum<4>;} qperm pred(const p:Big,m:qbit) {m ^= (p.x^p.y)==1;} qfunc main(output p:Big) {allocate(p);phase_oracle(pred,p);}"
-    with pytest.raises(ValueError, match="eight input bits"):
+def test_predicate_input_budget_refuses_more_than_twelve_decision_bits() -> None:
+    source = "qstruct Big {x:qnum<7>;y:qnum<6>;} qperm pred(const p:Big,m:qbit) {m ^= (p.x^p.y)==1;} qfunc main(output p:Big) {allocate(p);phase_oracle(pred,p);}"
+    with pytest.raises(ValueError, match="twelve input bits"):
         synth.synthesize(source, source_format="qmod")
 
 

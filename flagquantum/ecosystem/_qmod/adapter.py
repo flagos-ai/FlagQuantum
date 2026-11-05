@@ -33,6 +33,7 @@ from ...compiler._hybrid.model import (
     ValueId,
 )
 from ...compiler._hybrid.verifier import Diagnostic, HybridVerificationError
+from .decisions import lower_decision_phase
 from .integers import checked_integer, checked_integer_array
 from .oracles import expand_static_oracles
 from .permutations import verify_permutations
@@ -1598,6 +1599,14 @@ class _Adapt:
                 expression, quantum_word, self.classical_number, condition=condition
             )
         except HybridVerificationError as error:
+            if condition is not None and all(
+                diagnostic.code == "qmod.budget.phase"
+                for diagnostic in error.diagnostics
+            ):
+                lower_decision_phase(
+                    self, token, expression, coefficient, condition, quantum_word
+                )
+                return
             # Preserve the established small-polynomial path and its resources.
             # Only expansion-budget refusals admit this exact alternative.
             if condition is not None or not all(

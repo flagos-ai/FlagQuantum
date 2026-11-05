@@ -475,6 +475,53 @@ def expand_static_oracles(
                     )
                 result.extend(phases)
                 h = Statement(Token("hadamard_transform", token.location), (target,))
+                if port.width is not None and 10 < port.width <= 12:
+                    zero = Expression(
+                        Token("~", token.location),
+                        (
+                            Expression(
+                                Token("[", token.location),
+                                (target, Expression(Token("0", token.location))),
+                            ),
+                        ),
+                    )
+                    for bit in range(1, port.width):
+                        item = Expression(
+                            Token("~", token.location),
+                            (
+                                Expression(
+                                    Token("[", token.location),
+                                    (
+                                        target,
+                                        Expression(Token(str(bit), token.location)),
+                                    ),
+                                ),
+                            ),
+                        )
+                        zero = Expression(Token("&", token.location), (zero, item))
+                    one = Expression(
+                        Token("+", token.location),
+                        (
+                            Expression(Token("0", token.location)),
+                            Expression(Token("1", token.location)),
+                        ),
+                    )
+                    flip_zero = Statement(
+                        Token("control", token.location),
+                        (zero,),
+                        control_body=(
+                            Statement(
+                                Token("phase", token.location),
+                                (one, Expression(Token("pi", token.location))),
+                            ),
+                        ),
+                    )
+                    global_sign = Statement(
+                        Token("phase", token.location),
+                        (Expression(Token("pi", token.location)),),
+                    )
+                    result.extend((h, flip_zero, global_sign, h))
+                    continue
                 loop = Token(
                     f"$oracle_flip{token.location.line}_{token.location.column}",
                     token.location,
