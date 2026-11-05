@@ -132,7 +132,7 @@ def test_callback_recursion_refuses() -> None:
 @pytest.mark.parametrize("types", ["qstruct B {x:qnum<2>;}", "qstruct B {x:qnum<1>;} "])
 def test_nominal_record_types_cannot_be_reinterpreted(types: str) -> None:
     source = f"qstruct A {{x:qnum<2>;}} {types} qfunc act(a:A) {{hadamard_transform(a);}} qfunc main(output b:B) {{allocate(b);act(b);}}"
-    with pytest.raises(ValueError, match="nominal"):
+    with pytest.raises(ValueError, match="matching record type"):
         synth.synthesize(source, source_format="qmod")
 
 

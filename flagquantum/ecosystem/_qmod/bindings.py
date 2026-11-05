@@ -64,6 +64,16 @@ def record_view(
 ) -> tuple[tuple[Value, int], ...]:
     root = argument.children[0] if argument.token.text == ":" else argument
     actual = None if root.children else owner.parameters.get(root.token.text)
+    if (
+        actual is not None
+        and actual.record is not None
+        and actual.record != parameter.record
+    ):
+        reject(
+            argument.token,
+            "signature",
+            "record helper requires the matching record type",
+        )
     if actual is None or (
         actual.record != parameter.record
         and not (actual.record is None and actual.kind == "qbit[]")
