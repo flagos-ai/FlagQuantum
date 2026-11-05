@@ -71,3 +71,11 @@ and a single integration PR remain behind the complete corpus acceptance gate.
 Official semantics:
 https://docs.classiq.io/sdk-reference/qmod/functions/open_library/amplitude_amplification
 https://docs.classiq.io/qmod-reference/library-reference/open-library-functions/grover_operator/grover_operator
+
+Implementation details fixed before delivery: expand into existing Statement and
+repeat records; no additional source-recipe class is needed. The existing whole
+array phase-flip effect remains self-adjoint. Static oracle indices admit +, -, *
+and the parser's existing one-child/two-child length forms; length is normalized
+without treating a record member as a captured value. Native comparison spells
+reflection with unsigned polynomial parity because native subtraction and mutable
+helper ports are not added by this batch.
