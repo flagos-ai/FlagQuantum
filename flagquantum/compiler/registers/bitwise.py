@@ -2,7 +2,8 @@
 # SPDX-License-Identifier: Apache-2.0
 # Adapted from Qualtran v0.7.0 Xor, XorK and BitwiseNot.
 # Source: https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/bloqs/arithmetic/bitwise.py
-# Changes: explicit big-endian wire tuples and concrete unsigned constants in IR.
+# Changes: explicit big-endian wire tuples, concrete unsigned constants and
+# one positive controlled XorK, all emitting native IR.
 
 """Shared register bit permutations without hidden work or dtype conversion."""
 
@@ -40,3 +41,17 @@ def bitwise_not_ir(target: tuple[int, ...]) -> tuple[Instruction, ...]:
     """Flip every bit, preserving the source OnEach order."""
     _validate_wires(target)
     return tuple(Instruction("x", (wire,)) for wire in target)
+
+
+def controlled_xor_constant_ir(
+    control: int, target: tuple[int, ...], value: int
+) -> tuple[Instruction, ...]:
+    """Apply a concrete XorK under one positive control, in original bit order.
+
+    The control may be coherent. No conjunction work, measurement or T gates
+    are introduced. Other control patterns are outside this concrete entry.
+    """
+    flips = xor_constant_ir(target, value)
+    if type(control) is not int or control < 0 or control in target:
+        raise ValueError("Controlled XOR requires a distinct nonnegative control")
+    return tuple(Instruction("cx", (control, gate.wires[0])) for gate in flips)

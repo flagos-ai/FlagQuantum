@@ -14,7 +14,7 @@
 from ...core.ir import Instruction
 from .._arithmetic_kernels import ripple_add_modular
 from .and_compute import and_compute_ir, and_uncompute_ir
-from .bitwise import bitwise_not_ir
+from .bitwise import bitwise_not_ir, controlled_xor_constant_ir, xor_constant_ir
 
 
 def controlled_add_or_subtract_ir(
@@ -146,14 +146,10 @@ def _constant_addition_ir(
             "Constant addition requires nonnegative integer classical slots"
         )
     normalized = value % (1 << width)
-    load = tuple(
-        (
-            Instruction("x", (wire,))
-            if control is None
-            else Instruction("cx", (control, wire))
-        )
-        for i, wire in enumerate(constant)
-        if normalized >> (width - i - 1) & 1
+    load = (
+        xor_constant_ir(constant, normalized)
+        if control is None
+        else controlled_xor_constant_ir(control, constant, normalized)
     )
     return (*load, *add_ir(constant, target, carries, classical_bits), *load)
 
