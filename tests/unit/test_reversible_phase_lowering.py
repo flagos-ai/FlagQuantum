@@ -227,14 +227,15 @@ def test_exact_half_turns_round_trip(
 
 def test_reversible_gates_hmr_and_feedback(native_reference: ModuleType) -> None:
     km = native_reference
-    circuit = km.Circuit("""
+    payload = """
         X q0
         CX q0 q1
         CCX q0 q1 q2
         Z_POW q2 0.0078125
         HMR q2 b0
         Z q1 if b0
-    """)
+    """
+    circuit = km.Circuit(payload)
     sim = km.Simulator(batch_size=64, seed=123)
     sim.do(circuit)
     outcomes = sim.read_across_shots(km.b(0), out=int)
