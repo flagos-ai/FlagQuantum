@@ -198,13 +198,14 @@ def reference_arithmetic_gates(
             return tuple(bound.all_operations())
         if not preserve_components or not isinstance(bloq, Bloq):
             return NotImplemented
-        if type(bloq).__name__ in {"IntState", "IntEffect"}:
+        basis_bloq = bloq.subbloq if type(bloq).__name__ == "Adjoint" else bloq
+        if type(basis_bloq).__name__ in {"IntState", "IntEffect"}:
             # States/effects have no complete Cirq export (ZeroEffect raises).
             # Bind their unmodified basis tensors to zero-initialized/returned
             # native work. Cleanup is independently proved on the whole channel.
-            bits = bloq.dtype.to_bits(bloq.val)
-            basis = np.zeros(1 << int(bloq.bitsize), dtype=np.complex128)
-            basis[int(bloq.val)] = 1
+            bits = basis_bloq.dtype.to_bits(basis_bloq.val)
+            basis = np.zeros(1 << int(basis_bloq.bitsize), dtype=np.complex128)
+            basis[int(basis_bloq.val)] = 1
             np.testing.assert_array_equal(
                 bloq.decompose_bloq().tensor_contract().reshape(-1), basis
             )

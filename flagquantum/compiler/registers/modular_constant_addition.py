@@ -12,6 +12,7 @@ from .controlled_modular_addition import (
     controlled_modular_add_ir,
     controlled_modular_requirements,
 )
+from .controlled_modular_addition_adjoint import controlled_modular_add_adjoint_ir
 
 
 def modular_constant_requirements(width: int) -> tuple[int, int]:
@@ -34,6 +35,40 @@ def controlled_modular_add_constant_ir(
     CModAdd clean domain requires 0 <= k <= p. Work starts/ends zero; first n
     wires store k during the shared component and are unloaded by the same Xs.
     """
+    return _controlled_modular_constant_ir(
+        control, target, value, modulus, workspace, classical_bits, adjoint=False
+    )
+
+
+def controlled_modular_add_constant_adjoint_ir(
+    control: int,
+    target: tuple[int, ...],
+    value: int,
+    modulus: int,
+    workspace: tuple[int, ...],
+    classical_bits: tuple[int, ...],
+) -> tuple[Instruction, ...]:
+    """Subtract k modulo p through original state / CModAdd-adjoint / effect.
+
+    Positive coherent control; both branches promise target in [0,p), with
+    0<=k<=p. The same k is loaded and unloaded, never replaced by p-k.
+    Work starts/ends zero; classical slots retain latest measurement outcomes.
+    """
+    return _controlled_modular_constant_ir(
+        control, target, value, modulus, workspace, classical_bits, adjoint=True
+    )
+
+
+def _controlled_modular_constant_ir(
+    control: int,
+    target: tuple[int, ...],
+    value: int,
+    modulus: int,
+    workspace: tuple[int, ...],
+    classical_bits: tuple[int, ...],
+    *,
+    adjoint: bool,
+) -> tuple[Instruction, ...]:
     n = len(target)
     quantum, _ = modular_constant_requirements(n)
     if type(value) is not int or type(modulus) is not int or not 0 <= value <= modulus:
@@ -43,8 +78,7 @@ def controlled_modular_add_constant_ir(
             f"Modular constant addition requires {quantum} clean work wires"
         )
     loaded, inner = workspace[:n], workspace[n:]
-    gates = controlled_modular_add_ir(
-        control, loaded, target, modulus, inner, classical_bits
-    )
+    emit = controlled_modular_add_adjoint_ir if adjoint else controlled_modular_add_ir
+    gates = emit(control, loaded, target, modulus, inner, classical_bits)
     load = xor_constant_ir(loaded, value)
     return (*load, *gates, *load)
