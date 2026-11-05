@@ -337,17 +337,23 @@ def specialize_quantum_callbacks(
 
         walk(function.statements)
 
-    checked_wrappers: set[str] = set()
+    graph_steps = 0
 
     def wrapper_graph(name: str, stack: tuple[str, ...]) -> None:
+        nonlocal graph_steps
+        graph_steps += 1
+        if graph_steps > MAX_CALLBACK_STATEMENTS:
+            reject(
+                wrappers[name].name,
+                "budget.callback",
+                "unused wrapper expansion exceeds 4096 calls",
+            )
         if name in stack or len(stack) >= MAX_CALLBACK_DEPTH:
             reject(
                 wrappers[name].name,
                 "callback.recursion",
                 "wrapper graph must be acyclic and bounded",
             )
-        if name in checked_wrappers:
-            return
         pending = list(wrappers[name].statements)
         while pending:
             statement = pending.pop()
@@ -355,7 +361,6 @@ def specialize_quantum_callbacks(
                 wrapper_graph(statement.token.text, (*stack, name))
             pending.extend(statement.within or ())
             pending.extend(statement.apply)
-        checked_wrappers.add(name)
 
     for name, function in wrappers.items():
         validate_wrapper(function)

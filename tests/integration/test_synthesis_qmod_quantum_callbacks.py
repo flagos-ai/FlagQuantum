@@ -161,3 +161,16 @@ def test_unused_unknown_predicate_refuses() -> None:
     source = "qfunc wrap(f:qfunc(qbit[]),x:qbit[]) {phase_oracle(missing,x);} qfunc main(output x:qbit) {allocate(x);}"
     with pytest.raises(ValueError, match="callback.signature"):
         synth.synthesize(source, source_format="qmod")
+
+
+def test_unused_wrapper_depth_is_independent_of_definition_order() -> None:
+    definitions = ["qfunc w0(f:qfunc(qbit[]),x:qbit[]) {f(x);}"]
+    definitions += [
+        f"qfunc w{i}(f:qfunc(qbit[]),x:qbit[]) {{w{i-1}(f,x);}}" for i in range(1, 17)
+    ]
+    for ordered in (definitions, list(reversed(definitions))):
+        with pytest.raises(ValueError, match="callback.recursion"):
+            synth.synthesize(
+                "\n".join(ordered) + " qfunc main(output x:qbit) {allocate(x);}",
+                source_format="qmod",
+            )
