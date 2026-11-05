@@ -9,6 +9,7 @@
 
 from ...core.ir import Instruction
 from .arithmetic import add_ir
+from .sign_extension import sign_extend_ir
 
 
 def _validate_subtraction(
@@ -27,31 +28,6 @@ def _validate_subtraction(
         raise ValueError("Subtraction requires distinct nonnegative quantum wires")
     if any(type(bit) is not int or bit < 0 for bit in classical_bits):
         raise ValueError("Subtraction requires nonnegative integer classical slots")
-
-
-def _sign_extension_ir(
-    control: int, targets: tuple[int, ...]
-) -> tuple[Instruction, ...]:
-    """Retain MultiTargetCNOT's depth-layer ordering, including dirty-target fanout."""
-    if not targets:
-        return ()
-    depth = len(targets).bit_length()
-    layers = [
-        tuple(
-            Instruction("cx", (c, t))
-            for c, t in zip(
-                targets[: 2**i],
-                targets[2**i : min(len(targets), 2 ** (i + 1))],
-                strict=False,
-            )
-        )
-        for i in range(depth)
-    ]
-    return (
-        *(gate for layer in reversed(layers) for gate in layer),
-        Instruction("cx", (control, targets[0])),
-        *(gate for layer in layers for gate in layer),
-    )
 
 
 def subtract_ir(
@@ -75,7 +51,7 @@ def subtract_ir(
         raise ValueError("Subtraction signed flag must be a boolean")
     extended = (*prefix, *left)
     addition = add_ir(extended, right, carries, classical_bits)
-    extension = _sign_extension_ir(left[0], prefix) if signed else ()
+    extension = sign_extend_ir(left, prefix) if signed and prefix else ()
     flip_left = tuple(Instruction("x", (wire,)) for wire in extended)
     flip_right = tuple(Instruction("x", (wire,)) for wire in right)
     return (*extension, *flip_left, *addition, *flip_right, *flip_left, *extension)
