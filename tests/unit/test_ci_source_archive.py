@@ -234,10 +234,10 @@ def test_api_truncated_tree_requires_archive(tmp_path: Path, source: _Source) ->
     )
 
 
-@pytest.mark.parametrize("remove_failure", [False, True])
+@pytest.mark.parametrize("removal", ["success", "auto-removal", "persistent"])
 @pytest.mark.parametrize("imported_image", [False, True])
 def test_cleanup_only_removes_previous_container_for_this_runner_and_workspace(
-    tmp_path, monkeypatch, remove_failure, imported_image
+    tmp_path, monkeypatch, removal, imported_image
 ):
     import json
 
@@ -278,7 +278,9 @@ def test_cleanup_only_removes_previous_container_for_this_runner_and_workspace(
             return subprocess.CompletedProcess(arguments, 0, json.dumps(metadata), "")
         if arguments[1] == "rm":
             assert arguments[2:] == ["--force", ids[0]]
-            return subprocess.CompletedProcess(arguments, int(remove_failure), "", "")
+            return subprocess.CompletedProcess(
+                arguments, int(removal != "success"), "", "removal already in progress"
+            )
         if "{{.ID}} {{.Image}}" in arguments:
             return subprocess.CompletedProcess(
                 arguments,
@@ -287,17 +289,22 @@ def test_cleanup_only_removes_previous_container_for_this_runner_and_workspace(
                 "",
             )
         return subprocess.CompletedProcess(
-            arguments, 0, ids[0] if remove_failure else "", ""
+            arguments, 0, ids[0] if removal == "persistent" else "", ""
         )
 
     monkeypatch.setattr(archive.subprocess, "run", command)
-    if remove_failure:
-        with pytest.raises(RuntimeError, match="still writing"):
+    monkeypatch.setattr(archive.time, "sleep", lambda _: None)
+    if removal == "persistent":
+        with pytest.raises(
+            RuntimeError, match="Could not remove previous CI containers"
+        ):
             archive.cleanup_runner_containers()
     else:
         archive.cleanup_runner_containers()
     assert not any(ids[3] in command for command in calls)
-    assert sum(command[1] == "rm" for command in calls) == 1
+    assert sum(command[1] == "rm" for command in calls) == (
+        2 if removal == "persistent" else 1
+    )
 
 
 def test_cleanup_does_not_access_docker_on_hosted_or_non_docker_runners(monkeypatch):

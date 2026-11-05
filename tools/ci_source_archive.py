@@ -14,6 +14,7 @@ import shutil
 import subprocess
 import tarfile
 import tempfile
+import time
 from collections.abc import Callable
 from dataclasses import dataclass
 from email.message import Message
@@ -296,11 +297,22 @@ def cleanup_runner_containers() -> None:
         f"Removing {len(owned)} previous CI containers for exclusive runner {runner}",
         flush=True,
     )
-    result = docker("rm", "--force", *owned, check=False)
-    if result.returncode:
+    for delay in (0.5, 2.0):
+        result = docker("rm", "--force", *owned, check=False)
+        if not result.returncode:
+            return
+        # Docker's --rm cleanup can already be removing the same container.
+        # Give that removal time to finish before retrying or refusing checkout.
+        time.sleep(delay)
         remaining = docker("ps", "--all", "--no-trunc", "--format", "{{.ID}}")
-        if set(owned).intersection(remaining.stdout.splitlines()):
-            raise RuntimeError("Previous CI containers are still writing the checkout")
+        present = set(remaining.stdout.splitlines())
+        owned = [identifier for identifier in owned if identifier in present]
+        if not owned:
+            print("Previous CI containers were removed by Docker", flush=True)
+            return
+    raise RuntimeError(
+        f"Could not remove previous CI containers: {result.stderr.strip()[:500]}"
+    )
 
 
 def _main() -> None:

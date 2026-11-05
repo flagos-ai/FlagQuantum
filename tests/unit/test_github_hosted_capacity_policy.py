@@ -368,7 +368,7 @@ def test_coverage_uses_the_same_bounded_work_stealing_policy() -> None:
         for token in (
             "-p tools.pytest_shard",
             '"@$plan"',
-            'python -m tools.ci_coverage_plan "$RUNNER_TEMP/coverage-plan" ${{ matrix.shard }}',
+            'python -m tools.ci_coverage_plan "$FQ_COVERAGE_PLAN" ${{ matrix.shard }}',
         ):
             assert token in command
 
@@ -416,16 +416,17 @@ def test_coverage_shards_are_combined_before_the_policy_is_enforced() -> None:
     download = next(
         step
         for step in _steps("ci.yml", "coverage")
-        if step.get("uses") == "actions/download-artifact@v8.0.2"
+        if step.get("uses") == "./.github/actions/download-artifact"
         and "pattern" in step.get("with", {})
     )
-    assert download["with"]["digest-mismatch"] == "error"
-    assert commands.index("rm -rf coverage-data") < commands.index("integrity_check")
+    assert download["with"]["merge-multiple"] is True
+    assert download["timeout-minutes"] == 6
+    assert not download.get("continue-on-error", False)
     assert commands.index("integrity_check") < commands.index(
-        "coverage combine coverage-data"
+        'coverage combine "$FQ_COVERAGE_INPUTS"'
     )
-    assert "coverage combine coverage-data" in commands
-    assert commands.index("coverage combine coverage-data") < commands.index(
+    assert 'coverage combine "$FQ_COVERAGE_INPUTS"' in commands
+    assert commands.index('coverage combine "$FQ_COVERAGE_INPUTS"') < commands.index(
         "tools/check_coverage.py"
     )
 
@@ -456,7 +457,11 @@ def test_coverage_download_validation_refuses_partial_or_corrupt_inputs(
     script = step["run"].split("<<'PY'\n", 1)[1].rsplit("\nPY", 1)[0]
     result = subprocess.run(
         [sys.executable, "-c", script],
-        env={**os.environ, "FQ_COVERAGE_SHARDS": str(count)},
+        env={
+            **os.environ,
+            "FQ_COVERAGE_SHARDS": str(count),
+            "FQ_COVERAGE_INPUTS": str(directory),
+        },
         cwd=tmp_path,
         capture_output=True,
         text=True,

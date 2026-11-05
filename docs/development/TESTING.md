@@ -1077,3 +1077,9 @@ exclusive registration. Containers belonging to another registration or workspac
 are left alone. This startup check also handles a hard-killed wrapper and legacy
 jobs that did not install an exit trap. Cleanup failures stop checkout rather than
 allowing an older test process to keep writing the new source tree.
+
+
+Coverage plan and result downloads use one bounded transport retry. Attempts
+stage in separate runner-temporary directories, so partial files from a failed
+transfer cannot enter the successful plan or coverage input set. Digest errors
+and a persistent transport failure still stop the job.
