@@ -1,0 +1,81 @@
+name: Prewarm locked CPU environments
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - docker/ci/images.lock
+      - .github/workflows/prewarm-ci-cpu.yml
+
+permissions:
+  contents: read
+  packages: read
+
+jobs:
+  prewarm:
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: [self-hosted, linux, x64, "${{ matrix.host }}"]
+    strategy:
+      fail-fast: false
+      matrix:
+        host: [a800-171, a800-172]
+    concurrency:
+      group: prewarm-ci-cpu-${{ matrix.host }}
+      queue: max
+    timeout-minutes: 30
+    steps:
+      - name: Read the lock from the exact workflow revision
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PYTHON'
+          import base64
+          import json
+          import os
+          from pathlib import Path
+          from urllib.request import Request, urlopen
+
+          url = (f"{os.environ['GITHUB_API_URL']}/repos/"
+                 f"{os.environ['GITHUB_REPOSITORY']}/contents/docker/ci/images.lock"
+                 f"?ref={os.environ['GITHUB_SHA']}")
+          request = Request(url, headers={"Authorization": f"Bearer {os.environ['GH_TOKEN']}"})
+          with urlopen(request, timeout=60) as response:
+              payload = json.load(response)
+          Path(os.environ["RUNNER_TEMP"], "ci-images.lock").write_bytes(
+              base64.b64decode(payload["content"], validate=False)
+          )
+          PYTHON
+      - name: Preinstall and qualify every locked profile
+        env:
+          FQ_REGISTRY_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          export DOCKER_CONFIG
+          DOCKER_CONFIG="$(mktemp -d "$RUNNER_TEMP/fq-prewarm-registry.XXXXXXXX")"
+          trap 'rm -rf "$DOCKER_CONFIG"' EXIT
+          printf '%s' "$FQ_REGISTRY_TOKEN" | docker login ghcr.io --username "$GITHUB_ACTOR" --password-stdin
+          unset FQ_REGISTRY_TOKEN
+          lock_dir="${XDG_CACHE_HOME:-$HOME/.cache}/flagquantum-ci"
+          mkdir -p -m 700 "$lock_dir"
+          while read -r profile image; do
+            [[ "$profile" =~ ^(core-py3\.(10|11|12)|coverage-py3\.12)$ ]]
+            [[ "$image" =~ ^ghcr\.io/flagos-ai/flagquantum-ci@sha256:[a-f0-9]{64}$ ]]
+            echo "Prewarming $profile on $RUNNER_NAME"
+            exec 9>"$lock_dir/${image##*@}.lock"
+            flock -w 480 9
+            if ! docker image inspect "$image" >/dev/null 2>&1; then
+              timeout --kill-after=15s 450s docker pull "$image"
+            fi
+            exec 9>&-
+            timeout --kill-after=5s 60s docker run --rm --network none "$image" python -m pip check
+            timeout --kill-after=5s 60s docker run --rm --network none "$image" python -c \
+              'import torch; assert torch.version.cuda is None'
+            if [[ "$profile" == core-* ]]; then
+              timeout --kill-after=5s 60s docker run --rm --network none "$image" python -c \
+                "import importlib.util as u; assert all(u.find_spec(name) is None for name in ('numpy', 'jax', 'cirq', 'qiskit', 'pennylane', 'braket', 'cudaq'))"
+            fi
+            echo "Qualified $profile ($image)" >> "$GITHUB_STEP_SUMMARY"
+          done < "$RUNNER_TEMP/ci-images.lock"
