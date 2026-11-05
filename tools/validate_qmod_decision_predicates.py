@@ -1,4 +1,4 @@
-"""Independent dense Grover Circuits and analytic amplitudes for unchanged originals."""
+"""Independent gate-level Grover Circuits and analytic amplitudes for originals."""
 
 from __future__ import annotations
 
@@ -65,7 +65,7 @@ def grover_power_matrix(
 
     Only the two uniform good/bad axes rotate. The good orthogonal complement
     has eigenvalue +1; the bad one has (-1)**rounds. This preserves the complete
-    operator and avoids repeating a 256 MiB matrix conversion ten times.
+    operator for small operator-level reference tests.
     """
     size, good = 1 << width, len(marked)
     bad = size - good
@@ -90,17 +90,37 @@ def grover_power_matrix(
 
 
 def reference_circuit(case: str) -> fq.Circuit:
-    """Use the full dense Grover power, independent of BDD and cube kernels.
-
-    The largest validation-only buffer is 256 MiB, separate from production's
-    64 MiB state budget. All original rounds are retained in the operator power.
-    """
+    """Use a separate full conjunction ladder, without BDD or large matrices."""
     width, rounds, marked = marked_states(case)
-    step = grover_power_matrix(width, marked, rounds)
-    circuit = fq.Circuit(width, dtype=DTYPE)
+    circuit = fq.Circuit(2 * width - 3, dtype=DTYPE)
+
+    def flip(word: int) -> None:
+        zeros = [bit for bit in range(width) if not word & (1 << (width - 1 - bit))]
+        for bit in zeros:
+            circuit.x(bit)
+        circuit.h(width - 1)
+        circuit.ccx(0, 1, width)
+        for bit in range(2, width - 2):
+            circuit.ccx(width + bit - 2, bit, width + bit - 1)
+        circuit.ccx(2 * width - 4, width - 2, width - 1)
+        for bit in reversed(range(2, width - 2)):
+            circuit.ccx(width + bit - 2, bit, width + bit - 1)
+        circuit.ccx(0, 1, width)
+        circuit.h(width - 1)
+        for bit in reversed(zeros):
+            circuit.x(bit)
+
     for bit in range(width):
         circuit.h(bit)
-    circuit.any(*range(width), matrix=step)
+    for _ in range(rounds):
+        for word in marked:
+            flip(word)
+        for bit in range(width):
+            circuit.h(bit)
+        flip(0)
+        circuit.x(0).phase(0, theta=math.pi).x(0).phase(0, theta=math.pi)
+        for bit in range(width):
+            circuit.h(bit)
     return circuit
 
 
@@ -154,8 +174,8 @@ def validate(case: str) -> Validation:
         resources.n_operations,
     )
     actual = fq.run(program).statevector().reshape(-1)
-    LOGGER.info("Executing independent dense Circuit reference")
-    expected = (
+    LOGGER.info("Executing independent gate-level Circuit reference")
+    reference = (
         fq.run(
             reference_circuit(case),
             options=fq.ExecutionOptions(
@@ -169,6 +189,10 @@ def validate(case: str) -> Validation:
         .statevector()
         .reshape(-1)
     )
+    reference_data = reference.reshape(1 << width, 1 << (width - 3))
+    if float(reference_data[:, 1:].abs().square().sum()) > 1e-24:
+        raise AssertionError("independent reference workspace is not clean")
+    expected = reference_data[:, 0]
     # Every physical scratch word is compared; only the zero word may be populated.
     data = actual.reshape(1 << width, 1 << scratch)
     dirty = float(data[:, 1:].abs().square().sum())
@@ -201,7 +225,7 @@ def validate(case: str) -> Validation:
         dirty,
         norm,
         time.perf_counter() - started,
-        (1 << width) ** 2 * 16,
+        0,
     )
 
 

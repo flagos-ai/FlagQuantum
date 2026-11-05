@@ -167,11 +167,24 @@ def test_slice_bounds_do_not_escape_to_the_original_array(
 
 
 @pytest.mark.parametrize("guard", ["v.a==0", "(v.a-v.a)==0"])
-def test_predicate_eight_bit_budget_survives_cancellation(guard: str) -> None:
+def test_decision_budget_preserves_phase_and_cancelled_reads(guard: str) -> None:
     source = f"""qstruct State {{a:qnum<9>;}}
-      qfunc main(alpha:real,output v:State) {{allocate(v);control({guard}) {{phase(v.a+1,alpha);}}}}"""
-    with pytest.raises(ValueError, match="eight input bits"):
-        synth.synthesize(source, source_format="qmod", classical_inputs={"alpha": 0.37})
+      qfunc main(alpha:real,output v:State) {{allocate(v);hadamard_transform(v);control({guard}) {{phase(v.a+1,alpha);}}}}"""
+    program = synth.synthesize(
+        source, source_format="qmod", classical_inputs={"alpha": 0.37}
+    )
+    state = fq.run(program).statevector().reshape(-1)
+    scratch = program.circuit.n_wires - 9
+    expected = torch.zeros_like(state)
+    angles = torch.tensor(
+        [
+            0.37 * (word + 1) if guard != "v.a==0" or word == 0 else 0
+            for word in range(512)
+        ],
+        dtype=torch.float64,
+    )
+    expected[:: 1 << scratch] = torch.exp(1j * angles) / sqrt(512)
+    torch.testing.assert_close(state, expected, atol=1e-12, rtol=0)
 
 
 def test_predicate_rejects_noninteger_classical_threshold() -> None:
@@ -185,12 +198,22 @@ def test_predicate_rejects_noninteger_classical_threshold() -> None:
         )
 
 
-def test_guard_times_cost_preserves_phase_degree_budget() -> None:
+def test_factored_guard_times_cost_preserves_phase_and_clean_scratch() -> None:
     source = """qfunc main(alpha:real,output x:qnum<8>,output y:qbit) {
-      allocate(x);allocate(y);control(x==255) {phase(y,alpha);}
+      allocate(x);allocate(y);hadamard_transform(x);H(y);control(x==255) {phase(y,alpha);}
     }"""
-    with pytest.raises(ValueError, match="degree eight"):
-        synth.synthesize(source, source_format="qmod", classical_inputs={"alpha": 0.37})
+    program = synth.synthesize(
+        source, source_format="qmod", classical_inputs={"alpha": 0.37}
+    )
+    state = fq.run(program).statevector().reshape(-1)
+    expected = torch.zeros_like(state)
+    expected[:: 1 << (program.circuit.n_wires - 9)] = torch.ones(
+        512, dtype=torch.complex128
+    ) / sqrt(512)
+    expected[511 << (program.circuit.n_wires - 9)] *= complex(
+        torch.exp(torch.tensor(0.37j, dtype=torch.complex128))
+    )
+    torch.testing.assert_close(state, expected, atol=1e-12, rtol=0)
 
 
 def test_cancelled_cost_still_checks_initialization() -> None:

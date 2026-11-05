@@ -363,7 +363,7 @@ this path; smaller reflections preserve their previous resource template.
 The two unchanged graph-coloring and whitebox originals retain one and ten
 rounds. Run tools/validate_qmod_decision_predicates.py with --case
 whitebox_fuzzing (or grover_graph_coloring) and --output /tmp/decision.json.
-References use an independent full dense Grover power and analytic amplitudes;
+References use an independent gate-level Grover Circuit and analytic amplitudes;
 production still executes every original round. The largest validation-only
-reference matrix is 256 MiB, separate from the production 64 MiB state budget.
+reference uses its own clean conjunction workspace and no dense operator matrix.
 This is local CPU correctness evidence, not a performance or corpus-wide claim.

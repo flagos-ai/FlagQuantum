@@ -10,6 +10,34 @@ from tools.validate_qmod_decision_predicates import grover_power_matrix, validat
 pytestmark = pytest.mark.integration
 
 
+def test_original_local_phase_evaluator_keeps_eight_bit_cap() -> None:
+    from flagquantum.compiler._construction.register_profile import register_type
+    from flagquantum.compiler._hybrid.model import Value, ValueId
+    from flagquantum.ecosystem._qmod.phase import expand_phase
+    from flagquantum.ecosystem._qmod.syntax import Parser, tokenize
+
+    syntax = Parser(
+        tokenize(
+            "qfunc main(output x:qnum<9>) {control(x==0) {phase(pi);}}",
+            "<local-budget>",
+        )
+    ).parse()[0][0]
+    condition = syntax.statements[0].arguments[0]
+    literal = condition.children[1]
+    value = Value(ValueId("test", 0), register_type(9))
+    with pytest.raises(ValueError, match="eight input bits"):
+        expand_phase(
+            literal,
+            lambda node: (
+                tuple((value, i) for i in range(9))
+                if not node.children and node.token.text == "x"
+                else None
+            ),
+            lambda node: float(node.token.text),
+            condition=condition,
+        )
+
+
 @pytest.mark.parametrize("case", ["grover_graph_coloring", "whitebox_fuzzing"])
 def test_original_full_states(case: str) -> None:
     assert validate(case).workspace_nonzero_probability == 0
