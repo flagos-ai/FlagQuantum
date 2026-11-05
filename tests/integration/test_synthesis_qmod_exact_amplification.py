@@ -219,3 +219,14 @@ def test_close_scalar_does_not_certify_a_large_rotation_remainder(
 ) -> None:
     with pytest.raises(ValueError, match="amplitude|cleanup"):
         synth.synthesize(source(probability, amplitude), source_format="qmod")
+
+
+def test_large_float_pi_ratio_does_not_prove_a_sign_oracle() -> None:
+    angle = math.pi * (2**48 + 1)
+    assert angle / math.pi == float(2**48 + 1)
+    assert abs(math.sin(angle)) > 0.05
+    text = source(0.07).replace(
+        ",Z,prep,q)", f",lambda(a){{phase(a,{angle:.17f});}},prep,q)"
+    )
+    with pytest.raises(ValueError, match="signs"):
+        synth.synthesize(text, source_format="qmod")

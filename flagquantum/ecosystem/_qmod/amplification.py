@@ -373,13 +373,16 @@ def marked_words(
     marked = []
     for word, phase in enumerate(phases):
         multiple = phase / math.pi
-        if not math.isclose(multiple, round(multiple), abs_tol=1e-12, rel_tol=0):
+        if (
+            not math.isclose(multiple, round(multiple), abs_tol=1e-12, rel_tol=0)
+            or abs(math.sin(phase)) > 1e-14
+        ):
             reject(
                 target.token,
                 "amplification.oracle",
                 "oracle must apply signs +1 or -1 on every word",
             )
-        if round(multiple) % 2:
+        if math.cos(phase) < 0:
             marked.append(word)
     return tuple(marked)
 
