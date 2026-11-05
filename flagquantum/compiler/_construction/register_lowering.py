@@ -378,7 +378,15 @@ def schedule_register_program(
                 op.attributes["amplitudes"], bindings[op.operands[1].id]
             )
         elif op.name == "qreg.unitary":
-            wires = bindings[op.operands[1].id]
+            if "indices" in op.attributes:
+                wires = tuple(
+                    bindings[value.id][-1 - index]
+                    for value, index in zip(
+                        op.operands[1:], op.attributes["indices"], strict=True
+                    )
+                )
+            else:
+                wires = bindings[op.operands[1].id]
             matrix = unitary_matrix(op.attributes["matrix"], len(wires), op)
             gates = _unitary_instructions(matrix, wires, op)
         elif op.name in {"qreg.qft", "qreg.inverse_qft"}:

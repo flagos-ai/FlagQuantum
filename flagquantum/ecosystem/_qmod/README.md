@@ -718,3 +718,10 @@ array, ordered view or half-open slice such as `q[i:i + 2]`. A function-scope
 `if` can select a gate-only block with a static integer comparison, such
 as `q.len > 2`. Bound helpers can scale a real array element by the
 unshadowed constant `pi` for RX, RY and RZ.
+
+Bound helpers can invoke the existing bounded `suzuki_trotter` operation
+on initialized whole registers and `unitary` on initialized qubit arrays
+or ordered views. For an inline matrix, the first view element is the
+least-significant matrix bit, as for a whole Qmod array. A static
+`repeat` may call a bound helper. Helper calls share a cumulative
+expansion budget of 4096, including calls that emit no operations.

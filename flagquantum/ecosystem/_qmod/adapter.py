@@ -48,6 +48,7 @@ from .syntax import (
 
 SUPPORTED_SOURCE_VERSION = "2bfd835e73b6882fcc515a725098b04766c238e7"
 MAX_EFFECT_OPERATIONS = 4096
+MAX_HELPER_EXPANSIONS = 4096
 MAX_QDRIFT_SAMPLES = 1024
 QDRIFT_SEED = 0
 _GATE_CALLS = frozenset({"X", "H", "S", "Z", "I", "SX", "hadamard_transform"})
@@ -745,6 +746,7 @@ class _Adapt:
         self.local_scope: list[tuple[str, Token]] | None = None
         self.dropped: set[str] = set()
         self.helper_stack: tuple[str, ...] = ()
+        self.helper_expansions = 0
 
     def register(
         self,
@@ -950,8 +952,20 @@ class _Adapt:
                 statement.token, "budget.expansion", "repeat count must be in 0..256"
             )
         for item in statement.repeat_body:
-            if item.declaration is not None or item.token.text not in _STATIC_GATES:
-                reject(item.token, "scope", "repeat bodies admit only gates")
+            callee = self.definitions.get(item.token.text)
+            bound_call = (
+                callee is not None
+                and callee.name.text != "main"
+                and _bound_helper(callee)
+            )
+            if item.declaration is not None or (
+                item.token.text not in _STATIC_GATES and not bound_call
+            ):
+                reject(
+                    item.token,
+                    "scope",
+                    "repeat bodies admit only gates and bound helper calls",
+                )
         for iteration in range(count):
             self.loop_indices[name] = iteration
             for ordinal, item in enumerate(statement.repeat_body):
@@ -1076,8 +1090,15 @@ class _Adapt:
                 "recursion",
                 "bound helper expansion must be acyclic and at most 16 levels",
             )
+        if self.helper_expansions >= MAX_HELPER_EXPANSIONS:
+            reject(
+                token,
+                "budget.expansion",
+                "native expansion exceeds 4096 bound helper calls",
+            )
         child = _Adapt(syntax, self.resolve, self.definitions, self.constants)
         child.helper_stack = (*self.helper_stack, syntax.name.text)
+        child.helper_expansions = self.helper_expansions + 1
         actuals: set[tuple[Value, int]] = set()
         for argument, parameter in zip(arguments, syntax.parameters, strict=True):
             name = parameter.name.text
@@ -1118,8 +1139,9 @@ class _Adapt:
                 child.views[name] = view
         for index, statement in enumerate(syntax.statements):
             child.statement(statement, str(index))
+        self.helper_expansions = child.helper_expansions
         for op in child.operations:
-            # Replay the specialized gates with the caller's linear effect.
+            # Replay the specialized operations with the caller's linear effect.
             self.effect_op(op.name, token, op.operands[1:], **op.attributes)
 
     def call(
@@ -2279,14 +2301,25 @@ class _Adapt:
             if len(args) != 2:
                 reject(token, "signature", "unitary requires a matrix and qubit array")
             matrix, target_arg = args
-            target = self.atom(target_arg)
-            register = self.register(target, allow_qubit_array=True)
-            if self.parameters[target.text].kind != "qbit[]":
-                reject(target, "type", "unitary requires a qubit array")
+            view = self.array_view(target_arg)
+            if len(view) not in {1, 2} or len(set(view)) != len(view):
+                reject(
+                    target_arg.token,
+                    "unitary",
+                    "unitary requires one or two distinct qubit locations",
+                )
+            view_attributes: dict[str, object] = {}
+            if target_arg.children or target_arg.token.text in self.views:
+                # Qmod array position zero is the least-significant matrix bit.
+                wires = tuple(reversed(view))
+                operands = tuple(register for register, _ in wires)
+                view_attributes["indices"] = tuple(index for _, index in wires)
+            else:
+                operands = (view[0][0],)
             self.effect_op(
                 "qreg.unitary",
                 token,
-                (register,),
+                operands,
                 matrix=tuple(
                     tuple(
                         (value.real, value.imag)
@@ -2294,6 +2327,7 @@ class _Adapt:
                     )
                     for row in matrix.children
                 ),
+                **view_attributes,
             )
         elif token.text == "linear_pauli_rotations":
             self.linear_pauli_rotations(token, args)
@@ -2602,7 +2636,8 @@ def parse_qmod(
                 and _bound_helper(called)
             )
             if statement.declaration is not None or (
-                statement.token.text not in _GATE_CALLS | _PAIR_CALLS | ANGLE_CALLS
+                statement.token.text
+                not in _STATIC_GATES | {"suzuki_trotter", "unitary"}
                 and not controlled_qft
                 and not hadamard_within
                 and statement.repeat_index is None
@@ -2612,7 +2647,7 @@ def parse_qmod(
                 reject(
                     statement.token,
                     "scope",
-                    "bound helper bodies admit only gates and scoped QFT",
+                    "bound helper bodies admit only gates, bounded unitary and Pauli evolution, and scoped QFT",
                 )
 
     compiled: dict[str, tuple[_Adapt, HybridProgram]] = {}

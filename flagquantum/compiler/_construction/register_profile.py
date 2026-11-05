@@ -341,6 +341,9 @@ def _verify_body(
                 attributes = attributes | {"angle"}
             if "indices" in op.attributes:
                 attributes = attributes | {"indices"}
+        if op.name == "qreg.unitary" and "indices" in op.attributes:
+            assert attributes is not None
+            attributes = attributes | {"indices"}
         if op.name == "qreg.phase" and "angle" in op.attributes:
             angle = op.attributes["angle"]
             if type(angle) is not float or not math.isfinite(angle):
@@ -499,22 +502,45 @@ def _verify_body(
                 initialized.update(v.id for v in writes)
                 changed = tuple(writes)
             elif op.name == "qreg.unitary":
-                if arguments or destination in borrowed:
-                    _fail(
-                        "register.unitary", "unitary requires one writable register", op
-                    )
-                if destination.id not in initialized:
+                if "indices" in op.attributes:
+                    indices = op.attributes["indices"]
+                    if (
+                        not isinstance(indices, tuple)
+                        or len(indices) != len(operands)
+                        or len(indices) not in {1, 2}
+                        or any(
+                            type(index) is not int
+                            or not 0 <= index < register_width(value)
+                            for value, index in zip(operands, indices, strict=True)
+                        )
+                        or len(set(zip(operands, indices, strict=True))) != len(indices)
+                    ):
+                        _fail(
+                            "register.unitary",
+                            "unitary indices must be in bounds and distinct",
+                            op,
+                        )
+                    width = len(indices)
+                else:
+                    if arguments:
+                        _fail(
+                            "register.unitary",
+                            "unitary requires one writable register",
+                            op,
+                        )
+                    width = register_width(destination)
+                if any(value in borrowed for value in operands):
+                    _fail("register.unitary", "unitary requires writable qubits", op)
+                if any(value.id not in initialized for value in operands):
                     _fail(
                         "register.uninitialized",
-                        "unitary requires an initialized register",
+                        "unitary requires initialized qubits",
                         op,
                     )
-                matrix = unitary_matrix(
-                    op.attributes["matrix"], register_width(destination), op
-                )
+                matrix = unitary_matrix(op.attributes["matrix"], width, op)
                 if not _is_finite_unitary(matrix):
                     _fail("register.unitary", "matrix must be unitary", op)
-                changed = (destination,)
+                changed = tuple(operands)
             elif op.name in {"qreg.qft", "qreg.inverse_qft"}:
                 if arguments:
                     _fail("register.transform", "QFT requires one register", op)
