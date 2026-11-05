@@ -156,6 +156,23 @@ def add_constant_ir(
     )
 
 
+def add_constant_adjoint_ir(
+    target: tuple[int, ...],
+    value: int,
+    constant: tuple[int, ...],
+    carries: tuple[int, ...],
+    classical_bits: tuple[int, ...],
+) -> tuple[Instruction, ...]:
+    """Subtract k using the literal AddK(k) adjoint and the same loaded k.
+
+    Match add_constant_ir's unsigned normalization and caller work contract.
+    The source inverse is load(k), Add.adjoint(), unload(k), not AddK(-k).
+    """
+    return _constant_addition_ir(
+        target, value, constant, carries, classical_bits, control=None, adjoint=True
+    )
+
+
 def _constant_addition_ir(
     target: tuple[int, ...],
     value: int,
@@ -164,6 +181,7 @@ def _constant_addition_ir(
     classical_bits: tuple[int, ...],
     *,
     control: int | None,
+    adjoint: bool = False,
 ) -> tuple[Instruction, ...]:
     """One load/add/unload implementation for plain and controlled AddK."""
     width = len(target)
@@ -188,7 +206,12 @@ def _constant_addition_ir(
         if control is None
         else controlled_xor_constant_ir(control, constant, normalized)
     )
-    return (*load, *add_ir(constant, target, carries, classical_bits), *load)
+    addition = (
+        add_adjoint_ir(constant, target, carries, classical_bits)
+        if adjoint
+        else add_ir(constant, target, carries, classical_bits)
+    )
+    return (*load, *addition, *load)
 
 
 def negate_ir(

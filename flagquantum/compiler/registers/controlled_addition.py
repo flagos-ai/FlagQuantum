@@ -79,6 +79,57 @@ def controlled_add_constant_ir(
     executes on both control branches, as in upstream Always(Add). Control-on-zero
     retains the source's global X conjugation. All quantum work starts/ends zero.
     """
+    return _controlled_constant_ir(
+        control,
+        target,
+        value,
+        constant,
+        carries,
+        classical_bits,
+        control_value=control_value,
+        adjoint=False,
+    )
+
+
+def controlled_add_constant_adjoint_ir(
+    control: int,
+    target: tuple[int, ...],
+    value: int,
+    constant: tuple[int, ...],
+    carries: tuple[int, ...],
+    classical_bits: tuple[int, ...],
+    *,
+    control_value: int = 1,
+) -> tuple[Instruction, ...]:
+    """Port controlled AddK(k).adjoint(), keeping the same controlled load k.
+
+    Subtract k when control matches, preserving control phases and clearing all
+    constant/carry work. The source's zero-control outer X pair is retained.
+    """
+    return _controlled_constant_ir(
+        control,
+        target,
+        value,
+        constant,
+        carries,
+        classical_bits,
+        control_value=control_value,
+        adjoint=True,
+    )
+
+
+def _controlled_constant_ir(
+    control: int,
+    target: tuple[int, ...],
+    value: int,
+    constant: tuple[int, ...],
+    carries: tuple[int, ...],
+    classical_bits: tuple[int, ...],
+    *,
+    control_value: int,
+    adjoint: bool,
+) -> tuple[Instruction, ...]:
+    """One controlled constant body and polarity policy for both directions."""
     if type(control_value) is not int or control_value not in (0, 1):
         raise ValueError(
             "Controlled constant addition control value must be zero or one"
@@ -88,7 +139,13 @@ def controlled_add_constant_ir(
             "Controlled constant addition requires a nonnegative control wire"
         )
     body = _constant_addition_ir(
-        target, value, constant, carries, classical_bits, control=control
+        target,
+        value,
+        constant,
+        carries,
+        classical_bits,
+        control=control,
+        adjoint=adjoint,
     )
     flip = (Instruction("x", (control,)),) if control_value == 0 else ()
     return (*flip, *body, *flip)
