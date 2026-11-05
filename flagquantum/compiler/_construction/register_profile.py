@@ -128,6 +128,45 @@ def register_width(value: Value, operation: Operation | None = None) -> int:
     return width
 
 
+def record_fields(op: Operation) -> tuple[tuple[str, str, int], ...]:
+    """Validate a flat record's owned output layout before projecting readout names."""
+    if "fields" not in op.attributes and "record_type" not in op.attributes:
+        return ()
+    fields = op.attributes.get("fields")
+    record_type = op.attributes.get("record_type")
+    if (
+        not isinstance(record_type, str)
+        or not record_type.isidentifier()
+        or not isinstance(fields, tuple)
+        or not fields
+    ):
+        _fail("register.record", "record requires a type and nonempty field layout", op)
+    names: set[str] = set()
+    width = 0
+    for field in fields:
+        if not isinstance(field, tuple) or len(field) != 3:
+            _fail("register.record", "record fields require name, kind and width", op)
+        name, kind, size = field
+        if (
+            not isinstance(name, str)
+            or not name.isidentifier()
+            or name in names
+            or name in {"size", "len"}
+            or kind not in ("qbit", "qbit[]")
+            or type(size) is not int
+            or not 1 <= size <= 256
+            or (kind == "qbit" and size != 1)
+        ):
+            _fail(
+                "register.record", "record fields must be unique bounded bit fields", op
+            )
+        names.add(name)
+        width += size
+    if len(op.results) != 1 or width != register_width(op.results[0], op):
+        _fail("register.record", "record fields must cover the register exactly", op)
+    return fields
+
+
 def register_ports(
     program: HybridProgram,
 ) -> tuple[dict[str, tuple[int, ...]], dict[ValueId, tuple[int, ...]], int]:
@@ -139,7 +178,16 @@ def register_ports(
         if op.name == "qreg.declare":
             value = op.results[0]
             ports = tuple(range(position, position + register_width(value)))
-            names[op.attributes["name"]] = ports
+            fields = record_fields(op)
+            if fields:
+                offset = 0
+                for name, _, size in fields:
+                    names[f"{op.attributes['name']}.{name}"] = ports[
+                        len(ports) - offset - size : len(ports) - offset
+                    ]
+                    offset += size
+            else:
+                names[op.attributes["name"]] = ports
             values[value.id] = ports
             position += len(ports)
     following = position
@@ -281,6 +329,7 @@ def _verify_body(
     initialized = {v.id for v in borrowed}
     reversible: dict[ValueId, frozenset[ValueId]] = {}
     labels: set[str] = set()
+    readout_labels: set[str] = set()
     width = sum(register_width(v) for v in borrowed)
     if width > max_qubits:
         _fail("register.budget", "Const entry widths exceed construction capacity")
@@ -347,6 +396,11 @@ def _verify_body(
         ):
             assert attributes is not None
             attributes = attributes | {"indices"}
+        if op.name == "qreg.declare" and (
+            "fields" in op.attributes or "record_type" in op.attributes
+        ):
+            assert attributes is not None
+            attributes = attributes | {"fields", "record_type"}
         if op.name == "qreg.unitary" and "indices" in op.attributes:
             assert attributes is not None
             attributes = attributes | {"indices"}
@@ -387,6 +441,15 @@ def _verify_body(
                 )
             registers.append(value)
             if op.name == "qreg.declare":
+                fields = record_fields(op)
+                projected = (
+                    tuple(f"{label}.{name}" for name, _, _ in fields)
+                    if fields
+                    else (label,)
+                )
+                if any(name in readout_labels for name in projected):
+                    _fail("register.name", "projected output names must be unique", op)
+                readout_labels.update(projected)
                 returned.append(value)
             elif op.name == "qreg.local":
                 local_storage.add(value)

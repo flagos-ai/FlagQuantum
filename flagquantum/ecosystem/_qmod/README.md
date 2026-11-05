@@ -799,3 +799,34 @@ complex128 amplitude with an independently constructed Circuit, and
 checks the classical cost phase over the full input domain in chunks.
 The 24-bit state buffer occupies 256 MiB. Routine tests check planning,
 memory refusal and separate input/degree/expansion budgets.
+
+### Flat quantum records
+
+The Qmod frontend accepts flat qstruct definitions with scalar qbit and
+one-dimensional qbit[N] fields. Fields must be unique, nonempty and fit
+the 256-bit structural budget. Record allocation, record size,
+whole-record Hadamard and bounded single-qubit maps reuse the existing
+register storage. A record can be passed to a matching writable helper
+or produced by a matching Output helper.
+
+Declaration order fixes each field's consecutive logical locations,
+with the first field occupying the least-significant part. Field array
+indices retain the existing least-significant-bit convention. The owned
+register declaration carries field kind, width and record type, and the
+Compiler independently checks complete coverage and output name
+uniqueness.
+
+Named output registers are the disjoint fields, such as `v.f` and
+`v.interaction`. Read them with
+`program.probabilities(result, registers=("v.f", "v.interaction"))`.
+`program.report["qmod_records"]` retains the declared schema.
+A bounded repeat may contain an admitted single-qubit map callback.
+Nested records, numeric fields and multidimensional arrays remain
+outside this flat record profile.
+
+Full original record examples can be verified explicitly with
+`PYTHONPATH=. python tools/validate_qmod_records.py --case ising_model --scale 0.003 --check-phase --output ising-validation.json`.
+The tool uses Python's arithmetic AST parser and an independent closed
+classical evaluator, exact rational finite differences and directly
+constructed Circuits. It does not import the Qmod parser or phase
+normalizer for its reference costs.

@@ -41,6 +41,7 @@ from .syntax import (
     Function,
     Parameter,
     Parser,
+    Record,
     Statement,
     Token,
     reject,
@@ -719,7 +720,9 @@ class _Adapt:
         resolve: Callable[[Token], tuple[Function, HybridProgram]],
         definitions: Mapping[str, Function],
         constants: Mapping[str, Expression],
+        record_types: Mapping[str, Record] = MappingProxyType({}),
     ) -> None:
+        self.record_types = record_types
         self.syntax = syntax
         self.resolve = resolve
         self.definitions = definitions
@@ -864,6 +867,29 @@ class _Adapt:
             reject(node.token, "signature", "this argument must be one output variable")
         return node.token
 
+    def record_field(
+        self, node: Expression
+    ) -> tuple[Parameter, tuple[tuple[Value, int], ...]] | None:
+        if node.token.text != "." or len(node.children) != 2:
+            return None
+        root, member = node.children
+        if root.children:
+            reject(
+                node.token, "field", "flat record access requires one declared record"
+            )
+        parameter = self.parameters.get(root.token.text)
+        if parameter is None or parameter.record is None:
+            reject(root.token, "field", "field access requires a declared record")
+        record = self.record_types[parameter.record]
+        offset = 0
+        for field in record.fields:
+            assert field.width is not None
+            if field.name.text == member.token.text:
+                view = self.array_view(root)
+                return field, view[offset : offset + field.width]
+            offset += field.width
+        reject(member.token, "field", "unknown record field")
+
     def static_integer(self, node: Expression) -> int:
         text = node.token.text
         if text.isdecimal():
@@ -889,11 +915,28 @@ class _Adapt:
                 )
             return numerator // denominator
         if text == ".":
-            name = node.children[0].token.text
+            root = node.children[0]
+            member = node.children[1].token.text if len(node.children) == 2 else "len"
+            if member == "size" and not root.children:
+                parameter = self.parameters.get(root.token.text)
+                if parameter is not None and parameter.record is not None:
+                    return self.record_types[parameter.record].width
+            if member != "len":
+                reject(node.token, "field", "expected array len or record size")
+            if root.children:
+                field = self.record_field(root)
+                if field is not None and field[0].kind == "qbit[]":
+                    return len(field[1])
+                reject(node.token, "field", "len requires an array field")
+            name = root.token.text
             if name in self.classical_arrays:
                 return len(self.classical_arrays[name])
             width = self.widths.get(name)
-            if width is None or self.parameters[name].kind != "qbit[]":
+            if (
+                width is None
+                or self.parameters[name].kind != "qbit[]"
+                or self.parameters[name].record is not None
+            ):
                 reject(
                     node.token, "width", "len requires a qubit array with a known width"
                 )
@@ -903,6 +946,21 @@ class _Adapt:
         reject(node.token, "expression", "expected a static integer or loop index")
 
     def gate_target(self, node: Expression) -> tuple[Value, int]:
+        source = node.children[0] if node.token.text == "[" else node
+        if source.token.text == ".":
+            resolved = self.record_field(source)
+            assert resolved is not None
+            field, field_view = resolved
+            if node.token.text == "[":
+                if field.kind != "qbit[]":
+                    reject(node.token, "field", "indexing requires an array field")
+                index = self.static_integer(node.children[1])
+                if not 0 <= index < len(field_view):
+                    reject(node.token, "width", "field index is out of bounds")
+                return field_view[index]
+            if len(field_view) != 1:
+                reject(node.token, "field", "gate requires a scalar field or element")
+            return field_view[0]
         indexed = node.token.text == "["
         target = self.atom(node.children[0] if indexed else node)
         if target.text in self.suspended:
@@ -930,6 +988,10 @@ class _Adapt:
         return value, index
 
     def array_view(self, node: Expression) -> tuple[tuple[Value, int], ...]:
+        if node.token.text == ".":
+            resolved = self.record_field(node)
+            assert resolved is not None
+            return resolved[1]
         if node.token.text == "{":
             return tuple(self.gate_target(item) for item in node.children)
         source = node.children[0] if node.token.text == ":" else node
@@ -993,6 +1055,7 @@ class _Adapt:
                 item.token.text not in _STATIC_GATES | {"phase"}
                 and not bound_call
                 and item.control_body is None
+                and item.map_callback is None
             ):
                 reject(
                     item.token,
@@ -1154,7 +1217,9 @@ class _Adapt:
                 "budget.expansion",
                 "native expansion exceeds 4096 bound helper calls",
             )
-        child = _Adapt(syntax, self.resolve, self.definitions, self.constants)
+        child = _Adapt(
+            syntax, self.resolve, self.definitions, self.constants, self.record_types
+        )
         child.helper_stack = (*self.helper_stack, syntax.name.text)
         child.helper_expansions = self.helper_expansions + 1
         actuals: set[tuple[Value, int]] = set()
@@ -1181,6 +1246,7 @@ class _Adapt:
                     or first.kind != "real"
                     or second.role != "inout"
                     or second.kind != "qbit[]"
+                    or second.record is not None
                 ):
                     reject(
                         actual,
@@ -1204,6 +1270,17 @@ class _Adapt:
                 else:
                     child.classical_values[name] = self.angle(argument, token)
                 continue
+            if parameter.record is not None:
+                actual = self.atom(argument)
+                if (
+                    self.parameters.get(actual.text) is None
+                    or self.parameters[actual.text].record != parameter.record
+                ):
+                    reject(
+                        actual,
+                        "signature",
+                        "record helper requires the matching record type",
+                    )
             view = (
                 self.array_view(argument)
                 if parameter.kind in {"qbit[]", "qnum"}
@@ -1283,8 +1360,20 @@ class _Adapt:
             borrowed = parameter.role == "const"
             formal = next(const if borrowed else outputs)
             actual_name = self.atom(argument)
+            if (
+                parameter.record is not None
+                and self.parameters.get(actual_name.text) is not None
+                and self.parameters[actual_name.text].record != parameter.record
+            ):
+                reject(
+                    actual_name,
+                    "signature",
+                    "record helper requires the matching record type",
+                )
             actual = self.register(
-                actual_name, None if borrowed else formal.type.parameters[0]
+                actual_name,
+                None if borrowed else formal.type.parameters[0],
+                allow_qubit_array=parameter.record is not None,
             )
             if (
                 actual_name.text in self.signed
@@ -1313,6 +1402,20 @@ class _Adapt:
     ) -> None:
         def quantum_word(node: Expression) -> tuple[tuple[Value, int], ...] | None:
             source = node.children[0] if node.token.text == "[" else node
+            if source.token.text == ".":
+                resolved = self.record_field(source)
+                assert resolved is not None
+                field, view = resolved
+                if node.token.text == "[":
+                    if field.kind != "qbit[]":
+                        reject(node.token, "field", "indexing requires an array field")
+                    index = self.static_integer(node.children[1])
+                    if not 0 <= index < len(view):
+                        reject(node.token, "width", "field index is out of bounds")
+                    return (view[index],)
+                if field.kind != "qbit":
+                    reject(node.token, "field", "phase arrays require an element index")
+                return view
             if source.children:
                 return None
             parameter = self.parameters.get(source.token.text)
@@ -2526,13 +2629,20 @@ class _Adapt:
                 )
             size = None
             if len(args) > 1:
-                if args[0].children or not args[0].token.text.isdecimal():
+                if (
+                    args[0].token.text == "."
+                    and len(args[0].children) == 2
+                    and args[0].children[1].token.text == "size"
+                ):
+                    size = self.static_integer(args[0])
+                elif not args[0].children and args[0].token.text.isdecimal():
+                    size = int(args[0].token.text)
+                else:
                     reject(
                         args[0].token,
                         "width",
-                        "allocation size must be a literal in 1..256",
+                        "allocation size must be a literal or record size",
                     )
-                size = int(args[0].token.text)
                 if not 1 <= size <= 256:
                     reject(
                         args[0].token,
@@ -2861,14 +2971,18 @@ class _Adapt:
             if len(args) != 1:
                 reject(token, "signature", f"{token.text} requires one output variable")
             if token.text == "hadamard_transform":
-                target = self.atom(args[0])
-                if target.text in self.views:
-                    gate_locations = self.views[target.text]
+                if args[0].token.text == ".":
+                    gate_locations = self.array_view(args[0])
                 else:
-                    destination = self.register(target, allow_qubit_array=True)
-                    gate_locations = tuple(
-                        (destination, bit) for bit in range(register_width(destination))
-                    )
+                    target = self.atom(args[0])
+                    if target.text in self.views:
+                        gate_locations = self.views[target.text]
+                    else:
+                        destination = self.register(target, allow_qubit_array=True)
+                        gate_locations = tuple(
+                            (destination, bit)
+                            for bit in range(register_width(destination))
+                        )
             else:
                 gate_locations = (self.gate_target(args[0]),)
             for destination, bit in gate_locations:
@@ -2929,7 +3043,20 @@ class _Adapt:
             Operation(
                 "qreg.declare",
                 results=(value,),
-                attributes={"name": parameter.name.text},
+                attributes={
+                    "name": parameter.name.text,
+                    **(
+                        {
+                            "record_type": parameter.record,
+                            "fields": tuple(
+                                (field.name.text, field.kind, field.width)
+                                for field in self.record_types[parameter.record].fields
+                            ),
+                        }
+                        if parameter.record is not None
+                        else {}
+                    ),
+                },
                 location=parameter.name.location,
             )
             for parameter, value in zip(output_parameters, declared, strict=True)
@@ -2986,7 +3113,8 @@ def parse_qmod(
     tokens = tokenize(source, filename)
     check_source_version(source_version, tokens[0])
     definitions: dict[str, Function] = {}
-    functions_syntax, declarations = Parser(tokens).parse()
+    parser = Parser(tokens)
+    functions_syntax, declarations = parser.parse()
     constants: dict[str, Expression] = {}
     for name_token, operator in declarations:
         name = name_token.text
@@ -3139,7 +3267,7 @@ def parse_qmod(
             )
         if name not in compiled:
             active.add(name)
-            adapter = _Adapt(syntax, resolve, definitions, constants)
+            adapter = _Adapt(syntax, resolve, definitions, constants, parser.records)
             if name == "main":
                 adapter.classical_values.update(bindings)
                 adapter.classical_arrays.update(arrays)

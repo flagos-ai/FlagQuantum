@@ -96,13 +96,13 @@ def network_cost(bits, real=Fraction):
     return linear + real("0.2") * (sum(value**2 for value in flow) + capacity)
 
 
-def independent_terms(cost, degree):
+def independent_terms(cost, degree, width=WIDTH):
     """Recover low-degree coefficients by exact classical finite differences."""
-    coefficients = {0: cost([0] * WIDTH)}
+    coefficients = {0: cost([0] * width)}
     for size in range(1, degree + 1):
-        for subset in combinations(range(WIDTH), size):
+        for subset in combinations(range(width), size):
             mask = sum(1 << bit for bit in subset)
-            value = cost([(mask >> bit) & 1 for bit in range(WIDTH)])
+            value = cost([(mask >> bit) & 1 for bit in range(width)])
             proper = (mask - 1) & mask
             while True:
                 value -= coefficients.get(proper, 0)
@@ -114,14 +114,14 @@ def independent_terms(cost, degree):
     return {mask: float(value) for mask, value in coefficients.items() if value}
 
 
-def reference_circuit(params, terms):
-    circuit = fq.Circuit(WIDTH, dtype=torch.complex128)
-    for wire in range(WIDTH):
+def reference_circuit(params, terms, width=WIDTH):
+    circuit = fq.Circuit(width, dtype=torch.complex128)
+    for wire in range(width):
         circuit.h(wire)
     for gamma, beta in zip(params[::2], params[1::2], strict=True):
         for mask, coefficient in terms.items():
             angle = gamma * coefficient
-            wires = tuple(WIDTH - 1 - bit for bit in range(WIDTH) if mask & (1 << bit))
+            wires = tuple(width - 1 - bit for bit in range(width) if mask & (1 << bit))
             if not wires:
                 circuit.x(0).phase(0, theta=angle).x(0).phase(0, theta=angle)
             elif len(wires) == 1:
@@ -134,14 +134,16 @@ def reference_circuit(params, terms):
                     torch.tensor(1j * angle, dtype=torch.complex128)
                 )
                 circuit.any(*wires, matrix=torch.diag(diagonal))
-        for wire in range(WIDTH):
+        for wire in range(width):
             circuit.rx(wire, theta=beta)
     return circuit
 
 
 def maximum_error(actual, expected):
     error = 0.0
-    for start in range(0, SIZE, CHUNK):
+    if actual.numel() != expected.numel():
+        raise AssertionError("state sizes differ")
+    for start in range(0, actual.numel(), CHUNK):
         error = max(
             error,
             float(

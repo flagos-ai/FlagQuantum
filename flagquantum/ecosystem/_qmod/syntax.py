@@ -25,6 +25,7 @@ _TOKEN = re.compile(
 _RESERVED = frozenset(
     {
         "qfunc",
+        "qstruct",
         "output",
         "input",
         "const",
@@ -119,6 +120,17 @@ class Parameter:
     kind: str
     width: int | None
     role: Literal["output", "const", "local", "real", "inout", "callable"] = "output"
+    record: str | None = None
+
+
+@dataclass(frozen=True)
+class Record:
+    name: Token
+    fields: tuple[Parameter, ...]
+
+    @property
+    def width(self) -> int:
+        return sum(field.width or 0 for field in self.fields)
 
 
 @dataclass(frozen=True)
@@ -151,6 +163,7 @@ class Parser:
     def __init__(self, tokens: tuple[Token, ...]) -> None:
         self.tokens = tokens
         self.position = 0
+        self.records: dict[str, Record] = {}
 
     @property
     def current(self) -> Token:
@@ -239,39 +252,64 @@ class Parser:
                     "expected a nonnegative integer, output name or parentheses",
                 )
             left = Expression(self.name())
-        if not left.children and not left.token.text.isdecimal():
-            if static and self.current.text == ".":
+        if (
+            not left.children
+            and token.text in EXTREMA
+            and not static
+            and self.current.text == "("
+        ):
+            self.take("(")
+            first = self.expression(
+                nesting=nesting + 1, decimal=True, difference=difference
+            )
+            self.take(",")
+            second = self.expression(
+                nesting=nesting + 1, decimal=True, difference=difference
+            )
+            self.take(")")
+            depth = max(first.depth, second.depth) + 1
+            if depth > MAX_DEPTH:
+                reject(
+                    token, "budget.depth", f"expression tree exceeds depth {MAX_DEPTH}"
+                )
+            left = Expression(token, (first, second), depth)
+        while True:
+            if not left.children and left.token.text.isdecimal():
+                break
+            if self.current.text == "." and (static or self.records):
                 dot = self.take(".")
-                self.take("len")
-                left = Expression(dot, (left,), 2)
-            elif not static and token.text in EXTREMA and self.current.text == "(":
-                self.take("(")
-                first = self.expression(
-                    nesting=nesting + 1, decimal=True, difference=difference
-                )
-                self.take(",")
-                second = self.expression(
-                    nesting=nesting + 1, decimal=True, difference=difference
-                )
-                self.take(")")
-                depth = max(first.depth, second.depth) + 1
-                if depth > MAX_DEPTH:
-                    reject(
-                        token,
-                        "budget.depth",
-                        f"expression tree exceeds depth {MAX_DEPTH}",
-                    )
-                left = Expression(token, (first, second), depth)
-            elif not static and self.current.text == "[":
+                if static and not self.records:
+                    self.take("len")
+                    left = Expression(dot, (left,), left.depth + 1)
+                else:
+                    member = Expression(self.name())
+                    left = Expression(dot, (left, member), left.depth + 1)
+            elif (
+                not static
+                and self.current.text == "["
+                and (not left.children or (self.records and left.token.text == "."))
+            ):
                 bracket = self.take("[")
                 index = self.expression(nesting=nesting + 1, static=True)
                 if allow_slice and self.current.text == ":":
                     colon = self.take(":")
                     stop = self.expression(nesting=nesting + 1, static=True)
-                    left = Expression(colon, (left, index, stop))
+                    left = Expression(
+                        colon,
+                        (left, index, stop),
+                        max(left.depth, index.depth, stop.depth) + 1,
+                    )
                 else:
-                    left = Expression(bracket, (left, index), index.depth + 1)
+                    left = Expression(
+                        bracket, (left, index), max(left.depth, index.depth) + 1
+                    )
                 self.take("]")
+            else:
+                break
+            if left.depth > MAX_DEPTH:
+                reject(
+                    token, "budget.depth", f"expression tree exceeds depth {MAX_DEPTH}"
+                )
         precedence = {
             **dict.fromkeys(_COMPARISONS, 5),
             "|": 6,
@@ -653,6 +691,12 @@ class Parser:
                 for token in self.tokens[self.position + 1 : self.position + 3]
             ] == [":", "real"]:
                 role = "real"
+            elif (
+                name.text != "main"
+                and self.position + 2 < len(self.tokens)
+                and self.tokens[self.position + 2].text in self.records
+            ):
+                role = "inout"
             elif name.text != "main" and [
                 token.text
                 for token in self.tokens[self.position + 1 : self.position + 3]
@@ -671,7 +715,17 @@ class Parser:
                 )
             parameter = self.name()
             self.take(":")
-            if role == "callable":
+            record = None
+            if self.current.text in self.records:
+                if role not in {"output", "inout"}:
+                    reject(
+                        self.current,
+                        "role",
+                        "records require Output or writable helper ports",
+                    )
+                record = self.take(self.current.text).text
+                kind, width = "qbit[]", self.records[record].width
+            elif role == "callable":
                 self.take("qfunc")
                 self.take("(")
                 self.take("real")
@@ -700,7 +754,7 @@ class Parser:
                 reject(
                     parameter, "width", "Const qnum requires an explicit unsigned width"
                 )
-            parameters.append(Parameter(parameter, kind, width, role))
+            parameters.append(Parameter(parameter, kind, width, role, record))
             if self.current.text != ",":
                 break
             self.take(",")
@@ -1002,6 +1056,42 @@ class Parser:
         self.take("}")
         return tuple(statements)
 
+    def record(self) -> None:
+        self.take("qstruct")
+        name = self.name()
+        if name.text in self.records:
+            reject(name, "name", "duplicate record type")
+        self.take("{")
+        fields: list[Parameter] = []
+        while self.current.text != "}":
+            field = self.name()
+            if field.text in {"size", "len"} or any(
+                item.name.text == field.text for item in fields
+            ):
+                reject(
+                    field,
+                    "name",
+                    "record field names must be unique and cannot shadow size or len",
+                )
+            self.take(":")
+            if self.current.text != "qbit":
+                reject(
+                    self.current, "type", "flat record fields require qbit or qbit[N]"
+                )
+            kind, width = self.scalar_type(allow_fixed_array=True)
+            if self.current.text == "[":
+                reject(
+                    self.current, "type", "record fields support one array dimension"
+                )
+            self.take(";")
+            fields.append(Parameter(field, kind, width))
+            if sum(item.width or 0 for item in fields) > 256:
+                reject(field, "budget.record", "record exceeds 256 bits")
+        self.take("}")
+        if not fields:
+            reject(name, "type", "record requires at least one field")
+        self.records[name.text] = Record(name, tuple(fields))
+
     def parse(
         self,
     ) -> tuple[tuple[Function, ...], tuple[tuple[Token, Expression], ...]]:
@@ -1010,10 +1100,13 @@ class Parser:
         functions: list[Function] = []
         constants: list[tuple[Token, Expression]] = []
         while self.current.text != "<eof>":
-            if len(functions) + len(constants) >= MAX_FUNCTIONS:
+            if len(functions) + len(constants) + len(self.records) >= MAX_FUNCTIONS:
                 reject(
                     self.current, "budget.functions", "source exceeds 32 definitions"
                 )
+            if self.current.text == "qstruct":
+                self.record()
+                continue
             kind = (
                 self.tokens[self.position + 2].text
                 if self.position + 2 < len(self.tokens)

@@ -72,6 +72,17 @@ def synthesize_registers(
     }
     if source_format == "qmod":
         report.update(source_name=source_name, source_version=source_version)
+        record_layouts = tuple(
+            (
+                op.attributes["name"],
+                op.attributes["record_type"],
+                op.attributes["fields"],
+            )
+            for op in program.body.blocks[0].operations
+            if op.name == "qreg.declare" and "record_type" in op.attributes
+        )
+        if record_layouts:
+            report["qmod_records"] = record_layouts
         if fractional_bits:
             report["qmod_fractional_bits"] = fractional_bits
         if signed_registers:
