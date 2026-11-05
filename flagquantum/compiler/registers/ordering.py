@@ -26,3 +26,20 @@ def greater_ir(
         *less_equal_ir(left, right, target, workspace, classical_bits),
         Instruction("x", (target,)),
     )
+
+
+def greater_adjoint_ir(
+    left: tuple[int, ...],
+    right: tuple[int, ...],
+    target: int,
+    workspace: tuple[int, ...],
+    classical_bits: tuple[int, ...],
+) -> tuple[Instruction, ...]:
+    """XOR a>b using the original X / self-adjoint LessThanEqual inverse.
+
+    Big-endian unsigned operands may differ in width; target may be arbitrary.
+    Keep original component order and the shared clean-work/slot requirements.
+    Quantum work starts/ends zero; classical slots retain latest outcomes.
+    """
+    comparison = less_equal_ir(left, right, target, workspace, classical_bits)
+    return (Instruction("x", (target,)), *comparison)

@@ -221,6 +221,7 @@ def reference_arithmetic_gates(
             "Controlled",
             "ControlledViaAnd",
             "MultiControlX",
+            "GreaterThan",
             "ModAdd",
             "ModSub",
             "CModAdd",
@@ -236,6 +237,7 @@ def reference_arithmetic_gates(
         quregs = split_qubits(bloq.signature, op.qubits)
         component = bloq.decompose_bloq()
         if kind not in {
+            "GreaterThan",
             "ModAdd",
             "ModSub",
             "CModAdd",
