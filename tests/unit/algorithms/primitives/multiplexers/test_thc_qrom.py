@@ -45,8 +45,10 @@ def _execute_sparse(
             for basis, value in state.items():
                 updated[basis & ~mask] += value / sqrt(2)
                 updated[basis | mask] += (-value if basis & mask else value) / sqrt(2)
+            # Drop roundoff from destructive interference in the Clifford+T
+            # swap decomposition before subsequent Hadamards expand it.
             state = {
-                basis: value for basis, value in updated.items() if abs(value) > 1e-16
+                basis: value for basis, value in updated.items() if abs(value) > 1e-14
             }
         elif name == "measure":
             (mask,) = masks
@@ -354,4 +356,121 @@ def test_measured_qrom_matches_qualtran_thc_angle_tables(
     }
     assert _execute_sparse(ir, source, seed=11) == pytest.approx(
         expected_state, abs=1e-12
+    )
+
+
+def test_qroam_swap_with_zero_matches_qualtran_gate_sequence() -> None:
+    from importlib.metadata import version
+
+    pytest.importorskip("qualtran")
+    if version("qualtran") != "0.7.0":
+        pytest.skip("Gate sequence comparison pins Qualtran 0.7.0")
+    import cirq
+    from qualtran.bloqs.swap_network.swap_with_zero import SwapWithZero
+
+    width = 3
+    load = controlled_qrom_ir(
+        width, 8, (8, 20, 0, 0, 0, 240), blocked=True, relative_phase_swap=True
+    )
+    wires = np.asarray(cirq.LineQubit.range(width, width + 17))
+    names = {
+        cirq.CNOT: "cx",
+        cirq.H: "h",
+        cirq.S: "s",
+        cirq.S**-1: "sdg",
+        cirq.T: "t",
+        cirq.T**-1: "tdg",
+    }
+    upstream = cirq.decompose(
+        SwapWithZero(1, 8, 2).on_registers(
+            selection=wires[:1], targets=wires[1:].reshape(2, 8)
+        ),
+        keep=lambda op: op.gate in names,
+    )
+    expected = [
+        (names[op.gate], tuple(wire.x for wire in op.qubits)) for op in upstream
+    ]
+    assert [
+        (op.name, op.wires) for op in load.instructions[-len(expected) :]
+    ] == expected
+
+
+@pytest.mark.parametrize(
+    "width,words",
+    [
+        (3, (8, 20, 0, 0, 0, 240)),
+        (3, (248, 236, 0, 0, 0, 16)),
+        (2, (8, 20)),
+        (2, (248, 236)),
+        (2, (1, 1)),  # Odd overlap activates the deterministic swap-sign fixup.
+    ],
+)
+def test_paired_swap_and_erasure_all_measurement_branches(
+    width: int, words: tuple[int, ...]
+) -> None:
+    load = controlled_qrom_ir(width, 8, words, blocked=True, relative_phase_swap=True)
+    bits = tuple(range(16))
+    erase = controlled_qrom_ir(
+        width,
+        8,
+        words,
+        blocked=True,
+        inverse=True,
+        measurement_bits=bits,
+        relative_phase_swap=True,
+    )
+    prefix_width = width + 1
+    payload_width = load.n_wires - prefix_width
+    source = {
+        prefix << payload_width: (1j) ** prefix / sqrt(1 << prefix_width)
+        for prefix in range(1 << prefix_width)
+    }
+    loaded = _execute_sparse(load, source, seed=0)
+    assert len(loaded) == len(source)
+
+    # Contract the emitted X-basis measurement/reset prefix in one batch.
+    # The rest is a classical permutation with diagonal phase corrections.
+    outcomes = np.arange(1 << len(bits), dtype=np.uint32)
+    amplitudes = np.zeros((len(outcomes), len(source)), dtype=np.complex128)
+    measurement_prefix = 3 * len(bits)
+    for basis, amplitude in loaded.items():
+        state = basis
+        branch = np.full(len(outcomes), amplitude / sqrt(len(outcomes)))
+        for wire, bit in enumerate(bits, start=prefix_width):
+            h, measure, clear = erase.instructions[3 * bit : 3 * bit + 3]
+            assert (h.name, measure.name, clear.name) == ("h", "measure", "x")
+            assert h.wires == measure.wires == clear.wires == (wire,)
+            assert measure.metadata["classical_bit"] == bit
+            assert instruction_condition_clauses(clear) == (((bit, 1),),)
+            mask = 1 << (erase.n_wires - wire - 1)
+            if state & mask:
+                branch[(outcomes & (1 << bit)) != 0] *= -1
+            state &= ~mask
+
+        for op in erase.instructions[measurement_prefix:]:
+            masks = tuple(1 << (erase.n_wires - wire - 1) for wire in op.wires)
+            clauses = instruction_condition_clauses(op)
+            if op.name in {"x", "cx", "ccx"}:
+                assert not clauses
+                control = sum(masks[:-1])
+                if state & control == control:
+                    state ^= masks[-1]
+            else:
+                assert op.name in {"z", "cz"}
+                if state & sum(masks) == sum(masks):
+                    if clauses:
+                        (((bit, expected),),) = clauses
+                        branch[((outcomes >> bit) & 1) == expected] *= -1
+                    else:
+                        branch *= -1
+
+        assert state & ((1 << payload_width) - 1) == 0
+        amplitudes[:, state >> payload_width] += branch
+
+    reference = np.asarray(list(source.values())) / sqrt(len(outcomes))
+    np.testing.assert_allclose(
+        amplitudes, np.broadcast_to(reference, amplitudes.shape), rtol=0, atol=1e-12
+    )
+    np.testing.assert_allclose(
+        np.sum(abs(amplitudes) ** 2, axis=1), 1 / len(outcomes), rtol=0, atol=1e-15
     )

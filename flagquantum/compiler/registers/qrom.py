@@ -22,6 +22,7 @@ def controlled_qrom_ir(
     blocked: bool = False,
     inverse: bool = False,
     traversal_bits: tuple[int, ...] = (),
+    relative_phase_swap: bool = False,
 ) -> CircuitIR:
     """Emit lookup, or erase loaded data using X measurement and feedback.
 
@@ -33,6 +34,8 @@ def controlled_qrom_ir(
     supplied by the caller so the fragment can be placed on any qubits.
     Supply traversal_bits to use the upstream temporary-AND sequence for
     an unblocked forward lookup, with one classical bit per traversal wire.
+    Use relative_phase_swap with clean paired banks and matching measured
+    erasure. The erasure includes a correction for the relative swap sign.
     """
     if width < 1 or data_width < 1 or not 0 < len(words) <= 1 << width:
         raise ValueError(
@@ -55,6 +58,8 @@ def controlled_qrom_ir(
         or len(set(traversal_bits)) != width
     ):
         raise ValueError("Measured traversal requires an unblocked forward lookup")
+    if relative_phase_swap and (not blocked or inverse != bool(measurement_bits)):
+        raise ValueError("Relative-phase swap requires paired load or measured inverse")
     if blocked or measurement_bits:
         return paired_lookup_ir(
             width,
@@ -63,6 +68,7 @@ def controlled_qrom_ir(
             measurement_bits=measurement_bits,
             blocked=blocked,
             inverse=inverse,
+            relative_phase_swap=relative_phase_swap,
         )
 
     data_start = 1 + width

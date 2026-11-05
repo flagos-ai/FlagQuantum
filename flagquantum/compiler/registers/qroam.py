@@ -9,6 +9,7 @@
 from collections.abc import Sequence
 
 from ...core.ir import CircuitIR, Instruction
+from .swap_network import swap_with_zero_pair_ir
 from .unary_iteration import append_unary_iteration
 
 
@@ -20,6 +21,7 @@ def paired_lookup_ir(
     measurement_bits: tuple[int, ...],
     blocked: bool,
     inverse: bool,
+    relative_phase_swap: bool,
 ) -> CircuitIR:
     """Lower paired lookup or erasure for a validated QROM table."""
     banks = 2 if blocked else 1
@@ -65,6 +67,13 @@ def paired_lookup_ir(
                         instructions.append(Instruction("cx", (predicate, wire)))
             return
 
+        # Berry et al., Appendix C: X-measure the words and kick back the
+        # classically selected phase. For two rows, factor the fixup into
+        # the base row and the difference selected by the low address bit.
+        # https://arxiv.org/abs/1902.02134
+        if relative_phase_swap and (even & odd).bit_count() % 2:
+            instructions.append(Instruction("cz", (predicate, width)))
+
         # The low address bit swaps the two banks. Its phase correction
         # is the difference (XOR) between the unswapped and swapped words.
         for offset, bit in enumerate(measurement_bits):
@@ -97,5 +106,14 @@ def paired_lookup_ir(
         break_early=same_block if blocked else None,
     )
     if not inverse and not measurement_bits:
-        instructions.extend(swaps)
+        if relative_phase_swap:
+            instructions.extend(
+                swap_with_zero_pair_ir(
+                    width,
+                    tuple(range(data_start, data_start + data_width)),
+                    tuple(range(data_start + data_width, operand_count)),
+                )
+            )
+        else:
+            instructions.extend(swaps)
     return CircuitIR(operand_count + width, tuple(instructions))

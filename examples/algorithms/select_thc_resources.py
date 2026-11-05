@@ -18,6 +18,7 @@ from flagquantum.compiler.registers.arithmetic import (
 )
 from flagquantum.compiler.registers.phase_gradient import phase_gradient_state_ir
 from flagquantum.compiler.registers.qrom import controlled_qrom_ir
+from flagquantum.compiler.registers.swap_network import swap_with_zero_pair_ir
 from flagquantum.compiler.resource_estimation import count_instruction_resources
 from flagquantum.core.classical_control import instruction_condition_clauses
 from flagquantum.core.ir import CircuitIR
@@ -33,6 +34,9 @@ def _stage_layout(measured: bool) -> Iterator[tuple[str, tuple[str, ...]]]:
     angle, gradient = tuple(range(1, 9)), tuple(range(9, 17))
     carries = tuple(range(17, 24))
     bits = tuple(range(16))
+    swap_count = (
+        len(swap_with_zero_pair_ir(0, angle, gradient)) if measured else ANGLE_BITS
+    )
     adder = (
         measurement_add_or_subtract_ir(
             0, angle, gradient, carries, tuple(range(16, 23))
@@ -57,7 +61,11 @@ def _stage_layout(measured: bool) -> Iterator[tuple[str, tuple[str, ...]]]:
                 for net in networks
             )
             load = controlled_qrom_ir(
-                3 if first else 2, ANGLE_BITS, words, blocked=True
+                3 if first else 2,
+                ANGLE_BITS,
+                words,
+                blocked=True,
+                relative_phase_swap=measured,
             )
             erase = controlled_qrom_ir(
                 3 if first else 2,
@@ -66,9 +74,13 @@ def _stage_layout(measured: bool) -> Iterator[tuple[str, tuple[str, ...]]]:
                 blocked=True,
                 inverse=True,
                 measurement_bits=bits if measured else (),
+                relative_phase_swap=measured,
             )
             yield "Rotation basis changes", ("cx",)
-            yield "Lookup", tuple(op.name for op in load)
+            yield "Lookup XOR", tuple(op.name for op in load.instructions[:-swap_count])
+            yield "Lookup bank exchange", tuple(
+                op.name for op in load.instructions[-swap_count:]
+            )
             yield "Rotation basis changes", ("sdg", "h")
             yield "Add/subtract", tuple(op.name for op in adder)
             yield "Rotation basis changes", ("h", "s")

@@ -96,6 +96,7 @@ class THCRotations:
     ) -> None:
         width = len(self.selection)
         modulus = 1 << len(angle_data)
+        relative_phase_swap = bool(junk and measurement_bits)
         traversal_bits: tuple[int, ...] = ()
         if measurement_bits and not junk:
             start = measurement_bits[-1] + 1 + (len(carries) if len(carries) > 1 else 0)
@@ -129,6 +130,7 @@ class THCRotations:
                     lookup_words,
                     blocked=bool(junk),
                     traversal_bits=traversal_bits,
+                    relative_phase_swap=relative_phase_swap,
                 ),
                 dtype=circuit.dtype,
                 bsz=circuit.bsz,
@@ -163,6 +165,7 @@ class THCRotations:
                         measurement_bits=measurement_bits,
                         blocked=bool(junk),
                         inverse=True,
+                        relative_phase_swap=relative_phase_swap,
                     ),
                     dtype=circuit.dtype,
                     bsz=circuit.bsz,
