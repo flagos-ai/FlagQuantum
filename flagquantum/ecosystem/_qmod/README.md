@@ -802,8 +802,9 @@ memory refusal and separate input/degree/expansion budgets.
 
 ### Flat quantum records
 
-The Qmod frontend accepts flat qstruct definitions with scalar qbit and
-one-dimensional qbit[N] fields. Fields must be unique, nonempty and fit
+The Qmod frontend accepts flat qstruct definitions with scalar qbit,
+one-dimensional qbit[N], fixed-width unsigned qnum<W> and qnum<W>[N]
+fields. Explicit numeric modifiers must be False, 0. Fields must be unique, nonempty and fit
 the 256-bit structural budget. Record allocation, record size,
 whole-record Hadamard and bounded single-qubit maps reuse the existing
 register storage. A record can be passed to a matching writable helper
@@ -817,12 +818,39 @@ Compiler independently checks complete coverage and output name
 uniqueness.
 
 Named output registers are the disjoint fields, such as `v.f` and
-`v.interaction`. Read them with
+`v.interaction`; numeric arrays expose each integer as `v.w[0]`, `v.w[1]`,
+and so on. The first element occupies the least-significant field segment.
+Array len counts elements; record size counts bits. Each numeric word keeps
+its declared width and is decoded as an unsigned integer. Read bit fields with
 `program.probabilities(result, registers=("v.f", "v.interaction"))`.
 `program.report["qmod_records"]` retains the declared schema.
 A bounded repeat may contain an admitted single-qubit map callback.
-Nested records, numeric fields and multidimensional arrays remain
-outside this flat record profile.
+Numeric words and indexed numeric array elements can be read by bounded real
+phase arithmetic. Whole fields and indexed numeric words support Hadamard;
+direct scalar gates still require qbit fields or indexed qbit elements.
+Nested records, signed/fractional numeric fields, numeric array arithmetic
+without an element index and multidimensional arrays remain outside this profile.
+
+Run an unchanged original portfolio program without designing gates or decoding
+physical bit strings:
+
+```python
+from pathlib import Path
+
+import flagquantum as fq
+from flagquantum import synth
+
+source = Path("tests/fixtures/classiq_qmod/portfolio_optimization.qmod")
+program = synth.synthesize(
+    source,
+    classical_inputs={"params": [0.003, -0.006, 0.009, -0.012, 0.015, -0.018]},
+    memory_limit_bytes=64 * 1024**2,
+)
+result = fq.run(program)
+distribution = program.probabilities(result, registers=("v.w[0]", "v.w[1]", "v.w[2]"))
+print(sum(distribution.values()))  # Approximately 1; integer values range from 0 to 7.
+print(program.report["resources"])  # 12 qubits, 271 operations, depth 51.
+```
 
 Full original record examples can be verified explicitly with
 `PYTHONPATH=. python tools/validate_qmod_records.py --case ising_model --scale 0.003 --check-phase --output ising-validation.json`.

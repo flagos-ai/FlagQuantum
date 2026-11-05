@@ -121,6 +121,7 @@ class Parameter:
     width: int | None
     role: Literal["output", "const", "local", "real", "inout", "callable"] = "output"
     record: str | None = None
+    length: int | None = None
 
 
 @dataclass(frozen=True)
@@ -130,7 +131,7 @@ class Record:
 
     @property
     def width(self) -> int:
-        return sum(field.width or 0 for field in self.fields)
+        return sum((field.width or 0) * (field.length or 1) for field in self.fields)
 
 
 @dataclass(frozen=True)
@@ -607,6 +608,7 @@ class Parser:
         allow_qubit_array: bool = False,
         allow_phase: bool = False,
         allow_fixed_array: bool = False,
+        allow_numeric_array: bool = False,
     ) -> tuple[str, int | None]:
         kind = self.current
         if kind.text not in {"qbit", "qnum"}:
@@ -659,6 +661,8 @@ class Parser:
             width = self.width()
             self.take("]")
             return "qbit[]", width
+        if self.current.text == "[" and kind.text == "qnum" and allow_numeric_array:
+            return kind.text, width
         if self.current.text == "[":
             reject(
                 self.current,
@@ -1074,18 +1078,30 @@ class Parser:
                     "record field names must be unique and cannot shadow size or len",
                 )
             self.take(":")
-            if self.current.text != "qbit":
+            if self.current.text not in {"qbit", "qnum"}:
                 reject(
-                    self.current, "type", "flat record fields require qbit or qbit[N]"
+                    self.current,
+                    "type",
+                    "flat record fields require qbit or unsigned qnum",
                 )
-            kind, width = self.scalar_type(allow_fixed_array=True)
+            kind, width = self.scalar_type(
+                allow_fixed_array=True, allow_numeric_array=True
+            )
+            if width is None:
+                reject(field, "width", "record numeric fields require a fixed width")
+            length = None
+            if kind == "qnum" and self.current.text == "[":
+                self.take("[")
+                length = self.width()
+                self.take("]")
+                kind = "qnum[]"
             if self.current.text == "[":
                 reject(
                     self.current, "type", "record fields support one array dimension"
                 )
             self.take(";")
-            fields.append(Parameter(field, kind, width))
-            if sum(item.width or 0 for item in fields) > 256:
+            fields.append(Parameter(field, kind, width, length=length))
+            if sum((item.width or 0) * (item.length or 1) for item in fields) > 256:
                 reject(field, "budget.record", "record exceeds 256 bits")
         self.take("}")
         if not fields:

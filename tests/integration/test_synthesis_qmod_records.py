@@ -1,6 +1,7 @@
 """Check flat record storage, composition and named field readout contracts."""
 
 from dataclasses import replace
+from math import sin
 
 import pytest
 import torch
@@ -52,6 +53,50 @@ def test_record_output_helper_and_whole_field_hadamard():
     )
 
 
+def test_numeric_record_words_preserve_shape_storage_and_readout():
+    source = """qstruct State {words:qnum<2>[2]; tag:qbit;}
+      qfunc prepare(output s:State) {
+        allocate(s.size,s);
+        repeat(i:s.words.len) {hadamard_transform(s.words[i]);}
+        X(s.tag);
+      }
+      qfunc kick(s:State) {phase(s.words[0]+2*s.words[1]+s.tag,0.37);}
+      qfunc main(output s:State) {prepare(s);kick(s);hadamard_transform(s.words);}"""
+    program = synth.synthesize(source, source_format="qmod")
+    reference = fq.Circuit(5, dtype=DTYPE).x(0)
+    for wire, weight in ((4, 1), (3, 2), (2, 2), (1, 4)):
+        reference.h(wire).phase(wire, theta=0.37 * weight).h(wire)
+    reference.phase(0, theta=0.37)
+    result = fq.run(program)
+    torch.testing.assert_close(
+        result.statevector(), fq.run(reference).statevector(), atol=1e-12, rtol=0
+    )
+    assert dict(program.registers) == {
+        "s.words[0]": (3, 4),
+        "s.words[1]": (1, 2),
+        "s.tag": (0,),
+    }
+    expected = {}
+    for first in range(4):
+        for second in range(4):
+            probability = 1.0
+            for value, angles in ((first, (0.37, 0.74)), (second, (0.74, 1.48))):
+                for bit, angle in enumerate(angles):
+                    one = sin(angle / 2) ** 2
+                    probability *= one if value & (1 << bit) else 1 - one
+            expected[first, second, 1] = probability
+    assert dict(
+        program.probabilities(result, registers=tuple(program.registers))
+    ) == pytest.approx(expected)
+    assert program.report["qmod_records"] == (
+        ("s", "State", (("words", "qnum[]", 2, 2), ("tag", "qbit", 1))),
+    )
+    assert program.report["resources"].n_qubits == 5
+    assert program.report["workspace_qubits"] == 0
+    with pytest.raises(synth.SynthesisError):
+        synth.synthesize(source, source_format="qmod", max_qubits=4)
+
+
 @pytest.mark.parametrize(
     ("source", "diagnostic"),
     [
@@ -60,7 +105,30 @@ def test_record_output_helper_and_whole_field_hadamard():
         ("qstruct R {a:qbit;a:qbit;} qfunc main(output r:R) {}", "unique"),
         ("qstruct R {size:qbit;} qfunc main(output r:R) {}", "shadow size"),
         ("qstruct R {a:qbit[256];b:qbit;} qfunc main(output r:R) {}", "exceeds 256"),
-        ("qstruct R {a:qnum<2>;} qfunc main(output r:R) {}", "flat record fields"),
+        ("qstruct R {a:qnum;} qfunc main(output r:R) {}", "fixed width"),
+        ("qstruct R {a:qnum<2,True,0>;} qfunc main(output r:R) {}", "signed"),
+        ("qstruct R {a:qnum<2,False,1>;} qfunc main(output r:R) {}", "fractional"),
+        ("qstruct R {a:qnum<8>[33];} qfunc main(output r:R) {}", "exceeds 256"),
+        (
+            "qstruct R {a:qnum<2>[2][2];} qfunc main(output r:R) {}",
+            "one array dimension",
+        ),
+        (
+            "qstruct R {a:qnum<2>[2];} qfunc main(output r:R) {allocate(r);phase(r.a[2],1.0);}",
+            "field index",
+        ),
+        (
+            "qstruct R {a:qnum<2>[2];} qfunc main(output r:R) {allocate(r);phase(r.a,1.0);}",
+            "element index",
+        ),
+        (
+            "qstruct R {a:qnum<1>;} qfunc main(output r:R) {allocate(r);X(r.a);}",
+            "scalar field",
+        ),
+        (
+            "qstruct R {a:qnum<2>[2];} qfunc main(output r:R) {allocate(r);X(r.a[0]);}",
+            "array field",
+        ),
         ("qstruct R {a:qbit[2][2];} qfunc main(output r:R) {}", "one array dimension"),
         (
             "qstruct R {a:qbit;} qfunc main(output r:R) {allocate(r);X(r.b);}",
@@ -100,6 +168,10 @@ def test_equal_width_record_types_are_not_interchangeable():
         (("a", "qbit[]", 1),),
         (("a", "qbit", 1), ("a", "qbit", 1)),
         (("a", "qbit", True), ("b", "qbit", 1)),
+        (("a", "qnum[]", 1, True), ("b", "qnum", 1)),
+        (("a", "qnum[]", 2),),
+        (("a", "qnum", 1, 2),),
+        (("a", "qnum[]", 2, 257),),
     ],
 )
 def test_compiler_rechecks_owned_record_layout(fields):
@@ -123,7 +195,18 @@ def test_compiler_rechecks_owned_record_layout(fields):
         verify_register_program(program)
 
 
-@pytest.mark.parametrize("name", ["ising_model", "kidney_exchange_problem"])
+@pytest.mark.parametrize(
+    "name",
+    [
+        "ising_model",
+        "kidney_exchange_problem",
+        "portfolio_optimization",
+        "integer_linear_programming",
+        "learning_optimization",
+        "combi_workshop_Inequality_constriants_PO",
+        "combi_workshop_equality_constriants_PO",
+    ],
+)
 @pytest.mark.parametrize("scale", [0.003, -0.005])
 def test_small_original_records_against_independent_cost(name, scale):
     import hashlib
@@ -141,11 +224,15 @@ def test_small_original_records_against_independent_cost(name, scale):
     program = synth.synthesize(source, classical_inputs={"params": params})
     terms = independent_terms(oracle, oracle.degree, oracle.width)
     midpoint = oracle.count // 2
-    interleaved = [
-        value
-        for pair in zip(params[:midpoint], params[midpoint:], strict=True)
-        for value in pair
-    ]
+    interleaved = (
+        params
+        if oracle.interleaved
+        else [
+            value
+            for pair in zip(params[:midpoint], params[midpoint:], strict=True)
+            for value in pair
+        ]
+    )
     reference = reference_circuit(interleaved, terms, oracle.width)
     result = fq.run(program)
     torch.testing.assert_close(

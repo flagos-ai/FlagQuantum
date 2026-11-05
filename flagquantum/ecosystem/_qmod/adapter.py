@@ -884,10 +884,11 @@ class _Adapt:
         offset = 0
         for field in record.fields:
             assert field.width is not None
+            size = field.width * (field.length or 1)
             if field.name.text == member.token.text:
                 view = self.array_view(root)
-                return field, view[offset : offset + field.width]
-            offset += field.width
+                return field, view[offset : offset + size]
+            offset += size
         reject(member.token, "field", "unknown record field")
 
     def static_integer(self, node: Expression) -> int:
@@ -925,8 +926,8 @@ class _Adapt:
                 reject(node.token, "field", "expected array len or record size")
             if root.children:
                 field = self.record_field(root)
-                if field is not None and field[0].kind == "qbit[]":
-                    return len(field[1])
+                if field is not None and field[0].kind in {"qbit[]", "qnum[]"}:
+                    return field[0].length or len(field[1])
                 reject(node.token, "field", "len requires an array field")
             name = root.token.text
             if name in self.classical_arrays:
@@ -958,7 +959,7 @@ class _Adapt:
                 if not 0 <= index < len(field_view):
                     reject(node.token, "width", "field index is out of bounds")
                 return field_view[index]
-            if len(field_view) != 1:
+            if field.kind != "qbit":
                 reject(node.token, "field", "gate requires a scalar field or element")
             return field_view[0]
         indexed = node.token.text == "["
@@ -988,6 +989,17 @@ class _Adapt:
         return value, index
 
     def array_view(self, node: Expression) -> tuple[tuple[Value, int], ...]:
+        if node.token.text == "[" and node.children[0].token.text == ".":
+            resolved = self.record_field(node.children[0])
+            assert resolved is not None
+            field, word_locations = resolved
+            if field.kind != "qnum[]":
+                return (self.gate_target(node),)
+            index = self.static_integer(node.children[1])
+            assert field.length is not None and field.width is not None
+            if not 0 <= index < field.length:
+                reject(node.token, "width", "field index is out of bounds")
+            return word_locations[index * field.width : (index + 1) * field.width]
         if node.token.text == ".":
             resolved = self.record_field(node)
             assert resolved is not None
@@ -1407,13 +1419,16 @@ class _Adapt:
                 assert resolved is not None
                 field, view = resolved
                 if node.token.text == "[":
-                    if field.kind != "qbit[]":
+                    if field.kind not in {"qbit[]", "qnum[]"}:
                         reject(node.token, "field", "indexing requires an array field")
                     index = self.static_integer(node.children[1])
-                    if not 0 <= index < len(view):
+                    if not 0 <= index < (field.length or len(view)):
                         reject(node.token, "width", "field index is out of bounds")
+                    if field.kind == "qnum[]":
+                        assert field.width is not None
+                        return view[index * field.width : (index + 1) * field.width]
                     return (view[index],)
-                if field.kind != "qbit":
+                if field.kind not in {"qbit", "qnum"}:
                     reject(node.token, "field", "phase arrays require an element index")
                 return view
             if source.children:
@@ -1438,7 +1453,13 @@ class _Adapt:
         polynomial, locations = expand_phase(
             expression, quantum_word, self.classical_number
         )
-        angle = self.classical_number(coefficient)
+        angle = (
+            math.pi
+            if not coefficient.children
+            and coefficient.token.text == "pi"
+            and "pi" not in self.parameters
+            else self.classical_number(coefficient)
+        )
         # Check reads even when algebraic cancellation removes their phase terms.
         for value, wire in locations:
             self.effect_op(
@@ -2567,6 +2588,10 @@ class _Adapt:
                 )
             if (
                 args[1].token.text == "["
+                or any(
+                    parameter.record is not None
+                    for parameter in self.parameters.values()
+                )
                 or args[1].token.text in self.classical_values
                 or (
                     self.helper_stack
@@ -2971,7 +2996,7 @@ class _Adapt:
             if len(args) != 1:
                 reject(token, "signature", f"{token.text} requires one output variable")
             if token.text == "hadamard_transform":
-                if args[0].token.text == ".":
+                if args[0].token.text in {".", "["}:
                     gate_locations = self.array_view(args[0])
                 else:
                     target = self.atom(args[0])
@@ -3049,7 +3074,16 @@ class _Adapt:
                         {
                             "record_type": parameter.record,
                             "fields": tuple(
-                                (field.name.text, field.kind, field.width)
+                                (
+                                    (
+                                        field.name.text,
+                                        field.kind,
+                                        field.width,
+                                        field.length,
+                                    )
+                                    if field.length is not None
+                                    else (field.name.text, field.kind, field.width)
+                                )
                                 for field in self.record_types[parameter.record].fields
                             ),
                         }

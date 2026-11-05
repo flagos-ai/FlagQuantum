@@ -1,4 +1,4 @@
-"""Full original flat-record QAOA validation using an independent arithmetic oracle."""
+"""Full original bit/integer-record QAOA validation with an arithmetic oracle."""
 
 from __future__ import annotations
 
@@ -37,6 +37,11 @@ BLOBS = {
     "set_cover": "68acd2dd9ce373119987cf92b28a3ad050f083b6",
     "set_partition": "0fc084450cfaf46053c63cebcea58f923d137ef3",
     "ising_model": "b2e4dca01efeed6856554bc6f2ee6c1f968dc0c2",
+    "portfolio_optimization": "136d3dc2b6f964dfcb2344b094de728262c2e3d9",
+    "integer_linear_programming": "d447b9a52c72a673358ae97f4a8c8216eafdb7b1",
+    "learning_optimization": "9b488ef162a463e6bf190391c72b7611dc45d7cf",
+    "combi_workshop_Inequality_constriants_PO": "feee2bea69f3b75b327039635aea37763c05734c",
+    "combi_workshop_equality_constriants_PO": "f81c12106fc83c5625794f23585085627159624a",
 }
 ARITHMETIC = {ast.Add: add, ast.Sub: sub, ast.Mult: mul, ast.Div: truediv, ast.Pow: pow}
 
@@ -52,9 +57,19 @@ class RecordCost:
         record = re.search(r"qstruct\s+(\w+)\s*\{([^}]*)\}", source)
         self.fields = []
         self.width = 0
-        for field, size in re.findall(r"(\w+)\s*:\s*qbit(?:\[(\d+)\])?\s*;", record[2]):
-            width = int(size) if size else 1
+        self.numeric = {}
+        self.owner = re.search(r"output\s+(\w+)\s*:", source)[1]
+        self.interleaved = bool(re.search(r"params\[2\s*\*\s*i\]", source))
+        for field, kind, digits, size in re.findall(
+            r"(\w+)\s*:\s*(qbit|qnum)(?:<(\d+)(?:,\s*False,\s*0)?>)?"
+            r"(?:\[(\d+)\])?\s*;",
+            record[2],
+        ):
+            word_width = int(digits) if digits else 1
+            width = word_width * (int(size) if size else 1)
             self.fields.append((field, self.width, width, bool(size)))
+            if kind == "qnum":
+                self.numeric[field] = word_width
             self.width += width
         opening = re.search(r"\bphase\s*\(", source).end()
         nesting = 0
@@ -95,6 +110,14 @@ class RecordCost:
             name: bits[offset : offset + width] if array else bits[offset]
             for name, offset, width, array in self.fields
         }
+        for name, offset, width, array in self.fields:
+            if name in self.numeric:
+                word_width = self.numeric[name]
+                words = [
+                    sum((1 << bit) * bits[start + bit] for bit in range(word_width))
+                    for start in range(offset, offset + width, word_width)
+                ]
+                fields[name] = words if array else words[0]
 
         def evaluate(node):
             if isinstance(node, ast.Constant) and type(node.value) in (int, float):
@@ -102,7 +125,7 @@ class RecordCost:
             if (
                 isinstance(node, ast.Attribute)
                 and isinstance(node.value, ast.Name)
-                and node.value.id == "v"
+                and node.value.id == self.owner
             ):
                 return fields[node.attr]
             if isinstance(node, ast.Subscript) and isinstance(node.slice, ast.Constant):
@@ -172,11 +195,15 @@ def main():
     checkpoint = time.perf_counter()
     terms = independent_terms(oracle, oracle.degree, oracle.width)
     midpoint = oracle.count // 2
-    interleaved = [
-        value
-        for pair in zip(params[:midpoint], params[midpoint:], strict=True)
-        for value in pair
-    ]
+    interleaved = (
+        params
+        if oracle.interleaved
+        else [
+            value
+            for pair in zip(params[:midpoint], params[midpoint:], strict=True)
+            for value in pair
+        ]
+    )
     reference = reference_circuit(interleaved, terms, oracle.width)
     times["reference_construction_seconds"] = time.perf_counter() - checkpoint
     checkpoint = time.perf_counter()

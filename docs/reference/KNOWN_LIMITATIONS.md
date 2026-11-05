@@ -264,3 +264,13 @@ reason in `last_execution.runtime["training_compilation"]`. This does not change
 explicit JAX policy, manual Module loops, checkpoint schemas or capability level.
 See `TORCH_TRAINING_COMPILATION_CONTRACT.md` in `docs/development/`; #936 and
 #918 remain open pending performance/adoption and the stronger comparisons.
+
+## Qmod integer record fields (UP-06 integration candidate)
+
+Flat records support fixed-width unsigned integer scalars and one-dimensional
+integer arrays, including explicit `False, 0` modifiers. Numeric array elements
+have disjoint named integer readouts. Arithmetic access currently targets bounded
+real phase expressions; this does not enable general record-field assignment.
+Signed/fractional fields, nested records and multidimensional fields are rejected.
+The 256-bit record layout and existing phase/memory budgets remain enforced.
+This local integration capability has not completed the 216-original release gate.

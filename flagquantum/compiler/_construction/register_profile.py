@@ -128,7 +128,10 @@ def register_width(value: Value, operation: Operation | None = None) -> int:
     return width
 
 
-def record_fields(op: Operation) -> tuple[tuple[str, str, int], ...]:
+RecordField = tuple[str, str, int] | tuple[str, str, int, int]
+
+
+def record_fields(op: Operation) -> tuple[RecordField, ...]:
     """Validate a flat record's owned output layout before projecting readout names."""
     if "fields" not in op.attributes and "record_type" not in op.attributes:
         return ()
@@ -144,27 +147,47 @@ def record_fields(op: Operation) -> tuple[tuple[str, str, int], ...]:
     names: set[str] = set()
     width = 0
     for field in fields:
-        if not isinstance(field, tuple) or len(field) != 3:
+        if not isinstance(field, tuple) or len(field) not in {3, 4}:
             _fail("register.record", "record fields require name, kind and width", op)
-        name, kind, size = field
+        name, kind, size = field[:3]
+        length = field[3] if len(field) == 4 else 1
         if (
             not isinstance(name, str)
             or not name.isidentifier()
             or name in names
             or name in {"size", "len"}
-            or kind not in ("qbit", "qbit[]")
+            or kind not in ("qbit", "qbit[]", "qnum", "qnum[]")
             or type(size) is not int
             or not 1 <= size <= 256
             or (kind == "qbit" and size != 1)
+            or type(length) is not int
+            or not 1 <= length <= 256
+            or (kind == "qnum[]") != (len(field) == 4)
+            or size * length > 256
         ):
             _fail(
-                "register.record", "record fields must be unique bounded bit fields", op
+                "register.record",
+                "record fields must be unique bounded unsigned fields",
+                op,
             )
         names.add(name)
-        width += size
-    if len(op.results) != 1 or width != register_width(op.results[0], op):
+        width += size * length
+    if (
+        width > 256
+        or len(op.results) != 1
+        or width != register_width(op.results[0], op)
+    ):
         _fail("register.record", "record fields must cover the register exactly", op)
     return fields
+
+
+def record_readouts(fields: tuple[RecordField, ...]) -> tuple[tuple[str, int], ...]:
+    """Project each numeric array element as one independently decoded integer."""
+    return tuple(
+        (f"{field[0]}[{index}]" if len(field) == 4 else field[0], field[2])
+        for field in fields
+        for index in range(field[3] if len(field) == 4 else 1)
+    )
 
 
 def register_ports(
@@ -181,7 +204,7 @@ def register_ports(
             fields = record_fields(op)
             if fields:
                 offset = 0
-                for name, _, size in fields:
+                for name, size in record_readouts(fields):
                     names[f"{op.attributes['name']}.{name}"] = ports[
                         len(ports) - offset - size : len(ports) - offset
                     ]
@@ -443,7 +466,7 @@ def _verify_body(
             if op.name == "qreg.declare":
                 fields = record_fields(op)
                 projected = (
-                    tuple(f"{label}.{name}" for name, _, _ in fields)
+                    tuple(f"{label}.{name}" for name, _ in record_readouts(fields))
                     if fields
                     else (label,)
                 )

@@ -270,3 +270,12 @@ measurements do not promote default training performance or a new capability
 level. In particular, ordinary short jobs remain eager, Adam optimizer updates
 remain eager, and no GPU/distributed performance or whole-step fusion is claimed.
 The parent #918 acceptance remains separate from this implementation slice.
+
+## Qmod unsigned record integration slice
+
+The UP-06 integration branch extends flat bit records with fixed-width unsigned
+integer scalar/array fields. Five unchanged pinned originals have two nonzero
+parameter sets checked against independent full-state Circuits and classical
+cost-phase oracles. This is a local exact CPU correctness slice, not corpus-wide
+completion or a capability-level promotion. The corpus gate and full integration
+CI remain required before release.
