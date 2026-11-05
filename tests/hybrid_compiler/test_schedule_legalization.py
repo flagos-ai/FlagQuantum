@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from flagquantum.compiler.schedule_legalization import (
+from flagquantum.compiler.lowering.schedule_legalization import (
     ScheduleLegalizationError,
     schedule_circuit_dependencies,
 )

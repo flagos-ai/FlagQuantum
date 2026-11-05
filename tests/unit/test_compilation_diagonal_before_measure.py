@@ -41,12 +41,12 @@ import torch
 
 import flagquantum.compiler.pipeline as pipeline_module
 from flagquantum.compiler import optimize
-from flagquantum.compiler.diagonal_before_measure import (
+from flagquantum.compiler.optimization.diagonal_before_measure import (
     _DIAGONAL_TWO_WIRE,
     remove_diagonal_gates_before_measure,
 )
-from flagquantum.compiler.one_qubit_synthesis import is_diagonal_one_qubit
-from flagquantum.compiler.optimization_levels import (
+from flagquantum.compiler.optimization.one_qubit_synthesis import is_diagonal_one_qubit
+from flagquantum.compiler.optimization.optimization_levels import (
     DEFAULT_OPTIMIZATION_LEVEL,
     OPTIMIZATION_LEVEL_STAGES,
 )

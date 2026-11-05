@@ -8,8 +8,8 @@ from collections.abc import Iterable, Mapping
 from typing import Any
 
 from ..compiler import CouplingMap
-from ..compiler.directed_topology import DirectedCouplingMap
 from ..compiler.routing import DEPLOYABLE_ROUTING_STRATEGIES
+from ..compiler.topology.directed_topology import DirectedCouplingMap
 
 DEPLOYMENT_ROUTING_EVIDENCE_SCHEMA = "flagquantum_deployment_routing_evidence_v1"
 DEPLOYMENT_PACKAGE_SCHEMA = "flagquantum_deployment_package_v1"

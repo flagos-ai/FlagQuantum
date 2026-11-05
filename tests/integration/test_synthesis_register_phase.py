@@ -23,7 +23,7 @@ from flagquantum.compiler._construction.register_lowering import (
 from flagquantum.compiler._construction.selection import Constraints, ConstructionBudget
 from flagquantum.compiler._construction.target import PHASE_BASIS, Target
 from flagquantum.compiler._hybrid.verifier import HybridVerificationError
-from flagquantum.compiler.coupling import CouplingMap
+from flagquantum.compiler.topology.coupling import CouplingMap
 from flagquantum.errors import PlanningError
 from flagquantum.services._synthesis_registers import synthesize_registers
 from flagquantum.services.synthesis import SynthesisError

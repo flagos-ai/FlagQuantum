@@ -82,7 +82,9 @@ import torch
 import flagquantum as fq
 from benchmarks.compiler_lookahead_swap import SEEDS, case_basis
 from flagquantum.compiler import compile as compile_program
-from flagquantum.compiler.optimization_levels import DEFAULT_OPTIMIZATION_LEVEL
+from flagquantum.compiler.optimization.optimization_levels import (
+    DEFAULT_OPTIMIZATION_LEVEL,
+)
 from flagquantum.compiler.routing import (
     DEPLOYABLE_ROUTING_STRATEGIES,
     ROUTING_STRATEGIES,

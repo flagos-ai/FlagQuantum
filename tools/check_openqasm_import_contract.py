@@ -38,7 +38,7 @@ from flagquantum.core.ir import IR_VERSION
 ROOT = Path(__file__).resolve().parents[1]
 CONTRACT = ROOT / "contracts" / "openqasm-import-v1-candidate.json"
 IMPORTER = ROOT / "flagquantum" / "compiler" / "openqasm_import.py"
-GATE_TABLES = ROOT / "flagquantum" / "compiler" / "openqasm_gates.py"
+GATE_TABLES = ROOT / "flagquantum" / "compiler" / "formats" / "openqasm_gates.py"
 PACKAGE = ROOT / "flagquantum"
 WITNESS_TESTS = ROOT / "tests" / "test_openqasm_import.py"
 

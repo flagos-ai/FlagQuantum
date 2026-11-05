@@ -952,7 +952,7 @@
   "phase28_completed": true,
   "phase29": {
     "stage": "verified_deterministic_target_text_emission",
-    "input": "flagquantum.compiler.target_legalization.TargetLegalizationResult",
+    "input": "flagquantum.compiler.lowering.target_legalization.TargetLegalizationResult",
     "output": "private_in_process_emission_result_and_audit",
     "profiles": {
       "openqasm-2.0": "qasm_backend",
@@ -995,8 +995,8 @@
   "phase30": {
     "stage": "strict_target_text_conformance",
     "inputs": [
-      "flagquantum.compiler.target_emission.TargetEmissionResult",
-      "flagquantum.compiler.target_legalization.TargetLegalizationResult"
+      "flagquantum.compiler.formats.target_emission.TargetEmissionResult",
+      "flagquantum.compiler.lowering.target_legalization.TargetLegalizationResult"
     ],
     "reproduction_policy": "exact_complete_emission_result_match",
     "parsers": [
@@ -1102,7 +1102,7 @@
   "phase32_completed": true,
   "phase33": {
     "stage": "artifact_v2_vertical_slice_and_local_circuit_execution",
-    "compiler_target_artifact_adapter": "flagquantum.compiler.target_artifact.build_target_artifact",
+    "compiler_target_artifact_adapter": "flagquantum.compiler.artifacts.target_artifact.build_target_artifact",
     "runtime_target_preflight": "flagquantum.runtime.artifact_preflight.preflight_executable_artifact",
     "deployment_dry_run": "flagquantum.deployment.artifact_dry_run.prepare_artifact_deployment",
     "runtime_local_circuit_execution": "flagquantum.runtime.artifact_execution.execute_circuit_artifact",
@@ -1140,8 +1140,8 @@
   "phase34_completed": true,
   "phase35": {
     "stage": "verified_artifact_to_artifact_target_compilation",
-    "entrypoint": "flagquantum.compiler.artifact_compilation.compile_circuit_artifact_for_target",
-    "result": "flagquantum.compiler.artifact_compilation.ArtifactCompilationResult",
+    "entrypoint": "flagquantum.compiler.artifacts.artifact_compilation.compile_circuit_artifact_for_target",
+    "result": "flagquantum.compiler.artifacts.artifact_compilation.ArtifactCompilationResult",
     "accepted_inputs": [
       "fully_bound_circuit-ir-1.0",
       "CircuitArtifactBindingResult"
@@ -1169,8 +1169,8 @@
   "phase35_completed": true,
   "phase36": {
     "stage": "physical_mapping_and_dependency_schedule_plan",
-    "builder": "flagquantum.compiler.physical_plan.build_physical_circuit_plan",
-    "result": "flagquantum.compiler.physical_plan.PhysicalCircuitPlan",
+    "builder": "flagquantum.compiler.artifacts.physical_plan.build_physical_circuit_plan",
+    "result": "flagquantum.compiler.artifacts.physical_plan.PhysicalCircuitPlan",
     "authoritative_program": "flagquantum.core.ir.CircuitIR",
     "source_program_objects_retained": true,
     "mapping_transitions_replayable": true,
@@ -1232,8 +1232,8 @@
   "phase38_implementation_completed": true,
   "phase39": {
     "stage": "directional_topology_layout_compiler_implementation",
-    "directed_topology": "flagquantum.compiler.directed_topology.DirectedCouplingMap",
-    "direction_legalization": "flagquantum.compiler.direction_legalization.legalize_directed_cx",
+    "directed_topology": "flagquantum.compiler.topology.directed_topology.DirectedCouplingMap",
+    "direction_legalization": "flagquantum.compiler.topology.direction_legalization.legalize_directed_cx",
     "authoritative_program": "flagquantum.core.ir.CircuitIR",
     "explicit_initial_layout": true,
     "identity_final_layout_required": true,

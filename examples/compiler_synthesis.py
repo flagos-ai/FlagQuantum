@@ -18,11 +18,11 @@ from collections.abc import Sequence
 import torch
 
 import flagquantum as fq
-from flagquantum.compiler.one_qubit_synthesis import synthesize_one_qubit
-from flagquantum.compiler.state_preparation_synthesis import (
+from flagquantum.compiler.optimization.one_qubit_synthesis import synthesize_one_qubit
+from flagquantum.compiler.optimization.state_preparation_synthesis import (
     synthesize_state_preparation,
 )
-from flagquantum.compiler.two_qubit_synthesis import synthesize_two_qubit
+from flagquantum.compiler.optimization.two_qubit_synthesis import synthesize_two_qubit
 from flagquantum.core.ir import Instruction
 
 #: The target this example compiles for: a z-rotation, a pi/2 pulse about x, and

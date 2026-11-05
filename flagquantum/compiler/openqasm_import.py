@@ -20,8 +20,8 @@ from typing import Any, NoReturn
 
 from ..core.ir import CircuitIR, Instruction, MeasurementNode
 from ..errors import CompilationError
+from .formats.openqasm_gates import FIXED_GATES, PARAMETERIZED_GATES
 from .openqasm import emit_openqasm
-from .openqasm_gates import FIXED_GATES, PARAMETERIZED_GATES
 
 SUPPORTED_VERSIONS = (2.0, 3.0)
 

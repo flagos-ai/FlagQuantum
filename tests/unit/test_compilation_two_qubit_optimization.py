@@ -20,8 +20,7 @@ import random
 import pytest
 import torch
 
-from flagquantum.compiler.pipeline import optimize
-from flagquantum.compiler.two_qubit_optimization import (
+from flagquantum.compiler.optimization.two_qubit_optimization import (
     _FAMILIES,
     _IDENTITY,
     _block_product,
@@ -32,6 +31,7 @@ from flagquantum.compiler.two_qubit_optimization import (
     _same,
     collapse_two_qubit_blocks,
 )
+from flagquantum.compiler.pipeline import optimize
 from flagquantum.core.ir import CircuitIR, Instruction
 from flagquantum.core.operator_schema import OPERATOR_SCHEMAS, canonical_opcode
 from flagquantum.simulation.gate_matrix import gate_matrix

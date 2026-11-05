@@ -7,13 +7,15 @@ from datetime import datetime, timedelta, timezone
 import pytest
 import torch
 
-from flagquantum.compiler.directed_topology import DirectedCouplingMap
-from flagquantum.compiler.direction_legalization import (
+from flagquantum.compiler.lowering.target_legalization import (
+    legalize_circuit_for_target,
+)
+from flagquantum.compiler.topology.directed_topology import DirectedCouplingMap
+from flagquantum.compiler.topology.direction_legalization import (
     DirectionLegalizationError,
     _validate_direction_legal_program,
     legalize_directed_cx,
 )
-from flagquantum.compiler.target_legalization import legalize_circuit_for_target
 from flagquantum.core.ir import CircuitIR, Instruction
 from flagquantum.core.operator_schema import OPERATOR_SCHEMAS
 from flagquantum.core.target_capabilities import (

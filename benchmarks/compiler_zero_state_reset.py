@@ -70,7 +70,7 @@ if str(ROOT) not in sys.path:
 import torch  # noqa: E402
 
 from flagquantum.compiler import optimize  # noqa: E402
-from flagquantum.compiler.zero_state_reset import (  # noqa: E402
+from flagquantum.compiler.optimization.zero_state_reset import (  # noqa: E402
     remove_zero_state_resets,
 )
 from flagquantum.core.ir import CircuitIR, Instruction  # noqa: E402
@@ -280,7 +280,7 @@ def _legacy_fixed_point(ir: CircuitIR) -> CircuitIR:
 def rule_contract() -> dict[str, Any]:
     """The facts the pass's rule rests on, reported rather than asserted."""
 
-    import flagquantum.compiler.zero_state_reset as module
+    import flagquantum.compiler.optimization.zero_state_reset as module
 
     tree = ast.parse(Path(module.__file__).read_text(encoding="utf-8"))
     docstrings: set[int] = set()

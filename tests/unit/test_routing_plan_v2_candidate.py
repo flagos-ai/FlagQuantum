@@ -38,16 +38,16 @@ import pytest
 import flagquantum as fq
 from flagquantum.compiler import CouplingMap
 from flagquantum.compiler import compile as compile_program
-from flagquantum.compiler.directed_topology import (
-    DirectedCouplingMap,
-    route_to_directed_topology,
-)
 from flagquantum.compiler.layout import remove_layout_restore
 from flagquantum.compiler.layout_planning import plan_dense_layout
 from flagquantum.compiler.routing import (
     DEPLOYABLE_ROUTING_STRATEGIES,
     ROUTING_STRATEGIES,
     select_routing_strategy,
+)
+from flagquantum.compiler.topology.directed_topology import (
+    DirectedCouplingMap,
+    route_to_directed_topology,
 )
 from flagquantum.deployment.cloud import CloudBackendProfile, create_deployment_package
 from flagquantum.deployment.routing_evidence import (

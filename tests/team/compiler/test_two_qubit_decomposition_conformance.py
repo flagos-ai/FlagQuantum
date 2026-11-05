@@ -72,22 +72,22 @@ from datetime import datetime, timedelta, timezone
 import pytest
 import torch
 
-from flagquantum.compiler.native_gate_legalization import (
+from flagquantum.compiler.lowering.native_gate_legalization import (
     NativeGateLegalizationError,
     _local_replacement,
     _matrix_replacement,
     legalize_native_gates,
 )
-from flagquantum.compiler.one_qubit_synthesis import (
+from flagquantum.compiler.optimization.one_qubit_synthesis import (
     HALF_PI_PULSE_OPCODES,
     Z_ROTATION_OPCODES,
 )
-from flagquantum.compiler.two_qubit_optimization import (
+from flagquantum.compiler.optimization.two_qubit_optimization import (
     _MATCH_EPS,
     _split_instruction,
     split_two_qubit_blocks,
 )
-from flagquantum.compiler.two_qubit_synthesis import (
+from flagquantum.compiler.optimization.two_qubit_synthesis import (
     _UNITARY_ATOL,
     SUPERCONTROLLED_ENTANGLERS,
     _BasisDecomposer,

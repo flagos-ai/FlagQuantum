@@ -27,8 +27,8 @@ from pathlib import Path
 
 import pytest
 
+from flagquantum.compiler.formats.openqasm_gates import FIXED_GATES, PARAMETERIZED_GATES
 from flagquantum.compiler.openqasm import emit_openqasm
-from flagquantum.compiler.openqasm_gates import FIXED_GATES, PARAMETERIZED_GATES
 from flagquantum.core.ir import get_operator_schema
 
 pytestmark = pytest.mark.unit

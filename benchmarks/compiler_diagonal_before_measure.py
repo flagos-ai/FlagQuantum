@@ -84,13 +84,13 @@ if str(ROOT) not in sys.path:
 
 import torch  # noqa: E402
 
-import flagquantum.compiler.diagonal_before_measure as pass_module  # noqa: E402
+import flagquantum.compiler.optimization.diagonal_before_measure as pass_module  # noqa: E402
 from flagquantum.compiler import optimize  # noqa: E402
-from flagquantum.compiler.diagonal_before_measure import (  # noqa: E402
+from flagquantum.compiler.optimization.diagonal_before_measure import (  # noqa: E402
     _DIAGONAL_TWO_WIRE,
     remove_diagonal_gates_before_measure,
 )
-from flagquantum.compiler.one_qubit_synthesis import (  # noqa: E402
+from flagquantum.compiler.optimization.one_qubit_synthesis import (  # noqa: E402
     is_diagonal_one_qubit,
 )
 from flagquantum.core.ir import CircuitIR, Instruction  # noqa: E402

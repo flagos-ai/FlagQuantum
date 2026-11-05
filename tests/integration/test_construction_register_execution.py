@@ -15,7 +15,7 @@ from flagquantum.compiler._construction.selection import (
     select_register_program,
 )
 from flagquantum.compiler._construction.target import Target
-from flagquantum.compiler.coupling import CouplingMap
+from flagquantum.compiler.topology.coupling import CouplingMap
 from tests.register_program_cases import (
     Registers,
     double,

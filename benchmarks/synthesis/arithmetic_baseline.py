@@ -28,8 +28,8 @@ from flagquantum.compiler._construction.target import (
     Target,
     compile_target,
 )
-from flagquantum.compiler.coupling import CouplingMap
 from flagquantum.compiler.resource_estimation import estimate_resources
+from flagquantum.compiler.topology.coupling import CouplingMap
 from flagquantum.core.ir import CircuitIR, Instruction
 
 from .expressions import Case, corpus, exchanged_energy, helper_energy, square_helper

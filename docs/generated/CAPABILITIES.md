@@ -432,7 +432,7 @@ Transform one FlagQuantum IR program without executing it: canonical optimizatio
 Spell gates and states a target cannot express in the gates that target publishes, and report a basis that cannot carry them instead of approximating it.
 
 - **Maturity:** Development evidence
-- **Public API:** `flagquantum.compiler.native_gate_legalization.legalize_native_gates`, `flagquantum.compiler.one_qubit_synthesis.synthesize_one_qubit`, `flagquantum.compiler.two_qubit_synthesis.synthesize_two_qubit`, `flagquantum.compiler.state_preparation_synthesis.synthesize_state_preparation`, `flagquantum.compiler.basis_translation.translate`
+- **Public API:** `flagquantum.compiler.lowering.native_gate_legalization.legalize_native_gates`, `flagquantum.compiler.optimization.one_qubit_synthesis.synthesize_one_qubit`, `flagquantum.compiler.optimization.two_qubit_synthesis.synthesize_two_qubit`, `flagquantum.compiler.optimization.state_preparation_synthesis.synthesize_state_preparation`, `flagquantum.compiler.basis_translation.translate`
 - **Runtime modes:** `not_applicable`
 - **Hardware:** `cpu`
 - **Gradient support:** `not_applicable`

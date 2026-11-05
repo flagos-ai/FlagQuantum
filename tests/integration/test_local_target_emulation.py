@@ -20,7 +20,7 @@ import pytest
 
 import flagquantum as fq
 from flagquantum.compiler import CouplingMap
-from flagquantum.compiler.directed_topology import DirectedCouplingMap
+from flagquantum.compiler.topology.directed_topology import DirectedCouplingMap
 from flagquantum.deployment.cloud import CloudBackendProfile
 from flagquantum.errors import ExecutionError
 from flagquantum.noise import (

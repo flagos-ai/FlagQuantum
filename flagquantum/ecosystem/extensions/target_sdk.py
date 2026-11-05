@@ -16,7 +16,7 @@ compile or execution path:
   into the Compiler-owned ``CouplingMap`` with one constructor call, which keeps
   this package free of a Compiler dependency;
 * compilation stays
-  :func:`flagquantum.compiler.target_legalization.legalize_circuit_for_target`
+  :func:`flagquantum.compiler.lowering.target_legalization.legalize_circuit_for_target`
   with ``backend="provider"``, and execution stays an already-admitted backend
   route plus a :class:`flagquantum.noise.NoiseModel`.
 

@@ -9,7 +9,7 @@ import random
 import pytest
 import torch
 
-from flagquantum.compiler.two_qubit_synthesis import (
+from flagquantum.compiler.optimization.two_qubit_synthesis import (
     SUPERCONTROLLED_ENTANGLERS,
     synthesize_two_qubit,
 )
@@ -169,7 +169,7 @@ def test_every_entangler_matrix_agrees_with_the_authoritative_gate_matrix() -> N
     exist at all.
     """
 
-    import flagquantum.compiler.two_qubit_synthesis as module
+    import flagquantum.compiler.optimization.two_qubit_synthesis as module
 
     for entangler, angle in SUPERCONTROLLED_ENTANGLERS.items():
         params = {} if angle is None else {"theta": angle}
@@ -399,7 +399,7 @@ def test_the_module_carries_no_second_source_of_truth_for_gate_matrices() -> Non
     numeric dependency that would let one appear here.
     """
 
-    import flagquantum.compiler.two_qubit_synthesis as module
+    import flagquantum.compiler.optimization.two_qubit_synthesis as module
 
     assert module.__file__ is not None
     with open(module.__file__, encoding="utf-8") as handle:

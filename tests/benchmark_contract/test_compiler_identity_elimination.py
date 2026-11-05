@@ -60,12 +60,12 @@ pytestmark = pytest.mark.benchmark_contract
 #: numbers are not comparable with these.
 _RULE = {
     "pass_module": "flagquantum/compiler/pipeline.py",
-    "predicate_module": "flagquantum/compiler/one_qubit_synthesis.py",
+    "predicate_module": "flagquantum/compiler/optimization/one_qubit_synthesis.py",
     # The two functions' line counts are published by the benchmark but deliberately
     # not pinned here: they move whenever either docstring is edited and would pin
     # prose rather than a property, which is the trap the sibling contract for
     # `remove_diagonal_gates_before_measure` documents for `pass_module_line_count`.
-    "pass_function_imports": ["one_qubit_synthesis"],
+    "pass_function_imports": ["optimization.one_qubit_synthesis"],
     "pass_function_opcode_literals": [],
     "predicate_holds_no_angle_table": True,
     "predicate_refuses_a_caller_supplied_matrix": True,
@@ -468,7 +468,7 @@ def test_the_rule_is_read_from_the_declaration_and_not_from_a_name_list(
         contract["pass_function_line_count"]
     )
     assert contract["pass_function_opcode_literals"] == []
-    assert contract["pass_function_imports"] == ["one_qubit_synthesis"]
+    assert contract["pass_function_imports"] == ["optimization.one_qubit_synthesis"]
     assert contract["predicate_holds_no_angle_table"] is True
     assert "canonical_euler_angles" in contract["angle_source"]
     # Fail-closed in the corner where the name stops describing the operator: the
@@ -929,7 +929,9 @@ def test_intermediate_measurements_are_not_erased_by_the_benchmark() -> None:
 
 def test_the_counterfactual_zero_tolerance_is_frozen() -> None:
     from benchmarks.compiler_identity_elimination import _gate, _superseded_rule
-    from flagquantum.compiler.one_qubit_synthesis import is_identity_one_qubit
+    from flagquantum.compiler.optimization.one_qubit_synthesis import (
+        is_identity_one_qubit,
+    )
 
     gate = _gate("rz", (0,), theta=1e-13)
     assert _superseded_rule(gate)

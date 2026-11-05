@@ -973,7 +973,7 @@ class Circuit(_BuiltinGateMethods):
         return _initial_state(self)
 
     def _statevector_instructions(self) -> tuple[Instruction, ...]:
-        from .compiler.deferred_operations import lower_deferred_operations
+        from .compiler.lowering.deferred_operations import lower_deferred_operations
 
         return lower_deferred_operations(self._instructions)
 

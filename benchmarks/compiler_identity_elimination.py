@@ -113,9 +113,9 @@ if str(ROOT) not in sys.path:
 
 import torch  # noqa: E402
 
-import flagquantum.compiler.one_qubit_synthesis as synthesis_module  # noqa: E402
+import flagquantum.compiler.optimization.one_qubit_synthesis as synthesis_module  # noqa: E402
 from flagquantum.compiler import optimize  # noqa: E402
-from flagquantum.compiler.one_qubit_synthesis import (  # noqa: E402
+from flagquantum.compiler.optimization.one_qubit_synthesis import (  # noqa: E402
     _MODULAR_FOLD_LIMIT,
     is_identity_one_qubit,
 )
@@ -757,7 +757,7 @@ def rule_contract() -> dict[str, Any]:
     )
     return {
         "pass_module": "flagquantum/compiler/pipeline.py",
-        "predicate_module": "flagquantum/compiler/one_qubit_synthesis.py",
+        "predicate_module": "flagquantum/compiler/optimization/one_qubit_synthesis.py",
         "pass_module_line_count": len(
             Path("flagquantum/compiler/pipeline.py")
             .read_text(encoding="utf-8")

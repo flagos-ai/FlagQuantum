@@ -11,7 +11,7 @@ from flagquantum import _api
 from flagquantum.compiler._construction.constraints import CircuitLimits
 from flagquantum.compiler._construction.selection import Constraints, ConstructionBudget
 from flagquantum.compiler._construction.target import Target
-from flagquantum.compiler.coupling import CouplingMap
+from flagquantum.compiler.topology.coupling import CouplingMap
 from flagquantum.ecosystem._qmod.adapter import SUPPORTED_SOURCE_VERSION, parse_qmod
 from flagquantum.services._synthesis_registers import synthesize_registers
 from flagquantum.services.synthesis import Program, SynthesisError

@@ -6,7 +6,7 @@ import pytest
 import torch
 
 from flagquantum.compiler.routing import CouplingMap
-from flagquantum.compiler.topology_legalization import (
+from flagquantum.compiler.topology.topology_legalization import (
     TopologyLegalizationError,
     legalize_circuit_topology,
 )

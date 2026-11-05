@@ -52,7 +52,10 @@ from typing import cast
 
 from ..core.ir import CircuitIR, ensure_circuit_ir
 from ..errors import CapabilityError, CompilationError
-from .optimization_levels import DEFAULT_OPTIMIZATION_LEVEL, OPTIMIZATION_LEVEL_STAGES
+from .optimization.optimization_levels import (
+    DEFAULT_OPTIMIZATION_LEVEL,
+    OPTIMIZATION_LEVEL_STAGES,
+)
 
 # A transformation: one program in, one program out.
 PassFunction = Callable[[CircuitIR], CircuitIR]

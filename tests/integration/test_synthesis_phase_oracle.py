@@ -21,7 +21,7 @@ from flagquantum.compiler._construction.target import (
     Target,
     compile_target,
 )
-from flagquantum.compiler.coupling import CouplingMap
+from flagquantum.compiler.topology.coupling import CouplingMap
 from flagquantum.core.ir import Instruction
 from flagquantum.errors import PlanningError
 from flagquantum.services.synthesis import SynthesisError, _complete

@@ -7,7 +7,9 @@ import torch
 
 import flagquantum as fq
 from flagquantum.algorithms.primitives.multiplexers import SelectPauliLCU
-from flagquantum.compiler.deferred_operations import lower_select_pauli_lcu_to_gates
+from flagquantum.compiler.lowering.deferred_operations import (
+    lower_select_pauli_lcu_to_gates,
+)
 from flagquantum.core.ir import CircuitIR
 
 pytestmark = pytest.mark.unit

@@ -12,7 +12,7 @@ from flagquantum.compiler import (
     remove_layout_restore,
     route_to_topology,
 )
-from flagquantum.compiler.directed_topology import (
+from flagquantum.compiler.topology.directed_topology import (
     DirectedCouplingMap,
     route_to_directed_topology,
 )

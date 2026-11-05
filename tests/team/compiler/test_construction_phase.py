@@ -213,7 +213,7 @@ def test_phase_preparation_cannot_touch_predicate_workspace_or_a_hidden_output()
 
 def test_projective_basis_paths_and_non_native_preparation_are_not_admitted():
     from flagquantum.compiler._construction.target import PHASE_BASIS, Target
-    from flagquantum.compiler.coupling import CouplingMap
+    from flagquantum.compiler.topology.coupling import CouplingMap
 
     graph = capture(marked, {"x": 2, "y": 2})
     for profile in (

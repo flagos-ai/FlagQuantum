@@ -1,6 +1,6 @@
 """Pin the commutation rule source against the runtime's own gate matrices.
 
-`flagquantum.compiler.commutation` decides that two instructions commute without
+`flagquantum.compiler.optimization.commutation` decides that two instructions commute without
 reading a parameter, because every rule it holds is a statement about opcodes and
 wires rather than about values. That is a strong claim, and the module cannot
 check it against `flagquantum.simulation`, which the compiler layer may not
@@ -23,7 +23,7 @@ import random
 import pytest
 import torch
 
-from flagquantum.compiler.commutation import (
+from flagquantum.compiler.optimization.commutation import (
     _RULE_OPCODES,
     CommutationAnalysis,
     analyze_commutation,
@@ -530,7 +530,7 @@ def test_the_rule_source_carries_no_import_of_the_simulation_layer() -> None:
     import ast
     import importlib
 
-    module = importlib.import_module("flagquantum.compiler.commutation")
+    module = importlib.import_module("flagquantum.compiler.optimization.commutation")
     assert module.__file__ is not None
     with open(module.__file__, encoding="utf-8") as handle:
         tree = ast.parse(handle.read())
@@ -546,8 +546,8 @@ def test_the_rule_source_carries_no_import_of_the_simulation_layer() -> None:
         "dataclasses",
         "types",
         "typing",
-        "..core.ir",
-        "..core.operator_schema",
+        "...core.ir",
+        "...core.operator_schema",
     ]
     # The reach of the rule source, as a fact rather than as a guess.
     assert len(_RULE_OPCODES) == 30

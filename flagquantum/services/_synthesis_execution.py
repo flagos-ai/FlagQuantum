@@ -9,8 +9,8 @@ import torch
 from ..compiler import ResourceEstimate, estimate_resources
 from ..compiler._construction.constraints import CircuitLimits
 from ..compiler.basis_conversion import require_basis
-from ..compiler.coupling import CouplingMap
 from ..compiler.layout import Layout, _routing_swap_phases, final_layout
+from ..compiler.topology.coupling import CouplingMap
 from ..core.ir import CircuitIR
 from ..core.operator_schema import get_operator_schema
 from ..core.runtime_config import RuntimeConfig

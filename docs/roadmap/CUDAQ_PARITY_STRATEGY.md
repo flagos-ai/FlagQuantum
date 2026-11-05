@@ -180,10 +180,10 @@ change, because a row cannot be closed by evidence that no entry carries.
 `commutation_aware_rewrite` moved from `unsupported` to `partial` in the same
 wave, and it is the one move that required no new code at all. Its reason said the
 pass was absent and needed the pass manager first; the tree said otherwise.
-[commutation.py](../../flagquantum/compiler/commutation.py) answers whether two
+[commutation.py](../../flagquantum/compiler/optimization/commutation.py) answers whether two
 instructions commute and which instructions form one commuting block on a wire,
 from the operator schemas rather than from a generated table, and
-[commutation_cancellation.py](../../flagquantum/compiler/commutation_cancellation.py)
+[commutation_cancellation.py](../../flagquantum/compiler/optimization/commutation_cancellation.py)
 consumes that analysis inside the optimizer's fixed-point loop, so
 `cx(0, 1) rz(0) cx(0, 1)` reduces to a bare `rz(0)` -- a reduction the wire-local
 self-inverse merge cannot reach, because the latest writer of wire 0 is the `rz`.
@@ -451,7 +451,7 @@ the clause that was false.
 `topology_aware_routing` was the most consequential, because its reason denied the
 existence of the very thing it is named for: "there is no published-quality router
 comparable to a SABRE-class algorithm."
-[sabre.py](../../flagquantum/compiler/sabre.py) is that algorithm, landed in three
+[sabre.py](../../flagquantum/compiler/topology/sabre.py) is that algorithm, landed in three
 changes before the sentence was written and never reflected in it. It implements
 the heuristic of Li, Ding, and Xie, *Tackling the Qubit Mapping Problem for
 NISQ-Era Quantum Devices*: a front layer of two-wire operations whose predecessors

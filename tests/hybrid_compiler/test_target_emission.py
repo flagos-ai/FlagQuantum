@@ -4,11 +4,13 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 
-from flagquantum.compiler.target_emission import (
+from flagquantum.compiler.formats.target_emission import (
     TargetEmissionError,
     emit_legalized_target,
 )
-from flagquantum.compiler.target_legalization import legalize_circuit_for_target
+from flagquantum.compiler.lowering.target_legalization import (
+    legalize_circuit_for_target,
+)
 from flagquantum.core.ir import CircuitIR, Instruction, MeasurementNode, ObservableNode
 from flagquantum.core.parameters import Parameter
 from flagquantum.core.target_capabilities import (
