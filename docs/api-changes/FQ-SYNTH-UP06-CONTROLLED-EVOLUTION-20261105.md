@@ -38,3 +38,22 @@ recording any existing native entry limitations. Recheck all 216 originals,
 preserve prior source/license/AO/PF/resource evidence and the separately tracked
 partial-exponential amplitude mismatch. No integration PR/full CI before the
 complete original-corpus acceptance gate.
+
+Existing time-zero qDRIFT emits a zero RZ as an initialization read. In this
+controlled profile only, that exact identity effect is represented as a zero
+Pauli rotation before adding control; initialization and overlap checks remain.
+No nonidentity gate is accepted through this identity normalization. The legacy
+bare-pi predicate phase path is frozen; its cost-expression domain is unchanged.
+New explicit classical phase coefficients use existing indexed real phases.
+
+Signed-domain metadata is propagated through bound numeric helpers so that a
+signed one-bit actual cannot silently become an unsigned selector. The existing
+non-bound call path retains its signed-kind rejection. Static helper evolution
+admission uses the same EVOLUTION_CALLS classification as controlled expansion.
+Obsolete helper-only signed-angle/RZ-only-pi branches are removed; numeric literal
+and static-array policies remain centralized and checked.
+
+Positive Const controls can borrow through the existing controlled Pauli effect.
+Negative/else branches currently require writable controls: paired source X gates
+retain the existing Const mutation refusal. A future owned negative-polarity
+representation can remove that limitation; this slice does not claim it.
