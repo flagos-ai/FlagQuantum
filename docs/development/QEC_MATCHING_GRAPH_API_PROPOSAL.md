@@ -1,7 +1,7 @@
 # Matching graph interoperability: complete capability-bundle API proposal
 
 Status: owner approved13 paths; implementation candidate with local validation.
-The example-index14th-path amendment is separately pending approval. Fresh
+The README-only fourteenth-path example-index amendment is separately approved. Fresh
 installed-candidate and actual-main acceptance remain pending. This supersedes method-sized proposals for this gap.
 Proposed title: feat(qec): support matrix-defined weighted matching workflows.
 Classification: single_device_fast_path, primary domain QEC.

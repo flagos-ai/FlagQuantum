@@ -220,6 +220,10 @@ These examples do not use that alias:
   compares native matching and PyMatching on the same 35 distance-three Z
   memory shots. It uses the existing Stim and PyMatching extras on CPU and
   reports four paired outcome counts after all three batches complete.
+- [`qec/check_matrix_matching.py`](qec/check_matrix_matching.py) imports a
+  weighted check matrix through canonical QEC modules rather than the root alias.
+  CPU and the PyMatching extra are required. It prints the column mapping,
+  independent edge costs and the unique selected pair edge.
 - [`qec/memory_experiment.py`](qec/memory_experiment.py) composes the approved
   fixed-shot experiment through its canonical QEC execution import. It uses one
   original source and exact final partial batches with five default decoders;
