@@ -60,7 +60,7 @@ _ATTRIBUTES = MappingProxyType(
         "qreg.return": frozenset(),
     }
 )
-_PAIR_GATES = frozenset({"cx", "swap", "crx", "cry", "crz"})
+_PAIR_GATES = frozenset({"cx", "cz", "swap", "crx", "cry", "crz"})
 _ANGLE_GATES = frozenset({"phase", "rx", "ry", "rz"})
 _GATES = frozenset({"x", "h", "s", "z", "i", "sx"}) | _ANGLE_GATES
 

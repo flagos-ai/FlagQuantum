@@ -185,6 +185,7 @@ class Parser:
         static: bool = False,
         decimal: bool = False,
         difference: bool = False,
+        allow_slice: bool = False,
     ) -> Expression:
         token = self.current
         if nesting >= MAX_DEPTH:
@@ -248,8 +249,13 @@ class Parser:
             elif not static and self.current.text == "[":
                 bracket = self.take("[")
                 index = self.expression(nesting=nesting + 1, static=True)
+                if allow_slice and self.current.text == ":":
+                    colon = self.take(":")
+                    stop = self.expression(nesting=nesting + 1, static=True)
+                    left = Expression(colon, (left, index, stop))
+                else:
+                    left = Expression(bracket, (left, index), index.depth + 1)
                 self.take("]")
-                left = Expression(bracket, (left, index), index.depth + 1)
         precedence = {
             **dict.fromkeys(_COMPARISONS, 5),
             "|": 6,
@@ -544,7 +550,6 @@ class Parser:
         allow_qubit_array: bool = False,
         allow_phase: bool = False,
         allow_fixed_array: bool = False,
-        allow_single_array: bool = False,
     ) -> tuple[str, int | None]:
         kind = self.current
         if kind.text not in {"qbit", "qnum"}:
@@ -591,14 +596,7 @@ class Parser:
             self.take("[")
             self.take("]")
             return "qbit[]", None
-        if (
-            kind.text == "qbit"
-            and self.current.text == "["
-            and (
-                allow_fixed_array
-                or (allow_single_array and self.tokens[self.position + 1].text == "1")
-            )
-        ):
+        if kind.text == "qbit" and self.current.text == "[" and allow_fixed_array:
             self.take("[")
             width = self.width()
             self.take("]")
@@ -651,16 +649,17 @@ class Parser:
             if role == "real":
                 self.take("real")
                 kind, width = "real", None
-                if name.text == "main" and self.current.text == "[":
+                if self.current.text == "[":
                     self.take("[")
-                    width = self.width()
+                    if name.text == "main" or self.current.text != "]":
+                        width = self.width()
                     self.take("]")
                     kind = "real[]"
             else:
                 kind, width = self.scalar_type(
                     allow_qubit_array=name.text == "main" or role == "inout",
                     allow_phase=name.text == "main" and role == "output",
-                    allow_single_array=name.text == "main" and role == "output",
+                    allow_fixed_array=role == "inout" or name.text == "main",
                 )
             if role == "const" and width is None:
                 reject(
@@ -676,6 +675,20 @@ class Parser:
                 )
         self.take(")")
         return Function(name, tuple(parameters), self.block())
+
+    def call_argument(self) -> Expression:
+        if self.current.text == "[":
+            array = self.literal_array(self.signed_angle_argument)
+            return Expression(Token("[]", array.token.location), array.children)
+        if self.current.text == "{":
+            opening = self.take("{")
+            items = [self.expression()]
+            while self.current.text == ",":
+                self.take(",")
+                items.append(self.expression())
+            self.take("}")
+            return Expression(opening, tuple(items))
+        return self.expression(allow_slice=True)
 
     def block(
         self,
@@ -817,9 +830,9 @@ class Parser:
                             else Expression(self.name())
                         )
                     elif target.text in ANGLE_CALLS:
-                        args.append(self.angle_argument())
+                        args.append(self.signed_angle_argument())
                     else:
-                        args.append(self.expression())
+                        args.append(self.call_argument())
                     while self.current.text == ",":
                         self.take(",")
                         if target.text == "linear_pauli_rotations" and len(args) in {
@@ -846,7 +859,7 @@ class Parser:
                             self.angle_argument()
                             if (target.text == "U" and len(args) < 4)
                             or (len(args) == 1 and target.text in {"R", "phase"})
-                            else self.expression()
+                            else self.call_argument()
                         )
                 self.take(")")
                 arguments = tuple(args)

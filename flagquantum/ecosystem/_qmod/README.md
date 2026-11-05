@@ -695,3 +695,20 @@ in-place Bloch rotations, using the registered gate inverses. The body must
 contain only gate operations. A one-element output array declared as
 `qbit[1]` can be passed directly to single-qubit gates. `I`, `SX`, and
 `RZ(pi, target)` are supported.
+
+### Classical array helpers and static qubit views
+
+A Qmod helper can receive a bound classical array as `real[]` or
+`real[N]`. Pass a named array, a half-open static slice, or a list of
+finite literals and bound elements. Helpers can use static array lengths
+and loop indices to address elements in a bounded gate-only `repeat`.
+The entry point still requires explicit lengths for classical arrays.
+
+A writable scalar helper port can bind to a qubit array element. A
+writable array port can bind to a whole qubit array or an ordered list
+such as `{state[2], state[0]}`. Each element refers to its original wire.
+Writable ports must be disjoint, including within a list. Gate-only
+helper calls preserve that mapping across nested calls. Operations
+requiring whole registers, such as scoped QFT, still require whole
+registers. Fixed-width qubit output arrays and the `CZ` gate are also
+supported in this profile.

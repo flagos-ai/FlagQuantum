@@ -51,7 +51,7 @@ MAX_EFFECT_OPERATIONS = 4096
 MAX_QDRIFT_SAMPLES = 1024
 QDRIFT_SEED = 0
 _GATE_CALLS = frozenset({"X", "H", "S", "Z", "I", "SX", "hadamard_transform"})
-_PAIR_CALLS = frozenset({"CX", "SWAP", "CRX"})
+_PAIR_CALLS = frozenset({"CX", "CZ", "SWAP", "CRX"})
 _UNIFORM_CALLS = frozenset(
     {"prepare_uniform_interval_state", "prepare_uniform_trimmed_state"}
 )
@@ -733,6 +733,7 @@ class _Adapt:
         self.signed: set[str] = set()
         self.fractional_bits: dict[str, int] = {}
         self.registers: dict[str, Value] = {}
+        self.views: dict[str, tuple[tuple[Value, int], ...]] = {}
         self.counter = len(self.parameters) + 1
         self.entry = Value(ValueId(self.scope, 0), QUANTUM_EFFECT)
         self.effect = self.entry
@@ -752,6 +753,8 @@ class _Adapt:
         allow_fractional_output: bool = False,
     ) -> Value:
         name = token.text
+        if name in self.views:
+            reject(token, "view", "this operation requires a whole register")
         if name in self.dropped:
             reject(token, "drop", "a dropped register cannot be used again")
         if name in self.fractional_bits and not allow_fractional_output:
@@ -860,6 +863,8 @@ class _Adapt:
             return left + right if text == "+" else left - right
         if text == ".":
             name = node.children[0].token.text
+            if name in self.classical_arrays:
+                return len(self.classical_arrays[name])
             width = self.widths.get(name)
             if width is None or self.parameters[name].kind != "qbit[]":
                 reject(
@@ -871,27 +876,58 @@ class _Adapt:
         reject(node.token, "expression", "expected a static integer or loop index")
 
     def gate_target(self, node: Expression) -> tuple[Value, int]:
-        if node.token.text == "[":
-            array, offset = node.children
-            target = self.atom(array)
+        indexed = node.token.text == "["
+        target = self.atom(node.children[0] if indexed else node)
+        parameter = self.parameters.get(target.text)
+        view = self.views.get(target.text)
+        if indexed and (parameter is None or parameter.kind != "qbit[]"):
+            reject(target, "operator", "indexing requires a qubit array")
+        index = self.static_integer(node.children[1]) if indexed else 0
+        if view is not None:
+            width = len(view)
+        else:
             value = self.register(target, allow_qubit_array=True)
-            if self.parameters[target.text].kind != "qbit[]":
-                reject(target, "operator", "indexing requires a qubit array")
-            index = self.static_integer(offset)
-            width = self.widths[target.text]
-            assert width is not None
-            if not 0 <= index < width:
-                reject(offset.token, "width", "qubit array index is out of bounds")
-            return value, index
-        target = self.atom(node)
-        value = self.register(target, allow_qubit_array=True)
-        if self.parameters[target.text].kind != "qbit" and not (
-            self.parameters[target.text].kind == "qbit[]" and register_width(value) == 1
+            width = register_width(value)
+        if not indexed and (
+            parameter is None or parameter.kind not in {"qbit", "qbit[]"} or width != 1
         ):
             reject(
                 target, "type", "gate operand requires a scalar qubit or array element"
             )
-        return value, 0
+        if not 0 <= index < width:
+            reject(node.token, "width", "qubit array index is out of bounds")
+        if view is not None:
+            return view[index]
+        return value, index
+
+    def array_view(self, node: Expression) -> tuple[tuple[Value, int], ...]:
+        if node.token.text == "{":
+            return tuple(self.gate_target(item) for item in node.children)
+        target = self.atom(node)
+        parameter = self.parameters.get(target.text)
+        if parameter is None or parameter.kind != "qbit[]":
+            reject(target, "type", "helper requires a qubit array")
+        if target.text in self.views:
+            return self.views[target.text]
+        value = self.register(target, allow_qubit_array=True)
+        return tuple((value, index) for index in range(register_width(value)))
+
+    def real_array(self, node: Expression) -> tuple[float, ...]:
+        if node.token.text == "[]":
+            return tuple(
+                self.angle(item, node.token, allow_signed=True)
+                for item in node.children
+            )
+        source = node.children[0] if node.token.text == ":" else node
+        values = self.classical_arrays.get(source.token.text)
+        if values is None or source.children:
+            reject(source.token, "binding", "helper requires a bound real array")
+        if node.token.text != ":":
+            return values
+        start, stop = (self.static_integer(item) for item in node.children[1:])
+        if not 0 <= start < stop <= len(values):
+            reject(node.token, "binding", "real array slice is out of bounds or empty")
+        return values[start:stop]
 
     def repeat(self, statement: Statement, index: str) -> None:
         variable = statement.repeat_index
@@ -916,7 +952,13 @@ class _Adapt:
                 self.statement(item, f"{index}.{iteration}.{ordinal}")
         self.loop_indices.pop(name, None)
 
-    def angle(self, node: Expression, gate: Token) -> float:
+    def angle(
+        self, node: Expression, gate: Token, *, allow_signed: bool = False
+    ) -> float:
+        if node.token.text == "-" and (
+            allow_signed or (self.helper_stack and self.classical_arrays)
+        ):
+            return -_literal_angle(node.children[0], gate)
         if (
             gate.text == "RZ"
             and not node.children
@@ -930,14 +972,16 @@ class _Adapt:
             array, index = node.children
             values = self.classical_arrays.get(array.token.text)
             if values is not None and not array.children:
-                if index.children or not index.token.text.isdecimal():
+                if not self.helper_stack and (
+                    index.children or not index.token.text.isdecimal()
+                ):
                     reject(
                         index.token,
                         "binding",
                         "real array index requires an integer literal",
                     )
-                offset = int(index.token.text)
-                if offset >= len(values):
+                offset = self.static_integer(index)
+                if not 0 <= offset < len(values):
                     reject(index.token, "binding", "real array index is out of bounds")
                 return values[offset]
         return _literal_angle(node, gate)
@@ -1008,27 +1052,44 @@ class _Adapt:
             )
         child = _Adapt(syntax, self.resolve, self.definitions, self.constants)
         child.helper_stack = (*self.helper_stack, syntax.name.text)
-        actuals: set[Value] = set()
+        actuals: set[tuple[Value, int]] = set()
         for argument, parameter in zip(arguments, syntax.parameters, strict=True):
             name = parameter.name.text
             if parameter.role == "real":
-                child.classical_values[name] = self.angle(argument, token)
-            else:
-                target = self.atom(argument)
-                value = self.register(target, allow_qubit_array=True)
-                if self.parameters[target.text].kind != parameter.kind:
-                    reject(
-                        target,
-                        "type",
-                        "helper requires a matching qubit or qubit array",
-                    )
-                if value in actuals:
-                    reject(
-                        target, "alias", "writable helper arguments must be disjoint"
-                    )
-                actuals.add(value)
+                if parameter.kind == "real[]":
+                    values = self.real_array(argument)
+                    if not values or (
+                        parameter.width is not None and len(values) != parameter.width
+                    ):
+                        reject(
+                            argument.token,
+                            "binding",
+                            "helper real array length disagrees",
+                        )
+                    child.classical_arrays[name] = values
+                else:
+                    child.classical_values[name] = self.angle(argument, token)
+                continue
+            view = (
+                self.array_view(argument)
+                if parameter.kind == "qbit[]"
+                else (self.gate_target(argument),)
+            )
+            if parameter.width is not None and len(view) != parameter.width:
+                reject(argument.token, "width", "helper quantum array length disagrees")
+            if len(set(view)) != len(view) or actuals.intersection(view):
+                reject(
+                    argument.token,
+                    "alias",
+                    "writable helper arguments must be disjoint",
+                )
+            actuals.update(view)
+            child.widths[name] = len(view)
+            value = view[0][0]
+            if view == tuple((value, index) for index in range(register_width(value))):
                 child.registers[name] = value
-                child.widths[name] = self.widths[target.text]
+            else:
+                child.views[name] = view
         for index, statement in enumerate(syntax.statements):
             child.statement(statement, str(index))
         for op in child.operations:
@@ -2258,7 +2319,10 @@ class _Adapt:
             targets = args[int(angled) :]
             locations = tuple(self.gate_target(arg) for arg in targets)
             registers, indices = zip(*locations, strict=True)
-            if pair and any(arg.token.text == "[" for arg in targets):
+            if pair and (
+                any(arg.token.text == "[" for arg in targets)
+                or any(register_width(register) != 1 for register in registers)
+            ):
                 attributes["indices"] = indices
             if not pair:
                 attributes["index"] = indices[0]
@@ -2273,14 +2337,16 @@ class _Adapt:
                 reject(token, "signature", f"{token.text} requires one output variable")
             if token.text == "hadamard_transform":
                 target = self.atom(args[0])
-                destination = self.register(target, allow_qubit_array=True)
-                width = self.widths[target.text]
-                assert width is not None
-                bits = range(width)
+                if target.text in self.views:
+                    gate_locations = self.views[target.text]
+                else:
+                    destination = self.register(target, allow_qubit_array=True)
+                    gate_locations = tuple(
+                        (destination, bit) for bit in range(register_width(destination))
+                    )
             else:
-                destination, bit = self.gate_target(args[0])
-                bits = range(bit, bit + 1)
-            for bit in bits:
+                gate_locations = (self.gate_target(args[0]),)
+            for destination, bit in gate_locations:
                 self.effect_op(
                     "qreg.gate",
                     token,
@@ -2474,7 +2540,6 @@ def parse_qmod(
                 "role",
                 "bound helpers require real or writable qubit array ports",
             )
-        scoped_qft = False
         for statement in syntax.statements:
             controlled_qft = (
                 statement.control_body is not None
@@ -2486,24 +2551,24 @@ def parse_qmod(
                 and len(statement.within) == 1
                 and statement.within[0].token.text == "H"
             )
-            scoped_qft |= controlled_qft or hadamard_within
+            called = definitions.get(statement.token.text)
+            bound_call = (
+                called is not None
+                and called.name.text != "main"
+                and _bound_helper(called)
+            )
             if statement.declaration is not None or (
                 statement.token.text not in _GATE_CALLS | _PAIR_CALLS | ANGLE_CALLS
                 and not controlled_qft
                 and not hadamard_within
+                and statement.repeat_index is None
+                and not bound_call
             ):
                 reject(
                     statement.token,
                     "scope",
                     "bound helper bodies admit only gates and scoped QFT",
                 )
-
-        if not scoped_qft and any(
-            port.role == "inout" and port.kind == "qbit" for port in syntax.parameters
-        ):
-            reject(
-                syntax.name, "role", "writable scalar helper ports require scoped QFT"
-            )
 
     compiled: dict[str, tuple[_Adapt, HybridProgram]] = {}
     active: set[str] = set()
