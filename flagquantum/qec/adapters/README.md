@@ -76,3 +76,13 @@ change. The approved surface is in
 `contracts/qec-stim-experiment-bridge-v1.json`; the complete contract and numerical
 precision limitations are in
 `docs/development/QEC_STIM_EXPERIMENT_BRIDGE_PROPOSAL.md`.
+
+
+## Matched detection endpoints
+
+The approved `PyMatchingDecoder.decode_to_matched_detectors` reports immutable
+matched endpoint pairs; None denotes a boundary match. It is distinct from
+correction edges and from logical predictions. See the
+[API proposal](../../../docs/development/QEC_PYMATCHING_MATCHED_DETECTORS_API_PROPOSAL.md)
+for runnable code and tests. QEC owns normalization and validation; SDK objects
+remain private. Independent tied calls need not describe one identical solution.

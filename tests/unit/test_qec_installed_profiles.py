@@ -7,14 +7,22 @@ import json
 import subprocess
 import sys
 from pathlib import Path
+from unittest.mock import Mock
 
 import pytest
+import torch
 
+from flagquantum.errors import CapabilityError
+from flagquantum.qec import PyMatchingDecoder
+from flagquantum.qec.dem.graph import DecodingGraph
 from tools.check_qec_installed_profiles import _run
 from tools.qec_installed_smoke import (
     PROFILES,
     _exercise,
     _exercise_decoder_records,
+    _exercise_matched_detectors,
+    _exercise_packed_predictions,
+    _exercise_sdk_weights,
     _exercise_stim_experiment,
 )
 
@@ -28,6 +36,13 @@ def test_public_workflow_in_the_available_source_profile(profile: str) -> None:
     )
     if available != PROFILES[profile]:
         pytest.skip("this source environment does not have that real SDK configuration")
+    assert _exercise_packed_predictions(profile) == (
+        [[0], [1], [2], [4], [7]] if available[1] else None
+    )
+    assert (_exercise_sdk_weights(profile) is not None) == available[1]
+    assert _exercise_matched_detectors(profile) == (
+        [[0, None], [1, 2]] if available[1] else None
+    )
     records = _exercise(profile)
     assert len(records) == (4 if available[0] else 0)
     for record in records:
@@ -120,3 +135,314 @@ def test_hanging_child_is_bounded_and_its_log_is_retained(tmp_path: Path) -> Non
             seconds=1,
         )
     assert "started" in log.read_text()
+
+
+def _packed_fake(
+    monkeypatch: pytest.MonkeyPatch, observables: int = 9
+) -> tuple[PyMatchingDecoder, Mock]:
+    decoder = object.__new__(PyMatchingDecoder)
+    sdk = Mock()
+    object.__setattr__(decoder, "graph", DecodingGraph(9, observables))
+    object.__setattr__(decoder, "_matching", sdk)
+    # A controlled boundary stand-in keeps validation independent of NumPy/SDK.
+    monkeypatch.setattr(torch.Tensor, "numpy", lambda self: self)
+    return decoder, sdk
+
+
+def test_packed_owns_input_and_output(monkeypatch: pytest.MonkeyPatch) -> None:
+    decoder, sdk = _packed_fake(monkeypatch)
+
+    def predict(
+        buffer: torch.Tensor, *, bit_packed_shots: bool, bit_packed_predictions: bool
+    ) -> torch.Tensor:
+        assert bit_packed_shots and bit_packed_predictions
+        buffer.fill_(0)
+        return buffer
+
+    sdk.decode_batch.side_effect = predict
+    backing = torch.tensor([[1, 99, 1, 99], [2, 99, 0, 99]], dtype=torch.uint8)
+    events = backing[:, ::2]
+    before = backing.clone()
+    result = decoder.decode_packed_batch(events)
+    assert torch.equal(backing, before)
+    assert result.tolist() == [[0, 0], [0, 0]]
+    assert result.data_ptr() != sdk.decode_batch.call_args.args[0].data_ptr()
+    sdk.decode_batch.assert_called_once()
+
+
+@pytest.mark.parametrize(
+    "events,exception",
+    [
+        (None, TypeError),
+        (torch.zeros((1, 2), dtype=torch.bool), TypeError),
+        (torch.zeros((1, 2), dtype=torch.int64), TypeError),
+        (torch.zeros(2, dtype=torch.uint8), ValueError),
+        (torch.zeros((1, 3), dtype=torch.uint8), ValueError),
+        (torch.tensor([[0, 2]], dtype=torch.uint8), ValueError),
+        (torch.empty((1, 2), dtype=torch.uint8, device="meta"), CapabilityError),
+    ],
+)
+def test_packed_refuses_before_sdk(
+    monkeypatch: pytest.MonkeyPatch, events: torch.Tensor, exception: type[Exception]
+) -> None:
+    decoder, sdk = _packed_fake(monkeypatch)
+    with pytest.raises(exception):
+        decoder.decode_packed_batch(events)
+    sdk.decode_batch.assert_not_called()
+
+
+@pytest.mark.parametrize(
+    "answer",
+    [
+        torch.zeros((1, 2), dtype=torch.int64),
+        torch.zeros((1, 1), dtype=torch.uint8),
+        torch.tensor([[0, 2]], dtype=torch.uint8),
+        torch.empty((1, 2), dtype=torch.uint8, device="meta"),
+        object(),
+    ],
+)
+def test_packed_rejects_malformed_sdk(
+    monkeypatch: pytest.MonkeyPatch, answer: object
+) -> None:
+    decoder, sdk = _packed_fake(monkeypatch)
+    sdk.decode_batch.return_value = answer
+    with pytest.raises(CapabilityError):
+        decoder.decode_packed_batch(torch.zeros((1, 2), dtype=torch.uint8))
+
+
+def test_packed_empty_and_zero_observables(monkeypatch: pytest.MonkeyPatch) -> None:
+    decoder, sdk = _packed_fake(monkeypatch, observables=0)
+    assert decoder.decode_packed_batch(
+        torch.empty((0, 2), dtype=torch.uint8)
+    ).shape == (0, 0)
+    sdk.decode_batch.assert_not_called()
+    sdk.decode_batch.return_value = torch.empty((2, 0), dtype=torch.uint8)
+    assert decoder.decode_packed_batch(
+        torch.zeros((2, 2), dtype=torch.uint8)
+    ).shape == (2, 0)
+    sdk.decode_batch.assert_called_once()
+
+
+def test_packed_sdk_error_retains_cause(monkeypatch: pytest.MonkeyPatch) -> None:
+    decoder, sdk = _packed_fake(monkeypatch)
+    error = ValueError("no perfect matching")
+    sdk.decode_batch.side_effect = error
+    with pytest.raises(CapabilityError) as caught:
+        decoder.decode_packed_batch(torch.zeros((1, 2), dtype=torch.uint8))
+    assert caught.value.__cause__ is error
+
+
+@pytest.fixture
+def weighted_fake(monkeypatch: pytest.MonkeyPatch) -> tuple[PyMatchingDecoder, Mock]:
+    decoder = object.__new__(PyMatchingDecoder)
+    sdk = Mock()
+    object.__setattr__(decoder, "graph", DecodingGraph(9, 9))
+    object.__setattr__(decoder, "_matching", sdk)
+    monkeypatch.setattr(torch.Tensor, "numpy", lambda self: self)
+    return decoder, sdk
+
+
+@pytest.mark.parametrize(
+    "packed_in,packed_out", [(False, False), (False, True), (True, False), (True, True)]
+)
+def test_weighted_pair_is_owned_and_single_call(
+    weighted_fake: tuple[PyMatchingDecoder, Mock], packed_in: bool, packed_out: bool
+) -> None:
+    decoder, sdk = weighted_fake
+    columns = 2 if packed_out else 9
+    bits = torch.zeros((2, columns), dtype=torch.uint8)
+    weights = torch.tensor([0.0, 1.0], dtype=torch.float64)
+
+    def predict(
+        buffer: torch.Tensor, **options: bool
+    ) -> tuple[torch.Tensor, torch.Tensor]:
+        assert options == dict(
+            return_weights=True,
+            bit_packed_shots=packed_in,
+            bit_packed_predictions=packed_out,
+        )
+        buffer.zero_()
+        return bits, weights
+
+    sdk.decode_batch.side_effect = predict
+    backing = torch.ones((2, 4 if packed_in else 18), dtype=torch.uint8)
+    events = backing[:, ::2]
+    before = backing.clone()
+    output, costs = decoder.decode_batch_with_weights(
+        events, bit_packed_shots=packed_in, bit_packed_predictions=packed_out
+    )
+    assert torch.equal(before, backing)
+    bits.fill_(1)
+    weights.fill_(-1)
+    assert not bool(output.any()) and costs.tolist() == [0.0, 1.0]
+    sdk.decode_batch.assert_called_once()
+
+
+@pytest.mark.parametrize(
+    "case",
+    [
+        "pair",
+        "arity",
+        "bits_shape",
+        "bits_dtype",
+        "bits_padding",
+        "weights_shape",
+        "weights_dtype",
+        "nan",
+        "negative",
+        "device",
+    ],
+)
+def test_weighted_malformed_pair_is_atomic(
+    weighted_fake: tuple[PyMatchingDecoder, Mock], case: str
+) -> None:
+    decoder, sdk = weighted_fake
+    bits = torch.zeros((1, 2), dtype=torch.uint8)
+    costs = torch.zeros(1, dtype=torch.float64)
+    raw: object = (bits, costs)
+    if case == "pair":
+        raw = [bits, costs]
+    elif case == "arity":
+        raw = (bits,)
+    elif case == "bits_shape":
+        raw = (bits[:, :1], costs)
+    elif case == "bits_dtype":
+        raw = (bits.bool(), costs)
+    elif case == "bits_padding":
+        bits[0, 1] = 2
+    elif case == "weights_shape":
+        raw = (bits, costs.reshape(1, 1))
+    elif case == "weights_dtype":
+        raw = (bits, costs.float())
+    elif case == "nan":
+        costs.fill_(float("nan"))
+    elif case == "negative":
+        costs.fill_(-1)
+    elif case == "device":
+        raw = (bits, torch.empty(1, dtype=torch.float64, device="meta"))
+    sdk.decode_batch.return_value = raw
+    with pytest.raises(CapabilityError):
+        decoder.decode_batch_with_weights(
+            torch.zeros((1, 2), dtype=torch.uint8),
+            bit_packed_shots=True,
+            bit_packed_predictions=True,
+        )
+
+
+def test_weighted_empty_and_failure_semantics(
+    weighted_fake: tuple[PyMatchingDecoder, Mock]
+) -> None:
+    decoder, sdk = weighted_fake
+    bits, costs = decoder.decode_batch_with_weights(
+        torch.empty((0, 9), dtype=torch.uint8)
+    )
+    assert bits.shape == (0, 9) and costs.shape == (0,)
+    sdk.decode_batch.assert_not_called()
+    with pytest.raises(ValueError):
+        decoder.decode_batch_with_weights(
+            torch.tensor([[0, 2]], dtype=torch.uint8), bit_packed_shots=True
+        )
+    sdk.decode_batch.assert_not_called()
+    error = ValueError("unreachable")
+    sdk.decode_batch.side_effect = error
+    with pytest.raises(CapabilityError) as caught:
+        decoder.decode_batch_with_weights(torch.zeros((1, 9), dtype=torch.uint8))
+    assert caught.value.__cause__ is error
+
+
+@pytest.mark.parametrize("flag", [0, 1, None, "true"])
+def test_weighted_flags_are_strict_bools(
+    weighted_fake: tuple[PyMatchingDecoder, Mock], flag: bool
+) -> None:
+    decoder, sdk = weighted_fake
+    with pytest.raises(TypeError, match="bool"):
+        decoder.decode_batch_with_weights(
+            torch.zeros((1, 9), dtype=torch.uint8), bit_packed_shots=flag
+        )
+    with pytest.raises(TypeError, match="bool"):
+        decoder.decode_batch_with_weights(
+            torch.zeros((1, 9), dtype=torch.uint8), bit_packed_predictions=flag
+        )
+    sdk.decode_batch.assert_not_called()
+
+
+@pytest.mark.parametrize("packed", [False, True])
+def test_weighted_empty_layout_shapes(
+    weighted_fake: tuple[PyMatchingDecoder, Mock], packed: bool
+) -> None:
+    decoder, sdk = weighted_fake
+    bits, weights = decoder.decode_batch_with_weights(
+        torch.empty((0, 2 if packed else 9), dtype=torch.uint8),
+        bit_packed_shots=packed,
+        bit_packed_predictions=packed,
+    )
+    assert bits.shape == (0, 2 if packed else 9)
+    assert bits.dtype == (torch.uint8 if packed else torch.bool)
+    assert weights.shape == (0,) and weights.dtype == torch.float64
+    sdk.decode_batch.assert_not_called()
+
+
+@pytest.fixture
+def matched_fake() -> tuple[PyMatchingDecoder, Mock]:
+    decoder = object.__new__(PyMatchingDecoder)
+    sdk = Mock()
+    object.__setattr__(decoder, "graph", DecodingGraph(3, 1))
+    object.__setattr__(decoder, "_matching", sdk)
+    return decoder, sdk
+
+
+def test_matched_pairs_cover_events_and_own_values(
+    matched_fake: tuple[PyMatchingDecoder, Mock]
+) -> None:
+    decoder, sdk = matched_fake
+    raw = torch.tensor([[2, 1], [0, -1]], dtype=torch.int64)
+    sdk.decode_to_matched_dets_array.return_value = raw
+    pairs = decoder.decode_to_matched_detectors(iter((2, 0, 1)))
+    assert pairs == ((0, None), (1, 2))
+    raw.fill_(-1)
+    assert pairs == ((0, None), (1, 2))
+    sdk.decode_to_matched_dets_array.assert_called_once_with([1, 1, 1])
+
+
+@pytest.mark.parametrize(
+    "raw",
+    [
+        torch.tensor([0, -1]),
+        torch.tensor([[0.0, -1.0]]),
+        torch.tensor([[True, False]]),
+        torch.tensor([[-1, 0]]),
+        torch.tensor([[0, 0], [1, 2]]),
+        torch.tensor([[0, -2], [1, 2]]),
+        torch.tensor([[0, -1], [1, 3]]),
+        torch.tensor([[0, -1]]),
+        torch.tensor([[0, -1], [0, -1], [1, 2]]),
+        torch.empty((2, 2), dtype=torch.int64, device="meta"),
+        object(),
+    ],
+)
+def test_matched_malformed_result_is_atomic(
+    matched_fake: tuple[PyMatchingDecoder, Mock], raw: object
+) -> None:
+    decoder, sdk = matched_fake
+    sdk.decode_to_matched_dets_array.return_value = raw
+    with pytest.raises(CapabilityError):
+        decoder.decode_to_matched_detectors((0, 1, 2))
+
+
+def test_matched_validation_and_failure(
+    matched_fake: tuple[PyMatchingDecoder, Mock]
+) -> None:
+    decoder, sdk = matched_fake
+    assert decoder.decode_to_matched_detectors(()) == ()
+    with pytest.raises(ValueError):
+        decoder.decode_to_matched_detectors((0, 0))
+    with pytest.raises(ValueError):
+        decoder.decode_to_matched_detectors((3,))
+    with pytest.raises(TypeError):
+        decoder.decode_to_matched_detectors((True,))
+    sdk.decode_to_matched_dets_array.assert_not_called()
+    error = ValueError("no matching")
+    sdk.decode_to_matched_dets_array.side_effect = error
+    with pytest.raises(CapabilityError) as caught:
+        decoder.decode_to_matched_detectors((0,))
+    assert caught.value.__cause__ is error

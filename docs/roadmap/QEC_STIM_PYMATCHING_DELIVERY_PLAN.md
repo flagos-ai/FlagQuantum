@@ -766,3 +766,12 @@ logs and older cancelled/superseded heads remain historical evidence. Final
 reviewed-head CI/GPU and normal actual-main acceptance still gate delivery; no
 force merge, check weakening, runner change or research execution is authorized
 by combining this tranche. No PyPI/tag publication is part of this PR.
+
+
+## Consolidated SDK delivery in PR1087
+
+The owner requested one coherent PR covering the approved external Stim report,
+packed predictions, SDK batch weights and matched detector pairs. PR1090 and
+PR1091 are superseded only after their contents are audited into this candidate.
+All prior evidence and approval scopes remain retained; no new upstream feature
+is inferred. Final-head integration and actual-main acceptance remain pending.

@@ -311,6 +311,72 @@ def _exercise_decoder_records(profile: str) -> list[str]:
     return names
 
 
+def _exercise_packed_predictions(profile: str) -> list[list[int]] | None:
+    if not PROFILES[profile][1]:
+        return None
+    import torch
+
+    from flagquantum.qec import DemError, DetectorErrorModel, PyMatchingDecoder
+
+    model = DetectorErrorModel(
+        3,
+        3,
+        (
+            DemError(0.1, (0,), (0,)),
+            DemError(0.2, (1,), (1,)),
+            DemError(0.3, (2,), (2,)),
+        ),
+    )
+    decoder = PyMatchingDecoder.from_detector_error_model(model)
+    result = decoder.decode_packed_batch(
+        torch.tensor([[0], [1], [2], [4], [7]], dtype=torch.uint8)
+    )
+    expected = [[0], [1], [2], [4], [7]]
+    assert result.tolist() == expected
+    return expected
+
+
+def _exercise_sdk_weights(profile: str) -> dict[str, object] | None:
+    if not PROFILES[profile][1]:
+        return None
+    import torch
+
+    from flagquantum.qec import DemError, DetectorErrorModel, PyMatchingDecoder
+
+    decoder = PyMatchingDecoder.from_detector_error_model(
+        DetectorErrorModel(3, 3, tuple(DemError(0.125, (i,), (i,)) for i in range(3)))
+    )
+    dense = torch.tensor([[0, 0, 0], [1, 0, 0], [1, 1, 1]], dtype=torch.uint8)
+    for packed_in in (False, True):
+        events = (
+            torch.tensor([[0], [1], [7]], dtype=torch.uint8) if packed_in else dense
+        )
+        for packed_out in (False, True):
+            bits, costs = decoder.decode_batch_with_weights(
+                events, bit_packed_shots=packed_in, bit_packed_predictions=packed_out
+            )
+            expected = [[0], [1], [7]] if packed_out else dense.bool().tolist()
+            assert bits.tolist() == expected
+            assert costs.dtype == torch.float64 and costs.shape == (3,)
+            assert bool(torch.isfinite(costs).all()) and costs[0] == 0 and costs[1] > 0
+    return {"shots": 3, "layouts": 4, "weight_source": "sdk_matching"}
+
+
+def _exercise_matched_detectors(profile: str) -> list[list[int | None]] | None:
+    if not PROFILES[profile][1]:
+        return None
+    from flagquantum.qec import DemError, DetectorErrorModel, PyMatchingDecoder
+
+    model = DetectorErrorModel(
+        3, 1, (DemError(0.125, (0,), (0,)), DemError(0.1, (1, 2), ()))
+    )
+    pairs = PyMatchingDecoder.from_detector_error_model(
+        model
+    ).decode_to_matched_detectors((0, 1, 2))
+    assert pairs == ((0, None), (1, 2))
+    return [[first, second] for first, second in pairs]
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("profile", choices=PROFILES)
@@ -362,6 +428,9 @@ def main() -> int:
                     if present
                 },
                 "cells": records,
+                "packed_predictions": _exercise_packed_predictions(args.profile),
+                "sdk_weighted_batches": _exercise_sdk_weights(args.profile),
+                "matched_detectors": _exercise_matched_detectors(args.profile),
                 "stim_experiment": experiment,
                 "full_record_decoders": record_decoders,
             },
