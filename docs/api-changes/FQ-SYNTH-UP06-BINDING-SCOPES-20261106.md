@@ -47,3 +47,8 @@ Acceptance:
 - Full 216 audit must preserve all previous 135 resource rows and source blobs.
 - Keep both known invalid original inputs as source-semantic refusals; no original
   or historical measurement baseline is rewritten. No integration PR/full CI yet.
+
+Nested static loops must reject reuse of an active loop-index name, preserving
+the outer static environment. Negative bounds may refuse during parsing before
+the 0..256 semantic bound check. Existing effect expansion limits still apply
+when loop products exceed 4096 operations.
