@@ -5,6 +5,7 @@ from __future__ import annotations
 import math
 from typing import TYPE_CHECKING
 
+from ...compiler._construction.register_profile import MAX_MATRIX_QUBITS
 from .syntax import Expression, Token, reject
 
 if TYPE_CHECKING:
@@ -25,11 +26,12 @@ def matrix_value(node: Expression) -> complex:
 
 
 def validate_matrix_constant(token: Token, matrix: Expression) -> None:
-    if not 1 <= len(matrix.children) <= 8 or any(
-        not 1 <= len(row.children) <= 8 for row in matrix.children
+    size = 1 << MAX_MATRIX_QUBITS
+    if not 1 <= len(matrix.children) <= size or any(
+        not 1 <= len(row.children) <= size for row in matrix.children
     ):
         reject(
-            token, "unitary", "matrix constants are bounded to eight rows and columns"
+            token, "unitary", f"matrix constants are bounded to {size} rows and columns"
         )
     if len({len(row.children) for row in matrix.children}) != 1:
         reject(token, "unitary", "matrix constants must be rectangular")
@@ -53,11 +55,11 @@ def lower_unitary(owner: _Adapt, token: Token, args: tuple[Expression, ...]) -> 
             "unitary requires a literal matrix or matrix constant",
         )
     view = owner.array_view(target_arg)
-    if len(view) not in {1, 2, 3} or len(set(view)) != len(view):
+    if not 1 <= len(view) <= MAX_MATRIX_QUBITS or len(set(view)) != len(view):
         reject(
             target_arg.token,
             "unitary",
-            "unitary requires one to three distinct qubit locations",
+            "unitary requires one to four distinct qubit locations",
         )
     view_attributes: dict[str, object] = {}
     if target_arg.children or target_arg.token.text in owner.views:

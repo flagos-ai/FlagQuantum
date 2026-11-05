@@ -205,13 +205,28 @@ def infer_phase_allocation(
         parameter is None
         or parameter.kind not in {"qnum", "qphase", "qphase_signed"}
         or parameter.width not in {None, size}
-        or parameter.role != "output"
-        or owner.scope != "main"
+        or not (
+            parameter.role == "output"
+            or parameter.role == "local"
+            and parameter.kind == "qphase"
+            and owner.scope == "main"
+        )
+        or (owner.scope != "main" and not owner.helper_stack)
+    ):
+        reject(token, "qpe", "all-fractional allocation requires a matching Output")
+    signed = sign.token.text in {"True", "SIGNED"}
+    if parameter.kind in {"qphase", "qphase_signed"} and signed != (
+        parameter.kind == "qphase_signed"
     ):
         reject(
-            token, "qpe", "all-fractional allocation requires a matching main output"
+            sign.token,
+            "precision",
+            "fixed-point allocation signedness must agree with its type",
         )
-    signed = sign.token.text in {"True", "SIGNED"}
+    if signed and owner.helper_stack:
+        reject(
+            sign.token, "precision", "signed fixed-point helper ports are not admitted"
+        )
     owner.parameters[target.text] = replace(
         parameter, kind="qphase_signed" if signed else "qphase", width=size
     )

@@ -21,7 +21,7 @@ MAX_DEPTH = 40
 MAX_EXPRESSION_DEPTH = 128
 MAX_SCOPE_DEPTH = 32
 MAX_FUNCTIONS = 32
-ANGLE_CALLS = frozenset({"PHASE", "RX", "RY", "RZ", "RZZ", "CRX", "R", "U"})
+ANGLE_CALLS = frozenset({"PHASE", "RX", "RY", "RZ", "RZZ", "CRX", "CPHASE", "R", "U"})
 _TOKEN = re.compile(
     r"(?P<space>\s+)|(?P<comment>//[^\n]*|/\*[\s\S]*?\*/)"
     r"|(?P<number>[0-9]+)|(?P<name>[A-Za-z_][A-Za-z_0-9]*)"
@@ -780,10 +780,16 @@ class Parser:
             else:
                 kind, width = self.scalar_type(
                     allow_qubit_array=name.text == "main" or role in {"inout", "const"},
-                    allow_phase=name.text == "main" and role == "output",
+                    allow_phase=True,
                     allow_fixed_array=role in {"inout", "output", "const"}
                     or name.text == "main",
                 )
+                if kind == "qphase_signed" and name.text != "main":
+                    reject(
+                        parameter,
+                        "type",
+                        "signed fixed-point helper ports are not admitted",
+                    )
             parameters.append(Parameter(parameter, kind, width, role, record))
             if self.current.text != ",":
                 break
@@ -837,6 +843,7 @@ class Parser:
         scope_depth: int = 0,
         power_body: bool = False,
         static_loop_body: bool = False,
+        control_actions: bool = False,
         binding_preparation: bool = False,
         binding_actions: bool = False,
     ) -> tuple[Statement, ...]:
@@ -886,7 +893,9 @@ class Parser:
                 and self.tokens[self.position + 1].text == "("
             ):
                 token = self.take(self.current.text)
-                if scope_depth and not (static_loop_body or binding_actions):
+                if scope_depth and not (
+                    static_loop_body or binding_actions or control_actions
+                ):
                     reject(
                         token,
                         "scope",
@@ -985,8 +994,12 @@ class Parser:
                     kind, local_width = "qbit[]", self.records[record].width
                 else:
                     kind, local_width = self.scalar_type(
-                        allow_fixed_array=True, allow_qubit_array=True
+                        allow_fixed_array=True, allow_qubit_array=True, allow_phase=True
                     )
+                    if kind == "qphase_signed":
+                        reject(
+                            target, "type", "signed fixed-point locals are not admitted"
+                        )
                 self.take(";")
                 statements.append(
                     Statement(
@@ -1039,6 +1052,8 @@ class Parser:
                         )
                     elif target.text == "linear_pauli_rotations":
                         args.append(self.literal_array(self.linear_rotation_basis))
+                    elif target.text == "select_rotation":
+                        args.append(self.pauli_axis())
                     elif target.text == "single_pauli_exponent":
                         args.append(self.literal_array(self.pauli_axis))
                     elif target.text in PREPARATIONS:
@@ -1108,12 +1123,18 @@ class Parser:
                         "budget.depth",
                         f"scope nesting exceeds depth {MAX_SCOPE_DEPTH}",
                     )
-                body = self.block(allow_scopes=False, scope_depth=scope_depth + 1)
+                body = self.block(
+                    allow_scopes=False,
+                    scope_depth=scope_depth + 1,
+                    control_actions=True,
+                )
                 alternate = None
                 if self.current.text == "else":
                     self.take("else")
                     alternate = self.block(
-                        allow_scopes=False, scope_depth=scope_depth + 1
+                        allow_scopes=False,
+                        scope_depth=scope_depth + 1,
+                        control_actions=True,
                     )
                 statements.append(
                     Statement(

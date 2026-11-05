@@ -94,6 +94,15 @@ def test_complex_unitary_all_columns_and_controlled_phase(
     torch.testing.assert_close(actual, reference, atol=1e-12, rtol=0)
 
 
+def test_four_qubit_unitary_without_clean_workspace() -> None:
+    matrix = matrix_fixture(4)
+    row = schedule_register_program(model_for(matrix), n_qubits=4)
+    assert row.peak_workspace == 0
+    inputs = torch.eye(16, dtype=DTYPE)
+    actual = fq.Circuit.from_ir(row.circuit, dtype=DTYPE, inputs=inputs, bsz=16).state()
+    torch.testing.assert_close(actual, matrix.T, atol=1e-12, rtol=0)
+
+
 @pytest.mark.parametrize(
     "attributes",
     [
@@ -129,7 +138,7 @@ def test_reject_malformed_power_and_control(attributes: dict[str, object]) -> No
 )
 def test_reject_unsafe_unitary_programs(case: str) -> None:
     p = Registers()
-    width = 4 if case == "width" else 3
+    width = 5 if case == "width" else 3
     data = p.declare("data", width)
     p.emit("qreg.allocate", data)
     control = data if case == "alias" else p.declare("control", 1)

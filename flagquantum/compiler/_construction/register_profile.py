@@ -67,12 +67,13 @@ _ANGLED_PAIR_GATES = frozenset({"crx", "cry", "crz", "rzz"})
 _PAIR_GATES = frozenset({"cx", "cz", "swap"}) | _ANGLED_PAIR_GATES
 _ANGLE_GATES = frozenset({"phase", "rx", "ry", "rz"})
 _GATES = frozenset({"x", "h", "s", "z", "i", "sx"}) | _ANGLE_GATES
+MAX_MATRIX_QUBITS = 4
 
 
 def unitary_matrix(entries: object, width: int, op: Operation) -> torch.Tensor:
     """Decode a bounded dense matrix from immutable real/imaginary pairs."""
-    if not 1 <= width <= 3:
-        _fail("register.unitary", "matrix targets must have one to three qubits", op)
+    if not 1 <= width <= MAX_MATRIX_QUBITS:
+        _fail("register.unitary", "matrix targets must have one to four qubits", op)
     size = 1 << width
     if (
         not isinstance(entries, tuple)
@@ -674,7 +675,7 @@ def _verify_body(
                     if (
                         not isinstance(indices, tuple)
                         or len(indices) != len(data)
-                        or len(indices) not in {1, 2, 3}
+                        or not 1 <= len(indices) <= MAX_MATRIX_QUBITS
                         or any(
                             type(index) is not int
                             or not 0 <= index < register_width(value)

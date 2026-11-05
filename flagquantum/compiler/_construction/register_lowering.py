@@ -360,9 +360,21 @@ def schedule_register_program(
             matrix = unitary_matrix(op.attributes["matrix"], len(wires), op)
             if "power" in op.attributes:
                 matrix = torch.linalg.matrix_power(matrix, op.attributes["power"])
-            gates = unitary_instructions(
-                matrix, wires, op, () if control is None else (control,)
+            needed = 2 + (control is not None) if len(wires) == 4 else 0
+            scratch = (
+                tuple(range(position, position + needed))
+                if position + needed <= n_qubits
+                else ()
             )
+            gates = unitary_instructions(
+                matrix, wires, op, () if control is None else (control,), scratch
+            )
+            if scratch:
+                used = {
+                    wire for gate in gates for wire in gate.wires if wire in scratch
+                }
+                if used:
+                    control_workspace = max(control_workspace, max(used) - position + 1)
         elif op.name in {"qreg.qft", "qreg.inverse_qft"}:
             gates = qft_instructions(bindings[op.operands[1].id])
             if op.name == "qreg.inverse_qft":

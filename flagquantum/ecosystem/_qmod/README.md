@@ -1418,3 +1418,20 @@ prepared by `X; H`, a sequence of CX operations targeting the bit leaves
 it in the same X eigenstate. If `H; X` restores zero before `free`, the
 importer can remove the local and retain the equivalent phase on each
 control. An unproven `free` is rejected.
+
+### Expanded phase estimation and HHL composition
+
+An unsigned all-fractional `qnum<w, False, w>` has a fixed binary point.
+A typed helper can forward the same-width storage or use an explicit qubit
+array port for bit operations. A Const fixed-point port can drive checked
+selector controls. Owned helper Outputs must refer to disjoint whole caller
+Outputs, and the helper must initialize them. A reversible apply block can
+initialize a fresh Output that the preparation did not touch. Dropping a
+local ends source access while retaining it in the joint physical state.
+
+`select_rotation` accepts an exact-length X, Y or Z rotation table and one
+to eight selector bits, with array index zero as the least-significant bit.
+`CPHASE` and indexed coherent control support the expanded QFT and matrix
+power patterns. Four-qubit matrix decomposition uses the existing verified
+Givens construction and may reuse up to three clean scratch bits for controlled
+powers. Synthesis includes those bits in its workspace and qubit budgets.

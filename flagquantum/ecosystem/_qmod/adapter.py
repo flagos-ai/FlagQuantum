@@ -8,6 +8,7 @@ import re
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, replace
 from decimal import Decimal
+from itertools import groupby
 from operator import and_, eq, ge, gt, le, lt, ne, or_, xor
 from types import MappingProxyType
 
@@ -56,6 +57,7 @@ from .preparation import lower_inplace_preparation
 from .qpe import infer_phase_allocation, lower_qpe
 from .quantum_callbacks import specialize_quantum_callbacks
 from .scope_control import lower_fourier_control
+from .selector_rotations import is_selector_helper, lower_select_rotation
 from .swap_test import lower_swap_test
 from .syntax import (
     ANGLE_CALLS,
@@ -111,6 +113,7 @@ _INTRINSICS = (
         "multi_suzuki_trotter",
         "single_pauli_exponent",
         "linear_pauli_rotations",
+        "select_rotation",
         "unitary",
         "exponentiate",
         "qdrift",
@@ -828,7 +831,7 @@ class _Adapt:
                     or (self.helper_stack and self.parameters[name].kind == "qbit")
                 )
                 and self.local_scope is None
-                and self.parameters[name].kind in {"qbit", "qnum"}
+                and self.parameters[name].kind in {"qbit", "qnum", "qphase"}
             )
         )
         if (
@@ -1081,7 +1084,9 @@ class _Adapt:
             return view[index]
         return value, index
 
-    def array_view(self, node: Expression) -> tuple[tuple[Value, int], ...]:
+    def array_view(
+        self, node: Expression, *, allow_phase: bool = False
+    ) -> tuple[tuple[Value, int], ...]:
         cell = self.record_bit(node)
         if cell is not None:
             return (cell,)
@@ -1115,13 +1120,20 @@ class _Adapt:
         if target.text in self.suspended:
             reject(target, "binding", "a bound source name is suspended")
         parameter = self.parameters.get(target.text)
-        if parameter is None or parameter.kind not in {"qbit[]", "qnum", "qbit"}:
+        phase = allow_phase and parameter is not None and parameter.kind == "qphase"
+        if parameter is None or (
+            parameter.kind not in {"qbit[]", "qnum", "qbit"} and not phase
+        ):
             reject(target, "type", "expected an unsigned quantum register or view")
-        if target.text in self.signed or target.text in self.fractional_bits:
+        if target.text in self.signed or (
+            target.text in self.fractional_bits and not phase
+        ):
             reject(target, "type", "views require an unsigned integer register")
         view = self.views.get(target.text)
         if view is None:
-            value = self.register(target, allow_qubit_array=True)
+            value = self.register(
+                target, allow_qubit_array=True, allow_fractional_output=phase
+            )
             view = tuple((value, index) for index in range(register_width(value)))
         if node.token.text != ":":
             return view
@@ -1405,6 +1417,8 @@ class _Adapt:
             if name in self.constants
         )
         actuals: set[tuple[Value, int]] = set()
+        outputs: set[Value] = set()
+        phase_borrows: set[Value] = set()
         for argument, parameter in zip(arguments, syntax.parameters, strict=True):
             name = parameter.name.text
             if parameter.role == "callable":
@@ -1463,12 +1477,46 @@ class _Adapt:
                 else:
                     child.classical_values[name] = self.angle(argument, token)
                 continue
+            actual_port = (
+                self.parameters.get(argument.token.text)
+                if not argument.children
+                else None
+            )
+            if (
+                actual_port is not None
+                and actual_port.kind == "qphase"
+                and (
+                    parameter.kind not in {"qphase", "qbit[]"}
+                    or (actual_port.role == "const" and parameter.role != "const")
+                )
+            ):
+                reject(
+                    argument.token,
+                    "precision",
+                    "fixed-point helper ports require a checked bit view or matching type",
+                )
+            if parameter.kind == "qphase" and (
+                actual_port is None or actual_port.kind != "qphase"
+            ):
+                reject(
+                    argument.token,
+                    "precision",
+                    "fixed-point helper ports require matching unsigned fractional storage",
+                )
+            if parameter.role == "output" and (
+                actual_port is None or actual_port.role != "output"
+            ):
+                reject(
+                    argument.token,
+                    "ownership",
+                    "bound helper Output requires a whole caller Output",
+                )
             view = (
                 record_view(self, parameter, argument)
                 if parameter.record is not None
                 else (
-                    self.array_view(argument)
-                    if parameter.kind in {"qbit[]", "qnum"}
+                    self.array_view(argument, allow_phase=True)
+                    if parameter.kind in {"qbit[]", "qnum", "qphase"}
                     else (self.gate_target(argument),)
                 )
             )
@@ -1493,8 +1541,38 @@ class _Adapt:
                 child.registers[name] = value
             else:
                 child.views[name] = view
+            if parameter.role == "output":
+                if name not in child.registers:
+                    reject(
+                        argument.token,
+                        "ownership",
+                        "bound helper Output cannot be a partial view",
+                    )
+                outputs.add(value)
+            if parameter.kind == "qphase" and parameter.role == "const":
+                phase_borrows.add(value)
         for index, statement in enumerate(syntax.statements):
             child.statement(statement, str(index))
+        initialized_outputs = set()
+        for op in child.operations:
+            operands = op.operands[1:]
+            if op.name in {"qreg.allocate", "qreg.prepare_amplitudes"}:
+                initialized_outputs.add(operands[0])
+            if phase_borrows.intersection(operands):
+                if op.name == "qreg.control_phase" or (
+                    op.name == "qreg.pair_gate"
+                    and op.attributes.get("gate") == "cx"
+                    and operands[0] in phase_borrows
+                    and operands[1] not in phase_borrows
+                ):
+                    continue
+                reject(
+                    token,
+                    "ownership",
+                    "bound helper cannot write a Const fixed-point port",
+                )
+        if not outputs <= initialized_outputs:
+            reject(token, "ownership", "bound helper must initialize each Output")
         if any(op.name == "qreg.hidden" for op in child.operations):
             reject(token, "free", "bound helper must free each allocated local qbit")
         self.helper_expansions = child.helper_expansions
@@ -1916,10 +1994,18 @@ class _Adapt:
 
     def coherent_helper_control(self, statement: Statement, index: str) -> bool:
         condition = statement.arguments[0]
-        if condition.token.text not in {"==", "!="} or len(condition.children) != 2:
-            return False
-        source, expected = condition.children
-        if expected.children or expected.token.text not in {"0", "1"}:
+        if condition.token.text in {"==", "!="} and len(condition.children) == 2:
+            source, expected = condition.children
+            if expected.children or expected.token.text not in {"0", "1"}:
+                return False
+            positive = int(expected.token.text) ^ (condition.token.text == "!=")
+        elif condition.token.text == "[" or (
+            not condition.children
+            and self.widths.get(condition.token.text) == 1
+            and self.parameters[condition.token.text].kind in {"qbit", "qnum"}
+        ):
+            source, positive = condition, 1
+        else:
             return False
         if source.token.text == "[":
             control = self.gate_target(source)
@@ -1936,11 +2022,7 @@ class _Adapt:
             return False
         body = statement.control_body
         assert body is not None
-        branches: tuple[tuple[int, tuple[Statement, ...]], ...] = (
-            (int(expected.token.text), body),
-        )
-        if condition.token.text == "!=":
-            branches = ((1 - int(expected.token.text), body),)
+        branches: tuple[tuple[int, tuple[Statement, ...]], ...] = ((positive, body),)
         if statement.control_else is not None:
             branches += ((1 - branches[0][0], statement.control_else),)
 
@@ -1948,6 +2030,7 @@ class _Adapt:
         def contains_composition(children: tuple[Statement, ...]) -> bool:
             return any(
                 child.inverse_body is not None
+                or child.repeat_index is not None
                 or child.token.text in self.definitions
                 or (
                     child.control_body is not None
@@ -1977,20 +2060,52 @@ class _Adapt:
                     gate="x",
                     index=control[1],
                 )
-            for op in expanded:
-                if op.name == "qreg.control_x" and "indices" in op.attributes:
-                    locations = tuple(
-                        zip(op.operands[1:], op.attributes["indices"], strict=True)
-                    )
-                elif op.name == "qreg.gate" and op.attributes["gate"] == "x":
-                    locations = ((op.operands[1], op.attributes["index"]),)
-                else:
-                    reject(
-                        statement.token,
-                        "control",
-                        "controlled helper requires reversible X and indexed controlled-X operations",
-                    )
-                self.emit_indexed_x(statement.token, (control, *locations))
+            for (name, operands, attrs), run in groupby(
+                expanded, key=lambda op: (op.name, op.operands[1:], dict(op.attributes))
+            ):
+                if (
+                    name == "qreg.unitary"
+                    and "control_index" not in attrs
+                    and "power" not in attrs
+                    and control[0] not in operands
+                ):
+                    power = sum(1 for _ in run)
+                    for start in range(0, power, 128):
+                        self.effect_op(
+                            name,
+                            statement.token,
+                            (*operands, control[0]),
+                            **attrs,
+                            control_index=control[1],
+                            power=min(128, power - start),
+                        )
+                    continue
+                for _ in run:
+                    if name == "qreg.control_x" and "indices" in attrs:
+                        locations = tuple(zip(operands, attrs["indices"], strict=True))
+                    elif name == "qreg.gate" and attrs["gate"] == "x":
+                        locations = ((operands[0], attrs["index"]),)
+                    elif name == "qreg.pair_gate" and attrs["gate"] == "swap":
+                        left, right = zip(
+                            operands, attrs.get("indices", (0, 0)), strict=True
+                        )
+                        if control in (left, right):
+                            reject(
+                                statement.token,
+                                "alias",
+                                "controlled SWAP requires distinct locations",
+                            )
+                        self.emit_indexed_x(statement.token, (right, left))
+                        self.emit_indexed_x(statement.token, (control, left, right))
+                        self.emit_indexed_x(statement.token, (right, left))
+                        continue
+                    else:
+                        reject(
+                            statement.token,
+                            "control",
+                            "controlled helper requires reversible X, indexed controlled-X, SWAP or a disjoint unitary",
+                        )
+                    self.emit_indexed_x(statement.token, (control, *locations))
             if not value:
                 self.effect_op(
                     "qreg.gate",
@@ -2606,7 +2721,12 @@ class _Adapt:
                 f"{token.text} requires a vector, bound and output",
             )
         vector, bound_arg, output = args
-        if vector.token.text != "[":
+        values = (
+            self.classical_arrays.get(vector.token.text)
+            if not vector.children
+            else None
+        )
+        if values is None and vector.token.text != "[":
             constant = self.constants.get(vector.token.text)
             if constant is None or constant.token.text != "[":
                 reject(vector.token, "amplitudes", "expected a declared real[] vector")
@@ -2616,7 +2736,7 @@ class _Adapt:
             if constant.token.text in {"[", "SparsePauliOp"}:
                 reject(bound_arg.token, "amplitudes", "bound requires a scalar real")
             bound_arg = constant
-        count = len(vector.children)
+        count = len(values) if values is not None else len(vector.children)
         if not 2 <= count <= MAX_PREPARED_AMPLITUDES or count & (count - 1):
             reject(
                 vector.token,
@@ -2624,7 +2744,11 @@ class _Adapt:
                 "amplitude count must be a power of two in 2..256",
             )
 
-        amplitudes = tuple(_preparation_value(item) for item in vector.children)
+        amplitudes = (
+            values
+            if values is not None
+            else tuple(_preparation_value(item) for item in vector.children)
+        )
         bound = _preparation_value(bound_arg)
         if token.text == "prepare_state":
             if any(value < 0 for value in amplitudes) or not math.isclose(
@@ -2724,6 +2848,23 @@ class _Adapt:
             return
         if token.text == "inplace_prepare_state":
             lower_inplace_preparation(self, token, args)
+            return
+        if token.text == "select_rotation":
+            lower_select_rotation(self, token, args)
+            return
+        if token.text == "CPHASE":
+            if len(args) != 3:
+                reject(token, "signature", "CPHASE requires an angle and two qubits")
+            locations = tuple(self.gate_target(arg) for arg in args[1:])
+            if len(set(locations)) != 2:
+                reject(token, "alias", "CPHASE requires distinct qubit locations")
+            self.effect_op(
+                "qreg.control_phase",
+                token,
+                tuple(value for value, _ in locations),
+                indices=tuple(index for _, index in locations),
+                angle=self.angle(args[0], token),
+            )
             return
         if statement.map_callback is not None:
             variable, body = statement.map_callback
@@ -3017,8 +3158,11 @@ class _Adapt:
             target = self.atom(args[-1])
             if self.helper_stack and (
                 self.parameters.get(target.text) is None
-                or self.parameters[target.text].role != "local"
-                or self.parameters[target.text].kind != "qbit"
+                or not (
+                    self.parameters[target.text].role == "output"
+                    or self.parameters[target.text].role == "local"
+                    and self.parameters[target.text].kind == "qbit"
+                )
             ):
                 reject(target, "free", "bound allocation requires a local qbit")
             phase_allocation = infer_phase_allocation(self, token, args, size)
@@ -3099,10 +3243,14 @@ class _Adapt:
             if (
                 drop_parameter is None
                 or drop_parameter.role != "local"
-                or drop_parameter.kind not in {"qbit", "qnum", "qbit[]"}
+                or drop_parameter.kind not in {"qbit", "qnum", "qbit[]", "qphase"}
             ):
                 reject(target, "drop", "drop requires a local register")
-            destination = self.register(target, allow_qubit_array=True)
+            destination = self.register(
+                target,
+                allow_qubit_array=True,
+                allow_fractional_output=drop_parameter.kind == "qphase",
+            )
             self.effect_op("qreg.drop", token, (destination,))
             self.dropped.add(target.text)
         elif token.text == "IDENTITY":
@@ -3393,8 +3541,9 @@ class _Adapt:
             self.register(p.name) for p in self.syntax.parameters if p.role == "const"
         )
         for parameter in output_parameters:
+            kind = self.parameters[parameter.name.text].kind
             if (
-                self.parameters[parameter.name.text].kind in {"qphase", "qphase_signed"}
+                kind == "qphase_signed"
                 and parameter.name.text not in self.fractional_bits
             ):
                 reject(
@@ -3402,6 +3551,10 @@ class _Adapt:
                     "qpe",
                     "fixed-point phase output requires qpe_flexible",
                 )
+            if kind == "qphase":
+                width = self.widths[parameter.name.text]
+                assert width is not None
+                self.fractional_bits.setdefault(parameter.name.text, width)
         declared = tuple(
             self.register(p.name, allow_qubit_array=True, allow_fractional_output=True)
             for p in output_parameters
@@ -3471,7 +3624,7 @@ def check_source_version(source_version: str, token: Token) -> None:
 
 def _bound_helper(syntax: Function) -> bool:
     return any(
-        port.role in {"real", "integer", "inout", "callable"}
+        port.role in {"real", "integer", "inout", "callable"} or port.kind == "qphase"
         for port in syntax.parameters
     )
 
@@ -3611,8 +3764,17 @@ def parse_qmod(
             reject(syntax.name, "name", "duplicate helper parameter")
         if any(
             port.role not in {"real", "integer", "inout", "callable"}
-            and not (port.role == "output" and port.kind == "qbit")
-            and not (port.role == "const" and is_const_cx_permutation(syntax))
+            and not (
+                port.role == "output" and port.kind in {"qbit", "qbit[]", "qphase"}
+            )
+            and not (
+                port.role == "const"
+                and (
+                    port.kind == "qphase"
+                    or is_const_cx_permutation(syntax)
+                    or is_selector_helper(syntax)
+                )
+            )
             for port in syntax.parameters
         ):
             reject(
@@ -3626,11 +3788,19 @@ def parse_qmod(
             if statement.declaration is not None
             and statement.declaration.kind == "qbit"
         }
+        output_names = {
+            port.name.text for port in syntax.parameters if port.role == "output"
+        }
         for statement in syntax.statements:
             if statement.token.text in {"allocate", "free"} and (
                 not statement.arguments
                 or statement.arguments[-1].children
-                or statement.arguments[-1].token.text not in local_bits
+                or statement.arguments[-1].token.text
+                not in (
+                    local_bits | output_names
+                    if statement.token.text == "allocate"
+                    else local_bits
+                )
             ):
                 reject(
                     statement.token,
@@ -3672,6 +3842,8 @@ def parse_qmod(
                     "+=",
                     "phase",
                     "inplace_prepare_state",
+                    "prepare_amplitudes",
+                    "select_rotation",
                     "allocate",
                     "free",
                 }

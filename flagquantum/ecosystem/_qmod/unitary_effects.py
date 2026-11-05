@@ -25,6 +25,7 @@ PURE_EFFECTS = frozenset(
         "qreg.inverse_qft",
         "qreg.control_qft",
         "qreg.inplace_prepare_amplitudes",
+        "qreg.unitary",
     }
 )
 
@@ -36,6 +37,11 @@ def emit_inverse(owner: _Adapt, token: Token, operations: Sequence[Operation]) -
         opcode = op.name
         if op.name in {"qreg.qft", "qreg.inverse_qft"}:
             opcode = "qreg.inverse_qft" if op.name == "qreg.qft" else "qreg.qft"
+        elif op.name == "qreg.unitary":
+            attributes["matrix"] = tuple(
+                tuple((real, -imag) for real, imag in column)
+                for column in zip(*op.attributes["matrix"], strict=True)
+            )
         elif op.name in {
             "qreg.gate",
             "qreg.control_qft",
@@ -82,19 +88,39 @@ def is_reversible_scope(statement: Statement) -> bool:
 
 def lower_reversible_scope(owner: _Adapt, statement: Statement, index: str) -> None:
     assert statement.within is not None
-    bindings = dict(owner.registers), dict(owner.views), set(owner.suspended)
+    registers = dict(owner.registers)
+    bindings = dict(owner.views), set(owner.suspended)
 
     def checked_effects(
-        label: str, body: tuple[Statement, ...]
+        label: str,
+        body: tuple[Statement, ...],
+        preparation: tuple[Operation, ...] = (),
     ) -> tuple[Operation, ...]:
         start = len(owner.operations)
         for ordinal, child in enumerate(body):
             owner.statement(child, f"{index}.{label}{ordinal}")
         effects = tuple(owner.operations[start:])
-        if any(op.name not in PURE_EFFECTS for op in effects) or bindings != (
-            owner.registers,
-            owner.views,
-            owner.suspended,
+        touched = {value for op in preparation for value in op.operands[1:]}
+        allocated = {op.operands[1] for op in effects if op.name == "qreg.allocate"}
+        fresh_outputs = {
+            name: value
+            for name, value in owner.registers.items()
+            if label == "apply"
+            and owner.parameters[name].role == "output"
+            and value in allocated
+            and value not in touched
+        }
+        if (
+            any(
+                op.name not in PURE_EFFECTS
+                and not (
+                    op.name == "qreg.allocate"
+                    and op.operands[1] in fresh_outputs.values()
+                )
+                for op in effects
+            )
+            or bindings != (owner.views, owner.suspended)
+            or owner.registers != registers | fresh_outputs
         ):
             reject(
                 statement.token,
@@ -104,5 +130,5 @@ def lower_reversible_scope(owner: _Adapt, statement: Statement, index: str) -> N
         return effects
 
     forward = checked_effects("within", statement.within)
-    checked_effects("apply", statement.apply)
+    checked_effects("apply", statement.apply, forward)
     emit_inverse(owner, statement.token, forward)
