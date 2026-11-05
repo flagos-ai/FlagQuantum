@@ -11,7 +11,7 @@ from flagquantum.ecosystem._qmod.adapter import (
     QmodImport,
     parse_qmod,
 )
-from flagquantum.ecosystem._qmod.syntax import MAX_BYTES, MAX_TOKENS
+from flagquantum.ecosystem._qmod.syntax import MAX_BYTES, MAX_DEPTH, MAX_TOKENS
 
 pytestmark = pytest.mark.unit
 CORPUS = Path(__file__).resolve().parents[2] / "fixtures/classiq_qmod"
@@ -231,11 +231,17 @@ def test_diagnostic_retains_exact_native_line_and_column() -> None:
         ("qfunc main(output q:qnum) { q=" + "9" * 79 + "; }", "qmod.budget.number"),
         ("qfunc main(output q:qnum) { q=" + str(1 << 256) + "; }", "qmod.width"),
         (
-            "qfunc main(output q:qnum) { q=" + "(" * 34 + "1" + ")" * 34 + "; }",
+            "qfunc main(output q:qnum) { q="
+            + "(" * (MAX_DEPTH + 2)
+            + "1"
+            + ")" * (MAX_DEPTH + 2)
+            + "; }",
             "qmod.budget.depth",
         ),
         (
-            "qfunc main(output q:qnum) { q=" + "+".join(["1"] * 34) + "; }",
+            "qfunc main(output q:qnum) { q="
+            + "+".join(["1"] * (MAX_DEPTH + 2))
+            + "; }",
             "qmod.budget.depth",
         ),
         (

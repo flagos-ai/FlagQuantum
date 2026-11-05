@@ -8,6 +8,10 @@ from .syntax import Expression, reject
 
 Location = tuple[Value, int]
 Polynomial = dict[int, float]
+MAX_PHASE_INPUT_BITS = 24
+MAX_PHASE_DEGREE = 8
+MAX_PHASE_TERMS = 256
+MAX_PHASE_PRODUCTS = 20_000
 
 
 def expand_phase(
@@ -20,8 +24,10 @@ def expand_phase(
     products = 0
 
     def checked(polynomial: Polynomial, node: Expression) -> Polynomial:
-        if len(polynomial) > 256:
+        if len(polynomial) > MAX_PHASE_TERMS:
             reject(node.token, "budget.phase", "phase exceeds 256 monomials")
+        if any(mask.bit_count() > MAX_PHASE_DEGREE for mask in polynomial):
+            reject(node.token, "budget.phase", "phase monomial exceeds degree eight")
         if any(
             not math.isfinite(value) or abs(value) > 2**53
             for value in polynomial.values()
@@ -32,7 +38,7 @@ def expand_phase(
     def multiply(left: Polynomial, right: Polynomial, node: Expression) -> Polynomial:
         nonlocal products
         products += len(left) * len(right)
-        if products > 20_000:
+        if products > MAX_PHASE_PRODUCTS:
             reject(node.token, "budget.phase", "phase exceeds 20000 monomial products")
         result: Polynomial = {}
         for first, first_value in left.items():
@@ -48,11 +54,11 @@ def expand_phase(
             for bit, location in enumerate(word):
                 if location not in locations:
                     locations.append(location)
-                    if len(locations) > 8:
+                    if len(locations) > MAX_PHASE_INPUT_BITS:
                         reject(
                             node.token,
                             "budget.phase",
-                            "phase exceeds eight quantum input bits",
+                            "phase exceeds 24 quantum input bits",
                         )
                 mask = 1 << locations.index(location)
                 result[mask] = result.get(mask, 0.0) + 2.0**bit

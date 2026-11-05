@@ -137,10 +137,11 @@ def test_real_phase_preserves_constant_global_phase_and_boolean_powers():
         ("q[0]/0", 2, "divisor must be a nonzero classical"),
         ("q[2]", 2, "bit index is out of bounds"),
         (
-            "+".join(f"q[{bit}]" for bit in range(9)),
-            9,
-            "exceeds eight quantum input bits",
+            "+".join(f"q[{bit}]" for bit in range(25)),
+            25,
+            "exceeds 24 quantum input bits",
         ),
+        ("*".join(f"q[{bit}]" for bit in range(9)), 9, "monomial exceeds degree eight"),
         ("(9007199254740992*q[0])**8", 1, "coefficient exceeds finite"),
     ],
 )

@@ -13,7 +13,8 @@ from ...compiler._hybrid.verifier import Diagnostic, HybridVerificationError
 
 MAX_BYTES = 262144
 MAX_TOKENS = 4096
-MAX_DEPTH = 32
+MAX_DEPTH = 40
+MAX_SCOPE_DEPTH = 32
 MAX_FUNCTIONS = 32
 ANGLE_CALLS = frozenset({"PHASE", "RX", "RY", "RZ", "RZZ", "CRX", "R", "U"})
 _TOKEN = re.compile(
@@ -760,8 +761,12 @@ class Parser:
             ):
                 token = self.take("invert")
                 if scope_depth:
-                    if scope_depth >= MAX_DEPTH:
-                        reject(token, "budget.depth", "scope nesting exceeds depth 32")
+                    if scope_depth >= MAX_SCOPE_DEPTH:
+                        reject(
+                            token,
+                            "budget.depth",
+                            f"scope nesting exceeds depth {MAX_SCOPE_DEPTH}",
+                        )
                 body = self.block(allow_scopes=False, scope_depth=scope_depth + 1)
                 statements.append(Statement(token, (), inverse_body=body))
                 continue
@@ -774,8 +779,12 @@ class Parser:
                     reject(
                         token, "scope", "nested scopes belong in apply, not preparation"
                     )
-                if scope_depth >= MAX_DEPTH:
-                    reject(token, "budget.depth", "scope nesting exceeds depth 32")
+                if scope_depth >= MAX_SCOPE_DEPTH:
+                    reject(
+                        token,
+                        "budget.depth",
+                        f"scope nesting exceeds depth {MAX_SCOPE_DEPTH}",
+                    )
                 preparation = self.block(
                     allow_scopes=False, scope_depth=scope_depth + 1
                 )
@@ -969,8 +978,12 @@ class Parser:
                     "only fresh assignment, scalar declarations and admitted calls are supported",
                 )
             if operator.text == "control" and self.current.text == "{":
-                if scope_depth >= MAX_DEPTH:
-                    reject(operator, "budget.depth", "scope nesting exceeds depth 32")
+                if scope_depth >= MAX_SCOPE_DEPTH:
+                    reject(
+                        operator,
+                        "budget.depth",
+                        f"scope nesting exceeds depth {MAX_SCOPE_DEPTH}",
+                    )
                 body = self.block(allow_scopes=False, scope_depth=scope_depth + 1)
                 alternate = None
                 if self.current.text == "else":

@@ -66,7 +66,7 @@ slices, bind, unscoped local initialization, classical parameters, consuming Inp
 free/drop, control/invert, signed/fractional numbers, in-place assignment
 and other functions/operators are outside this subset and must fail explicitly.
 
-Limits: 262,144 UTF-8 source bytes, 4,096 tokens, depth 32, 78 decimal digits per
+Limits: 262,144 UTF-8 source bytes, 4,096 tokens, expression depth 40, lexical scope depth 32, 78 decimal digits per
 literal, 256-bit scalar domains and at most 4,096 expanded effect operations.
 The existing Compiler independently enforces total model/node/live-width budgets. No truncation or silent best-effort conversion is allowed.
 
@@ -772,7 +772,7 @@ unsigned numeric values, finite classical constants and bound array
 elements, addition, subtraction, products, literal powers and division
 by a nonzero classical real. Constants retain their global phase. The
 adapter expands a real polynomial with the Boolean identity b*b=b,
-bounded to eight distinct quantum bits, 256 terms and 20000 intermediate
+bounded to 24 distinct quantum bits, degree eight per monomial, 256 terms and 20000 intermediate
 monomial products. Indexed phase operations reuse registered phase-gate
 lowering and the phase-preserving target checks.
 
@@ -782,3 +782,20 @@ bounded integer products and `floor(array.len / positive_integer)`.
 A `qfunc(real, qbit[])` parameter accepts a named helper with matching
 ports, specialized at ordinary call sites. Named callbacks retain the
 existing recursion, alias, width and expansion checks.
+
+
+Full-size 24-bit telecommunications originals have an explicit validation
+entry point. Run each case in a fresh process to collect synthesis,
+execution and reference timings together with peak process RSS.
+
+```bash
+PYTHONPATH=. python tools/validate_qmod_sparse_phase.py \
+  --case network_traffic_optimization --scale 0.007 \
+  --check-phase --output network-validation.json
+```
+
+The tool preserves the original width and layer count, compares every
+complex128 amplitude with an independently constructed Circuit, and
+checks the classical cost phase over the full input domain in chunks.
+The 24-bit state buffer occupies 256 MiB. Routine tests check planning,
+memory refusal and separate input/degree/expansion budgets.
