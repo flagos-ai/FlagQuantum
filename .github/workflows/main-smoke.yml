@@ -3,13 +3,13 @@ on: workflow_dispatch
 permissions: {}
 jobs:
   dispatch-probe:
-    runs-on: [self-hosted, linux, x64, fq-bw1100-16-pilot]
+    runs-on: fq-bw1100-16-pilot
     timeout-minutes: 3
     steps:
       - run: test "$RUNNER_NAME" = fq-bw1100-16-cpu-pilot
   offline-probe:
     needs: dispatch-probe
-    runs-on: [self-hosted, linux, x64, fq-bw1100-16-pilot]
+    runs-on: fq-bw1100-16-pilot
     timeout-minutes: 4
     steps:
       - name: Verify rootless and the offline locked image
@@ -70,7 +70,7 @@ jobs:
 
   coverage-shard:
     needs: [prepare-source, offline-probe]
-    runs-on: [self-hosted, linux, x64, fq-bw1100-16-pilot]
+    runs-on: fq-bw1100-16-pilot
     permissions:
       contents: read
       packages: read
