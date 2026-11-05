@@ -545,3 +545,32 @@ Run python -m examples.synthesis_autoencoder for the original Qmod, existing
 scalar native qfunc composition and Circuit comparison. No native array/loop
 export or numerical kernel is added. Dropped coded data retains physical state;
 it is not zero workspace. Existing source-semantic refusals and baselines remain.
+
+
+## Checked static amplitude-amplification iterations
+
+The Qmod boundary admits amplitude_amplification(reps,oracle,space_transform,target)
+with named single-array callbacks and bounded static repetitions. It composes
+existing preparation and Q=-A*S0*A^-1*S_chi without changing the original global
+minus sign. Oracle validation covers indexed Z and the checked pi sign-phase
+profile, including zero-round and unused definitions. Closed +,-,* index arithmetic
+and array length preserve actual bounds; fractional phases, captures, writes and
+Output escape refuse. Existing pure phase/pair effects invert in reverse order.
+No amplitude parameter or state-normalization repair is inferred.
+
+Untyped array/slice arguments may borrow a flat record layout only at its exact
+width; named records remain nominal and signed/fractional casts refuse. A local
+flat record retains semantic storage like an existing local array. Binding-only
+apply accepts the same checked pure unitary effects; ownership changes refuse.
+X apply_to_all and phase-flip views reuse indexed lowering; whole-register routes
+remain unchanged. Static loops and physical/effect/helper budgets remain bounded.
+
+Run tools/validate_qmod_iterations.py with --case quantum_counting (also
+quantum_counting_iqae or qmci_pi_estimation), --repetitions 0/1/2 and --output
+/tmp/iterations.json for unchanged originals against independent Circuit and
+analytic full vectors. Run python -m examples.synthesis_amplification_iterations
+for native scalar phase/CX qfunc, Qmod and Circuit comparison. Native rounds are
+explicit; no native amplification, array or mutable helper export is added.
+Dropped problem data remains semantic, not clean workspace. Actual scratch is
+checked separately. Source-semantic refusals and historical baselines are retained;
+this is local CPU correctness evidence only.

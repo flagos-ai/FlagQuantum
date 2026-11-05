@@ -4,9 +4,11 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from .syntax import MAX_SCOPE_DEPTH, Statement, reject
+from .syntax import MAX_SCOPE_DEPTH, Expression, Parameter, Statement, reject
+from .unitary_effects import PURE_EFFECTS
 
 if TYPE_CHECKING:
+    from ...compiler._hybrid.model import Value
     from .adapter import _Adapt
     from .syntax import Parser
 
@@ -44,10 +46,7 @@ def lower_binding_scope(owner: _Adapt, statement: Statement, index: str) -> bool
             owner.bind_registers(child.token, *child.arguments)
         for ordinal, child in enumerate(statement.apply):
             owner.statement(child, f"{index}.binding{ordinal}")
-        if any(
-            op.name not in {"qreg.gate", "qreg.pair_gate", "qreg.control_x"}
-            for op in owner.operations[start:]
-        ):
+        if any(op.name not in PURE_EFFECTS for op in owner.operations[start:]):
             reject(
                 statement.token,
                 "binding.scope",
@@ -58,3 +57,25 @@ def lower_binding_scope(owner: _Adapt, statement: Statement, index: str) -> bool
         owner.widths = widths
         owner.suspended = suspended
     return True
+
+
+def record_view(
+    owner: _Adapt, parameter: Parameter, argument: Expression
+) -> tuple[tuple[Value, int], ...]:
+    root = argument.children[0] if argument.token.text == ":" else argument
+    actual = None if root.children else owner.parameters.get(root.token.text)
+    if actual is None or (
+        actual.record != parameter.record
+        and not (actual.record is None and actual.kind == "qbit[]")
+    ):
+        reject(
+            argument.token,
+            "signature",
+            "record helper requires its nominal record or an exact untyped array view",
+        )
+    view = owner.array_view(argument)
+    if len(view) != parameter.width:
+        reject(
+            argument.token, "width", "record view must match its exact declared width"
+        )
+    return view

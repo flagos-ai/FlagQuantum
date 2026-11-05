@@ -34,10 +34,11 @@ from ...compiler._hybrid.model import (
 )
 from ...compiler._hybrid.verifier import Diagnostic, HybridVerificationError
 from .amplification import expand_amplification, lower_amplification, product_angles
-from .bindings import is_binding_scope, lower_binding_scope
+from .bindings import is_binding_scope, lower_binding_scope, record_view
 from .controlled_evolution import EVOLUTION_CALLS, controlled_evolution
 from .decisions import lower_decision_phase
 from .integers import checked_integer, checked_integer_array
+from .iterations import expand_iterations
 from .oracles import expand_static_oracles
 from .permutations import verify_permutations
 from .phase import MAX_PHASE_INPUT_BITS, expand_phase
@@ -58,6 +59,7 @@ from .syntax import (
     reject,
     tokenize,
 )
+from .unitary_effects import emit_inverse
 
 SUPPORTED_SOURCE_VERSION = "2bfd835e73b6882fcc515a725098b04766c238e7"
 MAX_EFFECT_OPERATIONS = 4096
@@ -88,6 +90,7 @@ _INTRINSICS = (
         "prepare_exponential_state",
         "inplace_prepare_state",
         "exact_amplitude_amplification",
+        "amplitude_amplification",
         "prepare_amplitudes",
         "prepare_state",
         "prepare_bell_state",
@@ -1165,12 +1168,19 @@ class _Adapt:
             if item.declaration is not None or (
                 item.token.text
                 not in _STATIC_GATES
-                | {"phase", "suzuki_trotter", "multi_suzuki_trotter", "unitary"}
+                | {
+                    "phase",
+                    "suzuki_trotter",
+                    "multi_suzuki_trotter",
+                    "unitary",
+                    "apply_to_all",
+                }
                 and not bound_call
                 and item.control_body is None
                 and item.map_callback is None
                 and item.static_if_body is None
                 and item.repeat_index is None
+                and item.inverse_body is None
             ):
                 reject(
                     item.token,
@@ -1408,21 +1418,14 @@ class _Adapt:
                 else:
                     child.classical_values[name] = self.angle(argument, token)
                 continue
-            if parameter.record is not None:
-                actual = self.atom(argument)
-                if (
-                    self.parameters.get(actual.text) is None
-                    or self.parameters[actual.text].record != parameter.record
-                ):
-                    reject(
-                        actual,
-                        "signature",
-                        "record helper requires the matching record type",
-                    )
             view = (
-                self.array_view(argument)
-                if parameter.kind in {"qbit[]", "qnum"}
-                else (self.gate_target(argument),)
+                record_view(self, parameter, argument)
+                if parameter.record is not None
+                else (
+                    self.array_view(argument)
+                    if parameter.kind in {"qbit[]", "qnum"}
+                    else (self.gate_target(argument),)
+                )
             )
             if parameter.width is not None and len(view) != parameter.width:
                 reject(argument.token, "width", "helper quantum array length disagrees")
@@ -2016,8 +2019,18 @@ class _Adapt:
             and parameter.kind == "qbit[]"
         ):
             if flip_phase:
-                control = self.register(parameter.name, allow_qubit_array=True)
-                self.effect_op("qreg.array_phase_flip", token, (control,))
+                if parameter.name.text in self.views:
+                    view = self.array_view(condition)
+                    self.effect_op(
+                        "qreg.control_phase",
+                        token,
+                        tuple(value for value, _ in view),
+                        indices=tuple(bit for _, bit in view),
+                        angle=math.pi,
+                    )
+                else:
+                    control = self.register(parameter.name, allow_qubit_array=True)
+                    self.effect_op("qreg.array_phase_flip", token, (control,))
                 return
             if operation.token.text != "X" or len(operation.arguments) != 1:
                 reject(
@@ -2764,29 +2777,7 @@ class _Adapt:
             forward = self.operations[start:]
             del self.operations[start:]
             self.effect = incoming
-            for op in reversed(forward):
-                if op.name == "qreg.gate":
-                    inverse_attributes = dict(op.attributes)
-                    if inverse_attributes.pop("inverse", False) is not True:
-                        inverse_attributes["inverse"] = True
-                    self.effect_op(
-                        op.name, token, op.operands[1:], **inverse_attributes
-                    )
-                elif op.name == "qreg.control_x" and "indices" in op.attributes:
-                    self.effect_op(op.name, token, op.operands[1:], **op.attributes)
-                elif op.name == "qreg.pauli_rotation":
-                    self.effect_op(
-                        op.name,
-                        token,
-                        op.operands[1:],
-                        **{**op.attributes, "angle": -op.attributes["angle"]},
-                    )
-                else:
-                    reject(
-                        token,
-                        "scope",
-                        "invert cannot allocate or change ownership and requires checked reversible gates",
-                    )
+            emit_inverse(self, token, forward)
         elif statement.power_callback is not None:
             self.qpe_flexible(statement)
         elif statement.repeat_index is not None:
@@ -3187,12 +3178,12 @@ class _Adapt:
             if (
                 len(args) != 2
                 or args[0].children
-                or args[0].token.text not in {"H", "Z"}
+                or args[0].token.text not in {"H", "X", "Z"}
             ):
                 reject(
                     token,
                     "signature",
-                    "apply_to_all currently requires H or Z and a register",
+                    "apply_to_all currently requires H, X or Z and a register",
                 )
             for value, wire in self.array_view(args[1]):
                 self.effect_op(
@@ -3525,6 +3516,7 @@ def parse_qmod(
     if "main" not in definitions:
         reject(tokens[0], "entry", "source requires one qfunc main")
     definitions = expand_amplification(definitions, constants)
+    definitions = expand_iterations(definitions)
     definitions = specialize_quantum_callbacks(definitions, constants)
     verify_permutations(definitions)
     definitions = expand_predicate_oracles(definitions, constants, parser.records)

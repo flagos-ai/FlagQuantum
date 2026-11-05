@@ -975,13 +975,23 @@ class Parser:
                     reject(
                         token, "scope", "declare locals at function level before within"
                     )
-                kind, width = self.scalar_type(
-                    allow_fixed_array=True, allow_qubit_array=True
-                )
+                record = None
+                local_width: int | None
+                if self.current.text in self.records:
+                    record = self.name().text
+                    kind, local_width = "qbit[]", self.records[record].width
+                else:
+                    kind, local_width = self.scalar_type(
+                        allow_fixed_array=True, allow_qubit_array=True
+                    )
                 self.take(";")
                 statements.append(
                     Statement(
-                        token, (), declaration=Parameter(target, kind, width, "local")
+                        token,
+                        (),
+                        declaration=Parameter(
+                            target, kind, local_width, "local", record
+                        ),
                     )
                 )
                 continue

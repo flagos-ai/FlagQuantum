@@ -16,6 +16,33 @@ if TYPE_CHECKING:
 MAX_ORACLE_EXPANSIONS = 4096
 
 
+def static_index(
+    node: Expression, integers: Mapping[str, Expression], width: int | None
+) -> int | None:
+    if not node.children:
+        if node.token.text.isdecimal():
+            return checked_integer(int(node.token.text), node.token)
+        if node.token.text in {item.token.text for item in integers.values()}:
+            return None
+    elif node.token.text == "." and node.children[1].token.text == "len":
+        return width
+    elif node.token.text in {"+", "-", "*"} and len(node.children) == 2:
+        left, right = (static_index(child, integers, width) for child in node.children)
+        if left is None or right is None:
+            return None
+        value = (
+            left + right
+            if node.token.text == "+"
+            else left - right if node.token.text == "-" else left * right
+        )
+        return checked_integer(value, node.token)
+    reject(
+        node.token,
+        "oracle.alias",
+        "phase oracle index requires bounded closed integer arithmetic",
+    )
+
+
 def parse_oracle_call(parser: Parser, target: Token, scope_depth: int) -> Statement:
     """Read the static callback form within the shared bounded source parser."""
     if target.text == "phase_oracle":
@@ -119,7 +146,24 @@ def expand_static_oracles(
                     "phase callback cannot capture another quantum value or escape its target",
                 )
         if expression.token.text == ".":
-            root, member = expression.children
+            root = expression.children[0]
+            member = (
+                expression.children[1]
+                if len(expression.children) == 2
+                else Expression(Token("len", expression.token.location))
+            )
+            if (
+                record is None
+                and not root.children
+                and root.token.text == variable
+                and not member.children
+                and member.token.text == "len"
+            ):
+                return (
+                    replace(expression, children=(root, member))
+                    if width is None
+                    else Expression(Token(str(width), expression.token.location))
+                )
             if (
                 record is None
                 or root.children
@@ -146,25 +190,15 @@ def expand_static_oracles(
                     "oracle.alias",
                     "phase oracle indexing requires its whole borrowed target",
                 )
-            symbolic = (
-                not offset.children
-                and re.fullmatch(r"[A-Za-z_][A-Za-z_0-9]*", offset.token.text)
-                is not None
-                and offset.token.text in {item.token.text for item in integers.values()}
-            )
-            if not symbolic:
-                if offset.children or not offset.token.text.isdecimal():
-                    reject(
-                        offset.token,
-                        "oracle.alias",
-                        "phase oracle indices require nonnegative static integers",
-                    )
-                if width is not None and int(offset.token.text) >= width:
-                    reject(
-                        offset.token,
-                        "oracle.alias",
-                        "phase oracle index is out of bounds",
-                    )
+            index = static_index(offset, integers, width)
+            if index is not None and (
+                index < 0 or (width is not None and index >= width)
+            ):
+                reject(
+                    offset.token, "oracle.alias", "phase oracle index is out of bounds"
+                )
+            if index is not None and offset.children:
+                children = (array, Expression(Token(str(index), offset.token.location)))
         return replace(
             expression,
             children=children,
@@ -264,6 +298,23 @@ def expand_static_oracles(
                     )
                 result.append(
                     replace(statement, arguments=(condition,), control_body=phases)
+                )
+            elif token.text == "Z" and statement.control_body is None:
+                if (
+                    len(statement.arguments) != 1
+                    or statement.arguments[0].token.text != "["
+                ):
+                    reject(token, "oracle", "borrowed Z requires one indexed array bit")
+                selected = substitute(
+                    closed(statement.arguments[0], variable, integers, width, record),
+                    variable,
+                    target,
+                )
+                result.append(
+                    Statement(
+                        Token("phase", token.location),
+                        (selected, Expression(Token("pi", token.location))),
+                    )
                 )
             elif token.text == "phase" and statement.control_body is None:
                 if not 1 <= len(statement.arguments) <= 2:
