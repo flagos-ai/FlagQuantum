@@ -170,6 +170,26 @@ def reference_arithmetic_gates(
                 value[0] << (len(values) - 1 - i) for i, value in enumerate(values)
             )
             bloq = XGate().controlled(CtrlSpec(qdtypes=QUInt(len(values)), cvs=pattern))
+        if preserve_components and (
+            gate == cirq.CSWAP or type(bloq).__name__ == "TwoBitCSwap"
+        ):
+            from qualtran.bloqs.basic_gates.swap import TwoBitCSwap
+
+            literal = TwoBitCSwap().to_clifford_t_circuit()
+            bound = literal.unfreeze().transform_qubits(
+                dict(
+                    zip(
+                        (
+                            cirq.NamedQubit("ctrl"),
+                            cirq.NamedQubit("x"),
+                            cirq.NamedQubit("y"),
+                        ),
+                        op.qubits,
+                        strict=True,
+                    )
+                )
+            )
+            return tuple(bound.all_operations())
         if not preserve_components or not isinstance(bloq, Bloq):
             return NotImplemented
         if type(bloq).__name__ in {"IntState", "IntEffect"}:
@@ -194,6 +214,7 @@ def reference_arithmetic_gates(
             "CModAdd",
             "CModSub",
             "CModAddK",
+            "CtrlScaleModAdd",
             "CLinearDepthGreaterThan",
         }:
             return NotImplemented
@@ -201,7 +222,12 @@ def reference_arithmetic_gates(
 
         quregs = split_qubits(bloq.signature, op.qubits)
         component = bloq.decompose_bloq()
-        if type(bloq).__name__ not in {"CModAdd", "CModSub", "CModAddK"}:
+        if type(bloq).__name__ not in {
+            "CModAdd",
+            "CModSub",
+            "CModAddK",
+            "CtrlScaleModAdd",
+        }:
             component = component.flatten()
         circuit, outputs = component.to_cirq_circuit_and_quregs(
             qubit_manager=manager, **quregs

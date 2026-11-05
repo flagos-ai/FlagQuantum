@@ -59,7 +59,8 @@ def certified_and_channel_map(
     iff its target is the controls' And. Check that invariant for every basis
     input and every block. Linearity then gives the same map / sqrt(2**events)
     for every branch on every superposition of these inputs. Only unconditional
-    X/CX and literal known blocks are accepted. This is a test certificate,
+    X/CX and literal known And/exact-CSwap blocks are accepted. CSwap columns
+    are independently proved on all eight inputs before composition. This is a test certificate,
     not an execution backend or a sampled branch check.
     """
     import numpy as np
@@ -68,6 +69,7 @@ def certified_and_channel_map(
         and_compute_ir,
         and_uncompute_ir,
     )
+    from flagquantum.compiler.registers.controlled_swap import controlled_swap_bit_ir
 
     if not basis_bits or not basis_bits[0]:
         raise AssertionError("Channel certificate needs nonempty basis inputs")
@@ -77,9 +79,26 @@ def certified_and_channel_map(
     i, events = 0, 0
     while i < len(gates):
         gate = gates[i]
+        if (
+            gate.name == "cx"
+            and i + 2 < len(gates)
+            and gates[i + 1].name == "cx"
+            and gates[i + 2].name == "h"
+        ):
+            right, left = gate.wires
+            control = gates[i + 1].wires[0]
+            if len({control, left, right}) == 3:
+                swap = controlled_swap_bit_ir(control, left, right)
+                if gates[i : i + len(swap)] == swap:
+                    a, b = values[left].copy(), values[right].copy()
+                    values[left] = np.where(values[control], b, a)
+                    values[right] = np.where(values[control], a, b)
+                    i += len(swap)
+                    continue
         if gate.name == "h" and i + 3 < len(gates):
             target = gate.wires[0]
             if gates[i + 1].name == "t":
+                assert gates[i + 2].name == gates[i + 3].name == "cx"
                 x, y = gates[i + 2].wires[0], gates[i + 3].wires[0]
                 block = and_compute_ir(x, y, target)
                 assert gates[i : i + len(block)] == block
