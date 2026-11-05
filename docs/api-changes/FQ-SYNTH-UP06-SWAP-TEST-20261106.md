@@ -40,3 +40,8 @@ The official swap-test notebook also normalizes both arrays explicitly before
 preparation. Never silently normalize this pinned original or weaken the owned
 preparation verifier. Original strict refusal remains an acceptance result, not
 an executed-original coverage claim.
+
+Bound static helpers may forward one scalar qbit Output to swap_test. Existing
+caller location-alias checks and owned allocation verification enforce freshness
+and disjointness, including preallocated or reused markers. This does not admit
+new array Output forms or allocation inside coherent control/adjoint scopes.
