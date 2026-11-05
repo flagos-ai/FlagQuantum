@@ -423,9 +423,21 @@ def schedule_register_program(
             control, target = (bindings[value.id][0] for value in op.operands[1:])
             gates = controlled_instruction(Instruction("h", (target,)), (control,))
         elif op.name == "qreg.control_x":
-            controls, target_ports = (bindings[value.id] for value in op.operands[1:])
+            if "indices" in op.attributes:
+                ports = tuple(
+                    bindings[value.id][-1 - index]
+                    for value, index in zip(
+                        op.operands[1:], op.attributes["indices"], strict=True
+                    )
+                )
+                controls, target_wire = ports[:-1], ports[-1]
+            else:
+                controls, target_ports = (
+                    bindings[value.id] for value in op.operands[1:]
+                )
+                target_wire = target_ports[0]
             gates, used_workspace = _array_controlled_x(
-                controls, target_ports[0], position, n_qubits, op
+                controls, target_wire, position, n_qubits, op
             )
             control_workspace = max(control_workspace, used_workspace)
         elif op.name == "qreg.array_phase_flip":

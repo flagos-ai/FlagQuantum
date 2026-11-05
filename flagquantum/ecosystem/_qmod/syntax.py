@@ -128,6 +128,7 @@ class Statement:
     within: tuple[Statement, ...] | None = None
     apply: tuple[Statement, ...] = ()
     control_body: tuple[Statement, ...] | None = None
+    control_else: tuple[Statement, ...] | None = None
     repeat_index: Token | None = None
     repeat_body: tuple[Statement, ...] = ()
     power_callback: tuple[Token, tuple[Statement, ...]] | None = None
@@ -567,11 +568,12 @@ class Parser:
             if self.current.text == ",":
                 self.take(",")
                 phase = allow_phase and self.current.text == "UNSIGNED"
-                if not phase and self.current.text != "False":
+                unsigned_integer = allow_phase and self.current.text == "UNSIGNED"
+                if not phase and not unsigned_integer and self.current.text != "False":
                     reject(self.current, "type", "signed modifiers are not admitted")
                 self.take(self.current.text)
                 self.take(",")
-                if phase:
+                if phase and self.current.text != "0":
                     assert width is not None
                     self.take(str(width))
                     self.take(">")
@@ -637,7 +639,7 @@ class Parser:
             elif name.text != "main" and [
                 token.text
                 for token in self.tokens[self.position + 1 : self.position + 3]
-            ] == [":", "qbit"]:
+            ] in ([":", "qbit"], [":", "qnum"]):
                 role = "inout"
             else:
                 reject(
@@ -707,8 +709,9 @@ class Parser:
             ):
                 token = self.take("invert")
                 if scope_depth:
-                    reject(token, "scope", "invert requires function scope")
-                body = self.block(allow_scopes=False, scope_depth=1)
+                    if scope_depth >= MAX_DEPTH:
+                        reject(token, "budget.depth", "scope nesting exceeds depth 32")
+                body = self.block(allow_scopes=False, scope_depth=scope_depth + 1)
                 statements.append(Statement(token, (), inverse_body=body))
                 continue
             if (
@@ -891,12 +894,20 @@ class Parser:
                     "only fresh assignment, scalar declarations and admitted calls are supported",
                 )
             if operator.text == "control" and self.current.text == "{":
-                if scope_depth:
-                    reject(
-                        operator, "scope", "control is admitted only at function scope"
-                    )
+                if scope_depth >= MAX_DEPTH:
+                    reject(operator, "budget.depth", "scope nesting exceeds depth 32")
                 body = self.block(allow_scopes=False, scope_depth=scope_depth + 1)
-                statements.append(Statement(operator, arguments, control_body=body))
+                alternate = None
+                if self.current.text == "else":
+                    self.take("else")
+                    alternate = self.block(
+                        allow_scopes=False, scope_depth=scope_depth + 1
+                    )
+                statements.append(
+                    Statement(
+                        operator, arguments, control_body=body, control_else=alternate
+                    )
+                )
             else:
                 self.take(";")
                 statements.append(Statement(operator, arguments))

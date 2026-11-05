@@ -725,3 +725,19 @@ or ordered views. For an inline matrix, the first view element is the
 least-significant matrix bit, as for a whole Qmod array. A static
 `repeat` may call a bound helper. Helper calls share a cumulative
 expansion budget of 4096, including calls that emit no operations.
+
+### Coherent reversible helper composition
+
+An initialized unsigned integer register can bind to a writable helper
+array without copying its storage. A static repeat can control an X
+operation with a nonempty slice of that array. The controls and target
+must be distinct wire locations even when they share a register.
+
+Scalar comparisons `coin == 0`, `coin == 1` and their inequality forms
+can coherently control a helper whose expansion consists of X and indexed
+multi-controlled X operations. A `control ... else ...` applies the two
+supported branches coherently. `invert` reverses checked gate/helper
+expansions, taking registered single-qubit adjoints and retaining the
+self-inverse indexed controlled-X operations. Neither composition admits
+allocation or changes of register ownership. Scratch space uses the
+existing clean multi-controlled-X scheduler and is included in budgets.

@@ -341,6 +341,9 @@ def _verify_body(
                 attributes = attributes | {"angle"}
             if "indices" in op.attributes:
                 attributes = attributes | {"indices"}
+        if op.name == "qreg.control_x" and "indices" in op.attributes:
+            assert attributes is not None
+            attributes = attributes | {"indices"}
         if op.name == "qreg.unitary" and "indices" in op.attributes:
             assert attributes is not None
             attributes = attributes | {"indices"}
@@ -592,6 +595,32 @@ def _verify_body(
                         "phase flip requires one initialized register",
                         op,
                     )
+            elif op.name == "qreg.control_x" and "indices" in op.attributes:
+                indices = op.attributes["indices"]
+                if (
+                    not isinstance(indices, tuple)
+                    or len(indices) != len(operands)
+                    or len(indices) < 2
+                    or any(
+                        type(index) is not int or not 0 <= index < register_width(value)
+                        for value, index in zip(operands, indices, strict=True)
+                    )
+                    or len(set(zip(operands, indices, strict=True))) != len(indices)
+                ):
+                    _fail(
+                        "register.control",
+                        "control indices must be in bounds and distinct",
+                        op,
+                    )
+                if any(value.id not in initialized for value in operands):
+                    _fail(
+                        "register.uninitialized",
+                        "control requires initialized qubits",
+                        op,
+                    )
+                if operands[-1] in borrowed:
+                    _fail("register.const", "controlled target must be writable", op)
+                changed = (operands[-1],)
             elif op.name in {"qreg.control_h", "qreg.control_x", "qreg.control_phase"}:
                 if (
                     len(arguments) > 1

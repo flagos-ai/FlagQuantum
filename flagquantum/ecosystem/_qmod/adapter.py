@@ -910,8 +910,10 @@ class _Adapt:
         source = node.children[0] if node.token.text == ":" else node
         target = self.atom(source)
         parameter = self.parameters.get(target.text)
-        if parameter is None or parameter.kind != "qbit[]":
-            reject(target, "type", "expected a qubit array or view")
+        if parameter is None or parameter.kind not in {"qbit[]", "qnum"}:
+            reject(target, "type", "expected an unsigned quantum register or view")
+        if target.text in self.signed or target.text in self.fractional_bits:
+            reject(target, "type", "views require an unsigned integer register")
         view = self.views.get(target.text)
         if view is None:
             value = self.register(target, allow_qubit_array=True)
@@ -959,7 +961,9 @@ class _Adapt:
                 and _bound_helper(callee)
             )
             if item.declaration is not None or (
-                item.token.text not in _STATIC_GATES and not bound_call
+                item.token.text not in _STATIC_GATES
+                and not bound_call
+                and item.control_body is None
             ):
                 reject(
                     item.token,
@@ -1119,7 +1123,7 @@ class _Adapt:
                 continue
             view = (
                 self.array_view(argument)
-                if parameter.kind == "qbit[]"
+                if parameter.kind in {"qbit[]", "qnum"}
                 else (self.gate_target(argument),)
             )
             if parameter.width is not None and len(view) != parameter.width:
@@ -1215,13 +1219,110 @@ class _Adapt:
                 "qreg.control_call", token, (control_bit, *reads), callee=program.name
             )
 
+    def emit_indexed_x(
+        self, token: Token, locations: tuple[tuple[Value, int], ...]
+    ) -> None:
+        if len(locations) < 2 or len(set(locations)) != len(locations):
+            reject(
+                token, "control", "controls and target must be distinct qubit locations"
+            )
+        self.effect_op(
+            "qreg.control_x",
+            token,
+            tuple(value for value, _ in locations),
+            indices=tuple(wire for _, wire in locations),
+        )
+
+    def coherent_helper_control(self, statement: Statement, index: str) -> bool:
+        condition = statement.arguments[0]
+        if condition.token.text not in {"==", "!="} or len(condition.children) != 2:
+            return False
+        source, expected = condition.children
+        if (
+            source.children
+            or expected.children
+            or expected.token.text not in {"0", "1"}
+        ):
+            return False
+        parameter = self.parameters.get(source.token.text)
+        if parameter is None or parameter.kind != "qbit":
+            return False
+        body = statement.control_body
+        assert body is not None
+        branches: tuple[tuple[int, tuple[Statement, ...]], ...] = (
+            (int(expected.token.text), body),
+        )
+        if condition.token.text == "!=":
+            branches = ((1 - int(expected.token.text), body),)
+        if statement.control_else is not None:
+            branches += ((1 - branches[0][0], statement.control_else),)
+        # Keep existing scalar control behavior unless this is a helper composition.
+        if not any(
+            child.inverse_body is not None or child.token.text in self.definitions
+            for _, children in branches
+            for child in children
+        ):
+            return False
+        control = self.gate_target(source)
+        for value, children in branches:
+            start, incoming = len(self.operations), self.effect
+            for ordinal, child in enumerate(children):
+                self.statement(child, f"{index}.control{value}.{ordinal}")
+            expanded = self.operations[start:]
+            del self.operations[start:]
+            self.effect = incoming
+            if not value:
+                self.effect_op(
+                    "qreg.gate",
+                    statement.token,
+                    (control[0],),
+                    gate="x",
+                    index=control[1],
+                )
+            for op in expanded:
+                if op.name == "qreg.control_x" and "indices" in op.attributes:
+                    locations = tuple(
+                        zip(op.operands[1:], op.attributes["indices"], strict=True)
+                    )
+                elif op.name == "qreg.gate" and op.attributes["gate"] == "x":
+                    locations = ((op.operands[1], op.attributes["index"]),)
+                else:
+                    reject(
+                        statement.token,
+                        "control",
+                        "controlled helper requires reversible X and indexed controlled-X operations",
+                    )
+                self.emit_indexed_x(statement.token, (control, *locations))
+            if not value:
+                self.effect_op(
+                    "qreg.gate",
+                    statement.token,
+                    (control[0],),
+                    gate="x",
+                    index=control[1],
+                )
+        return True
+
     def scalar_control(self, statement: Statement, index: str) -> None:
         token = statement.token
         body = statement.control_body
         if len(statement.arguments) != 1 or body is None or len(body) != 1:
             reject(token, "control", "control requires one condition and one operation")
         condition = statement.arguments[0]
+        if self.coherent_helper_control(statement, index):
+            return
+        if statement.control_else is not None:
+            reject(
+                token, "control", "control else requires a supported reversible helper"
+            )
         operation = body[0]
+        if condition.token.text == ":":
+            if operation.token.text != "X" or len(operation.arguments) != 1:
+                reject(token, "control", "slice control requires one X target")
+            controls = self.array_view(condition)
+            target_location = self.gate_target(operation.arguments[0])
+            self.emit_indexed_x(token, (*controls, target_location))
+            return
         args = operation.arguments
         flip_phase = (
             operation.token.text == "phase"
@@ -1921,28 +2022,39 @@ class _Adapt:
                 "RZ",
                 "inplace_encode_on_bloch",
             }
-            if not body or any(child.token.text not in allowed for child in body):
+            if not body or any(
+                child.token.text not in allowed
+                and child.token.text not in self.definitions
+                and child.inverse_body is None
+                for child in body
+            ):
                 reject(
                     token,
                     "scope",
-                    "invert requires static single-qubit gates or in-place Bloch encoding",
+                    "invert requires static single-qubit gates or reversible helpers",
                 )
             start, incoming = len(self.operations), self.effect
             for ordinal, child in enumerate(body):
                 self.statement(child, f"{index}.invert{ordinal}")
             forward = self.operations[start:]
-            if any(op.name != "qreg.gate" for op in forward):
-                reject(
-                    token,
-                    "scope",
-                    "invert cannot allocate or change register ownership",
-                )
             del self.operations[start:]
             self.effect = incoming
             for op in reversed(forward):
-                self.effect_op(
-                    op.name, token, op.operands[1:], inverse=True, **op.attributes
-                )
+                if op.name == "qreg.gate":
+                    inverse_attributes = dict(op.attributes)
+                    if inverse_attributes.pop("inverse", False) is not True:
+                        inverse_attributes["inverse"] = True
+                    self.effect_op(
+                        op.name, token, op.operands[1:], **inverse_attributes
+                    )
+                elif op.name == "qreg.control_x" and "indices" in op.attributes:
+                    self.effect_op(op.name, token, op.operands[1:], **op.attributes)
+                else:
+                    reject(
+                        token,
+                        "scope",
+                        "invert cannot allocate or change ownership and requires checked reversible gates",
+                    )
         elif statement.power_callback is not None:
             self.qpe_flexible(statement)
         elif statement.repeat_index is not None:
@@ -2642,6 +2754,8 @@ def parse_qmod(
                 and not hadamard_within
                 and statement.repeat_index is None
                 and statement.static_if_body is None
+                and statement.control_body is None
+                and statement.inverse_body is None
                 and not bound_call
             ):
                 reject(
