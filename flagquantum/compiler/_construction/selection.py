@@ -322,7 +322,7 @@ def select_register_program(
     verify_register_program(program, functions)
     expanded = expand_register_calls(program, functions)
     if any(
-        op.name in {"qreg.phase", "qreg.unitary"}
+        op.name in {"qreg.phase", "qreg.unitary", "qreg.inverse_qft"}
         for op in expanded.body.blocks[0].operations
     ):
         _check_phase_target(target)

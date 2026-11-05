@@ -651,3 +651,12 @@ is preserved. The lowering uses an offset RY and bit-weighted CRY gates.
 signed real and imaginary literals, such as `1j` or `((-0) - 1j)`. The
 compiler checks unitarity, lowers to registered gates, and preserves global
 phase in the supported phase-preserving target profiles.
+
+### Flexible phase estimation
+
+`qpe_flexible(lambda(power) { ... }, phase)` accepts one first-order,
+single-step `suzuki_trotter` call in the callback. The time expression can
+multiply numeric literals, `pi` and the static power parameter. The phase
+output uses `qnum<n, UNSIGNED, n>` with one to eight bits. Allocate it before
+the call and read the raw result divided by `2**n`. The controlled evolution
+retains the phase of identity Pauli terms, followed by an inverse QFT.

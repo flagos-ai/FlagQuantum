@@ -78,6 +78,7 @@ _INTRINSICS = (
         "exponentiate",
         "qdrift",
         "qft",
+        "qpe_flexible",
         "qct_qst_type1",
         "qct_type2",
         "qst_type2",
@@ -750,6 +751,10 @@ class _Adapt:
             reject(token, "precision", "a fractional result is a terminal output")
         if name not in self.parameters:
             reject(token, "name", f"unknown output {name!r}")
+        if self.parameters[name].kind == "qphase" and not allow_fractional_output:
+            reject(
+                token, "precision", "fixed-point phase register requires qpe_flexible"
+            )
         if self.parameters[name].kind == "qbit[]" and not allow_qubit_array:
             reject(
                 token,
@@ -1412,12 +1417,90 @@ class _Adapt:
             prepared.append((support, self.evolution_angle(coefficient, token)))
         return register, prepared
 
+    def qpe_flexible(self, statement: Statement) -> None:
+        token = statement.token
+        assert statement.power_callback is not None
+        power, body = statement.power_callback
+        if (
+            len(body) != 1
+            or body[0].token.text != "suzuki_trotter"
+            or len(body[0].arguments) != 5
+        ):
+            reject(token, "qpe", "power callback requires one suzuki_trotter call")
+        if (
+            power.text in self.parameters
+            or power.text in self.constants
+            or power.text in _INTRINSICS
+        ):
+            reject(power, "qpe", "power parameter must be unshadowed")
+        phase_name = self.atom(statement.arguments[0])
+        parameter = self.parameters.get(phase_name.text)
+        if parameter is None or parameter.kind != "qphase" or parameter.width is None:
+            reject(
+                phase_name, "qpe", "expected an unsigned all-fractional phase output"
+            )
+        width = parameter.width
+        if width > 8:
+            reject(
+                phase_name,
+                "qpe",
+                "phase estimation supports at most eight phase qubits",
+            )
+        phase = self.register(phase_name, allow_fractional_output=True)
+        last_use = next(
+            (op for op in reversed(self.operations) if phase in op.operands[1:]), None
+        )
+        if last_use is None or last_use.name != "qreg.allocate":
+            reject(
+                phase_name,
+                "qpe",
+                "phase output must be initialized by allocate and unused",
+            )
+        operator, time, order, repetitions, target = body[0].arguments
+        if any(arg.children or arg.token.text != "1" for arg in (order, repetitions)):
+            reject(
+                token, "qpe", "power callback requires first order and one repetition"
+            )
+        state, terms = self.pauli_terms(body[0].token, operator, target)
+
+        def coefficient(node: Expression, value: int) -> float:
+            text = node.token.text
+            if text == "*" and len(node.children) == 2:
+                left, right = node.children
+                return coefficient(left, value) * coefficient(right, value)
+            if text == "-" and len(node.children) == 1:
+                return -coefficient(node.children[0], value)
+            if not node.children:
+                if text == power.text:
+                    return float(value)
+                if text == "pi" and "pi" not in self.parameters:
+                    return math.pi
+            return _literal_angle(node, token)
+
+        for index in range(width):
+            self.effect_op("qreg.gate", token, (phase,), gate="h", index=index)
+        for index in range(width):
+            evolution = coefficient(time, 1 << index)
+            for support, weight in terms:
+                angle = evolution * weight
+                if not math.isfinite(2 * angle):
+                    reject(
+                        time.token, "qpe", "controlled evolution angle must be finite"
+                    )
+                self.pauli_exponential(
+                    token, state, support, angle, control=(phase, index)
+                )
+        self.effect_op("qreg.inverse_qft", token, (phase,))
+        self.fractional_bits[phase_name.text] = width
+
     def pauli_exponential(
         self,
         token: Token,
         register: Value,
         support: tuple[tuple[int, str], ...],
         angle: float,
+        *,
+        control: tuple[Value, int] | None = None,
     ) -> None:
         def gate(name: str, index: int, **attributes: object) -> None:
             self.effect_op(
@@ -1426,7 +1509,18 @@ class _Adapt:
 
         if not support:
             gate("rz", 0, angle=0.0)
-            self.effect_op("qreg.phase", token, (), angle=-angle)
+            if control is None:
+                self.effect_op("qreg.phase", token, (), angle=-angle)
+            else:
+                phase, index = control
+                self.effect_op(
+                    "qreg.gate",
+                    token,
+                    (phase,),
+                    gate="phase",
+                    index=index,
+                    angle=-angle,
+                )
             return
 
         for index, axis in support:
@@ -1443,7 +1537,18 @@ class _Adapt:
                 gate="cx",
                 indices=(index, anchor),
             )
-        gate("rz", anchor, angle=2 * angle)
+        if control is None:
+            gate("rz", anchor, angle=2 * angle)
+        else:
+            phase, index = control
+            self.effect_op(
+                "qreg.pair_gate",
+                token,
+                (phase, register),
+                gate="crz",
+                indices=(index, anchor),
+                angle=2 * angle,
+            )
         for index, _ in reversed(support[1:]):
             self.effect_op(
                 "qreg.pair_gate",
@@ -1600,7 +1705,9 @@ class _Adapt:
 
     def statement(self, statement: Statement, index: str) -> None:
         token, args = statement.token, statement.arguments
-        if statement.repeat_index is not None:
+        if statement.power_callback is not None:
+            self.qpe_flexible(statement)
+        elif statement.repeat_index is not None:
             self.repeat(statement, index)
         elif statement.declaration is not None:
             parameter = statement.declaration
@@ -1763,7 +1870,17 @@ class _Adapt:
                         "allocation size must be a literal in 1..256",
                     )
             target = self.atom(args[-1])
-            destination = self.register(target, size, allow_qubit_array=True)
+            phase_parameter = self.parameters.get(target.text)
+            destination = self.register(
+                target,
+                size,
+                allow_qubit_array=True,
+                allow_fractional_output=(
+                    phase_parameter is not None
+                    and phase_parameter.kind == "qphase"
+                    and target.text not in self.fractional_bits
+                ),
+            )
             if size is not None and self.widths[target.text] != size:
                 reject(
                     target,
@@ -2032,6 +2149,16 @@ class _Adapt:
         borrowed = tuple(
             self.register(p.name) for p in self.syntax.parameters if p.role == "const"
         )
+        for parameter in output_parameters:
+            if (
+                parameter.kind == "qphase"
+                and parameter.name.text not in self.fractional_bits
+            ):
+                reject(
+                    parameter.name,
+                    "qpe",
+                    "fixed-point phase output requires qpe_flexible",
+                )
         declared = tuple(
             self.register(p.name, allow_qubit_array=True, allow_fractional_output=True)
             for p in output_parameters

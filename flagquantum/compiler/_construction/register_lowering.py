@@ -15,7 +15,7 @@ from typing import Literal
 
 import torch
 
-from ...core._composition import controlled_instruction
+from ...core._composition import controlled_instruction, inverted_instruction
 from ...core.controlled import _clean_mcx_instructions
 from ...core.ir import CircuitIR, Instruction
 from .._fourier_kernels import qft_instructions
@@ -327,8 +327,10 @@ def schedule_register_program(
             wires = bindings[op.operands[1].id]
             matrix = unitary_matrix(op.attributes["matrix"], len(wires), op)
             gates = _unitary_instructions(matrix, wires, op)
-        elif op.name == "qreg.qft":
+        elif op.name in {"qreg.qft", "qreg.inverse_qft"}:
             gates = qft_instructions(bindings[op.operands[1].id])
+            if op.name == "qreg.inverse_qft":
+                gates = tuple(inverted_instruction(gate) for gate in reversed(gates))
         elif op.name == "qreg.type1_transform":
             gates = _type1_instructions(bindings[op.operands[1].id])
         elif op.name == "qreg.type2_transform":

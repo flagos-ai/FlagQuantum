@@ -130,6 +130,7 @@ class Statement:
     control_body: tuple[Statement, ...] | None = None
     repeat_index: Token | None = None
     repeat_body: tuple[Statement, ...] = ()
+    power_callback: tuple[Token, tuple[Statement, ...]] | None = None
 
 
 @dataclass(frozen=True)
@@ -515,7 +516,9 @@ class Parser:
             },
         )
 
-    def scalar_type(self, *, allow_qubit_array: bool = False) -> tuple[str, int | None]:
+    def scalar_type(
+        self, *, allow_qubit_array: bool = False, allow_phase: bool = False
+    ) -> tuple[str, int | None]:
         kind = self.current
         if kind.text not in {"qbit", "qnum"}:
             reject(
@@ -530,10 +533,16 @@ class Parser:
             width = self.width()
             if self.current.text == ",":
                 self.take(",")
-                if self.current.text != "False":
+                phase = allow_phase and self.current.text == "UNSIGNED"
+                if not phase and self.current.text != "False":
                     reject(self.current, "type", "signed modifiers are not admitted")
-                self.take("False")
+                self.take(self.current.text)
                 self.take(",")
+                if phase:
+                    assert width is not None
+                    self.take(str(width))
+                    self.take(">")
+                    return "qphase", width
                 if self.current.text != "0":
                     reject(
                         self.current, "type", "fractional modifiers are not admitted"
@@ -610,7 +619,8 @@ class Parser:
                     kind = "real[]"
             else:
                 kind, width = self.scalar_type(
-                    allow_qubit_array=name.text == "main" or role == "inout"
+                    allow_qubit_array=name.text == "main" or role == "inout",
+                    allow_phase=name.text == "main" and role == "output",
                 )
             if role == "const" and width is None:
                 reject(
@@ -632,6 +642,7 @@ class Parser:
         *,
         allow_scopes: bool = True,
         scope_depth: int = 0,
+        power_body: bool = False,
     ) -> tuple[Statement, ...]:
         self.take("{")
         statements: list[Statement] = []
@@ -675,6 +686,23 @@ class Parser:
                 continue
             target = self.name()
             arguments: tuple[Expression, ...]
+            if target.text == "qpe_flexible" and self.current.text == "(":
+                if scope_depth:
+                    reject(target, "scope", "qpe_flexible requires function scope")
+                self.take("(")
+                self.take("lambda")
+                self.take("(")
+                power = self.name()
+                self.take(")")
+                body = self.block(allow_scopes=False, scope_depth=1, power_body=True)
+                self.take(",")
+                destination = Expression(self.name())
+                self.take(")")
+                self.take(";")
+                statements.append(
+                    Statement(target, (destination,), power_callback=(power, body))
+                )
+                continue
             if self.current.text == ":":
                 token = self.take(":")
                 if scope_depth:
@@ -756,7 +784,11 @@ class Parser:
                             "suzuki_trotter",
                             "single_pauli_exponent",
                         }:
-                            args.append(self.signed_angle_argument())
+                            args.append(
+                                self.expression(decimal=True, difference=True)
+                                if power_body and target.text == "suzuki_trotter"
+                                else self.signed_angle_argument()
+                            )
                             continue
                         args.append(
                             self.angle_argument()

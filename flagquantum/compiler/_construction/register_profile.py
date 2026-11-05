@@ -38,6 +38,7 @@ _ATTRIBUTES = MappingProxyType(
         "qreg.prepare_amplitudes": frozenset({"amplitudes", "bound"}),
         "qreg.unitary": frozenset({"matrix"}),
         "qreg.qft": frozenset(),
+        "qreg.inverse_qft": frozenset(),
         "qreg.type1_transform": frozenset(),
         "qreg.type2_transform": frozenset({"kind"}),
         "qreg.rzz": frozenset({"angle"}),
@@ -55,7 +56,7 @@ _ATTRIBUTES = MappingProxyType(
         "qreg.return": frozenset(),
     }
 )
-_PAIR_GATES = frozenset({"cx", "swap", "crx", "cry"})
+_PAIR_GATES = frozenset({"cx", "swap", "crx", "cry", "crz"})
 _ANGLE_GATES = frozenset({"phase", "rx", "ry", "rz"})
 _GATES = frozenset({"x", "h", "s", "z"}) | _ANGLE_GATES
 
@@ -316,7 +317,7 @@ def _verify_body(
             attributes = attributes | {"angle"}
         if op.name == "qreg.pair_gate":
             assert attributes is not None
-            if op.attributes.get("gate") in ("crx", "cry"):
+            if op.attributes.get("gate") in ("crx", "cry", "crz"):
                 attributes = attributes | {"angle"}
             if "indices" in op.attributes:
                 attributes = attributes | {"indices"}
@@ -488,7 +489,7 @@ def _verify_body(
                 if not _is_finite_unitary(matrix):
                     _fail("register.unitary", "matrix must be unitary", op)
                 changed = (destination,)
-            elif op.name == "qreg.qft":
+            elif op.name in {"qreg.qft", "qreg.inverse_qft"}:
                 if arguments:
                     _fail("register.transform", "QFT requires one register", op)
                 if destination in borrowed:
@@ -672,7 +673,7 @@ def _verify_body(
                         "pair gate indices must be in bounds and distinct",
                         op,
                     )
-                if gate in {"crx", "cry"}:
+                if gate in {"crx", "cry", "crz"}:
                     angle = op.attributes["angle"]
                     if type(angle) is not float or not math.isfinite(angle):
                         _fail(
