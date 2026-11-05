@@ -1002,3 +1002,8 @@ resource reports remain available on failure.
 The required `CI complete` gate is the exception: it always runs with a
 two-minute limit and rejects failed, skipped, or cancelled dependencies. It must
 never become a skipped required check when a run is cancelled.
+
+Network-dependent SDK jobs share hosted groups 1, 4, and 7. Core runtime,
+Python 3.12 unit tests, and Python compatibility checks use groups 3, 5, and 6
+respectively, so SDK downloads cannot occupy their concurrency groups. The
+repository-wide hosted ceiling remains eight.

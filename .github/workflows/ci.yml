@@ -800,7 +800,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     concurrency:
-      group: flagquantum-gh-3
+      group: flagquantum-gh-4
       queue: max
     steps:
       - uses: actions/download-artifact@v8.0.2
@@ -904,7 +904,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     concurrency:
-      group: flagquantum-gh-3
+      group: flagquantum-gh-7
       queue: max
     env:
       OPTIONAL_VERSIONS: "1.32.3 1.32.*"
@@ -1382,7 +1382,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     concurrency:
-      group: flagquantum-gh-3
+      group: flagquantum-gh-1
       queue: max
     env:
       MAX_JOBS: "2"

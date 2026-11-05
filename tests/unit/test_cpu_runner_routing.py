@@ -217,6 +217,11 @@ def test_portable_cpu_work_uses_general_or_validated_scale_sets() -> None:
 
 def test_network_dependent_sdks_do_not_wait_for_the_preinstalled_pool() -> None:
     jobs = yaml.safe_load((WORKFLOWS / "ci.yml").read_text())["jobs"]
+    core_groups = {
+        jobs[name]["concurrency"]["group"]
+        for name in ("cpu-runtime", "cpu-core-3-12-tests", "cpu-core")
+    }
+
     for name in (
         "jax-optional",
         "cirq-optional",
@@ -227,8 +232,9 @@ def test_network_dependent_sdks_do_not_wait_for_the_preinstalled_pool() -> None:
     ):
         job = jobs[name]
         assert job["runs-on"] == "ubuntu-latest"
+        assert job["concurrency"]["group"] not in core_groups
         assert job["concurrency"]["group"] in {
-            "flagquantum-gh-3",
+            "flagquantum-gh-1",
             "flagquantum-gh-4",
             "flagquantum-gh-7",
         }
