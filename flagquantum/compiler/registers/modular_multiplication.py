@@ -12,6 +12,7 @@ from ...core.ir import Instruction
 from .bitwise import _validate_wires
 from .controlled_swap import controlled_swap_ir
 from .modular_scaled_addition import (
+    controlled_modular_scaled_add_adjoint_ir,
     controlled_modular_scaled_add_ir,
     modular_scaled_requirements,
 )
@@ -37,6 +38,41 @@ def controlled_modular_multiply_constant_ir(
     scale-add stages and the final exact controlled exchange; caller work starts
     and ends zero. Do not replace that exchange by unconditional output aliases.
     """
+    return _controlled_modular_multiply_ir(
+        control, target, value, modulus, workspace, classical_bits, adjoint=False
+    )
+
+
+def controlled_modular_multiply_constant_adjoint_ir(
+    control: int,
+    target: tuple[int, ...],
+    value: int,
+    modulus: int,
+    workspace: tuple[int, ...],
+    classical_bits: tuple[int, ...],
+) -> tuple[Instruction, ...]:
+    """Multiply by k^-1 on positive control using original inverse components.
+
+    Big-endian x lies in [0,p) in both coherent branches; 0<k<p and gcd(k,p)=1.
+    Preserve the original constant and result word. The source self-adjoint
+    CSwap comes first, followed by two exact scaled-add adjoints. Quantum work
+    starts/ends zero; classical slots retain latest outcomes.
+    """
+    return _controlled_modular_multiply_ir(
+        control, target, value, modulus, workspace, classical_bits, adjoint=True
+    )
+
+
+def _controlled_modular_multiply_ir(
+    control: int,
+    target: tuple[int, ...],
+    value: int,
+    modulus: int,
+    workspace: tuple[int, ...],
+    classical_bits: tuple[int, ...],
+    *,
+    adjoint: bool,
+) -> tuple[Instruction, ...]:
     n = len(target)
     q, _ = modular_multiplication_requirements(n)
     if type(modulus) is not int or not 1 < modulus < 1 << n:
@@ -47,18 +83,16 @@ def controlled_modular_multiply_constant_ir(
         raise ValueError(f"Modular multiplication requires {q} clean work wires")
     _validate_wires((control, *target, *workspace))
     result, inner = workspace[:n], workspace[n:]
-    return (
-        *controlled_modular_scaled_add_ir(
-            control, target, result, value, modulus, inner, classical_bits
-        ),
-        *controlled_modular_scaled_add_ir(
-            control,
-            result,
-            target,
-            -pow(value, -1, modulus),
-            modulus,
-            inner,
-            classical_bits,
-        ),
-        *controlled_swap_ir(control, target, result),
+    swap = controlled_swap_ir(control, target, result)
+    stages = ((target, result, value), (result, target, -pow(value, -1, modulus)))
+    emit = (
+        controlled_modular_scaled_add_adjoint_ir
+        if adjoint
+        else controlled_modular_scaled_add_ir
     )
+    gates: list[Instruction] = list(swap) if adjoint else []
+    for left, right, scale in reversed(stages) if adjoint else stages:
+        gates.extend(emit(control, left, right, scale, modulus, inner, classical_bits))
+    if not adjoint:
+        gates.extend(swap)
+    return tuple(gates)

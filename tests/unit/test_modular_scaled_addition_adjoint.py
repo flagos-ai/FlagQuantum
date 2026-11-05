@@ -11,10 +11,7 @@ from flagquantum.compiler.registers.modular_scaled_addition import (
     controlled_modular_scaled_add_ir,
 )
 from tests.unit.measurement_checks import certified_and_channel_map, forced_branch
-from tests.unit.test_controlled_modular_addition import layout as add_layout
-from tests.unit.test_controlled_modular_addition_adjoint import (
-    adjoint_reference_binding,
-)
+from tests.unit.test_modular_constant_addition_adjoint import inverse_constant_binding
 from tests.unit.test_modular_scaled_addition import CASES, basis_inputs, layout
 from tests.unit.test_register_constant_addition import reference_arithmetic_gates
 from tests.unit.test_register_subtraction import assert_source
@@ -28,14 +25,7 @@ def test_exact_reverse_source_traversal_and_models(n: int, p: int, k: int) -> No
     from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
 
     a, b, w, bits = layout(n)
-    old_a, old_b, old_w, old_bits = add_layout(n)
-    remap = dict(
-        zip((*old_a, *old_b, *old_w), (*w[1 : n + 1], *b, *w[n + 1 :]), strict=True)
-    )
-    alloc, measured = adjoint_reference_binding(n, p, 1)
-    alloc = (*w[1 : n + 1], *(remap[x] for x in alloc))
-    bit_map = dict(zip(old_bits, bits, strict=True))
-    measured = {remap[x]: bit_map[v] for x, v in measured.items()}
+    alloc, measured = inverse_constant_binding(b, w[1:], bits, p)
     measured[w[0]] = bits[0]
     source = CtrlScaleModAdd(k=k, mod=p, bitsize=n).adjoint()
     expected = reference_arithmetic_gates(

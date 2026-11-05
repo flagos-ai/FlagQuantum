@@ -22,22 +22,33 @@ from tests.unit.test_register_subtraction import assert_source
 pytestmark = pytest.mark.unit
 
 
+def inverse_constant_binding(
+    target: tuple[int, ...], work: tuple[int, ...], bits: tuple[int, ...], p: int
+) -> tuple[tuple[int, ...], dict[int, int]]:
+    """Bind original state/controlled-add inverse lifetimes to shared work."""
+    n = len(target)
+    a, b, w, old_bits = add_layout(n)
+    remap = dict(zip((*a, *b, *w), (*work[:n], *target, *work[n:]), strict=True))
+    alloc, measured = adjoint_reference_binding(n, p, 1)
+    bit_map = dict(zip(old_bits, bits, strict=True))
+    return (*work[:n], *(remap[x] for x in alloc)), {
+        remap[x]: bit_map[v] for x, v in measured.items()
+    }
+
+
 @pytest.mark.parametrize("n,p,k", CASES)
 def test_original_adjoint_source_and_independent_models(n: int, p: int, k: int) -> None:
     from qualtran.bloqs.mod_arithmetic.mod_addition import CModAddK
     from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
 
     target, work, bits = layout(n)
-    a, b, w, old_bits = add_layout(n)
-    remap = dict(zip((*a, *b, *w), (*work[:n], *target, *work[n:]), strict=True))
-    alloc, measured = adjoint_reference_binding(n, p, 1)
-    bit_map = dict(zip(old_bits, bits, strict=True))
+    alloc, measured = inverse_constant_binding(target, work, bits, p)
     source = CModAddK(k=k, mod=p, bitsize=n).adjoint()
     expected = reference_arithmetic_gates(
         source,
         {"ctrl": (0,), "x": target},
-        (*work[:n], *(remap[x] for x in alloc)),
-        {remap[x]: bit_map[v] for x, v in measured.items()},
+        alloc,
+        measured,
         reuse_allocations=False,
         preserve_components=True,
     )
