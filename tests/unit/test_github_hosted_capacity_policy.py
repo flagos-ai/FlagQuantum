@@ -242,7 +242,10 @@ def test_migrated_cpu_jobs_keep_frameworks_and_processes_isolated(job: str) -> N
     assert "torch.version.cuda is None" in commands
     assert "jax.default_backend() == 'cpu'" in commands
     if job == "distributed-cpu-shard":
-        assert definition["runs-on"] == A800_CPU_ROUTE
+        assert definition["runs-on"] == A800_CPU_ROUTE.replace(
+            '"flagquantum-cpu"]',
+            '"flagquantum-cpu","flagquantum-cpu-sdk-preinstalled"]',
+        )
         assert definition["timeout-minutes"] == 60
         assert any(
             step.get("uses") == "./.github/actions/isolated-python" for step in steps

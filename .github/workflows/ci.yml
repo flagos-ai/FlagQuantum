@@ -1661,7 +1661,7 @@ jobs:
   distributed-cpu-shard:
     needs: prepare-source
     runs-on: >-
-      ${{ fromJSON((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","linux","x64","flagquantum-cpu"]' || '["ubuntu-latest"]') }}
+      ${{ fromJSON((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","linux","x64","flagquantum-cpu","flagquantum-cpu-sdk-preinstalled"]' || '["ubuntu-latest"]') }}
     timeout-minutes: 60
     strategy:
       fail-fast: false
@@ -1728,13 +1728,28 @@ jobs:
           git clean -ffdx
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
       - uses: actions/setup-python@v5
+        if: runner.environment != 'self-hosted'
         with:
           python-version: "3.12"
       - uses: ./.github/actions/isolated-python
+        if: runner.environment != 'self-hosted'
+      - name: Attach the preinstalled JAX environment
+        if: runner.environment == 'self-hosted'
+        run: |
+          source .github/scripts/attach-preinstalled-sdk.sh
+          fq_attach_preinstalled_sdk jax
+          echo "$VIRTUAL_ENV/bin" >> "$GITHUB_PATH"
+          echo "VIRTUAL_ENV=$VIRTUAL_ENV" >> "$GITHUB_ENV"
+          echo "PYTHONPATH=" >> "$GITHUB_ENV"
+          echo "PYTHONHOME=" >> "$GITHUB_ENV"
+          echo "PYTHONNOUSERSITE=1" >> "$GITHUB_ENV"
+          echo "PYTHONDONTWRITEBYTECODE=1" >> "$GITHUB_ENV"
       - name: Budget launchers for this isolated CPU service
         run: python -I tools/ci_cpu_budget.py --dedicated
       - uses: ./.github/actions/install-cpu-torch
-      - run: python -m pip install --no-build-isolation -e '.[dev,jax]'
+        if: runner.environment != 'self-hosted'
+      - if: runner.environment != 'self-hosted'
+        run: python -m pip install --no-build-isolation -e '.[dev,jax]'
       - name: Verify dependency consistency and CPU frameworks
         run: |
           python -m pip check

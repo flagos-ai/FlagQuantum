@@ -174,6 +174,10 @@ def _allows_untrusted_code(job: dict[str, object], reaching: frozenset[str]) -> 
             ENTRY_CPU_ROUTE,
             PORTABLE_CPU_ROUTE,
             A800_CPU_ROUTE,
+            A800_CPU_ROUTE.replace(
+                '"flagquantum-cpu"]',
+                '"flagquantum-cpu","flagquantum-cpu-sdk-preinstalled"]',
+            ),
             MC550_CPU_ROUTE,
         )
     )

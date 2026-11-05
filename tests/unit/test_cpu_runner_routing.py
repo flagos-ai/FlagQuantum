@@ -175,7 +175,9 @@ def test_portable_cpu_work_uses_general_or_validated_scale_sets() -> None:
     for name in ("distributed-cpu-shard", "triton-optional"):
         job = jobs[name]
         labels = '["self-hosted","linux","x64","flagquantum-cpu"]'
-        if name == "triton-optional":
+        if name == "distributed-cpu-shard":
+            labels = '["self-hosted","linux","x64","flagquantum-cpu","flagquantum-cpu-sdk-preinstalled"]'
+        elif name == "triton-optional":
             # The generic CPU label also exists on legacy A800 hosts without
             # the provisioned MC550 wheel directories and network path.
             labels = '["self-hosted","linux","x64","flagquantum-cpu","flagquantum-mc550-cpu"]'
