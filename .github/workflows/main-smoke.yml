@@ -1,4 +1,5 @@
 name: BW1100 CPU runner pilot
+run-name: BW1100-${{ inputs.node }} runner validation
 on:
   workflow_dispatch:
     inputs:
