@@ -15,6 +15,7 @@ from flagquantum.compiler.resource_estimation import ResourceEstimate
 from flagquantum.ecosystem import InteropConversionError
 from flagquantum.ecosystem._qmod.source import load_qmod
 from flagquantum.services import synthesis
+from flagquantum.services._qmod_workflow import run_qaoa_workflow
 
 
 def probe(
@@ -25,7 +26,9 @@ def probe(
     classical_inputs: Mapping[str, float | Sequence[float]] | None = None,
 ) -> dict[str, str | int]:
     try:
-        load_qmod(path, source_version=revision, classical_inputs=classical_inputs)
+        imported = load_qmod(
+            path, source_version=revision, classical_inputs=classical_inputs
+        )
     except InteropConversionError as error:
         return {"stage": "frontend_refused", "detail": str(error)}
     if not execute:
@@ -49,7 +52,23 @@ def probe(
         "depth": resources.depth,
     }
     try:
-        state = run(program).statevector()
+        evidence: dict[str, str | int] = {}
+        if imported.workflow is None:
+            state = run(program).statevector()
+        else:
+            workflow = run_qaoa_workflow(
+                imported.workflow, memory_limit_bytes=memory_bytes
+            )
+            state = workflow.vqe.statevector
+            evidence = {
+                "workflow_evaluations": len(workflow.vqe.evaluations),
+                "workflow_termination": workflow.vqe.termination,
+                "resource_parameters": (
+                    "source_initial_point"
+                    if classical_inputs is None
+                    else "explicit_quantum_bindings"
+                ),
+            }
         norm = float(state.abs().square().sum())
         if not math.isclose(norm, 1.0, rel_tol=1e-9, abs_tol=1e-9):
             return {
@@ -59,7 +78,7 @@ def probe(
             }
     except (ValueError, RuntimeError) as error:
         return {"stage": "execution_failed", "detail": str(error), **costs}
-    return {"stage": "execution_smoke_passed", **costs}
+    return {"stage": "execution_smoke_passed", **costs, **evidence}
 
 
 def main() -> None:
