@@ -5,13 +5,110 @@ in an environment with Qualtran 0.7.0 to include its separate model estimate.
 """
 
 import argparse
-from collections import Counter
+from collections import Counter, defaultdict
+from collections.abc import Iterator
 from importlib.metadata import version
+from math import tau
 
 import flagquantum as fq
 from flagquantum.algorithms.primitives.multiplexers import SelectTHC
+from flagquantum.compiler.registers.arithmetic import (
+    controlled_add_or_subtract_ir,
+    measurement_add_or_subtract_ir,
+)
+from flagquantum.compiler.registers.phase_gradient import phase_gradient_state_ir
+from flagquantum.compiler.registers.qrom import controlled_qrom_ir
 from flagquantum.compiler.resource_estimation import count_instruction_resources
+from flagquantum.core.classical_control import instruction_condition_clauses
+from flagquantum.core.ir import CircuitIR
 from flagquantum.dynamic import DynamicCircuit
+
+ANGLE_BITS = 8
+NETWORKS = (((0, 1, 0.2),), ((0, 1, 0.5),))
+ONE_BODY_NETWORKS = ((), ((0, 1, -0.4),))
+
+
+def _stage_layout(measured: bool) -> Iterator[tuple[str, tuple[str, ...]]]:
+    """Expected opcode spans for the two-row, single-slot example."""
+    angle, gradient = tuple(range(1, 9)), tuple(range(9, 17))
+    carries = tuple(range(17, 24))
+    bits = tuple(range(16))
+    adder = (
+        measurement_add_or_subtract_ir(
+            0, angle, gradient, carries, tuple(range(16, 23))
+        )
+        if measured
+        else controlled_add_or_subtract_ir(0, angle, gradient, carries[0])
+    )
+    yield "Gradient prepare", tuple(op.name for op in phase_gradient_state_ir(gradient))
+    for first, networks in (
+        (True, (*NETWORKS, (), (), *ONE_BODY_NETWORKS)),
+        (False, NETWORKS),
+    ):
+        yield "Spin swaps", ("cswap",) * 2
+        for inverse in (False, True):
+            words = tuple(
+                (
+                    round(((-net[0][2] if inverse else net[0][2]) % tau) / tau * 256)
+                    % 256
+                    if net
+                    else 0
+                )
+                for net in networks
+            )
+            load = controlled_qrom_ir(
+                3 if first else 2, ANGLE_BITS, words, blocked=True
+            )
+            erase = controlled_qrom_ir(
+                3 if first else 2,
+                ANGLE_BITS,
+                words,
+                blocked=True,
+                inverse=True,
+                measurement_bits=bits if measured else (),
+            )
+            yield "Rotation basis changes", ("cx",)
+            yield "Lookup", tuple(op.name for op in load)
+            yield "Rotation basis changes", ("sdg", "h")
+            yield "Add/subtract", tuple(op.name for op in adder)
+            yield "Rotation basis changes", ("h", "s")
+            yield "Erase", tuple(op.name for op in erase)
+            yield "Rotation basis changes", ("cx",)
+            if not inverse:
+                yield "Reflection", ("cz",) if first else ("x", "h", "ccx", "h", "x")
+        yield "Spin swaps", ("cswap",) * 2
+    yield "Address/spin-label exchange", ("x", "cx", "cswap", "cswap", "cswap", "x")
+    yield "Gradient cleanup", tuple(
+        op.name for op in phase_gradient_state_ir(gradient, inverse=True)
+    )
+
+
+def _print_emitted_stages(ir: CircuitIR, *, measured: bool) -> None:
+    stages: dict[str, Counter[str]] = defaultdict(Counter)
+    conditioned: Counter[str] = Counter()
+    offset = 0
+    for stage, expected in _stage_layout(measured):
+        span = ir.instructions[offset : offset + len(expected)]
+        if tuple(op.name for op in span) != expected:
+            raise RuntimeError(f"{stage} does not match emitted IR at offset {offset}")
+        stages[stage].update(op.name for op in span)
+        conditioned[stage] += sum(
+            bool(instruction_condition_clauses(op)) for op in span
+        )
+        offset += len(span)
+    if offset != len(ir.instructions):
+        raise RuntimeError(f"Unaccounted emitted IR after offset {offset}")
+    print(
+        "  Stage                       T/T†   CCX  CSWAP  Meas.  Cond.  Phase   T-equiv."
+    )
+    for stage, counts in stages.items():
+        t = counts["t"] + counts["tdg"]
+        subtotal = t + 7 * (counts["ccx"] + counts["cswap"])
+        print(
+            f"  {stage:27} {counts['t']:>2}/{counts['tdg']:<2} "
+            f"{counts['ccx']:>5} {counts['cswap']:>6} {counts['measure']:>6} "
+            f"{conditioned[stage]:>6} {counts['phase']:>6} {subtotal:>10}"
+        )
 
 
 def main() -> None:
@@ -37,8 +134,8 @@ def main() -> None:
                 plus_b=8,
                 sys_a=(9, 10),
                 sys_b=(11, 12),
-                networks=(((0, 1, 0.2),), ((0, 1, 0.5),)),
-                one_body_networks=((), ((0, 1, -0.4),)),
+                networks=NETWORKS,
+                one_body_networks=ONE_BODY_NETWORKS,
                 workspace=tuple(range(logical_width, width)),
                 measurement_erasure=measurement_erasure,
             )
@@ -56,12 +153,13 @@ def main() -> None:
             "  T-equivalent subtotal (7 per CCX/CSWAP, excluding phase synthesis):",
             counts["t"] + counts["tdg"] + 7 * (counts["ccx"] + counts["cswap"]),
         )
-        print("  Includes phase-gradient state preparation and cleanup.")
+        _print_emitted_stages(circuit.to_ir(), measured=measurement_erasure)
 
     if args.qualtran:
         if version("qualtran") != "0.7.0":
             parser.error("--qualtran requires Qualtran 0.7.0")
         from qualtran.bloqs.chemistry.thc.select_bloq import SelectTHC as CostModel
+        from qualtran.bloqs.chemistry.thc.select_bloq import THCRotations
         from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
 
         model = CostModel(
@@ -75,7 +173,21 @@ def main() -> None:
         )
         print("  Modeled total qubits:", get_cost_value(model, QubitCount()))
         print("  Rotation workspace and measurements are not fully modeled.")
-        print("  Assumes a phase-gradient state and charges address swaps to PREPARE.")
+        print("  Assumes an existing phase-gradient state.")
+        print("  The actual v0.7.0 call graph includes 3 label and 8 system CSWAPs.")
+        modeled_toffolis = 0
+        for bloq, copies in model.decompose_bloq().bloq_counts().items():
+            if isinstance(bloq, THCRotations):
+                total = get_cost_value(bloq, QECGatesCost()).toffoli
+                arithmetic = bloq.num_spin_orb * (bloq.num_bits_theta - 2)
+                lookup = total - arithmetic
+                print(
+                    f"  {'nu' if bloq.two_body_only else 'mu'} "
+                    f"{'adjoint' if bloq.is_adjoint else 'forward'} ×{copies}: "
+                    f"{arithmetic} arithmetic + {lookup} lookup Toffolis per call"
+                )
+                modeled_toffolis += copies * total
+        print("  Reflection Toffolis:", cost.toffoli - modeled_toffolis)
 
 
 if __name__ == "__main__":
