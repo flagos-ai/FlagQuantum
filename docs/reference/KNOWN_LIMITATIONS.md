@@ -289,3 +289,16 @@ Nested or multi-operation control bodies are outside this slice. The existing
 alias rules for non-diagonal operations remain enforced. Classical real arrays
 admit a checked static half-open slice followed by one static/loop element index.
 The complete 216-original acceptance gate and integration CI remain outstanding.
+
+## Checked Qmod qperm and Output array integration slice
+
+qperm retains its source marker and a conservative transitive basis-preservation
+check, permitting supported diagonal phases and basis operations. Unsupported
+operations are rejected even in unused definitions or cancelling pairs. Existing
+Compiler initialization and ownership checks remain authoritative. Helpers can
+produce fixed one-dimensional qbit[N] outputs, preserving the array type for N=1.
+Unimplemented Input/Const array roles, unsized helper Output arrays and dynamic
+qperm callbacks remain unsupported. multi_suzuki_trotter currently admits exactly
+one inline sparse operator and one time, reusing existing order 1/2 evolution and
+1..256 repetitions. Additional operators and times are rejected. These are local
+integration slices pending the complete original corpus gate and integration CI.

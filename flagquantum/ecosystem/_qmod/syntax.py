@@ -156,6 +156,7 @@ class Function:
     name: Token
     parameters: tuple[Parameter, ...]
     statements: tuple[Statement, ...]
+    permutation: bool = False
 
 
 class Parser:
@@ -681,7 +682,8 @@ class Parser:
         return kind.text, width
 
     def function(self) -> Function:
-        self.take("qfunc")
+        permutation = self.current.text == "qperm"
+        self.take("qperm" if permutation else "qfunc")
         name = self.name()
         self.take("(")
         parameters: list[Parameter] = []
@@ -761,7 +763,8 @@ class Parser:
                 kind, width = self.scalar_type(
                     allow_qubit_array=name.text == "main" or role == "inout",
                     allow_phase=name.text == "main" and role == "output",
-                    allow_fixed_array=role == "inout" or name.text == "main",
+                    allow_fixed_array=role in {"inout", "output"}
+                    or name.text == "main",
                 )
             if role == "const" and width is None:
                 reject(
@@ -776,7 +779,7 @@ class Parser:
                     self.current, "syntax", "trailing parameter commas are not admitted"
                 )
         self.take(")")
-        return Function(name, tuple(parameters), self.block())
+        return Function(name, tuple(parameters), self.block(), permutation=permutation)
 
     def call_argument(self) -> Expression:
         if self.current.text == "[":
@@ -966,7 +969,9 @@ class Parser:
                 self.take("(")
                 args: list[Expression] = []
                 if self.current.text != ")":
-                    if target.text in {"exponentiate", "qdrift", "suzuki_trotter"}:
+                    if target.text == "multi_suzuki_trotter":
+                        args.append(self.literal_array(self.sparse_pauli_op))
+                    elif target.text in {"exponentiate", "qdrift", "suzuki_trotter"}:
                         if self.current.text == "SparsePauliOp":
                             args.append(self.sparse_pauli_op())
                         elif (
@@ -1012,6 +1017,9 @@ class Parser:
                         args.append(self.call_argument())
                     while self.current.text == ",":
                         self.take(",")
+                        if len(args) == 1 and target.text == "multi_suzuki_trotter":
+                            args.append(self.call_argument())
+                            continue
                         if target.text == "linear_pauli_rotations" and len(args) in {
                             1,
                             2,

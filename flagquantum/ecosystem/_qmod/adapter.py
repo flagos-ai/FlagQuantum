@@ -33,6 +33,7 @@ from ...compiler._hybrid.model import (
     ValueId,
 )
 from ...compiler._hybrid.verifier import Diagnostic, HybridVerificationError
+from .permutations import verify_permutations
 from .phase import expand_phase
 from .syntax import (
     ANGLE_CALLS,
@@ -79,6 +80,7 @@ _INTRINSICS = (
         "prepare_state",
         "prepare_bell_state",
         "suzuki_trotter",
+        "multi_suzuki_trotter",
         "single_pauli_exponent",
         "linear_pauli_rotations",
         "unitary",
@@ -1429,7 +1431,8 @@ class _Adapt:
             actual = self.register(
                 actual_name,
                 None if borrowed else formal.type.parameters[0],
-                allow_qubit_array=parameter.record is not None,
+                allow_qubit_array=parameter.record is not None
+                or parameter.kind == "qbit[]",
             )
             if (
                 actual_name.text in self.signed
@@ -2068,9 +2071,26 @@ class _Adapt:
             reject(
                 token,
                 "signature",
-                "suzuki_trotter requires terms, time, order, repetitions and target",
+                f"{token.text} requires terms, time, order, repetitions and target",
             )
         terms, time_arg, order_arg, repetitions_arg, target_arg = args
+        if token.text == "multi_suzuki_trotter":
+            if terms.token.text != "[" or len(terms.children) != 1:
+                reject(
+                    token,
+                    "evolution",
+                    "multi_suzuki_trotter requires exactly one operator",
+                )
+            times = self.real_array(time_arg)
+            if len(times) != 1:
+                reject(
+                    time_arg.token,
+                    "evolution",
+                    "multi_suzuki_trotter requires exactly one time",
+                )
+            terms, time = terms.children[0], times[0]
+        else:
+            time = self.evolution_angle(time_arg, token)
         if any(
             arg.children or not arg.token.text.isdecimal()
             for arg in (order_arg, repetitions_arg)
@@ -2080,7 +2100,7 @@ class _Adapt:
         repetitions = int(repetitions_arg.token.text)
         if order not in {1, 2} or not 1 <= repetitions <= 256:
             reject(token, "evolution", "use order 1 or 2 and 1..256 repetitions")
-        self.pauli_evolution(token, terms, time_arg, target_arg, order, repetitions)
+        self.pauli_evolution(token, terms, time, target_arg, order, repetitions)
 
     def exponentiate(self, token: Token, args: tuple[Expression, ...]) -> None:
         if len(args) != 3:
@@ -2089,19 +2109,21 @@ class _Adapt:
             )
         operator, time_arg, target_arg = args
         # Classiq's Hamiltonian Simulation guide specifies a first-order single step.
-        self.pauli_evolution(token, operator, time_arg, target_arg, 1, 1)
+        self.pauli_evolution(
+            token, operator, self.evolution_angle(time_arg, token), target_arg, 1, 1
+        )
 
     def pauli_evolution(
         self,
         token: Token,
         operator: Expression,
-        time_arg: Expression,
+        time: float,
         target_arg: Expression,
         order: int,
         repetitions: int,
     ) -> None:
         register, terms = self.pauli_terms(token, operator, target_arg)
-        step = self.evolution_angle(time_arg, token) / repetitions
+        step = time / repetitions
         if order == 2:
             step /= 2
         sequence = terms if order == 1 else [*terms, *reversed(terms)]
@@ -2991,7 +3013,7 @@ class _Adapt:
             self.linear_pauli_rotations(token, args)
         elif token.text == "single_pauli_exponent":
             self.single_pauli_exponent(token, args)
-        elif token.text == "suzuki_trotter":
+        elif token.text in {"suzuki_trotter", "multi_suzuki_trotter"}:
             self.suzuki_trotter(token, args)
         elif token.text == "exponentiate":
             self.exponentiate(token, args)
@@ -3265,6 +3287,7 @@ def parse_qmod(
         definitions[name] = syntax
     if "main" not in definitions:
         reject(tokens[0], "entry", "source requires one qfunc main")
+    verify_permutations(definitions)
     main = definitions["main"]
     parameters = {p.name.text: p for p in main.parameters if p.role == "real"}
     inputs = {} if classical_inputs is None else classical_inputs
@@ -3343,7 +3366,8 @@ def parse_qmod(
             )
             if statement.declaration is not None or (
                 statement.token.text
-                not in _STATIC_GATES | {"suzuki_trotter", "unitary", "+=", "phase"}
+                not in _STATIC_GATES
+                | {"suzuki_trotter", "multi_suzuki_trotter", "unitary", "+=", "phase"}
                 and not controlled_qft
                 and not hadamard_within
                 and statement.repeat_index is None

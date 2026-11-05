@@ -294,3 +294,11 @@ relative phase. Acceptance includes full complex128 state vectors against direct
 dense-diagonal Circuits, resource budgets, clean workspace and the existing
 216-original integration gate. This remains local integration work without a
 corpus-wide capability promotion.
+
+The checked qperm slice retains a source proof boundary and reuses existing
+register storage, inverse/control composition and arithmetic lowering. Fixed
+Output array helpers and singleton multi_suzuki_trotter add three original paths
+covering two distinct blobs. Independent full-state references cover positive and
+negative molecular evolution times, coherent walk wraparound and zero scratch
+leakage. This adds no native qperm API or capability-level promotion and does not
+complete the 216-original gate.

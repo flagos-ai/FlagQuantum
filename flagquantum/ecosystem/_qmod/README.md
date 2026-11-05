@@ -950,3 +950,63 @@ checks the complete original against a direct Circuit with dense 32-state
 diagonal phases and RX mixers. Its reference does not use the predicate or
 polynomial compiler. The other two retained cases are `qaoa` and
 `algo_design_QCE_tutorial_part_II`.
+
+### Checked qperm calls and fixed Output arrays
+
+The parser retains a distinct `qperm` marker. Before conversion to owned records,
+the source boundary checks its complete admitted call graph, including ordinary
+qfunc helpers, both control branches, repeat/map bodies, inverse and within/apply
+scopes. The admitted subset preserves computational basis labels up to diagonal
+phases: existing X, Z, S, I, RZ, CX, CZ and SWAP operations, arithmetic assignment
+and XOR, in-place unit increments/decrements, checked binding and fresh allocation.
+Width, freshness, aliasing and ownership still use the existing Compiler checks.
+H, generic rotations and unproved calls are rejected, including indirect calls
+and unused qperm definitions. Algebraic cancellation of unsupported operations
+is not assumed. Dynamic callbacks and unimplemented port roles remain outside
+this conservative qperm subset.
+
+A fresh helper Output may be a fixed one-dimensional `qbit[N]` array. Its array
+kind and width remain intact through the call, including N=1. Caller and callee
+must match exactly. Duplicate writes, overlapping outputs, already initialized
+actuals and escaped output storage are rejected. This does not introduce
+unsized Output arrays in helpers, Input ports or Const array/record ports.
+
+`multi_suzuki_trotter([SparsePauliOp {...}], times, order, repetitions, target)`
+accepts exactly one inline sparse operator and one real time. `times` can be a
+bound real array, a checked slice or a real array literal. Order 1 or 2 and 1..256
+repetitions reuse existing Suzuki-Trotter lowering, including target widths,
+finite real coefficients, global phases and expansion limits. Multiple operators
+or times are explicitly rejected; none are discarded.
+
+Run either unchanged molecular example with one nonzero time:
+
+```python
+from pathlib import Path
+
+import flagquantum as fq
+from flagquantum import synth
+
+program = synth.synthesize(
+    Path("tests/fixtures/classiq_qmod/molecular_energy_curve.qmod"),
+    classical_inputs={"params": [0.37]},
+    max_qubits=1,
+    max_workspace=0,
+    memory_limit_bytes=64 * 1024**2,
+)
+result = fq.run(program)
+print(dict(program.probabilities(result, registers=("state",))))
+print(result.statevector())
+print(program.report["resources"])  # 1 qubit, 1 operation, depth 1.
+```
+
+The original `discrete_quantum_walk.qmod` needs no classical binding. Load it
+with synthesize and read registers `("x", "coin")`; it returns `(1, 0)` and
+`(1023, 1)` with probability one half each. Its actual circuit uses 16 qubits,
+150 operations and depth 142, including five clean work qubits.
+
+`python tools/validate_qmod_permutations.py --case molecular_energy_curve --parameter -0.81 --output molecular-validation.json`
+compares the full state against an independent X followed by RY Circuit.
+Use `--case discrete_quantum_walk` without `--parameter` for the original walk
+and its full-state/clean-workspace reference. Molecular energy curve and molecule
+eigensolver are two original paths containing the same source blob; coverage is
+reported by both paths and distinct blobs.
