@@ -1,6 +1,8 @@
 name: BW1100 CPU runner pilot
 on: workflow_dispatch
 permissions: {}
+env:
+  FQ_PILOT_SOURCE_SHA: eb04d9ffd36c40b167c9ebbd72eb66c11d39e43a
 jobs:
   dispatch-probe:
     runs-on: fq-bw1100-16-pilot
@@ -39,13 +41,14 @@ jobs:
         with:
           persist-credentials: false
           fetch-depth: 16
+          ref: ${{ env.FQ_PILOT_SOURCE_SHA }}
       - name: Pack the exact commit and its complete tree for the A800 runners
         id: pack-source
         run: |
           set -o pipefail
           echo "artifact-key=${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}" >> "$GITHUB_OUTPUT"
           mkdir "$RUNNER_TEMP/ci-source"
-          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git rev-parse HEAD)" = "$FQ_PILOT_SOURCE_SHA"
           git rev-parse HEAD > "$RUNNER_TEMP/ci-source/source.sha"
           git rev-list --objects --no-walk HEAD | git pack-objects --stdout > "$RUNNER_TEMP/ci-source/source.pack"
           mkdir "$RUNNER_TEMP/ci-source-incremental"
@@ -97,7 +100,7 @@ jobs:
         id: source-cache
         run: |
           sha="$(cat "$RUNNER_TEMP/ci-source/source.sha")"
-          test "$sha" = "$GITHUB_SHA"
+          test "$sha" = "$FQ_PILOT_SOURCE_SHA"
           if [ ! -d .git ]; then
             git init .
           fi
@@ -118,7 +121,7 @@ jobs:
       - name: Restore and verify this run's exact source commit
         run: |
           sha="$(cat "$RUNNER_TEMP/ci-source/source.sha")"
-          test "$sha" = "$GITHUB_SHA"
+          test "$sha" = "$FQ_PILOT_SOURCE_SHA"
           if [ ! -d .git ]; then
             git init .
           fi
@@ -131,7 +134,7 @@ jobs:
           git read-tree --empty
           git checkout --force --detach "$sha"
           git clean -ffdx
-          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git rev-parse HEAD)" = "$FQ_PILOT_SOURCE_SHA"
       - uses: ./.github/actions/offline-cpu
         with:
           profile: coverage-py3.12
