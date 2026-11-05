@@ -9,6 +9,9 @@ import math
 from collections.abc import Mapping, Sequence
 from types import MappingProxyType
 
+import torch
+
+from ...core._composition import _is_finite_unitary
 from .._hybrid.model import (
     QUANTUM_EFFECT,
     HybridProgram,
@@ -33,6 +36,7 @@ _ATTRIBUTES = MappingProxyType(
         "qreg.initialize": frozenset({"value"}),
         "qreg.prepare_ghz": frozenset(),
         "qreg.prepare_amplitudes": frozenset({"amplitudes", "bound"}),
+        "qreg.unitary": frozenset({"matrix"}),
         "qreg.qft": frozenset(),
         "qreg.type1_transform": frozenset(),
         "qreg.type2_transform": frozenset({"kind"}),
@@ -54,6 +58,31 @@ _ATTRIBUTES = MappingProxyType(
 _PAIR_GATES = frozenset({"cx", "swap", "crx", "cry"})
 _ANGLE_GATES = frozenset({"phase", "rx", "ry", "rz"})
 _GATES = frozenset({"x", "h", "s", "z"}) | _ANGLE_GATES
+
+
+def unitary_matrix(entries: object, width: int, op: Operation) -> torch.Tensor:
+    """Decode a bounded dense matrix from immutable real/imaginary pairs."""
+    if not 1 <= width <= 2:
+        _fail("register.unitary", "matrix targets must have one or two qubits", op)
+    size = 1 << width
+    if (
+        not isinstance(entries, tuple)
+        or len(entries) != size
+        or any(not isinstance(row, tuple) or len(row) != size for row in entries)
+        or any(
+            not isinstance(entry, tuple)
+            or len(entry) != 2
+            or any(type(part) is not float or not math.isfinite(part) for part in entry)
+            for row in entries
+            for entry in row
+        )
+    ):
+        _fail(
+            "register.unitary",
+            "expected a finite square matrix matching the target width",
+            op,
+        )
+    return torch.view_as_complex(torch.tensor(entries, dtype=torch.float64))
 
 
 def equatorial_rotation(theta: float, phi: float) -> tuple[tuple[str, float], ...]:
@@ -442,6 +471,23 @@ def _verify_body(
                     )
                 initialized.update(v.id for v in writes)
                 changed = tuple(writes)
+            elif op.name == "qreg.unitary":
+                if arguments or destination in borrowed:
+                    _fail(
+                        "register.unitary", "unitary requires one writable register", op
+                    )
+                if destination.id not in initialized:
+                    _fail(
+                        "register.uninitialized",
+                        "unitary requires an initialized register",
+                        op,
+                    )
+                matrix = unitary_matrix(
+                    op.attributes["matrix"], register_width(destination), op
+                )
+                if not _is_finite_unitary(matrix):
+                    _fail("register.unitary", "matrix must be unitary", op)
+                changed = (destination,)
             elif op.name == "qreg.qft":
                 if arguments:
                     _fail("register.transform", "QFT requires one register", op)

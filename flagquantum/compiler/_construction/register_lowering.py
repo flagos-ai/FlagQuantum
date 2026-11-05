@@ -6,18 +6,25 @@ The returned circuit requires an all-zero entry state; this is an allocation
 precondition, not a claim inferred from an arbitrary external state.
 """
 
+import cmath
 import math
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, replace
 from types import MappingProxyType
 from typing import Literal
 
+import torch
+
 from ...core._composition import controlled_instruction
 from ...core.controlled import _clean_mcx_instructions
 from ...core.ir import CircuitIR, Instruction
 from .._fourier_kernels import qft_instructions
 from .._hybrid.model import Block, HybridProgram, Operation, Region, Value, ValueId
+from ..one_qubit_optimization import _instruction_matrix as _one_qubit_matrix
+from ..one_qubit_synthesis import synthesize_one_qubit_matrix
 from ..state_preparation_synthesis import _synthesize_real_state
+from ..two_qubit_optimization import _block_product
+from ..two_qubit_synthesis import synthesize_two_qubit
 from .boolean_lowering import BooleanCandidateError, lower_boolean_value
 from .lowering import (
     ArithmeticCandidate,
@@ -33,6 +40,7 @@ from .register_profile import (
     _ANGLE_GATES,
     register_ports,
     register_width,
+    unitary_matrix,
     verify_register_program,
 )
 
@@ -244,6 +252,42 @@ def _real_transform_instructions(
     return tuple(gates)
 
 
+def _unitary_instructions(
+    matrix: torch.Tensor, wires: tuple[int, ...], op: Operation
+) -> tuple[Instruction, ...]:
+    """Synthesize registered gates and restore the decomposition's global phase."""
+    if len(wires) == 1:
+        gates = synthesize_one_qubit_matrix(
+            matrix.tolist(), qubit=wires[0], z_rotation="rz"
+        )
+        assert gates is not None
+        product = torch.eye(2, dtype=torch.complex128)
+        for gate in gates:
+            leaf = _one_qubit_matrix(gate)
+            assert leaf is not None
+            product = torch.tensor(leaf, dtype=torch.complex128) @ product
+    else:
+        gates = synthesize_two_qubit(
+            matrix.tolist(), qubits=wires, entangler="cx", z_rotation="rz"
+        )
+        assert gates is not None
+        block = _block_product(gates, wires)
+        assert block is not None
+        product = torch.tensor(block, dtype=torch.complex128)
+    angle = cmath.phase(complex(torch.trace(product.mH @ matrix).item()))
+    if not torch.allclose(product * cmath.exp(1j * angle), matrix, atol=1e-12, rtol=0):
+        _fail(
+            "lowering.unitary",
+            "registered gate decomposition failed matrix verification",
+            op,
+        )
+    if abs(angle) <= 1e-15:
+        return gates
+    phase = Instruction("phase", (wires[0],), {"theta": angle})
+    flip = Instruction("x", (wires[0],))
+    return (*gates, flip, phase, flip, phase)
+
+
 def schedule_register_program(
     program: HybridProgram,
     functions: Sequence[HybridProgram] = (),
@@ -279,6 +323,10 @@ def schedule_register_program(
             gates = _synthesize_real_state(
                 op.attributes["amplitudes"], bindings[op.operands[1].id]
             )
+        elif op.name == "qreg.unitary":
+            wires = bindings[op.operands[1].id]
+            matrix = unitary_matrix(op.attributes["matrix"], len(wires), op)
+            gates = _unitary_instructions(matrix, wires, op)
         elif op.name == "qreg.qft":
             gates = qft_instructions(bindings[op.operands[1].id])
         elif op.name == "qreg.type1_transform":

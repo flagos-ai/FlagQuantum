@@ -321,7 +321,10 @@ def select_register_program(
     # diagnostic rather than mistaking a resource budget for invalid semantics.
     verify_register_program(program, functions)
     expanded = expand_register_calls(program, functions)
-    if any(op.name == "qreg.phase" for op in expanded.body.blocks[0].operations):
+    if any(
+        op.name in {"qreg.phase", "qreg.unitary"}
+        for op in expanded.body.blocks[0].operations
+    ):
         _check_phase_target(target)
     mapping, _, position = register_ports(program)
     identities = (

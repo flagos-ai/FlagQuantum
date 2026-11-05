@@ -74,6 +74,7 @@ _INTRINSICS = (
         "suzuki_trotter",
         "single_pauli_exponent",
         "linear_pauli_rotations",
+        "unitary",
         "exponentiate",
         "qdrift",
         "qft",
@@ -116,6 +117,19 @@ def _preparation_value(node: Expression) -> float:
     if value.children or not re.fullmatch(r"[0-9]+(?:\.[0-9]+)?", value.token.text):
         reject(value.token, "amplitudes", "expected a real decimal literal")
     return float(value.token.text) * (-1 if negative else 1)
+
+
+def _matrix_value(node: Expression) -> complex:
+    text = node.token.text
+    if not node.children:
+        return complex(float(text))
+    left = _matrix_value(node.children[0])
+    if text == "j":
+        return 1j * left
+    right = _matrix_value(node.children[1]) if len(node.children) == 2 else None
+    if right is None:
+        return -left if text == "-" else left
+    return left - right if text == "-" else left + right
 
 
 def _pauli_support(
@@ -1889,6 +1903,26 @@ class _Adapt:
             destination = self.register(self.atom(args[-1]))
             self.effect_op(
                 "qreg.uniform_interval", token, (destination,), start=start, stop=stop
+            )
+        elif token.text == "unitary":
+            if len(args) != 2:
+                reject(token, "signature", "unitary requires a matrix and qubit array")
+            matrix, target_arg = args
+            target = self.atom(target_arg)
+            register = self.register(target, allow_qubit_array=True)
+            if self.parameters[target.text].kind != "qbit[]":
+                reject(target, "type", "unitary requires a qubit array")
+            self.effect_op(
+                "qreg.unitary",
+                token,
+                (register,),
+                matrix=tuple(
+                    tuple(
+                        (value.real, value.imag)
+                        for value in map(_matrix_value, row.children)
+                    )
+                    for row in matrix.children
+                ),
             )
         elif token.text == "linear_pauli_rotations":
             self.linear_pauli_rotations(token, args)

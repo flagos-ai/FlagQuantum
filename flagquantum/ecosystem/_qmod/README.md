@@ -643,3 +643,11 @@ arrays whose lengths match the initialized target array. This profile accepts
 the Y axis as either `2` or `Pauli::Y`. The rotation angle on each target
 qubit is `slope * x + offset` with unsigned `x`. The disjoint control array
 is preserved. The lowering uses an offset RY and bit-weighted CRY gates.
+
+### Inline unitary matrices
+
+`unitary(matrix, x)` accepts an inline complex matrix of size 2 by 2 or
+4 by 4 on a matching initialized qubit array. Matrix entries may contain
+signed real and imaginary literals, such as `1j` or `((-0) - 1j)`. The
+compiler checks unitarity, lowers to registered gates, and preserves global
+phase in the supported phase-preserving target profiles.

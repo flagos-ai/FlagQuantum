@@ -376,6 +376,40 @@ class Parser:
             reject(axis, "pauli", "expected Pauli::I, X, Y or Z")
         return Expression(axis)
 
+    def matrix_entry(self, depth: int = 0) -> Expression:
+        entry = self.matrix_atom(depth)
+        if self.current.text in {"+", "-"}:
+            operator = self.take(self.current.text)
+            return Expression(operator, (entry, self.matrix_atom(depth)))
+        return entry
+
+    def matrix_atom(self, depth: int) -> Expression:
+        token = self.current
+        if depth >= MAX_DEPTH:
+            reject(token, "budget.depth", "matrix entry exceeds depth budget")
+        if token.text in {"+", "-"}:
+            return Expression(self.take(token.text), (self.matrix_atom(depth + 1),))
+        if token.text == "(":
+            self.take("(")
+            entry = self.matrix_entry(depth + 1)
+            self.take(")")
+            return entry
+        if not token.text.isdecimal():
+            reject(token, "matrix", "expected a numeric matrix literal")
+        if self.tokens[self.position + 1].text == ".":
+            number = self.angle_argument()
+        else:
+            self.position += 1
+            number = Expression(token)
+        suffix = self.current
+        if (
+            suffix.text == "j"
+            and suffix.location.line == token.location.line
+            and suffix.location.column == token.location.column + len(number.token.text)
+        ):
+            return Expression(self.take("j"), (number,))
+        return number
+
     def linear_rotation_basis(self) -> Expression:
         if self.current.text == "Pauli":
             return self.pauli_axis()
@@ -681,6 +715,12 @@ class Parser:
                             args.append(Expression(self.name()))
                     elif target.text == "prepare_exponential_state":
                         args.append(self.signed_angle_argument())
+                    elif target.text == "unitary":
+                        args.append(
+                            self.literal_array(
+                                lambda: self.literal_array(self.matrix_entry)
+                            )
+                        )
                     elif target.text == "linear_pauli_rotations":
                         args.append(self.literal_array(self.linear_rotation_basis))
                     elif target.text == "single_pauli_exponent":
