@@ -1007,3 +1007,9 @@ Network-dependent SDK jobs share hosted groups 1, 4, and 7. Core runtime,
 Python 3.12 unit tests, and Python compatibility checks use groups 3, 5, and 6
 respectively, so SDK downloads cannot occupy their concurrency groups. The
 repository-wide hosted ceiling remains eight.
+
+CI and GPU artifact uploads retry a transient service failure at most twice,
+within a six-minute upload step budget. Each retry replaces only that job
+artifact, including any partial upload. Persistent failure still fails the job;
+tests are not automatically retried. Job/matrix-unique names prevent one job
+from replacing another job artifact.

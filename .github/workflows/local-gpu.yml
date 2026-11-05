@@ -109,13 +109,15 @@ jobs:
             git rev-list --objects 'HEAD^{tree}' "^${base}^{tree}"
             git rev-parse 'HEAD^{tree}' 'HEAD:tools' 'HEAD:tools/ci_source_archive.py'
           } | git pack-objects --stdout > "$RUNNER_TEMP/ci-source-incremental/source.pack"
-      - uses: actions/upload-artifact@v4
+      - uses: ./.github/actions/upload-artifact
+        timeout-minutes: 6
         with:
           name: ci-source-incremental-${{ github.run_id }}-${{ github.run_attempt }}
           path: ${{ runner.temp }}/ci-source-incremental/
           retention-days: 1
           compression-level: 0
-      - uses: actions/upload-artifact@v4
+      - uses: ./.github/actions/upload-artifact
+        timeout-minutes: 6
         with:
           name: ci-source-${{ github.run_id }}-${{ github.run_attempt }}
           path: ${{ runner.temp }}/ci-source/
@@ -257,7 +259,8 @@ jobs:
           --evidence-scope one_gpu_local
           --log hardware-run/one-gpu.log
       - if: always()
-        uses: actions/upload-artifact@v4
+        uses: ./.github/actions/upload-artifact
+        timeout-minutes: 6
         with:
           name: one-gpu-${{ github.sha }}-${{ github.run_attempt }}
           path: hardware-run/
@@ -359,7 +362,8 @@ jobs:
           --log hardware-run/two-gpu-torch.log
           --log hardware-run/two-gpu-jax.log
       - if: always()
-        uses: actions/upload-artifact@v4
+        uses: ./.github/actions/upload-artifact
+        timeout-minutes: 6
         with:
           name: two-gpu-required-${{ github.sha }}-${{ github.run_attempt }}
           path: hardware-run/
@@ -467,7 +471,8 @@ jobs:
           --diagnostics hardware-run/watchdog-eight-gpu-reverse --
           torchrun --standalone --nproc-per-node=8
           tests/distributed/statevector_reverse_executor.py --backend nccl
-      - uses: actions/upload-artifact@v4
+      - uses: ./.github/actions/upload-artifact
+        timeout-minutes: 6
         if: always()
         with:
           name: a100-pool-validation-${{ github.run_id }}

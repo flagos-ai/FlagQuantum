@@ -166,13 +166,15 @@ jobs:
             # Carry the Git path proof for bounded API repair of cache misses.
             git rev-parse 'HEAD^{tree}' 'HEAD:tools' 'HEAD:tools/ci_source_archive.py'
           } | git pack-objects --stdout > "$RUNNER_TEMP/ci-source-incremental/source.pack"
-      - uses: actions/upload-artifact@v4
+      - uses: ./.github/actions/upload-artifact
+        timeout-minutes: 6
         with:
           name: ci-source-incremental-${{ github.run_id }}-${{ github.run_attempt }}
           path: ${{ runner.temp }}/ci-source-incremental/
           retention-days: 1
           compression-level: 0
-      - uses: actions/upload-artifact@v4
+      - uses: ./.github/actions/upload-artifact
+        timeout-minutes: 6
         with:
           name: ci-source-${{ github.run_id }}-${{ github.run_attempt }}
           path: ${{ runner.temp }}/ci-source/
@@ -425,7 +427,8 @@ jobs:
         run: python tools/check_import_time.py
       - name: Retain resource limits and pytest timing reports
         if: ${{ always() && env.FQ_CI_REPORT_DIR != '' }}
-        uses: actions/upload-artifact@v4
+        uses: ./.github/actions/upload-artifact
+        timeout-minutes: 6
         with:
           name: cpu-report-${{ github.job }}-${{ strategy.job-index || '0' }}
           path: ${{ env.FQ_CI_REPORT_DIR }}
@@ -568,7 +571,8 @@ jobs:
         run: python -m pytest tests/smoke/test_no_jax_core.py -q
       - name: Retain resource limits and pytest timing reports
         if: ${{ always() && env.FQ_CI_REPORT_DIR != '' }}
-        uses: actions/upload-artifact@v4
+        uses: ./.github/actions/upload-artifact
+        timeout-minutes: 6
         with:
           name: cpu-report-${{ github.job }}-${{ strategy.job-index || '0' }}
           path: ${{ env.FQ_CI_REPORT_DIR }}
@@ -675,7 +679,8 @@ jobs:
         run: python -m pytest tests/smoke/test_no_jax_core.py -q
       - name: Retain resource limits and pytest timing reports
         if: ${{ always() && env.FQ_CI_REPORT_DIR != '' }}
-        uses: actions/upload-artifact@v4
+        uses: ./.github/actions/upload-artifact
+        timeout-minutes: 6
         with:
           name: cpu-report-${{ github.job }}-${{ strategy.job-index || '0' }}
           path: ${{ env.FQ_CI_REPORT_DIR }}
@@ -775,7 +780,8 @@ jobs:
         run: torchrun --standalone --nproc-per-node=2 -m pytest -m distributed_launch -q
       - name: Retain resource limits and pytest timing reports
         if: ${{ always() && env.FQ_CI_REPORT_DIR != '' }}
-        uses: actions/upload-artifact@v4
+        uses: ./.github/actions/upload-artifact
+        timeout-minutes: 6
         with:
           name: cpu-report-${{ github.job }}-${{ strategy.job-index || '0' }}
           path: ${{ env.FQ_CI_REPORT_DIR }}
@@ -893,7 +899,8 @@ jobs:
           python -m pytest tests/test_hybrid_jax.py tests/test_jax_distributed_plan.py -q
       - name: Retain resource limits and pytest timing reports
         if: ${{ always() && env.FQ_CI_REPORT_DIR != '' }}
-        uses: actions/upload-artifact@v4
+        uses: ./.github/actions/upload-artifact
+        timeout-minutes: 6
         with:
           name: cpu-report-${{ github.job }}-${{ strategy.job-index || '0' }}
           path: ${{ env.FQ_CI_REPORT_DIR }}
@@ -990,7 +997,8 @@ jobs:
           done
       - name: Retain resource limits and pytest timing reports
         if: ${{ always() && env.FQ_CI_REPORT_DIR != '' }}
-        uses: actions/upload-artifact@v4
+        uses: ./.github/actions/upload-artifact
+        timeout-minutes: 6
         with:
           name: cpu-report-${{ github.job }}-${{ strategy.job-index || '0' }}
           path: ${{ env.FQ_CI_REPORT_DIR }}
@@ -1093,7 +1101,8 @@ jobs:
         run: python -m pytest tests/test_statevector_triton_gates.py tests/unit/test_hva_forward_tangent_triton.py tests/unit/test_mps_two_site_triton.py tests/unit/test_real_imag_kernels.py tests/unit/test_single_qubit_loop_triton.py tests/unit/test_statevector_pauli_expectation_triton.py tests/unit/test_statevector_probabilities_triton.py tests/unit/test_statevector_triton.py tests/unit/test_triton_complex_bmm.py tests/unit/test_two_qubit_pauli_tangent_triton.py -m triton -q -rs
       - name: Retain resource limits and pytest timing reports
         if: ${{ always() && env.FQ_CI_REPORT_DIR != '' }}
-        uses: actions/upload-artifact@v4
+        uses: ./.github/actions/upload-artifact
+        timeout-minutes: 6
         with:
           name: cpu-report-${{ github.job }}-${{ strategy.job-index || '0' }}
           path: ${{ env.FQ_CI_REPORT_DIR }}
@@ -1244,7 +1253,8 @@ jobs:
           python -c "import sys, flagquantum; assert not any(name == 'qiskit' or name.startswith('qiskit.') or name == 'qiskit_aer' or name.startswith('qiskit_aer.') for name in sys.modules)"
       - name: Retain resource limits and pytest timing reports
         if: ${{ always() && env.FQ_CI_REPORT_DIR != '' }}
-        uses: actions/upload-artifact@v4
+        uses: ./.github/actions/upload-artifact
+        timeout-minutes: 6
         with:
           name: cpu-report-${{ github.job }}-${{ strategy.job-index || '0' }}
           path: ${{ env.FQ_CI_REPORT_DIR }}
@@ -1371,7 +1381,8 @@ jobs:
           ); done
       - name: Retain resource limits and pytest timing reports
         if: ${{ always() && env.FQ_CI_REPORT_DIR != '' }}
-        uses: actions/upload-artifact@v4
+        uses: ./.github/actions/upload-artifact
+        timeout-minutes: 6
         with:
           name: cpu-report-${{ github.job }}-${{ strategy.job-index || '0' }}
           path: ${{ env.FQ_CI_REPORT_DIR }}
@@ -1471,7 +1482,8 @@ jobs:
           done
       - name: Retain resource limits and pytest timing reports
         if: ${{ always() && env.FQ_CI_REPORT_DIR != '' }}
-        uses: actions/upload-artifact@v4
+        uses: ./.github/actions/upload-artifact
+        timeout-minutes: 6
         with:
           name: cpu-report-${{ github.job }}-${{ strategy.job-index || '0' }}
           path: ${{ env.FQ_CI_REPORT_DIR }}
@@ -1558,7 +1570,8 @@ jobs:
           done
       - name: Retain resource limits and pytest timing reports
         if: ${{ always() && env.FQ_CI_REPORT_DIR != '' }}
-        uses: actions/upload-artifact@v4
+        uses: ./.github/actions/upload-artifact
+        timeout-minutes: 6
         with:
           name: cpu-report-${{ github.job }}-${{ strategy.job-index || '0' }}
           path: ${{ env.FQ_CI_REPORT_DIR }}
@@ -1651,7 +1664,8 @@ jobs:
           done
       - name: Retain resource limits and pytest timing reports
         if: ${{ always() && env.FQ_CI_REPORT_DIR != '' }}
-        uses: actions/upload-artifact@v4
+        uses: ./.github/actions/upload-artifact
+        timeout-minutes: 6
         with:
           name: cpu-report-${{ github.job }}-${{ strategy.job-index || '0' }}
           path: ${{ env.FQ_CI_REPORT_DIR }}
@@ -1780,7 +1794,8 @@ jobs:
           mypy --strict --python-version 3.12 --ignore-missing-imports flagquantum
       - name: Retain resource limits and pytest timing reports
         if: ${{ always() && env.FQ_CI_REPORT_DIR != '' }}
-        uses: actions/upload-artifact@v4
+        uses: ./.github/actions/upload-artifact
+        timeout-minutes: 6
         with:
           name: cpu-report-${{ github.job }}-${{ strategy.job-index || '0' }}
           path: ${{ env.FQ_CI_REPORT_DIR }}
@@ -1878,12 +1893,14 @@ jobs:
           --report-dir "${{ runner.temp }}/qec-installed-reports"
       - name: Retain installed QEC evidence
         if: ${{ always() }}
-        uses: actions/upload-artifact@v4
+        uses: ./.github/actions/upload-artifact
+        timeout-minutes: 6
         with:
           name: qec-installed-${{ github.sha }}
           path: ${{ runner.temp }}/qec-installed-reports/
           retention-days: 7
-      - uses: actions/upload-artifact@v4
+      - uses: ./.github/actions/upload-artifact
+        timeout-minutes: 6
         with:
           name: flagquantum-distributions-${{ github.sha }}
           path: dist/
@@ -1923,7 +1940,8 @@ jobs:
           output-dir: wheelhouse
       - name: Verify release wheel contents
         run: python tools/verify_distribution_artifacts.py wheelhouse
-      - uses: actions/upload-artifact@v4
+      - uses: ./.github/actions/upload-artifact
+        timeout-minutes: 6
         with:
           name: flagquantum-${{ matrix.artifact }}-${{ github.sha }}
           path: wheelhouse/
@@ -2039,7 +2057,8 @@ jobs:
         run: torchrun --standalone --nproc-per-node=2 -m pytest tests/distributed/test_hybrid_jax_runtime.py -q
       - name: Retain resource limits and pytest timing reports
         if: ${{ always() && env.FQ_CI_REPORT_DIR != '' }}
-        uses: actions/upload-artifact@v4
+        uses: ./.github/actions/upload-artifact
+        timeout-minutes: 6
         with:
           name: cpu-report-${{ github.job }}-${{ strategy.job-index || '0' }}
           path: ${{ env.FQ_CI_REPORT_DIR }}
@@ -2192,14 +2211,16 @@ jobs:
           --fq-shard-count 16 --fq-shard-index ${{ matrix.shard }}
           --cov=flagquantum
           --cov-report=
-      - uses: actions/upload-artifact@v4
+      - uses: ./.github/actions/upload-artifact
+        timeout-minutes: 6
         with:
           name: coverage-shard-${{ matrix.shard }}-${{ github.sha }}
           path: .coverage.${{ matrix.shard }}
           include-hidden-files: true
       - name: Retain resource limits and pytest timing reports
         if: ${{ always() && env.FQ_CI_REPORT_DIR != '' }}
-        uses: actions/upload-artifact@v4
+        uses: ./.github/actions/upload-artifact
+        timeout-minutes: 6
         with:
           name: cpu-report-${{ github.job }}-${{ strategy.job-index || '0' }}
           path: ${{ env.FQ_CI_REPORT_DIR }}
@@ -2315,13 +2336,15 @@ jobs:
           python -m coverage xml
       - name: Enforce coverage policy
         run: python tools/check_coverage.py
-      - uses: actions/upload-artifact@v4
+      - uses: ./.github/actions/upload-artifact
+        timeout-minutes: 6
         with:
           name: coverage-${{ github.sha }}
           path: coverage.xml
       - name: Retain resource limits and pytest timing reports
         if: ${{ always() && env.FQ_CI_REPORT_DIR != '' }}
-        uses: actions/upload-artifact@v4
+        uses: ./.github/actions/upload-artifact
+        timeout-minutes: 6
         with:
           name: cpu-report-${{ github.job }}-${{ strategy.job-index || '0' }}
           path: ${{ env.FQ_CI_REPORT_DIR }}
@@ -2421,13 +2444,15 @@ jobs:
         run: cyclonedx-py environment --output-format JSON --output-file sbom.cdx.json
       - name: Validate SBOM
         run: python tools/validate_sbom.py sbom.cdx.json
-      - uses: actions/upload-artifact@v4
+      - uses: ./.github/actions/upload-artifact
+        timeout-minutes: 6
         with:
           name: sbom-${{ github.sha }}
           path: sbom.cdx.json
       - name: Retain resource limits and pytest timing reports
         if: ${{ always() && env.FQ_CI_REPORT_DIR != '' }}
-        uses: actions/upload-artifact@v4
+        uses: ./.github/actions/upload-artifact
+        timeout-minutes: 6
         with:
           name: cpu-report-${{ github.job }}-${{ strategy.job-index || '0' }}
           path: ${{ env.FQ_CI_REPORT_DIR }}
