@@ -1013,3 +1013,28 @@ within a six-minute upload step budget. Each retry replaces only that job
 artifact, including any partial upload. Persistent failure still fails the job;
 tests are not automatically retried. Job/matrix-unique names prevent one job
 from replacing another job artifact.
+
+
+### Filling the existing CPU allocation
+
+The coverage planner collects the original marker selection once, then assigns
+whole test files by estimated duration to at most 192 nonempty shards for trusted
+PRs (16 on hosted/manual runs). Each selected node appears exactly once in the
+plan. Shards verify the source SHA and content digest before running their explicit
+node list. Keeping files together avoids full-repository collection on every
+worker. The final coverage gate requires exactly the planned number of valid
+SQLite inputs; failed or missing shards remain failures.
+
+The offline action measures the runner service before entering Docker. Containers
+inherit that CPU and memory budget and receive explicit CPU, memory, and affinity
+limits, including on shared Docker daemons. Recognized MC550, BW1100, and A800 CPU
+slot services use their own finite quota without reserving half of it again.
+No runner service quota or host allocation is increased.
+
+Resource artifacts include `test-usage.json`, which records pytest wall time,
+process CPU seconds including xdist children, and utilization relative to the
+assigned CI CPU quota. Whole-host CPU percentage is a different denominator:
+BW1100's existing CI slots account for about 16.7% of its logical CPUs and MC550's
+for about 40%. Idle time after the runnable test backlog drains is expected;
+runner occupancy alone does not prove improved throughput. Compare elapsed test
+time, CPU usage, queueing, and the unchanged correctness gates together.

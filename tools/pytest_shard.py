@@ -10,6 +10,9 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
+import resource
+import time
 from pathlib import Path
 
 import pytest
@@ -17,6 +20,7 @@ import pytest
 ROOT = Path(__file__).resolve().parents[1]
 DURATION_HINTS = ROOT / "contracts" / "pytest-duration-hints.json"
 EXPECTED_HINT_SCHEMA = "flagquantum_pytest_duration_hints_v1"
+USAGE_START: pytest.StashKey[tuple[float, float]] = pytest.StashKey()
 
 
 def shard_for(nodeid: str, count: int) -> int:
@@ -81,9 +85,12 @@ def pytest_addoption(parser: pytest.Parser) -> None:
     group = parser.getgroup("flagquantum-sharding")
     group.addoption("--fq-shard-count", type=int, default=1)
     group.addoption("--fq-shard-index", type=int, default=0)
+    group.addoption("--fq-write-coverage-plan", type=Path)
+    group.addoption("--fq-coverage-plan-count", type=int, default=16)
 
 
 def pytest_configure(config: pytest.Config) -> None:
+    config.stash[USAGE_START] = (time.monotonic(), _cpu_seconds())
     count = int(config.getoption("--fq-shard-count"))
     index = int(config.getoption("--fq-shard-index"))
     if count < 1:
@@ -98,6 +105,16 @@ def pytest_configure(config: pytest.Config) -> None:
 def pytest_collection_modifyitems(
     config: pytest.Config, items: list[pytest.Item]
 ) -> None:
+    if directory := config.getoption("--fq-write-coverage-plan"):
+        from tools.ci_coverage_plan import write_plan
+
+        if not config.option.collectonly or hasattr(config, "workerinput"):
+            raise pytest.UsageError("Coverage planning requires serial --collect-only")
+        write_plan(
+            tuple(item.nodeid for item in items),
+            directory,
+            int(config.getoption("--fq-coverage-plan-count")),
+        )
     count = int(config.getoption("--fq-shard-count"))
     if count == 1:
         return
@@ -113,3 +130,35 @@ def pytest_collection_modifyitems(
     deselected = [item for item in items if assignments[item.nodeid] != index]
     items[:] = selected
     config.hook.pytest_deselected(items=deselected)
+
+
+def _cpu_seconds() -> float:
+    own = resource.getrusage(resource.RUSAGE_SELF)
+    children = resource.getrusage(resource.RUSAGE_CHILDREN)
+    return own.ru_utime + own.ru_stime + children.ru_utime + children.ru_stime
+
+
+def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:
+    """Record consumed process CPU against the assigned CI quota, including workers."""
+    if hasattr(session.config, "workerinput"):
+        return
+    report_directory = os.environ.get("FQ_CI_REPORT_DIR")
+    if not report_directory:
+        return
+    directory = Path(report_directory)
+    budget = json.loads((directory / "resources.json").read_text())
+    started, cpu_started = session.config.stash[USAGE_START]
+    elapsed = time.monotonic() - started
+    cpu_seconds = _cpu_seconds() - cpu_started
+    assigned_cpus = budget["effective_cpus"] / budget["shared_registrations_budgeted"]
+    payload = {
+        "wall_seconds": elapsed,
+        "process_cpu_seconds": cpu_seconds,
+        "assigned_ci_cpus": assigned_cpus,
+        "ci_quota_utilization_percent": 100 * cpu_seconds / (elapsed * assigned_cpus),
+        "collected_tests": session.testscollected,
+        "failed_tests": session.testsfailed,
+        "exit_status": int(exitstatus),
+    }
+    (directory / "test-usage.json").write_text(json.dumps(payload, indent=2) + "\n")
+    print("CI quota usage: " + json.dumps(payload), flush=True)

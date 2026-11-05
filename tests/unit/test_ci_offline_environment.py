@@ -16,8 +16,9 @@ ROOT = Path(__file__).resolve().parents[2]
 @pytest.mark.skipif(os.name == "nt", reason="The CPU container wrapper requires bash")
 @pytest.mark.parametrize("binary", ["python", "torchrun"])
 @pytest.mark.parametrize("cached_wheels", [False, True])
+@pytest.mark.parametrize("host_budget", [False, True])
 def test_container_wrapper_preserves_offline_runtime_and_read_only_wheels(
-    tmp_path: Path, binary: str, cached_wheels: bool
+    tmp_path: Path, binary: str, cached_wheels: bool, host_budget: bool
 ) -> None:
     commands = tmp_path / "commands"
     commands.mkdir()
@@ -37,6 +38,17 @@ def test_container_wrapper_preserves_offline_runtime_and_read_only_wheels(
     wheels = tmp_path / "certified wheels"
     for directory in (workspace, temporary, wheels):
         directory.mkdir()
+    budget = temporary / "host-budget.json"
+    budget.write_text(
+        json.dumps(
+            {
+                "effective_cpus": 4,
+                "memory_limit_bytes": 16 * 1024**3,
+                "affinity": [4, 5, 84, 85],
+                "shared_registrations_budgeted": 1,
+            }
+        )
+    )
     private = temporary / "private"
     image = "ghcr.io/flagos-ai/flagquantum-ci@sha256:" + "1" * 64
     arguments = (
@@ -52,6 +64,7 @@ def test_container_wrapper_preserves_offline_runtime_and_read_only_wheels(
             "GITHUB_WORKSPACE": str(workspace),
             "RUNNER_TEMP": str(temporary),
             "FQ_CI_PRIVATE": str(private),
+            "FQ_CI_HOST_BUDGET": str(budget) if host_budget else "",
             "FQ_CI_CONTAINER_USER": "0:0",
             "FQ_CI_IMAGE": image,
             "FQ_CI_WHEEL_DIRECTORY": str(wheels) if cached_wheels else "",
@@ -64,6 +77,12 @@ def test_container_wrapper_preserves_offline_runtime_and_read_only_wheels(
     )
     actual = json.loads(log.read_text())
     assert actual[:2] == ["run", "--rm"]
+    if host_budget:
+        assert actual[actual.index("--cpus") + 1] == "4.0"
+        assert actual[actual.index("--memory") + 1] == str(16 * 1024**3)
+        assert actual[actual.index("--cpuset-cpus") + 1] == "4,5,84,85"
+    else:
+        assert "--cpus" not in actual
     assert actual[actual.index("--network") + 1] == "none"
     assert actual[actual.index("--pull") + 1] == "never"
     assert "--read-only" in actual

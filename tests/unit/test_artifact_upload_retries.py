@@ -89,6 +89,12 @@ def test_workflow_uploads_have_budgets_and_unique_names_for_every_matrix_leg() -
         ]
         for job_name, job in jobs.items():
             matrix = job.get("strategy", {}).get("matrix", {})
+            if matrix == "${{ fromJSON(needs.coverage-plan.outputs.matrix) }}":
+                matrix = {
+                    "include": [
+                        {"shard": i, "hosted-bucket": i % 8} for i in range(192)
+                    ]
+                }
             rows = matrix.get("include") or [
                 dict(zip(matrix, row, strict=True)) for row in product(*matrix.values())
             ]

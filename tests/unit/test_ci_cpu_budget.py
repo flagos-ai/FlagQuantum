@@ -9,6 +9,11 @@ from tools.ci_cpu_budget import GIB, controller_directories, read_limits, select
 pytestmark = pytest.mark.unit
 
 
+@pytest.fixture(autouse=True)
+def isolate_inherited_runner_budget(monkeypatch):
+    monkeypatch.delenv("FQ_CI_HOST_BUDGET", raising=False)
+
+
 @pytest.mark.parametrize(
     ("cpus", "memory_gib", "shared", "expected"),
     [
@@ -153,6 +158,15 @@ def test_launcher_budget_accounts_for_nested_eight_rank_processes(
     [
         ("fqmc-cpu01.service", "400000 100000", 16, 4, True),
         ("fqmc-cpu16.service", "150000 100000", 16, 1, True),
+        ("fq-bw1100-pilot-runner.service", "400000 100000", 24, 4, True),
+        ("fq-bw1100-cpu16-runner.service", "400000 100000", 24, 4, True),
+        (
+            "actions.runner.flagos-ai-FlagQuantum.a800-171-flagquantum-cpu-1.service",
+            "1200000 100000",
+            64,
+            12,
+            True,
+        ),
         ("fqmc-cpu08.service", "400000 100000", 4, 2, True),
         ("fqmc-cpu99.service", "400000 100000", 16, 2, False),
         ("shared-runner.service", "400000 100000", 16, 2, False),
@@ -220,3 +234,48 @@ def test_isolated_launcher_budget_fits_all_child_ranks(
         select_distributed_workers(cpus, memory_gib * GIB, shared, dedicated=True)
         == expected
     )
+
+
+def test_container_inherits_stricter_host_service_budget(tmp_path, monkeypatch):
+    import json
+
+    from tools import ci_cpu_budget as budget
+
+    host = tmp_path / "host.json"
+    host.write_text(
+        json.dumps(
+            {
+                "runner": "cpu01",
+                "effective_cpus": 4,
+                "memory_limit_bytes": 16 * GIB,
+                "dedicated_service": True,
+            }
+        )
+    )
+    group = tmp_path / "container"
+    group.mkdir()
+    (group / "cpu.max").write_text("max 100000")
+    (group / "memory.max").write_text("max")
+    monkeypatch.setattr(
+        budget, "controller_directories", lambda: {"cpu": [group], "memory": [group]}
+    )
+    monkeypatch.setattr(
+        budget.os, "sched_getaffinity", lambda _: set(range(64)), raising=False
+    )
+    monkeypatch.setenv("RUNNER_ENVIRONMENT", "self-hosted")
+    monkeypatch.setenv("RUNNER_NAME", "cpu01")
+    monkeypatch.setenv("FQ_CI_HOST_BUDGET", str(host))
+    monkeypatch.setenv("RUNNER_TEMP", str(tmp_path))
+    monkeypatch.setenv("GITHUB_ENV", str(tmp_path / "env"))
+    monkeypatch.delenv("GITHUB_STEP_SUMMARY", raising=False)
+    budget.main()
+    report = json.loads(
+        next(tmp_path.glob("fq-ci-report-*/resources.json")).read_text()
+    )
+    assert report["effective_cpus"] == 4
+    assert report["memory_limit_bytes"] == 16 * GIB
+    assert report["workers"] == 4
+    assert f"FQ_CI_HOST_BUDGET={host}\n" in (tmp_path / "env").read_text()
+    monkeypatch.setenv("RUNNER_NAME", "cpu02")
+    with pytest.raises(RuntimeError, match="another runner"):
+        budget.main()
