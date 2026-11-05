@@ -181,6 +181,33 @@ def _translate(
     return matching, carried
 
 
+def _check_batch_input(detection_events: torch.Tensor, detectors: int) -> None:
+    if not isinstance(detection_events, torch.Tensor):
+        raise TypeError("detection_events must be a torch.Tensor")
+    if detection_events.layout != torch.strided:
+        raise TypeError("detection_events must be a dense strided tensor")
+    if detection_events.dtype not in (
+        torch.bool,
+        torch.uint8,
+        torch.uint16,
+        torch.uint32,
+        torch.uint64,
+        torch.int8,
+        torch.int16,
+        torch.int32,
+        torch.int64,
+    ):
+        raise TypeError("detection_events must have bool or integer dtype")
+    if detection_events.device.type != "cpu":
+        raise CapabilityError("batch matching accepts CPU tensors only")
+    if detection_events.ndim != 2:
+        raise ValueError("detection_events must have shape (shots, detectors)")
+    if detection_events.shape[1] != detectors:
+        raise ValueError(f"detection_events must have {detectors} detector columns")
+    if not bool(((detection_events == 0) | (detection_events == 1)).all()):
+        raise ValueError("detection_events must contain only binary values 0 and 1")
+
+
 @dataclass(frozen=True)
 class PyMatchingDecoder:
     """Decode a syndrome with PyMatching, to cross-check the in-tree matcher.
@@ -294,32 +321,7 @@ class PyMatchingDecoder:
             ...     result = decoder.decode_batch(torch.tensor([[0], [1]]))
             ...     assert result.tolist() == [[False], [True]]
         """
-        if not isinstance(detection_events, torch.Tensor):
-            raise TypeError("detection_events must be a torch.Tensor")
-        if detection_events.layout != torch.strided:
-            raise TypeError("detection_events must be a dense strided tensor")
-        if detection_events.dtype not in (
-            torch.bool,
-            torch.uint8,
-            torch.uint16,
-            torch.uint32,
-            torch.uint64,
-            torch.int8,
-            torch.int16,
-            torch.int32,
-            torch.int64,
-        ):
-            raise TypeError("detection_events must have bool or integer dtype")
-        if detection_events.device.type != "cpu":
-            raise CapabilityError("batch matching accepts CPU tensors only")
-        if detection_events.ndim != 2:
-            raise ValueError("detection_events must have shape (shots, detectors)")
-        if detection_events.shape[1] != self.graph.num_detectors:
-            raise ValueError(
-                f"detection_events must have {self.graph.num_detectors} detector columns"
-            )
-        if not bool(((detection_events == 0) | (detection_events == 1)).all()):
-            raise ValueError("detection_events must contain only binary values 0 and 1")
+        _check_batch_input(detection_events, self.graph.num_detectors)
         shots = detection_events.shape[0]
         if shots == 0:
             return torch.empty((0, self.graph.num_observables), dtype=torch.bool)
@@ -342,6 +344,119 @@ class PyMatchingDecoder:
         if not bool(((result == 0) | (result == 1)).all()):
             raise CapabilityError("PyMatching returned nonbinary predictions")
         return result.to(dtype=torch.bool, device="cpu").clone()
+
+    def decode_batch_with_weights(
+        self,
+        detection_events: torch.Tensor,
+        *,
+        bit_packed_shots: bool = False,
+        bit_packed_predictions: bool = False,
+    ) -> tuple[torch.Tensor, torch.Tensor]:
+        """Return logical predictions and SDK matching weights from one batch call.
+
+        Dense input uses the existing binary CPU contract. Packed input uses
+        CPU uint8 bytes, least-significant bit first, with zero unused padding.
+        Both outputs own their storage. SDK weights are CPU float64, not the
+        recomputed selected-edge sums in complete matching records.
+
+        Raises:
+            TypeError: Flags or input carrier/dtype/layout are invalid.
+            ValueError: Input shape, values or packed padding is invalid.
+            CapabilityError: Input device, SDK decoding or returned buffers
+                violate the contract. No partial result is returned.
+
+        Examples:
+            >>> from importlib.util import find_spec
+            >>> import torch
+            >>> from flagquantum.qec import DemError, DetectorErrorModel
+            >>> if find_spec("pymatching") is not None:
+            ...     model = DetectorErrorModel(1, 1, (DemError(0.125, (0,), (0,)),))
+            ...     decoder = PyMatchingDecoder.from_detector_error_model(model)
+            ...     bits, weights = decoder.decode_batch_with_weights(
+            ...         torch.tensor([[0], [1]], dtype=torch.uint8)
+            ...     )
+            ...     assert bits.tolist() == [[False], [True]]
+            ...     assert weights.shape == (2,) and weights[0] == 0
+        """
+        if (
+            type(bit_packed_shots) is not bool
+            or type(bit_packed_predictions) is not bool
+        ):
+            raise TypeError("packed flags must be bool")
+        if bit_packed_shots:
+            if not isinstance(detection_events, torch.Tensor):
+                raise TypeError("detection_events must be a torch.Tensor")
+            if (
+                detection_events.layout != torch.strided
+                or detection_events.dtype != torch.uint8
+            ):
+                raise TypeError("packed detection_events must be a dense uint8 tensor")
+            if detection_events.device.type != "cpu":
+                raise CapabilityError("batch matching accepts CPU tensors only")
+            width = (self.graph.num_detectors + 7) // 8
+            if detection_events.ndim != 2 or detection_events.shape[1] != width:
+                raise ValueError(
+                    f"packed detection_events must have shape (shots, {width})"
+                )
+            remainder = self.graph.num_detectors % 8
+            if remainder and bool((detection_events[:, -1] >> remainder).any()):
+                raise ValueError("unused packed detector padding bits must be zero")
+        else:
+            _check_batch_input(detection_events, self.graph.num_detectors)
+        shots = detection_events.shape[0]
+        columns = (
+            (self.graph.num_observables + 7) // 8
+            if bit_packed_predictions
+            else self.graph.num_observables
+        )
+        dtype = torch.uint8 if bit_packed_predictions else torch.bool
+        if shots == 0:
+            return torch.empty((0, columns), dtype=dtype), torch.empty(
+                0, dtype=torch.float64
+            )
+        syndrome = detection_events.to(dtype=torch.uint8, copy=True).contiguous()
+        try:
+            raw = self._matching.decode_batch(
+                syndrome.numpy(),
+                return_weights=True,
+                bit_packed_shots=bit_packed_shots,
+                bit_packed_predictions=bit_packed_predictions,
+            )
+        except ValueError as exc:
+            raise CapabilityError(
+                f"PyMatching could not decode the weighted batch: {exc}"
+            ) from exc
+        if not isinstance(raw, tuple) or len(raw) != 2:
+            raise CapabilityError("PyMatching returned an invalid weighted result pair")
+        try:
+            predictions, weights = (torch.as_tensor(item) for item in raw)
+        except (TypeError, ValueError, RuntimeError) as exc:
+            raise CapabilityError(
+                "PyMatching returned an invalid weighted buffer"
+            ) from exc
+        if (
+            predictions.device.type != "cpu"
+            or predictions.layout != torch.strided
+            or predictions.dtype != torch.uint8
+            or predictions.shape != (shots, columns)
+        ):
+            raise CapabilityError("PyMatching returned invalid weighted predictions")
+        if bit_packed_predictions:
+            remainder = self.graph.num_observables % 8
+            if remainder and bool((predictions[:, -1] >> remainder).any()):
+                raise CapabilityError("PyMatching returned nonzero logical padding")
+        elif not bool(((predictions == 0) | (predictions == 1)).all()):
+            raise CapabilityError("PyMatching returned nonbinary predictions")
+        if (
+            weights.device.type != "cpu"
+            or weights.layout != torch.strided
+            or weights.dtype != torch.float64
+            or weights.shape != (shots,)
+            or not bool(torch.isfinite(weights).all())
+            or bool((weights < 0).any())
+        ):
+            raise CapabilityError("PyMatching returned invalid SDK matching weights")
+        return predictions.to(dtype=dtype).clone(), weights.clone()
 
     def decode(self, detection_events: Iterable[int]) -> MatchingDecodeResult:
         """Return PyMatching's cheapest explanation of a syndrome.

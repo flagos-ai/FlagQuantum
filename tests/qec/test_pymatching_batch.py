@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import math
 from types import SimpleNamespace
+from typing import Any
 from unittest.mock import Mock
 
 import pytest
@@ -97,7 +99,7 @@ def test_no_observables_still_validates_reachability() -> None:
     ],
 )
 def test_invalid_input_fails_before_sdk(
-    decoder: PyMatchingDecoder, events: object, error: type[Exception], message: str
+    decoder: PyMatchingDecoder, events: Any, error: type[Exception], message: str
 ) -> None:
     sdk = Mock()
     object.__setattr__(decoder, "_matching", sdk)
@@ -110,7 +112,7 @@ def test_one_sdk_call_and_buffer_ownership(decoder: PyMatchingDecoder) -> None:
     events = torch.tensor([[1, 0]], dtype=torch.uint8)
     answer = torch.tensor([[1, 0]], dtype=torch.uint8).numpy()
 
-    def decode_batch(buffer: object) -> object:
+    def decode_batch(buffer: Any) -> object:
         buffer[:] = 0
         return answer
 
@@ -132,3 +134,92 @@ def test_sdk_output_is_validated(
     object.__setattr__(decoder, "_matching", sdk)
     with pytest.raises(CapabilityError, match="returned"):
         decoder.decode_batch(torch.tensor([[0, 0]]))
+
+
+@pytest.mark.parametrize(
+    "packed_in,packed_out", [(False, False), (False, True), (True, False), (True, True)]
+)
+@pytest.mark.parametrize("width", [3, 9])
+def test_weighted_batch_has_independent_oracle(
+    width: int, packed_in: bool, packed_out: bool
+) -> None:
+    model = DetectorErrorModel(
+        width,
+        width,
+        tuple(DemError(0.125, (i,), (width - i - 1,)) for i in range(width)),
+    )
+    decoder = PyMatchingDecoder.from_detector_error_model(model)
+    dense = torch.tensor(
+        [[(value >> i) & 1 for i in range(width)] for value in range(8)],
+        dtype=torch.uint8,
+    )
+
+    def pack(bits: torch.Tensor) -> torch.Tensor:
+        result = torch.zeros(
+            (bits.shape[0], (bits.shape[1] + 7) // 8), dtype=torch.uint8
+        )
+        for column in range(bits.shape[1]):
+            result[:, column // 8] |= bits[:, column] << (column % 8)
+        return result
+
+    events = pack(dense) if packed_in else dense
+    predictions, weights = decoder.decode_batch_with_weights(
+        events, bit_packed_shots=packed_in, bit_packed_predictions=packed_out
+    )
+    expected_bits = pack(dense.flip(1)) if packed_out else dense.flip(1).bool()
+    assert torch.equal(predictions, expected_bits)
+    original_weights = dense.sum(1).double() * math.log(7)
+    for row, expected in enumerate(original_weights):
+        tolerance = int(dense[row].sum()) * 2**-23 * max(1.0, float(expected))
+        assert abs(float(weights[row] - expected)) <= tolerance
+    reference = pymatching.Matching()
+    for i in range(width):
+        reference.add_boundary_edge(i, fault_ids=width - i - 1, weight=math.log(7))
+    direct_bits, direct_weights = reference.decode_batch(
+        events.numpy(),
+        return_weights=True,
+        bit_packed_shots=packed_in,
+        bit_packed_predictions=packed_out,
+    )
+    assert torch.equal(predictions, torch.as_tensor(direct_bits).to(predictions.dtype))
+    assert torch.equal(weights, torch.as_tensor(direct_weights))
+    direct_weights.fill(-1)
+    assert bool((weights >= 0).all())
+
+
+def test_weighted_zero_observables_still_decodes() -> None:
+    decoder = PyMatchingDecoder.from_detector_error_model(
+        DetectorErrorModel(1, 0, (DemError(0.125, (0,), ()),))
+    )
+    bits, weights = decoder.decode_batch_with_weights(
+        torch.tensor([[0], [1]], dtype=torch.uint8)
+    )
+    assert bits.shape == (2, 0) and weights.shape == (2,)
+    assert weights[0] == 0 and weights[1] > 0
+
+
+def test_weighted_zero_cost_and_unreachable_syndrome() -> None:
+    decoder = PyMatchingDecoder.from_detector_error_model(
+        DetectorErrorModel(2, 1, (DemError(0.5, (0, 1), (0,)),))
+    )
+    bits, weights = decoder.decode_batch_with_weights(
+        torch.tensor([[0, 0], [1, 1]], dtype=torch.uint8)
+    )
+    assert bits.tolist() == [[False], [True]] and weights.tolist() == [0.0, 0.0]
+    with pytest.raises(CapabilityError):
+        decoder.decode_batch_with_weights(torch.tensor([[1, 0]], dtype=torch.uint8))
+
+
+def test_weighted_ties_do_not_require_a_preferred_logical_prediction() -> None:
+    model = DetectorErrorModel(
+        2,
+        1,
+        (DemError(0.5, (0,), (0,)), DemError(0.5, (1,), ()), DemError(0.5, (0, 1), ())),
+    )
+    decoder = PyMatchingDecoder.from_detector_error_model(model)
+    bits, weights = decoder.decode_batch_with_weights(
+        torch.tensor([[1, 1]], dtype=torch.uint8)
+    )
+    # The pair fault or both boundary faults explain this syndrome at zero cost.
+    assert bits.shape == (1, 1) and bits.dtype == torch.bool
+    assert weights.tolist() == [0.0]

@@ -236,3 +236,11 @@ matrix jobs cancelled and no established cause. It was not retriggered and is
 not reported successful. The [central progress ledger](../roadmap/QEC_STIM_PYMATCHING_DELIVERY_PLAN.md)
 retains these boundaries and the remaining functional work. Decision C stays
 design-only; this completed batch contract does not authorize that implementation.
+
+
+## SDK batch weights
+
+The approved [batch weights method](QEC_PYMATCHING_BATCH_WEIGHTS_API_PROPOSAL.md)
+returns predictions and SDK matching weights from one call. Dense and packed
+layouts are independent choices. SDK weights differ from the double-precision
+selected-edge sums in complete records; neither original contract changes.

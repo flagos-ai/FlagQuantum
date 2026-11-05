@@ -18,5 +18,15 @@
   "zero_observables": "Tensor[B,0], with reachability still checked",
   "failure": "Atomic CapabilityError on SDK decode failure; no partial predictions",
   "consumer": "tests/qec/test_restructure_compatibility.py",
-  "conformance_tests": "tests/qec/test_pymatching_batch.py"
+  "conformance_tests": "tests/qec/test_pymatching_batch.py",
+  "sdk_batch_weights_extension": {
+    "approval": {
+      "date": "2026-11-05",
+      "scope": "Explicit user approval of eight-path SDK batch weights proposal"
+    },
+    "method": "PyMatchingDecoder.decode_batch_with_weights(self, detection_events: torch.Tensor, *, bit_packed_shots: bool = False, bit_packed_predictions: bool = False) -> tuple[torch.Tensor, torch.Tensor]",
+    "weights": "Owned finite nonnegative CPU float64[B] SDK-reported weights, distinct from full-record selected-edge sums",
+    "proposal": "docs/development/QEC_PYMATCHING_BATCH_WEIGHTS_API_PROPOSAL.md",
+    "status": "candidate_pending_acceptance"
+  }
 }

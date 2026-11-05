@@ -717,3 +717,13 @@ changed. Zero-noise PyMatching isolated-detector refusal remains explicit.
 Focused correctness and actual-SDK acceptance are in progress; exact-head full
 CI/GPU, reviews/rules, normal pinned merge and exact merge/Main smoke acceptance
 are still required. No performance, threshold, GPU or capacity claim is made.
+
+
+## Full parity: SDK batch weights candidate
+
+`PyMatchingDecoder.decode_batch_with_weights` is an approved implementation
+candidate for PyMatching 2.4.0 return_weights with all four bit-layout choices.
+SDK weights retain their own precision and originate from the same call as
+predictions. Local conformance and main acceptance remain separately recorded;
+this entry does not certify native matching or full upstream parity. PR1087 and
+PR1090 are independent unaccepted candidates and are not branch dependencies.

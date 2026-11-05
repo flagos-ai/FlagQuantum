@@ -134,6 +134,32 @@ def _exercise(profile: str) -> list[dict[str, object]]:
     return records
 
 
+def _exercise_sdk_weights(profile: str) -> dict[str, object] | None:
+    if not PROFILES[profile][1]:
+        return None
+    import torch
+
+    from flagquantum.qec import DemError, DetectorErrorModel, PyMatchingDecoder
+
+    decoder = PyMatchingDecoder.from_detector_error_model(
+        DetectorErrorModel(3, 3, tuple(DemError(0.125, (i,), (i,)) for i in range(3)))
+    )
+    dense = torch.tensor([[0, 0, 0], [1, 0, 0], [1, 1, 1]], dtype=torch.uint8)
+    for packed_in in (False, True):
+        events = (
+            torch.tensor([[0], [1], [7]], dtype=torch.uint8) if packed_in else dense
+        )
+        for packed_out in (False, True):
+            bits, costs = decoder.decode_batch_with_weights(
+                events, bit_packed_shots=packed_in, bit_packed_predictions=packed_out
+            )
+            expected = [[0], [1], [7]] if packed_out else dense.bool().tolist()
+            assert bits.tolist() == expected
+            assert costs.dtype == torch.float64 and costs.shape == (3,)
+            assert bool(torch.isfinite(costs).all()) and costs[0] == 0 and costs[1] > 0
+    return {"shots": 3, "layouts": 4, "weight_source": "sdk_matching"}
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("profile", choices=PROFILES)
@@ -183,6 +209,7 @@ def main() -> int:
                     if present
                 },
                 "cells": records,
+                "sdk_weighted_batches": _exercise_sdk_weights(args.profile),
             },
             sort_keys=True,
         )
