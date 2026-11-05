@@ -7,11 +7,16 @@ import json
 import subprocess
 import sys
 from pathlib import Path
+from unittest.mock import Mock
 
 import pytest
+import torch
 
+from flagquantum.errors import CapabilityError
+from flagquantum.qec import PyMatchingDecoder
+from flagquantum.qec.dem.graph import DecodingGraph
 from tools.check_qec_installed_profiles import _run
-from tools.qec_installed_smoke import PROFILES, _exercise
+from tools.qec_installed_smoke import PROFILES, _exercise, _exercise_packed_predictions
 
 pytestmark = pytest.mark.unit
 
@@ -23,6 +28,8 @@ def test_public_workflow_in_the_available_source_profile(profile: str) -> None:
     )
     if available != PROFILES[profile]:
         pytest.skip("this source environment does not have that real SDK configuration")
+    packed = _exercise_packed_predictions(profile)
+    assert packed == ([[0], [1], [2], [4], [7]] if available[1] else None)
     records = _exercise(profile)
     assert len(records) == (4 if available[0] else 0)
     for record in records:
@@ -94,3 +101,98 @@ def test_hanging_child_is_bounded_and_its_log_is_retained(tmp_path: Path) -> Non
             seconds=1,
         )
     assert "started" in log.read_text()
+
+
+def _packed_fake(
+    monkeypatch: pytest.MonkeyPatch, observables: int = 9
+) -> tuple[PyMatchingDecoder, Mock]:
+    decoder = object.__new__(PyMatchingDecoder)
+    sdk = Mock()
+    object.__setattr__(decoder, "graph", DecodingGraph(9, observables))
+    object.__setattr__(decoder, "_matching", sdk)
+    # A controlled boundary stand-in keeps validation independent of NumPy/SDK.
+    monkeypatch.setattr(torch.Tensor, "numpy", lambda self: self)
+    return decoder, sdk
+
+
+def test_packed_owns_input_and_output(monkeypatch: pytest.MonkeyPatch) -> None:
+    decoder, sdk = _packed_fake(monkeypatch)
+
+    def predict(
+        buffer: torch.Tensor, *, bit_packed_shots: bool, bit_packed_predictions: bool
+    ) -> torch.Tensor:
+        assert bit_packed_shots and bit_packed_predictions
+        buffer.fill_(0)
+        return buffer
+
+    sdk.decode_batch.side_effect = predict
+    backing = torch.tensor([[1, 99, 1, 99], [2, 99, 0, 99]], dtype=torch.uint8)
+    events = backing[:, ::2]
+    before = backing.clone()
+    result = decoder.decode_packed_batch(events)
+    assert torch.equal(backing, before)
+    assert result.tolist() == [[0, 0], [0, 0]]
+    assert result.data_ptr() != sdk.decode_batch.call_args.args[0].data_ptr()
+    sdk.decode_batch.assert_called_once()
+
+
+@pytest.mark.parametrize(
+    "events,exception",
+    [
+        (None, TypeError),
+        (torch.zeros((1, 2), dtype=torch.bool), TypeError),
+        (torch.zeros((1, 2), dtype=torch.int64), TypeError),
+        (torch.zeros(2, dtype=torch.uint8), ValueError),
+        (torch.zeros((1, 3), dtype=torch.uint8), ValueError),
+        (torch.tensor([[0, 2]], dtype=torch.uint8), ValueError),
+        (torch.empty((1, 2), dtype=torch.uint8, device="meta"), CapabilityError),
+    ],
+)
+def test_packed_refuses_before_sdk(
+    monkeypatch: pytest.MonkeyPatch, events: torch.Tensor, exception: type[Exception]
+) -> None:
+    decoder, sdk = _packed_fake(monkeypatch)
+    with pytest.raises(exception):
+        decoder.decode_packed_batch(events)
+    sdk.decode_batch.assert_not_called()
+
+
+@pytest.mark.parametrize(
+    "answer",
+    [
+        torch.zeros((1, 2), dtype=torch.int64),
+        torch.zeros((1, 1), dtype=torch.uint8),
+        torch.tensor([[0, 2]], dtype=torch.uint8),
+        torch.empty((1, 2), dtype=torch.uint8, device="meta"),
+        object(),
+    ],
+)
+def test_packed_rejects_malformed_sdk(
+    monkeypatch: pytest.MonkeyPatch, answer: object
+) -> None:
+    decoder, sdk = _packed_fake(monkeypatch)
+    sdk.decode_batch.return_value = answer
+    with pytest.raises(CapabilityError):
+        decoder.decode_packed_batch(torch.zeros((1, 2), dtype=torch.uint8))
+
+
+def test_packed_empty_and_zero_observables(monkeypatch: pytest.MonkeyPatch) -> None:
+    decoder, sdk = _packed_fake(monkeypatch, observables=0)
+    assert decoder.decode_packed_batch(
+        torch.empty((0, 2), dtype=torch.uint8)
+    ).shape == (0, 0)
+    sdk.decode_batch.assert_not_called()
+    sdk.decode_batch.return_value = torch.empty((2, 0), dtype=torch.uint8)
+    assert decoder.decode_packed_batch(
+        torch.zeros((2, 2), dtype=torch.uint8)
+    ).shape == (2, 0)
+    sdk.decode_batch.assert_called_once()
+
+
+def test_packed_sdk_error_retains_cause(monkeypatch: pytest.MonkeyPatch) -> None:
+    decoder, sdk = _packed_fake(monkeypatch)
+    error = ValueError("no perfect matching")
+    sdk.decode_batch.side_effect = error
+    with pytest.raises(CapabilityError) as caught:
+        decoder.decode_packed_batch(torch.zeros((1, 2), dtype=torch.uint8))
+    assert caught.value.__cause__ is error

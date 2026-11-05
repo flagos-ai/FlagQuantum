@@ -236,3 +236,12 @@ matrix jobs cancelled and no established cause. It was not retriggered and is
 not reported successful. The [central progress ledger](../roadmap/QEC_STIM_PYMATCHING_DELIVERY_PLAN.md)
 retains these boundaries and the remaining functional work. Decision C stays
 design-only; this completed batch contract does not authorize that implementation.
+
+
+## Packed SDK logical predictions
+
+The approved [packed method](QEC_PYMATCHING_PACKED_BATCH_API_PROPOSAL.md) adds
+`PyMatchingDecoder.decode_packed_batch` for CPU uint8 LSB-first syndromes.
+It preserves the dense prediction and sparse full-record APIs. Zero unused
+input bits are required; results own their bytes. It is SDK-backed, not native
+replacement or full packed/weighted/correlated upstream parity.

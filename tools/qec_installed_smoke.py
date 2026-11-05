@@ -134,6 +134,31 @@ def _exercise(profile: str) -> list[dict[str, object]]:
     return records
 
 
+def _exercise_packed_predictions(profile: str) -> list[list[int]] | None:
+    if not PROFILES[profile][1]:
+        return None
+    import torch
+
+    from flagquantum.qec import DemError, DetectorErrorModel, PyMatchingDecoder
+
+    model = DetectorErrorModel(
+        3,
+        3,
+        (
+            DemError(0.1, (0,), (0,)),
+            DemError(0.2, (1,), (1,)),
+            DemError(0.3, (2,), (2,)),
+        ),
+    )
+    decoder = PyMatchingDecoder.from_detector_error_model(model)
+    result = decoder.decode_packed_batch(
+        torch.tensor([[0], [1], [2], [4], [7]], dtype=torch.uint8)
+    )
+    expected = [[0], [1], [2], [4], [7]]
+    assert result.tolist() == expected
+    return expected
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("profile", choices=PROFILES)
@@ -183,6 +208,7 @@ def main() -> int:
                     if present
                 },
                 "cells": records,
+                "packed_predictions": _exercise_packed_predictions(args.profile),
             },
             sort_keys=True,
         )

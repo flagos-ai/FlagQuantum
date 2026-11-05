@@ -343,6 +343,78 @@ class PyMatchingDecoder:
             raise CapabilityError("PyMatching returned nonbinary predictions")
         return result.to(dtype=torch.bool, device="cpu").clone()
 
+    def decode_packed_batch(self, detection_events: torch.Tensor) -> torch.Tensor:
+        """Predict logical flips from least-significant-bit-first packed syndromes.
+
+        Input and output are caller-owned CPU uint8 matrices with one byte per
+        eight detector or observable bits. Unused input padding must be zero.
+        Uses PyMatching's packed operation, without recovering correction edges.
+
+        Raises:
+            TypeError: Input is not a dense uint8 Tensor.
+            ValueError: Input rank, byte width or padding is invalid.
+            CapabilityError: Input device or SDK output violates the contract,
+                or the SDK cannot decode the batch.
+
+        Examples:
+            >>> from importlib.util import find_spec
+            >>> import torch
+            >>> from flagquantum.qec import DemError, DetectorErrorModel
+            >>> if find_spec("pymatching") is not None:
+            ...     model = DetectorErrorModel(1, 1, (DemError(0.1, (0,), (0,)),))
+            ...     decoder = PyMatchingDecoder.from_detector_error_model(model)
+            ...     assert decoder.decode_packed_batch(
+            ...         torch.tensor([[0], [1]], dtype=torch.uint8)
+            ...     ).tolist() == [[0], [1]]
+        """
+        if not isinstance(detection_events, torch.Tensor):
+            raise TypeError("detection_events must be a torch.Tensor")
+        if (
+            detection_events.layout != torch.strided
+            or detection_events.dtype != torch.uint8
+        ):
+            raise TypeError("packed detection_events must be a dense uint8 tensor")
+        if detection_events.device.type != "cpu":
+            raise CapabilityError("packed batch matching accepts CPU tensors only")
+        width = (self.graph.num_detectors + 7) // 8
+        if detection_events.ndim != 2 or detection_events.shape[1] != width:
+            raise ValueError(
+                f"packed detection_events must have shape (shots, {width})"
+            )
+        remainder = self.graph.num_detectors % 8
+        if remainder and bool((detection_events[:, -1] >> remainder).any()):
+            raise ValueError("unused packed detector padding bits must be zero")
+        shots = detection_events.shape[0]
+        output_width = (self.graph.num_observables + 7) // 8
+        if shots == 0:
+            return torch.empty((0, output_width), dtype=torch.uint8)
+        syndrome = detection_events.clone().contiguous()
+        try:
+            predicted = self._matching.decode_batch(
+                syndrome.numpy(), bit_packed_shots=True, bit_packed_predictions=True
+            )
+        except ValueError as exc:
+            raise CapabilityError(
+                f"PyMatching could not decode the packed batch: {exc}"
+            ) from exc
+        try:
+            result = torch.as_tensor(predicted)
+        except (TypeError, ValueError, RuntimeError) as exc:
+            raise CapabilityError(
+                "PyMatching returned an invalid packed buffer"
+            ) from exc
+        if (
+            result.device.type != "cpu"
+            or result.layout != torch.strided
+            or result.dtype != torch.uint8
+            or result.shape != (shots, output_width)
+        ):
+            raise CapabilityError("PyMatching returned an invalid packed prediction")
+        remainder = self.graph.num_observables % 8
+        if remainder and bool((result[:, -1] >> remainder).any()):
+            raise CapabilityError("PyMatching returned nonzero logical padding bits")
+        return result.clone()
+
     def decode(self, detection_events: Iterable[int]) -> MatchingDecodeResult:
         """Return PyMatching's cheapest explanation of a syndrome.
 

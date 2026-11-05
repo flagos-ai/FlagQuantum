@@ -717,3 +717,16 @@ changed. Zero-noise PyMatching isolated-detector refusal remains explicit.
 Focused correctness and actual-SDK acceptance are in progress; exact-head full
 CI/GPU, reviews/rules, normal pinned merge and exact merge/Main smoke acceptance
 are still required. No performance, threshold, GPU or capacity claim is made.
+
+
+## Full parity: packed prediction candidate
+
+The full upstream target includes packed batches. The approved eight-path
+candidate adds `PyMatchingDecoder.decode_packed_batch` and installed profile
+acceptance using independent boundary-fault logical labels. Upstream baseline:
+PyMatching 2.4.0, source `6f63b2b9474ba0fa7e511fe52bffdce858a06984`.
+Core-only validation uses controlled SDK buffers; SDK profiles compare packed,
+dense and direct upstream outputs. Actual-main acceptance remains pending.
+Weights, correlated decoding, noncanonical padding and arbitrary graph inputs
+remain separate gaps. PR1087 remains a separate unmerged integration delivery;
+this main-based candidate does not incorporate its branch or certify it.

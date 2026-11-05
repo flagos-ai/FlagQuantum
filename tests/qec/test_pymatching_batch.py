@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from types import SimpleNamespace
+from typing import Any
 from unittest.mock import Mock
 
 import pytest
@@ -97,8 +98,9 @@ def test_no_observables_still_validates_reachability() -> None:
     ],
 )
 def test_invalid_input_fails_before_sdk(
-    decoder: PyMatchingDecoder, events: object, error: type[Exception], message: str
+    decoder: PyMatchingDecoder, events: Any, error: type[Exception], message: str
 ) -> None:
+    # Pytest deliberately supplies invalid carriers at this runtime API boundary.
     sdk = Mock()
     object.__setattr__(decoder, "_matching", sdk)
     with pytest.raises(error, match=message):
@@ -110,7 +112,8 @@ def test_one_sdk_call_and_buffer_ownership(decoder: PyMatchingDecoder) -> None:
     events = torch.tensor([[1, 0]], dtype=torch.uint8)
     answer = torch.tensor([[1, 0]], dtype=torch.uint8).numpy()
 
-    def decode_batch(buffer: object) -> object:
+    def decode_batch(buffer: Any) -> object:
+        # The external SDK owns this mutable NumPy buffer, not a domain carrier.
         buffer[:] = 0
         return answer
 
@@ -132,3 +135,69 @@ def test_sdk_output_is_validated(
     object.__setattr__(decoder, "_matching", sdk)
     with pytest.raises(CapabilityError, match="returned"):
         decoder.decode_batch(torch.tensor([[0, 0]]))
+
+
+@pytest.mark.parametrize("width", [3, 8, 9, 16, 17])
+def test_packed_independent_boundary_oracle(width: int) -> None:
+    model = DetectorErrorModel(
+        width, width, tuple(DemError(0.1, (i,), (width - i - 1,)) for i in range(width))
+    )
+    decoder = PyMatchingDecoder.from_detector_error_model(model)
+    # Every syndrome has a unique boundary correction; reverse its logical bits.
+    dense = torch.tensor(
+        [[(value >> i) & 1 for i in range(width)] for value in range(8)],
+        dtype=torch.uint8,
+    )
+
+    def pack(bits: torch.Tensor) -> torch.Tensor:
+        result = torch.zeros(
+            (bits.shape[0], (bits.shape[1] + 7) // 8), dtype=torch.uint8
+        )
+        for column in range(bits.shape[1]):
+            result[:, column // 8] |= bits[:, column] << (column % 8)
+        return result
+
+    packed = pack(dense)
+    expected = pack(dense.flip(1))
+    result = decoder.decode_packed_batch(packed)
+    assert torch.equal(result, expected)
+    assert torch.equal(pack(decoder.decode_batch(dense).to(torch.uint8)), expected)
+    reference = pymatching.Matching()
+    for i in range(width):
+        reference.add_boundary_edge(i, fault_ids=width - i - 1, weight=1.0)
+    direct = reference.decode_batch(
+        packed.numpy(), bit_packed_shots=True, bit_packed_predictions=True
+    )
+    assert torch.equal(result, torch.as_tensor(direct))
+    direct.fill(0)
+    assert torch.equal(result, expected)
+
+
+def test_packed_sdk_numpy_views_are_owned(
+    monkeypatch: pytest.MonkeyPatch, decoder: PyMatchingDecoder
+) -> None:
+    events = torch.tensor([[1], [2]], dtype=torch.uint8)
+    before = events.clone()
+    sdk = Mock()
+
+    def predict(buffer: torch.Tensor, **options: object) -> object:
+        array = torch.as_tensor(buffer)
+        array.zero_()
+        return array.numpy()
+
+    sdk.decode_batch.side_effect = predict
+    object.__setattr__(decoder, "_matching", sdk)
+    result = decoder.decode_packed_batch(events)
+    assert torch.equal(events, before)
+    assert result.tolist() == [[0], [0]]
+    torch.as_tensor(sdk.decode_batch.call_args.args[0]).fill_(3)
+    assert result.tolist() == [[0], [0]]
+
+
+def test_packed_zero_observables_still_decodes() -> None:
+    decoder = PyMatchingDecoder.from_detector_error_model(
+        DetectorErrorModel(1, 0, (DemError(0.1, (0,), ()),))
+    )
+    result = decoder.decode_packed_batch(torch.tensor([[0], [1]], dtype=torch.uint8))
+    assert result.shape == (2, 0)
+    assert result.dtype == torch.uint8
