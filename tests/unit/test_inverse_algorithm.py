@@ -2,7 +2,6 @@
 
 from collections import Counter
 from math import gcd
-from typing import Any
 
 import pytest
 
@@ -10,17 +9,10 @@ from flagquantum.compiler.registers.inverse_algorithm import (
     inverse_algorithm_ir,
     inverse_algorithm_outputs,
 )
-from flagquantum.compiler.registers.inverse_iteration import inverse_iteration_outputs
 from flagquantum.core.ir import CircuitIR, Instruction
 from tests.unit.algorithms.primitives.multiplexers.test_thc_qrom import _execute_sparse
+from tests.unit.inverse_algorithm_source import walk_inverse_source
 from tests.unit.measurement_checks import certified_and_channel_map
-from tests.unit.register_source_graph import (
-    SourcePorts,
-    SourceResult,
-    walk_source_graph,
-)
-from tests.unit.test_inverse_iteration import layout as iteration_layout
-from tests.unit.test_inverse_iteration import original_iteration
 from tests.unit.test_register_constant_addition import reference_arithmetic_gates
 from tests.unit.test_register_subtraction import assert_source
 
@@ -68,64 +60,12 @@ def original_algorithm(n: int, p: int, adjoint: bool) -> tuple[Instruction, ...]
     if adjoint:
         source = source.adjoint()
 
-    def leaf(
-        bloq: Any, inputs: SourcePorts, desired: SourcePorts
-    ) -> SourceResult | None:
-        nonlocal pool
-        base = getattr(bloq, "subbloq", bloq)
-        name = type(base).__name__
-        if name == "XGate":
-            return (Instruction("x", inputs["q"]),), inputs
-        if name == "_KaliskiIteration":
-            assert base.bitsize == n and base.mod == p
-            reverse = type(bloq).__name__ == "Adjoint"
-            assert reverse == adjoint
-            cu, cv, cr, cs, cm, cf, ct, cw, cbits = iteration_layout(n)
-            if reverse:
-                cr, cw = inverse_iteration_outputs(cr, cw)
-            canonical = dict(
-                u=cu, v=cv, r=cr, s=cs, m=(cm,), f=(cf,), is_terminal=(ct,)
-            )
-            qmap = dict(zip(cw, pool, strict=True))
-            for key, wires in canonical.items():
-                qmap.update(zip(wires, inputs[key], strict=True))
-            cmap = dict(zip(cbits, bits, strict=True))
-            gates = []
-            for gate in original_iteration(n, p, reverse):
-                metadata = dict(gate.metadata)
-                if "classical_bit" in metadata:
-                    metadata["classical_bit"] = cmap[metadata["classical_bit"]]
-                if "conditions" in metadata:
-                    metadata["conditions"] = tuple(
-                        (cmap[b], val) for b, val in metadata["conditions"]
-                    )
-                gates.append(
-                    Instruction(
-                        gate.name,
-                        tuple(qmap[w] for w in gate.wires),
-                        gate.params,
-                        gate.matrix,
-                        metadata,
-                    )
-                )
-            result, pool = inverse_iteration_outputs(inputs["r"], pool, adjoint=reverse)
-            outputs = dict(inputs, r=result)
-            assert all(outputs[k] == val for k, val in desired.items())
-            return tuple(gates), outputs
-        if name in ("XorK", "BitwiseNot", "AddK", "Controlled"):
-            if name == "Controlled":
-                assert type(base.subbloq).__name__ == "XorK"
-            allocations = (*pool[:n], *pool[n : 2 * n - 1]) if name == "AddK" else ()
-            slots = dict(zip(pool[n : 2 * n - 1], bits[: n - 1], strict=True))
-            gates = reference_arithmetic_gates(
-                bloq, inputs, allocations, slots, expected_outputs=inputs
-            )
-            return gates, inputs
-        return None
-
     inputs = dict(u=u, v=v, r=input_r, s=s, m=m, f=(f,), terminal_condition=t)
     desired = dict(inputs, r=r if adjoint else rr)
-    gates, outputs = walk_source_graph(source, inputs, desired, leaf)
+    gates, outputs, pool, freed = walk_inverse_source(
+        source, inputs, desired, n, p, adjoint, pool, bits
+    )
+    assert not freed
     assert outputs == desired
     assert pool == (work if adjoint else ww)
     return gates

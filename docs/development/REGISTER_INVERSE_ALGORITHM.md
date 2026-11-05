@@ -18,7 +18,7 @@ classical slots. The forward input v contains x; every other logical input and
 all work start zero. Valid inputs are zero or units modulo a fitting positive
 odd modulus, with n>=2 and p+1<2**n.
 
-The output r contains **x^-1 * 2**(2n) mod p**, with zero mapped to zero. It is a
+The output r contains `x^-1 * 2^(2n) mod p`, with zero mapped to zero. It is a
 Montgomery-scaled inverse, not an ordinary unscaled inverse. The other words and
 active flag return zero. Marker and terminal words contain the original logical
 history, needed by the inverse; they are not disposable clean scratch. Classical
@@ -114,6 +114,8 @@ neither Qualtran nor NumPy. Complete execution evidence above is provided by the
 sparse primitive tests and all-history certificates, rather than being claimed
 as a dense production execution of that example.
 
-This slice delivers the original full body. The public in-place wrapper with
-explicit junk allocation/free and its output mapping remains a separate G2 slice;
-this does not mark the whole source file or G2 complete.
+This slice delivers the original full body. The public in-place wrapper's
+concrete compute/uncompute path is accepted separately in
+[REGISTER_MODULAR_INVERSE.md](REGISTER_MODULAR_INVERSE.md), including junk
+allocation/free and physical output mapping. Symbolic interfaces and remaining
+inventory are still open; this does not mark the whole source file or G2 complete.
