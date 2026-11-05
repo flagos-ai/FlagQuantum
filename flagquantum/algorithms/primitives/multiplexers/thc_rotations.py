@@ -96,6 +96,10 @@ class THCRotations:
     ) -> None:
         width = len(self.selection)
         modulus = 1 << len(angle_data)
+        traversal_bits: tuple[int, ...] = ()
+        if measurement_bits and not junk:
+            start = measurement_bits[-1] + 1 + (len(carries) if len(carries) > 1 else 0)
+            traversal_bits = tuple(range(start, start + width))
         tables: dict[tuple[int, int], list[int]] = {}
         for address, network in enumerate(self.networks):
             for slot, (left, right, angle) in enumerate(network):
@@ -110,9 +114,21 @@ class THCRotations:
             _, left = table_key
             target, parity = self.target[left : left + 2]
             operands = (parity, *self.selection, *angle_data, *junk, *scratch[:width])
+            lookup_words = tables[table_key]
+            if traversal_bits:
+                # Match upstream traversal over the full address register while
+                # preserving the zero word on FlagQuantum's padded addresses.
+                lookup_words = [
+                    *lookup_words,
+                    *([0] * ((1 << width) - len(lookup_words))),
+                ]
             qrom = Circuit.from_ir(
                 controlled_qrom_ir(
-                    width, len(angle_data), tables[table_key], blocked=bool(junk)
+                    width,
+                    len(angle_data),
+                    lookup_words,
+                    blocked=bool(junk),
+                    traversal_bits=traversal_bits,
                 ),
                 dtype=circuit.dtype,
                 bsz=circuit.bsz,

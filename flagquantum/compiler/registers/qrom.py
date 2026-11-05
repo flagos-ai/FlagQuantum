@@ -21,6 +21,7 @@ def controlled_qrom_ir(
     measurement_bits: tuple[int, ...] = (),
     blocked: bool = False,
     inverse: bool = False,
+    traversal_bits: tuple[int, ...] = (),
 ) -> CircuitIR:
     """Emit lookup, or erase loaded data using X measurement and feedback.
 
@@ -30,6 +31,8 @@ def controlled_qrom_ir(
     Erasure requires the data to still hold the word selected by the same
     enable and address. Unlisted addresses load zero. Classical bits are
     supplied by the caller so the fragment can be placed on any qubits.
+    Supply traversal_bits to use the upstream temporary-AND sequence for
+    an unblocked forward lookup, with one classical bit per traversal wire.
     """
     if width < 1 or data_width < 1 or not 0 < len(words) <= 1 << width:
         raise ValueError(
@@ -44,6 +47,14 @@ def controlled_qrom_ir(
     ):
         raise ValueError("QROM erasure requires a distinct classical bit per data wire")
 
+    if traversal_bits and (
+        blocked
+        or inverse
+        or measurement_bits
+        or len(traversal_bits) != width
+        or len(set(traversal_bits)) != width
+    ):
+        raise ValueError("Measured traversal requires an unblocked forward lookup")
     if blocked or measurement_bits:
         return paired_lookup_ir(
             width,
@@ -64,6 +75,9 @@ def controlled_qrom_ir(
             if words[address] & (1 << (data_width - offset - 1)):
                 instructions.append(Instruction("cx", (predicate, data_start + offset)))
 
+    def same_word(start: int, stop: int) -> bool:
+        return all(words[index] == words[start] for index in range(start + 1, stop))
+
     append_unary_iteration(
         instructions,
         operand_count=operand_count,
@@ -71,6 +85,8 @@ def controlled_qrom_ir(
         entries=len(words),
         control_value=1,
         apply_branch=load,
-        coherent=True,
+        coherent=not traversal_bits,
+        break_early=same_word,
+        classical_bits=traversal_bits,
     )
     return CircuitIR(operand_count + width, tuple(instructions))

@@ -171,7 +171,7 @@ def test_select_thc_qrom_phase_gradient(
         .to_ir()
     )
     assert validate_classical_control(ir.instructions, n_qubits=ir.n_wires) == (
-        (16 if blocked else 8) + (7 if upstream_add else 0)
+        (16 if blocked else 11) + (7 if upstream_add else 0)
         if measurement_erasure
         else 0
     )
@@ -179,12 +179,12 @@ def test_select_thc_qrom_phase_gradient(
     assert resources.workspace_qubits == workspace
     assert bool(resources.conditional_counts) == measurement_erasure
     assert resources.fixed_counts.get("measure", 0) == (
-        (64 if blocked else 32) + (28 if upstream_add else 0)
+        (64 if blocked else 46) + (28 if upstream_add else 0)
         if measurement_erasure
         else 0
     )
     assert resources.fixed_counts["ccx"] == (
-        97 if blocked else (113 if measurement_erasure else 129)
+        97 if blocked else (81 if measurement_erasure else 121)
     ) - (64 if upstream_add else 0)
     result = _execute_sparse(
         ir,
@@ -261,4 +261,97 @@ def test_controlled_adder_preserves_complex_superposition() -> None:
         torch.from_numpy(expected_state).expand(8, -1),
         atol=1e-12,
         rtol=0,
+    )
+
+
+@pytest.mark.parametrize(
+    "width,words",
+    [
+        (3, (8, 20, 0, 0, 0, 240, 0, 0)),
+        (3, (248, 236, 0, 0, 0, 16, 0, 0)),
+        (2, (8, 20, 0, 0)),
+        (2, (248, 236, 0, 0)),
+    ],
+)
+def test_measured_qrom_matches_qualtran_thc_angle_tables(
+    width: int, words: tuple[int, ...]
+) -> None:
+    qualtran = pytest.importorskip("qualtran")
+    from importlib.metadata import version
+
+    if version(qualtran.__name__) != "0.7.0":
+        pytest.skip("Gate sequence comparison pins Qualtran 0.7.0")
+    import cirq
+    from qualtran.bloqs.basic_gates import CNOT
+    from qualtran.bloqs.data_loading import QROM
+    from qualtran.cirq_interop import BloqAsCirqGate
+
+    register_width = 1 + width + 8
+    wires = cirq.LineQubit.range(register_width)
+    context = cirq.DecompositionContext(cirq.SimpleQubitManager())
+    qrom = QROM.build_from_data(np.array(words), target_bitsizes=(8,), num_controls=1)
+    gate_names = {
+        cirq.X: "x",
+        cirq.H: "h",
+        cirq.S: "s",
+        cirq.T: "t",
+        cirq.T**-1: "tdg",
+        cirq.CNOT: "cx",
+        cirq.CZ: "cz",
+    }
+    gate_names[BloqAsCirqGate(CNOT())] = "cx"
+    upstream = cirq.decompose(
+        qrom.decompose_from_registers(
+            context=context,
+            control=np.asarray(wires[:1]),
+            selection=np.asarray(wires[1 : 1 + width]),
+            target0_=np.asarray(wires[1 + width :]),
+        ),
+        context=context,
+        keep=lambda op: (
+            op.gate in gate_names
+            or cirq.is_measurement(op)
+            or isinstance(op.gate, cirq.ResetChannel)
+            or isinstance(op, cirq.ClassicallyControlledOperation)
+        ),
+    )
+    labels = {wire: index for index, wire in enumerate(wires)}
+    bits = tuple(range(40, 40 + width))
+    measured = {}
+    expected = []
+    for op in upstream:
+        metadata = {}
+        if isinstance(op, cirq.ClassicallyControlledOperation):
+            (key,) = cirq.control_keys(op)
+            metadata = {"conditions": ((measured[key], 1),)}
+            op = op.without_classical_controls()
+        operands = tuple(labels.setdefault(wire, len(labels)) for wire in op.qubits)
+        if cirq.is_measurement(op):
+            bit = bits[operands[0] - register_width]
+            measured[cirq.measurement_key_obj(op)] = bit
+            metadata = {"is_dynamic": True, "classical_bit": bit}
+            name = "measure"
+        elif isinstance(op.gate, cirq.ResetChannel):
+            name = "reset"
+            metadata = {"is_dynamic": True}
+        else:
+            name = gate_names[op.gate]
+        expected.append((name, operands, metadata))
+
+    ir = controlled_qrom_ir(width, 8, words, traversal_bits=bits)
+    assert [
+        (op.name, op.wires, dict(op.metadata)) for op in ir.instructions
+    ] == expected
+
+    # The padded addresses keep their zero words, including in superposition.
+    source = {
+        label << (ir.n_wires - width - 1): (1j) ** label / sqrt(2 ** (width + 1))
+        for label in range(2 ** (width + 1))
+    }
+    expected_state = {
+        basis | ((words[label % (1 << width)] if label >> width else 0) << width): value
+        for label, (basis, value) in enumerate(source.items())
+    }
+    assert _execute_sparse(ir, source, seed=11) == pytest.approx(
+        expected_state, abs=1e-12
     )

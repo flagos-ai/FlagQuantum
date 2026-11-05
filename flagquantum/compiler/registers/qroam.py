@@ -79,6 +79,13 @@ def paired_lookup_ir(
                     Instruction("cz", (predicate, width), metadata=condition)
                 )
 
+    def same_block(start: int, stop: int) -> bool:
+        first = tuple(words[2 * start : 2 * start + 2])
+        return all(
+            tuple(words[2 * index : 2 * index + 2]) == first
+            for index in range(start + 1, stop)
+        )
+
     append_unary_iteration(
         instructions,
         operand_count=operand_count,
@@ -87,6 +94,7 @@ def paired_lookup_ir(
         control_value=1,
         apply_branch=apply_block,
         coherent=True,
+        break_early=same_block if blocked else None,
     )
     if not inverse and not measurement_bits:
         instructions.extend(swaps)
