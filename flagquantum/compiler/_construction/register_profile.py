@@ -429,6 +429,15 @@ def _verify_body(
         ):
             assert attributes is not None
             attributes = attributes | {"fields", "record_type"}
+        if op.name == "qreg.hidden" and "workspace" in op.attributes:
+            if op.attributes["workspace"] is not True:
+                _fail(
+                    "register.workspace",
+                    "hidden workspace marker must be exactly True",
+                    op,
+                )
+            assert attributes is not None
+            attributes = attributes | {"workspace"}
         if op.name == "qreg.unitary" and "indices" in op.attributes:
             assert attributes is not None
             attributes = attributes | {"indices"}

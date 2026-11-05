@@ -391,3 +391,39 @@ python -m examples.synthesis_quantum_callbacks for the original Qmod, existing
 native qfunc phase-composition and Circuit comparison. This adds no higher-order
 Python qfunc annotations or native phase_oracle export. Evidence is local CPU
 correctness, not a performance or full-corpus claim.
+
+
+## Checked exact amplification and retained work
+
+The private Qmod exact_amplitude_amplification profile accepts one initialized
+zero target of one through seven unsigned bits, a closed sign oracle, a closed
+product-RY preparation and a positive marked-subspace amplitude. It independently
+checks that amplitude against the preparation and predicate mass to absolute
+1e-12. It reduces the Grover angle using a retained hidden ancilla and admits at
+most 32 rounds. The ancilla and any simultaneous Compiler scratch count toward
+max_workspace; its allocation is counted once in total physical width. No early
+release or reset is asserted. Existing hidden semantic data keeps its previous
+accounting. Owned workspace markers must be exactly True.
+
+inplace_prepare_state accepts normalized product probability vectors with
+amplitude L2 factorization defect at most 1e-12. Existing exponential RY angles
+are reusable in this checked composition. Nonproduct/complex preparations,
+quantum captures, consuming/Output callbacks, non-sign oracles, nonzero or
+unproved-zero input, unsupported scopes and over-budget requests refuse.
+Unsigned literal += offsets in -256..256 reduce modulo register width and
+compose the existing +/-1 kernel; they are not a new optimized adder template.
+Zero offsets still check initialization. All physical costs remain budgeted.
+
+The unchanged exact_amplitude_amplification.qmod has independent Circuit and
+analytic full-state acceptance. The unchanged partial_exponential_state_preparation.qmod
+has a supplied amplitude 0.996625424765961 inconsistent with the approximately
+0.9979545784437375 mass of its exp(+x/2), x>=21 preparation. It deliberately
+refuses; a clearly labelled corrected diagnostic copy tests that full path,
+including x += -18, without increasing original coverage. No original parameter
+is silently changed. Run tools/validate_qmod_exact_amplification.py with --case
+exact_amplitude_amplification (or partial_exponential_state_preparation) and
+--output /tmp/amplification.json. The second choice validates the corrected copy
+and the original refusal. Run python -m examples.synthesis_exact_amplification
+for original Qmod, existing native R/phase composition and Circuit comparison.
+Native rounds and its auxiliary output are explicit; this adds no native exact
+amplification export or native for-loop support. Evidence is local CPU correctness.

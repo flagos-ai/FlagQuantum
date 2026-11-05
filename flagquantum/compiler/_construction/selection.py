@@ -332,7 +332,7 @@ def select_register_program(
     position += sum(
         op.results[0].type.parameters[0]
         for op in expanded.body.blocks[0].operations
-        if op.name == "qreg.hidden"
+        if op.name == "qreg.hidden" and not op.attributes.get("workspace", False)
     )
     identities = (
         program.semantic_identity,

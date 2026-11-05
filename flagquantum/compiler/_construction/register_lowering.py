@@ -361,7 +361,7 @@ def schedule_register_program(
     hidden_width = sum(
         register_width(op.results[0])
         for op in program.body.blocks[0].operations
-        if op.name == "qreg.hidden"
+        if op.name == "qreg.hidden" and not op.attributes.get("workspace", False)
     )
     local_width = position - output_width - hidden_width
     instructions: list[Instruction] = []

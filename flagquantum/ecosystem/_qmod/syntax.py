@@ -6,10 +6,13 @@ import re
 from collections.abc import Callable
 from dataclasses import dataclass
 from functools import partial
-from typing import Literal, NoReturn
+from typing import TYPE_CHECKING, Literal, NoReturn
 
 from ...compiler._hybrid.model import SourceLocation
 from ...compiler._hybrid.verifier import Diagnostic, HybridVerificationError
+
+if TYPE_CHECKING:
+    from .amplification import Amplification
 
 MAX_BYTES = 524288
 MAX_TOKENS = 65536
@@ -36,6 +39,7 @@ _RESERVED = frozenset(
         "false",
     }
 )
+PREPARATIONS = {"prepare_amplitudes", "prepare_state", "inplace_prepare_state"}
 EXTREMA = frozenset({"min", "max"})
 _COMPARISONS = frozenset({"==", "!=", "<", "<=", ">", ">="})
 
@@ -154,6 +158,7 @@ class Statement:
     map_callback: tuple[Token, tuple[Statement, ...]] | None = None
     oracle_callback: tuple[Token, tuple[Statement, ...]] | None = None
     predicate_callback: tuple[Token, Token, tuple[Statement, ...]] | None = None
+    amplification: Amplification | None = None
 
 
 @dataclass(frozen=True)
@@ -782,10 +787,6 @@ class Parser:
                     allow_fixed_array=role in {"inout", "output", "const"}
                     or name.text == "main",
                 )
-            if role == "const" and width is None and kind not in {"qbit[]", "qnum"}:
-                reject(
-                    parameter, "width", "Const qnum requires an explicit unsigned width"
-                )
             parameters.append(Parameter(parameter, kind, width, role, record))
             if self.current.text != ",":
                 break
@@ -1048,12 +1049,12 @@ class Parser:
                         args.append(self.literal_array(self.linear_rotation_basis))
                     elif target.text == "single_pauli_exponent":
                         args.append(self.literal_array(self.pauli_axis))
-                    elif target.text in {"prepare_amplitudes", "prepare_state"}:
+                    elif target.text in PREPARATIONS:
                         args.append(
                             self.literal_array(
                                 partial(
                                     self.preparation_literal,
-                                    allow_fraction=target.text == "prepare_state",
+                                    allow_fraction=target.text != "prepare_amplitudes",
                                 )
                             )
                             if self.current.text == "["

@@ -33,6 +33,7 @@ from ...compiler._hybrid.model import (
     ValueId,
 )
 from ...compiler._hybrid.verifier import Diagnostic, HybridVerificationError
+from .amplification import expand_amplification, lower_amplification, product_angles
 from .decisions import lower_decision_phase
 from .integers import checked_integer, checked_integer_array
 from .oracles import expand_static_oracles
@@ -82,6 +83,8 @@ _INTRINSICS = (
         "control",
         "prepare_ghz_state",
         "prepare_exponential_state",
+        "inplace_prepare_state",
+        "exact_amplitude_amplification",
         "prepare_amplitudes",
         "prepare_state",
         "prepare_bell_state",
@@ -1805,22 +1808,38 @@ class _Adapt:
             reject(
                 target.token, "type", "in-place increment requires an unsigned integer"
             )
-        negative = amount.token.text == "-"
+        if name in self.signed or name in self.fractional_bits:
+            reject(
+                target.token, "type", "constant increment requires an unsigned integer"
+            )
+        negative = amount.token.text == "-" and len(amount.children) == 1
         magnitude = amount.children[0] if negative else amount
-        if magnitude.children or magnitude.token.text != "1":
+        if (
+            magnitude.children
+            or not magnitude.token.text.isdecimal()
+            or int(magnitude.token.text) > 256
+        ):
             reject(
                 amount.token,
                 "arithmetic",
-                "in-place increment currently requires 1 or -1",
+                "constant increment requires a literal offset in -256..256",
             )
         view = self.array_view(target)
-        order = range(len(view)) if negative else reversed(range(len(view)))
-        for bit in order:
-            if bit:
-                self.emit_indexed_x(token, (*view[:bit], view[bit]))
-            else:
-                value, wire = view[0]
-                self.effect_op("qreg.gate", token, (value,), gate="x", index=wire)
+        modulus = 1 << len(view)
+        offset = ((-1 if negative else 1) * int(magnitude.token.text)) % modulus
+        if offset > modulus // 2:
+            offset -= modulus
+        if offset == 0:
+            value, bit = view[0]
+            self.effect_op("qreg.gate", token, (value,), gate="i", index=bit)
+        for _ in range(abs(offset)):
+            order = range(len(view)) if offset < 0 else reversed(range(len(view)))
+            for bit in order:
+                if bit:
+                    self.emit_indexed_x(token, (*view[:bit], view[bit]))
+                else:
+                    value, wire = view[0]
+                    self.effect_op("qreg.gate", token, (value,), gate="x", index=wire)
 
     def emit_indexed_x(
         self, token: Token, locations: tuple[tuple[Value, int], ...]
@@ -2637,6 +2656,32 @@ class _Adapt:
 
     def statement(self, statement: Statement, index: str) -> None:
         token, args = statement.token, statement.arguments
+        if statement.amplification is not None:
+            lower_amplification(self, token, args[0], statement.amplification)
+            return
+        if token.text == "inplace_prepare_state":
+            if len(args) != 3:
+                reject(
+                    token,
+                    "signature",
+                    "inplace preparation requires probabilities, bound and target",
+                )
+            angles = product_angles(args[0], args[1], self.constants)
+            prepared_register = self.register(
+                self.atom(args[2]), allow_qubit_array=True
+            )
+            if register_width(prepared_register) != len(angles):
+                reject(token, "width", "product probability vector width disagrees")
+            for bit, preparation_angle in enumerate(angles):
+                self.effect_op(
+                    "qreg.gate",
+                    token,
+                    (prepared_register,),
+                    gate="ry",
+                    index=bit,
+                    angle=preparation_angle,
+                )
+            return
         if statement.map_callback is not None:
             variable, body = statement.map_callback
             name = variable.text
@@ -3469,6 +3514,7 @@ def parse_qmod(
         definitions[name] = syntax
     if "main" not in definitions:
         reject(tokens[0], "entry", "source requires one qfunc main")
+    definitions = expand_amplification(definitions, constants)
     definitions = specialize_quantum_callbacks(definitions, constants)
     verify_permutations(definitions)
     definitions = expand_predicate_oracles(definitions, constants, parser.records)
@@ -3565,7 +3611,14 @@ def parse_qmod(
             if statement.declaration is not None or (
                 statement.token.text
                 not in _STATIC_GATES
-                | {"suzuki_trotter", "multi_suzuki_trotter", "unitary", "+=", "phase"}
+                | {
+                    "suzuki_trotter",
+                    "multi_suzuki_trotter",
+                    "unitary",
+                    "+=",
+                    "phase",
+                    "inplace_prepare_state",
+                }
                 and not controlled_qft
                 and not hadamard_within
                 and statement.repeat_index is None
