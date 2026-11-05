@@ -337,3 +337,12 @@ Circuit and analytic checks (r=0/1/2), bit-order and clean-scratch acceptance,
 with alias/escape and budget refusals. This remains local integration evidence,
 not a general callback language, native Python Grover export or corpus-wide
 maturity promotion.
+
+The predicate-oracle UP-06 slice reuses checked flat record views, bounded
+integer predicates, existing conditional phase effects and Grover reflection.
+Named/two-argument lambda predicates admit a single distinct XOR marker;
+nonzero and coherent marker states, negative differences, global phase and clean
+scratch are tested independently. Three unchanged originals are checked, with
+graph marking >=4 kept distinct from the earlier <=4 example. The eight-input
+predicate and all physical caps remain. This is local integration evidence,
+not general callback, nested-record, Python QStruct or corpus-wide promotion.

@@ -153,6 +153,7 @@ class Statement:
     static_if_body: tuple[Statement, ...] | None = None
     map_callback: tuple[Token, tuple[Statement, ...]] | None = None
     oracle_callback: tuple[Token, tuple[Statement, ...]] | None = None
+    predicate_callback: tuple[Token, Token, tuple[Statement, ...]] | None = None
 
 
 @dataclass(frozen=True)
@@ -751,7 +752,7 @@ class Parser:
             self.take(":")
             record = None
             if self.current.text in self.records:
-                if role not in {"output", "inout"}:
+                if role not in {"output", "inout", "const"}:
                     reject(
                         self.current,
                         "role",
@@ -948,10 +949,13 @@ class Parser:
                 continue
             target = self.name()
             arguments: tuple[Expression, ...]
-            if target.text == "grover_operator" and self.current.text == "(":
-                from .oracles import parse_grover_call
+            if (
+                target.text in {"grover_operator", "grover_search", "phase_oracle"}
+                and self.current.text == "("
+            ):
+                from .oracles import parse_oracle_call
 
-                statements.append(parse_grover_call(self, target, scope_depth))
+                statements.append(parse_oracle_call(self, target, scope_depth))
                 continue
             if (
                 target.text == "apply_to_all"
@@ -1010,7 +1014,8 @@ class Parser:
                     self.signed_angle_argument()
                     if operator.text in {"^=", "+="} and self.current.text == "-"
                     else self.expression(
-                        decimal=operator.text == "=", difference=operator.text == "="
+                        decimal=operator.text == "=",
+                        difference=operator.text in {"=", "^="},
                     )
                 )
                 arguments = (Expression(target), rhs)

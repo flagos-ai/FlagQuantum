@@ -2,7 +2,7 @@
 
 import math
 from collections.abc import Callable
-from operator import eq, ge, gt, le, lt, ne
+from operator import and_, eq, ge, gt, le, lt, ne, or_, xor
 
 from ...compiler._hybrid.model import Value
 from .syntax import Expression, reject
@@ -79,6 +79,48 @@ def expand_phase(
                 )
             return result
         text = node.token.text
+        if integer and text in {"%", "&", "|", "^"}:
+            left, right = (visit(child, integer=True) for child in node.children)
+            if len(locations) > MAX_PHASE_PREDICATE_BITS:
+                reject(
+                    node.token,
+                    "budget.phase",
+                    "phase predicate exceeds eight input bits",
+                )
+            if text == "%":
+                divisor = node.children[1]
+                if (
+                    divisor.children
+                    or not divisor.token.text.isdecimal()
+                    or int(divisor.token.text) < 1
+                    or int(divisor.token.text) & (int(divisor.token.text) - 1)
+                ):
+                    reject(
+                        node.token,
+                        "modulo",
+                        "predicate modulo requires a positive power-of-two literal divisor",
+                    )
+            values = []
+            for basis in range(1 << len(locations)):
+                a, b = integer_value(left, basis), integer_value(right, basis)
+                if a < 0 or b < 0:
+                    reject(
+                        node.token,
+                        "type",
+                        "predicate bitwise and modulo operands must be unsigned",
+                    )
+                values.append(
+                    a % b
+                    if text == "%"
+                    else {"&": and_, "|": or_, "^": xor}[text](a, b)
+                )
+            for bit in range(len(locations)):
+                for basis in range(len(values)):
+                    if basis & (1 << bit):
+                        values[basis] -= values[basis ^ (1 << bit)]
+            return checked(
+                {mask: float(value) for mask, value in enumerate(values)}, node
+            )
         if text == "-" and len(node.children) == 1:
             return {
                 mask: -value

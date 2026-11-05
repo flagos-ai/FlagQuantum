@@ -1088,3 +1088,39 @@ source/license digests and real budget refusals are checked. Use
 tools/validate_qmod_grover.py --case 3_sat_grover --iterations 2 --output /tmp/sat.json
 and repeat for grover_max_cut. See the contract
 docs/api-changes/FQ-SYNTH-UP06-GROVER-20261105.md.
+
+## Checked predicate phase oracles
+
+The Qmod integration profile admits a qperm with one Const whole array or flat
+fixed unsigned record, one distinct writable single-bit marker and optional
+exact scalar integer arguments. Its body must be exactly marker ^= predicate;
+the expression must prove a one-bit result and cannot read the marker. All
+definitions are checked, including unused definitions. Nominal record identity,
+scalar field widths and lexical bindings are retained; field names are not
+renamed when a same-named callback formal shadows its own actual register.
+
+phase_oracle accepts a named checked predicate or a two-argument forwarding
+lambda. The phase form marks satisfying states by -1. A direct predicate call
+XORs any initialized marker, including nonzero and coherent states, using the
+existing conditional phase effect between marker Hadamards. There is no new
+owned opcode or physical gate template. Capture, input/marker aliases, extra
+mutable ports, Output escape and malformed predicates fail closed.
+
+Mathematical negative differences are preserved through comparisons. Unsigned
+bitwise arithmetic and positive power-of-two literal modulo are evaluated only
+within the existing eight-input-bit predicate bound; monomial, degree, product,
+source and final instruction caps are not raised. Larger graph-coloring and
+whitebox predicates remain separate resource/semantic blockers, not implied
+coverage. grover_search composes uniform preparation with bounded checked Grover
+rounds and retains their absolute global phase. General callback ports, custom
+preparation and nested/array-valued borrowed records remain outside this slice.
+
+Three unchanged originals are accepted separately: grover_operator.qmod,
+oracles_workshop.qmod and grover.qmod (r=0/1/2). The workshop subtraction does not
+wrap; the graph original marks >=4, unlike the previous <=4 Max-Cut original.
+Run tools/validate_qmod_predicate_oracle.py --case grover --iterations 2
+--output /tmp/predicate.json for independent full-state Circuit comparison.
+python -m examples.synthesis_predicate_oracle compares Qmod, existing native
+qfunc phase intent and an independent Circuit. It does not add a native Python
+phase_oracle/Grover export or a Python QStruct API. The private contract is
+docs/api-changes/FQ-SYNTH-UP06-PREDICATE-ORACLE-20261105.md.

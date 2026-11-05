@@ -376,3 +376,22 @@ required by the shared MCX kernel are included in the full-state comparison and
 must return to zero. Run tools/validate_qmod_grover.py or the three-form example
 python -m examples.synthesis_grover. This is local CPU integration evidence;
 there is no new native Grover export or complete Classiq-library claim.
+
+## Checked predicate-oracle integration slice
+
+The phase-only Const-array profile now has a bounded predicate exception: a
+checked qperm may borrow one whole array or flat unsigned scalar-field record
+and XOR one distinct initialized marker. phase_oracle supports a named predicate
+or a closed two-argument forwarding lambda. Direct XOR preserves nonzero and
+coherent markers. grover_search composes the existing uniform Grover profile.
+Only exact scalar integer specialization is admitted; arbitrary higher-order
+ports, mutable record aliases, nested/array-valued borrowed fields, Output
+escape and general classical execution remain unsupported. Predicate evaluation
+still admits at most eight input bits, with unchanged physical resource caps.
+
+The three pinned originals have independent full-state Circuit checks, including
+negative differences, >=4 graph marking, global phase, numeric bit order and
+clean scratch. See tools/validate_qmod_predicate_oracle.py and the runnable
+Qmod/native qfunc/Circuit example examples/synthesis_predicate_oracle.py.
+This remains local CPU integration evidence, not a new native predicate-oracle
+export or complete Classiq-library support.

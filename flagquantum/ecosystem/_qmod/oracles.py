@@ -8,7 +8,7 @@ from dataclasses import replace
 from typing import TYPE_CHECKING
 
 from .integers import checked_integer
-from .syntax import Expression, Function, Parameter, Statement, Token, reject
+from .syntax import Expression, Function, Parameter, Record, Statement, Token, reject
 
 if TYPE_CHECKING:
     from .syntax import Parser
@@ -16,9 +16,17 @@ if TYPE_CHECKING:
 MAX_ORACLE_EXPANSIONS = 4096
 
 
-def parse_grover_call(parser: Parser, target: Token, scope_depth: int) -> Statement:
+def parse_oracle_call(parser: Parser, target: Token, scope_depth: int) -> Statement:
     """Read the static callback form within the shared bounded source parser."""
+    if target.text == "phase_oracle":
+        from .predicates import parse_phase_oracle_call
+
+        return parse_phase_oracle_call(parser, target, scope_depth)
     parser.take("(")
+    repetitions = None
+    if target.text == "grover_search":
+        repetitions = parser.call_argument()
+        parser.take(",")
     callback = None
     if parser.current.text == "lambda":
         marker = parser.take("lambda")
@@ -33,18 +41,28 @@ def parse_grover_call(parser: Parser, target: Token, scope_depth: int) -> Statem
     else:
         oracle = Expression(parser.name())
     parser.take(",")
-    preparation = Expression(parser.name())
-    parser.take(",")
+    preparation = Expression(Token("hadamard_transform", target.location))
+    if repetitions is None:
+        preparation = Expression(parser.name())
+        parser.take(",")
     destination = parser.call_argument()
     parser.take(")")
     parser.take(";")
     return Statement(
-        target, (oracle, preparation, destination), oracle_callback=callback
+        target,
+        (
+            (oracle, preparation, destination)
+            if repetitions is None
+            else (repetitions, oracle, destination)
+        ),
+        oracle_callback=callback,
     )
 
 
 def expand_static_oracles(
-    definitions: Mapping[str, Function], constants: Mapping[str, Expression]
+    definitions: Mapping[str, Function],
+    constants: Mapping[str, Expression],
+    records: Mapping[str, Record],
 ) -> dict[str, Function]:
     """Erase checked static callbacks before constructing any owned Compiler IR.
 
@@ -83,6 +101,7 @@ def expand_static_oracles(
         variable: str,
         integers: Mapping[str, Expression],
         width: int | None,
+        record: str | None,
     ) -> Expression:
         if not expression.children:
             name = expression.token.text
@@ -99,8 +118,25 @@ def expand_static_oracles(
                     "oracle.capture",
                     "phase callback cannot capture another quantum value or escape its target",
                 )
+        if expression.token.text == ".":
+            root, member = expression.children
+            if (
+                record is None
+                or root.children
+                or root.token.text != variable
+                or member.children
+                or member.token.text
+                not in {field.name.text for field in records[record].fields}
+            ):
+                reject(
+                    expression.token,
+                    "oracle.capture",
+                    "field access requires a declared field of the borrowed record",
+                )
+            return expression
         children = tuple(
-            closed(child, variable, integers, width) for child in expression.children
+            closed(child, variable, integers, width, record)
+            for child in expression.children
         )
         if expression.token.text == "[":
             array, offset = children
@@ -139,6 +175,14 @@ def expand_static_oracles(
     ) -> Expression:
         if not expression.children and expression.token.text == variable:
             return target
+        if expression.token.text == ".":
+            return replace(
+                expression,
+                children=(
+                    substitute(expression.children[0], variable, target),
+                    expression.children[1],
+                ),
+            )
         return replace(
             expression,
             children=tuple(
@@ -153,6 +197,7 @@ def expand_static_oracles(
         active: tuple[str, ...],
         integers: Mapping[str, Expression],
         width: int | None,
+        record: str | None,
     ) -> tuple[Statement, ...]:
         nonlocal count
         result: list[Statement] = []
@@ -198,11 +243,13 @@ def expand_static_oracles(
                         "borrowed predicate may control one phase effect only",
                     )
                 condition = substitute(
-                    closed(statement.arguments[0], variable, integers, width),
+                    closed(statement.arguments[0], variable, integers, width, record),
                     variable,
                     target,
                 )
-                phases = body(actions, variable, target, active, integers, width)
+                phases = body(
+                    actions, variable, target, active, integers, width, record
+                )
                 if len(phases[0].arguments) == 1:
                     # Reuse the admitted conditional real-phase path for phase(a).
                     one = Expression(
@@ -224,7 +271,9 @@ def expand_static_oracles(
                         token, "oracle", "phase effect requires one or two arguments"
                     )
                 arguments = tuple(
-                    substitute(closed(arg, variable, integers, width), variable, target)
+                    substitute(
+                        closed(arg, variable, integers, width, record), variable, target
+                    )
                     for arg in statement.arguments
                 )
                 result.append(replace(statement, arguments=arguments))
@@ -243,11 +292,13 @@ def expand_static_oracles(
                         "phase callback must forward exactly its borrowed target; aliases and captures are rejected",
                     )
                 arguments = tuple(
-                    substitute(closed(arg, variable, integers, width), variable, target)
+                    substitute(
+                        closed(arg, variable, integers, width, record), variable, target
+                    )
                     for arg in statement.arguments
                 )
                 result.extend(
-                    invoke(token, arguments, active, width, frozenset(integers))
+                    invoke(token, arguments, active, width, frozenset(integers), record)
                 )
             else:
                 reject(
@@ -265,6 +316,7 @@ def expand_static_oracles(
         active: tuple[str, ...],
         width: int | None,
         symbolic: frozenset[str] = frozenset(),
+        record: str | None = None,
     ) -> tuple[Statement, ...]:
         function = oracles.get(token.text)
         if function is None or token.text == "main":
@@ -278,6 +330,12 @@ def expand_static_oracles(
         if len(active) >= 32:
             reject(token, "budget.oracle", "phase oracle call depth exceeds 32")
         port = borrowed(function)
+        if port.record != record:
+            reject(
+                token,
+                "oracle.alias",
+                "phase oracle requires the matching nominal record layout",
+            )
         if len(arguments) != len(function.parameters):
             reject(
                 token,
@@ -313,6 +371,7 @@ def expand_static_oracles(
             (*active, token.text),
             integers,
             width,
+            record,
         )
 
     # Validate every admitted borrowed definition, rather than erasing dead errors.
@@ -327,6 +386,7 @@ def expand_static_oracles(
             (),
             port.width,
             symbolic,
+            port.record,
         )
 
     def scope(
@@ -335,6 +395,38 @@ def expand_static_oracles(
         result: list[Statement] = []
         for statement in statements:
             token, args = statement.token, statement.arguments
+            if token.text == "grover_search":
+                repetitions, oracle, target = args
+                call = replace(
+                    statement,
+                    token=Token("grover_operator", token.location),
+                    arguments=(
+                        oracle,
+                        Expression(Token("hadamard_transform", token.location)),
+                        target,
+                    ),
+                )
+                search_loop = Statement(
+                    Token("power", token.location),
+                    (repetitions,),
+                    repeat_index=Token(
+                        f"$grover_search{token.location.line}_{token.location.column}",
+                        token.location,
+                    ),
+                    repeat_body=(call,),
+                )
+                result.extend(
+                    scope(
+                        (
+                            Statement(
+                                Token("hadamard_transform", token.location), (target,)
+                            ),
+                            search_loop,
+                        ),
+                        parameters,
+                    )
+                )
+                continue
             if token.text == "grover_operator":
                 oracle, preparation, target = args
                 if (
@@ -351,7 +443,6 @@ def expand_static_oracles(
                     target.children
                     or port is None
                     or port.kind != "qbit[]"
-                    or port.record is not None
                     or port.role == "const"
                 ):
                     reject(
@@ -360,11 +451,16 @@ def expand_static_oracles(
                         "Grover target must be one whole writable array, without slices, captures or alias ports",
                     )
                 if statement.oracle_callback is None:
-                    phases = invoke(oracle.token, (target,), (), port.width)
+                    phases = invoke(
+                        oracle.token, (target,), (), port.width, record=port.record
+                    )
                 else:
                     variable, actions = statement.oracle_callback
                     if (
-                        variable.text in parameters
+                        (
+                            variable.text in parameters
+                            and variable.text != target.token.text
+                        )
                         or variable.text in definitions
                         or variable.text in constants
                         or variable.text == "pi"
@@ -374,7 +470,9 @@ def expand_static_oracles(
                             "oracle.capture",
                             "callback parameter cannot shadow a bound name",
                         )
-                    phases = body(actions, variable.text, target, (), {}, port.width)
+                    phases = body(
+                        actions, variable.text, target, (), {}, port.width, port.record
+                    )
                 result.extend(phases)
                 h = Statement(Token("hadamard_transform", token.location), (target,))
                 loop = Token(
@@ -387,9 +485,13 @@ def expand_static_oracles(
                 flip = Statement(
                     Token("repeat", token.location),
                     (
-                        Expression(
-                            Token(".", token.location),
-                            (target, Expression(Token("len", token.location))),
+                        (
+                            Expression(Token(str(port.width), token.location))
+                            if port.record is not None
+                            else Expression(
+                                Token(".", token.location),
+                                (target, Expression(Token("len", token.location))),
+                            )
                         ),
                     ),
                     repeat_index=loop,
@@ -413,7 +515,7 @@ def expand_static_oracles(
                         token, "oracle.alias", "phase oracle requires one whole array"
                     )
                 port = parameters.get(args[position].token.text)
-                if port is None or port.kind != "qbit[]" or port.record is not None:
+                if port is None or port.kind != "qbit[]":
                     reject(
                         token, "oracle.alias", "phase oracle target must be an array"
                     )
@@ -427,7 +529,9 @@ def expand_static_oracles(
                     constants.get(arg.token.text, arg) if not arg.children else arg
                     for arg in args
                 )
-                result.extend(invoke(token, resolved, (), port.width))
+                result.extend(
+                    invoke(token, resolved, (), port.width, record=port.record)
+                )
             else:
 
                 def optional(

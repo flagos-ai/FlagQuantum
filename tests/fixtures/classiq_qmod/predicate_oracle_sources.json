@@ -1,0 +1,26 @@
+{
+  "repository": "https://github.com/Classiq/classiq-library",
+  "commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "license_file": "LICENSE.txt",
+  "license_sha256": "241f68c9f35357f97e8a2a195e447d4f80098c140f0b3b3c770a11eed96f58e0",
+  "fixtures": [
+    {
+      "file": "grover_operator.qmod",
+      "upstream_path": "functions/qmod_library_reference/classiq_open_library/grover_operator/grover_operator.qmod",
+      "git_blob_sha1": "ece299a0cc8a1643fc8c721c86495411f5bea354",
+      "sha256": "e683a404b90804f257a73f3aa7b9e281d757098885c08c951d7ea08dfce677f6"
+    },
+    {
+      "file": "oracles_workshop.qmod",
+      "upstream_path": "tutorials/workshops/oracle_workshop/oracles_workshop.qmod",
+      "git_blob_sha1": "71c4c14ccee1fba9e4d36fc8cda2e83e0770e6a6",
+      "sha256": "b998fb0d44784390446d1c1f79c157c7007c831762709870f32e4cb0b8aa8322"
+    },
+    {
+      "file": "grover.qmod",
+      "upstream_path": "algorithms/search_and_optimization/grover/grover.qmod",
+      "git_blob_sha1": "a32bc67c7dfc247d92bd6b63ae538ec63f26f65a",
+      "sha256": "0c13b87b292de8e4abfa4bd9c9f3c5c847973a647a652419ee0eb772d87a81c6"
+    }
+  ]
+}

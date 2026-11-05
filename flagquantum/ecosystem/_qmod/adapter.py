@@ -38,6 +38,7 @@ from .oracles import expand_static_oracles
 from .permutations import verify_permutations
 from .phase import MAX_PHASE_INPUT_BITS, expand_phase
 from .phase_factors import Cube, preserve_factors
+from .predicates import expand_predicate_oracles
 from .syntax import (
     ANGLE_CALLS,
     EXTREMA,
@@ -98,6 +99,8 @@ _INTRINSICS = (
         "qst_type2",
         "qct_qst_type2",
         "grover_operator",
+        "grover_search",
+        "phase_oracle",
     }
     | EXTREMA
     | ANGLE_CALLS
@@ -3457,7 +3460,8 @@ def parse_qmod(
     if "main" not in definitions:
         reject(tokens[0], "entry", "source requires one qfunc main")
     verify_permutations(definitions)
-    definitions = expand_static_oracles(definitions, constants)
+    definitions = expand_predicate_oracles(definitions, constants, parser.records)
+    definitions = expand_static_oracles(definitions, constants, parser.records)
     main = definitions["main"]
     parameters = {
         p.name.text: p for p in main.parameters if p.role in {"real", "integer"}
