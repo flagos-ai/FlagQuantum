@@ -8,7 +8,10 @@
 
 from ...core.ir import Instruction
 from .bitwise import _validate_wires
-from .controlled_addition import controlled_add_constant_ir
+from .controlled_addition import (
+    controlled_add_constant_adjoint_ir,
+    controlled_add_constant_ir,
+)
 from .multi_control import multi_control_x_ir
 from .sign_extension import _fanout_ir
 
@@ -62,15 +65,46 @@ def modular_negate_ir(
     Target is big-endian; all caller-owned work starts/ends zero. p+1 fits n
     bits. Input support outside the residue promise is not inspected by compiler.
     """
+    return _modular_negation_ir(
+        target, modulus, workspace, classical_bits, adjoint=False
+    )
+
+
+def modular_negate_adjoint_ir(
+    target: tuple[int, ...],
+    modulus: int,
+    workspace: tuple[int, ...],
+    classical_bits: tuple[int, ...],
+) -> tuple[Instruction, ...]:
+    """Negate a valid residue using the literal original ModNeg adjoint stream.
+
+    Big-endian x lies in [0,p), p+1 fits n bits. Quantum work starts/ends zero;
+    classical slots retain latest outcomes. Although logically self-inverse,
+    the source inverse applies AddK-adjoint before its conditional fanout.
+    """
+    return _modular_negation_ir(
+        target, modulus, workspace, classical_bits, adjoint=True
+    )
+
+
+def _modular_negation_ir(
+    target: tuple[int, ...],
+    modulus: int,
+    workspace: tuple[int, ...],
+    classical_bits: tuple[int, ...],
+    *,
+    adjoint: bool,
+) -> tuple[Instruction, ...]:
     flag, constant, carry = _negation_layout(target, modulus, workspace, classical_bits)
     zero = multi_control_x_ir(target, (0,) * len(target), flag, carry, classical_bits)
+    emit = controlled_add_constant_adjoint_ir if adjoint else controlled_add_constant_ir
+    add = emit(flag, target, modulus + 1, constant, carry, classical_bits)
+    fanout = _fanout_ir(flag, target)
+    middle = (*add, *fanout) if adjoint else (*fanout, *add)
     return (
         Instruction("x", (flag,)),
         *zero,
-        *_fanout_ir(flag, target),
-        *controlled_add_constant_ir(
-            flag, target, modulus + 1, constant, carry, classical_bits
-        ),
+        *middle,
         *zero,
         Instruction("x", (flag,)),
     )
