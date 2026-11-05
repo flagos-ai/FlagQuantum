@@ -132,6 +132,7 @@ class Statement:
     repeat_body: tuple[Statement, ...] = ()
     power_callback: tuple[Token, tuple[Statement, ...]] | None = None
     inverse_body: tuple[Statement, ...] | None = None
+    static_if_body: tuple[Statement, ...] | None = None
 
 
 @dataclass(frozen=True)
@@ -746,6 +747,26 @@ class Parser:
                 statements.append(
                     Statement(token, (count,), repeat_index=index, repeat_body=body)
                 )
+                continue
+            if self.current.text == "if" and self.tokens[self.position + 1].text == "(":
+                token = self.take("if")
+                if scope_depth:
+                    reject(token, "scope", "static if requires function scope")
+                self.take("(")
+                left = self.expression(static=True)
+                comparison = self.current
+                if comparison.text not in _COMPARISONS:
+                    reject(
+                        comparison,
+                        "expression",
+                        "static if requires an integer comparison",
+                    )
+                self.take(comparison.text)
+                right = self.expression(static=True)
+                self.take(")")
+                body = self.block(allow_scopes=False, scope_depth=1)
+                condition = Expression(comparison, (left, right))
+                statements.append(Statement(token, (condition,), static_if_body=body))
                 continue
             target = self.name()
             arguments: tuple[Expression, ...]

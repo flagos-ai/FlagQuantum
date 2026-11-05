@@ -8,7 +8,7 @@ import re
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from decimal import Decimal
-from operator import and_, or_, xor
+from operator import and_, eq, ge, gt, le, lt, ne, or_, xor
 from types import MappingProxyType
 
 from ...compiler._construction.profile import uint_type
@@ -52,6 +52,8 @@ MAX_QDRIFT_SAMPLES = 1024
 QDRIFT_SEED = 0
 _GATE_CALLS = frozenset({"X", "H", "S", "Z", "I", "SX", "hadamard_transform"})
 _PAIR_CALLS = frozenset({"CX", "CZ", "SWAP", "CRX"})
+_STATIC_COMPARISONS = {"==": eq, "!=": ne, "<": lt, "<=": le, ">": gt, ">=": ge}
+_STATIC_GATES = _GATE_CALLS | _PAIR_CALLS | ANGLE_CALLS
 _UNIFORM_CALLS = frozenset(
     {"prepare_uniform_interval_state", "prepare_uniform_trimmed_state"}
 )
@@ -903,14 +905,21 @@ class _Adapt:
     def array_view(self, node: Expression) -> tuple[tuple[Value, int], ...]:
         if node.token.text == "{":
             return tuple(self.gate_target(item) for item in node.children)
-        target = self.atom(node)
+        source = node.children[0] if node.token.text == ":" else node
+        target = self.atom(source)
         parameter = self.parameters.get(target.text)
         if parameter is None or parameter.kind != "qbit[]":
-            reject(target, "type", "helper requires a qubit array")
-        if target.text in self.views:
-            return self.views[target.text]
-        value = self.register(target, allow_qubit_array=True)
-        return tuple((value, index) for index in range(register_width(value)))
+            reject(target, "type", "expected a qubit array or view")
+        view = self.views.get(target.text)
+        if view is None:
+            value = self.register(target, allow_qubit_array=True)
+            view = tuple((value, index) for index in range(register_width(value)))
+        if node.token.text != ":":
+            return view
+        start, stop = (self.static_integer(item) for item in node.children[1:])
+        if not 0 <= start < stop <= len(view):
+            reject(node.token, "width", "qubit array slice is out of bounds or empty")
+        return view[start:stop]
 
     def real_array(self, node: Expression) -> tuple[float, ...]:
         if node.token.text == "[]":
@@ -941,10 +950,7 @@ class _Adapt:
                 statement.token, "budget.expansion", "repeat count must be in 0..256"
             )
         for item in statement.repeat_body:
-            if (
-                item.declaration is not None
-                or item.token.text not in _GATE_CALLS | _PAIR_CALLS | ANGLE_CALLS
-            ):
+            if item.declaration is not None or item.token.text not in _STATIC_GATES:
                 reject(item.token, "scope", "repeat bodies admit only gates")
         for iteration in range(count):
             self.loop_indices[name] = iteration
@@ -955,6 +961,26 @@ class _Adapt:
     def angle(
         self, node: Expression, gate: Token, *, allow_signed: bool = False
     ) -> float:
+        if (
+            node.token.text == "*"
+            and gate.text in {"RX", "RY", "RZ"}
+            and self.helper_stack
+            and "pi" not in self.parameters
+        ):
+            factor, element = node.children
+            if (
+                not factor.children
+                and factor.token.text == "pi"
+                and element.token.text == "["
+            ):
+                array = element.children[0]
+                if not array.children and array.token.text in self.classical_arrays:
+                    angle = math.pi * self.angle(element, gate)
+                    if abs(angle) > 2**53:
+                        reject(
+                            node.token, "angle", "scaled angle exceeds ±2**53 radians"
+                        )
+                    return angle
         if node.token.text == "-":
             if allow_signed or (self.helper_stack and self.classical_arrays):
                 return -_literal_angle(node.children[0], gate)
@@ -1852,6 +1878,18 @@ class _Adapt:
 
     def statement(self, statement: Statement, index: str) -> None:
         token, args = statement.token, statement.arguments
+        if statement.static_if_body is not None:
+            if any(
+                item.declaration is not None or item.token.text not in _STATIC_GATES
+                for item in statement.static_if_body
+            ):
+                reject(token, "scope", "static if bodies admit only gates")
+            condition = args[0]
+            left, right = (self.static_integer(item) for item in condition.children)
+            if _STATIC_COMPARISONS[condition.token.text](left, right):
+                for ordinal, child in enumerate(statement.static_if_body):
+                    self.statement(child, f"{index}.if{ordinal}")
+            return
         if statement.inverse_body is not None:
             body = statement.inverse_body
             allowed = _GATE_CALLS | {
@@ -2271,14 +2309,20 @@ class _Adapt:
             if len(args) != 2:
                 reject(token, "signature", "RZZ requires an angle and a qubit array")
             angle = self.angle(args[0], token)
-            target = self.atom(args[1])
-            destination = self.register(target, allow_qubit_array=True)
-            if (
-                self.parameters[target.text].kind != "qbit[]"
-                or self.widths[target.text] != 2
-            ):
-                reject(target, "type", "RZZ requires a two-qubit array")
-            self.effect_op("qreg.rzz", token, (destination,), angle=angle)
+            view = self.array_view(args[1])
+            if len(view) != 2:
+                reject(args[1].token, "type", "RZZ requires a two-qubit array or view")
+            if len(set(view)) != 2:
+                reject(args[1].token, "alias", "RZZ requires distinct qubit locations")
+            (first, first_index), (second, second_index) = view
+            self.effect_op(
+                "qreg.pair_gate",
+                token,
+                (first, second),
+                gate="rzz",
+                indices=(first_index, second_index),
+                angle=angle,
+            )
         elif token.text == "U":
             if len(args) != 5:
                 reject(token, "signature", "U requires four angles and a qbit target")
@@ -2562,6 +2606,7 @@ def parse_qmod(
                 and not controlled_qft
                 and not hadamard_within
                 and statement.repeat_index is None
+                and statement.static_if_body is None
                 and not bound_call
             ):
                 reject(

@@ -712,3 +712,9 @@ helper calls preserve that mapping across nested calls. Operations
 requiring whole registers, such as scoped QFT, still require whole
 registers. Fixed-width qubit output arrays and the `CZ` gate are also
 supported in this profile.
+
+`RZZ(angle, view)` accepts any two distinct locations in a static qubit
+array, ordered view or half-open slice such as `q[i:i + 2]`. A function-scope
+`if` can select a gate-only block with a static integer comparison, such
+as `q.len > 2`. Bound helpers can scale a real array element by the
+unshadowed constant `pi` for RX, RY and RZ.

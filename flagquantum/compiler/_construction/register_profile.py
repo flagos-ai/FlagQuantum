@@ -60,7 +60,8 @@ _ATTRIBUTES = MappingProxyType(
         "qreg.return": frozenset(),
     }
 )
-_PAIR_GATES = frozenset({"cx", "cz", "swap", "crx", "cry", "crz"})
+_ANGLED_PAIR_GATES = frozenset({"crx", "cry", "crz", "rzz"})
+_PAIR_GATES = frozenset({"cx", "cz", "swap"}) | _ANGLED_PAIR_GATES
 _ANGLE_GATES = frozenset({"phase", "rx", "ry", "rz"})
 _GATES = frozenset({"x", "h", "s", "z", "i", "sx"}) | _ANGLE_GATES
 
@@ -333,7 +334,10 @@ def _verify_body(
             attributes = attributes | {"inverse"}
         if op.name == "qreg.pair_gate":
             assert attributes is not None
-            if op.attributes.get("gate") in ("crx", "cry", "crz"):
+            if (
+                isinstance(gate := op.attributes.get("gate"), str)
+                and gate in _ANGLED_PAIR_GATES
+            ):
                 attributes = attributes | {"angle"}
             if "indices" in op.attributes:
                 attributes = attributes | {"indices"}
@@ -750,7 +754,7 @@ def _verify_body(
                         "pair gate indices must be in bounds and distinct",
                         op,
                     )
-                if gate in {"crx", "cry", "crz"}:
+                if gate in _ANGLED_PAIR_GATES:
                     angle = op.attributes["angle"]
                     if type(angle) is not float or not math.isfinite(angle):
                         _fail(
@@ -758,7 +762,7 @@ def _verify_body(
                             "gate angle must be a finite float in radians",
                             op,
                         )
-                changed = tuple(operands if gate == "swap" else arguments)
+                changed = tuple(operands if gate in {"swap", "rzz"} else arguments)
                 if any(value in borrowed for value in changed):
                     _fail("register.const", "Const cannot be a gate target", op)
                 if any(value.id not in initialized for value in operands):
