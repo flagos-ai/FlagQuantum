@@ -1,27 +1,34 @@
 name: BW1100 CPU runner pilot
-on: workflow_dispatch
+on:
+  workflow_dispatch:
+    inputs:
+      node:
+        description: BW1100 pilot host
+        required: true
+        type: choice
+        options: ['2', '10', '11', '12', '14', '15', '17']
 permissions: {}
 env:
   FQ_PILOT_SOURCE_SHA: eb04d9ffd36c40b167c9ebbd72eb66c11d39e43a
 jobs:
   dispatch-probe:
-    runs-on: fq-bw1100-16-pilot
+    runs-on: fq-bw1100-${{ inputs.node }}-pilot
     timeout-minutes: 3
     steps:
-      - run: test "$RUNNER_NAME" = fq-bw1100-16-cpu-pilot
+      - run: test "$RUNNER_NAME" = fq-bw1100-${{ inputs.node }}-cpu-pilot
   offline-probe:
     needs: dispatch-probe
-    runs-on: fq-bw1100-16-pilot
+    runs-on: fq-bw1100-${{ inputs.node }}-pilot
     timeout-minutes: 4
     steps:
       - name: Verify rootless and the offline locked image
         run: |
-          test "$RUNNER_NAME" = fq-bw1100-16-cpu-pilot
+          test "$RUNNER_NAME" = fq-bw1100-${{ inputs.node }}-cpu-pilot
           docker info --format '{{json .SecurityOptions}}' | grep -F '"name=rootless"'
           docker run --rm --pull never --network none --read-only --cap-drop ALL --security-opt no-new-privileges ghcr.io/flagos-ai/flagquantum-ci@sha256:1f5d6aa7b1b1d6313d787c7fbeaf269179a39d031b1010b1b521162baceb5ba6 /opt/ci/bin/python -c 'import socket; assert {n for _, n in socket.if_nameindex()} == {"lo"}'
   coverage-shard:
     needs: offline-probe
-    runs-on: fq-bw1100-16-pilot
+    runs-on: fq-bw1100-${{ inputs.node }}-pilot
     permissions:
       contents: read
       packages: read
