@@ -14,6 +14,7 @@ from ...compiler._hybrid.verifier import Diagnostic, HybridVerificationError
 MAX_BYTES = 262144
 MAX_TOKENS = 4096
 MAX_DEPTH = 40
+MAX_EXPRESSION_DEPTH = 128
 MAX_SCOPE_DEPTH = 32
 MAX_FUNCTIONS = 32
 ANGLE_CALLS = frozenset({"PHASE", "RX", "RY", "RZ", "RZZ", "CRX", "R", "U"})
@@ -208,16 +209,22 @@ class Parser:
         real: bool = False,
     ) -> Expression:
         token = self.current
-        if nesting >= MAX_DEPTH:
-            reject(token, "budget.depth", f"expression nesting exceeds {MAX_DEPTH}")
+        if nesting >= MAX_EXPRESSION_DEPTH:
+            reject(
+                token,
+                "budget.depth",
+                f"expression nesting exceeds {MAX_EXPRESSION_DEPTH}",
+            )
         if not static and (token.text == "~" or (difference and token.text == "-")):
             self.take(token.text)
             operand = self.expression(
                 25, nesting + 1, decimal=decimal, difference=difference, real=real
             )
-            if operand.depth >= MAX_DEPTH:
+            if operand.depth >= MAX_EXPRESSION_DEPTH:
                 reject(
-                    token, "budget.depth", f"expression tree exceeds depth {MAX_DEPTH}"
+                    token,
+                    "budget.depth",
+                    f"expression tree exceeds depth {MAX_EXPRESSION_DEPTH}",
                 )
             left = Expression(token, (operand,), operand.depth + 1)
         elif token.text == "(":
@@ -270,9 +277,11 @@ class Parser:
             )
             self.take(")")
             depth = max(first.depth, second.depth) + 1
-            if depth > MAX_DEPTH:
+            if depth > MAX_EXPRESSION_DEPTH:
                 reject(
-                    token, "budget.depth", f"expression tree exceeds depth {MAX_DEPTH}"
+                    token,
+                    "budget.depth",
+                    f"expression tree exceeds depth {MAX_EXPRESSION_DEPTH}",
                 )
             left = Expression(token, (first, second), depth)
         while True:
@@ -317,9 +326,11 @@ class Parser:
                 self.take("]")
             else:
                 break
-            if left.depth > MAX_DEPTH:
+            if left.depth > MAX_EXPRESSION_DEPTH:
                 reject(
-                    token, "budget.depth", f"expression tree exceeds depth {MAX_DEPTH}"
+                    token,
+                    "budget.depth",
+                    f"expression tree exceeds depth {MAX_EXPRESSION_DEPTH}",
                 )
         precedence = {
             **dict.fromkeys(_COMPARISONS, 5),
@@ -369,11 +380,11 @@ class Parser:
                     "power requires a literal exponent in 1..8",
                 )
             depth = max(left.depth, right.depth) + 1
-            if depth > MAX_DEPTH:
+            if depth > MAX_EXPRESSION_DEPTH:
                 reject(
                     operator,
                     "budget.depth",
-                    f"expression tree exceeds depth {MAX_DEPTH}",
+                    f"expression tree exceeds depth {MAX_EXPRESSION_DEPTH}",
                 )
             left = Expression(operator, (left, right), depth)
         if self.current.text in {"/", "[", ".", "("} or (

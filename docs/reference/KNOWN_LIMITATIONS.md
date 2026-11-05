@@ -302,3 +302,23 @@ qperm callbacks remain unsupported. multi_suzuki_trotter currently admits exactl
 one inline sparse operator and one time, reusing existing order 1/2 evolution and
 1..256 repetitions. Additional operators and times are rejected. These are local
 integration slices pending the complete original corpus gate and integration CI.
+
+## Bounded Qmod Boolean phase factors
+
+Expression depth is bounded at 128 independently of the 40-level matrix literal
+and 32-level scope limits; byte, token and effect-expansion budgets are unchanged.
+An unguarded phase that exceeds the flat polynomial expansion budget may preserve
+up to eight shared products of three to six distinct signed bit literals. Their
+masked equalities use existing arithmetic compute/uncompute and local release;
+Compiler verification proves their lifecycle and selects the physical candidate.
+The optional Boolean candidate counts at most six active input bits rather than
+all declared owner bits, and recognizes signed cubes with clean MCX ladders.
+Its existing intermediate-width cap is twelve. Factor and kernel work qubits
+both count toward actual budgets. Physical phase reads remain limited to 24;
+the reduced polynomial retains its degree-eight, 256-term and 20000-product caps.
+This allows higher physical degree through bounded factors, without admitting
+unbounded expansion, guarded factorization or a global factor-search optimizer.
+
+The unchanged TSP and facility-location originals pass two nonzero parameter
+sets against independent exact-classical-cost Circuits, including absolute
+phase and clean workspace. This local slice does not complete the corpus gate.

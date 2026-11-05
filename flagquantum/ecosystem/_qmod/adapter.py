@@ -6,7 +6,7 @@ import math
 import random
 import re
 from collections.abc import Callable, Mapping, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from decimal import Decimal
 from operator import and_, eq, ge, gt, le, lt, ne, or_, xor
 from types import MappingProxyType
@@ -34,7 +34,8 @@ from ...compiler._hybrid.model import (
 )
 from ...compiler._hybrid.verifier import Diagnostic, HybridVerificationError
 from .permutations import verify_permutations
-from .phase import expand_phase
+from .phase import MAX_PHASE_INPUT_BITS, expand_phase
+from .phase_factors import Cube, preserve_factors
 from .syntax import (
     ANGLE_CALLS,
     EXTREMA,
@@ -1511,9 +1512,42 @@ class _Adapt:
                 return (view[index],)
             return view
 
-        polynomial, locations = expand_phase(
-            expression, quantum_word, self.classical_number, condition=condition
-        )
+        factors: tuple[Cube, ...] = ()
+        factor_values: tuple[Value, ...] = ()
+        try:
+            polynomial, locations = expand_phase(
+                expression, quantum_word, self.classical_number, condition=condition
+            )
+        except HybridVerificationError as error:
+            # Preserve the established small-polynomial path and its resources.
+            # Only expansion-budget refusals admit this exact alternative.
+            if condition is not None or not all(
+                diagnostic.code == "qmod.budget.phase"
+                for diagnostic in error.diagnostics
+            ):
+                raise
+            factored, factors = preserve_factors(expression, quantum_word)
+            if not factors:
+                raise
+            factor_values = tuple(
+                Value(ValueId(self.scope, self.counter + i), register_type(1))
+                for i in range(len(factors))
+            )
+
+            def factored_word(node: Expression) -> tuple[tuple[Value, int], ...] | None:
+                if node.token.text.startswith("$phase_factor"):
+                    return ((factor_values[int(node.token.text[13:])], 0),)
+                return quantum_word(node)
+
+            polynomial, locations = expand_phase(
+                factored, factored_word, self.classical_number
+            )
+            physical_reads = {
+                location for factor in factors for location, _ in factor
+            } | {location for location in locations if location[0] not in factor_values}
+            if len(physical_reads) > MAX_PHASE_INPUT_BITS:
+                reject(token, "budget.phase", "phase exceeds 24 quantum input bits")
+            self.counter += len(factors)
         angle = (
             math.pi
             if not coefficient.children
@@ -1521,6 +1555,8 @@ class _Adapt:
             and "pi" not in self.parameters
             else self.classical_number(coefficient)
         )
+        for factor, value in zip(factors, factor_values, strict=True):
+            self.phase_factor(token, factor, value)
         # Check reads even when algebraic cancellation removes their phase terms.
         for value, wire in locations:
             self.effect_op(
@@ -1543,6 +1579,50 @@ class _Adapt:
                 indices=tuple(wire for _, wire in selected),
                 angle=radians,
             )
+        for value in reversed(factor_values):
+            self.effect_op("qreg.uncompute", token, (value,))
+            self.effect_op("qreg.release", token, (value,))
+
+    def phase_factor(self, token: Token, factor: Cube, value: Value) -> None:
+        owners = tuple(dict.fromkeys(owner for (owner, _), _ in factor))
+        widths = {f"owner{i}": register_width(owner) for i, owner in enumerate(owners)}
+
+        def node(text: str, *children: Expression) -> Expression:
+            return Expression(replace(token, text=text), children)
+
+        predicates = []
+        for i, owner in enumerate(owners):
+            mask = sum(1 << bit for (source, bit), _ in factor if source == owner)
+            expected = sum(
+                1 << bit
+                for (source, bit), positive in factor
+                if source == owner and positive
+            )
+            predicates.append(
+                node(
+                    "==",
+                    node("&", node(f"owner{i}"), node(str(mask))),
+                    node(str(expected)),
+                )
+            )
+        predicate = predicates[0]
+        for other in predicates[1:]:
+            predicate = node("&", predicate, other)
+        expression = _Expression(
+            predicate, widths, f"{self.scope}.factor{value.id.index}", set()
+        )
+        graph = expression.function()
+        self.functions.append(graph)
+        self.append_op(
+            token,
+            Operation(
+                "qreg.local",
+                results=(value,),
+                attributes={"name": graph.name},
+                location=token.location,
+            ),
+        )
+        self.effect_op("qreg.compute", token, (value, *owners), callee=graph.name)
 
     def bind_registers(
         self, token: Token, source: Expression, destination: Expression
@@ -2684,8 +2764,17 @@ class _Adapt:
                     "signature",
                     "phase requires an expression and unshadowed pi coefficient",
                 )
+            pending = [args[0]]
+            indexed = False
+            while pending:
+                node = pending.pop()
+                if node.token.text == "[":
+                    indexed = True
+                    break
+                pending.extend(node.children)
             if (
-                args[1].token.text == "["
+                indexed
+                or args[1].token.text == "["
                 or any(
                     parameter.record is not None
                     for parameter in self.parameters.values()

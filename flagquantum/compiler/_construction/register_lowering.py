@@ -647,20 +647,23 @@ def schedule_register_program(
                     workspace_state="fresh_zero",
                     max_operations=remaining,
                 )
-                # Each cubic write has exactly one compute/write/uncompute triple.
+                # Track individual ladder wires, including multi-wire cubes.
                 trace: list[ScheduleEvent] = []
+                live_scratch: set[int] = set()
                 for gate in boolean.circuit.instructions:
-                    if boolean.workspace and gate.wires[-1:] == boolean.workspace:
+                    if gate.wires[-1] in boolean.workspace:
+                        wire = gate.wires[-1]
                         action: Literal["compute", "uncompute"] = (
-                            "uncompute" if len(trace) % 2 else "compute"
+                            "uncompute" if wire in live_scratch else "compute"
                         )
+                        live_scratch.symmetric_difference_update((wire,))
                         trace.append(
                             ScheduleEvent(
                                 action,
                                 boolean.source_result,
                                 (),
-                                boolean.workspace,
-                                1,
+                                (wire,),
+                                len(live_scratch),
                                 1,
                             )
                         )

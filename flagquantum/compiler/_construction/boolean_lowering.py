@@ -11,6 +11,7 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from typing import Literal
 
+from ...core.controlled import _clean_mcx_instructions
 from ...core.ir import CircuitIR, Instruction
 from .._hybrid.model import HybridProgram, ValueId
 from .arithmetic_rewrites import normalize_arithmetic
@@ -152,7 +153,7 @@ def lower_boolean_value(
         workspace=workspace,
         workspace_state=workspace_state,
     )
-    if sum(map(len, inputs.values())) > _MAX_INPUT_BITS or len(output) > _MAX_WIDTH:
+    if len(output) > _MAX_WIDTH:
         raise BooleanCandidateError("budget: Boolean input or output width")
 
     analysis = analyze_lifetimes(functions, entry=entry)
@@ -215,9 +216,55 @@ def lower_boolean_value(
     result = block.operations[-1].operands[0].id
     bits = values[result]
     bits += (_ZERO,) * (len(output) - len(bits))
+    support = 0
+    for terms in bits:
+        for mask in terms:
+            support |= mask
+    if support.bit_count() > _MAX_INPUT_BITS:
+        raise BooleanCandidateError(
+            "budget: Boolean input or output width (active inputs)"
+        )
     used_workspace: tuple[int, ...] = ()
     gates: list[Instruction] = []
     for target, terms in zip(reversed(output), bits, strict=True):
+        active = sorted(
+            {i for mask in terms for i in range(len(wires)) if mask >> i & 1}
+        )
+        # A signed Boolean cube has exactly one satisfying assignment on its
+        # support. Recognize it from the bounded ANF, independently of syntax.
+        if any(mask.bit_count() > 3 for mask in terms):
+            satisfying = []
+            for assignment in range(1 << len(active)):
+                basis = sum(
+                    1 << bit for i, bit in enumerate(active) if assignment >> i & 1
+                )
+                if sum(mask & basis == mask for mask in terms) % 2:
+                    satisfying.append(assignment)
+            if len(satisfying) == 1:
+                controls = tuple(wires[bit] for bit in active)
+                cube_scratch = tuple(workspace[: max(len(controls) - 2, 0)])
+                if len(cube_scratch) < len(controls) - 2:
+                    raise BooleanCandidateError(
+                        "mapping: cube requires clean workspace"
+                    )
+                flips = tuple(
+                    Instruction("x", (wire,))
+                    for i, wire in enumerate(controls)
+                    if not satisfying[0] >> i & 1
+                )
+                mapped = (
+                    *flips,
+                    *_clean_mcx_instructions(controls, target, cube_scratch),
+                    *flips,
+                )
+                if len(gates) + len(mapped) > min(max_operations, 256):
+                    raise BooleanCandidateError(
+                        "budget: Boolean mapped operations",
+                        exhausted=max_operations < 256,
+                    )
+                gates.extend(mapped)
+                used_workspace = tuple(dict.fromkeys((*used_workspace, *cube_scratch)))
+                continue
         for mask in sorted(terms):
             controls = tuple(w for i, w in enumerate(wires) if mask & (1 << i))
             degree = len(controls)
@@ -231,7 +278,7 @@ def lower_boolean_value(
                 )
             if degree == 3:
                 scratch = workspace[0]
-                used_workspace = (scratch,)
+                used_workspace = tuple(dict.fromkeys((*used_workspace, scratch)))
                 compute = Instruction("ccx", (*controls[:2], scratch))
                 gates.extend(
                     (

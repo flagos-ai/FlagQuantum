@@ -772,3 +772,49 @@ in the [compatibility delivery](../../docs/roadmap/SYNTH_LITERAL_RZ_DELIVERY.md)
 Run `python -m examples.synthesis_native_and_qmod_rz` for current Python
 high-level arithmetic, matching Qmod and the independent RZ Circuit reference.
 The example states the native phase gap rather than calling Circuit high-level.
+
+### Shared Boolean computations and original QAOA costs
+
+Native qfunc arithmetic and Qmod reuse the same Compiler Boolean candidate.
+For example, the user declares a product and a phase without choosing an AND
+ladder, scratch wires or cleanup gates:
+
+```python
+from flagquantum.synth import (
+    Output, QBit, QNum, qfunc, allocate, hadamard_transform,
+    within, apply, phase, synthesize,
+)
+
+@qfunc
+def main(a: Output[QBit], b: Output[QBit], c: Output[QBit], d: Output[QBit]):
+    allocate(a)
+    allocate(b)
+    allocate(c)
+    allocate(d)
+    hadamard_transform(a)
+    hadamard_transform(b)
+    hadamard_transform(c)
+    hadamard_transform(d)
+    with within():
+        selected: QNum[1] = a * b * c * d
+    with apply():
+        phase(selected, 0.37)
+
+program = synthesize(main, max_qubits=7, max_workspace=3)
+```
+
+Run `python -m examples.synthesis_boolean_factors` for executable native qfunc,
+Qmod and independent Circuit forms. Both synthesized programs use seven qubits,
+17 operations and depth 14, including three clean workspace qubits. This does
+not add masked-integer expressions to the Python qfunc frontend.
+
+For original Qmod real costs, the flat polynomial path is retained. When its
+bounded expansion fails, the adapter can preserve shared products of signed bit
+literals using existing arithmetic calls. The Compiler verifies their inverse
+cleanup and chooses their physical realization. The original TSP and facility
+location files keep their bytes and layer counts; reproduce their independent
+full-state checks with `python tools/validate_qmod_phase_factors.py --case
+facility_location --scale .003 --output /tmp/facility.json` (one shell line).
+See [the bounded profile](../../docs/reference/KNOWN_LIMITATIONS.md) for the
+factor, active-bit, expression-depth and resource limits. This is a local
+integration capability pending the complete 216-original gate.

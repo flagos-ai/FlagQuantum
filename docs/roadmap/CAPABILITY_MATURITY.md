@@ -302,3 +302,13 @@ covering two distinct blobs. Independent full-state references cover positive an
 negative molecular evolution times, coherent walk wraparound and zero scratch
 leakage. This adds no native qperm API or capability-level promotion and does not
 complete the 216-original gate.
+
+Bounded large expressions and shared Boolean phase factors add the unchanged TSP
+and facility-location originals to the local UP-06 candidate. Each has two
+nonzero parameter vectors checked against independent Circuits derived from
+exact classical arithmetic, with absolute phase and all workspace checked.
+Shared arithmetic compute/uncompute, six-active-bit Boolean cube recognition
+and existing clean MCX kernels provide the implementation; no filename or cost
+function special cases are used. Native qfunc arithmetic also uses that Compiler
+candidate. Expanded and factor-preserving paths have explicit finite budgets.
+This is local CPU correctness evidence, with no corpus-wide maturity promotion.
