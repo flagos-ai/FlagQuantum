@@ -303,6 +303,18 @@ def schedule_register_program(
                 controls, target_ports[0], position, n_qubits, op
             )
             control_workspace = max(control_workspace, used_workspace)
+        elif op.name == "qreg.array_phase_flip":
+            ports = bindings[op.operands[1].id]
+            controls, target = ports[:-1], ports[-1]
+            if controls:
+                middle, used_workspace = _array_controlled_x(
+                    controls, target, position, n_qubits, op
+                )
+                flip = Instruction("h", (target,))
+                gates = (flip, *middle, flip)
+                control_workspace = max(control_workspace, used_workspace)
+            else:
+                gates = (Instruction("z", (target,)),)
         elif op.name == "qreg.control_phase":
             condition = bindings[op.operands[1].id][0]
             angle = op.attributes["angle"]

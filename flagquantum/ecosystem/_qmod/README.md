@@ -620,3 +620,10 @@ print(fq.run(program).statevector())
 constant as the vector and a top-level `real` literal constant as the bound.
 These are immutable source values. Named vectors use the same width and
 normalization checks as inline vectors.
+
+### Phase flips controlled by qubit arrays
+
+`control(x) { phase(pi); }` flips the phase of the all-ones basis state of an
+initialized qubit array. `control(x[i]) { phase(pi); }` flips the phase when the
+indexed qubit is one, using the existing Qmod index order. A multi-qubit phase
+flip reuses the bounded array-control lowering and its clean workspace budget.

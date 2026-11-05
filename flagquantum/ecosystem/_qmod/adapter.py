@@ -1041,13 +1041,29 @@ class _Adapt:
         if len(statement.arguments) != 1 or body is None or len(body) != 1:
             reject(token, "control", "control requires one condition and one operation")
         condition = statement.arguments[0]
+        operation = body[0]
+        args = operation.arguments
+        flip_phase = (
+            operation.token.text == "phase"
+            and len(args) == 1
+            and not args[0].children
+            and args[0].token.text == "pi"
+            and "pi" not in self.parameters
+        )
+        if flip_phase and condition.token.text == "[":
+            register, wire = self.gate_target(condition)
+            self.effect_op("qreg.gate", token, (register,), gate="z", index=wire)
+            return
         parameter = self.parameters.get(condition.token.text)
         if (
             not condition.children
             and parameter is not None
             and parameter.kind == "qbit[]"
         ):
-            operation = body[0]
+            if flip_phase:
+                control = self.register(parameter.name, allow_qubit_array=True)
+                self.effect_op("qreg.array_phase_flip", token, (control,))
+                return
             if operation.token.text != "X" or len(operation.arguments) != 1:
                 reject(
                     token, "control", "array control requires a single scalar X target"
@@ -1074,13 +1090,14 @@ class _Adapt:
         )
         if sum(value.type.parameters[0] for value in inputs) > 8:
             reject(token, "control", "control predicate exceeds eight input bits")
-        operation = body[0]
-        args = operation.arguments
         targets: tuple[Value, ...] = ()
         angle = None
         if operation.token.text in {"H", "hadamard_transform"} and len(args) == 1:
             targets = (self.register(self.atom(args[0])),)
             opcode = "qreg.control_h"
+        elif flip_phase:
+            angle = math.pi
+            opcode = "qreg.control_phase"
         elif operation.token.text == "phase" and len(args) == 2:
             coefficient = args[1]
             if (

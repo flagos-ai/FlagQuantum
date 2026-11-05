@@ -40,6 +40,7 @@ _ATTRIBUTES = MappingProxyType(
         "qreg.pair_gate": frozenset({"gate"}),
         "qreg.control_h": frozenset(),
         "qreg.control_x": frozenset(),
+        "qreg.array_phase_flip": frozenset(),
         "qreg.control_phase": frozenset({"angle"}),
         "qreg.gate": frozenset({"gate", "index"}),
         "qreg.compute": frozenset({"callee"}),
@@ -485,6 +486,13 @@ def _verify_body(
                         op,
                     )
                 changed = (destination,)
+            elif op.name == "qreg.array_phase_flip":
+                if arguments or destination.id not in initialized:
+                    _fail(
+                        "register.control",
+                        "phase flip requires one initialized register",
+                        op,
+                    )
             elif op.name in {"qreg.control_h", "qreg.control_x", "qreg.control_phase"}:
                 if (
                     len(arguments) > 1
