@@ -20,6 +20,7 @@ from .._hybrid.model import (
     Value,
     ValueId,
 )
+from .pauli_rotation import checked_support
 from .profile import _fail, _positive_integer, _width, verify_construction
 from .register_expansion import expand_register_calls, is_register_function
 
@@ -46,6 +47,7 @@ _ATTRIBUTES = MappingProxyType(
         "qreg.type1_transform": frozenset(),
         "qreg.type2_transform": frozenset({"kind"}),
         "qreg.rzz": frozenset({"angle"}),
+        "qreg.pauli_rotation": frozenset({"support", "angle"}),
         "qreg.pair_gate": frozenset({"gate"}),
         "qreg.control_h": frozenset(),
         "qreg.control_x": frozenset(),
@@ -404,6 +406,9 @@ def _verify_body(
                 _fail("register.adjoint", "inverse gate marker must be true", op)
             assert attributes is not None
             attributes = attributes | {"inverse"}
+        if op.name == "qreg.pauli_rotation" and "control_index" in op.attributes:
+            assert attributes is not None
+            attributes = attributes | {"control_index"}
         if op.name == "qreg.pair_gate":
             assert attributes is not None
             if (
@@ -710,6 +715,49 @@ def _verify_body(
                         "phase requires initialized qubits",
                         op,
                     )
+            elif op.name == "qreg.pauli_rotation":
+                checked_support(
+                    op.attributes["support"], register_width(destination), op
+                )
+                angle = op.attributes["angle"]
+                controlled = "control_index" in op.attributes
+                if (
+                    type(angle) is not float
+                    or not math.isfinite(angle)
+                    or not math.isfinite(2 * angle)
+                ):
+                    _fail(
+                        "register.pauli",
+                        "Pauli angle and doubled angle must be finite floats",
+                        op,
+                    )
+                if len(arguments) != int(controlled):
+                    _fail(
+                        "register.pauli",
+                        "Pauli rotation needs a target and optional control",
+                        op,
+                    )
+                if any(value.id not in initialized for value in operands):
+                    _fail(
+                        "register.uninitialized",
+                        "Pauli rotation requires initialized storage",
+                        op,
+                    )
+                if destination in borrowed:
+                    _fail("register.const", "Pauli target must be writable", op)
+                if controlled:
+                    index = op.attributes["control_index"]
+                    if (
+                        arguments[0] == destination
+                        or type(index) is not int
+                        or not 0 <= index < register_width(arguments[0])
+                    ):
+                        _fail(
+                            "register.pauli",
+                            "Pauli control requires a disjoint register and bounded index",
+                            op,
+                        )
+                changed = (destination,)
             elif op.name == "qreg.control_x" and "indices" in op.attributes:
                 indices = op.attributes["indices"]
                 if (

@@ -212,7 +212,7 @@ def test_qdrift_preserves_sign_and_ignores_zero_weight(coefficient):
     )
 
 
-@pytest.mark.parametrize("count", ["0", "1025", "1+1"])
+@pytest.mark.parametrize("count", ["0", "2049", "1+1"])
 def test_qdrift_rejects_invalid_sample_counts(count):
     source = QDRIFT_SOURCE.read_text().replace("288,", f"{count},")
     with pytest.raises(InteropConversionError, match="literal sample count"):

@@ -11,8 +11,8 @@ from typing import Literal, NoReturn
 from ...compiler._hybrid.model import SourceLocation
 from ...compiler._hybrid.verifier import Diagnostic, HybridVerificationError
 
-MAX_BYTES = 262144
-MAX_TOKENS = 4096
+MAX_BYTES = 524288
+MAX_TOKENS = 65536
 MAX_DEPTH = 40
 MAX_EXPRESSION_DEPTH = 128
 MAX_SCOPE_DEPTH = 32

@@ -53,7 +53,7 @@ from .syntax import (
 SUPPORTED_SOURCE_VERSION = "2bfd835e73b6882fcc515a725098b04766c238e7"
 MAX_EFFECT_OPERATIONS = 4096
 MAX_HELPER_EXPANSIONS = 4096
-MAX_QDRIFT_SAMPLES = 1024
+MAX_QDRIFT_SAMPLES = 2048
 QDRIFT_SEED = 0
 _GATE_CALLS = frozenset({"X", "H", "S", "Z", "I", "SX", "hadamard_transform"})
 _PAIR_CALLS = frozenset({"CX", "CZ", "SWAP", "CRX"})
@@ -2233,7 +2233,7 @@ class _Adapt:
         register, terms = self.pauli_terms(token, operator, target_arg)
         time = self.evolution_angle(time_arg, token)
         weights = [abs(coefficient) for _, coefficient in terms]
-        total = sum(weights)
+        total = math.fsum(weights)
         if not total or not time:
             self.effect_op(
                 "qreg.gate", token, (register,), gate="rz", index=0, angle=0.0
@@ -2370,66 +2370,15 @@ class _Adapt:
         *,
         control: tuple[Value, int] | None = None,
     ) -> None:
-        def gate(name: str, index: int, **attributes: object) -> None:
-            self.effect_op(
-                "qreg.gate", token, (register,), gate=name, index=index, **attributes
+        if not math.isfinite(angle) or not math.isfinite(2 * angle):
+            reject(
+                token, "angle", "Pauli rotation angle and doubled angle must be finite"
             )
-
-        if not support:
-            gate("rz", 0, angle=0.0)
-            if control is None:
-                self.effect_op("qreg.phase", token, (), angle=-angle)
-            else:
-                phase, index = control
-                self.effect_op(
-                    "qreg.gate",
-                    token,
-                    (phase,),
-                    gate="phase",
-                    index=index,
-                    angle=-angle,
-                )
-            return
-
-        for index, axis in support:
-            if axis == "X":
-                gate("h", index)
-            elif axis == "Y":
-                gate("rx", index, angle=math.pi / 2)
-        anchor = support[0][0]
-        for index, _ in support[1:]:
-            self.effect_op(
-                "qreg.pair_gate",
-                token,
-                (register, register),
-                gate="cx",
-                indices=(index, anchor),
-            )
-        if control is None:
-            gate("rz", anchor, angle=2 * angle)
-        else:
-            phase, index = control
-            self.effect_op(
-                "qreg.pair_gate",
-                token,
-                (phase, register),
-                gate="crz",
-                indices=(index, anchor),
-                angle=2 * angle,
-            )
-        for index, _ in reversed(support[1:]):
-            self.effect_op(
-                "qreg.pair_gate",
-                token,
-                (register, register),
-                gate="cx",
-                indices=(index, anchor),
-            )
-        for index, axis in reversed(support):
-            if axis == "X":
-                gate("h", index)
-            elif axis == "Y":
-                gate("rx", index, angle=-math.pi / 2)
+        values = (register,) if control is None else (register, control[0])
+        attributes: dict[str, object] = {"support": support, "angle": angle}
+        if control is not None:
+            attributes["control_index"] = control[1]
+        self.effect_op("qreg.pauli_rotation", token, values, **attributes)
 
     def prepare_exponential_state(
         self, token: Token, args: tuple[Expression, ...]
@@ -2657,6 +2606,13 @@ class _Adapt:
                     )
                 elif op.name == "qreg.control_x" and "indices" in op.attributes:
                     self.effect_op(op.name, token, op.operands[1:], **op.attributes)
+                elif op.name == "qreg.pauli_rotation":
+                    self.effect_op(
+                        op.name,
+                        token,
+                        op.operands[1:],
+                        **{**op.attributes, "angle": -op.attributes["angle"]},
+                    )
                 else:
                     reject(
                         token,

@@ -303,6 +303,25 @@ one inline sparse operator and one time, reusing existing order 1/2 evolution an
 1..256 repetitions. Additional operators and times are rejected. These are local
 integration slices pending the complete original corpus gate and integration CI.
 
+## Compact Pauli evolution integration slice
+
+Qmod acquisition is bounded at 512 KiB and 65536 tokens for large Pauli data.
+Expression/scope/definition and 4096 owned-node caps remain independent. Each
+ordered Pauli factor becomes one private `qreg.pauli_rotation` effect; Compiler
+verifies its support, initialization, ownership, optional disjoint control and
+finite angle, then performs the physical H/RX/CX/RZ mapping. The adapter's old
+expanded mapping is removed. Identity terms retain absolute or controlled phase.
+Actual final instruction, depth, qubit, workspace and execution-memory limits
+remain enforced. This does not enable unbounded source or gate expansion.
+
+qDRIFT accepts literal counts 1..2048 in the existing deterministic local profile.
+Seed zero and source-order weighted sampling are retained. The rotation's total
+absolute weight uses `math.fsum`; no sample, zero-weight convention or source
+term is silently truncated. The unchanged 551-term, 12-bit Trotter and 2000-sample
+qDRIFT originals have independent full-state Circuit checks, including all sampled
+rotation payloads and global phase. No new public Python qfunc Hamiltonian-array
+entry is introduced. Corpus-wide acceptance and full integration CI remain open.
+
 ## Bounded Qmod Boolean phase factors
 
 Expression depth is bounded at 128 independently of the 40-level matrix literal

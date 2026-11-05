@@ -31,7 +31,10 @@ One Pauli factor occupies one owned effect; the 4096 owned-node budget is not
 raised. qDRIFT accepts 1..2048 literal samples, preserving all 2000 samples in
 the original example. The existing local deterministic profile uses seed zero,
 source-order terms, absolute coefficient weights and the same sampled sequence.
-Sampling remains in the adapter, not the Compiler. No operator terms are dropped.
+Sampling remains in the adapter, not the Compiler. Rotation normalization uses
+`math.fsum` of absolute weights for consistent finite-precision mass; the
+source-ordered cumulative distribution used by the fixed RNG is preserved. No
+operator terms are dropped.
 
 The physical mapping migrates the established H/RX, CX parity and RZ template
 into one authoritative Compiler implementation. The adapter's previous expanded

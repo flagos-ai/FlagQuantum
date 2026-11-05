@@ -235,7 +235,7 @@ print(dict(program.probabilities(result, registers=("x", "result"))))
 ```
 
 A string is always source text, never a filename. Files must be regular UTF-8
-.qmod files, at most 262144 bytes. Native input owns initialization, so inputs,
+.qmod files, at most 524288 bytes. Native input owns initialization, so inputs,
 input_state, constants, preparation and preparation_map must remain None and
 functions must be empty. The supported subset is one main, fresh unsigned scalar
 outputs, scalar Const/Output helpers, bounded arithmetic and admitted preparation;
@@ -818,3 +818,36 @@ facility_location --scale .003 --output /tmp/facility.json` (one shell line).
 See [the bounded profile](../../docs/reference/KNOWN_LIMITATIONS.md) for the
 factor, active-bit, expression-depth and resource limits. This is a local
 integration capability pending the complete 216-original gate.
+
+### Large Pauli evolution originals
+
+The original 551-term, 12-bit Pauli workloads now use compact owned effects
+and bounded Compiler lowering. qDRIFT retains all 2000 seed-zero samples.
+Use the same public workflow with either unchanged local file:
+
+```python
+from pathlib import Path
+import flagquantum as fq
+from flagquantum import synth
+
+program = synth.synthesize(
+    Path("hamiltonian_evolution.qmod"),
+    max_qubits=12,
+    max_workspace=0,
+    memory_limit_bytes=64 * 1024**2,
+)
+result = fq.run(program)
+print(program.report["resources"])
+print(result.statevector())
+```
+
+Run `python tools/validate_qmod_large_pauli.py --case hamiltonian_evolution
+--output /tmp/qdrift.json` on one shell line for the pinned fixture, independent
+sample sequence and full-state Circuit reference. The companion case is
+`example_exponentiation`. Source files and their MIT license are hash checked.
+
+`python -m examples.synthesis_large_pauli` demonstrates a small Z evolution
+through native qfunc phase intent, Qmod and independent Circuit forms, including
+the absolute phase and each form's real workspace cost. It does not claim that
+Python qfunc accepts Hamiltonian arrays. The private compact operation is an
+implementation detail; normal users continue to call `synthesize` and `fq.run`.

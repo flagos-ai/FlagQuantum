@@ -370,9 +370,9 @@ print(fq.run(program).statevector())
 ### qDRIFT
 
 `qdrift(operator, t, count, q)` takes an inline or named `SparsePauliOp`
-and a literal sample count in 1..1024. The existing effect budget also applies.
+and a literal sample count in 1..2048. The existing effect budget also applies.
 Each sample is drawn with replacement using probability `abs(h) / lambda`,
-where `lambda = sum(abs(h))`. Its Pauli rotation uses signed evolution angle
+where `lambda = math.fsum(abs(h))`. Its Pauli rotation uses signed evolution angle
 `sign(h) * t * lambda / count`. Zero total weight or zero time gives identity.
 
 FlagQuantum seeds a local Python RNG with 0 per call during synthesis to make
@@ -1010,3 +1010,20 @@ Use `--case discrete_quantum_walk` without `--parameter` for the original walk
 and its full-state/clean-workspace reference. Molecular energy curve and molecule
 eigensolver are two original paths containing the same source blob; coverage is
 reported by both paths and distinct blobs.
+
+## Compact large Pauli data
+
+Source acquisition is bounded at 512 KiB and 65536 tokens. The existing
+expression, scope, definition, helper-expansion and 4096 owned-node caps stay
+independent. One ordered Pauli factor translates to one owned
+`qreg.pauli_rotation` effect; Compiler verifies and maps the physical gates.
+The previous adapter-level expanded Pauli template is removed. Final qubit,
+workspace, instruction/depth and execution-memory constraints still apply.
+
+The unchanged 551-term Trotter and 2000-sample qDRIFT originals retain 12 target
+bits and have full-state independent Circuit acceptance. Source-term order,
+seed-zero draws, identity/global phase and numeric bit order are preserved.
+The finite absolute-weight normalization uses math.fsum. Sampling stays at the
+adapter boundary; no random state or external Qmod type enters Compiler.
+See docs/api-changes/FQ-SYNTH-UP06-PAULI-20261105.md and the independent tool
+`tools/validate_qmod_large_pauli.py`. This remains local corpus integration work.

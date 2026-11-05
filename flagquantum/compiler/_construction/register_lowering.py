@@ -34,6 +34,7 @@ from .lowering import (
     _copy,
     adjoint_value_candidate,
 )
+from .pauli_rotation import pauli_rotation_instructions
 from .profile import _fail, _positive_integer, _width, uint_type
 from .register_expansion import expand_register_calls, is_register_function
 from .register_profile import (
@@ -422,6 +423,19 @@ def schedule_register_program(
         elif op.name == "qreg.control_h":
             control, target = (bindings[value.id][0] for value in op.operands[1:])
             gates = controlled_instruction(Instruction("h", (target,)), (control,))
+        elif op.name == "qreg.pauli_rotation":
+            pauli_target = op.operands[1]
+            pauli_control = (
+                bindings[op.operands[2].id][-1 - op.attributes["control_index"]]
+                if "control_index" in op.attributes
+                else None
+            )
+            gates = pauli_rotation_instructions(
+                bindings[pauli_target.id],
+                op.attributes["support"],
+                op.attributes["angle"],
+                control=pauli_control,
+            )
         elif op.name == "qreg.control_x":
             if "indices" in op.attributes:
                 ports = tuple(

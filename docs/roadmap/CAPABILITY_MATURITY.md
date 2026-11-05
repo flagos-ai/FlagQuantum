@@ -312,3 +312,12 @@ and existing clean MCX kernels provide the implementation; no filename or cost
 function special cases are used. Native qfunc arithmetic also uses that Compiler
 candidate. Expanded and factor-preserving paths have explicit finite budgets.
 This is local CPU correctness evidence, with no corpus-wide maturity promotion.
+
+The large-Pauli UP-06 slice moves the existing physical template into Compiler
+behind an independently verified compact register effect. Two unchanged originals
+retain 551 terms and 12 target bits; the qDRIFT case retains all 2000 fixed-seed
+samples. Source-order products, identity/global phase, coherent controls, finite
+budgets and zero workspace are checked against independent references. Data
+budgets grow to 512 KiB/65536 tokens while the 4096 owned-node and 100000 final
+instruction caps remain. This is a local integration slice, not a complete
+Hamiltonian-language, classical-workflow or corpus-wide capability promotion.
