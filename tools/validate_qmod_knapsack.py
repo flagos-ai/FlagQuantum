@@ -98,7 +98,12 @@ def validate(case: str, scale: float) -> Validation:
     resources = program.report["resources"]
     if not isinstance(resources, ResourceEstimate):
         raise TypeError("expected actual Compiler resource estimates")
-    if error > 1e-12 or probability_error > 1e-12 or abs(norm - 1) > 1e-12:
+    if (
+        not all(math.isfinite(value) for value in (error, probability_error, norm))
+        or error > 1e-12
+        or probability_error > 1e-12
+        or abs(norm - 1) > 1e-12
+    ):
         raise AssertionError(
             f"state/probability/norm mismatch: {error}, {probability_error}, {norm}"
         )
