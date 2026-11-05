@@ -245,8 +245,11 @@ def test_migrated_cpu_jobs_keep_frameworks_and_processes_isolated(job: str) -> N
         assert definition["runs-on"] == A800_CPU_ROUTE
         assert definition["timeout-minutes"] == 60
         assert any(
-            step.get("uses") == "./.github/actions/isolated-python" for step in steps
+            step.get("uses") == "./.github/actions/offline-cpu"
+            and step["with"]["profile"] == "coverage-py3.12"
+            for step in steps
         )
+        assert not any("pip install" in step.get("run", "") for step in steps)
     else:
         assert definition["timeout-minutes"] == 30
     if job == "coverage-shard":
@@ -391,7 +394,9 @@ def test_coverage_shards_are_combined_before_the_policy_is_enforced() -> None:
         for step in source_steps
         if step.get("with", {}).get("name", "").startswith("ci-source-${{")
     )
-    assert full_source["if"] == "steps.source-cache.outputs.complete != 'true'"
+    assert full_source["if"] == (
+        "steps.source-cache.outputs.complete != 'true' && steps.source-repair.outputs.complete != 'true'"
+    )
     assert full_source["with"]["digest-mismatch"] == "error"
     commands = "\n".join(
         str(step.get("run", "")) for step in _steps("ci.yml", "coverage")

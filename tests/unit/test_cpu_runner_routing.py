@@ -8,6 +8,7 @@ import yaml
 
 pytestmark = pytest.mark.unit
 WORKFLOWS = Path(__file__).resolve().parents[2] / ".github/workflows"
+FULL_CPU_ROUTE = '${{ fromJSON((github.event_name != \'pull_request\' || github.event.pull_request.head.repo.full_name == github.repository) && \'["self-hosted","linux","x64","flagquantum-cpu"]\' || \'["ubuntu-latest"]\') }}'
 
 
 def _inventoried_r300_labels() -> set[str]:
@@ -158,10 +159,13 @@ def test_portable_cpu_work_uses_general_or_validated_scale_sets() -> None:
     }
     for name in portable:
         job = jobs[name]
-        assert any(
-            f"'{label}'" in job["runs-on"]
-            for label in {"flagquantum-cpu-general", *_inventoried_r300_labels()}
-        ), name
+        if name == "qiskit-compat":
+            assert job["runs-on"] == FULL_CPU_ROUTE
+        else:
+            assert any(
+                f"'{label}'" in job["runs-on"]
+                for label in {"flagquantum-cpu-general", *_inventoried_r300_labels()}
+            ), name
         assert "flagquantum-a100-cpu" not in job["runs-on"], name
         if "flagcicd-r300-" not in job["runs-on"]:
             assert not any(
@@ -223,8 +227,11 @@ def test_sdk_jobs_use_accepted_fixed_capacity() -> None:
             if name == "cirq-optional"
             else "flagquantum-cpu-general"
         )
-        assert f"'{label}'" in job["runs-on"]
-        assert "'ubuntu-latest'" in job["runs-on"]
+        if name == "qiskit-compat":
+            assert job["runs-on"] == FULL_CPU_ROUTE
+        else:
+            assert f"'{label}'" in job["runs-on"]
+        assert "ubuntu-latest" in job["runs-on"]
         assert job["timeout-minutes"] == 30
         assert job["env"]["MAX_JOBS"] == "2"
         installer = next(
@@ -369,9 +376,18 @@ def test_linux_prerequisites_keep_forks_off_private_cpu_runners(
             assert steps[index + 1]["uses"] == "./.github/actions/isolated-python"
 
 
-@pytest.mark.parametrize("name", ["pre-commit", "prepare-source"])
-def test_api_source_bootstrap_preserves_checkout_fallback(name: str) -> None:
-    jobs = yaml.safe_load((WORKFLOWS / "ci.yml").read_text())["jobs"]
+@pytest.mark.parametrize(
+    "workflow,name",
+    [
+        ("ci.yml", "pre-commit"),
+        ("ci.yml", "prepare-source"),
+        ("local-gpu.yml", "prepare-source"),
+    ],
+)
+def test_api_source_bootstrap_preserves_checkout_fallback(
+    workflow: str, name: str
+) -> None:
+    jobs = yaml.safe_load((WORKFLOWS / workflow).read_text())["jobs"]
     steps = jobs[name]["steps"]
     bootstrap = next(step for step in steps if step.get("id") == "archive-source")
     assert bootstrap["if"] == (

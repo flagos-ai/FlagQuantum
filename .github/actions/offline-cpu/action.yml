@@ -7,6 +7,9 @@ inputs:
   registry-token:
     description: Read-only GitHub package token
     required: true
+  wheel-directory:
+    description: Optional read-only SDK wheel cache mounted into the job container
+    default: ""
 runs:
   using: composite
   steps:
@@ -14,6 +17,7 @@ runs:
       env:
         FQ_CI_PROFILE: ${{ inputs.profile }}
         FQ_REGISTRY_TOKEN: ${{ inputs.registry-token }}
+        FQ_CI_WHEEL_DIRECTORY: ${{ inputs.wheel-directory }}
       run: |
         image="$(awk -v profile="$FQ_CI_PROFILE" '$1 == profile { print $2 }' docker/ci/images.lock)"
         [[ "$image" =~ ^ghcr\.io/flagos-ai/flagquantum-ci@sha256:[a-f0-9]{64}$ ]]
@@ -41,6 +45,8 @@ runs:
           container_user=0:0
         fi
         export FQ_CI_CONTAINER_USER="$container_user"
+        export FQ_CI_WHEEL_DIRECTORY
+        echo "FQ_CI_WHEEL_DIRECTORY=$FQ_CI_WHEEL_DIRECTORY" >> "$GITHUB_ENV"
         echo "FQ_CI_CONTAINER_USER=$container_user" >> "$GITHUB_ENV"
         echo "Using locked CPU CI image $image"
 

@@ -21,14 +21,20 @@ else
   command=("$python" "$@")
 fi
 
+mounts=(--volume "$GITHUB_WORKSPACE:$GITHUB_WORKSPACE" --volume "$RUNNER_TEMP:$RUNNER_TEMP")
+if [[ -n "${FQ_CI_WHEEL_DIRECTORY:-}" ]]; then
+  test -d "$FQ_CI_WHEEL_DIRECTORY"
+  mounts+=(--volume "$FQ_CI_WHEEL_DIRECTORY:$FQ_CI_WHEEL_DIRECTORY:ro")
+fi
+
 exec docker run --rm --pull never --network none --read-only --tmpfs /tmp:exec --shm-size 1g \
+  "${mounts[@]}" \
   --cap-drop ALL --security-opt no-new-privileges \
   --user "${FQ_CI_CONTAINER_USER:?}" --workdir "$GITHUB_WORKSPACE" \
-  --volume "$GITHUB_WORKSPACE:$GITHUB_WORKSPACE" \
-  --volume "$RUNNER_TEMP:$RUNNER_TEMP" \
   --env "HOME=$FQ_CI_PRIVATE" --env USER --env LOGNAME \
   --env "PATH=$FQ_CI_PRIVATE/venv/bin:/opt/ci/bin:/usr/local/bin:/usr/bin:/bin" \
   --env FQ_CI_PRIVATE --env FQ_CI_REPORT_DIR --env FQ_PYTEST_WORKERS \
+  --env FQ_DISTRIBUTED_WORKERS --env MAX_JOBS --env QISKIT_VERSION \
   --env GITHUB_ENV --env GITHUB_STEP_SUMMARY --env RUNNER_TEMP --env RUNNER_NAME --env RUNNER_ENVIRONMENT \
   --env PET_LOCAL_ADDR=127.0.0.1 --env GLOO_SOCKET_IFNAME=lo \
   --env OMP_NUM_THREADS --env MKL_NUM_THREADS --env OPENBLAS_NUM_THREADS \
