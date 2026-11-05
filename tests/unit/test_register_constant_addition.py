@@ -60,6 +60,7 @@ def reference_arithmetic_gates(
         pytest.skip("Reference gate stream requires Qualtran v0.7.0")
     import cirq
     import numpy as np
+    from qualtran import CompositeBloq
     from qualtran.bloqs.basic_gates import CNOT, XGate
     from qualtran.cirq_interop import BloqAsCirqGate
 
@@ -79,16 +80,18 @@ def reference_arithmetic_gates(
 
     manager = Manager()
     context = cirq.DecompositionContext(manager)
-    operation, outputs = (
-        source.decompose_bloq()
-        .flatten()
-        .to_cirq_circuit_and_quregs(
-            qubit_manager=manager,
-            **{
-                name: np.array([cirq.LineQubit(w) for w in wires])
-                for name, wires in inputs.items()
-            },
-        )
+    composite = source if isinstance(source, CompositeBloq) else source.decompose_bloq()
+    operation, outputs = composite.flatten().to_cirq_circuit_and_quregs(
+        qubit_manager=manager,
+        **{
+            name: np.array([cirq.LineQubit(w) for w in wires]).reshape(
+                (
+                    *source.signature.get_left(name).shape,
+                    int(source.signature.get_left(name).bitsize),
+                )
+            )
+            for name, wires in inputs.items()
+        },
     )
     assert {
         name: tuple(q.x for q in wires.flat) for name, wires in outputs.items()

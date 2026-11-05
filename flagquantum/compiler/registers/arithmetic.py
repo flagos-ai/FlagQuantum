@@ -13,6 +13,7 @@
 
 from ...core.ir import Instruction
 from .._arithmetic_kernels import ripple_add_modular
+from .and_compute import and_compute_ir, and_uncompute_ir
 
 
 def controlled_add_or_subtract_ir(
@@ -44,44 +45,11 @@ def add_ir(
     def cx(control: int, target: int) -> None:
         instructions.append(Instruction("cx", (control, target)))
 
-    def compute(x: int, y: int, target: int) -> None:
-        instructions.extend(
-            (
-                Instruction("h", (target,)),
-                Instruction("t", (target,)),
-                Instruction("cx", (x, target)),
-                Instruction("cx", (y, target)),
-                Instruction("cx", (target, x)),
-                Instruction("cx", (target, y)),
-                Instruction("tdg", (x,)),
-                Instruction("tdg", (y,)),
-                Instruction("t", (target,)),
-                Instruction("cx", (target, x)),
-                Instruction("cx", (target, y)),
-                Instruction("h", (target,)),
-                Instruction("s", (target,)),
-            )
-        )
-
-    def uncompute(x: int, y: int, target: int, bit: int) -> None:
-        instructions.extend(
-            (
-                Instruction("h", (target,)),
-                Instruction(
-                    "measure",
-                    (target,),
-                    metadata={"is_dynamic": True, "classical_bit": bit},
-                ),
-                Instruction("cz", (x, y), metadata={"conditions": ((bit, 1),)}),
-                Instruction("reset", (target,), metadata={"is_dynamic": True}),
-            )
-        )
-
     if width == 1:
         cx(a[0], b[0])
         return tuple(instructions)
 
-    compute(a[0], b[0], carries[0])
+    instructions.extend(and_compute_ir(a[0], b[0], carries[0]))
     for depth in range(1, width - 1):
         previous = carries[depth - 1]
         control = previous
@@ -89,7 +57,7 @@ def add_ir(
             control = a[depth]
             cx(previous, control)
         cx(previous, b[depth])
-        compute(control, b[depth], carries[depth])
+        instructions.extend(and_compute_ir(control, b[depth], carries[depth]))
         cx(previous, carries[depth])
     cx(carries[-1], b[-1])
     if len(a) == width:
@@ -98,11 +66,13 @@ def add_ir(
         previous = carries[depth - 1]
         cx(previous, carries[depth])
         control = a[depth] if depth < len(a) else previous
-        uncompute(control, b[depth], carries[depth], classical_bits[depth])
+        instructions.extend(
+            and_uncompute_ir(control, b[depth], carries[depth], classical_bits[depth])
+        )
         if depth < len(a):
             cx(previous, control)
             cx(control, b[depth])
-    uncompute(a[0], b[0], carries[0], classical_bits[0])
+    instructions.extend(and_uncompute_ir(a[0], b[0], carries[0], classical_bits[0]))
     cx(a[0], b[0])
     return tuple(instructions)
 
