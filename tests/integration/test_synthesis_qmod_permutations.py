@@ -43,7 +43,6 @@ def test_qperm_fresh_output_array_and_diagonal_phase() -> None:
     [
         "qperm bad(q:qbit) {H(q);}",
         "qfunc hidden(q:qbit) {H(q);} qperm bad(q:qbit) {hidden(q);}",
-        "qfunc Y(q:qbit) {H(q);} qperm bad(q:qbit) {Y(q);}",
         "qperm bad(q:qbit) {invert {H(q);}}",
         "qperm bad(q:qbit) {within {H(q);} apply {Z(q);}}",
         "qperm bad(q:qbit) {control(q==1) {H(q);}}",
@@ -65,6 +64,16 @@ def test_qperm_rejects_unproved_operations_even_in_unused_helpers(
 def test_qperm_call_graph_recursion_is_rejected() -> None:
     source = "qperm bad(q:qbit) {bad(q);} qfunc main(output q:qbit) {allocate(q);}"
     with pytest.raises(ValueError, match="acyclic"):
+        synth.synthesize(source, source_format="qmod")
+
+
+def test_builtin_y_cannot_be_redefined_to_bypass_qperm_proof() -> None:
+    source = """
+        qfunc Y(q:qbit) {H(q);}
+        qperm bad(q:qbit) {Y(q);}
+        qfunc main(output q:qbit) {allocate(q);}
+    """
+    with pytest.raises(ValueError, match="intrinsic redefinition"):
         synth.synthesize(source, source_format="qmod")
 
 
