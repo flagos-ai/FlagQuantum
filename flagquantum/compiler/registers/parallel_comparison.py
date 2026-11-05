@@ -7,9 +7,8 @@
 """Offset comparison blocks with independent logical histories and shared work."""
 
 from ...core.ir import Instruction
-from .bitwise import _validate_wires
 from .compare_exchange import compare_exchange_ir
-from .less_equal import less_equal_requirements
+from .comparison_layout import validate_comparison_layout
 
 
 def parallel_comparison_pairs(count: int, offset: int) -> tuple[tuple[int, int], ...]:
@@ -46,25 +45,14 @@ def parallel_compare_ir(
     A zero-pair block uses empty histories/work/slots and emits no instructions.
     """
     pairs = parallel_comparison_pairs(len(words), offset)
-    if type(adjoint) is not bool:
-        raise ValueError("Parallel comparison adjoint must be boolean")
-    width = len(words[0])
-    if width < 1 or any(len(word) != width for word in words):
-        raise ValueError("Parallel comparison requires equal positive word widths")
-    logical_wires = tuple(wire for word in words for wire in word)
-    _validate_wires((*logical_wires, *histories, *workspace))
-    if len(histories) != len(pairs):
-        raise ValueError("Parallel comparison needs one logical history per pair")
-    q, c = less_equal_requirements(width, width) if pairs else (0, 0)
-    if (
-        len(workspace) != q
-        or len(classical_bits) != c
-        or len(set(classical_bits)) != c
-        or any(type(bit) is not int or bit < 0 for bit in classical_bits)
-    ):
-        raise ValueError(
-            "Parallel comparison needs its clean work and distinct classical slots"
-        )
+    validate_comparison_layout(
+        words,
+        histories,
+        workspace,
+        classical_bits,
+        history_count=len(pairs),
+        adjoint=adjoint,
+    )
     stages = tuple(zip(pairs, histories, strict=True))
     return tuple(
         gate
