@@ -574,3 +574,18 @@ explicit; no native amplification, array or mutable helper export is added.
 Dropped problem data remains semantic, not clean workspace. Actual scratch is
 checked separately. Source-semantic refusals and historical baselines are retained;
 this is local CPU correctness evidence only.
+
+
+## Ordinary QPE source boundary
+
+Ordinary qpe accepts a checked zero-argument static callback and a fresh, unused
+all-fractional counter of at most eight bits. Signed values remain metadata over
+raw Distribution words; partial fractional arithmetic and native array QPE exports
+are not added. Supported effects and rejected ownership/control cases are listed
+in the [Qmod contributor guide](../../flagquantum/ecosystem/_qmod/README.md#bounded-ordinary-qpe-composition).
+Finite real[][] constants are at most 8x8, and unitary data width is at most three.
+Unitarity, source/effect/helper limits and all physical budgets remain checked;
+there is no normalization, dense runtime fallback or unbounded callback expansion.
+The three unchanged counting/matrix originals have independent complex128 CPU
+full-vector comparisons. This does not establish arbitrary QPE callback coverage,
+hardware qualification or general resource optimality.

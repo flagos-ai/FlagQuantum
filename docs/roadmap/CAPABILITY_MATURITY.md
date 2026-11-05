@@ -525,3 +525,23 @@ explicit; no native amplification, array or mutable helper export is added.
 Dropped problem data remains semantic, not clean workspace. Actual scratch is
 checked separately. Source-semantic refusals and historical baselines are retained;
 this is local CPU correctness evidence only.
+
+
+## Ordinary QPE source integration evidence
+
+Status: development_evidence, exact local CPU complex128. The unchanged
+quantum_counting_qpe, qpe_for_matrix and qpe_for_unitary_matrix originals compare
+complete complex statevectors against independent matrix powers and an explicit
+inverse Fourier transform. Source/license hashes are pinned in
+tests/fixtures/classiq_qmod/static_qpe_sources.json; run
+tools/validate_qmod_static_qpe.py for individual cases. Dropped problem registers
+remain semantic data and workspace is checked separately.
+
+The source slice reuses existing controls, phases, preparation and inverse QFT.
+Compiler adds bounded registered-gate matrix powers and controlled Givens
+composition. Structural commutation representatives preserve the old partitions
+and logical pair counters while avoiding repeated equivalent predicates.
+No numerical kernel, public source schema or native array-QPE export is added.
+See the [source scope and runnable comparison](../../flagquantum/ecosystem/_qmod/README.md#bounded-ordinary-qpe-composition)
+and [limitations](../reference/KNOWN_LIMITATIONS.md#ordinary-qpe-source-boundary).
+Global corpus counts remain separate from these three original acceptance cases.
