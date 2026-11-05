@@ -33,7 +33,8 @@ def controlled_qrom_ir(
     enable and address. Unlisted addresses load zero. Classical bits are
     supplied by the caller so the fragment can be placed on any qubits.
     Supply traversal_bits to use the upstream temporary-AND sequence for
-    an unblocked forward lookup, with one classical bit per traversal wire.
+    a forward lookup, with one classical bit per traversal wire. A paired
+    lookup traverses only the high address bits before exchanging banks.
     Use relative_phase_swap with clean paired banks and matching measured
     erasure. The erasure includes a correction for the relative swap sign.
     """
@@ -51,13 +52,14 @@ def controlled_qrom_ir(
         raise ValueError("QROM erasure requires a distinct classical bit per data wire")
 
     if traversal_bits and (
-        blocked
-        or inverse
+        inverse
         or measurement_bits
-        or len(traversal_bits) != width
-        or len(set(traversal_bits)) != width
+        or len(traversal_bits) != width - int(blocked)
+        or len(set(traversal_bits)) != len(traversal_bits)
     ):
-        raise ValueError("Measured traversal requires an unblocked forward lookup")
+        raise ValueError(
+            "Measured traversal requires one bit per forward traversal wire"
+        )
     if relative_phase_swap and (not blocked or inverse != bool(measurement_bits)):
         raise ValueError("Relative-phase swap requires paired load or measured inverse")
     if blocked or measurement_bits:
@@ -69,6 +71,7 @@ def controlled_qrom_ir(
             blocked=blocked,
             inverse=inverse,
             relative_phase_swap=relative_phase_swap,
+            traversal_bits=traversal_bits,
         )
 
     data_start = 1 + width

@@ -98,9 +98,9 @@ class THCRotations:
         modulus = 1 << len(angle_data)
         relative_phase_swap = bool(junk and measurement_bits)
         traversal_bits: tuple[int, ...] = ()
-        if measurement_bits and not junk:
+        if measurement_bits:
             start = measurement_bits[-1] + 1 + (len(carries) if len(carries) > 1 else 0)
-            traversal_bits = tuple(range(start, start + width))
+            traversal_bits = tuple(range(start, start + width - int(bool(junk))))
         tables: dict[tuple[int, int], list[int]] = {}
         for address, network in enumerate(self.networks):
             for slot, (left, right, angle) in enumerate(network):

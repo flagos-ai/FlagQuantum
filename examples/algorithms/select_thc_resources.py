@@ -60,11 +60,13 @@ def _stage_layout(measured: bool) -> Iterator[tuple[str, tuple[str, ...]]]:
                 )
                 for net in networks
             )
+            width = 3 if first else 2
             load = controlled_qrom_ir(
-                3 if first else 2,
+                width,
                 ANGLE_BITS,
-                words,
+                (*words, *([0] * ((1 << width) - len(words)))) if measured else words,
                 blocked=True,
+                traversal_bits=tuple(range(23, 23 + width - 1)) if measured else (),
                 relative_phase_swap=measured,
             )
             erase = controlled_qrom_ir(

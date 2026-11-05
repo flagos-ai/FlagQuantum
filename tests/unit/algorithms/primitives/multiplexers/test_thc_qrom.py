@@ -3,6 +3,7 @@
 from cmath import exp
 from collections import defaultdict
 from dataclasses import replace
+from itertools import product
 from math import sqrt, tau
 
 import pytest
@@ -11,6 +12,7 @@ import torch
 import flagquantum as fq
 from flagquantum.algorithms.primitives.multiplexers import SelectTHC
 from flagquantum.compiler.registers.qrom import controlled_qrom_ir
+from flagquantum.compiler.registers.swap_network import swap_with_zero_pair_ir
 from flagquantum.compiler.resource_estimation import count_instruction_resources
 from flagquantum.core.classical_control import (
     instruction_condition_clauses,
@@ -25,11 +27,16 @@ pytestmark = pytest.mark.unit
 
 
 def _execute_sparse(
-    ir: CircuitIR, state: dict[int, complex], *, seed: int
+    ir: CircuitIR,
+    state: dict[int, complex],
+    *,
+    seed: int,
+    forced_outcomes: tuple[int, ...] = (),
 ) -> dict[int, complex]:
     """Execute the emitted gate set directly on occupied computational states."""
     rng = np.random.default_rng(seed)
     outcomes: dict[int, int] = {}
+    forced = iter(forced_outcomes)
     for op in ir.instructions:
         clauses = instruction_condition_clauses(op)
         if clauses and not any(
@@ -52,7 +59,7 @@ def _execute_sparse(
             }
         elif name == "measure":
             (mask,) = masks
-            outcome = int(rng.integers(2))
+            outcome = next(forced) if forced_outcomes else int(rng.integers(2))
             outcomes[op.metadata["classical_bit"]] = outcome
             state = {
                 basis: value
@@ -173,7 +180,7 @@ def test_select_thc_qrom_phase_gradient(
         .to_ir()
     )
     assert validate_classical_control(ir.instructions, n_qubits=ir.n_wires) == (
-        (16 if blocked else 11) + (7 if upstream_add else 0)
+        (18 if blocked else 11) + (7 if upstream_add else 0)
         if measurement_erasure
         else 0
     )
@@ -181,12 +188,12 @@ def test_select_thc_qrom_phase_gradient(
     assert resources.workspace_qubits == workspace
     assert bool(resources.conditional_counts) == measurement_erasure
     assert resources.fixed_counts.get("measure", 0) == (
-        (64 if blocked else 46) + (28 if upstream_add else 0)
+        (72 if blocked else 46) + (28 if upstream_add else 0)
         if measurement_erasure
         else 0
     )
     assert resources.fixed_counts["ccx"] == (
-        97 if blocked else (81 if measurement_erasure else 121)
+        81 if measurement_erasure else (97 if blocked else 121)
     ) - (64 if upstream_add else 0)
     result = _execute_sparse(
         ir,
@@ -275,8 +282,9 @@ def test_controlled_adder_preserves_complex_superposition() -> None:
         (2, (248, 236, 0, 0)),
     ],
 )
+@pytest.mark.parametrize("blocked", [False, True])
 def test_measured_qrom_matches_qualtran_thc_angle_tables(
-    width: int, words: tuple[int, ...]
+    width: int, words: tuple[int, ...], blocked: bool
 ) -> None:
     qualtran = pytest.importorskip("qualtran")
     from importlib.metadata import version
@@ -285,17 +293,43 @@ def test_measured_qrom_matches_qualtran_thc_angle_tables(
         pytest.skip("Gate sequence comparison pins Qualtran 0.7.0")
     import cirq
     from qualtran.bloqs.basic_gates import CNOT
-    from qualtran.bloqs.data_loading import QROM
+    from qualtran.bloqs.data_loading import QROM, QROAMClean
+    from qualtran.bloqs.swap_network.swap_with_zero import SwapWithZero
     from qualtran.cirq_interop import BloqAsCirqGate
 
-    register_width = 1 + width + 8
+    data_width = 8
+    register_width = 1 + width + data_width * (2 if blocked else 1)
     wires = cirq.LineQubit.range(register_width)
     context = cirq.DecompositionContext(cirq.SimpleQubitManager())
-    qrom = QROM.build_from_data(np.array(words), target_bitsizes=(8,), num_controls=1)
+    selection = np.asarray(wires[1 : 1 + width])
+    targets = np.asarray(wires[1 + width :])
+    if blocked:
+        qroam = QROAMClean.build_from_data(
+            np.array(words),
+            target_bitsizes=(data_width,),
+            num_controls=1,
+            log_block_sizes=(1,),
+        )
+        qrom, swap = [
+            instance.bloq
+            for instance in sorted(
+                qroam.decompose_bloq().bloq_instances, key=lambda i: i.i
+            )
+            if isinstance(instance.bloq, (QROM, SwapWithZero))
+        ]
+        targets = targets.reshape(2, data_width)
+        selection, low_bit = selection[:-1], selection[-1:]
+        tail = [swap.on_registers(selection=low_bit, targets=targets)]
+    else:
+        qrom = QROM.build_from_data(
+            np.array(words), target_bitsizes=(data_width,), num_controls=1
+        )
+        tail = []
     gate_names = {
         cirq.X: "x",
         cirq.H: "h",
         cirq.S: "s",
+        cirq.S**-1: "sdg",
         cirq.T: "t",
         cirq.T**-1: "tdg",
         cirq.CNOT: "cx",
@@ -303,12 +337,15 @@ def test_measured_qrom_matches_qualtran_thc_angle_tables(
     }
     gate_names[BloqAsCirqGate(CNOT())] = "cx"
     upstream = cirq.decompose(
-        qrom.decompose_from_registers(
-            context=context,
-            control=np.asarray(wires[:1]),
-            selection=np.asarray(wires[1 : 1 + width]),
-            target0_=np.asarray(wires[1 + width :]),
-        ),
+        [
+            qrom.decompose_from_registers(
+                context=context,
+                control=np.asarray(wires[:1]),
+                selection=selection,
+                target0_=targets,
+            ),
+            tail,
+        ],
         context=context,
         keep=lambda op: (
             op.gate in gate_names
@@ -318,7 +355,7 @@ def test_measured_qrom_matches_qualtran_thc_angle_tables(
         ),
     )
     labels = {wire: index for index, wire in enumerate(wires)}
-    bits = tuple(range(40, 40 + width))
+    bits = tuple(range(40, 40 + len(selection)))
     measured = {}
     expected = []
     for op in upstream:
@@ -340,11 +377,20 @@ def test_measured_qrom_matches_qualtran_thc_angle_tables(
             name = gate_names[op.gate]
         expected.append((name, operands, metadata))
 
-    ir = controlled_qrom_ir(width, 8, words, traversal_bits=bits)
+    ir = controlled_qrom_ir(
+        width,
+        data_width,
+        words,
+        blocked=blocked,
+        traversal_bits=bits,
+        relative_phase_swap=blocked,
+    )
     assert [
         (op.name, op.wires, dict(op.metadata)) for op in ir.instructions
     ] == expected
 
+    if blocked:
+        return  # The paired load is exercised with every outcome below.
     # The padded addresses keep their zero words, including in superposition.
     source = {
         label << (ir.n_wires - width - 1): (1j) ** label / sqrt(2 ** (width + 1))
@@ -357,42 +403,6 @@ def test_measured_qrom_matches_qualtran_thc_angle_tables(
     assert _execute_sparse(ir, source, seed=11) == pytest.approx(
         expected_state, abs=1e-12
     )
-
-
-def test_qroam_swap_with_zero_matches_qualtran_gate_sequence() -> None:
-    from importlib.metadata import version
-
-    pytest.importorskip("qualtran")
-    if version("qualtran") != "0.7.0":
-        pytest.skip("Gate sequence comparison pins Qualtran 0.7.0")
-    import cirq
-    from qualtran.bloqs.swap_network.swap_with_zero import SwapWithZero
-
-    width = 3
-    load = controlled_qrom_ir(
-        width, 8, (8, 20, 0, 0, 0, 240), blocked=True, relative_phase_swap=True
-    )
-    wires = np.asarray(cirq.LineQubit.range(width, width + 17))
-    names = {
-        cirq.CNOT: "cx",
-        cirq.H: "h",
-        cirq.S: "s",
-        cirq.S**-1: "sdg",
-        cirq.T: "t",
-        cirq.T**-1: "tdg",
-    }
-    upstream = cirq.decompose(
-        SwapWithZero(1, 8, 2).on_registers(
-            selection=wires[:1], targets=wires[1:].reshape(2, 8)
-        ),
-        keep=lambda op: op.gate in names,
-    )
-    expected = [
-        (names[op.gate], tuple(wire.x for wire in op.qubits)) for op in upstream
-    ]
-    assert [
-        (op.name, op.wires) for op in load.instructions[-len(expected) :]
-    ] == expected
 
 
 @pytest.mark.parametrize(
@@ -408,7 +418,15 @@ def test_qroam_swap_with_zero_matches_qualtran_gate_sequence() -> None:
 def test_paired_swap_and_erasure_all_measurement_branches(
     width: int, words: tuple[int, ...]
 ) -> None:
-    load = controlled_qrom_ir(width, 8, words, blocked=True, relative_phase_swap=True)
+    padded = (*words, *([0] * ((1 << width) - len(words))))
+    load = controlled_qrom_ir(
+        width,
+        8,
+        padded,
+        blocked=True,
+        relative_phase_swap=True,
+        traversal_bits=tuple(range(16, 16 + width - 1)),
+    )
     bits = tuple(range(16))
     erase = controlled_qrom_ir(
         width,
@@ -425,7 +443,22 @@ def test_paired_swap_and_erasure_all_measurement_branches(
         prefix << payload_width: (1j) ** prefix / sqrt(1 << prefix_width)
         for prefix in range(1 << prefix_width)
     }
-    loaded = _execute_sparse(load, source, seed=0)
+    swap_length = len(
+        swap_with_zero_pair_ir(0, tuple(range(1, 9)), tuple(range(9, 17)))
+    )
+    traversal = CircuitIR(load.n_wires, load.instructions[:-swap_length])
+    swap = CircuitIR(load.n_wires, load.instructions[-swap_length:])
+    n_traversal = sum(op.name == "measure" for op in traversal.instructions)
+    common_state = _execute_sparse(
+        traversal, source, seed=0, forced_outcomes=(0,) * n_traversal
+    )
+    for outcome in product((0, 1), repeat=n_traversal):
+        assert _execute_sparse(
+            traversal, source, seed=0, forced_outcomes=outcome
+        ) == pytest.approx(common_state, abs=1e-12)
+    # Every forward outcome has probability 2**-n_traversal and the same
+    # normalized state, so contract the shared suffix only once.
+    loaded = _execute_sparse(swap, common_state, seed=0)
     assert len(loaded) == len(source)
 
     # Contract the emitted X-basis measurement/reset prefix in one batch.

@@ -22,6 +22,7 @@ def paired_lookup_ir(
     blocked: bool,
     inverse: bool,
     relative_phase_swap: bool,
+    traversal_bits: tuple[int, ...],
 ) -> CircuitIR:
     """Lower paired lookup or erasure for a validated QROM table."""
     banks = 2 if blocked else 1
@@ -102,7 +103,8 @@ def paired_lookup_ir(
         entries=(len(words) + 1) // 2,
         control_value=1,
         apply_branch=apply_block,
-        coherent=True,
+        coherent=not traversal_bits,
+        classical_bits=traversal_bits,
         break_early=same_block if blocked else None,
     )
     if not inverse and not measurement_bits:
