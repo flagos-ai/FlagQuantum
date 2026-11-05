@@ -44,3 +44,13 @@ References: https://docs.classiq.io/sdk-reference/qmod/functions/open_library/am
 and https://docs.classiq.io/sdk-reference/qmod/functions/open_library/state_preparation.
 The algorithm follows exact Grover rotation with an amplitude-reducing ancilla;
 implementation is independently derived rather than copied from a foreign SDK.
+
+The corrected diagnostic copy additionally needs `x += -18`. Admit an unsigned
+literal constant offset with absolute value at most 256, reduce it modulo the
+known register width to the shortest signed representative, and compose the
+existing +/-1 reversible increment kernel. No separate adder template is added.
+A zero offset still emits an identity read so initialization is checked. All
+emitted effects and physical work count against existing budgets. Dynamic or
+quantum offsets and signed/fractional targets remain outside this extension.
+Test every small basis word, wraparound, coherent phase and cleanup. This shared
+constant-offset extension does not repair the original's amplitude mismatch.
