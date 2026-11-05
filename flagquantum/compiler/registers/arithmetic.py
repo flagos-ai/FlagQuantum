@@ -5,6 +5,7 @@
 # Source: https://github.com/quantumlib/Qualtran/blob/v0.7.0/qualtran/bloqs/arithmetic/controlled_add_or_subtract.py
 # Sources: https://github.com/quantumlib/Qualtran/blob/v0.7.0/qualtran/bloqs/arithmetic/addition.py
 #          https://github.com/quantumlib/Qualtran/blob/v0.7.0/qualtran/bloqs/mcmt/and_bloq.py
+# AddK load/add/unload: https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/bloqs/arithmetic/addition.py
 # Changes: emit native IR for unsigned addition and bind scratch explicitly.
 
 """Register-level arithmetic decompositions."""
@@ -124,3 +125,43 @@ def measurement_add_or_subtract_ir(
         *complement,
         *flip,
     )
+
+
+def add_constant_ir(
+    target: tuple[int, ...],
+    value: int,
+    constant: tuple[int, ...],
+    carries: tuple[int, ...],
+    classical_bits: tuple[int, ...],
+) -> tuple[Instruction, ...]:
+    """Port unsigned AddK: load a constant, add it, then erase the load.
+
+    Big-endian target and clean constant registers have equal positive width n.
+    Supply n-1 clean carry wires and distinct nonnegative classical slots.
+    The target is incremented modulo 2**n; all quantum work returns to zero.
+    Negative constants follow upstream unsigned normalization. Positive constants
+    must fit n bits. No constant-specific gate simplification is performed.
+    """
+    width = len(target)
+    if width < 1 or len(constant) != width:
+        raise ValueError(
+            "Constant addition requires equal nonempty target and load widths"
+        )
+    wires = (*target, *constant, *carries)
+    if any(type(w) is not int or w < 0 for w in wires) or len(set(wires)) != len(wires):
+        raise ValueError(
+            "Constant addition requires distinct nonnegative quantum wires"
+        )
+    if type(value) is not int or value >= 1 << width:
+        raise ValueError("Additive constant must be an integer smaller than 2**width")
+    if any(type(bit) is not int or bit < 0 for bit in classical_bits):
+        raise ValueError(
+            "Constant addition requires nonnegative integer classical slots"
+        )
+    normalized = value % (1 << width)
+    load = tuple(
+        Instruction("x", (wire,))
+        for i, wire in enumerate(constant)
+        if normalized >> (width - i - 1) & 1
+    )
+    return (*load, *add_ir(constant, target, carries, classical_bits), *load)
