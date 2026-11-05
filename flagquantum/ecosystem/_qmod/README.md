@@ -635,3 +635,11 @@ initialized array. On zero input, the output probabilities are proportional
 to `exp(-rate * k)` for basis integer `k`. An existing state receives the
 same rotations without resetting the register. A signed real literal or a
 bound finite real rate within the existing ±2**53 input range is accepted.
+
+### Linear Y rotations
+
+`linear_pauli_rotations(bases, slopes, offsets, x, q)` accepts three literal
+arrays whose lengths match the initialized target array. This profile accepts
+the Y axis as either `2` or `Pauli::Y`. The rotation angle on each target
+qubit is `slope * x + offset` with unsigned `x`. The disjoint control array
+is preserved. The lowering uses an offset RY and bit-weighted CRY gates.

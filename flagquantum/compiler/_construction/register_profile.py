@@ -51,7 +51,7 @@ _ATTRIBUTES = MappingProxyType(
         "qreg.return": frozenset(),
     }
 )
-_PAIR_GATES = frozenset({"cx", "swap", "crx"})
+_PAIR_GATES = frozenset({"cx", "swap", "crx", "cry"})
 _ANGLE_GATES = frozenset({"phase", "rx", "ry", "rz"})
 _GATES = frozenset({"x", "h", "s", "z"}) | _ANGLE_GATES
 
@@ -287,7 +287,7 @@ def _verify_body(
             attributes = attributes | {"angle"}
         if op.name == "qreg.pair_gate":
             assert attributes is not None
-            if op.attributes.get("gate") == "crx":
+            if op.attributes.get("gate") in ("crx", "cry"):
                 attributes = attributes | {"angle"}
             if "indices" in op.attributes:
                 attributes = attributes | {"indices"}
@@ -626,7 +626,7 @@ def _verify_body(
                         "pair gate indices must be in bounds and distinct",
                         op,
                     )
-                if gate == "crx":
+                if gate in {"crx", "cry"}:
                     angle = op.attributes["angle"]
                     if type(angle) is not float or not math.isfinite(angle):
                         _fail(

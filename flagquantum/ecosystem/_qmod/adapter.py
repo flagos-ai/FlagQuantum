@@ -73,6 +73,7 @@ _INTRINSICS = (
         "prepare_bell_state",
         "suzuki_trotter",
         "single_pauli_exponent",
+        "linear_pauli_rotations",
         "exponentiate",
         "qdrift",
         "qft",
@@ -1207,6 +1208,56 @@ class _Adapt:
             return -self.angle(node.children[0], token)
         return self.angle(node, token)
 
+    def linear_pauli_rotations(
+        self, token: Token, args: tuple[Expression, ...]
+    ) -> None:
+        if len(args) != 5:
+            reject(
+                token,
+                "signature",
+                "linear_pauli_rotations requires bases, slopes, offsets, control and target",
+            )
+        bases, slopes, offsets, control_arg, target_arg = args
+        control_name, target_name = self.atom(control_arg), self.atom(target_arg)
+        control = self.register(control_name, allow_qubit_array=True)
+        target = self.register(target_name, allow_qubit_array=True)
+        if (
+            self.parameters[control_name.text].kind != "qbit[]"
+            or self.parameters[target_name.text].kind != "qbit[]"
+            or control == target
+        ):
+            reject(
+                token, "type", "linear_pauli_rotations requires disjoint qubit arrays"
+            )
+        width = register_width(target)
+        if any(len(node.children) != width for node in (bases, slopes, offsets)):
+            reject(
+                token, "width", "bases, slopes and offsets must match the target width"
+            )
+        for wire, (basis, slope, offset) in enumerate(
+            zip(bases.children, slopes.children, offsets.children, strict=True)
+        ):
+            if basis.token.text not in {"Y", "2"}:
+                reject(basis.token, "pauli", "linear_pauli_rotations supports only Y")
+            self.effect_op(
+                "qreg.gate",
+                token,
+                (target,),
+                gate="ry",
+                index=wire,
+                angle=self.evolution_angle(offset, token),
+            )
+            coefficient = self.evolution_angle(slope, token)
+            for index in range(register_width(control)):
+                self.effect_op(
+                    "qreg.pair_gate",
+                    token,
+                    (control, target),
+                    gate="cry",
+                    indices=(index, wire),
+                    angle=math.ldexp(coefficient, index),
+                )
+
     def single_pauli_exponent(self, token: Token, args: tuple[Expression, ...]) -> None:
         if len(args) != 3:
             reject(
@@ -1839,6 +1890,8 @@ class _Adapt:
             self.effect_op(
                 "qreg.uniform_interval", token, (destination,), start=start, stop=stop
             )
+        elif token.text == "linear_pauli_rotations":
+            self.linear_pauli_rotations(token, args)
         elif token.text == "single_pauli_exponent":
             self.single_pauli_exponent(token, args)
         elif token.text == "suzuki_trotter":

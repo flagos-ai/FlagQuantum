@@ -376,6 +376,15 @@ class Parser:
             reject(axis, "pauli", "expected Pauli::I, X, Y or Z")
         return Expression(axis)
 
+    def linear_rotation_basis(self) -> Expression:
+        if self.current.text == "Pauli":
+            return self.pauli_axis()
+        token = self.current
+        if not token.text.isdecimal():
+            reject(token, "pauli", "expected a Pauli axis or integer code")
+        self.position += 1
+        return Expression(token)
+
     def literal_array(self, item: Callable[[], Expression]) -> Expression:
         start = self.take("[")
         items = []
@@ -672,6 +681,8 @@ class Parser:
                             args.append(Expression(self.name()))
                     elif target.text == "prepare_exponential_state":
                         args.append(self.signed_angle_argument())
+                    elif target.text == "linear_pauli_rotations":
+                        args.append(self.literal_array(self.linear_rotation_basis))
                     elif target.text == "single_pauli_exponent":
                         args.append(self.literal_array(self.pauli_axis))
                     elif target.text in {"prepare_amplitudes", "prepare_state"}:
@@ -691,6 +702,12 @@ class Parser:
                         args.append(self.expression())
                     while self.current.text == ",":
                         self.take(",")
+                        if target.text == "linear_pauli_rotations" and len(args) in {
+                            1,
+                            2,
+                        }:
+                            args.append(self.literal_array(self.signed_angle_argument))
+                            continue
                         if len(args) == 1 and target.text in {
                             "exponentiate",
                             "qdrift",
