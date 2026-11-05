@@ -156,13 +156,13 @@ def record_fields(op: Operation) -> tuple[RecordField, ...]:
             or not name.isidentifier()
             or name in names
             or name in {"size", "len"}
-            or kind not in ("qbit", "qbit[]", "qnum", "qnum[]")
+            or kind not in ("qbit", "qbit[]", "qnum", "qnum[]", "qbit[][]")
             or type(size) is not int
             or not 1 <= size <= 256
             or (kind == "qbit" and size != 1)
             or type(length) is not int
             or not 1 <= length <= 256
-            or (kind == "qnum[]") != (len(field) == 4)
+            or (kind in {"qnum[]", "qbit[][]"}) != (len(field) == 4)
             or size * length > 256
         ):
             _fail(
@@ -182,7 +182,7 @@ def record_fields(op: Operation) -> tuple[RecordField, ...]:
 
 
 def record_readouts(fields: tuple[RecordField, ...]) -> tuple[tuple[str, int], ...]:
-    """Project each numeric array element as one independently decoded integer."""
+    """Project disjoint fields, numeric elements and bit-array rows for readout."""
     return tuple(
         (f"{field[0]}[{index}]" if len(field) == 4 else field[0], field[2])
         for field in fields

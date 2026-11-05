@@ -42,6 +42,9 @@ BLOBS = {
     "learning_optimization": "9b488ef162a463e6bf190391c72b7611dc45d7cf",
     "combi_workshop_Inequality_constriants_PO": "feee2bea69f3b75b327039635aea37763c05734c",
     "combi_workshop_equality_constriants_PO": "f81c12106fc83c5625794f23585085627159624a",
+    "electric_grid_optimization": "2f98747512804987f087aa5164096f4b246cdf74",
+    "max_induced_k_color_subgraph": "ae9da944b8adcd7003315172401656ad43810e11",
+    "min_graph_coloring": "98723456a83eb1572fe3f445f79a680e9d3ecc72",
 }
 ARITHMETIC = {ast.Add: add, ast.Sub: sub, ast.Mult: mul, ast.Div: truediv, ast.Pow: pow}
 
@@ -58,18 +61,23 @@ class RecordCost:
         self.fields = []
         self.width = 0
         self.numeric = {}
+        self.bit_rows = {}
         self.owner = re.search(r"output\s+(\w+)\s*:", source)[1]
         self.interleaved = bool(re.search(r"params\[2\s*\*\s*i\]", source))
-        for field, kind, digits, size in re.findall(
+        for field, kind, digits, size, rows in re.findall(
             r"(\w+)\s*:\s*(qbit|qnum)(?:<(\d+)(?:,\s*False,\s*0)?>)?"
-            r"(?:\[(\d+)\])?\s*;",
+            r"(?:\[(\d+)\])?(?:\[(\d+)\])?\s*;",
             record[2],
         ):
             word_width = int(digits) if digits else 1
-            width = word_width * (int(size) if size else 1)
+            width = word_width * (int(size) if size else 1) * (int(rows) if rows else 1)
             self.fields.append((field, self.width, width, bool(size)))
             if kind == "qnum":
                 self.numeric[field] = word_width
+            if rows:
+                if kind != "qbit":
+                    raise ValueError("oracle admits only two-dimensional bit arrays")
+                self.bit_rows[field] = int(size)
             self.width += width
         opening = re.search(r"\bphase\s*\(", source).end()
         nesting = 0
@@ -111,6 +119,12 @@ class RecordCost:
             for name, offset, width, array in self.fields
         }
         for name, offset, width, array in self.fields:
+            if name in self.bit_rows:
+                columns = self.bit_rows[name]
+                fields[name] = [
+                    bits[start : start + columns]
+                    for start in range(offset, offset + width, columns)
+                ]
             if name in self.numeric:
                 word_width = self.numeric[name]
                 words = [
@@ -221,6 +235,15 @@ def main():
         phase_error = compare_classical_phase(source, oracle)
         times["classical_phase_seconds"] = time.perf_counter() - checkpoint
     resources = program.report["resources"]
+    ports = [wire for wires in program.registers.values() for wire in wires]
+    if (
+        resources.n_qubits != oracle.width
+        or program.report["workspace_qubits"] != 0
+        or sorted(ports) != list(range(oracle.width))
+    ):
+        raise AssertionError(
+            "record outputs must cover the state with no auxiliary qubits"
+        )
     peak = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
     result = {
         "case": args.case,
@@ -233,6 +256,7 @@ def main():
         "operations": resources.n_operations,
         "depth": resources.depth,
         "workspace": program.report["workspace_qubits"],
+        "output_qubits_cover_state": True,
         "oracle_terms": len(terms),
         "oracle_degree": oracle.degree,
         "max_abs_state_error": error,

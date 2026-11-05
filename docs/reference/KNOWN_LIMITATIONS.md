@@ -271,6 +271,9 @@ Flat records support fixed-width unsigned integer scalars and one-dimensional
 integer arrays, including explicit `False, 0` modifiers. Numeric array elements
 have disjoint named integer readouts. Arithmetic access currently targets bounded
 real phase expressions; this does not enable general record-field assignment.
-Signed/fractional fields, nested records and multidimensional fields are rejected.
+Two-dimensional fixed bit arrays support checked row/column indices, row views
+and disjoint row readouts. `qbit[C][R]` has R rows of C bits. Signed/fractional
+fields, nested records, multidimensional numeric arrays and bit-array rank above
+two are rejected. General field assignment is not enabled by this slice.
 The 256-bit record layout and existing phase/memory budgets remain enforced.
 This local integration capability has not completed the 216-original release gate.

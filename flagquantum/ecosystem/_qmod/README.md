@@ -803,7 +803,7 @@ memory refusal and separate input/degree/expansion budgets.
 ### Flat quantum records
 
 The Qmod frontend accepts flat qstruct definitions with scalar qbit,
-one-dimensional qbit[N], fixed-width unsigned qnum<W> and qnum<W>[N]
+one-dimensional qbit[N], two-dimensional qbit[C][R], fixed-width unsigned qnum<W> and qnum<W>[N]
 fields. Explicit numeric modifiers must be False, 0. Fields must be unique, nonempty and fit
 the 256-bit structural budget. Record allocation, record size,
 whole-record Hadamard and bounded single-qubit maps reuse the existing
@@ -829,7 +829,19 @@ Numeric words and indexed numeric array elements can be read by bounded real
 phase arithmetic. Whole fields and indexed numeric words support Hadamard;
 direct scalar gates still require qbit fields or indexed qbit elements.
 Nested records, signed/fractional numeric fields, numeric array arithmetic
-without an element index and multidimensional arrays remain outside this profile.
+without an element index, multidimensional numeric arrays and bit arrays above
+rank two remain outside this profile.
+
+For a bit field `grid:qbit[C][R]`, the outer dimension is R rows and each row
+contains C bits. `grid.len` is R and `grid[i].len` is C. Rows occupy consecutive
+low-to-high logical segments and columns retain the least-significant-bit
+convention within each row. Both indices must be bounded static integers or
+admitted loop indices. Scalar gates and phase arithmetic use `v.grid[i][j]`;
+row views such as `v.grid[i]` support Hadamard and writable array helpers.
+Whole matrices and rows are not scalar phase operands. The owned declaration
+retains `("grid", "qbit[][]", C, R)` and the Compiler independently checks it.
+Readouts expose disjoint rows as `v.grid[0]`, `v.grid[1]`, and so on, decoded
+as unsigned bit patterns; no overlapping whole-matrix readout is introduced.
 
 Run an unchanged original portfolio program without designing gates or decoding
 physical bit strings:
@@ -850,6 +862,26 @@ result = fq.run(program)
 distribution = program.probabilities(result, registers=("v.w[0]", "v.w[1]", "v.w[2]"))
 print(sum(distribution.values()))  # Approximately 1; integer values range from 0 to 7.
 print(program.report["resources"])  # 12 qubits, 271 operations, depth 51.
+```
+
+The original electric-grid program uses `x:qbit[4][3]`. Run all four QAOA
+layers and read the first row without physical wire numbers:
+
+```python
+from pathlib import Path
+
+import flagquantum as fq
+from flagquantum import synth
+
+program = synth.synthesize(
+    Path("tests/fixtures/classiq_qmod/electric_grid_optimization.qmod"),
+    classical_inputs={"params": [0.003 * (i + 1) * (-1 if i % 2 else 1) for i in range(8)]},
+    memory_limit_bytes=64 * 1024**2,
+)
+result = fq.run(program)
+print(dict(program.probabilities(result, registers=("v.x[0]",))))
+print(program.report["resources"])  # 18 qubits, 373 operations, depth 54.
+print(program.report["workspace_qubits"])  # 0.
 ```
 
 Full original record examples can be verified explicitly with

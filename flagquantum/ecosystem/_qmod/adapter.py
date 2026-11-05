@@ -891,6 +891,30 @@ class _Adapt:
             offset += size
         reject(member.token, "field", "unknown record field")
 
+    def record_bit(self, node: Expression) -> tuple[Value, int] | None:
+        """Resolve one checked row/column access without erasing field rank."""
+        if node.token.text != "[" or node.children[0].token.text != "[":
+            return None
+        row, column = node.children
+        resolved = self.record_field(row.children[0])
+        if resolved is None:
+            return None
+        field, locations = resolved
+        if field.kind != "qbit[][]":
+            reject(
+                node.token,
+                "field",
+                "double indexing requires a two-dimensional bit field",
+            )
+        assert field.width is not None and field.length is not None
+        row_index = self.static_integer(row.children[1])
+        column_index = self.static_integer(column)
+        if not 0 <= row_index < field.length:
+            reject(row.token, "width", "field row index is out of bounds")
+        if not 0 <= column_index < field.width:
+            reject(column.token, "width", "field column index is out of bounds")
+        return locations[row_index * field.width + column_index]
+
     def static_integer(self, node: Expression) -> int:
         text = node.token.text
         if text.isdecimal():
@@ -925,8 +949,16 @@ class _Adapt:
             if member != "len":
                 reject(node.token, "field", "expected array len or record size")
             if root.children:
+                if root.token.text == "[":
+                    resolved = self.record_field(root.children[0])
+                    if resolved is not None and resolved[0].kind == "qbit[][]":
+                        return len(self.array_view(root))
                 field = self.record_field(root)
-                if field is not None and field[0].kind in {"qbit[]", "qnum[]"}:
+                if field is not None and field[0].kind in {
+                    "qbit[]",
+                    "qnum[]",
+                    "qbit[][]",
+                }:
                     return field[0].length or len(field[1])
                 reject(node.token, "field", "len requires an array field")
             name = root.token.text
@@ -947,6 +979,9 @@ class _Adapt:
         reject(node.token, "expression", "expected a static integer or loop index")
 
     def gate_target(self, node: Expression) -> tuple[Value, int]:
+        cell = self.record_bit(node)
+        if cell is not None:
+            return cell
         source = node.children[0] if node.token.text == "[" else node
         if source.token.text == ".":
             resolved = self.record_field(source)
@@ -989,11 +1024,14 @@ class _Adapt:
         return value, index
 
     def array_view(self, node: Expression) -> tuple[tuple[Value, int], ...]:
+        cell = self.record_bit(node)
+        if cell is not None:
+            return (cell,)
         if node.token.text == "[" and node.children[0].token.text == ".":
             resolved = self.record_field(node.children[0])
             assert resolved is not None
             field, word_locations = resolved
-            if field.kind != "qnum[]":
+            if field.kind not in {"qnum[]", "qbit[][]"}:
                 return (self.gate_target(node),)
             index = self.static_integer(node.children[1])
             assert field.length is not None and field.width is not None
@@ -1413,12 +1451,21 @@ class _Adapt:
         self, token: Token, expression: Expression, coefficient: Expression
     ) -> None:
         def quantum_word(node: Expression) -> tuple[tuple[Value, int], ...] | None:
+            cell = self.record_bit(node)
+            if cell is not None:
+                return (cell,)
             source = node.children[0] if node.token.text == "[" else node
             if source.token.text == ".":
                 resolved = self.record_field(source)
                 assert resolved is not None
                 field, view = resolved
                 if node.token.text == "[":
+                    if field.kind == "qbit[][]":
+                        reject(
+                            node.token,
+                            "field",
+                            "phase bit fields require row and column indices",
+                        )
                     if field.kind not in {"qbit[]", "qnum[]"}:
                         reject(node.token, "field", "indexing requires an array field")
                     index = self.static_integer(node.children[1])

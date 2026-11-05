@@ -97,6 +97,62 @@ def test_numeric_record_words_preserve_shape_storage_and_readout():
         synth.synthesize(source, source_format="qmod", max_qubits=4)
 
 
+def test_matrix_record_cells_preserve_row_order_and_bit_significance():
+    source = """qstruct State {tag:qbit; grid:qbit[3][2]; tail:qnum<2>;}
+      qfunc prepare(output s:State) {
+        allocate(s); X(s.tag); H(s.grid[0][0]);
+        X(s.grid[0][2]); X(s.grid[1][1]);
+      }
+      qfunc kick(s:State) {phase(s.grid[0][0]+2*s.grid[1][1]+s.tag,0.37);}
+      qfunc main(output s:State) {prepare(s);kick(s);H(s.grid[0][0]);}"""
+    program = synth.synthesize(source, source_format="qmod")
+    reference = fq.Circuit(9, dtype=DTYPE).x(8).h(7).x(5).x(3)
+    reference.phase(7, theta=0.37).phase(3, theta=0.74).phase(8, theta=0.37).h(7)
+    result = fq.run(program)
+    torch.testing.assert_close(
+        result.statevector(), fq.run(reference).statevector(), atol=1e-12, rtol=0
+    )
+    assert dict(program.registers) == {
+        "s.tag": (8,),
+        "s.grid[0]": (5, 6, 7),
+        "s.grid[1]": (2, 3, 4),
+        "s.tail": (0, 1),
+    }
+    one = sin(0.37 / 2) ** 2
+    assert dict(
+        program.probabilities(result, registers=tuple(program.registers))
+    ) == pytest.approx({(1, 4, 2, 0): 1 - one, (1, 5, 2, 0): one})
+    assert program.report["qmod_records"] == (
+        (
+            "s",
+            "State",
+            (("tag", "qbit", 1), ("grid", "qbit[][]", 3, 2), ("tail", "qnum", 2)),
+        ),
+    )
+    assert program.report["resources"].n_qubits == 9
+    assert program.report["workspace_qubits"] == 0
+    with pytest.raises(synth.SynthesisError):
+        synth.synthesize(source, source_format="qmod", max_qubits=8)
+
+
+def test_matrix_row_views_lengths_and_writable_helper_share_storage():
+    source = """qstruct State {grid:qbit[3][2];}
+      qfunc flip(row:qbit[]) {repeat(j:row.len) {X(row[j]);}}
+      qfunc main(output s:State) {
+        allocate(s.size,s);
+        repeat(i:s.grid.len) {X(s.grid[i][0]);}
+        repeat(j:s.grid[0].len) {X(s.grid[0][j]);}
+        flip(s.grid[1]);
+        hadamard_transform(s.grid[0]); hadamard_transform(s.grid[0]);
+      }"""
+    program = synth.synthesize(source, source_format="qmod")
+    result = fq.run(program)
+    assert dict(
+        program.probabilities(result, registers=tuple(program.registers))
+    ) == pytest.approx({(6, 6): 1.0})
+    assert program.report["workspace_qubits"] == 0
+
+
 @pytest.mark.parametrize(
     ("source", "diagnostic"),
     [
@@ -129,7 +185,39 @@ def test_numeric_record_words_preserve_shape_storage_and_readout():
             "qstruct R {a:qnum<2>[2];} qfunc main(output r:R) {allocate(r);X(r.a[0]);}",
             "array field",
         ),
-        ("qstruct R {a:qbit[2][2];} qfunc main(output r:R) {}", "one array dimension"),
+        (
+            "qstruct R {a:qbit[2][2][2];} qfunc main(output r:R) {}",
+            "two array dimensions",
+        ),
+        ("qstruct R {a:qbit[16][17];} qfunc main(output r:R) {}", "exceeds 256"),
+        (
+            "qstruct R {a:qbit[3][2];} qfunc main(output r:R) {allocate(r);X(r.a[2][0]);}",
+            "row index",
+        ),
+        (
+            "qstruct R {a:qbit[3][2];} qfunc main(output r:R) {allocate(r);X(r.a[0][3]);}",
+            "column index",
+        ),
+        (
+            "qstruct R {a:qbit[3][2];} qfunc main(output r:R) {allocate(r);phase(r.a[2][0],1.0);}",
+            "row index",
+        ),
+        (
+            "qstruct R {a:qbit[3][2];} qfunc main(output r:R) {allocate(r);phase(r.a[0][3],1.0);}",
+            "column index",
+        ),
+        (
+            "qstruct R {a:qbit[3][2];} qfunc main(output r:R) {allocate(r);phase(r.a[0],1.0);}",
+            "row and column",
+        ),
+        (
+            "qstruct R {a:qbit[3][2];} qfunc main(output r:R) {allocate(r);hadamard_transform(r.a[2]);}",
+            "field index",
+        ),
+        (
+            "qstruct R {a:qnum<2>[2];} qfunc main(output r:R) {allocate(r);X(r.a[0][0]);}",
+            "two-dimensional bit",
+        ),
         (
             "qstruct R {a:qbit;} qfunc main(output r:R) {allocate(r);X(r.b);}",
             "unknown record field",
@@ -172,6 +260,9 @@ def test_equal_width_record_types_are_not_interchangeable():
         (("a", "qnum[]", 2),),
         (("a", "qnum", 1, 2),),
         (("a", "qnum[]", 2, 257),),
+        (("a", "qbit[][]", 2),),
+        (("a", "qbit[][]", 1, False),),
+        (("a", "qbit[][]", 1, 0),),
     ],
 )
 def test_compiler_rechecks_owned_record_layout(fields):
@@ -240,3 +331,34 @@ def test_small_original_records_against_independent_cost(name, scale):
     )
     distribution = program.probabilities(result, registers=tuple(program.registers))
     assert sum(distribution.values()) == pytest.approx(1)
+
+
+@pytest.mark.parametrize(
+    ("name", "columns", "rows", "width"),
+    [
+        ("electric_grid_optimization", 4, 3, 18),
+        ("max_induced_k_color_subgraph", 6, 2, 12),
+        ("min_graph_coloring", 5, 3, 15),
+    ],
+)
+def test_original_matrix_records_keep_shape_and_resource_budget(
+    name, columns, rows, width
+):
+    import hashlib
+
+    from tools.validate_qmod_records import BLOBS, FIXTURES, RecordCost
+
+    source = FIXTURES / f"{name}.qmod"
+    raw = source.read_bytes()
+    assert hashlib.sha1(f"blob {len(raw)}\0".encode() + raw).hexdigest() == BLOBS[name]
+    count = RecordCost(raw.decode()).count
+    bindings = {"params": [0.003 * (i + 1) for i in range(count)]}
+    program = synth.synthesize(source, classical_inputs=bindings)
+    assert program.report["resources"].n_qubits == width
+    assert program.report["workspace_qubits"] == 0
+    assert program.report["qmod_records"][0][2][0] == ("x", "qbit[][]", columns, rows)
+    assert sorted(
+        wire for ports in program.registers.values() for wire in ports
+    ) == list(range(width))
+    with pytest.raises(synth.SynthesisError):
+        synth.synthesize(source, classical_inputs=bindings, max_qubits=width - 1)

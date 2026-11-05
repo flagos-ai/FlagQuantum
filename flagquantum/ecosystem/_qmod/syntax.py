@@ -285,10 +285,18 @@ class Parser:
                 else:
                     member = Expression(self.name())
                     left = Expression(dot, (left, member), left.depth + 1)
-            elif (
-                not static
-                and self.current.text == "["
-                and (not left.children or (self.records and left.token.text == "."))
+            elif self.current.text == "[" and (
+                (not static and not left.children)
+                or (
+                    self.records
+                    and (
+                        left.token.text == "."
+                        or (
+                            left.token.text == "["
+                            and left.children[0].token.text == "."
+                        )
+                    )
+                )
             ):
                 bracket = self.take("[")
                 index = self.expression(nesting=nesting + 1, static=True)
@@ -1090,14 +1098,16 @@ class Parser:
             if width is None:
                 reject(field, "width", "record numeric fields require a fixed width")
             length = None
-            if kind == "qnum" and self.current.text == "[":
+            if kind in {"qnum", "qbit[]"} and self.current.text == "[":
                 self.take("[")
                 length = self.width()
                 self.take("]")
-                kind = "qnum[]"
+                kind = "qnum[]" if kind == "qnum" else "qbit[][]"
             if self.current.text == "[":
                 reject(
-                    self.current, "type", "record fields support one array dimension"
+                    self.current,
+                    "type",
+                    "record numeric fields support one array dimension; bit fields support two array dimensions",
                 )
             self.take(";")
             fields.append(Parameter(field, kind, width, length=length))

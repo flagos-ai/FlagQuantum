@@ -279,3 +279,10 @@ parameter sets checked against independent full-state Circuits and classical
 cost-phase oracles. This is a local exact CPU correctness slice, not corpus-wide
 completion or a capability-level promotion. The corpus gate and full integration
 CI remain required before release.
+
+Two-dimensional fixed bit fields extend that same checked layout and physical
+storage. Row/column access, row views and named row readouts are part of the local
+UP-06 candidate; they do not promote general nested records or numeric matrices.
+The original electric-grid, induced-color-subgraph and minimum-coloring programs
+retain their source bytes, layer counts and independent full-state acceptance
+requirements. Remaining corpus blockers and the final integration gate stay open.
