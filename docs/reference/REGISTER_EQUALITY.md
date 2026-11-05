@@ -70,3 +70,8 @@ register QUInt/QInt/QMontgomeryUInt/QAny and concrete constants. Small native
 checks cover all complex input/target states, spectator entanglement, cleanup
 and double-XOR restoration. Validation rejects aliases, invalid bit patterns,
 workspace and measurement slots. Source is not patched for these comparisons.
+
+Batch acceptance: all 646 combined G1/G2 regression cases pass. Both new modules
+reach 100% statement coverage. Strict mypy passes on 932 source files. Floor and
+current Black, Ruff, architecture boundaries and the multi-level IR contract
+pass. Local module acceptance does not replace whole-PR CI/GPU or review.
