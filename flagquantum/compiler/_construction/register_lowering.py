@@ -137,6 +137,55 @@ def _array_controlled_x(
     return tuple(gates), workspace_width
 
 
+def _modular_exp_instructions(
+    target: tuple[int, ...],
+    exponent: tuple[int, ...],
+    workspace_start: int,
+    n_qubits: int,
+    op: Operation,
+) -> tuple[tuple[Instruction, ...], int]:
+    """Compose controlled modular permutations using adjacent basis swaps."""
+    modulus, base = op.attributes["modulus"], op.attributes["base"]
+    gates: list[Instruction] = []
+    workspace = 0
+
+    def swap(control: int, start: int, end: int) -> None:
+        nonlocal workspace
+        path = [start]
+        while path[-1] != end:
+            difference = path[-1] ^ end
+            path.append(path[-1] ^ (difference & -difference))
+        edges = list(zip(path[:-1], path[1:], strict=True))
+        for left, right in (*edges, *reversed(edges[:-1])):
+            bit = (left ^ right).bit_length() - 1
+            wire = target[-1 - bit]
+            controls = (control, *(q for q in target if q != wire))
+            flips = tuple(
+                Instruction("x", (q,))
+                for index, q in enumerate(reversed(target))
+                if q != wire and not left & (1 << index)
+            )
+            middle, used = _array_controlled_x(
+                controls, wire, workspace_start, n_qubits, op
+            )
+            workspace = max(workspace, used)
+            gates.extend((*flips, *middle, *flips))
+
+    for index, control in enumerate(reversed(exponent)):
+        multiplier = pow(base, 1 << index, modulus)
+        seen: set[int] = set()
+        for first in range(modulus):
+            if first in seen:
+                continue
+            seen.add(first)
+            current = first * multiplier % modulus
+            while current != first:
+                swap(control, first, current)
+                seen.add(current)
+                current = current * multiplier % modulus
+    return tuple(gates), workspace
+
+
 def _pattern_gate(
     gate: Instruction, wires: tuple[int, ...], pattern: int
 ) -> tuple[Instruction, ...]:
@@ -349,6 +398,12 @@ def schedule_register_program(
                 Instruction("h", (first,)),
                 *(Instruction("cx", (first, target)) for target in rest),
             )
+        elif op.name == "qreg.modular_exp":
+            residue_ports, exponent = (bindings[v.id] for v in op.operands[1:])
+            gates, used_workspace = _modular_exp_instructions(
+                residue_ports, exponent, position, n_qubits, op
+            )
+            control_workspace = max(control_workspace, used_workspace)
         elif op.name == "qreg.control_qft":
             control_ports, data = (bindings[v.id] for v in op.operands[1:])
             gates = tuple(

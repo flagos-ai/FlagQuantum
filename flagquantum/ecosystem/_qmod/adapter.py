@@ -79,6 +79,7 @@ _INTRINSICS = (
         "qdrift",
         "qft",
         "drop",
+        "modular_exp",
         "qpe_flexible",
         "qct_qst_type1",
         "qct_type2",
@@ -1974,6 +1975,26 @@ class _Adapt:
             self.prepare_state_vector(token, args)
         elif token.text == "prepare_exponential_state":
             self.prepare_exponential_state(token, args)
+        elif token.text == "modular_exp":
+            if len(args) != 4 or any(
+                arg.children or not arg.token.text.isdecimal() for arg in args[:2]
+            ):
+                reject(
+                    token,
+                    "signature",
+                    "modular_exp requires literal modulus and base, target and exponent",
+                )
+            modulus, base = (int(arg.token.text) for arg in args[:2])
+            names = tuple(self.atom(arg) for arg in args[2:])
+            registers = tuple(self.register(name) for name in names)
+            if any(
+                self.parameters[name.text].kind != "qnum" or name.text in self.signed
+                for name in names
+            ):
+                reject(token, "type", "modular_exp requires unsigned qnum registers")
+            self.effect_op(
+                "qreg.modular_exp", token, registers, modulus=modulus, base=base
+            )
         elif token.text == "drop":
             if len(args) != 1 or self.scope != "main" or self.local_scope is not None:
                 reject(token, "drop", "drop requires one local qubit array in main")

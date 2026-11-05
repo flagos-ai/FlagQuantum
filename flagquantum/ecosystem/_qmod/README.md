@@ -669,3 +669,13 @@ local qubit array must be allocated before use and dropped before return.
 `drop` removes it from named readout while retaining its effect on the visible
 marginal. Its physical wires remain in the executable state and cannot be
 reused as clean work qubits.
+
+### Bounded modular exponentiation
+
+`modular_exp(n, a, x, power)` multiplies an initialized residue `x` by
+`a**power` modulo `n`. The base and modulus are positive integer literals
+with `n >= 2` and `gcd(a, n) == 1`. The disjoint unsigned target and
+exponent registers support up to four and eight qubits, respectively.
+The permutation fixes target encodings at or above the modulus. The
+`allocate(ceiling(log(n, 2)), x)` width form accepts a literal modulus and
+uses integer bit length.

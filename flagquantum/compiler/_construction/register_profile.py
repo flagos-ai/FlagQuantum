@@ -31,6 +31,7 @@ _ATTRIBUTES = MappingProxyType(
         "qreg.declare": frozenset({"name"}),
         "qreg.hidden": frozenset({"name"}),
         "qreg.drop": frozenset(),
+        "qreg.modular_exp": frozenset({"modulus", "base"}),
         "qreg.control_qft": frozenset(),
         "qreg.local": frozenset({"name"}),
         "qreg.release": frozenset(),
@@ -607,6 +608,34 @@ def _verify_body(
                             )
             elif op.name == "qreg.phase":
                 check_call(op, operands)
+            elif op.name == "qreg.modular_exp":
+                modulus, base = op.attributes["modulus"], op.attributes["base"]
+                if (
+                    len(arguments) != 1
+                    or destination in borrowed
+                    or destination in arguments
+                    or any(v.id not in initialized for v in operands)
+                    or not 1 <= register_width(arguments[0]) <= 8
+                    or not 1 <= register_width(destination) <= 4
+                ):
+                    _fail(
+                        "register.modular_exp",
+                        "modular exponentiation requires distinct initialized registers within width bounds",
+                        op,
+                    )
+                if (
+                    type(modulus) is not int
+                    or type(base) is not int
+                    or not 2 <= modulus <= 1 << register_width(destination)
+                    or base < 1
+                    or math.gcd(base, modulus) != 1
+                ):
+                    _fail(
+                        "register.modular_exp",
+                        "base must be coprime to a modulus fitting the target",
+                        op,
+                    )
+                changed = (destination,)
             elif op.name == "qreg.control_qft":
                 if (
                     len(arguments) != 1

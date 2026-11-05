@@ -311,6 +311,27 @@ class Parser:
             )
         return left
 
+    def binary_log_width(self) -> Expression:
+        token = self.take("ceiling")
+        self.take("(")
+        self.take("log")
+        self.take("(")
+        value = self.current
+        if not value.text.isdecimal() or int(value.text) < 2:
+            reject(
+                value,
+                "width",
+                "binary log width requires an integer literal of at least two",
+            )
+        self.take(value.text)
+        self.take(",")
+        self.take("2")
+        self.take(")")
+        self.take(")")
+        return Expression(
+            Token(str((int(value.text) - 1).bit_length()), token.location)
+        )
+
     def angle_argument(self) -> Expression:
         integer = self.current
         if not integer.text.isdecimal() or self.tokens[self.position + 1].text != ".":
@@ -750,6 +771,8 @@ class Parser:
                             args.append(self.pauli_terms())
                         else:
                             args.append(Expression(self.name()))
+                    elif target.text == "allocate" and self.current.text == "ceiling":
+                        args.append(self.binary_log_width())
                     elif target.text == "prepare_exponential_state":
                         args.append(self.signed_angle_argument())
                     elif target.text == "unitary":
