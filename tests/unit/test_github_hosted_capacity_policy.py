@@ -382,7 +382,7 @@ def test_coverage_shards_are_combined_before_the_policy_is_enforced() -> None:
     }
 
     final = _github_hosted_jobs("ci.yml")["coverage"]
-    assert final.get("needs") == "coverage-shard"
+    assert final.get("needs") == ["prepare-source", "coverage-shard"]
     commands = "\n".join(
         str(step.get("run", "")) for step in _steps("ci.yml", "coverage")
     )
@@ -391,6 +391,7 @@ def test_coverage_shards_are_combined_before_the_policy_is_enforced() -> None:
         step
         for step in _steps("ci.yml", "coverage")
         if step.get("uses") == "actions/download-artifact@v8.0.2"
+        and "pattern" in step.get("with", {})
     )
     assert download["with"]["digest-mismatch"] == "error"
     assert commands.index("rm -rf coverage-data") < commands.index("integrity_check")

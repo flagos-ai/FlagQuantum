@@ -32,6 +32,7 @@ ROOT = Path(__file__).resolve().parents[2]
         ("ci.yml", "dependency-bounds"),
         pytest.param("ci.yml", "distributed-cpu-shard", id="ci.yml-distributed-cpu"),
         ("ci.yml", "coverage-shard"),
+        ("ci.yml", "coverage"),
         ("ci.yml", "supply-chain"),
         ("local-gpu.yml", "one-gpu-local"),
     ],
@@ -124,7 +125,9 @@ def test_source_artifact_restores_the_exact_tree_and_rejects_another_commit(
     artifact_key = jobs["prepare-source"]["outputs"]["artifact-key"]
     assert artifact_key == "${{ steps.pack-source.outputs.artifact-key }}"
     for step in jobs[job]["steps"]:
-        if step.get("uses", "").startswith("actions/download-artifact@"):
+        if step.get("uses", "").startswith(
+            "actions/download-artifact@"
+        ) and "name" in step.get("with", {}):
             assert (
                 "${{ needs.prepare-source.outputs.artifact-key }}"
                 in step["with"]["name"]
@@ -170,6 +173,7 @@ def test_source_artifact_restores_the_exact_tree_and_rejects_another_commit(
     [
         pytest.param("distributed-cpu-shard", id="distributed-cpu"),
         "coverage-shard",
+        "coverage",
         "dependency-bounds",
     ],
 )

@@ -1920,7 +1920,7 @@ jobs:
           retention-days: 7
 
   coverage:
-    needs: coverage-shard
+    needs: [prepare-source, coverage-shard]
     if: ${{ always() }}
     runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'flagquantum-a100-cpu' || 'ubuntu-latest' }}
     concurrency:
@@ -1929,14 +1929,28 @@ jobs:
     steps:
       - name: Require every coverage shard to pass
         run: test '${{ needs.coverage-shard.result }}' = success
-      - name: Clear sparse checkout state from a previous job
+      - uses: actions/download-artifact@v8.0.2
+        with:
+          digest-mismatch: error
+          name: ci-source-${{ needs.prepare-source.outputs.artifact-key }}
+          path: ${{ runner.temp }}/ci-source
+      - name: Restore and verify this run's exact source commit
         run: |
-          if [ -d .git ]; then
-            git sparse-checkout disable
-            rm -f .git/info/sparse-checkout
-            git config --local --unset core.sparseCheckout || true
+          sha="$(cat "$RUNNER_TEMP/ci-source/source.sha")"
+          test "$sha" = "$GITHUB_SHA"
+          if [ ! -d .git ]; then
+            git init .
           fi
-      - uses: actions/checkout@v4
+          git index-pack --stdin < "$RUNNER_TEMP/ci-source/source.pack"
+          printf '%s\n' "$sha" >> .git/shallow
+          sort -u .git/shallow -o .git/shallow
+          git config --worktree core.sparseCheckout false
+          git config --worktree core.sparseCheckoutCone false
+          rm -f .git/info/sparse-checkout
+          git read-tree --empty
+          git checkout --force --detach "$sha"
+          git clean -ffdx
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
