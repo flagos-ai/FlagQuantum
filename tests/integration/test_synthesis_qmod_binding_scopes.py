@@ -164,3 +164,11 @@ def test_physical_resource_limits_are_preserved(options: dict[str, int]) -> None
     )
     with pytest.raises(ValueError):
         synth.synthesize(text, source_format="qmod", **options)
+
+
+def test_static_loop_nesting_keeps_scope_depth_budget() -> None:
+    body = "X(x[0]);"
+    for index in range(33):
+        body = f"repeat(i{index}:0) {{{body}}}"
+    with pytest.raises(ValueError, match="scope nesting exceeds depth 32"):
+        synth.synthesize(scoped(body), source_format="qmod")

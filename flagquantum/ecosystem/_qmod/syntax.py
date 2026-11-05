@@ -827,6 +827,12 @@ class Parser:
         binding_preparation: bool = False,
         binding_actions: bool = False,
     ) -> tuple[Statement, ...]:
+        if scope_depth > MAX_SCOPE_DEPTH:
+            reject(
+                self.current,
+                "budget.depth",
+                f"scope nesting exceeds depth {MAX_SCOPE_DEPTH}",
+            )
         self.take("{")
         statements: list[Statement] = []
         while self.current.text != "}":
