@@ -64,8 +64,8 @@ the raw CCX and CX counts in every tested case, including the repaired adjoint.
 
 The table excludes input and output registers (three degree-sized words).
 Other widths can need recursive clean scratch; degree 5 is exercised in tests.
-Symbolic field parameters, the plus-equal-product variant, and measurement-based
-multiplier erasure remain outside this concrete slice.
+Symbolic field parameters and the plus-equal-product variant remain outside this
+concrete slice. Measurement-based product erasure is documented below.
 
 Tests: `tests/unit/test_field_multiplication.py`. Source gate/map comparisons use
 degrees 2, 3, 4, 5, 6, and 8; the complex statevector test covers a superposition
@@ -126,3 +126,56 @@ Local acceptance: 19 inversion tests passed with 100% statement coverage of
 `field_inverse.py`. The six-file G1/G2 regression run passed all 109 tests with
 both pinned references available. Black, Ruff, and the standalone example also
 passed. These results do not constitute final whole-PR CI or GPU acceptance.
+
+## Measurement-assisted product erasure
+
+`field_erasure.gf2_product_erasure` ports the **unmodified** v0.7.0 `GF2MulMBUC`
+measurement order, all classical parity input lists, and ordered phase correction
+calls. It uses no linear adjoint and is unaffected by the defect above. Inputs
+and the known product are big-endian words in the same polynomial basis. Each
+classical slot corresponds to the product wire at the same position. The product
+must contain `left * right`; an arbitrary target is outside the erasure contract.
+Every branch preserves the two inputs and clears all product slots to zero.
+There is no additional quantum workspace, and the measurement record remains
+available to the caller.
+
+The compiler-local result retains measurement order, logical `ParityPhase`
+calls, and every upstream parity input list, including an unused final parity.
+Its `lower()` method emits existing dynamic IR. Shared `measurement.py` primitives
+provide X-basis clearing and XOR-controlled Z/CZ phases; paired QROAM lookup and
+erasure use the same helpers. Four representative QROAM instruction streams were
+compared with the pre-refactor source and were unchanged. A replacement test
+substitutes independent measurement/phase emitters without changing the consumer.
+Higher-arity phases are explicitly rejected at this boundary.
+
+For the current target, `(-1)^((a XOR b)*p)` is emitted as the product of two
+single-bit-controlled phases. This linear-size expansion uses existing classical
+control metadata, avoiding an exponential Boolean expansion or a new runtime
+operation. Qualtran has a classical `Parity` operation here, but no gate-level
+decomposition for it. Consequently source **logical calls**, target **emitted
+instructions**, and source **resource estimates** are separate evidence levels.
+
+| Degree / modulus | Source logical CZ calls | Source modeled CZ | Emitted single-bit-controlled CZ | Target HMR | Extra quantum work | T gates |
+|---|---:|---:|---:|---:|---:|---:|
+| 2 / `0x7` | 4 | 4 | 5 | 2 | 0 | 0 |
+| 3 / `0xB` | 9 | 9 | 12 | 3 | 0 | 0 |
+| 4 / `0x13` | 16 | 16 | 22 | 4 | 0 | 0 |
+| 5 / `0x25` | 25 | 25 | 36 | 5 | 0 | 0 |
+| 8 / `0x11B` | 64 | 64 | 151 | 8 | 0 | 0 |
+
+HMR is the target representation of adjacent H, measurement, and result-controlled
+X clearing. The raw dynamic IR has one of each per product bit. These counts
+exclude forward multiplication and include no T substitution estimates. Classical
+storage is one retained measurement bit per product bit; logical classical parity
+is fused into phase feedback instead of allocating additional parity slots.
+
+The runnable example includes compute followed by measured erasure using
+`circuit.append(op)` and checks all returned trajectories. The erasure tests
+compare source calls for degrees 2, 3, 5, and 8. Exact phase-polynomial evaluation
+covers every operand pair and every measurement branch at degrees 1, 2, 3, 5,
+and 8, including nonuniform complex input amplitudes. At degree 8 this covers
+65,536 input pairs and all 256 outcomes. Independent dynamic complex128 execution
+checks degrees 2 and 3; KMX execution on the pinned native reference checks
+degrees 3 and 8, all quantum slots, exact zero phase, and observed coverage of
+every outcome. The new erasure suite has 15 tests; both new compiler modules have
+100% statement coverage. The seven-file G1/G2 regression has 124 passing tests.

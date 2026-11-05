@@ -10,6 +10,7 @@ from dataclasses import dataclass
 import torch
 
 import flagquantum as fq
+from flagquantum.compiler.registers.field_erasure import gf2_product_erasure
 from flagquantum.compiler.registers.field_inverse import (
     gf2_inverse_ir,
     gf2_inverse_workspace_size,
@@ -19,6 +20,8 @@ from flagquantum.compiler.registers.field_multiplication import (
     gf2_multiplication,
 )
 from flagquantum.core.ir import CircuitIR, Instruction
+from flagquantum.dynamic import DynamicCircuit
+from flagquantum.runtime.dynamic.execution import run_dynamic
 
 
 @dataclass(frozen=True)
@@ -60,6 +63,24 @@ def main() -> None:
     assert int(result.abs().argmax()) == ((3 << 3) | 6) << work_count
     print(f"GF(8): inverse(3) = 6; all {work_count} work wires returned to zero")
     print("Emitted clean-inverse gates:", dict(Counter(g.name for g in gates)))
+
+    erase = gf2_product_erasure(x, y, plan.outputs[2], (0, 1, 2), modulus=0b1011)
+    compute_erase = (*plan.instructions, *erase.lower())
+    state = torch.zeros(512, dtype=torch.complex128)
+    state[(3 << 6) | (5 << 3)] = 1
+    circuit = DynamicCircuit(9, inputs=state, dtype=torch.complex128).append(
+        FieldOperation(9, compute_erase)
+    )
+    trajectories = run_dynamic(circuit, shots=16, seed=29, strategy="trajectory")
+    torch.testing.assert_close(
+        trajectories.final_states.reshape(16, -1),
+        state.expand(16, -1),
+        rtol=0,
+        atol=1e-12,
+    )
+    print("GF(8): compute and measured product erasure preserve all 16 trajectories")
+    print("Erasure logical CZ calls:", len(erase.corrections))
+    print("Emitted erasure gates:", dict(Counter(g.name for g in erase.lower())))
 
 
 if __name__ == "__main__":

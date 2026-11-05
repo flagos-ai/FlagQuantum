@@ -10,6 +10,7 @@ from collections.abc import Sequence
 
 from ...core.ir import CircuitIR, Instruction
 from .._component_trace.trace import ComponentCall, ComponentTrace
+from .measurement import ParityPhase, measure_x_clear_ir
 from .unary_iteration import append_unary_iteration
 
 
@@ -32,17 +33,7 @@ def paired_lookup_ir(
     if measurement_bits:
         for offset, bit in enumerate(measurement_bits):
             wire = data_start + offset
-            instructions.extend(
-                (
-                    Instruction("h", (wire,)),
-                    Instruction(
-                        "measure",
-                        (wire,),
-                        metadata={"is_dynamic": True, "classical_bit": bit},
-                    ),
-                    Instruction("x", (wire,), metadata={"conditions": ((bit, 1),)}),
-                )
-            )
+            instructions.extend(measure_x_clear_ir(wire, bit))
 
     measurement_stop = len(instructions)
     swaps = (
@@ -74,14 +65,11 @@ def paired_lookup_ir(
         for offset, bit in enumerate(measurement_bits):
             bank, position = divmod(offset, data_width)
             mask = 1 << (data_width - position - 1)
-            condition = {"conditions": ((bit, 1),)}
             base_word = odd if bank else even
             if base_word & mask:
-                instructions.append(Instruction("z", (predicate,), metadata=condition))
+                instructions.extend(ParityPhase((predicate,), (bit,)).lower())
             if (even ^ odd) & mask:
-                instructions.append(
-                    Instruction("cz", (predicate, width), metadata=condition)
-                )
+                instructions.extend(ParityPhase((predicate, width), (bit,)).lower())
 
     traversal_start = len(instructions)
     append_unary_iteration(
