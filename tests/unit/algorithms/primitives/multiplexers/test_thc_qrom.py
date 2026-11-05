@@ -1,7 +1,7 @@
 """Check the full 8-bit circuit without a dense statevector."""
 
 from cmath import exp
-from collections import Counter, defaultdict
+from collections import defaultdict
 from dataclasses import replace
 from math import sqrt, tau
 
@@ -11,6 +11,7 @@ import torch
 import flagquantum as fq
 from flagquantum.algorithms.primitives.multiplexers import SelectTHC
 from flagquantum.compiler.registers.qrom import controlled_qrom_ir
+from flagquantum.compiler.resource_estimation import count_instruction_resources
 from flagquantum.core.classical_control import (
     instruction_condition_clauses,
     validate_classical_control,
@@ -107,6 +108,7 @@ def _execute_sparse(
         (True, False, 0, False),
         (True, True, 7, False),
         (False, True, 11, True),
+        (True, True, 11, True),
     ],
 )
 def test_select_thc_qrom_phase_gradient(
@@ -173,13 +175,15 @@ def test_select_thc_qrom_phase_gradient(
         if measurement_erasure
         else 0
     )
-    counts = Counter(item.name for item in ir.instructions)
-    assert counts["measure"] == (
+    resources = count_instruction_resources(ir, logical_qubits=13)
+    assert resources.workspace_qubits == workspace
+    assert bool(resources.conditional_counts) == measurement_erasure
+    assert resources.fixed_counts.get("measure", 0) == (
         (64 if blocked else 32) + (28 if upstream_add else 0)
         if measurement_erasure
         else 0
     )
-    assert counts["ccx"] == (
+    assert resources.fixed_counts["ccx"] == (
         97 if blocked else (113 if measurement_erasure else 129)
     ) - (64 if upstream_add else 0)
     result = _execute_sparse(
@@ -210,7 +214,7 @@ def test_select_thc_qrom_phase_gradient(
     print("8-bit amplitude error", np.max(np.abs(logical - expected)))
     print("Unquantized amplitude error", np.max(np.abs(logical - unrounded)))
     print("Workspace leakage probability", leakage)
-    print("Emitted gates", dict(Counter(op.name for op in ir.instructions)))
+    print("Emitted resources", resources)
 
 
 def test_paired_qrom_erasure_on_native_dynamic_runtime() -> None:

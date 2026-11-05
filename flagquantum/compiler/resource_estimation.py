@@ -1,4 +1,7 @@
-"""Static resource accounting for one program's operation sequence.
+"""Resource accounting for one program's operation sequence.
+
+:func:`count_instruction_resources` reports emitted instruction counts for
+circuits with measurements and classical conditions, without tracing outcomes.
 
 :func:`estimate_resources` answers the question CUDA-Q's ``estimate_resources``
 answers -- how many operations a program applies, how deep their dependency
@@ -25,10 +28,15 @@ reuses the compiler's own scheduler rather than a second depth rule.
 
 from __future__ import annotations
 
+from collections import Counter
 from collections.abc import Iterable
 from dataclasses import dataclass
 from typing import Any
 
+from ..core.classical_control import (
+    instruction_condition_clauses,
+    validate_classical_control,
+)
 from ..core.ir import Instruction, ensure_circuit_ir
 from ..errors import CapabilityError
 from .basis_conversion import convert_basis
@@ -141,6 +149,54 @@ def _data_dependence_reason(instruction: Instruction) -> str | None:
             "measurement results holds, so it may apply zero times"
         )
     return None
+
+
+@dataclass(frozen=True)
+class InstructionResourceReport:
+    """Counts over emitted IR, partitioned by classical control.
+
+    Conditional counts count each emitted instruction once. They bound execution
+    counts from above, without assuming that all conditions can hold in one run.
+    Workspace is the reserved circuit width minus the caller's logical width.
+    """
+
+    n_qubits: int
+    workspace_qubits: int
+    fixed_counts: dict[str, int]
+    conditional_counts: dict[str, int]
+
+
+def count_instruction_resources(
+    program: object, *, logical_qubits: int
+) -> InstructionResourceReport:
+    """Count emitted opcodes, including measurements and conditional corrections.
+
+    Pass a circuit or IR with explicit gate, measurement, and reset instructions.
+    The report uses the emitted gate set and includes any workspace preparation
+    and cleanup present in the IR. It does not simulate measurement outcomes.
+
+    Raises:
+        ValueError: The logical width is outside the reserved register.
+        CapabilityError: A dynamic instruction has no explicit accounting rule.
+    """
+    ir = ensure_circuit_ir(program)
+    if type(logical_qubits) is not int:
+        raise TypeError("logical_qubits must be an integer")
+    if not 0 <= logical_qubits <= ir.n_wires:
+        raise ValueError("logical_qubits must be within the circuit width")
+
+    if any(_data_dependence_reason(item) is not None for item in ir):
+        validate_classical_control(ir, n_qubits=ir.n_wires)
+    fixed: Counter[str] = Counter()
+    conditional: Counter[str] = Counter()
+    for item in ir:
+        if item.metadata.get("is_dynamic") and item.name not in {"measure", "reset"}:
+            raise CapabilityError(f"unsupported dynamic opcode {item.name!r}")
+        counts = conditional if instruction_condition_clauses(item) else fixed
+        counts[item.name] += 1
+    return InstructionResourceReport(
+        ir.n_wires, ir.n_wires - logical_qubits, dict(fixed), dict(conditional)
+    )
 
 
 def estimate_resources(
