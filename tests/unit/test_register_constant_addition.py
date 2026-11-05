@@ -148,7 +148,13 @@ def reference_arithmetic_gates(
             preserve_components
             and isinstance(gate, cirq.ControlledGate)
             and isinstance(gate.sub_gate, BloqAsCirqGate)
-            and type(gate.sub_gate.bloq).__name__ == "AddK"
+            and (
+                type(gate.sub_gate.bloq).__name__ == "AddK"
+                or (
+                    type(gate.sub_gate.bloq).__name__ == "Adjoint"
+                    and type(gate.sub_gate.bloq.subbloq).__name__ == "AddK"
+                )
+            )
         ):
             # Controlled.as_cirq_op exports a Cirq control wrapper. Recover the
             # same source Bloq's custom controlled decomposition before Cirq's
@@ -205,7 +211,10 @@ def reference_arithmetic_gates(
             return tuple(
                 cirq.X(q) for q, bit in zip(op.qubits, bits, strict=True) if bit
             )
-        if type(bloq).__name__ not in {
+        kind = type(bloq).__name__
+        if kind == "Adjoint":
+            kind = type(bloq.subbloq).__name__
+        if kind not in {
             "CAdd",
             "AddK",
             "Controlled",
@@ -222,7 +231,7 @@ def reference_arithmetic_gates(
 
         quregs = split_qubits(bloq.signature, op.qubits)
         component = bloq.decompose_bloq()
-        if type(bloq).__name__ not in {
+        if kind not in {
             "CModAdd",
             "CModSub",
             "CModAddK",

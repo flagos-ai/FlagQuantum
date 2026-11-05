@@ -24,8 +24,9 @@ def controlled_add_ir(
 ) -> tuple[Instruction, ...]:
     """Add a zero-extended word on the selected coherent control branch.
 
-    Work/classical roles match controlled_add_ir: one loaded wire/slot per
-    left bit plus len(right)-1 carries/slots, all initially and finally zero.
+    Supply one clean loaded wire per left bit and len(right)-1 clean carries,
+    each with a distinct classical slot. Quantum work starts/ends zero; the
+    slots retain latest measurement outcomes.
     Unequal-width bit patterns use zero extension, not signed extension.
     """
     return _controlled_addition_ir(
@@ -54,8 +55,9 @@ def controlled_add_adjoint_ir(
 ) -> tuple[Instruction, ...]:
     """Port CAdd.adjoint with original loaded bits and exact shared Add adjoint.
 
-    Work/classical roles match controlled_add_ir: one loaded wire/slot per
-    left bit plus len(right)-1 carries/slots, all initially and finally zero.
+    Supply one clean loaded wire per left bit and len(right)-1 clean carries,
+    each with a distinct classical slot. Quantum work starts/ends zero; the
+    slots retain latest measurement outcomes.
     Unequal-width bit patterns use zero extension, not signed extension.
     """
     return _controlled_addition_ir(
