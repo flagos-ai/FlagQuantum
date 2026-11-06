@@ -258,3 +258,8 @@ the admitted exact Clifford program and single-bit X feedback to Stim 1.16.0.
 Stim owns sampling, packing and its bounded write batches. FlagQuantum owns
 preflight budgets, tensor and column semantics, and no-replace publication.
 Run `python -m examples.qec.compiled_measurement_sampler` with the Stim extra.
+
+The opt-in macOS arm64 embedded wheel uses a private Stim source extension
+for prepared measurement sampling. The source lock and license are under
+`csrc/`. Both implementations use the same Clifford and single-slot X
+feedback admission rules before engine preparation.

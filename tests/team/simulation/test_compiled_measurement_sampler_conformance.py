@@ -9,6 +9,7 @@ import torch
 
 import flagquantum as fq
 from flagquantum.dynamic import DynamicCircuit
+from flagquantum.simulation.stabilizer import measurement_sampler
 
 pytestmark = pytest.mark.integration
 
@@ -70,3 +71,41 @@ def test_inverted_feedback_and_cross_byte_output(tmp_path: Path) -> None:
         path=str(path), format="b8", num_measurements=9, bit_packed=True
     )
     assert rows.tolist() == packed.tolist()
+
+
+def test_overwrite_feedback_targets_and_b8_invariants(tmp_path: Path) -> None:
+    if (
+        not Path(measurement_sampler.__file__)
+        .with_name("_embedded_stim_profile.txt")
+        .is_file()
+    ):
+        pytest.importorskip("stim")
+    program = (
+        DynamicCircuit(3)
+        .h(0)
+        .measure(0, classical_bit=0)
+        .conditional("x", 1, classical_bit=0)
+        .reset(0)
+        .conditional("x", 0, classical_bit=0, equals=0)
+        .measure(0, classical_bit=0)
+        .conditional("x", 2, classical_bit=0)
+        .measure(1)
+        .measure(2)
+    )
+    sampler = program.compile_sampler(seed=7)
+    records = sampler.sample(32)
+    assert records.shape == (32, 4)
+    assert records.dtype == torch.bool
+    assert set(map(tuple, records.tolist())) <= {
+        (False, True, False, True),
+        (True, False, True, False),
+    }
+    packed = sampler.sample(32, bit_packed=True)
+    assert packed.shape == (32, 1)
+    assert packed.dtype == torch.uint8
+    assert set(packed[:, 0].tolist()) <= {0x05, 0x0A}
+    output = tmp_path / "records.b8"
+    sampler.sample_write(32, filepath=output, format="b8")
+    data = output.read_bytes()
+    assert len(data) == 32
+    assert set(data) <= {0x05, 0x0A}

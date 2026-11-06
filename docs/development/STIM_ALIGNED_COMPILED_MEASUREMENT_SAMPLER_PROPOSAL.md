@@ -238,3 +238,15 @@ noise, additional feedback forms, further output formats and general
 The embedded C++ route requires its own source and build proposal.
 This PR advances bounded FTS-04 record and feedback conformance. It does not
 close FTS-04 or claim full Stim parity, benchmark performance or capacity.
+
+## Embedded source replacement
+
+The SDK evidence above applies to the original two-column example. The
+current example additionally measures the two feedback targets. Its
+expected output is `records (32, 4)`, `packed (32, 1)` and `b8 bytes 32`.
+
+The macOS arm64 embedded wheel uses the same prepared measurement contract
+and pinned Stim 1.16.0 algorithms through a private extension. Its installed
+profile selects the engine, while circuit lowering and refusal remain shared.
+In particular, T gates and classically controlled H gates are independently
+refused before engine preparation. Single-slot X feedback remains supported.

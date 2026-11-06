@@ -145,7 +145,17 @@ def _prepare_sdk_sampler(
     return cast(_SdkSampler, circuit.compile_sampler(seed=seed))
 
 
+def _prepare_embedded_sampler(
+    operations: tuple[_EngineOperation, ...], seed: int | None, columns: int
+) -> _SdkSampler:
+    from ._embedded_sampler import _EmbeddedSampler
+
+    return _EmbeddedSampler(operations, seed, columns)
+
+
 def _as_torch_sample(data: object) -> torch.Tensor:
+    if isinstance(data, torch.Tensor):
+        return data
     # The SDK returns a new array per call. Torch keeps its storage alive.
     return torch.from_numpy(data)
 
@@ -246,7 +256,10 @@ def _compile_measurement_sampler(
     ir = program.to_ir()
     operations, columns = _lower_program(ir)
     sampler = object.__new__(CompiledMeasurementSampler)
-    sampler._sdk = _prepare_sdk_sampler(operations, validated_seed)
+    if Path(__file__).with_name("_embedded_stim_profile.txt").is_file():
+        sampler._sdk = _prepare_embedded_sampler(operations, validated_seed, columns)
+    else:
+        sampler._sdk = _prepare_sdk_sampler(operations, validated_seed)
     sampler._qubits = ir.n_wires
     sampler._columns = columns
     sampler._pid = os.getpid()
