@@ -348,7 +348,11 @@ python -m examples.local.measure
 python -m examples.local.train
 python -m examples.local.dynamic_feedback
 python -m examples.local.dynamic_many_shots
+python -m examples.local.dynamic_final_outputs
 ```
+
+The [dynamic final outputs example](local/dynamic_final_outputs.py) requests
+samples and counts together after mid-circuit feedback.
 
 They cover local statevector simulation, exact and sampled measurements,
 PyTorch-native training, and experimental local dynamic feedback without
