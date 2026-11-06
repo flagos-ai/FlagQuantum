@@ -44,7 +44,9 @@ def forced_branch(
             classical[int(bit)] == value
             for bit, value in gate.metadata.get("conditions", ())
         ):
-            pending.append(Instruction(gate.name, gate.wires, gate.params))
+            pending.append(
+                Instruction(gate.name, gate.wires, gate.params, matrix=gate.matrix)
+            )
     flush()
     return state
 
