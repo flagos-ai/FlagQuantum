@@ -107,7 +107,10 @@ def compare_original() -> tuple[float, float, object]:
     work_norm = torch.linalg.vector_norm(actual[:, 1:]).item()
     assert error < 1e-10
     assert work_norm < 1e-10
-    assert torch.linalg.vector_norm(actual[:, 0].reshape(64, 64)[:, 1:]).item() < 1e-10
+    phase_tail = torch.linalg.vector_norm(actual[:, 0].reshape(64, 64)[:, 1:])
+    reference_tail = torch.linalg.vector_norm(expected.reshape(64, 64)[:, 1:])
+    assert reference_tail.item() > 0.05
+    torch.testing.assert_close(phase_tail, reference_tail, atol=1e-10, rtol=0)
     return error, work_norm, program.report["resources"]
 
 

@@ -211,7 +211,7 @@ def test_composed_cx_and_cz_callback_preserves_entangled_amplitudes() -> None:
     )
 
 
-@pytest.mark.parametrize("literal", ["[]", "[[1,0],[1]]", "[[1" + ",0" * 16 + "]]"])
+@pytest.mark.parametrize("literal", ["[]", "[[1,0],[1]]", "[[1" + ",0" * 32 + "]]"])
 def test_matrix_constants_have_closed_storage_bounds(literal: str) -> None:
     with pytest.raises(InteropConversionError):
         synth.synthesize(

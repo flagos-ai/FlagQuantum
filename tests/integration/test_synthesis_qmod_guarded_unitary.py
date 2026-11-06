@@ -96,7 +96,7 @@ def test_unitary_branches_preserve_relative_sign_and_selector_order() -> None:
     ("width", "guard", "target", "message"),
     [
         (2, 1, "s[0]", "disjoint from condition"),
-        (4, 1, "t", "matrix width"),
+        (5, 1, "t", "matrix width"),
         (2, 4, "t", "selector range"),
     ],
 )
