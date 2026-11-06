@@ -2711,3 +2711,42 @@ This fixture emits 408 T-family instructions and 67 measurements with six
 clean scratch qubits. The locked resource model above retains its original
 signature and reflection control. The paper-backed executable circuit also
 reflects on the inner alias sample and uses the nonzero-factor control.
+
+## Double-factorization PREPARE and programmed rotation
+
+The declared models reproduce the locked inner PREPARE, outer PREPARE,
+indexed data and programmed rotation graphs. They preserve the original
+port widths and the direction of the chemistry QROAM child. For 50 factors,
+10 spin orbitals, 250 retained eigenvalues, seven amplitude-amplification
+bits, 12 alias bits and eight basis-rotation bits, the modeled Toffoli counts
+are 159/76 for inner PREPARE, 62/33 for outer PREPARE, 45/15 for indexed data
+and 235/99 for programmed rotation, in forward/adjoint order. The inner
+PREPARE also models seven Ands and seven measurements for its offset Add.
+
+The executable indexed-data lookup follows Eq. C29 and returns the
+nonzero-factor flag, rank minus one, the supplied rotation word and the
+offset into the concatenated eigenvalue rows. The rank-minus-one convention
+uses the available rank width even at full rank. Block banks are retained
+until the matching inverse.
+
+```python
+from flagquantum.algorithms.primitives.double_factorization_indexed_data import (
+    DoubleFactorizationIndexedData,
+)
+from flagquantum.compiler.registers.partition import partition_register
+from flagquantum.dynamic import DynamicCircuit
+
+data = DoubleFactorizationIndexedData(
+    ranks=(4, 2, 1, 4, 3), rotation_words=(1, 3, 5, 7, 0),
+    rotation_bits=3, log_block_size=1,
+)
+logical = sum(width for _, width in data.layout)
+ports = partition_register(tuple(range(logical)), data.layout)
+scratch = tuple(range(logical, logical + data.workspace_size()))
+circuit = DynamicCircuit(logical + len(scratch))
+circuit.append(data.make_on(ports, workspace=scratch))
+circuit.append(data.make_on(ports, workspace=scratch, adjoint=True))
+```
+
+The indexed-data stream uses the concrete locked QROAMClean decomposition.
+The chemistry QROAM cost placeholder remains a separate model.
