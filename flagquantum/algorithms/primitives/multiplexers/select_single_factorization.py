@@ -24,7 +24,8 @@ class SelectSingleFactorization:
     Spatial addresses p and q are big-endian and must select populated orbitals.
     System wires are ordered by orbital, then spin. Both success flags must be
     one. Pass the optional nonzero-factor flag for the second SELECT in the
-    full encoding. All caller-owned work starts and returns to zero.
+    full encoding. An optional coefficient sign applies a phase on the same
+    active branch. All caller-owned work starts and returns to zero.
     """
 
     p: tuple[int, ...]
@@ -35,6 +36,7 @@ class SelectSingleFactorization:
     system: tuple[int, ...]
     workspace: tuple[int, ...]
     l_ne_zero: int | None = None
+    coefficient_sign: int | None = None
 
     @staticmethod
     def workspace_size(spin_orbitals: int, *, additional_control: bool = False) -> int:
@@ -48,11 +50,10 @@ class SelectSingleFactorization:
 
     def append_to(self, circuit: Circuit) -> Circuit:
         """Append to a DynamicCircuit, reserving feedback slots after existing ones."""
-        controls: tuple[int, ...] = (self.succ_pq, self.succ_l)
-        if self.l_ne_zero is not None:
-            controls = (*controls, self.l_ne_zero)
         size = len(self.system)
-        needed = self.workspace_size(size, additional_control=len(controls) == 3)
+        needed = self.workspace_size(
+            size, additional_control=self.l_ne_zero is not None
+        )
         address_width = (size // 2 - 1).bit_length()
         if len(self.p) != address_width or len(self.q) != address_width:
             raise ValidationError("Single-factorization SELECT address width mismatch")
@@ -60,7 +61,16 @@ class SelectSingleFactorization:
             raise ValidationError(
                 f"Single-factorization SELECT requires {needed} work wires"
             )
-        wires = (*self.p, *self.q, self.spin, *controls, *self.system, *self.workspace)
+        wires = (
+            *self.p,
+            *self.q,
+            self.spin,
+            self.succ_pq,
+            self.succ_l,
+            *(q for q in (self.l_ne_zero, self.coefficient_sign) if q is not None),
+            *self.system,
+            *self.workspace,
+        )
         _validate_wires(wires)
         if max(wires) >= circuit.n_qubits:
             raise ValidationError(
@@ -76,12 +86,15 @@ class SelectSingleFactorization:
         return circuit.compose(
             CircuitIR(
                 circuit.n_qubits,
-                self._emit(controls, slot),
+                self._emit(slot),
                 metadata={"batch_size": circuit.bsz},
             ).validate()
         )
 
-    def _emit(self, controls: tuple[int, ...], slot: int) -> tuple[Instruction, ...]:
+    def _emit(self, slot: int) -> tuple[Instruction, ...]:
+        controls: tuple[int, ...] = (self.succ_pq, self.succ_l)
+        if self.l_ne_zero is not None:
+            controls = (*controls, self.l_ne_zero)
         count = len(controls) - 1
         predicate_work, majorana_work = self.workspace[:count], self.workspace[count:]
         predicate = predicate_work[-1]
@@ -117,8 +130,14 @@ class SelectSingleFactorization:
                 ),
                 Instruction("s", (predicate,)),
             )
+        sign = (
+            ()
+            if self.coefficient_sign is None
+            else (Instruction("cz", (predicate, self.coefficient_sign)),)
+        )
         return (
             *multi_and_ir(controls, polarity, predicate_work),
+            *sign,
             *selected,
             *multi_and_ir(
                 controls,

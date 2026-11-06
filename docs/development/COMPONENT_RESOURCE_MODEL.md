@@ -2676,3 +2676,38 @@ two cells per axis, each direction emits 219 T-family instructions and 25
 measurements and borrows seven clean wires. The locked source provides a
 resource graph for the top-level operation. The emitted stream uses exact
 uniform amplification and the matching inverse of the selected QROAM banks.
+
+### Executable single-factorization block encoding
+
+The executable sequence follows Fig. 15. The outer alias prepares the factor,
+and the inner alias prepares the signed triangular address. The first SELECT
+runs on every successful factor. The middle reflection and the second SELECT
+run only on nonzero factors. The SELECT phase uses the same activation
+predicate as its Majorana pair.
+
+If $A_j$ is the alias-quantized signed spin and order average for factor
+$j$, and $w_j$ is its quantized outer probability, the zero-signal block
+is $w_0 A_0 + \sum_{j>0} w_j(2 A_j^2-I)$. The identity term records the
+constant shift from the reflection.
+
+```python
+from flagquantum.algorithms.primitives.single_factorization_block_encoding import (
+    SingleFactorizationBlockEncoding,
+)
+from flagquantum.compiler.registers.partition import partition_register
+from flagquantum.dynamic import DynamicCircuit
+
+encoding = SingleFactorizationBlockEncoding.from_coefficients(
+    2, (1.0, -2.0, 1.0), ((2.0, 3.0, -1.0),), outer_bits=1, inner_bits=1,
+)
+logical = sum(width for _, width in encoding.layout)
+work, _ = encoding.requirements()
+ports = partition_register(tuple(range(logical)), encoding.layout)
+circuit = DynamicCircuit(logical + work)
+circuit.append(encoding.make_on(ports, workspace=tuple(range(logical, logical + work))))
+```
+
+This fixture emits 408 T-family instructions and 67 measurements with six
+clean scratch qubits. The locked resource model above retains its original
+signature and reflection control. The paper-backed executable circuit also
+reflects on the inner alias sample and uses the nonzero-factor control.
