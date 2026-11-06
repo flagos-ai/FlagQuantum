@@ -7,6 +7,7 @@ from pathlib import Path
 import pytest
 import torch
 
+import flagquantum as fq
 from flagquantum.dynamic import DynamicCircuit
 
 pytestmark = pytest.mark.integration
@@ -30,6 +31,9 @@ def test_feedback_uses_latest_record_for_the_overwritten_slot(tmp_path: Path) ->
     assert records.dtype == torch.bool
     assert records.tolist() == expected.compile_sampler(seed=7).sample(8).tolist()
     assert records.tolist() == [[True, False, False]] * 8
+    native = fq.Circuit.from_ir(program.to_ir())
+    assert type(native) is fq.Circuit
+    assert torch.equal(native.compile_sampler(seed=7).sample(8), records)
     assert (
         stale.compile_sampler(seed=7).sample(8, bit_packed=True).tolist() == [[5]] * 8
     )

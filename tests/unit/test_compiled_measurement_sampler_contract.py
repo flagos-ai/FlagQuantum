@@ -116,3 +116,46 @@ def test_unsupported_programs_refuse_before_preparation() -> None:
     ):
         with pytest.raises(CapabilityError):
             program.compile_sampler()
+
+
+def test_exact_budget_boundaries_without_large_allocations(
+    fake: _FakeSampler, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    assert implementation._check_sample_budget(33_554_432, 2, 1, False) == 2
+    assert implementation._check_sample_budget(65_536, 4096, 2048, True) == 512
+    with pytest.raises(CapabilityError, match="frame estimate"):
+        implementation._check_sample_budget(65_537, 4096, 2048, True)
+    monkeypatch.setattr(implementation, "_MAX_FILE_BYTES", 3)
+    sampler = _program().compile_sampler(seed=7)
+    destination = tmp_path / "at-limit.b8"
+    with pytest.raises(CapabilityError, match="file"):
+        sampler.sample_write(4, filepath=destination, format="b8")
+    assert fake.calls == []
+    sampler.sample_write(3, filepath=destination, format="b8")
+    assert destination.read_bytes() == b"\x01" * 3
+
+
+def test_symlink_and_publication_race_never_replace_destination(
+    fake: _FakeSampler, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    sampler = _program().compile_sampler(seed=7)
+    missing = tmp_path / "missing"
+    link = tmp_path / "symlink.b8"
+    link.symlink_to(missing)
+    with pytest.raises(FileExistsError):
+        sampler.sample_write(1, filepath=link, format="b8")
+    assert link.is_symlink() and not missing.exists()
+    assert fake.calls == []
+
+    path = tmp_path / "concurrent.b8"
+    original = fake.sample_write
+
+    def write_with_collision(shots: int, *, filepath: str, format: str) -> None:
+        original(shots, filepath=filepath, format=format)
+        path.write_bytes(b"concurrent writer")
+
+    monkeypatch.setattr(fake, "sample_write", write_with_collision)
+    with pytest.raises(FileExistsError):
+        sampler.sample_write(1, filepath=path, format="b8")
+    assert path.read_bytes() == b"concurrent writer"
+    assert set(tmp_path.iterdir()) == {link, path}

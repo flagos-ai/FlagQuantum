@@ -243,3 +243,12 @@ caller reads the record back one recorded bit at a time. Nothing is approximated
 decomposed, or silently dropped, because a stabilizer result that quietly
 answers a different circuit is worse than a refusal: the caller cannot tell the
 two apart from the samples.
+
+
+### Prepared explicit measurement sampler
+
+`Circuit.compile_sampler` delegates to `measurement_sampler.py`. It lowers
+the admitted exact Clifford program and single-bit X feedback to Stim 1.16.0.
+Stim owns sampling, packing and its bounded write batches. FlagQuantum owns
+preflight budgets, tensor and column semantics, and no-replace publication.
+Run `python -m examples.qec.compiled_measurement_sampler` with the Stim extra.

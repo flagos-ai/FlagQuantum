@@ -84,6 +84,16 @@ terminal measurement instruction are outside this workflow.
 Run the [complete example](../../examples/local/dynamic_final_outputs.py)
 with `python -m examples.local.dynamic_final_outputs`.
 
+### Reuse a Clifford sampler
+
+With the Stim 1.16.0 extra, `circuit.compile_sampler(seed=7)` prepares
+one stream for repeated sampling of explicit measurements. Call
+`sampler.sample(shots=32)` for bool records or set `bit_packed=True` for
+packed rows. To write directly to a fresh local path, call
+`sampler.sample_write(shots=32, filepath=path, format="b8")`.
+The [prepared sampler example](../../examples/qec/compiled_measurement_sampler.py)
+shows repeated writes to a classical slot and verifies the resulting file.
+
 ## Train
 
 An `fq.Module` owns trainable quantum parameters and behaves as a PyTorch
