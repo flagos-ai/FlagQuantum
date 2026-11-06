@@ -9,6 +9,7 @@ from flagquantum.algorithms.first_quantization_resource_model import (
     source_prepare_ij_cost,
     source_prepare_power_two_cost,
     source_prepare_t_cost,
+    source_prepare_tuv_cost,
     source_prepare_uv_cost,
     source_prepare_zeta_cost,
     source_select_first_quantization_cost,
@@ -319,3 +320,29 @@ def test_prepare_uv_roundtrip_resources() -> None:
     assert forward.logical.peak_logical_qubits == 77
     assert reverse.logical.peak_logical_qubits == 50
     assert forward.emitted is reverse.emitted is None
+
+
+@pytest.mark.parametrize(
+    ("bits", "eta", "charge", "precision"),
+    [(1, 1, 0, 1), (8, 3, 0, 5), (16, 10, 10, 8), (16, 4, 2**54, 8)],
+)
+@pytest.mark.ftqc_reference
+def test_prepare_tuv_source_cost(
+    bits: int, eta: int, charge: int, precision: int
+) -> None:
+    pytest.importorskip("qualtran")
+    from qualtran import DecomposeNotImplementedError
+    from qualtran.bloqs.chemistry.pbc.first_quantization.select_and_prepare import (
+        PrepareTUVSuperpositions,
+    )
+
+    source = PrepareTUVSuperpositions(bits, eta, charge, precision)
+    model = source_prepare_tuv_cost(bits, eta, charge, precision)
+    assert [(reg.name, reg.bitsize) for reg in source.signature.lefts()] == [
+        ("tuv", 1),
+        ("uv", 1),
+    ]
+    for operation in (source, source.adjoint()):
+        assert_source_model(model, operation)
+        with pytest.raises(DecomposeNotImplementedError):
+            operation.decompose_bloq()

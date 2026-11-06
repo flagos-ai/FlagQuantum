@@ -212,3 +212,18 @@ def source_prepare_uv_cost(
         nu_ports + index_width,
         calls=calls[::-1] if adjoint else calls,
     )
+
+
+def source_prepare_tuv_cost(
+    num_bits_t: int, eta: int, lambda_zeta: int, num_bits_rot_aa: int = 8
+) -> ComponentCost:
+    """Count the pinned term-selection preparation on two through flags."""
+    _require_positive(num_bits_t, eta, num_bits_rot_aa)
+    if type(lambda_zeta) is not int or lambda_zeta < 0:
+        raise ValueError("Total nuclear charge must be a nonnegative integer")
+    width = (eta + 2 * lambda_zeta - 1).bit_length()
+    return ComponentCost(
+        "PrepareTUVSuperpositions",
+        3,
+        GateCost(toffoli=num_bits_t + 4 * width + 2 * num_bits_rot_aa - 12),
+    )
