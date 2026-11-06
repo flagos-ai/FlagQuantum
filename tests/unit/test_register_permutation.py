@@ -1,14 +1,21 @@
 """Literal cycle source streams and complete coherent permutation semantics."""
 
 from collections import Counter
+from dataclasses import asdict
 from itertools import product
 
 import pytest
 import torch
 
+from flagquantum.compiler._component_trace.resource_model import (
+    estimate_component_resources,
+)
 from flagquantum.compiler.registers.permutation import (
     permutation_cycle_ir,
     permutation_ir,
+)
+from flagquantum.compiler.registers.permutation_resource_model import (
+    source_permutation_cost,
 )
 from tests.unit.measurement_checks import forced_branch
 from tests.unit.test_register_constant_addition import reference_arithmetic_gates
@@ -40,7 +47,7 @@ def test_cycles_source_gates_feedback_and_model(
 ) -> None:
     pytest.importorskip("qualtran")
     from qualtran.bloqs.arithmetic.permutation import Permutation, PermutationCycle
-    from qualtran.resource_counting import QECGatesCost, get_cost_value
+    from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
 
     target, marker, carries, bits = layout(n)
     cycles = (cycle, cycle[::-1]) if composed else (cycle,)
@@ -77,6 +84,11 @@ def test_cycles_source_gates_feedback_and_model(
     )
     counts = Counter(g.name for g in gates)
     model = get_cost_value(source, QECGatesCost())
+    estimated = estimate_component_resources(source_permutation_cost(size, n, cycles))
+    assert {
+        key: value for key, value in asdict(estimated.gates).items() if value
+    } == model.asdict()
+    assert estimated.peak_logical_qubits == get_cost_value(source, QubitCount())
     assert (
         counts["t"] + counts["tdg"] == model.total_t_count() == 4 * (n - 1) * equalities
     )
