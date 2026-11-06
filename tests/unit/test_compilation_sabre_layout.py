@@ -5,7 +5,7 @@ import torch
 
 import flagquantum as fq
 from flagquantum.compiler import CouplingMap, route_to_topology
-from flagquantum.compiler.sabre import plan_sabre_layout, plan_sabre_swaps
+from flagquantum.compiler.topology.sabre import plan_sabre_layout, plan_sabre_swaps
 from flagquantum.core.ir import CircuitIR, Instruction, MeasurementNode
 
 pytestmark = pytest.mark.unit

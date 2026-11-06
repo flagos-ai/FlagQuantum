@@ -9,13 +9,13 @@ from datetime import datetime, timedelta, timezone
 import pytest
 
 import flagquantum.experimental.artifacts as artifacts
-from flagquantum.compiler.artifact_compilation import (
+from flagquantum.compiler.artifacts.artifact_compilation import (
     compile_circuit_artifact_for_target,
 )
-from flagquantum.compiler.compilation_evidence import (
+from flagquantum.compiler.artifacts.compilation_evidence import (
     build_compilation_evidence_bundle,
 )
-from flagquantum.compiler.directed_topology import DirectedCouplingMap
+from flagquantum.compiler.topology.directed_topology import DirectedCouplingMap
 from flagquantum.core import _artifacts
 from flagquantum.core.ir import CircuitIR, Instruction, MeasurementNode
 from flagquantum.core.target_capabilities import (

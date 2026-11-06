@@ -19,7 +19,7 @@ import torch
 import flagquantum as fq
 from flagquantum.compiler import CouplingMap, optimize
 from flagquantum.compiler import compile as compile_program
-from flagquantum.compiler.optimization_levels import (
+from flagquantum.compiler.optimization.optimization_levels import (
     DEFAULT_OPTIMIZATION_LEVEL,
     IMPLEMENTED_OPTIMIZATION_LEVELS,
     RESERVED_OPTIMIZATION_LEVELS,

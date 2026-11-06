@@ -7,7 +7,7 @@ from collections.abc import Mapping
 from itertools import groupby
 from typing import TYPE_CHECKING
 
-from ...compiler.state_preparation_synthesis import _synthesize_real_state
+from ...compiler.optimization.state_preparation_synthesis import _synthesize_real_state
 from ...core._composition import controlled_instruction
 from ...core.controlled import _clean_mcx_instructions
 from ...core.ir import Instruction

@@ -4,10 +4,25 @@
     "run_id": 37877763072,
     "commit": "16926a02de7b0ea406f44ba71170b359bbe47fe4",
     "recorded_at": "2026-10-09",
-    "selection": "pull-request coverage; three shards; pytest --durations=50"
+    "selection": "pull-request coverage; three shards; pytest --durations=50",
+    "additional_measurements": [
+      {
+        "run_id": 42150188386,
+        "commit": "6213e06fad56e838b51b24879874f397b3b1516d",
+        "recorded_at": "2026-11-06",
+        "selection": "Linux pull-request coverage; pytest --durations=50",
+        "job_ids": [
+          127672433030,
+          127672434207
+        ]
+      }
+    ]
   },
   "default_seconds": 0.05,
   "durations": {
+    "tests/integration/test_representation_agreement_sweep.py::test_a_degenerate_cut_is_reported_as_a_domain_boundary": 36.73,
+    "tests/integration/test_representation_agreement_sweep.py::test_a_smooth_truncating_cell_records_its_own_derivative_and_its_jump": 88.39,
+    "tests/integration/test_representation_agreement_sweep.py::test_fidelity_falls_when_the_cap_actually_discards_weight": 35.87,
     "tests/integration/test_stabilizer_execution_mode.py::test_a_width_no_amplitude_store_can_hold_is_planned_and_run": 13.45,
     "tests/qec/test_css_code.py::test_a_code_no_class_declares_builds_a_memory_circuit_and_a_model": 65.75,
     "tests/qec/test_css_code.py::test_a_rebuild_describes_the_same_experiment_as_the_declared_record[code1]": 5.58,

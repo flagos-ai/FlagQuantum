@@ -4,9 +4,15 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from dataclasses import dataclass, replace
-from math import isfinite
+from math import isfinite, tau
 
 from ....circuit import Circuit
+from ....compiler.registers.arithmetic import (
+    controlled_add_or_subtract_ir,
+    measurement_add_or_subtract_ir,
+)
+from ....compiler.registers.qrom import controlled_qrom_ir
+from ....core.ir import CircuitIR
 from ....errors import ValidationError
 
 
@@ -62,15 +68,7 @@ class THCRotations:
                 fragment.x(q)
             rotations = reversed(network) if self.is_adjoint else iter(network)
             for left, right, angle in rotations:
-                if (
-                    type(left) is not int
-                    or type(right) is not int
-                    or not 0 <= left < right == left + 1 < len(self.target)
-                    or not isfinite(angle)
-                ):
-                    raise ValidationError(
-                        "THC needs adjacent orbital offsets and finite angles."
-                    )
+                self._validate_rotation(left, right, angle)
                 theta = -2 * angle if self.is_adjoint else 2 * angle
                 rotation = Circuit(1, bsz=circuit.bsz, dtype=circuit.dtype).ry(
                     0, theta=theta
@@ -85,3 +83,84 @@ class THCRotations:
             for q in flips:
                 fragment.x(q)
         return circuit.compose(fragment, qubits=qubits)
+
+    def _append_qrom(
+        self,
+        circuit: Circuit,
+        angle_data: tuple[int, ...],
+        gradient: tuple[int, ...],
+        carries: tuple[int, ...],
+        scratch: tuple[int, ...],
+        measurement_bits: tuple[int, ...],
+        junk: tuple[int, ...],
+    ) -> None:
+        width = len(self.selection)
+        modulus = 1 << len(angle_data)
+        tables: dict[tuple[int, int], list[int]] = {}
+        for address, network in enumerate(self.networks):
+            for slot, (left, right, angle) in enumerate(network):
+                self._validate_rotation(left, right, angle)
+                # Reduce before scaling so any finite input angle is supported.
+                word = round((angle % tau) / tau * modulus) % modulus
+                if word:
+                    table = tables.setdefault((slot, left), [0] * len(self.networks))
+                    table[address] = (-word if self.is_adjoint else word) % modulus
+
+        for table_key in sorted(tables, reverse=self.is_adjoint):
+            _, left = table_key
+            target, parity = self.target[left : left + 2]
+            operands = (parity, *self.selection, *angle_data, *junk, *scratch[:width])
+            qrom = Circuit.from_ir(
+                controlled_qrom_ir(
+                    width, len(angle_data), tables[table_key], blocked=bool(junk)
+                ),
+                dtype=circuit.dtype,
+                bsz=circuit.bsz,
+            )
+            circuit.cx(target, parity).compose(qrom, qubits=operands)
+            circuit.sdg(target).h(target)
+            if len(carries) > 1:
+                first_bit = measurement_bits[-1] + 1
+                bits = tuple(range(first_bit, first_bit + len(carries)))
+                adder = measurement_add_or_subtract_ir(
+                    target, angle_data, gradient, carries, bits
+                )
+                circuit.compose(
+                    Circuit.from_ir(
+                        CircuitIR(circuit.n_qubits, adder),
+                        dtype=circuit.dtype,
+                        bsz=circuit.bsz,
+                    )
+                )
+            else:
+                for gate in controlled_add_or_subtract_ir(
+                    target, angle_data, gradient, carries[0]
+                ):
+                    circuit.gate(gate.name, gate.wires)
+            circuit.h(target).s(target)
+            if measurement_bits or junk:
+                qrom = Circuit.from_ir(
+                    controlled_qrom_ir(
+                        width,
+                        len(angle_data),
+                        tables[table_key],
+                        measurement_bits=measurement_bits,
+                        blocked=bool(junk),
+                        inverse=True,
+                    ),
+                    dtype=circuit.dtype,
+                    bsz=circuit.bsz,
+                )
+            # The address and orbital parity still select the same word.
+            circuit.compose(qrom, qubits=operands).cx(target, parity)
+
+    def _validate_rotation(self, left: int, right: int, angle: float) -> None:
+        if (
+            type(left) is not int
+            or type(right) is not int
+            or not 0 <= left < right == left + 1 < len(self.target)
+            or not isfinite(angle)
+        ):
+            raise ValidationError(
+                "THC needs adjacent orbital offsets and finite angles."
+            )

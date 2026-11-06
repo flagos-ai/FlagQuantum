@@ -26,14 +26,14 @@ from pathlib import Path
 import pytest
 import torch
 
+import flagquantum.compiler.optimization.zero_state_reset as zero_state_reset_module
 import flagquantum.compiler.pipeline as pipeline_module
-import flagquantum.compiler.zero_state_reset as zero_state_reset_module
 from flagquantum.compiler import optimize
-from flagquantum.compiler.optimization_levels import (
+from flagquantum.compiler.optimization.optimization_levels import (
     DEFAULT_OPTIMIZATION_LEVEL,
     OPTIMIZATION_LEVEL_STAGES,
 )
-from flagquantum.compiler.zero_state_reset import remove_zero_state_resets
+from flagquantum.compiler.optimization.zero_state_reset import remove_zero_state_resets
 from flagquantum.core.ir import CircuitIR, Instruction
 from flagquantum.runtime.dynamic import DynamicCircuit, run_dynamic
 

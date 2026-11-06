@@ -76,21 +76,28 @@ import flagquantum as fq
 import flagquantum.compiler.pass_manager as pass_manager
 import flagquantum.compiler.pipeline as compiler_pipeline
 from flagquantum.compiler import optimize
-from flagquantum.compiler.commutation_cancellation import (
+from flagquantum.compiler.optimization.commutation_cancellation import (
     cancel_commuting_self_inverse,
     merge_commuting_rotations,
 )
-from flagquantum.compiler.diagonal_before_measure import (
+from flagquantum.compiler.optimization.diagonal_before_measure import (
     remove_diagonal_gates_before_measure,
 )
-from flagquantum.compiler.inverse_cancellation import inverse_pairs, merge_inverse_pairs
-from flagquantum.compiler.one_qubit_optimization import collapse_one_qubit_runs
-from flagquantum.compiler.optimization_levels import (
+from flagquantum.compiler.optimization.inverse_cancellation import (
+    inverse_pairs,
+    merge_inverse_pairs,
+)
+from flagquantum.compiler.optimization.one_qubit_optimization import (
+    collapse_one_qubit_runs,
+)
+from flagquantum.compiler.optimization.optimization_levels import (
     DEFAULT_OPTIMIZATION_LEVEL,
     OPTIMIZATION_LEVEL_STAGES,
 )
-from flagquantum.compiler.two_qubit_optimization import collapse_two_qubit_blocks
-from flagquantum.compiler.zero_state_reset import remove_zero_state_resets
+from flagquantum.compiler.optimization.two_qubit_optimization import (
+    collapse_two_qubit_blocks,
+)
+from flagquantum.compiler.optimization.zero_state_reset import remove_zero_state_resets
 from flagquantum.core.ir import CircuitIR, Instruction
 from flagquantum.core.operator_schema import get_operator_schema
 from flagquantum.runtime.dynamic import DynamicCircuit, run_dynamic

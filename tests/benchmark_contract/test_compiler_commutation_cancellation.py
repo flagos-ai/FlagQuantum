@@ -2,7 +2,7 @@
 
 The benchmark module answers three questions at once. How much of the declared
 arity-one and arity-two unitary group does the rule source in
-``flagquantum.compiler.commutation`` actually decide? What does the cancellation
+``flagquantum.compiler.optimization.commutation`` actually decide? What does the cancellation
 pass built on it remove that the pipeline could not remove before? And where does
 a diagonal rotation sit inside a controlled gate without changing it?
 

@@ -21,6 +21,11 @@ from ...core.ir import CircuitIR, MeasurementNode
 from ...core.ising import IsingBraidProgram
 from ...errors import CapabilityError, ValidationError
 from ..dynamic._conditions import instruction_is_dynamic
+from ..dynamic._final_outputs import (
+    mark_dynamic_final_outputs,
+    resolve_dynamic_final_output_options,
+    validate_dynamic_final_outputs,
+)
 from ..execution_plan import (
     CircuitAnalysis,
     EvolutionSemantics,
@@ -788,11 +793,6 @@ def _validated_plan_program(
         instruction_is_dynamic(instruction) for instruction in source_ir.instructions
     )
     if measurements is not None:
-        if is_dynamic:
-            raise CapabilityError(
-                "dynamic planning does not accept outputs; measurements and final "
-                "samples are defined by the DynamicCircuit"
-            )
         if source_ir.measurements:
             raise ValidationError(
                 "measurements cannot be supplied when the program already contains "
@@ -800,7 +800,10 @@ def _validated_plan_program(
             )
         if any(not isinstance(request, MeasurementNode) for request in measurements):
             raise TypeError("measurements must contain MeasurementNode instances")
-        source_ir = replace(source_ir, measurements=tuple(measurements))
+        requests = tuple(measurements)
+        if is_dynamic:
+            requests = mark_dynamic_final_outputs(source_ir, requests)
+        source_ir = replace(source_ir, measurements=requests)
     if noise_model is not None:
         from ...noise import NoiseModel
 
@@ -928,6 +931,8 @@ def plan(
             "dynamic planning takes precision from DynamicCircuit; "
             "ExecutionOptions.precision must be None"
         )
+    if is_dynamic:
+        options = resolve_dynamic_final_output_options(source_ir, options)
     runtime_config = getattr(program, "runtime_config", None)
     resolved = resolve_execution_options(
         options,
@@ -966,6 +971,9 @@ def plan(
             source_ir = candidate
             is_dynamic = True
     if is_dynamic:
+        validate_dynamic_final_outputs(
+            source_ir, shots=resolved.shots, batch_size=resolved.batch_size
+        )
         _validate_dynamic_plan_request(
             program,
             source_ir,

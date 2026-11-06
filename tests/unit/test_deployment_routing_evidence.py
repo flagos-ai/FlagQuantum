@@ -6,7 +6,7 @@ import flagquantum as fq
 import flagquantum.deployment as fqd
 from flagquantum.compiler import CouplingMap
 from flagquantum.compiler import compile as compile_circuit
-from flagquantum.compiler.directed_topology import DirectedCouplingMap
+from flagquantum.compiler.topology.directed_topology import DirectedCouplingMap
 from flagquantum.deployment import CloudBackendProfile
 from flagquantum.deployment.routing_evidence import (
     DEPLOYMENT_ROUTING_EVIDENCE_SCHEMA,

@@ -168,14 +168,11 @@ def test_callback_signature_and_recursion_are_checked():
         ("qfunc cost(q:qbit[]) {H(q[0]);}", "named"),
         ("qfunc cost(g:real,q:qbit[]) {cost(g,q);}", "acyclic"),
     ):
-        source = (
-            helper
-            + """
+        source = helper + """
           qfunc run_cost(f:qfunc(real,qbit[]),g:real,q:qbit[]) {f(g,q);}
           qfunc main(p:real[1],output q:qbit[1]) {
             allocate(q); run_cost(cost,p[0],q);
           }"""
-        )
         with pytest.raises(InteropConversionError, match=diagnostic):
             synth.synthesize(
                 source, source_format="qmod", classical_inputs={"p": [0.2]}

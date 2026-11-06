@@ -87,9 +87,11 @@ from benchmarks.compiler_lookahead_swap import (
     case_basis,
 )
 from flagquantum.compiler import CouplingMap, optimize, route_to_topology
-from flagquantum.compiler.optimization_levels import DEFAULT_OPTIMIZATION_LEVEL
+from flagquantum.compiler.optimization.optimization_levels import (
+    DEFAULT_OPTIMIZATION_LEVEL,
+)
 from flagquantum.compiler.routing import record_post_routing_optimization
-from flagquantum.compiler.sabre import (
+from flagquantum.compiler.topology.sabre import (
     SabrePlan,
     _planning_coupling,
     _validated_layout,
@@ -388,7 +390,7 @@ def plan_stochastic_swaps(
 ) -> SabrePlan:
     """Plan a persistent layout by randomized layer permutations.
 
-    The plan has the shape :class:`~flagquantum.compiler.sabre.SabrePlan` gives the
+    The plan has the shape :class:`~flagquantum.compiler.topology.sabre.SabrePlan` gives the
     shipped planner, so the shipped materialization, restore, and cost model all
     apply to it unchanged.
 

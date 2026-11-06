@@ -88,11 +88,11 @@ import pytest
 import torch
 
 from flagquantum.algorithms.primitives import state_preparation as reference
-from flagquantum.compiler.one_qubit_synthesis import (
+from flagquantum.compiler.optimization.one_qubit_synthesis import (
     Z_ROTATION_OPCODES,
     synthesize_one_qubit_matrix,
 )
-from flagquantum.compiler.state_preparation_synthesis import (
+from flagquantum.compiler.optimization.state_preparation_synthesis import (
     _CONTROL_FLIP,
     _LADDER_Z_ROTATION,
     _control_flips,
@@ -106,7 +106,7 @@ from flagquantum.compiler.state_preparation_synthesis import (
     _walsh,
     synthesize_state_preparation,
 )
-from flagquantum.compiler.two_qubit_synthesis import (
+from flagquantum.compiler.optimization.two_qubit_synthesis import (
     SUPERCONTROLLED_ENTANGLERS,
     synthesize_two_qubit,
 )

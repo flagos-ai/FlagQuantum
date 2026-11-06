@@ -236,7 +236,7 @@ module = "flagquantum/algorithms/primitives/oracle.py"
 admission_basis = "shared"
 # Measured from the import graph. The basis above is derived from these and from the
 # test/example callers the gate also counts, so a consumer that moves fails this contract.
-framework_consumers = ["flagquantum/algorithms/grover.py", "flagquantum/algorithms/qarm.py", "flagquantum/compiler/deferred_operations.py"]
+framework_consumers = ["flagquantum/algorithms/grover.py", "flagquantum/algorithms/qarm.py", "flagquantum/compiler/lowering/deferred_operations.py"]
 package_consumers = ["flagquantum/algorithms/primitives/linear_combination.py"]
 distribution_semantics = "single_device_fast_path"
 accepts_tensor = false

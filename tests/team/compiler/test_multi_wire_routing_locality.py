@@ -19,17 +19,17 @@ import torch
 
 import flagquantum as fq
 from flagquantum.compiler import compile as compile_circuit
-from flagquantum.compiler.coupling import CouplingMap
-from flagquantum.compiler.directed_topology import (
-    DirectedCouplingMap,
-    route_to_directed_topology,
-)
-from flagquantum.compiler.operand_semantics import _MULTI_QUBIT_OPERAND_PAIRS
+from flagquantum.compiler.lowering.operand_semantics import _MULTI_QUBIT_OPERAND_PAIRS
 from flagquantum.compiler.routing import (
     ROUTING_STRATEGIES,
     route_to_topology,
 )
-from flagquantum.compiler.topology_legalization import (
+from flagquantum.compiler.topology.coupling import CouplingMap
+from flagquantum.compiler.topology.directed_topology import (
+    DirectedCouplingMap,
+    route_to_directed_topology,
+)
+from flagquantum.compiler.topology.topology_legalization import (
     TopologyLegalizationError,
     legalize_circuit_topology,
 )

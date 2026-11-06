@@ -20,7 +20,9 @@ from benchmarks.compiler_lookahead_swap import (
     Configuration,
     run_benchmark,
 )
-from flagquantum.compiler.optimization_levels import DEFAULT_OPTIMIZATION_LEVEL
+from flagquantum.compiler.optimization.optimization_levels import (
+    DEFAULT_OPTIMIZATION_LEVEL,
+)
 
 pytestmark = pytest.mark.benchmark_contract
 

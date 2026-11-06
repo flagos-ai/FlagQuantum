@@ -30,8 +30,32 @@ ACCELERATOR_GROUP = "flagquantum-accelerator"
 
 A800_CPU_ROUTE = '${{ fromJSON((github.event_name != \'pull_request\' || github.event.pull_request.head.repo.full_name == github.repository) && \'["self-hosted","linux","x64","flagquantum-cpu"]\' || \'["ubuntu-latest"]\') }}'
 
+PREINSTALLED_A800_CPU_ROUTE = A800_CPU_ROUTE.replace(
+    '"flagquantum-cpu"]', '"flagquantum-cpu","flagquantum-a800-cpu"]'
+)
+
+PREWARM_CPU_LABELS = [
+    "self-hosted",
+    "linux",
+    "x64",
+    "flagquantum-a800-cpu",
+    "${{ matrix.host }}",
+]
+PREWARM_CPU_GUARD = (
+    "${{ !cancelled() && (needs.export.result == 'success' || "
+    "needs.export.result == 'skipped') && (github.event_name != 'pull_request' || "
+    "github.event.pull_request.head.repo.full_name == github.repository) }}"
+)
+
 MC550_CPU_ROUTE = A800_CPU_ROUTE.replace(
     '"flagquantum-cpu"]', '"flagquantum-cpu","flagquantum-mc550-cpu"]'
+)
+
+COVERAGE_CPU_ROUTE = (
+    "${{ fromJSON(\n"
+    "  (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)\n"
+    '  && \'["self-hosted","linux","x64","flagquantum-cpu"]\' || \'["ubuntu-latest"]\'\n'
+    ") }}"
 )
 
 TRUSTED_CPU_ROUTE = (
@@ -166,6 +190,12 @@ def _is_self_hosted(job: dict[str, object]) -> bool:
 def _allows_untrusted_code(job: dict[str, object], reaching: frozenset[str]) -> bool:
     if not _is_self_hosted(job):
         return False
+    if (
+        reaching == frozenset({"pull_request"})
+        and job.get("runs-on") == PREWARM_CPU_LABELS
+        and job.get("if") == PREWARM_CPU_GUARD
+    ):
+        return False
     return not (
         reaching == frozenset({"pull_request"})
         and job.get("runs-on")
@@ -174,7 +204,9 @@ def _allows_untrusted_code(job: dict[str, object], reaching: frozenset[str]) -> 
             ENTRY_CPU_ROUTE,
             PORTABLE_CPU_ROUTE,
             A800_CPU_ROUTE,
+            PREINSTALLED_A800_CPU_ROUTE,
             MC550_CPU_ROUTE,
+            COVERAGE_CPU_ROUTE,
         )
     )
 
@@ -390,7 +422,9 @@ def test_trigger_parsing_reads_both_ways_a_workflow_can_spell_on(
     assert _triggers(scalar) == frozenset({"push"})
 
 
-@pytest.mark.parametrize("route", [TRUSTED_CPU_ROUTE, MC550_CPU_ROUTE])
+@pytest.mark.parametrize(
+    "route", [TRUSTED_CPU_ROUTE, MC550_CPU_ROUTE, PREINSTALLED_A800_CPU_ROUTE]
+)
 def test_cpu_route_rejects_missing_guards_and_other_untrusted_events(
     route: str,
 ) -> None:
@@ -415,10 +449,32 @@ def test_cpu_route_rejects_missing_guards_and_other_untrusted_events(
 def test_dedicated_cpu_lanes_keep_fork_code_on_hosted_runners() -> None:
     jobs = _jobs(WORKFLOWS / "ci.yml")
     for name in ("cpu-core", "cpu-core-3-12-tests", "cpu-runtime"):
-        assert jobs[name]["runs-on"] == A800_CPU_ROUTE
+        assert jobs[name]["runs-on"] == PREINSTALLED_A800_CPU_ROUTE
         assert _is_self_hosted(jobs[name])
         assert not _allows_untrusted_code(jobs[name], frozenset({"pull_request"}))
+    coverage = jobs["coverage-shard"]
+    assert coverage["runs-on"] == COVERAGE_CPU_ROUTE
+    assert _is_self_hosted(coverage)
+    assert not _allows_untrusted_code(coverage, frozenset({"pull_request"}))
     triton = jobs["triton-optional"]
     assert triton["runs-on"] == MC550_CPU_ROUTE
     assert _is_self_hosted(triton)
     assert not _allows_untrusted_code(triton, frozenset({"pull_request"}))
+
+
+def test_cpu_image_qualification_rejects_forks_and_unprovisioned_hardware() -> None:
+    job = _jobs(WORKFLOWS / "prewarm-ci-cpu.yml")["prewarm"]
+    assert job["runs-on"] == PREWARM_CPU_LABELS
+    assert job["if"] == PREWARM_CPU_GUARD
+    assert _is_self_hosted(job)
+    assert not _allows_untrusted_code(job, frozenset({"pull_request"}))
+    for event in ("workflow_run", "pull_request_target"):
+        assert _allows_untrusted_code(job, frozenset({event}))
+    unguarded = dict(job)
+    unguarded["if"] = PREWARM_CPU_GUARD.replace(
+        "github.event.pull_request.head.repo.full_name == github.repository", "true"
+    )
+    assert _allows_untrusted_code(unguarded, frozenset({"pull_request"}))
+    other_hardware = dict(job)
+    other_hardware["runs-on"] = ["self-hosted", "gpu", "a800-171"]
+    assert _allows_untrusted_code(other_hardware, frozenset({"pull_request"}))

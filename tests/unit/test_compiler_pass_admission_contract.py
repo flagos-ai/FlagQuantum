@@ -21,7 +21,8 @@ from typing import Any
 
 import pytest
 
-from flagquantum.compiler import optimization_levels, pass_manager, pipeline
+from flagquantum.compiler import pass_manager, pipeline
+from flagquantum.compiler.optimization import optimization_levels
 from flagquantum.core.ir import CircuitIR, Instruction
 from flagquantum.ecosystem.extensions import pass_admission, sdk
 from flagquantum.errors import CapabilityError, CompilationError

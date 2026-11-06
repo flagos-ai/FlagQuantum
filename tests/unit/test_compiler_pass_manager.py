@@ -17,7 +17,8 @@ from types import MappingProxyType
 import pytest
 
 import flagquantum as fq
-from flagquantum.compiler import optimization_levels, pass_manager, pipeline
+from flagquantum.compiler import pass_manager, pipeline
+from flagquantum.compiler.optimization import optimization_levels
 from flagquantum.core.ir import (
     CircuitIR,
     Instruction,
@@ -414,12 +415,18 @@ def test_every_built_in_binding_agrees_with_the_module_that_implements_it() -> N
     # The registry adds a name, not a second implementation. Each bound pass must
     # produce exactly what its own module's function produces on the same program,
     # so the pipeline cannot drift away from the pass that owns the transformation.
-    from flagquantum.compiler.commutation_cancellation import (
+    from flagquantum.compiler.optimization.commutation_cancellation import (
         cancel_commuting_self_inverse,
     )
-    from flagquantum.compiler.inverse_cancellation import merge_inverse_pairs
-    from flagquantum.compiler.one_qubit_optimization import collapse_one_qubit_runs
-    from flagquantum.compiler.zero_state_reset import remove_zero_state_resets
+    from flagquantum.compiler.optimization.inverse_cancellation import (
+        merge_inverse_pairs,
+    )
+    from flagquantum.compiler.optimization.one_qubit_optimization import (
+        collapse_one_qubit_runs,
+    )
+    from flagquantum.compiler.optimization.zero_state_reset import (
+        remove_zero_state_resets,
+    )
 
     program = _ir(
         Instruction(name="x", wires=(0,)),
@@ -732,7 +739,7 @@ def test_a_declared_fact_is_not_computed_when_the_reader_short_circuits() -> Non
 
 
 def test_the_manager_answers_an_analysis_the_way_the_pass_reads_it() -> None:
-    from flagquantum.compiler.commutation import analyze_commutation
+    from flagquantum.compiler.optimization.commutation import analyze_commutation
 
     program = _ir(
         Instruction(name="cx", wires=(0, 1)),

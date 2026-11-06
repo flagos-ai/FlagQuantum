@@ -31,12 +31,12 @@ from flagquantum.compiler import (
     plan_trivial_layout,
     route_to_topology,
 )
-from flagquantum.compiler.directed_topology import (
+from flagquantum.compiler.layout_planning import LayoutPlanningError
+from flagquantum.compiler.topology.directed_topology import (
     DirectedCouplingMap,
     route_to_directed_topology,
 )
-from flagquantum.compiler.layout_planning import LayoutPlanningError
-from flagquantum.compiler.topology_legalization import (
+from flagquantum.compiler.topology.topology_legalization import (
     TopologyLegalizationError,
     legalize_circuit_topology,
 )

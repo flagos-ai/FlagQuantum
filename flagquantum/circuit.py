@@ -46,6 +46,7 @@ if TYPE_CHECKING:
     from .runtime.options import ExecutionOptions
     from .runtime.planner.models import RuntimeSelectionPlan
     from .runtime.result import ExecutionResult
+    from .simulation.stabilizer.measurement_sampler import CompiledMeasurementSampler
 else:
     _BuiltinGateMethods = object
 
@@ -973,7 +974,7 @@ class Circuit(_BuiltinGateMethods):
         return _initial_state(self)
 
     def _statevector_instructions(self) -> tuple[Instruction, ...]:
-        from .compiler.deferred_operations import lower_deferred_operations
+        from .compiler.lowering.deferred_operations import lower_deferred_operations
 
         return lower_deferred_operations(self._instructions)
 
@@ -1004,6 +1005,22 @@ class Circuit(_BuiltinGateMethods):
         return noisy_density_matrix(
             self, noise_model, device=self.device, dtype=self.dtype
         )
+
+    def compile_sampler(self, *, seed: int | None = None) -> CompiledMeasurementSampler:
+        """Prepare one CPU Clifford sampler for explicit measurement records.
+
+        Examples:
+            >>> from importlib.util import find_spec
+            >>> from flagquantum.dynamic import DynamicCircuit
+            >>> if find_spec("stim") is not None:
+            ...     sampler = DynamicCircuit(1).x(0).measure(0).compile_sampler(seed=7)
+            ...     assert sampler.sample(1).tolist() == [[True]]
+        """
+        from .simulation.stabilizer.measurement_sampler import (
+            _compile_measurement_sampler,
+        )
+
+        return _compile_measurement_sampler(self, seed=seed)
 
     def run(
         self,

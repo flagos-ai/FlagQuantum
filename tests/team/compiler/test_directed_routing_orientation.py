@@ -29,8 +29,7 @@ import torch
 
 import flagquantum as fq
 from flagquantum.compiler import compile as compile_circuit
-from flagquantum.compiler.directed_topology import DirectedCouplingMap
-from flagquantum.compiler.operand_semantics import _TWO_WIRE_OPERAND_SYMMETRY
+from flagquantum.compiler.lowering.operand_semantics import _TWO_WIRE_OPERAND_SYMMETRY
 from flagquantum.compiler.routing import (
     DEPLOYABLE_ROUTING_STRATEGIES,
     ROUTING_STRATEGIES,
@@ -39,6 +38,7 @@ from flagquantum.compiler.routing import (
     route_to_topology,
     select_routing_strategy,
 )
+from flagquantum.compiler.topology.directed_topology import DirectedCouplingMap
 from flagquantum.core.ir import CircuitIR, Instruction
 from flagquantum.simulation.statevector.local import run_local_statevector
 
@@ -396,7 +396,9 @@ def test_the_routed_ordered_program_has_nothing_left_to_legalize(strategy: str) 
     direction; a nonzero count would mean routing left work it claims to price.
     """
 
-    from flagquantum.compiler.direction_legalization import legalize_directed_cx
+    from flagquantum.compiler.topology.direction_legalization import (
+        legalize_directed_cx,
+    )
     from tests.team.compiler.test_direction_operand_semantics import _snapshot
 
     routed = route_to_topology(
@@ -501,8 +503,12 @@ def test_the_target_legalization_composition_still_divides_the_orientation_work(
     the one that repairs it.
     """
 
-    from flagquantum.compiler.direction_legalization import legalize_directed_cx
-    from flagquantum.compiler.topology_legalization import legalize_circuit_topology
+    from flagquantum.compiler.topology.direction_legalization import (
+        legalize_directed_cx,
+    )
+    from flagquantum.compiler.topology.topology_legalization import (
+        legalize_circuit_topology,
+    )
     from tests.hybrid_compiler.test_target_legalization import _snapshot
 
     source = CircuitIR(

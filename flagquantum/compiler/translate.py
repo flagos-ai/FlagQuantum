@@ -4,14 +4,14 @@ The counterpart of ``cudaq.translate``. Translation is Compiler-owned: it turns
 a validated program into text and performs no compilation, no target
 legalization, and no numerical work. A caller who needs the emitted text bound
 to a legalized target, with its evidence identities, uses
-:func:`flagquantum.compiler.target_emission.emit_legalized_target` instead.
+:func:`flagquantum.compiler.formats.target_emission.emit_legalized_target` instead.
 """
 
 from __future__ import annotations
 
 from typing import Any
 
-from .target_emission import EMISSION_PROFILES
+from .formats.target_emission import EMISSION_PROFILES
 
 TRANSLATION_FORMATS: tuple[str, ...] = tuple(sorted(EMISSION_PROFILES))
 # Closed set of accepted ``format`` values, the emission profile names.

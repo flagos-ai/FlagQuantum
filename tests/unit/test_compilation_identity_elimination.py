@@ -44,7 +44,7 @@ import pytest
 import torch
 
 from flagquantum.compiler import optimize
-from flagquantum.compiler.one_qubit_synthesis import (
+from flagquantum.compiler.optimization.one_qubit_synthesis import (
     _MODULAR_FOLD_LIMIT,
     is_identity_one_qubit,
 )

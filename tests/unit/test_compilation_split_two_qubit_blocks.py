@@ -21,13 +21,15 @@ import random
 import pytest
 import torch
 
-from flagquantum.compiler.one_qubit_optimization import collapse_one_qubit_runs
-from flagquantum.compiler.pipeline import optimize
-from flagquantum.compiler.two_qubit_optimization import (
+from flagquantum.compiler.optimization.one_qubit_optimization import (
+    collapse_one_qubit_runs,
+)
+from flagquantum.compiler.optimization.two_qubit_optimization import (
     _MATCH_EPS,
     _product_factors,
     split_two_qubit_blocks,
 )
+from flagquantum.compiler.pipeline import optimize
 from flagquantum.core.ir import CircuitIR, Instruction
 from flagquantum.core.operator_schema import get_operator_schema
 from flagquantum.simulation.gate_matrix import gate_matrix
@@ -149,7 +151,9 @@ def test_the_split_reproduces_the_source_statevector_exactly() -> None:
     # phase-blind route of the same input actually misses it, and it does: the KAK
     # route this pass replaces has an overlap magnitude of 1 and a raw difference
     # of order 1, which is why nothing in this file compares overlaps.
-    from flagquantum.compiler.two_qubit_synthesis import synthesize_two_qubit
+    from flagquantum.compiler.optimization.two_qubit_synthesis import (
+        synthesize_two_qubit,
+    )
 
     _, _, matrix = _random_case(0)
     source = CircuitIR(

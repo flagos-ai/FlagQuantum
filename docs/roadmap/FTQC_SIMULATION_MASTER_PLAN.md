@@ -1007,3 +1007,9 @@ The `--sparse-projection` mode reuses those windows and displays detector
 rows and logical rows in a shared fault-column order. Column 1 appears
 in both the D1 and L0 rows for the shared-layer fault. This exercises
 chunked decoder-input preparation for FTS-07 and R08.
+
+The `--decode-rounds` mode feeds the same model one round at a time. A local
+index 0 in the middle round refers to D1. The first round buffers, the second
+commits fault column 1 and logical observable 0, and the third completes the
+record with that single fault. This exercises round ordering and the handoff
+from DEM chunks to decoder records for FTS-07 and R08.

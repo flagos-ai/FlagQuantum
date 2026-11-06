@@ -52,12 +52,12 @@ from unittest.mock import patch
 
 import torch
 
-from flagquantum.compiler.commutation import (
+from flagquantum.compiler.optimization.commutation import (
     _RULE_OPCODES,
     analyze_commutation,
     commute,
 )
-from flagquantum.compiler.commutation_cancellation import (
+from flagquantum.compiler.optimization.commutation_cancellation import (
     cancellable_positions,
     rotation_groups,
 )
@@ -727,7 +727,7 @@ def rotation_merge_reach() -> list[dict[str, Any]]:
     capturing it at import time.
     """
 
-    from flagquantum.compiler.commutation_cancellation import (
+    from flagquantum.compiler.optimization.commutation_cancellation import (
         merge_commuting_rotations,
     )
 

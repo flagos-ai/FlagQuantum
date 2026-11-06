@@ -7,7 +7,7 @@ from unittest.mock import patch
 import pytest
 import torch
 
-from flagquantum.compiler.commutation import (
+from flagquantum.compiler.optimization.commutation import (
     analyze_commutation,
     commute,
 )
@@ -89,7 +89,9 @@ def test_large_diagonal_run_avoids_quadratic_predicate_evaluation() -> None:
             for i in range(count)
         ),
     )
-    with patch("flagquantum.compiler.commutation.commute", wraps=commute) as predicate:
+    with patch(
+        "flagquantum.compiler.optimization.commutation.commute", wraps=commute
+    ) as predicate:
         result = analyze_commutation(ir)
     assert predicate.call_count < 3 * count
     assert result.blocks_by_qubit[0] == (tuple(range(count)),)

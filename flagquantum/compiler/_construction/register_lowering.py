@@ -21,7 +21,7 @@ from ...noise import amplitude_damping_channel
 from .._fourier_kernels import qft_instructions
 from .._hybrid.model import Block, HybridProgram, Operation, Region, Value, ValueId
 from ..noise import _encode_channel_instruction
-from ..state_preparation_synthesis import _synthesize_real_state
+from ..optimization.state_preparation_synthesis import _synthesize_real_state
 from .boolean_lowering import BooleanCandidateError, lower_boolean_value
 from .gate_tape import expand_gate_tape
 from .lowering import (

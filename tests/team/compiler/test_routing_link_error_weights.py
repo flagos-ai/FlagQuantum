@@ -31,7 +31,6 @@ import torch
 
 import flagquantum as fq
 from flagquantum.compiler import CouplingMap, LinkErrorRates
-from flagquantum.compiler.directed_topology import DirectedCouplingMap
 from flagquantum.compiler.routing import (
     DEPLOYABLE_ROUTING_STRATEGIES,
     LINK_ERROR_ROUTING_STRATEGIES,
@@ -39,6 +38,7 @@ from flagquantum.compiler.routing import (
     route_to_topology,
     select_routing_strategy,
 )
+from flagquantum.compiler.topology.directed_topology import DirectedCouplingMap
 from flagquantum.core.ir import CircuitIR
 
 pytestmark = pytest.mark.unit

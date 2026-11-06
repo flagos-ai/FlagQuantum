@@ -2,7 +2,7 @@
 
 import pytest
 
-from flagquantum.compiler.directed_topology import DirectedCouplingMap
+from flagquantum.compiler.topology.directed_topology import DirectedCouplingMap
 
 pytestmark = pytest.mark.unit
 

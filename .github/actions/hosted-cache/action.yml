@@ -1,0 +1,16 @@
+name: Hosted wheel cache
+description: Defer the remote cache action until a hosted-only local step runs
+inputs:
+  path:
+    description: Wheel directory to cache
+    required: true
+  key:
+    description: Exact wheel cache key
+    required: true
+runs:
+  using: composite
+  steps:
+    - uses: actions/cache@v4
+      with:
+        path: ${{ inputs.path }}
+        key: ${{ inputs.key }}

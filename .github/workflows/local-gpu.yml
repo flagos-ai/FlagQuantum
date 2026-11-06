@@ -32,22 +32,63 @@ jobs:
   prepare-source:
     outputs:
       artifact-key: ${{ steps.pack-source.outputs.artifact-key }}
-    runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'flagquantum-a100-cpu-entry' || 'ubuntu-latest' }}
-    timeout-minutes: 5
+    runs-on: ${{ fromJSON((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","linux","x64","flagquantum-cpu"]' || '["ubuntu-latest"]') }}
+    timeout-minutes: 15
+    env:
+      GIT_CONFIG_COUNT: "1"
+      GIT_CONFIG_KEY_0: http.version
+      GIT_CONFIG_VALUE_0: HTTP/1.1
     permissions:
       contents: read
     concurrency:
-      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('a100-cpu-{0}-prepare-source-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-${{ github.event.pull_request.number || github.ref_name }}-cpucore-3.12
+      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('self-hosted-{0}-prepare-source-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-5
       queue: max
     steps:
+      - name: Restore verified source through the GitHub API
+        id: archive-source
+        if: runner.environment == 'self-hosted' && github.event_name == 'pull_request'
+        continue-on-error: true
+        timeout-minutes: 10
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python3 - <<'PYTHON'
+          import base64
+          import hashlib
+          import json
+          import os
+          import runpy
+          from pathlib import Path
+          from urllib.request import Request, urlopen
+
+          api = os.environ["GITHUB_API_URL"].rstrip("/")
+          repo = os.environ["GITHUB_REPOSITORY"]
+          sha = os.environ["GITHUB_SHA"]
+          request = Request(
+              f"{api}/repos/{repo}/contents/tools/ci_source_archive.py?ref={sha}",
+              headers={"Authorization": f"Bearer {os.environ['GH_TOKEN']}"},
+          )
+          with urlopen(request, timeout=30) as response:
+              metadata = json.load(response)
+          code = base64.b64decode(metadata["content"])
+          digest = hashlib.sha1(b"blob " + str(len(code)).encode() + b"\0" + code)
+          if digest.hexdigest() != metadata["sha"]:
+              raise ValueError("The source helper does not match its Git blob SHA")
+          helper = Path(os.environ["RUNNER_TEMP"]) / "ci_source_archive.py"
+          helper.write_bytes(code)
+          runpy.run_path(str(helper), run_name="__main__")
+          PYTHON
       - name: Clear sparse checkout state from a previous job
+        if: steps.archive-source.outcome != 'success'
         run: |
           if [ -d .git ]; then
             git sparse-checkout disable
             rm -f .git/info/sparse-checkout
             git config --local --unset core.sparseCheckout || true
+            git config --local remote.origin.url "https://github.com/${{ github.repository }}"
           fi
       - uses: actions/checkout@v4
+        if: steps.archive-source.outcome != 'success'
         with:
           persist-credentials: false
           fetch-depth: 16
@@ -62,18 +103,21 @@ jobs:
           git rev-list --objects --no-walk HEAD | git pack-objects --stdout > "$RUNNER_TEMP/ci-source/source.pack"
           mkdir "$RUNNER_TEMP/ci-source-incremental"
           cp "$RUNNER_TEMP/ci-source/source.sha" "$RUNNER_TEMP/ci-source-incremental/source.sha"
-          base="$(git rev-list --first-parent --max-count=9 HEAD | tail -n 1)"
+          base="${FQ_CI_SOURCE_BASE:-$(git rev-list --first-parent --max-count=9 HEAD | tail -n 1)}"
           {
             git rev-parse HEAD
             git rev-list --objects 'HEAD^{tree}' "^${base}^{tree}"
+            git rev-parse 'HEAD^{tree}' 'HEAD:tools' 'HEAD:tools/ci_source_archive.py'
           } | git pack-objects --stdout > "$RUNNER_TEMP/ci-source-incremental/source.pack"
-      - uses: actions/upload-artifact@v4
+      - uses: ./.github/actions/upload-artifact
+        timeout-minutes: 6
         with:
           name: ci-source-incremental-${{ github.run_id }}-${{ github.run_attempt }}
           path: ${{ runner.temp }}/ci-source-incremental/
           retention-days: 1
           compression-level: 0
-      - uses: actions/upload-artifact@v4
+      - uses: ./.github/actions/upload-artifact
+        timeout-minutes: 6
         with:
           name: ci-source-${{ github.run_id }}-${{ github.run_attempt }}
           path: ${{ runner.temp }}/ci-source/
@@ -105,6 +149,10 @@ jobs:
             git init .
           fi
           git index-pack --stdin < "$RUNNER_TEMP/ci-source/source.pack"
+          if [ "$RUNNER_ENVIRONMENT" = self-hosted ]; then
+            git show "$sha:tools/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/cleanup-source.py"
+            python3 "$RUNNER_TEMP/ci-source/cleanup-source.py" --cleanup-containers
+          fi
           complete=false
           if objects="$(git rev-list --objects --missing=print --no-walk "$sha")"; then
             if ! printf '%s\n' "$objects" | grep -q '^?'; then
@@ -112,8 +160,22 @@ jobs:
             fi
           fi
           echo "complete=$complete" >> "$GITHUB_OUTPUT"
+      - name: Repair missing cached source objects through the GitHub API
+        id: source-repair
+        if: runner.environment == 'self-hosted' && steps.source-cache.outputs.complete != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          sha="$(cat "$RUNNER_TEMP/ci-source/source.sha")"
+          test "$sha" = "$GITHUB_SHA"
+          git show "$sha:tools/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/repair-source.py"
+          if timeout --kill-after=15s 120s python3 "$RUNNER_TEMP/ci-source/repair-source.py"; then
+            echo "complete=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "complete=false" >> "$GITHUB_OUTPUT"
+          fi
       - uses: actions/download-artifact@v8.0.2
-        if: steps.source-cache.outputs.complete != 'true'
+        if: steps.source-cache.outputs.complete != 'true' && steps.source-repair.outputs.complete != 'true'
         with:
           digest-mismatch: error
           name: ci-source-${{ needs.prepare-source.outputs.artifact-key }}
@@ -201,7 +263,8 @@ jobs:
           --evidence-scope one_gpu_local
           --log hardware-run/one-gpu.log
       - if: always()
-        uses: actions/upload-artifact@v4
+        uses: ./.github/actions/upload-artifact
+        timeout-minutes: 6
         with:
           name: one-gpu-${{ github.sha }}-${{ github.run_attempt }}
           path: hardware-run/
@@ -229,6 +292,10 @@ jobs:
             git init .
           fi
           git index-pack --stdin < "$RUNNER_TEMP/ci-source/source.pack"
+          if [ "$RUNNER_ENVIRONMENT" = self-hosted ]; then
+            git show "$sha:tools/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/cleanup-source.py"
+            python3 "$RUNNER_TEMP/ci-source/cleanup-source.py" --cleanup-containers
+          fi
           complete=false
           if objects="$(git rev-list --objects --missing=print --no-walk "$sha")"; then
             if ! printf '%s\n' "$objects" | grep -q '^?'; then
@@ -236,8 +303,22 @@ jobs:
             fi
           fi
           echo "complete=$complete" >> "$GITHUB_OUTPUT"
+      - name: Repair missing cached source objects through the GitHub API
+        id: source-repair
+        if: runner.environment == 'self-hosted' && steps.source-cache.outputs.complete != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          sha="$(cat "$RUNNER_TEMP/ci-source/source.sha")"
+          test "$sha" = "$GITHUB_SHA"
+          git show "$sha:tools/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/repair-source.py"
+          if timeout --kill-after=15s 120s python3 "$RUNNER_TEMP/ci-source/repair-source.py"; then
+            echo "complete=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "complete=false" >> "$GITHUB_OUTPUT"
+          fi
       - uses: actions/download-artifact@v8.0.2
-        if: steps.source-cache.outputs.complete != 'true'
+        if: steps.source-cache.outputs.complete != 'true' && steps.source-repair.outputs.complete != 'true'
         with:
           digest-mismatch: error
           name: ci-source-${{ needs.prepare-source.outputs.artifact-key }}
@@ -289,7 +370,8 @@ jobs:
           --log hardware-run/two-gpu-torch.log
           --log hardware-run/two-gpu-jax.log
       - if: always()
-        uses: actions/upload-artifact@v4
+        uses: ./.github/actions/upload-artifact
+        timeout-minutes: 6
         with:
           name: two-gpu-required-${{ github.sha }}-${{ github.run_attempt }}
           path: hardware-run/
@@ -397,7 +479,8 @@ jobs:
           --diagnostics hardware-run/watchdog-eight-gpu-reverse --
           torchrun --standalone --nproc-per-node=8
           tests/distributed/statevector_reverse_executor.py --backend nccl
-      - uses: actions/upload-artifact@v4
+      - uses: ./.github/actions/upload-artifact
+        timeout-minutes: 6
         if: always()
         with:
           name: a100-pool-validation-${{ github.run_id }}
@@ -430,6 +513,10 @@ jobs:
             git init .
           fi
           git index-pack --stdin < "$RUNNER_TEMP/ci-source/source.pack"
+          if [ "$RUNNER_ENVIRONMENT" = self-hosted ]; then
+            git show "$sha:tools/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/cleanup-source.py"
+            python3 "$RUNNER_TEMP/ci-source/cleanup-source.py" --cleanup-containers
+          fi
           complete=false
           if objects="$(git rev-list --objects --missing=print --no-walk "$sha")"; then
             if ! printf '%s\n' "$objects" | grep -q '^?'; then
@@ -437,8 +524,22 @@ jobs:
             fi
           fi
           echo "complete=$complete" >> "$GITHUB_OUTPUT"
+      - name: Repair missing cached source objects through the GitHub API
+        id: source-repair
+        if: runner.environment == 'self-hosted' && steps.source-cache.outputs.complete != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          sha="$(cat "$RUNNER_TEMP/ci-source/source.sha")"
+          test "$sha" = "$GITHUB_SHA"
+          git show "$sha:tools/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/repair-source.py"
+          if timeout --kill-after=15s 120s python3 "$RUNNER_TEMP/ci-source/repair-source.py"; then
+            echo "complete=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "complete=false" >> "$GITHUB_OUTPUT"
+          fi
       - uses: actions/download-artifact@v8.0.2
-        if: steps.source-cache.outputs.complete != 'true'
+        if: steps.source-cache.outputs.complete != 'true' && steps.source-repair.outputs.complete != 'true'
         with:
           digest-mismatch: error
           name: ci-source-${{ needs.prepare-source.outputs.artifact-key }}

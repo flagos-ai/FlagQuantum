@@ -13,9 +13,9 @@ from ..basis_conversion import (
     convert_basis,
     require_basis,
 )
-from ..coupling import CouplingMap
 from ..layout import Layout, _routing_swap_phases, final_layout, remove_layout_restore
 from ..pipeline import compile, schedule_layers
+from ..topology.coupling import CouplingMap
 
 
 class TargetError(ValueError):

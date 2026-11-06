@@ -304,8 +304,10 @@ def test_the_three_entries_read_a_directed_device_and_price_its_ordering() -> No
     forms was the message, not the rejected type.
     """
 
-    from flagquantum.compiler.directed_topology import DirectedCouplingMap
-    from flagquantum.compiler.operand_semantics import _TWO_WIRE_OPERAND_SYMMETRY
+    from flagquantum.compiler.lowering.operand_semantics import (
+        _TWO_WIRE_OPERAND_SYMMETRY,
+    )
+    from flagquantum.compiler.topology.directed_topology import DirectedCouplingMap
 
     program = _workload()
     edges = tuple(CouplingMap.line(5).edges)

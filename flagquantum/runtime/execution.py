@@ -21,12 +21,12 @@ from ..core.runtime_config import (
     runtime_config,
 )
 from ..errors import CapabilityError, ExecutionError
-from ..runtime.backend_registry import resolve_device, resolve_dtype
-from ..runtime.distributed.backend_policy import (
+from .backend_registry import resolve_device, resolve_dtype
+from .distributed.backend_policy import (
     DistributedBackendPolicy,
     resolve_distributed_backend_policy,
 )
-from ..runtime.distributed.backend_policy import (
+from .distributed.backend_policy import (
     _resolve_backend_policy as _resolve_policy_from_options,
 )
 from .execution_plan import ExecutionPlan

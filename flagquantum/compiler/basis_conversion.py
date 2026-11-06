@@ -46,12 +46,15 @@ from ..core.ir import CircuitIR, Instruction, ensure_circuit_ir
 from ..core.operator_schema import canonical_opcode, get_operator_schema
 from ..errors import CompilationError
 from .basis_translation import EQUIVALENCE_RULES, EquivalenceRule, translate
-from .one_qubit_synthesis import (
+from .optimization.one_qubit_synthesis import (
     HALF_PI_PULSE_OPCODES,
     Z_ROTATION_OPCODES,
     synthesize_one_qubit_matrix,
 )
-from .two_qubit_synthesis import SUPERCONTROLLED_ENTANGLERS, synthesize_two_qubit
+from .optimization.two_qubit_synthesis import (
+    SUPERCONTROLLED_ENTANGLERS,
+    synthesize_two_qubit,
+)
 
 
 class BasisConversionError(CompilationError):

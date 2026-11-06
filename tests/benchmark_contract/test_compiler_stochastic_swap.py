@@ -26,7 +26,9 @@ from benchmarks.compiler_stochastic_swap import (
     run_benchmark,
 )
 from flagquantum.compiler import CouplingMap
-from flagquantum.compiler.optimization_levels import DEFAULT_OPTIMIZATION_LEVEL
+from flagquantum.compiler.optimization.optimization_levels import (
+    DEFAULT_OPTIMIZATION_LEVEL,
+)
 from flagquantum.core.ir import CircuitIR, Instruction
 
 pytestmark = pytest.mark.benchmark_contract

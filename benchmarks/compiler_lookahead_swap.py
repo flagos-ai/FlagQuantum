@@ -60,11 +60,13 @@ import torch
 
 import flagquantum as fq
 import flagquantum.compiler.routing as routing_module
-import flagquantum.compiler.sabre as sabre_module
+import flagquantum.compiler.topology.sabre as sabre_module
 from flagquantum.compiler import CouplingMap, optimize, route_to_topology
-from flagquantum.compiler.optimization_levels import DEFAULT_OPTIMIZATION_LEVEL
+from flagquantum.compiler.optimization.optimization_levels import (
+    DEFAULT_OPTIMIZATION_LEVEL,
+)
 from flagquantum.compiler.routing import record_post_routing_optimization
-from flagquantum.compiler.sabre import (
+from flagquantum.compiler.topology.sabre import (
     LOOKAHEAD_DECAY,
     LOOKAHEAD_EXTENDED_SIZE,
     LOOKAHEAD_WEIGHT,
@@ -281,7 +283,7 @@ def plan_lookahead_swaps(
 ) -> SabrePlan:
     """Plan a persistent layout by searching chains of SWAPs.
 
-    The plan has the shape :class:`~flagquantum.compiler.sabre.SabrePlan` gives
+    The plan has the shape :class:`~flagquantum.compiler.topology.sabre.SabrePlan` gives
     the shipped planner, so the shipped materialization, restore, and cost model
     all apply to it unchanged.
 

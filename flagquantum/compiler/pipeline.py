@@ -10,12 +10,12 @@ from typing import Any, cast
 
 from ..core.ir import CircuitIR, Instruction, ensure_circuit_ir
 from ..core.runtime_config import RuntimeConfig, get_runtime_config
-from .commutation import CommutationAnalysis, analyze_commutation
-from .directed_topology import DirectedCouplingMap
-from .optimization_levels import (
+from .optimization.commutation import CommutationAnalysis, analyze_commutation
+from .optimization.optimization_levels import (
     DEFAULT_OPTIMIZATION_LEVEL,
     optimization_level_stages,
 )
+from .optimization.zero_state_reset import remove_zero_state_resets
 from .pass_manager import OPTIMIZATION_PIPELINE as OPTIMIZATION_PIPELINE
 from .pass_manager import (
     AnalysisSpec,
@@ -32,7 +32,7 @@ from .routing import (
     route_to_topology,
     select_routing_strategy,
 )
-from .zero_state_reset import remove_zero_state_resets
+from .topology.directed_topology import DirectedCouplingMap
 
 # The opcodes the pipeline treats as their own inverse. `i` is deliberately absent
 # even though the operator schema declares it self-inverse: `remove_identity_gates`
@@ -187,7 +187,7 @@ def remove_identity_gates(
     the same instruction.
     """
 
-    from .one_qubit_synthesis import is_identity_one_qubit
+    from .optimization.one_qubit_synthesis import is_identity_one_qubit
 
     rotations = _rotation_table(analyses)
     instructions = []
@@ -362,13 +362,15 @@ def schedule_layers(ir: CircuitIR) -> list[list[Instruction]]:
 
 
 def _remove_diagonal_gates_before_measure(ir: CircuitIR) -> CircuitIR:
-    from .diagonal_before_measure import remove_diagonal_gates_before_measure
+    from .optimization.diagonal_before_measure import (
+        remove_diagonal_gates_before_measure,
+    )
 
     return remove_diagonal_gates_before_measure(ir)
 
 
 def _merge_inverse_pairs(ir: CircuitIR) -> CircuitIR:
-    from .inverse_cancellation import merge_inverse_pairs
+    from .optimization.inverse_cancellation import merge_inverse_pairs
 
     return merge_inverse_pairs(ir)
 
@@ -376,25 +378,25 @@ def _merge_inverse_pairs(ir: CircuitIR) -> CircuitIR:
 def _cancel_commuting_self_inverse(
     ir: CircuitIR, analyses: Mapping[str, object] | None = None
 ) -> CircuitIR:
-    from .commutation_cancellation import cancel_commuting_self_inverse
+    from .optimization.commutation_cancellation import cancel_commuting_self_inverse
 
     return cancel_commuting_self_inverse(ir, analyses)
 
 
 def _merge_commuting_rotations(ir: CircuitIR) -> CircuitIR:
-    from .commutation_cancellation import merge_commuting_rotations
+    from .optimization.commutation_cancellation import merge_commuting_rotations
 
     return merge_commuting_rotations(ir)
 
 
 def _collapse_one_qubit_runs(ir: CircuitIR) -> CircuitIR:
-    from .one_qubit_optimization import collapse_one_qubit_runs
+    from .optimization.one_qubit_optimization import collapse_one_qubit_runs
 
     return collapse_one_qubit_runs(ir)
 
 
 def _collapse_two_qubit_blocks(ir: CircuitIR) -> CircuitIR:
-    from .two_qubit_optimization import collapse_two_qubit_blocks
+    from .optimization.two_qubit_optimization import collapse_two_qubit_blocks
 
     return collapse_two_qubit_blocks(ir)
 
@@ -554,7 +556,7 @@ def optimize(
     """Apply target-independent circuit optimizations to a fixed point.
 
     `optimization_level` selects one of the declared pass sequences in
-    `flagquantum.compiler.optimization_levels`: 1 collapses adjacent gates and
+    `flagquantum.compiler.optimization.optimization_levels`: 1 collapses adjacent gates and
     removes work that cannot be observed, 2 additionally commutes gates past one
     another, and 0 is the request to leave the program as submitted. The level
     this call used is recorded under `metadata["optimization"]`. A reserved or
@@ -639,7 +641,7 @@ def compile(
             "admitted passes would not run, so the request is refused rather than "
             "answered with the program unchanged"
         )
-    from .deferred_operations import lower_deferred_operations
+    from .lowering.deferred_operations import lower_deferred_operations
     from .select_lowering import lower_select_program
 
     ir = lower_select_program(_as_ir(circuit_or_ir), "dense")

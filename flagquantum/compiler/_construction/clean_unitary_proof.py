@@ -6,8 +6,12 @@ import torch
 
 from ...core.ir import Instruction
 from .._hybrid.model import HybridProgram
-from ..one_qubit_optimization import _instruction_matrix as one_qubit_matrix
-from ..two_qubit_optimization import _instruction_matrix as two_qubit_matrix
+from ..optimization.one_qubit_optimization import (
+    _instruction_matrix as one_qubit_matrix,
+)
+from ..optimization.two_qubit_optimization import (
+    _instruction_matrix as two_qubit_matrix,
+)
 from .profile import _fail
 from .register_lowering import schedule_register_program
 

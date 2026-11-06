@@ -9,10 +9,12 @@ from ...core._composition import controlled_instruction
 from ...core.controlled import _clean_mcx_instructions
 from ...core.ir import Instruction
 from .._hybrid.model import Operation
-from ..one_qubit_optimization import _instruction_matrix as _one_qubit_matrix
-from ..one_qubit_synthesis import _zyz_angles, synthesize_one_qubit_matrix
-from ..two_qubit_optimization import _block_product
-from ..two_qubit_synthesis import synthesize_two_qubit
+from ..optimization.one_qubit_optimization import (
+    _instruction_matrix as _one_qubit_matrix,
+)
+from ..optimization.one_qubit_synthesis import _zyz_angles, synthesize_one_qubit_matrix
+from ..optimization.two_qubit_optimization import _block_product
+from ..optimization.two_qubit_synthesis import synthesize_two_qubit
 from .profile import _fail
 
 

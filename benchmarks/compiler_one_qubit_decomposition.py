@@ -71,14 +71,14 @@ from benchmarks.compiler_two_qubit_synthesis import (
     Basis,
     snapshot,
 )
-from flagquantum.compiler.native_gate_legalization import legalize_native_gates
-from flagquantum.compiler.one_qubit_optimization import (
+from flagquantum.compiler.lowering.native_gate_legalization import legalize_native_gates
+from flagquantum.compiler.optimization.one_qubit_optimization import (
     _instruction_matrix,
     _run_product,
     _split_anchor,
     _u3_angles,
 )
-from flagquantum.compiler.one_qubit_synthesis import _emit_leaves, _leaves
+from flagquantum.compiler.optimization.one_qubit_synthesis import _emit_leaves, _leaves
 from flagquantum.core.ir import CircuitIR, Instruction
 from flagquantum.core.operator_schema import OPERATOR_SCHEMAS, get_operator_schema
 from flagquantum.simulation.statevector.local import run_local_statevector

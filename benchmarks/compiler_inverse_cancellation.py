@@ -138,14 +138,22 @@ from typing import Any
 
 import torch
 
-from flagquantum.compiler.commutation_cancellation import cancel_commuting_self_inverse
-from flagquantum.compiler.inverse_cancellation import inverse_pairs, merge_inverse_pairs
-from flagquantum.compiler.native_gate_legalization import (
+from flagquantum.compiler.lowering.native_gate_legalization import (
     NativeGateLegalizationError,
     legalize_native_gates,
 )
-from flagquantum.compiler.one_qubit_optimization import collapse_one_qubit_runs
-from flagquantum.compiler.one_qubit_synthesis import HALF_PI_PULSE_OPCODES
+from flagquantum.compiler.optimization.commutation_cancellation import (
+    cancel_commuting_self_inverse,
+)
+from flagquantum.compiler.optimization.inverse_cancellation import (
+    inverse_pairs,
+    merge_inverse_pairs,
+)
+from flagquantum.compiler.optimization.one_qubit_optimization import (
+    collapse_one_qubit_runs,
+)
+from flagquantum.compiler.optimization.one_qubit_synthesis import HALF_PI_PULSE_OPCODES
+from flagquantum.compiler.optimization.zero_state_reset import remove_zero_state_resets
 from flagquantum.compiler.pipeline import (
     _SELF_INVERSE,
     _optimize_to_fixed_point,
@@ -153,7 +161,6 @@ from flagquantum.compiler.pipeline import (
     merge_self_inverse,
     remove_identity_gates,
 )
-from flagquantum.compiler.zero_state_reset import remove_zero_state_resets
 from flagquantum.core.ir import CircuitIR, Instruction
 from flagquantum.core.operator_schema import (
     OPERATOR_SCHEMAS,
