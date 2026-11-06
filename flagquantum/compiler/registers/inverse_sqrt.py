@@ -4,6 +4,8 @@
 
 """Compose a clean fixed-point inverse square root from C1 and Newton steps."""
 
+from collections.abc import Callable
+
 from ...core.ir import Instruction
 from .bitwise import _validate_wires, xor_ir
 from .inverse_sqrt_newton import (
@@ -91,6 +93,32 @@ def inverse_sqrt_ir(
         raise ValueError("Inverse square root requires distinct nonnegative slots")
     _validate_wires((*source, *result, *workspace))
 
+    return _with_inverse_sqrt_estimate_ir(
+        source,
+        workspace,
+        classical_bits,
+        source_fraction_bits=source_fraction_bits,
+        precision=precision,
+        iterations=iterations,
+        consume=lambda estimate: xor_ir(estimate[: len(result)], result),
+    )
+
+
+def _with_inverse_sqrt_estimate_ir(
+    source: tuple[int, ...],
+    workspace: tuple[int, ...],
+    classical_bits: tuple[int, ...],
+    *,
+    source_fraction_bits: int,
+    precision: int,
+    iterations: int,
+    consume: Callable[[tuple[int, ...]], tuple[Instruction, ...]],
+) -> tuple[Instruction, ...]:
+    """Use the last estimate before uncomputing history and with scratch clean."""
+    estimate_width, (seed_work, seed_slots), (step_work, step_slots) = (
+        _inverse_sqrt_layout(len(source), source_fraction_bits, precision, iterations)
+    )
+    history_width = (iterations + 1) * estimate_width
     history = tuple(
         workspace[i : i + estimate_width]
         for i in range(0, history_width, estimate_width)
@@ -116,11 +144,10 @@ def inverse_sqrt_ir(
         )
         for previous, following in zip(history[:-1], history[1:], strict=True)
     )
-    copy = xor_ir(history[-1][: len(result)], result)
     return (
         *seed,
         *(gate for update in updates for gate in update),
-        *copy,
+        *consume(history[-1]),
         *(gate for update in reversed(updates) for gate in update),
         *seed,
     )
