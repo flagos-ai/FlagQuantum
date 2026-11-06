@@ -162,6 +162,31 @@ def _exercise_stim_conversion(profile: str) -> dict[str, object] | None:
     }
 
 
+def _exercise_compiled_measurement_sampler(profile: str) -> dict[str, object] | None:
+    from pathlib import Path
+    from tempfile import TemporaryDirectory
+
+    from flagquantum.dynamic import DynamicCircuit
+    from flagquantum.simulation.stabilizer import StabilizerDependencyError
+
+    circuit = DynamicCircuit(1).x(0).measure(0).reset(0).measure(0)
+    try:
+        sampler = circuit.compile_sampler(seed=7)
+    except StabilizerDependencyError:
+        if PROFILES[profile][0]:
+            raise
+        return None
+    assert PROFILES[profile][0], "prepared sampler ignored missing Stim"
+    samples = sampler.sample(2, bit_packed=True)
+    assert samples.tolist() == [[1], [1]]
+    with TemporaryDirectory() as directory:
+        output = Path(directory) / "records.b8"
+        sampler.sample_write(2, filepath=output, format="b8")
+        packed = output.read_bytes()
+        assert packed == b"\x01\x01"
+    return {"packed_samples": samples.tolist(), "b8_hex": packed.hex()}
+
+
 def _exercise_terminal_conversion(profile: str) -> dict[str, object] | None:
     import torch
 
@@ -244,6 +269,9 @@ def main() -> int:
                 "cells": records,
                 "stim_conversion": _exercise_stim_conversion(args.profile),
                 "terminal_conversion": _exercise_terminal_conversion(args.profile),
+                "compiled_measurement_sampler": _exercise_compiled_measurement_sampler(
+                    args.profile
+                ),
             },
             sort_keys=True,
         )

@@ -126,6 +126,15 @@ requires all evidence for the target level to pass
 `python tools/check_capability_maturity.py`.
 <!-- END GENERATED KNOWN_LIMITATIONS -->
 
+## Prepared explicit measurement sampling
+
+The Stim 1.16.0 path admits one CPU circuit with exact Clifford gates,
+explicit Z measurements and resets, and single-slot conditional X. It caps
+the returned tensor and the principal frame-table estimate at 64 MiB
+each, and a b8 write at 1 GiB. These limits do not bound process RSS.
+The sampler records explicit measurements in source order and requires
+a fresh destination for each b8 file.
+
 ## Quafu multi-circuit job boundary
 
 The additive `fq.submit` collection path is an offline-tested adapter slice:

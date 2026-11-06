@@ -44,6 +44,9 @@ Examples driven by the root-level `fq` alias use:
 
 These examples do not use that alias:
 
+- [`qec/compiled_measurement_sampler.py`](qec/compiled_measurement_sampler.py)
+  reuses one Clifford sampler for dense records, packed records and a b8 file
+  that Stim reads back independently.
 - [`qec/stim_measurement_conversion.py`](qec/stim_measurement_conversion.py)
   converts existing CPU measurement records into reference-normalized detector
   and logical flips using the optional Stim extra.

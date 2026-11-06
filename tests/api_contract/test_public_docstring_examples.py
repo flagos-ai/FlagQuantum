@@ -255,6 +255,7 @@ ENTRIES = (
     excitation_operator,
     fold_program,
     fq.Circuit,
+    fq.Circuit.compile_sampler,
     fq.Module,
     fq.Observable,
     fq.compile,

@@ -938,6 +938,16 @@ remain experimental or internal. Custom initial states are refused because
 ExecutionPlan v1 does not serialize them. Provider-native state and diagnostic
 fields are not part of the stable result contract.
 
+### Prepared measurement sampling
+
+`circuit.compile_sampler(seed=7)` prepares one CPU Clifford sampler. With
+Stim 1.16.0 available, the returned handle supports `sample(shots)`,
+`sample(shots, bit_packed=True)`, and
+`sample_write(shots, filepath=path, format="b8")`. The result columns
+follow explicit measurements in circuit order, including repeated writes
+to the same classical slot. `sample_write` requires a fresh local path.
+See the [sampler example](../../examples/qec/compiled_measurement_sampler.py).
+
 ### Terminal measurements on the static Quafu route
 
 A `DynamicCircuit` whose only dynamic operations are one final measurement of
