@@ -1,7 +1,10 @@
 """Exercise the same resource estimate before and after circuit construction."""
 
+import sys
+
 import pytest
 
+from examples.algorithms import ftqc_resource_estimation
 from examples.algorithms.ftqc_resource_estimation import make_circuit
 from flagquantum.algorithms.primitives.multiplexers.thc_resource_model import (
     select_thc_cost,
@@ -17,6 +20,28 @@ from flagquantum.qec.resources.estimation import (
 )
 
 pytestmark = pytest.mark.unit
+
+
+def test_thc_cli_estimates_dimensions_without_building_ir(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    def unexpected_circuit() -> None:
+        pytest.fail("Dimension-only THC estimation must not build a circuit")
+
+    monkeypatch.setattr(ftqc_resource_estimation, "make_circuit", unexpected_circuit)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["estimate", "--thc", "2", "4", "8", "1", "--thc-erasure-blocks", "2", "1"],
+    )
+    ftqc_resource_estimation.main()
+    assert capsys.readouterr().out.splitlines() == [
+        "Model Toffoli gates 106",
+        "Model controlled swaps 11",
+        "Model measurements 0",
+        "Model T equivalents 468",
+        "Model peak logical qubits 24",
+    ]
 
 
 def test_model_and_emitted_counts_are_independent() -> None:

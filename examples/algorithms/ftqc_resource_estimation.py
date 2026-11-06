@@ -1,6 +1,7 @@
 """Estimate fault-tolerant resources from algorithm dimensions.
 
 Run from the repository root with python -m examples.algorithms.ftqc_resource_estimation.
+Add --thc 2 4 8 1 for a dimension-only THC SELECT estimate.
 Add --single-factorization 10 50 12 for the single-factorization block encoding.
 """
 
@@ -17,7 +18,10 @@ from flagquantum.dynamic import DynamicCircuit
 from flagquantum.qec.resources.beverland_physical import (
     estimate_beverland_physical_resources,
 )
-from flagquantum.qec.resources.estimation import estimate_ftqc_resources
+from flagquantum.qec.resources.estimation import (
+    FTQCResourceReport,
+    estimate_ftqc_resources,
+)
 from flagquantum.qec.resources.gidney_fowler import estimate_gidney_fowler_resources
 
 
@@ -63,16 +67,50 @@ def _report_single_factorization(
     )
 
 
+def _print_thc_estimate(report: FTQCResourceReport) -> None:
+    gates = report.logical.gates
+    print("Model Toffoli gates", gates.toffoli)
+    print("Model controlled swaps", gates.cswap)
+    print("Model measurements", gates.measurement)
+    print("Model T equivalents", gates.total_t_count())
+    print("Model peak logical qubits", report.logical.peak_logical_qubits)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument(
+    model_options = parser.add_mutually_exclusive_group()
+    model_options.add_argument(
+        "--thc",
+        nargs=4,
+        type=int,
+        metavar=("NUM_MU", "SPIN_ORBITALS", "ANGLE_BITS", "KEEP_BITS"),
+        help="estimate THC SELECT without angle tables or circuit construction",
+    )
+    model_options.add_argument(
         "--single-factorization",
         nargs=3,
         type=int,
         metavar=("SPIN_ORBITALS", "AUXILIARIES", "ALIAS_BITS"),
         help="estimate a single-factorization encoding from its dimensions",
     )
+    parser.add_argument(
+        "--thc-erasure-blocks",
+        nargs=2,
+        type=int,
+        metavar=("KR1", "KR2"),
+        help="set the THC SELECT model's erasure block sizes (default: 1 1)",
+    )
     args = parser.parse_args()
+    if args.thc_erasure_blocks is not None and args.thc is None:
+        parser.error("--thc-erasure-blocks requires --thc")
+    if args.thc is not None:
+        kr1, kr2 = args.thc_erasure_blocks or (1, 1)
+        try:
+            model = select_thc_cost(*args.thc, kr1=kr1, kr2=kr2)
+        except ValueError as exc:
+            parser.error(str(exc))
+        _print_thc_estimate(estimate_ftqc_resources(model))
+        return
     if args.single_factorization is not None:
         _report_single_factorization(*args.single_factorization)
         return
@@ -80,8 +118,7 @@ def main() -> None:
     model = select_thc_cost(num_mu=2, num_spin_orb=4, num_bits_theta=8, keep_bitsize=1)
     planned = estimate_ftqc_resources(model, error_budget=1e-3, physical_error=1e-4)
     assert planned.surface_code is not None
-    print("Model T equivalents", planned.logical.gates.total_t_count())
-    print("Model peak logical qubits", planned.logical.peak_logical_qubits)
+    _print_thc_estimate(planned)
     print(
         "Fast data-block physical qubits",
         planned.surface_code.data_block_physical_qubits,

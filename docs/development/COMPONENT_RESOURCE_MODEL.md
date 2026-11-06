@@ -92,6 +92,18 @@ assert report.surface_code is not None
 assert report.surface_code.data_block_physical_qubits == 6174
 ```
 
+Run the dimension-only estimate with the four model dimensions in order:
+
+```sh
+python -m examples.algorithms.ftqc_resource_estimation --thc 2 4 8 1
+```
+
+Pass `--thc-erasure-blocks KR1 KR2` to vary the two modeled erasure block
+sizes. This command prints the declared Toffoli, controlled-swap,
+measurement, T-equivalent and peak logical-qubit estimates without angle
+tables or circuit construction. The locked rotation leaf declares its
+lookup and addition costs as Toffolis. Its model has no measurement count.
+
 Run `python -m examples.algorithms.ftqc_resource_estimation` to also construct
 the 8-bit circuit with `circuit.append(op)`. The emitted section reports 112
 T/T† instructions, 49 CCX instructions, 11 CSwap instructions and 60
