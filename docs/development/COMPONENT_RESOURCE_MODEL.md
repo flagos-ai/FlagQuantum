@@ -1172,3 +1172,32 @@ clean work wires. Both PREPARE T estimates include the declared costs for
 `r` and `s`. Their pinned `PreparePowerTwoState` has only a cost model,
 as does the separate distinct-particle `i/j` preparation. The original
 one-bit power-of-two cost of −1 Toffoli is preserved for source comparison.
+
+## First-quantized momentum-transfer PREPARE
+
+The momentum-transfer model retains the source's asymmetric forward and
+adjoint resource declarations. Its optional composite cost adds the uniform
+preparation of `m`, which is absent from the declared gate graph. Peak width
+follows the source composite in both cases, including the three flags that
+the forward inequality consumes and the adjoint inequality produces.
+
+```python
+from flagquantum.algorithms.first_quantization_nu_resource_model import (
+    source_prepare_nu_cost,
+)
+from flagquantum.qec.resources.estimation import estimate_ftqc_resources
+
+forward = estimate_ftqc_resources(source_prepare_nu_cost(6, 32768))
+adjoint = estimate_ftqc_resources(source_prepare_nu_cost(6, 32768, adjoint=True))
+assert forward.logical.gates.toffoli == 567
+assert forward.logical.peak_logical_qubits == 73
+assert adjoint.logical.gates.toffoli == 20
+assert adjoint.logical.peak_logical_qubits == 46
+```
+
+For these parameters the composite adds 15 modeled Clifford operations
+in each direction. The shared uniform emitter implements the `m` subcall.
+The remaining five source children supply only resource declarations, so
+the whole preparation has no emitted instruction report. The pinned
+composite rejects `m_param=1` because the zero-width uniform preparation
+has no target port. The estimate raises for this case.
