@@ -11,44 +11,21 @@ from ...compiler._component_trace.resource_model import (
     CostCall,
     GateCost,
 )
+from ...compiler.registers.arithmetic_resource_model import source_phase_add_cost
+from ...compiler.registers.permutation_resource_model import source_permutation_cost
+from ...compiler.registers.qrom_resource_model import source_qrom_cost
 from .rotation_preparation import RotationPreparation
 from .rotation_tables import rotation_tables
 from .sparse_rotation_preparation import SparseRotationPreparation
 
 
-def _qrom_cost(
-    words: tuple[int, ...], angle_width: int, controls: int
-) -> ComponentCost:
-    """Count a complete one-axis QROM with at least one control."""
-
-    def visit(start: int, stop: int) -> tuple[int, int]:
-        first = words[start]
-        if all(words[i] == first for i in range(start + 1, stop)):
-            return 0, first.bit_count()
-        middle = (start + stop) // 2
-        left_nodes, left_loads = visit(start, middle)
-        right_nodes, right_loads = visit(middle, stop)
-        return 1 + left_nodes + right_nodes, left_loads + right_loads
-
-    splits, loads = visit(0, len(words))
-    selection = (len(words) - 1).bit_length()
-    reduction = controls - 1
-    width = angle_width + 2 * selection + controls + reduction
-    return ComponentCost(
-        "QROM",
-        width,
-        GateCost(
-            and_bloq=splits + reduction,
-            clifford=loads + 2 * splits + reduction,
-            measurement=splits + reduction,
-        ),
-    )
-
-
 def _lookup_cost(words: tuple[int, ...], width: int, controls: int) -> ComponentCost:
-    selector_and_controls = (len(words) - 1).bit_length() + controls
-    qrom = _qrom_cost(words, width, controls)
-    add = ComponentCost("AddIntoPhaseGrad", 2 * width, GateCost(toffoli=width - 2))
+    selection_width = (len(words) - 1).bit_length()
+    selector_and_controls = selection_width + controls
+    qrom = source_qrom_cost(
+        controls, (selection_width,), (len(words),), ((1, width),), (words,)
+    )
+    add = source_phase_add_cost(width, width)
     return ComponentCost(
         "PhaseGradientLookup",
         width + selector_and_controls,
@@ -90,40 +67,12 @@ def rotation_preparation_cost(
     )
 
 
-def _permutation_cycle_cost(cycle: tuple[int, ...], width: int) -> ComponentCost:
-    comparisons = (*cycle, cycle[0])
-    flips = sum(
-        (value ^ cycle[(i + 1) % len(cycle)]).bit_count()
-        for i, value in enumerate(cycle)
-    )
-    prefix_ands = (width - 1) * len(comparisons)
-    # The source MultiAnd graph includes polarity flips for its decomposed
-    # children. Two controls use the separately classified direct And.
-    per_zero = 2 if width == 1 else 4 if width > 2 else 0
-    zero_bits = sum(width - value.bit_count() for value in comparisons)
-    return ComponentCost(
-        "PermutationCycle",
-        2 * width,
-        GateCost(
-            and_bloq=prefix_ands,
-            clifford=flips + width * len(comparisons) + per_zero * zero_bits,
-            measurement=prefix_ands,
-        ),
-    )
-
-
 def sparse_rotation_preparation_cost(
     preparation: SparseRotationPreparation, target_width: int
 ) -> ComponentCost:
     """Build the source model for low-word preparation and basis permutation."""
     dense, cycles, low_width = preparation._components(target_width)
-    permutation = ComponentCost(
-        "BasisPermutation",
-        target_width,
-        calls=tuple(
-            CostCall(_permutation_cycle_cost(cycle, target_width)) for cycle in cycles
-        ),
-    )
+    permutation = source_permutation_cost(preparation.size, target_width, cycles)
     return ComponentCost(
         "SparseRotationPreparation",
         target_width + preparation.phase_width,

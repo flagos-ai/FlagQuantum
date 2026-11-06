@@ -43,10 +43,19 @@ in native IR has a different resource profile. The existing
 `estimate_resources` entry point continues to describe static instructions
 and basis conversion, with its existing data-dependence rules.
 
-The present model assumes concrete counts and explicit sequential
-bystanders. It covers the concrete rotation preparations and leaves
-symbolic aggregation, automatic graph scheduling, additional component
-models, and physical error-correction models for separate work.
+Reusable register models cover concrete unary QROM, Add,
+AddIntoPhaseGrad, and equality-driven basis permutations. The QROM model
+handles bounded multidimensional axes and shaped target words. Its width
+comes from the locked static formula, including the full selection pool
+even when a uniform table uses less work. The phase-add model retains
+the upstream abstract Toffoli count. The one-bit source Add reports
+−3 Clifford gates and one-bit AddIntoPhaseGrad can report a negative
+Toffoli count. These values reproduce source formulas for comparison.
+The one-bit native Add emits one CX.
+
+The model assumes concrete counts and explicit sequential bystanders.
+Symbolic aggregation, automatic graph scheduling, and physical
+error-correction models remain separate.
 
 - [Qualtran v0.7.0 gate costs](https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/resource_counting/_bloq_counts.py)
 - [Qualtran v0.7.0 logical width](https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/resource_counting/_qubit_counts.py)
