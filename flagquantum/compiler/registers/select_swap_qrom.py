@@ -43,6 +43,7 @@ def select_swap_qrom_ir(
     classical_bits: tuple[int, ...],
     *,
     dirty: bool = True,
+    adjoint: bool = False,
 ) -> tuple[Instruction, ...]:
     """XOR each selected word into its destination, restoring the bank state.
 
@@ -50,10 +51,12 @@ def select_swap_qrom_ir(
     padded cells of the final high block. Every destination can start nonzero.
     In the dirty path each bank can carry arbitrary coherent data, including
     correlations with other registers. In the clean path banks start at zero.
-    Measured And workspace starts and ends at zero in both cases.
+    Measured And workspace starts and ends at zero in both cases. The
+    adjoint reverses component calls and retains each QROM's measured And
+    schedule.
     """
-    if type(dirty) is not bool:
-        raise ValueError("Select-swap dirty mode must be boolean")
+    if type(dirty) is not bool or type(adjoint) is not bool:
+        raise ValueError("Select-swap dirty and adjoint flags must be boolean")
     load, low = _source_qroam_batch_ir(
         table, controls, selections, banks, workspace, classical_bits
     )
@@ -71,18 +74,23 @@ def select_swap_qrom_ir(
         )
     )
 
+    bank_targets = tuple(zip(banks, targets, strict=True))
+    if adjoint:
+        bank_targets = bank_targets[::-1]
     copy = tuple(
-        gate
-        for bank, target in zip(banks, targets, strict=True)
-        for gate in xor_ir(bank[0], target)
+        gate for bank, target in bank_targets for gate in xor_ir(bank[0], target)
     )
     route: list[Instruction] = []
     unroute: list[Instruction] = []
     if any(table.log_block_sizes):
-        for bank in banks:
+        for bank, _ in bank_targets:
             route.extend(swap_with_zero_ir(low, table.block_shape, bank))
             unroute.extend(
                 swap_with_zero_ir(low, table.block_shape, bank, adjoint=True)
             )
     select = (*route, *copy, *unroute)
-    return (*load, *select, *load, *select) if dirty else (*load, *select, *load)
+    if not dirty:
+        return (*load, *select, *load)
+    if adjoint:
+        return (*select, *load, *select, *load)
+    return (*load, *select, *load, *select)

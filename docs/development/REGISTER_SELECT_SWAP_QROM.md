@@ -54,3 +54,29 @@ column records literal native instructions only.
 Run `python -m examples.algorithms.register_select_swap_qrom` to verify
 a controlled lookup and borrowed bank restoration through
 `circuit.append(op)`.
+
+## Standalone adjoint
+
+Pass `adjoint=True` to `select_swap_qrom_ir` to follow the pinned source
+component adjoint. Each QROM and XOR is self-adjoint at the source component
+boundary. Each SwapWithZero toggles its network direction. The adjoint also
+reverses the order of banks for routing, copy and unroute.
+
+With clean banks the stages remain load, select, load. With borrowed banks
+the adjoint stages are select, load, select, load. The first selection of the
+borrowed path runs on the original bank. Each load retains its own forward
+measurement and feedback sequence. All bank wires are supplied by the
+caller and restored, including coherent borrowed data.
+
+In the pinned borrowed source graph the forward Free has the default clean
+flag even though Allocate is marked dirty. Taking the source adjoint therefore
+creates a clean Allocate and a dirty Free. The reference test binds each
+adjoint allocation to the corresponding forward Free wire by graph identity.
+It checks the pinned markers and measures the executable stream on both
+clean and borrowed inputs.
+
+For five rows of two-bit words with a two-row block and one control, the
+adjoint emits 32 T/T† and 66 CX with clean banks, or 48 T/T† and 90 CX with
+borrowed banks. Both use four measurements and 12 total qubits. The source
+gate categories, T-equivalent totals and peak width match the corresponding
+forward resource model.

@@ -43,6 +43,8 @@ def original_select_swap_gates(
     banks: tuple[tuple[tuple[int, ...], ...], ...],
     work: tuple[int, ...],
     bits: tuple[int, ...],
+    *,
+    adjoint: bool = False,
 ) -> tuple[tuple[Instruction, ...], tuple[tuple[Instruction, ...], ...]]:
     pytest.importorskip("qualtran")
     cirq = pytest.importorskip("cirq")
@@ -55,6 +57,7 @@ def original_select_swap_gates(
     words = tuple(word for bank in banks for word in bank)
     allocate = iter(words)
     freed: list[tuple[int, ...]] = []
+    inverse_graph = False
     loads = []
 
     def leaf(
@@ -62,12 +65,13 @@ def original_select_swap_gates(
     ) -> SourceResult | None:
         if isinstance(bloq, Allocate):
             word = next(allocate)
-            assert bloq.dirty is source.use_dirty_ancilla
+            assert bloq.dirty is (source.use_dirty_ancilla and not inverse_graph)
             assert len(word) == bloq.dtype.num_qubits
             return (), {"reg": word}
         if isinstance(bloq, Free):
-            # The pinned graph uses the default Free flag for borrowed banks too.
-            assert not bloq.dirty
+            # Forward uses the default Free flag even for a borrowed bank.
+            # Adjoint exchanges the original Allocate and Free flags.
+            assert bloq.dirty is (source.use_dirty_ancilla and inverse_graph)
             freed.append(inputs["reg"])
             return (), {}
         if isinstance(bloq, Partition):
@@ -98,7 +102,32 @@ def original_select_swap_gates(
             return gates, inputs
         return None
 
-    gates, outputs = walk_source_graph(source, ports, ports, leaf)
+    graph = source
+    if adjoint:
+        # The source creates adjoint allocations from forward Free nodes,
+        # in reverse graph order. Bind their physical names by that graph.
+        forward = source.decompose_bloq()
+        walk_source_graph(forward, ports, ports, leaf)
+        forward_nodes = [node for node, _, _ in forward.iter_bloqnections()]
+        free_nodes = [node for node in forward_nodes if isinstance(node.bloq, Free)]
+        freed_by_node = dict(zip(free_nodes, freed, strict=True))
+        allocations = {
+            index: freed_by_node[node]
+            for index, node in enumerate(reversed(forward_nodes))
+            if node in freed_by_node
+        }
+        graph = source.adjoint().decompose_bloq()
+        allocate = iter(
+            tuple(
+                allocations[node.i]
+                for node, _, _ in graph.iter_bloqnections()
+                if isinstance(node.bloq, Allocate)
+            )
+        )
+        freed.clear()
+        loads.clear()
+        inverse_graph = True
+    gates, outputs = walk_source_graph(graph, ports, ports, leaf)
     assert outputs == ports and next(allocate, None) is None
     assert Counter(freed) == Counter(words)
     assert len(loads) == 2
@@ -118,6 +147,7 @@ CASES = (
 @pytest.mark.ftqc_reference
 @pytest.mark.parametrize("shape,logs,control_count,widths,datasets", CASES)
 @pytest.mark.parametrize("dirty", [False, True])
+@pytest.mark.parametrize("adjoint", [False, True])
 def test_source_gate_graph_and_bank_channel(
     shape: tuple[int, ...],
     logs: tuple[int, ...],
@@ -125,6 +155,7 @@ def test_source_gate_graph_and_bank_channel(
     widths: tuple[int, ...],
     datasets: tuple[tuple[int, ...], ...],
     dirty: bool,
+    adjoint: bool,
 ) -> None:
     pytest.importorskip("qualtran")
     np = pytest.importorskip("numpy")
@@ -178,27 +209,38 @@ def test_source_gate_graph_and_bank_channel(
         )
     }
     gates = select_swap_qrom_ir(
-        table, controls, selectors, targets, banks, work, bits, dirty=dirty
+        table,
+        controls,
+        selectors,
+        targets,
+        banks,
+        work,
+        bits,
+        dirty=dirty,
+        adjoint=adjoint,
     )
-    expected, loads = original_select_swap_gates(source, ports, banks, work, bits)
+    expected, loads = original_select_swap_gates(
+        source, ports, banks, work, bits, adjoint=adjoint
+    )
     for bank in reversed(leases):
         for lease in reversed(bank):
             bank_pool.free(lease)
     assert bank_pool.allocate(len(bank_wires), dirty=dirty).wires == bank_wires
     assert_source(gates, expected)
-    model = get_cost_value(source, QECGatesCost())
+    graph = source.adjoint() if adjoint else source
+    model = get_cost_value(graph, QECGatesCost())
     estimate = estimate_component_resources(
         source_select_swap_qrom_cost(
             table, control_count, tuple(map(len, selectors)), widths, dirty=dirty
         )
     )
     assert {k: v for k, v in asdict(estimate.gates).items() if v} == model.asdict()
-    assert estimate.peak_logical_qubits == get_cost_value(source, QubitCount())
+    assert estimate.peak_logical_qubits == get_cost_value(graph, QubitCount())
     counts = Counter(g.name for g in gates)
     events = counts["measure"]
     assert counts["t"] + counts["tdg"] == model.total_t_count()
     assert events == counts["reset"] == model.measurement
-    assert get_cost_value(source, QubitCount()) == total
+    assert get_cost_value(graph, QubitCount()) == total
 
     def put(row: list[int], wires: tuple[int, ...], val: int) -> None:
         for i, wire in enumerate(reversed(wires)):
@@ -276,17 +318,33 @@ def test_source_gate_graph_and_bank_channel(
     amps /= amps.norm()
     start, end = indices(before), indices(after)
     if total <= 13 and events <= 4:
+        opposite = select_swap_qrom_ir(
+            table,
+            controls,
+            selectors,
+            targets,
+            banks,
+            work,
+            bits,
+            dirty=dirty,
+            adjoint=not adjoint,
+        )
         state = torch.zeros(1 << (total + 1), dtype=torch.complex128)
         expected_state = torch.zeros_like(state)
         state[start] = amps
         expected_state[end] = amps
         for history in product((0, 1), repeat=events):
+            branch = forced_branch(state, gates, history)
             torch.testing.assert_close(
-                forced_branch(state, gates, history),
-                expected_state * 2 ** (-events / 2),
-                atol=2e-12,
-                rtol=0,
+                branch, expected_state * 2 ** (-events / 2), atol=2e-12, rtol=0
             )
+            if adjoint:
+                torch.testing.assert_close(
+                    forced_branch(branch, opposite, tuple(1 - bit for bit in history)),
+                    state * 2**-events,
+                    atol=2e-12,
+                    rtol=0,
+                )
     else:
         initial = dict(zip(start, amps.tolist(), strict=True))
         result = dict(zip(end, amps.tolist(), strict=True))
@@ -328,6 +386,8 @@ def test_select_swap_validation() -> None:
     args = (table, (), ((),), ((0,),), (((1,),),), (), ())
     with pytest.raises(ValueError, match="boolean"):
         select_swap_qrom_ir(*args, dirty=1)
+    with pytest.raises(ValueError, match="boolean"):
+        select_swap_qrom_ir(*args, adjoint=1)
     with pytest.raises(ValueError, match="matching destination"):
         select_swap_qrom_ir(*args[:3], (), *args[4:])
     with pytest.raises(ValueError, match="distinct"):
