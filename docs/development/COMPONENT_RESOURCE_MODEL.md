@@ -3032,6 +3032,34 @@ includes the two alias samples as well as the factor, orbital, spin and
 rank-rotation ports. `encoding.signal_layout` identifies these persistent
 ports, and the other non-system ports require clean input.
 
+Wrap the encoding in `DoubleFactorizationWalk` to apply the block and
+then reflect about its zero signal. The adjoint reverses the order and
+uses the block's adjoint binding. The small executable example below
+emits 166 T/T† and 24 measurements using five clean work qubits.
+
+```python
+from flagquantum.algorithms.primitives.double_factorization_walk import (
+    DoubleFactorizationWalk,
+)
+
+encoding = DoubleFactorizationBlockEncoding.from_eigenvalues(
+    (1.0,), ((2.0,),), ((), ()), outer_bits=1, inner_bits=1, rank_rotation_bits=2
+)
+walk = DoubleFactorizationWalk(encoding)
+logical = sum(width for _, width in walk.layout)
+work, _ = walk.requirements()
+ports = partition_register(tuple(range(logical)), walk.layout)
+circuit = DynamicCircuit(logical + work)
+circuit.append(walk.make_on(ports, workspace=tuple(range(logical, logical + work))))
+```
+
+For the locked notebook dimensions the source gate model gives 1,245
+Toffoli, 20 CSwap, 75 And, 488 Clifford, four rotations and 75 measurements
+for one walk step. `source_gate_cost()` uses the source's four-register
+signal declaration. The locked source's executable walk and peak-qubit
+query both fail because its DF signature has no packed `selection` port.
+The native walk reflects on its full persistent signal.
+
 ### Double-factorization notebook resource queries
 
 Run `python -m examples.algorithms.double_factorization_resources` to print
