@@ -215,3 +215,26 @@ SVG rendering requires a local Graphviz `dot` executable. Supply an explicit
 path with `executable=` when it is outside PATH. The DOT and Markdown exports
 work independently of Graphviz. Symbolic resource graphs use the same
 formatting functions and preserve their expressions.
+
+## Register musical score layout
+
+Use a verified register construction to obtain logical register lifetimes and
+dependency columns. Each horizontal lane represents a register, including
+registers wider than one qubit. A local register starts at its declaration and
+ends at its release. The lowest free lane is reused for later allocations.
+
+```python
+from examples.synthesis_local_registers import local_composition
+from flagquantum.drawer.register_score import register_program_score
+
+program, helpers = local_composition(overlapping=False, helpers=True)
+score = register_program_score(program, helpers)
+for column in score.columns:
+    print(column.sequence, column.generation, column.step.name, column.lanes)
+```
+
+The sequence is the drawing order. Independent operations can share a
+dependency generation. This placement describes register connectivity and
+lifetimes, while the compiler still uses the verified effect order for
+execution. The score currently provides layout data. Image rendering and
+browser serialization use separate adapters.
