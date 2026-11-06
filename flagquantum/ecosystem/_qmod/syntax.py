@@ -382,9 +382,11 @@ class Parser:
             self.take(")")
             left = Expression(token, (argument,), argument.depth + 1)
         elif (
-            real and token.text == "acos" and self.tokens[self.position + 1].text == "("
+            real
+            and token.text in {"acos", "asin", "sqrt", "exp"}
+            and self.tokens[self.position + 1].text == "("
         ):
-            self.take("acos")
+            self.take(token.text)
             self.take("(")
             argument = self.expression(
                 nesting=nesting + 1,
@@ -422,6 +424,7 @@ class Parser:
                 nesting=nesting + 1,
                 decimal=True,
                 difference=difference,
+                real=real,
                 depth_limit=depth_limit,
             )
             self.take(",")
@@ -429,6 +432,7 @@ class Parser:
                 nesting=nesting + 1,
                 decimal=True,
                 difference=difference,
+                real=real,
                 depth_limit=depth_limit,
             )
             self.take(")")
@@ -466,7 +470,7 @@ class Parser:
                 or (
                     real
                     and self.tokens[self.position + 1].text
-                    in {"len", "size", "index", "pauli"}
+                    in {"len", "size", "index", "pauli", "fraction_digits"}
                 )
             ):
                 dot = self.take(".")
@@ -1557,7 +1561,7 @@ class Parser:
 
                         args.append(parse_lambda(self, preparation=True))
                     elif target.text == "prepare_exponential_state":
-                        args.append(self.signed_angle_argument())
+                        args.append(self.real_angle())
                     elif target.text == "unitary":
                         args.append(
                             self.literal_array(
@@ -1585,7 +1589,11 @@ class Parser:
                             else Expression(self.name())
                         )
                     elif target.text == "control":
-                        args.append(self.expression(difference=True, allow_slice=True))
+                        args.append(
+                            self.expression(
+                                decimal=True, difference=True, allow_slice=True
+                            )
+                        )
                     elif target.text == "phase":
                         args.append(
                             self.expression(
@@ -1740,7 +1748,11 @@ class Parser:
                 allow_phase=True,
                 allow_signed_integer=True,
             )
-            if fractional_bits or kind in {"qphase", "qphase_signed"}:
+            if (
+                kind in {"qphase", "qphase_signed"}
+                or fractional_bits
+                and self.current.text == "["
+            ):
                 reject(
                     field,
                     "type",

@@ -54,3 +54,13 @@ def lower_inplace_preparation(
         owner.effect_op(
             "qreg.gate", token, (register,), gate="ry", index=bit, angle=angle
         )
+
+
+def exponential_angles(rate: float, width: int) -> tuple[float, ...]:
+    """Prepare each bit with amplitude ratio exp(-rate * 2**index / 2)."""
+    angles = []
+    for index in range(width):
+        magnitude = abs(rate) * math.ldexp(1.0, index - 1)
+        angle = 2 * math.atan(math.exp(-magnitude))
+        angles.append(math.pi - angle if rate < 0 else angle)
+    return tuple(angles)

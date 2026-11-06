@@ -67,6 +67,7 @@ from .cscope import QaoaWorkflow, VqeSettings, split_cscope
 from .decisions import lower_decision_phase
 from .deferred_measurement import defer_private_measurements
 from .diffusion import lower_diffuser
+from .fixed_payoff import inferred_computation, lower_fixed_payoff, payoff_helpers
 from .fixed_xor import lower_fixed_xor
 from .hea import lower_hea
 from .indexed_control import (
@@ -94,7 +95,7 @@ from .phase import MAX_PHASE_INPUT_BITS, expand_phase
 from .phase_factors import Cube, preserve_factors
 from .phase_kickback import expand_phase_kickbacks
 from .predicates import expand_predicate_oracles
-from .preparation import lower_inplace_preparation
+from .preparation import exponential_angles, lower_inplace_preparation
 from .qpe import (
     infer_phase_allocation,
     is_modular_power,
@@ -1026,7 +1027,7 @@ class _Adapt:
         return node.token
 
     def record_field(
-        self, node: Expression
+        self, node: Expression, *, allow_fractional: bool = False
     ) -> tuple[Parameter, tuple[tuple[Value, int], ...]] | None:
         if node.token.text != "." or len(node.children) != 2:
             return None
@@ -1043,6 +1044,12 @@ class _Adapt:
             assert field.width is not None
             size = field.width * (field.length or 1)
             if field.name.text == member.token.text:
+                if field.fractional_bits and not allow_fractional:
+                    reject(
+                        member.token,
+                        "precision",
+                        "fractional record fields require checked fixed-point lowering",
+                    )
                 view = parent[1] if parent is not None else self.array_view(root)
                 return field, view[offset : offset + size]
             offset += size
@@ -2009,6 +2016,7 @@ class _Adapt:
             for index, statement in enumerate(syntax.statements):
                 if index + 3 == len(syntax.statements) and (
                     lower_computed_rotation(child, syntax.statements[index:])
+                    or lower_fixed_payoff(child, syntax.statements[index:])
                     or lower_copied_selector(
                         child, syntax.statements[index:], str(index)
                     )
@@ -3063,13 +3071,31 @@ class _Adapt:
             if flip_phase:
                 if parameter.name.text in self.views:
                     view = self.array_view(condition)
-                    self.effect_op(
-                        "qreg.control_phase",
-                        token,
-                        tuple(value for value, _ in view),
-                        indices=tuple(bit for _, bit in view),
-                        angle=math.pi,
-                    )
+                    if len(view) > 8:
+                        phase_target, phase_bit = view[-1]
+                        self.effect_op(
+                            "qreg.gate",
+                            token,
+                            (phase_target,),
+                            gate="h",
+                            index=phase_bit,
+                        )
+                        self.emit_indexed_x(token, view)
+                        self.effect_op(
+                            "qreg.gate",
+                            token,
+                            (phase_target,),
+                            gate="h",
+                            index=phase_bit,
+                        )
+                    else:
+                        self.effect_op(
+                            "qreg.control_phase",
+                            token,
+                            tuple(value for value, _ in view),
+                            indices=tuple(bit for _, bit in view),
+                            angle=math.pi,
+                        )
                 else:
                     control = self.register(parameter.name, allow_qubit_array=True)
                     self.effect_op("qreg.array_phase_flip", token, (control,))
@@ -3631,12 +3657,9 @@ class _Adapt:
         register = self.register(target, allow_qubit_array=True)
         if self.parameters[target.text].kind != "qbit[]":
             reject(target, "type", "prepare_exponential_state requires a qubit array")
-        # The bit of weight 2**index has amplitude ratio exp(-rate * 2**index / 2).
-        for index in range(register_width(register)):
-            magnitude = abs(rate) * math.ldexp(1.0, index - 1)
-            angle = 2 * math.atan(math.exp(-magnitude))
-            if rate < 0:
-                angle = math.pi - angle
+        for index, angle in enumerate(
+            exponential_angles(rate, register_width(register))
+        ):
             self.effect_op(
                 "qreg.gate", token, (register,), gate="ry", index=index, angle=angle
             )
@@ -4877,13 +4900,17 @@ def check_source_version(source_version: str, token: Token) -> None:
 
 def _bound_helper(syntax: Function) -> bool:
     return (
-        len(syntax.statements) == 1
-        and syntax.statements[0].token.text == "$kickback_phase"
-    ) or any(
-        port.role in {"real", "integer", "inout", "callable", "operator"}
-        or port.kind == "qphase"
-        or port.fractional_bits
-        for port in syntax.parameters
+        (
+            len(syntax.statements) == 1
+            and syntax.statements[0].token.text == "$kickback_phase"
+        )
+        or inferred_computation(syntax) is not None
+        or any(
+            port.role in {"real", "integer", "inout", "callable", "operator"}
+            or port.kind == "qphase"
+            or port.fractional_bits
+            for port in syntax.parameters
+        )
     )
 
 
@@ -5059,9 +5086,29 @@ def parse_qmod(
     definitions = expand_borrowed_phase_views(definitions, constants)
     definitions = expand_phase_kickbacks(definitions)
     verify_permutations(definitions)
-    definitions = expand_predicate_oracles(definitions, constants, parser.records)
+    fixed_helpers = payoff_helpers(definitions)
+    definitions = expand_predicate_oracles(
+        definitions, constants, parser.records, inferred_helpers=fixed_helpers
+    )
     definitions = expand_static_oracles(definitions, constants, parser.records)
     main = definitions["main"]
+
+    def fractional_record(record: str) -> bool:
+        return any(
+            field.fractional_bits
+            or (field.record is not None and fractional_record(field.record))
+            for field in parser.records[record].fields
+        )
+
+    if any(
+        port.record is not None and fractional_record(port.record)
+        for port in main.parameters
+    ):
+        reject(
+            main.name,
+            "precision",
+            "fractional record fields require checked fixed-point lowering",
+        )
     if any(port.fractional_bits for port in main.parameters):
         reject(
             main.name,
@@ -5126,7 +5173,7 @@ def parse_qmod(
             arrays[name] = tuple(checked_real(item, name) for item in value)
 
     for name, syntax in definitions.items():
-        if name == "main" or not _bound_helper(syntax):
+        if name == "main" or not _bound_helper(syntax) or name in fixed_helpers:
             continue
         if any(port.kind == "SparsePauliOp" for port in syntax.parameters):
             power_action(syntax)

@@ -1652,3 +1652,30 @@ result = fq.run(program)
 assert result.statevector().shape[-1] == 2**14
 print(program.report["resources"].n_operations)  # 3802
 ```
+
+### Inferred fixed-point payoff controls
+
+A terminal read-only payoff may consume a freshly computed numeric value
+whose input words occupy up to four bits. The adapter checks exact dyadic
+arithmetic and derives the bounded result format, including the precision
+and representation promoted across min/max operands. Its size and fractional
+digits remain visible to the callback. The callback may select bounded
+static rotations or a disjoint XOR predicate. Its coherent controls leave
+the original numeric inputs available, and no physical score register is
+needed. Allocations, escaping aliases, and writes to the inferred value
+outside a reversible private view are refused.
+
+```python
+from pathlib import Path
+
+import flagquantum as fq
+from flagquantum import synth
+
+source = Path("tests/fixtures/classiq_qmod/rainbow_options_integration_method.qmod")
+program = synth.synthesize(
+    source, classical_inputs={"k": 1}, max_qubits=14, max_workspace=4,
+    max_operations=35_000,
+)
+result = fq.run(program)
+print(program.probabilities(result, registers=("indicator",))[(1,)])  # about 0.398315
+```

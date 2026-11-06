@@ -49,6 +49,8 @@ def expand_predicate_oracles(
     definitions: Mapping[str, Function],
     constants: Mapping[str, Expression],
     records: Mapping[str, Record],
+    *,
+    inferred_helpers: frozenset[str] = frozenset(),
 ) -> dict[str, Function]:
     """Validate restricted XOR predicates, then erase their static callback syntax."""
     predicates: dict[str, Predicate] = {}
@@ -124,9 +126,13 @@ def expand_predicate_oracles(
 
     # A numeric Const width may be inferred only for a checked borrowed predicate.
     for name, function in definitions.items():
-        if name in predicates or (
-            len(function.statements) == 1
-            and function.statements[0].token.text == "$kickback_phase"
+        if (
+            name in predicates
+            or name in inferred_helpers
+            or (
+                len(function.statements) == 1
+                and function.statements[0].token.text == "$kickback_phase"
+            )
         ):
             continue
         for port in function.parameters:
