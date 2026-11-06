@@ -1533,3 +1533,48 @@ The source places a global scalar of −1 inside the reflection. Native IR
 represents it as a phase on the temporary phase target while that wire
 is in `|1>`. The source model charges no gate for this scalar. The
 emitted report includes the phase instruction.
+
+## Zero-signal LCU block encoding
+
+`LCUBlockEncoding` applies PREPARE, SELECT and PREPARE†. The signal
+preparation is identity on the selection registers. Preparation junk
+passes through the block. The adjoint uses SELECT† in the middle, and
+a controlled block passes the requested polarity to its specialized
+SELECT emitter.
+
+```python
+from flagquantum.algorithms.primitives.black_box_prepare import BlackBoxPrepare
+from flagquantum.algorithms.primitives.lcu_block_encoding import LCUBlockEncoding
+from flagquantum.algorithms.primitives.select_block_encoding import SelectBlockEncoding
+from flagquantum.compiler._component_trace.resource_model import ComponentCost, GateCost
+from flagquantum.core.ir import Instruction
+from flagquantum.dynamic import DynamicCircuit
+from flagquantum.qec.resources.estimation import estimate_ftqc_resources
+
+def select(ports, workspace, classical_bits, adjoint):
+    return (Instruction("cx", (*ports["address"], *ports["system"])),)
+
+def prepare(ports, workspace, classical_bits, adjoint):
+    return (Instruction("h", ports["address"]),)
+
+preparation = BlackBoxPrepare((("address", 1),), (), prepare, normalization=2.0)
+block = SelectBlockEncoding((("address", 1),), (("system", 1),), select, preparation)
+lcu = LCUBlockEncoding(block)
+circuit = DynamicCircuit(2)
+circuit.append(lcu.make_on(selection=(0,), junk=(), target=(1,)))
+select_model = ComponentCost("SELECT", 2, GateCost(clifford=1))
+prepare_model = ComponentCost("Prepare", 1, GateCost(clifford=1))
+report = estimate_ftqc_resources(
+    lcu.resource_model(select_model, prepare_model, prepare_model),
+    emitted_ir=circuit.to_ir(),
+)
+assert report.logical.gates.clifford == 3
+assert report.logical.peak_logical_qubits == 2
+assert report.emitted is not None
+assert report.emitted.unconditional == {"h": 2, "cx": 1}
+```
+
+Each stage receives its own explicit work and feedback slots. Clean
+workspace may be shared across stages. SELECT's named address ports
+must be available among the preparation's selection and through-junk
+ports with matching widths.
