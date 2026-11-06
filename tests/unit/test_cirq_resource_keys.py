@@ -4,6 +4,10 @@ from dataclasses import asdict, fields
 
 import pytest
 
+from flagquantum.compiler._component_trace.compound_control_resource import (
+    CONTROLLED_HADAMARD_COST,
+    compound_control_key,
+)
 from flagquantum.compiler._component_trace.qec_gate_cost import (
     QECGateCost,
     query_qec_gate_cost,
@@ -38,7 +42,7 @@ def test_source_recognition_order_and_gate_costs() -> None:
         (cirq.T**-1, "TGate", PhaseCall("t", True)),
         (cirq.S**-1, "SGate", PhaseCall("s", True)),
         (cirq.H, "Hadamard", CliffordCall("h", 1)),
-        (cirq.ControlledGate(cirq.H), "CHadamard", None),
+        (cirq.ControlledGate(cirq.H), "CHadamard", CONTROLLED_HADAMARD_COST),
         (cirq.ControlledGate(cirq.Y), "CYGate", CliffordCall("cy", 2)),
         (cirq.CNOT, "CNOT", CliffordCall("cx", 2)),
         (cirq.CZ, "CZ", CliffordCall("cz", 2)),
@@ -134,6 +138,8 @@ def test_predicate_controls_map_to_source_costs(controls: tuple[int, ...]) -> No
         gate = cirq.ControlledGate(base, control_values=controls)
         key = cirq_gate_resource_key(gate)
         assert key is not None
+        if base == cirq.H:
+            assert key == compound_control_key(CliffordCall("h", 1), controls)
         source = get_cost_value(cirq_gate_to_bloq(gate), QECGatesCost())
         assert asdict(query_qec_gate_cost(key)) == {
             field.name: getattr(source, field.name) for field in fields(QECGateCost)

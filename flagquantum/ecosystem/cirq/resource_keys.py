@@ -8,7 +8,10 @@
 from collections.abc import Hashable
 from typing import Literal, cast
 
-from ...compiler._component_trace.compound_control_resource import compound_control_key
+from ...compiler._component_trace.compound_control_resource import (
+    CONTROLLED_HADAMARD_COST,
+    compound_control_key,
+)
 from ...compiler._component_trace.resource_generalization import (
     CliffordCall,
     ControlledRotationCall,
@@ -22,11 +25,8 @@ from ...compiler._component_trace.resource_generalization import (
     RotationCall,
     ZeroCostCall,
 )
-from ...compiler._component_trace.resource_model import ComponentCost, GateCost
 from ...compiler._component_trace.symbolic_math import SymbolicReal
 from .conversion import _cirq
-
-_CONTROLLED_H = ComponentCost("CHadamard", 2, GateCost(clifford=4, rotation=2))
 
 
 def cirq_gate_resource_key(gate: object) -> ResourceCall | None:
@@ -46,7 +46,7 @@ def cirq_gate_resource_key(gate: object) -> ResourceCall | None:
         cirq.S: PhaseCall("s"),
         cirq.S**-1: PhaseCall("s", adjoint=True),
         cirq.H: CliffordCall("h", 1),
-        cirq.ControlledGate(cirq.H): _CONTROLLED_H,
+        cirq.ControlledGate(cirq.H): CONTROLLED_HADAMARD_COST,
         cirq.CNOT: CliffordCall("cx", 2),
         cirq.TOFFOLI: FixedTCall("toffoli"),
         cirq.X: CliffordCall("x", 1),
@@ -132,8 +132,6 @@ def _single_positive_key(key: ResourceCall | None) -> ResourceCall | None:
         return CliffordCall("cy", 2)
     if key.opcode == "z":
         return CliffordCall("cz", 2)
-    if key.opcode == "h":
-        return _CONTROLLED_H
     if key.opcode == "swap_bit":
         return FixedTCall("fredkin")
     return None
