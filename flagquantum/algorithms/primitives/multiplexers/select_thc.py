@@ -90,6 +90,9 @@ class SelectTHC:
 
     def append_to(self, circuit: Circuit) -> Circuit:
         """Emit the two rotate–reflect–unrotate blocks as ordinary gates."""
+        return self._append_to(circuit)
+
+    def _append_to(self, circuit: Circuit, *, measurement_start: int = 0) -> Circuit:
         width = len(self.mu)
         orbitals = len(self.sys_a)
         if (
@@ -125,6 +128,7 @@ class SelectTHC:
             next_bit = validate_classical_control(
                 circuit.to_ir().instructions, n_qubits=circuit.n_qubits
             )
+            next_bit = max(next_bit, measurement_start)
             measurement_bits = tuple(
                 range(next_bit, next_bit + _ANGLE_BITS * (2 if blocked else 1))
             )
