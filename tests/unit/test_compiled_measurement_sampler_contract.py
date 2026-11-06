@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import sys
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 import torch
@@ -192,3 +194,79 @@ def test_symlink_and_publication_race_never_replace_destination(
         sampler.sample_write(1, filepath=path, format="b8")
     assert path.read_bytes() == b"concurrent writer"
     assert set(tmp_path.iterdir()) == {link, path}
+
+
+def test_embedded_profile_uses_record_targets_and_owns_samples(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    marker = tmp_path / "_embedded_stim_profile.txt"
+    marker.write_text("stim-1.16.0\n")
+    monkeypatch.setattr(
+        implementation, "__file__", str(tmp_path / "measurement_sampler.py")
+    )
+    handle = object()
+    calls = []
+
+    def prepare(text: str, seed: int | None) -> object:
+        assert text == "X 0\nM 0\nCX rec[-1] 1\nR 0\nM 0\nCX rec[-1] 2\nM 1\nM 2"
+        assert seed == 7
+        calls.append("prepare")
+        return handle
+
+    def sample(native_handle: object, shots: int, packed: bool) -> bytearray:
+        assert native_handle is handle and shots == 2
+        calls.append("packed" if packed else "unpacked")
+        return bytearray([5, 5] if packed else [1, 0, 1, 0] * 2)
+
+    def write_b8(native_handle: object, shots: int, filepath: str) -> None:
+        assert native_handle is handle and shots == 2
+        calls.append("write")
+        Path(filepath).write_bytes(b"\x05" * shots)
+
+    native = SimpleNamespace(prepare=prepare, sample=sample, write_b8=write_b8)
+    monkeypatch.setitem(
+        sys.modules, "flagquantum.simulation.stabilizer._embedded_stim", native
+    )
+    circuit = (
+        DynamicCircuit(3)
+        .x(0)
+        .measure(0, classical_bit=0)
+        .conditional("x", 1, classical_bit=0)
+        .reset(0)
+        .measure(0, classical_bit=0)
+        .conditional("x", 2, classical_bit=0)
+        .measure(1)
+        .measure(2)
+    )
+    sampler = circuit.compile_sampler(seed=7)
+    first = sampler.sample(2)
+    second = sampler.sample(2)
+    assert first.dtype == second.dtype == torch.bool
+    first.zero_()
+    assert second.tolist() == [[True, False, True, False]] * 2
+    packed = sampler.sample(2, bit_packed=True)
+    assert packed.dtype == torch.uint8
+    assert packed.tolist() == [[5], [5]]
+    output = tmp_path / "records.b8"
+    sampler.sample_write(2, filepath=output, format="b8")
+    assert output.read_bytes() == b"\x05\x05"
+    assert calls == ["prepare", "unpacked", "unpacked", "packed", "write"]
+
+
+def test_embedded_profile_does_not_fall_back_when_extension_is_missing(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    (tmp_path / "_embedded_stim_profile.txt").write_text("stim-1.16.0\n")
+    monkeypatch.setattr(
+        implementation, "__file__", str(tmp_path / "measurement_sampler.py")
+    )
+    monkeypatch.setitem(
+        sys.modules, "flagquantum.simulation.stabilizer._embedded_stim", None
+    )
+
+    def unexpected_sdk(*args: object) -> None:
+        pytest.fail("embedded profile fell back to the Stim SDK")
+
+    monkeypatch.setattr(implementation, "_prepare_sdk_sampler", unexpected_sdk)
+    with pytest.raises(ModuleNotFoundError, match="_embedded_stim"):
+        _program().compile_sampler(seed=7)
