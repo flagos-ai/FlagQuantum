@@ -2,9 +2,10 @@
 # SPDX-License-Identifier: Apache-2.0
 # X-basis clearing moved from the paired QROAM emitter adapted from Qualtran.
 # Source: https://github.com/quantumlib/Qualtran/tree/v0.7.0/qualtran/bloqs/data_loading
-# Changes: shared native-IR helpers and explicit parity-controlled phase expansion.
+# Basis instruments: https://github.com/quantumlib/Qualtran/tree/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/bloqs/basic_gates
+# Changes: caller-owned physical clearing and explicit parity-controlled phase expansion.
 
-"""Shared X-basis clearing and classical-parity phase decompositions."""
+"""Shared basis measurement clearing and classical-parity phase decompositions."""
 
 from dataclasses import dataclass
 
@@ -12,14 +13,13 @@ from ...core.classical_dataflow import ClassicalXor
 from ...core.ir import Instruction
 
 
-def measure_x_clear_ir(qubit: int, classical_bit: int) -> tuple[Instruction, ...]:
-    """Demolish an X-basis measured qubit and leave its physical slot in zero."""
+def measure_z_clear_ir(qubit: int, classical_bit: int) -> tuple[Instruction, ...]:
+    """Record the Z outcome and return the consumed qubit's physical slot in zero."""
     if any(type(value) is not int or value < 0 for value in (qubit, classical_bit)):
         raise ValueError(
             "Measurement qubit and classical bit must be nonnegative integers"
         )
     return (
-        Instruction("h", (qubit,)),
         Instruction(
             "measure",
             (qubit,),
@@ -27,6 +27,12 @@ def measure_x_clear_ir(qubit: int, classical_bit: int) -> tuple[Instruction, ...
         ),
         Instruction("x", (qubit,), metadata={"conditions": ((classical_bit, 1),)}),
     )
+
+
+def measure_x_clear_ir(qubit: int, classical_bit: int) -> tuple[Instruction, ...]:
+    """Record the X outcome and return the consumed qubit's physical slot in zero."""
+    clear = measure_z_clear_ir(qubit, classical_bit)
+    return (Instruction("h", (qubit,)), *clear)
 
 
 @dataclass(frozen=True)
