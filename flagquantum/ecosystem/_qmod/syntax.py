@@ -1130,6 +1130,7 @@ class Parser:
                     and self.tokens[self.position + 1].text == "<"
                     and self.position + 3 < len(self.tokens)
                     and self.tokens[self.position + 3].text == "."
+                    and not self.tokens[self.position + 2].text.isdecimal()
                 ):
                     self.take("qnum")
                     self.take("<")

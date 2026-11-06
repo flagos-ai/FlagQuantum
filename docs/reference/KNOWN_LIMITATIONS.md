@@ -626,3 +626,14 @@ budget. Both paths preserve branch-relative phase and reject control/target
 aliases. The unchanged harmonic oscillator original has an independent
 block-matrix Circuit reference. Run
 `python -m pytest tests/integration/test_synthesis_qmod_guarded_unitary.py -q`.
+
+## Nested Qmod controls on numeric views
+
+Fixed-width local integers accept exact decimal widths such as `2.0`.
+Unsigned one-bit numeric views may be passed to scalar qubit helpers and used
+as targets of indexed equality controls. A nested chain of static equality
+conditions around one supported gate shares the existing bounded indexed
+control lowering. Repeated control locations and target overlap are rejected.
+The original two-axis Laplacian is checked against an independently built
+preparation, reversible permutations and selected rotations. Run
+`python -m pytest tests/integration/test_synthesis_qmod_laplacian_views.py -q`.

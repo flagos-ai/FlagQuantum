@@ -5,7 +5,7 @@ from __future__ import annotations
 import math
 from typing import TYPE_CHECKING
 
-from .syntax import Expression, Statement, reject
+from .syntax import Expression, Statement, Token, reject
 
 if TYPE_CHECKING:
     from ...compiler._hybrid.model import Value
@@ -102,7 +102,7 @@ def lower_indexed_control(
 
     target = owner.gate_target(
         operation.arguments[-1],
-        allow_numeric=gate in {"RX", "RZ"} or condition.token.text == "&",
+        allow_numeric=gate in {"RX", "RZ"} or condition.token.text in {"&", "=="},
     )
     locations = (*controls, target)
     token = operation.token
@@ -206,3 +206,25 @@ def lower_zero_reflection_control(
     if not positive:
         owner.effect_op("qreg.gate", token, (control,), gate="x", index=bit)
     return True
+
+
+def lower_nested_indexed_control(
+    owner: _Adapt, condition: Expression, operation: Statement
+) -> bool:
+    """Combine equality guards around one gate while preserving their basis values."""
+    if condition.token.text != "==":
+        return False
+    conjunction, leaf = condition, operation
+    while leaf.control_body is not None:
+        if (
+            len(leaf.control_body) != 1
+            or leaf.control_else is not None
+            or len(leaf.arguments) != 1
+            or leaf.arguments[0].token.text != "=="
+        ):
+            return False
+        conjunction = Expression(
+            Token("&", leaf.token.location), (conjunction, leaf.arguments[0])
+        )
+        leaf = leaf.control_body[0]
+    return lower_indexed_control(owner, conjunction, leaf)

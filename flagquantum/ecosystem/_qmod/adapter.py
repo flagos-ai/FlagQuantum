@@ -52,7 +52,11 @@ from .controlled_evolution import EVOLUTION_CALLS, controlled_evolution
 from .cscope import QaoaWorkflow, VqeSettings, split_cscope
 from .decisions import lower_decision_phase
 from .diffusion import lower_diffuser
-from .indexed_control import lower_indexed_control, lower_zero_reflection_control
+from .indexed_control import (
+    lower_indexed_control,
+    lower_nested_indexed_control,
+    lower_zero_reflection_control,
+)
 from .integers import checked_integer, checked_integer_array, integer_operation
 from .iterations import expand_iterations
 from .local_cleanup import lower_free
@@ -1683,7 +1687,7 @@ class _Adapt:
                 else (
                     self.array_view(argument, allow_phase=True, allow_signed=True)
                     if parameter.kind in {"qbit[]", "qnum", "qphase"}
-                    else (self.gate_target(argument),)
+                    else (self.gate_target(argument, allow_numeric=True),)
                 )
             )
             if parameter.width is not None and len(view) != parameter.width:
@@ -2514,6 +2518,8 @@ class _Adapt:
             )
         operation = body[0]
         if operation.control_body is not None:
+            if lower_nested_indexed_control(self, condition, operation):
+                return
             reject(token, "scope", "nested scalar control requires function scope")
         if lower_zero_reflection_control(self, condition, operation):
             return
@@ -4011,7 +4017,9 @@ class _Adapt:
                         )
             else:
                 gate_locations = (
-                    self.gate_target(args[0], allow_numeric=token.text in {"H", "X"}),
+                    self.gate_target(
+                        args[0], allow_numeric=token.text in {"H", "X", "Z"}
+                    ),
                 )
             for destination, bit in gate_locations:
                 if token.text == "Y":
