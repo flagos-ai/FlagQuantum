@@ -258,3 +258,55 @@ def test_dense_alias_resource_model(weights, precision):
     model = source_dense_alias_preparation_cost(table)
     assert_source_model(model, source)
     assert_source_model(model, source.adjoint())
+
+
+@pytest.mark.ftqc_reference
+@pytest.mark.parametrize(
+    ("weights", "size", "precision"),
+    [
+        ({3: 1, 0: 3}, 4, 0.25),
+        ({6: 1, 2: 2, 0: 4}, 7, 0.25),
+        ({0: 1, 3: 1, 9: 3, 1: 2}, 10, 0.125),
+        ({15: 4, 1: 1}, 16, 0.125),
+    ],
+)
+def test_sparse_alias_resource_model(weights, size, precision):
+    pytest.importorskip("qualtran")
+    from qualtran.bloqs.state_preparation.state_preparation_alias_sampling import (
+        SparseStatePreparationAliasSampling,
+    )
+
+    from flagquantum.algorithms.primitives.alias_preparation import (
+        source_sparse_alias_preparation_cost,
+    )
+    from tests.unit.test_first_quantization_resource_model import assert_source_model
+
+    table = sparse_alias_sampling_table(weights, size, precision=precision)
+    source = SparseStatePreparationAliasSampling.from_sparse_dict(
+        weights, size, precision=precision
+    )
+    model = source_sparse_alias_preparation_cost(table)
+    assert_source_model(model, source)
+    assert_source_model(model, source.adjoint())
+
+
+@pytest.mark.ftqc_reference
+def test_sparse_singleton_has_no_source_cost():
+    pytest.importorskip("qualtran")
+    from qualtran.bloqs.state_preparation.state_preparation_alias_sampling import (
+        SparseStatePreparationAliasSampling,
+    )
+    from qualtran.resource_counting import QECGatesCost, get_cost_value
+
+    from flagquantum.algorithms.primitives.alias_preparation import (
+        source_sparse_alias_preparation_cost,
+    )
+
+    table = sparse_alias_sampling_table({3: 1}, 4, precision=1)
+    source = SparseStatePreparationAliasSampling.from_sparse_dict(
+        {3: 1}, 4, precision=1
+    )
+    with pytest.raises(KeyError, match="sparse_index"):
+        get_cost_value(source, QECGatesCost())
+    with pytest.raises(ValueError, match="at least two support rows"):
+        source_sparse_alias_preparation_cost(table)
