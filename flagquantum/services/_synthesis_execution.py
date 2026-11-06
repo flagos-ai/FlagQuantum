@@ -1,7 +1,7 @@
 """Private CS06-A checks over the existing sealed Runtime execution plan."""
 
 from collections.abc import Iterable, Mapping, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from types import MappingProxyType
 
 import torch
@@ -11,14 +11,17 @@ from ..compiler._construction.constraints import CircuitLimits
 from ..compiler.basis_conversion import require_basis
 from ..compiler.coupling import CouplingMap
 from ..compiler.layout import Layout, _routing_swap_phases, final_layout
+from ..compiler.pipeline import schedule_layers
 from ..core.ir import CircuitIR
 from ..core.operator_schema import get_operator_schema
 from ..core.runtime_config import RuntimeConfig
+from ..noise import amplitude_damping_channel
 from ..runtime.dynamic._conditions import instruction_is_dynamic
 from ..runtime.execution_plan import ExecutionPlan
 from ..runtime.execution_plan_contract import (
     canonical_json,
     plan_execution_program,
+    plan_program,
     plan_to_dict,
 )
 from ..runtime.result import ExecutionResult
@@ -53,7 +56,7 @@ def _program(plan: ExecutionPlan) -> CircuitIR:
     assert isinstance(fingerprints, Mapping)
     if (
         plan.analysis is None
-        or decision["mode"] != "statevector"
+        or decision["mode"] not in {"statevector", "density_matrix"}
         or plan.state_mode != decision["mode"]
         or decision["backend"] not in {"torch", "pytorch"}
         or decision["device"] != "cpu"
@@ -65,7 +68,7 @@ def _program(plan: ExecutionPlan) -> CircuitIR:
         or decision["target"] not in {"auto", "state"}
         or decision["allow_approximate"]
         or decision["allow_backend_fallback"]
-        or plan.noisy_execution_plan is not None
+        or (decision["mode"] == "statevector" and plan.noisy_execution_plan is not None)
         or payload["extensions"]
     ):
         raise ExecutionContractError(
@@ -106,7 +109,30 @@ def _program(plan: ExecutionPlan) -> CircuitIR:
                 "execution.layers",
                 "layer order or qubit summary differs from the canonical program",
             )
-    actual = plan_execution_program(plan)
+    if decision["mode"] == "density_matrix":
+        noisy = plan.noisy_execution_plan
+        if noisy is None or noisy.evolution != "exact_channel":
+            raise ExecutionContractError(
+                "execution.profile", "reset requires exact channel evolution"
+            )
+        actual = plan_program(plan)
+        scheduled = replace(
+            actual,
+            instructions=tuple(
+                gate for layer in schedule_layers(actual) for gate in layer
+            ),
+        )
+        applied = plan_execution_program(plan)
+        if (
+            scheduled.instructions
+            and scheduled.content_hash
+            != replace(applied, metadata=actual.metadata).content_hash
+        ):
+            raise ExecutionContractError(
+                "execution.layers", "reset schedule differs from the sealed sequence"
+            )
+    else:
+        actual = plan_execution_program(plan)
     # Runtime already recomputed this fingerprint from the sealed program. Keep
     # its authoritative layer reconstruction, without rebuilding the record again.
     if program_fingerprint != actual.content_hash:
@@ -125,7 +151,32 @@ def _program(plan: ExecutionPlan) -> CircuitIR:
             "execution.profile",
             "this contract checks a full state, without output projections",
         )
+    expected_reset = (
+        amplitude_damping_channel(1.0, dtype=torch.complex128, device="cpu").kraus
+        if decision["mode"] == "density_matrix"
+        else ()
+    )
+    resets = 0
     for gate in actual.instructions:
+        if (
+            decision["mode"] == "density_matrix"
+            and gate.name == "amplitude_damping"
+            and len(gate.wires) == 1
+            and gate.params == {"gamma": 1.0}
+            and gate.metadata == {"is_channel": True}
+            and isinstance(gate.matrix, tuple)
+            and len(gate.matrix) == 2
+            and all(
+                isinstance(matrix, torch.Tensor) and torch.equal(matrix, expected)
+                for matrix, expected in zip(
+                    gate.matrix,
+                    expected_reset,
+                    strict=True,
+                )
+            )
+        ):
+            resets += 1
+            continue
         schema = get_operator_schema(gate.name)
         if (
             schema is None
@@ -137,6 +188,10 @@ def _program(plan: ExecutionPlan) -> CircuitIR:
                 "execution.profile",
                 "require registered static unitaries with explicit gate semantics",
             )
+    if decision["mode"] == "density_matrix" and resets == 0:
+        raise ExecutionContractError(
+            "execution.profile", "density execution needs a checked full reset"
+        )
     return actual
 
 
@@ -320,13 +375,17 @@ class CheckedExecution:
             if result.plan.precision == "complex128"
             else torch.complex64
         )
+        dimension = 1 << program.n_wires
+        valid_shapes = (
+            {(dimension, dimension), (1, dimension, dimension)}
+            if result.plan.state_mode == "density_matrix"
+            else {(dimension,), (1, dimension)}
+        )
         if (
             not isinstance(state, torch.Tensor)
             or state.device.type != "cpu"
             or state.dtype != expected_dtype
-            or state.ndim not in {1, 2}
-            or state.shape[-1] != 1 << program.n_wires
-            or state.numel() != 1 << program.n_wires
+            or tuple(state.shape) not in valid_shapes
         ):
             raise ExecutionContractError(
                 "execution.result",

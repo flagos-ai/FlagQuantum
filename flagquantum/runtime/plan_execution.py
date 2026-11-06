@@ -387,6 +387,13 @@ def execute_plan(execution_plan: ExecutionPlan) -> ExecutionResult:
     requests = tuple(source_ir.measurements)
     validate_measurements(requests, n_qubits=source_ir.n_wires)
     mode = str(decision["mode"])
+    if (
+        mode == "density_matrix"
+        and noise_model is None
+        and "construction_reset_repetitions" in source_ir.metadata
+    ):
+        # The sealed source order retains the repeated epoch boundaries.
+        execution_ir = source_ir
     noisy_plan = execution_plan.noisy_execution_plan
     # The plan, not the argument, says what the program needs: an inline channel
     # has no model and still needs the trajectory route, and an MPS

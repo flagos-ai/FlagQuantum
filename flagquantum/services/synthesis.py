@@ -66,7 +66,7 @@ from ..core.parameters import parameter_names_in_value
 from ..errors import PlanningError
 from ..runtime.dynamic._conditions import instruction_is_dynamic
 from ..runtime.execution_plan import ExecutionPlan
-from ..runtime.execution_plan_contract import plan_execution_program
+from ..runtime.execution_plan_contract import plan_execution_program, plan_program
 from ..runtime.options import ExecutionOptions
 from ..runtime.result import ExecutionResult
 from ._synthesis_execution import CheckedExecution, inspect_execution
@@ -207,7 +207,11 @@ class Program:
             raise ValueError(
                 "execution layout or named ports differ from the selected target"
             )
-        actual = plan_execution_program(self._checked.plan)
+        actual = (
+            plan_program(self._checked.plan)
+            if self._checked.plan.state_mode == "density_matrix"
+            else plan_execution_program(self._checked.plan)
+        )
         expected = replace(
             row.target.executable,
             metadata={
@@ -216,6 +220,23 @@ class Program:
                 if key != "runtime_config"
             },
         )
+        if self._checked.plan.state_mode == "density_matrix":
+            from ..compiler.pipeline import schedule_layers
+
+            def canonicalize(ir: CircuitIR) -> CircuitIR:
+                return replace(
+                    ir,
+                    instructions=tuple(
+                        op for layer in schedule_layers(ir) for op in layer
+                    ),
+                    metadata={
+                        key: value
+                        for key, value in ir.metadata.items()
+                        if key != "runtime_config"
+                    },
+                )
+
+            actual, expected = canonicalize(actual), canonicalize(expected)
         if actual.content_hash != expected.content_hash:
             raise ValueError(
                 "execution identity differs from the selected Compiler product"
@@ -809,9 +830,12 @@ def _complete(
         raise SynthesisError(selection)
     from .._api import plan
 
+    mixed = any(
+        gate.metadata.get("is_channel") for gate in row.target.executable.instructions
+    )
     options = ExecutionOptions(
         memory_limit_bytes=memory_limit_bytes,
-        mode="statevector",
+        mode="density_matrix" if mixed else "statevector",
         backend="torch",
         device="cpu",
         precision="complex128",

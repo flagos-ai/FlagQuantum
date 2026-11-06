@@ -1679,3 +1679,33 @@ program = synth.synthesize(
 result = fq.run(program)
 print(program.probabilities(result, registers=("indicator",))[(1,)])  # about 0.398315
 ```
+
+### Unconditional reset and repeated channels
+
+Qmod `RESET(q)` resets an initialized writable bit. The circuit uses the
+existing full amplitude-damping channel with gamma equal to one. Synthesis
+chooses exact local density-matrix execution, and named probabilities read
+the resulting density diagonal. Coherent control and inversion refuse
+reset because the operation is nonunitary.
+
+For a bounded loop with a repeated cycle, Compiler verifies the body once
+and counts all repeated gates and resets. When the sealed circuit consists
+of identical epochs that end with complete resets of the same scratch
+wires, the CPU simulator may evaluate the exact reduced channel once and
+compose it for all iterations. The plan still accounts for its full
+materialized density matrix.
+
+```python
+from pathlib import Path
+
+import flagquantum as fq
+from flagquantum import synth
+
+source = Path("tests/fixtures/classiq_qmod/quantum_thermal_state_preparation.qmod")
+program = synth.synthesize(
+    source, max_qubits=11, max_workspace=1, max_operations=25_000,
+)
+result = fq.run(program)
+print(dict(program.probabilities(result, registers=("be.state",))))
+# Approximately {(0,): 0.18097, (1,): 0.24856, (2,): 0.34812, (3,): 0.22235}
+```

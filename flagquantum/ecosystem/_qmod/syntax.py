@@ -370,14 +370,19 @@ class Parser:
                 symbolic=True, nesting=nesting, depth_limit=depth_limit
             )
         elif (
-            static
+            (static or real)
             and token.text == "floor"
             and self.tokens[self.position + 1].text == "("
         ):
             self.take("floor")
             self.take("(")
             argument = self.expression(
-                nesting=nesting + 1, static=True, depth_limit=depth_limit
+                nesting=nesting + 1,
+                static=static,
+                real=real,
+                decimal=decimal,
+                difference=difference,
+                depth_limit=depth_limit,
             )
             self.take(")")
             left = Expression(token, (argument,), argument.depth + 1)

@@ -11,6 +11,8 @@ from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import cast
 
+import torch
+
 from flagquantum.compiler.resource_estimation import ResourceEstimate
 from flagquantum.ecosystem import InteropConversionError
 from flagquantum.ecosystem._qmod.source import load_qmod
@@ -60,7 +62,29 @@ def probe(
     try:
         evidence: dict[str, str | int] = {}
         if imported.workflow is None:
-            state = run(program).statevector()
+            result = run(program)
+            if result.plan is not None and result.plan.state_mode == "density_matrix":
+                state = result.state
+                dimension = 1 << resources.n_qubits
+                if (
+                    not isinstance(state, torch.Tensor)
+                    or tuple(state.shape) != (1, dimension, dimension)
+                    or not torch.allclose(state, state.mH, atol=1e-10, rtol=0)
+                    or abs(state.diagonal(dim1=-2, dim2=-1).sum().item() - 1) > 1e-9
+                    or torch.any(state.diagonal(dim1=-2, dim2=-1).real < -1e-10)
+                ):
+                    return {
+                        "stage": "execution_failed",
+                        "detail": "invalid exact density matrix",
+                        **costs,
+                    }
+                return {
+                    "stage": "execution_smoke_passed",
+                    **costs,
+                    "execution_profile": "exact_density_matrix",
+                    "reset_channels": resources.channel_count,
+                }
+            state = result.statevector()
         else:
             workflow = run_qaoa_workflow(
                 imported.workflow, memory_limit_bytes=memory_bytes

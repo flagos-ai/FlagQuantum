@@ -55,6 +55,8 @@ _ATTRIBUTES = MappingProxyType(
         "qreg.control_x": frozenset(),
         "qreg.array_phase_flip": frozenset(),
         "qreg.control_phase": frozenset({"angle"}),
+        "qreg.replay": frozenset({"callee", "count"}),
+        "qreg.reset": frozenset({"index"}),
         "qreg.gate": frozenset({"gate", "index"}),
         "qreg.compute": frozenset({"callee"}),
         "qreg.uncompute": frozenset(),
@@ -401,7 +403,7 @@ def verify_register_program(
             active.add(name)
             depth = 1
             for op in helpers[name].body.blocks[0].operations:
-                if op.name in {"qreg.call", "qreg.control_call"}:
+                if op.name in {"qreg.call", "qreg.control_call", "qreg.replay"}:
                     callee = op.attributes.get("callee")
                     if not isinstance(callee, str) or callee not in helpers:
                         _fail(
@@ -422,7 +424,7 @@ def verify_register_program(
     _verify_body(program, arithmetic, helpers, max_qubits)
     expanded = expand_register_calls(program, functions, max_nodes=max_nodes)
     if expanded is not program:
-        _verify_body(expanded, arithmetic, {}, max_qubits)
+        _verify_body(expanded, arithmetic, helpers, max_qubits)
     return program
 
 
@@ -1221,6 +1223,88 @@ def _verify_body(
                         op,
                     )
                 initialized.remove(destination.id)
+                changed = (destination,)
+            elif op.name == "qreg.replay":
+                callee, count = (op.attributes[key] for key in ("callee", "count"))
+                if (
+                    not isinstance(callee, str)
+                    or callee not in helpers
+                    or type(count) is not int
+                    or not 2 <= count <= 256
+                ):
+                    _fail(
+                        "register.replay",
+                        "replay requires a known template and bounded count",
+                        op,
+                    )
+                body = helpers[callee].body.blocks[0]
+                declared = tuple(
+                    child.results[0]
+                    for child in body.operations
+                    if child.name == "qreg.declare"
+                )
+                length = len(declared)
+                initial = body.operations[length : 2 * length]
+                effects = body.operations[2 * length : -1]
+                if (
+                    len(body.arguments) != 1
+                    or tuple(child.name for child in body.operations[:length])
+                    != ("qreg.declare",) * length
+                    or tuple(child.name for child in initial)
+                    != ("qreg.allocate",) * length
+                    or tuple(child.operands[1] for child in initial) != declared
+                    or not 1 <= len(effects) <= 512
+                    or not any(child.name == "qreg.reset" for child in effects)
+                    or any(
+                        child.name
+                        not in {
+                            "qreg.gate",
+                            "qreg.pair_gate",
+                            "qreg.control_x",
+                            "qreg.array_phase_flip",
+                            "qreg.phase",
+                            "qreg.control_phase",
+                            "qreg.pauli_rotation",
+                            "qreg.qft",
+                            "qreg.inverse_qft",
+                            "qreg.control_qft",
+                            "qreg.inplace_prepare_amplitudes",
+                            "qreg.unitary",
+                            "qreg.reset",
+                        }
+                        for child in effects
+                    )
+                ):
+                    _fail(
+                        "register.replay",
+                        "replay template must contain one checked reset cycle",
+                        op,
+                    )
+                if (
+                    tuple(v.type for v in operands) != tuple(v.type for v in declared)
+                    or len(set(operands)) != len(operands)
+                    or any(v in borrowed or v.id not in initialized for v in operands)
+                ):
+                    _fail(
+                        "register.replay",
+                        "replay requires disjoint initialized writable operands",
+                        op,
+                    )
+                changed = operands
+            elif op.name == "qreg.reset":
+                bit = op.attributes["index"]
+                if (
+                    arguments
+                    or destination in borrowed
+                    or destination.id not in initialized
+                    or type(bit) is not int
+                    or not 0 <= bit < register_width(destination)
+                ):
+                    _fail(
+                        "register.reset",
+                        "reset needs a writable initialized scalar bit",
+                        op,
+                    )
                 changed = (destination,)
             elif op.name == "qreg.rzz":
                 angle = op.attributes["angle"]

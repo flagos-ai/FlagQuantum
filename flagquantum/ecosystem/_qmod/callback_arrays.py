@@ -54,7 +54,11 @@ def capture_callbacks(
 
 
 def capture_effects(
-    owner: _Adapt, token: Token, statements: tuple[Statement, ...]
+    owner: _Adapt,
+    token: Token,
+    statements: tuple[Statement, ...],
+    *,
+    allowed_effects: frozenset[str] = PURE_EFFECTS,
 ) -> tuple[Operation, ...]:
     """Compile a lexical body against a snapshot of its borrowed locations."""
     location = token.location
@@ -91,7 +95,7 @@ def capture_effects(
     for ordinal, statement in enumerate(statements):
         child.statement(statement, str(ordinal))
     if (
-        any(op.name not in PURE_EFFECTS for op in child.operations)
+        any(op.name not in allowed_effects for op in child.operations)
         or child.functions
         or child.registers != owner.registers
         or child.views != owner.views

@@ -17,7 +17,7 @@ def lower_indexed_control(
 ) -> bool:
     gate = operation.token.text
     rotations = {"RX", "RY", "RZ"}
-    if gate not in {"X", "H"} | rotations or len(operation.arguments) != (
+    if gate not in {"X", "Y", "H"} | rotations or len(operation.arguments) != (
         2 if gate in rotations else 1
     ):
         return False
@@ -116,8 +116,19 @@ def lower_indexed_control(
     for register, bit in negative:
         owner.effect_op("qreg.gate", token, (register,), gate="x", index=bit)
 
-    if gate == "X":
+    if gate in {"X", "Y"}:
+        if gate == "Y":
+            owner.effect_op(
+                "qreg.gate",
+                token,
+                (target[0],),
+                gate="s",
+                index=target[1],
+                inverse=True,
+            )
         owner.emit_indexed_x(token, locations)
+        if gate == "Y":
+            owner.effect_op("qreg.gate", token, (target[0],), gate="s", index=target[1])
     else:
         register, index = target
         angle = (

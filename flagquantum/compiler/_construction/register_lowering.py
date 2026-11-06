@@ -17,8 +17,10 @@ import torch
 from ...core._composition import controlled_instruction, inverted_instruction
 from ...core.controlled import _clean_mcx_instructions
 from ...core.ir import CircuitIR, Instruction
+from ...noise import amplitude_damping_channel
 from .._fourier_kernels import qft_instructions
 from .._hybrid.model import Block, HybridProgram, Operation, Region, Value, ValueId
+from ..noise import _encode_channel_instruction
 from ..state_preparation_synthesis import _synthesize_real_state
 from .boolean_lowering import BooleanCandidateError, lower_boolean_value
 from .lowering import (
@@ -341,6 +343,7 @@ def schedule_register_program(
         _fail("register.budget", "use a known schedule and at most 100000 operations")
     verify_register_program(program, functions, max_qubits=n_qubits)
     program = expand_register_calls(program, functions)
+    register_templates = {f.name: f for f in functions if is_register_function(f)}
     functions = tuple(f for f in functions if not is_register_function(f))
     labels, bindings, output_width = register_ports(program)
     position = max(
@@ -360,7 +363,49 @@ def schedule_register_program(
         if ordinal < skip_until:
             continue
         gates: tuple[Instruction, ...] = ()
-        if op.name == "qreg.initialize":
+        if op.name == "qreg.replay":
+            template = register_templates[op.attributes["callee"]]
+            names, _, width = register_ports(template)
+            nested = schedule_register_program(
+                template,
+                n_qubits=width + n_qubits - position,
+                max_operations=max_operations,
+                scheduling=scheduling,
+            )
+            repeat = op.attributes["count"]
+            if len(nested.circuit.instructions) * repeat > max_operations - len(
+                instructions
+            ):
+                _fail(
+                    "lowering.operations", "repeated cycle exceeds operation budget", op
+                )
+            physical = {
+                wire: target
+                for relative, actual in zip(
+                    names.values(), op.operands[1:], strict=True
+                )
+                for wire, target in zip(relative, bindings[actual.id], strict=True)
+            }
+            physical.update(
+                (width + bit, position + bit) for bit in range(nested.peak_workspace)
+            )
+            remapped = tuple(
+                replace(gate, wires=tuple(physical[wire] for wire in gate.wires))
+                for gate in nested.circuit.instructions
+            )
+            control_workspace = max(control_workspace, nested.peak_workspace)
+            gates = remapped * repeat
+        elif op.name == "qreg.reset":
+            wire = bindings[op.operands[1].id][-1 - op.attributes["index"]]
+            gates = (
+                _encode_channel_instruction(
+                    amplitude_damping_channel(
+                        1.0, dtype=torch.complex128, device="cpu"
+                    ),
+                    (wire,),
+                ),
+            )
+        elif op.name == "qreg.initialize":
             gates = _copy(op.attributes["value"], bindings[op.operands[1].id])
         elif op.name in {"qreg.prepare_amplitudes", "qreg.inplace_prepare_amplitudes"}:
             wires = (
@@ -804,8 +849,25 @@ def schedule_register_program(
         instructions.extend(gates)
     if boolean_values and not used_boolean:
         raise BooleanCandidateError("unsupported: no unsigned value segment")
+    epochs = tuple(
+        op
+        for op in operations
+        if op.name
+        not in {
+            "qreg.declare",
+            "qreg.hidden",
+            "qreg.allocate",
+            "qreg.drop",
+            "qreg.return",
+        }
+    )
+    metadata = (
+        {"construction_reset_repetitions": epochs[0].attributes["count"]}
+        if len(epochs) == 1 and epochs[0].name == "qreg.replay"
+        else {}
+    )
     return RegisterCandidate(
-        CircuitIR(n_qubits, tuple(instructions), dtype="complex128"),
+        CircuitIR(n_qubits, tuple(instructions), dtype="complex128", metadata=metadata),
         scheduling,
         MappingProxyType(labels),
         tuple(segments),

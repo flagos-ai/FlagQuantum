@@ -5,10 +5,12 @@ from __future__ import annotations
 from dataclasses import replace
 from typing import TYPE_CHECKING
 
-from .syntax import Statement, reject
+from .syntax import Expression, Statement, reject
+from .unitary_effects import emit_controlled_pauli
 
 if TYPE_CHECKING:
     from .adapter import _Adapt
+    from .phase import Location
 
 EVOLUTION_CALLS = frozenset(
     {
@@ -83,13 +85,49 @@ def controlled_evolution(owner: _Adapt, statement: Statement, index: str) -> boo
         control = owner.array_view(source)[0]
     else:
         control = owner.gate_target(source)
+
+    def actual_views(action: Statement) -> tuple[tuple[Location, ...], ...]:
+        name, args = action.token.text, action.arguments
+        callee = owner.callback_bindings.get(name) or owner.definitions.get(name)
+        arguments: tuple[Expression, ...]
+        if name in EVOLUTION_CALLS and args:
+            arguments = (args[-1],)
+        elif callee is not None and len(callee.parameters) == len(args):
+            arguments = tuple(
+                arg
+                for port, arg in zip(callee.parameters, args, strict=True)
+                if port.role in {"const", "inout"}
+                and port.kind in {"qbit", "qbit[]", "qnum"}
+            )
+        else:
+            return ()
+        return tuple(
+            (
+                (owner.gate_target(arg),)
+                if arg.token.text == "["
+                else owner.array_view(arg)
+            )
+            for arg in arguments
+        )
+
     branches = [(expected, body)]
     if statement.control_else is not None:
         branches.append((1 - expected, statement.control_else))
     for value, children in branches:
         start, incoming = len(owner.operations), owner.effect
+        checked_views: dict[int, tuple[tuple[Location, ...], ...]] = {}
         for ordinal, child in enumerate(children):
+            offset = len(owner.operations)
             owner.statement(child, f"{index}.pauli{value}.{ordinal}")
+            new = owner.operations[offset:]
+            if any(
+                op.name == "qreg.pauli_rotation" and op.operands[1] == control[0]
+                for op in new
+            ):
+                views = actual_views(child)
+                if all(control not in view for view in views):
+                    for op in new:
+                        checked_views[id(op)] = views
         expanded = [
             (
                 replace(
@@ -112,7 +150,16 @@ def controlled_evolution(owner: _Adapt, statement: Statement, index: str) -> boo
                     "control.evolution",
                     "Pauli branches require only previously uncontrolled rotations; ownership changes and nested controls refuse",
                 )
-            if control[0] == op.operands[1]:
+            target = op.operands[1]
+            if control[0] == target and not any(
+                control not in view
+                and view
+                and all(value == target for value, _ in view)
+                and set((target, bit) for bit, _ in op.attributes["support"]).issubset(
+                    view
+                )
+                for view in checked_views.get(id(op), ())
+            ):
                 reject(
                     statement.token,
                     "control.alias",
@@ -123,6 +170,16 @@ def controlled_evolution(owner: _Adapt, statement: Statement, index: str) -> boo
                 "qreg.gate", statement.token, (control[0],), gate="x", index=control[1]
             )
         for op in expanded:
+            if control[0] == op.operands[1]:
+                emit_controlled_pauli(
+                    owner,
+                    statement.token,
+                    op.operands[1],
+                    op.attributes["support"],
+                    op.attributes["angle"],
+                    (control,),
+                )
+                continue
             owner.effect_op(
                 op.name,
                 statement.token,

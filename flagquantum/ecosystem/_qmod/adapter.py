@@ -113,6 +113,7 @@ from .quantum_callbacks import (
     specialize_quantum_callbacks,
 )
 from .real_matrices import bound_matrix, lower_matrix_iteration, matrix_cell
+from .repeated_effects import lower_repeated_effects
 from .scope_control import lower_fourier_control
 from .selector_rotations import (
     fold_skip_control_tables,
@@ -157,7 +158,10 @@ _GATE_CALLS = frozenset({"X", "Y", "H", "S", "Z", "I", "SX", "hadamard_transform
 _PAIR_CALLS = frozenset({"CX", "CZ", "SWAP", "CRX"})
 _STATIC_COMPARISONS = {"==": eq, "!=": ne, "<": lt, "<=": le, ">": gt, ">=": ge}
 _STATIC_GATES = (
-    _GATE_CALLS | _PAIR_CALLS | ANGLE_CALLS | {"IDENTITY", "assign_phase_table"}
+    _GATE_CALLS
+    | _PAIR_CALLS
+    | ANGLE_CALLS
+    | {"IDENTITY", "assign_phase_table", "RESET"}
 )
 _UNIFORM_CALLS = frozenset(
     {"prepare_uniform_interval_state", "prepare_uniform_trimmed_state"}
@@ -168,6 +172,7 @@ _INTRINSICS = (
     | _PAIR_CALLS
     | {
         "allocate",
+        "RESET",
         "apply_to_all",
         "encode_in_angle",
         "encode_on_bloch",
@@ -1397,7 +1402,9 @@ class _Adapt:
                 "budget.expansion",
                 "static loops exceed 4096 iterations",
             )
-        if lower_modular_loop(self, statement, count):
+        if lower_modular_loop(self, statement, count) or lower_repeated_effects(
+            self, statement, count
+        ):
             return
         for item in statement.repeat_body:
             callee = self.callback_bindings.get(
@@ -1493,11 +1500,26 @@ class _Adapt:
                     "integer angle conversion exceeds exact real range",
                 )
             result = float(value)
-        elif text == "acos":
+        elif text in {"acos", "asin", "sqrt", "exp"}:
             value_real = self.classical_number(node.children[0])
-            if not -1 <= value_real <= 1:
-                reject(node.token, "angle", "acos requires an argument in [-1, 1]")
-            result = math.acos(value_real)
+            if text in {"acos", "asin"}:
+                if not -1 <= value_real <= 1:
+                    reject(
+                        node.token, "angle", f"{text} requires an argument in [-1, 1]"
+                    )
+                result = (
+                    math.acos(value_real) if text == "acos" else math.asin(value_real)
+                )
+            elif text == "sqrt":
+                if value_real < 0:
+                    reject(node.token, "angle", "sqrt requires a nonnegative argument")
+                result = math.sqrt(value_real)
+            else:
+                if value_real > 53 * math.log(2):
+                    reject(
+                        node.token, "angle", "exponential exceeds finite angle range"
+                    )
+                result = math.exp(value_real)
         elif text == "-" and len(node.children) == 1:
             result = -self.classical_number(node.children[0])
         elif text in {"+", "-", "*", "/"}:
@@ -1519,9 +1541,18 @@ class _Adapt:
         return result
 
     def angle(self, node: Expression, gate: Token) -> float:
-        if node.token.text in {"+", "-", "*", "/", "**", "pi", "acos"} and (
-            node.children or node.token.text == "pi"
-        ):
+        if node.token.text in {
+            "+",
+            "-",
+            "*",
+            "/",
+            "**",
+            "pi",
+            "acos",
+            "asin",
+            "sqrt",
+            "exp",
+        } and (node.children or node.token.text == "pi"):
             return self.classical_number(node)
         if (
             not node.children
@@ -2928,6 +2959,15 @@ class _Adapt:
         body = statement.control_body
         if len(statement.arguments) != 1 or body is None:
             reject(token, "control", "control requires one condition and one operation")
+        if any(
+            child.token.text == "RESET"
+            for child in (*body, *(statement.control_else or ()))
+        ):
+            reject(
+                token,
+                "control",
+                "RESET is nonunitary and cannot be coherently controlled",
+            )
         condition = statement.arguments[0]
         if (
             len(body) == 1
@@ -3893,6 +3933,12 @@ class _Adapt:
             return
         if statement.amplification is not None:
             lower_amplification(self, token, args[0], statement.amplification)
+            return
+        if token.text == "RESET":
+            if len(args) != 1:
+                reject(token, "signature", "RESET requires one initialized bit")
+            value, wire = self.gate_target(args[0])
+            self.effect_op("qreg.reset", token, (value,), index=wire)
             return
         if token.text == "swap_test":
             lower_swap_test(self, token, args)
