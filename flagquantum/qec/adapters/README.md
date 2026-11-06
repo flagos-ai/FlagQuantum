@@ -76,3 +76,6 @@ change. The approved surface is in
 `contracts/qec-stim-experiment-bridge-v1.json`; the complete contract and numerical
 precision limitations are in
 `docs/development/QEC_STIM_EXPERIMENT_BRIDGE_PROPOSAL.md`.
+
+For external measurement records, use the
+[QEC measurement conversion entry](../execution/README.md).
