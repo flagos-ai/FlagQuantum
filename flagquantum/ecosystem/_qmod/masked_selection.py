@@ -32,6 +32,7 @@ def lower_masked_selection(owner: _Adapt, statement: Statement) -> bool:
     )
     if not structured and not loop_selector:
         return False
+    controls: tuple[Location, ...]
     if structured:
         controls = (owner.gate_target(source),)
     elif port is not None and not source.children and port.kind == "qnum":
