@@ -106,6 +106,7 @@ from flagquantum.qec.adapters.stim import (
 )
 from flagquantum.qec.decoders.batch import decode_batch
 from flagquantum.qec.execution.experiments import run_memory_experiment
+from flagquantum.qec.execution.measurement_conversion import convert_measurement_records
 from flagquantum.runtime import planner
 from flagquantum.runtime.executors.statevector import gather_distributed_statevector
 from flagquantum.simulation.lindblad import evolve_density_matrix
@@ -201,6 +202,7 @@ ENTRIES = (
     fq.save,
     fq.load,
     run_memory_experiment,
+    convert_measurement_records,
     LatexFigure,
     ClassicalLayer,
     draw_latex,
