@@ -226,9 +226,36 @@ assert t_count.subs({repeats: 3, rows: 17}) == 192
 assert measurements.subs({repeats: 3, rows: 17}) == 48
 ```
 
-This counts a shape-only program under the source gate model. Peak qubits
-depend on register lifetimes and use the separate width model. Automatic
-scheduling and physical error-correction estimates remain separate.
+This counts a shape-only program under the source gate model. Use
+`estimate_connection_width` for sequential logical width when register
+connections and each component's local peak are known. It schedules
+ready steps in the source's stable greedy order, tracks bystander
+registers, and takes the largest peak across weakly connected components.
+
+```python
+from flagquantum.compiler._component_trace.width_schedule import (
+    WidthConnection,
+    WidthStep,
+    estimate_connection_width,
+)
+from flagquantum.compiler.registers.arithmetic_resource_model import source_add_cost
+
+adder = source_add_cost(2, 2)
+steps = [WidthStep("input"), WidthStep("component", adder.qubits), WidthStep("output")]
+connections = [
+    WidthConnection(0, 1, 2),
+    WidthConnection(0, 1, 2),
+    WidthConnection(1, 2, 2),
+    WidthConnection(1, 2, 2),
+    WidthConnection(0, 2, 3),
+]
+assert estimate_connection_width(steps, connections) == 8
+```
+
+The two 2-qubit operands and one carry belong to the adder's local peak.
+The 3-qubit bystander remains live across the call. Steps and connections
+are explicit model inputs. The estimate does not extract them from
+`CircuitIR`, change circuit execution order, or assign physical qubits.
 
 - [Qualtran v0.7.0 gate costs](https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/resource_counting/_bloq_counts.py)
 - [Qualtran v0.7.0 logical width](https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/resource_counting/_qubit_counts.py)
