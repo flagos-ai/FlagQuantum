@@ -1622,3 +1622,33 @@ program = synth.synthesize(
 result = fq.run(program)
 print(dict(program.probabilities(result, registers=("indicator",))))
 ```
+
+### Consuming basis preparation and indexed parity
+
+An expanded preparation helper may consume a privately prepared input into
+a fresh Output through a bounded checked basis permutation. Each input word
+must map to a distinct output word. Freed storage must be zero for every
+input, and neither consumed names nor coherent selector wires may be
+written or reused outside their checked scope. The lowering prepares the
+result directly from the original signed amplitudes without exposing the
+consumed storage as a public register.
+
+An indexed bit may XOR a parity of distinct source locations. Repeated
+source reads cancel and still require initialized storage. A fixed
+unsigned word may also XOR a constant under a disjoint word equality
+guard.
+
+```python
+from pathlib import Path
+
+import flagquantum as fq
+from flagquantum import synth
+
+source = Path("tests/fixtures/classiq_qmod/dqi_max_xorsat.qmod")
+program = synth.synthesize(
+    source, max_qubits=14, max_workspace=2, max_operations=5_000
+)
+result = fq.run(program)
+assert result.statevector().shape[-1] == 2**14
+print(program.report["resources"].n_operations)  # 3802
+```

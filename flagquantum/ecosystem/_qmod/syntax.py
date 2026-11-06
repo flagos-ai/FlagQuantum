@@ -159,7 +159,15 @@ class Parameter:
     kind: str
     width: int | None
     role: Literal[
-        "output", "const", "local", "real", "integer", "inout", "callable", "operator"
+        "output",
+        "const",
+        "local",
+        "real",
+        "integer",
+        "inout",
+        "callable",
+        "operator",
+        "input",
     ] = "output"
     record: str | None = None
     length: int | None = None
@@ -921,9 +929,19 @@ class Parser:
         parameters: list[Parameter] = []
         while self.current.text != ")":
             role: Literal[
-                "output", "const", "real", "integer", "inout", "callable", "operator"
+                "output",
+                "const",
+                "real",
+                "integer",
+                "inout",
+                "callable",
+                "operator",
+                "input",
             ]
-            if self.current.text == "output":
+            if self.current.text == "input" and permutation and name.text != "main":
+                self.take("input")
+                role = "input"
+            elif self.current.text == "output":
                 self.take("output")
                 role = "output"
                 if self.current.text == "const":
@@ -1032,7 +1050,7 @@ class Parser:
                     allow_signed_integer=role in {"const", "inout"}
                     or name.text == "main"
                     and role == "output",
-                    allow_fixed_array=role in {"inout", "output", "const"}
+                    allow_fixed_array=role in {"inout", "output", "const", "input"}
                     or name.text == "main",
                     allow_numeric_array=role in {"inout", "output", "const"},
                 )
@@ -1464,11 +1482,23 @@ class Parser:
                 )
                 continue
             if self.current.text == "[":
-                self.take("[")
+                bracket = self.take("[")
                 callback_index = self.expression(static=True)
-                for part in ("]", "(", ")", ";"):
-                    self.take(part)
-                statements.append(Statement(target, (), callback_index=callback_index))
+                self.take("]")
+                if self.current.text == "^=":
+                    operator = self.take("^=")
+                    destination = Expression(
+                        bracket, (Expression(target), callback_index)
+                    )
+                    value = self.expression(difference=True)
+                    self.take(";")
+                    statements.append(Statement(operator, (destination, value)))
+                else:
+                    for part in ("(", ")", ";"):
+                        self.take(part)
+                    statements.append(
+                        Statement(target, (), callback_index=callback_index)
+                    )
                 continue
             if self.current.text in {"=", "^=", "+="}:
                 operator = self.take(self.current.text)

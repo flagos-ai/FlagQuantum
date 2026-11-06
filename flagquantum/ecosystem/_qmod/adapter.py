@@ -60,6 +60,7 @@ from .computed_rotation import (
     lower_computed_rotation,
     reinterpreted_selector,
 )
+from .consuming_preparation import fuse_consuming_preparations
 from .controlled_evolution import EVOLUTION_CALLS, controlled_evolution
 from .copied_selector import lower_copied_selector, slice_output
 from .cscope import QaoaWorkflow, VqeSettings, split_cscope
@@ -86,6 +87,7 @@ from .masked_selection import (
 )
 from .matrices import lower_unitary, validate_matrix_constant
 from .oracles import expand_static_oracles
+from .parity_updates import lower_indexed_parity, lower_masked_word_xor
 from .pauli_schedule import ceiling_repetitions, compact_commuting
 from .permutations import is_const_cx_permutation, verify_permutations
 from .phase import MAX_PHASE_INPUT_BITS, expand_phase
@@ -2933,6 +2935,8 @@ class _Adapt:
             )
         ):
             return
+        if lower_masked_word_xor(self, statement):
+            return
         if lower_guarded_selector(self, statement, index):
             return
         if lower_callback_control(self, statement):
@@ -4260,7 +4264,10 @@ class _Adapt:
                 "qreg.phase", token, inputs, callee=graph.name, **phase_attributes
             )
         elif token.text == "^=":
-            if not lower_fixed_xor(self, token, args[0], args[1]):
+            if not (
+                lower_indexed_parity(self, token, args[0], args[1])
+                or lower_fixed_xor(self, token, args[0], args[1])
+            ):
                 self.xor_update(token, args[0], args[1])
         elif token.text in {
             "encode_in_angle",
@@ -5027,6 +5034,7 @@ def parse_qmod(
     definitions = expand_iterations(definitions)
     definitions = specialize_quantum_callbacks(definitions, constants)
     definitions = expand_nested_array_kickbacks(definitions)
+    definitions = fuse_consuming_preparations(definitions)
     definitions = prove_annotated_selections(definitions)
 
     def compile_probe(
