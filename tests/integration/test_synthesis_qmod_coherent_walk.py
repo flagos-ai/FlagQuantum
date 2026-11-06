@@ -157,8 +157,26 @@ def test_slice_control_checks_storage(body, diagnostic):
         synth.synthesize(source, source_format="qmod")
 
 
-def test_controlled_helper_refuses_non_admitted_reversible_gates():
+def test_controlled_hadamard_helper_preserves_coherent_phase():
     source = """qfunc step(x:qbit[]) {H(x[0]);}
+      qfunc main(output x:qbit[1],output coin:qbit) {
+        allocate(x); allocate(coin); H(coin); S(coin);
+        control(coin==1) {step(x);}
+      }"""
+    hadamard = torch.tensor([[1, 1], [1, -1]], dtype=DTYPE) / math.sqrt(2)
+    matrix = torch.block_diag(torch.eye(2, dtype=DTYPE), hadamard)
+    reference = fq.Circuit(2, dtype=DTYPE).h(1).s(1).any(1, 0, matrix=matrix)
+    program = synth.synthesize(source, source_format="qmod")
+    torch.testing.assert_close(
+        fq.run(program).statevector(),
+        fq.run(reference).statevector(),
+        atol=1e-12,
+        rtol=0,
+    )
+
+
+def test_controlled_helper_refuses_non_admitted_reversible_gates():
+    source = """qfunc step(x:qbit[]) {S(x[0]);}
       qfunc main(output x:qbit[1],output coin:qbit) {
         allocate(x); allocate(coin); control(coin==1) {step(x);}
       }"""
