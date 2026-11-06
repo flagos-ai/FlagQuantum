@@ -68,6 +68,13 @@ def reject(token: Token, code: str, message: str) -> NoReturn:
     )
 
 
+def exact_unsigned_literal(text: str) -> int | None:
+    whole, _, fraction = text.partition(".")
+    if whole.isdecimal() and all(digit == "0" for digit in fraction):
+        return int(whole)
+    return None
+
+
 def tokenize(source: str, filename: str) -> tuple[Token, ...]:
     """Lex the complete input without truncation, source execution or I/O."""
     if (
@@ -167,6 +174,7 @@ class Statement:
     oracle_callback: tuple[Token, tuple[Statement, ...]] | None = None
     predicate_callback: tuple[Token, Token, tuple[Statement, ...]] | None = None
     amplification: Amplification | None = None
+    callback_index: Expression | None = None
 
 
 @dataclass(frozen=True)
@@ -225,6 +233,12 @@ class Parser:
                 "width must be a literal integer in 1..256 or a bound integer constant",
             )
         self.position += 1
+        if token.text.isdecimal() and self.current.text == ".":
+            self.take(".")
+            fraction = self.current
+            if not fraction.text.isdecimal() or fraction.text.strip("0"):
+                reject(fraction, "width", "decimal width must be an exact integer")
+            self.take(fraction.text)
         return value
 
     def expression(
@@ -840,11 +854,16 @@ class Parser:
 
             return parse_lambda(self)
         if self.current.text == "[":
-            array = self.literal_array(
-                lambda: self.expression(
-                    decimal=True, difference=True, real=True, allow_slice=True
+            if self.tokens[self.position + 1].text == "lambda":
+                from .quantum_callbacks import parse_lambda
+
+                array = self.literal_array(partial(parse_lambda, self))
+            else:
+                array = self.literal_array(
+                    lambda: self.expression(
+                        decimal=True, difference=True, real=True, allow_slice=True
+                    )
                 )
-            )
             return Expression(Token("[]", array.token.location), array.children)
         if self.current.text == "{":
             opening = self.take("{")
@@ -1032,6 +1051,16 @@ class Parser:
                     self.take("qnum")
                     self.take("<")
                     width_expression = self.expression(static=True)
+                    if self.current.text == ",":
+                        self.take(",")
+                        sign = self.current
+                        if sign.text not in {"UNSIGNED", "False"}:
+                            reject(
+                                sign, "type", "derived width requires unsigned storage"
+                            )
+                        self.take(sign.text)
+                        self.take(",")
+                        self.take("0")
                     self.take(">")
                     kind, local_width = "qnum", None
                 elif self.current.text in self.records:
@@ -1060,6 +1089,13 @@ class Parser:
                         ),
                     )
                 )
+                continue
+            if self.current.text == "[":
+                self.take("[")
+                callback_index = self.expression(static=True)
+                for part in ("]", "(", ")", ";"):
+                    self.take(part)
+                statements.append(Statement(target, (), callback_index=callback_index))
                 continue
             if self.current.text in {"=", "^=", "+="}:
                 operator = self.take(self.current.text)

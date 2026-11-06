@@ -15,6 +15,7 @@ MAX_CALLBACK_STATEMENTS = 4096
 MAX_CALLBACK_DEPTH = 16
 
 BORROWED_ARRAY_PAIR = "qfunc(qbit[],qbit[])"
+CALLBACK_ARRAY = "qfunc[]()"
 
 QUANTUM_SIGNATURES = {
     "qfunc(qbit[])": ("qbit[]",),
@@ -30,6 +31,10 @@ class Lambda(Expression):
 
 def parse_signature(parser: Parser) -> str:
     token = parser.take("qfunc")
+    if parser.current.text == "[":
+        for part in ("[", "]", "(", ")"):
+            parser.take(part)
+        return CALLBACK_ARRAY
     parser.take("(")
     types = []
     while parser.current.text != ")":
@@ -63,10 +68,12 @@ def parse_lambda(parser: Parser) -> Lambda:
     if parser.callback_depth:
         reject(token, "callback.escape", "nested callback values are not admitted")
     parser.take("(")
-    parameters = [parser.name()]
-    while parser.current.text == ",":
-        parser.take(",")
+    parameters = []
+    if parser.current.text != ")":
         parameters.append(parser.name())
+        while parser.current.text == ",":
+            parser.take(",")
+            parameters.append(parser.name())
     parser.take(")")
     parser.callback_depth += 1
     try:

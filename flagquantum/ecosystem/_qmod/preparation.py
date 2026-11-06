@@ -24,6 +24,19 @@ def lower_inplace_preparation(
         )
     vector, bound, target = arguments
     probabilities = checked_probabilities(vector, bound, owner.constants)
+    if target.children or target.token.text in owner.views:
+        locations = tuple(reversed(owner.array_view(target)))
+        if len(probabilities) != (1 << len(locations)):
+            reject(token, "width", "probability vector width disagrees")
+        owner.effect_op(
+            "qreg.inplace_prepare_amplitudes",
+            token,
+            tuple(value for value, _ in locations),
+            indices=tuple(index for _, index in locations),
+            amplitudes=tuple(math.sqrt(value) for value in probabilities),
+            bound=0.0,
+        )
+        return
     register = owner.register(owner.atom(target), allow_qubit_array=True)
     if len(probabilities) != (1 << register_width(register)):
         reject(token, "width", "probability vector width disagrees")

@@ -42,6 +42,7 @@ from .bindings import (
     publish_bound_array,
     record_view,
 )
+from .callback_arrays import capture_callbacks, indexed_callback, lower_callback_control
 from .controlled_evolution import EVOLUTION_CALLS, controlled_evolution
 from .cscope import QaoaWorkflow, VqeSettings, split_cscope
 from .decisions import lower_decision_phase
@@ -57,7 +58,12 @@ from .phase_factors import Cube, preserve_factors
 from .predicates import expand_predicate_oracles
 from .preparation import lower_inplace_preparation
 from .qpe import infer_phase_allocation, lower_qpe
-from .quantum_callbacks import BORROWED_ARRAY_PAIR, Lambda, specialize_quantum_callbacks
+from .quantum_callbacks import (
+    BORROWED_ARRAY_PAIR,
+    CALLBACK_ARRAY,
+    Lambda,
+    specialize_quantum_callbacks,
+)
 from .scope_control import lower_fourier_control
 from .selector_rotations import is_selector_helper, lower_select_rotation
 from .swap_test import lower_swap_test
@@ -71,6 +77,7 @@ from .syntax import (
     Record,
     Statement,
     Token,
+    exact_unsigned_literal,
     reject,
     tokenize,
 )
@@ -766,6 +773,7 @@ class _Adapt:
         self.constants = constants
         self.classical_values: dict[str, float] = {}
         self.callback_bindings: dict[str, Function] = {}
+        self.callback_arrays: dict[str, tuple[tuple[Operation, ...], ...]] = {}
         self.classical_arrays: dict[str, tuple[float, ...]] = {}
         self.classical_integers: dict[str, int] = {}
         self.integer_arrays: dict[str, tuple[int, ...]] = {}
@@ -1037,6 +1045,8 @@ class _Adapt:
                     return field[0].length or len(field[1])
                 reject(node.token, "field", "len requires an array field")
             name = root.token.text
+            if name in self.callback_arrays:
+                return len(self.callback_arrays[name])
             if name in self.classical_arrays:
                 return len(self.classical_arrays[name])
             if name in self.integer_arrays:
@@ -1238,6 +1248,7 @@ class _Adapt:
                 }
                 and not bound_call
                 and item.control_body is None
+                and item.callback_index is None
                 and item.map_callback is None
                 and item.static_if_body is None
                 and item.repeat_index is None
@@ -1495,6 +1506,9 @@ class _Adapt:
             name = parameter.name.text
             if parameter.kind == BORROWED_ARRAY_PAIR:
                 child.callback_bindings[name] = self.borrowed_array_callback(argument)
+                continue
+            if parameter.kind == CALLBACK_ARRAY:
+                child.callback_arrays[name] = capture_callbacks(self, argument)
                 continue
             if parameter.role == "callable":
                 actual = self.atom(argument)
@@ -2244,6 +2258,8 @@ class _Adapt:
         if len(statement.arguments) != 1 or body is None:
             reject(token, "control", "control requires one condition and one operation")
         condition = statement.arguments[0]
+        if lower_callback_control(self, statement):
+            return
         if controlled_evolution(self, statement, index):
             return
         if lower_fourier_control(self, statement):
@@ -2978,6 +2994,12 @@ class _Adapt:
 
     def statement(self, statement: Statement, index: str) -> None:
         token, args = statement.token, statement.arguments
+        if statement.callback_index is not None:
+            for effect in indexed_callback(self, statement):
+                self.effect_op(
+                    effect.name, token, effect.operands[1:], **effect.attributes
+                )
+            return
         if statement.amplification is not None:
             lower_amplification(self, token, args[0], statement.amplification)
             return
@@ -3289,9 +3311,9 @@ class _Adapt:
                     and args[0].children[1].token.text in {"size", "len"}
                 ):
                     size = self.static_integer(args[0])
-                elif not args[0].children and args[0].token.text.isdecimal():
-                    size = int(args[0].token.text)
-                else:
+                elif not args[0].children:
+                    size = exact_unsigned_literal(args[0].token.text)
+                if size is None:
                     reject(
                         args[0].token,
                         "width",
@@ -4051,7 +4073,7 @@ def parse_qmod(
             declaration = statement.declaration
             if declaration is not None and (
                 declaration.kind == "qbit"
-                or (declaration.kind == "qbit[]" and declaration.width is None)
+                or declaration.kind == "qbit[]"
                 or (
                     declaration.kind == "qnum"
                     and (
@@ -4106,6 +4128,7 @@ def parse_qmod(
                 and statement.map_callback is None
                 and statement.control_body is None
                 and statement.inverse_body is None
+                and statement.callback_index is None
                 and not bound_call
             ):
                 reject(
