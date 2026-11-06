@@ -2619,3 +2619,40 @@ Four spin orbitals with the additional control emit 32 T-family instructions
 and eight measurements with five work wires. The locked source declares four
 Toffolis for either control configuration and leaves SELECT undecomposed.
 The emitted counts include activation and measurement-based uncomputation.
+
+### Executable outer single-factorization PREPARE
+
+The B8 marginal uses twice the absolute triangular one-body weight and the
+square of each factor's absolute triangular weight. The executable operation
+prepares the uniform factor register, loads the alias and nonzero-factor words,
+and swaps both together. Exact uniform preparation sets the success flag
+deterministically. The alias flag and table words are retained until the
+adjoint. Both directions return the borrowed scratch to zero.
+
+```python
+from flagquantum.algorithms.primitives.single_factorization_outer_prepare import (
+    PrepareSingleFactorizationOuter,
+)
+from flagquantum.compiler.registers.partition import partition_register
+from flagquantum.dynamic import DynamicCircuit
+
+prepare = PrepareSingleFactorizationOuter.from_coefficients(
+    (0.0, -0.5, 0.0),
+    ((0.0, -1.0, 0.0), (0.0, -2.0, 0.0), (0.0, -1.0, 0.0)),
+    probability_bits=1,
+    log_block_size=1,
+)
+logical = sum(size for _, size in prepare.layout)
+work, _ = prepare.requirements()
+ports = partition_register(tuple(range(logical)), prepare.layout)
+scratch = tuple(range(logical, logical + work))
+circuit = DynamicCircuit(logical + work)
+circuit.append(prepare.make_on(ports, workspace=scratch))
+circuit.append(prepare.make_on(ports, workspace=scratch, adjoint=True))
+```
+
+The four-row fixture emits 45 T-family instructions and one measurement per
+direction, with two clean work wires and 15 live logical wires. The locked
+outer PREPARE supplies only its resource graph and its automatic chemistry
+blocking model rejects these small tables. The executable adjoint reverses the
+selected forward block shape, including its relative phases.
