@@ -7,6 +7,10 @@
 
 from ..compiler._component_trace.resource_model import ComponentCost, CostCall, GateCost
 from ..compiler.registers.arithmetic_resource_model import source_add_cost
+from .first_quantization import (
+    source_controlled_multiplexed_cswap_3d_cost,
+    source_multiplexed_cswap_3d_cost,
+)
 from .first_quantization_nu_resource_model import (
     source_projectile_prepare_nu_adjoint_gate_cost,
     source_projectile_prepare_nu_cost,
@@ -123,3 +127,77 @@ def source_projectile_prepare_uv_adjoint_gate_cost(
     nu = source_projectile_prepare_nu_adjoint_gate_cost(num_bits_p, num_bits_n)
     zeta = source_prepare_zeta_cost(num_atoms, lambda_zeta, adjoint=True)
     return nu.plus(zeta.gates, 1)
+
+
+def source_projectile_select_first_quantization_cost(
+    num_bits_p: int,
+    num_bits_n: int,
+    eta: int,
+    num_atoms: int,
+    *,
+    m_param: int = 2**8,
+    num_bits_nuc_pos: int = 16,
+) -> ComponentCost:
+    """Estimate the source top-level projectile SELECT graph."""
+    _require_positive(num_bits_p, num_bits_n, eta, num_atoms, m_param, num_bits_nuc_pos)
+    p, n = num_bits_p, num_bits_n
+    controlled_exchange = source_controlled_multiplexed_cswap_3d_cost(eta, p, n, 1)
+    electron_exchange = source_multiplexed_cswap_3d_cost(eta, p)
+    coordinate_swap = ComponentCost("CSwap", 2 * n + 1, GateCost(cswap=n))
+    kinetic = source_projectile_select_t_cost(n)
+    potential = source_projectile_select_uv_cost(p, n, num_atoms, num_bits_nuc_pos)
+    ports = (
+        6  # Four Hamiltonian flags, i != j and plus_t.
+        + 2 * (eta - 1).bit_length()
+        + 6  # Two three-bit coordinate selectors.
+        + 3 * n  # r, s and mu.
+        + 3 * (n + 1)  # Momentum-transfer coordinates.
+        + (m_param - 1).bit_length()
+        + (num_atoms - 1).bit_length()
+        + 3 * (eta * p + n)  # Electron and projectile systems.
+    )
+    one_momentum = ports + 3 * n
+    both_momenta = one_momentum + 3 * p
+    # QubitCount postpones the q and rl allocations until first use and
+    # releases each projectile coordinate immediately after its last swap.
+    return ComponentCost(
+        "SelectFirstQuantizationWithProj",
+        ports,
+        calls=(
+            CostCall(
+                controlled_exchange,
+                bystander_qubits=one_momentum - controlled_exchange.qubits,
+            ),
+            *(
+                CostCall(
+                    coordinate_swap,
+                    bystander_qubits=one_momentum - coordinate_swap.qubits,
+                )
+                for _ in range(3)
+            ),
+            CostCall(kinetic, bystander_qubits=one_momentum - kinetic.qubits),
+            CostCall(
+                electron_exchange,
+                bystander_qubits=both_momenta - electron_exchange.qubits,
+            ),
+            CostCall(
+                potential,
+                bystander_qubits=both_momenta + num_bits_nuc_pos - potential.qubits,
+            ),
+            CostCall(
+                controlled_exchange,
+                bystander_qubits=both_momenta - controlled_exchange.qubits,
+            ),
+            *(
+                CostCall(
+                    coordinate_swap,
+                    bystander_qubits=both_momenta - axis * n - coordinate_swap.qubits,
+                )
+                for axis in range(3)
+            ),
+            CostCall(
+                electron_exchange,
+                bystander_qubits=ports + 3 * p - electron_exchange.qubits,
+            ),
+        ),
+    )

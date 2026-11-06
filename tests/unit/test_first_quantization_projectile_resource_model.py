@@ -15,6 +15,7 @@ from flagquantum.algorithms.first_quantization_projectile_resource_model import 
     source_projectile_prepare_t_cost,
     source_projectile_prepare_uv_adjoint_gate_cost,
     source_projectile_prepare_uv_cost,
+    source_projectile_select_first_quantization_cost,
     source_projectile_select_t_cost,
     source_projectile_select_uv_cost,
 )
@@ -276,3 +277,59 @@ def test_projectile_prepare_uv_source_graph(
     assert {
         key: value for key, value in asdict(gates).items() if value
     } == get_cost_value(adjoint, QECGatesCost()).asdict()
+
+
+@pytest.mark.parametrize(
+    ("p", "n", "eta", "atoms", "m", "precision"),
+    [
+        (2, 2, 2, 1, 1, 1),
+        (2, 3, 3, 2, 17, 5),
+        (3, 7, 5, 9, 8, 4),
+        (6, 9, 10, 10, 256, 41),
+    ],
+)
+@pytest.mark.ftqc_reference
+def test_projectile_top_select_resource_schedule(p, n, eta, atoms, m, precision):
+    pytest.importorskip("qualtran")
+    from qualtran import LeftDangle
+    from qualtran.bloqs.bookkeeping import Allocate, Free
+    from qualtran.bloqs.chemistry.pbc.first_quantization.projectile.select_and_prepare import (
+        ControlledMultiplexedCSwap3D,
+        SelectFirstQuantizationWithProj,
+    )
+
+    source = SelectFirstQuantizationWithProj(
+        p, n, eta, atoms, 10, m_param=m, num_bits_nuc_pos=precision
+    )
+    model = source_projectile_select_first_quantization_cost(
+        p, n, eta, atoms, m_param=m, num_bits_nuc_pos=precision
+    )
+    assert_source_model(model, source)
+    assert model.qubits == source.signature.n_qubits()
+    graph = source.decompose_bloq()
+    live = {edge for edge in graph.connections if edge.left.binst == LeftDangle}
+    calls = []
+    allocated, freed = Counter(), Counter()
+    for node, incoming, outgoing in graph.iter_bloqnections():
+        live.difference_update(incoming)
+        bystanders = sum(edge.shape for edge in live)
+        if isinstance(node.bloq, Allocate):
+            allocated[sum(edge.shape for edge in outgoing)] += 1
+        elif isinstance(node.bloq, Free):
+            freed[sum(edge.shape for edge in incoming)] += 1
+        else:
+            if isinstance(node.bloq, ControlledMultiplexedCSwap3D):
+                assert node.bloq.cvs == (0,)
+            calls.append(
+                (
+                    type(node.bloq).__name__,
+                    sum(edge.shape for edge in incoming),
+                    bystanders,
+                )
+            )
+        live.update(outgoing)
+    assert allocated == freed == Counter([p] * 3 + [n] * 3 + [precision])
+    assert calls == [
+        (call.component.name, call.component.qubits, call.bystander_qubits)
+        for call in model.calls
+    ]
