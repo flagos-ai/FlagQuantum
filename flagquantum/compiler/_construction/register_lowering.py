@@ -36,6 +36,7 @@ from .register_profile import (
     _ANGLE_GATES,
     register_ports,
     register_width,
+    semantic_hidden_width,
     unitary_matrix,
     verify_register_program,
 )
@@ -318,11 +319,7 @@ def schedule_register_program(
     position = max(
         (max(ports) + 1 for ports in bindings.values()), default=output_width
     )
-    hidden_width = sum(
-        register_width(op.results[0])
-        for op in program.body.blocks[0].operations
-        if op.name == "qreg.hidden" and not op.attributes.get("workspace", False)
-    )
+    hidden_width = semantic_hidden_width(program)
     local_width = position - output_width - hidden_width
     instructions: list[Instruction] = []
     segments: list[ArithmeticCandidate] = []

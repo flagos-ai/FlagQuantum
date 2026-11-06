@@ -32,6 +32,7 @@ _ATTRIBUTES = MappingProxyType(
         "qreg.declare": frozenset({"name"}),
         "qreg.hidden": frozenset({"name"}),
         "qreg.drop": frozenset(),
+        "qreg.publish": frozenset({"destinations", "locations"}),
         "qreg.modular_exp": frozenset({"modulus", "base"}),
         "qreg.control_qft": frozenset(),
         "qreg.local": frozenset({"name"}),
@@ -225,6 +226,67 @@ def record_readouts(fields: tuple[RecordField, ...]) -> tuple[tuple[str, int], .
     )
 
 
+def _publication(program: HybridProgram) -> Operation | None:
+    operations = program.body.blocks[0].operations
+    if len(operations) >= 2 and operations[-2].name == "qreg.publish":
+        return operations[-2]
+    return None
+
+
+def _publication_destinations(op: Operation) -> tuple[Value, ...]:
+    count = op.attributes.get("destinations")
+    if type(count) is not int or not 1 <= count < len(op.operands) - 1:
+        _fail("register.publish", "publication requires outputs and hidden storage", op)
+    return op.operands[1 : 1 + count]
+
+
+def _publication_sources(op: Operation) -> tuple[Value, ...]:
+    return op.operands[1 + len(_publication_destinations(op)) :]
+
+
+def _publication_layout(op: Operation) -> tuple[tuple[Value, int], ...]:
+    sources = _publication_sources(op)
+    locations = op.attributes.get("locations")
+    if (
+        not isinstance(locations, tuple)
+        or len(locations) != sum(register_width(source) for source in sources)
+        or len(locations)
+        != sum(register_width(out) for out in _publication_destinations(op))
+    ):
+        _fail(
+            "register.publish",
+            "publication must cover the source and output widths exactly",
+            op,
+        )
+    result: list[tuple[Value, int]] = []
+    for location in locations:
+        if (
+            not isinstance(location, tuple)
+            or len(location) != 2
+            or type(location[0]) is not int
+            or not 0 <= location[0] < len(sources)
+            or type(location[1]) is not int
+            or not 0 <= location[1] < register_width(sources[location[0]])
+        ):
+            _fail("register.publish", "publication locations must be in bounds", op)
+        result.append((sources[location[0]], location[1]))
+    if len(set(result)) != len(result):
+        _fail("register.publish", "publication locations must be distinct", op)
+    return tuple(result)
+
+
+def semantic_hidden_width(program: HybridProgram) -> int:
+    publication = _publication(program)
+    published = () if publication is None else _publication_sources(publication)
+    return sum(
+        register_width(op.results[0])
+        for op in program.body.blocks[0].operations
+        if op.name == "qreg.hidden"
+        and not op.attributes.get("workspace", False)
+        and op.results[0] not in published
+    )
+
+
 def register_ports(
     program: HybridProgram,
 ) -> tuple[dict[str, tuple[int, ...]], dict[ValueId, tuple[int, ...]], int]:
@@ -248,9 +310,23 @@ def register_ports(
                 names[op.attributes["name"]] = ports
             values[value.id] = ports
             position += len(ports)
+    publication = _publication(program)
+    if publication is not None:
+        owners = {
+            value: [-1] * register_width(value)
+            for value in _publication_sources(publication)
+        }
+        outputs = _publication_destinations(publication)
+        locations = _publication_layout(publication)
+        target_wires = (
+            wire for value in outputs for wire in reversed(values[value.id])
+        )
+        for (owner, bit), wire in zip(locations, target_wires, strict=True):
+            owners[owner][-1 - bit] = wire
+        values.update((owner.id, tuple(ports)) for owner, ports in owners.items())
     following = position
     for op in program.body.blocks[0].operations:
-        if op.name == "qreg.hidden":
+        if op.name == "qreg.hidden" and op.results[0].id not in values:
             value = op.results[0]
             end = following + register_width(value)
             values[value.id] = tuple(range(following, end))
@@ -425,6 +501,9 @@ def _verify_body(
             _fail("register.width", "fresh assignment cannot truncate its result", op)
 
     hidden: set[Value] = set()
+    scratch: set[Value] = set()
+    publication = _publication(program)
+    published = () if publication is None else _publication_destinations(publication)
     for position, op in enumerate(block.operations):
         attributes = _ATTRIBUTES.get(op.name)
         if (
@@ -519,7 +598,9 @@ def _verify_body(
                     "register.declare", "declaration requires one register result", op
                 )
             value = op.results[0]
-            width += register_width(value, op)
+            declared_width = register_width(value, op)
+            if op.name != "qreg.declare" or value not in published:
+                width += declared_width
             label = op.attributes["name"]
             if not isinstance(label, str) or not label.strip() or label in labels:
                 _fail("register.name", "register names must be nonempty and unique", op)
@@ -545,6 +626,8 @@ def _verify_body(
                 local_storage.add(value)
             else:
                 hidden.add(value)
+                if op.attributes.get("workspace", False):
+                    scratch.add(value)
             labels.add(label)
         else:
             if not op.operands or op.operands[0] != effect:
@@ -594,7 +677,33 @@ def _verify_body(
                 )
             destination, *arguments = operands
             changed: tuple[Value, ...] = ()
-            if op.name in {"qreg.call", "qreg.control_call"}:
+            if op.name == "qreg.publish":
+                outputs = _publication_destinations(op)
+                sources = _publication_sources(op)
+                if (
+                    op is not publication
+                    or const_entry
+                    or local_storage
+                    or len(set(outputs)) != len(outputs)
+                    or len(set(sources)) != len(sources)
+                    or any(v not in returned or v.id in initialized for v in outputs)
+                    or any(
+                        v not in hidden or v in scratch or v.id not in initialized
+                        for v in sources
+                    )
+                ):
+                    _fail(
+                        "register.publish",
+                        "terminal publication requires fresh outputs and initialized hidden data",
+                        op,
+                    )
+                _publication_layout(op)
+                for source in sources:
+                    hidden.remove(source)
+                    registers.remove(source)
+                    initialized.remove(source.id)
+                initialized.update(v.id for v in outputs)
+            elif op.name in {"qreg.call", "qreg.control_call"}:
                 controlled = op.name == "qreg.control_call"
                 if controlled:
                     if (
