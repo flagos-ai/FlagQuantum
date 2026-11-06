@@ -5,9 +5,12 @@
 # Sources: https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/bloqs/mcmt/and_bloq.py
 # https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/bloqs/mcmt/multi_control_pauli.py
 # https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/bloqs/mcmt/controlled_via_and.py
+# https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/bloqs/basic_gates/hadamard.py
 # Changes: native IR, explicit workspace and shared measured And emitters.
 
-"""Concrete logical-And ladders and multi-controlled X."""
+"""Concrete logical-And ladders and single-target controlled gates."""
+
+from typing import Literal
 
 from ...core.ir import Instruction
 from .and_compute import and_compute_ir, and_uncompute_ir
@@ -88,7 +91,7 @@ def multi_control_x_ir(
     classical_bits: tuple[int, ...],
 ) -> tuple[Instruction, ...]:
     """XOR the specified control pattern into an arbitrary target; clear all work."""
-    return _multi_control_pauli_ir(
+    return _multi_control_gate_ir(
         "x", controls, values, target, workspace, classical_bits
     )
 
@@ -101,13 +104,26 @@ def multi_control_z_ir(
     classical_bits: tuple[int, ...],
 ) -> tuple[Instruction, ...]:
     """Apply the source MultiControlZ ladder and restore its clean work."""
-    return _multi_control_pauli_ir(
+    return _multi_control_gate_ir(
         "z", controls, values, target, workspace, classical_bits
     )
 
 
-def _multi_control_pauli_ir(
-    pauli: str,
+def multi_control_h_ir(
+    controls: tuple[int, ...],
+    values: tuple[int, ...],
+    target: int,
+    workspace: tuple[int, ...],
+    classical_bits: tuple[int, ...],
+) -> tuple[Instruction, ...]:
+    """Apply Hadamard through the source CHadamard and predicate dispatch."""
+    return _multi_control_gate_ir(
+        "h", controls, values, target, workspace, classical_bits
+    )
+
+
+def _multi_control_gate_ir(
+    gate: Literal["x", "z", "h"],
     controls: tuple[int, ...],
     values: tuple[int, ...],
     target: int,
@@ -116,12 +132,10 @@ def _multi_control_pauli_ir(
 ) -> tuple[Instruction, ...]:
     _validate_controls(controls, values, workspace, classical_bits, measured=True)
     if type(target) is not int or target < 0 or target in (*controls, *workspace):
-        raise ValueError(
-            "Multi-controlled X target must be a distinct nonnegative wire"
-        )
+        raise ValueError("Controlled gate target must be a distinct nonnegative wire")
     if not controls:
-        return (Instruction(pauli, (target,)),)
-    controlled = f"c{pauli}"
+        return (Instruction(gate, (target,)),)
+    controlled = f"c{gate}"
     if len(controls) == 1:
         flip = (Instruction("x", controls),) if values[0] == 0 else ()
         return (*flip, Instruction(controlled, (*controls, target)), *flip)

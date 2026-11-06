@@ -517,6 +517,24 @@ power, the X/Y global shift becomes a phase on the control wire. Qualtran
 delegates these leaf unitaries to Cirq. FlagQuantum uses phase instructions
 and basis changes to preserve the full complex action.
 
+## Controlled Hadamard
+
+The native `multi_control_h_ir` emitter uses H without controls and
+the atomic CH instruction for one positive control. A negative
+control wraps CH in two X gates. Multiple controls compute the source
+AND predicate, apply CH to the target, and erase the predicate with
+measurements and feedback. Each control beyond the first needs one
+caller-owned clean work qubit and one classical slot.
+
+The locked source assigns each CH four Clifford gates and two rotations
+in the QEC model. FlagQuantum emits one CH instruction, leaving basis
+lowering to the target compiler. For a two-control pattern, the native
+predicate adds four emitted T-family instructions, one measurement and
+one work qubit. The resource model accounts for the predicate and CH
+separately.
+
+- [Qualtran v0.7.0 Hadamard](https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/bloqs/basic_gates/hadamard.py)
+
 ## Scalar and controlled phases
 
 Qualtran's atomic global phase multiplies amplitudes by

@@ -131,6 +131,7 @@ def reference_arithmetic_gates(
     names = {
         cirq.X: "x",
         cirq.H: "h",
+        cirq.ControlledGate(cirq.H): "ch",
         cirq.T: "t",
         cirq.T**-1: "tdg",
         cirq.S: "s",

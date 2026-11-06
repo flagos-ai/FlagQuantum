@@ -17,7 +17,12 @@ from .resource_generalization import (
     RotationCall,
     ZeroCostCall,
 )
+from .resource_model import ComponentCost, GateCost
 from .symbolic_math import SymbolicReal
+
+CONTROLLED_HADAMARD_COST = ComponentCost(
+    "CHadamard", 2, GateCost(clifford=4, rotation=2)
+)
 
 
 def global_phase_cost_key(
@@ -43,6 +48,12 @@ def compound_control_key(
     ):
         raise ValueError(
             "Compound control requires a nonempty binary activation pattern"
+        )
+    if isinstance(gate, CliffordCall) and gate.opcode == "h":
+        return (
+            CONTROLLED_HADAMARD_COST
+            if controls == (1,)
+            else PredicateControlledCall(CONTROLLED_HADAMARD_COST, controls)
         )
     if isinstance(gate, CliffordCall) and gate.opcode == "cx":
         toffoli = FixedTCall("toffoli")
