@@ -5,7 +5,12 @@
 
 """Resource models for first-quantized chemistry with a quantum projectile."""
 
-from ..compiler._component_trace.resource_model import ComponentCost, CostCall, GateCost
+from ..compiler._component_trace.resource_model import (
+    ComponentCost,
+    CostCall,
+    GateCost,
+    estimate_component_resources,
+)
 from ..compiler.registers.arithmetic_resource_model import source_add_cost
 from .first_quantization import (
     source_controlled_multiplexed_cswap_3d_cost,
@@ -19,6 +24,7 @@ from .first_quantization_resource_model import (
     _require_positive,
     _signed_conversion_cost,
     source_apply_nuclear_phase_cost,
+    source_prepare_ij_cost,
     source_prepare_zeta_cost,
 )
 
@@ -201,3 +207,73 @@ def source_projectile_select_first_quantization_cost(
             ),
         ),
     )
+
+
+def source_projectile_prepare_tuv_cost(
+    num_bits_t: int, *, adjoint: bool = False
+) -> ComponentCost:
+    """Count the source term preparation on nine through wires."""
+    _require_positive(num_bits_t)
+    return ComponentCost(
+        "PrepareTUVSuperpositions",
+        9,
+        GateCost(toffoli=0 if adjoint else 6 * num_bits_t + 2),
+    )
+
+
+def source_projectile_prepare_first_quantization_cost(
+    num_bits_p: int,
+    num_bits_n: int,
+    eta: int,
+    num_atoms: int,
+    lambda_zeta: int,
+    *,
+    m_param: int = 2**8,
+    num_bits_t: int = 16,
+    num_bits_rot_aa: int = 8,
+) -> ComponentCost:
+    """Estimate the forward top-level projectile preparation."""
+    particles = source_prepare_ij_cost(eta, num_bits_rot_aa)
+    if eta < 2:
+        raise ValueError("Source projectile PREPARE requires at least two particles")
+    term = source_projectile_prepare_tuv_cost(num_bits_t)
+    kinetic = source_projectile_prepare_t_cost(num_bits_p, num_bits_n)
+    potential = source_projectile_prepare_uv_cost(
+        num_bits_p, num_bits_n, num_atoms, m_param, lambda_zeta
+    )
+    particle_ports = 2 * (eta - 1).bit_length()
+    # The disjoint child groups leave plus_t live throughout.
+    ports = term.qubits + particle_ports + kinetic.qubits + potential.qubits + 1
+    return ComponentCost(
+        "PrepareFirstQuantizationWithProj",
+        ports,
+        calls=(
+            CostCall(term, bystander_qubits=ports - term.qubits),
+            CostCall(particles, bystander_qubits=ports - particle_ports),
+            CostCall(kinetic, bystander_qubits=ports - kinetic.qubits),
+            CostCall(potential, bystander_qubits=ports - potential.qubits),
+        ),
+    )
+
+
+def source_projectile_prepare_first_quantization_adjoint_gate_cost(
+    num_bits_p: int,
+    num_bits_n: int,
+    eta: int,
+    num_atoms: int,
+    lambda_zeta: int,
+    *,
+    num_bits_rot_aa: int = 8,
+) -> GateCost:
+    """Count adjoint gates independently of the invalid nested source width."""
+    particles = source_prepare_ij_cost(eta, num_bits_rot_aa)
+    if eta < 2:
+        raise ValueError("Source projectile PREPARE requires at least two particles")
+    potential = source_projectile_prepare_uv_adjoint_gate_cost(
+        num_bits_p, num_bits_n, num_atoms, lambda_zeta
+    )
+    kinetic = estimate_component_resources(
+        source_projectile_prepare_t_cost(num_bits_p, num_bits_n, adjoint=True)
+    )
+    # The adjoint term preparation declares zero gates at every precision.
+    return potential.plus(kinetic.gates, 1).plus(particles.gates, 1)

@@ -12,7 +12,10 @@ from flagquantum.algorithms.first_quantization_nu_resource_model import (
 )
 from flagquantum.algorithms.first_quantization_projectile_resource_model import (
     source_projectile_power_two_cost,
+    source_projectile_prepare_first_quantization_adjoint_gate_cost,
+    source_projectile_prepare_first_quantization_cost,
     source_projectile_prepare_t_cost,
+    source_projectile_prepare_tuv_cost,
     source_projectile_prepare_uv_adjoint_gate_cost,
     source_projectile_prepare_uv_cost,
     source_projectile_select_first_quantization_cost,
@@ -333,3 +336,101 @@ def test_projectile_top_select_resource_schedule(p, n, eta, atoms, m, precision)
         (call.component.name, call.component.qubits, call.bystander_qubits)
         for call in model.calls
     ]
+
+
+@pytest.mark.parametrize(("bits", "adjoint"), [(1, False), (16, False), (16, True)])
+@pytest.mark.ftqc_reference
+def test_projectile_top_prepare_term_selection(bits, adjoint):
+    pytest.importorskip("qualtran")
+    from qualtran import DecomposeNotImplementedError
+    from qualtran.bloqs.chemistry.pbc.first_quantization.projectile.select_and_prepare import (
+        PrepareTUVSuperpositions,
+    )
+
+    source = PrepareTUVSuperpositions(bits, 10, 10, is_adjoint=adjoint)
+    assert_source_model(
+        source_projectile_prepare_tuv_cost(bits, adjoint=adjoint), source
+    )
+    assert [
+        (register.name, register.total_bits()) for register in source.signature.lefts()
+    ] == [("tuv", 1), ("tepm", 2), ("uv", 2), ("flags", 4)]
+    with pytest.raises(DecomposeNotImplementedError):
+        source.decompose_bloq()
+
+
+@pytest.mark.parametrize(
+    ("p", "n", "eta", "atoms", "charge", "m", "term_bits", "rotation_bits"),
+    [
+        (1, 1, 2, 1, 0, 3, 1, 1),
+        (2, 4, 3, 3, 4, 5, 7, 2),
+        (6, 8, 10, 10, 10, 524288, 16, 8),
+    ],
+)
+@pytest.mark.ftqc_reference
+def test_projectile_top_prepare_resources_and_ports(
+    p, n, eta, atoms, charge, m, term_bits, rotation_bits
+):
+    pytest.importorskip("qualtran")
+    from qualtran import LeftDangle, RightDangle
+    from qualtran.bloqs.chemistry.pbc.first_quantization.projectile.select_and_prepare import (
+        PrepareFirstQuantizationWithProj,
+    )
+    from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
+
+    source = PrepareFirstQuantizationWithProj(
+        p,
+        n,
+        eta,
+        atoms,
+        charge,
+        m_param=m,
+        num_bits_t=term_bits,
+        num_bits_rot_aa=rotation_bits,
+    )
+    model = source_projectile_prepare_first_quantization_cost(
+        p,
+        n,
+        eta,
+        atoms,
+        charge,
+        m_param=m,
+        num_bits_t=term_bits,
+        num_bits_rot_aa=rotation_bits,
+    )
+    assert_source_model(model, source)
+    assert model.qubits == source.signature.n_qubits()
+    graph = source.decompose_bloq()
+    live = {edge for edge in graph.connections if edge.left.binst == LeftDangle}
+    assert [
+        (edge.left.reg.name, edge.right.reg.name)
+        for edge in live
+        if edge.right.binst == RightDangle
+    ] == [("plus_t", "plus_t")]
+    calls = []
+    for node, incoming, outgoing in graph.iter_bloqnections():
+        live.difference_update(incoming)
+        calls.append((type(node.bloq).__name__, sum(edge.shape for edge in live)))
+        if str(node.bloq) == "PrepareUVFirstQuantizationWithProj":
+            assert {
+                (edge.left.reg.name, edge.right.idx)
+                for edge in incoming
+                if edge.right.reg.name == "nu"
+            } == {("nu_x", (0,)), ("nu_y", (1,)), ("nu_z", (2,))}
+            assert any(
+                edge.left.reg.name == "succ_nu" and edge.right.reg.name == "flag_nu"
+                for edge in incoming
+            )
+        live.update(outgoing)
+    assert calls == [
+        (call.component.name, call.bystander_qubits) for call in model.calls
+    ]
+
+    reverse = source.adjoint()
+    with pytest.raises(RuntimeError, match="does not accept Soquets.*flag"):
+        get_cost_value(reverse, QubitCount())
+    gates = source_projectile_prepare_first_quantization_adjoint_gate_cost(
+        p, n, eta, atoms, charge, num_bits_rot_aa=rotation_bits
+    )
+    assert {
+        key: value for key, value in asdict(gates).items() if value
+    } == get_cost_value(reverse, QECGatesCost()).asdict()

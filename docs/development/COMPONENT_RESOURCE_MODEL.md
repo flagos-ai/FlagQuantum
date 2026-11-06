@@ -1366,3 +1366,43 @@ The default estimate prices six abstract controlled swaps at four T
 equivalents each. The emitted exchange uses seven T/T† instructions per
 exact Fredkin and four for the measured And. The model and emitted width
 both include three untouched suffix wires.
+
+## First-quantized projectile top-level PREPARE and SELECT
+
+The top-level SELECT model retains the source allocation schedule. It
+accounts for the projectile-sized momentum words, the electron-sized
+momentum words, and the nuclear-position register at their actual points
+of use. Each projectile word leaves the schedule after its last swap.
+The two addressed controlled exchanges follow the source activation
+described above.
+
+```python
+from flagquantum.algorithms.first_quantization_projectile_resource_model import (
+    source_projectile_prepare_first_quantization_adjoint_gate_cost,
+    source_projectile_prepare_first_quantization_cost,
+    source_projectile_select_first_quantization_cost,
+)
+from flagquantum.qec.resources.estimation import estimate_ftqc_resources
+
+select = estimate_ftqc_resources(
+    source_projectile_select_first_quantization_cost(6, 9, 10, 10, num_bits_nuc_pos=41)
+)
+assert select.logical.gates.cswap == 774
+assert select.logical.gates.toffoli == 2113
+assert select.logical.peak_logical_qubits == 382
+
+prepare = estimate_ftqc_resources(
+    source_projectile_prepare_first_quantization_cost(6, 8, 10, 10, 10, m_param=524288)
+)
+adjoint = source_projectile_prepare_first_quantization_adjoint_gate_cost(
+    6, 8, 10, 10, 10
+)
+assert prepare.logical.gates.toffoli == 1128
+assert prepare.logical.peak_logical_qubits == 135
+assert adjoint.toffoli == 102
+```
+
+The projectile PREPARE keeps `plus_t` live through all four calls. Its
+adjoint inherits the source unary flag binding failure, so only the
+declared adjoint gates are available. Both top-level graphs contain
+cost-only leaves. Their reports describe analytical resources.
