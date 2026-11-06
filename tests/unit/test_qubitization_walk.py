@@ -5,6 +5,7 @@ from math import pi
 import pytest
 
 from flagquantum.algorithms.primitives.black_box_prepare import BlackBoxPrepare
+from flagquantum.algorithms.primitives.lcu_block_encoding import LCUBlockEncoding
 from flagquantum.algorithms.primitives.multiplexers.select_pauli_lcu import (
     SelectPauliLCU,
 )
@@ -29,18 +30,23 @@ from tests.unit.test_relative_controlled_swap import (
 pytestmark = pytest.mark.unit
 
 
-@pytest.mark.parametrize("shared", [False, True])
+@pytest.mark.parametrize(
+    ("shared", "lcu"), [(False, False), (True, False), (True, True)]
+)
 @pytest.mark.parametrize("adjoint", [False, True])
 @pytest.mark.ftqc_reference
 def test_locked_walk_stages_scalar_and_all_branches(
-    shared: bool, adjoint: bool
+    shared: bool, lcu: bool, adjoint: bool
 ) -> None:
     pytest.importorskip("qualtran")
     import cirq
     import numpy as np
     from attrs import frozen
-    from qualtran import QAny, Register
+    from qualtran import Adjoint, QAny, Register
     from qualtran.bloqs.basic_gates import Hadamard, XGate
+    from qualtran.bloqs.block_encoding.lcu_block_encoding import (
+        LCUBlockEncoding as SourceLCU,
+    )
     from qualtran.bloqs.block_encoding.lcu_block_encoding import (
         SelectBlockEncoding as SourceBlock,
     )
@@ -51,6 +57,7 @@ def test_locked_walk_stages_scalar_and_all_branches(
     from qualtran.bloqs.qubitization.qubitization_walk_operator import (
         QubitizationWalkOperator,
     )
+    from qualtran.bloqs.reflections.prepare_identity import PrepareIdentity
     from qualtran.bloqs.reflections.reflection_using_prepare import (
         ReflectionUsingPrepare,
     )
@@ -86,19 +93,26 @@ def test_locked_walk_stages_scalar_and_all_branches(
         source_select.selection_registers[0] if shared else Register("signal", QAny(1))
     )
     source_prepare = Prepare(register)
-    original = QubitizationWalkOperator(SourceBlock(source_select, source_prepare))
+    source_block = SourceLCU if lcu else SourceBlock
+    original = QubitizationWalkOperator(source_block(source_select, source_prepare))
+    if lcu:
+        assert isinstance(original.reflect.prepare_gate, PrepareIdentity)
     source = original.adjoint() if adjoint else original
     signal_name = register.name
     ports = {"selection": (0, 1), "target": (2,)}
     if not shared:
         ports["signal"] = (3,)
-    data = 3 if shared else 4
+    if lcu:
+        ports["junk"] = (3,)
+    data = 3 if shared and not lcu else 4
     signal_wires = ports[signal_name]
-    phase_target, junk = data, (data + 1,)
-    reflection_work = (phase_target, data + 2) if shared else (phase_target,)
+    phase_target = data
+    junk = ports["junk"] if lcu else (data + 1,)
+    prefix = data + (1 if lcu else 2)
+    reflection_work = (phase_target, prefix) if shared else (phase_target,)
     # The block's measured predicate and reflection's phase target reuse a wire.
     select_work = (phase_target,)
-    work = tuple(range(data, data + 2 + int(shared)))
+    work = tuple(range(data, data + 2 + int(shared) - int(lcu)))
     select = SelectPauliLCU(2, 1, words)
 
     def emit_select(bound, workspace, bits, _inverse):
@@ -122,11 +136,16 @@ def test_locked_walk_stages_scalar_and_all_branches(
     block = SelectBlockEncoding(
         (("selection", 2),), (("target", 1),), emit_select, signal
     )
-    walk = QubitizationWalk(block)
+    walk = QubitizationWalk(LCUBlockEncoding(block) if lcu else block)
     args = dict(
-        selection={name: wires for name, wires in ports.items() if name != "target"},
+        selection={
+            name: wires
+            for name, wires in ports.items()
+            if name not in ("target", "junk")
+        },
         target=ports["target"],
-        signal_junk=junk,
+        block_junk=junk if lcu else (),
+        signal_junk=() if lcu else junk,
         select_workspace=select_work,
         select_classical_bits=(5,),
         reflection_workspace=reflection_work,
@@ -144,6 +163,11 @@ def test_locked_walk_stages_scalar_and_all_branches(
     def leaf(
         bloq: object, inputs: SourcePorts, desired: SourcePorts
     ) -> SourceResult | None:
+        if lcu and isinstance(bloq, (Prepare, Adjoint)):
+            child = bloq.subbloq if isinstance(bloq, Adjoint) else bloq
+            if isinstance(child, Prepare):
+                stages.append("unprepare" if isinstance(bloq, Adjoint) else "prepare")
+                return reference_arithmetic_gates(bloq, inputs, (), {}), inputs
         if isinstance(bloq, SourceSelect):
             stages.append("select")
             return (
@@ -185,10 +209,18 @@ def test_locked_walk_stages_scalar_and_all_branches(
             dict(zip(mark_work, (9,) if shared else (), strict=True)),
         )
         prep_inputs = {signal_name: signal_wires, "junk": junk}
-        before = reference_arithmetic_gates(
-            source_prepare.adjoint(), prep_inputs, (), {}
+        before = (
+            ()
+            if lcu
+            else reference_arithmetic_gates(
+                source_prepare.adjoint(), prep_inputs, (), {}
+            )
         )
-        after = reference_arithmetic_gates(source_prepare, prep_inputs, (), {})
+        after = (
+            ()
+            if lcu
+            else reference_arithmetic_gates(source_prepare, prep_inputs, (), {})
+        )
         flip = Instruction("x", (phase_target,))
         return (
             *before,
@@ -200,7 +232,10 @@ def test_locked_walk_stages_scalar_and_all_branches(
         ), inputs
 
     expected, outputs = walk_source_graph(source, ports, ports, leaf)
-    assert stages == (["reflection", "select"] if adjoint else ["select", "reflection"])
+    block_stages = ["prepare", "select", "unprepare"] if lcu else ["select"]
+    assert stages == (
+        ["reflection", *block_stages] if adjoint else [*block_stages, "reflection"]
+    )
     assert outputs == ports
     assert_source_dependencies(actual, expected)
     assert_controlled_exchange_branches(actual, expected, inverse, data, work)
@@ -256,3 +291,24 @@ def test_walk_with_no_logical_ports_preserves_clean_phase_wire() -> None:
         atol=2e-12,
         rtol=0,
     )
+
+
+@pytest.mark.parametrize("value", [0, 1])
+@pytest.mark.ftqc_reference
+def test_locked_walk_with_controlled_lcu_lacks_control_port(value: int) -> None:
+    pytest.importorskip("qualtran")
+    from attrs import evolve
+    from qualtran.bloqs.block_encoding.lcu_block_encoding import _lcu_block
+    from qualtran.bloqs.qubitization.qubitization_walk_operator import (
+        QubitizationWalkOperator,
+    )
+
+    source = QubitizationWalkOperator(evolve(_lcu_block(), control_val=value))
+    assert "ctrl" not in {reg.name for reg in source.signature}
+    with pytest.raises(KeyError, match="ctrl"):
+        source.decompose_bloq()
+    signal = BlackBoxPrepare((), (), lambda *_: (), normalization=1)
+    block = SelectBlockEncoding((), (), lambda *_: (), signal)
+    controlled = LCUBlockEncoding(block, value, lambda *_: ())
+    with pytest.raises(ValueError, match="omits the controlled LCU ctrl port"):
+        QubitizationWalk(controlled)

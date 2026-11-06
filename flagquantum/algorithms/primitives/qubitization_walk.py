@@ -17,14 +17,28 @@ from ...compiler.registers.prepare_reflection import (
     source_uncontrolled_prepare_reflection_cost,
 )
 from ...core.ir import CircuitIR, Instruction
+from .lcu_block_encoding import LCUBlockEncoding
 from .select_block_encoding import SelectBlockEncoding
 
 
 @dataclass(frozen=True)
 class QubitizationWalk:
-    """Walk in the prepared signal basis of a SELECT-only block encoding."""
+    """Walk in the signal basis of a SELECT or zero-signal LCU block."""
 
-    block_encoding: SelectBlockEncoding
+    block_encoding: SelectBlockEncoding | LCUBlockEncoding
+
+    def __post_init__(self) -> None:
+        block = self.block_encoding
+        if isinstance(block, LCUBlockEncoding) and block.control_value is not None:
+            raise ValueError(
+                "The source walk signature omits the controlled LCU ctrl port"
+            )
+
+    @property
+    def junk_layout(self) -> RegisterLayout:
+        """The block's logical junk passes through the walk."""
+        block = self.block_encoding
+        return block.junk_layout if isinstance(block, LCUBlockEncoding) else ()
 
     @property
     def selection_layout(self) -> RegisterLayout:
@@ -55,14 +69,30 @@ class QubitizationWalk:
     ) -> ComponentCost:
         """Count the ordered block and reflection calls with their bystanders."""
         block = self.block_encoding
-        width = sum(size for _, size in self.selection_layout) + block.system_bitsize
-        select = block.resource_model(select_cost)
+        width = (
+            sum(size for _, size in self.selection_layout)
+            + sum(size for _, size in self.junk_layout)
+            + block.system_bitsize
+        )
+        signal = block.signal_state
+        if isinstance(block, LCUBlockEncoding):
+            encoding = block.resource_model(
+                select_cost, prepare_cost, unprepare_cost, adjoint=adjoint
+            )
+            identity = ComponentCost("PrepareIdentity", signal.selection_width)
+            reflect_prepare = reflect_unprepare = identity
+        else:
+            encoding = block.resource_model(select_cost)
+            reflect_prepare, reflect_unprepare = prepare_cost, unprepare_cost
         reflection = source_uncontrolled_prepare_reflection_cost(
-            block.ancilla_bitsize, block.resource_bitsize, prepare_cost, unprepare_cost
+            signal.selection_width,
+            signal.junk_width,
+            reflect_prepare,
+            reflect_unprepare,
         )
         calls = (
-            CostCall(select, bystander_qubits=width - select.qubits),
-            CostCall(reflection, bystander_qubits=width - block.ancilla_bitsize),
+            CostCall(encoding, bystander_qubits=width - encoding.qubits),
+            CostCall(reflection, bystander_qubits=width - signal.selection_width),
         )
         return ComponentCost(
             "QubitizationWalkOperator†" if adjoint else "QubitizationWalkOperator",
@@ -75,6 +105,7 @@ class QubitizationWalk:
         *,
         selection: Mapping[str, tuple[int, ...]],
         target: tuple[int, ...],
+        block_junk: tuple[int, ...] = (),
         signal_junk: tuple[int, ...] = (),
         select_workspace: tuple[int, ...] = (),
         select_classical_bits: tuple[int, ...] = (),
@@ -86,15 +117,19 @@ class QubitizationWalk:
     ) -> "_BoundQubitizationWalk":
         """Bind one walk step for circuit.append using caller-owned clean work.
 
-        SELECT may reuse reflection work or signal junk between stages.
-        Preparation and the zero mark can share work other than the phase
-        target, which is reserved throughout reflection.
+        Block junk is logical and stays live through reflection. Signal junk
+        is temporary and belongs to the reflection. Clean work can be reused
+        between the block and reflection.
         """
         if type(adjoint) is not bool:
             raise ValueError("Walk direction must be boolean")
         block = self.block_encoding
         signal = block.signal_state
-        logical = (*unpartition_register(selection, self.selection_layout), *target)
+        logical = (
+            *unpartition_register(selection, self.selection_layout),
+            *block_junk,
+            *target,
+        )
         select_wires = tuple(
             wire for name, _ in block.selection_layout for wire in selection[name]
         )
@@ -104,26 +139,45 @@ class QubitizationWalk:
         if logical or select_workspace:
             _validate_wires((*logical, *select_workspace))
         _validate_wires((*logical, *signal_junk, *reflection_workspace))
-        _validate_wires(
-            (*logical, *signal_junk, *reflection_workspace[:1], *prepare_workspace)
-        )
-        select = block.emit(
-            select_wires,
-            target,
-            select_workspace,
-            select_classical_bits,
-            adjoint=adjoint,
-        )
-        prepare = signal.emit(
-            signal_wires, signal_junk, prepare_workspace, prepare_classical_bits
-        )
-        unprepare = signal.emit(
-            signal_wires,
-            signal_junk,
-            prepare_workspace,
-            prepare_classical_bits,
-            adjoint=True,
-        )
+        prepare: tuple[Instruction, ...]
+        unprepare: tuple[Instruction, ...]
+        if isinstance(block, LCUBlockEncoding):
+            if signal_junk:
+                raise ValueError("The zero signal has no temporary preparation junk")
+            select = block.make_on(
+                selection=select_wires,
+                junk=block_junk,
+                target=target,
+                select_workspace=select_workspace,
+                select_classical_bits=select_classical_bits,
+                prepare_workspace=prepare_workspace,
+                prepare_classical_bits=prepare_classical_bits,
+                adjoint=adjoint,
+            ).instructions
+            prepare = unprepare = ()
+        else:
+            if block_junk:
+                raise ValueError("The SELECT block has no logical junk ports")
+            _validate_wires(
+                (*logical, *signal_junk, *reflection_workspace[:1], *prepare_workspace)
+            )
+            select = block.emit(
+                select_wires,
+                target,
+                select_workspace,
+                select_classical_bits,
+                adjoint=adjoint,
+            )
+            prepare = signal.emit(
+                signal_wires, signal_junk, prepare_workspace, prepare_classical_bits
+            )
+            unprepare = signal.emit(
+                signal_wires,
+                signal_junk,
+                prepare_workspace,
+                prepare_classical_bits,
+                adjoint=True,
+            )
         reflection = prepare_reflection_ir(
             signal_wires,
             reflection_workspace,

@@ -1578,3 +1578,37 @@ Each stage receives its own explicit work and feedback slots. Clean
 workspace may be shared across stages. SELECT's named address ports
 must be available among the preparation's selection and through-junk
 ports with matching widths.
+
+### Walking a zero-signal LCU block
+
+Pass an `LCUBlockEncoding` to the same walk class. Its logical junk is
+passed as `block_junk` and stays live through the step. The reflection
+uses the identity signal preparation, while the block still runs its
+PREPARE and PREPARE†. An LCU preparation work wire can be reused by
+the later reflection, including as the phase target.
+
+Continuing the bounded Pauli walk example above:
+
+```python
+from flagquantum.algorithms.primitives.lcu_block_encoding import LCUBlockEncoding
+
+lcu_walk = QubitizationWalk(LCUBlockEncoding(block))
+circuit = DynamicCircuit(5)
+circuit.append(lcu_walk.make_on(
+    selection={"address": (0, 1)}, target=(2,),
+    select_workspace=(3,), select_classical_bits=(0,),
+    reflection_workspace=(3, 4), reflection_classical_bits=(0,),
+))
+report = estimate_ftqc_resources(
+    lcu_walk.resource_model(select_model, prepare_model, prepare_model),
+    emitted_ir=circuit.to_ir(),
+)
+assert report.logical.peak_logical_qubits == 5
+assert report.emitted is not None
+assert report.emitted.t_count == 8
+assert report.emitted.unconditional["measure"] == 2
+```
+
+The locked walk signature omits the control port of an already
+controlled LCU block. Creating this combination raises an explicit
+validation error.
