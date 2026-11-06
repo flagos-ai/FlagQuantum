@@ -7,11 +7,18 @@
 
 from collections.abc import Mapping
 
+from ...compiler._component_trace.resource_model import (
+    ComponentCost,
+    CostCall,
+    GateCost,
+)
 from ...compiler.registers.bitwise import _validate_wires
 from ...compiler.registers.controlled_swap import controlled_swap_ir
 from ...compiler.registers.less_equal import less_equal_ir, less_equal_requirements
+from ...compiler.registers.qrom_resource_model import source_qrom_cost
 from ...compiler.registers.source_qrom import source_qrom_ir, source_qrom_workspace_size
 from ...compiler.registers.uniform_preparation import (
+    source_uniform_preparation_cost,
     uniform_preparation_ir,
     uniform_preparation_requirements,
 )
@@ -150,3 +157,33 @@ def alias_black_box_prepare(table: AliasSamplingTable) -> BlackBoxPrepare:
         )
 
     return BlackBoxPrepare((("selection", width),), junk, emit, table.normalization)
+
+
+def source_dense_alias_preparation_cost(table: AliasSamplingTable) -> ComponentCost:
+    """Count the dense source call graph and active preparation width."""
+    if table.indices is not None or table.selection_size < 2:
+        raise ValueError("Dense alias costs require at least two rows")
+    rows, mu = table.selection_size, table.mu
+    address = (rows - 1).bit_length()
+    width = 2 * address + 2 * mu + 1
+    work, slots = less_equal_requirements(mu, mu)
+    compare = ComponentCost(
+        "LessThanEqual",
+        2 * mu + 1 + work,
+        GateCost(and_bloq=slots, clifford=22 * mu - 9, measurement=slots),
+    )
+    lookup = source_qrom_cost(
+        0, (address,), (rows,), ((1, address), (1, mu)), _datasets(table)
+    )
+    return ComponentCost(
+        "StatePreparationAliasSampling",
+        width,
+        GateCost(clifford=mu, cswap=address),
+        (
+            CostCall(
+                source_uniform_preparation_cost(rows), bystander_qubits=width - address
+            ),
+            CostCall(lookup, bystander_qubits=mu + 1),
+            CostCall(compare, bystander_qubits=2 * address),
+        ),
+    )

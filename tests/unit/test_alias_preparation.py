@@ -235,3 +235,26 @@ def test_source_parent_graph_leaves_and_complex_output(sparse_mode):
     torch.testing.assert_close(
         torch.from_numpy(reference), expected, atol=3e-12, rtol=0
     )
+
+
+@pytest.mark.ftqc_reference
+@pytest.mark.parametrize(
+    ("weights", "precision"),
+    [((1, 3), 1.0), ((1, 1, 1), 0.25), ((1, 2, 3), 0.5), ((1, 2, 3, 4), 0.3)],
+)
+def test_dense_alias_resource_model(weights, precision):
+    pytest.importorskip("qualtran")
+    from qualtran.bloqs.state_preparation import StatePreparationAliasSampling
+
+    from flagquantum.algorithms.primitives.alias_preparation import (
+        source_dense_alias_preparation_cost,
+    )
+    from tests.unit.test_first_quantization_resource_model import assert_source_model
+
+    table = alias_sampling_table(weights, precision=precision)
+    source = StatePreparationAliasSampling.from_probabilities(
+        weights, precision=precision
+    )
+    model = source_dense_alias_preparation_cost(table)
+    assert_source_model(model, source)
+    assert_source_model(model, source.adjoint())
