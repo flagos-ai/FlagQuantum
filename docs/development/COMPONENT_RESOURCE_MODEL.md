@@ -1942,3 +1942,46 @@ assert measured_cost.emitted.unconditional["measure"] == 16
 The executable path retains the coherent path's T count and scratch
 width and adds one measurement per lookup bank wire. The separate source
 model keeps the upstream abstract erasure formula.
+
+### Bounded sparse chemistry SELECT
+
+Bind the locked SelectSparse stream with named ports and a reusable
+accumulator and traversal workspace.
+
+```python
+from flagquantum.algorithms.primitives.multiplexers.select_sparse import SelectSparse
+from flagquantum.compiler.registers.partition import partition_register
+from flagquantum.dynamic import DynamicCircuit
+from flagquantum.qec.resources.estimation import estimate_ftqc_resources
+
+layout = SelectSparse.source_layout(4)
+width = sum(bits for _, bits in layout)
+work, slots = SelectSparse.source_requirements(4)
+ports = partition_register(tuple(range(width)), layout)
+op = SelectSparse.make_source_on(
+    4, ports,
+    workspace=tuple(range(width, width + work)),
+    classical_bits=tuple(range(slots)),
+)
+circuit = DynamicCircuit(width + work).append(op)
+report = estimate_ftqc_resources(op, emitted_ir=circuit.to_ir())
+assert report.logical.peak_logical_qubits == 14
+assert report.logical.gates.total_t_count() == 40
+assert report.emitted is not None
+assert report.emitted.t_count == 40
+assert report.emitted.unconditional["measure"] == 10
+```
+
+The bounded path visits spatial orbitals in ascending order and spin in
+least-significant-bit order. It reuses one clean accumulator and two
+tree wires across the four Majorana calls for four spin orbitals. For
+six spin orbitals it emits 72 T/T† and 18 measurements on 21 wires,
+including four clean work wires. The same settings yield 72 T equivalents
+and a peak of 21 in the locked logical model.
+
+Use populated orbital addresses with the bounded path. The source tree
+can alias padded addresses to populated rows, while the existing
+`make_on` selects identity for an unused Majorana address. The optional
+source `control_value` adds a pass-through wire for either polarity.
+The one-body flag gates the first two Majorana calls. Source resource
+queries fail at one spatial orbital, which the bounded binding excludes.
