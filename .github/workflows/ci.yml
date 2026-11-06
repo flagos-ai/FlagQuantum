@@ -8,7 +8,7 @@ on:
 # Hosted jobs share eight repository-wide concurrency groups across workflows.
 # Trusted coverage uses prewarmed locked images on the CPU pool.
 # Core suites use qualified A800 caches; SDK downloads stay hosted.
-# Entry jobs use a separate pool and never wait behind coverage or SDK checks.
+# Source preparation uses the generic CPU pool with independent concurrency.
 # queue: max keeps waiting jobs in the queue instead of replacing them.
 # Self-hosted CPU jobs keep independent groups keyed by run and matrix index.
 # Main pushes use Main smoke. PR pushes cancel superseded runs of the same PR.
@@ -18,53 +18,13 @@ concurrency:
 
 jobs:
   pre-commit:
-    runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'flagquantum-a100-cpu-entry' || 'ubuntu-latest' }}
+    runs-on: ubuntu-latest
     timeout-minutes: 15
-    env:
-      # Self-hosted GitHub connections can reset HTTP/2 streams.
-      GIT_CONFIG_COUNT: "1"
-      GIT_CONFIG_KEY_0: http.version
-      GIT_CONFIG_VALUE_0: HTTP/1.1
     concurrency:
-      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('a100-cpu-{0}-pre-commit-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-2
+      group: flagquantum-gh-2
       queue: max
     steps:
-      - name: Restore verified source through the GitHub API
-        id: archive-source
-        if: runner.environment == 'self-hosted' && github.event_name == 'pull_request'
-        continue-on-error: true
-        timeout-minutes: 10
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          python3 - <<'PYTHON'
-          import base64
-          import hashlib
-          import json
-          import os
-          import runpy
-          from pathlib import Path
-          from urllib.request import Request, urlopen
-
-          api = os.environ["GITHUB_API_URL"].rstrip("/")
-          repo = os.environ["GITHUB_REPOSITORY"]
-          sha = os.environ["GITHUB_SHA"]
-          request = Request(
-              f"{api}/repos/{repo}/contents/tools/ci_source_archive.py?ref={sha}",
-              headers={"Authorization": f"Bearer {os.environ['GH_TOKEN']}"},
-          )
-          with urlopen(request, timeout=30) as response:
-              metadata = json.load(response)
-          code = base64.b64decode(metadata["content"])
-          digest = hashlib.sha1(b"blob " + str(len(code)).encode() + b"\0" + code)
-          if digest.hexdigest() != metadata["sha"]:
-              raise ValueError("The source helper does not match its Git blob SHA")
-          helper = Path(os.environ["RUNNER_TEMP"]) / "ci_source_archive.py"
-          helper.write_bytes(code)
-          runpy.run_path(str(helper), run_name="__main__")
-          PYTHON
       - name: Clear sparse checkout state from a previous job
-        if: steps.archive-source.outcome != 'success'
         run: |
           if [ -d .git ]; then
             git sparse-checkout disable
@@ -73,7 +33,6 @@ jobs:
             git config --local remote.origin.url "https://github.com/${{ github.repository }}"
           fi
       - uses: actions/checkout@v5
-        if: steps.archive-source.outcome != 'success'
         with:
           persist-credentials: false
           fetch-depth: 16
@@ -87,7 +46,7 @@ jobs:
   prepare-source:
     outputs:
       artifact-key: ${{ steps.pack-source.outputs.artifact-key }}
-    runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'flagquantum-a100-cpu-entry' || 'ubuntu-latest' }}
+    runs-on: ${{ fromJSON((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","linux","x64","flagquantum-cpu"]' || '["ubuntu-latest"]') }}
     timeout-minutes: 15
     env:
       # Self-hosted GitHub connections can reset HTTP/2 streams.
@@ -97,7 +56,7 @@ jobs:
     permissions:
       contents: read
     concurrency:
-      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('a100-cpu-{0}-prepare-source-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-5
+      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('self-hosted-{0}-prepare-source-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-5
       queue: max
     steps:
       - name: Restore verified source through the GitHub API

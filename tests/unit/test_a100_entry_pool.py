@@ -100,29 +100,10 @@ def test_invalid_partition_is_refused_before_any_mutation(invalid: str) -> None:
     assert runners == before
 
 
-def test_only_source_producers_and_hygiene_can_target_entry_slots() -> None:
-    expected = {
-        ("ci.yml", "pre-commit"),
-        ("ci.yml", "prepare-source"),
-        ("local-gpu.yml", "prepare-source"),
-        ("pre-commit.yaml", "pre-commit"),
-    }
-    found = set()
+def test_workflows_do_not_target_the_unavailable_entry_label() -> None:
     for path in (ROOT / ".github/workflows").glob("*y*ml"):
         for name, job in yaml.safe_load(path.read_text())["jobs"].items():
-            if ENTRY not in str(job.get("runs-on", "")):
-                continue
-            found.add((path.name, name))
-            assert (
-                "github.event.pull_request.head.repo.full_name == github.repository"
-                in job["runs-on"]
-            )
-            assert "'ubuntu-latest'" in job["runs-on"]
-            assert job.get("timeout-minutes", 15) <= 15
-            assert not job.get("continue-on-error", False)
-            commands = "\n".join(step.get("run", "") for step in job["steps"])
-            assert "pytest" not in commands and "pip install -e" not in commands
-    assert found == expected
+            assert ENTRY not in str(job.get("runs-on", "")), (path.name, name)
 
 
 def test_manual_pool_validation_keeps_all_sixteen_slots_and_regressions() -> None:

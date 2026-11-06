@@ -16,9 +16,8 @@ def _inventoried_r300_labels() -> set[str]:
     return set(validation["jobs"]["resources"]["strategy"]["matrix"]["scale_set"])
 
 
-@pytest.mark.parametrize("workflow", ["ci.yml", "pre-commit.yaml"])
-def test_cpu_pool_routes_require_a_same_repository_pull_request(workflow: str) -> None:
-    document = yaml.safe_load((WORKFLOWS / workflow).read_text())
+def test_cpu_pool_routes_require_a_same_repository_pull_request() -> None:
+    document = yaml.safe_load((WORKFLOWS / "ci.yml").read_text())
     routed = [
         job
         for job in document["jobs"].values()
@@ -355,6 +354,7 @@ def test_cpu_suites_attach_the_locked_image(job: str, profile: str) -> None:
         ("ci.yml", "pre-commit"),
         ("ci.yml", "prepare-source"),
         ("local-gpu.yml", "prepare-source"),
+        ("pre-commit.yaml", "pre-commit"),
         ("main-smoke.yml", "installed-wheel-smoke"),
     ],
 )
@@ -363,26 +363,17 @@ def test_linux_prerequisites_keep_forks_off_private_cpu_runners(
 ) -> None:
     document = yaml.safe_load((WORKFLOWS / workflow).read_text())
     job = document["jobs"][name]
-    if workflow == "ci.yml":
-        assert job["runs-on"] == (
-            "${{ (github.event_name != 'pull_request' || "
-            "github.event.pull_request.head.repo.full_name == github.repository) "
-            "&& 'flagquantum-a100-cpu-entry' || 'ubuntu-latest' }}"
-        )
-        assert f"a100-cpu-{{0}}-{name}-{{1}}" in job["concurrency"]["group"]
+    if name == "prepare-source":
+        assert job["runs-on"] == FULL_CPU_ROUTE
+        assert f"self-hosted-{{0}}-{name}-{{1}}" in job["concurrency"]["group"]
         assert "github.run_id" in job["concurrency"]["group"]
         assert job["env"]["GIT_CONFIG_COUNT"] == "1"
         assert job["env"]["GIT_CONFIG_KEY_0"] == "http.version"
         assert job["env"]["GIT_CONFIG_VALUE_0"] == "HTTP/1.1"
-    elif workflow == "local-gpu.yml":
-        assert job["runs-on"] == (
-            "${{ (github.event_name != 'pull_request' || "
-            "github.event.pull_request.head.repo.full_name == github.repository) "
-            "&& 'flagquantum-a100-cpu-entry' || 'ubuntu-latest' }}"
-        )
-        assert "github.run_id" in job["concurrency"]["group"]
     else:
         assert job["runs-on"] == "ubuntu-latest"
+        if name == "pre-commit":
+            assert job["concurrency"]["group"] == "flagquantum-gh-2"
     assert "pull_request_target" not in document.get("on", document.get(True, {}))
     assert job["concurrency"]["queue"] == "max"
     assert not job.get("continue-on-error", False)
@@ -414,7 +405,6 @@ def test_linux_prerequisites_keep_forks_off_private_cpu_runners(
 @pytest.mark.parametrize(
     "workflow,name",
     [
-        ("ci.yml", "pre-commit"),
         ("ci.yml", "prepare-source"),
         ("local-gpu.yml", "prepare-source"),
     ],
