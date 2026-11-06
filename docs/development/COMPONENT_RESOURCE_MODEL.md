@@ -100,6 +100,21 @@ For the same THC workload, a distance-21 compact block with one factory
 takes 22,302 cycles, limited by the data block. The default simple layout
 and one factory retain the original 20,119-cycle estimate.
 
+## 15-to-1 distillation factory estimate
+
+`FifteenToOneFactory` in `flagquantum.qec.resources.fifteen_to_one` emits
+the five-wire distillation schedule as FlagQuantum IR. Wire 0 carries the
+output. The estimate postselects the four check wires on the all-plus
+state using the native density-matrix executor. It reports the expected
+cycles and output error for a supplied T-state demand along with the
+factory footprint. The logical error scaler is 0.1 for the Gidney-Fowler
+scheme and 0.03 for the Beverland scheme, both with threshold 0.01.
+
+For distances (7, 3, 3), physical error 0.0001, and scaler 0.1, one
+requested T state takes 19 modeled cycles and the factory occupies 810
+physical qubits. The conditional output error is about 4.4e-8. The
+density matrix and resource values were compared with the locked source.
+
 ## Beverland surface-code estimate
 
 A declared logical cost can feed a surface-code model before any circuit
