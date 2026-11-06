@@ -1,8 +1,11 @@
 # Copyright 2023 Google LLC
+# Copyright 2024 Google LLC
 # SPDX-License-Identifier: Apache-2.0
 # Adapted from Qualtran v0.7.0 Add, QROM and QubitCount.
 # https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/bloqs/arithmetic/addition.py
 # https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/bloqs/data_loading/qrom.py
+# https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/bloqs/arithmetic/permutation.py
+# https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/bloqs/state_preparation/state_preparation_via_rotation.py
 
 """Shape-level resource formulas without data tables or emitted circuits."""
 
@@ -79,3 +82,58 @@ def source_qrom_resource_formula(
     loads = rows * prod(word_widths)
     width = sum(word_widths) + 2 * sum(selection_widths) + 2 * control_count - 1
     return SymbolicResourceFormula(ands, loads + ands, ands, width)
+
+
+def source_phase_gradient_lookup_resource_formula(
+    rows: SymbolicInt,
+    selection_width: SymbolicInt,
+    phase_width: SymbolicInt,
+    control_count: SymbolicInt,
+) -> SymbolicResourceFormula:
+    """Model one shape-only QROM, add, and QROM sequence."""
+    qrom = source_qrom_resource_formula(
+        (rows,),
+        (phase_width,),
+        selection_widths=(selection_width,),
+        control_count=control_count,
+    )
+    address = selection_width + control_count
+    addition_peak = smax(3, 2 * phase_width) + address
+    width = cast(
+        SymbolicInt,
+        smax(
+            0,
+            address + 2 * phase_width,
+            qrom.logical_qubits + phase_width,
+            addition_peak,
+        ),
+    )
+    return SymbolicResourceFormula(
+        2 * qrom.and_bloq,
+        2 * qrom.clifford,
+        2 * qrom.measurement,
+        width,
+        toffoli=phase_width - 2,
+    )
+
+
+def source_permutation_cycle_resource_formula(
+    cycle_length: SymbolicInt, width: SymbolicInt
+) -> SymbolicResourceFormula:
+    """Model a shape-only source cycle using unknown equality and XOR words."""
+    if isinstance(width, int) and width < 1:
+        raise ValueError("Permutation cycle requires a nonempty register")
+    if isinstance(cycle_length, int) and cycle_length < 1:
+        raise ValueError("Permutation cycle requires at least one element")
+    equalities = cycle_length + 1
+    ands = equalities * (width - 1)
+    # The source decomposes the equality at concrete widths. A symbolic width
+    # instead uses the nested signature/callee fallback.
+    peak = (
+        2 * width
+        if isinstance(width, int)
+        else cast(SymbolicInt, smax(3, width + 1, 2 * width - 1))
+    )
+    return SymbolicResourceFormula(
+        ands, (equalities + cycle_length) * width, ands, peak
+    )

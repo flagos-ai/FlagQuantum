@@ -9,6 +9,8 @@ from flagquantum.compiler.registers.arithmetic_resource_model import source_add_
 from flagquantum.compiler.registers.symbolic_resource_model import (
     SymbolicResourceFormula,
     source_add_resource_formula,
+    source_permutation_cycle_resource_formula,
+    source_phase_gradient_lookup_resource_formula,
     source_qrom_resource_formula,
 )
 
@@ -17,12 +19,12 @@ pytestmark = pytest.mark.unit
 
 def assert_resource_formula(formula: SymbolicResourceFormula, source: object) -> None:
     from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
+    from sympy import simplify
 
     model = get_cost_value(source, QECGatesCost())
-    assert formula.and_bloq == model.and_bloq
-    assert formula.clifford == model.clifford
-    assert formula.measurement == model.measurement
-    assert formula.logical_qubits == get_cost_value(source, QubitCount())
+    for field in ("and_bloq", "clifford", "measurement", "toffoli", "t"):
+        assert simplify(getattr(formula, field) - getattr(model, field)) == 0, field
+    assert simplify(formula.logical_qubits - get_cost_value(source, QubitCount())) == 0
 
 
 @pytest.mark.ftqc_reference
@@ -127,9 +129,46 @@ class BlockSympy(MetaPathFinder):
 
 sys.meta_path.insert(0, BlockSympy())
 from flagquantum.compiler.registers.symbolic_resource_model import (
-    source_add_resource_formula, source_qrom_resource_formula,
+    source_add_resource_formula,
+    source_permutation_cycle_resource_formula,
+    source_phase_gradient_lookup_resource_formula, source_qrom_resource_formula,
 )
 assert source_add_resource_formula(2, 4).logical_qubits == 9
 assert source_qrom_resource_formula((5,), (2,), control_count=1).measurement == 4
 """
     subprocess.run([sys.executable, "-c", code], check=True, timeout=30)
+
+
+@pytest.mark.ftqc_reference
+@pytest.mark.parametrize("controls", [0, 1, 3])
+def test_shape_only_phase_gradient_lookup(controls: int) -> None:
+    pytest.importorskip("qualtran")
+    sympy = pytest.importorskip("sympy")
+    from qualtran.bloqs.state_preparation.state_preparation_via_rotation import (
+        PRGAViaPhaseGradient,
+    )
+    from qualtran.symbolics import Shaped, bit_length
+
+    n, b = sympy.symbols("n b", positive=True, integer=True)
+    selectors = bit_length(n - 1)
+    assert_resource_formula(
+        source_phase_gradient_lookup_resource_formula(n, selectors, b, controls),
+        PRGAViaPhaseGradient(selectors, b, Shaped((n,)), controls),
+    )
+
+
+@pytest.mark.ftqc_reference
+@pytest.mark.parametrize("concrete_width", [None, 1, 5])
+def test_shape_only_permutation_cycle(concrete_width: int | None) -> None:
+    pytest.importorskip("qualtran")
+    sympy = pytest.importorskip("sympy")
+    from qualtran.bloqs.arithmetic.permutation import PermutationCycle
+    from qualtran.symbolics import Shaped
+
+    length, width = sympy.symbols("l w", positive=True, integer=True)
+    if concrete_width is not None:
+        width = concrete_width
+    assert_resource_formula(
+        source_permutation_cycle_resource_formula(length, width),
+        PermutationCycle(2**width, Shaped((length,)), bitsize=width),
+    )
