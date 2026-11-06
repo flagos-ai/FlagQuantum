@@ -2946,3 +2946,33 @@ reflection and its nonzero-factor control.
 The two-orbital fixture emits 450 T-family instructions and 81 measurements
 with four scratch wires. Native controlled rotations used in the rank
 preparation remain outside that T-family instruction count.
+
+For a supported shape, obtain the locked analytical baseline directly from
+the operation before binding it to any wires. The same estimate is available
+from `source_double_factorization_block_encoding_cost` with dimensions alone.
+
+```python
+from flagquantum.qec.resources.estimation import estimate_ftqc_resources
+
+encoding = DoubleFactorizationBlockEncoding.from_eigenvalues(
+    (1.0, 2.0, 3.0), ((1.0, -1.0, 2.0),) * 24, ((0, 0),) * 75,
+    outer_bits=2, inner_bits=2, rank_rotation_bits=3, basis_rotation_bits=4,
+)
+report = estimate_ftqc_resources(encoding.source_resource_model())
+assert report.logical.gates.total_t_count() == 2200
+assert report.logical.peak_logical_qubits == 49
+assert report.emitted is None
+```
+
+The analytical report uses the source's shared alias precision and automatic
+QROAM block sizes. The source's automatic block selection requires at least
+as many rows as target bits for forward lookups. This excludes some small
+executable examples. Pass `emitted_ir=circuit.to_ir()` for the corresponding
+FlagQuantum circuit to report its instruction counts separately.
+
+| Same 24-factor input | T metric | Measurements | Width |
+| --- | ---: | ---: | ---: |
+| Locked analytical model | 2,200 T equivalents | 54 | 49 peak logical qubits |
+| FlagQuantum emitted IR | 2,650 T/T† instructions | 603 | 82 declared qubits, including seven scratch wires |
+
+The emitted IR also contains 36 native controlled rotations before synthesis.

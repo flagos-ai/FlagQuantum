@@ -6,6 +6,9 @@ from math import sqrt
 
 import pytest
 
+from flagquantum.algorithms.primitives.double_factorization_block_encoding import (
+    DoubleFactorizationBlockEncoding as ExecutableDoubleFactorization,
+)
 from flagquantum.algorithms.primitives.double_factorization_encoding_model import (
     source_double_factorization_block_encoding_cost,
     source_double_factorization_one_body_cost,
@@ -14,6 +17,7 @@ from flagquantum.compiler._component_trace.resource_model import (
     estimate_component_resources,
 )
 from flagquantum.compiler.registers.multi_control import multi_control_z_ir
+from flagquantum.qec.resources.estimation import estimate_ftqc_resources
 from tests.unit.test_register_constant_addition import reference_arithmetic_gates
 from tests.unit.test_register_subtraction import assert_source
 from tests.unit.test_sparse_chemistry_prepare import _branch
@@ -89,6 +93,50 @@ def test_full_source_graph_retains_actual_reflection_ports(spin):
         _ = source.alpha
     with pytest.raises(NotImplementedError):
         _ = source.epsilon
+
+
+def test_df_source_estimate_from_operation_without_emitting_ir(monkeypatch):
+    pytest.importorskip("qualtran")
+    from qualtran.bloqs.chemistry.df.double_factorization import (
+        DoubleFactorizationBlockEncoding,
+    )
+    from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
+
+    def unexpected_emit(*args, **kwargs):
+        pytest.fail("Source resource estimation must not emit instructions")
+
+    monkeypatch.setattr(ExecutableDoubleFactorization, "_emit", unexpected_emit)
+    encoding = ExecutableDoubleFactorization.from_eigenvalues(
+        (1.0, 2.0, 3.0),
+        ((1.0, -1.0, 2.0),) * 24,
+        ((0, 0),) * 75,
+        outer_bits=2,
+        inner_bits=2,
+        rank_rotation_bits=3,
+        basis_rotation_bits=4,
+    )
+    source = DoubleFactorizationBlockEncoding(
+        num_aux=24,
+        num_spin_orb=6,
+        num_eig=72,
+        num_bits_state_prep=2,
+        num_bits_rot=4,
+        num_bits_rot_aa_inner=3,
+    )
+    report = estimate_ftqc_resources(encoding.source_resource_model())
+    assert report.emitted is None
+    assert report.logical.peak_logical_qubits == get_cost_value(source, QubitCount())
+    assert {
+        key: count for key, count in asdict(report.logical.gates).items() if count
+    } == get_cost_value(source, QECGatesCost()).asdict()
+
+
+def test_df_source_estimate_rejects_distinct_alias_precisions():
+    encoding = ExecutableDoubleFactorization.from_eigenvalues(
+        (1.0,), (), ((),), outer_bits=1, inner_bits=2
+    )
+    with pytest.raises(ValueError, match="requires shared alias precision"):
+        encoding.source_resource_model()
 
 
 @pytest.mark.parametrize("spatial,controls", [(3, 2), (5, 2), (3, 3)])

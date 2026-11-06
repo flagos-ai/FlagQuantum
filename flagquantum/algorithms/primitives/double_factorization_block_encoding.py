@@ -4,6 +4,7 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 
 from ...circuit import Circuit
+from ...compiler._component_trace.resource_model import ComponentCost
 from ...compiler.registers.bitwise import _validate_wires
 from ...compiler.registers.multi_control import multi_and_ir
 from ...compiler.registers.partition import RegisterLayout, unpartition_register
@@ -11,6 +12,9 @@ from ...compiler.registers.prepare_reflection import prepare_reflection_ir
 from ...core.classical_control import validate_classical_control
 from ...core.ir import CircuitIR, Instruction
 from ...dynamic import DynamicCircuit
+from .double_factorization_encoding_model import (
+    source_double_factorization_block_encoding_cost,
+)
 from .double_factorization_indexed_data import DoubleFactorizationIndexedData
 from .double_factorization_inner_prepare import PrepareDoubleFactorizationInner
 from .double_factorization_outer_prepare import PrepareDoubleFactorizationOuter
@@ -133,6 +137,24 @@ class DoubleFactorizationBlockEncoding:
         return (
             max(outer_work, inner_work, indexed, selected, reflection),
             max(outer_slots, inner_slots, indexed, selected, reflection),
+        )
+
+    def source_resource_model(self) -> ComponentCost:
+        """Return the locked analytical baseline before emitting a circuit.
+
+        This model uses the source's QROAM block selection and reflection.
+        It requires the source's shared outer and inner alias precision and
+        inherits the source model's QROAM shape limits.
+        """
+        if self.outer.probability_bits != self.inner.probability_bits:
+            raise ValueError("The source DF model requires shared alias precision")
+        return source_double_factorization_block_encoding_cost(
+            auxiliaries=len(self.inner.ranks) - 1,
+            spin_orbitals=2 * self.select.orbitals,
+            eigenvalues=sum(self.inner.ranks[1:]),
+            alias_bits=self.inner.probability_bits,
+            basis_rotation_bits=self.select.angle_bits,
+            inner_rotation_bits=self.inner.rotation_bits,
         )
 
     def make_on(
