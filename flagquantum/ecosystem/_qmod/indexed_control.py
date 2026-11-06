@@ -15,8 +15,8 @@ def lower_indexed_control(
     owner: _Adapt, condition: Expression, operation: Statement
 ) -> bool:
     gate = operation.token.text
-    if gate not in {"X", "H", "RY"} or len(operation.arguments) != (
-        2 if gate == "RY" else 1
+    if gate not in {"X", "H", "RX", "RY"} or len(operation.arguments) != (
+        2 if gate in {"RX", "RY"} else 1
     ):
         return False
 
@@ -38,7 +38,9 @@ def lower_indexed_control(
         expected = (1 << len(controls)) - 1
     elif condition.token.text == "==":
         source, literal = condition.children
-        if source.children or (gate != "X" and source.token.text not in owner.views):
+        if source.children or (
+            gate in {"H", "RY"} and source.token.text not in owner.views
+        ):
             return False
         parameter = owner.parameters.get(source.token.text)
         if parameter is None or parameter.kind != "qnum":
@@ -56,7 +58,7 @@ def lower_indexed_control(
     else:
         return False
 
-    target = owner.gate_target(operation.arguments[-1])
+    target = owner.gate_target(operation.arguments[-1], allow_numeric=gate == "RX")
     locations = (*controls, target)
     token = operation.token
     if len(set(locations)) != len(locations):
@@ -81,7 +83,12 @@ def lower_indexed_control(
 
         def rotation(value: float) -> None:
             owner.effect_op(
-                "qreg.gate", token, (register,), gate="ry", index=index, angle=value
+                "qreg.gate",
+                token,
+                (register,),
+                gate="rx" if gate == "RX" else "ry",
+                index=index,
+                angle=value,
             )
 
         def conditional_z() -> None:
@@ -97,7 +104,7 @@ def lower_indexed_control(
         rotation(angle)
         conditional_z()
         rotation(-angle)
-        if gate == "RY":
+        if gate != "H":
             conditional_z()
     for register, bit in reversed(negative):
         owner.effect_op("qreg.gate", token, (register,), gate="x", index=bit)

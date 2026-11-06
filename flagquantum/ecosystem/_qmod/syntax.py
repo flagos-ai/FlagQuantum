@@ -40,7 +40,12 @@ _RESERVED = frozenset(
         "false",
     }
 )
-PREPARATIONS = {"prepare_amplitudes", "prepare_state", "inplace_prepare_state"}
+PREPARATIONS = {
+    "prepare_amplitudes",
+    "inplace_prepare_amplitudes",
+    "prepare_state",
+    "inplace_prepare_state",
+}
 EXTREMA = frozenset({"min", "max"})
 _COMPARISONS = frozenset({"==", "!=", "<", "<=", ">", ">="})
 
@@ -278,6 +283,16 @@ class Parser:
             argument = self.expression(nesting=nesting + 1, static=True)
             self.take(")")
             left = Expression(token, (argument,), argument.depth + 1)
+        elif (
+            real and token.text == "acos" and self.tokens[self.position + 1].text == "("
+        ):
+            self.take("acos")
+            self.take("(")
+            argument = self.expression(
+                nesting=nesting + 1, decimal=True, difference=True, real=True
+            )
+            self.take(")")
+            left = Expression(token, (argument,), argument.depth + 1)
         elif token.text.isdecimal():
             if decimal and self.tokens[self.position + 1].text == ".":
                 left = self.angle_argument()
@@ -318,7 +333,24 @@ class Parser:
         while True:
             if not left.children and left.token.text.isdecimal():
                 break
-            if self.current.text == "." and (
+            if (
+                static
+                and self.current.text == ":"
+                and [
+                    item.text
+                    for item in self.tokens[self.position + 1 : self.position + 3]
+                ]
+                == [":", "len"]
+            ):
+                separator = self.take(":")
+                self.take(":")
+                length_token = self.take("len")
+                left = Expression(
+                    Token(".", separator.location),
+                    (left, Expression(length_token)),
+                    left.depth + 1,
+                )
+            elif self.current.text == "." and (
                 static
                 or self.records
                 or (real and self.tokens[self.position + 1].text == "len")
@@ -1065,7 +1097,8 @@ class Parser:
                             self.literal_array(
                                 partial(
                                     self.preparation_literal,
-                                    allow_fraction=target.text != "prepare_amplitudes",
+                                    allow_fraction=target.text
+                                    in {"prepare_state", "inplace_prepare_state"},
                                 )
                             )
                             if self.current.text == "["

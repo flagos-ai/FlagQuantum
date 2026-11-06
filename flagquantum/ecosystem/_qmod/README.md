@@ -1463,3 +1463,13 @@ CPU probabilities and bounds the number of objective evaluations by
 `max_iteration`. Zero step size and tolerance select FlagQuantum's COBYLA
 defaults. `alpha_cvar=1` computes the expectation, while values below one
 select the lower or upper probability tail according to `maximize`.
+
+### Coherent lookup and reversible helper views
+
+A static loop may read an array length as `array::len`. Real gate angles
+admit classical `acos` on [-1, 1]. A bounded unsigned selector can coherently
+control RX on a disjoint scalar location, including an unsigned one-bit
+numeric register. A bound helper may split or reinterpret borrowed storage
+using local views and must restore its formal ports in their original wire
+order. Real `inplace_prepare_amplitudes` requires a normalized vector and
+initialized storage, with the inverse available in a reversible block.

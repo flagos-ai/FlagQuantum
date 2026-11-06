@@ -105,6 +105,7 @@ _INTRINSICS = (
         "prepare_ghz_state",
         "prepare_exponential_state",
         "inplace_prepare_state",
+        "inplace_prepare_amplitudes",
         "IDENTITY",
         "exact_amplitude_amplification",
         "amplitude_amplification",
@@ -1043,7 +1044,9 @@ class _Adapt:
             return self.loop_indices[text]
         reject(node.token, "expression", "expected a static integer or loop index")
 
-    def gate_target(self, node: Expression) -> tuple[Value, int]:
+    def gate_target(
+        self, node: Expression, *, allow_numeric: bool = False
+    ) -> tuple[Value, int]:
         cell = self.record_bit(node)
         if cell is not None:
             return cell
@@ -1076,8 +1079,15 @@ class _Adapt:
         else:
             value = self.register(target, allow_qubit_array=True)
             width = register_width(value)
+        scalar_kinds = {"qbit", "qbit[]"}
+        if (
+            allow_numeric
+            and target.text not in self.signed
+            and target.text not in self.fractional_bits
+        ):
+            scalar_kinds.add("qnum")
         if not indexed and (
-            parameter is None or parameter.kind not in {"qbit", "qbit[]"} or width != 1
+            parameter is None or parameter.kind not in scalar_kinds or width != 1
         ):
             reject(
                 target, "type", "gate operand requires a scalar qubit or array element"
@@ -1281,6 +1291,11 @@ class _Adapt:
                     "integer angle conversion exceeds exact real range",
                 )
             result = float(value)
+        elif text == "acos":
+            value_real = self.classical_number(node.children[0])
+            if not -1 <= value_real <= 1:
+                reject(node.token, "angle", "acos requires an argument in [-1, 1]")
+            result = math.acos(value_real)
         elif text == "-" and len(node.children) == 1:
             result = -self.classical_number(node.children[0])
         elif text in {"+", "-", "*", "/"}:
@@ -1302,7 +1317,9 @@ class _Adapt:
         return result
 
     def angle(self, node: Expression, gate: Token) -> float:
-        if node.token.text in {"+", "-", "*", "/", "**", "pi"}:
+        if node.token.text in {"+", "-", "*", "/", "**", "pi", "acos"} and (
+            node.children or node.token.text == "pi"
+        ):
             return self.classical_number(node)
         if (
             not node.children
@@ -1557,6 +1574,12 @@ class _Adapt:
                 phase_borrows.add(value)
         for index, statement in enumerate(syntax.statements):
             child.statement(statement, str(index))
+        if any(port.name.text in child.suspended for port in syntax.parameters):
+            reject(
+                token,
+                "binding",
+                "bound helper must restore every formal port before return",
+            )
         initialized_outputs = set()
         for op in child.operations:
             operands = op.operands[1:]
@@ -1878,7 +1901,7 @@ class _Adapt:
         for item in destinations:
             name = self.atom(item).text
             parameter = self.parameters.get(name)
-            if parameter is None or parameter.role not in {"local", "output"}:
+            if parameter is None or parameter.role not in {"local", "output", "inout"}:
                 reject(
                     item.token,
                     "binding",
@@ -1916,7 +1939,20 @@ class _Adapt:
                         "binding",
                         "restored storage must match the original wire order",
                     )
+            elif name in self.views:
+                if name not in self.suspended or view != self.views[name]:
+                    reject(
+                        item.token,
+                        "binding",
+                        "restored storage must match the original wire order",
+                    )
             elif parameter.role != "local":
+                if parameter.role != "output":
+                    reject(
+                        item.token,
+                        "binding",
+                        "borrowed storage must be restored, not rebound",
+                    )
                 if not publish_output or len(destinations) != 1:
                     reject(
                         item.token,
@@ -2757,6 +2793,17 @@ class _Adapt:
             else tuple(_preparation_value(item) for item in vector.children)
         )
         bound = _preparation_value(bound_arg)
+        inplace = token.text == "inplace_prepare_amplitudes"
+        if inplace and (
+            not math.isclose(math.hypot(*amplitudes), 1.0, abs_tol=1e-12, rel_tol=0)
+            or not math.isfinite(bound)
+            or bound < 0
+        ):
+            reject(
+                vector.token,
+                "amplitudes",
+                "inplace preparation requires a normalized finite real vector and a nonnegative finite bound",
+            )
         if token.text == "prepare_state":
             if any(value < 0 for value in amplitudes) or not math.isclose(
                 math.fsum(amplitudes), 1.0, rel_tol=0, abs_tol=1e-12
@@ -2781,7 +2828,7 @@ class _Adapt:
         if register_width(destination) != width:
             reject(target, "width", "amplitude vector must match the output width")
         self.effect_op(
-            "qreg.prepare_amplitudes",
+            "qreg.inplace_prepare_amplitudes" if inplace else "qreg.prepare_amplitudes",
             token,
             (destination,),
             amplitudes=amplitudes,
@@ -2933,6 +2980,7 @@ class _Adapt:
                 "RZ",
                 "inplace_encode_on_bloch",
                 "inplace_prepare_state",
+                "inplace_prepare_amplitudes",
                 "qft",
             }
             if not body or any(
@@ -3217,7 +3265,11 @@ class _Adapt:
                         )
                     self.signed.add(target.text)
             self.effect_op("qreg.allocate", token, (destination,))
-        elif token.text in {"prepare_amplitudes", "prepare_state"}:
+        elif token.text in {
+            "prepare_amplitudes",
+            "inplace_prepare_amplitudes",
+            "prepare_state",
+        }:
             self.prepare_state_vector(token, args)
         elif token.text == "prepare_exponential_state":
             self.prepare_exponential_state(token, args)
@@ -3462,7 +3514,10 @@ class _Adapt:
             if angled:
                 attributes["angle"] = self.angle(args[0], token)
             targets = args[int(angled) :]
-            locations = tuple(self.gate_target(arg) for arg in targets)
+            locations = tuple(
+                self.gate_target(arg, allow_numeric=token.text == "CX")
+                for arg in targets
+            )
             registers, indices = zip(*locations, strict=True)
             if pair and (
                 any(arg.token.text == "[" for arg in targets)
@@ -3900,6 +3955,7 @@ def parse_qmod(
             if declaration is not None and (
                 declaration.kind == "qbit"
                 or (declaration.kind == "qbit[]" and declaration.width is None)
+                or (declaration.kind == "qnum" and declaration.width is not None)
             ):
                 continue
             controlled_qft = (
@@ -3931,10 +3987,12 @@ def parse_qmod(
                     "+=",
                     "phase",
                     "inplace_prepare_state",
+                    "inplace_prepare_amplitudes",
                     "prepare_amplitudes",
                     "select_rotation",
                     "allocate",
                     "free",
+                    "->",
                 }
                 and not controlled_qft
                 and not hadamard_within
