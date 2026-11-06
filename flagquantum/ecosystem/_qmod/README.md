@@ -1592,3 +1592,33 @@ program = synth.synthesize(
 result = fq.run(program)
 print(dict(program.probabilities(result, registers=("indicator",))))
 ```
+
+### Checked selector lifetimes and fixed numeric arrays
+
+A bounded annotated unary selector can be reduced to coherent static cases
+after its borrowed bits and scratch are checked for every selector word.
+The selected effects retain negative controls and absolute phases. An
+annotated helper with one borrowed selector and up to four data qubits can
+also be admitted through a full matrix proof. Each caller must prepare a
+fresh selector in a known basis state and return it clean. The proof checks
+every logical basis input and the internal work bits before reusing the
+corresponding unitary block.
+
+A fixed unsigned numeric array such as `qnum<3, False, 0>[2]` owns one
+packed six-bit register. Indexing returns one three-bit word, and `len`
+counts elements while `size` counts qubits. A phase table supplies one
+finite angle per basis word of its target.
+
+```python
+from pathlib import Path
+
+import flagquantum as fq
+from flagquantum import synth
+
+source = Path("tests/fixtures/classiq_qmod/discrete_poisson_solver.qmod")
+program = synth.synthesize(
+    source, max_qubits=13, max_workspace=0, max_operations=6_000
+)
+result = fq.run(program)
+print(dict(program.probabilities(result, registers=("indicator",))))
+```

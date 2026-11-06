@@ -52,6 +52,7 @@ from .callback_arrays import (
     lower_callback_control,
     lower_selected_effects,
 )
+from .clean_selector_normalization import normalize_clean_selectors, probe_source
 from .cnf_kickback import lower_cnf_kickback
 from .computed_rotation import (
     composed_rotation,
@@ -68,6 +69,7 @@ from .diffusion import lower_diffuser
 from .fixed_xor import lower_fixed_xor
 from .hea import lower_hea
 from .indexed_control import (
+    lower_constant_phase_guard,
     lower_guarded_field_increment,
     lower_indexed_control,
     lower_nested_indexed_control,
@@ -77,7 +79,11 @@ from .indexed_pauli import bind_indexed_pauli, indexed_pauli_member
 from .integers import checked_integer, checked_integer_array, integer_operation
 from .iterations import expand_iterations
 from .local_cleanup import lower_free
-from .masked_selection import emit_signed_predicate_xor, lower_masked_selection
+from .masked_selection import (
+    emit_selected,
+    emit_signed_predicate_xor,
+    lower_masked_selection,
+)
 from .matrices import lower_unitary, validate_matrix_constant
 from .oracles import expand_static_oracles
 from .pauli_schedule import ceiling_repetitions, compact_commuting
@@ -127,6 +133,7 @@ from .syntax import (
     reject,
     tokenize,
 )
+from .unary_selection_proof import prove_annotated_selections
 from .unitary_effects import (
     PURE_EFFECTS,
     emit_controlled_pauli,
@@ -146,7 +153,9 @@ QDRIFT_SEED = 0
 _GATE_CALLS = frozenset({"X", "Y", "H", "S", "Z", "I", "SX", "hadamard_transform"})
 _PAIR_CALLS = frozenset({"CX", "CZ", "SWAP", "CRX"})
 _STATIC_COMPARISONS = {"==": eq, "!=": ne, "<": lt, "<=": le, ">": gt, ">=": ge}
-_STATIC_GATES = _GATE_CALLS | _PAIR_CALLS | ANGLE_CALLS | {"IDENTITY"}
+_STATIC_GATES = (
+    _GATE_CALLS | _PAIR_CALLS | ANGLE_CALLS | {"IDENTITY", "assign_phase_table"}
+)
 _UNIFORM_CALLS = frozenset(
     {"prepare_uniform_interval_state", "prepare_uniform_trimmed_state"}
 )
@@ -1145,6 +1154,13 @@ class _Adapt:
                     return field[0].length or len(field[1])
                 reject(node.token, "field", "len requires an array field")
             name = root.token.text
+            numeric = self.parameters.get(name)
+            if (
+                numeric is not None
+                and numeric.length is not None
+                and numeric.record is None
+            ):
+                return numeric.length
             if name in self.callback_arrays:
                 return len(self.callback_arrays[name])
             if name in self.classical_arrays:
@@ -1199,6 +1215,13 @@ class _Adapt:
         if indexed and (parameter is None or parameter.kind != "qbit[]"):
             reject(target, "operator", "indexing requires a qubit array")
         index = self.static_integer(node.children[1]) if indexed else 0
+        if indexed and parameter is not None and parameter.length is not None:
+            if self.widths[target.text] != parameter.length:
+                reject(
+                    target,
+                    "type",
+                    "a scalar gate requires a one-bit numeric array element",
+                )
         if view is not None:
             width = len(view)
         else:
@@ -1226,6 +1249,20 @@ class _Adapt:
     def array_view(
         self, node: Expression, *, allow_phase: bool = False, allow_signed: bool = False
     ) -> tuple[tuple[Value, int], ...]:
+        if node.token.text == "[" and not node.children[0].children:
+            source, index_expression = node.children
+            port = self.parameters.get(source.token.text)
+            if port is not None and port.length is not None and port.record is None:
+                offset = self.static_integer(index_expression)
+                if not 0 <= offset < port.length:
+                    reject(
+                        index_expression.token,
+                        "width",
+                        "numeric array index is out of bounds",
+                    )
+                array = self.array_view(source)
+                width = len(array) // port.length
+                return array[offset * width : (offset + 1) * width]
         cell = self.record_bit(node)
         if cell is not None:
             return (cell,)
@@ -1379,6 +1416,7 @@ class _Adapt:
                 and item.static_if_body is None
                 and item.repeat_index is None
                 and item.inverse_body is None
+                and not is_reversible_scope(item)
             ):
                 reject(
                     item.token,
@@ -1903,6 +1941,10 @@ class _Adapt:
                     else (self.gate_target(argument, allow_numeric=True),)
                 )
             )
+            if parameter.length is not None and (
+                actual_port is None or actual_port.length != parameter.length
+            ):
+                reject(argument.token, "width", "helper numeric array shape disagrees")
             if parameter.width is not None and len(view) != parameter.width:
                 reject(argument.token, "width", "helper quantum array length disagrees")
             if len(set(view)) != len(view) or actuals.intersection(view):
@@ -2043,6 +2085,12 @@ class _Adapt:
             operands = tuple(
                 materialized.get(value, value) for value in op.operands[1:]
             )
+            if op.name == "qreg.local":
+                reject(
+                    token,
+                    "scope",
+                    "bound helper needs a checked lowering for computed local storage",
+                )
             self.effect_op(op.name, token, operands, **op.attributes)
 
     def call(
@@ -2121,10 +2169,20 @@ class _Adapt:
                 None if borrowed else formal.type.parameters[0],
                 allow_qubit_array=parameter.record is not None
                 or parameter.kind == "qbit[]",
+                allocate_local=not borrowed and self.scope == "main",
+            )
+            actual_kind = self.parameters[actual_name.text].kind
+            raw_array_output = (
+                not borrowed
+                and parameter.kind == "qbit[]"
+                and actual_kind == "qnum"
+                and parameter.record is None
+                and self.parameters[actual_name.text].role == "local"
             )
             if (
                 actual_name.text in self.signed
-                or self.parameters[actual_name.text].kind != parameter.kind
+                or actual_kind != parameter.kind
+                and not raw_array_output
                 or actual.type != formal.type
             ):
                 reject(
@@ -2636,6 +2694,7 @@ class _Adapt:
             return any(
                 child.inverse_body is not None
                 or child.repeat_index is not None
+                or child.within is not None
                 or child.token.text in {"+=", "unitary"}
                 or child.token.text in self.definitions
                 or (
@@ -2692,7 +2751,15 @@ class _Adapt:
                             power=min(128, power - start),
                         )
                     continue
-                for _ in run:
+                for effect in run:
+                    if (
+                        "control_state" in attrs
+                        or name == "qreg.inplace_prepare_amplitudes"
+                        or name == "qreg.gate"
+                        and attrs.get("gate") in {"phase", "z", "s"}
+                    ):
+                        emit_selected(self, statement.token, (control,), 1, (effect,))
+                        continue
                     if name == "qreg.control_x" and "indices" in attrs:
                         locations = tuple(zip(operands, attrs["indices"], strict=True))
                     elif name == "qreg.gate" and attrs["gate"] in {"i", "x"}:
@@ -2878,6 +2945,8 @@ class _Adapt:
             return
         if self.controlled_rz_branches(statement):
             return
+        if lower_constant_phase_guard(self, statement):
+            return
         if lower_masked_selection(self, statement):
             return
         if self.coherent_helper_control(statement, index):
@@ -2905,6 +2974,7 @@ class _Adapt:
             and (self.widths.get(condition.children[0].token.text) or 0) > 1
             and (
                 body[0].token.text in {"grover_diffuser", "inplace_prepare_state"}
+                or is_reversible_scope(body[0])
                 or (
                     (helper := self.definitions.get(body[0].token.text)) is not None
                     and _bound_helper(helper)
@@ -2916,7 +2986,19 @@ class _Adapt:
             effects = tuple(self.operations[start:])
             del self.operations[start:]
             self.effect = incoming
-            lower_selected_effects(self, token, condition, effects)
+            if is_reversible_scope(body[0]):
+                selector, literal = condition.children
+                controls = self.array_view(selector)
+                expected = self.static_integer(literal)
+                if not 1 <= len(controls) <= 7 or not 0 <= expected < 1 << len(
+                    controls
+                ):
+                    reject(
+                        token, "control", "selected scope equality must fit its word"
+                    )
+                emit_selected(self, token, controls, expected, effects)
+            else:
+                lower_selected_effects(self, token, condition, effects)
             return
         if len(body) != 1:
             reject(token, "control", "control requires one condition and one operation")
@@ -3948,6 +4030,7 @@ class _Adapt:
                 and child.token.text not in self.callback_bindings
                 and child.token.text not in self.zero_callbacks
                 and child.inverse_body is None
+                and child.control_body is None
                 for child in body
             ):
                 reject(
@@ -4327,15 +4410,45 @@ class _Adapt:
             )
             self.effect_op("qreg.drop", token, (destination,))
             self.dropped.add(target.text)
+        elif token.text == "assign_phase_table":
+            if len(args) != 2:
+                reject(
+                    token, "signature", "phase table requires angles and a quantum word"
+                )
+            angles = self.real_array(args[0])
+            locations = self.array_view(args[1])
+            if not 1 <= len(locations) <= 7 or len(angles) != 1 << len(locations):
+                reject(
+                    token,
+                    "width",
+                    "phase table size must match a one-to-seven-bit word",
+                )
+            if len(locations) != len(set(locations)):
+                reject(token, "alias", "phase table target locations must be disjoint")
+            registers, indices = zip(*locations, strict=True)
+            for word, angle in enumerate(angles):
+                if abs(angle) > 2**53:
+                    reject(
+                        token, "phase", "phase table angles must fit finite phase range"
+                    )
+                if angle or word == 0:
+                    self.effect_op(
+                        "qreg.control_phase",
+                        token,
+                        registers,
+                        indices=indices,
+                        control_state=word,
+                        angle=angle,
+                    )
         elif token.text == "IDENTITY":
             if len(args) != 1:
                 reject(token, "signature", "IDENTITY requires one register")
-            locations = self.array_view(args[0])
-            port = (
-                self.parameters.get(args[0].token.text)
-                if not args[0].children
-                else None
+            indexed = args[0].token.text == "[" and not args[0].children[0].children
+            locations = (
+                (self.gate_target(args[0]),) if indexed else self.array_view(args[0])
             )
+            root = args[0].children[0] if indexed else args[0]
+            port = self.parameters.get(root.token.text) if not root.children else None
             checked: set[Value] = set()
             for value, bit in locations:
                 if value not in checked:
@@ -4914,6 +5027,27 @@ def parse_qmod(
     definitions = expand_iterations(definitions)
     definitions = specialize_quantum_callbacks(definitions, constants)
     definitions = expand_nested_array_kickbacks(definitions)
+    definitions = prove_annotated_selections(definitions)
+
+    def compile_probe(
+        function: Function, proof_definitions: Mapping[str, Function]
+    ) -> HybridProgram:
+        def resolve_probe(token: Token) -> tuple[Function, HybridProgram]:
+            reject(
+                token, "ownership", "selector proof requires statically bound helpers"
+            )
+
+        probe = _Adapt(
+            probe_source(function),
+            resolve_probe,
+            proof_definitions,
+            constants,
+            parser.records,
+        )
+        probe.classical_integers.update(constant_integers)
+        return probe.adapt()
+
+    definitions = normalize_clean_selectors(definitions, compile_probe)
     definitions = expand_borrowed_phase_views(definitions, constants)
     definitions = expand_phase_kickbacks(definitions)
     verify_permutations(definitions)

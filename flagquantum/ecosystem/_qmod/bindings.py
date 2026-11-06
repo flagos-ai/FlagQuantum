@@ -29,7 +29,9 @@ def parse_within(parser: Parser, allow_scopes: bool, scope_depth: int) -> Statem
     )
     parser.take("apply")
     has_bindings = any(s.token.text == "->" for s in preparation)
-    actions = parser.block(scope_depth=scope_depth + 1, binding_actions=has_bindings)
+    actions = parser.block(
+        scope_depth=scope_depth + 1, binding_actions=has_bindings, static_loop_body=True
+    )
     return Statement(token, (), within=preparation, apply=actions)
 
 
@@ -76,6 +78,30 @@ def lower_binding_scope(owner: _Adapt, statement: Statement, index: str) -> bool
 def record_view(
     owner: _Adapt, parameter: Parameter, argument: Expression
 ) -> tuple[tuple[Value, int], ...]:
+    if argument.token.text == "{":
+        assert parameter.record is not None
+        fields = owner.record_types[parameter.record].fields
+        if len(argument.children) != len(fields):
+            reject(
+                argument.token, "signature", "record groups must match declared fields"
+            )
+        views: list[tuple[Value, int]] = []
+        for item, field in zip(argument.children, fields, strict=True):
+            atom = owner.atom(item)
+            actual = owner.parameters.get(atom.text)
+            if (
+                actual is None
+                or actual.kind != field.kind
+                or actual.record != field.record
+            ):
+                reject(atom, "signature", "record groups require matching field types")
+            view = owner.array_view(item, allow_signed=field.kind == "qnum_signed")
+            if len(view) != (field.width or 0) * (field.length or 1):
+                reject(atom, "width", "record group field width disagrees")
+            views.extend(view)
+        if len(views) != len(set(views)):
+            reject(argument.token, "alias", "record group fields must be disjoint")
+        return tuple(views)
     root = argument.children[0] if argument.token.text == ":" else argument
     nested = owner.record_field(root)
     actual = (

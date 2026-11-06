@@ -975,6 +975,7 @@ class Parser:
             self.take(":")
             record = None
             fractional_bits = 0
+            numeric_length = None
             if self.current.text in self.records:
                 if role not in {"output", "inout", "const"}:
                     reject(
@@ -1033,7 +1034,20 @@ class Parser:
                     and role == "output",
                     allow_fixed_array=role in {"inout", "output", "const"}
                     or name.text == "main",
+                    allow_numeric_array=role in {"inout", "output", "const"},
                 )
+                if kind == "qnum" and self.current.text == "[":
+                    self.take("[")
+                    numeric_length = self.width()
+                    self.take("]")
+                    if width is None or width * numeric_length > 256:
+                        reject(
+                            parameter,
+                            "width",
+                            "numeric array requires a fixed element width within 256 total bits",
+                        )
+                    width *= numeric_length
+                    kind = "qbit[]"
                 if kind == "qphase_signed" and name.text != "main":
                     reject(
                         parameter,
@@ -1047,6 +1061,7 @@ class Parser:
                     width,
                     role,
                     record,
+                    length=numeric_length,
                     fractional_bits=fractional_bits,
                 )
             )
@@ -1212,7 +1227,7 @@ class Parser:
                 count = self.expression(static=True)
                 self.take(")")
                 body = self.block(
-                    allow_scopes=False,
+                    allow_scopes=allow_scopes,
                     scope_depth=scope_depth + 1,
                     static_loop_body=True,
                     binding_actions=binding_actions,
@@ -1299,7 +1314,7 @@ class Parser:
                 right = self.expression(static=True)
                 self.take(")")
                 body = self.block(
-                    allow_scopes=False,
+                    allow_scopes=allow_scopes,
                     scope_depth=scope_depth + 1,
                     static_loop_body=True,
                 )
@@ -1308,7 +1323,7 @@ class Parser:
                 if self.current.text == "else":
                     self.take("else")
                     alternative = self.block(
-                        allow_scopes=False,
+                        allow_scopes=allow_scopes,
                         scope_depth=scope_depth + 1,
                         static_loop_body=True,
                     )
@@ -1341,7 +1356,11 @@ class Parser:
                 continue
             target = self.name()
             arguments: tuple[Expression, ...]
-            if target.text == "free" and scope_depth:
+            if (
+                target.text == "free"
+                and scope_depth
+                and not (allow_scopes and static_loop_body)
+            ):
                 reject(target, "scope", "free requires function scope")
             if (
                 target.text in {"grover_operator", "grover_search", "phase_oracle"}
@@ -1639,7 +1658,7 @@ class Parser:
                         f"scope nesting exceeds depth {MAX_SCOPE_DEPTH}",
                     )
                 body = self.block(
-                    allow_scopes=False,
+                    allow_scopes=allow_scopes,
                     scope_depth=scope_depth + 1,
                     control_actions=True,
                 )
@@ -1647,7 +1666,7 @@ class Parser:
                 if self.current.text == "else":
                     self.take("else")
                     alternate = self.block(
-                        allow_scopes=False,
+                        allow_scopes=allow_scopes,
                         scope_depth=scope_depth + 1,
                         control_actions=True,
                     )

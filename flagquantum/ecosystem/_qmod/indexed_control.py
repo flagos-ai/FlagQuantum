@@ -279,3 +279,68 @@ def lower_guarded_field_increment(owner: _Adapt, statement: Statement) -> bool:
     for value, index in reversed(negative):
         owner.effect_op("qreg.gate", update.token, (value,), gate="x", index=index)
     return True
+
+
+def lower_constant_phase_guard(owner: _Adapt, statement: Statement) -> bool:
+    """Keep an exact constant phase under nested indexed equality guards."""
+    chain = []
+    leaf = statement
+    while leaf.control_body is not None:
+        if (
+            len(leaf.control_body) != 1
+            or leaf.control_else is not None
+            or len(leaf.arguments) != 1
+        ):
+            return False
+        condition = leaf.arguments[0]
+        if condition.token.text != "==" or len(condition.children) != 2:
+            return False
+        source, expected = condition.children
+        if expected.children or not expected.token.text.isdecimal():
+            return False
+        chain.append((source, expected))
+        leaf = leaf.control_body[0]
+    if (
+        not chain
+        or leaf.token.text != "phase"
+        or len(leaf.arguments) != 1
+        or leaf.arguments[0].children
+        or leaf.arguments[0].token.text != "pi"
+        or "pi" in owner.parameters
+        or len(chain) == 1
+        and not chain[0][0].children
+        and not (
+            owner.helper_stack and (owner.widths.get(chain[0][0].token.text) or 0) > 1
+        )
+    ):
+        return False
+    locations: dict[tuple[Value, int], int] = {}
+    consistent = True
+    for source, expected in chain:
+        view = (
+            (owner.gate_target(source),)
+            if source.token.text == "[" and not source.children[0].children
+            else owner.array_view(source)
+        )
+        word = owner.static_integer(expected)
+        if not 0 <= word < 1 << len(view):
+            reject(expected.token, "control", "phase equality must fit its word")
+        for index, location in enumerate(view):
+            bit = word >> index & 1
+            if location in locations and locations[location] != bit:
+                consistent = False
+            locations[location] = bit
+    if not 1 <= len(locations) <= 8:
+        reject(
+            statement.token, "control", "phase equality guards need at most eight bits"
+        )
+    values, indices = zip(*locations, strict=True)
+    owner.effect_op(
+        "qreg.control_phase",
+        statement.token,
+        values,
+        indices=indices,
+        control_state=sum(bit << index for index, bit in enumerate(locations.values())),
+        angle=math.pi if consistent else 0.0,
+    )
+    return True
