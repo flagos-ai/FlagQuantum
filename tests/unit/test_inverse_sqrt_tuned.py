@@ -11,8 +11,8 @@ from flagquantum.compiler.registers.fixed_point_sqrt import fixed_point_sqrt_ir
 from flagquantum.compiler.registers.inverse_sqrt import inverse_sqrt_ir
 from flagquantum.compiler.registers.inverse_sqrt_seed import inverse_sqrt_seed_ir
 from flagquantum.core.ir import CircuitIR
-from tests.unit.algorithms.primitives.multiplexers.test_thc_qrom import _execute_sparse
 from tests.unit.measurement_checks import certified_and_channel_map
+from tests.unit.sparse_register_execution import execute_sparse_register
 from tests.unit.test_fixed_point_sqrt import layout as sqrt_layout
 from tests.unit.test_inverse_sqrt import layout as inverse_layout
 from tests.unit.test_inverse_sqrt_seed import layout as seed_layout
@@ -115,7 +115,7 @@ def test_tuned_iterations_all_words_and_clean_history(root, n, f, b, steps, o):
                 2 ** (n + 1)
             )
     for initial, expected in ((before, after), (after, before)):
-        actual = _execute_sparse(ir, initial, seed=31)
+        actual = execute_sparse_register(ir, initial, seed=31)
         assert all(
             abs(actual.get(i, 0) - expected.get(i, 0)) < 2e-12
             for i in actual.keys() | expected.keys()
