@@ -1201,3 +1201,34 @@ The remaining five source children supply only resource declarations, so
 the whole preparation has no emitted instruction report. The pinned
 composite rejects `m_param=1` because the zero-width uniform preparation
 has no target port. The estimate raises for this case.
+
+## First-quantized potential PREPARE
+
+The potential preparation combines the momentum-transfer graph with the
+nuclear-index model. The two register groups are independent. The nuclear
+index remains live during momentum preparation, and vice versa. The
+adjoint reverses the calls and follows the source's separate cost rules.
+
+```python
+from flagquantum.algorithms.first_quantization_resource_model import (
+    source_prepare_uv_cost,
+)
+from flagquantum.qec.resources.estimation import estimate_ftqc_resources
+
+forward = estimate_ftqc_resources(source_prepare_uv_cost(6, 10, 32768, 10))
+reverse = estimate_ftqc_resources(
+    source_prepare_uv_cost(6, 10, 32768, 10, adjoint=True)
+)
+assert forward.logical.gates.toffoli == 577
+assert forward.logical.peak_logical_qubits == 77
+assert reverse.logical.gates.toffoli == 24
+assert reverse.logical.peak_logical_qubits == 50
+```
+
+The locked nuclear-index leaf declares one Toffoli per unit of total nuclear
+charge forward and the ceiling of the floating-point square root of that
+charge for the adjoint. It has no gate decomposition. Its index is
+zero-width for one atom, and the source width model still includes the
+three-wire Toffoli callee. The example above reports analytical resources
+for the potential preparation. Its complete emitted gate count is
+unavailable.

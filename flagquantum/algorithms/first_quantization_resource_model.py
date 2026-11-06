@@ -11,6 +11,7 @@ from ..compiler._component_trace.resource_model import ComponentCost, CostCall, 
 from ..compiler.registers.arithmetic_resource_model import source_add_cost
 from ..compiler.registers.uniform_preparation import source_uniform_preparation_cost
 from .first_quantization import source_multiplexed_cswap_3d_cost
+from .first_quantization_nu_resource_model import source_prepare_nu_cost
 
 
 def source_select_t_cost(num_bits_p: int) -> ComponentCost:
@@ -182,3 +183,32 @@ def source_prepare_zeta_cost(
     # Keep the source's floating square-root rounding in the adjoint model.
     toffoli = ceil(lambda_zeta**0.5) if adjoint else lambda_zeta
     return ComponentCost("PrepareZetaState", max(width, 3), GateCost(toffoli=toffoli))
+
+
+def source_prepare_uv_cost(
+    num_bits_p: int,
+    num_atoms: int,
+    m_param: int,
+    lambda_zeta: int,
+    *,
+    adjoint: bool = False,
+) -> ComponentCost:
+    """Combine the source momentum-transfer and nuclear-index cost graphs.
+
+    Both child calls pass through disjoint register groups. The index is
+    live during momentum preparation and vice versa. The source adjoint
+    reverses the calls and uses each child's adjoint resource declaration.
+    """
+    nu = source_prepare_nu_cost(num_bits_p, m_param, adjoint=adjoint)
+    zeta = source_prepare_zeta_cost(num_atoms, lambda_zeta, adjoint=adjoint)
+    nu_ports = 4 * num_bits_p + (m_param - 1).bit_length() + 4
+    index_width = (num_atoms - 1).bit_length()
+    calls = (
+        CostCall(nu, bystander_qubits=index_width),
+        CostCall(zeta, bystander_qubits=nu_ports),
+    )
+    return ComponentCost(
+        "PrepareUVFirstQuantization†" if adjoint else "PrepareUVFirstQuantization",
+        nu_ports + index_width,
+        calls=calls[::-1] if adjoint else calls,
+    )

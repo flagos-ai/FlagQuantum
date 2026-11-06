@@ -9,6 +9,7 @@ from flagquantum.algorithms.first_quantization_resource_model import (
     source_prepare_ij_cost,
     source_prepare_power_two_cost,
     source_prepare_t_cost,
+    source_prepare_uv_cost,
     source_prepare_zeta_cost,
     source_select_first_quantization_cost,
     source_select_t_cost,
@@ -255,3 +256,66 @@ def test_prepare_zeta_cost(
     )
     with pytest.raises(DecomposeNotImplementedError):
         source.decompose_bloq()
+
+
+@pytest.mark.parametrize(
+    ("p", "eta", "atoms", "m", "charge", "precision"),
+    [
+        (1, 2, 1, 3, 0, 1),
+        (2, 4, 1, 2, 1, 16),
+        (2, 3, 2, 5, 4, 8),
+        (3, 4, 33, 9, 15, 2),
+        (6, 10, 10, 32768, 10, 8),
+    ],
+)
+@pytest.mark.parametrize("adjoint", [False, True])
+@pytest.mark.ftqc_reference
+def test_prepare_uv_source_graph(
+    p: int, eta: int, atoms: int, m: int, charge: int, precision: int, adjoint: bool
+) -> None:
+    pytest.importorskip("qualtran")
+    from qualtran import LeftDangle, RightDangle
+    from qualtran.bloqs.chemistry.pbc.first_quantization.prepare_uv import (
+        PrepareUVFirstQuantization,
+    )
+
+    source = PrepareUVFirstQuantization(p, eta, atoms, m, charge, precision)
+    if adjoint:
+        source = source.adjoint()
+    model = source_prepare_uv_cost(p, atoms, m, charge, adjoint=adjoint)
+    assert_source_model(model, source)
+    assert model.qubits == source.signature.n_qubits()
+    composite = source.decompose_bloq()
+    assert_source_model(model, composite)
+    live = {edge for edge in composite.connections if edge.left.binst == LeftDangle}
+    stages = []
+    for node, incoming, outgoing in composite.iter_bloqnections():
+        live.difference_update(incoming)
+        assert all(edge.left.binst == LeftDangle for edge in incoming)
+        assert all(edge.right.binst == RightDangle for edge in outgoing)
+        register_names = {edge.left.reg.name for edge in incoming}
+        assert register_names == {edge.right.reg.name for edge in outgoing}
+        assert register_names == (
+            {"l"}
+            if str(node.bloq) == "PrepareZetaState"
+            else {"mu", "nu", "m", "flag_nu"}
+        )
+        stages.append((str(node.bloq), sum(edge.shape for edge in live)))
+        live.update(outgoing)
+    assert stages == [
+        (call.component.name, call.bystander_qubits) for call in model.calls
+    ]
+
+
+def test_prepare_uv_roundtrip_resources() -> None:
+    forward = estimate_ftqc_resources(source_prepare_uv_cost(6, 10, 32768, 10))
+    reverse = estimate_ftqc_resources(
+        source_prepare_uv_cost(6, 10, 32768, 10, adjoint=True)
+    )
+    assert (
+        forward.logical.gates.total_t_count() + reverse.logical.gates.total_t_count()
+        == 2516
+    )
+    assert forward.logical.peak_logical_qubits == 77
+    assert reverse.logical.peak_logical_qubits == 50
+    assert forward.emitted is reverse.emitted is None
