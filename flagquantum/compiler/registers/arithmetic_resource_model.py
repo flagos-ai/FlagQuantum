@@ -11,7 +11,9 @@
 from .._component_trace.resource_model import ComponentCost, GateCost
 
 
-def source_add_cost(left_width: int, right_width: int) -> ComponentCost:
+def source_add_cost(
+    left_width: int, right_width: int, *, legacy_shims: bool = False
+) -> ComponentCost:
     """Preserve the source Add formula, including its one-bit Clifford anomaly."""
     if (
         type(left_width) is not int
@@ -25,7 +27,7 @@ def source_add_cost(left_width: int, right_width: int) -> ComponentCost:
         left_width + right_width + carries,
         GateCost(
             and_bloq=carries,
-            clifford=(right_width - 2) * 6 + 3 + carries,
+            clifford=(right_width - 2) * 6 + 3 + carries * (3 if legacy_shims else 1),
             measurement=carries,
         ),
     )

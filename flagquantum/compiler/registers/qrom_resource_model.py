@@ -17,6 +17,8 @@ def source_qrom_cost(
     shape: tuple[int, ...],
     target_layout: tuple[tuple[int, int], ...],
     datasets: tuple[tuple[int, ...], ...],
+    *,
+    legacy_shims: bool = False,
 ) -> ComponentCost:
     """Estimate QROM from flattened row-major data and (word count, width) pairs."""
     if type(control_count) is not int or control_count < 0:
@@ -49,6 +51,7 @@ def source_qrom_cost(
             )
 
     reduction = max(0, control_count - 1)
+    erase_cliffords = 3 if legacy_shims else 1
     width = sum(selection_widths)
     target_width = sum(words * bits for words, bits in target_layout)
     peak = target_width + 2 * (width + control_count) - 1
@@ -71,7 +74,9 @@ def source_qrom_cost(
             "QROM",
             peak,
             GateCost(
-                and_bloq=reduction, clifford=load(0) + reduction, measurement=reduction
+                and_bloq=reduction,
+                clifford=load(0) + erase_cliffords * reduction,
+                measurement=reduction,
             ),
         )
     if not all(selection_widths):
@@ -114,12 +119,19 @@ def source_qrom_cost(
             visit(capacity // 2, capacity)
 
     axis(0, 0, control_count > 0)
+    # Each split has a negative control on compute and a positive erase.
+    split_cliffords = 2 + erase_cliffords + 1 if legacy_shims else 2
     return ComponentCost(
         "QROM",
         peak,
         GateCost(
             and_bloq=splits + reduction,
-            clifford=loads + 2 * splits + reduction + 2 * (control_count == 0),
+            clifford=(
+                loads
+                + split_cliffords * splits
+                + erase_cliffords * reduction
+                + 2 * (control_count == 0)
+            ),
             measurement=splits + reduction,
         ),
     )

@@ -130,6 +130,12 @@ def test_literal_qrom_and_complete_channel(
         key: value for key, value in asdict(estimated.gates).items() if value
     } == model.asdict()
     assert estimated.peak_logical_qubits == get_cost_value(source, QubitCount())
+    legacy = source_qrom_cost(
+        controls_count, widths, shape, target_layout, datasets, legacy_shims=True
+    )
+    assert {
+        key: value for key, value in asdict(legacy.gates).items() if value
+    } == get_cost_value(source, QECGatesCost(legacy_shims=True)).asdict()
     # The static estimate always includes the full selection pool.
     assert (
         get_cost_value(source, QubitCount())

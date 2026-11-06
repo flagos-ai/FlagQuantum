@@ -35,6 +35,15 @@ def test_add_source_model_and_native_measurements(left: int, right: int) -> None
 
     cost = source_add_cost(left, right)
     assert_source_cost(cost, Add(QUInt(left), QUInt(right)))
+    from qualtran.resource_counting import QECGatesCost, get_cost_value
+
+    legacy = source_add_cost(left, right, legacy_shims=True)
+    locked = get_cost_value(
+        Add(QUInt(left), QUInt(right)), QECGatesCost(legacy_shims=True)
+    )
+    assert {
+        key: value for key, value in asdict(legacy.gates).items() if value
+    } == locked.asdict()
     gates = add_ir(
         tuple(range(left)),
         tuple(range(left, left + right)),
