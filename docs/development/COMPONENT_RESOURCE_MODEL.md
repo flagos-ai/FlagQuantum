@@ -2750,3 +2750,37 @@ circuit.append(data.make_on(ports, workspace=scratch, adjoint=True))
 
 The indexed-data stream uses the concrete locked QROAMClean decomposition.
 The chemistry QROAM cost placeholder remains a separate model.
+
+### Ordered double-factorization block encodings
+
+The ordered model follows the locked block's outer PREPARE, indexed-data
+load, one-body block, reflection, repeated one-body block, and inverse
+loads. The middle reflection touches the orbital selection and spin, and
+the locked circuit controls it on the outer success flag. Its one-body
+number phase applies to the first orbital of the selected spin register.
+The custom source gate-count graph uses a fixed five-orbital word for this
+phase. The ordered model uses the decomposition's actual spatial word
+width for lifetimes. Both widths give the same declared gate cost.
+
+```python
+from flagquantum.algorithms.primitives.double_factorization_encoding_model import (
+    source_double_factorization_block_encoding_cost,
+)
+from flagquantum.compiler._component_trace.resource_model import (
+    estimate_component_resources,
+)
+
+model = source_double_factorization_block_encoding_cost(
+    auxiliaries=50, spin_orbitals=10, eigenvalues=250,
+    alias_bits=12, basis_rotation_bits=8,
+)
+resources = estimate_component_resources(model)
+assert resources.gates.toffoli == 1304
+assert resources.peak_logical_qubits == 101
+```
+
+The shared emitted number-phase predicate uses four T-family instructions,
+one measurement and one clean work wire with two success controls. A third
+control for the nonzero-factor flag uses eight T-family instructions, two
+measurements and two work wires. These are leaf-level emitted counts. The
+full encoding above is an analytical model.
