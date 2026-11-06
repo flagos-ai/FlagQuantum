@@ -510,6 +510,13 @@ The emitted phase instructions retain their angles for later synthesis.
 The QEC model classifies those angles separately as Clifford, T-like
 or arbitrary rotations.
 
+The native Pauli power emitters preserve the eigenphase at zero
+global shift. For example, the square of X is the identity, whereas
+a radian X rotation by twice pi is minus the identity. For a controlled
+power, the X/Y global shift becomes a phase on the control wire. Qualtran
+delegates these leaf unitaries to Cirq. FlagQuantum uses phase instructions
+and basis changes to preserve the full complex action.
+
 - [Qualtran v0.7.0 gate costs](https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/resource_counting/_bloq_counts.py)
 - [Qualtran v0.7.0 logical width](https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/resource_counting/_qubit_counts.py)
 - [Qualtran v0.7.0 success probability](https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/resource_counting/_success_prob.py)
