@@ -212,6 +212,18 @@ def test_outer_control_relative_swap(
     if width > 3:
         # Wider cases exercise the fanout order and resources without dense simulation.
         return
+    assert_controlled_exchange_branches(
+        actual, expected, inverse, data_width, workspace
+    )
+
+
+def assert_controlled_exchange_branches(
+    actual: tuple[Instruction, ...],
+    expected: tuple[Instruction, ...],
+    inverse: tuple[Instruction, ...],
+    data_width: int,
+    workspace: tuple[int, ...],
+) -> None:
     # Include a spectator entangled across both control sectors and every target input.
     indices = torch.arange(1 << (data_width + 1))
     amplitudes = torch.complex(indices.double() + 1, (indices % 7).double() - 3)

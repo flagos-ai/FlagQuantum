@@ -9,7 +9,12 @@ from math import prod
 
 from ...core.ir import Instruction
 from .bitwise import _validate_wires
-from .relative_controlled_swap import relative_controlled_swap_ir
+from .control_predicate import ControlRegister
+from .controlled_component import controlled_component_ir
+from .relative_controlled_swap import (
+    control_relative_swap_ir,
+    relative_controlled_swap_ir,
+)
 
 
 def swap_with_zero_ir(
@@ -24,6 +29,57 @@ def swap_with_zero_ir(
     The selected row moves to zero for in-range selections. The inverse reverses
     the network and keeps the source phase of each self-adjoint exchange.
     """
+    return tuple(
+        gate
+        for control, left, right in _swap_sequence(selections, shape, targets, adjoint)
+        for gate in relative_controlled_swap_ir(control, targets[left], targets[right])
+    )
+
+
+def control_swap_with_zero_ir(
+    controls: tuple[tuple[int, ...], ...],
+    registers: tuple[ControlRegister, ...],
+    selections: tuple[tuple[int, ...], ...],
+    shape: tuple[int, ...],
+    targets: tuple[tuple[int, ...], ...],
+    workspace: tuple[int, ...],
+    classical_bits: tuple[int, ...],
+    *,
+    adjoint: bool = False,
+) -> tuple[Instruction, ...]:
+    """Apply one shared outer predicate to the source exchange network."""
+    order = _swap_sequence(selections, shape, targets, adjoint)
+    _validate_wires(
+        (
+            *workspace,
+            *(wire for word in (*controls, *selections, *targets) for wire in word),
+        )
+    )
+
+    def emit(control: int) -> tuple[Instruction, ...]:
+        return tuple(
+            gate
+            for select, left, right in order
+            for gate in control_relative_swap_ir(
+                ((control,),),
+                (ControlRegister(1, (1,)),),
+                select,
+                targets[left],
+                targets[right],
+                (),
+                (),
+            )
+        )
+
+    return controlled_component_ir(controls, registers, emit, workspace, classical_bits)
+
+
+def _swap_sequence(
+    selections: tuple[tuple[int, ...], ...],
+    shape: tuple[int, ...],
+    targets: tuple[tuple[int, ...], ...],
+    adjoint: bool,
+) -> list[tuple[int, int, int]]:
     if not shape or len(selections) != len(shape) or type(adjoint) is not bool:
         raise ValueError("Swap with zero requires matching axes and boolean adjoint")
     empty_selection = False
@@ -56,9 +112,6 @@ def swap_with_zero_ir(
                 )
 
     visit(0, 0)
-    order = reversed(exchanges) if adjoint else iter(exchanges)
-    return tuple(
-        gate
-        for control, left, right in order
-        for gate in relative_controlled_swap_ir(control, targets[left], targets[right])
-    )
+    if adjoint:
+        exchanges.reverse()
+    return exchanges

@@ -64,3 +64,19 @@ eight T/T† and two measurements, with two clean work qubits. The pinned
 `QubitCount` is 12. The pinned `QECGatesCost` fails for the controlled abstract
 `ArbitraryClifford` in the source cost graph. The eight emitted T/T† count only
 the predicate, and the other controlled leaves retain their own opcodes.
+
+## Outer control on the indexed network
+
+`control_swap_with_zero_ir` uses the same row-major traversal and relative
+swap leaves as the regular network. The outer predicate is computed once
+for the entire exchange sequence, so the number of outer work qubits and
+measurements is independent of the table size. For the network adjoint,
+the exchange sequence reverses and the same forward controlled leaf is
+used at each exchange. The empty network retains the source's negative
+control conjugation or measured multi-control wrapper.
+
+With three rows of two bits and outer pattern `(1, 0, 1)`, the two exchanges
+emit 22 CCX, 32 CH and 48 controlled phase instructions. The outer predicate
+adds eight T/T† instructions and two measurements, returning both work
+qubits to zero. The source peak is 13 logical qubits. Its QEC gate query
+encounters the same controlled `ArbitraryClifford` limitation as the leaf.
