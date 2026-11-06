@@ -1722,3 +1722,26 @@ assert report.emitted is not None
 assert report.emitted.t_count == 20
 assert report.emitted.unconditional["measure"] == 5
 ```
+
+## Walk construction from a Pauli Hamiltonian
+
+`pauli_hamiltonian_walk` in
+`flagquantum.algorithms.primitives.pauli_hamiltonian_walk` combines repeated
+Pauli products in input order, orders the active target labels, and passes
+signed words to bounded SELECT. It converts the requested eigenphase
+precision to absolute coefficient precision before building the dense alias
+table. Supply `norm_bound` when the source's signed norm estimate is nonreal
+or when an independently established bound is needed.
+
+Use the resulting `walk.make_on` with the alias preparation's explicit
+selection, signal junk, and workspace requirements. The locked alias
+reflection marks the selection register only. Its allocated preparation junk
+can remain nonzero, including when it starts at zero. Keep those wires live
+after the step. Comparator and reflection work is cleared.
+
+For the two-term example with coefficients +3 and −3 and an explicit norm
+bound of √18, the model gives 32 T equivalents and a peak of 14 logical
+qubits. Native IR emits 38 T/T† and six measurements, with exact seven-T
+Fredkin gates. The allocated circuit has 15 wires including the scalar
+phase carrier. Both directions were compared over all measurement histories,
+retaining the preparation junk in the source comparison.
