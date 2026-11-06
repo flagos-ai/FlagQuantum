@@ -1473,3 +1473,14 @@ numeric register. A bound helper may split or reinterpret borrowed storage
 using local views and must restore its formal ports in their original wire
 order. Real `inplace_prepare_amplitudes` requires a normalized vector and
 initialized storage, with the inverse available in a reversible block.
+
+### Bounded affine arithmetic and captured flags
+
+An unsigned register can apply an in-place affine addition or subtraction
+using distinct unsigned source locations and a static offset in -256..256.
+Register-dependent updates are bounded to eight source and eight target
+bits. The target wraps at its declared width. An inferred local capture in
+a bound helper can feed terminal comparison-controlled X operations across
+one checked reversible integer update. The flags are independent of that
+update, so their comparisons are evaluated on the captured input before
+the update, with signed thresholds and no exposed temporary storage.

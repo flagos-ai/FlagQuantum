@@ -1051,10 +1051,10 @@ class Parser:
                 operator = self.take(self.current.text)
                 rhs = (
                     self.signed_angle_argument()
-                    if operator.text in {"^=", "+="} and self.current.text == "-"
+                    if operator.text == "^=" and self.current.text == "-"
                     else self.expression(
                         decimal=operator.text == "=",
-                        difference=operator.text in {"=", "^="},
+                        difference=True,
                     )
                 )
                 arguments = (Expression(target), rhs)

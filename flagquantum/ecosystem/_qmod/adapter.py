@@ -34,6 +34,7 @@ from ...compiler._hybrid.model import (
     ValueId,
 )
 from ...compiler._hybrid.verifier import Diagnostic, HybridVerificationError
+from .affine import lower_affine_update, lower_snapshot, snapshot_start
 from .amplification import expand_amplification, lower_amplification
 from .bindings import (
     is_binding_scope,
@@ -1572,7 +1573,11 @@ class _Adapt:
                 outputs.add(value)
             if parameter.kind == "qphase" and parameter.role == "const":
                 phase_borrows.add(value)
+        snapshot = snapshot_start(syntax.statements)
         for index, statement in enumerate(syntax.statements):
+            if index == snapshot:
+                lower_snapshot(child, syntax.statements, index)
+                break
             child.statement(statement, str(index))
         if any(port.name.text in child.suspended for port in syntax.parameters):
             reject(
@@ -1991,11 +1996,10 @@ class _Adapt:
             )
         negative = amount.token.text == "-" and len(amount.children) == 1
         magnitude = amount.children[0] if negative else amount
-        if (
-            magnitude.children
-            or not magnitude.token.text.isdecimal()
-            or int(magnitude.token.text) > 256
-        ):
+        if magnitude.children or not magnitude.token.text.isdecimal():
+            lower_affine_update(self, token, target, amount)
+            return
+        if int(magnitude.token.text) > 256:
             reject(
                 amount.token,
                 "arithmetic",
@@ -3935,7 +3939,10 @@ def parse_qmod(
         output_names = {
             port.name.text for port in syntax.parameters if port.role == "output"
         }
-        for statement in syntax.statements:
+        snapshot = snapshot_start(syntax.statements)
+        for ordinal, statement in enumerate(syntax.statements):
+            if snapshot is not None and ordinal in {snapshot, snapshot + 1}:
+                continue
             if statement.token.text in {"allocate", "free"} and (
                 not statement.arguments
                 or statement.arguments[-1].children
