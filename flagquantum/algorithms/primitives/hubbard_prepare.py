@@ -34,6 +34,21 @@ from ...core.ir import CircuitIR, Instruction
 from ...dynamic import DynamicCircuit
 
 
+def hubbard_selection_layout(dimension: int) -> RegisterLayout:
+    """Return the common PREPARE and SELECT address order."""
+    width = (dimension - 1).bit_length()
+    return (
+        ("U", 1),
+        ("V", 1),
+        ("p_x", width),
+        ("p_y", width),
+        ("alpha", 1),
+        ("q_x", width),
+        ("q_y", width),
+        ("beta", 1),
+    )
+
+
 @dataclass(frozen=True)
 class PrepareHubbard:
     """Bind the source selection ports and its two retained direction bits."""
@@ -61,17 +76,7 @@ class PrepareHubbard:
 
     @property
     def selection_layout(self) -> RegisterLayout:
-        width = (self.dimension - 1).bit_length()
-        return (
-            ("U", 1),
-            ("V", 1),
-            ("p_x", width),
-            ("p_y", width),
-            ("alpha", 1),
-            ("q_x", width),
-            ("q_y", width),
-            ("beta", 1),
-        )
+        return hubbard_selection_layout(self.dimension)
 
     @property
     def layout(self) -> RegisterLayout:

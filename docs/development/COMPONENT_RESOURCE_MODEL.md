@@ -3120,3 +3120,29 @@ logical qubits. The source and native counts use different decompositions
 for the bounded increment. The executable interface accepts square
 side lengths of at least two. The source decomposition fails at side one
 when binding the zero-width coordinate registers.
+
+### Hubbard qubitization selection
+
+`SelectHubbard` uses the same selection layout as PREPARE and accepts
+either an uncontrolled binding or one positive external control. The
+Majorana factors visit x, y and spin, with spin the fastest index.
+The spin-up Z visits y and x within the second half of the system
+register, following the distinct indexing of the locked source.
+The address swaps are restored before the sign and spin-up phase.
+
+```python
+from flagquantum.algorithms.primitives.hubbard_select import SelectHubbard
+
+select = SelectHubbard(3, controlled=True)
+logical = sum(width for _, width in select.layout)
+work, _ = select.requirements()
+ports = partition_register(tuple(range(logical)), select.layout)
+circuit = DynamicCircuit(logical + work)
+circuit.append(select.make_on(ports, workspace=tuple(range(logical, logical + work))))
+```
+
+The controlled 3×3 example emits 242 T/T† and 43 measurements with six
+clean work qubits. Its locked analytical model counts ten CSwap,
+43 And, 62 Clifford, 43 measurements and 37 peak logical qubits.
+The emitted stream expands each CSwap to seven T-family instructions.
+The source exposes control-on-zero through a separate control wrapper.
