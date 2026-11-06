@@ -8,15 +8,18 @@ from typing import TYPE_CHECKING
 
 from ...compiler._construction.register_profile import register_width
 from ...compiler._hybrid.model import Operation, Value
-from .syntax import Expression, Statement, Token, reject
+from .angles import REAL_LITERAL
+from .syntax import Expression, Function, Statement, Token, reject
 
 if TYPE_CHECKING:
     from .adapter import _Adapt
     from .syntax import Parser
 
 
-def parse_qpe_call(parser: Parser, token: Token, depth: int) -> Statement:
-    if depth:
+def parse_qpe_call(
+    parser: Parser, token: Token, depth: int, *, reversible_preparation: bool = False
+) -> Statement:
+    if depth and not (reversible_preparation and token.text == "qpe_flexible"):
         reject(token, "scope", f"{token.text} requires function scope")
     parser.take("(")
     parser.take("lambda")
@@ -421,8 +424,11 @@ def parse_fraction(
     parser: Parser, width: int, allow_phase: bool, *, allow_signed_integer: bool
 ) -> str | None:
     sign = parser.current
-    if sign.text not in ({"UNSIGNED", "SIGNED", "False"} if allow_phase else {"False"}):
+    if sign.text not in (
+        {"UNSIGNED", "SIGNED", "True", "False"} if allow_phase else {"False"}
+    ):
         reject(sign, "type", "signed modifiers are not admitted")
+    signed = sign.text in {"SIGNED", "True"}
     parser.take(sign.text)
     parser.take(",")
     fraction = parser.current
@@ -434,12 +440,134 @@ def parse_fraction(
     if allow_phase and value == width:
         parser.take(fraction.text)
         parser.take(">")
-        return "qphase_signed" if sign.text == "SIGNED" else "qphase"
-    if allow_signed_integer and value == 0 and sign.text == "SIGNED":
+        return "qphase_signed" if signed else "qphase"
+    if allow_signed_integer and value == 0 and signed:
         parser.take(fraction.text)
         parser.take(">")
         return "qnum_signed"
-    if value != 0 or sign.text == "SIGNED":
+    if value != 0 or signed:
         reject(fraction, "type", "fractional modifiers are not admitted")
     parser.take(fraction.text)
     return None
+
+
+def _atom(node: Expression, name: str) -> bool:
+    return not node.children and node.token.text == name
+
+
+def _plain(statement: Statement) -> bool:
+    return statement == Statement(statement.token, statement.arguments)
+
+
+def _power_degree(node: Expression, name: str) -> int | None:
+    if not node.children:
+        if node.token.text == name:
+            return 1
+        if node.token.text == "pi" or REAL_LITERAL.fullmatch(node.token.text):
+            return 0
+    if node.token.text == "-" and len(node.children) == 1:
+        return _power_degree(node.children[0], name)
+    if node.token.text == "*" and len(node.children) == 2:
+        left, right = (_power_degree(child, name) for child in node.children)
+        if left is not None and right is not None:
+            return left + right
+    return None
+
+
+def power_action(helper: Function) -> Statement:
+    """Check the borrowed signature and power form even for unused definitions."""
+    ports = {p.role: p for p in helper.parameters}
+    if (
+        helper.permutation
+        or helper.disable_permutation_check is not None
+        or helper.disable_const_checks is not None
+        or len(helper.parameters) != 3
+        or len({p.name.text for p in helper.parameters}) != 3
+        or {role: port.kind for role, port in ports.items()}
+        != {"integer": "int", "operator": "SparsePauliOp", "inout": "qbit[]"}
+        or any(p.width is not None or p.record is not None for p in ports.values())
+        or len(helper.statements) != 1
+    ):
+        reject(
+            helper.name,
+            "qpe",
+            "typed power helper needs int, SparsePauliOp and borrowed array ports",
+        )
+    (action,) = helper.statements
+    if (
+        not _plain(action)
+        or action.token.text != "suzuki_trotter"
+        or len(action.arguments) != 5
+    ):
+        reject(
+            action.token,
+            "qpe",
+            "typed power helper requires a single Suzuki-Trotter call",
+        )
+    operator, time, order, repetitions, target = action.arguments
+    if (
+        not _atom(operator, ports["operator"].name.text)
+        or not _atom(target, ports["inout"].name.text)
+        or not _atom(order, "1")
+        or not _atom(repetitions, "1")
+        or _power_degree(time, ports["integer"].name.text) != 1
+        or any(p.name.text == "pi" for p in ports.values())
+    ):
+        reject(
+            action.token,
+            "qpe",
+            "typed power helper must forward its ports with a linear power and a single first-order step",
+        )
+    return action
+
+
+def specialize_power_body(
+    owner: _Adapt, body: tuple[Statement, ...], power: Token
+) -> tuple[Statement, ...]:
+    if len(body) != 1:
+        return body
+    (call,) = body
+    helper = owner.definitions.get(call.token.text)
+    if helper is None or not any(p.role == "operator" for p in helper.parameters):
+        return body
+    action = power_action(helper)
+    if (
+        not _plain(call)
+        or call.token.text in owner.parameters
+        or len(call.arguments) != 3
+    ):
+        reject(
+            call.token, "qpe", "typed power call requires three unshadowed arguments"
+        )
+    for port, argument in zip(helper.parameters, call.arguments, strict=True):
+        if port.role == "integer" and not _atom(argument, power.text):
+            reject(
+                argument.token, "qpe", "typed power call must forward its lexical power"
+            )
+        if port.role == "operator":
+            operator = owner.constants.get(argument.token.text)
+            if (
+                argument.children
+                or argument.token.text in owner.parameters
+                or operator is None
+                or operator.token.text != "SparsePauliOp"
+            ):
+                reject(
+                    argument.token,
+                    "qpe",
+                    "typed power call requires a static SparsePauliOp constant",
+                )
+    substitution = dict(
+        zip((p.name.text for p in helper.parameters), call.arguments, strict=True)
+    )
+
+    def substitute(node: Expression) -> Expression:
+        if not node.children:
+            return substitution.get(node.token.text, node)
+        return replace(
+            node, children=tuple(substitute(child) for child in node.children)
+        )
+
+    return (
+        replace(action, arguments=tuple(substitute(arg) for arg in action.arguments)),
+    )

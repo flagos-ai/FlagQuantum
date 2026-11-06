@@ -348,6 +348,32 @@ program = synth.synthesize(source, classical_inputs={"k": 2}, max_workspace=0)
 print(program.probabilities(fq.run(program), registers=("indicator",)))
 ```
 
+## Reversible phase estimation and signed phase bits (UP-06 integration candidate)
+
+The checked Qmod phase-estimation path admits a lexical power helper with
+an integer power, a static SparsePauliOp constant and a borrowed bit array.
+The helper must forward those ports to one first-order Suzuki-Trotter step
+with a time linear in the power. A pure qpe_flexible computation can run
+inside within and be inverted after apply. Signed all-fractional outputs
+preserve their signedness and scale in the synthesis report. A checked Const
+bit view can read them without introducing signed arithmetic.
+
+The adapter admits numeric Pauli enum values and literal square roots in
+real preparation arrays. It also accepts a cyclic skip_control CX network
+around RY operations when the aggregate skipped effect is identity. Such a
+network lowers as a checked selector rotation table.
+
+```python
+from pathlib import Path
+
+import flagquantum as fq
+from flagquantum import synth
+
+source = Path("tests/fixtures/classiq_qmod/compact_hhl.qmod")
+program = synth.synthesize(source, max_workspace=0)
+print(program.probabilities(fq.run(program), registers=("indicator",)))
+```
+
 ## Compact Pauli evolution integration slice
 
 Qmod acquisition is bounded at 512 KiB and 65536 tokens for large Pauli data.

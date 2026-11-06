@@ -77,6 +77,8 @@ from .qpe import (
     lower_modular_loop,
     lower_modular_qpe,
     lower_qpe,
+    power_action,
+    specialize_power_body,
 )
 from .qsvt import lower_qsvt_inversion
 from .quantum_callbacks import (
@@ -87,6 +89,7 @@ from .quantum_callbacks import (
 )
 from .scope_control import lower_fourier_control
 from .selector_rotations import (
+    fold_skip_control_tables,
     is_selector_helper,
     lower_guarded_selector,
     lower_select_rotation,
@@ -201,6 +204,15 @@ def _literal_angle(angle: Expression, gate: Token) -> float:
 
 
 def _preparation_value(node: Expression) -> float:
+    if node.token.text == "sqrt":
+        radicand = _preparation_value(node.children[0])
+        if radicand < 0 or not math.isfinite(radicand):
+            reject(
+                node.token,
+                "amplitudes",
+                "square root requires a finite nonnegative literal",
+            )
+        return math.sqrt(radicand)
     if node.token.text == "/":
         numerator, denominator = (int(part.token.text) for part in node.children)
         if not denominator:
@@ -1221,7 +1233,14 @@ class _Adapt:
         if target.text in self.suspended:
             reject(target, "binding", "a bound source name is suspended")
         parameter = self.parameters.get(target.text)
-        phase = allow_phase and parameter is not None and parameter.kind == "qphase"
+        phase = (
+            allow_phase
+            and parameter is not None
+            and (
+                parameter.kind == "qphase"
+                or (allow_signed and parameter.kind == "qphase_signed")
+            )
+        )
         if parameter is None or (
             parameter.kind not in {"qbit[]", "qnum", "qbit"} and not phase
         ):
@@ -1547,6 +1566,12 @@ class _Adapt:
     ) -> None:
         if len(arguments) != len(syntax.parameters):
             reject(token, "signature", "helper argument count disagrees")
+        if any(p.role == "operator" for p in syntax.parameters):
+            reject(
+                token,
+                "qpe",
+                "typed power helpers require a lexical qpe_flexible callback",
+            )
         if syntax.name.text in self.helper_stack or len(self.helper_stack) >= 16:
             reject(
                 token,
@@ -1669,6 +1694,16 @@ class _Adapt:
                 if not argument.children
                 else None
             )
+            if (
+                actual_port is not None
+                and actual_port.kind == "qphase_signed"
+                and (parameter.kind != "qbit[]" or parameter.role != "const")
+            ):
+                reject(
+                    argument.token,
+                    "precision",
+                    "signed phase storage requires a Const bit view",
+                )
             borrowed_counter = (
                 name in modular_phase_ports
                 and actual_port is not None
@@ -2570,7 +2605,7 @@ class _Adapt:
                                 control=control,
                             )
                         continue
-                    elif name == "qreg.pair_gate" and attrs["gate"] == "swap":
+                    elif name == "qreg.pair_gate" and attrs["gate"] in {"cx", "swap"}:
                         left, right = zip(
                             operands, attrs.get("indices", (0, 0)), strict=True
                         )
@@ -2578,11 +2613,13 @@ class _Adapt:
                             reject(
                                 statement.token,
                                 "alias",
-                                "controlled SWAP requires distinct locations",
+                                f"controlled {attrs['gate'].upper()} requires distinct locations",
                             )
-                        self.emit_indexed_x(statement.token, (right, left))
+                        if attrs["gate"] == "swap":
+                            self.emit_indexed_x(statement.token, (right, left))
                         self.emit_indexed_x(statement.token, (control, left, right))
-                        self.emit_indexed_x(statement.token, (right, left))
+                        if attrs["gate"] == "swap":
+                            self.emit_indexed_x(statement.token, (right, left))
                         continue
                     else:
                         reject(
@@ -3170,6 +3207,7 @@ class _Adapt:
         if is_modular_power(statement):
             lower_modular_qpe(self, statement)
             return
+        body = specialize_power_body(self, body, power)
         if (
             len(body) != 1
             or body[0].token.text != "suzuki_trotter"
@@ -3178,10 +3216,12 @@ class _Adapt:
             reject(token, "qpe", "power callback requires one suzuki_trotter call")
         phase_name = self.atom(statement.arguments[0])
         parameter = self.parameters.get(phase_name.text)
-        if parameter is None or parameter.kind != "qphase" or parameter.width is None:
-            reject(
-                phase_name, "qpe", "expected an unsigned all-fractional phase output"
-            )
+        if (
+            parameter is None
+            or parameter.kind not in {"qphase", "qphase_signed"}
+            or parameter.width is None
+        ):
+            reject(phase_name, "qpe", "expected an all-fractional phase output")
         width = parameter.width
         if width > 8:
             reject(
@@ -4409,7 +4449,8 @@ def _bound_helper(syntax: Function) -> bool:
         len(syntax.statements) == 1
         and syntax.statements[0].token.text == "$kickback_phase"
     ) or any(
-        port.role in {"real", "integer", "inout", "callable"} or port.kind == "qphase"
+        port.role in {"real", "integer", "inout", "callable", "operator"}
+        or port.kind == "qphase"
         for port in syntax.parameters
     )
 
@@ -4550,11 +4591,12 @@ def parse_qmod(
         if name in constants:
             reject(syntax.name, "name", "function shadows a top-level constant")
         for parameter in syntax.parameters:
-            if parameter.name.text in constants:
+            if parameter.name.text in constants and parameter.role != "operator":
                 reject(parameter.name, "name", "parameter shadows a top-level constant")
         definitions[name] = syntax
     if "main" not in definitions:
         reject(tokens[0], "entry", "source requires one qfunc main")
+    definitions = fold_skip_control_tables(definitions)
     definitions = expand_amplification(definitions, constants)
     definitions = expand_iterations(definitions)
     definitions = specialize_quantum_callbacks(definitions, constants)
@@ -4623,6 +4665,9 @@ def parse_qmod(
 
     for name, syntax in definitions.items():
         if name == "main" or not _bound_helper(syntax):
+            continue
+        if any(port.role == "operator" for port in syntax.parameters):
+            power_action(syntax)
             continue
         if len({port.name.text for port in syntax.parameters}) != len(
             syntax.parameters

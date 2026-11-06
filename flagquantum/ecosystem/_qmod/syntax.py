@@ -158,7 +158,7 @@ class Parameter:
     kind: str
     width: int | None
     role: Literal[
-        "output", "const", "local", "real", "integer", "inout", "callable"
+        "output", "const", "local", "real", "integer", "inout", "callable", "operator"
     ] = "output"
     record: str | None = None
     length: int | None = None
@@ -208,6 +208,7 @@ class Statement:
     predicate_callback: tuple[Token, Token, tuple[Statement, ...]] | None = None
     amplification: Amplification | None = None
     callback_index: Expression | None = None
+    skip_control: tuple[Statement, ...] | None = None
 
 
 @dataclass(frozen=True)
@@ -583,12 +584,24 @@ class Parser:
             return Expression(self.take("-"), (self.angle_argument(),))
         return self.angle_argument()
 
-    def preparation_literal(self, *, allow_fraction: bool) -> Expression:
+    def preparation_literal(
+        self, *, allow_fraction: bool, allow_sqrt: bool = True
+    ) -> Expression:
         grouped = self.current.text == "("
         if grouped:
             self.take("(")
         numerator = self.current
-        if (
+        if numerator.text == "sqrt":
+            if not allow_sqrt:
+                reject(
+                    numerator, "amplitudes", "square root requires a literal argument"
+                )
+            self.take("sqrt")
+            self.take("(")
+            argument = self.preparation_literal(allow_fraction=True, allow_sqrt=False)
+            self.take(")")
+            value = Expression(numerator, (argument,))
+        elif (
             allow_fraction
             and numerator.text.isdecimal()
             and self.tokens[self.position + 1].text == "/"
@@ -710,8 +723,15 @@ class Parser:
 
     def indexed_pauli(self) -> Expression:
         return self.pauli_record(
-            "IndexedPauli", {"pauli": self.pauli_axis, "index": self.expression}
+            "IndexedPauli", {"pauli": self.sparse_axis, "index": self.expression}
         )
+
+    def sparse_axis(self) -> Expression:
+        token = self.current
+        if token.text in {"0", "1", "2", "3"}:
+            self.take(token.text)
+            return Expression(replace(token, text="IXYZ"[int(token.text)]))
+        return self.pauli_axis()
 
     def sparse_pauli_coefficient(self) -> Expression:
         grouped = self.current.text == "("
@@ -844,7 +864,9 @@ class Parser:
         self.take("(")
         parameters: list[Parameter] = []
         while self.current.text != ")":
-            role: Literal["output", "const", "real", "integer", "inout", "callable"]
+            role: Literal[
+                "output", "const", "real", "integer", "inout", "callable", "operator"
+            ]
             if self.current.text == "output":
                 self.take("output")
                 role = "output"
@@ -875,6 +897,11 @@ class Parser:
             elif name.text != "main" and [
                 token.text
                 for token in self.tokens[self.position + 1 : self.position + 3]
+            ] == [":", "SparsePauliOp"]:
+                role = "operator"
+            elif name.text != "main" and [
+                token.text
+                for token in self.tokens[self.position + 1 : self.position + 3]
             ] == [":", "qfunc"]:
                 role = "callable"
             elif name.text != "main" and [
@@ -900,6 +927,8 @@ class Parser:
                     )
                 record = self.take(self.current.text).text
                 kind, width = "qbit[]", self.records[record].width
+            elif role == "operator":
+                kind, width = self.take("SparsePauliOp").text, None
             elif role == "callable":
                 from .quantum_callbacks import parse_signature
 
@@ -1019,6 +1048,13 @@ class Parser:
         self.take("{")
         statements: list[Statement] = []
         while self.current.text != "}":
+            if self.current.text == "skip_control":
+                token = self.take("skip_control")
+                if scope_depth:
+                    reject(token, "scope", "skip_control table requires function scope")
+                body = self.block(allow_scopes=False, scope_depth=scope_depth + 1)
+                statements.append(Statement(token, (), skip_control=body))
+                continue
             if self.current.text == "{" or self.tokens[self.position + 1].text == "->":
                 if scope_depth and not binding_preparation:
                     reject(self.current, "scope", "bindings require function scope")
@@ -1198,7 +1234,14 @@ class Parser:
             if target.text in {"qpe", "qpe_flexible"} and self.current.text == "(":
                 from .qpe import parse_qpe_call
 
-                statements.append(parse_qpe_call(self, target, scope_depth))
+                statements.append(
+                    parse_qpe_call(
+                        self,
+                        target,
+                        scope_depth,
+                        reversible_preparation=binding_preparation,
+                    )
+                )
                 continue
             if self.current.text == ":":
                 token = self.take(":")

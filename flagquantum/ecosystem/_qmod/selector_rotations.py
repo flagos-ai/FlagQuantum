@@ -1,8 +1,12 @@
 """Checked uniformly controlled rotations on a statically resolved bit view."""
 
+import math
+from collections.abc import Mapping
+from dataclasses import replace
 from operator import eq, ge, gt, le, lt, ne
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, NoReturn
 
+from .angles import REAL_LITERAL
 from .syntax import Expression, Function, Statement, Token, reject
 
 if TYPE_CHECKING:
@@ -170,3 +174,128 @@ def lower_select_rotation(
         )
     if axis.token.text == "X":
         gate("h")
+
+
+def _atom(node: Expression, name: str) -> bool:
+    return not node.children and node.token.text == name
+
+
+def _plain(statement: Statement) -> bool:
+    return statement == Statement(statement.token, statement.arguments)
+
+
+def fold_skip_control_tables(
+    definitions: Mapping[str, Function],
+) -> dict[str, Function]:
+    rewritten = dict(definitions)
+    for name, helper in definitions.items():
+        marker = next(
+            (s for s in helper.statements if s.skip_control is not None), None
+        )
+        if marker is None:
+            continue
+        rewritten[name] = replace(
+            helper, statements=(_rotation_table(helper, marker.token),)
+        )
+    return rewritten
+
+
+def _rotation_table(helper: Function, anchor: Token) -> Statement:
+    def fail() -> NoReturn:
+        reject(
+            anchor,
+            "skip_control",
+            "skip_control table requires a cyclic CX network on one writable target",
+        )
+
+    ports = {p.role: p for p in helper.parameters}
+    if (
+        len(helper.parameters) != 2
+        or set(ports) != {"const", "inout"}
+        or len(helper.statements) > 512
+    ):
+        fail()
+    read, write = ports["const"], ports["inout"]
+    width = read.width
+    if (
+        read.kind != "qbit[]"
+        or read.record is not None
+        or width is None
+        or not 1 <= width <= 8
+        or write.kind != "qbit"
+        or read.name.text == write.name.text
+    ):
+        fail()
+    parity = 0
+    terms: list[tuple[int, float]] = []
+    for statement in helper.statements:
+        if statement.skip_control is None:
+            if (
+                not _plain(statement)
+                or statement.token.text != "RY"
+                or len(statement.arguments) != 2
+            ):
+                fail()
+            angle, target = statement.arguments
+            negative = angle.token.text == "-" and len(angle.children) == 1
+            base = angle.children[0] if negative else angle
+            if (
+                not _atom(target, write.name.text)
+                or base.children
+                or not REAL_LITERAL.fullmatch(base.token.text)
+            ):
+                fail()
+            value = float(base.token.text)
+            if not 0 <= value <= 2**53:
+                fail()
+            terms.append((parity, -value if negative else value))
+            continue
+        if len(statement.skip_control) != 1:
+            fail()
+        (gate,) = statement.skip_control
+        if not _plain(gate) or gate.token.text != "CX" or len(gate.arguments) != 2:
+            fail()
+        source, target = gate.arguments
+        if (
+            source.token.text != "["
+            or len(source.children) != 2
+            or not _atom(target, write.name.text)
+        ):
+            fail()
+        register, index = source.children
+        if (
+            not _atom(register, read.name.text)
+            or index.children
+            or not index.token.text.isdecimal()
+            or int(index.token.text) >= width
+        ):
+            fail()
+        parity ^= 1 << int(index.token.text)
+    if parity or not terms:
+        fail()
+
+    def node(text: str, *children: Expression) -> Expression:
+        return Expression(replace(anchor, text=text), children)
+
+    # Conjugating RY by the current CX parity changes only its angle sign.
+    # The final parity vanishes on every selector basis state.
+    angles = tuple(
+        math.fsum(
+            (-1 if (basis & mask).bit_count() % 2 else 1) * angle
+            for mask, angle in terms
+        )
+        for basis in range(1 << width)
+    )
+    if any(abs(angle) > 2**53 for angle in angles):
+        fail()
+    table = node(
+        "[]",
+        *(
+            node("-", node(repr(-angle))) if angle < 0 else node(repr(angle))
+            for angle in angles
+        ),
+    )
+    return Statement(
+        replace(anchor, text="select_rotation"),
+        (node("Y"), table, Expression(read.name), Expression(write.name)),
+    )
