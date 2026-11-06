@@ -48,6 +48,7 @@ def options(p, out, coeffs, b, steps, tuned=False):
     "f,p,out,coeffs,b,steps,tuned",
     [
         (1, 1, 4, (2,), 1, 0, False),
+        (1, 1, 20, (2,), 1, 0, False),
         (2, 2, 6, (1, 4), 2, 1, False),
         (3, 4, 9, (3, 16), 4, 1, True),
     ],
@@ -62,9 +63,9 @@ def test_signed_endpoints_oddness_and_every_measurement_history(
         *unsigned_layout(f, p, out - 1, len(coeffs) - 1, b, steps), **config
     )
     counts, base = (Counter(g.name for g in stream) for stream in (gates, unsigned))
-    events = 2 * base["measure"] + 2 * (f + out - 1)
+    events = base["measure"] + 2 * (f + out - 1)
     assert counts["measure"] == counts["reset"] == events
-    assert counts["ccx"] == 2 * base["ccx"]
+    assert counts["ccx"] == base["ccx"] + 2 * (out - 1)
     assert counts["t"] + counts["tdg"] == 4 * events
 
     def bits(word, size):

@@ -11,8 +11,9 @@ from .controlled_addition import (
     controlled_add_constant_ir,
 )
 from .fixed_point_arcsine import (
-    fixed_point_arcsine_ir,
-    fixed_point_arcsine_requirements,
+    _arcsine_requirements,
+    _select_arcsine_output_ir,
+    _with_arcsine_result_ir,
 )
 
 
@@ -26,20 +27,18 @@ def signed_arcsine_requirements(
     iterations: int,
 ) -> tuple[int, int]:
     """Return magnitude and angle storage, shared scratch and measurement slots."""
-    work, slots = fixed_point_arcsine_requirements(
+    work, slots = _arcsine_requirements(
         source_fraction_bits,
         polynomial_fraction_bits,
         output_width - 1,
         degree,
         precision=precision,
         iterations=iterations,
+        consumer_work=2 * output_width - 1,
+        consumer_slots=output_width - 1,
     )
     magnitude_width = source_fraction_bits + 1
-    negate_width = max(magnitude_width, output_width)
-    return (
-        magnitude_width + output_width + max(work, 2 * negate_width - 1),
-        max(slots, negate_width - 1),
-    )
+    return magnitude_width + output_width + work, slots
 
 
 def signed_arcsine_ir(
@@ -84,7 +83,7 @@ def signed_arcsine_ir(
     sign = source[0]
 
     def negate(
-        target: tuple[int, ...],
+        target: tuple[int, ...], work: tuple[int, ...]
     ) -> tuple[tuple[Instruction, ...], tuple[Instruction, ...]]:
         width = len(target)
         invert = fanout_ir(sign, target)
@@ -92,8 +91,8 @@ def signed_arcsine_ir(
             sign,
             target,
             1,
-            scratch[:width],
-            scratch[width : 2 * width - 1],
+            work[:width],
+            work[width : 2 * width - 1],
             classical_bits[: width - 1],
         )
         return (
@@ -101,32 +100,29 @@ def signed_arcsine_ir(
             (*controlled_add_constant_adjoint_ir(*args), *invert),
         )
 
-    abs_forward, abs_reverse = negate(magnitude)
-    sign_forward, sign_reverse = negate(angle)
-    unsigned_work, unsigned_slots = fixed_point_arcsine_requirements(
-        f, polynomial_fraction_bits, out - 1, degree, **config
-    )
-    evaluate = fixed_point_arcsine_ir(
+    abs_forward, abs_reverse = negate(magnitude, scratch)
+
+    def copy_signed(
+        flag: int, low: tuple[int, ...], high: tuple[int, ...], work: tuple[int, ...]
+    ) -> tuple[Instruction, ...]:
+        select = _select_arcsine_output_ir(flag, low, high, angle[1:])
+        sign_forward, sign_reverse = negate(angle, work)
+        return (*select, *sign_forward, *xor_ir(angle, result), *sign_reverse, *select)
+
+    evaluate = _with_arcsine_result_ir(
         magnitude,
-        angle[1:],
-        scratch[:unsigned_work],
-        classical_bits[:unsigned_slots],
+        out - 1,
+        scratch,
+        classical_bits,
         coefficients=coefficients,
         polynomial_fraction_bits=polynomial_fraction_bits,
         half_pi_word=half_pi_word,
         precision=precision,
         iterations=iterations,
         tuned=tuned,
+        consume=copy_signed,
+        consumer_work=2 * out - 1,
+        consumer_slots=out - 1,
     )
     copy_input = xor_ir(source[1:], magnitude)
-    return (
-        *copy_input,
-        *abs_forward,
-        *evaluate,
-        *sign_forward,
-        *xor_ir(angle, result),
-        *sign_reverse,
-        *evaluate,
-        *abs_reverse,
-        *copy_input,
-    )
+    return (*copy_input, *abs_forward, *evaluate, *abs_reverse, *copy_input)

@@ -4,6 +4,8 @@
 
 """Nonnegative fixed-point arcsine using a caller-supplied polynomial."""
 
+from collections.abc import Callable
+
 from ...core.ir import Instruction
 from .arcsine_reduction import arcsine_reduction_ir, arcsine_reduction_requirements
 from .arithmetic import add_adjoint_ir, add_ir
@@ -44,7 +46,27 @@ def fixed_point_arcsine_requirements(
     iterations: int,
 ) -> tuple[int, int]:
     """Return clean workspace and reusable classical slots."""
-    f, p = source_fraction_bits, polynomial_fraction_bits
+    return _arcsine_requirements(
+        source_fraction_bits,
+        polynomial_fraction_bits,
+        output_width,
+        degree,
+        precision=precision,
+        iterations=iterations,
+    )
+
+
+def _arcsine_requirements(
+    f: int,
+    p: int,
+    output_width: int,
+    degree: int,
+    *,
+    precision: int,
+    iterations: int,
+    consumer_work: int = 0,
+    consumer_slots: int = 0,
+) -> tuple[int, int]:
     (
         q,
         (reduce_work, reduce_slots),
@@ -55,8 +77,9 @@ def fixed_point_arcsine_requirements(
     carries = output_width - 1
     live = 1 + 2 * f + p + 2 + 2 * q + 2 * output_width
     return (
-        live + max(reduce_work, poly_work, root_work, product + carries),
-        max(reduce_slots, poly_slots, root_slots, carries),
+        live
+        + max(reduce_work, poly_work, root_work, product + max(carries, consumer_work)),
+        max(reduce_slots, poly_slots, root_slots, carries, consumer_slots),
     )
 
 
@@ -82,7 +105,63 @@ def fixed_point_arcsine_ir(
     product must not exceed that word, and the low product must fit.
     Source and initially clean work are restored.
     """
-    f, p, out = len(source) - 1, polynomial_fraction_bits, len(result)
+    _validate_wires((*source, *result, *workspace))
+    return _with_arcsine_result_ir(
+        source,
+        len(result),
+        workspace,
+        classical_bits,
+        coefficients=coefficients,
+        polynomial_fraction_bits=polynomial_fraction_bits,
+        half_pi_word=half_pi_word,
+        precision=precision,
+        iterations=iterations,
+        tuned=tuned,
+        consume=lambda flag, low, high, _: _select_arcsine_output_ir(
+            flag, low, high, result
+        ),
+    )
+
+
+def _select_arcsine_output_ir(
+    flag: int, low: tuple[int, ...], high: tuple[int, ...], result: tuple[int, ...]
+) -> tuple[Instruction, ...]:
+    flip = Instruction("x", (flag,))
+    low_copy = tuple(
+        Instruction("ccx", (flag, wire, dest))
+        for wire, dest in zip(reversed(low), reversed(result), strict=True)
+    )
+    high_copy = tuple(
+        Instruction("ccx", (flag, wire, dest))
+        for wire, dest in zip(reversed(high), reversed(result), strict=True)
+    )
+    return (*low_copy, flip, *high_copy, flip)
+
+
+def _with_arcsine_result_ir(
+    source: tuple[int, ...],
+    out: int,
+    workspace: tuple[int, ...],
+    classical_bits: tuple[int, ...],
+    *,
+    coefficients: tuple[int, ...],
+    polynomial_fraction_bits: int,
+    half_pi_word: int,
+    precision: int,
+    iterations: int,
+    tuned: bool,
+    consume: Callable[
+        [int, tuple[int, ...], tuple[int, ...], tuple[int, ...]],
+        tuple[Instruction, ...],
+    ],
+    consumer_work: int = 0,
+    consumer_slots: int = 0,
+) -> tuple[Instruction, ...]:
+    """Use the live branch candidates and clean scratch before reversing.
+
+    The consumer must restore the selector, both candidates and its scratch.
+    """
+    f, p = len(source) - 1, polynomial_fraction_bits
     degree = len(coefficients) - 1
     (
         q,
@@ -91,8 +170,15 @@ def fixed_point_arcsine_ir(
         (root_work, root_slots),
         product,
     ) = _arcsine_layout(f, p, out, degree, precision, iterations)
-    work, slots = fixed_point_arcsine_requirements(
-        f, p, out, degree, precision=precision, iterations=iterations
+    work, slots = _arcsine_requirements(
+        f,
+        p,
+        out,
+        degree,
+        precision=precision,
+        iterations=iterations,
+        consumer_work=consumer_work,
+        consumer_slots=consumer_slots,
     )
     if type(half_pi_word) is not int or not 0 <= half_pi_word < 1 << out:
         raise ValueError("Arcsine half-pi word must fit the unsigned result")
@@ -103,8 +189,6 @@ def fixed_point_arcsine_ir(
         or len(set(classical_bits)) != slots
     ):
         raise ValueError("Arcsine requires distinct nonnegative slots")
-    _validate_wires((*source, *result, *workspace))
-
     flag = workspace[0]
     reduced = workspace[1 : 1 + 2 * f]
     start = 1 + 2 * f
@@ -167,7 +251,7 @@ def fixed_point_arcsine_ir(
     constant = xor_constant_ir(angle, half_pi_word)
     subtract = add_adjoint_ir(term, angle, carries, carry_bits)
     restore = add_ir(term, angle, carries, carry_bits)
-    copy = (*select_xor(term, result), flip_flag, *select_xor(angle, result), flip_flag)
+    copy = consume(flag, term, angle, scratch[product : product + consumer_work])
     scale = q + p - (out - 1)
 
     def reconstruct(word: tuple[int | None, ...]) -> tuple[Instruction, ...]:
