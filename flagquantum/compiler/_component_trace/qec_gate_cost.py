@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from collections.abc import Callable, Iterable, Mapping, MutableMapping, Sequence
 from dataclasses import dataclass
+from math import pi
 
 from .call_graph import Generalizer, compose_cost_generalizer
 from .cost_query import _query_cost
@@ -20,12 +21,15 @@ from .resource_generalization import (
     ConjunctionCall,
     ControlledSwapCall,
     ControlledZPowerCall,
+    ControlledZRotationCall,
+    ControlPredicateCall,
     DeclaredResourceCalls,
     FanoutCall,
     FixedTCall,
     MeasurementCall,
     PartitionedCall,
     PhaseCall,
+    PredicateControlledCall,
     ResourceCall,
     RotationCall,
     ZeroCostCall,
@@ -162,6 +166,36 @@ def _qec_callees(
         yield ConjunctionCall((1, 1)), 1
         yield RotationCall("zpow", node.exponent, node.precision), 1
         yield ConjunctionCall((1, 1), adjoint=True), 1
+    elif isinstance(node, ControlledZRotationCall):
+        half = (node.angle / pi) / 2
+        yield RotationCall("zpow", half, node.precision / 2), 1
+        yield CliffordCall("cx", 2), 2
+        yield RotationCall("zpow", -half, node.precision / 2), 1
+    elif isinstance(node, ControlPredicateCall):
+        controls = node.controls
+        size = len(controls) if isinstance(controls, tuple) else controls
+        if isinstance(size, int) and size < 2:
+            raise ValueError("Control predicate requires at least two control bits")
+        if isinstance(controls, tuple):
+            if any(type(bit) is not int or bit not in (0, 1) for bit in controls):
+                raise ValueError("Control pattern requires binary activation values")
+            conjunction = ConjunctionCall(controls, node.adjoint)
+        else:
+            conjunction = ConjunctionCall(
+                (None, None) if type(controls) is int and controls == 2 else controls,
+                node.adjoint,
+            )
+        yield conjunction, 1
+    elif isinstance(node, PredicateControlledCall):
+        yield node.positive, 1
+        if isinstance(node.controls, tuple) and len(node.controls) == 1:
+            if node.controls == (0,):
+                yield CliffordCall("x", 1), 2
+            elif node.controls != (1,):
+                raise ValueError("Control pattern requires binary activation values")
+        else:
+            yield ControlPredicateCall(node.controls), 1
+            yield ControlPredicateCall(node.controls, adjoint=True), 1
     elif isinstance(node, PartitionedCall):
         yield node.call, 1
     else:

@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from collections.abc import Hashable, Iterable, Mapping
 from dataclasses import dataclass, replace
-from typing import Literal
+from typing import Literal, TypeAlias
 
 from .call_graph import Generalizer, _component_calls
 from .resource_model import ComponentCost
@@ -61,6 +61,33 @@ class ControlledZPowerCall:
 
     exponent: SymbolicReal
     precision: SymbolicReal = 1e-11
+
+
+@dataclass(frozen=True)
+class ControlledZRotationCall:
+    """Dedicated controlled Rz with two half-angle Z powers."""
+
+    angle: SymbolicReal
+    precision: SymbolicReal = 1e-11
+
+
+ControlPattern: TypeAlias = "tuple[int, ...] | SymbolicInt"
+
+
+@dataclass(frozen=True)
+class ControlPredicateCall:
+    """An encoded control equality or a width with unknown polarities."""
+
+    controls: ControlPattern
+    adjoint: bool = False
+
+
+@dataclass(frozen=True)
+class PredicateControlledCall:
+    """Apply the declared single positive-controlled child via a predicate."""
+
+    positive: ResourceCall
+    controls: ControlPattern
 
 
 @dataclass(frozen=True)
@@ -130,6 +157,9 @@ ResourceCall = (
     | CliffordCall
     | ControlledRotationCall
     | ControlledZPowerCall
+    | ControlledZRotationCall
+    | ControlPredicateCall
+    | PredicateControlledCall
     | ConjunctionCall
     | ControlledSwapCall
     | BookkeepingCall
