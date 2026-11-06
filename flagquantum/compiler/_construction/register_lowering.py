@@ -520,19 +520,19 @@ def schedule_register_program(
                     op.operands[1:], op.attributes["indices"], strict=True
                 )
             )
-            phase = Instruction(
+            rotation = Instruction(
                 "phase", (ports[-1],), {"theta": op.attributes["angle"]}
             )
             if "control_state" in op.attributes and len(ports) >= 6:
                 gates, used_workspace = _bounded_control_group(
-                    phase, ports[:-1], position, n_qubits
+                    rotation, ports[:-1], position, n_qubits
                 )
                 control_workspace = max(control_workspace, used_workspace)
             else:
                 gates = (
-                    controlled_instruction(phase, ports[:-1])
+                    controlled_instruction(rotation, ports[:-1])
                     if len(ports) > 1
-                    else (phase,)
+                    else (rotation,)
                 )
         elif op.name == "qreg.control_phase":
             condition = bindings[op.operands[1].id][0]
