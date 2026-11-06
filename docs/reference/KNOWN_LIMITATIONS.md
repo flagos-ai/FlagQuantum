@@ -895,3 +895,25 @@ source = Path("tests/fixtures/classiq_qmod/rainbow_options_bruteforce_method.qmo
 program = synth.synthesize(source, classical_inputs={"k": 2}, max_workspace=0)
 print(dict(program.probabilities(fq.run(program), registers=("indicator",))))
 ```
+
+## Static IndexedPauli arrays and borrowed phase kickback
+
+Typed helpers bind immutable `IndexedPauli[]` literals and can forward them
+to another checked helper. A statically bound index exposes only the Pauli
+discriminant and its declared wire index. The adapter checks array bounds
+and the receiving quantum view independently. A coherent Pauli-Y branch
+preserves the phase on that branch. The adapter also verifies the complete
+local X/H kickback pattern before replacing a borrowed comparison with a
+diagonal phase. The unchanged oblivious amplitude amplification source
+then executes with four qubits and no work bits.
+
+```python
+from pathlib import Path
+
+import flagquantum as fq
+from flagquantum import synth
+
+source = Path("tests/fixtures/classiq_qmod/oblivious_amplitude_amplification.qmod")
+program = synth.synthesize(source, max_qubits=4, max_workspace=0)
+print(dict(program.probabilities(fq.run(program), registers=("data", "block"))))
+```

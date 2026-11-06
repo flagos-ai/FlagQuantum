@@ -36,6 +36,7 @@ from ...compiler._hybrid.verifier import Diagnostic, HybridVerificationError
 from .affine import lower_affine_update, lower_snapshot, snapshot_start
 from .amplification import expand_amplification, lower_amplification
 from .angles import REAL_LITERAL
+from .array_kickback import expand_nested_array_kickbacks
 from .bindings import (
     is_binding_scope,
     lower_binding_scope,
@@ -67,6 +68,7 @@ from .indexed_control import (
     lower_nested_indexed_control,
     lower_zero_reflection_control,
 )
+from .indexed_pauli import bind_indexed_pauli, indexed_pauli_member
 from .integers import checked_integer, checked_integer_array, integer_operation
 from .iterations import expand_iterations
 from .local_cleanup import lower_free
@@ -832,6 +834,7 @@ class _Adapt:
         self.classical_integers: dict[str, int] = {}
         self.integer_arrays: dict[str, tuple[int, ...]] = {}
         self.pauli_bindings: dict[str, Expression] = {}
+        self.indexed_pauli: dict[str, tuple[tuple[int, int], ...]] = {}
         self.scope = syntax.name.text
         self.parameters: dict[str, Parameter] = {}
         for parameter in syntax.parameters:
@@ -1093,6 +1096,8 @@ class _Adapt:
         if text == ".":
             root = node.children[0]
             member = node.children[1].token.text if len(node.children) == 2 else "len"
+            if (entry := indexed_pauli_member(self, node, root, member)) is not None:
+                return entry
             if member == "size" and root.children:
                 field = self.record_field(root)
                 if field is not None:
@@ -1128,6 +1133,8 @@ class _Adapt:
                 return len(self.classical_arrays[name])
             if name in self.integer_arrays:
                 return len(self.integer_arrays[name])
+            if name in self.indexed_pauli:
+                return len(self.indexed_pauli[name])
             width = self.widths.get(name)
             if (
                 width is None
@@ -1670,6 +1677,9 @@ class _Adapt:
                         "callback requires a named (real, qbit[]) helper",
                     )
                 child.callback_bindings[name] = callback
+                continue
+            if parameter.kind == "IndexedPauli[]":
+                child.indexed_pauli[name] = bind_indexed_pauli(self, argument)
                 continue
             if parameter.kind == "PauliTerm[]":
                 terms = argument
@@ -4784,6 +4794,7 @@ def parse_qmod(
     definitions = expand_amplification(definitions, constants)
     definitions = expand_iterations(definitions)
     definitions = specialize_quantum_callbacks(definitions, constants)
+    definitions = expand_nested_array_kickbacks(definitions)
     definitions = expand_borrowed_phase_views(definitions, constants)
     definitions = expand_phase_kickbacks(definitions)
     verify_permutations(definitions)
@@ -4891,7 +4902,7 @@ def parse_qmod(
             )
         if any(
             port.role not in {"real", "integer", "inout", "callable"}
-            and port.kind != "PauliTerm[]"
+            and port.kind not in {"PauliTerm[]", "IndexedPauli[]"}
             and not (
                 port.role == "output"
                 and port.kind in {"qbit", "qbit[]", "qphase", "qnum"}
@@ -4917,6 +4928,11 @@ def parse_qmod(
                     )
                     or is_const_cx_permutation(syntax)
                     or is_selector_helper(syntax)
+                    or (
+                        port.kind == "qbit[]"
+                        and port.record is None
+                        and any(p.kind == "IndexedPauli[]" for p in syntax.parameters)
+                    )
                 )
             )
             for port in syntax.parameters

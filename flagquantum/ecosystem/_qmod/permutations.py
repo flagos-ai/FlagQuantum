@@ -9,6 +9,7 @@ _BASIS_OPERATIONS = frozenset(
         "I",
         "IDENTITY",
         "X",
+        "Y",
         "Z",
         "S",
         "RZ",

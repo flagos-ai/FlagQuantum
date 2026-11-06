@@ -107,6 +107,7 @@ def expand_static_oracles(
             not function.permutation
             and any(p.role == "inout" for p in function.parameters)
         )
+        and not any(p.kind == "IndexedPauli[]" for p in function.parameters)
         and not is_const_cx_permutation(function)
         and not is_selector_helper(function)
         and not (

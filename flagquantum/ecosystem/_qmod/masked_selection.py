@@ -172,6 +172,11 @@ def emit_selected(
             sign = -1 if attributes.get("inverse") else 1
             if gate == "x":
                 flip((), 0, target)
+            elif gate == "y":
+                # Y = i X Z. The factor of i is conditional on the whole selector.
+                phase((target,), 1, math.pi)
+                flip((), 0, target)
+                phase((), 0, math.pi / 2)
             elif gate in {"z", "s", "sdg", "t", "tdg"}:
                 angles = {
                     "z": math.pi,

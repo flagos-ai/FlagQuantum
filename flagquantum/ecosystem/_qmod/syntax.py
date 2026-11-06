@@ -420,7 +420,11 @@ class Parser:
             elif self.current.text == "." and (
                 static
                 or self.records
-                or (real and self.tokens[self.position + 1].text in {"len", "size"})
+                or (
+                    real
+                    and self.tokens[self.position + 1].text
+                    in {"len", "size", "index", "pauli"}
+                )
             ):
                 dot = self.take(".")
                 member = Expression(self.name())
@@ -898,7 +902,7 @@ class Parser:
             elif name.text != "main" and [
                 token.text
                 for token in self.tokens[self.position + 1 : self.position + 3]
-            ] in ([":", "SparsePauliOp"], [":", "PauliTerm"]):
+            ] in ([":", "SparsePauliOp"], [":", "PauliTerm"], [":", "IndexedPauli"]):
                 role = "operator"
             elif name.text != "main" and [
                 token.text
@@ -931,10 +935,10 @@ class Parser:
                 kind, width = "qbit[]", self.records[record].width
             elif role == "operator":
                 kind, width = self.take(self.current.text).text, None
-                if kind == "PauliTerm":
+                if kind in {"PauliTerm", "IndexedPauli"}:
                     self.take("[")
                     self.take("]")
-                    kind = "PauliTerm[]"
+                    kind += "[]"
             elif role == "callable":
                 from .quantum_callbacks import parse_signature
 
@@ -1006,6 +1010,11 @@ class Parser:
 
             return parse_lambda(self)
         if self.current.text == "[":
+            if self.tokens[self.position + 1].text == "IndexedPauli":
+                paulis = self.literal_array(self.indexed_pauli)
+                return replace(
+                    paulis, token=replace(paulis.token, text="IndexedPauli[]")
+                )
             if self.tokens[self.position + 1].text == "PauliTerm":
                 terms = self.pauli_terms()
                 return replace(terms, token=replace(terms.token, text="PauliTerm[]"))

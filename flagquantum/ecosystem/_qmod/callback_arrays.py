@@ -74,6 +74,7 @@ def capture_effects(
     child.classical_arrays = dict(owner.classical_arrays)
     child.classical_integers = dict(owner.classical_integers)
     child.integer_arrays = dict(owner.integer_arrays)
+    child.indexed_pauli = dict(owner.indexed_pauli)
     child.loop_indices = dict(owner.loop_indices)
     child.widths = dict(owner.widths)
     child.registers = dict(owner.registers)
