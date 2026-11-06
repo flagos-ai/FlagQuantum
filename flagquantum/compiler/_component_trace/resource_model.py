@@ -6,6 +6,7 @@
 
 """Evaluate declared component costs independently of emitted instructions."""
 
+from collections.abc import Iterator
 from dataclasses import dataclass
 from math import isfinite
 
@@ -83,6 +84,36 @@ class ModeledResources:
     success_probability: float = 1.0
 
 
+def _component_width(node: ComponentCost) -> int:
+    if type(node.qubits) is not int or node.qubits < 0:
+        raise ValueError("Component width must be a nonnegative integer")
+    return node.qubits
+
+
+def _declared_success(node: ComponentCost) -> float | None:
+    override = node.success_probability
+    if override is not None and (
+        isinstance(override, bool) or not isfinite(override) or not 0 <= override <= 1
+    ):
+        raise ValueError("Success probability must be finite and between zero and one")
+    return None if override is None else float(override)
+
+
+def _active_calls(node: ComponentCost) -> Iterator[CostCall]:
+    for call in node.calls:
+        if (
+            type(call.repetitions) is not int
+            or call.repetitions < 0
+            or type(call.bystander_qubits) is not int
+            or call.bystander_qubits < 0
+        ):
+            raise ValueError(
+                "Call multiplicity and bystander width must be nonnegative integers"
+            )
+        if call.repetitions:
+            yield call
+
+
 def estimate_component_resources(component: ComponentCost) -> ModeledResources:
     """Sum gates, take peak width, and multiply declared success probabilities."""
     cache: dict[int, ModeledResources] = {}
@@ -91,35 +122,15 @@ def estimate_component_resources(component: ComponentCost) -> ModeledResources:
         key = id(node)
         if key in cache:
             return cache[key]
-        if type(node.qubits) is not int or node.qubits < 0:
-            raise ValueError("Component width must be a nonnegative integer")
-        override = node.success_probability
-        if override is not None and (
-            isinstance(override, bool)
-            or not isfinite(override)
-            or not 0 <= override <= 1
-        ):
-            raise ValueError(
-                "Success probability must be finite and between zero and one"
-            )
-        success = 1.0 if override is None else float(override)
-        gates, peak = node.gates, node.qubits
-        for call in node.calls:
-            if (
-                type(call.repetitions) is not int
-                or call.repetitions < 0
-                or type(call.bystander_qubits) is not int
-                or call.bystander_qubits < 0
-            ):
-                raise ValueError(
-                    "Call multiplicity and bystander width must be nonnegative integers"
-                )
-            if call.repetitions:
-                child = visit(call.component)
-                gates = gates.plus(child.gates, call.repetitions)
-                peak = max(peak, child.peak_logical_qubits + call.bystander_qubits)
-                if override is None:
-                    success *= child.success_probability**call.repetitions
+        gates, peak = node.gates, _component_width(node)
+        override = _declared_success(node)
+        success = 1.0 if override is None else override
+        for call in _active_calls(node):
+            child = visit(call.component)
+            gates = gates.plus(child.gates, call.repetitions)
+            peak = max(peak, child.peak_logical_qubits + call.bystander_qubits)
+            if override is None:
+                success *= child.success_probability**call.repetitions
         estimate = ModeledResources(gates, peak, success)
         cache[key] = estimate
         return estimate

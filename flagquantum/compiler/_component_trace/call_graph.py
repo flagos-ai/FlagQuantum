@@ -61,6 +61,29 @@ class ModeledCallGraph:
 CostGeneralizer = Callable[[ComponentCost], ComponentCost | None]
 
 
+def compose_cost_generalizer(
+    generalizer: CostGeneralizer | Sequence[CostGeneralizer] | None,
+) -> CostGeneralizer:
+    """Apply ordered rewrites until a component is omitted."""
+    if generalizer is None:
+        generalizers: Sequence[CostGeneralizer] = ()
+    elif callable(generalizer):
+        generalizers = (generalizer,)
+    else:
+        generalizers = generalizer
+
+    def apply(node: ComponentCost) -> ComponentCost | None:
+        current = node
+        for transform in generalizers:
+            updated = transform(current)
+            if updated is None:
+                return None
+            current = updated
+        return current
+
+    return apply
+
+
 def modeled_call_graph(
     component: ComponentCost,
     *,
@@ -77,22 +100,7 @@ def modeled_call_graph(
     if max_depth is not None and (type(max_depth) is not int or max_depth < 0):
         raise ValueError("Call graph depth must be a nonnegative integer")
 
-    if generalizer is None:
-        generalizers: Sequence[CostGeneralizer] = ()
-    elif callable(generalizer):
-        generalizers = (generalizer,)
-    else:
-        generalizers = generalizer
-
-    def generalize(node: ComponentCost) -> ComponentCost | None:
-        current = node
-        for transform in generalizers:
-            updated = transform(current)
-            if updated is None:
-                return None
-            current = updated
-        return current
-
+    generalize = compose_cost_generalizer(generalizer)
     root = generalize(component)
     if root is None:
         raise ValueError("Cannot remove the root of a call graph")

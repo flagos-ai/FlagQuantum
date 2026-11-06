@@ -104,6 +104,29 @@ depth-first visit determines its expansion, matching the locked source.
 The terminal counts describe calls and omit exclusive gate costs declared
 on interior nodes. Use the resource estimate for those totals.
 
+Query a single metric with `query_component_cost` from
+`flagquantum.compiler._component_trace.cost_query`. The built-in metrics are
+`GATE_COST`, `PEAK_LOGICAL_QUBITS` and `SUCCESS_PROBABILITY`. A custom
+`CostMetric` supplies a recursive rule and the identity returned for an
+omitted component. The query first generalizes the node, then checks the
+caller cache, checks explicit static overrides and finally evaluates the
+recursive rule. A success probability declared on the component remains
+the built-in probability rule's default override. Use each cache with a
+single metric and a fixed generalizer and override configuration.
+
+```python
+from flagquantum.compiler._component_trace.cost_query import (
+    PEAK_LOGICAL_QUBITS,
+    query_component_cost,
+)
+
+model = sparse_rotation_preparation_cost(preparation, target_width=4)
+assert query_component_cost(model, PEAK_LOGICAL_QUBITS) == 22
+assert query_component_cost(
+    model, PEAK_LOGICAL_QUBITS, static_costs={model: 24}
+) == 24
+```
+
 A component can declare `success_probability` to override its local
 probability model. Without a declaration, the estimator multiplies child
 probabilities, raised to their call multiplicities. A zero-call edge has no
@@ -120,3 +143,4 @@ error-correction models remain separate.
 - [Qualtran v0.7.0 logical width](https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/resource_counting/_qubit_counts.py)
 - [Qualtran v0.7.0 success probability](https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/resource_counting/_success_prob.py)
 - [Qualtran v0.7.0 call graph](https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/resource_counting/_call_graph.py)
+- [Qualtran v0.7.0 cost queries](https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/resource_counting/_costing.py)
