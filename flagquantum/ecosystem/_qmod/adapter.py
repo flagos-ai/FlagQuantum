@@ -47,6 +47,7 @@ from .bindings import (
 from .borrowed_phase_views import expand_borrowed_phase_views
 from .callback_arrays import (
     capture_callbacks,
+    capture_effects,
     indexed_callback,
     lower_callback_control,
     lower_selected_effects,
@@ -98,6 +99,7 @@ from .quantum_callbacks import (
     Lambda,
     specialize_quantum_callbacks,
 )
+from .real_matrices import bound_matrix, lower_matrix_iteration, matrix_cell
 from .scope_control import lower_fourier_control
 from .selector_rotations import (
     fold_skip_control_tables,
@@ -829,8 +831,10 @@ class _Adapt:
         self.constants = constants
         self.classical_values: dict[str, float] = {}
         self.callback_bindings: dict[str, Function] = {}
+        self.zero_callbacks: dict[str, tuple[Operation, ...]] = {}
         self.callback_arrays: dict[str, tuple[tuple[Operation, ...], ...]] = {}
         self.classical_arrays: dict[str, tuple[float, ...]] = {}
+        self.classical_matrices: dict[str, tuple[tuple[float, ...], ...]] = {}
         self.classical_integers: dict[str, int] = {}
         self.integer_arrays: dict[str, tuple[int, ...]] = {}
         self.pauli_bindings: dict[str, Expression] = {}
@@ -1131,6 +1135,8 @@ class _Adapt:
                 return len(self.callback_arrays[name])
             if name in self.classical_arrays:
                 return len(self.classical_arrays[name])
+            if name in self.classical_matrices:
+                return len(self.classical_matrices[name])
             if name in self.integer_arrays:
                 return len(self.integer_arrays[name])
             if name in self.indexed_pauli:
@@ -1392,6 +1398,8 @@ class _Adapt:
                 return _literal_angle(constant, node.token)
             return _literal_angle(node, node.token)
         if text == "[":
+            if (cell := matrix_cell(self, node)) is not None:
+                return cell
             source, offset = node.children
             if not source.children and source.token.text in self.integer_arrays:
                 value = self.static_integer(node)
@@ -1470,6 +1478,8 @@ class _Adapt:
         if not node.children and node.token.text in self.classical_values:
             return self.classical_values[node.token.text]
         if node.token.text == "[":
+            if (cell := matrix_cell(self, node)) is not None:
+                return cell
             array, index = node.children
             values = self.classical_arrays.get(array.token.text)
             if values is not None and not array.children:
@@ -1640,6 +1650,26 @@ class _Adapt:
         deferred: dict[str, Token] = {}
         for argument, parameter in zip(arguments, syntax.parameters, strict=True):
             name = parameter.name.text
+            if parameter.kind == "qfunc()":
+                if isinstance(argument, Lambda):
+                    if argument.parameters or not argument.body:
+                        reject(
+                            argument.token,
+                            "callback.signature",
+                            "expected a nonempty zero-argument callback",
+                        )
+                    effects = capture_effects(self, argument.token, argument.body)
+                else:
+                    captured = self.zero_callbacks.get(argument.token.text)
+                    if argument.children or captured is None:
+                        reject(
+                            argument.token,
+                            "callback.signature",
+                            "expected a bound zero-argument callback",
+                        )
+                    effects = captured
+                child.zero_callbacks[name] = effects
+                continue
             if parameter.kind in BORROWED_EFFECT_SIGNATURES:
                 child.callback_bindings[name] = self.borrowed_effect_callback(
                     argument, BORROWED_EFFECT_SIGNATURES[parameter.kind]
@@ -1729,7 +1759,16 @@ class _Adapt:
                     )
                 continue
             if parameter.role == "real":
-                if parameter.kind == "real[]":
+                if parameter.kind == "real[][]":
+                    matrix = bound_matrix(self, argument)
+                    if not matrix or any(len(row) != parameter.width for row in matrix):
+                        reject(
+                            argument.token,
+                            "binding",
+                            "real matrix does not match the formal row width",
+                        )
+                    child.classical_matrices[name] = matrix
+                elif parameter.kind == "real[]":
                     values = self.real_array(argument)
                     if not values or (
                         parameter.width is not None and len(values) != parameter.width
@@ -1788,7 +1827,13 @@ class _Adapt:
                 and parameter.role == "inout"
                 and parameter.kind == "qnum"
             )
-            if borrowed_counter:
+            if borrowed_counter or (
+                actual_port is not None
+                and actual_port.kind == "qphase"
+                and parameter.kind == "qnum"
+                and parameter.width is None
+                and parameter.role in {"const", "inout"}
+            ):
                 parameter = replace(parameter, kind="qphase")
                 child.parameters[name] = parameter
             if (
@@ -2143,7 +2188,12 @@ class _Adapt:
             if source.children:
                 return None
             parameter = self.parameters.get(source.token.text)
-            if parameter is None or parameter.kind not in {"qbit", "qbit[]", "qnum"}:
+            if parameter is None or parameter.kind not in {
+                "qbit",
+                "qbit[]",
+                "qnum",
+                "qphase",
+            }:
                 return None
             if parameter.kind == "qbit[]" and node.token.text != "[":
                 reject(
@@ -2151,13 +2201,27 @@ class _Adapt:
                     "phase",
                     "phase arithmetic requires indexed array elements",
                 )
-            view = self.array_view(source, allow_signed=signed_word(node))
+            view = self.array_view(
+                source,
+                allow_signed=signed_word(node),
+                allow_phase=parameter.kind == "qphase",
+            )
             if node.token.text == "[":
                 index = self.static_integer(node.children[1])
                 if not 0 <= index < len(view):
                     reject(node.token, "width", "phase bit index is out of bounds")
                 return (view[index],)
             return view
+
+        def phase_scale(node: Expression) -> int:
+            parameter = (
+                self.parameters.get(node.token.text) if not node.children else None
+            )
+            return (
+                (self.widths[node.token.text] or 0)
+                if parameter is not None and parameter.kind == "qphase"
+                else 0
+            )
 
         factors: tuple[Cube, ...] = ()
         factor_values: tuple[Value, ...] = ()
@@ -2167,6 +2231,7 @@ class _Adapt:
                 quantum_word,
                 self.classical_number,
                 signed_word=signed_word,
+                fraction_bits=phase_scale,
                 condition=condition,
                 disjoint_condition_target=disjoint_condition_target,
             )
@@ -3799,12 +3864,28 @@ class _Adapt:
         if token.text == "+=":
             self.increment(token, args[0], args[1])
             return
+        if statement.matrix_row is not None:
+            if any(variable.text in _INTRINSICS for variable in statement.matrix_row):
+                reject(token, "name", "real matrix row names cannot shadow intrinsics")
+            lower_matrix_iteration(self, statement, index, MAX_LOOP_ITERATIONS)
+            return
+        if token.text in self.zero_callbacks:
+            if statement != Statement(token, ()) or args:
+                reject(
+                    token,
+                    "callback.signature",
+                    "zero-argument callbacks do not accept operands or nested scopes",
+                )
+            for op in self.zero_callbacks[token.text]:
+                self.effect_op(op.name, token, op.operands[1:], **op.attributes)
+            return
         if statement.static_if_body is not None:
             if any(
                 item.declaration is not None
                 or (
                     item.token.text not in _STATIC_GATES
                     and item.static_if_body is None
+                    and item.matrix_row is None
                     and item.control_body is None
                     and item.token.text not in self.definitions
                 )
@@ -3834,6 +3915,7 @@ class _Adapt:
                 child.token.text not in allowed
                 and child.token.text not in self.definitions
                 and child.token.text not in self.callback_bindings
+                and child.token.text not in self.zero_callbacks
                 and child.inverse_body is None
                 for child in body
             ):

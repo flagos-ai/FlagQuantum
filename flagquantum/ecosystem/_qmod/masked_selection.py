@@ -30,10 +30,16 @@ def lower_masked_selection(owner: _Adapt, statement: Statement) -> bool:
         and expected.token.text in owner.loop_indices
         and any(child.static_if_body is not None for child in body)
     )
-    if not structured and not loop_selector:
+    callback_branch = len(body) == 1 and (
+        body[0].token.text in owner.zero_callbacks
+        or body[0].inverse_body is not None
+        and len(body[0].inverse_body) == 1
+        and body[0].inverse_body[0].token.text in owner.zero_callbacks
+    )
+    if not structured and not loop_selector and not callback_branch:
         return False
     controls: tuple[Location, ...]
-    if structured:
+    if structured or callback_branch:
         controls = (owner.gate_target(source),)
     elif port is not None and not source.children and port.kind == "qnum":
         controls = owner.array_view(source)

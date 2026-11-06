@@ -66,7 +66,7 @@ def parse_signature(parser: Parser) -> str:
     parser.take(")")
     signature = "qfunc(" + ",".join(types) + ")"
     if signature not in QUANTUM_SIGNATURES and signature not in (
-        BORROWED_EFFECT_SIGNATURES.keys() | {"qfunc(real,qbit[])"}
+        BORROWED_EFFECT_SIGNATURES.keys() | {"qfunc(real,qbit[])", "qfunc()"}
     ):
         reject(token, "callback.signature", "unsupported callback signature")
     return signature

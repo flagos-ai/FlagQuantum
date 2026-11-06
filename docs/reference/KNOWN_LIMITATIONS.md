@@ -917,3 +917,25 @@ source = Path("tests/fixtures/classiq_qmod/oblivious_amplitude_amplification.qmo
 program = synth.synthesize(source, max_qubits=4, max_workspace=0)
 print(dict(program.probabilities(fq.run(program), registers=("data", "block"))))
 ```
+
+## Static real matrix rows and zero-argument quantum callbacks
+
+A typed Qmod helper can bind a real matrix with a fixed row width, access
+bounded cells, and traverse a static row slice with destructuring. A
+zero-argument lambda can borrow existing quantum locations and emit
+checked unitary effects. It cannot create or transfer storage. A scalar
+equality can select the callback or its inverse when the callback leaves
+the selector untouched. Phase arithmetic on a borrowed unsigned
+all-fractional number uses its declared binary scale. The pinned GQSP
+source retains all seven rows and both branches of the power schedule.
+
+```python
+from pathlib import Path
+
+import flagquantum as fq
+from flagquantum import synth
+
+source = Path("tests/fixtures/classiq_qmod/gqsp.qmod")
+program = synth.synthesize(source, max_qubits=8, max_workspace=0)
+print(dict(program.probabilities(fq.run(program), registers=("ind",))))
+```

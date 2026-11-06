@@ -22,6 +22,7 @@ def expand_phase(
     number: Callable[[Expression], float],
     *,
     signed_word: Callable[[Expression], bool] | None = None,
+    fraction_bits: Callable[[Expression], int] | None = None,
     condition: Expression | None = None,
     disjoint_condition_target: Location | None = None,
 ) -> tuple[Polynomial, tuple[Location, ...]]:
@@ -65,6 +66,13 @@ def expand_phase(
         if word is not None:
             result: Polynomial = {}
             signed = signed_word is not None and signed_word(node)
+            scale = fraction_bits(node) if fraction_bits is not None else 0
+            if integer and scale:
+                reject(
+                    node.token,
+                    "precision",
+                    "integer predicates cannot read fixed-point values",
+                )
             for bit, location in enumerate(word):
                 if location not in locations:
                     locations.append(location)
@@ -81,7 +89,7 @@ def expand_phase(
                 result[mask] = (
                     int(result.get(mask, 0)) + weight
                     if integer
-                    else result.get(mask, 0.0) + float(weight)
+                    else result.get(mask, 0.0) + math.ldexp(weight, -scale)
                 )
             return result
         text = node.token.text

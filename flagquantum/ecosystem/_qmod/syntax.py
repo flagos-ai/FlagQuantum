@@ -210,6 +210,7 @@ class Statement:
     amplification: Amplification | None = None
     callback_index: Expression | None = None
     skip_control: tuple[Statement, ...] | None = None
+    matrix_row: tuple[Token, ...] | None = None
 
 
 @dataclass(frozen=True)
@@ -432,6 +433,7 @@ class Parser:
             elif self.current.text == "[" and (
                 (not left.children)
                 or (not static and left.token.text == ":")
+                or (real and left.token.text == "[")
                 or (
                     self.records
                     and (
@@ -953,6 +955,15 @@ class Parser:
                         width = self.width()
                     self.take("]")
                     kind += "[]"
+                    if (
+                        kind == "real[]"
+                        and width is not None
+                        and name.text != "main"
+                        and self.current.text == "["
+                    ):
+                        self.take("[")
+                        self.take("]")
+                        kind = "real[][]"
                 if kind.startswith("Pauli") and (
                     kind != "Pauli[]" or name.text == "main"
                 ):
@@ -1010,6 +1021,14 @@ class Parser:
 
             return parse_lambda(self)
         if self.current.text == "[":
+            if self.tokens[self.position + 1].text == "[":
+
+                def row() -> Expression:
+                    items = self.literal_array(self.real_angle)
+                    return replace(items, token=replace(items.token, text="[]"))
+
+                matrix = self.literal_array(row)
+                return replace(matrix, token=replace(matrix.token, text="$real_matrix"))
             if self.tokens[self.position + 1].text == "IndexedPauli":
                 paulis = self.literal_array(self.indexed_pauli)
                 return replace(
@@ -1148,6 +1167,27 @@ class Parser:
                 )
                 statements.append(
                     Statement(token, (count,), repeat_index=index, repeat_body=body)
+                )
+                continue
+            if self.current.text == "foreach":
+                token = self.take("foreach")
+                self.take("(")
+                names = [self.name()]
+                while self.current.text == ",":
+                    self.take(",")
+                    names.append(self.name())
+                self.take(":")
+                matrix = self.expression(static=True, allow_slice=True)
+                self.take(")")
+                body = self.block(
+                    allow_scopes=False,
+                    scope_depth=scope_depth + 1,
+                    static_loop_body=True,
+                )
+                statements.append(
+                    Statement(
+                        token, (matrix,), repeat_body=body, matrix_row=tuple(names)
+                    )
                 )
                 continue
             if self.current.text == "if" and self.tokens[self.position + 1].text == "(":
