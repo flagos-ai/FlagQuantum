@@ -7,6 +7,7 @@
 """Unsigned constant comparison through clean prefix flags."""
 
 from ...core.ir import Instruction
+from .._component_trace.resource_model import ComponentCost, GateCost
 from .and_compute import and_compute_ir, and_uncompute_ir
 
 
@@ -17,6 +18,20 @@ def less_than_constant_workspace_size(width: int, threshold: int) -> int:
     if type(threshold) is not int or threshold < 0:
         raise ValueError("Comparison threshold must be a nonnegative concrete integer")
     return 0 if threshold >= 1 << width else width + 1
+
+
+def source_less_than_constant_cost(width: int, threshold: int) -> ComponentCost:
+    """Count the locked unsigned prefix comparator without emitting IR."""
+    work = less_than_constant_workspace_size(width, threshold)
+    if not work:
+        gates = GateCost(clifford=1)
+    else:
+        gates = GateCost(
+            and_bloq=width,
+            clifford=3 * (width + threshold.bit_count()) + 2,
+            measurement=width,
+        )
+    return ComponentCost("LessThanConstant", width + 1 + work, gates)
 
 
 def less_than_constant_ir(

@@ -9,9 +9,11 @@ from examples.algorithms.binary_field_arithmetic import FieldOperation
 from flagquantum.compiler.registers.comparison import (
     less_than_constant_ir,
     less_than_constant_workspace_size,
+    source_less_than_constant_cost,
 )
 from flagquantum.dynamic import DynamicCircuit
 from flagquantum.runtime.dynamic.execution import run_dynamic
+from tests.unit.test_first_quantization_resource_model import assert_source_model
 from tests.unit.test_register_constant_addition import reference_arithmetic_gates
 from tests.unit.test_register_subtraction import assert_source
 
@@ -43,6 +45,7 @@ def test_literal_source_comparison_gates_outputs_conditions_and_cost(
 
     x, work, bits = layout(width, threshold)
     source = LessThanConstant(width, threshold)
+    assert_source_model(source_less_than_constant_cost(width, threshold), source)
     actual = less_than_constant_ir(x, threshold, width, work, bits)
     expected = reference_arithmetic_gates(
         source,
