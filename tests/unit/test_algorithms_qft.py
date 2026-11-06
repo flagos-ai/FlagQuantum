@@ -79,3 +79,76 @@ def test_append_qft_rejects_repeated_wires() -> None:
     """A repeated qubit would apply a phase to the wrong qubit."""
     with pytest.raises(ValueError):
         append_qft(fq.Circuit(2), [0, 0])
+
+
+@pytest.mark.ftqc_reference
+@pytest.mark.parametrize("width", [1, 3, 5])
+@pytest.mark.parametrize("with_reverse", [False, True])
+def test_pinned_qft_order_counts_and_complex_state(width, with_reverse):
+    pytest.importorskip("qualtran")
+    import cirq
+    import numpy as np
+    from qualtran.bloqs.basic_gates.rotation import CZPowGate
+    from qualtran.bloqs.qft.qft_text_book import QFTTextBook
+
+    from examples.algorithms.binary_field_arithmetic import FieldOperation
+    from flagquantum.algorithms.primitives.qft import _qft_circuit
+
+    qubits = tuple(cirq.LineQubit.range(width))
+    source = QFTTextBook(width, with_reverse=with_reverse)
+    stream = cirq.decompose(
+        source.on(*qubits),
+        keep=lambda op: op.gate in (cirq.H, cirq.SWAP)
+        or isinstance(getattr(op.gate, "bloq", op.gate), CZPowGate),
+    )
+    reference = []
+    for op in stream:
+        wires = tuple(q.x for q in op.qubits)
+        if op.gate == cirq.H:
+            reference.append(("h", wires, 0))
+        elif op.gate == cirq.SWAP:
+            reference.append(("swap", wires, 0))
+        else:
+            bloq = getattr(op.gate, "bloq", op.gate)
+            reference.append(("cphase", wires, np.pi * bloq.exponent))
+    value = torch.arange(1, (1 << width) + 1, dtype=torch.float64)
+    state = torch.complex(value, 2 - value)
+    state /= state.norm()
+    forward = _qft_circuit(width, with_reverse=with_reverse)
+    for inverse in (False, True):
+        actual = forward.adjoint() if inverse else forward
+        expected = (
+            [(name, wires, -angle) for name, wires, angle in reversed(reference)]
+            if inverse
+            else reference
+        )
+        instructions = tuple(actual.to_ir().instructions)
+        assert [
+            (g.name, g.wires, g.params.get("theta", 0)) for g in instructions
+        ] == expected
+        cirq_stream = [
+            (
+                cirq.H(qubits[wires[0]])
+                if name == "h"
+                else (
+                    cirq.SWAP(*(qubits[q] for q in wires))
+                    if name == "swap"
+                    else (cirq.CZ ** (angle / np.pi))(*(qubits[q] for q in wires))
+                )
+            )
+            for name, wires, angle in expected
+        ]
+        wanted = (
+            cirq.Simulator(dtype=np.complex128)
+            .simulate(
+                cirq.Circuit(cirq_stream),
+                qubit_order=qubits,
+                initial_state=state.numpy(),
+            )
+            .final_state_vector
+        )
+        circuit = fq.Circuit(width, inputs=state, dtype=torch.complex128)
+        circuit.append(FieldOperation(width, instructions))
+        torch.testing.assert_close(
+            circuit.state().flatten(), torch.from_numpy(wanted), atol=2e-12, rtol=0
+        )

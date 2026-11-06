@@ -76,28 +76,31 @@ def qft(n_qubits: int, *, inverse: bool = False) -> Circuit:
     return forward.adjoint() if inverse else forward
 
 
-def _qft_circuit(n_qubits: int) -> Circuit:
+def _qft_circuit(n_qubits: int, *, with_reverse: bool = True) -> Circuit:
     """Build the forward transform on a fresh register of ``n_qubits`` qubits.
 
-    The sequence is the Hadamard and controlled-phase ladder followed by the bit-reversal
-    swaps. Qubit ``p`` takes a Hadamard and then the phases controlled by every more
-    significant qubit, with the phase between two qubits one position apart being ``pi/2``.
+    Each qubit controls phases on the earlier qubits in reverse order, then
+    receives its Hadamard. The optional swaps implement bit reversal.
 
     Args:
         n_qubits: The register width; the caller has already checked it is positive.
+        with_reverse: Include the terminal bit-reversal swaps.
 
     Returns:
         The forward transform, its qubits numbered ``0`` to ``n_qubits - 1``.
     """
     circuit = Circuit(n_qubits)
-    for position in range(n_qubits):
-        circuit.gate("h", position)
-        for offset in range(position + 1, n_qubits):
+    # Adapted from Qualtran v0.7.0 QFTTextBook, Copyright 2023 Google LLC, Apache-2.0.
+    # https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/bloqs/qft/qft_text_book.py
+    for control in range(n_qubits):
+        for target in range(control - 1, -1, -1):
             circuit.gate(
                 "cphase",
-                (offset, position),
-                theta=math.pi / 2 ** (offset - position),
+                (control, target),
+                theta=math.pi / 2 ** (control - target),
             )
-    for position in range(n_qubits // 2):
-        circuit.gate("swap", (position, n_qubits - 1 - position))
+        circuit.gate("h", control)
+    if with_reverse:
+        for position in range(n_qubits // 2):
+            circuit.gate("swap", (position, n_qubits - 1 - position))
     return circuit
