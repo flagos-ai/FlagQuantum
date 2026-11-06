@@ -43,7 +43,7 @@ def _controlled_modular_workspace(
         workspace,
         classical_bits,
         requirements,
-        extra_wires=(control,),
+        extra_qubits=(control,),
     )
     sign, pool = workspace[0], workspace[1:]
     constant, carry = pool[: n + 1], pool[n + 1 : 2 * n + 1]

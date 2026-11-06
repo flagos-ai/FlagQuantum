@@ -83,7 +83,7 @@ def _controlled_modular_scaled_ir(
         workspace,
         classical_bits,
         requirements,
-        extra_wires=(control,),
+        extra_qubits=(control,),
     )
     if type(scale) is not int:
         raise ValueError("Modular scale must be a concrete integer")
