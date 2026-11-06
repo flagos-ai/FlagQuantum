@@ -14,6 +14,7 @@ from flagquantum.compiler._component_trace.cost_query import (
     SUCCESS_PROBABILITY,
     CostMetric,
     query_component_cost,
+    query_component_costs,
 )
 from flagquantum.compiler._component_trace.resource_model import (
     ComponentCost,
@@ -128,3 +129,77 @@ def test_removed_root_uses_identity_and_cycles_are_refused() -> None:
     assert not cache
     with pytest.raises(ValueError, match="cycle"):
         query_component_cost(root, GATE_COST, generalizer=lambda _: root)
+
+
+@pytest.mark.ftqc_reference
+@pytest.mark.parametrize("omit_branch", [False, True])
+def test_batch_matches_source_metric_rows(omit_branch: bool) -> None:
+    pytest.importorskip("qualtran")
+    from qualtran.bloqs.basic_gates import TGate
+    from qualtran.bloqs.for_testing.costing import CostingBloq
+    from qualtran.resource_counting import (
+        QECGatesCost,
+        QubitCount,
+        SuccessProb,
+        query_costs,
+    )
+
+    leaf = ComponentCost("T", 1, GateCost(t=1))
+    alias = ComponentCost("T†", 1, GateCost(t=1))
+    branch = ComponentCost(
+        "branch", 3, calls=(CostCall(leaf, 2), CostCall(alias)), success_probability=0.5
+    )
+    root = ComponentCost("root", 2, calls=(CostCall(branch, 3),))
+    metrics = (GATE_COST, PEAK_LOGICAL_QUBITS, SUCCESS_PROBABILITY)
+    actual = query_component_costs(
+        root,
+        iter(metrics),
+        generalizer=(
+            lambda node: None if omit_branch and node == branch else node,
+            lambda node: leaf if node == alias else node,
+        ),
+    )
+
+    t_gate = TGate()
+    success = SuccessProb()
+    source_branch = CostingBloq(
+        "branch",
+        3,
+        [(t_gate, 2), (t_gate.adjoint(), 1)],
+        static_costs=[(success, 0.5)],
+    )
+    source_root = CostingBloq("root", 2, [(source_branch, 3)])
+    source_metrics = (QECGatesCost(), QubitCount(), success)
+    expected = query_costs(
+        source_root,
+        source_metrics,
+        generalizer=(
+            lambda node: None if omit_branch and node == source_branch else node,
+            lambda node: t_gate if node == t_gate.adjoint() else node,
+        ),
+    )
+
+    source_nodes = {leaf: t_gate, branch: source_branch, root: source_root}
+    assert [source_nodes[node] for node in actual] == list(expected)
+    for node, row in actual.items():
+        source_row = expected[source_nodes[node]]
+        assert list(row) == [
+            metric
+            for metric, source_metric in zip(metrics, source_metrics, strict=True)
+            if source_metric in source_row
+        ]
+        for metric, source_metric in zip(metrics, source_metrics, strict=True):
+            if metric in row:
+                value = source_row[source_metric]
+                assert row[metric] == (
+                    GateCost(t=value.t) if metric == GATE_COST else value
+                )
+    if not omit_branch:
+        assert SUCCESS_PROBABILITY not in actual[leaf]
+        assert actual[root][SUCCESS_PROBABILITY] == 0.125
+
+
+def test_batch_with_no_evaluated_nodes_has_no_rows() -> None:
+    root = ComponentCost("root", 1)
+    assert query_component_costs(root, ()) == {}
+    assert query_component_costs(root, (GATE_COST,), generalizer=lambda _: None) == {}

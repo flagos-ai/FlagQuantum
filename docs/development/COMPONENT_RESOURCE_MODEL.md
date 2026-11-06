@@ -127,6 +127,25 @@ assert query_component_cost(
 ) == 24
 ```
 
+Use `query_component_costs` for a table indexed by component and metric.
+Each metric starts with its own empty cache. A row contains only the
+metrics that visited it. For example, a declared success probability can
+stop that query at the parent while gate and width queries still visit
+its children.
+
+```python
+from flagquantum.compiler._component_trace.cost_query import (
+    GATE_COST,
+    PEAK_LOGICAL_QUBITS,
+    SUCCESS_PROBABILITY,
+    query_component_costs,
+)
+
+metrics = (GATE_COST, PEAK_LOGICAL_QUBITS, SUCCESS_PROBABILITY)
+table = query_component_costs(model, metrics)
+assert table[model][PEAK_LOGICAL_QUBITS] == 22
+```
+
 A component can declare `success_probability` to override its local
 probability model. Without a declaration, the estimator multiplies child
 probabilities, raised to their call multiplicities. A zero-call edge has no

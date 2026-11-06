@@ -1,13 +1,14 @@
 # Copyright 2023 Google LLC
+# Copyright 2024 Google LLC
 # SPDX-License-Identifier: Apache-2.0
-# Adapted from Qualtran v0.7.0 CostKey and get_cost_value.
+# Adapted from Qualtran v0.7.0 CostKey, get_cost_value, and query_costs.
 # https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/resource_counting/_costing.py
 
-"""Query a single component resource metric with scoped overrides and caching."""
+"""Query declared component costs with independent caches for each metric."""
 
-from collections.abc import Callable, Mapping, MutableMapping, Sequence
+from collections.abc import Callable, Iterable, Mapping, MutableMapping, Sequence
 from dataclasses import dataclass
-from typing import Generic, TypeVar
+from typing import Generic, Protocol, TypeVar
 
 from .call_graph import CostGeneralizer, compose_cost_generalizer
 from .resource_model import (
@@ -27,6 +28,20 @@ class CostMetric(Generic[Value]):
 
     compute: Callable[[ComponentCost, Callable[[ComponentCost], Value]], Value]
     zero: Value
+
+    def cost_cache(
+        self, component: ComponentCost, generalizer: CostGeneralizer
+    ) -> dict[ComponentCost, Value]:
+        """Collect the values visited by this metric from an empty cache."""
+        cache: dict[ComponentCost, Value] = {}
+        query_component_cost(component, self, cache=cache, generalizer=generalizer)
+        return cache
+
+
+class _BatchMetric(Protocol):
+    def cost_cache(
+        self, component: ComponentCost, generalizer: CostGeneralizer
+    ) -> Mapping[ComponentCost, object]: ...
 
 
 def query_component_cost(
@@ -64,6 +79,25 @@ def query_component_cost(
         return value
 
     return visit(component)
+
+
+def query_component_costs(
+    component: ComponentCost,
+    metrics: Iterable[_BatchMetric],
+    *,
+    generalizer: CostGeneralizer | Sequence[CostGeneralizer] | None = None,
+) -> dict[ComponentCost, dict[_BatchMetric, object]]:
+    """Collect the visited component rows for each metric in request order.
+
+    Each metric gets a fresh cache and may visit a different set of nodes.
+    A row contains only metrics that evaluated or retrieved that node.
+    """
+    table: dict[ComponentCost, dict[_BatchMetric, object]] = {}
+    generalize = compose_cost_generalizer(generalizer)
+    for metric in metrics:
+        for node, value in metric.cost_cache(component, generalize).items():
+            table.setdefault(node, {})[metric] = value
+    return table
 
 
 def _gate_cost(
