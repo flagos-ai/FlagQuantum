@@ -300,6 +300,14 @@ graph = symbolic_call_graph(root, calls, generalizer=generalize_rotation)
 assert graph.leaf_counts == {RotationCall("rx", None): 5}
 ```
 
+`classify_resource_gate` uses the source's finite angle and exponent
+lists and its strict tolerance to classify explicitly modeled Clifford,
+T-like and rotation calls. `ignore_known_cliffords` can remove the
+recognized Clifford calls, including inside partition wrappers. Apply
+that filter before generalizing angles if the classification needs the
+original angle. An opaque component retains its own identity regardless
+of its name.
+
 - [Qualtran v0.7.0 gate costs](https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/resource_counting/_bloq_counts.py)
 - [Qualtran v0.7.0 logical width](https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/resource_counting/_qubit_counts.py)
 - [Qualtran v0.7.0 success probability](https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/resource_counting/_success_prob.py)

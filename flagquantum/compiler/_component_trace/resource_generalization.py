@@ -32,6 +32,23 @@ class PhaseCall:
 
 
 @dataclass(frozen=True)
+class CliffordCall:
+    """An explicit gate family recognized by the source Clifford predicate."""
+
+    opcode: Literal["swap_bit", "h", "x", "y", "z", "cx", "cy", "cz", "arbitrary"]
+    width: SymbolicInt
+    adjoint: bool = False
+
+
+@dataclass(frozen=True)
+class ControlledRotationCall:
+    """A rotation with explicit controls for cost classification."""
+
+    call: RotationCall | PhaseCall
+    controls: tuple[SymbolicInt, ...]
+
+
+@dataclass(frozen=True)
 class ConjunctionCall:
     """Binary And when the control tuple has two entries, otherwise MultiAnd.
 
@@ -68,6 +85,8 @@ ResourceCall = (
     ComponentCost
     | RotationCall
     | PhaseCall
+    | CliffordCall
+    | ControlledRotationCall
     | ConjunctionCall
     | ControlledSwapCall
     | BookkeepingCall
