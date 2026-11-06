@@ -2479,3 +2479,25 @@ assert report.emitted is not None
 assert report.emitted.t_count == 3104
 assert report.emitted.unconditional["measure"] == 776
 ```
+
+### Cubic inverse distance
+
+Set `cubic=True` in both `grid_potential_requirements` and
+`GridPotentialEnergy.make_on` to select the piecewise cubic followed by
+one corrected Newton step from [Eqs. 36–49](https://arxiv.org/pdf/2308.12352).
+The executable QROM loads four coefficient magnitudes and the interval's
+Newton correction. Leading-one selection supplies the normalized interval
+offset. Three reversible Horner stages compute each complete product before
+truncating it. Phasing is followed by the inverse arithmetic and QROM erase.
+
+The locked coefficient table and resource model retain their original
+address conventions. The executable table covers the complete distance
+register and uses the paper's intervals, including separate rows for
+distances two and three. Coefficients and the Newton correction are
+quantized from the published decimal constants.
+
+For the two-electron example above, use five fractional bits and
+`cubic=True`. This requires 212 work qubits and emits 4,136 T/T† instructions
+and 1,034 measurements. The locked source model still reports a peak of 81
+logical qubits. These figures include reversible clearing in the emitted
+circuit.

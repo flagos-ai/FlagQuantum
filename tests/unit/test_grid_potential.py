@@ -106,3 +106,40 @@ def test_one_electron_potential_is_identity():
     )
     assert circuit.append(op) is circuit
     assert not circuit.to_ir().instructions
+
+
+@pytest.mark.parametrize("adjoint", [False, True])
+def test_table_cubic_grid_potential_absolute_phase(adjoint):
+    from tests.unit.test_grid_cubic_inverse_sqrt import cubic_word
+
+    precision, theta = 5, 0.721
+    work, _ = grid_potential_requirements(
+        1, precision=precision, iterations=1, cubic=True
+    )
+    op = GridPotentialEnergy.make_on(
+        grid_points=1,
+        system=(((0,), (1,), (2,)), ((3,), (4,), (5,))),
+        workspace=tuple(range(6, 6 + work)),
+        radians_per_unit=theta,
+        precision=precision,
+        cubic=True,
+        adjoint=adjoint,
+    )
+    ir = DynamicCircuit(6 + work).append(op).to_ir()
+    incoming, expected = {}, {}
+    for i in range(64):
+        index = i << work
+        squared = ((i >> 3) ^ (i & 7)).bit_count()
+        incoming[index] = exp(0.3j * i) / 8
+        expected[index] = incoming[index] * exp(
+            (-1 if adjoint else 1)
+            * 1j
+            * theta
+            * cubic_word(squared, precision)
+            / (1 << precision)
+        )
+    observed = execute_sparse_register(ir, incoming, seed=11)
+    assert all(
+        abs(observed.get(i, 0) - expected.get(i, 0)) < 4e-12
+        for i in observed.keys() | expected.keys()
+    )
