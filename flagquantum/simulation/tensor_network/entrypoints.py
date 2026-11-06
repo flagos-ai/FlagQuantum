@@ -237,6 +237,20 @@ def tensor_network_basis_effect(
     return result.reshape(plan.bsz, 1 << (len(labels) - 1))
 
 
+def tensor_network_basis_measurement(
+    plan: TensorNetworkContractionPlan, wire: int, *, basis: Literal["x", "z"]
+) -> tuple[torch.Tensor, torch.Tensor]:
+    """Consume one quantum output and return the two unnormalized outcome kets.
+
+    Tuple indices give the classical result. Each ket keeps the batch axis
+    and original spectator order. Its squared norm is the outcome probability.
+    """
+    return (
+        tensor_network_basis_effect(plan, {wire: (basis, 0)}),
+        tensor_network_basis_effect(plan, {wire: (basis, 1)}),
+    )
+
+
 def _amplitude_batch_projection(
     plan: TensorNetworkContractionPlan,
     bitstrings: Sequence[int | str | Sequence[int]],

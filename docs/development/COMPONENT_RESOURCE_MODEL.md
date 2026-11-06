@@ -607,6 +607,26 @@ domain the adder preserves the loaded word, so the matching unload
 returns the allocated work wires to zero. Its existing source call graph
 charges the controlled modular add alone.
 
+## Consuming X and Z measurements
+
+The pinned `MeasureX` and `MeasureZ` each consume one quantum wire and
+produce one classical bit. The model charges one measurement and one
+peak logical qubit per leaf. In native dynamic IR, the caller supplies
+the wire and the classical result slot. Z uses a computational-basis
+measurement followed by X on outcome one to clear the consumed physical
+slot for reuse. X prepends H to the same sequence. The emitted H and
+conditional X are reported separately from the source cost. The output
+slot retains the measured bit after the physical wire is cleared.
+
+For exact tensor-network analysis,
+`tensor_network_basis_measurement(plan, wire, basis=...)` returns the
+unnormalized survivor ket for classical outcomes 0 and 1 in that order.
+It removes the measured quantum axis and keeps the batch axis and the
+original order of all spectator wires. The squared norm of each ket is
+its outcome probability, including zero for an impossible outcome.
+Taking the outer product of each branch in a separate classical block
+reproduces the source superoperator.
+
 ## Register identity
 
 The source models Identity as one atomic call with zero QEC gates.
