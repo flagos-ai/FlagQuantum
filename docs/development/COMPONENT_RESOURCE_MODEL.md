@@ -169,6 +169,22 @@ erase leaf is specific to the concrete data model above. Bind concrete
 sizes and rebuild the model to select integer blocks with the concrete
 optimizer.
 
+The shape-only rotation models in
+`flagquantum.algorithms.primitives.symbolic_rotation_resource_model` reuse
+the QROM, phase-gradient lookup and permutation-cycle formulas. The locked
+dense call graph represents the amplitude layers with one full-shape lookup
+and uses one more for the phase step. The sparse model uses one cycle of
+length twice the declared number of nonzero coefficients. An explicit
+target width affects the outer signature. The source still sizes the
+unknown permutation from the state size.
+
+The symbolic permutation width uses the locked callee fallback. With a
+state size of 1,024, one nonzero coefficient and two phase bits, substituting
+1,024 into the symbolic sparse width gives 19 logical qubits. Rebuilding at
+the concrete width gives 20 because the equality has a decomposition at
+that width. Both are shape models. Concrete coefficient data use the
+separate rotation-tree and cycle construction.
+
 Symbolic aggregation
 across arbitrary component graphs, automatic scheduling and physical
 error-correction models remain separate.
