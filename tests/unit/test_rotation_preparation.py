@@ -24,6 +24,61 @@ from tests.unit.test_register_subtraction import assert_source
 pytestmark = pytest.mark.unit
 
 
+def source_rotation_preparation_gates(
+    source: Any, ports: SourcePorts, work: tuple[int, ...], bits: tuple[int, ...]
+) -> tuple[Instruction, ...]:
+    from qualtran.bloqs.basic_gates import Rx, XGate
+    from qualtran.bloqs.bookkeeping import Allocate, Free
+    from qualtran.bloqs.state_preparation.state_preparation_via_rotation import (
+        PRGAViaPhaseGradient,
+    )
+
+    def leaf(
+        bloq: Any, inputs: SourcePorts, desired: SourcePorts
+    ) -> SourceResult | None:
+        if isinstance(bloq, Rx):
+            return (
+                Instruction("rx", inputs["q"], {"theta": float(bloq.angle)}),
+            ), inputs
+        if isinstance(bloq, XGate):
+            return (Instruction("x", inputs["q"]),), inputs
+        if isinstance(bloq, Allocate):
+            assert not bloq.dirty and bloq.signature.get_right("reg").total_bits() == 1
+            return (), {"reg": work[-1:]}
+        if isinstance(bloq, Free):
+            assert inputs == {"reg": work[-1:]} and not bloq.dirty
+            return (), {}
+        if isinstance(bloq, PRGAViaPhaseGradient):
+            return source_lookup_gates(bloq, inputs, work, bits), inputs
+        return None
+
+    expected, outputs = walk_source_graph(source, ports, ports, leaf)
+    assert outputs == ports
+    return expected
+
+
+def execute_rotation_sparse(
+    gates: tuple[Instruction, ...], width: int, state: dict[int, complex], seed: int
+) -> dict[int, complex]:
+    """Run paired Rx rotations with the sparse interpreter's phase basis."""
+    # Rx(theta) = exp(-i*theta/2) H Phase(theta) H. The scalar
+    # factors multiply to one across the literal paired rotations.
+    rotations = []
+    for gate in gates:
+        if gate.name == "rx":
+            rotations.extend(
+                (
+                    Instruction("h", gate.wires),
+                    Instruction("phase", gate.wires, gate.params),
+                    Instruction("h", gate.wires),
+                )
+            )
+        else:
+            rotations.append(gate)
+    assert exp(-0.5j * sum(g.params["theta"] for g in gates if g.name == "rx")) == 1
+    return execute_sparse_register(CircuitIR(width, tuple(rotations)), state, seed=seed)
+
+
 @pytest.mark.ftqc_reference
 @pytest.mark.parametrize(
     "coefficients,width,control_count",
@@ -39,10 +94,7 @@ def test_rotation_preparation_graph_and_state(
     coefficients: tuple[complex, ...], width: int, control_count: int, uncompute: bool
 ) -> None:
     pytest.importorskip("qualtran")
-    from qualtran.bloqs.basic_gates import Rx, XGate
-    from qualtran.bloqs.bookkeeping import Allocate, Free
     from qualtran.bloqs.state_preparation.state_preparation_via_rotation import (
-        PRGAViaPhaseGradient,
         StatePreparationViaRotations,
     )
     from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
@@ -68,27 +120,7 @@ def test_rotation_preparation_graph_and_state(
     if controls:
         ports["prepare_control"] = controls
 
-    def leaf(
-        bloq: Any, inputs: SourcePorts, desired: SourcePorts
-    ) -> SourceResult | None:
-        if isinstance(bloq, Rx):
-            return (
-                Instruction("rx", inputs["q"], {"theta": float(bloq.angle)}),
-            ), inputs
-        if isinstance(bloq, XGate):
-            return (Instruction("x", inputs["q"]),), inputs
-        if isinstance(bloq, Allocate):
-            assert not bloq.dirty and bloq.signature.get_right("reg").total_bits() == 1
-            return (), {"reg": work[-1:]}
-        if isinstance(bloq, Free):
-            assert inputs == {"reg": work[-1:]} and not bloq.dirty
-            return (), {}
-        if isinstance(bloq, PRGAViaPhaseGradient):
-            return source_lookup_gates(bloq, inputs, work, bits), inputs
-        return None
-
-    expected, outputs = walk_source_graph(source, ports, ports, leaf)
-    assert outputs == ports
+    expected = source_rotation_preparation_gates(source, ports, work, bits)
     assert_source(gates, expected)
     assert [gate for gate in gates if gate.name == "rx"] == [
         gate for gate in expected if gate.name == "rx"
@@ -132,24 +164,8 @@ def test_rotation_preparation_graph_and_state(
             i << q: complex(value) for i, value in enumerate(result.flatten())
         }
         input_sparse = {i << q: complex(value) for i, value in enumerate(data)}
-        # Rx(theta) = exp(-i*theta/2) H Phase(theta) H. The scalar
-        # factors multiply to one across the literal paired rotations.
-        rotations = []
-        for gate in gates:
-            if gate.name == "rx":
-                rotations.extend(
-                    (
-                        Instruction("h", gate.wires),
-                        Instruction("phase", gate.wires, gate.params),
-                        Instruction("h", gate.wires),
-                    )
-                )
-            else:
-                rotations.append(gate)
-        assert exp(-0.5j * sum(g.params["theta"] for g in gates if g.name == "rx")) == 1
-        ir = CircuitIR(data_size + q, tuple(rotations))
         for seed in (0, 1, 27):
-            actual = execute_sparse_register(ir, input_sparse, seed=seed)
+            actual = execute_rotation_sparse(gates, data_size + q, input_sparse, seed)
             assert (
                 max(
                     abs(actual.get(i, 0) - expected_sparse.get(i, 0))
