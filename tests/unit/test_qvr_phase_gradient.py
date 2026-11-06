@@ -19,8 +19,8 @@ from flagquantum.compiler.registers.scaled_phase_addition import (
     scaled_phase_add_terms,
 )
 from flagquantum.core.ir import CircuitIR
-from tests.unit.algorithms.primitives.multiplexers.test_thc_qrom import _execute_sparse
 from tests.unit.measurement_checks import certified_and_channel_map, forced_branch
+from tests.unit.sparse_register_execution import execute_sparse_register
 
 pytestmark = pytest.mark.unit
 
@@ -162,7 +162,9 @@ def test_qvr_source_binding_complex_phase_and_cleanup(
                 )
         else:
             for seed in (3, 41):
-                result = _execute_sparse(CircuitIR(width, gates), before, seed=seed)
+                result = execute_sparse_register(
+                    CircuitIR(width, gates), before, seed=seed
+                )
                 assert all(
                     abs(result.get(i, 0) - after.get(i, 0)) < 2e-12
                     for i in result.keys() | after.keys()

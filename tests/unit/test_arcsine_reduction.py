@@ -14,8 +14,8 @@ from flagquantum.compiler.registers.arcsine_reduction import (
     arcsine_reduction_requirements,
 )
 from flagquantum.core.ir import CircuitIR
-from tests.unit.algorithms.primitives.multiplexers.test_thc_qrom import _execute_sparse
 from tests.unit.measurement_checks import certified_and_channel_map, forced_branch
+from tests.unit.sparse_register_execution import execute_sparse_register
 
 pytestmark = pytest.mark.unit
 
@@ -79,7 +79,9 @@ def test_arcsine_reduction_full_complex_trajectories(f):
             before[src] = after[dest] = exp(1j * (value + spectator / 5)) / norm
     for initial, expected in ((before, after), (after, before)):
         for seed in (7, 21, 49):
-            observed = _execute_sparse(CircuitIR(width, gates), initial, seed=seed)
+            observed = execute_sparse_register(
+                CircuitIR(width, gates), initial, seed=seed
+            )
             assert all(
                 abs(observed.get(i, 0) - expected.get(i, 0)) < 2e-12
                 for i in observed.keys() | expected.keys()

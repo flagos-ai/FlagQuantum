@@ -11,13 +11,13 @@ import torch
 
 from flagquantum.compiler.registers.rz_phase_gradient import rz_via_phase_gradient_ir
 from flagquantum.core.ir import CircuitIR
-from tests.unit.algorithms.primitives.multiplexers.test_thc_qrom import _execute_sparse
 from tests.unit.measurement_checks import certified_and_channel_map, forced_branch
 from tests.unit.register_source_graph import (
     SourcePorts,
     SourceResult,
     walk_source_graph,
 )
+from tests.unit.sparse_register_execution import execute_sparse_register
 from tests.unit.test_register_constant_addition import reference_arithmetic_gates
 from tests.unit.test_register_subtraction import assert_source
 
@@ -142,7 +142,9 @@ def test_rz_source_graph_angle_encoding_and_complex_phase(m: int, n: int) -> Non
                 )
         else:
             for seed in (3, 41):
-                actual = _execute_sparse(CircuitIR(width, gates), prepared, seed=seed)
+                actual = execute_sparse_register(
+                    CircuitIR(width, gates), prepared, seed=seed
+                )
                 assert all(
                     abs(actual.get(k, 0) - kicked.get(k, 0)) < 2e-12
                     for k in actual.keys() | kicked.keys()

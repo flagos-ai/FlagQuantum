@@ -21,13 +21,13 @@ from flagquantum.compiler.registers.square_cost_phasing import (
     square_cost_zpow_ir,
 )
 from flagquantum.core.ir import CircuitIR, Instruction
-from tests.unit.algorithms.primitives.multiplexers.test_thc_qrom import _execute_sparse
 from tests.unit.measurement_checks import certified_and_channel_map, forced_branch
 from tests.unit.register_source_graph import (
     SourcePorts,
     SourceResult,
     walk_source_graph,
 )
+from tests.unit.sparse_register_execution import execute_sparse_register
 from tests.unit.test_integer_square import square_layout
 from tests.unit.test_register_subtraction import assert_source
 
@@ -176,7 +176,7 @@ def test_square_cost_original_graph_phases_and_cleanup(fraction, use_gradient) -
             events,
         )
         for seed in (4, 19, 73):
-            observed = _execute_sparse(
+            observed = execute_sparse_register(
                 CircuitIR(width + 1, (*pre, *gates, *post)), initial, seed=seed
             )
             assert all(

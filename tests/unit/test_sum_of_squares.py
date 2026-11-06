@@ -14,8 +14,8 @@ from flagquantum.compiler.registers.integer_square import (
     sum_of_squares_requirements,
 )
 from flagquantum.core.ir import CircuitIR
-from tests.unit.algorithms.primitives.multiplexers.test_thc_qrom import _execute_sparse
 from tests.unit.measurement_checks import certified_and_channel_map, forced_branch
+from tests.unit.sparse_register_execution import execute_sparse_register
 
 pytestmark = pytest.mark.unit
 
@@ -125,7 +125,9 @@ def test_sum_of_squares_complex_amplitudes_and_clean_work(n, k):
                 )
         else:
             for seed in (4, 19, 73):
-                actual = _execute_sparse(CircuitIR(width, gates), incoming, seed=seed)
+                actual = execute_sparse_register(
+                    CircuitIR(width, gates), incoming, seed=seed
+                )
                 assert all(
                     abs(actual.get(i, 0) - outgoing.get(i, 0)) < 2e-12
                     for i in actual.keys() | outgoing.keys()

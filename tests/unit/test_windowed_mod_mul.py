@@ -12,13 +12,13 @@ from flagquantum.compiler.registers.single_window_mod_mul import (
 )
 from flagquantum.compiler.registers.windowed_mod_mul import windowed_mod_mul_ir
 from flagquantum.core.ir import CircuitIR, Instruction
-from tests.unit.algorithms.primitives.multiplexers.test_thc_qrom import _execute_sparse
 from tests.unit.measurement_checks import certified_and_channel_map
 from tests.unit.register_source_graph import (
     SourcePorts,
     SourceResult,
     walk_source_graph,
 )
+from tests.unit.sparse_register_execution import execute_sparse_register
 from tests.unit.test_register_constant_addition import reference_arithmetic_gates
 from tests.unit.test_register_subtraction import assert_source
 from tests.unit.test_single_window_mod_mul import original_window_gates
@@ -241,7 +241,9 @@ def test_locked_windowed_source_and_complex_roundtrip(n: int, w: int, p: int) ->
     result = dict(zip(addresses(expected), amplitudes.tolist(), strict=True))
     for stream, start, end in ((gates, data, result), (inverse, result, data)):
         for seed in (1, 41):
-            actual = _execute_sparse(CircuitIR(width + 1, stream), start, seed=seed)
+            actual = execute_sparse_register(
+                CircuitIR(width + 1, stream), start, seed=seed
+            )
             assert all(
                 abs(actual.get(k, 0) - end.get(k, 0)) < 2e-12
                 for k in actual.keys() | end.keys()
@@ -263,7 +265,7 @@ def test_windowed_append_uses_forward_output_aliases_for_uncompute() -> None:
     assert roundtrip.instructions[: len(forward.instructions)] == forward.instructions
     assert op.target_wires == (7, 8, 13)
     state = {((1 << 3) | 2) << 15: 0.6j, ((2 << 3) | 1) << 15: 0.8}
-    actual = _execute_sparse(roundtrip, state, seed=3)
+    actual = execute_sparse_register(roundtrip, state, seed=3)
     assert all(
         abs(actual.get(k, 0) - state.get(k, 0)) < 2e-12
         for k in actual.keys() | state.keys()

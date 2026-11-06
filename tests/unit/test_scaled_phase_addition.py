@@ -12,8 +12,8 @@ from flagquantum.compiler.registers.scaled_phase_addition import (
     scaled_phase_add_terms,
 )
 from flagquantum.core.ir import CircuitIR
-from tests.unit.algorithms.primitives.multiplexers.test_thc_qrom import _execute_sparse
 from tests.unit.measurement_checks import certified_and_channel_map, forced_branch
+from tests.unit.sparse_register_execution import execute_sparse_register
 from tests.unit.test_register_constant_addition import reference_arithmetic_gates
 from tests.unit.test_register_subtraction import assert_source
 
@@ -205,7 +205,7 @@ def test_scaled_source_schedule_and_complex_roundtrip(
             (inverse, b_sparse, a_sparse),
         ):
             for seed in (1, 41):
-                actual = _execute_sparse(
+                actual = execute_sparse_register(
                     CircuitIR(width + 1, stream), initial, seed=seed
                 )
                 assert all(

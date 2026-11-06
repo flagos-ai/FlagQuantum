@@ -14,8 +14,8 @@ from flagquantum.compiler.registers.fixed_point_square import (
     fixed_point_square_workspace_size,
 )
 from flagquantum.core.ir import CircuitIR
-from tests.unit.algorithms.primitives.multiplexers.test_thc_qrom import _execute_sparse
 from tests.unit.measurement_checks import certified_and_channel_map, forced_branch
+from tests.unit.sparse_register_execution import execute_sparse_register
 
 pytestmark = pytest.mark.unit
 
@@ -127,7 +127,9 @@ def test_fixed_square_complex_amplitudes_and_clean_work(d):
                 )
         else:
             for seed in (3, 19, 72):
-                actual = _execute_sparse(CircuitIR(width, gates), initial, seed=seed)
+                actual = execute_sparse_register(
+                    CircuitIR(width, gates), initial, seed=seed
+                )
                 assert all(
                     abs(actual.get(i, 0) - target.get(i, 0)) < 2e-12
                     for i in actual.keys() | target.keys()

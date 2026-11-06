@@ -18,13 +18,13 @@ from flagquantum.compiler.registers.scaled_phase_addition import (
     scaled_phase_add_terms,
 )
 from flagquantum.core.ir import CircuitIR
-from tests.unit.algorithms.primitives.multiplexers.test_thc_qrom import _execute_sparse
 from tests.unit.measurement_checks import certified_and_channel_map, forced_branch
 from tests.unit.register_source_graph import (
     SourcePorts,
     SourceResult,
     walk_source_graph,
 )
+from tests.unit.sparse_register_execution import execute_sparse_register
 from tests.unit.test_hamming_weight import layout
 from tests.unit.test_hamming_weight_phasing import source_count_leaf
 from tests.unit.test_register_subtraction import assert_source
@@ -205,7 +205,9 @@ def test_gradient_hamming_source_binding_phase_and_cleanup(
                 )
         else:
             for seed in (3, 41):
-                actual = _execute_sparse(CircuitIR(width, gates), start, seed=seed)
+                actual = execute_sparse_register(
+                    CircuitIR(width, gates), start, seed=seed
+                )
                 assert all(
                     abs(actual.get(k, 0) - end.get(k, 0)) < 2e-12
                     for k in actual.keys() | end.keys()

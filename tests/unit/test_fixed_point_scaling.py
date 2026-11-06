@@ -14,8 +14,8 @@ from flagquantum.compiler.registers.fixed_point_scaling import (
     scale_integer_workspace_size,
 )
 from flagquantum.core.ir import CircuitIR
-from tests.unit.algorithms.primitives.multiplexers.test_thc_qrom import _execute_sparse
 from tests.unit.measurement_checks import certified_and_channel_map, forced_branch
+from tests.unit.sparse_register_execution import execute_sparse_register
 from tests.unit.test_register_constant_addition import reference_arithmetic_gates
 from tests.unit.test_register_subtraction import assert_source
 
@@ -154,7 +154,9 @@ def test_scaling_complex_amplitudes_with_coherent_spectator(r, n):
                 )
         else:
             for seed in (3, 19, 72):
-                actual = _execute_sparse(CircuitIR(width, gates), before, seed=seed)
+                actual = execute_sparse_register(
+                    CircuitIR(width, gates), before, seed=seed
+                )
                 assert all(
                     abs(actual.get(i, 0) - after.get(i, 0)) < 2e-12
                     for i in actual.keys() | after.keys()

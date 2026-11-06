@@ -13,13 +13,13 @@ from flagquantum.compiler.registers.hamming_weight_phasing import (
     hamming_weight_phasing_ir,
 )
 from flagquantum.core.ir import CircuitIR, Instruction
-from tests.unit.algorithms.primitives.multiplexers.test_thc_qrom import _execute_sparse
 from tests.unit.measurement_checks import certified_and_channel_map, forced_branch
 from tests.unit.register_source_graph import (
     SourcePorts,
     SourceResult,
     walk_source_graph,
 )
+from tests.unit.sparse_register_execution import execute_sparse_register
 from tests.unit.test_hamming_weight import layout
 from tests.unit.test_register_constant_addition import reference_arithmetic_gates
 from tests.unit.test_register_subtraction import assert_source
@@ -166,7 +166,9 @@ def test_hamming_phasing_source_graph_and_complete_complex_state(
             before = dict(zip(indices, amps.tolist(), strict=True))
             after = dict(zip(indices, (amps * phases).tolist(), strict=True))
             for seed in (3, 41):
-                actual = _execute_sparse(CircuitIR(width + 1, gates), before, seed=seed)
+                actual = execute_sparse_register(
+                    CircuitIR(width + 1, gates), before, seed=seed
+                )
                 assert all(
                     abs(actual.get(i, 0) - after.get(i, 0)) < 2e-12
                     for i in actual.keys() | after.keys()

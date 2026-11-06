@@ -12,13 +12,13 @@ from flagquantum.compiler.registers.single_window_mod_mul import (
     single_window_qroam_table,
 )
 from flagquantum.core.ir import CircuitIR, Instruction
-from tests.unit.algorithms.primitives.multiplexers.test_thc_qrom import _execute_sparse
 from tests.unit.measurement_checks import certified_and_channel_map, forced_branch
 from tests.unit.register_source_graph import (
     SourcePorts,
     SourceResult,
     walk_source_graph,
 )
+from tests.unit.sparse_register_execution import execute_sparse_register
 from tests.unit.test_register_constant_addition import reference_arithmetic_gates
 from tests.unit.test_register_subtraction import assert_source
 from tests.unit.test_relative_controlled_swap import source_relative_swap
@@ -262,7 +262,9 @@ def test_source_window_graph_branches_and_bank_cleanup(
                 (gates, state_sparse, result_sparse),
                 (inverse, result_sparse, state_sparse),
             ):
-                actual = _execute_sparse(CircuitIR(width + 1, stream), a, seed=seed)
+                actual = execute_sparse_register(
+                    CircuitIR(width + 1, stream), a, seed=seed
+                )
                 assert all(
                     abs(actual.get(i, 0) - b.get(i, 0)) < 2e-12
                     for i in actual.keys() | b.keys()

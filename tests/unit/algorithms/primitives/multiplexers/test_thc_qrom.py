@@ -1,7 +1,6 @@
 """Check the full 8-bit circuit without a dense statevector."""
 
-from cmath import exp
-from collections import Counter, defaultdict
+from collections import Counter
 from dataclasses import replace
 from math import sqrt, tau
 
@@ -12,90 +11,15 @@ import flagquantum as fq
 from flagquantum.algorithms.primitives.multiplexers import SelectTHC
 from flagquantum.compiler.registers.qrom import controlled_qrom_ir
 from flagquantum.core.classical_control import (
-    instruction_condition_clauses,
     validate_classical_control,
 )
 from flagquantum.core.ir import CircuitIR
 from flagquantum.dynamic import DynamicCircuit
 from flagquantum.runtime.dynamic.execution import run_dynamic
+from tests.unit.sparse_register_execution import execute_sparse_register
 
 np = pytest.importorskip("numpy")
 pytestmark = pytest.mark.unit
-
-
-def _execute_sparse(
-    ir: CircuitIR, state: dict[int, complex], *, seed: int
-) -> dict[int, complex]:
-    """Execute the emitted gate set directly on occupied computational states."""
-    rng = np.random.default_rng(seed)
-    outcomes: dict[int, int] = {}
-    for op in ir.instructions:
-        clauses = instruction_condition_clauses(op)
-        if clauses and not any(
-            all(outcomes[bit] == expected for bit, expected in clause)
-            for clause in clauses
-        ):
-            continue
-        masks = tuple(1 << (ir.n_wires - q - 1) for q in op.wires)
-        name = op.name
-        if name == "h":
-            (mask,) = masks
-            updated: defaultdict[int, complex] = defaultdict(complex)
-            for basis, value in state.items():
-                updated[basis & ~mask] += value / sqrt(2)
-                updated[basis | mask] += (-value if basis & mask else value) / sqrt(2)
-            state = {
-                basis: value for basis, value in updated.items() if abs(value) > 1e-16
-            }
-        elif name == "measure":
-            (mask,) = masks
-            outcome = int(rng.integers(2))
-            outcomes[op.metadata["classical_bit"]] = outcome
-            state = {
-                basis: value
-                for basis, value in state.items()
-                if bool(basis & mask) == outcome
-            }
-            probability = sum(abs(value) ** 2 for value in state.values())
-            assert probability == pytest.approx(0.5, abs=1e-12)
-            state = {basis: value / sqrt(probability) for basis, value in state.items()}
-        elif name == "reset":
-            (mask,) = masks
-            state = {basis & ~mask: value for basis, value in state.items()}
-        elif name in ("phase", "s", "sdg", "z", "cz", "t", "tdg"):
-            mask = sum(masks)
-            phases = {
-                "s": 1j,
-                "sdg": -1j,
-                "z": -1,
-                "cz": -1,
-                "t": exp(1j * tau / 8),
-                "tdg": exp(-1j * tau / 8),
-            }
-            phase = phases[name] if name in phases else exp(1j * op.params["theta"])
-            state = {
-                basis: phase * value if basis & mask == mask else value
-                for basis, value in state.items()
-            }
-        elif name in ("x", "cx", "ccx"):
-            control, target = sum(masks[:-1]), masks[-1]
-            state = {
-                basis ^ target if basis & control == control else basis: value
-                for basis, value in state.items()
-            }
-        elif name == "cswap":
-            control, left, right = masks
-            state = {
-                (
-                    basis ^ (left | right)
-                    if basis & control and bool(basis & left) != bool(basis & right)
-                    else basis
-                ): value
-                for basis, value in state.items()
-            }
-        else:
-            raise AssertionError(f"Unexpected gate {name}")
-    return state
 
 
 @pytest.mark.parametrize(
@@ -182,7 +106,7 @@ def test_select_thc_qrom_phase_gradient(
     assert counts["ccx"] == (
         97 if blocked else (113 if measurement_erasure else 129)
     ) - (64 if upstream_add else 0)
-    result = _execute_sparse(
+    result = execute_sparse_register(
         ir,
         {int(i) << workspace: complex(inputs[i]) for i in np.flatnonzero(inputs)},
         seed=seed,

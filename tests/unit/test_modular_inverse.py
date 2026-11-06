@@ -10,9 +10,9 @@ from flagquantum.compiler.registers.modular_inverse import (
     modular_inverse_outputs,
 )
 from flagquantum.core.ir import CircuitIR, Instruction
-from tests.unit.algorithms.primitives.multiplexers.test_thc_qrom import _execute_sparse
 from tests.unit.inverse_algorithm_source import walk_inverse_source
 from tests.unit.measurement_checks import certified_and_channel_map
+from tests.unit.sparse_register_execution import execute_sparse_register
 from tests.unit.test_inverse_algorithm import assert_complex_maps, cases, pack
 from tests.unit.test_register_subtraction import assert_source
 
@@ -196,17 +196,23 @@ def test_full_complex_spectator_sparse_primitive_channels(n: int, p: int) -> Non
     gates = modular_inverse_ir(x, junk, p, work, bits)
     reverse = modular_inverse_ir(y, junk, p, returned, bits, adjoint=True)
     for seed in (2, 11, 23):
-        actual = _execute_sparse(CircuitIR(width, gates), state.copy(), seed=seed)
+        actual = execute_sparse_register(
+            CircuitIR(width, gates), state.copy(), seed=seed
+        )
         assert_complex_maps(actual, expected)
-        restored = _execute_sparse(CircuitIR(width, reverse), actual, seed=seed + 2)
+        restored = execute_sparse_register(
+            CircuitIR(width, reverse), actual, seed=seed + 2
+        )
         assert_complex_maps(restored, state)
     # Replace each native direction by the corresponding original public graph.
-    actual = _execute_sparse(
+    actual = execute_sparse_register(
         CircuitIR(width, original_public(n, p, False)), state.copy(), seed=31
     )
     assert_complex_maps(actual, expected)
     assert_complex_maps(
-        _execute_sparse(CircuitIR(width, original_public(n, p, True)), actual, seed=37),
+        execute_sparse_register(
+            CircuitIR(width, original_public(n, p, True)), actual, seed=37
+        ),
         state,
     )
 

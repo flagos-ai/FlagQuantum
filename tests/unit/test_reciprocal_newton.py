@@ -14,8 +14,8 @@ from flagquantum.compiler.registers.reciprocal_newton import (
     reciprocal_newton_step_ir,
 )
 from flagquantum.core.ir import CircuitIR
-from tests.unit.algorithms.primitives.multiplexers.test_thc_qrom import _execute_sparse
 from tests.unit.measurement_checks import certified_and_channel_map, forced_branch
+from tests.unit.sparse_register_execution import execute_sparse_register
 
 pytestmark = pytest.mark.unit
 
@@ -98,7 +98,9 @@ def test_newton_primitive_complex_trajectories(n, f, b):
 
     for initial, expected in ((before, after), (after, before)):
         for seed in (3, 19, 72):
-            actual = _execute_sparse(CircuitIR(width, gates), initial, seed=seed)
+            actual = execute_sparse_register(
+                CircuitIR(width, gates), initial, seed=seed
+            )
             assert all(
                 abs(actual.get(i, 0) - expected.get(i, 0)) < 2e-12
                 for i in actual.keys() | expected.keys()

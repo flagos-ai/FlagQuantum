@@ -13,8 +13,8 @@ from flagquantum.compiler.registers.integer_product import (
 )
 from flagquantum.compiler.registers.product_accumulation import product_accumulation_ir
 from flagquantum.core.ir import CircuitIR
-from tests.unit.algorithms.primitives.multiplexers.test_thc_qrom import _execute_sparse
 from tests.unit.measurement_checks import certified_and_channel_map, forced_branch
+from tests.unit.sparse_register_execution import execute_sparse_register
 from tests.unit.test_register_constant_addition import reference_arithmetic_gates
 from tests.unit.test_register_subtraction import assert_source
 
@@ -134,7 +134,9 @@ def test_accumulation_original_tensor_and_complex_branches(n, m, width, adjoint)
             )
     else:
         for seed in (4, 19, 73):
-            actual = _execute_sparse(CircuitIR(total_bits, gates), initial, seed=seed)
+            actual = execute_sparse_register(
+                CircuitIR(total_bits, gates), initial, seed=seed
+            )
             assert all(
                 abs(actual.get(i, 0) - target.get(i, 0)) < 2e-12
                 for i in actual.keys() | target.keys()

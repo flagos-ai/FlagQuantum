@@ -16,8 +16,8 @@ from flagquantum.compiler.registers.reciprocal import (
 from flagquantum.compiler.registers.reciprocal_newton import reciprocal_newton_step_ir
 from flagquantum.compiler.registers.reciprocal_seed import reciprocal_seed_ir
 from flagquantum.core.ir import CircuitIR, Instruction
-from tests.unit.algorithms.primitives.multiplexers.test_thc_qrom import _execute_sparse
 from tests.unit.measurement_checks import certified_and_channel_map, forced_branch
+from tests.unit.sparse_register_execution import execute_sparse_register
 
 pytestmark = pytest.mark.unit
 
@@ -116,7 +116,9 @@ def test_reciprocal_complex_amplitudes_and_cleanup(n, f, b, o):
         before[i] = after[j] = exp(1j * (value - 0.31 * s)) / sqrt(2 ** (n + 1))
     for initial, expected in ((before, after), (after, before)):
         for seed in (3, 19, 72):
-            observed = _execute_sparse(CircuitIR(width, gates), initial, seed=seed)
+            observed = execute_sparse_register(
+                CircuitIR(width, gates), initial, seed=seed
+            )
             assert all(
                 abs(observed.get(i, 0) - expected.get(i, 0)) < 2e-12
                 for i in observed.keys() | expected.keys()

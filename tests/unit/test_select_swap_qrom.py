@@ -14,13 +14,13 @@ from flagquantum.compiler.registers.select_swap_qrom import (
 )
 from flagquantum.compiler.registers.source_qroam_clean import QroamCleanTable
 from flagquantum.core.ir import CircuitIR, Instruction
-from tests.unit.algorithms.primitives.multiplexers.test_thc_qrom import _execute_sparse
 from tests.unit.measurement_checks import certified_and_channel_map, forced_branch
 from tests.unit.register_source_graph import (
     SourcePorts,
     SourceResult,
     walk_source_graph,
 )
+from tests.unit.sparse_register_execution import execute_sparse_register
 from tests.unit.test_register_constant_addition import reference_arithmetic_gates
 from tests.unit.test_register_subtraction import assert_source
 from tests.unit.test_relative_controlled_swap import source_relative_swap
@@ -259,7 +259,9 @@ def test_source_gate_graph_and_bank_channel(
         initial = dict(zip(start, amps.tolist(), strict=True))
         result = dict(zip(end, amps.tolist(), strict=True))
         for seed in (1, 41):
-            actual = _execute_sparse(CircuitIR(total + 1, gates), initial, seed=seed)
+            actual = execute_sparse_register(
+                CircuitIR(total + 1, gates), initial, seed=seed
+            )
             assert all(
                 abs(actual.get(k, 0) - result.get(k, 0)) < 2e-12
                 for k in actual.keys() | result.keys()

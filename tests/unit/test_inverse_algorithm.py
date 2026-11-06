@@ -10,9 +10,9 @@ from flagquantum.compiler.registers.inverse_algorithm import (
     inverse_algorithm_outputs,
 )
 from flagquantum.core.ir import CircuitIR, Instruction
-from tests.unit.algorithms.primitives.multiplexers.test_thc_qrom import _execute_sparse
 from tests.unit.inverse_algorithm_source import walk_inverse_source
 from tests.unit.measurement_checks import certified_and_channel_map
+from tests.unit.sparse_register_execution import execute_sparse_register
 from tests.unit.test_register_constant_addition import reference_arithmetic_gates
 from tests.unit.test_register_subtraction import assert_source
 
@@ -172,14 +172,19 @@ def test_primitive_sparse_complex_vectors_and_source_replacement(
     gates = inverse_algorithm_ir(u, v, r, s, m, f, t, p, work, bits)
     inverse = inverse_algorithm_ir(u, v, rr, s, m, f, t, p, ww, bits, adjoint=True)
     for seed in (0, 7, 19):
-        actual = _execute_sparse(CircuitIR(width, gates), state.copy(), seed=seed)
+        actual = execute_sparse_register(
+            CircuitIR(width, gates), state.copy(), seed=seed
+        )
         assert_complex_maps(actual, expected)
-        restored = _execute_sparse(CircuitIR(width, inverse), actual, seed=seed + 1)
+        restored = execute_sparse_register(
+            CircuitIR(width, inverse), actual, seed=seed + 1
+        )
         assert_complex_maps(restored, state)
     # Original executable source replaces native emission without changing inputs.
     source_gates = original_algorithm(n, p, False)
     assert_complex_maps(
-        _execute_sparse(CircuitIR(width, source_gates), state.copy(), seed=31), expected
+        execute_sparse_register(CircuitIR(width, source_gates), state.copy(), seed=31),
+        expected,
     )
 
 
