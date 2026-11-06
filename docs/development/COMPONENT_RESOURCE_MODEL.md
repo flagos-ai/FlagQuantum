@@ -1106,3 +1106,33 @@ conversion at four per Toffoli or CSwap.
 - [Qualtran v0.7.0 call graph](https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/resource_counting/_call_graph.py)
 - [Qualtran v0.7.0 cost queries](https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/resource_counting/_costing.py)
 - [Qualtran v0.7.0 symbolic mathematics](https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/symbolics/math_funcs.py)
+
+## First-quantized SELECT
+
+`source_select_first_quantization_cost` models four momentum exchanges,
+kinetic SELECT and potential SELECT. The pinned width schedule runs the
+kinetic call before allocating the second momentum register. Both momentum
+registers and the nuclear position register are live during potential SELECT.
+The nuclear position register is released before the return exchanges.
+
+```python
+from flagquantum.algorithms.first_quantization_resource_model import (
+    source_select_first_quantization_cost,
+)
+from flagquantum.qec.resources.estimation import estimate_ftqc_resources
+
+report = estimate_ftqc_resources(source_select_first_quantization_cost(2, 3, 2))
+assert report.logical.peak_logical_qubits == 81
+assert report.logical.gates.total_t_count() == 1184
+assert report.logical.gates.total_t_count(ts_per_cswap=7) == 1400
+```
+
+The example uses two momentum bits, three particles, two atoms, the source
+default nuclear precision of 16 bits, and a sampling range of 256. Its gate
+categories are 208 Toffoli, 72 CSwap, 16 And, 82 Clifford and 16 measurements.
+The pinned kinetic and potential SELECT leaves declare costs only. The
+one-bit momentum source has a gate-count result, but its width query fails
+on the signed-conversion signature. The combined estimator requires at least
+two momentum bits.
+
+- [Qualtran v0.7.0 first-quantized SELECT call graph](https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/bloqs/chemistry/pbc/first_quantization/select_and_prepare.py)
