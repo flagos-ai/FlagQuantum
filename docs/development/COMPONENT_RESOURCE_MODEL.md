@@ -517,6 +517,42 @@ power, the X/Y global shift becomes a phase on the control wire. Qualtran
 delegates these leaf unitaries to Cirq. FlagQuantum uses phase instructions
 and basis changes to preserve the full complex action.
 
+## Scalar and controlled phases
+
+Qualtran's atomic global phase multiplies amplitudes by
+`exp(i * pi * exponent)` and has zero modeled gates and zero logical
+ports. FlagQuantum emits two X and two phase instructions on one
+existing wire to retain that scalar in a circuit. The carrier can be
+entangled and requires no initialization.
+
+A positive single control uses one Z power. A negative control
+wraps it in two X gates. For multiple controls, FlagQuantum follows
+the source's predicate, Z power and measured inverse. Callers bind
+the controls and activation values in matching order and provide
+one clean qubit and one classical slot for each control beyond the first.
+
+```python
+from flagquantum.compiler._component_trace.compound_control_resource import (
+    global_phase_cost_key,
+)
+from flagquantum.compiler._component_trace.qec_gate_cost import query_qec_gate_cost
+from flagquantum.compiler.registers.global_phase import global_phase_ir
+
+gates = global_phase_ir(
+    0.25, controls=(0, 1), values=(0, 1), workspace=(2,), classical_bits=(0,)
+)
+assert sum(gate.name in {"t", "tdg"} for gate in gates) == 4
+assert sum(gate.name == "measure" for gate in gates) == 1
+estimate = query_qec_gate_cost(global_phase_cost_key(0.25, (0, 1)))
+assert (estimate.t, estimate.and_bloq, estimate.measurement) == (1, 1, 1)
+```
+
+The emitted phase instruction retains its angle. The model recognizes
+that angle as one additional T independently of the four emitted T-family
+instructions in the AND computation.
+
+- [Qualtran v0.7.0 global phase](https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/bloqs/basic_gates/global_phase.py)
+
 ## THC SELECT before lowering
 
 For THC SELECT, the model needs only the dimensions, angle precision,

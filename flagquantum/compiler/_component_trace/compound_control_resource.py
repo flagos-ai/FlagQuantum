@@ -14,7 +14,24 @@ from .resource_generalization import (
     MergedFredkinCall,
     PredicateControlledCall,
     ResourceCall,
+    RotationCall,
+    ZeroCostCall,
 )
+from .symbolic_math import SymbolicReal
+
+
+def global_phase_cost_key(
+    exponent: SymbolicReal,
+    controls: tuple[int, ...] = (),
+    precision: SymbolicReal = 1e-11,
+) -> ResourceCall:
+    """Use the source zero-cost leaf or the controlled Z-power call chain."""
+    if any(type(bit) is not int or bit not in (0, 1) for bit in controls):
+        raise ValueError("Global phase controls require binary activation values")
+    if not controls:
+        return ZeroCostCall("global_phase", (exponent, precision))
+    positive = RotationCall("zpow", exponent, precision)
+    return positive if controls == (1,) else PredicateControlledCall(positive, controls)
 
 
 def compound_control_key(

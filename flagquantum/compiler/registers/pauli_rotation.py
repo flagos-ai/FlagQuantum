@@ -5,24 +5,14 @@
 
 """Exact Pauli powers and axis rotations in FlagQuantum IR."""
 
-from math import isfinite, pi
+from math import pi
 from typing import Literal
 
 from ...core.ir import Instruction
 from .bitwise import _validate_wires
+from .global_phase import _finite_angle, scalar_phase_ir
 
 PauliAxis = Literal["x", "y", "z"]
-
-
-def _finite_angle(value: float, scale: float = 1.0) -> float:
-    if type(value) in (int, float):
-        try:
-            angle = scale * value
-            if isfinite(angle):
-                return angle
-        except OverflowError:
-            pass
-    raise ValueError("Rotation requires a finite phase angle")
 
 
 def pauli_rotation_ir(
@@ -76,13 +66,4 @@ def pauli_power_ir(
         scalar = Instruction("phase", (control,), params={"theta": shift})
         return (*before, power, *after, scalar)
 
-    # P(s) X P(s) X is the scalar exp(i*s) on either target eigenstate.
-    return (
-        *before,
-        power,
-        *after,
-        Instruction("phase", (target,), params={"theta": shift}),
-        Instruction("x", (target,)),
-        Instruction("phase", (target,), params={"theta": shift}),
-        Instruction("x", (target,)),
-    )
+    return (*before, power, *after, *scalar_phase_ir(target, shift))

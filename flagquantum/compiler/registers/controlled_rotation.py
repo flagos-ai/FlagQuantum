@@ -10,7 +10,8 @@ from math import pi
 from ...core.ir import Instruction
 from .and_compute import and_compute_ir, and_uncompute_ir
 from .bitwise import _validate_wires
-from .pauli_rotation import _finite_angle, pauli_power_ir
+from .global_phase import _finite_angle
+from .pauli_rotation import pauli_power_ir
 
 
 def controlled_rz_ir(

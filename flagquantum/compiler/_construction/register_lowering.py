@@ -15,6 +15,7 @@ from typing import Literal
 from ...core._composition import controlled_instruction
 from ...core.ir import CircuitIR, Instruction
 from .._hybrid.model import Block, HybridProgram, Operation, Region, Value, ValueId
+from ..registers.global_phase import scalar_phase_ir
 from .boolean_lowering import BooleanCandidateError, lower_boolean_value
 from .lowering import (
     ArithmeticCandidate,
@@ -158,12 +159,7 @@ def schedule_register_program(
             segments.append(segment)
             gates = segment.circuit.instructions
         elif op.name == "qreg.phase" and "callee" not in op.attributes:
-            angle = op.attributes["angle"]
-            if angle:
-                # P(theta) X P(theta) X = exp(i theta) I on any existing qubit.
-                rotation = Instruction("phase", (0,), params={"theta": angle})
-                flip = Instruction("x", (0,))
-                gates = (flip, rotation, flip, rotation)
+            gates = scalar_phase_ir(0, op.attributes["angle"])
         elif op.name in {"qreg.compute", "qreg.phase"}:
             phase = op.name == "qreg.phase"
             actual = op.operands[1:] if phase else op.operands[2:]
