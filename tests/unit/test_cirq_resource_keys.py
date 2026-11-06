@@ -141,6 +141,9 @@ def test_predicate_controls_map_to_source_costs(controls: tuple[int, ...]) -> No
         assert key is not None
         if base == cirq.H:
             assert key == compound_control_key(CliffordCall("h", 1), controls)
+        elif base in (cirq.T, cirq.S**-1):
+            phase = PhaseCall("t") if base == cirq.T else PhaseCall("s", adjoint=True)
+            assert key == compound_control_key(phase, controls)
         source = get_cost_value(cirq_gate_to_bloq(gate), QECGatesCost())
         assert asdict(query_qec_gate_cost(key)) == {
             field.name: getattr(source, field.name) for field in fields(QECGateCost)

@@ -123,7 +123,7 @@ def _single_positive_key(key: ResourceCall | None) -> ResourceCall | None:
         if key.opcode == "rz":
             return ControlledZRotationCall(key.parameter, key.precision)
         return ControlledZPowerCall(key.parameter, key.precision)
-    if isinstance(key, (RotationCall, PhaseCall)):
+    if isinstance(key, RotationCall):
         return ControlledRotationCall(key, (1,))
     if not isinstance(key, CliffordCall):
         return None
