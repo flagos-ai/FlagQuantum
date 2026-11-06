@@ -13,11 +13,26 @@ from flagquantum.compiler.registers.contiguous_index import (
     contiguous_index_columns_workspace_size,
     contiguous_index_ir,
     contiguous_index_requirements,
+    source_contiguous_index_cost,
 )
 from tests.unit.measurement_checks import certified_and_channel_map, forced_branch
 from tests.unit.sparse_register_execution import execute_sparse_register
+from tests.unit.test_first_quantization_resource_model import assert_source_model
 
 pytestmark = pytest.mark.unit
+
+
+@pytest.mark.ftqc_reference
+@pytest.mark.parametrize("width,result_width", [(1, 1), (2, 3), (3, 4), (5, 10)])
+def test_source_index_cost_without_decomposition(width, result_width):
+    pytest.importorskip("qualtran")
+    from qualtran import DecomposeNotImplementedError
+    from qualtran.bloqs.arithmetic.conversions.contiguous_index import ToContiguousIndex
+
+    source = ToContiguousIndex(width, result_width)
+    assert_source_model(source_contiguous_index_cost(width, result_width), source)
+    with pytest.raises(DecomposeNotImplementedError):
+        source.decompose_bloq()
 
 
 def layout(n, out, columns=False):

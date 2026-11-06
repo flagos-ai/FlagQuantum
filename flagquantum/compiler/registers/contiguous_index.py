@@ -8,6 +8,7 @@
 from collections.abc import Iterator
 
 from ...core.ir import Instruction
+from .._component_trace.resource_model import ComponentCost, GateCost
 from .arithmetic import add_adjoint_ir, add_ir
 from .bit_compression import with_weighted_columns_ir
 from .bitwise import _validate_wires, xor_ir
@@ -19,6 +20,17 @@ def contiguous_index_requirements(width: int) -> tuple[int, int]:
     square = integer_square_workspace_size(width)
     carries = 2 * width - 1
     return 2 * width + max(square, carries), carries
+
+
+def source_contiguous_index_cost(width: int, result_width: int) -> ComponentCost:
+    """Count the locked opaque index leaf at its declared port widths."""
+    if any(type(size) is not int or size < 1 for size in (width, result_width)):
+        raise ValueError("Contiguous index requires positive register widths")
+    return ComponentCost(
+        "ToContiguousIndex",
+        2 * width + result_width,
+        GateCost(toffoli=width * width + width - 1),
+    )
 
 
 def contiguous_index_ir(
