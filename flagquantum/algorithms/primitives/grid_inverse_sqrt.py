@@ -93,10 +93,6 @@ def source_grid_inverse_sqrt_newton_cost(
         raise ValueError(
             "Grid inverse-square-root Newton widths must be positive integers"
         )
-    if polynomial_width < distance_width:
-        raise ValueError(
-            "The source scale requires polynomial width at least distance width"
-        )
     square = ComponentCost(
         "SquareRealNumber",
         3 * polynomial_width,
