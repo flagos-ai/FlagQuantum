@@ -1406,3 +1406,42 @@ The projectile PREPARE keeps `plus_t` live through all four calls. Its
 adjoint inherits the source unary flag binding failure, so only the
 declared adjoint gates are available. Both top-level graphs contain
 cost-only leaves. Their reports describe analytical resources.
+
+## SELECT-only block encoding
+
+`SelectBlockEncoding` applies the supplied SELECT on its named
+selection and target ports. It keeps the signal preparation and its
+normalization available separately. The resource model delegates to the
+same SELECT and excludes signal-preparation gates.
+
+```python
+from flagquantum.algorithms.primitives.black_box_prepare import BlackBoxPrepare
+from flagquantum.algorithms.primitives.select_block_encoding import SelectBlockEncoding
+from flagquantum.compiler._component_trace.resource_model import ComponentCost, GateCost
+from flagquantum.core.ir import Instruction
+from flagquantum.dynamic import DynamicCircuit
+from flagquantum.qec.resources.estimation import estimate_ftqc_resources
+
+def select(ports, workspace, classical_bits, adjoint):
+    return (Instruction("cx", (*ports["address"], *ports["system"])),)
+
+def prepare(ports, workspace, classical_bits, adjoint):
+    return (Instruction("h", ports["address"]),)
+
+signal = BlackBoxPrepare((("address", 1),), (), prepare, normalization=2.0)
+encoding = SelectBlockEncoding((("address", 1),), (("system", 1),), select, signal)
+circuit = DynamicCircuit(2)
+circuit.append(encoding.make_on(selection=(0,), target=(1,)))
+report = estimate_ftqc_resources(
+    encoding.resource_model(ComponentCost("SELECT", 2, GateCost(clifford=1))),
+    emitted_ir=circuit.to_ir(),
+)
+assert encoding.alpha == 2.0
+assert report.emitted is not None
+assert report.emitted.unconditional == {"cx": 1}
+```
+
+Selection and target ports may be packed or split into named contiguous
+words in logical order. Physical wires can be noncontiguous. Work and
+classical slots belong to the SELECT implementation supplied by the
+caller. The signal state's junk registers are outside the SELECT binding.
