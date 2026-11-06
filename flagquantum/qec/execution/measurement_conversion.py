@@ -59,7 +59,7 @@ def convert_measurement_records(
 
     Examples:
         >>> from importlib.util import find_spec
-        >>> text = "R 0\nX 0\nM 0\nDETECTOR rec[-1]"
+        >>> text = "R 0\\nX 0\\nM 0\\nDETECTOR rec[-1]"
         >>> if find_spec("stim") is not None:
         ...     batch = convert_measurement_records(
         ...         text, torch.tensor([[1], [0]]), circuit_format="stim"
