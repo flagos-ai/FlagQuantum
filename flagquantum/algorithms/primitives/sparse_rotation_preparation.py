@@ -9,7 +9,7 @@ from dataclasses import dataclass
 from math import hypot, isfinite
 
 from ...compiler.registers.bitwise import _validate_wires
-from ...compiler.registers.partition import partition_register
+from ...compiler.registers.partition import split_register_pair
 from ...compiler.registers.permutation import (
     permutation_ir,
     source_partial_permutation_cycles,
@@ -94,11 +94,9 @@ class SparseRotationPreparation:
                 "Sparse rotation preparation requires distinct nonnegative slots"
             )
         _validate_wires((*target, *gradient, *workspace))
-        parts = partition_register(
-            target, (("high_bits", width - low_width), ("low_bits", low_width))
-        )
+        _, low_bits = split_register_pair(target, width - low_width, low_width)
         gates = dense.emit(
-            (), parts["low_bits"], gradient, workspace[:work], classical_bits[:slots]
+            (), low_bits, gradient, workspace[:work], classical_bits[:slots]
         )
         if not cycles:
             return gates

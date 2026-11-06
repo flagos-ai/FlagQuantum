@@ -679,6 +679,25 @@ unsigned encoder. Integer conversion requires a positive concrete width.
 The pinned source accepts a zero-width physical binding, while its
 zero-width integer conversion fails.
 
+## Named partitions and two-word views
+
+`partition_register` and `unpartition_register` bind a flat word to
+named ports and back. A shaped port is flattened in row-major order.
+The inverse takes ports in declared layout order, as the source tensor
+and classical compositions do. Calling the source Cirq adapter
+directly with reordered keywords can give a different order.
+`split_register_pair` and `join_register_pair` use the same layout rule
+for a high word and a low word. The sparse rotation preparation uses
+the low-word binding directly.
+
+These bindings emit no gates. The source model has zero gate costs and
+peak logical width equal to the sum of port widths, including symbolic
+widths. Physical binding requires concrete widths and permits empty
+ports. The source classical Split2 rejects empty integer outputs.
+Classical Join2 accepts one empty input and rejects an empty result.
+Its array conversion masks nonnegative machine words to the declared
+width and checks the range of wider values.
+
 ## Register identity
 
 The source models Identity as one atomic call with zero QEC gates.
