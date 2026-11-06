@@ -105,8 +105,6 @@ def _controlled_key(
 ) -> ResourceCall | None:
     if isinstance(key, ZeroCostCall) and key.opcode == "identity":
         return identity_cost_key(1, control_width=len(controls))
-    if isinstance(key, CliffordCall) and key.opcode == "x" and controls == (1, 1):
-        return FixedTCall("toffoli")
     if key is not None:
         compound = compound_control_key(key, controls)
         if compound is not None:
@@ -127,12 +125,6 @@ def _single_positive_key(key: ResourceCall | None) -> ResourceCall | None:
         return ControlledRotationCall(key, (1,))
     if not isinstance(key, CliffordCall):
         return None
-    if key.opcode == "x":
-        return CliffordCall("cx", 2)
-    if key.opcode == "y":
-        return CliffordCall("cy", 2)
-    if key.opcode == "z":
-        return CliffordCall("cz", 2)
     if key.opcode == "swap_bit":
         return FixedTCall("fredkin")
     return None

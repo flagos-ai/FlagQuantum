@@ -139,8 +139,10 @@ def test_predicate_controls_map_to_source_costs(controls: tuple[int, ...]) -> No
         gate = cirq.ControlledGate(base, control_values=controls)
         key = cirq_gate_resource_key(gate)
         assert key is not None
-        if base == cirq.H:
-            assert key == compound_control_key(CliffordCall("h", 1), controls)
+        if base in (cirq.X, cirq.Y, cirq.Z, cirq.H):
+            assert key == compound_control_key(
+                CliffordCall(str(base).lower(), 1), controls
+            )
         elif base in (cirq.T, cirq.S**-1):
             phase = PhaseCall("t") if base == cirq.T else PhaseCall("s", adjoint=True)
             assert key == compound_control_key(phase, controls)
