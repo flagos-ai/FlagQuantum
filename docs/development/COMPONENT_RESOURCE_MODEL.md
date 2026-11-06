@@ -1262,3 +1262,34 @@ The report follows the locked source cost declarations. The top-level
 graph contains leaves without gate decompositions, including term selection.
 The source composite also requires at least two particles and a nonempty
 `m` register. The model reports those unsupported boundaries explicitly.
+
+## First-quantized projectile kinetic PREPARE and SELECT
+
+The projectile resource model tracks separate electron and projectile
+momentum widths. The source kinetic PREPARE uses two-bit coordinate words
+and has different costs in each direction. The kinetic SELECT uses
+three-bit coordinate words. The potential SELECT reuses the signed
+conversion, addition and nuclear-phase models.
+
+```python
+from flagquantum.algorithms.first_quantization_projectile_resource_model import (
+    source_projectile_prepare_t_cost,
+    source_projectile_select_uv_cost,
+)
+from flagquantum.qec.resources.estimation import estimate_ftqc_resources
+
+prepare = estimate_ftqc_resources(source_projectile_prepare_t_cost(6, 8))
+reverse = estimate_ftqc_resources(source_projectile_prepare_t_cost(6, 8, adjoint=True))
+potential = estimate_ftqc_resources(source_projectile_select_uv_cost(6, 8, 10, 16))
+assert prepare.logical.gates.toffoli == 47
+assert reverse.logical.gates.toffoli == 27
+assert prepare.logical.peak_logical_qubits == 20
+assert potential.logical.gates.toffoli == 669
+assert potential.logical.gates.and_bloq == 42
+assert potential.logical.peak_logical_qubits == 91
+```
+
+The locked projectile leaves declare resource costs without gate
+decompositions. Kinetic PREPARE requires the projectile word to be at
+least as wide as the electron word. Potential SELECT requires both words
+to have at least two bits for the source signed-conversion signature.

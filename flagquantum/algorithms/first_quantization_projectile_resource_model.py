@@ -6,7 +6,12 @@
 """Resource models for first-quantized chemistry with a quantum projectile."""
 
 from ..compiler._component_trace.resource_model import ComponentCost, CostCall, GateCost
-from .first_quantization_resource_model import _require_positive
+from ..compiler.registers.arithmetic_resource_model import source_add_cost
+from .first_quantization_resource_model import (
+    _require_positive,
+    _signed_conversion_cost,
+    source_apply_nuclear_phase_cost,
+)
 
 
 def source_projectile_power_two_cost(
@@ -43,4 +48,46 @@ def source_projectile_prepare_t_cost(
             ),
             CostCall(unary, repetitions=2),
         ),
+    )
+
+
+def source_projectile_select_t_cost(num_bits_n: int) -> ComponentCost:
+    """Count the source kinetic selector with two three-bit coordinate words."""
+    _require_positive(num_bits_n)
+    return ComponentCost(
+        "SelectTFirstQuantizationWithProj",
+        9 + 5 * num_bits_n,
+        GateCost(toffoli=5 * (num_bits_n - 1) + 3),
+    )
+
+
+def source_projectile_select_uv_cost(
+    num_bits_p: int, num_bits_n: int, num_atoms: int, num_bits_nuc_pos: int
+) -> ComponentCost:
+    """Count the potential selector on three unequal-width p and q axes."""
+    _require_positive(num_bits_p, num_bits_n, num_atoms, num_bits_nuc_pos)
+    if min(num_bits_p, num_bits_n) < 2:
+        raise ValueError(
+            "Source projectile SELECT UV requires at least two momentum bits"
+        )
+    p, n = num_bits_p, num_bits_n
+    # Keep the independent electronic and projectile arithmetic families.
+    # The call-graph query combines structurally equal children.
+    calls = (
+        CostCall(_signed_conversion_cost(p), repetitions=3),
+        CostCall(_signed_conversion_cost(n), repetitions=3),
+        CostCall(source_add_cost(p + 1, p + 1), repetitions=3),
+        CostCall(source_add_cost(n + 1, n + 1), repetitions=3),
+        CostCall(
+            ComponentCost("Toffoli", 3, GateCost(toffoli=1)),
+            repetitions=3 * (p + n + 2),
+        ),
+        CostCall(_signed_conversion_cost(p + 2), repetitions=3),
+        CostCall(_signed_conversion_cost(n + 2), repetitions=3),
+        CostCall(source_apply_nuclear_phase_cost(n, num_bits_nuc_pos)),
+    )
+    return ComponentCost(
+        "SelectUVFirstQuantizationWithProj",
+        2 + (num_atoms - 1).bit_length() + num_bits_nuc_pos + 3 * (n + 1) + 3 * (p + n),
+        calls=calls,
     )

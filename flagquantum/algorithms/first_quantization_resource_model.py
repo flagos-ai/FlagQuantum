@@ -105,7 +105,7 @@ def source_select_first_quantization_cost(
 
 def _signed_conversion_cost(width: int) -> ComponentCost:
     return ComponentCost(
-        "SignedIntegerToTwosComplement", width, GateCost(toffoli=width - 2)
+        "SignedIntegerToTwosComplement", max(3, width), GateCost(toffoli=width - 2)
     )
 
 
