@@ -158,3 +158,69 @@ def test_mixed_feedback_preserves_born_weights_and_final_outputs(
     assert terminal_weights[2 * control_bit + target_bit] > 0
     assert result.samples is final.value
     assert result.counts[0] == {f"{control_bit}{target_bit}": 1}
+
+
+@pytest.mark.parametrize(("first", "second"), [(0, 0), (1, 0), (1, 1)])
+def test_two_round_mixed_feedback_retains_both_slots(first: int, second: int) -> None:
+    circuit = (
+        DynamicCircuit(2, dtype=torch.complex128, device="cpu")
+        .h(0)
+        .t(0)
+        .h(0)
+        .measure(0, classical_bit=0)
+        .conditional("h", 1, classical_bit=0)
+        .measure(1, classical_bit=1)
+        .reset(0)
+        .conditional("x", 0, classical_bit=1)
+    )
+    p = (2 - math.sqrt(2)) / 4
+    expected = (
+        (1 - p, p),
+        (0.5, 0.5) if first else (1.0, 0.0),
+        (0.0, 1.0) if first else (1.0, 0.0),
+        (0.0, 0.0, 0.0, 1.0) if second else (1.0, 0.0, 0.0, 0.0),
+    )
+    controlled = (first, second)
+    original_draw = torch.multinomial
+    stages = iter(range(len(expected)))
+
+    def draw(
+        probabilities: torch.Tensor,
+        num_samples: int,
+        *,
+        generator: torch.Generator | None = None,
+    ) -> torch.Tensor:
+        stage = next(stages)
+        assert num_samples == 1
+        torch.testing.assert_close(
+            probabilities,
+            torch.tensor(expected[stage], dtype=torch.float64),
+            atol=1e-12,
+            rtol=0,
+        )
+        if stage < len(controlled):
+            selected = controlled[stage]
+            assert probabilities[selected] > 0
+            return torch.tensor([selected], dtype=torch.int64)
+        return original_draw(probabilities, num_samples, generator=generator)
+
+    with patch.object(torch, "multinomial", side_effect=draw) as draw_spy:
+        result = fq.run(
+            circuit,
+            outputs=(fq.samples(name="final"), fq.counts()),
+            options=fq.ExecutionOptions(
+                seed=7,
+                device="cpu",
+                allow_approximate=False,
+                allow_backend_fallback=False,
+            ),
+            shots=1,
+        )
+
+    assert draw_spy.call_count == 4
+    mid = result.measurement("mid_circuit_measurement").value
+    final = result.measurement("final").value
+    assert isinstance(mid, torch.Tensor) and mid.tolist() == [[first, second]]
+    assert isinstance(final, torch.Tensor) and final.tolist() == [[second, second]]
+    assert result.samples is final
+    assert result.counts[0] == {str(second) * 2: 1}
