@@ -720,6 +720,7 @@ are still required. No performance, threshold, GPU or capacity claim is made.
 
 ## External Stim measurement conversion candidate
 
-The [conversion contract](../development/QEC_STIM_MEASUREMENT_CONVERSION_API_PROPOSAL.md)
+The backend-neutral `convert_measurement_records` entry selects the source
+text dialect with `circuit_format`. The [conversion contract](../development/QEC_STIM_MEASUREMENT_CONVERSION_API_PROPOSAL.md)
 covers existing CPU records, reference normalization, and sweep controls.
 Installed-package and main acceptance are tracked separately.

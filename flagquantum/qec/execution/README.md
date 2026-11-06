@@ -28,6 +28,11 @@ execution, core IR, noise channels and the optional stabilizer sampler.
   owned sampler. Canonical imports only; no root/parent re-export or persistence
   schema. Run `examples/qec/memory_experiment.py` with the Stim/PyMatching extras
   for all five default decoders; unsupported model/decoder intersections refuse.
+- `measurement_conversion.py`: reference-normalized detector and logical flips
+  from existing records. Use `convert_measurement_records` with
+  `circuit_format="stim"` and run
+  `python -m examples.qec.stim_measurement_conversion` with the Stim extra.
+  Simulation selects and owns the current execution implementation.
 - `noise_sweep.py`: the existing finite-shot loop over repetition execution.
 
 The approved 0.4.0 retirement removes flat execution imports and their pickle

@@ -29,12 +29,13 @@ reference check and is independent of matrix-defined matching.
 
 ## Exact proposed public entry
 
-Canonical module: flagquantum.qec.adapters.stim. Add only:
+Canonical module: flagquantum.qec.execution.measurement_conversion. Add only:
 
-    def convert_stim_measurements(
+    def convert_measurement_records(
         circuit_text: str,
         measurements: torch.Tensor,
         *,
+        circuit_format: Literal["stim"],
         sweep_bits: torch.Tensor | None = None,
         bit_packed_measurements: bool = False,
         bit_packed_sweep_bits: bool = False,
@@ -71,7 +72,8 @@ and one million recorded columns, at least one detector) remain unchanged.
 
 ## Scope: fourteen paths
 
-- `flagquantum/qec/adapters/stim.py`
+- `flagquantum/qec/execution/measurement_conversion.py`
+- `flagquantum/qec/execution/README.md`
 - `flagquantum/simulation/stabilizer/engine.py`
 - `flagquantum/qec/adapters/README.md`
 - `flagquantum/simulation/stabilizer/README.md`
@@ -85,10 +87,13 @@ and one million recorded columns, at least one detector) remain unchanged.
 - `docs/roadmap/QEC_STIM_PYMATCHING_DELIVERY_PLAN.md`
 
 - `contracts/qec-stim-measurement-conversion-v1.json`
-- `tests/qec/test_stim_experiment_bridge.py`
 
-The approved contract amendment adds the new signature separately and extends
-the existing export and missing-SDK assertions. The original contract is retained.
+The pre-merge naming amendment places the approved conversion operation in the
+execution namespace. The required circuit format selects the text dialect.
+Simulation owns the execution seam so the same contract can be satisfied by
+the current SDK or a future integrated implementation of the Stim source.
+A source integration proposal must pin the imported revision and document
+licensing, builds, supported devices and backend conformance.
 
 ## Contract-first and replacement acceptance
 
@@ -104,11 +109,11 @@ for fixed-record conversion tests.
 
 ```python
 import torch
-from flagquantum.qec.adapters.stim import convert_stim_measurements
+from flagquantum.qec.execution.measurement_conversion import convert_measurement_records
 
 text = "R 0\nX 0\nM 0\nDETECTOR rec[-1]\nOBSERVABLE_INCLUDE(0) rec[-1]"
 raw = torch.tensor([[1], [0]], dtype=torch.bool)
-result = convert_stim_measurements(text, raw)
+result = convert_measurement_records(text, raw, circuit_format="stim")
 print(result.detectors.tolist())
 print(result.observables.tolist())
 ```
