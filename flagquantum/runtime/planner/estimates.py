@@ -2,6 +2,12 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ...core.ir import CircuitIR
+    from ..options_resolver import ResolvedExecutionOptions
+
 
 def estimate_state_bytes(n_qubits: int, bsz: int = 1, complex_bytes: int = 8) -> int:
     """Estimate dense statevector memory."""
@@ -148,3 +154,24 @@ def exact_interval_mps_bond(qubits: tuple[tuple[int, ...], ...]) -> int | None:
         if largest > 12:
             return None
     return 1 << (largest // 2)
+
+
+def _exact_mps_bond(
+    source_ir: CircuitIR,
+    resolved: ResolvedExecutionOptions,
+    has_noise: bool,
+    is_dynamic: bool,
+    world_size: int,
+) -> int | None:
+    if (
+        resolved.mode == "mps"
+        and not resolved.allow_approximate
+        and not has_noise
+        and not is_dynamic
+        and source_ir.n_wires > 32
+        and world_size == 1
+    ):
+        return exact_interval_mps_bond(
+            tuple(gate.wires for gate in source_ir.instructions)
+        )
+    return None
