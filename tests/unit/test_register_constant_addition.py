@@ -2,6 +2,7 @@
 
 from collections import Counter
 from importlib.metadata import version
+from math import pi
 from typing import Any
 
 import pytest
@@ -58,6 +59,7 @@ def reference_arithmetic_gates(
     expected_outputs: dict[str, tuple[int, ...]] | None = None,
     reuse_allocations: bool = True,
     preserve_components: bool = False,
+    keep_exchange_leaves: bool = False,
 ) -> tuple[Instruction, ...]:
     """Read unmodified pinned arithmetic with explicit quantum/classical binding."""
     pytest.importorskip("qualtran")
@@ -140,6 +142,14 @@ def reference_arithmetic_gates(
         BloqAsCirqGate(CNOT()): "cx",
         BloqAsCirqGate(XGate()): "x",
     }
+
+    phase_angles = {}
+    if keep_exchange_leaves:
+        phase_angles = {
+            cirq.CZ**power: pi * power for power in (0.5, -0.5, 0.25, -0.25)
+        }
+        names.update(dict.fromkeys(phase_angles, "cphase"))
+        names.update({cirq.S**-1: "sdg", cirq.TOFFOLI: "ccx"})
 
     def source_component(op: Any) -> Any:
         # Keep caller stage lifetimes when physical work buffers are reused.
@@ -323,7 +333,9 @@ def reference_arithmetic_gates(
             name = "reset"
         else:
             name = names[op.gate]
-        gates.append(Instruction(name, wires, metadata=metadata))
+        theta = phase_angles.get(op.gate)
+        params = {} if theta is None else {"theta": theta}
+        gates.append(Instruction(name, wires, params, metadata=metadata))
     return tuple(gates)
 
 

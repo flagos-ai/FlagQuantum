@@ -42,3 +42,25 @@ The local dependency regression passed 249 tests, including 15 new cases
 and the paired lookup measurement tests. Both new emitters have 100%
 statement coverage. The locked blobs for `cswap_approx.py`,
 `swap_with_zero.py` and `multi_target_cnot.py` match the inventory.
+
+## Generic adjoint and outer controls
+
+The standalone adjoint of `relative_controlled_swap_ir` follows the source
+`Adjoint` graph. It reverses the dependencies and conjugates the phase leaves.
+`SwapWithZero` has its own adjoint rule and continues to reverse its network
+while applying forward relative-phase swaps at its leaves.
+
+`control_relative_swap_ir` applies the source generic outer control to the
+forward or adjoint block. Before the outer control is threaded through, the
+source imports its independent rotations in moment order. The native emitter
+uses the same order and keeps Toffoli, controlled Hadamard and exact controlled
+S/T phases as leaves. A negative outer control adds X conjugation. A multi-bit
+outer predicate uses clean work and a classical slot per extra control, then
+measures and clears them in reverse order.
+
+For three-bit words and an outer pattern of `(1, 0, 1)`, the IR has 17 CCX,
+24 CH and 36 controlled phase instructions. Predicate computation contributes
+eight T/T† and two measurements, with two clean work qubits. The pinned
+`QubitCount` is 12. The pinned `QECGatesCost` fails for the controlled abstract
+`ArbitraryClifford` in the source cost graph. The eight emitted T/T† count only
+the predicate, and the other controlled leaves retain their own opcodes.
