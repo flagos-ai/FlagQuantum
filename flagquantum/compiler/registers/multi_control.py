@@ -88,19 +88,46 @@ def multi_control_x_ir(
     classical_bits: tuple[int, ...],
 ) -> tuple[Instruction, ...]:
     """XOR the specified control pattern into an arbitrary target; clear all work."""
+    return _multi_control_pauli_ir(
+        "x", controls, values, target, workspace, classical_bits
+    )
+
+
+def multi_control_z_ir(
+    controls: tuple[int, ...],
+    values: tuple[int, ...],
+    target: int,
+    workspace: tuple[int, ...],
+    classical_bits: tuple[int, ...],
+) -> tuple[Instruction, ...]:
+    """Apply the source MultiControlZ ladder and restore its clean work."""
+    return _multi_control_pauli_ir(
+        "z", controls, values, target, workspace, classical_bits
+    )
+
+
+def _multi_control_pauli_ir(
+    pauli: str,
+    controls: tuple[int, ...],
+    values: tuple[int, ...],
+    target: int,
+    workspace: tuple[int, ...],
+    classical_bits: tuple[int, ...],
+) -> tuple[Instruction, ...]:
     _validate_controls(controls, values, workspace, classical_bits, measured=True)
     if type(target) is not int or target < 0 or target in (*controls, *workspace):
         raise ValueError(
             "Multi-controlled X target must be a distinct nonnegative wire"
         )
     if not controls:
-        return (Instruction("x", (target,)),)
+        return (Instruction(pauli, (target,)),)
+    controlled = f"c{pauli}"
     if len(controls) == 1:
         flip = (Instruction("x", controls),) if values[0] == 0 else ()
-        return (*flip, Instruction("cx", (*controls, target)), *flip)
+        return (*flip, Instruction(controlled, (*controls, target)), *flip)
     return (
         *multi_and_ir(controls, values, workspace),
-        Instruction("cx", (workspace[-1], target)),
+        Instruction(controlled, (workspace[-1], target)),
         *multi_and_ir(
             controls, values, workspace, classical_bits=classical_bits, uncompute=True
         ),
