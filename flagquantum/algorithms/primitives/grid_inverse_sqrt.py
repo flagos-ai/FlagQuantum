@@ -12,18 +12,20 @@ from ...compiler._component_trace.resource_model import (
 )
 from ...compiler.registers.arithmetic_resource_model import source_add_cost
 
-_LOW = (
-    0.9999413248911988,
-    0.4960989191590354,
-    0.33261112772430493,
-    0.14876762006038398,
+_LOW_DECIMAL = (
+    "0.99994132489119882162",
+    "0.49609891915903542303",
+    "0.33261112772430493331",
+    "0.14876762006038398086",
 )
-_HIGH = (
-    0.8164851520538522,
-    0.27136515484240234,
-    0.12756148214815175,
-    0.04475302857915384,
+_HIGH_DECIMAL = (
+    "0.81648515205385221995",
+    "0.27136515484240234115",
+    "0.12756148214815175348",
+    "0.044753028579153842218",
 )
+_LOW = tuple(map(float, _LOW_DECIMAL))
+_HIGH = tuple(map(float, _HIGH_DECIMAL))
 
 
 def grid_inverse_sqrt_qrom_data(
