@@ -15,8 +15,9 @@ def lower_indexed_control(
     owner: _Adapt, condition: Expression, operation: Statement
 ) -> bool:
     gate = operation.token.text
-    if gate not in {"X", "H", "RX", "RY"} or len(operation.arguments) != (
-        2 if gate in {"RX", "RY"} else 1
+    rotations = {"RX", "RY", "RZ"}
+    if gate not in {"X", "H"} | rotations or len(operation.arguments) != (
+        2 if gate in rotations else 1
     ):
         return False
 
@@ -58,7 +59,9 @@ def lower_indexed_control(
     else:
         return False
 
-    target = owner.gate_target(operation.arguments[-1], allow_numeric=gate == "RX")
+    target = owner.gate_target(
+        operation.arguments[-1], allow_numeric=gate in {"RX", "RZ"}
+    )
     locations = (*controls, target)
     token = operation.token
     if len(set(locations)) != len(locations):
@@ -86,12 +89,15 @@ def lower_indexed_control(
                 "qreg.gate",
                 token,
                 (register,),
-                gate="rx" if gate == "RX" else "ry",
+                gate="ry" if gate == "H" else gate.lower(),
                 index=index,
                 angle=value,
             )
 
-        def conditional_z() -> None:
+        def conjugate() -> None:
+            if gate == "RZ":
+                owner.emit_indexed_x(token, locations)
+                return
             owner.effect_op(
                 "qreg.control_phase",
                 token,
@@ -100,12 +106,13 @@ def lower_indexed_control(
                 angle=math.pi,
             )
 
-        # Conjugating Z gives H. Two Z factors reverse the middle RY on the active branch.
+        # The active branch conjugates the middle rotation by an anticommuting Pauli.
+        # Hadamard is the special case RY(pi/4) Z RY(-pi/4).
         rotation(angle)
-        conditional_z()
+        conjugate()
         rotation(-angle)
         if gate != "H":
-            conditional_z()
+            conjugate()
     for register, bit in reversed(negative):
         owner.effect_op("qreg.gate", token, (register,), gate="x", index=bit)
     return True
