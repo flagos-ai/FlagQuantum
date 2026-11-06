@@ -2902,3 +2902,47 @@ The two-orbital fixture emits 104 T-family instructions and 19 measurements
 with three scratch wires. The three-orbital blocked fixture emits 218
 T-family instructions and 28 measurements with three scratch wires. The
 locked DF programmed-rotation component remains a separate cost declaration.
+
+### Executable double-factorization block encoding
+
+The executable sequence follows Fig. 16 of
+[arXiv:2011.03494](https://arxiv.org/abs/2011.03494). It prepares the factor
+alias, loads the indexed metadata, and applies two signed inner
+PREPARE–SELECT–adjoint bodies around the middle reflection. Both the
+middle reflection and the second SELECT require a nonzero factor and
+successful outer preparation. The reflection covers the orbital, alias
+sample, rotation and spin signal wires.
+
+The effective one-body input uses the negative Z coefficient from
+the number operator. The zero-signal block includes the constant shift
+from the middle reflection. At finite rank-rotation precision a failed
+inner preparation contributes the identity on that branch. For an outer
+factor probability $w_j$ and projected inner body $A_j$, the circuit encodes
+$w_0 A_0 + \sum_{j>0} w_j(2A_j^2-I)$.
+
+```python
+from flagquantum.algorithms.primitives.double_factorization_block_encoding import (
+    DoubleFactorizationBlockEncoding,
+)
+from flagquantum.compiler.registers.partition import partition_register
+from flagquantum.dynamic import DynamicCircuit
+
+encoding = DoubleFactorizationBlockEncoding.from_eigenvalues(
+    (1.0, -3.0), ((2.0,),), ((1,), (3,), (2,)),
+    outer_bits=1, inner_bits=1, rank_rotation_bits=2, basis_rotation_bits=4,
+)
+logical = sum(width for _, width in encoding.layout)
+work, _ = encoding.requirements()
+ports = partition_register(tuple(range(logical)), encoding.layout)
+circuit = DynamicCircuit(logical + work)
+circuit.append(encoding.make_on(ports, workspace=tuple(range(logical, logical + work))))
+```
+
+Angle rows are provided as fixed-point words in concatenated eigenvalue
+order. The locked resource declaration retains its original reflection
+ports and the outer success control. The executable model uses the paper
+reflection and its nonzero-factor control.
+
+The two-orbital fixture emits 450 T-family instructions and 81 measurements
+with four scratch wires. Native controlled rotations used in the rank
+preparation remain outside that T-family instruction count.

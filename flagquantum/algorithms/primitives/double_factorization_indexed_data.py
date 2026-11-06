@@ -17,7 +17,7 @@ from ...compiler.registers.source_qroam_clean import (
     source_qroam_clean_uncompute_ir,
 )
 from ...core.classical_control import validate_classical_control
-from ...core.ir import CircuitIR
+from ...core.ir import CircuitIR, Instruction
 from ...dynamic import DynamicCircuit
 
 
@@ -150,19 +150,22 @@ class _BoundIndexedData:
         start = validate_classical_control(
             circuit.to_ir().instructions, n_qubits=circuit.n_qubits
         )
+        gates = self._emit(start)
+        return circuit.compose(
+            CircuitIR(
+                circuit.n_qubits, gates, metadata={"batch_size": circuit.bsz}
+            ).validate()
+        )
+
+    def _emit(self, start: int) -> tuple[Instruction, ...]:
         emit = (
             source_qroam_clean_uncompute_ir if self.adjoint else source_qroam_clean_ir
         )
-        gates = emit(
+        return emit(
             self.table,
             (),
             (self.address,),
             self.banks,
             self.workspace,
             tuple(range(start, start + len(self.workspace))),
-        )
-        return circuit.compose(
-            CircuitIR(
-                circuit.n_qubits, gates, metadata={"batch_size": circuit.bsz}
-            ).validate()
         )
