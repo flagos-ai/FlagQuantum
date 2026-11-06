@@ -2656,3 +2656,23 @@ direction, with two clean work wires and 15 live logical wires. The locked
 outer PREPARE supplies only its resource graph and its automatic chemistry
 blocking model rejects these small tables. The executable adjoint reverses the
 selected forward block shape, including its relative phases.
+
+### Executable inner single-factorization PREPARE
+
+The B11 preparation keeps the outer factor index read-only. It prepares the
+exact uniform triangle, computes the zero-based address `q*(q+1)//2+p`,
+and looks up the alias data on both axes. The swap exchanges both coordinates
+and their sign. Apply a phase using the selected `theta` between PREPARE and
+its adjoint to incorporate the Hamiltonian coefficient sign. The rotation
+wire and borrowed scratch end at zero. The address, alias words, and route
+banks are retained until unpreparing.
+
+Bind `PrepareSingleFactorizationInner.from_coefficients` with the named
+`layout` and `requirements()`, using the same `make_on` and
+`circuit.append(op)` convention as the outer preparation. Coefficients in
+each factor are ordered by the same zero-based triangular address. In the
+three-spatial-orbital, three-factor-row fixture with one probability bit and
+two cells per axis, each direction emits 219 T-family instructions and 25
+measurements and borrows seven clean wires. The locked source provides a
+resource graph for the top-level operation. The emitted stream uses exact
+uniform amplification and the matching inverse of the selected QROAM banks.
