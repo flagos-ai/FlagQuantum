@@ -8,6 +8,7 @@
 from math import prod
 
 from ...core.ir import Instruction
+from .._component_trace.resource_model import ComponentCost, GateCost
 from .bitwise import _validate_wires
 from .controlled_swap import controlled_swap_ir
 from .multi_control import multi_and_ir
@@ -29,24 +30,15 @@ def multiplexed_cswap_ir(
     order and the output can start in any state. The source contract assumes
     in-range selections, so padded addresses follow the bounded gate stream.
     """
-    if not shape or len(shape) != len(selections) or not all(selections):
-        raise ValueError("Multiplexed swap requires nonempty source selection axes")
-    if any(
-        type(extent) is not int or not 1 <= extent <= 1 << len(wires)
-        for extent, wires in zip(shape, selections, strict=True)
-    ):
-        raise ValueError("Multiplexed swap extent must fit its selection")
-    if not controls and shape[0] == 1:
-        raise ValueError(
-            "Source multiplexed swap needs a control for a singleton first axis"
-        )
+    widths = tuple(map(len, selections))
+    _validate_selection(shape, widths, len(controls))
     if (
         not output
         or len(targets) != prod(shape)
         or any(len(word) != len(output) for word in targets)
     ):
         raise ValueError("Multiplexed swap requires one equal-width word per row")
-    size = sum(map(len, selections)) + len(controls) - 1
+    size = sum(widths) + len(controls) - 1
     if len(workspace) != size:
         raise ValueError(f"Multiplexed swap requires {size} clean work wires")
     if (
@@ -108,3 +100,61 @@ def multiplexed_cswap_ir(
             )
         )
     return tuple(gates)
+
+
+def source_multiplexed_cswap_cost(
+    shape: tuple[int, ...],
+    selection_widths: tuple[int, ...],
+    control_count: int,
+    word_width: int,
+) -> ComponentCost:
+    """Estimate source logical gates and peak width without emitting a circuit."""
+    _validate_selection(shape, selection_widths, control_count)
+    if type(word_width) is not int or word_width < 1:
+        raise ValueError("Multiplexed swap requires a positive integer word width")
+
+    rows = prod(shape)
+    has_control = control_count > 0
+    # A bounded binary tree has one fewer fork than leaves. Without an
+    # explicit control, two Xs on the first live address bit replace its root.
+    tree_ands = rows - 1 - int(not has_control)
+    reduction_ands = max(control_count - 1, 0)
+    ands = tree_ands + reduction_ands
+    cliffords = 2 * tree_ands + reduction_ands + 2 * int(not has_control)
+
+    # The longest live path visits the complete left half at each first
+    # nontrivial split. Leading padded bits do not allocate active work.
+    active_work = sum((extent - 1).bit_length() for extent in shape) + control_count - 1
+    ports = control_count + sum(selection_widths) + (rows + 1) * word_width
+    return ComponentCost(
+        "MultiplexedCSwap",
+        ports + active_work,
+        GateCost(
+            cswap=rows * word_width,
+            and_bloq=ands,
+            clifford=cliffords,
+            measurement=ands,
+        ),
+    )
+
+
+def _validate_selection(
+    shape: tuple[int, ...], widths: tuple[int, ...], control_count: int
+) -> None:
+    if (
+        not shape
+        or len(shape) != len(widths)
+        or any(type(width) is not int or width < 1 for width in widths)
+    ):
+        raise ValueError("Multiplexed swap requires nonempty source selection axes")
+    if any(
+        type(extent) is not int or extent < 1 or (extent - 1).bit_length() > width
+        for extent, width in zip(shape, widths, strict=True)
+    ):
+        raise ValueError("Multiplexed swap extent must fit its selection")
+    if type(control_count) is not int or control_count < 0:
+        raise ValueError("Multiplexed swap requires a nonnegative control count")
+    if not control_count and shape[0] == 1:
+        raise ValueError(
+            "Source multiplexed swap needs a control for a singleton first axis"
+        )

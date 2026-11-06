@@ -1,6 +1,7 @@
 """Compare exact bounded swaps and every measurement branch to pinned Qualtran."""
 
 from collections import Counter
+from dataclasses import asdict
 from itertools import product
 from math import prod
 from typing import Any
@@ -8,7 +9,11 @@ from typing import Any
 import pytest
 import torch
 
-from flagquantum.compiler.registers.multiplexed_swap import multiplexed_cswap_ir
+from flagquantum.compiler.registers.multiplexed_swap import (
+    multiplexed_cswap_ir,
+    source_multiplexed_cswap_cost,
+)
+from flagquantum.qec.resources.estimation import estimate_ftqc_resources
 from tests.unit.measurement_checks import forced_branch
 from tests.unit.test_register_constant_addition import reference_arithmetic_gates
 from tests.unit.test_relative_controlled_swap import assert_source_dependencies
@@ -92,6 +97,12 @@ def test_pinned_multiplexed_cswap(
 
     counts = Counter(gate.name for gate in actual)
     model = get_cost_value(source, QECGatesCost())
+    cost = source_multiplexed_cswap_cost(shape, widths, control_count, word_width)
+    report = estimate_ftqc_resources(cost)
+    assert {
+        key: count for key, count in asdict(report.logical.gates).items() if count
+    } == model.asdict()
+    assert report.logical.peak_logical_qubits == get_cost_value(source, QubitCount())
     assert model.cswap == prod(shape) * word_width
     assert counts["measure"] == counts["reset"] == model.measurement == model.and_bloq
     assert counts["t"] + counts["tdg"] == model.total_t_count(ts_per_cswap=7)
@@ -175,3 +186,73 @@ def test_pinned_undecomposable_axes(
             (),
             (),
         )
+
+
+@pytest.mark.ftqc_reference
+@pytest.mark.parametrize(
+    ("shape", "widths", "controls", "word"),
+    [
+        ((1, 1), (3, 4), 3, 2),
+        ((1, 3, 1, 2), (3, 5, 1, 4), 4, 2),
+        ((2, 1, 3), (4, 1, 5), 0, 2),
+        ((5, 7), (5, 6), 2, 4),
+        ((3,), (5,), 4, 3),
+        ((1,), (7,), 1, 2),
+        ((13,), (10,), 0, 7),
+    ],
+)
+def test_direct_cost_matches_pinned_model(
+    shape: tuple[int, ...],
+    widths: tuple[int, ...],
+    controls: int,
+    word: int,
+) -> None:
+    pytest.importorskip("qualtran")
+    from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
+
+    source = source_swap(shape, widths, controls, word)
+    source_gates = get_cost_value(source, QECGatesCost())
+    report = estimate_ftqc_resources(
+        source_multiplexed_cswap_cost(shape, widths, controls, word)
+    )
+    counts = report.logical.gates
+    assert {
+        key: count for key, count in asdict(counts).items() if count
+    } == source_gates.asdict()
+    assert counts.total_t_count() == source_gates.total_t_count()
+    assert counts.total_t_count(ts_per_cswap=7) == source.t_complexity().t
+    assert report.logical.peak_logical_qubits == get_cost_value(source, QubitCount())
+    assert report.emitted is None
+
+
+def test_direct_cost_scales_without_materializing_rows() -> None:
+    report = estimate_ftqc_resources(
+        source_multiplexed_cswap_cost((2**30, 3), (32, 4), 3, 8)
+    )
+    counts = report.logical.gates
+    assert counts.cswap == 25_769_803_776
+    assert counts.and_bloq == counts.measurement == 3_221_225_473
+    assert counts.clifford == 6_442_450_944
+    assert report.logical.peak_logical_qubits == 25_769_803_857
+    assert report.emitted is None
+
+
+@pytest.mark.parametrize(
+    ("shape", "widths", "controls", "word", "message"),
+    [
+        ((), (), 0, 1, "nonempty"),
+        ((3,), (1,), 0, 1, "extent"),
+        ((1,), (2,), 0, 1, "singleton first axis"),
+        ((2,), (1,), -1, 1, "nonnegative"),
+        ((2,), (1,), 0, 0, "word width"),
+    ],
+)
+def test_direct_cost_rejects_unsupported_inputs(
+    shape: tuple[int, ...],
+    widths: tuple[int, ...],
+    controls: int,
+    word: int,
+    message: str,
+) -> None:
+    with pytest.raises(ValueError, match=message):
+        source_multiplexed_cswap_cost(shape, widths, controls, word)

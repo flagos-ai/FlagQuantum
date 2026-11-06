@@ -103,3 +103,29 @@ declares six CSwap, one And, four Clifford and one measurement with
 peak width 11. Its default conversion gives 28 T equivalents. The
 source's seven-T Fredkin conversion and its legacy T complexity both
 give 46.
+
+### Shape-only estimate for multiplexed exchange
+
+Pass `source_multiplexed_cswap_cost` to the shared resource estimator
+to price the operation before constructing its circuit.
+
+```python
+from flagquantum.compiler.registers.multiplexed_swap import (
+    source_multiplexed_cswap_cost,
+)
+from flagquantum.qec.resources.estimation import estimate_ftqc_resources
+
+cost = source_multiplexed_cswap_cost((5, 7), (5, 6), 2, 4)
+logical = estimate_ftqc_resources(cost).logical
+assert logical.peak_logical_qubits == 164
+assert logical.gates.total_t_count() == 700
+assert logical.gates.total_t_count(ts_per_cswap=7) == 1120
+```
+
+The model counts one CSwap per row and word bit, one measured And per
+bounded traversal fork, and the optional control reduction. Peak width
+includes all declared input/output ports and the longest live And path.
+Only the significant bits of each axis contribute to that path. For the
+example above, the caller reserves 12 work wires while seven contribute
+to the source peak. The estimate runs in time proportional to the number
+of axes and does not emit instructions.
