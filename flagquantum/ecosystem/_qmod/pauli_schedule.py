@@ -43,7 +43,7 @@ def ceiling_repetitions(owner: _Adapt, expression: Expression) -> int:
                     "evolution",
                     "static power exceeds its bounded real domain",
                 )
-            result = left**right
+            result = float(left**right)
         else:
             if text == "/" and right == 0:
                 reject(node.token, "evolution", "static ceiling division by zero")
