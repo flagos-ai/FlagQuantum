@@ -66,7 +66,7 @@ def _branch(gates, width, history, state=None, *, normalize_measurements=False):
             continue
         updated = defaultdict(complex)
         for index, amp in state.items():
-            if gate.name == "h":
+            if gate.name == "h" or (gate.name == "ch" and index & masks[0]):
                 updated[index & ~mask] += amp / sqrt(2)
                 updated[index | mask] += (-amp if index & mask else amp) / sqrt(2)
             elif gate.name == "x" or (gate.name == "cx" and index & masks[0]):
@@ -86,7 +86,7 @@ def _branch(gates, width, history, state=None, *, normalize_measurements=False):
             elif gate.name == "rz":
                 theta = gate.params["theta"]
                 updated[index] += amp * exp((1j if index & mask else -1j) * theta / 2)
-            elif gate.name == "ry":
+            elif gate.name == "ry" or (gate.name == "cry" and index & masks[0]):
                 half_angle = gate.params["theta"] / 2
                 updated[index] += amp * cos(half_angle)
                 updated[index ^ mask] += (
@@ -101,7 +101,7 @@ def _branch(gates, width, history, state=None, *, normalize_measurements=False):
             elif gate.name == "cz":
                 updated[index] += -amp if all(index & m for m in masks) else amp
             else:
-                assert gate.name in (*phase, "cx", "cy", "ccx")
+                assert gate.name in (*phase, "cx", "cy", "ccx", "ch", "cry")
                 updated[index] += amp * phase.get(gate.name, 1) if index & mask else amp
         state = {index: amp for index, amp in updated.items() if abs(amp) > 1e-12}
     assert next(outcomes, None) is None

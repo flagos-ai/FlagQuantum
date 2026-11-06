@@ -2817,3 +2817,17 @@ Each direction in this fixture emits 30 T-family instructions and one
 measurement and uses two scratch qubits. The lookup stream follows the
 concrete locked QROAMClean. The top-level Qualtran outer PREPARE is a
 resource declaration.
+
+### Rank-conditioned uniform preparation
+
+The shared rank preparation follows Appendix C step 3(a) of
+[arXiv:2011.03494](https://arxiv.org/abs/2011.03494). A reversible prefix
+computes which Hadamards are active from the leading bits of rank minus one.
+The read-only angle word specifies a binary fraction of one full turn.
+The success output marks an in-range index with the rotation qubit zero,
+so residual failure from the finite rotation precision remains coherent.
+
+With a two-bit rank and a four-bit angle, each direction emits 64 T-family
+instructions, 16 measurements and 12 controlled rotations. It uses seven
+clean scratch qubits. The controlled Hadamards and rotations are native
+IR operations. Their synthesis cost belongs to a separate resource model.
