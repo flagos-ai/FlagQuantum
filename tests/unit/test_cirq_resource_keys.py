@@ -102,7 +102,7 @@ def test_unsupported_sdk_wrappers_remain_at_the_boundary() -> None:
         assert type(cirq_gate_to_bloq(gate)).__name__ == "CirqGateAsBloq"
         assert cirq_gate_resource_key(gate) is None
     assert (
-        cirq_gate_resource_key(cirq.ControlledGate(cirq.CNOT, control_values=(0,)))
+        cirq_gate_resource_key(cirq.ControlledGate(cirq.CNOT, control_values=((0, 1),)))
         is None
     )
     assert cirq_gate_resource_key(cirq.H.on(cirq.LineQubit(0))) is None
@@ -123,6 +123,9 @@ def test_predicate_controls_map_to_source_costs(controls: tuple[int, ...]) -> No
         cirq.H,
         cirq.T,
         cirq.SWAP,
+        cirq.CNOT,
+        cirq.TOFFOLI,
+        cirq.CSWAP,
         cirq.S**-1,
         cirq.rx(0.3),
         cirq.rz(-0.7),
@@ -144,3 +147,11 @@ def test_positive_rz_uses_dedicated_resource_decomposition() -> None:
     assert query_qec_gate_cost(ControlledZRotationCall(0.3)) == QECGateCost(
         clifford=2, rotation=2
     )
+
+
+def test_nested_singleton_controls_preserve_original_activation_order() -> None:
+    cirq = pytest.importorskip("cirq")
+    inner = cirq.ControlledGate(cirq.T, control_values=(0,))
+    nested = cirq.ControlledGate(inner, control_values=(1, 0))
+    flat = cirq.ControlledGate(cirq.T, control_values=(1, 0, 0))
+    assert cirq_gate_resource_key(nested) == cirq_gate_resource_key(flat)

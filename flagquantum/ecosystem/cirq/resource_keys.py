@@ -8,6 +8,7 @@
 from collections.abc import Hashable
 from typing import Literal, cast
 
+from ...compiler._component_trace.compound_control_resource import compound_control_key
 from ...compiler._component_trace.resource_generalization import (
     CliffordCall,
     ControlledRotationCall,
@@ -105,6 +106,10 @@ def _controlled_key(
         return ZeroCostCall("identity", (1 + len(controls),))
     if isinstance(key, CliffordCall) and key.opcode == "x" and controls == (1, 1):
         return FixedTCall("toffoli")
+    if key is not None:
+        compound = compound_control_key(key, controls)
+        if compound is not None:
+            return compound
     positive = _single_positive_key(key)
     if positive is None or controls == (1,):
         return positive

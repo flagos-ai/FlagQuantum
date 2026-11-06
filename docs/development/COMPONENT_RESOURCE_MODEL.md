@@ -477,6 +477,14 @@ The dedicated controlled Rz uses two Z powers and two CNOTs.
 Non-singleton control conditions and wrappers over unsupported child
 gates stay at the adapter boundary.
 
+Adding a positive control to CNOT selects a Toffoli. Other CNOT
+control patterns wrap that Toffoli in the predicate model. Adding
+controls to Toffoli instead merges its two existing positive controls
+into the new predicate. For a register CSwap, the source's additional
+positive control decomposes one bit at a time, charging the predicate
+once per bit. The bitwise Fredkin can merge its original control
+directly with one added control.
+
 - [Qualtran v0.7.0 gate costs](https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/resource_counting/_bloq_counts.py)
 - [Qualtran v0.7.0 logical width](https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/resource_counting/_qubit_counts.py)
 - [Qualtran v0.7.0 success probability](https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/resource_counting/_success_prob.py)
