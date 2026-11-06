@@ -2434,3 +2434,48 @@ unsigned value. Result and workspace start at zero, are reused between
 electrons, and return to zero. The measurement slot is chosen above any
 existing feedback bits. The inverse reverses the electron order and
 negates the phase coefficient.
+
+## Grid pair potential
+
+The locked model preserves the source add and erase calls, squared-distance
+register width, four-bank coefficient lookup, cubic and Newton estimates,
+and one call for each upper-triangular electron pair. The original coefficient
+table occupies a prefix of the wider distance address. The peak uses the
+source scheduler's early release of the system and coefficient wires.
+
+The executable potential binds unsigned, big-endian axis words and computes
+the magnitude of each signed difference before squaring. It phases the shared
+C1/Newton fixed-point inverse-distance estimate and erases both the estimate
+and the squared distance. Coincident points yield zero phase. The locked
+cubic/Newton graph and the executable C1/Newton circuit use different seed
+arithmetic and have separate resource reports.
+
+```python
+from flagquantum.algorithms.primitives.grid_potential import (
+    GridPotentialEnergy,
+    grid_potential_requirements,
+)
+from flagquantum.algorithms.primitives.grid_potential_resource_model import (
+    source_grid_potential_cost,
+)
+from flagquantum.dynamic import DynamicCircuit
+from flagquantum.qec.resources.estimation import estimate_ftqc_resources
+
+work, slots = grid_potential_requirements(1, precision=4, iterations=1)
+op = GridPotentialEnergy.make_on(
+    grid_points=1,
+    system=(((0,), (1,), (2,)), ((3,), (4,), (5,))),
+    workspace=tuple(range(6, 6 + work)),
+    radians_per_unit=0.721,
+    precision=4,
+)
+circuit = DynamicCircuit(6 + work).append(op)
+report = estimate_ftqc_resources(
+    source_grid_potential_cost(2, 1), emitted_ir=circuit.to_ir()
+)
+assert (work, slots) == (177, 13)
+assert report.logical.peak_logical_qubits == 81
+assert report.emitted is not None
+assert report.emitted.t_count == 3104
+assert report.emitted.unconditional["measure"] == 776
+```
