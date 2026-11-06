@@ -1323,3 +1323,46 @@ assert reverse_gates.toffoli == 33
 The uniform `m` preparation uses the shared executable implementation.
 The complete source graph includes model-only leaves, so these estimates
 describe analytical resources.
+
+## Controlled three-coordinate projectile exchange
+
+The controlled exchange takes the leading electron-width bits of each
+big-endian projectile word in x/y/z order. The remaining bits pass through,
+including any entanglement. The source uses `cvs` as diagram labels and
+its child activates on all-one controls. This behavior applies even when
+the label is zero.
+
+```python
+from flagquantum.algorithms.first_quantization import (
+    ControlledMultiplexedCSwap3D,
+    source_controlled_multiplexed_cswap_3d_cost,
+)
+from flagquantum.dynamic import DynamicCircuit
+from flagquantum.qec.resources.estimation import estimate_ftqc_resources
+
+op = ControlledMultiplexedCSwap3D.make_on(
+    controls=(0,),
+    cvs=(0,),
+    selection=(1,),
+    targets=(((2,), (3,), (4,)), ((5,), (6,), (7,))),
+    junk=((8, 9), (10, 11), (12, 13)),
+    workspace=(14,),
+    classical_bits=(0,),
+)
+circuit = DynamicCircuit(15)
+circuit.append(op)
+report = estimate_ftqc_resources(
+    source_controlled_multiplexed_cswap_3d_cost(2, 1, 2, 1),
+    emitted_ir=circuit.to_ir(),
+)
+assert report.logical.peak_logical_qubits == 15
+assert report.logical.gates.total_t_count() == 28
+assert report.emitted is not None
+assert report.emitted.t_count == 46
+assert report.emitted.unconditional["measure"] == 1
+```
+
+The default estimate prices six abstract controlled swaps at four T
+equivalents each. The emitted exchange uses seven T/T† instructions per
+exact Fredkin and four for the measured And. The model and emitted width
+both include three untouched suffix wires.
