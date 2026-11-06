@@ -73,6 +73,24 @@ IR level, before further synthesis or measurement branch selection. The
 surface-code scenario uses the declared model and is independent of the
 optional circuit. The caller pairs the model with its corresponding circuit.
 
+## Factory-limited Gidney-Fowler scenario
+
+Pass `report.logical` to
+`flagquantum.qec.resources.gidney_fowler.estimate_gidney_fowler_resources`.
+The scenario uses the locked Gidney-Fowler logical error model, a simple data
+block with 50% routing overhead, and one catalyzed CCZ-to-T factory. Supply the
+data code distance and optionally the two factory distances, physical error
+rate, and cycle time. Each rotation contributes eleven T states in the
+source's gate budget. The simple data block assumes unlimited magic-state
+consumption, so the factory sets the cycle count.
+
+At data distance 7, physical error rate 0.0001, and one microsecond per cycle,
+the 8-bit THC example takes 20,119 cycles (20.119 ms) in the model. The simple
+data block uses 3,528 physical qubits and the factory uses 147,904. The
+first-order failure estimate is 0.000724284. This scenario is computed
+independently of the Beverland data-block calculation and the emitted IR
+counts above.
+
 ## Beverland surface-code estimate
 
 A declared logical cost can feed a surface-code model before any circuit

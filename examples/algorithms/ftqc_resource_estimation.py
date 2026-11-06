@@ -9,6 +9,7 @@ from flagquantum.algorithms.primitives.multiplexers.thc_resource_model import (
 )
 from flagquantum.dynamic import DynamicCircuit
 from flagquantum.qec.resources.estimation import estimate_ftqc_resources
+from flagquantum.qec.resources.gidney_fowler import estimate_gidney_fowler_resources
 
 
 def make_circuit() -> DynamicCircuit:
@@ -42,6 +43,15 @@ def main() -> None:
         "Fast data-block physical qubits",
         planned.surface_code.data_block_physical_qubits,
     )
+
+    factory_scenario = estimate_gidney_fowler_resources(
+        planned.logical, data_distance=7, physical_error=1e-4
+    )
+    print("Gidney-Fowler scenario (data distance 7, 1 microsecond per cycle)")
+    print("Data and factory physical qubits", factory_scenario.physical_qubits)
+    print("Error-correction cycles", factory_scenario.cycles)
+    print("Duration in hours", factory_scenario.duration_hours)
+    print("Modeled failure probability", factory_scenario.failure_probability)
 
     observed = estimate_ftqc_resources(model, emitted_ir=make_circuit().to_ir())
     assert observed.emitted is not None
