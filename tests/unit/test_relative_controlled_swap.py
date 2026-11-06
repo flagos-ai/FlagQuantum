@@ -230,7 +230,8 @@ def assert_controlled_exchange_branches(
     amplitudes /= amplitudes.norm()
     state = torch.zeros(1 << (data_width + len(workspace) + 1), dtype=torch.complex128)
     state[((indices >> 1) << (len(workspace) + 1)) | (indices & 1)] = amplitudes
-    for history in product((0, 1), repeat=len(workspace)):
+    measurements = sum(gate.name == "measure" for gate in actual)
+    for history in product((0, 1), repeat=measurements):
         result = forced_branch(state, actual, history)
         torch.testing.assert_close(
             result, forced_branch(state, expected, history), atol=2e-12, rtol=0
@@ -243,11 +244,11 @@ def assert_controlled_exchange_branches(
             == 0
         )
         torch.testing.assert_close(
-            result.norm(), state.norm() / sqrt(2 ** len(workspace)), atol=2e-12, rtol=0
+            result.norm(), state.norm() / sqrt(2**measurements), atol=2e-12, rtol=0
         )
         torch.testing.assert_close(
             forced_branch(result, inverse, history),
-            state / (2 ** len(workspace)),
+            state / 2**measurements,
             atol=2e-12,
             rtol=0,
         )

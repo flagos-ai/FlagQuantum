@@ -10,7 +10,9 @@ from math import prod
 from ...core.ir import Instruction
 from .._component_trace.resource_model import ComponentCost, GateCost
 from .bitwise import _validate_wires
-from .controlled_swap import controlled_swap_ir
+from .control_predicate import ControlRegister
+from .controlled_component import controlled_component_ir
+from .controlled_swap import control_register_cswap_ir, controlled_swap_ir
 from .multi_control import multi_and_ir
 from .unary_iteration import append_bounded_unary_tree
 
@@ -37,12 +39,7 @@ def multiplexed_cswap_ir(
         raise ValueError("Multiplexed swap adjoint flag must be boolean")
     widths = tuple(map(len, selections))
     _validate_selection(shape, widths, len(controls))
-    if (
-        not output
-        or len(targets) != prod(shape)
-        or any(len(word) != len(output) for word in targets)
-    ):
-        raise ValueError("Multiplexed swap requires one equal-width word per row")
+    _validate_words(shape, targets, output)
     size = sum(widths) + len(controls) - 1
     if len(workspace) != size:
         raise ValueError(f"Multiplexed swap requires {size} clean work wires")
@@ -108,6 +105,78 @@ def multiplexed_cswap_ir(
     return tuple(gates)
 
 
+def control_multiplexed_cswap_ir(
+    outer_controls: tuple[tuple[int, ...], ...],
+    registers: tuple[ControlRegister, ...],
+    controls: tuple[int, ...],
+    selections: tuple[tuple[int, ...], ...],
+    shape: tuple[int, ...],
+    targets: tuple[tuple[int, ...], ...],
+    output: tuple[int, ...],
+    workspace: tuple[int, ...],
+    classical_bits: tuple[int, ...],
+    *,
+    adjoint: bool = False,
+) -> tuple[Instruction, ...]:
+    """Add a generic outer control where the pinned unary graph can decompose.
+
+    The final work wire and slot belong to the per-pair CSwap predicate.
+    Earlier work wires and slots belong to the shared outer predicate.
+    """
+    if type(adjoint) is not bool:
+        raise ValueError("Multiplexed swap adjoint flag must be boolean")
+    _validate_selection(shape, tuple(map(len, selections)), len(controls))
+    _validate_words(shape, targets, output)
+    if prod(shape) + len(controls) != 2:
+        raise ValueError(
+            "Pinned controlled multiplexed swap cannot decompose controlled And"
+        )
+    if not workspace or not classical_bits:
+        raise ValueError("Controlled multiplexed swap requires a work wire and slot")
+    if len(set(classical_bits)) != len(classical_bits):
+        raise ValueError("Outer and inner classical slots must be distinct")
+    _validate_wires(
+        (
+            *controls,
+            *(
+                wire
+                for group in (*outer_controls, *selections, *targets)
+                for wire in group
+            ),
+            *output,
+            *workspace,
+        )
+    )
+    inner_work, inner_slot = workspace[-1:], classical_bits[-1:]
+
+    def emit(control: int) -> tuple[Instruction, ...]:
+        predicate = controls[0] if controls else selections[0][-1]
+
+        def exchange(row: int) -> tuple[Instruction, ...]:
+            return control_register_cswap_ir(
+                ((control,),),
+                (ControlRegister(1, (1,)),),
+                predicate,
+                targets[row],
+                output,
+                inner_work,
+                inner_slot,
+            )
+
+        if controls:
+            return exchange(0)
+        # The source trims the leading address bits before its uncontrolled
+        # root. Its two Xs become CXs under generic control.
+        flip = Instruction("cx", (control, predicate))
+        if adjoint:
+            return (*exchange(1), flip, *exchange(0), flip)
+        return (flip, *exchange(0), flip, *exchange(1))
+
+    return controlled_component_ir(
+        outer_controls, registers, emit, workspace[:-1], classical_bits[:-1]
+    )
+
+
 def source_multiplexed_cswap_cost(
     shape: tuple[int, ...],
     selection_widths: tuple[int, ...],
@@ -164,3 +233,16 @@ def _validate_selection(
         raise ValueError(
             "Source multiplexed swap needs a control for a singleton first axis"
         )
+
+
+def _validate_words(
+    shape: tuple[int, ...],
+    targets: tuple[tuple[int, ...], ...],
+    output: tuple[int, ...],
+) -> None:
+    if (
+        not output
+        or len(targets) != prod(shape)
+        or any(len(word) != len(output) for word in targets)
+    ):
+        raise ValueError("Multiplexed swap requires one equal-width word per row")

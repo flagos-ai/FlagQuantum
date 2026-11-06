@@ -9,14 +9,19 @@ from typing import Any
 import pytest
 import torch
 
+from flagquantum.compiler.registers.control_predicate import ControlRegister
 from flagquantum.compiler.registers.multiplexed_swap import (
+    control_multiplexed_cswap_ir,
     multiplexed_cswap_ir,
     source_multiplexed_cswap_cost,
 )
 from flagquantum.qec.resources.estimation import estimate_ftqc_resources
 from tests.unit.measurement_checks import forced_branch
 from tests.unit.test_register_constant_addition import reference_arithmetic_gates
-from tests.unit.test_relative_controlled_swap import assert_source_dependencies
+from tests.unit.test_relative_controlled_swap import (
+    assert_controlled_exchange_branches,
+    assert_source_dependencies,
+)
 
 pytestmark = pytest.mark.unit
 
@@ -272,3 +277,123 @@ def test_direct_cost_rejects_unsupported_inputs(
 ) -> None:
     with pytest.raises(ValueError, match=message):
         source_multiplexed_cswap_cost(shape, widths, controls, word)
+
+
+@pytest.mark.ftqc_reference
+@pytest.mark.parametrize(
+    ("shape", "widths", "inner", "word"),
+    [
+        ((2,), (1,), 0, 2),
+        ((2, 1), (3, 2), 0, 1),
+        ((1, 1), (1, 1), 1, 2),
+    ],
+)
+@pytest.mark.parametrize("outer", [(1,), (0,), (0, 1), (1, 0, 1)])
+@pytest.mark.parametrize("adjoint", [False, True])
+def test_pinned_outer_multiplexed_cswap(
+    shape: tuple[int, ...],
+    widths: tuple[int, ...],
+    inner: int,
+    word: int,
+    outer: tuple[int, ...],
+    adjoint: bool,
+) -> None:
+    pytest.importorskip("qualtran")
+    from qualtran import CtrlSpec
+    from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
+
+    total = 0
+
+    def allocate(size: int) -> tuple[int, ...]:
+        nonlocal total
+        start = total
+        total += size
+        return tuple(range(start, total))
+
+    outside = allocate(len(outer))
+    controls = allocate(inner)
+    selections = tuple(allocate(width) for width in widths)
+    targets = tuple(allocate(word) for _ in range(prod(shape)))
+    output = allocate(word)
+    data_width = total
+    work = allocate(len(outer))
+    bits = tuple(range(40, 40 + len(work)))
+    args = (
+        (outside,),
+        (ControlRegister(1, outer),),
+        controls,
+        selections,
+        shape,
+        targets,
+        output,
+        work,
+        bits,
+    )
+    actual = control_multiplexed_cswap_ir(*args, adjoint=adjoint)
+    opposite = control_multiplexed_cswap_ir(*args, adjoint=not adjoint)
+    base = source_swap(shape, widths, inner, word)
+    source = (base.adjoint() if adjoint else base).controlled(
+        CtrlSpec(cvs=outer[0] if len(outer) == 1 else outer)
+    )
+    ports = {
+        next(iter(source.signature)).name: outside,
+        **{f"c{i}": (wire,) for i, wire in enumerate(controls)},
+        **{f"s{i}": wires for i, wires in enumerate(selections)},
+        "targets": tuple(wire for row in targets for wire in row),
+        "output": output,
+    }
+    expected = reference_arithmetic_gates(
+        source.decompose_bloq().flatten(),
+        ports,
+        work,
+        dict(zip(work, bits, strict=True)),
+        preserve_components=True,
+    )
+    assert_source_dependencies(actual, expected)
+    counts = Counter(gate.name for gate in actual)
+    cost = get_cost_value(source, QECGatesCost())
+    assert cost.cswap == prod(shape) * word
+    assert (
+        counts["measure"]
+        == counts["reset"]
+        == cost.measurement
+        == cost.cswap + len(outer) - 1
+    )
+    assert counts["t"] + counts["tdg"] == cost.total_t_count(ts_per_cswap=7)
+    assert get_cost_value(source, QubitCount()) == total
+    assert_controlled_exchange_branches(actual, expected, opposite, data_width, work)
+
+
+@pytest.mark.ftqc_reference
+@pytest.mark.parametrize(
+    ("shape", "widths", "inner"), [((3,), (2,), 0), ((2,), (1,), 1), ((1,), (1,), 2)]
+)
+def test_pinned_outer_multiplexed_cswap_requires_undecomposable_and(
+    shape: tuple[int, ...], widths: tuple[int, ...], inner: int
+) -> None:
+    pytest.importorskip("qualtran")
+    from qualtran import DecomposeTypeError
+    from qualtran.bloqs.mcmt import And
+
+    source = source_swap(shape, widths, inner, 1).controlled()
+    leaves = {
+        str(node.bloq): node.bloq
+        for node in source.decompose_bloq().flatten().bloq_instances
+    }
+    for leaf in ("C[And]", "C[And†]"):
+        assert isinstance(leaves[leaf].subbloq, And)
+        with pytest.raises(DecomposeTypeError, match="non-thru"):
+            leaves[leaf].decompose_bloq()
+    targets = tuple((10 + row,) for row in range(prod(shape)))
+    with pytest.raises(ValueError, match="cannot decompose controlled And"):
+        control_multiplexed_cswap_ir(
+            ((0,),),
+            (ControlRegister(1, (1,)),),
+            tuple(range(1, inner + 1)),
+            (tuple(range(4, 4 + widths[0])),),
+            shape,
+            targets,
+            (20,),
+            (21,),
+            (30,),
+        )

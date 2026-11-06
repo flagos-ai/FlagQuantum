@@ -143,3 +143,23 @@ The adjoint has the same source QEC gate categories, T-equivalent counts
 and peak width. Its tests compare the locked adjoint graph's gate
 operands and feedback, and verify round trips through separate forward
 and inverse measurement histories across the entire address register.
+
+### Generic outer control on multiplexed exchange
+
+`control_multiplexed_cswap_ir` follows the pinned generic control graph
+for two rows without a prior control, or one row with a prior positive
+control. A positive outer predicate controls each register CSwap and
+each root address flip. The adjoint reverses the root traversal. Each
+controlled register CSwap reuses one measured scratch bit and slot
+across its word pairs. Additional outer bits share a predicate computed
+once around the network.
+
+Other layouts need controlled And or controlled And-adjoint leaves with
+non-through ports, which the pinned source cannot decompose. The emitter
+rejects these layouts explicitly.
+
+For two two-bit rows and outer pattern `(1, 0, 1)`, the exact stream
+emits 52 T/T† and six measurements with three work qubits. The source
+model reports four CSwap, six And, twelve Clifford, six measurements
+and peak width 13. Its default T-equivalent count is 40 and its
+seven-T Fredkin conversion is 52.
