@@ -190,3 +190,61 @@ def test_horner_invalid_layout(change, match):
         fixed_point_horner_step_ir(
             **(bound | {"argument_fraction_bits": 2, "coefficient": 0} | change)
         )
+
+
+@pytest.mark.parametrize(
+    "argument_width,width,fraction", [(1, 1, 1), (2, 3, 2), (3, 2, 1)]
+)
+def test_register_horner_exhaustive_words_and_branches(argument_width, width, fraction):
+    from flagquantum.compiler.registers.fixed_point_horner import (
+        register_horner_step_ir,
+        register_horner_step_requirements,
+    )
+
+    work, slots = register_horner_step_requirements(argument_width, width)
+    argument = tuple(range(argument_width))
+    prev, coeff, result = (
+        tuple(
+            range(argument_width + index * width, argument_width + (index + 1) * width)
+        )
+        for index in range(3)
+    )
+    scratch = tuple(
+        range(argument_width + 3 * width, argument_width + 3 * width + work)
+    )
+    bound = (argument, prev, coeff, result, scratch, tuple(range(slots)))
+    forward = register_horner_step_ir(*bound, argument_fraction_bits=fraction)
+    inverse = register_horner_step_ir(
+        *bound, argument_fraction_bits=fraction, adjoint=True
+    )
+    events = sum(gate.name == "measure" for gate in forward)
+    before, after = [], []
+    mask = (1 << width) - 1
+    for a, y, c in product(
+        range(1 << argument_width), range(1 << width), range(1 << width)
+    ):
+        occupied = (a + y) & mask
+        updated = (occupied + c - ((a * y) >> fraction)) & mask
+        bits = f"{a:0{argument_width}b}{y:0{width}b}{c:0{width}b}"
+        before.append(tuple(map(int, bits + f"{occupied:0{width}b}")) + (0,) * work)
+        after.append(tuple(map(int, bits + f"{updated:0{width}b}")) + (0,) * work)
+    assert certified_and_channel_map(forward, tuple(before)) == (tuple(after), events)
+    assert certified_and_channel_map(inverse, tuple(after)) == (tuple(before), events)
+    norm = sqrt(len(before))
+    amplitudes = [exp(0.3j * i) / norm for i in range(len(before))]
+
+    def state(rows):
+        return {
+            int("".join(map(str, row)), 2): a
+            for row, a in zip(rows, amplitudes, strict=True)
+        }
+
+    initial, expected = state(before), state(after)
+    for seed in (3, 17):
+        actual = execute_sparse_register(
+            CircuitIR(len(before[0]), forward), initial, seed=seed
+        )
+        assert all(
+            abs(actual.get(i, 0) - expected.get(i, 0)) < 2e-12
+            for i in actual.keys() | expected.keys()
+        )

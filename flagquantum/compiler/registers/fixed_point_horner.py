@@ -5,9 +5,10 @@
 """Horner multiply-add using shifted, pre-truncated contributions."""
 
 from ...core.ir import Instruction
-from .arithmetic import add_constant_adjoint_ir, add_constant_ir
+from .arithmetic import add_adjoint_ir, add_constant_adjoint_ir, add_constant_ir, add_ir
 from .bitwise import _validate_wires
 from .controlled_addition import controlled_add_adjoint_ir, controlled_add_ir
+from .integer_product import integer_product_ir, integer_product_requirements
 
 
 def fixed_point_horner_step_requirements(width: int) -> tuple[int, int]:
@@ -94,3 +95,77 @@ def fixed_point_horner_step_ir(
         )
     product = tuple(gate for block in blocks for gate in block)
     return (*offset, *product) if adjoint else (*product, *offset)
+
+
+def register_horner_step_requirements(
+    argument: int, accumulator: int
+) -> tuple[int, int]:
+    """Return clean product and shared arithmetic workspace and slot counts."""
+    product, product_work = integer_product_requirements(argument, accumulator)
+    carries = accumulator - 1
+    return product + max(product_work, carries), max(1, carries)
+
+
+def register_horner_step_ir(
+    argument: tuple[int, ...],
+    previous: tuple[int, ...],
+    coefficient: tuple[int, ...],
+    result: tuple[int, ...],
+    workspace: tuple[int, ...],
+    classical_bits: tuple[int, ...],
+    *,
+    argument_fraction_bits: int,
+    adjoint: bool = False,
+) -> tuple[Instruction, ...]:
+    """Accumulate coefficient minus the truncated unsigned product.
+
+    Words are big endian. Previous, coefficient and result share a
+    fixed-point format. The full integer product is truncated only after
+    multiplication. Result arithmetic wraps, and inputs and work are
+    restored. The adjoint subtracts the same update from the result.
+    """
+    width = len(result)
+    work, slots = register_horner_step_requirements(len(argument), width)
+    fraction = argument_fraction_bits
+    if type(fraction) is not int or not 0 <= fraction <= len(argument):
+        raise ValueError("Register Horner requires a valid argument format")
+    if len(previous) != width or len(coefficient) != width:
+        raise ValueError(
+            "Register Horner requires equal accumulator and coefficient widths"
+        )
+    if type(adjoint) is not bool:
+        raise ValueError("Register Horner adjoint must be boolean")
+    if len(workspace) != work or len(classical_bits) != slots:
+        raise ValueError(
+            f"Register Horner requires {work} work wires and {slots} slots"
+        )
+    if len(set(classical_bits)) != slots or any(
+        type(bit) is not int or bit < 0 for bit in classical_bits
+    ):
+        raise ValueError("Register Horner requires distinct nonnegative slots")
+    _validate_wires((*argument, *previous, *coefficient, *result, *workspace))
+
+    product_width, product_work = integer_product_requirements(len(argument), width)
+    product, scratch = workspace[:product_width], workspace[product_width:]
+    carries, carry_bits = scratch[: width - 1], classical_bits[: width - 1]
+    multiply = integer_product_ir(
+        argument,
+        previous,
+        product,
+        scratch[:product_work],
+        measurement_bit=classical_bits[0],
+    )
+    retained = product[product_width - fraction - width : product_width - fraction]
+    if adjoint:
+        return (
+            *add_adjoint_ir(coefficient, result, carries, carry_bits),
+            *multiply,
+            *add_ir(retained, result, carries, carry_bits),
+            *multiply,
+        )
+    return (
+        *multiply,
+        *add_adjoint_ir(retained, result, carries, carry_bits),
+        *multiply,
+        *add_ir(coefficient, result, carries, carry_bits),
+    )
