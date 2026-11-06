@@ -549,6 +549,40 @@ def _verify_body(
             assert attributes is not None
             attributes = attributes | {"indices"}
         if (
+            "control_state" in op.attributes
+            and "indices" in op.attributes
+            and op.name
+            in {
+                "qreg.control_x",
+                "qreg.control_phase",
+                "qreg.inplace_prepare_amplitudes",
+            }
+        ):
+            state = op.attributes["control_state"]
+            operand_count = len(op.operands) - 1
+            count = (
+                operand_count - 1
+                if op.name == "qreg.control_x"
+                else (
+                    operand_count
+                    if op.name == "qreg.control_phase"
+                    else op.attributes.get("control_count")
+                )
+            )
+            if (
+                type(count) is not int
+                or not 1 <= count <= 8
+                or type(state) is not int
+                or not 0 <= state < 1 << count
+            ):
+                _fail(
+                    "register.control",
+                    "control state must fit its indexed controls",
+                    op,
+                )
+            assert attributes is not None
+            attributes = attributes | {"control_state"}
+        if (
             op.name == "qreg.inplace_prepare_amplitudes"
             and "control_count" in op.attributes
         ):

@@ -135,6 +135,32 @@ def _array_controlled_x(
     return tuple(gates), workspace_width
 
 
+def _bounded_control_group(
+    gate: Instruction,
+    controls: tuple[int, ...],
+    position: int,
+    n_qubits: int,
+) -> tuple[tuple[Instruction, ...], int]:
+    # Group verified wide masks without allocating a full control ladder.
+    group_count = len(controls) // 3
+    if not group_count or position + group_count > n_qubits:
+        return controlled_instruction(gate, controls), 0
+    flags = tuple(range(position, position + group_count))
+    prefix = tuple(
+        entry
+        for ordinal, flag in enumerate(flags)
+        for entry in controlled_instruction(
+            Instruction("x", (flag,)), controls[3 * ordinal : 3 * (ordinal + 1)]
+        )
+    )
+    middle = controlled_instruction(gate, (*flags, *controls[3 * group_count :]))
+    return (
+        *prefix,
+        *middle,
+        *(inverted_instruction(entry) for entry in reversed(prefix)),
+    ), group_count
+
+
 def _modular_exp_instructions(
     target: tuple[int, ...],
     exponent: tuple[int, ...],
@@ -465,10 +491,16 @@ def schedule_register_program(
                     bindings[value.id] for value in op.operands[1:]
                 )
                 target_wire = target_ports[0]
-            gates, used_workspace = _array_controlled_x(
-                controls, target_wire, position, n_qubits, op
-            )
-            control_workspace = max(control_workspace, used_workspace)
+            if "control_state" in op.attributes and len(controls) >= 5:
+                gates, used_workspace = _bounded_control_group(
+                    Instruction("x", (target_wire,)), controls, position, n_qubits
+                )
+                control_workspace = max(control_workspace, used_workspace)
+            else:
+                gates, used_workspace = _array_controlled_x(
+                    controls, target_wire, position, n_qubits, op
+                )
+                control_workspace = max(control_workspace, used_workspace)
         elif op.name == "qreg.array_phase_flip":
             ports = bindings[op.operands[1].id]
             controls, target = ports[:-1], ports[-1]
@@ -488,16 +520,20 @@ def schedule_register_program(
                     op.operands[1:], op.attributes["indices"], strict=True
                 )
             )
-            gates = (
-                controlled_instruction(
-                    Instruction(
-                        "phase", (ports[-1],), {"theta": op.attributes["angle"]}
-                    ),
-                    ports[:-1],
-                )
-                if len(ports) > 1
-                else (Instruction("phase", ports, {"theta": op.attributes["angle"]}),)
+            phase = Instruction(
+                "phase", (ports[-1],), {"theta": op.attributes["angle"]}
             )
+            if "control_state" in op.attributes and len(ports) >= 6:
+                gates, used_workspace = _bounded_control_group(
+                    phase, ports[:-1], position, n_qubits
+                )
+                control_workspace = max(control_workspace, used_workspace)
+            else:
+                gates = (
+                    controlled_instruction(phase, ports[:-1])
+                    if len(ports) > 1
+                    else (phase,)
+                )
         elif op.name == "qreg.control_phase":
             condition = bindings[op.operands[1].id][0]
             angle = op.attributes["angle"]
@@ -728,6 +764,26 @@ def schedule_register_program(
             if not phase:
                 computed[op.operands[1].id] = segment
             gates = segment.circuit.instructions
+        if "control_state" in op.attributes:
+            operands = op.operands[1:]
+            count = (
+                len(operands) - 1
+                if op.name == "qreg.control_x"
+                else (
+                    len(operands)
+                    if op.name == "qreg.control_phase"
+                    else op.attributes["control_count"]
+                )
+            )
+            pattern = op.attributes["control_state"]
+            flips = tuple(
+                Instruction("x", (bindings[value.id][-1 - wire],))
+                for bit, (value, wire) in enumerate(
+                    zip(operands, op.attributes["indices"], strict=True)
+                )
+                if bit < count and not pattern & (1 << bit)
+            )
+            gates = (*flips, *gates, *reversed(flips))
         if len(instructions) + len(gates) > max_operations:
             _fail("lowering.operations", "whole program exceeds operation budget", op)
         instructions.extend(gates)
