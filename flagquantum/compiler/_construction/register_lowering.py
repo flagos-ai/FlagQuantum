@@ -335,9 +335,17 @@ def schedule_register_program(
         if op.name == "qreg.initialize":
             gates = _copy(op.attributes["value"], bindings[op.operands[1].id])
         elif op.name in {"qreg.prepare_amplitudes", "qreg.inplace_prepare_amplitudes"}:
-            gates = _synthesize_real_state(
-                op.attributes["amplitudes"], bindings[op.operands[1].id]
+            wires = (
+                tuple(
+                    bindings[value.id][-1 - index]
+                    for value, index in zip(
+                        op.operands[1:], op.attributes["indices"], strict=True
+                    )
+                )
+                if "indices" in op.attributes
+                else bindings[op.operands[1].id]
             )
+            gates = _synthesize_real_state(op.attributes["amplitudes"], wires)
             if op.attributes.get("inverse"):
                 gates = tuple(inverted_instruction(gate) for gate in reversed(gates))
         elif op.name == "qreg.unitary":

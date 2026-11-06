@@ -95,14 +95,14 @@ def unitary_matrix(entries: object, width: int, op: Operation) -> torch.Tensor:
     return torch.view_as_complex(torch.tensor(entries, dtype=torch.float64))
 
 
-def _check_real_preparation(op: Operation, destination: Value) -> None:
+def _check_real_preparation(op: Operation, width: int) -> None:
     amplitudes = op.attributes["amplitudes"]
     bound = op.attributes["bound"]
     if (
         not isinstance(amplitudes, tuple)
         or not 2 <= len(amplitudes) <= MAX_PREPARED_AMPLITUDES
         or len(amplitudes) & (len(amplitudes) - 1)
-        or len(amplitudes).bit_length() - 1 != register_width(destination)
+        or len(amplitudes).bit_length() - 1 != width
         or any(
             type(value) is not float or not math.isfinite(value) for value in amplitudes
         )
@@ -451,7 +451,12 @@ def _verify_body(
             if "indices" in op.attributes:
                 attributes = attributes | {"indices"}
         if (
-            op.name in {"qreg.control_x", "qreg.control_phase"}
+            op.name
+            in {
+                "qreg.control_x",
+                "qreg.control_phase",
+                "qreg.inplace_prepare_amplitudes",
+            }
             and "indices" in op.attributes
         ):
             assert attributes is not None
@@ -968,18 +973,46 @@ def _verify_body(
                     )
                 changed = tuple(arguments)
             elif op.name == "qreg.inplace_prepare_amplitudes":
-                if (
-                    arguments
-                    or destination in borrowed
-                    or destination.id not in initialized
+                if any(
+                    value in borrowed or value.id not in initialized
+                    for value in operands
                 ):
                     _fail(
                         "register.amplitudes",
-                        "inplace preparation requires one initialized writable register",
+                        "inplace preparation requires initialized writable storage",
                         op,
                     )
-                _check_real_preparation(op, destination)
-                changed = (destination,)
+                if "indices" in op.attributes:
+                    indices = op.attributes["indices"]
+                    if (
+                        not isinstance(indices, tuple)
+                        or len(indices) != len(operands)
+                        or not 1
+                        <= len(indices)
+                        <= (MAX_PREPARED_AMPLITUDES.bit_length() - 1)
+                        or any(
+                            type(index) is not int
+                            or not 0 <= index < register_width(value)
+                            for value, index in zip(operands, indices, strict=True)
+                        )
+                        or len(set(zip(operands, indices, strict=True))) != len(indices)
+                    ):
+                        _fail(
+                            "register.amplitudes",
+                            "preparation indices must be bounded and distinct",
+                            op,
+                        )
+                    width = len(indices)
+                else:
+                    if arguments:
+                        _fail(
+                            "register.amplitudes",
+                            "inplace preparation requires one register or an indexed view",
+                            op,
+                        )
+                    width = register_width(destination)
+                _check_real_preparation(op, width)
+                changed = tuple(dict.fromkeys(operands))
             elif op.name == "qreg.drop":
                 if (
                     arguments
@@ -1170,7 +1203,7 @@ def _verify_body(
                             op,
                         )
                     if op.name == "qreg.prepare_amplitudes":
-                        _check_real_preparation(op, destination)
+                        _check_real_preparation(op, register_width(destination))
                     if op.name == "qreg.initialize":
                         constant = op.attributes["value"]
                         if (
