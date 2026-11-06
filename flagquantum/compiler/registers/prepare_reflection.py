@@ -82,6 +82,8 @@ def prepare_reflection_ir(
         if global_phase != 1
         else ()
     )
+    if controlled and global_phase == -1:
+        shift = (Instruction("z", (target,)),)
     return (*unprepare, *flip, *mark, *shift, *flip, *prepare)
 
 
@@ -92,7 +94,23 @@ def source_uncontrolled_prepare_reflection_cost(
     unprepare_cost: ComponentCost,
 ) -> ComponentCost:
     """Estimate the locked uncontrolled reflection with scalar coefficient -1."""
-    work, slots = prepare_reflection_requirements(selection_width, controlled=False)
+    return source_prepare_reflection_cost(
+        selection_width, junk_width, prepare_cost, unprepare_cost, controlled=False
+    )
+
+
+def source_prepare_reflection_cost(
+    selection_width: int,
+    junk_width: int,
+    prepare_cost: ComponentCost,
+    unprepare_cost: ComponentCost,
+    *,
+    controlled: bool,
+) -> ComponentCost:
+    """Estimate the locked reflection with scalar -1 under optional positive control."""
+    work, slots = prepare_reflection_requirements(
+        selection_width, controlled=controlled
+    )
     if type(junk_width) is not int or junk_width < 0:
         raise ValueError("Reflection junk width must be a nonnegative integer")
     # The source QEC model prices the scalar at zero. MultiControlZ uses
@@ -103,17 +121,17 @@ def source_uncontrolled_prepare_reflection_cost(
         mark_cliffords = 5 * selection_width
     mark = ComponentCost(
         "MultiControlZ",
-        selection_width + work,
+        selection_width + work + int(controlled),
         GateCost(and_bloq=slots, clifford=mark_cliffords, measurement=slots),
     )
     # The source QubitCount schedules the phase target only around the mark.
     return ComponentCost(
         "ReflectionUsingPrepare",
-        selection_width + junk_width,
-        GateCost(clifford=2),
+        selection_width + junk_width + int(controlled),
+        GateCost(clifford=1 if controlled else 2),
         (
-            CostCall(unprepare_cost),
+            CostCall(unprepare_cost, bystander_qubits=int(controlled)),
             CostCall(mark, bystander_qubits=junk_width),
-            CostCall(prepare_cost),
+            CostCall(prepare_cost, bystander_qubits=int(controlled)),
         ),
     )

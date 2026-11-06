@@ -5,9 +5,8 @@
 
 """Conjugate a SELECT oracle by its preparation in the zero-signal basis."""
 
-from collections.abc import Callable, Mapping
-from dataclasses import dataclass, replace
-from functools import partial
+from collections.abc import Mapping
+from dataclasses import dataclass
 
 from ...circuit import Circuit
 from ...compiler._component_trace.resource_model import ComponentCost, CostCall
@@ -15,12 +14,7 @@ from ...compiler.registers.bitwise import _validate_wires
 from ...compiler.registers.partition import RegisterLayout, partition_register
 from ...core.ir import CircuitIR, Instruction
 from .black_box_prepare import BlackBoxPrepare
-from .select_block_encoding import SelectBlockEncoding
-
-ControlledSelectEmitter = Callable[
-    [int, Mapping[str, tuple[int, ...]], tuple[int, ...], tuple[int, ...], bool],
-    tuple[Instruction, ...],
-]
+from .select_block_encoding import ControlledSelectEmitter, SelectBlockEncoding
 
 
 def _identity_prepare(
@@ -112,11 +106,12 @@ class LCUBlockEncoding:
         unprepare_cost: ComponentCost,
         *,
         adjoint: bool = False,
+        controlled: bool = False,
     ) -> ComponentCost:
         """Count the conjugation, given the directional cost of SELECT."""
         block = self.select_block
         system = self.system_bitsize
-        controls = int(self.control_value is not None)
+        controls = int(self.control_value is not None or controlled)
         ports = self.ancilla_bitsize + self.resource_bitsize + system + controls
         select_width = sum(width for _, width in block.selection_layout)
         return ComponentCost(
@@ -164,11 +159,7 @@ class LCUBlockEncoding:
             wire for name, _ in block.selection_layout for wire in ports[name]
         )
         if self.control_value is not None and self.controlled_select is not None:
-            block = replace(
-                block,
-                selection_layout=(("control", 1), *block.selection_layout),
-                select=partial(self.controlled_select, self.control_value),
-            )
+            block = block.with_control(self.control_value, self.controlled_select)
         before = prepare.emit(
             selection, junk, prepare_workspace, prepare_classical_bits
         )

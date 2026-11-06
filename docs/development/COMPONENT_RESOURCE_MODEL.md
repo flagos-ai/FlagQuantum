@@ -1671,3 +1671,54 @@ assert report.emitted.unconditional["measure"] == 2
 The locked walk signature omits the control port of an already
 controlled LCU block. Creating this combination raises an explicit
 validation error.
+
+### Applying an external control to the walk
+
+Bind an external control pattern to an uncontrolled block. The walk uses
+a specialized positive SELECT emitter and a controlled reflection. A
+negative bit conjugates the walk by X. Multiple bits compute one predicate
+and erase it after both stages. In the LCU path, PREPARE and PREPARE†
+remain unconditional, and the reflection phase acts as Z on the predicate.
+Predicate workspace is live through the walk and must be disjoint from
+stage workspace.
+
+Continuing the bounded Pauli walk example:
+
+```python
+from flagquantum.compiler.registers.control_predicate import ControlRegister
+
+controlled_select = SelectPauliLCU(2, 1, ("X", "Z", "X"), 1)
+
+def emit_controlled(value, ports, work, bits, adjoint):
+    assert value == 1
+    return controlled_select.make_bounded_on(
+        selection=ports["address"], target=ports["target"],
+        control=ports["control"], workspace=work, classical_bits=bits,
+    ).emit()
+
+control_registers = (ControlRegister(1, (1, 0, 1)),)
+circuit = DynamicCircuit(10)
+circuit.append(walk.make_on(
+    selection={"address": (0, 1)}, target=(2,),
+    controls=((3, 4, 5),), control_registers=control_registers,
+    controlled_select=emit_controlled,
+    control_workspace=(6, 7), control_classical_bits=(2, 3),
+    select_workspace=(8, 9), select_classical_bits=(0, 1),
+    reflection_workspace=(8,), reflection_classical_bits=(0,),
+))
+positive_select_model = controlled_select.make_bounded_on(
+    selection=(0, 1), target=(2,), control=(7,),
+    workspace=(8, 9), classical_bits=(0, 1),
+).resource_model()
+report = estimate_ftqc_resources(
+    walk.resource_model(
+        positive_select_model, prepare_model, prepare_model,
+        control_registers=control_registers,
+    ),
+    emitted_ir=circuit.to_ir(),
+)
+assert report.logical.peak_logical_qubits == 10
+assert report.emitted is not None
+assert report.emitted.t_count == 20
+assert report.emitted.unconditional["measure"] == 5
+```

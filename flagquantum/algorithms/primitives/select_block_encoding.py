@@ -6,7 +6,8 @@
 """A block encoding with a separate prepared signal state."""
 
 from collections.abc import Callable, Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
+from functools import partial
 
 from ...circuit import Circuit
 from ...compiler._component_trace.resource_model import ComponentCost, CostCall
@@ -17,6 +18,12 @@ from .black_box_prepare import BlackBoxPrepare
 
 SelectEmitter = Callable[
     [Mapping[str, tuple[int, ...]], tuple[int, ...], tuple[int, ...], bool],
+    tuple[Instruction, ...],
+]
+
+
+ControlledSelectEmitter = Callable[
+    [int, Mapping[str, tuple[int, ...]], tuple[int, ...], tuple[int, ...], bool],
     tuple[Instruction, ...],
 ]
 
@@ -58,12 +65,26 @@ class SelectBlockEncoding:
         """Return the pinned source placeholder for approximation error."""
         return 0.0
 
-    def resource_model(self, select_cost: ComponentCost) -> ComponentCost:
+    def with_control(
+        self, value: int, emit: ControlledSelectEmitter
+    ) -> "SelectBlockEncoding":
+        """Use a specialized single-control SELECT implementation."""
+        if "control" in dict((*self.selection_layout, *self.target_layout)):
+            raise ValueError("Controlled SELECT reserves the control port name")
+        return replace(
+            self,
+            selection_layout=(("control", 1), *self.selection_layout),
+            select=partial(emit, value),
+        )
+
+    def resource_model(
+        self, select_cost: ComponentCost, *, controlled: bool = False
+    ) -> ComponentCost:
         """Wrap one SELECT cost without charging the signal preparation."""
         selection_width = sum(width for _, width in self.selection_layout)
         return ComponentCost(
             "SelectBlockEncoding",
-            selection_width + self.system_bitsize,
+            selection_width + self.system_bitsize + int(controlled),
             calls=(CostCall(select_cost),),
         )
 
