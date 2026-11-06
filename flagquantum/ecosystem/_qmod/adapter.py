@@ -1340,6 +1340,8 @@ class _Adapt:
             if not 0 <= index < len(values):
                 reject(offset.token, "binding", "real array index is out of bounds")
             return values[index]
+        if text == ".":
+            return float(self.static_integer(node))
         if text == "**":
             value = self.static_integer(node)
             if abs(value) > 2**53:
@@ -1924,6 +1926,13 @@ class _Adapt:
         disjoint_condition_target: tuple[Value, int] | None = None,
         conjugate_xor: bool = False,
     ) -> None:
+        def signed_word(node: Expression) -> bool:
+            return (
+                condition is None
+                and not node.children
+                and node.token.text in self.signed
+            )
+
         def quantum_word(node: Expression) -> tuple[tuple[Value, int], ...] | None:
             if node.token.text == "$predicate_word":
                 return self.array_view(node.children[0])
@@ -1932,6 +1941,8 @@ class _Adapt:
                 return (cell,)
             source = node.children[0] if node.token.text == "[" else node
             if source.token.text == ".":
+                if source is node and source.children[1].token.text in {"size", "len"}:
+                    return None
                 resolved = self.record_field(source)
                 assert resolved is not None
                 field, view = resolved
@@ -1965,7 +1976,7 @@ class _Adapt:
                     "phase",
                     "phase arithmetic requires indexed array elements",
                 )
-            view = self.array_view(source)
+            view = self.array_view(source, allow_signed=signed_word(node))
             if node.token.text == "[":
                 index = self.static_integer(node.children[1])
                 if not 0 <= index < len(view):
@@ -1980,6 +1991,7 @@ class _Adapt:
                 expression,
                 quantum_word,
                 self.classical_number,
+                signed_word=signed_word,
                 condition=condition,
                 disjoint_condition_target=disjoint_condition_target,
             )
@@ -2036,7 +2048,10 @@ class _Adapt:
                 for diagnostic in error.diagnostics
             ):
                 raise
-            factored, factors = preserve_factors(expression, quantum_word)
+            factored, factors = preserve_factors(
+                expression,
+                lambda node: None if signed_word(node) else quantum_word(node),
+            )
             if not factors:
                 raise
             factor_values = tuple(
@@ -2050,7 +2065,7 @@ class _Adapt:
                 return quantum_word(node)
 
             polynomial, locations = expand_phase(
-                factored, factored_word, self.classical_number
+                factored, factored_word, self.classical_number, signed_word=signed_word
             )
             physical_reads = {
                 location for factor in factors for location, _ in factor

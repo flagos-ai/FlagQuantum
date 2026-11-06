@@ -606,3 +606,13 @@ over all 1,024 logical amplitudes, with three clean work bits. Run
 `python -m pytest tests/integration/test_synthesis_qmod_expanded_qsvt.py -q`.
 This is a bounded Qmod source profile. Arbitrary reversible operations on a
 Const marker require a separate proof.
+
+## Width-dependent Qmod Fourier phases
+
+Static register width can appear in real phase coefficients, including a
+bounded exact integer power such as `2 ** y.size`. Unguarded real phase
+arithmetic can read a whole signed integer word with two's-complement weights.
+Signed fractional fields and signed reads in guarded phase expressions remain
+outside this profile. The QCE Fourier-arithmetic and signed Sawtooth originals
+have independent Fourier-matrix full-state checks. Run
+`python -m pytest tests/integration/test_synthesis_qmod_fourier_phases.py -q`.

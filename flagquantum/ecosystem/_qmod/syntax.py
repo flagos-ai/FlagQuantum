@@ -403,7 +403,7 @@ class Parser:
             elif self.current.text == "." and (
                 static
                 or self.records
-                or (real and self.tokens[self.position + 1].text == "len")
+                or (real and self.tokens[self.position + 1].text in {"len", "size"})
             ):
                 dot = self.take(".")
                 member = Expression(self.name())

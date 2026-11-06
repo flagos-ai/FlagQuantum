@@ -21,6 +21,7 @@ def expand_phase(
     quantum_word: Callable[[Expression], tuple[Location, ...] | None],
     number: Callable[[Expression], float],
     *,
+    signed_word: Callable[[Expression], bool] | None = None,
     condition: Expression | None = None,
     disjoint_condition_target: Location | None = None,
 ) -> tuple[Polynomial, tuple[Location, ...]]:
@@ -63,6 +64,7 @@ def expand_phase(
         word = quantum_word(node)
         if word is not None:
             result: Polynomial = {}
+            signed = signed_word is not None and signed_word(node)
             for bit, location in enumerate(word):
                 if location not in locations:
                     locations.append(location)
@@ -73,10 +75,13 @@ def expand_phase(
                             "phase exceeds 24 quantum input bits",
                         )
                 mask = 1 << locations.index(location)
+                weight = 1 << bit
+                if signed and bit == len(word) - 1:
+                    weight = -weight
                 result[mask] = (
-                    (int(result.get(mask, 0)) + (1 << bit))
+                    int(result.get(mask, 0)) + weight
                     if integer
-                    else result.get(mask, 0.0) + 2.0**bit
+                    else result.get(mask, 0.0) + float(weight)
                 )
             return result
         text = node.token.text
@@ -134,8 +139,30 @@ def expand_phase(
         if text in {"+", "-", "*", "/", "**"}:
             left = visit(node.children[0], integer=integer)
             if text == "**":
+                exponent = node.children[1]
+                if (
+                    not exponent.children
+                    and exponent.token.text.isdecimal()
+                    and 0 <= int(exponent.token.text) <= 8
+                ):
+                    degree = int(exponent.token.text)
+                elif not any(left):
+                    value = number(node)
+                    if integer and not value.is_integer():
+                        reject(
+                            node.token,
+                            "control",
+                            "phase predicates require integer arithmetic",
+                        )
+                    return checked({0: int(value) if integer else value}, node)
+                else:
+                    reject(
+                        exponent.token,
+                        "phase",
+                        "quantum power requires an integer literal exponent in 0..8",
+                    )
                 result = {0: 1 if integer else 1.0}
-                for _ in range(int(node.children[1].token.text)):
+                for _ in range(degree):
                     result = multiply(result, left, node, integer=integer)
                 return result
             right = visit(node.children[1], integer=integer)
