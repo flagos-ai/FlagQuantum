@@ -64,6 +64,7 @@ from .indexed_control import (
 from .integers import checked_integer, checked_integer_array, integer_operation
 from .iterations import expand_iterations
 from .local_cleanup import lower_free
+from .masked_selection import emit_signed_predicate_xor, lower_masked_selection
 from .matrices import lower_unitary, validate_matrix_constant
 from .oracles import expand_static_oracles
 from .pauli_schedule import ceiling_repetitions, compact_commuting
@@ -1209,6 +1210,12 @@ class _Adapt:
         if node.token.text == ".":
             resolved = self.record_field(node)
             assert resolved is not None
+            if resolved[0].kind == "qnum_signed" and not allow_signed:
+                reject(
+                    node.token,
+                    "type",
+                    "signed field requires an explicit signed or raw-bit view",
+                )
             return resolved[1]
         if node.token.text == "{":
             return tuple(
@@ -1714,11 +1721,30 @@ class _Adapt:
                 else:
                     child.classical_values[name] = self.angle(argument, token)
                 continue
-            actual_port = (
-                self.parameters.get(argument.token.text)
-                if not argument.children
-                else None
+            field_port = (
+                self.record_field(argument) if argument.token.text == "." else None
             )
+            actual_port = (
+                field_port[0]
+                if field_port is not None
+                else (
+                    self.parameters.get(argument.token.text)
+                    if not argument.children
+                    else None
+                )
+            )
+            signed_actual = (
+                actual_port is not None
+                and actual_port.kind == "qnum_signed"
+                or not argument.children
+                and argument.token.text in self.signed
+            )
+            if parameter.kind == "qnum_signed" and not signed_actual:
+                reject(
+                    argument.token,
+                    "type",
+                    "signed helper requires a signed integer actual",
+                )
             if (
                 actual_port is not None
                 and actual_port.kind == "qphase_signed"
@@ -1792,7 +1818,7 @@ class _Adapt:
                 if parameter.record is not None
                 else (
                     self.array_view(argument, allow_phase=True, allow_signed=True)
-                    if parameter.kind in {"qbit[]", "qnum", "qphase"}
+                    if parameter.kind in {"qbit[]", "qnum", "qnum_signed", "qphase"}
                     else (self.gate_target(argument, allow_numeric=True),)
                 )
             )
@@ -1812,11 +1838,7 @@ class _Adapt:
                 and parameter.role == "inout"
             ):
                 signed_bit_exports[argument.token.text] = len(view)
-            if (
-                parameter.kind == "qnum"
-                and not argument.children
-                and argument.token.text in self.signed
-            ):
+            if parameter.kind in {"qnum", "qnum_signed"} and signed_actual:
                 child.signed.add(name)
             value = view[0][0]
             if view == tuple((value, index) for index in range(register_width(value))):
@@ -2045,12 +2067,20 @@ class _Adapt:
         conjugate_xor: bool = False,
         phase_sign: bool = False,
     ) -> None:
+        saw_signed = False
+
         def signed_word(node: Expression) -> bool:
-            return (
-                condition is None
-                and not node.children
-                and node.token.text in self.signed
-            )
+            nonlocal saw_signed
+            if node.token.text == "." and node.children[1].token.text not in {
+                "size",
+                "len",
+            }:
+                selected = self.record_field(node)
+                signed = selected is not None and selected[0].kind == "qnum_signed"
+            else:
+                signed = not node.children and node.token.text in self.signed
+            saw_signed |= signed
+            return signed
 
         def quantum_word(node: Expression) -> tuple[tuple[Value, int], ...] | None:
             if node.token.text == "$predicate_word":
@@ -2081,7 +2111,7 @@ class _Adapt:
                         assert field.width is not None
                         return view[index * field.width : (index + 1) * field.width]
                     return (view[index],)
-                if field.kind not in {"qbit", "qnum"}:
+                if field.kind not in {"qbit", "qnum", "qnum_signed"}:
                     reject(node.token, "field", "phase arrays require an element index")
                 return view
             if source.children:
@@ -2115,8 +2145,10 @@ class _Adapt:
                 disjoint_condition_target=disjoint_condition_target,
             )
         except HybridVerificationError as error:
-            if conjugate_xor and all(
-                d.code == "qmod.budget.phase" for d in error.diagnostics
+            if (
+                conjugate_xor
+                and not saw_signed
+                and all(d.code == "qmod.budget.phase" for d in error.diagnostics)
             ):
                 assert disjoint_condition_target is not None
                 owner, wire = disjoint_condition_target
@@ -2151,6 +2183,7 @@ class _Adapt:
             if (
                 condition is not None
                 and disjoint_condition_target is None
+                and not saw_signed
                 and all(
                     diagnostic.code == "qmod.budget.phase"
                     for diagnostic in error.diagnostics
@@ -2192,6 +2225,12 @@ class _Adapt:
             if len(physical_reads) > MAX_PHASE_INPUT_BITS:
                 reject(token, "budget.phase", "phase exceeds 24 quantum input bits")
             self.counter += len(factors)
+        if conjugate_xor and saw_signed:
+            assert disjoint_condition_target is not None
+            emit_signed_predicate_xor(
+                self, token, locations, polynomial, disjoint_condition_target
+            )
+            return
         angle = (
             math.pi
             if not coefficient.children
@@ -2716,6 +2755,8 @@ class _Adapt:
         if lower_guarded_field_increment(self, statement):
             return
         if self.controlled_rz_branches(statement):
+            return
+        if lower_masked_selection(self, statement):
             return
         if self.coherent_helper_control(statement, index):
             return
@@ -3459,7 +3500,7 @@ class _Adapt:
             # The shared preparation is exact, independent of the probability tolerance.
             bound = 0.0
         if inplace and (output.children or output.token.text in self.views):
-            locations = tuple(reversed(self.array_view(output)))
+            locations = tuple(reversed(self.array_view(output, allow_signed=True)))
             if len(locations) != count.bit_length() - 1:
                 reject(
                     output.token,
@@ -3542,6 +3583,21 @@ class _Adapt:
                 self.effect_op("qreg.gate", token, (owner,), gate="i", index=bit)
             return
         target = self.atom(destination)
+        if (
+            self.parameters.get(target.text) is not None
+            and self.parameters[target.text].kind == "qbit"
+            and not source.children
+            and source.token.text in {"0", "1"}
+        ):
+            value, index = self.gate_target(destination)
+            self.effect_op(
+                "qreg.gate",
+                token,
+                (value,),
+                gate="x" if source.token.text == "1" else "i",
+                index=index,
+            )
+            return
         register = self.register(target)
         if self.local_scope is not None or self.parameters[target.text].kind != "qnum":
             reject(
@@ -3794,6 +3850,25 @@ class _Adapt:
             self.within(statement, index)
         elif token.text == "=":
             target = self.atom(args[0])
+            if (
+                self.helper_stack
+                and not args[1].children
+                and args[1].token.text in self.parameters
+                and self.parameters[args[1].token.text].kind == "qnum"
+                and args[1].token.text not in self.signed
+                and self.parameters.get(target.text) is not None
+                and self.parameters[target.text].role == "output"
+                and self.parameters[target.text].kind == "qnum"
+                and target.text not in self.signed
+            ):
+                view = self.array_view(args[1])
+                register = self.register(target, len(view))
+                if any(value == register for value, _ in view):
+                    reject(target, "alias", "copy requires disjoint input and Output")
+                self.effect_op("qreg.allocate", token, (register,))
+                for bit, control in enumerate(view):
+                    self.emit_indexed_x(token, (control, (register, bit)))
+                return
             if "." in args[1].token.text and not args[1].children:
                 reject(
                     args[1].token,
@@ -4474,7 +4549,15 @@ class _Adapt:
                                         field.length,
                                     )
                                     if field.length is not None
-                                    else (field.name.text, field.kind, field.width)
+                                    else (
+                                        field.name.text,
+                                        (
+                                            "qnum"
+                                            if field.kind == "qnum_signed"
+                                            else field.kind
+                                        ),
+                                        field.width,
+                                    )
                                 )
                                 for field in self.record_types[parameter.record].leaves(
                                     self.record_types
@@ -4761,7 +4844,10 @@ def parse_qmod(
                 port.role == "const"
                 and (
                     port.kind == "qphase"
-                    or (port.kind in {"qbit", "qnum"} and port.record is None)
+                    or (
+                        port.kind in {"qbit", "qnum", "qnum_signed"}
+                        and port.record is None
+                    )
                     or (
                         port.record is not None
                         and len(syntax.statements) == 1
@@ -4838,6 +4924,17 @@ def parse_qmod(
                 port.role == "callable" and port.name.text == statement.token.text
                 for port in syntax.parameters
             )
+            copy_output = (
+                statement.token.text == "="
+                and not any(arg.children for arg in statement.arguments)
+                and statement.arguments[0].token.text in output_names
+                and any(
+                    port.name.text == statement.arguments[1].token.text
+                    and port.kind == "qnum"
+                    and port.role in {"const", "inout"}
+                    for port in syntax.parameters
+                )
+            )
             if statement.declaration is not None or (
                 statement.token.text
                 not in _STATIC_GATES
@@ -4861,6 +4958,7 @@ def parse_qmod(
                     "free",
                     "->",
                 }
+                and not copy_output
                 and not controlled_qft
                 and not is_modular_power(statement)
                 and not hadamard_within
@@ -4945,6 +5043,22 @@ def parse_qmod(
         MappingProxyType(adapter.inferred),
         filename,
         MappingProxyType(adapter.fractional_bits),
-        tuple(p.name.text for p in main.parameters if p.name.text in adapter.signed),
+        tuple(
+            name
+            for p in main.parameters
+            for name in (
+                (p.name.text,)
+                if p.name.text in adapter.signed
+                else (
+                    tuple(
+                        f"{p.name.text}.{field.name.text}"
+                        for field in parser.records[p.record].leaves(parser.records)
+                        if field.kind == "qnum_signed"
+                    )
+                    if p.record is not None
+                    else ()
+                )
+            )
+        ),
         workflow,
     )

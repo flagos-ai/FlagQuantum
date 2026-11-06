@@ -81,6 +81,19 @@ def expand_predicate_oracles(
             )
         read, flag = reads[0], writes[0]
         if (
+            read.kind == "qnum"
+            and read.width == 1
+            and flag.kind == "qnum"
+            and flag.width is not None
+            and flag.width > 1
+            and all(
+                s.repeat_index is not None or s.control_body is not None
+                for s in function.statements
+            )
+        ):
+            # A selector-controlled permutation is checked through its borrowed ports.
+            continue
+        if (
             flag.kind not in {"qbit", "qnum"}
             or flag.width not in {None, 1}
             or flag.record is not None

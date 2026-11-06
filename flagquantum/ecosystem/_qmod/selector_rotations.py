@@ -107,7 +107,7 @@ def lower_select_rotation(
     axis, table, source, destination = args
     if axis.token.text not in {"X", "Y", "Z"}:
         reject(axis.token, "rotation", "select_rotation supports Pauli::X, Y or Z")
-    selector = owner.array_view(source, allow_phase=True)
+    selector = owner.array_view(source, allow_phase=True, allow_signed=True)
     target, wire = owner.gate_target(destination)
     if not 1 <= len(selector) <= 8:
         reject(

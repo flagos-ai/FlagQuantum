@@ -216,6 +216,16 @@ def expand_phase(
         if not node.children and text in {"0", "1"}:
             return lambda basis: text == "1"
         if text in comparisons:
+            left_node, right_node = node.children
+            if (
+                text in {"==", "!="}
+                and left_node.token.text in comparisons.keys() | {"and"}
+                and not right_node.children
+                and right_node.token.text in {"0", "1"}
+            ):
+                check = predicate(left_node)
+                expected = bool(int(right_node.token.text)) ^ (text == "!=")
+                return lambda basis: check(basis) == expected
             left, right = (visit(child, integer=True) for child in node.children)
             comparison = comparisons[text]
             return lambda basis: comparison(

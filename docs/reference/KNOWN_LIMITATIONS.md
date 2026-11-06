@@ -436,6 +436,29 @@ qfunc main(output first:qbit, output rest:qnum<2>) {
 }
 ```
 
+## Signed fields and masked selector branches (UP-06 integration candidate)
+
+Fixed-width signed integer fields and helper ports support checked borrowing,
+two's-complement comparison and phase arithmetic. Signed readout fields
+are named in the synthesis report. Predicate XORs can use disjoint masks,
+and bounded selector branches preserve the basis values of borrowed
+controls while applying rotations, indexed flips and state preparation.
+The Compiler validates each mask before lowering it and cleans the
+bounded work bits used for wide conjunctions.
+
+```python
+from pathlib import Path
+
+import flagquantum as fq
+from flagquantum import synth
+
+source = Path("tests/fixtures/classiq_qmod/vlasov_ampere.qmod")
+program = synth.synthesize(source, max_qubits=24, max_workspace=2,
+                           memory_limit_bytes=256 * 1024**2)
+result = fq.run(program)
+print(program.report["resources"])
+```
+
 ## Compact Pauli evolution integration slice
 
 Qmod acquisition is bounded at 512 KiB and 65536 tokens for large Pauli data.

@@ -43,6 +43,11 @@ def preserves_basis_labels(op: Operation, readonly: set[tuple[Value, int]]) -> b
         )
     if op.name == "qreg.control_x" and "indices" in op.attributes:
         return (operands[-1], op.attributes["indices"][-1]) not in readonly
+    if op.name == "qreg.inplace_prepare_amplitudes" and "indices" in op.attributes:
+        count = op.attributes.get("control_count", 0)
+        return not readonly.intersection(
+            zip(operands[count:], op.attributes["indices"][count:], strict=True)
+        )
     if op.name == "qreg.pauli_rotation":
         return all(
             axis == "Z" or (operands[0], wire) not in readonly

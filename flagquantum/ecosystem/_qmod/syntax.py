@@ -21,7 +21,7 @@ MAX_TOKENS = 65536
 MAX_DEPTH = 40
 MAX_EXPRESSION_DEPTH = 128
 MAX_SCOPE_DEPTH = 32
-MAX_FUNCTIONS = 32
+MAX_FUNCTIONS = 64
 ANGLE_CALLS = frozenset({"PHASE", "RX", "RY", "RZ", "RZZ", "CRX", "CPHASE", "R", "U"})
 _TOKEN = re.compile(
     r"(?P<space>\s+)|(?P<comment>//[^\n]*|/\*[\s\S]*?\*/)"
@@ -959,7 +959,9 @@ class Parser:
                 kind, width = self.scalar_type(
                     allow_qubit_array=name.text == "main" or role in {"inout", "const"},
                     allow_phase=True,
-                    allow_signed_integer=name.text == "main" and role == "output",
+                    allow_signed_integer=role in {"const", "inout"}
+                    or name.text == "main"
+                    and role == "output",
                     allow_fixed_array=role in {"inout", "output", "const"}
                     or name.text == "main",
                 )
@@ -1517,7 +1519,15 @@ class Parser:
             kind, width = self.scalar_type(
                 allow_fixed_array=True,
                 allow_numeric_array=True,
+                allow_phase=True,
+                allow_signed_integer=True,
             )
+            if kind in {"qphase", "qphase_signed"}:
+                reject(
+                    field,
+                    "type",
+                    "fractional record fields require fixed-point field lowering",
+                )
             if width is None:
                 reject(field, "width", "record numeric fields require a fixed width")
             length = None
@@ -1598,7 +1608,9 @@ class Parser:
         while self.current.text != "<eof>":
             if len(functions) + len(constants) + len(self.records) >= MAX_FUNCTIONS:
                 reject(
-                    self.current, "budget.functions", "source exceeds 32 definitions"
+                    self.current,
+                    "budget.functions",
+                    f"source exceeds {MAX_FUNCTIONS} definitions",
                 )
             if self.current.text == "qstruct":
                 self.record()
