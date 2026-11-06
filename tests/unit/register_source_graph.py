@@ -23,7 +23,7 @@ def walk_source_graph(
     """Bind original Soquet connections; only the caller binds leaf physical work."""
     pytest.importorskip("qualtran")
     np = pytest.importorskip("numpy")
-    from qualtran import LeftDangle, Soquet
+    from qualtran import CompositeBloq, LeftDangle, Soquet
     from qualtran.bloqs.bookkeeping import Join, Split
 
     result = leaf(bloq, inputs, desired)
@@ -46,7 +46,7 @@ def walk_source_graph(
         assert outputs == inputs
         assert all(outputs[key] == value for key, value in desired.items())
         return (), outputs
-    cb = bloq.decompose_bloq()
+    cb = bloq if isinstance(bloq, CompositeBloq) else bloq.decompose_bloq()
     mapping: dict[Any, tuple[int, ...]] = dict(bindings or {})
 
     def soqs(value: Any) -> tuple[Any, ...]:

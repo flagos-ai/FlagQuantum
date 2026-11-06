@@ -584,6 +584,25 @@ separately.
 
 - [Qualtran v0.7.0 Hadamard](https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/bloqs/basic_gates/hadamard.py)
 
+## Additional controls on CNOT and Toffoli
+
+`cnot_with_controls_ir` binds one positive added control to a native
+CCX in source operand order: new control, original control, target.
+A negative control wraps the CCX in two X instructions. With two or more
+added controls, the predicate includes only the added controls and the
+result controls the same CCX leaf.
+
+`toffoli_with_controls_ir` follows the source's other route. It puts
+the added controls before the two original positive controls in one
+predicate, applies CX from the predicate to the target, then clears
+the predicate with measurement feedback. For one added control the
+native wrapper emits eight T-family instructions and two measurements
+with two work wires. The QEC model counts two And calls and the CX
+and cleanup separately.
+
+- [Qualtran v0.7.0 CNOT](https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/bloqs/basic_gates/cnot.py)
+- [Qualtran v0.7.0 Toffoli](https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/bloqs/basic_gates/toffoli.py)
+
 ## Fixed S and T phases
 
 `phase_family_ir` emits S, S†, T or T† directly. Under a positive

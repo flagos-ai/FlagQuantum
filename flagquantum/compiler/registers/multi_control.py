@@ -152,9 +152,10 @@ def _controlled_target_ir(
     classical_bits: tuple[int, ...],
 ) -> tuple[Instruction, ...]:
     _validate_controls(controls, values, workspace, classical_bits, measured=True)
-    (target,) = gate.wires
-    if target in (*controls, *workspace):
-        raise ValueError("Controlled gate target must be a distinct nonnegative wire")
+    if set(gate.wires).intersection((*controls, *workspace)):
+        raise ValueError(
+            "Controlled gate operands must be distinct from controls and work"
+        )
     if not controls:
         return (gate,)
     if len(controls) == 1:
