@@ -1,10 +1,13 @@
 """Verify the executable DF encoding against a quantized block matrix."""
 
-from math import acos, cos, floor, sqrt, tau
+from math import acos, cos, floor, sin, sqrt, tau
 
 import numpy as np
 import pytest
 
+from flagquantum.algorithms.primitives.double_factorization_angles import (
+    orbital_rotation_words,
+)
 from flagquantum.algorithms.primitives.double_factorization_block_encoding import (
     DoubleFactorizationBlockEncoding,
 )
@@ -18,6 +21,29 @@ from tests.unit.test_single_factorization_block_encoding import _probabilities
 from tests.unit.test_sparse_chemistry_prepare import _branch
 
 pytestmark = pytest.mark.unit
+
+
+@pytest.mark.parametrize(
+    "vector", [(2 / 3, 1 / 3, -2 / 3), (0.0, -1.0, 0.0), (-1.0, 0.0, 0.0)]
+)
+def test_df_eigenvector_words_encode_single_particle_projector(vector):
+    bits = 20
+    words = orbital_rotation_words(vector, bits)
+    angles = tuple(tau * word / (1 << bits) for word in words)
+    reflected = _basis_matrix(3, angles)[np.ix_([4, 2, 1], [4, 2, 1])]
+    expected = np.eye(3) - 2 * np.outer(vector, vector)
+    np.testing.assert_allclose(reflected, expected, atol=4 * tau / (1 << bits), rtol=0)
+
+
+@pytest.mark.parametrize("vector", [(), (0.0,), (2.0,), (float("nan"),)])
+def test_df_eigenvector_words_reject_invalid_vectors(vector):
+    with pytest.raises(ValueError, match="DF orbital vectors"):
+        orbital_rotation_words(vector, 8)
+
+
+def test_df_eigensystem_rejects_wrong_orbital_width():
+    with pytest.raises(ValueError, match="spatial orbital count"):
+        DoubleFactorizationBlockEncoding.from_eigensystems(((1.0, (1.0, 0.0)),), ())
 
 
 def _expected_block(rows, angles, alias_bits, angle_bits, rank_bits):
@@ -74,6 +100,26 @@ def test_df_block_projection_with_rank_failure_and_sign(rows, angle_rows, rank_b
         rank_rotation_bits=rank_bits,
         basis_rotation_bits=4,
     )
+    if len(rows[0]) == 2:
+        pairs = []
+        offset = 0
+        for row in rows:
+            eigenpairs = []
+            for i, value in enumerate(row, start=offset):
+                angle = 2 * tau * angle_rows[i][0] / 16
+                eigenpairs.append((value, (cos(angle), sin(angle))))
+            pairs.append(eigenpairs)
+            offset += len(row)
+        inferred = DoubleFactorizationBlockEncoding.from_eigensystems(
+            pairs[0],
+            pairs[1:],
+            outer_bits=1,
+            inner_bits=1,
+            rank_rotation_bits=rank_bits,
+            basis_rotation_bits=4,
+        )
+        assert inferred == encoding
+        encoding = inferred
     logical = sum(width for _, width in encoding.layout)
     work, _ = encoding.requirements()
     width = logical + work

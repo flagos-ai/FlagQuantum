@@ -12,6 +12,7 @@ from ...compiler.registers.prepare_reflection import prepare_reflection_ir
 from ...core.classical_control import validate_classical_control
 from ...core.ir import CircuitIR, Instruction
 from ...dynamic import DynamicCircuit
+from .double_factorization_angles import orbital_rotation_words
 from .double_factorization_encoding_model import (
     source_double_factorization_block_encoding_cost,
 )
@@ -99,6 +100,47 @@ class DoubleFactorizationBlockEncoding:
         )
         return cls(
             outer, inner, inner.indexed_data(log_block_size=metadata_log_block), select
+        )
+
+    @classmethod
+    def from_eigensystems(
+        cls,
+        one_body: Sequence[tuple[float, Sequence[float]]],
+        factors: Sequence[Sequence[tuple[float, Sequence[float]]]],
+        *,
+        outer_bits: int = 8,
+        inner_bits: int = 8,
+        rank_rotation_bits: int = 8,
+        basis_rotation_bits: int = 8,
+        outer_log_block: int = 0,
+        metadata_log_block: int = 0,
+        inner_log_block: int = 0,
+        basis_log_block: int = 0,
+    ) -> "DoubleFactorizationBlockEncoding":
+        """Use ordered eigenvalue and real unit eigenvector pairs.
+
+        Give one vector per retained eigenvalue. Every vector is in the
+        same spatial orbital basis, with one component per one-body pair.
+        """
+        orbitals = len(one_body)
+        vectors = tuple(vector for row in (one_body, *factors) for _, vector in row)
+        if any(len(vector) != orbitals for vector in vectors):
+            raise ValueError("DF orbital vectors must match the spatial orbital count")
+        return cls.from_eigenvalues(
+            tuple(value for value, _ in one_body),
+            tuple(tuple(value for value, _ in factor) for factor in factors),
+            tuple(
+                orbital_rotation_words(vector, basis_rotation_bits)
+                for vector in vectors
+            ),
+            outer_bits=outer_bits,
+            inner_bits=inner_bits,
+            rank_rotation_bits=rank_rotation_bits,
+            basis_rotation_bits=basis_rotation_bits,
+            outer_log_block=outer_log_block,
+            metadata_log_block=metadata_log_block,
+            inner_log_block=inner_log_block,
+            basis_log_block=basis_log_block,
         )
 
     @property

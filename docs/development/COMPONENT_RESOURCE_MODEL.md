@@ -2939,7 +2939,28 @@ circuit.append(encoding.make_on(ports, workspace=tuple(range(logical, logical + 
 ```
 
 Angle rows are provided as fixed-point words in concatenated eigenvalue
-order. The locked resource declaration retains its original reflection
+order. To derive the words from real eigenvectors, pass one sequence of
+eigenvalue and unit eigenvector pairs for the one-body term and one sequence
+per retained factor. Each vector spans the same spatial orbital basis.
+
+```python
+from math import sqrt
+
+diagonal = 1 / sqrt(2)
+encoding = DoubleFactorizationBlockEncoding.from_eigensystems(
+    ((1.0, (diagonal, diagonal)), (-3.0, (-diagonal, diagonal))),
+    (((2.0, (0.0, 1.0)),),),
+    outer_bits=1, inner_bits=1, rank_rotation_bits=2, basis_rotation_bits=4,
+)
+```
+
+The conversion follows the adjacent rotation chain in Eq. 57 of
+[von Burg et al.](https://arxiv.org/pdf/2007.14460#page=71) and rounds the
+half angles to the nearest fractional-turn word. It consumes already
+factorized real eigenpairs. The locked Qualtran Hamiltonian factory raises
+`NotImplementedError`.
+
+The locked resource declaration retains its original reflection
 ports and the outer success control. The executable model uses the paper
 reflection and its nonzero-factor control.
 
