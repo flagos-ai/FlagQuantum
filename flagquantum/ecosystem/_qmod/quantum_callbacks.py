@@ -6,6 +6,7 @@ from collections.abc import Mapping
 from dataclasses import dataclass, replace
 from typing import TYPE_CHECKING
 
+from .integers import checked_integer
 from .syntax import Expression, Function, Parameter, Statement, Token, reject
 
 if TYPE_CHECKING:
@@ -20,8 +21,10 @@ BORROWED_EFFECT_SIGNATURES = {
     "qfunc(qnum,qnum)": ("qnum", "qnum"),
 }
 CALLBACK_ARRAY = "qfunc[]()"
+OUTPUT_CALLBACK = "qfunc(qnum,output qnum)"
 
 QUANTUM_SIGNATURES = {
+    OUTPUT_CALLBACK: ("qnum", "qnum"),
     "qfunc(qbit[])": ("qbit[]",),
     "qfunc(qnum,qbit)": ("qnum", "qbit"),
 }
@@ -42,6 +45,9 @@ def parse_signature(parser: Parser) -> str:
     parser.take("(")
     types = []
     while parser.current.text != ")":
+        output = parser.current.text == "output"
+        if output:
+            parser.take("output")
         token = parser.current
         if token.text not in {"real", "qnum", "qbit"}:
             reject(
@@ -53,7 +59,7 @@ def parse_signature(parser: Parser) -> str:
             parser.take("[")
             parser.take("]")
             kind += "[]"
-        types.append(kind)
+        types.append(f"output {kind}" if output else kind)
         if parser.current.text != ",":
             break
         parser.take(",")
@@ -106,6 +112,124 @@ def specialize_quantum_callbacks(
             return bindings.get(node.token.text, node)
         return replace(
             node, children=tuple(expression(c, bindings) for c in node.children)
+        )
+
+    specialized_oracles: set[str] = set()
+
+    def output_assignment(callback: Lambda) -> Lambda:
+        if (
+            len(callback.parameters) != 2
+            or len(set(p.text for p in callback.parameters)) != 2
+        ):
+            reject(
+                callback.token,
+                "callback.alias",
+                "initializer needs distinct input and Output formals",
+            )
+        source, output = callback.parameters
+        if len(callback.body) != 1:
+            reject(
+                callback.token,
+                "callback.escape",
+                "initializer must forward exactly one checked assignment",
+            )
+        statement = callback.body[0]
+        oracle = definitions.get(statement.token.text)
+        if (
+            oracle is None
+            or not oracle.permutation
+            or len(oracle.statements) != 1
+            or len(oracle.parameters) != len(statement.arguments)
+        ):
+            reject(
+                statement.token,
+                "callback.escape",
+                "initializer requires a checked assignment qperm",
+            )
+        borrowed = tuple(p for p in oracle.parameters if p.role == "const")
+        outputs = tuple(p for p in oracle.parameters if p.role == "output")
+        if (
+            len(borrowed) != 1
+            or len(outputs) != 1
+            or any(
+                p.kind != "qnum" or p.record is not None or p.width is not None
+                for p in (*borrowed, *outputs)
+            )
+        ):
+            reject(
+                statement.token,
+                "callback.signature",
+                "initializer qperm requires one inferred-width Const qnum and one inferred-width Output qnum",
+            )
+        substitution = {}
+        for port, actual in zip(oracle.parameters, statement.arguments, strict=True):
+            if actual.children:
+                reject(
+                    actual.token,
+                    "callback.capture",
+                    "initializer requires whole formals and integer constants",
+                )
+            if port.role in {"const", "output"}:
+                expected = source if port.role == "const" else output
+                if actual.token.text != expected.text:
+                    reject(
+                        actual.token,
+                        "callback.alias",
+                        "initializer must forward its declared input and Output",
+                    )
+            elif port.role == "integer" and port.kind == "int":
+                actual = constants.get(actual.token.text, actual)
+                if actual.children or not actual.token.text.isdecimal():
+                    reject(
+                        actual.token,
+                        "callback.capture",
+                        "initializer integer arguments require nonnegative static values",
+                    )
+                checked_integer(int(actual.token.text), actual.token)
+            else:
+                reject(
+                    port.name,
+                    "callback.signature",
+                    "initializer helper has an unsupported port",
+                )
+            substitution[port.name.text] = actual
+        assignment = oracle.statements[0]
+        if (
+            assignment.token.text != "="
+            or assignment.arguments[0].children
+            or assignment.arguments[0].token.text != outputs[0].name.text
+            or len(substitution) != len(oracle.parameters)
+        ):
+            reject(
+                assignment.token,
+                "callback.escape",
+                "initializer must assign only its fresh Output",
+            )
+        pending = [assignment.arguments[1]]
+        while pending:
+            node = pending.pop()
+            if (
+                not node.children
+                and not node.token.text.isdecimal()
+                and node.token.text not in substitution.keys() - {outputs[0].name.text}
+            ):
+                reject(
+                    node.token,
+                    "callback.capture",
+                    "initializer cannot read its Output or capture external storage",
+                )
+            pending.extend(node.children)
+        specialized_oracles.add(oracle.name.text)
+        return replace(
+            callback,
+            body=(
+                replace(
+                    assignment,
+                    arguments=tuple(
+                        expression(arg, substitution) for arg in assignment.arguments
+                    ),
+                ),
+            ),
         )
 
     def closed(
@@ -192,8 +316,45 @@ def specialize_quantum_callbacks(
 
     def validate_wrapper(function: Function) -> None:
         names = {p.name.text for p in function.parameters}
+        initializer = any(p.kind == OUTPUT_CALLBACK for p in function.parameters)
+        if initializer:
+            role_ports = {p.role: p for p in function.parameters}
+            if (
+                len(function.parameters) != 3
+                or role_ports.keys() != {"callable", "inout", "output"}
+                or any(role_ports[role].kind != "qnum" for role in ("inout", "output"))
+                or len(function.statements) != 1
+            ):
+                reject(
+                    function.name,
+                    "callback.signature",
+                    "initializer wrapper requires one input, one Output and one callback",
+                )
+            (block,) = function.statements
+            if (
+                block.within is None
+                or len(block.within) != 1
+                or block.within[0].token.text != "hadamard_transform"
+                or len(block.apply) != 1
+                or block.apply[0].token.text != role_ports["callable"].name.text
+                or tuple(a.token.text for a in block.within[0].arguments)
+                != (role_ports["inout"].name.text,)
+                or tuple(a.token.text for a in block.apply[0].arguments)
+                != (role_ports["inout"].name.text, role_ports["output"].name.text)
+            ):
+                reject(
+                    function.name,
+                    "callback.escape",
+                    "initializer wrapper must prepare its input and invoke the callback exactly once in apply",
+                )
         if len(names) != len(function.parameters) or any(
-            p.role not in {"callable", "inout"} for p in function.parameters
+            p.role
+            not in (
+                {"callable", "inout", "output"}
+                if initializer
+                else {"callable", "inout"}
+            )
+            for p in function.parameters
         ):
             reject(
                 function.name,
@@ -420,6 +581,7 @@ def specialize_quantum_callbacks(
                         if (
                             actual is None
                             or actual.kind != p.kind
+                            or (p.role == "output" and actual.role != "output")
                             or (p.width is not None and p.width != actual.width)
                         ):
                             reject(
@@ -447,9 +609,14 @@ def specialize_quantum_callbacks(
                         if (
                             named is None
                             or tuple(q.kind for q in named.parameters) != kinds
-                            or any(
-                                q.role not in {"inout", "const"}
-                                for q in named.parameters
+                            or (
+                                tuple(q.role for q in named.parameters)
+                                != ("const", "output")
+                                if p.kind == OUTPUT_CALLBACK
+                                else any(
+                                    q.role not in {"inout", "const"}
+                                    for q in named.parameters
+                                )
                             )
                         ):
                             reject(
@@ -473,7 +640,10 @@ def specialize_quantum_callbacks(
                             "callback.signature",
                             "callback argument count disagrees",
                         )
-                    closed(callback.body, callback.parameters, kinds)
+                    if p.kind == OUTPUT_CALLBACK:
+                        callback = output_assignment(callback)
+                    else:
+                        closed(callback.body, callback.parameters, kinds)
                     bound[p.name.text] = callback
                 if len(set(quantum)) != len(quantum):
                     reject(
@@ -566,4 +736,6 @@ def specialize_quantum_callbacks(
             parameters=tuple(types[p.name.text] for p in f.parameters),
             statements=scope(f.statements, {}, {}, ()),
         )
-    return normalized
+    return {
+        name: f for name, f in normalized.items() if name not in specialized_oracles
+    }

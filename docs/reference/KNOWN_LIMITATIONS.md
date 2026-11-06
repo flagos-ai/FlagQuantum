@@ -637,3 +637,15 @@ control lowering. Repeated control locations and target overlap are rejected.
 The original two-axis Laplacian is checked against an independently built
 preparation, reversible permutations and selected rotations. Run
 `python -m pytest tests/integration/test_synthesis_qmod_laplacian_views.py -q`.
+
+## Closed Qmod callbacks with fresh numeric outputs
+
+A `qfunc(qnum, output qnum)` callback can initialize one fresh numeric Output
+in the apply half of a wrapper that Hadamard-prepares its input. The callback
+forwards distinct formals to a single checked arithmetic `qperm`. The adapter
+specializes inferred unsigned widths and exact nonnegative integer arguments,
+then uses the existing checked assignment and uncomputation pipeline. Callback
+writes to borrowed inputs, reads of the uninitialized Output and repeated
+initialization are rejected. Run
+`python -m pytest tests/integration/test_synthesis_qmod_simon.py -q` for the
+unchanged Simon source, independent permutation and analytic Walsh transform.
