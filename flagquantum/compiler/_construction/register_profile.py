@@ -159,7 +159,7 @@ RecordField = tuple[str, str, int] | tuple[str, str, int, int]
 
 
 def record_fields(op: Operation) -> tuple[RecordField, ...]:
-    """Validate a flat record's owned output layout before projecting readout names."""
+    """Validate disjoint record leaves before projecting their readout names."""
     if "fields" not in op.attributes and "record_type" not in op.attributes:
         return ()
     fields = op.attributes.get("fields")
@@ -180,9 +180,17 @@ def record_fields(op: Operation) -> tuple[RecordField, ...]:
         length = field[3] if len(field) == 4 else 1
         if (
             not isinstance(name, str)
-            or not name.isidentifier()
-            or name in names
-            or name in {"size", "len"}
+            or len(name.split(".")) > 32
+            or any(
+                not part.isidentifier() or part in {"size", "len"}
+                for part in name.split(".")
+            )
+            or any(
+                name == previous
+                or name.startswith(previous + ".")
+                or previous.startswith(name + ".")
+                for previous in names
+            )
             or kind not in ("qbit", "qbit[]", "qnum", "qnum[]", "qbit[][]")
             or type(size) is not int
             or not 1 <= size <= 256
