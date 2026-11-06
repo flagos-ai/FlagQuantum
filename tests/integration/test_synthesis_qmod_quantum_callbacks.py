@@ -149,10 +149,10 @@ def test_callback_expansion_limits_fail_closed(
         synth.synthesize(BASE.replace("CALL", "wrap(pred,x,y)"), source_format="qmod")
 
 
-def test_empty_callback_signature_is_a_structured_refusal() -> None:
+def test_unsupported_callback_signature_is_a_structured_refusal() -> None:
     with pytest.raises(ValueError, match="callback.signature"):
         synth.synthesize(
-            "qfunc wrap(f:qfunc()) {} qfunc main(output x:qbit) {allocate(x);}",
+            "qfunc wrap(f:qfunc(real)) {} qfunc main(output x:qbit) {allocate(x);}",
             source_format="qmod",
         )
 

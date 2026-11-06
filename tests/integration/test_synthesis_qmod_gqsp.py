@@ -108,6 +108,7 @@ def test_original_gqsp_uses_signed_powers_and_fixed_point_signal() -> None:
             "foreach (theta, theta, _lambda:",
             "row names must be distinct",
         ),
+        ("u_func(x);", "", "expected a nonempty zero-argument callback"),
         ("u_func(x);", "X(ind);", "selected gate cannot write its control"),
         ("u_func(x);", "allocate(ind);", "requires pure effects on existing storage"),
     ],
