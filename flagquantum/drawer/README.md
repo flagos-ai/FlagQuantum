@@ -262,11 +262,14 @@ after projection. The HTML embeds its data and renderer and works offline.
 
 The locked musical-score notebook uses a four-control MultiAnd with one
 negative control. The native score uses the same ladder stages as the
-compiler. The prefix results appear as named output lanes.
+compiler. The prefix results appear as named output lanes. The instance graph
+shows which operation produced and consumed each register value.
 
 ```python
 from pathlib import Path
 
+from flagquantum.drawer.call_graph import render_call_graph_svg
+from flagquantum.drawer.register_graph import export_register_graph_dot
 from flagquantum.drawer.register_score import multi_and_register_score
 from flagquantum.drawer.register_score_data import (
     export_register_score_json,
@@ -275,7 +278,11 @@ from flagquantum.drawer.register_score_data import (
 from flagquantum.drawer.register_score_html import export_register_score_html
 from flagquantum.drawer.register_score_mpl import draw_register_score
 
-data = register_score_data(multi_and_register_score((1, 1, 0, 1)))
+score = multi_and_register_score((1, 1, 0, 1))
+source = export_register_graph_dot(score)
+Path("multi-and-graph.dot").write_text(source, encoding="utf-8")
+Path("multi-and-graph.svg").write_bytes(render_call_graph_svg(source))
+data = register_score_data(score)
 Path("multi-and.json").write_text(export_register_score_json(data), encoding="utf-8")
 Path("multi-and.html").write_text(export_register_score_html(data), encoding="utf-8")
 figure, _ = draw_register_score(data)
