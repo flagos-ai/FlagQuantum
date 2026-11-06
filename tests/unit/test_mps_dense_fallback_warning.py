@@ -23,7 +23,7 @@ pytestmark = pytest.mark.unit
 
 
 def _circuit(n_wires: int) -> fq.Circuit:
-    return fq.Circuit(n_wires).h(0).ccx(0, 1, 2)
+    return fq.Circuit(n_wires).h(0).h(1).ccx(0, 1, 2)
 
 
 def test_three_wire_gate_is_planned_as_dense_fallback() -> None:
@@ -41,7 +41,7 @@ def test_local_mps_reports_the_dense_fallback() -> None:
 
 
 def test_local_mps_reports_the_fallback_once_per_program() -> None:
-    circuit = fq.Circuit(6).ccx(0, 1, 2).ccx(3, 4, 5)
+    circuit = _circuit(6).h(3).h(4).ccx(3, 4, 5)
     with warnings.catch_warnings(record=True) as caught:
         warnings.simplefilter("always")
         mps_entrypoints.run_mps(circuit, max_bond=4, cutoff=1e-8)
@@ -75,3 +75,19 @@ def test_reported_fallback_keeps_the_numerics_exact() -> None:
     assert torch.allclose(
         state.to_statevector().reshape(-1), reference.reshape(-1), atol=1e-5
     )
+
+
+@pytest.mark.parametrize("active", [False, True])
+def test_basis_controls_apply_to_an_entangled_target_without_fallback(
+    active: bool,
+) -> None:
+    preparation = fq.Circuit(4, dtype=torch.complex128).h(1).cx(1, 3).s(3).x(2)
+    if active:
+        preparation.x(0)
+    circuit = preparation.copy().ccx(2, 0, 3)
+    if active:
+        preparation.x(3)
+    with warnings.catch_warnings():
+        warnings.simplefilter("error", RuntimeWarning)
+        state = mps_entrypoints.run_mps(circuit)
+    torch.testing.assert_close(state.to_statevector(), preparation.state())
