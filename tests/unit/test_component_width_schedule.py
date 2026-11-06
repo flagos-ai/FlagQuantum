@@ -6,6 +6,7 @@ from flagquantum.compiler._component_trace.width_schedule import (
     WidthConnection,
     WidthStep,
     estimate_connection_width,
+    schedule_width_steps,
 )
 
 pytestmark = pytest.mark.unit
@@ -14,11 +15,26 @@ pytestmark = pytest.mark.unit
 @pytest.mark.ftqc_reference
 @pytest.mark.parametrize(
     "case",
-    ["symbolic", "interior", "independent", "serial", "many", "once", "abstracted"],
+    [
+        "symbolic",
+        "interior",
+        "independent",
+        "serial",
+        "many",
+        "once",
+        "abstracted",
+        "multi_alloc",
+        "symbolic_sided",
+    ],
 )
 def test_width_matches_source_connections_and_local_costs(case: str) -> None:
     pytest.importorskip("qualtran")
+    import networkx as nx
+    from qualtran import BloqBuilder
+    from qualtran._infra.binst_graph_iterators import greedy_topological_sort
+    from qualtran._infra.binst_graph_iterators_test import MultiAlloc
     from qualtran._infra.quantum_graph import LeftDangle, RightDangle
+    from qualtran.bloqs.basic_gates import IntState, Swap
     from qualtran.bloqs.bookkeeping import Allocate, Free
     from qualtran.bloqs.for_testing.interior_alloc import InteriorAlloc
     from qualtran.bloqs.for_testing.qubit_count_many_alloc import (
@@ -35,16 +51,25 @@ def test_width_matches_source_connections_and_local_costs(case: str) -> None:
     from sympy import Symbol
 
     n = Symbol("n", positive=True, integer=True)
-    source, known_peak = {
-        "symbolic": (InteriorAlloc(n), 3 * n),
-        "interior": (InteriorAlloc(10), 30),
-        "independent": (TestIndependentParallelCombo(), 1),
-        "serial": (TestSerialCombo(), 1),
-        "many": (TestManyAllocMany(10), 11),
-        "once": (TestManyAllocOnce(10), 11),
-        "abstracted": (TestManyAllocAbstracted(10), 11),
-    }[case]
-    composite = source.decompose_bloq()
+    if case == "symbolic_sided":
+        builder = BloqBuilder()
+        x = builder.add(IntState(5, n))
+        y = builder.add_register("y", n)
+        x, y = builder.add(Swap(n), x=x, y=y)
+        x, y = builder.add(Swap(n), x=x, y=y)
+        composite, known_peak = builder.finalize(x=x, y=y), 2 * n
+    else:
+        source, known_peak = {
+            "symbolic": (InteriorAlloc(n), 3 * n),
+            "interior": (InteriorAlloc(10), 30),
+            "independent": (TestIndependentParallelCombo(), 1),
+            "serial": (TestSerialCombo(), 1),
+            "many": (TestManyAllocMany(10), 11),
+            "once": (TestManyAllocOnce(10), 11),
+            "abstracted": (TestManyAllocAbstracted(10), 11),
+            "multi_alloc": (MultiAlloc(), 2),
+        }[case]
+        composite = source.decompose_bloq()
     graph = composite._binst_graph
     index = {node: i for i, node in enumerate(graph.nodes)}
     edges = [
@@ -67,6 +92,12 @@ def test_width_matches_source_connections_and_local_costs(case: str) -> None:
 
     raw = [width_step(node, use_local_cost=False) for node in index]
     modeled = [width_step(node, use_local_cost=True) for node in index]
+    assert schedule_width_steps(raw, edges) == tuple(
+        tuple(
+            index[node] for node in greedy_topological_sort(graph.subgraph(component))
+        )
+        for component in nx.weakly_connected_components(graph)
+    )
     assert estimate_connection_width(raw, edges) == _cbloq_max_width(graph)
     actual = estimate_connection_width(modeled, edges)
     assert actual == get_cost_value(composite, QubitCount()) == known_peak

@@ -47,6 +47,30 @@ def estimate_connection_width(
     step its local peak replaces its consumed inputs. The remaining live
     registers count as bystanders. Parallel edges represent distinct registers.
     """
+    incoming_widths: list[SymbolicInt] = [0] * len(steps)
+    outgoing_widths: list[SymbolicInt] = [0] * len(steps)
+    schedule = schedule_width_steps(steps, connections)
+    for edge in connections:
+        incoming_widths[edge.target] += edge.qubits
+        outgoing_widths[edge.source] += edge.qubits
+
+    peak: SymbolicInt = 0
+    for component in schedule:
+        live: SymbolicInt = 0
+        for node in component:
+            live -= incoming_widths[node]
+            step = steps[node]
+            if step.kind not in {"input", "output"}:
+                peak = cast(SymbolicInt, smax(peak, live + step.qubits))
+            live += outgoing_widths[node]
+            peak = cast(SymbolicInt, smax(peak, live))
+    return peak
+
+
+def schedule_width_steps(
+    steps: Sequence[WidthStep], connections: Sequence[WidthConnection]
+) -> tuple[tuple[int, ...], ...]:
+    """Return the stable greedy visitation order within each weak component."""
     incoming: list[list[WidthConnection]] = [[] for _ in steps]
     outgoing: list[list[WidthConnection]] = [[] for _ in steps]
     for connection in connections:
@@ -69,7 +93,7 @@ def estimate_connection_width(
 
     pending = [len(edges) for edges in incoming]
     seen: set[int] = set()
-    peak: SymbolicInt = 0
+    schedule: list[tuple[int, ...]] = []
     for first in range(len(steps)):
         if first in seen:
             continue
@@ -89,25 +113,18 @@ def estimate_connection_width(
         for node in component:
             if pending[node] == 0:
                 heappush(ready, (priorities[node], node))
-        live: SymbolicInt = 0
-        visited = 0
+        ordered: list[int] = []
         while ready:
             _, node = heappop(ready)
-            visited += 1
-            live -= sum(edge.qubits for edge in incoming[node])
-            step = steps[node]
-            if step.kind not in {"input", "output"}:
-                peak = cast(SymbolicInt, smax(peak, live + step.qubits))
-            live += sum(edge.qubits for edge in outgoing[node])
-            peak = cast(SymbolicInt, smax(peak, live))
+            ordered.append(node)
             for edge in outgoing[node]:
                 pending[edge.target] -= 1
                 if pending[edge.target] == 0:
                     heappush(ready, (priorities[edge.target], edge.target))
-        if visited != len(component):
+        if len(ordered) != len(component):
             raise ValueError("Width connection graph contains a cycle")
-
-    return peak
+        schedule.append(tuple(ordered))
+    return tuple(schedule)
 
 
 def _validate_width(width: SymbolicInt) -> None:
