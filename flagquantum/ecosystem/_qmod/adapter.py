@@ -37,6 +37,7 @@ from .affine import lower_affine_update, lower_snapshot, snapshot_start
 from .amplification import expand_amplification, lower_amplification
 from .angles import REAL_LITERAL
 from .array_kickback import expand_nested_array_kickbacks
+from .basis_regions import emit_closed_region, try_closed_region
 from .bindings import (
     is_binding_scope,
     lower_binding_scope,
@@ -5105,6 +5106,11 @@ def parse_qmod(
     numeric_program = try_numeric_program(definitions)
     if numeric_program is not None:
         definitions = {"main": replace(definitions["main"], statements=())}
+    closed_region = None
+    if {"skip_control", "qft_const_adder_phase"} <= {token.text for token in tokens}:
+        closed_region = try_closed_region(definitions, parser.records)
+        if closed_region is not None:
+            definitions = {"main": replace(definitions["main"], statements=())}
     definitions, deferred_measurements = defer_private_measurements(definitions)
     definitions = fold_skip_control_tables(definitions)
     definitions = expand_amplification(definitions, constants)
@@ -5437,6 +5443,8 @@ def parse_qmod(
                 adapter.integer_arrays.update(integer_arrays)
                 if numeric_program is not None:
                     emit_numeric_program(adapter, numeric_program)
+                if closed_region is not None:
+                    emit_closed_region(adapter, closed_region)
             program = adapter.adapt()
             compiled[name] = adapter, program
             active.remove(name)

@@ -1738,3 +1738,28 @@ decoded = {
     for (t, raw), probability in probabilities.items()
 }
 ```
+
+### Closed reversible numeric regions
+
+A bounded preparation can surround a closed numeric region with Hadamard
+preparation and a static unitary tail. The adapter expands the original
+calls and checks allocation, signed integer views, and cleanup on every
+reachable selector word. An annotated Fourier subregion must preserve the
+absolute amplitude of each admitted basis word, return all scratch to
+zero, and act as identity when a skipped control is inactive. The compiler
+emits a reversible truth network and the original tail gates.
+
+```python
+from pathlib import Path
+
+import flagquantum as fq
+from flagquantum import synth
+
+source = Path("tests/fixtures/classiq_qmod/elliptic_curve_discrete_log.qmod")
+program = synth.synthesize(
+    source, max_qubits=14, max_workspace=2, max_operations=15_000,
+)
+result = fq.run(program)
+probabilities = program.probabilities(result, registers=("x1", "x2", "ecp.x", "ecp.y"))
+# The raw x1 and x2 words represent values on the 1/8 grid.
+```

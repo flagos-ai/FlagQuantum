@@ -402,6 +402,27 @@ class Parser:
             )
             self.take(")")
             left = Expression(token, (argument,), argument.depth + 1)
+        elif (
+            token.text in {"qft_const_adder_phase", "mod_inverse"}
+            and self.tokens[self.position + 1].text == "("
+        ):
+            self.take(token.text)
+            self.take("(")
+            arguments = []
+            for argument_index in range(
+                3 if token.text == "qft_const_adder_phase" else 2
+            ):
+                if argument_index:
+                    self.take(",")
+                arguments.append(
+                    self.expression(
+                        static=True, nesting=nesting + 1, depth_limit=depth_limit
+                    )
+                )
+            self.take(")")
+            left = Expression(
+                token, tuple(arguments), 1 + max(arg.depth for arg in arguments)
+            )
         elif decimal and SCIENTIFIC_LITERAL.fullmatch(token.text):
             left = self.angle_argument()
         elif token.text.isdecimal():
@@ -1467,7 +1488,10 @@ class Parser:
                     kind, local_width = "qbit[]", self.records[record].width
                 else:
                     kind, local_width, fractional_bits = self.scalar_type(
-                        allow_fixed_array=True, allow_qubit_array=True, allow_phase=True
+                        allow_fixed_array=True,
+                        allow_qubit_array=True,
+                        allow_phase=True,
+                        allow_signed_integer=True,
                     )
                     if kind == "qphase_signed":
                         reject(
