@@ -374,6 +374,27 @@ program = synth.synthesize(source, max_workspace=0)
 print(program.probabilities(fq.run(program), registers=("indicator",)))
 ```
 
+## Dense Pauli helper schedules (UP-06 integration candidate)
+
+Dense PauliTerm arrays can be statically bound to helper ports. For an
+ordered body of 2 to 256 Suzuki-Trotter calls on the same view of at most
+three qubits, the adapter can compose bounded matrix chunks and pass them
+through existing unitary lowering. It preserves the source term order,
+repetitions, first- or second-order formula and absolute phase. Each step
+in the compact path is limited to 256 terms. The existing Compiler matrix,
+qubit and operation checks remain in force.
+
+```python
+from pathlib import Path
+
+import flagquantum as fq
+from flagquantum import synth
+
+source = Path("tests/fixtures/classiq_qmod/solving_qlsp_with_aqc.qmod")
+program = synth.synthesize(source, max_workspace=0)
+print(program.probabilities(fq.run(program), registers=("qba",)))
+```
+
 ## Compact Pauli evolution integration slice
 
 Qmod acquisition is bounded at 512 KiB and 65536 tokens for large Pauli data.

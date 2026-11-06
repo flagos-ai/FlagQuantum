@@ -897,7 +897,7 @@ class Parser:
             elif name.text != "main" and [
                 token.text
                 for token in self.tokens[self.position + 1 : self.position + 3]
-            ] == [":", "SparsePauliOp"]:
+            ] in ([":", "SparsePauliOp"], [":", "PauliTerm"]):
                 role = "operator"
             elif name.text != "main" and [
                 token.text
@@ -928,7 +928,11 @@ class Parser:
                 record = self.take(self.current.text).text
                 kind, width = "qbit[]", self.records[record].width
             elif role == "operator":
-                kind, width = self.take("SparsePauliOp").text, None
+                kind, width = self.take(self.current.text).text, None
+                if kind == "PauliTerm":
+                    self.take("[")
+                    self.take("]")
+                    kind = "PauliTerm[]"
             elif role == "callable":
                 from .quantum_callbacks import parse_signature
 
@@ -989,6 +993,9 @@ class Parser:
 
             return parse_lambda(self)
         if self.current.text == "[":
+            if self.tokens[self.position + 1].text == "PauliTerm":
+                terms = self.pauli_terms()
+                return replace(terms, token=replace(terms.token, text="PauliTerm[]"))
             if self.tokens[self.position + 1].text == "Pauli":
                 array = self.literal_array(self.pauli_axis)
                 return Expression(

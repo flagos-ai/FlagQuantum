@@ -94,6 +94,7 @@ from .selector_rotations import (
     lower_guarded_selector,
     lower_select_rotation,
 )
+from .small_pauli import lower_narrow_pauli_sequence
 from .swap_test import lower_swap_test
 from .syntax import (
     ANGLE_CALLS,
@@ -821,6 +822,7 @@ class _Adapt:
         self.classical_arrays: dict[str, tuple[float, ...]] = {}
         self.classical_integers: dict[str, int] = {}
         self.integer_arrays: dict[str, tuple[int, ...]] = {}
+        self.pauli_bindings: dict[str, Expression] = {}
         self.scope = syntax.name.text
         self.parameters: dict[str, Parameter] = {}
         for parameter in syntax.parameters:
@@ -1566,7 +1568,7 @@ class _Adapt:
     ) -> None:
         if len(arguments) != len(syntax.parameters):
             reject(token, "signature", "helper argument count disagrees")
-        if any(p.role == "operator" for p in syntax.parameters):
+        if any(p.kind == "SparsePauliOp" for p in syntax.parameters):
             reject(
                 token,
                 "qpe",
@@ -1646,6 +1648,26 @@ class _Adapt:
                         "callback requires a named (real, qbit[]) helper",
                     )
                 child.callback_bindings[name] = callback
+                continue
+            if parameter.kind == "PauliTerm[]":
+                terms = argument
+                if not terms.children:
+                    symbol = terms.token.text
+                    terms = (
+                        self.pauli_bindings.get(symbol, terms)
+                        if symbol in self.parameters
+                        else self.constants.get(symbol, terms)
+                    )
+                if (
+                    terms.token.text != "PauliTerm[]"
+                    or not 1 <= len(terms.children) <= 1024
+                ):
+                    reject(
+                        argument.token,
+                        "pauli",
+                        "helper requires a static PauliTerm array",
+                    )
+                child.pauli_bindings[name] = terms
                 continue
             if parameter.role == "integer":
                 if parameter.kind in {"int[]", "Pauli[]"}:
@@ -1823,12 +1845,13 @@ class _Adapt:
                 phase_borrows.add(value)
             elif parameter.role == "const":
                 readonly.update(view)
-        snapshot = snapshot_start(syntax.statements)
-        for index, statement in enumerate(syntax.statements):
-            if index == snapshot:
-                lower_snapshot(child, syntax.statements, index)
-                break
-            child.statement(statement, str(index))
+        if not lower_narrow_pauli_sequence(child, syntax.statements):
+            snapshot = snapshot_start(syntax.statements)
+            for index, statement in enumerate(syntax.statements):
+                if index == snapshot:
+                    lower_snapshot(child, syntax.statements, index)
+                    break
+                child.statement(statement, str(index))
         if any(port.name.text in child.suspended for port in syntax.parameters):
             reject(
                 token,
@@ -3026,7 +3049,15 @@ class _Adapt:
             )
         self.pauli_exponential(token, register, support, angle)
 
-    def suzuki_trotter(self, token: Token, args: tuple[Expression, ...]) -> None:
+    def suzuki_trotter(
+        self,
+        token: Token,
+        args: tuple[Expression, ...],
+        *,
+        emit: (
+            Callable[[Token, Expression, float, Expression, int, int], None] | None
+        ) = None,
+    ) -> None:
         if len(args) != 5:
             reject(
                 token,
@@ -3073,7 +3104,9 @@ class _Adapt:
         repetitions = int(repetitions_arg.token.text)
         if order not in {1, 2} or not 1 <= repetitions <= 256:
             reject(token, "evolution", "use order 1 or 2 and 1..256 repetitions")
-        self.pauli_evolution(token, terms, time, target_arg, order, repetitions)
+        (self.pauli_evolution if emit is None else emit)(
+            token, terms, time, target_arg, order, repetitions
+        )
 
     def exponentiate(self, token: Token, args: tuple[Expression, ...]) -> None:
         if len(args) != 3:
@@ -3154,12 +3187,16 @@ class _Adapt:
         register = owners[0]
         width = len(view)
         if not operator.children and operator.token.text != "[":
-            if operator.token.text not in self.constants:
+            bound = self.pauli_bindings.get(operator.token.text)
+            if bound is not None:
+                operator = bound
+            elif operator.token.text not in self.constants:
                 family = (
                     "PauliTerm[]" if token.text == "qaoa_penalty" else "SparsePauliOp"
                 )
                 reject(operator.token, "pauli", f"unknown {family} constant")
-            operator = self.constants[operator.token.text]
+            else:
+                operator = self.constants[operator.token.text]
             if operator.token.text not in {"SparsePauliOp", "PauliTerm[]"}:
                 reject(
                     target_arg.token, "pauli", "operator constant must be a Pauli sum"
@@ -4666,7 +4703,7 @@ def parse_qmod(
     for name, syntax in definitions.items():
         if name == "main" or not _bound_helper(syntax):
             continue
-        if any(port.role == "operator" for port in syntax.parameters):
+        if any(port.kind == "SparsePauliOp" for port in syntax.parameters):
             power_action(syntax)
             continue
         if len({port.name.text for port in syntax.parameters}) != len(
@@ -4675,6 +4712,7 @@ def parse_qmod(
             reject(syntax.name, "name", "duplicate helper parameter")
         if any(
             port.role not in {"real", "integer", "inout", "callable"}
+            and port.kind != "PauliTerm[]"
             and not (
                 port.role == "output"
                 and port.kind in {"qbit", "qbit[]", "qphase", "qnum"}
