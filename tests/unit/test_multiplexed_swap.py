@@ -51,11 +51,13 @@ def source_swap(
         ((1,), (1,), 1, 1),
     ],
 )
+@pytest.mark.parametrize("adjoint", [False, True])
 def test_pinned_multiplexed_cswap(
     shape: tuple[int, ...],
     widths: tuple[int, ...],
     control_count: int,
     word_width: int,
+    adjoint: bool,
 ) -> None:
     pytest.importorskip("qualtran")
     from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
@@ -76,9 +78,11 @@ def test_pinned_multiplexed_cswap(
     work = allocate(sum(widths) + control_count - 1)
     bits = tuple(range(40, 40 + len(work)))
     actual = multiplexed_cswap_ir(
-        controls, selections, shape, targets, output, work, bits
+        controls, selections, shape, targets, output, work, bits, adjoint=adjoint
     )
     source = source_swap(shape, widths, control_count, word_width)
+    if adjoint:
+        source = source.adjoint()
     ports = {
         **{f"c{i}": (wire,) for i, wire in enumerate(controls)},
         **{f"s{i}": wires for i, wires in enumerate(selections)},
@@ -90,7 +94,7 @@ def test_pinned_multiplexed_cswap(
         ports,
         work,
         dict(zip(work, bits, strict=True)),
-        cirq_style=True,
+        cirq_style=not adjoint,
         preserve_components=True,
     )
     assert_source_dependencies(actual, expected)
@@ -142,6 +146,11 @@ def test_pinned_multiplexed_cswap(
     logical[image_indices | spectator] = amplitudes
     valid_indices = (indices | spectator)[valid.repeat_interleave(2)]
     dirty_indices = ((torch.arange(state.numel()) >> 1) & ((1 << len(work)) - 1)) != 0
+    forward = (
+        multiplexed_cswap_ir(controls, selections, shape, targets, output, work, bits)
+        if adjoint
+        else ()
+    )
     for history in product((0, 1), repeat=model.measurement):
         result = forced_branch(state, actual, history)
         torch.testing.assert_close(
@@ -154,6 +163,13 @@ def test_pinned_multiplexed_cswap(
             rtol=0,
         )
         assert torch.count_nonzero(result[dirty_indices]) == 0
+        if adjoint:
+            torch.testing.assert_close(
+                forced_branch(result, forward, tuple(1 - bit for bit in history)),
+                state * 2**-model.measurement,
+                atol=2e-12,
+                rtol=0,
+            )
 
 
 @pytest.mark.ftqc_reference

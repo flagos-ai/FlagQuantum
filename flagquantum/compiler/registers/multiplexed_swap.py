@@ -23,13 +23,18 @@ def multiplexed_cswap_ir(
     output: tuple[int, ...],
     workspace: tuple[int, ...],
     classical_bits: tuple[int, ...],
+    *,
+    adjoint: bool = False,
 ) -> tuple[Instruction, ...]:
     """Exchange the indexed row with the output and clear traversal workspace.
 
     Each selection word is big-endian. Targets are flattened in row-major
     order and the output can start in any state. The source contract assumes
     in-range selections, so padded addresses follow the bounded gate stream.
+    The adjoint reverses the traversal and keeps the exact Fredkin leaves.
     """
+    if type(adjoint) is not bool:
+        raise ValueError("Multiplexed swap adjoint flag must be boolean")
     widths = tuple(map(len, selections))
     _validate_selection(shape, widths, len(controls))
     if (
@@ -80,6 +85,7 @@ def multiplexed_cswap_ir(
             workspace[offset:end],
             classical_bits[offset:end],
             leaf,
+            adjoint=adjoint,
         )
 
     reduction_size = max(0, len(controls) - 1)

@@ -114,8 +114,11 @@ def append_bounded_unary_tree(
     visit_leaf: Callable[[int, int], None],
     *,
     break_early: Callable[[int, int], bool] | None = None,
+    adjoint: bool = False,
 ) -> None:
-    """Visit the source's bounded tree with one effective control."""
+    """Visit the source's bounded tree or reverse its component sequence."""
+    compute_values = (1, 1) if adjoint else (1, 0)
+    erase_values = (1, 0) if adjoint else (1, 1)
 
     def visit(predicate: int, depth: int, start: int, stop: int) -> None:
         if stop <= extent and (
@@ -128,11 +131,17 @@ def append_bounded_unary_tree(
             visit(predicate, depth + 1, start, middle)
             return
         wire, work = selection[depth], workspace[depth]
-        gates.extend(and_compute_ir(predicate, wire, work, values=(1, 0)))
-        visit(work, depth + 1, start, middle)
+        halves = ((start, middle), (middle, stop))
+        first, second = reversed(halves) if adjoint else halves
+        gates.extend(and_compute_ir(predicate, wire, work, values=compute_values))
+        visit(work, depth + 1, *first)
         gates.append(Instruction("cx", (predicate, work)))
-        visit(work, depth + 1, middle, stop)
-        gates.extend(and_uncompute_ir(predicate, wire, work, classical_bits[depth]))
+        visit(work, depth + 1, *second)
+        gates.extend(
+            and_uncompute_ir(
+                predicate, wire, work, classical_bits[depth], values=erase_values
+            )
+        )
 
     capacity = 1 << len(selection)
     if control is not None:
@@ -144,7 +153,14 @@ def append_bounded_unary_tree(
         capacity //= 2
     predicate, selection = selection[0], selection[1:]
     middle = capacity // 2
-    gates.append(Instruction("x", (predicate,)))
-    visit(predicate, 0, 0, middle)
-    gates.append(Instruction("x", (predicate,)))
-    visit(predicate, 0, middle, capacity)
+    flip = Instruction("x", (predicate,))
+    if adjoint:
+        visit(predicate, 0, middle, capacity)
+        gates.append(flip)
+        visit(predicate, 0, 0, middle)
+        gates.append(flip)
+    else:
+        gates.append(flip)
+        visit(predicate, 0, 0, middle)
+        gates.append(flip)
+        visit(predicate, 0, middle, capacity)

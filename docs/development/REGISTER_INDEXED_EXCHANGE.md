@@ -129,3 +129,17 @@ Only the significant bits of each axis contribute to that path. For the
 example above, the caller reserves 12 work wires while seven contribute
 to the source peak. The estimate runs in time proportional to the number
 of axes and does not emit instructions.
+
+### Standalone adjoint of multiplexed exchange
+
+Pass `adjoint=True` to reverse the source component traversal. A split
+first computes its positive And and visits the right half. After the
+predicate toggle and left half it erases with the original negative
+polarity, using the same measured feedback and clean work wire. In the
+uncontrolled root, the right half moves before the address flips. Each
+swap uses the same exact self-adjoint Fredkin leaf.
+
+The adjoint has the same source QEC gate categories, T-equivalent counts
+and peak width. Its tests compare the locked adjoint graph's gate
+operands and feedback, and verify round trips through separate forward
+and inverse measurement histories across the entire address register.
