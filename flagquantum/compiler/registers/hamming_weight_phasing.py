@@ -8,9 +8,36 @@
 from math import isfinite, pi
 
 from ...core.ir import Instruction
-from .bitwise import _validate_wires
+from .cost_function_phasing import BoundStage, RegisterPorts, cost_function_phasing_ir
 from .hamming_weight import hamming_weight_ir
 from .qvr_phase_gradient import qvr_phase_gradient_ir
+
+
+def _phase_count(
+    source: tuple[int, ...],
+    junk: tuple[int, ...],
+    weight: tuple[int, ...],
+    classical_bits: tuple[int, ...],
+    phase: BoundStage,
+    phase_extras: RegisterPorts,
+) -> tuple[Instruction, ...]:
+    return cost_function_phasing_ir(
+        {"x": source},
+        {"junk": junk, "out": weight},
+        phase_extras,
+        cost_names=("out",),
+        evaluate=lambda ports: hamming_weight_ir(
+            ports["x"], ports["junk"], ports["out"]
+        ),
+        phase=phase,
+        erase=lambda ports: hamming_weight_ir(
+            ports["x"],
+            ports["junk"],
+            ports["out"],
+            adjoint=True,
+            classical_bits=classical_bits,
+        ),
+    )
 
 
 def hamming_weight_phasing_ir(
@@ -33,20 +60,19 @@ def hamming_weight_phasing_ir(
         raise ValueError("Hamming phasing adjoint must be boolean")
     if type(exponent) not in (int, float) or not isfinite(exponent):
         raise ValueError("Hamming phasing requires a finite exponent")
-    compute = hamming_weight_ir(source, junk, weight)
-    erase = hamming_weight_ir(
-        source, junk, weight, adjoint=True, classical_bits=classical_bits
-    )
-    terms = tuple(enumerate(reversed(weight)))
-    order = reversed(terms) if adjoint else iter(terms)
-    sign = -1 if adjoint else 1
-    phases = tuple(
-        Instruction(
-            "phase", (wire,), params={"theta": pi * (sign * exponent * (1 << i))}
+
+    def phase(ports: RegisterPorts) -> tuple[Instruction, ...]:
+        terms = tuple(enumerate(reversed(ports["out"])))
+        order = reversed(terms) if adjoint else iter(terms)
+        sign = -1 if adjoint else 1
+        return tuple(
+            Instruction(
+                "phase", (wire,), params={"theta": pi * (sign * exponent * (1 << i))}
+            )
+            for i, wire in order
         )
-        for i, wire in order
-    )
-    return (*compute, *phases, *erase)
+
+    return _phase_count(source, junk, weight, classical_bits, phase, {})
 
 
 def hamming_weight_gradient_phasing_ir(
@@ -69,19 +95,24 @@ def hamming_weight_gradient_phasing_ir(
     Count, junk and addition work start and end at zero. The two slot
     pools may overlap because addition finishes before count erasure.
     """
-    _validate_wires((*source, *junk, *weight, *gradient, *addition_work))
-    compute = hamming_weight_ir(source, junk, weight)
-    erase = hamming_weight_ir(
-        source, junk, weight, adjoint=True, classical_bits=count_bits
-    )
-    phase = qvr_phase_gradient_ir(
+
+    def phase(ports: RegisterPorts) -> tuple[Instruction, ...]:
+        return qvr_phase_gradient_ir(
+            ports["out"],
+            ports["phase_grad"],
+            ports["addition_work"],
+            addition_bits,
+            cost_fraction_bits=0,
+            coefficient=exponent / 2,
+            epsilon=epsilon,
+            adjoint=adjoint,
+        )
+
+    return _phase_count(
+        source,
+        junk,
         weight,
-        gradient,
-        addition_work,
-        addition_bits,
-        cost_fraction_bits=0,
-        coefficient=exponent / 2,
-        epsilon=epsilon,
-        adjoint=adjoint,
+        count_bits,
+        phase,
+        {"phase_grad": gradient, "addition_work": addition_work},
     )
-    return (*compute, *phase, *erase)
