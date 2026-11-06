@@ -6,7 +6,7 @@ from ..core.ir import Instruction
 
 
 def qft_instructions(wires: tuple[int, ...]) -> tuple[Instruction, ...]:
-    """Build the exact forward QFT for wires ordered most significant first."""
+    """Build the exact forward QFT for qubits ordered most significant first."""
     gates: list[Instruction] = []
     for index, target in enumerate(wires):
         gates.append(Instruction("h", (target,)))

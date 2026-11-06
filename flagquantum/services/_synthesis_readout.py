@@ -6,17 +6,15 @@ import math
 import time
 from collections.abc import Iterator, Mapping, Sequence
 from types import MappingProxyType
-from typing import TYPE_CHECKING, TypedDict
+from typing import TypedDict
 
 import torch
 
 from ..core.ir import MeasurementNode
 from ..runtime.measurements import execute_measurements
+from ..runtime.mps_result import mps_marginal, native_mps
 from ..runtime.result import ExecutionResult
 from ._synthesis_execution import CheckedExecution
-
-if TYPE_CHECKING:
-    from ..simulation.mps.state import MPSState
 
 
 class _ReadDiagnostics(TypedDict):
@@ -94,13 +92,8 @@ def probabilities(
     selected = tuple(q for name in registers for q in mapping[name])
     bits = len(selected)
     mixed = checked.plan.state_mode == "density_matrix"
-    native: MPSState | None = None
-    if checked.plan.state_mode == "mps":
-        from ..simulation.mps.state import MPSState
-
-        candidate = result.native()
-        assert isinstance(candidate, MPSState)
-        native = candidate
+    native = native_mps(result) if checked.plan.state_mode == "mps" else None
+    if native is not None:
         scanned = max(
             sum(t.numel() for t in native.tensors), (1 << bits) * native.max_bond**2
         )
@@ -115,9 +108,7 @@ def probabilities(
         )
     with torch.no_grad():
         if native is not None:
-            from ..simulation.mps.marginal import marginal_probabilities
-
-            marginal = marginal_probabilities(native, selected)
+            marginal = mps_marginal(native, selected)
             tolerance = 1e-6 if native.dtype == torch.complex64 else 1e-10
             mass = float(marginal.sum().item())
             if (

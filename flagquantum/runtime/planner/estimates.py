@@ -129,14 +129,14 @@ __all__ = [
 ]
 
 
-def exact_interval_mps_bond(wires: tuple[tuple[int, ...], ...]) -> int | None:
-    """Bound all intermediate bond ranks for independent short wire intervals.
+def exact_interval_mps_bond(qubits: tuple[tuple[int, ...], ...]) -> int | None:
+    """Bound all intermediate bond ranks for independent short qubit intervals.
 
     Reordering inside an interval cannot entangle it with a disjoint interval.
     A width-w interval therefore contributes at most 2**floor(w/2) across
     any one physical cut, even during a swap-based gate application.
     """
-    intervals = sorted((min(support), max(support)) for support in wires if support)
+    intervals = sorted((min(support), max(support)) for support in qubits if support)
     end = -1
     start = 0
     largest = 1

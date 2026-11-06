@@ -7,25 +7,26 @@ import torch
 from .state import MPSState
 
 
-def marginal_probabilities(state: MPSState, wires: tuple[int, ...]) -> torch.Tensor:
+def marginal_probabilities(state: MPSState, qubits: tuple[int, ...]) -> torch.Tensor:
     """Return unnormalized joint probabilities in the requested MSB-first order."""
     if (
-        len(wires) > 16
-        or len(wires) != len(set(wires))
+        len(qubits) > 16
+        or len(qubits) != len(set(qubits))
         or any(
-            type(wire) is not int or not 0 <= wire < state.n_qubits for wire in wires
+            type(qubit) is not int or not 0 <= qubit < state.n_qubits
+            for qubit in qubits
         )
     ):
-        raise ValueError("MPS marginal needs at most sixteen distinct in-range wires")
-    count = 1 << len(wires)
+        raise ValueError("MPS marginal needs at most sixteen distinct in-range qubits")
+    count = 1 << len(qubits)
     patterns = torch.arange(count, dtype=torch.long, device=state.device)
-    positions = {wire: len(wires) - index - 1 for index, wire in enumerate(wires)}
+    positions = {qubit: len(qubits) - index - 1 for index, qubit in enumerate(qubits)}
     environment = torch.ones(
         (state.bsz, count, 1, 1), dtype=state.dtype, device=state.device
     )
-    for wire, site in enumerate(state.tensors):
-        if wire in positions:
-            bits = (patterns >> positions[wire]) & 1
+    for qubit, site in enumerate(state.tensors):
+        if qubit in positions:
+            bits = (patterns >> positions[qubit]) & 1
             selected = site.index_select(2, bits).permute(0, 2, 1, 3)
             environment = torch.einsum(
                 "bklm,bklr,bkms->bkrs", environment, selected, selected.conj()

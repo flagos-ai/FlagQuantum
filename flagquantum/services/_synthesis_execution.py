@@ -24,6 +24,7 @@ from ..runtime.execution_plan_contract import (
     plan_program,
     plan_to_dict,
 )
+from ..runtime.mps_result import native_mps
 from ..runtime.result import ExecutionResult
 
 
@@ -397,11 +398,9 @@ class CheckedExecution:
             else torch.complex64
         )
         if result.plan.state_mode == "mps":
-            from ..simulation.mps.state import MPSState
-
-            native = result.native()
+            native = native_mps(result)
             if (
-                not isinstance(native, MPSState)
+                native is None
                 or native.bsz != 1
                 or native.n_qubits != program.n_wires
                 or native.device.type != "cpu"

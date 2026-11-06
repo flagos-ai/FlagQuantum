@@ -76,7 +76,7 @@ def lower_repeated_effects(owner: _Adapt, statement: Statement, count: int) -> b
     name = (
         f"{owner.syntax.name.text}.$reset{token.location.line}.{token.location.column}"
     )
-    # Declaration and allocation only establish the callee's checked wire layout.
+    # Declaration and allocation only establish the callee's checked qubit layout.
     # A replay call operates on existing initialized storage without allocating it.
     arguments = {
         actual: Value(ValueId(name, index + 1), actual.type)

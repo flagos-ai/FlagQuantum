@@ -111,8 +111,8 @@ def _clean_mcx_instructions(
 ) -> tuple[Instruction, ...]:
     """Emit an X on the all-ones branch using verified clean scratch.
 
-    The caller supplies distinct wires and exactly max(len(controls) - 2, 0)
-    clean work wires. Every work wire is restored before the ladder returns.
+    The caller supplies distinct qubits and exactly max(len(controls) - 2, 0)
+    clean work qubits. Every work qubit is restored before the ladder returns.
     """
     count = len(controls)
     if count == 1:

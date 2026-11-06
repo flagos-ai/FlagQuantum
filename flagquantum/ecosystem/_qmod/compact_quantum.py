@@ -117,7 +117,7 @@ class GateRegion(FixedRegion):
             )
             if writes & original:
                 # Const may acquire phase through an X/predicate conjugation.
-                # Every predicate for such a write reads only protected wires.
+                # Every predicate for such a write reads only protected qubits.
                 reads = set(step.value.reads if step.value is not None else ())
                 reads.update(bit for cond, _ in step.guards for bit in cond.reads)
                 if (

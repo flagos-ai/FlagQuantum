@@ -217,7 +217,7 @@ def _modular_exp_instructions(
 def _pattern_gate(
     gate: Instruction, wires: tuple[int, ...], pattern: int
 ) -> tuple[Instruction, ...]:
-    """Apply a single-wire gate on a specified pattern of the other wires."""
+    """Apply a single-qubit gate on a specified pattern of the other qubits."""
     controls = tuple(wire for wire in wires if wire != gate.wires[0])
     flips = tuple(
         Instruction("x", (wire,))
@@ -783,7 +783,7 @@ def schedule_register_program(
                     workspace_state="fresh_zero",
                     max_operations=remaining,
                 )
-                # Track individual ladder wires, including multi-wire cubes.
+                # Track individual ladder qubits, including cubes with multiple controls.
                 trace: list[ScheduleEvent] = []
                 live_scratch: set[int] = set()
                 for gate in boolean.circuit.instructions:
