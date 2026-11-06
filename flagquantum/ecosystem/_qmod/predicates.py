@@ -188,6 +188,7 @@ def expand_predicate_oracles(
             "|",
             "^",
             "~",
+            "and",
             "==",
             "!=",
             "<",
@@ -217,7 +218,7 @@ def expand_predicate_oracles(
     def one_bit(node: Expression, predicate: Predicate) -> bool:
         if node.token.text in {"==", "!=", "<", "<=", ">", ">="}:
             return True
-        if node.token.text in {"&", "|", "^", "*"}:
+        if node.token.text in {"and", "&", "|", "^", "*"}:
             return all(one_bit(child, predicate) for child in node.children)
         if node.token.text == "~":
             return one_bit(node.children[0], predicate)
@@ -357,6 +358,89 @@ def expand_predicate_oracles(
             Token("control", token.location), (condition,), control_body=(phase,)
         )
 
+    def forwarded_condition(
+        token: Token,
+        arguments: tuple[Expression, ...],
+        marker: Expression,
+        parameters: Mapping[str, Parameter],
+    ) -> Expression | None:
+        seen: set[str] = set()
+        while True:
+            function = definitions.get(token.text)
+            if (
+                function is None
+                or not function.permutation
+                or token.text in seen
+                or len(seen) >= 16
+                or len(function.parameters) != 2
+                or len(arguments) != 2
+                or len(function.statements) != 1
+                or any(arg.children for arg in arguments)
+                or len({arg.token.text for arg in arguments}) != 2
+            ):
+                return None
+            seen.add(token.text)
+            if marker.token.text not in {arg.token.text for arg in arguments}:
+                return None
+            flag_index = next(
+                i
+                for i, arg in enumerate(arguments)
+                if arg.token.text == marker.token.text
+            )
+            flag = function.parameters[flag_index]
+            read = function.parameters[1 - flag_index]
+            target = arguments[1 - flag_index]
+            actual = parameters.get(target.token.text)
+            if (
+                actual is None
+                or flag.role != "inout"
+                or flag.kind != "qbit"
+                or read.role not in {"const", "inout"}
+                or read.kind not in {"qnum", "qbit[]", "qbit"}
+                or actual.width is None
+                or (read.width is not None and actual.width != read.width)
+                or (
+                    read.record is not None
+                    and actual.record is not None
+                    and read.record != actual.record
+                )
+                or (
+                    actual.kind != read.kind
+                    and {actual.kind, read.kind} != {"qbit[]", "qnum"}
+                )
+            ):
+                return None
+            action = function.statements[0]
+            if action.token.text == "^=":
+                if (
+                    action.arguments[0].children
+                    or action.arguments[0].token.text != flag.name.text
+                ):
+                    return None
+                predicate = Predicate(function, read, flag, action.arguments[1])
+                if not one_bit(predicate.expression, predicate):
+                    return None
+                # Nominal field reads need their nominal source after forwarding.
+                if read.record is not None and actual.record != read.record:
+                    return None
+                word = target
+                if read.kind == "qnum" and actual.kind == "qbit[]":
+                    word = Expression(
+                        Token("$predicate_word", target.token.location), (target,)
+                    )
+                return expression(predicate.expression, predicate, {}, word)
+            formal_map = {
+                p.name.text: a
+                for p, a in zip(function.parameters, arguments, strict=True)
+            }
+            if len(formal_map) != 2 or any(
+                a.children or a.token.text not in formal_map for a in action.arguments
+            ):
+                return None
+            token, arguments = action.token, tuple(
+                formal_map[a.token.text] for a in action.arguments
+            )
+
     def projected_rotation(
         statement: Statement, parameters: Mapping[str, Parameter]
     ) -> Statement | None:
@@ -368,32 +452,37 @@ def expand_predicate_oracles(
             return None
         (prepare,) = statement.within
         (rotate,) = statement.apply
-        predicate = predicates.get(prepare.token.text)
-        if predicate is None or rotate.token.text != "RZ" or len(rotate.arguments) != 2:
+        if rotate.token.text != "RZ" or len(rotate.arguments) != 2:
             return None
-        ports = predicate.function.parameters
-        args = prepare.arguments
-        if len(args) != len(ports):
-            return None
-        target, marker = (
-            args[ports.index(predicate.read)],
-            args[ports.index(predicate.flag)],
-        )
-        angle, destination = rotate.arguments
-        if destination.children or destination.token.text != marker.token.text:
-            return None
-        actual = parameters.get(target.token.text)
+        angle, marker = rotate.arguments
         marker_port = parameters.get(marker.token.text)
         if (
-            actual is None
+            marker.children
             or marker_port is None
             or marker_port.width != 1
             or marker_port.role != "const"
         ):
             return None
-        condition = specialize(
-            prepare.token, args, target, marker, actual, borrow_array_word=True
-        )
+        predicate = predicates.get(prepare.token.text)
+        args = prepare.arguments
+        if predicate is None:
+            condition = forwarded_condition(prepare.token, args, marker, parameters)
+            if condition is None:
+                return None
+        else:
+            ports = predicate.function.parameters
+            if (
+                len(args) != len(ports)
+                or args[ports.index(predicate.flag)].token.text != marker.token.text
+            ):
+                return None
+            target = args[ports.index(predicate.read)]
+            actual = parameters.get(target.token.text)
+            if actual is None:
+                return None
+            condition = specialize(
+                prepare.token, args, target, marker, actual, borrow_array_word=True
+            )
         return Statement(
             Token("$projected_rz", statement.token.location), (angle, marker, condition)
         )

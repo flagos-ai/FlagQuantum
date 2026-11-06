@@ -105,6 +105,10 @@ def expand_static_oracles(
         if any(p.role == "const" and p.kind == "qbit[]" for p in function.parameters)
         and not is_const_cx_permutation(function)
         and not is_selector_helper(function)
+        and not (
+            len(function.statements) == 1
+            and function.statements[0].token.text == "$projected_rz"
+        )
     }
     count = 0
 
@@ -306,6 +310,18 @@ def expand_static_oracles(
                 result.append(
                     replace(statement, arguments=(condition,), control_body=phases)
                 )
+            elif token.text == "IDENTITY" and statement.control_body is None:
+                if (
+                    len(statement.arguments) != 1
+                    or statement.arguments[0].children
+                    or statement.arguments[0].token.text != variable
+                ):
+                    reject(
+                        token,
+                        "oracle.alias",
+                        "borrowed identity requires its whole input",
+                    )
+                result.append(replace(statement, arguments=(target,)))
             elif token.text == "Z" and statement.control_body is None:
                 if (
                     len(statement.arguments) != 1

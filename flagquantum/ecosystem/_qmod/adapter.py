@@ -116,7 +116,7 @@ QDRIFT_SEED = 0
 _GATE_CALLS = frozenset({"X", "Y", "H", "S", "Z", "I", "SX", "hadamard_transform"})
 _PAIR_CALLS = frozenset({"CX", "CZ", "SWAP", "CRX"})
 _STATIC_COMPARISONS = {"==": eq, "!=": ne, "<": lt, "<=": le, ">": gt, ">=": ge}
-_STATIC_GATES = _GATE_CALLS | _PAIR_CALLS | ANGLE_CALLS
+_STATIC_GATES = _GATE_CALLS | _PAIR_CALLS | ANGLE_CALLS | {"IDENTITY"}
 _UNIFORM_CALLS = frozenset(
     {"prepare_uniform_interval_state", "prepare_uniform_trimmed_state"}
 )
@@ -3207,7 +3207,22 @@ class _Adapt:
     def xor_update(
         self, token: Token, destination: Expression, source: Expression
     ) -> None:
-        if source.token.text in _STATIC_COMPARISONS:
+        if source.token.text == "==":
+            tested, literal = source.children
+            if (
+                not tested.children
+                and not literal.children
+                and literal.token.text.isdecimal()
+                and 6 <= (self.widths.get(tested.token.text) or 0) <= 8
+                and self.parameters[tested.token.text].role != "const"
+                and lower_indexed_control(
+                    self,
+                    source,
+                    Statement(Token("X", token.location), (destination,)),
+                )
+            ):
+                return
+        if source.token.text in _STATIC_COMPARISONS or source.token.text == "and":
             register, bit = self.gate_target(destination, allow_numeric=True)
             pi = Expression(Token("pi", token.location))
             self.real_phase(
@@ -3403,6 +3418,7 @@ class _Adapt:
             body = statement.inverse_body
             allowed = _GATE_CALLS | {
                 "PHASE",
+                "IDENTITY",
                 "RX",
                 "RY",
                 "RZ",
@@ -4388,6 +4404,11 @@ def parse_qmod(
                 and (
                     port.kind == "qphase"
                     or (port.kind in {"qbit", "qnum"} and port.record is None)
+                    or (
+                        port.record is not None
+                        and len(syntax.statements) == 1
+                        and syntax.statements[0].token.text == "$projected_rz"
+                    )
                     or is_const_cx_permutation(syntax)
                     or is_selector_helper(syntax)
                 )

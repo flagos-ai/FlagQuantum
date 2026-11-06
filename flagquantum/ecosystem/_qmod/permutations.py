@@ -7,6 +7,7 @@ from .syntax import Function, Statement, Token, reject
 _BASIS_OPERATIONS = frozenset(
     {
         "I",
+        "IDENTITY",
         "X",
         "Z",
         "S",

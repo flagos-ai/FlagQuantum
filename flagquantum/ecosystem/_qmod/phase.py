@@ -221,11 +221,11 @@ def expand_phase(
             return lambda basis: comparison(
                 integer_value(left, basis), integer_value(right, basis)
             )
-        if text in {"&", "|", "^"}:
+        if text in {"and", "&", "|", "^"}:
             left_predicate, right_predicate = (
                 predicate(child) for child in node.children
             )
-            if text == "&":
+            if text in {"and", "&"}:
                 return lambda basis: left_predicate(basis) and right_predicate(basis)
             if text == "|":
                 return lambda basis: left_predicate(basis) or right_predicate(basis)

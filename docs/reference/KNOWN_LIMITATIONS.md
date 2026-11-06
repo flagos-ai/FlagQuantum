@@ -649,3 +649,14 @@ writes to borrowed inputs, reads of the uninitialized Output and repeated
 initialization are rejected. Run
 `python -m pytest tests/integration/test_synthesis_qmod_simon.py -q` for the
 unchanged Simon source, independent permutation and analytic Walsh transform.
+
+## Fixed-point QSVT with forwarded arithmetic projectors
+
+The adapter proves a bounded chain of whole-port `qperm` forwarding to one
+Boolean XOR predicate before folding a borrowed-marker projector into a
+diagonal phase. Conjunctions of checked arithmetic comparisons preserve
+absolute phase and nominal record field order. Wider unsigned equality XOR
+into a writable bit uses the existing indexed multi-control path. Borrowed
+record identity is admitted as a basis-preserving effect. The pinned
+fixed-point QSVT original retains all 26 phases. Run
+`python -m pytest tests/integration/test_synthesis_qmod_fixed_point_qsvt.py -q`.
