@@ -2255,3 +2255,46 @@ reversal and a zero mark on all of its signal wires. Its gate stream
 therefore includes the SELECT implementation, the wider mark and the
 coherent lookup inverse. Gate-only source queries remain available when
 the unblocked source peak query fails.
+
+## Ordered Trotter evolution
+
+`TrotterProduct` accepts a term list and an explicit product schedule. Each
+term owns its angle-dependent gate stream and resource declaration on the
+same named through ports. The product binds each coefficient as
+`2 * coefficient * timestep`, visits paired entries in order, and stops
+at the shorter sequence. The binding accepts named circuit parameters.
+All physical wires are caller-owned and ordered most significant first.
+
+```python
+from flagquantum.algorithms.primitives.ising_evolution import (
+    IsingXUnitary,
+    IsingZZUnitary,
+)
+from flagquantum.algorithms.primitives.trotter_product import TrotterProduct
+from flagquantum.circuit import Circuit
+from flagquantum.qec.resources.estimation import estimate_ftqc_resources
+
+product = TrotterProduct(
+    (IsingXUnitary(3), IsingZZUnitary(3)),
+    (0, 1, 0),
+    (0.05, 2, 0.05),
+    0.125,
+)
+planned = estimate_ftqc_resources(product)
+op = product.make_on(system=(0, 1, 2))
+circuit = Circuit(3).append(op)
+report = estimate_ftqc_resources(op, emitted_ir=circuit.to_ir())
+assert planned.logical == report.logical
+assert report.logical.gates.clifford == 6
+assert report.logical.gates.rotation == 9
+assert report.logical.peak_logical_qubits == 3
+assert report.emitted is not None
+assert dict(report.emitted.unconditional) == {"rx": 6, "cx": 6, "rz": 3}
+```
+
+The inverse reverses and adjoints the full emitted stream. The modeled Ising
+gate categories and peak width apply in either direction. The periodic ZZ
+term retains both directed edges on a two-site ring. A one-site ZZ ring is
+rejected because the source edge gives CNOT the same control and target.
+These terms declare no work wires or measurements. The source ZZ rotation
+tolerance is synthesis metadata, while the native IR keeps an exact Rz.
