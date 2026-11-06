@@ -2397,3 +2397,40 @@ recover the absolute Rz phase. The native lattice uses the paper's physical
 angles, while the separately reported model preserves the locked source's
 angle and width conventions. Set `adjoint=True` to reverse the layers and
 negate their physical angles, including in the measured construction.
+
+## Grid kinetic phase
+
+The grid kinetic model preserves the locked per-electron order of
+SumOfSquares, QuantumVariableRotation and Free. The source phase leaf
+declares a generic rotation per result bit. The native phase binding uses
+a caller-specified angle in radians per unit of the unsigned square sum.
+It applies the square XOR again after phasing to clear the result.
+
+```python
+from flagquantum.algorithms.primitives.grid_kinetic import GridKineticEnergy
+from flagquantum.dynamic import DynamicCircuit
+from flagquantum.qec.resources.estimation import estimate_ftqc_resources
+
+op = GridKineticEnergy.make_on(
+    grid_points=1,
+    system=(((0,), (1,), (2,)), ((3,), (4,), (5,))),
+    result=(6, 7, 8, 9),
+    workspace=(10,),
+    radians_per_unit=0.317,
+)
+circuit = DynamicCircuit(11).append(op)
+report = estimate_ftqc_resources(op, emitted_ir=circuit.to_ir())
+assert report.logical.gates.toffoli == 2
+assert report.logical.peak_logical_qubits == 10
+assert report.emitted is not None
+assert report.emitted.t_count == 16
+assert report.emitted.unconditional["measure"] == 4
+```
+
+The three coordinate words per electron are big endian and follow the
+unsigned input type of the source square sum. The source sizes each word
+with an extra bit. The native circuit preserves that bit as part of the
+unsigned value. Result and workspace start at zero, are reused between
+electrons, and return to zero. The measurement slot is chosen above any
+existing feedback bits. The inverse reverses the electron order and
+negates the phase coefficient.
