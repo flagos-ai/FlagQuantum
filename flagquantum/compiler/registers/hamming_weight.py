@@ -7,7 +7,7 @@
 """Three-to-two Hamming-weight tree with explicit logical garbage and cleanup."""
 
 from ...core.ir import Instruction
-from .and_compute import and_compute_ir, and_uncompute_ir
+from .bit_compression import compress_three_bits_ir
 from .bitwise import xor_ir
 
 
@@ -57,25 +57,15 @@ def hamming_weight_ir(
 
     def compress(a: int, b: int, carry_in: int, carry_out: int) -> None:
         nonlocal used
-        if adjoint:
-            block = (
-                Instruction("cx", (b, carry_in)),
-                Instruction("cx", (a, carry_out)),
-                Instruction("cx", (a, b)),
-                *and_uncompute_ir(b, carry_in, carry_out, classical_bits[used]),
-                Instruction("cx", (a, carry_in)),
-                Instruction("cx", (a, b)),
+        blocks.append(
+            compress_three_bits_ir(
+                a,
+                b,
+                carry_in,
+                carry_out,
+                erase_bit=classical_bits[used] if adjoint else None,
             )
-        else:
-            block = (
-                Instruction("cx", (a, b)),
-                Instruction("cx", (a, carry_in)),
-                *and_compute_ir(b, carry_in, carry_out),
-                Instruction("cx", (a, b)),
-                Instruction("cx", (a, carry_out)),
-                Instruction("cx", (b, carry_in)),
-            )
-        blocks.append(block)
+        )
         used += 1
 
     for result in reversed(output):
