@@ -9,6 +9,7 @@ from cmath import phase
 from math import isclose
 
 from ...core.ir import Instruction
+from .._component_trace.resource_model import ComponentCost, CostCall, GateCost
 from .bitwise import _validate_wires
 from .multi_control import multi_control_z_ir
 
@@ -82,3 +83,37 @@ def prepare_reflection_ir(
         else ()
     )
     return (*unprepare, *flip, *mark, *shift, *flip, *prepare)
+
+
+def source_uncontrolled_prepare_reflection_cost(
+    selection_width: int,
+    junk_width: int,
+    prepare_cost: ComponentCost,
+    unprepare_cost: ComponentCost,
+) -> ComponentCost:
+    """Estimate the locked uncontrolled reflection with scalar coefficient -1."""
+    work, slots = prepare_reflection_requirements(selection_width, controlled=False)
+    if type(junk_width) is not int or junk_width < 0:
+        raise ValueError("Reflection junk width must be a nonnegative integer")
+    # The source QEC model prices the scalar at zero. MultiControlZ uses
+    # dedicated zero/one/two-control paths and an all-zero MultiAnd above two.
+    if selection_width < 3:
+        mark_cliffords = (1, 3, 2)[selection_width]
+    else:
+        mark_cliffords = 5 * selection_width
+    mark = ComponentCost(
+        "MultiControlZ",
+        selection_width + work,
+        GateCost(and_bloq=slots, clifford=mark_cliffords, measurement=slots),
+    )
+    # The source QubitCount schedules the phase target only around the mark.
+    return ComponentCost(
+        "ReflectionUsingPrepare",
+        selection_width + junk_width,
+        GateCost(clifford=2),
+        (
+            CostCall(unprepare_cost),
+            CostCall(mark, bystander_qubits=junk_width),
+            CostCall(prepare_cost),
+        ),
+    )

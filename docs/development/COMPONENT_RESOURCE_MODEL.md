@@ -1476,3 +1476,60 @@ Work and classical slots follow the declared address width. If the
 address is wider than necessary, the source traversal can leave some
 of that reserved work idle. The model reports the source peak active
 width. The emitted section reports the declared circuit width.
+
+## Qubitization walk for a SELECT block
+
+The walk applies the SELECT block and then reflects about its prepared
+signal. The adjoint reverses those calls and adjoints SELECT. Bind the
+union of selection ports by name. Shared names require matching widths.
+Signal junk and temporary qubits are explicit, and clean workspace can
+be reused across stages.
+
+```python
+from flagquantum.algorithms.primitives.black_box_prepare import BlackBoxPrepare
+from flagquantum.algorithms.primitives.multiplexers.select_pauli_lcu import SelectPauliLCU
+from flagquantum.algorithms.primitives.qubitization_walk import QubitizationWalk
+from flagquantum.algorithms.primitives.select_block_encoding import SelectBlockEncoding
+from flagquantum.compiler._component_trace.resource_model import ComponentCost, GateCost
+from flagquantum.core.ir import Instruction
+from flagquantum.dynamic import DynamicCircuit
+from flagquantum.qec.resources.estimation import estimate_ftqc_resources
+
+select = SelectPauliLCU(2, 1, ("X", "Z", "X"))
+
+def emit_select(ports, work, bits, adjoint):
+    return select.make_bounded_on(
+        selection=ports["address"], target=ports["target"],
+        workspace=work, classical_bits=bits,
+    ).emit()
+
+def prepare(ports, work, bits, adjoint):
+    return (Instruction("h", ports["address"][:1]),)
+
+signal = BlackBoxPrepare((("address", 2),), (), prepare, normalization=3.0)
+block = SelectBlockEncoding((("address", 2),), (("target", 1),), emit_select, signal)
+walk = QubitizationWalk(block)
+circuit = DynamicCircuit(5)
+circuit.append(walk.make_on(
+    selection={"address": (0, 1)}, target=(2,),
+    select_workspace=(3,), select_classical_bits=(0,),
+    reflection_workspace=(3, 4), reflection_classical_bits=(0,),
+))
+select_model = select.make_bounded_on(
+    selection=(0, 1), target=(2,), workspace=(3,), classical_bits=(0,)
+).resource_model()
+prepare_model = ComponentCost("Prepare", 2, GateCost(clifford=1))
+report = estimate_ftqc_resources(
+    walk.resource_model(select_model, prepare_model, prepare_model),
+    emitted_ir=circuit.to_ir(),
+)
+assert report.logical.peak_logical_qubits == 5
+assert report.emitted is not None
+assert report.emitted.t_count == 8
+assert report.emitted.unconditional["measure"] == 2
+```
+
+The source places a global scalar of −1 inside the reflection. Native IR
+represents it as a phase on the temporary phase target while that wire
+is in `|1>`. The source model charges no gate for this scalar. The
+emitted report includes the phase instruction.
