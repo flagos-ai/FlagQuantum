@@ -7,36 +7,18 @@
 """Physical costs for catalyzed CCZ-to-T factories and a surface-code data block."""
 
 from dataclasses import dataclass
-from math import ceil, isfinite, pow
+from math import ceil, pow
 
 from ...compiler._component_trace.gate_budget import t_and_ccz_budget
 from ...compiler._component_trace.resource_model import ModeledResources
 from .data_block import DataBlock, DataLayout
+from .physical_cost import PhysicalResourceEstimate, validate_logical_counts
+from .physical_parameters import PhysicalParameters
 
 
 @dataclass(frozen=True)
-class GidneyFowlerEstimate:
-    """Modeled costs under the specified distance and hardware assumptions."""
-
-    cycles: int
-    duration_hours: float
-    data_block_physical_qubits: int
-    factory_physical_qubits: int
-    data_error: float
-    factory_error: float
-
-    @property
-    def physical_qubits(self) -> int:
-        return self.data_block_physical_qubits + self.factory_physical_qubits
-
-    @property
-    def failure_probability(self) -> float:
-        """Return the model's first-order sum of the two error contributions."""
-        return self.data_error + self.factory_error
-
-    @property
-    def qubit_hours(self) -> float:
-        return self.physical_qubits * self.duration_hours
+class GidneyFowlerEstimate(PhysicalResourceEstimate):
+    """Physical resources for the catalyzed CCZ-to-T architecture."""
 
 
 def estimate_gidney_fowler_resources(
@@ -66,30 +48,10 @@ def estimate_gidney_fowler_resources(
         )
     ):
         raise ValueError("Use positive code distances and at least two for level one")
-    if not 0 < physical_error < 0.01:
-        raise ValueError("Physical error must lie in (0, 0.01)")
-    if not isfinite(cycle_time_us) or cycle_time_us <= 0:
-        raise ValueError("Cycle time must be positive and finite")
-
-    if type(factory_count) is not int or factory_count < 1:
-        raise ValueError("Factory count must be a positive integer")
+    hardware = PhysicalParameters(physical_error, cycle_time_us)
     data_block = DataBlock(data_layout, data_distance)
-    gates = logical.gates
-    if (
-        min(
-            logical.peak_logical_qubits,
-            gates.t,
-            gates.toffoli,
-            gates.cswap,
-            gates.and_bloq,
-            gates.rotation,
-        )
-        < 0
-    ):
-        raise ValueError(
-            "Logical width and magic-state gate counts must be nonnegative"
-        )
-    budget = t_and_ccz_budget(gates)
+    validate_logical_counts(logical)
+    budget = t_and_ccz_budget(logical.gates)
     pairs = ceil(int(budget["n_t"]) / 2)
     ccz_states = int(budget["n_ccz"]) + pairs
 
@@ -101,18 +63,14 @@ def estimate_gidney_fowler_resources(
     l1_error = 1000 * logical_error(l1) + 100 * logical_error(l1) + 35 * l0_error**3
     l2_error = 1000 * logical_error(l2) + 28 * l1_error**2
     generation_cycles = ceil((ccz_states * 5.5 + pairs) * max(2 * l1 + 1, l2))
-    if factory_count > 1:
-        generation_cycles = ceil(generation_cycles / factory_count)
-    cycles = max(generation_cycles, data_block.consumption_cycles(gates))
-    width = logical.peak_logical_qubits
     factory_qubits = 6 * (4 * 8 * 2 * l1**2) + 4 * 8 * 2 * l2**2
-    return GidneyFowlerEstimate(
-        cycles=cycles,
-        duration_hours=cycle_time_us * cycles / (1_000_000 * 60 * 60),
-        data_block_physical_qubits=data_block.physical_qubits(width),
-        factory_physical_qubits=factory_count * factory_qubits,
-        data_error=data_block.storage_error(
-            width, cycles, logical_error(data_distance)
-        ),
+    return GidneyFowlerEstimate._from_components(
+        logical,
+        data_block,
+        hardware,
+        error_rate_scaler=0.1,
+        factory_cycles=generation_cycles,
+        factory_qubits=factory_qubits,
         factory_error=l2_error * ccz_states,
+        factory_count=factory_count,
     )

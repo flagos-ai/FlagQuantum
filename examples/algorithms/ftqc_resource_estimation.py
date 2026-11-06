@@ -8,6 +8,9 @@ from flagquantum.algorithms.primitives.multiplexers.thc_resource_model import (
     select_thc_cost,
 )
 from flagquantum.dynamic import DynamicCircuit
+from flagquantum.qec.resources.beverland_physical import (
+    estimate_beverland_physical_resources,
+)
 from flagquantum.qec.resources.estimation import estimate_ftqc_resources
 from flagquantum.qec.resources.gidney_fowler import estimate_gidney_fowler_resources
 
@@ -52,6 +55,15 @@ def main() -> None:
     print("Error-correction cycles", factory_scenario.cycles)
     print("Duration in hours", factory_scenario.duration_hours)
     print("Modeled failure probability", factory_scenario.failure_probability)
+
+    beverland_scenario = estimate_beverland_physical_resources(
+        planned.logical, data_distance=25
+    )
+    print("Beverland architecture with 15-to-1 distillation")
+    print("Data and factory physical qubits", beverland_scenario.physical_qubits)
+    print("Error-correction cycles", beverland_scenario.cycles)
+    print("Duration in hours", beverland_scenario.duration_hours)
+    print("Modeled failure probability", beverland_scenario.failure_probability)
 
     observed = estimate_ftqc_resources(model, emitted_ir=make_circuit().to_ir())
     assert observed.emitted is not None

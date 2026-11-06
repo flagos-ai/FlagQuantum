@@ -115,6 +115,23 @@ requested T state takes 19 modeled cycles and the factory occupies 810
 physical qubits. The conditional output error is about 4.4e-8. The
 density matrix and resource values were compared with the locked source.
 
+## Beverland architecture with a 15-to-1 factory
+
+Pass the same logical report to
+`flagquantum.qec.resources.beverland_physical.estimate_beverland_physical_resources`.
+The source preset combines a compact block, a (9, 3, 3) distillation factory,
+a 0.001 physical error rate, and a 0.4 microsecond superconducting cycle.
+Choose the data distance and optionally override the layout, factory,
+hardware, or number of identical factories. The factory budget converts
+logical gates to T equivalents. The data block uses the source's T and CCZ
+consumption budget.
+
+The 8-bit THC example at data distance 25 yields 46,146 physical qubits
+and 26,550 cycles (10.62 ms), limited by the compact layout's consumption
+rate. Run `python -m examples.algorithms.ftqc_resource_estimation` to
+inspect this architecture, the data-block-only estimate, and the emitted
+instructions separately.
+
 ## Beverland surface-code estimate
 
 A declared logical cost can feed a surface-code model before any circuit
