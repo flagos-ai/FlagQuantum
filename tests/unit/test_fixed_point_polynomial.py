@@ -16,8 +16,8 @@ from flagquantum.compiler.registers.fixed_point_polynomial import (
     fixed_point_polynomial_requirements,
 )
 from flagquantum.core.ir import CircuitIR
-from tests.unit.algorithms.primitives.multiplexers.test_thc_qrom import _execute_sparse
 from tests.unit.measurement_checks import certified_and_channel_map, forced_branch
+from tests.unit.sparse_register_execution import execute_sparse_register
 
 pytestmark = pytest.mark.unit
 
@@ -128,7 +128,9 @@ def test_polynomial_preserves_complex_amplitudes_and_cleans_history(n, w, f, coe
         before[i] = after[j] = exp(0.3j * x * (1 + s)) / sqrt(2 ** (n + 1))
     for initial, expected in ((before, after), (after, before)):
         for seed in (9, 43, 81):
-            actual = _execute_sparse(CircuitIR(wire_count, gates), initial, seed=seed)
+            actual = execute_sparse_register(
+                CircuitIR(wire_count, gates), initial, seed=seed
+            )
             assert all(
                 abs(actual.get(i, 0) - expected.get(i, 0)) < 2e-12
                 for i in actual.keys() | expected.keys()
