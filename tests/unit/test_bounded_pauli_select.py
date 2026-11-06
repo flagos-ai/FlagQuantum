@@ -93,7 +93,10 @@ def test_bounded_pauli_source_gates_and_cost(words, width, value, reversed_wires
     )
     assert_source_dependencies(actual, expected)
     assert_source_model(op.resource_model(), source)
-    report = estimate_ftqc_resources(op.resource_model(), emitted_ir=circuit.to_ir())
+    planned = estimate_ftqc_resources(op)
+    report = estimate_ftqc_resources(op, emitted_ir=circuit.to_ir())
+    assert planned.emitted is None
+    assert report.logical == planned.logical
     assert report.emitted is not None
     assert report.emitted.t_count == report.logical.gates.total_t_count()
     assert (

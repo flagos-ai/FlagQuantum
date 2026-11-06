@@ -6,6 +6,7 @@ from examples.algorithms.ftqc_resource_estimation import make_circuit
 from flagquantum.algorithms.primitives.multiplexers.thc_resource_model import (
     select_thc_cost,
 )
+from flagquantum.compiler._component_trace.resource_model import ComponentCost
 from flagquantum.qec.resources.estimation import estimate_ftqc_resources
 
 pytestmark = pytest.mark.unit
@@ -45,3 +46,21 @@ def test_surface_code_assumptions_are_optional_and_paired() -> None:
         estimate_ftqc_resources(model, error_budget=1e-3)
     with pytest.raises(ValueError, match="both error_budget and physical_error"):
         estimate_ftqc_resources(model, physical_error=1e-4)
+
+
+def test_operation_model_can_be_used_without_lowering() -> None:
+    model = select_thc_cost(2, 4, 8, 1)
+
+    class Operation:
+        def resource_model(self) -> ComponentCost:
+            return model
+
+        def to_ir(self) -> None:
+            pytest.fail("A model-only estimate must not request IR")
+
+    assert estimate_ftqc_resources(Operation()) == estimate_ftqc_resources(model)
+
+
+def test_ir_alone_does_not_supply_an_algorithm_model() -> None:
+    with pytest.raises(TypeError, match="concrete ComponentCost"):
+        estimate_ftqc_resources(make_circuit().to_ir())  # type: ignore[arg-type]

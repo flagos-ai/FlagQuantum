@@ -51,6 +51,33 @@ works before circuit construction. Pass `emitted_ir=circuit.to_ir()` to include
 instruction counts and both `error_budget` and `physical_error` to include
 the Beverland fast data-block estimate.
 
+Operations with a zero-argument `resource_model()` returning a concrete
+`ComponentCost` can be passed directly. For example, plan a bounded Pauli
+SELECT, then count its emitted instructions after binding it to a circuit.
+
+```python
+from flagquantum.algorithms.primitives.multiplexers.select_pauli_lcu import SelectPauliLCU
+from flagquantum.dynamic import DynamicCircuit
+from flagquantum.qec.resources.estimation import estimate_ftqc_resources
+
+op = SelectPauliLCU(2, 1, ("X", "Z", "X")).make_bounded_on(
+    selection=(0, 1), target=(2,), workspace=(3,), classical_bits=(0,)
+)
+plan = estimate_ftqc_resources(op)
+assert plan.logical.gates.total_t_count() == 4
+assert plan.logical.peak_logical_qubits == 4
+
+circuit = DynamicCircuit(4).append(op)
+report = estimate_ftqc_resources(op, emitted_ir=circuit.to_ir())
+assert report.emitted is not None
+assert report.emitted.t_count == 4
+assert report.emitted.unconditional["measure"] == 1
+```
+
+For a direction or composition that needs model arguments, evaluate its
+model with those arguments and pass the result. Shape formulas with
+unresolved symbols use the separate symbolic resource queries.
+
 ```python
 from flagquantum.algorithms.primitives.multiplexers.thc_resource_model import (
     select_thc_cost,
