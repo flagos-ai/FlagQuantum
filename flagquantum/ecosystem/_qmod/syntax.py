@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import math
 import re
-from collections.abc import Callable
-from dataclasses import dataclass
+from collections.abc import Callable, Iterator, Mapping
+from dataclasses import dataclass, replace
 from functools import partial
 from typing import TYPE_CHECKING, Literal, NoReturn
 
@@ -173,6 +173,19 @@ class Record:
     @property
     def width(self) -> int:
         return sum((field.width or 0) * (field.length or 1) for field in self.fields)
+
+    def leaves(
+        self, layouts: Mapping[str, Record], prefix: str = ""
+    ) -> Iterator[Parameter]:
+        for field in self.fields:
+            if field.record is None:
+                yield replace(
+                    field, name=replace(field.name, text=prefix + field.name.text)
+                )
+            else:
+                yield from layouts[field.record].leaves(
+                    layouts, prefix + field.name.text + "."
+                )
 
 
 @dataclass(frozen=True)
@@ -925,10 +938,10 @@ class Parser:
             return Expression(Token("[]", array.token.location), array.children)
         if self.current.text == "{":
             opening = self.take("{")
-            items = [self.expression()]
+            items = [self.expression(allow_slice=True)]
             while self.current.text == ",":
                 self.take(",")
-                items.append(self.expression())
+                items.append(self.expression(allow_slice=True))
             self.take("}")
             return Expression(opening, tuple(items))
         return self.expression(
@@ -1351,13 +1364,13 @@ class Parser:
                 )
             self.take(":")
             if self.current.text not in {"qbit", "qnum"}:
-                reject(
-                    self.current,
-                    "type",
-                    "flat record fields require qbit or unsigned qnum",
-                )
+                nested = self.name()
+                self.take(";")
+                fields.append(Parameter(field, "qbit[]", None, record=nested.text))
+                continue
             kind, width = self.scalar_type(
-                allow_fixed_array=True, allow_numeric_array=True
+                allow_fixed_array=True,
+                allow_numeric_array=True,
             )
             if width is None:
                 reject(field, "width", "record numeric fields require a fixed width")
@@ -1381,6 +1394,37 @@ class Parser:
         if not fields:
             reject(name, "type", "record requires at least one field")
         self.records[name.text] = Record(name, tuple(fields))
+
+    def resolve_records(self) -> None:
+        def resolve(name: str, active: tuple[str, ...]) -> int:
+            layout = self.records[name]
+            if all(field.width is not None for field in layout.fields):
+                return layout.width
+            if name in active or len(active) >= MAX_SCOPE_DEPTH:
+                reject(
+                    layout.name,
+                    "record.cycle",
+                    "record fields must form a bounded acyclic layout",
+                )
+            fields = []
+            for field in layout.fields:
+                if field.record is not None:
+                    if field.record not in self.records:
+                        reject(
+                            field.name,
+                            "record.type",
+                            f"unknown field record {field.record!r}",
+                        )
+                    field = replace(field, width=resolve(field.record, (*active, name)))
+                fields.append(field)
+            layout = replace(layout, fields=tuple(fields))
+            if layout.width > 256:
+                reject(layout.name, "budget.record", "record exceeds 256 bits")
+            self.records[name] = layout
+            return layout.width
+
+        for name in self.records:
+            resolve(name, ())
 
     def constant_integer(self, node: Expression) -> int:
         from .integers import checked_integer, integer_operation
@@ -1463,6 +1507,8 @@ class Parser:
                 constants.append((name, value))
                 self.take(";")
             else:
+                self.resolve_records()
                 functions.append(self.function())
+        self.resolve_records()
         self.take("<eof>")
         return tuple(functions), tuple(constants)

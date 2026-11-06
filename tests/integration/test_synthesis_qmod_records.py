@@ -365,3 +365,69 @@ def test_original_matrix_records_keep_shape_and_resource_budget(
     ) == list(range(width))
     with pytest.raises(synth.SynthesisError):
         synth.synthesize(source, classical_inputs=bindings, max_qubits=width - 1)
+
+
+def test_nested_nominal_views_and_qualified_leaves_match_circuit():
+    source = """qstruct Packet {data:Payload; ready:qbit;}
+    qstruct Payload {prefix:qnum<2>; body:Body;}
+    qstruct Body {flags:qbit[3]; tag:qbit;}
+    qfunc prepare(output p:Packet) {allocate(p.size,p);}
+    qfunc inner(b:Body) {H(b.flags[0]); CX(b.flags[0],b.tag);}
+    qfunc flip(q:qbit[]) {repeat(i:q.len) {X(q[i]);}}
+    qfunc main(output p:Packet) {
+      prepare(p); inner(p.data.body); flip(p.data.body.flags[1:3]);
+      if (p.data.body.size == 4) {X(p.ready);}
+    }"""
+    program = synth.synthesize(source, source_format="qmod")
+    reference = fq.Circuit(7, dtype=DTYPE).h(4).cnot(4, 1).x(3).x(2).x(0)
+    result = fq.run(program)
+    torch.testing.assert_close(
+        result.statevector(), fq.run(reference).statevector(), atol=1e-12, rtol=0
+    )
+    assert dict(program.registers) == {
+        "p.data.prefix": (5, 6),
+        "p.data.body.flags": (2, 3, 4),
+        "p.data.body.tag": (1,),
+        "p.ready": (0,),
+    }
+    assert dict(program.probabilities(result, registers=tuple(program.registers))) == (
+        pytest.approx({(0, 6, 0, 1): 0.5, (0, 7, 1, 1): 0.5})
+    )
+    assert program.report["workspace_qubits"] == 0
+
+
+@pytest.mark.parametrize(
+    ("definitions", "body", "diagnostic"),
+    [
+        ("qstruct R {r:R;}", "allocate(r);", "acyclic"),
+        ("qstruct R {v:Other;} qstruct Other {r:R;}", "allocate(r);", "acyclic"),
+        ("qstruct R {v:Missing;}", "allocate(r);", "unknown field record"),
+        (
+            "qstruct R {v:Wide; tag:qbit;} qstruct Wide {bits:qbit[256];}",
+            "allocate(r);",
+            "exceeds 256 bits",
+        ),
+        (
+            "qstruct R {v:Left;} qstruct Left {b:qbit;} qstruct Right {b:qbit;}"
+            " qfunc flip(x:Right) {X(x.b);}",
+            "allocate(r); flip(r.v);",
+            "matching record type",
+        ),
+        (
+            "qstruct R {v:Left;} qstruct Left {b:qbit[2];}"
+            " qfunc flip(x:qbit[]) {H(x[0]);}",
+            "allocate(r); flip(r.v.b[1:3]);",
+            "out of bounds",
+        ),
+        (
+            "qstruct R {v:Left;} qstruct Left {b:qbit;}"
+            " qfunc flip(x:Left,y:qbit) {X(x.b); H(y);}",
+            "allocate(r); flip(r.v,r.v.b);",
+            "must be disjoint",
+        ),
+    ],
+)
+def test_nested_record_rejects_invalid_layout_and_views(definitions, body, diagnostic):
+    source = definitions + f" qfunc main(output r:R) {{{body}}}"
+    with pytest.raises(InteropConversionError, match=diagnostic):
+        synth.synthesize(source, source_format="qmod")

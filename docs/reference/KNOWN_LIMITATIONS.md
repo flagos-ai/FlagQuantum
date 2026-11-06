@@ -660,3 +660,14 @@ into a writable bit uses the existing indexed multi-control path. Borrowed
 record identity is admitted as a basis-preserving effect. The pinned
 fixed-point QSVT original retains all 26 phases. Run
 `python -m pytest tests/integration/test_synthesis_qmod_fixed_point_qsvt.py -q`.
+
+## Nested Qmod record layout
+
+A record can contain an earlier or later fixed-layout record declared before
+its first function use. The adapter checks cycles, unknown types and total
+width before allocating storage. Helpers can borrow a whole nested record
+with its nominal type, and checked slices of bit fields keep their physical
+wire order. Output readout projects disjoint leaf paths such as
+`packet.data.body.flags`. A containing record is a layout and does not
+introduce extra storage. Signed fields and assignment to existing nested
+fields remain separate capabilities.

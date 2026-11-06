@@ -77,7 +77,12 @@ def record_view(
     owner: _Adapt, parameter: Parameter, argument: Expression
 ) -> tuple[tuple[Value, int], ...]:
     root = argument.children[0] if argument.token.text == ":" else argument
-    actual = None if root.children else owner.parameters.get(root.token.text)
+    nested = owner.record_field(root)
+    actual = (
+        nested[0]
+        if nested is not None
+        else (None if root.children else owner.parameters.get(root.token.text))
+    )
     if (
         actual is not None
         and actual.record is not None

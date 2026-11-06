@@ -972,11 +972,10 @@ class _Adapt:
         if node.token.text != "." or len(node.children) != 2:
             return None
         root, member = node.children
-        if root.children:
-            reject(
-                node.token, "field", "flat record access requires one declared record"
-            )
-        parameter = self.parameters.get(root.token.text)
+        parent = self.record_field(root) if root.children else None
+        parameter = (
+            parent[0] if parent is not None else self.parameters.get(root.token.text)
+        )
         if parameter is None or parameter.record is None:
             reject(root.token, "field", "field access requires a declared record")
         record = self.record_types[parameter.record]
@@ -985,7 +984,7 @@ class _Adapt:
             assert field.width is not None
             size = field.width * (field.length or 1)
             if field.name.text == member.token.text:
-                view = self.array_view(root)
+                view = parent[1] if parent is not None else self.array_view(root)
                 return field, view[offset : offset + size]
             offset += size
         reject(member.token, "field", "unknown record field")
@@ -1058,6 +1057,10 @@ class _Adapt:
         if text == ".":
             root = node.children[0]
             member = node.children[1].token.text if len(node.children) == 2 else "len"
+            if member == "size" and root.children:
+                field = self.record_field(root)
+                if field is not None:
+                    return len(field[1])
             if member == "size" and not root.children:
                 parameter = self.parameters.get(root.token.text)
                 width = self.widths.get(root.token.text)
@@ -1188,8 +1191,20 @@ class _Adapt:
                     else self.array_view(item)
                 )
             )
-        source = node.children[0] if node.token.text == ":" else node
-        target = self.atom(source)
+        if node.token.text == ":":
+            source, start_node, stop_node = node.children
+            source_view = self.array_view(
+                source, allow_phase=allow_phase, allow_signed=allow_signed
+            )
+            start, stop = self.static_integer(start_node), self.static_integer(
+                stop_node
+            )
+            if not 0 <= start < stop <= len(source_view):
+                reject(
+                    node.token, "width", "qubit array slice is out of bounds or empty"
+                )
+            return source_view[start:stop]
+        target = self.atom(node)
         if target.text in self.suspended:
             reject(target, "binding", "a bound source name is suspended")
         parameter = self.parameters.get(target.text)
@@ -1208,12 +1223,7 @@ class _Adapt:
                 target, allow_qubit_array=True, allow_fractional_output=phase
             )
             view = tuple((value, index) for index in range(register_width(value)))
-        if node.token.text != ":":
-            return view
-        start, stop = (self.static_integer(item) for item in node.children[1:])
-        if not 0 <= start < stop <= len(view):
-            reject(node.token, "width", "qubit array slice is out of bounds or empty")
-        return view[start:stop]
+        return view
 
     def integer_array(self, node: Expression) -> tuple[int, ...]:
         if node.token.text == "[]":
@@ -4131,7 +4141,9 @@ class _Adapt:
                                     if field.length is not None
                                     else (field.name.text, field.kind, field.width)
                                 )
-                                for field in self.record_types[parameter.record].fields
+                                for field in self.record_types[parameter.record].leaves(
+                                    self.record_types
+                                )
                             ),
                         }
                         if parameter.record is not None
