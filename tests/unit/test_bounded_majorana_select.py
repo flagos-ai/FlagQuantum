@@ -65,6 +65,71 @@ def test_bounded_majorana_gate_stream(size, controlled, pauli):
     )
 
 
+@pytest.mark.ftqc_reference
+@pytest.mark.parametrize("side,controlled", tuple(product((2, 3, 5), (False, True))))
+def test_nested_majorana_preserves_original_axis_traversal(side, controlled):
+    pytest.importorskip("qualtran")
+    cirq = pytest.importorskip("cirq")
+    from qualtran import BQUInt, QBit, Register
+    from qualtran.bloqs.multiplexers.selected_majorana_fermion import (
+        SelectedMajoranaFermion,
+    )
+
+    extents = (side, side, 2)
+    w = (side - 1).bit_length()
+    start = int(controlled)
+    size = 2 * side**2
+    width = 2 * w + 1
+    selection = tuple(range(start, start + width))
+    target = tuple(range(start + width, start + width + size))
+    work = tuple(
+        range(
+            target[-1] + 1,
+            target[-1]
+            + 1
+            + bounded_majorana_workspace(
+                size, controlled=controlled, axis_extents=extents
+            ),
+        )
+    )
+    bits = tuple(range(len(work) - 1))
+    ports = {
+        "x": selection[:w],
+        "y": selection[w : 2 * w],
+        "spin": selection[-1:],
+        "target": target,
+    }
+    if controlled:
+        ports["control"] = (0,)
+    source = SelectedMajoranaFermion(
+        (
+            Register("x", BQUInt(w, side)),
+            Register("y", BQUInt(w, side)),
+            Register("spin", BQUInt(1, 2)),
+        ),
+        (Register("control", QBit()),) if controlled else (),
+        cirq.Y,
+    )
+    expected = reference_arithmetic_gates(
+        source,
+        ports,
+        work,
+        dict(zip(work[1:], bits, strict=True)),
+        cirq_style=True,
+        keep_pauli_leaves=True,
+    )
+    actual = bounded_majorana_ir(
+        selection,
+        target,
+        0 if controlled else None,
+        "Y",
+        work,
+        bits,
+        axis_extents=extents,
+    )
+    assert_source(actual, expected)
+
+
 @pytest.mark.parametrize(
     "size,controlled,pauli",
     [*product((4,), (False, True), "XY"), (6, True, "Y")],

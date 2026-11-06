@@ -164,3 +164,38 @@ def append_bounded_unary_tree(
         visit(predicate, 0, 0, middle)
         gates.append(flip)
         visit(predicate, 0, middle, capacity)
+
+
+def append_nested_bounded_unary_tree(
+    gates: list[Instruction],
+    control: int | None,
+    axes: tuple[tuple[int, ...], ...],
+    extents: tuple[int, ...],
+    workspace: tuple[int, ...],
+    classical_bits: tuple[int, ...],
+    visit_leaf: Callable[[int, int], None],
+) -> None:
+    """Visit axes of extent at least two and flatten only the output index."""
+
+    def walk(depth: int, prefix: int, predicate: int | None, used: int) -> None:
+        word, extent = axes[depth], extents[depth]
+        stop = used + unary_iteration_workspace(len(word), predicate)
+
+        def leaf(index: int, active: int) -> None:
+            flat_index = prefix * extent + index
+            if depth + 1 == len(axes):
+                visit_leaf(flat_index, active)
+            else:
+                walk(depth + 1, flat_index, active, stop)
+
+        append_bounded_unary_tree(
+            gates,
+            predicate,
+            word,
+            extent,
+            workspace[used:stop],
+            classical_bits[used:stop],
+            leaf,
+        )
+
+    walk(0, 0, control, 0)
