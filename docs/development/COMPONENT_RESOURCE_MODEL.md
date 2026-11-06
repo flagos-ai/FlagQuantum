@@ -517,6 +517,25 @@ power, the X/Y global shift becomes a phase on the control wire. Qualtran
 delegates these leaf unitaries to Cirq. FlagQuantum uses phase instructions
 and basis changes to preserve the full complex action.
 
+## Repeated register operations
+
+`register_power_ir` repeats a positive concrete number of calls to a
+bound in-place operation, in circuit order. Its output preserves literal
+rotation calls, including repeated calls to a single rotation. A body
+that uses classical feedback must define all inputs to that feedback
+within each iteration. The last iteration's writes remain in the
+caller-provided classical slots. For measured adjoints, supply the
+operation's explicit inverse as the body.
+
+`PowerCall` contributes one child edge with a concrete or symbolic
+multiplicity to the resource graph. It multiplies gate counts without
+materializing instructions. The locked source gate model supports
+symbolic counts, while its width query raises when it attempts to
+decompose a symbolic power. Concrete executions reuse the same
+caller-owned scratch and do not increase width with the repetition count.
+
+- [Qualtran v0.7.0 Power](https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/bloqs/basic_gates/power.py)
+
 ## Controlled Hadamard
 
 The native `multi_control_h_ir` emitter uses H without controls and

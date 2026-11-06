@@ -31,6 +31,7 @@ from .resource_generalization import (
     MergedFredkinCall,
     PartitionedCall,
     PhaseCall,
+    PowerCall,
     PredicateControlledCall,
     ResourceCall,
     RotationCall,
@@ -141,7 +142,7 @@ def _leaf_cost(node: ResourceCall, legacy: bool) -> QECGateCost | None:
 def _qec_callees(
     node: ResourceCall, declared_calls: DeclaredResourceCalls | None
 ) -> Iterable[tuple[ResourceCall, SymbolicInt]]:
-    if isinstance(node, ComponentCost) or (
+    if isinstance(node, (ComponentCost, PowerCall)) or (
         declared_calls is not None and node in declared_calls
     ):
         yield from _resource_callees(node, declared_calls)

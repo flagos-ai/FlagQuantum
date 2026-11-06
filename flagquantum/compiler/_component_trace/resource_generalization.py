@@ -163,6 +163,19 @@ class PartitionedCall:
     layout: Hashable
 
 
+@dataclass(frozen=True)
+class PowerCall:
+    """One source THRU call with a positive concrete or symbolic multiplicity."""
+
+    child: ResourceCall
+    repetitions: SymbolicInt
+
+    def __post_init__(self) -> None:
+        count = self.repetitions
+        if isinstance(count, (int, float)) and (type(count) is not int or count < 1):
+            raise ValueError("Register power requires a positive integer")
+
+
 ResourceCall = (
     ComponentCost
     | RotationCall
@@ -183,6 +196,7 @@ ResourceCall = (
     | FanoutCall
     | ZeroCostCall
     | PartitionedCall
+    | PowerCall
 )
 
 DeclaredResourceCalls = Mapping[ResourceCall, Mapping[ResourceCall, SymbolicInt]]
@@ -195,6 +209,8 @@ def _resource_callees(
         yield from declared_calls[node].items()
     elif isinstance(node, ComponentCost):
         yield from _component_calls(node)
+    elif isinstance(node, PowerCall):
+        yield node.child, node.repetitions
 
 
 def _inside_partition(
