@@ -157,6 +157,18 @@ class ZeroCostCall:
     parameters: tuple[Hashable, ...] = ()
 
 
+def identity_cost_key(
+    width: SymbolicInt, *, control_width: SymbolicInt = 0
+) -> ZeroCostCall:
+    """Retain the source identity width, including packed quantum controls."""
+    if any(
+        isinstance(size, (int, float)) and (type(size) is not int or size < 0)
+        for size in (width, control_width)
+    ):
+        raise ValueError("Identity requires nonnegative integer register widths")
+    return ZeroCostCall("identity", (width + control_width,))
+
+
 @dataclass(frozen=True)
 class PartitionedCall:
     call: ResourceCall

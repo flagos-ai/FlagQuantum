@@ -517,6 +517,22 @@ power, the X/Y global shift becomes a phase on the control wire. Qualtran
 delegates these leaf unitaries to Cirq. FlagQuantum uses phase instructions
 and basis changes to preserve the full complex action.
 
+## Register identity
+
+The source models Identity as one atomic call with zero QEC gates.
+Quantum controls widen the identity by the control register widths.
+They require no predicate, work qubits, or measurements. The native
+`register_identity_ir` expands the atomic call to an explicit `i`
+on each bound wire, in control-group order followed by target order.
+A zero-width binding emits no instructions.
+
+`identity_cost_key` retains the concrete or symbolic total width.
+Cirq's resource adapter uses this same key for recognized single-wire
+identity and controlled identity wrappers. A direct multi-wire Cirq
+identity stays at the adapter boundary, matching the locked mapper.
+
+- [Qualtran v0.7.0 Identity](https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/bloqs/basic_gates/identity.py)
+
 ## Applying a leaf to each wire
 
 `on_each_ir` binds an unconditioned single-qubit gate to each wire in
