@@ -1445,3 +1445,34 @@ Selection and target ports may be packed or split into named contiguous
 words in logical order. Physical wires can be noncontiguous. Work and
 classical slots belong to the SELECT implementation supplied by the
 caller. The signal state's junk registers are outside the SELECT binding.
+
+## Bounded Pauli SELECT
+
+The explicit bounded binding follows the locked unary traversal. With
+three rows, address `11` aliases the third row. The regular `make_on`
+binding applies identity to that unused address. Choose the bounded
+binding for an address prepared within the declared selection domain.
+
+```python
+from flagquantum.algorithms.primitives.multiplexers.select_pauli_lcu import SelectPauliLCU
+from flagquantum.dynamic import DynamicCircuit
+from flagquantum.qec.resources.estimation import estimate_ftqc_resources
+
+select = SelectPauliLCU(2, 1, ("X", "Z", "X"))
+op = select.make_bounded_on(
+    selection=(0, 1), target=(2,), workspace=(3,), classical_bits=(0,)
+)
+circuit = DynamicCircuit(4)
+circuit.append(op)
+report = estimate_ftqc_resources(op.resource_model(), emitted_ir=circuit.to_ir())
+assert report.logical.gates.and_bloq == 1
+assert report.logical.peak_logical_qubits == 4
+assert report.emitted is not None
+assert report.emitted.t_count == 4
+assert report.emitted.unconditional["measure"] == 1
+```
+
+Work and classical slots follow the declared address width. If the
+address is wider than necessary, the source traversal can leave some
+of that reserved work idle. The model reports the source peak active
+width. The emitted section reports the declared circuit width.

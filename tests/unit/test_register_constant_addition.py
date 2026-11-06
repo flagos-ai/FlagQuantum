@@ -60,6 +60,7 @@ def reference_arithmetic_gates(
     reuse_allocations: bool = True,
     preserve_components: bool = False,
     keep_exchange_leaves: bool = False,
+    keep_pauli_leaves: bool = False,
 ) -> tuple[Instruction, ...]:
     """Read unmodified pinned arithmetic with explicit quantum/classical binding."""
     pytest.importorskip("qualtran")
@@ -142,6 +143,9 @@ def reference_arithmetic_gates(
         BloqAsCirqGate(CNOT()): "cx",
         BloqAsCirqGate(XGate()): "x",
     }
+
+    if keep_pauli_leaves:
+        names.update({cirq.Y: "y", cirq.Z: "z", cirq.CY: "cy"})
 
     phase_angles = {}
     if keep_exchange_leaves:
