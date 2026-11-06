@@ -13,6 +13,7 @@
 
 from ...core.ir import Instruction
 from .._arithmetic_kernels import ripple_add_modular
+from .always import Always
 from .and_compute import and_compute_ir, and_uncompute_ir
 from .bitwise import bitwise_not_ir, controlled_xor_constant_ir, xor_constant_ir
 
@@ -151,6 +152,9 @@ def measurement_add_or_subtract_ir(
     )
 
 
+_ALWAYS_ADD = Always(add_ir, add_adjoint_ir)
+
+
 def add_constant_ir(
     target: tuple[int, ...],
     value: int,
@@ -216,17 +220,14 @@ def _constant_addition_ir(
             "Constant addition requires nonnegative integer classical slots"
         )
     normalized = value % (1 << width)
+    addition = _ALWAYS_ADD.adjoint() if adjoint else _ALWAYS_ADD
+    controls, addition = addition.controlled(() if control is None else (control,))
     load = (
-        xor_constant_ir(constant, normalized)
-        if control is None
-        else controlled_xor_constant_ir(control, constant, normalized)
+        controlled_xor_constant_ir(controls[0], constant, normalized)
+        if controls
+        else xor_constant_ir(constant, normalized)
     )
-    addition = (
-        add_adjoint_ir(constant, target, carries, classical_bits)
-        if adjoint
-        else add_ir(constant, target, carries, classical_bits)
-    )
-    return (*load, *addition, *load)
+    return (*load, *addition.emit(constant, target, carries, classical_bits), *load)
 
 
 def negate_ir(

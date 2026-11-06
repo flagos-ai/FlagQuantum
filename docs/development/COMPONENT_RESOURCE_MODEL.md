@@ -714,6 +714,23 @@ and opt-in. The pinned source adjoint drops both, and its shaped
 tensor export fails. The native shaped view uses the original Cirq
 wire order and reports the pinned shape-level width.
 
+## Always-executed child operations
+
+`Always` passes inherited control bindings through and emits the wrapped
+child with its original signature. It uses the child's declared inverse
+when lowering the adjoint. In controlled AddK, only the constant load
+and unload take the external control. The middle Add and its measurement
+feedback execute on both control branches. The loaded word is zero on
+the inactive branch, so the full operation still preserves the target
+there and returns all work wires to zero.
+
+The wrapper adds no gates, measurements or work wires.
+`always_component_cost` retains the child's direct cost declaration and
+callees. The pinned source forwards the decomposable child's graph.
+An atomic source child without a call graph, such as X under Always,
+has no source QEC cost for the wrapper. A native cost with an explicit
+declaration remains usable.
+
 ## Register identity
 
 The source models Identity as one atomic call with zero QEC gates.
