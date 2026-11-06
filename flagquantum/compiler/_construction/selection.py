@@ -20,7 +20,11 @@ from .lowering import ArithmeticCandidate, BoundArithmetic, Schedule
 from .profile import verify_construction
 from .register_expansion import expand_register_calls
 from .register_lowering import RegisterCandidate, schedule_register_program
-from .register_profile import register_ports, verify_register_program
+from .register_profile import (
+    register_ports,
+    semantic_hidden_width,
+    verify_register_program,
+)
 from .target import PHASE_BASIS, Target, TargetError, TargetProduct, compile_target
 
 
@@ -321,9 +325,15 @@ def select_register_program(
     # diagnostic rather than mistaking a resource budget for invalid semantics.
     verify_register_program(program, functions)
     expanded = expand_register_calls(program, functions)
-    if any(op.name == "qreg.phase" for op in expanded.body.blocks[0].operations):
+    if any(
+        op.name
+        in {"qreg.phase", "qreg.unitary", "qreg.inverse_qft", "qreg.control_qft"}
+        or (op.name == "qreg.control_phase" and "indices" in op.attributes)
+        for op in expanded.body.blocks[0].operations
+    ):
         _check_phase_target(target)
     mapping, _, position = register_ports(program)
+    position += semantic_hidden_width(expanded)
     identities = (
         program.semantic_identity,
         *(f.semantic_identity for f in sorted(functions, key=lambda f: f.name)),

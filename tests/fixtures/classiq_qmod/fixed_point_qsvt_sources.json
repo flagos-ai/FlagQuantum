@@ -1,0 +1,14 @@
+{
+  "repository": "https://github.com/Classiq/classiq-library",
+  "commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "license_file": "LICENSE.txt",
+  "license_sha256": "241f68c9f35357f97e8a2a195e447d4f80098c140f0b3b3c770a11eed96f58e0",
+  "fixtures": [
+    {
+      "file": "qsvt_fixed_point_amplitude_amplification.qmod",
+      "source_path": "algorithms/amplitude_amplification_and_estimation/qsvt_fixed_point_amplitude_amplification/qsvt_fixed_point_amplitude_amplification.qmod",
+      "git_blob_sha1": "caf41a36db0fae33bc507f3bab4c39f79329b5ef",
+      "sha256": "33f6ac40cf27c7a1014ca6ca973947d1deea48283f88e766dd01a4f5e054d380"
+    }
+  ]
+}

@@ -1,6 +1,6 @@
 """Private fresh-register producer for the shared checked synthesis workflow."""
 
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from typing import Literal
 
 from ..compiler._construction.selection import (
@@ -31,6 +31,10 @@ def synthesize_registers(
     source_format: Literal["register", "qmod", "python"] = "register",
     source_name: str | None = None,
     source_version: str | None = None,
+    fractional_bits: Mapping[str, int] | None = None,
+    signed_registers: tuple[str, ...] = (),
+    deferred_measurements: bool = False,
+    exact_mps: bool = False,
 ) -> Program:
     """Plan verified owned records; require an explicit Runtime memory ceiling.
 
@@ -70,9 +74,27 @@ def synthesize_registers(
     }
     if source_format == "qmod":
         report.update(source_name=source_name, source_version=source_version)
+        record_layouts = tuple(
+            (
+                op.attributes["name"],
+                op.attributes["record_type"],
+                op.attributes["fields"],
+            )
+            for op in program.body.blocks[0].operations
+            if op.name == "qreg.declare" and "record_type" in op.attributes
+        )
+        if record_layouts:
+            report["qmod_records"] = record_layouts
+        if fractional_bits:
+            report["qmod_fractional_bits"] = fractional_bits
+        if deferred_measurements:
+            report["qmod_measurement_profile"] = "deferred_private_measurements"
+        if signed_registers:
+            report["qmod_signed_registers"] = signed_registers
     return _complete(
         selection,
         report,
         memory_limit_bytes=memory_limit_bytes,
         memory_limit_origin=memory_limit_origin,
+        exact_mps=exact_mps,
     )

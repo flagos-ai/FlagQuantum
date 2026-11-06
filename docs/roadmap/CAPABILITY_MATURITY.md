@@ -270,3 +270,278 @@ measurements do not promote default training performance or a new capability
 level. In particular, ordinary short jobs remain eager, Adam optimizer updates
 remain eager, and no GPU/distributed performance or whole-step fusion is claimed.
 The parent #918 acceptance remains separate from this implementation slice.
+
+## Qmod unsigned record integration slice
+
+The UP-06 integration branch extends flat bit records with fixed-width unsigned
+integer scalar/array fields. Five unchanged pinned originals have two nonzero
+parameter sets checked against independent full-state Circuits and classical
+cost-phase oracles. This is a local exact CPU correctness slice, not corpus-wide
+completion or a capability-level promotion. The corpus gate and full integration
+CI remain required before release.
+
+Two-dimensional fixed bit fields extend that same checked layout and physical
+storage. Row/column access, row views and named row readouts are part of the local
+UP-06 candidate; they do not promote general nested records or numeric matrices.
+The original electric-grid, induced-color-subgraph and minimum-coloring programs
+retain their source bytes, layer counts and independent full-state acceptance
+requirements. Remaining corpus blockers and the final integration gate stay open.
+
+The guarded-real-phase slice adds bounded integer predicates and classical
+slice-element binding for the three original Knapsack programs. Predicate and
+phase reads may share storage, and a guarded constant retains its conditional
+relative phase. Acceptance includes full complex128 state vectors against direct
+dense-diagonal Circuits, resource budgets, clean workspace and the existing
+216-original integration gate. This remains local integration work without a
+corpus-wide capability promotion.
+
+The checked qperm slice retains a source proof boundary and reuses existing
+register storage, inverse/control composition and arithmetic lowering. Fixed
+Output array helpers and singleton multi_suzuki_trotter add three original paths
+covering two distinct blobs. Independent full-state references cover positive and
+negative molecular evolution times, coherent walk wraparound and zero scratch
+leakage. This adds no native qperm API or capability-level promotion and does not
+complete the 216-original gate.
+
+Bounded large expressions and shared Boolean phase factors add the unchanged TSP
+and facility-location originals to the local UP-06 candidate. Each has two
+nonzero parameter vectors checked against independent Circuits derived from
+exact classical arithmetic, with absolute phase and all workspace checked.
+Shared arithmetic compute/uncompute, six-active-bit Boolean cube recognition
+and existing clean MCX kernels provide the implementation; no filename or cost
+function special cases are used. Native qfunc arithmetic also uses that Compiler
+candidate. Expanded and factor-preserving paths have explicit finite budgets.
+This is local CPU correctness evidence, with no corpus-wide maturity promotion.
+
+The large-Pauli UP-06 slice moves the existing physical template into Compiler
+behind an independently verified compact register effect. Two unchanged originals
+retain 551 terms and 12 target bits; the qDRIFT case retains all 2000 fixed-seed
+samples. Source-order products, identity/global phase, coherent controls, finite
+budgets and zero workspace are checked against independent references. Data
+budgets grow to 512 KiB/65536 tokens while the 4096 owned-node and 100000 final
+instruction caps remain. This is a local integration slice, not a complete
+Hamiltonian-language, classical-workflow or corpus-wide capability promotion.
+
+The integer-composition UP-06 slice adds exact bounded Qmod classical int/array
+bindings and checked static power/if composition. Single-owner Pauli views and
+bounded multi-operator first-order products reuse Compiler rotation semantics;
+default phase coefficients reuse the real phase path. Three unchanged originals
+have independent full-state Circuit checks: Fermi iterations 1/2, two nonzero
+credit-card data pairs and original BB84 bits. This is local integration evidence
+without a native Python integer-port or corpus-wide maturity promotion.
+The checked-Grover UP-06 slice admits one borrowed Const array with diagonal
+phase effects, bounded integer specialization and a closed static callback.
+Uniform-state reflection reuses existing owned gates and phase lowering,
+including its absolute minus sign. Two unchanged originals have six full-state
+Circuit and analytic checks (r=0/1/2), bit-order and clean-scratch acceptance,
+with alias/escape and budget refusals. This remains local integration evidence,
+not a general callback language, native Python Grover export or corpus-wide
+maturity promotion.
+
+The predicate-oracle UP-06 slice reuses checked flat record views, bounded
+integer predicates, existing conditional phase effects and Grover reflection.
+Named/two-argument lambda predicates admit a single distinct XOR marker;
+nonzero and coherent marker states, negative differences, global phase and clean
+scratch are tested independently. Three unchanged originals are checked, with
+graph marking >=4 kept distinct from the earlier <=4 example. The eight-input
+predicate and all physical caps remain. This is local integration evidence,
+not general callback, nested-record, Python QStruct or corpus-wide promotion.
+
+## Bounded decision predicates
+
+The integration profile retains the eight-bit local phase evaluator. A budget
+refusal can use a separate twelve-input decision profile with at most 262144
+integer evaluator steps, 4096 reduced decision nodes and 128 disjoint accepting
+paths. Eight-bit leaves and shared equal branches produce signed cubes. Groups
+of at most six literals reuse existing Boolean compute candidates. Each cube's
+flags are uncomputed and released before the next; Compiler clean-tail scheduling
+and clean MCX lowering own physical reuse. No new canonical IR or public export
+is introduced. Existing degree, indexed-phase width, owned-node and final costs
+remain independently bounded. Static eleven/twelve-bit Grover reflections reuse
+this path; smaller reflections preserve their previous resource template.
+
+The two unchanged graph-coloring and whitebox originals retain one and ten
+rounds. Run tools/validate_qmod_decision_predicates.py with --case
+whitebox_fuzzing (or grover_graph_coloring) and --output /tmp/decision.json.
+References use an independent gate-level Grover Circuit and analytic amplitudes;
+production still executes every original round. The largest validation-only
+reference uses its own clean conjunction workspace and no dense operator matrix.
+This is local CPU correctness evidence, not a performance or corpus-wide claim.
+
+
+## Closed quantum callback composition
+
+The private Qmod adapter additionally admits borrowed `qfunc(qbit[])` and
+`qfunc(qnum,qbit)` parameters. Closed named functions and lambdas specialize to
+existing first-order statements before oracle normalization. Quantum captures,
+Output/ownership escape, aliases, wrong signatures, nested callback values and
+recursive wrappers refuse. Expansion remains bounded by 4096 statements and
+sixteen levels. Existing real callbacks keep their previous path. Only borrowed
+Hadamard preparation is admitted in this wrapper within/apply profile; it is
+self-inverse and emits preparation, apply, reverse preparation. Callback arrays
+and general captured lambdas are not supported.
+
+The unchanged hidden_shift.qmod and deutsch_jozsa.qmod originals have independent
+public Circuit and analytic full-state checks, including absolute phase, numeric
+bit order and clean workspace. Their numeric predicates reuse the local
+eight-input budget, including exact integer min/max; dynamic array widths are
+proven by literal allocation. Run tools/validate_qmod_quantum_callbacks.py with
+--case hidden_shift (or deutsch_jozsa) and --output /tmp/callback.json. Run
+python -m examples.synthesis_quantum_callbacks for the original Qmod, existing
+native qfunc phase-composition and Circuit comparison. This adds no higher-order
+Python qfunc annotations or native phase_oracle export. Evidence is local CPU
+correctness, not a performance or full-corpus claim.
+
+
+## Checked exact amplification and retained work
+
+The private Qmod exact_amplitude_amplification profile accepts one initialized
+zero target of one through seven unsigned bits, a closed sign oracle, a closed
+product-RY preparation and a positive marked-subspace amplitude. It independently
+checks that amplitude against the preparation and predicate mass to absolute
+1e-12. It reduces the Grover angle using a retained hidden ancilla and admits at
+most 32 rounds. The ancilla and any simultaneous Compiler scratch count toward
+max_workspace; its allocation is counted once in total physical width. No early
+release or reset is asserted. Existing hidden semantic data keeps its previous
+accounting. Owned workspace markers must be exactly True.
+
+inplace_prepare_state accepts normalized product probability vectors with
+amplitude L2 factorization defect at most 1e-12. Existing exponential RY angles
+are reusable in this checked composition. Nonproduct/complex preparations,
+quantum captures, consuming/Output callbacks, non-sign oracles, nonzero or
+unproved-zero input, unsupported scopes and over-budget requests refuse.
+Unsigned literal += offsets in -256..256 reduce modulo register width and
+compose the existing +/-1 kernel; they are not a new optimized adder template.
+Zero offsets still check initialization. All physical costs remain budgeted.
+
+The unchanged exact_amplitude_amplification.qmod has independent Circuit and
+analytic full-state acceptance. The unchanged partial_exponential_state_preparation.qmod
+has a supplied amplitude 0.996625424765961 inconsistent with the approximately
+0.9979545784437375 mass of its exp(+x/2), x>=21 preparation. It deliberately
+refuses; a clearly labelled corrected diagnostic copy tests that full path,
+including x += -18, without increasing original coverage. No original parameter
+is silently changed. Run tools/validate_qmod_exact_amplification.py with --case
+exact_amplitude_amplification (or partial_exponential_state_preparation) and
+--output /tmp/amplification.json. The second choice validates the corrected copy
+and the original refusal. Run python -m examples.synthesis_exact_amplification
+for original Qmod, existing native R/phase composition and Circuit comparison.
+Native rounds and its auxiliary output are explicit; this adds no native exact
+amplification export or native for-loop support. Evidence is local CPU correctness.
+
+
+## Scalar-controlled Pauli evolution and classical angles
+
+The experimental Qmod boundary supports one scalar unsigned bit (including an
+indexed qbit array element) controlling pure Pauli evolution, with literal
+zero/one polarity and an optional else branch. Static helpers reuse the same
+specialization and existing owned Pauli effects. Identity terms retain their
+relative phase. Nested controls, allocation or mixed effects inside these
+branches, overlapping control/target storage and signed numeric controls refuse.
+Positive Const controls borrow storage; negative/else controls require writable
+storage because the existing implementation uses paired X operations. Signed
+argument metadata is preserved through bound helper calls.
+
+Finite classical angle expressions support +, -, *, /, pi and bound real inputs.
+Matrix, probability and state-preparation literal domains retain their previous
+scanner and checks. No quantum-dependent angle is admitted by this profile.
+Run python -m examples.synthesis_controlled_evolution for the unchanged BPDE
+Qmod, native phase-composition qfunc and independent Circuit full-state comparison
+at two nonzero delta values. Native steps are explicit; this adds no native
+Hamiltonian-array export or Python for-loop support. The original's dropped
+Hamiltonian target is semantic data, not a promised zero auxiliary register.
+The separately recorded partial-exponential amplitude mismatch remains refused;
+no original corpus source or baseline is rewritten. Evidence is local CPU only.
+
+
+## Checked swap test and source-data refusal
+
+The experimental Qmod adapter composes swap_test from existing Hadamard and
+indexed controlled-X effects. Equal nonempty initialized writable input views
+and one fresh scalar qbit Output must have disjoint locations. Existing owned
+allocation and Const checks remain authoritative, including scalar Output
+forwarding through static helpers. No public native swap_test export is added.
+
+The pinned swap_test.qmod has amplitude squared norms 1.1072 and 1.1076 with
+zero preparation error bound, violating the official unit-norm contract. It
+remains refused; no automatic normalization or weakened verifier is introduced.
+A separately archived, normalized diagnostic copy checks the complete path
+against independent Circuit permutation and symmetric/antisymmetric algebra.
+It contributes zero original execution coverage. Run tools/validate_qmod_swap_test.py
+--output /tmp/swap-test.json. Run python -m examples.synthesis_swap_test for valid
+one-bit Qmod, existing native phase/CX qfunc composition and Circuit comparison.
+Dropped input states are retained semantic data, not clean workspace. This is
+local CPU correctness evidence only. Existing partial-exponential source-amplitude
+refusal and historical baselines remain unchanged.
+
+
+## Lexical binding-only within/apply
+
+The experimental Qmod adapter supports a within preparation consisting only of
+register -> bindings, followed by bounded static gates and specialized gate
+helpers in apply. It restores incoming view, width and suspended-name metadata
+on scope exit; temporary aliases cannot escape. This is a lexical view scope,
+not allocation, numerical inversion or a proof that arbitrary quantum data is
+zero. Allocation, initialization, release and other ownership-changing apply
+effects refuse after specialization. Existing arithmetic and Hadamard within
+paths retain their contracts. Static loops in other quantum scopes are unchanged.
+
+Whole registers and scalar/static indexed locations can concatenate into one
+helper array actual, preserving low-to-high source order and existing alias
+checks. Bound helpers may declare an unallocated unsized qbit[] alias. All
+source initialization, Const mutation, width, loop shadow and resource budgets
+remain checked. Run tools/validate_qmod_binding_scopes.py --case 0 --output
+/tmp/autoencoder.json (also case 1) for the unchanged quantum_autoencoder.qmod
+with two nonzero parameter bindings and independent Circuit full-state comparison.
+Run python -m examples.synthesis_autoencoder for the original Qmod, existing
+scalar native qfunc composition and Circuit comparison. No native array/loop
+export or numerical kernel is added. Dropped coded data retains physical state;
+it is not zero workspace. Existing source-semantic refusals and baselines remain.
+
+
+## Checked static amplitude-amplification iterations
+
+The Qmod boundary admits amplitude_amplification(reps,oracle,space_transform,target)
+with named single-array callbacks and bounded static repetitions. It composes
+existing preparation and Q=-A*S0*A^-1*S_chi without changing the original global
+minus sign. Oracle validation covers indexed Z and the checked pi sign-phase
+profile, including zero-round and unused definitions. Closed +,-,* index arithmetic
+and array length preserve actual bounds; fractional phases, captures, writes and
+Output escape refuse. Existing pure phase/pair effects invert in reverse order.
+No amplitude parameter or state-normalization repair is inferred.
+
+Untyped array/slice arguments may borrow a flat record layout only at its exact
+width; named records remain nominal and signed/fractional casts refuse. A local
+flat record retains semantic storage like an existing local array. Binding-only
+apply accepts the same checked pure unitary effects; ownership changes refuse.
+X apply_to_all and phase-flip views reuse indexed lowering; whole-register routes
+remain unchanged. Static loops and physical/effect/helper budgets remain bounded.
+
+Run tools/validate_qmod_iterations.py with --case quantum_counting (also
+quantum_counting_iqae or qmci_pi_estimation), --repetitions 0/1/2 and --output
+/tmp/iterations.json for unchanged originals against independent Circuit and
+analytic full vectors. Run python -m examples.synthesis_amplification_iterations
+for native scalar phase/CX qfunc, Qmod and Circuit comparison. Native rounds are
+explicit; no native amplification, array or mutable helper export is added.
+Dropped problem data remains semantic, not clean workspace. Actual scratch is
+checked separately. Source-semantic refusals and historical baselines are retained;
+this is local CPU correctness evidence only.
+
+
+## Ordinary QPE source integration evidence
+
+Status: development_evidence, exact local CPU complex128. The unchanged
+quantum_counting_qpe, qpe_for_matrix and qpe_for_unitary_matrix originals compare
+complete complex statevectors against independent matrix powers and an explicit
+inverse Fourier transform. Source/license hashes are pinned in
+tests/fixtures/classiq_qmod/static_qpe_sources.json; run
+tools/validate_qmod_static_qpe.py for individual cases. Dropped problem registers
+remain semantic data and workspace is checked separately.
+
+The source slice reuses existing controls, phases, preparation and inverse QFT.
+Compiler adds bounded registered-gate matrix powers and controlled Givens
+composition. Structural commutation representatives preserve the old partitions
+and logical pair counters while avoiding repeated equivalent predicates.
+No numerical kernel, public source schema or native array-QPE export is added.
+See the [source scope and runnable comparison](../../flagquantum/ecosystem/_qmod/README.md#bounded-ordinary-qpe-composition)
+and [limitations](../reference/KNOWN_LIMITATIONS.md#ordinary-qpe-source-boundary).
+Global corpus counts remain separate from these three original acceptance cases.

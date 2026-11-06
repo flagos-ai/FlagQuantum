@@ -156,10 +156,14 @@ def test_lexical_scope_depth_has_an_independent_bounded_limit(depth: int) -> Non
         )
 
 
+def test_explicit_local_allocation_requires_drop_before_return() -> None:
+    with pytest.raises(HybridVerificationError, match="drop every hidden register"):
+        parse("allocate(flag);")
+
+
 @pytest.mark.parametrize(
     "body",
     [
-        "allocate(flag);",
         "flag=x<y;",
         "phase(flag,pi);",
         "X(flag);",

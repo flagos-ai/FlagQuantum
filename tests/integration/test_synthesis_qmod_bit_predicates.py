@@ -63,15 +63,16 @@ def test_classical_bit_literals_fold(expression: str) -> None:
     check_state(p, fq.run(p), {(expected,): 1})
 
 
-@pytest.mark.parametrize("expression", ["x&1", "x|0", "~x", "x^1", "2&1"])
-def test_multibit_operands_refused_even_with_small_initial_values(
-    expression: str,
-) -> None:
-    with pytest.raises(InteropConversionError):
-        synth.synthesize(
-            f"qfunc main(output x:qnum<2>,output result:qnum) {{x=0;result={expression};}}",
-            source_format="qmod",
-        )
+@pytest.mark.parametrize(
+    ("expression", "expected"),
+    [("x&1", 0), ("x|0", 0), ("~x", 3), ("x^1", 1), ("2&1", 0)],
+)
+def test_multibit_width_is_independent_of_initial_value(expression, expected):
+    program = synth.synthesize(
+        f"qfunc main(output x:qnum<2>,output result:qnum) {{x=0;result={expression};}}",
+        source_format="qmod",
+    )
+    check_state(program, fq.run(program), {(0, expected): 1})
 
 
 @pytest.mark.parametrize("expression", ["0&x", "1|x", "x^x", "~x"])

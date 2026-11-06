@@ -1,0 +1,20 @@
+{
+  "repository": "https://github.com/Classiq/classiq-library",
+  "commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "license_file": "LICENSE.txt",
+  "license_sha256": "241f68c9f35357f97e8a2a195e447d4f80098c140f0b3b3c770a11eed96f58e0",
+  "fixtures": [
+    {
+      "file": "facility_location.qmod",
+      "upstream_path": "applications/logistics/facility_location/facility_location.qmod",
+      "git_blob_sha1": "c0c72d9e57c8d482cf956816f6d23b86435c8194",
+      "sha256": "bf193efb21cb352c03fe6fe55405728eefe8c6e3d597ba0bb6ce2a9cb432a02c"
+    },
+    {
+      "file": "traveling_salesman_problem.qmod",
+      "upstream_path": "applications/logistics/traveling_salesman_problem/traveling_salesman_problem.qmod",
+      "git_blob_sha1": "ff4c071d90018bdf75ccfc026d154534c3e5af7a",
+      "sha256": "e67a949ccb921de1d95f8d60600ccaf3b4acd0ab800287f94b5a723259e931b6"
+    }
+  ]
+}

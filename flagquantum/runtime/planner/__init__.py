@@ -52,6 +52,7 @@ from .candidates import (
     RuntimeCandidateBuilder,
 )
 from .estimates import (
+    _exact_mps_bond,
     estimate_density_bytes,
     estimate_mps_bytes,
     estimate_state_bytes,
@@ -1057,7 +1058,9 @@ def plan(
             f"target={resolved.target!r} requires a measurement embedded in the program"
         )
     stable_trajectory_count = 32
-    stable_mps_max_bond: int | None = None
+    stable_mps_max_bond = _exact_mps_bond(
+        source_ir, resolved, has_noise, is_dynamic, world_size
+    )
     complex_bytes = 16 if resolved.precision == "complex128" else 8
     if (
         has_noise

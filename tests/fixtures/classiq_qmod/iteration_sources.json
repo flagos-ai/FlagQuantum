@@ -1,0 +1,26 @@
+{
+  "repository": "https://github.com/Classiq/classiq-library",
+  "commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "license_file": "LICENSE.txt",
+  "license_sha256": "241f68c9f35357f97e8a2a195e447d4f80098c140f0b3b3c770a11eed96f58e0",
+  "fixtures": [
+    {
+      "file": "quantum_counting.qmod",
+      "source_path": "algorithms/amplitude_amplification_and_estimation/quantum_counting/quantum_counting.qmod",
+      "git_blob_sha1": "f85e591ce8fceb9967a3117fb5c5cb5ddf3de78a",
+      "sha256": "1406ca98e970189c574fbcaa2b58daca07c4cb84c1a703a30fb135905c4852f7"
+    },
+    {
+      "file": "quantum_counting_iqae.qmod",
+      "source_path": "algorithms/amplitude_amplification_and_estimation/quantum_counting/quantum_counting_iqae.qmod",
+      "git_blob_sha1": "9368b9ce6ad4afbcdca16633316525d0e8bf2e05",
+      "sha256": "d4ba4f58dea107382503b71c3c4390c76e5c1978a27eb0a1f6781cf8a0a724a3"
+    },
+    {
+      "file": "qmci_pi_estimation.qmod",
+      "source_path": "tutorials/basic_tutorials/qmci_pi_estimation/qmci_pi_estimation.qmod",
+      "git_blob_sha1": "0c2d3702afdd1ce7cf972efb7e909f689196d6e8",
+      "sha256": "780b1a90d4aa5d7348a457a28095dccd4bc221d948ec478c1f9f1f8c691c905d"
+    }
+  ]
+}

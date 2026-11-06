@@ -18,6 +18,7 @@ from .._arithmetic_kernels import (
     constant_multiply_accumulate,
     multiply_accumulate,
     ripple_add,
+    ripple_subtract_mod,
     square_accumulate,
     xor_add_parts,
 )
@@ -166,6 +167,45 @@ def _copy(value: _WireValue, target: tuple[int, ...]) -> tuple[Instruction, ...]
         Instruction("cx", (source, dest))
         for source, dest in zip(value, target[-len(value) :], strict=True)
     )
+
+
+def _bitwise(
+    operator: str,
+    words: tuple[_WireValue, ...],
+    target: tuple[int, ...],
+    signed: tuple[bool, ...],
+) -> Iterable[Instruction]:
+    words = tuple(
+        (
+            (word[0],) * max(0, len(target) - len(word)) + word
+            if sign and isinstance(word, tuple)
+            else word
+        )
+        for word, sign in zip(words, signed, strict=True)
+    )
+    if operator in {"~", "|", "^"}:
+        for word in words:
+            yield from _copy(word, target)
+    if operator == "~":
+        for wire in target:
+            yield Instruction("x", (wire,))
+    if operator not in {"&", "|"}:
+        return
+
+    for bit, wire in enumerate(reversed(target)):
+        controls = []
+        for word in words:
+            if isinstance(word, int):
+                if not word & (1 << bit):
+                    break
+            elif bit < len(word):
+                controls.append(word[-1 - bit])
+            else:
+                break
+        else:
+            # A repeated control is idempotent, including x & x and x | x.
+            ports = (*dict.fromkeys(controls), wire)
+            yield Instruction(("x", "cx", "ccx")[len(ports) - 1], ports)
 
 
 def _emit_arithmetic(
@@ -339,6 +379,8 @@ def _emit_arithmetic(
             "qint.less",
             "qint.multiply",
             "qint.select",
+            "qint.bitwise",
+            "qint.subtract_mod",
         } or carry_free_add(op):
             owned = allocate(unsigned_width(bound(key)), op)
             return _Allocation(owned, owned)
@@ -353,6 +395,28 @@ def _emit_arithmetic(
     def kernel(
         key: ValueId, allocation: _Allocation, op: Operation, scratch: tuple[int, ...]
     ) -> Iterable[Instruction]:
+        if op.name == "qint.bitwise":
+            return _bitwise(
+                op.attributes["operator"],
+                tuple(encoding(value.id) for value in op.operands),
+                allocation.result,
+                op.attributes.get("signed", (False,) * len(op.operands)),
+            )
+        if op.name == "qint.subtract_mod":
+            left, right = operands(op)
+            subtrahend, carry = scratch[:-1], scratch[-1]
+            width = len(allocation.result)
+            if isinstance(left, tuple):
+                left = left[-width:]
+            if isinstance(right, tuple):
+                right = right[-width:]
+            copy_right = _copy(right, subtrahend)
+            return (
+                *_copy(left, allocation.result),
+                *copy_right,
+                *ripple_subtract_mod(subtrahend, allocation.result, carry),
+                *reversed(copy_right),
+            )
         if op.name == "qint.select":
             predicate, yes, no = (encoding(value.id) for value in op.operands)
             assert isinstance(predicate, tuple) and len(predicate) == 1
@@ -418,6 +482,8 @@ def _emit_arithmetic(
                 variable = right if isinstance(left, int) else left
                 assert isinstance(variable, tuple)
                 scratch_count = max(0, len(allocation.result) - len(variable)) + 1
+        elif op.name == "qint.subtract_mod":
+            scratch_count = len(allocation.result) + 1
         elif op.name in {"qint.equal", "qint.less"}:
             scratch_count = max(unsigned_width(bound(v.id)) for v in op.operands) + 2
         scratch = allocate(scratch_count, op) if scratch_count else ()

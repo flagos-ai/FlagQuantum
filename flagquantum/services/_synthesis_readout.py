@@ -12,6 +12,7 @@ import torch
 
 from ..core.ir import MeasurementNode
 from ..runtime.measurements import execute_measurements
+from ..runtime.mps_result import mps_marginal, native_mps
 from ..runtime.result import ExecutionResult
 from ._synthesis_execution import CheckedExecution
 
@@ -88,34 +89,73 @@ def probabilities(
         )
     resources = checked.verify_result(result)
     state = result.state
-    assert isinstance(state, torch.Tensor)
     selected = tuple(q for name in registers for q in mapping[name])
     bits = len(selected)
-    if bits > max_bits or 1 << bits > max_keys or state.numel() > max_amplitudes:
+    mixed = checked.plan.state_mode == "density_matrix"
+    native = native_mps(result) if checked.plan.state_mode == "mps" else None
+    if native is not None:
+        scanned = max(
+            sum(t.numel() for t in native.tensors), (1 << bits) * native.max_bond**2
+        )
+    else:
+        assert isinstance(state, torch.Tensor)
+        scanned = state.shape[-1] if mixed else state.numel()
+    if bits > max_bits or 1 << bits > max_keys or scanned > max_amplitudes:
         raise ValueError(
             f"readout budget exceeded: {bits} selected bits, {1 << bits} possible keys, "
-            f"{state.numel()} amplitudes; limits are {max_bits}, {max_keys}, {max_amplitudes}. "
+            f"{scanned} amplitudes; limits are {max_bits}, {max_keys}, {max_amplitudes}. "
             "Select fewer registers or explicitly increase the appropriate read limit."
         )
     with torch.no_grad():
-        mass = float(torch.linalg.vector_norm(state).square().item())
-        tolerance = 1e-6 if state.dtype == torch.complex64 else 1e-10
-        if not math.isfinite(mass) or abs(mass - 1) > tolerance:
-            raise ValueError(
-                "statevector is not normalized; named reading will not repair or renormalize it"
-            )
-        measured = execute_measurements(
-            state.reshape(1, -1),
-            (
-                MeasurementNode(
-                    "probabilities", selected, metadata={"max_marginal_wires": max_bits}
+        if native is not None:
+            marginal = mps_marginal(native, selected)
+            tolerance = 1e-6 if native.dtype == torch.complex64 else 1e-10
+            mass = float(marginal.sum().item())
+            if (
+                not math.isfinite(mass)
+                or abs(mass - 1) > tolerance
+                or torch.any(marginal < -tolerance)
+            ):
+                raise ValueError("MPS marginal must be normalized and nonnegative")
+        else:
+            assert isinstance(state, torch.Tensor)
+            tolerance = 1e-6 if state.dtype == torch.complex64 else 1e-10
+            if mixed:
+                measurement_input = state.reshape(1, scanned, scanned)
+                diagonal = measurement_input.diagonal(dim1=-2, dim2=-1)
+                mass = diagonal.sum().item()
+                if (
+                    torch.any(diagonal.real < -tolerance)
+                    or not math.isfinite(abs(mass))
+                    or abs(mass - 1) > tolerance
+                ):
+                    raise ValueError(
+                        "density matrix requires a normalized nonnegative diagonal"
+                    )
+            else:
+                measurement_input = state.reshape(1, -1)
+                mass = float(torch.linalg.vector_norm(state).square().item())
+                if not math.isfinite(mass) or abs(mass - 1) > tolerance:
+                    raise ValueError(
+                        "statevector is not normalized; named reading will not repair or renormalize it"
+                    )
+            measured = execute_measurements(
+                measurement_input,
+                (
+                    MeasurementNode(
+                        "probabilities",
+                        selected,
+                        metadata={"max_marginal_wires": max_bits},
+                    ),
                 ),
-            ),
-            n_qubits=resources.n_qubits,
-        )
-        marginal = measured[0].value
-        if not isinstance(marginal, torch.Tensor):
-            raise TypeError("the existing probability reader did not return a tensor")
+                n_qubits=resources.n_qubits,
+            )
+            value = measured[0].value
+            if not isinstance(value, torch.Tensor):
+                raise TypeError(
+                    "the existing probability reader did not return a tensor"
+                )
+            marginal = value
         probabilities = tuple(float(p) for p in marginal.reshape(-1).tolist())
     widths = tuple(len(mapping[name]) for name in registers)
     values: dict[tuple[int, ...], float] = {}
@@ -132,7 +172,7 @@ def probabilities(
         values[tuple(key)] = probability
     diagnostics: _ReadDiagnostics = {
         "selected_bits": bits,
-        "scanned_amplitudes": state.numel(),
+        "scanned_amplitudes": scanned,
         "possible_keys": 1 << bits,
         "materialized_keys": len(values),
         "omitted_probability": omitted,

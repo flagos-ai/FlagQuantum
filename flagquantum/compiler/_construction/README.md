@@ -16,7 +16,9 @@ token. Function inputs are immutable basis borrows. Repeated reads of a value
 are legal; overlapping physical input/output/workspace ports are not.
 
 Supported records are `arith.constant` with classical INDEX type and a checked
-nonnegative integer, `qint.add`, `qint.multiply`, `qint.equal`, `qint.less`, `qint.call`, and `qint.return`.
+nonnegative integer, `qint.add`, `qint.multiply`, `qint.equal`, `qint.less`, `qint.call`, and `qint.return`. The Qmod adapter also uses
+`qint.subtract_mod` for raw word subtraction modulo the declared result width.
+Qmod owns sign extension and binary-point alignment before this operation.
 Functions return one quantum integer expression. Definitions form an acyclic
 call graph. This is a closed verifier profile, not an extension to the existing
 classical hybrid verifier or its lowering pipeline.

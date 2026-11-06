@@ -1,0 +1,20 @@
+{
+  "repository": "https://github.com/Classiq/classiq-library",
+  "commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "license_file": "LICENSE.txt",
+  "license_sha256": "241f68c9f35357f97e8a2a195e447d4f80098c140f0b3b3c770a11eed96f58e0",
+  "fixtures": [
+    {
+      "file": "quantum_compression_algorithm_for_symmetric_states.qmod",
+      "source_path": "community/paper_implementation_project/quantum_compression_algorithm_for_symmetric_states/quantum_compression_algorithm_for_symmetric_states.qmod",
+      "git_blob_sha1": "6d15169fda6a7eaec81ed2a2fb6be8f711c7780d",
+      "sha256": "79c03c4b8dca7c5c37ae9cbb48d62b5f88e2e71d27441bc8c252eb9507576f62"
+    },
+    {
+      "file": "Qmod_tutorial_part2.qmod",
+      "source_path": "tutorials/basic_tutorials/the_classiq_tutorial/Qmod_tutorial_part2.qmod",
+      "git_blob_sha1": "f2489a9e1dd6ab7459a0401a5c441a751849d4ec",
+      "sha256": "2330d29aca4c78675ca164737dca041ea4d4b2b0903ad6f1dc4a64ceca02f844"
+    }
+  ]
+}

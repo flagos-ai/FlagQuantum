@@ -13,16 +13,18 @@ from typing import NoReturn
 
 from .._hybrid.model import INDEX, HybridProgram, IRType, Operation, ValueId
 from .._hybrid.verifier import Diagnostic, HybridVerificationError
-from .ranges import unsigned_width
+from .ranges import bitwise_width, unsigned_width
 
 _ATTRIBUTES = MappingProxyType(
     {
         "arith.constant": frozenset({"value"}),
         "qint.add": frozenset(),
+        "qint.subtract_mod": frozenset(),
         "qint.multiply": frozenset(),
         "qint.equal": frozenset(),
         "qint.less": frozenset(),
         "qint.select": frozenset(),
+        "qint.bitwise": frozenset({"operator"}),
         "qint.call": frozenset({"callee"}),
         "qint.return": frozenset(),
     }
@@ -131,6 +133,8 @@ def verify_construction(
                     f"unsupported operation {operation.name!r}",
                     operation,
                 )
+            if operation.name == "qint.bitwise" and "signed" in operation.attributes:
+                expected_attributes = expected_attributes | {"signed"}
             actual_attributes = set(operation.attributes)
             if actual_attributes != expected_attributes:
                 _fail(
@@ -197,6 +201,14 @@ def verify_construction(
                     )
                 left, right = (item[1] for item in operands)
                 bound = left + right if operation.name == "qint.add" else left * right
+            elif operation.name == "qint.subtract_mod":
+                if len(operands) != 2 or all(item[0] == INDEX for item in operands):
+                    _fail(
+                        "arithmetic.signature",
+                        "modular subtraction requires two operands including a quantum value",
+                        operation,
+                    )
+                bound = (1 << width) - 1
             elif operation.name in {"qint.equal", "qint.less"}:
                 if len(operands) != 2 or all(item[0] == INDEX for item in operands):
                     _fail(
@@ -211,6 +223,45 @@ def verify_construction(
                         operation,
                     )
                 bound = 1
+            elif operation.name == "qint.bitwise":
+                operator = operation.attributes["operator"]
+                if (
+                    not isinstance(operator, str)
+                    or operator not in {"~", "&", "|", "^"}
+                    or len(operands) != (1 if operator == "~" else 2)
+                    or all(kind == INDEX for kind, _ in operands)
+                ):
+                    _fail(
+                        "bitwise.signature",
+                        "bitwise operation requires integer encodings and a quantum value",
+                        operation,
+                    )
+                signed = operation.attributes.get("signed", (False,) * len(operands))
+                if (
+                    not isinstance(signed, tuple)
+                    or len(signed) != len(operands)
+                    or any(
+                        type(sign) is not bool or (sign and kind == INDEX)
+                        for sign, (kind, _) in zip(signed, operands, strict=True)
+                    )
+                ):
+                    _fail(
+                        "bitwise.signature",
+                        "sign extension requires quantum word operands",
+                        operation,
+                    )
+                widths = tuple(
+                    unsigned_width(bound) if kind == INDEX else _width(kind, max_width)
+                    for kind, bound in operands
+                )
+                required = bitwise_width(operator, widths, signed)
+                if width < required or (operator == "~" and width != required):
+                    _fail(
+                        "bitwise.width",
+                        "bitwise result has incompatible width",
+                        operation,
+                    )
+                bound = (1 << width) - 1
             elif operation.name == "qint.select":
                 if len(operands) != 3 or operands[0][0] != uint_type(1):
                     _fail(

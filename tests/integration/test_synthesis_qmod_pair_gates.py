@@ -116,7 +116,6 @@ def test_native_crx_requires_finite_static_angle():
     [
         ("allocate(a); allocate(b); CX(a,a);", "register.gate"),
         ("allocate(a); CRX(1,a,b);", "register.uninitialized"),
-        ("allocate(a); allocate(b); CRX(-1,a,b);", "qmod.expression"),
         ("allocate(a); allocate(b); SWAP(a);", "qmod.signature"),
     ],
 )
@@ -126,3 +125,14 @@ def test_pair_gate_rejections(body, diagnostic):
         (HybridVerificationError, InteropConversionError), match=diagnostic
     ):
         synth.synthesize(source, source_format="qmod")
+
+
+def test_negative_crx_angle_preserves_full_coherent_state() -> None:
+    p = synth.synthesize(
+        "qfunc main(output a:qbit,output b:qbit) {allocate(a);allocate(b);H(a);CRX(-1,a,b);}",
+        source_format="qmod",
+    )
+    c = fq.Circuit(2, dtype=torch.complex128).h(0).crx(0, 1, theta=-1)
+    torch.testing.assert_close(
+        fq.run(p).statevector(), fq.run(c).statevector(), atol=1e-12, rtol=0
+    )
