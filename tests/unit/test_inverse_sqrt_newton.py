@@ -222,3 +222,28 @@ def test_locked_chemistry_update_is_a_distinct_resource_model(n, m, o, expected)
     assert (counts.toffoli, counts.measurement) == expected
     with pytest.raises(DecomposeNotImplementedError):
         model.decompose_bloq()
+
+
+def test_newton_quantum_correction_preserves_word_and_changes_update():
+    source, estimate, result, work, bits = layout(1, 2, 0, 2, 3)
+    correction = tuple(range(6 + len(work), 10 + len(work)))
+    gates = inverse_sqrt_newton_step_ir(
+        source,
+        estimate,
+        result,
+        work,
+        bits,
+        source_fraction_bits=0,
+        estimate_fraction_bits=2,
+        correction=correction,
+    )
+    base = (1, 1, 0)
+    cases = (
+        ((0, 0, 0, 0), (0, 1, 0)),
+        ((1, 0, 0, 0), (0, 1, 1)),
+    )
+    before = tuple(base + (0,) * (3 + len(work)) + word for word, _ in cases)
+    after = tuple(base + updated + (0,) * len(work) + word for word, updated in cases)
+    events = sum(gate.name == "measure" for gate in gates)
+    assert certified_and_channel_map(gates, before) == (after, events)
+    assert certified_and_channel_map(gates, after) == (before, events)

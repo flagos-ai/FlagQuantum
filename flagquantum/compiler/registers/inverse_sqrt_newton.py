@@ -6,7 +6,7 @@
 
 from ...core.ir import Instruction
 from .bit_compression import with_weighted_columns_ir
-from .bitwise import _validate_wires, xor_constant_ir
+from .bitwise import _validate_wires, xor_constant_ir, xor_ir
 from .integer_product import _product_terms, integer_product_requirements
 from .integer_square import integer_square_ir, integer_square_workspace_size
 from .product_accumulation import product_accumulation_ir
@@ -48,9 +48,12 @@ def inverse_sqrt_newton_step_ir(
     *,
     source_fraction_bits: int,
     estimate_fraction_bits: int,
+    correction: tuple[int, ...] = (),
 ) -> tuple[Instruction, ...]:
     """XOR the truncation of x*(3-a*x*x)/2 into a big-endian result.
 
+    A correction word optionally adds delta to 3, with f + 2*b fraction
+    bits for source fraction width f and estimate fraction width b.
     The unsigned result shares the estimate's fractional width. The valid
     domain has a*x*x <= 3 and a truncated update that fits the result.
     Source, estimate and clean caller-owned work are restored. Reapply
@@ -72,7 +75,9 @@ def inverse_sqrt_newton_step_ir(
         or len(set(classical_bits)) != slots
     ):
         raise ValueError("Inverse square root requires distinct nonnegative slots")
-    _validate_wires((*source, *estimate, *result, *workspace))
+    if len(correction) > f + 2 * b:
+        raise ValueError("Newton correction must be an unsigned fraction below one")
+    _validate_wires((*source, *estimate, *result, *workspace, *correction))
 
     factor_width = _factor_width(n, m, f, b)
     square = workspace[: 2 * m]
@@ -86,6 +91,11 @@ def inverse_sqrt_newton_step_ir(
         estimate, square, scratch[:square_work], measurement_bit=classical_bits[0]
     )
     set_constant = xor_constant_ir(factor, 3 << (f + 2 * b))
+    set_factor = (
+        (*set_constant, *xor_ir(correction, factor[-len(correction) :]))
+        if correction
+        else set_constant
+    )
     operands = (source, square, factor, scratch[:inner_work], carries, classical_bits)
     subtract = product_accumulation_ir(*operands, adjoint=True)
     add = product_accumulation_ir(*operands)
@@ -110,10 +120,10 @@ def inverse_sqrt_newton_step_ir(
     )
     return (
         *compute_square,
-        *set_constant,
+        *set_factor,
         *subtract,
         *multiply,
         *add,
-        *set_constant,
+        *set_factor,
         *compute_square,
     )
