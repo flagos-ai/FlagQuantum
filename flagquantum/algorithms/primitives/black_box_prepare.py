@@ -8,8 +8,9 @@
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 
+from ...compiler.registers.auto_partition import AutoPartition
 from ...compiler.registers.bitwise import _validate_wires
-from ...compiler.registers.partition import RegisterLayout, partition_register
+from ...compiler.registers.partition import RegisterLayout
 from ...core.ir import Instruction
 
 PrepareEmitter = Callable[
@@ -47,18 +48,19 @@ class BlackBoxPrepare:
         """Lower the child on the same physical qubits with no partition gates."""
         if type(adjoint) is not bool:
             raise ValueError("Preparation direction must be boolean")
-        selection_ports = partition_register(selection, self.selection_layout)
-        junk_ports = partition_register(junk, self.junk_layout)
-        if selection_ports.keys() & junk_ports.keys():
+        if {name for name, _ in self.selection_layout} & {
+            name for name, _ in self.junk_layout
+        }:
             raise ValueError("Preparation selection and junk names must be distinct")
+        ports, _ = AutoPartition(
+            (("selection", self.selection_layout), ("junk", self.junk_layout))
+        ).bind({"selection": selection, "junk": junk})
         allowed = (*selection, *junk, *workspace)
         if allowed:
             _validate_wires(allowed)
         if not selection:
             return ()
-        gates = self.prepare(
-            selection_ports | junk_ports, workspace, classical_bits, adjoint
-        )
+        gates = self.prepare(ports, workspace, classical_bits, adjoint)
         qubits = set(allowed)
         if any(q not in qubits for gate in gates for q in gate.wires):
             raise ValueError("Preparation used a qubit outside the bound registers")

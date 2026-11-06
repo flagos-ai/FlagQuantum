@@ -745,6 +745,21 @@ calls in its forward and inverse resource rows. For a swap of two
 four-qubit registers the model reports 16 T-family gates and 87 abstract
 Cliffords. The original primitive instruction count is tracked separately.
 
+## Automatically partitioned ports
+
+`AutoPartition` binds packed groups to named child ports in their declared
+order. An unused segment passes through and rejoins its original group.
+Repacking uses the child's actual output wire mapping, so virtual
+permutations remain bookkeeping. `left_only` exposes the named child
+outputs directly and supports consumed input ports. It rejects unused
+segments, matching the pinned constructor. The pinned version also
+rejects child signatures with right-only ports.
+
+Partitioning emits no instructions and adds no scratch. Its resource
+width includes unused wires live during the child. Symbolic widths are
+available to the resource model, while binding requires concrete widths.
+BlackBoxPrepare shares the same binding path.
+
 ## Register identity
 
 The source models Identity as one atomic call with zero QEC gates.
