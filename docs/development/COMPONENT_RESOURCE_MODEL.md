@@ -2550,3 +2550,30 @@ These source components provide resource graphs. SELECT's
 `additional_control` parameter leaves the locked signature and estimate
 unchanged. The model does not imply that the control acts on a physical
 system register.
+
+### Single-factorization block encoding
+
+The resource graph includes the directional PREPARE costs. In the
+one-body block, the inverse can use a different two-axis blocking pair.
+The full block calls outer PREPARE, the one-body block, a controlled
+zero reflection, the one-body block again, and outer PREPARE adjoint.
+The reflection's only control in the locked decomposition is `succ_l`.
+
+```python
+from flagquantum.algorithms.primitives.single_factorization_encoding_model import (
+    source_single_factorization_block_encoding_cost,
+)
+from flagquantum.qec.resources.estimation import estimate_ftqc_resources
+
+report = estimate_ftqc_resources(
+    source_single_factorization_block_encoding_cost(50, 10, 12, 7)
+)
+assert report.logical.gates.toffoli == 3095
+assert report.logical.gates.cswap == 50
+assert report.logical.gates.measurement == 179
+assert report.logical.peak_logical_qubits == 80
+```
+
+The locked PREPARE and SELECT leaves supply resource graphs. The source
+leaves `alpha` and `epsilon` undefined. The top-level resource report
+describes that model and its original binding conventions.

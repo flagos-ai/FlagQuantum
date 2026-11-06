@@ -54,6 +54,8 @@ def source_single_factorization_inner_prepare_cost(
     rotation_bits: int = 8,
     first_block: int = 1,
     second_block: int = 1,
+    *,
+    adjoint: bool = False,
 ) -> ComponentCost:
     """Model the original triangular PREPARE, including both QROAM axes."""
     n = _spatial_width(spin_orbitals)
@@ -72,7 +74,7 @@ def source_single_factorization_inner_prepare_cost(
         )
     triangular = spin_orbitals**2 // 8 + spin_orbitals // 4
     return ComponentCost(
-        "InnerPrepareSingleFactorization",
+        "Adjoint" if adjoint else "InnerPrepareSingleFactorization",
         auxiliaries.bit_length() + 2 * n + 1,
         calls=(
             CostCall(_TOFFOLI, 6 * n + 2 * rotation_bits - 7),
@@ -84,6 +86,7 @@ def source_single_factorization_inner_prepare_cost(
                     first_block,
                     second_block,
                     2 * n + alias_bits + 2,
+                    adjoint=adjoint,
                 )
             ),
             CostCall(source_equal_width_less_equal_cost(alias_bits)),
@@ -93,7 +96,7 @@ def source_single_factorization_inner_prepare_cost(
 
 
 def source_single_factorization_outer_prepare_cost(
-    auxiliaries: int, alias_bits: int
+    auxiliaries: int, alias_bits: int, *, adjoint: bool = False
 ) -> ComponentCost:
     """Count uniform, QROAM, comparison and swap on the outer alias register."""
     if type(auxiliaries) is not int or auxiliaries < 0:
@@ -101,12 +104,14 @@ def source_single_factorization_outer_prepare_cost(
     rows = auxiliaries + 1
     lookup_address = rows.bit_length()
     return ComponentCost(
-        "OuterPrepareSingleFactorization",
+        "Adjoint" if adjoint else "OuterPrepareSingleFactorization",
         auxiliaries.bit_length() + 3,
         calls=(
             CostCall(source_uniform_preparation_cost(rows)),
             CostCall(
-                source_chemistry_qroam_cost(rows, lookup_address + alias_bits + 2)
+                source_chemistry_qroam_cost(
+                    rows, lookup_address + alias_bits + 2, adjoint=adjoint
+                )
             ),
             CostCall(source_equal_width_less_equal_cost(alias_bits)),
             CostCall(_controlled_swap_cost(lookup_address + 1)),
