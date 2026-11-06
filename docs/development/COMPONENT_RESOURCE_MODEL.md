@@ -2130,3 +2130,53 @@ forward and reverse gate dependencies with the pinned QROAM using the
 same permuted inputs, including every measurement history of the small
 blocked and unblocked fixtures. The original preprocessing uses the
 unpermuted declaration and has its own model comparison.
+
+### Full THC alias preparation
+
+`PrepareTHCChemistry` binds the uniform signal, contiguous index,
+named lookup and signed alias exchange. The one-body flag is first
+cleared from the original pair, then written from the selected pair.
+That flag controls the final source-style symmetrization together with
+`plus_a`. The original address, lookup banks and symmetry predicate
+remain logical outputs. The comparison flag and temporary work return
+to zero. Bind the inverse with `adjoint=True` and the same ports.
+
+```python
+from flagquantum.algorithms.primitives.thc_chemistry_data import thc_chemistry_data
+from flagquantum.algorithms.primitives.thc_chemistry_prepare import PrepareTHCChemistry
+from flagquantum.compiler.registers.partition import partition_register
+from flagquantum.dynamic import DynamicCircuit
+from flagquantum.qec.resources.estimation import estimate_ftqc_resources
+
+data = thc_chemistry_data(
+    [6.0, -8.0], [[1.0, 1.0], [1.0, 1.0]], [[1.0, -2.0], [-2.0, 4.0]],
+    probability_bits=1, log_block_size=1,
+)
+prepare = PrepareTHCChemistry(data)
+layout = (*prepare.selection_layout, *prepare.junk_layout)
+width = sum(size for _, size in layout)
+ports = partition_register(tuple(range(width)), layout)
+work, slots = prepare.requirements()
+op = prepare.make_on(
+    ports, workspace=tuple(range(width, width + work)), classical_bits=tuple(range(slots))
+)
+circuit = DynamicCircuit(width + work).append(op)
+report = estimate_ftqc_resources(prepare.source_resource_model(), emitted_ir=circuit.to_ir())
+assert report.logical.gates.total_t_count() == 286
+assert report.logical.peak_logical_qubits == 32
+assert report.emitted is not None
+assert report.emitted.t_count == 266
+assert report.emitted.unconditional["ccx"] == 8
+assert report.emitted.unconditional["ry"] == 3
+assert report.emitted.unconditional["measure"] == 49
+assert report.emitted.declared_qubits == 40
+```
+
+The locked model retains the source uniform preparation, row order and
+one-body flag wiring. Its contiguous index leaf supplies a Toffoli
+formula and port width, while the executable index uses the shared
+weighted-column XOR circuit. The pinned unblocked PREPARE has gate
+costs but fails to bind the omitted `junk_target0_` port in its
+decomposition. Use `source_gate_cost()` for those counts. The native
+unblocked preparation and coherent inverse support the five selected
+words without extra banks.
