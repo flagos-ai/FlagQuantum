@@ -963,7 +963,9 @@ metadata declares Cirq and NumPy; Kickmix declares NumPy.
 To run the comparison job locally with Python 3.12:
 
 ```bash
-python -m pip install -e '.[dev,ftqc-reference]'
+python -m pip install -e '.[dev]'
+python tools/check_dependency_policy.py --print-test-environment ftqc-reference > /tmp/fq-ftqc-reference.txt
+python -m pip install -r /tmp/fq-ftqc-reference.txt
 python -m pytest -m ftqc_reference -q
 ```
 

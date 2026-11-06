@@ -18,7 +18,6 @@ stim = ["stim>=1.16,<2"]
 # cannot establish.
 pymatching = ["pymatching>=2.3,<3"]
 cuda = ["triton>=3.1,<4"]
-ftqc-reference = ["qualtran==0.7.0; python_version >= '3.12'", "kickmix==0.1.dev0; python_version >= '3.12'", "galois==0.4.11; python_version >= '3.12'", "numpy>=2.1,<3; python_version >= '3.12'", "cirq-core>=1.6.1,<1.8; python_version >= '3.12'"]
 azure = ["qdk[azure]>=1.32.3,<2"]
 kaiwu = ["numpy>=1.24,<3"]
 braket = ["amazon-braket-sdk>=1.117,<2; python_version >= '3.11'"]
@@ -33,8 +32,12 @@ invertible = ["torch>=2.13,<2.14"]
 all = ["pytest>=7.0.0,<10", "pytest-cov>=4.0.0,<8", "pytest-xdist>=3.0.0,<4", "ruff>=0.15.0,<0.17", "black>=24.1.0,<27", "mypy>=2.0.0,<3", "build>=1.2.0,<2", "pre-commit>=3.7.0,<5", "tomli>=2.0,<3; python_version < '3.11'", "pyyaml>=6.0,<7", "matplotlib>=3.5.0", "ipython>=8,<10", "jax>=0.10,<0.11", "datasets>=2.20.0", "transformers>=4.40.0", "triton>=3.1,<4"]
 interop-all = ["amazon-braket-sdk>=1.117,<2; python_version >= '3.11'", "cirq-core>=1.6.1,<1.8; python_version >= '3.11'", "pennylane>=0.44.1,<0.46; python_version >= '3.11'", "quafu-sdk>=0.2.7,<0.3", "quarkcircuit>=0.5.13,<0.6; python_version >= '3.12'", "qiskit[qasm3-import]>=2,<3", "qiskit-aer>=0.17,<1", "sympy>=1.13,<2"]
 
+# Isolated Python 3.12 CI tools, outside FlagQuantum package metadata.
+[test_environments]
+ftqc-reference = ["qualtran==0.7.0", "kickmix==0.1.dev0", "galois==0.4.11", "numpy>=2.1,<3", "cirq-core>=1.6.1,<1.8"]
+
 [classes]
-development = ["dev", "ftqc-reference"]
+development = ["dev"]
 accelerator_kernel = ["cuda"]
 optional_runtime = ["jax", "cotengra", "stim", "pymatching"]
 heterogeneous_toolchain = ["cudaq"]

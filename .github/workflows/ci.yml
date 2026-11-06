@@ -2620,7 +2620,8 @@ jobs:
         timeout-minutes: 8
       - name: Install independent FTQC references
         run: |
-          python -m pip install -e '.[dev,ftqc-reference]'
+          python -m pip install -e '.[dev]'
+          python -m pip install -r <(python tools/check_dependency_policy.py --print-test-environment ftqc-reference)
           python -m pip check
           python -c "import galois, kickmix, qualtran"
       - name: Compare compiler behavior with the pinned references

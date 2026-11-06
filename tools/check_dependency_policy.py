@@ -562,6 +562,24 @@ def policy_errors(policy: dict[str, Any], pyproject: dict[str, Any]) -> tuple[st
         if policy_extras[name] != project_extras[name]:
             errors.append(f"extra {name!r} does not exactly match pyproject")
 
+    test_environments = policy.get("test_environments", {})
+    if not isinstance(test_environments, dict):
+        errors.append("test environments must be a table")
+    else:
+        for name, requirements in test_environments.items():
+            if name in project_names or not requirement_names(requirements):
+                errors.append(
+                    f"test environment {name!r} must name valid requirements "
+                    "outside the project extras"
+                )
+                continue
+            for requirement in requirements:
+                bounds = requirement_bounds(requirement)
+                if bounds["lower"] is None or bounds["upper"] is None:
+                    errors.append(
+                        f"test environment requirement {requirement!r} must be bounded"
+                    )
+
     classes = policy.get("classes")
     classified: dict[str, str] = {}
     if not isinstance(classes, dict):
@@ -718,12 +736,25 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="print the guarded references the collection scan sees",
     )
+    parser.add_argument(
+        "--print-test-environment",
+        help="print the requirements of an isolated CI test environment",
+    )
     args = parser.parse_args(argv)
     policy = load_toml(args.policy)
     errors = policy_errors(policy, load_toml(args.pyproject))
     if errors:
         print("\n".join(errors))
         return 1
+    if args.print_test_environment:
+        requirements = policy.get("test_environments", {}).get(
+            args.print_test_environment
+        )
+        if not requirements:
+            print(f"unknown test environment: {args.print_test_environment}")
+            return 1
+        print("\n".join(requirements))
+        return 0
     if args.print_floor:
         pins = development_floor_pins(policy)
         if not pins:

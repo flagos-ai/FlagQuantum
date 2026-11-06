@@ -97,6 +97,10 @@ TOKEN = re.compile(r"[A-Za-z_]\w*")
 JOB_HEADER = re.compile(r"^  ([A-Za-z0-9_-]+):\s*$")
 NEW_KEY = re.compile(r"[A-Za-z_][\w-]*:")
 EXTRAS = re.compile(r"-e\s+['\"]\.\[([^\]]*)\]")
+TEST_ENVIRONMENT = re.compile(
+    r"pip install -r <\(python tools/check_dependency_policy.py "
+    r"--print-test-environment ([\w-]+)\)"
+)
 QUOTED_EXPRESSION = re.compile(r'-m\s+"([^"]+)"')
 BARE_EXPRESSION = re.compile(r"-m\s+([A-Za-z_]\w*)")
 DISTRIBUTION = re.compile(r"[\w-]+")
@@ -113,7 +117,7 @@ def _distributions(requirements: list[str]) -> set[str]:
     return {distribution_name(requirement) for requirement in requirements}
 
 
-def _declared() -> tuple[dict[str, frozenset[str]], frozenset[str]]:
+def _declared() -> tuple[dict[str, frozenset[str]], frozenset[str], frozenset[str]]:
     """(distribution -> extras providing it, the core distributions).
 
     Aggregate extras (`all`, `interop-all`) are skipped: naming one would make a
@@ -122,7 +126,9 @@ def _declared() -> tuple[dict[str, frozenset[str]], frozenset[str]]:
     policy = load_toml(POLICY)
     aggregates = set(policy["aggregates"])
     providers: dict[str, set[str]] = {}
-    for extra, requirements in policy["extras"].items():
+    test_environments = policy.get("test_environments", {})
+    requirements_by_environment = policy["extras"] | test_environments
+    for extra, requirements in requirements_by_environment.items():
         if extra in aggregates:
             continue
         for distribution in _distributions(requirements):
@@ -130,10 +136,11 @@ def _declared() -> tuple[dict[str, frozenset[str]], frozenset[str]]:
     return (
         {name: frozenset(extras) for name, extras in providers.items()},
         frozenset(_distributions(policy["core"])),
+        frozenset(test_environments),
     )
 
 
-PROVIDERS, CORE = _declared()
+PROVIDERS, CORE, TEST_ENVIRONMENTS = _declared()
 
 
 def extras_for(name: str) -> frozenset[str]:
@@ -273,7 +280,7 @@ def _installed_extras(text: str) -> frozenset[str]:
     distribution in the `dev` extra, so reading the whole line would credit the
     job with an extra it never asked for.
     """
-    extras: set[str] = set()
+    extras = set(TEST_ENVIRONMENT.findall(text)) & TEST_ENVIRONMENTS
     for line in _logical_lines(text):
         start = line.find("pip install")
         if start < 0:
@@ -285,7 +292,7 @@ def _installed_extras(text: str) -> frozenset[str]:
             )
         # A pinned package names the extra carrying it.
         for word in DISTRIBUTION.findall(command):
-            extras.update(extras_for(word))
+            extras.update(extras_for(word) - TEST_ENVIRONMENTS)
     if "./.github/actions/offline-cpu" in text:
         profile = re.search(r"(?m)^\s+profile: (\w+)-py", text)
         assert profile is not None
