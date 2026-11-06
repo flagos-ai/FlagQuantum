@@ -13,14 +13,35 @@ import sys
 import threading
 import time
 from collections import deque
+from collections.abc import Callable
 from pathlib import Path
 from types import FrameType
 
 
-def _diagnostics(directory: Path, payload: dict[str, object]) -> None:
+def _unmetered(_role: str) -> None:
+    pass
+
+
+def _write(path: Path, data: bytes) -> None:
+    path.write_bytes(data)
+
+
+def _emit(data: bytes) -> None:
+    sys.stdout.buffer.write(data)
+    sys.stdout.buffer.flush()
+
+
+def _diagnostics(
+    directory: Path,
+    payload: dict[str, object],
+    charge: Callable[[str], None] = _unmetered,
+    write: Callable[[Path, bytes], None] = _write,
+    setup: Callable[[], None] | None = None,
+) -> None:
     directory.mkdir(parents=True, exist_ok=True)
-    (directory / "watchdog.json").write_text(
-        json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    write(
+        directory / "watchdog.json",
+        (json.dumps(payload, indent=2, sort_keys=True) + "\n").encode(),
     )
     commands = {
         "processes.log": ["ps", "-eo", "pid,ppid,stat,etime,rss,cmd"],
@@ -32,11 +53,14 @@ def _diagnostics(directory: Path, payload: dict[str, object]) -> None:
     }
     for name, command in commands.items():
         try:
-            result = subprocess.run(command, text=True, capture_output=True, timeout=10)
+            charge("diagnostic")
+            result = subprocess.run(
+                command, text=True, capture_output=True, timeout=10, preexec_fn=setup
+            )
             text = result.stdout + result.stderr
         except (OSError, subprocess.SubprocessError) as error:
             text = f"diagnostic unavailable: {error}\n"
-        (directory / name).write_text(text, encoding="utf-8")
+        write(directory / name, text.encode())
     stacks = []
     proc = Path("/proc")
     entries = proc.iterdir() if proc.is_dir() else ()
@@ -52,19 +76,27 @@ def _diagnostics(directory: Path, payload: dict[str, object]) -> None:
             continue
         if "torchrun" in process_command or "python" in process_command:
             stacks.append(f"pid={entry.name} command={process_command}\n{stack}\n")
-    (directory / "rank-stacks.log").write_text(
-        "".join(stacks) or "kernel stacks unavailable\n", encoding="utf-8"
+    write(
+        directory / "rank-stacks.log",
+        ("".join(stacks) or "kernel stacks unavailable\n").encode(),
     )
 
 
-def _process_group_rss(group: int | None) -> int:
+def _process_group_rss(
+    group: int | None,
+    role: str = "regular",
+    charge: Callable[[str], None] = _unmetered,
+    setup: Callable[[], None] | None = None,
+) -> int:
     """Sum RSS (KiB from POSIX ps) for the owned group; never infer idle on errors."""
+    charge(role)
     result = subprocess.run(
         ["ps", "-axo", "pgid=,rss="],
         text=True,
         capture_output=True,
         check=True,
         timeout=0.05,
+        preexec_fn=setup,
     )
     rows = result.stdout.splitlines()
     if not rows:
@@ -86,7 +118,12 @@ def _cancel(signum: int, frame: FrameType | None) -> None:
     raise SystemExit(128 + signum)
 
 
-def _signal_group(group: int, signum: int) -> None:
+def _signal_group(
+    group: int,
+    signum: int,
+    charge: Callable[[str], None] = _unmetered,
+    setup: Callable[[], None] | None = None,
+) -> None:
     try:
         os.killpg(group, signum)
     except ProcessLookupError:
@@ -95,12 +132,14 @@ def _signal_group(group: int, signum: int) -> None:
         # macOS can report EPERM after TERM removes the last group member.
         # Accept that race only when independent accounting confirms absence.
         try:
+            charge("cleanup")
             result = subprocess.run(
                 ["ps", "-axo", "pgid="],
                 text=True,
                 capture_output=True,
                 check=True,
                 timeout=0.05,
+                preexec_fn=setup,
             )
             rows = result.stdout.splitlines()
             if not rows or any(len(row.split()) != 1 for row in rows):
@@ -114,18 +153,29 @@ def _signal_group(group: int, signum: int) -> None:
             raise
 
 
-def _stop_group(process: subprocess.Popen[bytes]) -> None:
+def _stop_group(
+    process: subprocess.Popen[bytes],
+    charge: Callable[[str], None] = _unmetered,
+    setup: Callable[[], None] | None = None,
+) -> None:
     # The launcher may exit while same-group children still own its output pipe.
-    _signal_group(process.pid, signal.SIGTERM)
+    _signal_group(process.pid, signal.SIGTERM, charge, setup)
     try:
         process.wait(timeout=10)
     except subprocess.TimeoutExpired:
         pass
-    _signal_group(process.pid, signal.SIGKILL)
+    _signal_group(process.pid, signal.SIGKILL, charge, setup)
     process.wait(timeout=5)
 
 
-def run(argv: list[str] | None = None) -> int:
+def run(
+    argv: list[str] | None = None,
+    *,
+    charge: Callable[[str], None] = _unmetered,
+    write: Callable[[Path, bytes], None] = _write,
+    emit: Callable[[bytes], None] = _emit,
+    setup: Callable[[], None] | None = None,
+) -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--phase", required=True)
     parser.add_argument("--stall-seconds", type=float, required=True)
@@ -142,6 +192,12 @@ def run(argv: list[str] | None = None) -> int:
         parser.error("positive timeouts and a command are required")
     if args.rss_limit_bytes is not None and args.rss_limit_bytes <= 0:
         parser.error("RSS limit must be positive")
+
+    def sample(group: int | None, role: str) -> int:
+        if charge is _unmetered:
+            return _process_group_rss(group)
+        return _process_group_rss(group, role, charge, setup)
+
     rss: dict[str, object] = {
         "rss_limit_bytes": args.rss_limit_bytes,
         "sampled_group_rss_max_bytes": 0,
@@ -153,7 +209,7 @@ def run(argv: list[str] | None = None) -> int:
     }
     if args.rss_limit_bytes is not None:
         try:
-            _process_group_rss(None)
+            sample(None, "admission")
         except (OSError, ValueError, subprocess.SubprocessError) as error:
             _diagnostics(
                 args.diagnostics,
@@ -163,14 +219,19 @@ def run(argv: list[str] | None = None) -> int:
                     "detail": str(error),
                     "command_started": False,
                 },
+                charge,
+                write,
+                setup,
             )
             return 125
     started = last_progress = previous_sample = time.monotonic()
+    charge("target")
     process = subprocess.Popen(
         command,
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
         start_new_session=True,
+        preexec_fn=setup,
     )
     assert process.stdout is not None
     os.set_blocking(process.stdout.fileno(), False)
@@ -188,7 +249,7 @@ def run(argv: list[str] | None = None) -> int:
         while process.poll() is None:
             if args.rss_limit_bytes is not None:
                 try:
-                    observed = _process_group_rss(process.pid)
+                    observed = sample(process.pid, "regular")
                 except (OSError, ValueError, subprocess.SubprocessError) as error:
                     rss["detail"] = str(error)
                     reason = "rss_monitor_unavailable"
@@ -210,8 +271,7 @@ def run(argv: list[str] | None = None) -> int:
             except BlockingIOError:
                 chunk = b""
             if chunk:
-                sys.stdout.buffer.write(chunk)
-                sys.stdout.buffer.flush()
+                emit(chunk)
                 last_progress = time.monotonic()
             now = time.monotonic()
             if now - started > args.timeout_seconds:
@@ -224,7 +284,7 @@ def run(argv: list[str] | None = None) -> int:
         if not reason and args.rss_limit_bytes is not None:
             # Observe the final interval and refuse children that outlive the launcher.
             try:
-                remaining = _process_group_rss(process.pid)
+                remaining = sample(process.pid, "final")
                 maximum_gap = max(maximum_gap, time.monotonic() - previous_sample)
                 peak = max(peak, remaining)
                 if remaining:
@@ -238,10 +298,10 @@ def run(argv: list[str] | None = None) -> int:
                 reason = "rss_monitor_unavailable"
         cleanup_started = time.monotonic()
         if reason:
-            _stop_group(process)
+            _stop_group(process, charge, setup)
         tail = process.stdout.read() or b""
         if tail:
-            sys.stdout.buffer.write(tail)
+            emit(tail)
         rss.update(
             sampled_group_rss_max_bytes=peak,
             rss_sample_count=samples,
@@ -262,18 +322,19 @@ def run(argv: list[str] | None = None) -> int:
             **(rss if args.rss_limit_bytes is not None else {}),
         }
         if reason:
-            _diagnostics(args.diagnostics, payload)
+            _diagnostics(args.diagnostics, payload, charge, write, setup)
             return 124
         if args.rss_limit_bytes is not None:
             args.diagnostics.mkdir(parents=True, exist_ok=True)
-            (args.diagnostics / "watchdog.json").write_text(
-                json.dumps(payload, indent=2) + "\n"
+            write(
+                args.diagnostics / "watchdog.json",
+                (json.dumps(payload, indent=2) + "\n").encode(),
             )
         return int(process.returncode or 0)
     except BaseException as error:
         # Owned process boundary: preserve cancellation evidence, then propagate it.
         cleanup_started = time.monotonic()
-        _stop_group(process)
+        _stop_group(process, charge, setup)
         rss.update(
             sampled_group_rss_max_bytes=peak,
             rss_sample_count=samples,
@@ -293,11 +354,14 @@ def run(argv: list[str] | None = None) -> int:
                 "termination_elapsed_seconds": time.monotonic() - cleanup_started,
                 **(rss if args.rss_limit_bytes is not None else {}),
             },
+            charge,
+            write,
+            setup,
         )
         raise
     finally:
         if process.poll() is None or args.rss_limit_bytes is not None:
-            _stop_group(process)
+            _stop_group(process, charge, setup)
         process.stdout.close()
         if previous_handler is not None:
             signal.signal(signal.SIGTERM, previous_handler)
