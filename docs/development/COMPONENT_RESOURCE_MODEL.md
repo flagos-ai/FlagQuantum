@@ -602,6 +602,23 @@ its original behavior for callers that request that decomposition.
 - [Qualtran v0.7.0 Y gate](https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/bloqs/basic_gates/y_gate.py)
 - [Qualtran v0.7.0 Z basis](https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/bloqs/basic_gates/z_basis.py)
 
+## Additional controls on CY and CZ
+
+`controlled_pauli_with_controls_ir` preserves the source's nested
+predicate schedule. A single added control enters a binary AND before
+the original positive control. For several added controls, an outer
+AND reduces them to one wire. The inner binary AND combines that result
+with the original control, then the native CY or CZ acts on the target.
+Measurement feedback clears the inner predicate before the outer one.
+
+With two added controls, the emitted wrapper uses eight T-family
+instructions, two clean work wires, and two measurements. The locked
+QEC model counts two And calls, three Clifford gates, and two
+measurements at width six. For CZ, the emitted stream includes the
+unconditional CZ leaf and two conditional CZ corrections.
+
+- [Qualtran v0.7.0 specialized control](https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/bloqs/mcmt/specialized_ctrl.py)
+
 ## Additional controls on CNOT and Toffoli
 
 `cnot_with_controls_ir` binds one positive added control to a native

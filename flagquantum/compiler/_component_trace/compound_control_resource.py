@@ -72,6 +72,10 @@ def compound_control_key(
             if controls == (1,)
             else PredicateControlledCall(CONTROLLED_HADAMARD_COST, controls)
         )
+    if isinstance(gate, CliffordCall) and gate.opcode in {"cy", "cz"}:
+        if len(controls) == 1:
+            return PredicateControlledCall(gate, (*controls, 1))
+        return PredicateControlledCall(PredicateControlledCall(gate, (1, 1)), controls)
     if isinstance(gate, CliffordCall) and gate.opcode == "cx":
         toffoli = FixedTCall("toffoli")
         return (
