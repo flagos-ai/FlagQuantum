@@ -3124,7 +3124,7 @@ when binding the zero-width coordinate registers.
 ### Hubbard qubitization selection
 
 `SelectHubbard` uses the same selection layout as PREPARE and accepts
-either an uncontrolled binding or one positive external control. The
+an uncontrolled binding or one external control. The
 Majorana factors visit x, y and spin, with spin the fastest index.
 The spin-up Z visits y and x within the second half of the system
 register, following the distinct indexing of the locked source.
@@ -3145,7 +3145,10 @@ The controlled 3×3 example emits 242 T/T† and 43 measurements with six
 clean work qubits. Its locked analytical model counts ten CSwap,
 43 And, 62 Clifford, 43 measurements and 37 peak logical qubits.
 The emitted stream expands each CSwap to seven T-family instructions.
-The source exposes control-on-zero through a separate control wrapper.
+Use `SelectHubbard(3, controlled=True, control_value=0)` for control on
+zero. The locked wrapper conjugates the positive-controlled body by
+two X gates on the control wire, with the same T count, measurements
+and work. The gate model charges the two extra Cliffords.
 
 ### Hubbard qubitization walk
 

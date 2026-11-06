@@ -6,11 +6,15 @@
 # https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/bloqs/chemistry/hubbard_model/qubitization/select_hubbard.py
 
 from collections.abc import Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from math import pi
 
 from ...circuit import Circuit
-from ...compiler._component_trace.resource_model import ComponentCost, GateCost
+from ...compiler._component_trace.resource_model import (
+    ComponentCost,
+    CostCall,
+    GateCost,
+)
 from ...compiler.registers.and_compute import and_compute_ir, and_uncompute_ir
 from ...compiler.registers.bitwise import _validate_wires
 from ...compiler.registers.bounded_majorana_select import (
@@ -29,16 +33,21 @@ from .hubbard_prepare import hubbard_selection_layout
 
 @dataclass(frozen=True)
 class SelectHubbard:
-    """Bind the source SELECT on a square lattice with optional positive control."""
+    """Bind the source SELECT with an optional single-qubit control."""
 
     dimension: int
     controlled: bool = False
+    control_value: int = field(default=1, kw_only=True)
 
     def __post_init__(self) -> None:
         if type(self.dimension) is not int or self.dimension < 2:
             raise ValueError("Hubbard SELECT requires square side length at least two")
         if type(self.controlled) is not bool:
             raise ValueError("Hubbard SELECT control flag must be boolean")
+        if type(self.control_value) is not int or self.control_value not in (0, 1):
+            raise ValueError("Hubbard SELECT control value must be zero or one")
+        if not self.controlled and self.control_value == 0:
+            raise ValueError("Hubbard SELECT control on zero needs a control wire")
 
     @property
     def layout(self) -> RegisterLayout:
@@ -64,7 +73,7 @@ class SelectHubbard:
         majorana = 2 * sites - 2 + controls
         spin_up = sites - 1 + controls
         ands = 2 * majorana + spin_up
-        return ComponentCost(
+        select = ComponentCost(
             "SelectHubbard",
             sum(width for _, width in self.layout) + self.requirements()[0],
             GateCost(
@@ -74,6 +83,14 @@ class SelectHubbard:
                 measurement=ands,
             ),
         )
+        if self.control_value == 0:
+            return ComponentCost(
+                "ControlledViaAnd",
+                select.qubits,
+                GateCost(clifford=2),
+                calls=(CostCall(select),),
+            )
+        return select
 
     def make_on(
         self, ports: Mapping[str, tuple[int, ...]], *, workspace: tuple[int, ...]
@@ -138,6 +155,9 @@ class SelectHubbard:
         )
         if control is not None:
             gates.extend(and_uncompute_ir(v, control, predicate, slots[0]))
+            if self.control_value == 0:
+                flip = Instruction("x", (control,))
+                return (flip, *gates, flip)
         return tuple(gates)
 
 

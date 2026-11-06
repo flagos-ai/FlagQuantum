@@ -24,24 +24,47 @@ pytestmark = pytest.mark.unit
 
 
 @pytest.mark.ftqc_reference
-@pytest.mark.parametrize("side,controlled", tuple(product((2, 3, 5), (False, True))))
-def test_hubbard_select_locked_signature_and_cost(side, controlled):
+@pytest.mark.parametrize("side,control_value", tuple(product((2, 3, 5), (None, 0, 1))))
+def test_hubbard_select_locked_signature_and_cost(side, control_value):
     pytest.importorskip("qualtran")
+    from qualtran import CtrlSpec
     from qualtran.bloqs.chemistry.hubbard_model.qubitization.select_hubbard import (
         SelectHubbard as Source,
     )
     from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
 
-    original = Source(side, side, control_val=1 if controlled else None)
-    select = SelectHubbard(side, controlled)
-    assert select.layout == tuple(
-        (reg.name, reg.total_bits()) for reg in original.signature
+    original = Source(side, side, control_val=1 if control_value == 1 else None)
+    select = SelectHubbard(
+        side,
+        controlled=control_value is not None,
+        control_value=1 if control_value is None else control_value,
     )
-    model = estimate_component_resources(select.source_resource_model())
-    assert {name: value for name, value in asdict(model.gates).items() if value} == (
+    model = select.source_resource_model()
+    if control_value == 0:
+        original = original.controlled(CtrlSpec(cvs=0))
+        stages = tuple(original.decompose_bloq().iter_bloqsoqs())
+        assert [type(stage.bloq).__name__ for stage, _, _ in stages] == [
+            "XGate",
+            "SelectHubbard",
+            "XGate",
+        ]
+        assert model.name == type(original).__name__
+        assert (
+            model.calls[0].component
+            == SelectHubbard(side, controlled=True).source_resource_model()
+        )
+        assert select.layout[1:] == tuple(
+            (reg.name, reg.total_bits()) for reg in tuple(original.signature)[1:]
+        )
+    else:
+        assert select.layout == tuple(
+            (reg.name, reg.total_bits()) for reg in original.signature
+        )
+    result = estimate_component_resources(model)
+    assert {name: value for name, value in asdict(result.gates).items() if value} == (
         get_cost_value(original, QECGatesCost()).asdict()
     )
-    assert model.peak_logical_qubits == get_cost_value(original, QubitCount())
+    assert result.peak_logical_qubits == get_cost_value(original, QubitCount())
 
 
 @pytest.mark.ftqc_reference
@@ -120,15 +143,28 @@ def test_hubbard_select_controlled_gate_dependencies_match_source(side):
     )
 
 
-@pytest.mark.parametrize("side,controlled", tuple(product((2, 3), (False, True))))
-def test_hubbard_select_complex_amplitudes_branches_and_work(side, controlled):
-    select = SelectHubbard(side, controlled)
+@pytest.mark.parametrize("side,control_value", tuple(product((2, 3), (None, 0, 1))))
+def test_hubbard_select_complex_amplitudes_branches_and_work(side, control_value):
+    controlled = control_value is not None
+    select = SelectHubbard(
+        side, controlled, control_value=1 if control_value is None else control_value
+    )
     logical = sum(size for _, size in select.layout)
     work, _ = select.requirements()
     width = logical + work
     ports = partition_register(tuple(range(logical)), select.layout)
     operation = select.make_on(ports, workspace=tuple(range(logical, width)))
     ir = DynamicCircuit(width).append(operation).to_ir()
+    if control_value == 0:
+        positive = SelectHubbard(side, controlled=True).make_on(
+            ports, workspace=tuple(range(logical, width))
+        )
+        flip = Instruction("x", ports["control"])
+        assert ir.instructions == (
+            flip,
+            *DynamicCircuit(width).append(positive).to_ir().instructions,
+            flip,
+        )
     counts = count_emitted_instructions(ir)
     events = counts.unconditional["measure"]
     assert (counts.t_count, events, work) == {
@@ -167,7 +203,7 @@ def test_hubbard_select_complex_amplitudes_branches_and_work(side, controlled):
         )
         amp = 1j**row / sqrt(len(rows))
         initial[pack(fields)] = amp
-        if not controlled or ctrl:
+        if not controlled or ctrl == control_value:
             p = 2 * (x * side + y) + alpha
             q = p if v else 2 * (qx * side + qy) + beta
             p_bit, q_bit = 1 << (n - p - 1), 1 << (n - q - 1)
