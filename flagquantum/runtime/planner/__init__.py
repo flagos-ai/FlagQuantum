@@ -1050,6 +1050,19 @@ def plan(
         )
     stable_trajectory_count = 32
     stable_mps_max_bond: int | None = None
+    if (
+        resolved.mode == "mps"
+        and not resolved.allow_approximate
+        and not has_noise
+        and not is_dynamic
+        and source_ir.n_wires > 32
+        and world_size == 1
+    ):
+        from .estimates import exact_interval_mps_bond
+
+        stable_mps_max_bond = exact_interval_mps_bond(
+            tuple(gate.wires for gate in source_ir.instructions)
+        )
     complex_bytes = 16 if resolved.precision == "complex128" else 8
     if (
         has_noise

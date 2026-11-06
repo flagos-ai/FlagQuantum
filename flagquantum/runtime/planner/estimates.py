@@ -127,3 +127,24 @@ __all__ = [
     "estimate_tensor_network_bytes",
     "estimate_tensor_network_working_set_bytes",
 ]
+
+
+def exact_interval_mps_bond(wires: tuple[tuple[int, ...], ...]) -> int | None:
+    """Bound all intermediate bond ranks for independent short wire intervals.
+
+    Reordering inside an interval cannot entangle it with a disjoint interval.
+    A width-w interval therefore contributes at most 2**floor(w/2) across
+    any one physical cut, even during a swap-based gate application.
+    """
+    intervals = sorted((min(support), max(support)) for support in wires if support)
+    end = -1
+    start = 0
+    largest = 1
+    for left, right in intervals:
+        if left > end:
+            start = left
+        end = max(end, right)
+        largest = max(largest, end - start + 1)
+        if largest > 12:
+            return None
+    return 1 << (largest // 2)

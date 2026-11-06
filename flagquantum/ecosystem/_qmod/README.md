@@ -1817,3 +1817,26 @@ result = fq.run(program)
 positions = program.probabilities(result, registers=("res",), max_amplitudes=2**24)
 print(program.report["resources"].n_operations)
 ```
+
+### Proved zero-entry walks with exact MPS output
+
+Synthesis can remove a closed walk when it proves that selection is
+identity on the initialized record, that the reflected preparation has
+zero overlap with that record, and that the phase counter and all local
+controls return unchanged on every admitted branch. The full logical
+output layout stays available. When its executable has independent
+short wire intervals, Runtime can return an exact MPS within a checked
+storage budget. Named probabilities contract the MPS directly.
+
+```python
+from pathlib import Path
+
+import flagquantum as fq
+from flagquantum import synth
+
+source = Path("tests/fixtures/classiq_qmod/tensor_hypercontraction.qmod")
+program = synth.synthesize(source, max_qubits=83, max_workspace=0)
+result = fq.run(program)
+probabilities = program.probabilities(result, registers=("t", "ell.succ"))
+print(probabilities[(0, 0)])  # about 0.856332
+```

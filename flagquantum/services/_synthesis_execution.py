@@ -56,7 +56,7 @@ def _program(plan: ExecutionPlan) -> CircuitIR:
     assert isinstance(fingerprints, Mapping)
     if (
         plan.analysis is None
-        or decision["mode"] not in {"statevector", "density_matrix"}
+        or decision["mode"] not in {"statevector", "density_matrix", "mps"}
         or plan.state_mode != decision["mode"]
         or decision["backend"] not in {"torch", "pytorch"}
         or decision["device"] != "cpu"
@@ -68,7 +68,10 @@ def _program(plan: ExecutionPlan) -> CircuitIR:
         or decision["target"] not in {"auto", "state"}
         or decision["allow_approximate"]
         or decision["allow_backend_fallback"]
-        or (decision["mode"] == "statevector" and plan.noisy_execution_plan is not None)
+        or (
+            decision["mode"] in {"statevector", "mps"}
+            and plan.noisy_execution_plan is not None
+        )
         or payload["extensions"]
     ):
         raise ExecutionContractError(
@@ -133,6 +136,24 @@ def _program(plan: ExecutionPlan) -> CircuitIR:
             )
     else:
         actual = plan_execution_program(plan)
+    if decision["mode"] == "mps":
+        from ..runtime.planner.estimates import (
+            estimate_mps_bytes,
+            exact_interval_mps_bond,
+        )
+
+        bond = exact_interval_mps_bond(
+            tuple(gate.wires for gate in actual.instructions)
+        )
+        if bond is None or plan.state_bytes != estimate_mps_bytes(
+            actual.n_wires,
+            max_bond=bond,
+            complex_bytes=16 if decision["precision"] == "complex128" else 8,
+        ):
+            raise ExecutionContractError(
+                "execution.profile",
+                "exact MPS requires independently bounded wire intervals",
+            )
     # Runtime already recomputed this fingerprint from the sealed program. Keep
     # its authoritative layer reconstruction, without rebuilding the record again.
     if program_fingerprint != actual.content_hash:
@@ -375,6 +396,27 @@ class CheckedExecution:
             if result.plan.precision == "complex128"
             else torch.complex64
         )
+        if result.plan.state_mode == "mps":
+            from ..simulation.mps.state import MPSState
+
+            native = result.native()
+            if (
+                not isinstance(native, MPSState)
+                or native.bsz != 1
+                or native.n_qubits != program.n_wires
+                or native.device.type != "cpu"
+                or native.dtype != expected_dtype
+                or native.truncation_records
+                or sum(t.numel() * t.element_size() for t in native.tensors)
+                > result.plan.state_bytes
+            ):
+                raise ExecutionContractError(
+                    "execution.result",
+                    "require the exact CPU MPS returned by the checked plan",
+                )
+            resources = estimate_resources(program)
+            _check_limits(self.limits, resources)
+            return resources
         dimension = 1 << program.n_wires
         valid_shapes = (
             {(dimension, dimension), (1, dimension, dimension)}

@@ -34,6 +34,7 @@ def synthesize_registers(
     fractional_bits: Mapping[str, int] | None = None,
     signed_registers: tuple[str, ...] = (),
     deferred_measurements: bool = False,
+    exact_mps: bool = False,
 ) -> Program:
     """Plan verified owned records; require an explicit Runtime memory ceiling.
 
@@ -95,4 +96,5 @@ def synthesize_registers(
         report,
         memory_limit_bytes=memory_limit_bytes,
         memory_limit_origin=memory_limit_origin,
+        exact_mps=exact_mps,
     )

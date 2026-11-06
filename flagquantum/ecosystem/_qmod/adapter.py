@@ -155,6 +155,7 @@ from .unitary_effects import (
     preserves_basis_labels,
 )
 from .variational import lower_qaoa_penalty
+from .zero_walk import prove_zero_walk
 
 SUPPORTED_SOURCE_VERSION = "2bfd835e73b6882fcc515a725098b04766c238e7"
 MAX_EFFECT_OPERATIONS = 4096
@@ -339,6 +340,7 @@ class QmodImport:
     signed_registers: tuple[str, ...]
     workflow: QaoaWorkflow | None = None
     deferred_measurements: bool = False
+    exact_mps: bool = False
 
 
 class _Expression:
@@ -5052,6 +5054,16 @@ def parse_qmod(
         and "amplitude_amplification" in token_names
         and bool({"SIGNED", "True"} & token_names)
     )
+    parser.zero_walk_proof = {
+        "qstruct",
+        "lambda",
+        "bool",
+        "CCX",
+        "CRZ",
+        "SDG",
+        "free",
+        "apply_to_all",
+    } <= token_names and sum(token.text == "qstruct" for token in tokens) >= 2
     functions_syntax, declarations = parser.parse()
     constants: dict[str, Expression] = {}
     constant_integers: dict[str, int] = {}
@@ -5119,6 +5131,12 @@ def parse_qmod(
     compact_tape = candidate_tape(definitions, parser.records)
     if compact_tape is not None:
         definitions = {"main": replace(definitions["main"], statements=())}
+    if parser.zero_walk_proof:
+        if constants:
+            reject(
+                tokens[0], "zero_walk", "closed zero-walk proof needs local static data"
+            )
+        definitions = dict(prove_zero_walk(definitions, parser.records).definitions)
     fixed_program: FixedPreparation | None = None
     if parser.closed_fixed_point:
         assert machine_precision is not None
@@ -5550,4 +5568,5 @@ def parse_qmod(
         ),
         workflow,
         deferred_measurements,
+        exact_mps=parser.zero_walk_proof,
     )

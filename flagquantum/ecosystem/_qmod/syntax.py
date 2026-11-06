@@ -239,6 +239,7 @@ class Parser:
         self.tokens = tokens
         self.position = 0
         self.closed_fixed_point = False
+        self.zero_walk_proof = False
         self.callback_depth = 0
         self.records: dict[str, Record] = {}
         self.integer_constants: set[str] = set()
@@ -987,7 +988,11 @@ class Parser:
             elif [
                 token.text
                 for token in self.tokens[self.position + 1 : self.position + 3]
-            ] in ([":", "real"], [":", "int"], [":", "Pauli"]):
+            ] in ([":", "real"], [":", "int"], [":", "Pauli"]) or (
+                self.zero_walk_proof
+                and self.tokens[self.position + 2].text == "bool"
+                and name.text != "main"
+            ):
                 role = (
                     "real"
                     if self.tokens[self.position + 2].text == "real"
@@ -1087,11 +1092,20 @@ class Parser:
                 )
                 if kind == "qnum" and self.current.text == "[":
                     self.take("[")
-                    numeric_length = self.width()
+                    if self.zero_walk_proof and self.current.text == "]":
+                        numeric_length = None
+                    else:
+                        numeric_length = self.width()
                     self.take("]")
-                    if self.closed_fixed_point and width is None:
+                    if (self.closed_fixed_point and width is None) or (
+                        self.zero_walk_proof and numeric_length is None
+                    ):
                         kind = "qnum[]"
-                    elif width is None or width * numeric_length > 256:
+                    elif (
+                        width is None
+                        or numeric_length is None
+                        or width * numeric_length > 256
+                    ):
                         reject(
                             parameter,
                             "width",
@@ -1339,6 +1353,19 @@ class Parser:
                     continue
                 left = self.expression(static=True)
                 comparison = self.current
+                if (
+                    self.zero_walk_proof
+                    and comparison.text == ")"
+                    and left.token.text == "["
+                ):
+                    self.take(")")
+                    body = self.block(
+                        allow_scopes=allow_scopes,
+                        scope_depth=scope_depth + 1,
+                        static_loop_body=True,
+                    )
+                    statements.append(Statement(token, (left,), static_if_body=body))
+                    continue
                 if comparison.text == ")" and not left.children:
                     if scope_depth:
                         reject(
@@ -1410,6 +1437,7 @@ class Parser:
             arguments: tuple[Expression, ...]
             if (
                 target.text == "free"
+                and not self.zero_walk_proof
                 and scope_depth
                 and not (allow_scopes and static_loop_body)
             ):
@@ -1454,12 +1482,13 @@ class Parser:
                 continue
             if self.current.text == ":":
                 token = self.take(":")
-                if scope_depth:
+                if scope_depth and not self.zero_walk_proof:
                     reject(
                         token, "scope", "declare locals at function level before within"
                     )
                 record = None
                 local_width: int | None
+                local_length: int | None = None
                 width_expression = None
                 fractional_bits = 0
                 if (
@@ -1496,7 +1525,17 @@ class Parser:
                         allow_qubit_array=True,
                         allow_phase=True,
                         allow_signed_integer=True,
+                        allow_numeric_array=self.zero_walk_proof,
                     )
+                    if (
+                        self.zero_walk_proof
+                        and kind == "qnum"
+                        and self.current.text == "["
+                    ):
+                        self.take("[")
+                        local_length = self.width()
+                        self.take("]")
+                        kind = "qnum[]"
                     if kind == "qphase_signed":
                         reject(
                             target, "type", "signed fixed-point locals are not admitted"
@@ -1512,6 +1551,7 @@ class Parser:
                             local_width,
                             "local",
                             record,
+                            length=local_length,
                             width_expression=width_expression,
                             fractional_bits=fractional_bits,
                         ),
@@ -1622,6 +1662,12 @@ class Parser:
                             if self.current.text == "["
                             else Expression(self.name())
                         )
+                    elif (
+                        target.text == "control"
+                        and self.zero_walk_proof
+                        and self.current.text == "["
+                    ):
+                        args.append(self.literal_array(self.call_argument))
                     elif target.text == "control":
                         args.append(
                             self.expression(
@@ -1683,6 +1729,22 @@ class Parser:
                                         lambda: self.expression(static=True)
                                     )
                                 )
+                            )
+                            continue
+                        if self.zero_walk_proof and self.current.text == "lambda":
+                            from .quantum_callbacks import Lambda
+
+                            token = self.take("lambda")
+                            self.take("(")
+                            formal = self.name()
+                            self.take(")")
+                            args.append(
+                                Lambda(token, parameters=(formal,), body=self.block())
+                            )
+                            continue
+                        if self.zero_walk_proof and self.current.text == "[":
+                            args.append(
+                                self.literal_array(lambda: Expression(self.name()))
                             )
                             continue
                         if len(args) == 1 and target.text == "multi_suzuki_trotter":

@@ -663,6 +663,7 @@ def synthesize(
     fractional_bits: Mapping[str, int] | None = None
     signed_registers: tuple[str, ...] = ()
     deferred_measurements = False
+    exact_mps = False
     if isinstance(function, (PathLike, str)):
         if not is_file and source_format != "qmod":
             raise ValueError("text requires source_format='qmod'; use Path for files")
@@ -695,6 +696,7 @@ def synthesize(
         fractional_bits = imported.fractional_bits
         signed_registers = imported.signed_registers
         deferred_measurements = imported.deferred_measurements
+        exact_mps = imported.exact_mps
         owned_source = "qmod"
         owned_name, owned_version = imported.source_name, imported.source_version
     elif isinstance(function, _QuantumFunction) and function.source.program:
@@ -745,6 +747,7 @@ def synthesize(
             fractional_bits=fractional_bits,
             signed_registers=signed_registers,
             deferred_measurements=deferred_measurements,
+            exact_mps=exact_mps,
         )
     assert not isinstance(function, (PathLike, str))
     if not isinstance(inputs, Mapping) or (
@@ -829,6 +832,7 @@ def _complete(
     *,
     memory_limit_bytes: int | None = None,
     memory_limit_origin: Literal["profile_default", "explicit"] = "profile_default",
+    exact_mps: bool = False,
 ) -> Program:
     """Admit either construction producer through one checked execution authority."""
     row = selection.selected
@@ -841,7 +845,7 @@ def _complete(
     )
     options = ExecutionOptions(
         memory_limit_bytes=memory_limit_bytes,
-        mode="density_matrix" if mixed else "statevector",
+        mode="density_matrix" if mixed else "mps" if exact_mps else "statevector",
         backend="torch",
         device="cpu",
         precision="complex128",

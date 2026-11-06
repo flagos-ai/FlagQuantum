@@ -63,6 +63,34 @@ def probe(
         evidence: dict[str, str | int] = {}
         if imported.workflow is None:
             result = run(program)
+            if result.plan is not None and result.plan.state_mode == "mps":
+                from flagquantum.simulation.mps.marginal import marginal_probabilities
+                from flagquantum.simulation.mps.state import MPSState
+
+                native = result.native()
+                if not isinstance(native, MPSState) or native.truncation_records:
+                    return {
+                        "stage": "execution_failed",
+                        "detail": "MPS was not exact",
+                        **costs,
+                    }
+                probability = float(marginal_probabilities(native, ())[0, 0])
+                storage = sum(
+                    site.numel() * site.element_size() for site in native.tensors
+                )
+                if abs(probability - 1) > 1e-10 or storage > result.plan.state_bytes:
+                    return {
+                        "stage": "execution_failed",
+                        "detail": "MPS norm or storage proof failed",
+                        **costs,
+                    }
+                return {
+                    "stage": "execution_smoke_passed",
+                    "execution_profile": "exact_interval_mps",
+                    "maximum_bond": native.max_bond,
+                    "state_bytes": storage,
+                    **costs,
+                }
             if result.plan is not None and result.plan.state_mode == "density_matrix":
                 state = result.state
                 dimension = 1 << resources.n_qubits
