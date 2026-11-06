@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 from collections import Counter
 from unittest.mock import patch
 
@@ -87,3 +88,58 @@ def test_final_outputs_reuse_one_readout(
             )
             assert actual.counts[0] == dict(expected)
             assert sum(actual.counts[0].values()) == shots
+
+
+@pytest.mark.parametrize("outcome", [0, 1])
+def test_mixed_feedback_preserves_born_weights_and_final_outputs(outcome: int) -> None:
+    circuit = (
+        DynamicCircuit(2, dtype=torch.complex128, device="cpu")
+        .h(0)
+        .t(0)
+        .h(0)
+        .measure(0, classical_bit=0)
+        .conditional("x", 1, classical_bit=0)
+    )
+    born = torch.tensor(
+        [(2 + math.sqrt(2)) / 4, (2 - math.sqrt(2)) / 4], dtype=torch.float64
+    )
+    draws: list[tuple[int, ...]] = []
+    original_draw = torch.multinomial
+
+    def draw(
+        probabilities: torch.Tensor,
+        num_samples: int,
+        *,
+        generator: torch.Generator | None = None,
+    ) -> torch.Tensor:
+        assert num_samples == 1
+        draws.append(tuple(probabilities.shape))
+        if len(draws) == 1:
+            torch.testing.assert_close(probabilities, born, atol=1e-12, rtol=0)
+            assert probabilities[outcome] > 0
+            return torch.tensor([outcome], dtype=torch.int64)
+        return original_draw(probabilities, num_samples, generator=generator)
+
+    with patch.object(torch, "multinomial", side_effect=draw):
+        result = fq.run(
+            circuit,
+            outputs=(fq.samples(name="final"), fq.counts()),
+            options=fq.ExecutionOptions(
+                seed=7,
+                device="cpu",
+                allow_approximate=False,
+                allow_backend_fallback=False,
+            ),
+            shots=1,
+        )
+
+    assert draws == [(2,), (4,)]
+    mid = result.measurement("mid_circuit_measurement")
+    final = result.measurement("final")
+    assert mid.shots == final.shots == 1
+    assert isinstance(mid.value, torch.Tensor) and mid.value.shape == (1, 1)
+    assert isinstance(final.value, torch.Tensor) and final.value.shape == (1, 2)
+    assert mid.value.tolist() == [[outcome]]
+    assert final.value.tolist() == [[outcome, outcome]]
+    assert result.samples is final.value
+    assert result.counts[0] == {str(outcome) * 2: 1}
