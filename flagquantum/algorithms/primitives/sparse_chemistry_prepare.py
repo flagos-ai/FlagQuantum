@@ -3,7 +3,7 @@
 # Adapted from Qualtran v0.7.0 chemistry/sparse/prepare.py.
 # https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/bloqs/chemistry/sparse/prepare.py
 
-"""Forward sparse chemistry PREPARE with caller-owned output registers."""
+"""Sparse chemistry preparation and explicit coherent reversal."""
 
 from collections.abc import Mapping
 from dataclasses import dataclass
@@ -22,6 +22,9 @@ from ...compiler.registers.less_equal import (
     source_equal_width_less_equal_cost,
 )
 from ...compiler.registers.partition import RegisterLayout, unpartition_register
+from ...compiler.registers.qroam_resource_model import (
+    source_qroam_measurement_erase_cost,
+)
 from ...compiler.registers.uniform_preparation import (
     source_uniform_preparation_cost,
     uniform_preparation_ir,
@@ -75,6 +78,31 @@ class PrepareSparseChemistry:
         classical_bits: tuple[int, ...],
     ) -> "_BoundPrepareSparseChemistry":
         """Bind selection, retained outputs and scratch for circuit.append."""
+        return self._bind(ports, workspace, classical_bits, adjoint=False)
+
+    def make_coherent_adjoint_on(
+        self,
+        ports: Mapping[str, tuple[int, ...]],
+        *,
+        workspace: tuple[int, ...],
+        classical_bits: tuple[int, ...],
+    ) -> "_BoundPrepareSparseChemistry":
+        """Reverse the preparation with explicit coherent QROAM uncomputation.
+
+        Supply the same logical wires and their matching forward bank state.
+        The source's abstract measurement-erasure cost is available separately
+        through resource_model(adjoint=True).
+        """
+        return self._bind(ports, workspace, classical_bits, adjoint=True)
+
+    def _bind(
+        self,
+        ports: Mapping[str, tuple[int, ...]],
+        workspace: tuple[int, ...],
+        classical_bits: tuple[int, ...],
+        *,
+        adjoint: bool,
+    ) -> "_BoundPrepareSparseChemistry":
         logical = unpartition_register(
             ports, (*self.selection_layout, *self.junk_layout)
         )
@@ -93,7 +121,11 @@ class PrepareSparseChemistry:
         _, uniform_work, uniform_slots = uniform_preparation_requirements(rows)
         address = ports["d"]
         uniform = uniform_preparation_ir(
-            rows, address, workspace[:uniform_work], classical_bits[:uniform_slots]
+            rows,
+            address,
+            workspace[:uniform_work],
+            classical_bits[:uniform_slots],
+            adjoint=adjoint,
         )
         lookup_work = data.lookup_table().workspace_size(0, (len(address),))
         lookup = data.lookup_ir(
@@ -101,6 +133,7 @@ class PrepareSparseChemistry:
             {name: ports[name] for name, _ in data.lookup_output_layout},
             workspace[:lookup_work],
             classical_bits[:lookup_work],
+            uncompute=adjoint,
         )
         sigma = ports["sigma"]
         flag = ports["less_than"][0]
@@ -117,38 +150,62 @@ class PrepareSparseChemistry:
             return controlled_swap_ir(control, ports[left], ports[right])
 
         flip = Instruction("x", (flag,))
-        instructions = (
-            *uniform,
-            *lookup,
-            *(Instruction("h", (wire,)) for wire in sigma),
-            *compare,
-            Instruction("cz", (flag, *ports["alt_theta"])),
-            flip,
-            Instruction("cz", (flag, *ports["theta"])),
-            flip,
+        sample = tuple(Instruction("h", (wire,)) for wire in sigma)
+        alternate_sign = (Instruction("cz", (flag, *ports["alt_theta"])),)
+        original_sign = (flip, Instruction("cz", (flag, *ports["theta"])), flip)
+        choose = (
             *(
-                gate
+                swap(flag, f"alt_{orbital}", orbital)
                 for orbital in ("p", "q", "r", "s")
-                for gate in swap(flag, f"alt_{orbital}", orbital)
             ),
-            *swap(flag, "flag_1b", "alt_flag_1b"),
+            swap(flag, "flag_1b", "alt_flag_1b"),
+        )
+        symmetry = (
             *(
-                Instruction("h", ports[name])
+                (Instruction("h", ports[name]),)
                 for name in ("swap_pq", "swap_rs", "swap_pqrs")
             ),
-            *swap(ports["swap_pqrs"][0], "p", "r"),
-            *swap(ports["swap_pqrs"][0], "q", "s"),
-            *swap(ports["swap_pq"][0], "p", "q"),
-            *swap(ports["swap_rs"][0], "r", "s"),
+            swap(ports["swap_pqrs"][0], "p", "r"),
+            swap(ports["swap_pqrs"][0], "q", "s"),
+            swap(ports["swap_pq"][0], "p", "q"),
+            swap(ports["swap_rs"][0], "r", "s"),
         )
+        stages = (
+            uniform,
+            lookup,
+            sample,
+            compare,
+            alternate_sign,
+            original_sign,
+            *choose,
+            *symmetry,
+        )
+        if adjoint:
+            stages = (
+                *reversed(symmetry),
+                *reversed(choose),
+                original_sign,
+                alternate_sign,
+                compare,
+                sample[::-1],
+                lookup,
+                uniform,
+            )
+        instructions = tuple(gate for stage in stages for gate in stage)
         return _BoundPrepareSparseChemistry(
             instructions, max((*logical, *workspace)) + 1
         )
 
-    def resource_model(self) -> ComponentCost:
-        """Return the locked forward cost, including its one-bit swap declaration."""
+    def resource_model(self, *, adjoint: bool = False) -> ComponentCost:
+        """Count the locked graph, using abstract measurement erasure for the adjoint."""
         data = self.data
-        lookup = data.lookup_cost()
+        lookup = (
+            source_qroam_measurement_erase_cost(
+                data.lookup_table(), 0, tuple(bits for _, bits in data.target_layout)
+            ).wrapper
+            if adjoint
+            else data.lookup_cost()
+        )
         mu = data.probability_bits
         orbital_width = (data.spatial_orbitals - 1).bit_length()
         width = sum(bits for _, bits in (*self.selection_layout, *self.junk_layout))
@@ -158,18 +215,19 @@ class PrepareSparseChemistry:
         compare = source_equal_width_less_equal_cost(mu)
         # The source dictionary merges the flag CSwap into CSwap(1) at width one.
         swaps = 8 * orbital_width + int(orbital_width != 1)
+        calls = (
+            CostCall(
+                source_uniform_preparation_cost(len(data.indices)),
+                bystander_qubits=bystanders,
+            ),
+            CostCall(lookup, bystander_qubits=bystanders),
+            CostCall(compare, bystander_qubits=width - compare_width),
+        )
         return ComponentCost(
-            "PrepareSparse",
+            "PrepareSparse†" if adjoint else "PrepareSparse",
             width,
             GateCost(cswap=swaps, clifford=mu + 7),
-            (
-                CostCall(
-                    source_uniform_preparation_cost(len(data.indices)),
-                    bystander_qubits=bystanders,
-                ),
-                CostCall(lookup, bystander_qubits=bystanders),
-                CostCall(compare, bystander_qubits=width - compare_width),
-            ),
+            calls[::-1] if adjoint else calls,
         )
 
 

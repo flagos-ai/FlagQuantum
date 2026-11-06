@@ -1,5 +1,6 @@
 """Compare complete sparse chemistry preparation with the pinned source."""
 
+from cmath import exp
 from collections import defaultdict
 from itertools import product
 from math import sqrt
@@ -20,14 +21,15 @@ from tests.unit.register_source_graph import walk_source_graph
 from tests.unit.test_first_quantization_resource_model import assert_source_model
 from tests.unit.test_register_constant_addition import reference_arithmetic_gates
 from tests.unit.test_register_subtraction import assert_source
+from tests.unit.test_relative_controlled_swap import source_relative_swap
 from tests.unit.test_source_qroam_clean import source_clean_graph
 
 pytestmark = pytest.mark.unit
 
 
-def _branch(gates, width, history):
+def _branch(gates, width, history, state=None):
     """Evaluate the small-support fixture without allocating dense bank states."""
-    state = {0: 1 + 0j}
+    state = {0: 1 + 0j} if state is None else state
     bits = {}
     outcomes = iter(history)
     phase = {
@@ -62,6 +64,9 @@ def _branch(gates, width, history):
                 updated[index ^ mask] += amp
             elif gate.name == "reset":
                 updated[index & ~mask] += amp
+            elif gate.name == "rz":
+                theta = gate.params["theta"]
+                updated[index] += amp * exp((1j if index & mask else -1j) * theta / 2)
             elif gate.name == "cz":
                 updated[index] += -amp if all(index & m for m in masks) else amp
             else:
@@ -80,7 +85,10 @@ def test_prepare_forward_source_graph_and_resources(spatial, log):
     from qualtran.bloqs.basic_gates import CSwap, Hadamard, OnEach
     from qualtran.bloqs.basic_gates.z_basis import CZ
     from qualtran.bloqs.chemistry.sparse.prepare import PrepareSparse
-    from qualtran.bloqs.data_loading.qroam_clean import QROAMClean
+    from qualtran.bloqs.data_loading.qroam_clean import (
+        QROAMClean,
+        QROAMCleanAdjointWrapper,
+    )
     from qualtran.bloqs.state_preparation.prepare_uniform_superposition import (
         PrepareUniformSuperposition,
     )
@@ -108,10 +116,23 @@ def test_prepare_forward_source_graph_and_resources(spatial, log):
         operation.make_on(ports, workspace=scratch, classical_bits=bits)
     )
     actual = circuit.to_ir().instructions
+    inverse = (
+        DynamicCircuit(width + work)
+        .append(
+            operation.make_coherent_adjoint_on(
+                ports, workspace=scratch, classical_bits=bits
+            )
+        )
+        .to_ir()
+        .instructions
+    )
+    source_adjoint = reference.adjoint()
+    assert_source_model(operation.resource_model(adjoint=True), source_adjoint)
     lookup_work = data.lookup_table().workspace_size(0, (data.address_width,))
 
     def leaf(bloq, inputs, desired):
-        if isinstance(bloq, PrepareSparse):
+        child = getattr(bloq, "subbloq", bloq)
+        if isinstance(child, PrepareSparse):
             return None
 
         if isinstance(bloq, QROAMClean):
@@ -124,7 +145,30 @@ def test_prepare_forward_source_graph_and_resources(spatial, log):
                 bloq, inputs, desired, scratch[:lookup_work], bits[:lookup_work]
             )
             return gates, desired
-        if isinstance(bloq, (PrepareUniformSuperposition, Hadamard, OnEach)):
+        if isinstance(bloq, QROAMCleanAdjointWrapper):
+            from qualtran import DecomposeNotImplementedError
+
+            with pytest.raises(DecomposeNotImplementedError):
+                bloq.qroam_clean_adjoint_bloq.decompose_bloq()
+            address = {"selection": inputs["selection"]}
+            forward, load_size, exchanges = source_clean_graph(
+                bloq.qroam_clean,
+                address,
+                inputs,
+                scratch[:lookup_work],
+                bits[:lookup_work],
+            )
+            return (
+                *(
+                    gate
+                    for exchange in reversed(exchanges)
+                    for gate in source_relative_swap(
+                        exchange["ctrl"][0], exchange["x"], exchange["y"]
+                    )
+                ),
+                *forward[:load_size],
+            ), address
+        if isinstance(child, (PrepareUniformSuperposition, Hadamard, OnEach)):
             gates = tuple(
                 Instruction("h", (wire,)) for word in inputs.values() for wire in word
             )
@@ -159,6 +203,14 @@ def test_prepare_forward_source_graph_and_resources(spatial, log):
     )
     assert returned == ports
     assert_source(actual, expected)
+    source_inverse, inverse_outputs = walk_source_graph(
+        source_adjoint,
+        ports,
+        {reg.name: ports[reg.name] for reg in source_adjoint.signature.rights()},
+        leaf,
+    )
+    assert set(inverse_outputs) == {reg.name for reg in reference.signature.lefts()}
+    assert_source(inverse, source_inverse)
     model = operation.resource_model()
     assert_source_model(model, reference)
     if spatial == 2:
@@ -167,6 +219,8 @@ def test_prepare_forward_source_graph_and_resources(spatial, log):
             assert events == 3
             assert sum(gate.name in {"t", "tdg"} for gate in actual) == 75
         assert model.gates.cswap == 8
+        inverse_events = sum(gate.name == "measure" for gate in inverse)
+        assert inverse_events == events
         for history in product((0, 1), repeat=events):
             output = _branch(actual, width + work, history)
             assert output == pytest.approx(
@@ -177,6 +231,9 @@ def test_prepare_forward_source_graph_and_resources(spatial, log):
             assert sum(abs(amp) ** 2 for amp in output.values()) == pytest.approx(
                 2**-events
             )
+            for inverse_history in product((0, 1), repeat=inverse_events):
+                restored = _branch(inverse, width + work, inverse_history, output)
+                assert restored == pytest.approx({0: 2**-events}, abs=2e-12)
             if log == 0:
                 assert output == pytest.approx(
                     _expected_unblocked(data, layout, work, events), abs=2e-12
@@ -216,3 +273,40 @@ def _expected_unblocked(data, layout, work, events):
             index = (index << bits) | values.get(name, 0)
         result[index << work] = (-1) ** sign / sqrt(64 * 2**events)
     return result
+
+
+@pytest.mark.ftqc_reference
+def test_padded_lookup_adjoint_and_non_power_of_two_uniform_round_trip():
+    pytest.importorskip("qualtran")
+    from qualtran.bloqs.chemistry.sparse.prepare import PrepareSparse
+
+    one = np.array([[1.0, -0.75], [-0.75, 1.0]])
+    two = np.zeros((2,) * 4)
+    data = sparse_chemistry_data(one, two, probability_bits=1, log_block_size=1)
+    prepare = PrepareSparseChemistry(data)
+    reference = PrepareSparse.from_hamiltonian_coeffs(
+        4, one, two, num_bits_state_prep=1, log_block_size=1
+    )
+    assert len(data.indices) == 3
+    assert_source_model(prepare.resource_model(adjoint=True), reference.adjoint())
+    layout = (*prepare.selection_layout, *prepare.junk_layout)
+    width = sum(bits for _, bits in layout)
+    ports = partition_register(tuple(range(width)), layout)
+    work, slots = prepare.requirements()
+    scratch = tuple(range(width, width + work))
+    bits = tuple(range(slots))
+    forward = prepare.make_on(
+        ports, workspace=scratch, classical_bits=bits
+    ).instructions
+    inverse = prepare.make_coherent_adjoint_on(
+        ports, workspace=scratch, classical_bits=bits
+    ).instructions
+    events = sum(gate.name == "measure" for gate in forward)
+    assert events == sum(gate.name == "measure" for gate in inverse)
+    for history in product((0, 1), repeat=events):
+        output = _branch(forward, width + work, history)
+        assert output and all(index & ((1 << work) - 1) == 0 for index in output)
+        restored = _branch(
+            inverse, width + work, tuple(1 - bit for bit in history), output
+        )
+        assert restored == pytest.approx({0: 2**-events}, abs=2e-12)

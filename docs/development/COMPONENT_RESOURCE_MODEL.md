@@ -1855,3 +1855,36 @@ At one-bit orbital width, the source's call dictionary assigns the same
 key to the flag swap and orbital swaps. Its model counts eight CSwap while
 the executable decomposition contains nine Fredkin gates. The emitter and
 resource estimate each preserve their corresponding source behavior.
+
+### Sparse chemistry PREPARE reversal
+
+Call `make_coherent_adjoint_on` with the same named ports and scratch
+to reverse the preparation on its matching forward output. The inverse
+undoes symmetry and alias swaps, phases, comparison, probability Hadamards,
+lookup routing and load, then the uniform address preparation. It preserves
+coherence on the lookup banks while uncomputing them. Scratch predicates
+can still use measurements and immediate feedback.
+
+```python
+inverse = prepare.make_coherent_adjoint_on(
+    ports,
+    workspace=tuple(range(width, width + work)),
+    classical_bits=tuple(range(slots)),
+)
+adjoint_circuit = DynamicCircuit(width + work).append(inverse)
+source_cost = estimate_ftqc_resources(prepare.resource_model(adjoint=True))
+coherent_cost = estimate_ftqc_resources(
+    prepare.resource_model(adjoint=True), emitted_ir=adjoint_circuit.to_ir()
+)
+assert source_cost.logical == coherent_cost.logical
+assert coherent_cost.emitted is not None
+assert coherent_cost.emitted.t_count == 75
+assert coherent_cost.emitted.unconditional["measure"] == 3
+```
+
+The source adjoint model counts its abstract QROAM measurement-erasure
+leaf. That leaf has no executable decomposition in the pinned version.
+The coherent circuit's counts describe its actual instructions, and
+the forward output banks must satisfy their lookup invariant when
+uncomputed. The branch checks include a padded lookup with an odd
+number of rows.

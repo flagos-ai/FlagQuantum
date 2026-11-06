@@ -20,6 +20,7 @@ from ...compiler.registers.source_qroam_clean import (
     QroamCleanTable,
     optimal_qroam_clean_log_block_size,
     source_qroam_clean_ir,
+    source_qroam_clean_uncompute_ir,
 )
 from ...core.ir import Instruction
 from .alias_sampling import alias_numerators
@@ -90,8 +91,10 @@ class SparseChemistryData:
         outputs: Mapping[str, tuple[int, ...]],
         workspace: tuple[int, ...],
         classical_bits: tuple[int, ...],
+        *,
+        uncompute: bool = False,
     ) -> tuple[Instruction, ...]:
-        """Bind named zero-initialized targets and retained junk to the source load."""
+        """Load clean banks or coherently erase matching signed lookup outputs."""
         table = self.lookup_table()
         if len(address) != self.address_width:
             raise ValueError("Sparse chemistry address width must match the row count")
@@ -108,9 +111,8 @@ class SparseChemistryData:
                     ),
                 )
             )
-        return source_qroam_clean_ir(
-            table, (), (address,), tuple(banks), workspace, classical_bits
-        )
+        emit = source_qroam_clean_uncompute_ir if uncompute else source_qroam_clean_ir
+        return emit(table, (), (address,), tuple(banks), workspace, classical_bits)
 
     def lookup_cost(self) -> ComponentCost:
         """Estimate the source forward lookup with the declared target widths."""
