@@ -90,5 +90,5 @@ def test_self_hosted_cpu_capacity_groups_do_not_serialize_ready_work() -> None:
         "coverage-shard",
         "dependency-bounds",
         "distributed-cpu-shard",
-        "pre-commit",
+        "prepare-source",
     } <= set(found)
