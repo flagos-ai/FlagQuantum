@@ -224,17 +224,28 @@ registers wider than one qubit. A local register starts at its declaration and
 ends at its release. The lowest free lane is reused for later allocations.
 
 ```python
+from pathlib import Path
+
 from examples.synthesis_local_registers import local_composition
 from flagquantum.drawer.register_score import register_program_score
+from flagquantum.drawer.register_score_data import (
+    export_register_score_json,
+    register_score_data,
+)
 
 program, helpers = local_composition(overlapping=False, helpers=True)
 score = register_program_score(program, helpers)
 for column in score.columns:
     print(column.sequence, column.generation, column.step.name, column.lanes)
+Path("register-score.json").write_text(
+    export_register_score_json(register_score_data(score)), encoding="utf-8"
+)
 ```
 
 The sequence is the drawing order. Independent operations can share a
 dependency generation. This placement describes register connectivity and
 lifetimes, while the compiler still uses the verified effect order for
-execution. The score currently provides layout data. Image rendering and
-browser serialization use separate adapters.
+execution. The JSON contains port symbols, vertical connectors, and
+horizontal lifetimes. Quantum registers are the default. Supply
+`classical={...}` when exporting a mixed register graph. Image and browser
+renderers consume these presentation records separately.

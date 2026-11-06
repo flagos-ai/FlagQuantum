@@ -31,6 +31,7 @@ class RegisterStep:
     name: str
     inputs: tuple[str, ...] = ()
     outputs: tuple[str, ...] = ()
+    gate: str | None = None
 
 
 @dataclass(frozen=True)
@@ -41,6 +42,7 @@ class RegisterColumn:
     sequence: int
     generation: int
     lanes: tuple[int, ...]
+    ordinal: int
 
 
 @dataclass(frozen=True)
@@ -124,7 +126,7 @@ def layout_register_score(
         lanes = tuple(
             dict.fromkeys(live[key][0] for key in (*step.inputs, *step.outputs))
         )
-        columns.append(RegisterColumn(step, sequence, generations[index], lanes))
+        columns.append(RegisterColumn(step, sequence, generations[index], lanes, index))
         for key in step.inputs:
             if key not in step.outputs:
                 lane, start = live.pop(key)
@@ -175,5 +177,6 @@ def register_program_score(
         elif op.name == "qreg.uncompute":
             operands += borrowed.pop(op.operands[1].id)
         outputs = () if op.name == "qreg.release" else operands
-        steps.append(RegisterStep(op.name, operands, outputs))
+        gate = op.attributes.get("gate")
+        steps.append(RegisterStep(op.name, operands, outputs, gate))
     return layout_register_score(widths, inputs, steps)
