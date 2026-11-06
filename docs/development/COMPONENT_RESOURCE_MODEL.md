@@ -253,9 +253,27 @@ assert estimate_connection_width(steps, connections) == 8
 ```
 
 The two 2-qubit operands and one carry belong to the adder's local peak.
-The 3-qubit bystander remains live across the call. Steps and connections
-are explicit model inputs. The estimate does not extract them from
-`CircuitIR`, change circuit execution order, or assign physical qubits.
+The 3-qubit bystander remains live across the call. Bare `CircuitIR`
+has no register ownership or release operations. For a verified
+construction program, `estimate_register_program_width` derives
+connections from declared registers, releases and ordered effects.
+Outputs are reserved at entry, matching register lowering. Each repeated
+operand reference counts as one register.
+
+```python
+from examples.synthesis_local_registers import local_composition
+from flagquantum.compiler._construction.register_width_model import (
+    estimate_register_program_width,
+)
+
+program, functions = local_composition(overlapping=True)
+assert estimate_register_program_width(program, functions) == 8
+```
+
+The default gives the declared storage peak. A `local_peak` callback can
+supply an expanded effect's modeled peak, including its distinct operands
+and any workspace. The estimator keeps the other live registers as
+bystanders and respects the original effect order.
 
 - [Qualtran v0.7.0 gate costs](https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/resource_counting/_bloq_counts.py)
 - [Qualtran v0.7.0 logical width](https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/resource_counting/_qubit_counts.py)
