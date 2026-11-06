@@ -517,6 +517,21 @@ power, the X/Y global shift becomes a phase on the control wire. Qualtran
 delegates these leaf unitaries to Cirq. FlagQuantum uses phase instructions
 and basis changes to preserve the full complex action.
 
+## X and Z basis states
+
+`basis_state_ir` prepares a basis vector on a caller-owned clean
+wire. The source's `|0>`, `|1>`, `|+>`, and `|->` emit, in order,
+the empty sequence, X, H, and X followed by H. The clean wire binds
+the source's single output port. Preparation introduces no additional
+work wires or measurements.
+
+`basis_state_cost_key` distinguishes the vectors and retains the
+source's zero QEC gate cost. The X and H instructions that prepare
+them remain visible in the emitted instruction count.
+
+- [Qualtran v0.7.0 X basis](https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/bloqs/basic_gates/x_basis.py)
+- [Qualtran v0.7.0 Z basis](https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/bloqs/basic_gates/z_basis.py)
+
 ## Register identity
 
 The source models Identity as one atomic call with zero QEC gates.
