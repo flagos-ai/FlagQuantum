@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
-from typing import Any
+from math import sqrt
+from typing import Any, Literal
 
 import torch
 
@@ -169,30 +170,71 @@ def _basis_projectors(
     return torch.stack(rows).reshape(len(bits), width, 2).to(dtype)
 
 
+def _basis_effect_projection(
+    plan: TensorNetworkContractionPlan,
+    effects: Sequence[tuple[int, Literal["x", "z"], int]],
+) -> tuple[tuple[TensorNetworkNode, ...], tuple[int, ...]]:
+    """Attach selected rank-one covectors while keeping other output labels."""
+    reference = plan.nodes[0].tensor
+    nodes = list(plan.nodes)
+    projectors = _basis_projectors(
+        [[bit for _, _, bit in effects]], device=reference.device, dtype=reference.dtype
+    )
+    for index, (wire, basis, bit) in enumerate(effects):
+        tensor = projectors[0, index].contiguous()
+        name = f"amplitude_projector_{wire}_{bit}"
+        if basis == "x":
+            # Qualtran's one-wire LEFT effects are the real covectors <+| and <-|.
+            scale = 1 / sqrt(2)
+            tensor = reference.new_tensor((scale, -scale if bit else scale))
+            name = f"amplitude_x_projector_{wire}_{bit}"
+        nodes.append(
+            TensorNetworkNode(
+                tensor=tensor,
+                labels=(plan.output_labels[wire + 1],),
+                name=name,
+                metadata={"qubit": wire, "bit": bit},
+            )
+        )
+    selected = {wire for wire, _, _ in effects}
+    kept = tuple(
+        label
+        for wire, label in enumerate(plan.output_labels[1:])
+        if wire not in selected
+    )
+    return tuple(nodes), (plan.output_labels[0], *kept)
+
+
 def _amplitude_projection(
     plan: TensorNetworkContractionPlan,
     bitstring: int | str | Sequence[int],
 ) -> tuple[tuple[TensorNetworkNode, ...], tuple[int, ...]]:
     """Attach computational-basis projectors to a ket contraction plan."""
-
     bits = _normalize_bitstring(bitstring, plan.n_qubits)
-    reference = plan.nodes[0].tensor
-    nodes = list(plan.nodes)
-    projectors = _basis_projectors(
-        [bits], device=reference.device, dtype=reference.dtype
+    return _basis_effect_projection(
+        plan, tuple((wire, "z", bit) for wire, bit in enumerate(bits))
     )
-    for qubit, (label, bit) in enumerate(
-        zip(plan.output_labels[1:], bits, strict=False)
-    ):
-        nodes.append(
-            TensorNetworkNode(
-                tensor=projectors[0, qubit].contiguous(),
-                labels=(label,),
-                name=f"amplitude_projector_{qubit}_{bit}",
-                metadata={"qubit": qubit, "bit": bit},
-            )
-        )
-    return tuple(nodes), (plan.output_labels[0],)
+
+
+def tensor_network_basis_effect(
+    plan: TensorNetworkContractionPlan,
+    effects: Mapping[int, tuple[Literal["x", "z"], int]],
+) -> torch.Tensor:
+    """Contract specified X/Z bras and return the unnormalized surviving ket.
+
+    The result is batch-major and keeps unprojected wires in their original
+    order. No sampling or normalization is applied.
+    """
+    for wire, (basis, bit) in effects.items():
+        if type(wire) is not int or not 0 <= wire < plan.n_qubits:
+            raise ValueError("Basis effect wire is outside the contraction plan")
+        if basis not in ("x", "z") or type(bit) is not int or bit not in (0, 1):
+            raise ValueError("Basis effect requires X or Z and a binary bit")
+    nodes, labels = _basis_effect_projection(
+        plan, tuple((wire, *effects[wire]) for wire in sorted(effects))
+    )
+    result, _ = _contract_nodes_greedy(nodes, labels, objective="quality")
+    return result.reshape(plan.bsz, 1 << (len(labels) - 1))
 
 
 def _amplitude_batch_projection(

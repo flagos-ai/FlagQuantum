@@ -532,6 +532,19 @@ them remain visible in the emitted instruction count.
 - [Qualtran v0.7.0 X basis](https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/bloqs/basic_gates/x_basis.py)
 - [Qualtran v0.7.0 Z basis](https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/bloqs/basic_gates/z_basis.py)
 
+## X and Z basis effects
+
+The source's four LEFT effects consume one wire and have zero modeled
+QEC gate cost. Its Cirq exporter refuses these effects. FlagQuantum's
+local tensor-network path attaches the corresponding covector to the
+selected output label and contracts it with the network.
+
+`tensor_network_basis_effect` takes an existing contraction plan and
+a map from wire to `(basis, bit)`. It returns the unnormalized surviving
+ket, with the original batch axis and the unprojected wire order. A
+zero-probability projection returns the zero ket. The contraction creates
+no circuit instructions, auxiliary wires, or measurement samples.
+
 ## Register identity
 
 The source models Identity as one atomic call with zero QEC gates.
