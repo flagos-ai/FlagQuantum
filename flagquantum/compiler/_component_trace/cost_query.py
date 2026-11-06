@@ -10,7 +10,7 @@ from collections.abc import Callable, Iterable, Mapping, MutableMapping, Sequenc
 from dataclasses import dataclass
 from typing import Generic, Protocol, TypeVar
 
-from .call_graph import CostGeneralizer, compose_cost_generalizer
+from .call_graph import CostGeneralizer, Generalizer, Node, compose_cost_generalizer
 from .resource_model import (
     ComponentCost,
     GateCost,
@@ -57,14 +57,31 @@ def query_component_cost(
     A caller-provided cache is updated in place using generalized component
     keys. Use one cache per metric and generalizer/override configuration.
     """
-    stored: MutableMapping[ComponentCost, Value] = {} if cache is None else cache
-    generalize = compose_cost_generalizer(generalizer)
-    visiting: set[ComponentCost] = set()
+    return _query_cost(
+        component,
+        metric.compute,
+        metric.zero,
+        compose_cost_generalizer(generalizer),
+        cache,
+        static_costs,
+    )
 
-    def visit(original: ComponentCost) -> Value:
+
+def _query_cost(
+    root: Node,
+    compute: Callable[[Node, Callable[[Node], Value]], Value],
+    zero: Value,
+    generalize: Generalizer[Node],
+    cache: MutableMapping[Node, Value] | None,
+    static_costs: Mapping[Node, Value] | None,
+) -> Value:
+    stored: MutableMapping[Node, Value] = {} if cache is None else cache
+    visiting: set[Node] = set()
+
+    def visit(original: Node) -> Value:
         node = generalize(original)
         if node is None:
-            return metric.zero
+            return zero
         if node in stored:
             return stored[node]
         if static_costs is not None and node in static_costs:
@@ -73,12 +90,12 @@ def query_component_cost(
             if node in visiting:
                 raise ValueError("Component cost query contains a cycle")
             visiting.add(node)
-            value = metric.compute(node, visit)
+            value = compute(node, visit)
             visiting.remove(node)
         stored[node] = value
         return value
 
-    return visit(component)
+    return visit(root)
 
 
 def query_component_costs(

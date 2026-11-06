@@ -414,6 +414,31 @@ assert legacy_gate_budget(gates)["t"] == 51
 assert beverland_gate_budget(gates)["D_R"] == 6
 ```
 
+Use `query_qec_gate_cost` to compute these categories directly from
+typed resource calls and symbolic multiplicities. Known leaves stop
+expansion. Explicitly modeled zero-cost operations contribute zero,
+and an unsupported key without declared callees raises an error.
+Use a separate cache for each model configuration.
+
+```python
+from flagquantum.compiler._component_trace.qec_gate_cost import query_qec_gate_cost
+from flagquantum.compiler._component_trace.resource_generalization import (
+    ConjunctionCall,
+    FanoutCall,
+)
+
+assert query_qec_gate_cost(FanoutCall(12)).clifford == 1
+assert query_qec_gate_cost(FanoutCall(12), legacy_shims=True).clifford == 23
+erase = ConjunctionCall((0, 0), adjoint=True)
+assert query_qec_gate_cost(erase).measurement == 1
+assert query_qec_gate_cost(erase, legacy_shims=True).clifford == 7
+```
+
+Legacy annotations supply the historical T, Clifford and rotation
+categories after seeded and static costs. Legacy fanout requires
+a positive concrete width because the locked source uses its
+decomposition for this convention.
+
 - [Qualtran v0.7.0 gate costs](https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/resource_counting/_bloq_counts.py)
 - [Qualtran v0.7.0 logical width](https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/resource_counting/_qubit_counts.py)
 - [Qualtran v0.7.0 success probability](https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/resource_counting/_success_prob.py)

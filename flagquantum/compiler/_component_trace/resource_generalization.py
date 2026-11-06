@@ -83,6 +83,32 @@ class BookkeepingCall:
 
 
 @dataclass(frozen=True)
+class MeasurementCall:
+    basis: Literal["x", "z"]
+
+
+@dataclass(frozen=True)
+class FanoutCall:
+    width: SymbolicInt
+
+
+@dataclass(frozen=True)
+class ZeroCostCall:
+    """An explicitly modeled state, effect, or empty operation."""
+
+    opcode: Literal[
+        "x_state",
+        "z_state",
+        "x_effect",
+        "z_effect",
+        "global_phase",
+        "identity",
+        "discard",
+    ]
+    parameters: tuple[Hashable, ...] = ()
+
+
+@dataclass(frozen=True)
 class PartitionedCall:
     call: ResourceCall
     layout: Hashable
@@ -98,6 +124,9 @@ ResourceCall = (
     | ConjunctionCall
     | ControlledSwapCall
     | BookkeepingCall
+    | MeasurementCall
+    | FanoutCall
+    | ZeroCostCall
     | PartitionedCall
 )
 
