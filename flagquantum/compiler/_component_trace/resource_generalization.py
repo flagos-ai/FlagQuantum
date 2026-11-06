@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # Adapted from Qualtran v0.7.0 resource graph generalizers.
 # https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/resource_counting/generalizers.py
+# Arbitrary Clifford: https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/bloqs/bookkeeping/arbitrary_clifford.py
 
 """Canonicalize declared resource call identities before aggregating edges."""
 
@@ -45,6 +46,15 @@ class CliffordCall:
     opcode: Literal["swap_bit", "h", "x", "y", "z", "cx", "cy", "cz", "arbitrary"]
     width: SymbolicInt
     adjoint: bool = False
+
+
+def arbitrary_clifford_cost_key(
+    width: SymbolicInt, *, adjoint: bool = False
+) -> CliffordCall:
+    """Declare one opaque Clifford of the given concrete or symbolic width."""
+    if isinstance(width, (int, float)) and (type(width) is not int or width < 0):
+        raise ValueError("Arbitrary Clifford requires a nonnegative integer width")
+    return CliffordCall("arbitrary", width, adjoint)
 
 
 @dataclass(frozen=True)

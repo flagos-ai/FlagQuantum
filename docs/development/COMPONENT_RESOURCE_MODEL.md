@@ -731,6 +731,20 @@ An atomic source child without a call graph, such as X under Always,
 has no source QEC cost for the wrapper. A native cost with an explicit
 declaration remains usable.
 
+## Opaque Clifford resource leaves
+
+`arbitrary_clifford_cost_key` declares an abstract Clifford and preserves
+its concrete or symbolic register width. The pinned leaf reports exactly
+one Clifford even at zero width. The adjoint has the same cost and width.
+The source supplies neither a gate decomposition nor a tensor for this
+leaf. Executable consumers retain their own decompositions.
+
+Integer vectors share this resource declaration. The approximate
+controlled swap uses it to retain distinct one- and two-qubit Clifford
+calls in its forward and inverse resource rows. For a swap of two
+four-qubit registers the model reports 16 T-family gates and 87 abstract
+Cliffords. The original primitive instruction count is tracked separately.
+
 ## Register identity
 
 The source models Identity as one atomic call with zero QEC gates.

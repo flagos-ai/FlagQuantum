@@ -8,7 +8,10 @@
 from typing import Literal
 
 from ...core.ir import Instruction
-from .._component_trace.resource_generalization import CliffordCall
+from .._component_trace.resource_generalization import (
+    CliffordCall,
+    arbitrary_clifford_cost_key,
+)
 from .._component_trace.symbolic_math import SymbolicInt
 from .bitwise import xor_constant_ir
 from .register_bits import split_integer, split_register
@@ -32,6 +35,4 @@ def int_effect_bindings(
 
 def int_vector_cost_key(width: SymbolicInt) -> CliffordCall:
     """Return the source's single ArbitraryClifford call for either side."""
-    if isinstance(width, (int, float)) and (type(width) is not int or width < 0):
-        raise ValueError("Integer vector cost requires a nonnegative integer width")
-    return CliffordCall("arbitrary", width)
+    return arbitrary_clifford_cost_key(width)

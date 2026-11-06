@@ -38,6 +38,7 @@ from .resource_generalization import (
     RotationCall,
     ZeroCostCall,
     _resource_callees,
+    arbitrary_clifford_cost_key,
 )
 from .resource_model import ComponentCost
 from .symbolic_math import SymbolicInt
@@ -162,8 +163,10 @@ def _qec_callees(
     elif isinstance(node, ControlledSwapCall):
         if node.approximate:
             yield PhaseCall("t", adjoint=node.adjoint), 4 * node.width
-            yield CliffordCall("arbitrary", 1, node.adjoint), 16 * node.width
-            yield CliffordCall("arbitrary", 2, node.adjoint), 6 * node.width - 1
+            yield arbitrary_clifford_cost_key(1, adjoint=node.adjoint), 16 * node.width
+            yield arbitrary_clifford_cost_key(
+                2, adjoint=node.adjoint
+            ), 6 * node.width - 1
         else:
             yield FixedTCall("fredkin"), node.width
     elif isinstance(node, ControlledRegisterSwapCall):
