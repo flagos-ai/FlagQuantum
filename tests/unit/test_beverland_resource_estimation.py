@@ -13,6 +13,7 @@ from flagquantum.compiler._component_trace.resource_model import (
     estimate_component_resources,
 )
 from flagquantum.qec.resources.beverland import estimate_beverland_resources
+from flagquantum.qec.resources.estimation import estimate_ftqc_resources
 
 pytestmark = pytest.mark.unit
 
@@ -161,10 +162,11 @@ def test_thc_matches_complete_source_model() -> None:
     from qualtran.surface_code import AlgorithmSummary, QECScheme, beverland_et_al_model
     from qualtran.surface_code.rotation_cost_model import BeverlandEtAlRotationCost
 
-    logical = estimate_component_resources(select_thc_cost(2, 4, 8, 1))
-    result = estimate_beverland_resources(
-        logical, error_budget=1e-3, physical_error=1e-4
+    report = estimate_ftqc_resources(
+        select_thc_cost(2, 4, 8, 1), error_budget=1e-3, physical_error=1e-4
     )
+    result = report.surface_code
+    assert result is not None
     source = AlgorithmSummary.from_bloq(SelectTHC(2, 4, 8, 1))
     assert result.minimum_time_steps == beverland_et_al_model.minimum_time_steps(
         error_budget=1e-3, alg=source, rotation_model=BeverlandEtAlRotationCost

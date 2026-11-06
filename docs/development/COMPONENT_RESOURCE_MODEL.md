@@ -43,6 +43,36 @@ in native IR has a different resource profile. The existing
 `estimate_resources` entry point continues to describe static instructions
 and basis conversion, with its existing data-dependence rules.
 
+## Unified FTQC resource report
+
+Call the experimental `estimate_ftqc_resources` entry point in
+`flagquantum.qec.resources.estimation` with a declared component model. This
+works before circuit construction. Pass `emitted_ir=circuit.to_ir()` to include
+instruction counts and both `error_budget` and `physical_error` to include
+the Beverland fast data-block estimate.
+
+```python
+from flagquantum.algorithms.primitives.multiplexers.thc_resource_model import (
+    select_thc_cost,
+)
+from flagquantum.qec.resources.estimation import estimate_ftqc_resources
+
+model = select_thc_cost(num_mu=2, num_spin_orb=4, num_bits_theta=8, keep_bitsize=1)
+report = estimate_ftqc_resources(model, error_budget=1e-3, physical_error=1e-4)
+assert report.logical.gates.total_t_count() == 472
+assert report.logical.peak_logical_qubits == 24
+assert report.surface_code is not None
+assert report.surface_code.data_block_physical_qubits == 6174
+```
+
+Run `python -m examples.algorithms.ftqc_resource_estimation` to also construct
+the 8-bit circuit with `circuit.append(op)`. The emitted section reports 112
+T/T† instructions, 49 CCX instructions, 11 CSwap instructions and 60
+measurements across 39 declared wires. These are static counts at the emitted
+IR level, before further synthesis or measurement branch selection. The
+surface-code scenario uses the declared model and is independent of the
+optional circuit. The caller pairs the model with its corresponding circuit.
+
 ## Beverland surface-code estimate
 
 A declared logical cost can feed a surface-code model before any circuit
