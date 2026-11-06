@@ -13,6 +13,8 @@ from flagquantum.algorithms.first_quantization_nu_resource_model import (
 from flagquantum.algorithms.first_quantization_projectile_resource_model import (
     source_projectile_power_two_cost,
     source_projectile_prepare_t_cost,
+    source_projectile_prepare_uv_adjoint_gate_cost,
+    source_projectile_prepare_uv_cost,
     source_projectile_select_t_cost,
     source_projectile_select_uv_cost,
 )
@@ -223,3 +225,54 @@ def test_projectile_prepare_nu_rejects_unbound_dimensions() -> None:
         source_projectile_prepare_nu_cost(4, 2, 8)
     with pytest.raises(ValueError, match="m_param >= 2"):
         source_projectile_prepare_nu_cost(2, 4, 1)
+
+
+@pytest.mark.parametrize(
+    ("p", "n", "atoms", "m", "charge"),
+    [(2, 2, 1, 5, 0), (3, 5, 4, 9, 4), (6, 8, 10, 524288, 10)],
+)
+@pytest.mark.ftqc_reference
+def test_projectile_prepare_uv_source_graph(
+    p: int, n: int, atoms: int, m: int, charge: int
+) -> None:
+    pytest.importorskip("qualtran")
+    from qualtran import LeftDangle, RightDangle
+    from qualtran.bloqs.chemistry.pbc.first_quantization.projectile.prepare_uv import (
+        PrepareUVFirstQuantizationWithProj,
+    )
+    from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
+
+    source = PrepareUVFirstQuantizationWithProj(p, n, 10, atoms, m, charge, 8)
+    model = source_projectile_prepare_uv_cost(p, n, atoms, m, charge)
+    assert_source_model(model, source)
+    assert model.qubits == source.signature.n_qubits()
+    graph = source.decompose_bloq()
+    assert_source_model(model, graph)
+    live = {edge for edge in graph.connections if edge.left.binst == LeftDangle}
+    stages = []
+    for node, incoming, outgoing in graph.iter_bloqnections():
+        live.difference_update(incoming)
+        assert all(edge.left.binst == LeftDangle for edge in incoming)
+        assert all(edge.right.binst == RightDangle for edge in outgoing)
+        assert {(edge.left.reg.name, edge.left.idx) for edge in incoming} == {
+            (edge.right.reg.name, edge.right.idx) for edge in outgoing
+        }
+        names = {edge.left.reg.name for edge in incoming}
+        assert names == (
+            {"l"}
+            if str(node.bloq) == "PrepareZetaState"
+            else {"mu", "nu", "m", "flag_nu"}
+        )
+        stages.append((str(node.bloq), sum(edge.shape for edge in live)))
+        live.update(outgoing)
+    assert stages == [
+        (call.component.name, call.bystander_qubits) for call in model.calls
+    ]
+
+    adjoint = source.adjoint()
+    with pytest.raises(RuntimeError, match="does not accept Soquets.*flag"):
+        get_cost_value(adjoint, QubitCount())
+    gates = source_projectile_prepare_uv_adjoint_gate_cost(p, n, atoms, charge)
+    assert {
+        key: value for key, value in asdict(gates).items() if value
+    } == get_cost_value(adjoint, QECGatesCost()).asdict()

@@ -7,10 +7,15 @@
 
 from ..compiler._component_trace.resource_model import ComponentCost, CostCall, GateCost
 from ..compiler.registers.arithmetic_resource_model import source_add_cost
+from .first_quantization_nu_resource_model import (
+    source_projectile_prepare_nu_adjoint_gate_cost,
+    source_projectile_prepare_nu_cost,
+)
 from .first_quantization_resource_model import (
     _require_positive,
     _signed_conversion_cost,
     source_apply_nuclear_phase_cost,
+    source_prepare_zeta_cost,
 )
 
 
@@ -91,3 +96,30 @@ def source_projectile_select_uv_cost(
         2 + (num_atoms - 1).bit_length() + num_bits_nuc_pos + 3 * (n + 1) + 3 * (p + n),
         calls=calls,
     )
+
+
+def source_projectile_prepare_uv_cost(
+    num_bits_p: int, num_bits_n: int, num_atoms: int, m_param: int, lambda_zeta: int
+) -> ComponentCost:
+    """Model forward momentum transfer and nuclear-index preparation."""
+    nu = source_projectile_prepare_nu_cost(num_bits_p, num_bits_n, m_param)
+    zeta = source_prepare_zeta_cost(num_atoms, lambda_zeta)
+    nu_ports = 4 * num_bits_n + (m_param - 1).bit_length() + 4
+    index_width = (num_atoms - 1).bit_length()
+    return ComponentCost(
+        "PrepareUVFirstQuantizationWithProj",
+        nu_ports + index_width,
+        calls=(
+            CostCall(nu, bystander_qubits=index_width),
+            CostCall(zeta, bystander_qubits=nu_ports),
+        ),
+    )
+
+
+def source_projectile_prepare_uv_adjoint_gate_cost(
+    num_bits_p: int, num_bits_n: int, num_atoms: int, lambda_zeta: int
+) -> GateCost:
+    """Count adjoint gates separately from the undefined source peak width."""
+    nu = source_projectile_prepare_nu_adjoint_gate_cost(num_bits_p, num_bits_n)
+    zeta = source_prepare_zeta_cost(num_atoms, lambda_zeta, adjoint=True)
+    return nu.plus(zeta.gates, 1)

@@ -1293,3 +1293,33 @@ The locked projectile leaves declare resource costs without gate
 decompositions. Kinetic PREPARE requires the projectile word to be at
 least as wide as the electron word. Potential SELECT requires both words
 to have at least two bits for the source signed-conversion signature.
+
+## First-quantized projectile momentum-transfer and potential PREPARE
+
+The projectile momentum-transfer model reuses the shared Nu graph and
+substitutes the source projectile unary preparation. The forward potential
+preparation combines that graph with the disjoint nuclear-index register.
+The source still declares the unary flag as an output in its adjoint. The
+adjoint composite cannot bind that flag, so the adjoint cost function
+returns declared gate counts without a peak-width estimate.
+
+```python
+from flagquantum.algorithms.first_quantization_projectile_resource_model import (
+    source_projectile_prepare_uv_adjoint_gate_cost,
+    source_projectile_prepare_uv_cost,
+)
+from flagquantum.qec.resources.estimation import estimate_ftqc_resources
+
+forward = estimate_ftqc_resources(
+    source_projectile_prepare_uv_cost(6, 8, 10, 524288, 10)
+)
+reverse_gates = source_projectile_prepare_uv_adjoint_gate_cost(6, 8, 10, 10)
+assert forward.logical.gates.toffoli == 941
+assert forward.logical.gates.and_bloq == 36
+assert forward.logical.peak_logical_qubits == 97
+assert reverse_gates.toffoli == 33
+```
+
+The uniform `m` preparation uses the shared executable implementation.
+The complete source graph includes model-only leaves, so these estimates
+describe analytical resources.
