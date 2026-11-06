@@ -163,3 +163,33 @@ emits 52 T/T† and six measurements with three work qubits. The source
 model reports four CSwap, six And, twelve Clifford, six measurements
 and peak width 13. Its default T-equivalent count is 40 and its
 seven-T Fredkin conversion is 52.
+
+## First-quantized momentum exchange
+
+`MultiplexedCSwap3D` in `flagquantum.algorithms.first_quantization` binds
+a particle address and three momentum coordinates per particle. The
+source reshapes x, y, z into one word per row and restores the views
+after the exchange. The native operation binds the same wires directly.
+Junk may contain nonzero or entangled data.
+
+```python
+from flagquantum.algorithms.first_quantization import MultiplexedCSwap3D
+from flagquantum.dynamic import DynamicCircuit
+
+circuit = DynamicCircuit(15)
+circuit.append(MultiplexedCSwap3D.make_on(
+    selection=(0, 1),
+    targets=(((2,), (3,), (4,)), ((5,), (6,), (7,)), ((8,), (9,), (10,))),
+    junk=((11,), (12,), (13,)),
+    workspace=(14,),
+    classical_bits=(0,),
+))
+```
+
+Three particles with one bit per coordinate use 15 logical qubits and
+emit 67 T/T† and one measurement. The shared resource estimator gives
+40 default T equivalents and 67 with exact Fredkin conversion.
+`adjoint=True` follows the source adjoint graph. The pinned one-particle
+case has an empty selection and no executable child decomposition.
+
+- [Qualtran v0.7.0 first-quantization momentum exchange](https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/bloqs/chemistry/pbc/first_quantization/select_and_prepare.py)
