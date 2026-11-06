@@ -1,11 +1,17 @@
-"""Estimate 8-bit THC SELECT before and after emitting a circuit.
+"""Estimate fault-tolerant resources from algorithm dimensions.
 
 Run from the repository root with python -m examples.algorithms.ftqc_resource_estimation.
+Add --single-factorization 10 50 12 for the single-factorization block encoding.
 """
+
+import argparse
 
 from flagquantum.algorithms.primitives.multiplexers import SelectTHC
 from flagquantum.algorithms.primitives.multiplexers.thc_resource_model import (
     select_thc_cost,
+)
+from flagquantum.algorithms.primitives.single_factorization_encoding_model import (
+    source_single_factorization_block_encoding_cost,
 )
 from flagquantum.dynamic import DynamicCircuit
 from flagquantum.qec.resources.beverland_physical import (
@@ -36,7 +42,41 @@ def make_circuit() -> DynamicCircuit:
     return circuit
 
 
+def _report_single_factorization(
+    spin_orbitals: int, auxiliaries: int, alias_bits: int
+) -> None:
+    model = source_single_factorization_block_encoding_cost(
+        auxiliaries, spin_orbitals, alias_bits
+    )
+    report = estimate_ftqc_resources(model, error_budget=1e-3, physical_error=1e-4)
+    assert report.surface_code is not None
+    gates = report.logical.gates
+    print("Single-factorization block encoding (8-bit inner rotation precision)")
+    print("Model Toffoli gates", gates.toffoli)
+    print("Model controlled swaps", gates.cswap)
+    print("Model measurements", gates.measurement)
+    print("Model T equivalents", gates.total_t_count())
+    print("Model peak logical qubits", report.logical.peak_logical_qubits)
+    print(
+        "Fast data-block physical qubits",
+        report.surface_code.data_block_physical_qubits,
+    )
+
+
 def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--single-factorization",
+        nargs=3,
+        type=int,
+        metavar=("SPIN_ORBITALS", "AUXILIARIES", "ALIAS_BITS"),
+        help="estimate a single-factorization encoding from its dimensions",
+    )
+    args = parser.parse_args()
+    if args.single_factorization is not None:
+        _report_single_factorization(*args.single_factorization)
+        return
+
     model = select_thc_cost(num_mu=2, num_spin_orb=4, num_bits_theta=8, keep_bitsize=1)
     planned = estimate_ftqc_resources(model, error_budget=1e-3, physical_error=1e-4)
     assert planned.surface_code is not None

@@ -2577,3 +2577,14 @@ assert report.logical.peak_logical_qubits == 80
 The locked PREPARE and SELECT leaves supply resource graphs. The source
 leaves `alpha` and `epsilon` undefined. The top-level resource report
 describes that model and its original binding conventions.
+
+Run the 8-bit single-factorization estimate using dimensions alone:
+
+```bash
+python -m examples.algorithms.ftqc_resource_estimation --single-factorization 10 50 12
+```
+
+The default blocking gives 3,103 Toffolis, 50 controlled swaps, 179
+measurements, 13,372 T equivalents, and a peak of 80 logical qubits.
+With total error budget `1e-3` and physical error `1e-4`, the Beverland fast
+data block uses 30,294 physical qubits.

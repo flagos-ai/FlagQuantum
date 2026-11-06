@@ -69,7 +69,11 @@ def test_locked_one_body_graph(forward, inverse, adjoint):
 @pytest.mark.ftqc_reference
 @pytest.mark.parametrize(
     "orbitals,aux,alias,rotations,forward,inverse",
-    [(10, 50, 12, (7, 7), (1, 1), (1, 1)), (108, 200, 10, (5, 7), (4, 32), (2, 256))],
+    [
+        (10, 50, 12, (7, 7), (1, 1), (1, 1)),
+        (10, 50, 12, (8, 8), (1, 1), (1, 1)),
+        (108, 200, 10, (5, 7), (4, 32), (2, 256)),
+    ],
 )
 def test_locked_full_encoding_graph(orbitals, aux, alias, rotations, forward, inverse):
     pytest.importorskip("qualtran")
