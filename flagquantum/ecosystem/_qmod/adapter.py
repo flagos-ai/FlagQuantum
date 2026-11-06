@@ -2355,7 +2355,7 @@ class _Adapt:
             return any(
                 child.inverse_body is not None
                 or child.repeat_index is not None
-                or child.token.text == "+="
+                or child.token.text in {"+=", "unitary"}
                 or child.token.text in self.definitions
                 or (
                     child.control_body is not None
@@ -2469,6 +2469,21 @@ class _Adapt:
         if lower_fourier_control(self, statement):
             return
         if self.coherent_helper_control(statement, index):
+            return
+        if (
+            len(body) == 1
+            and body[0].token.text == "unitary"
+            and statement.control_else is None
+            and condition.token.text == "=="
+        ):
+            selector, literal = condition.children
+            controls = self.array_view(selector)
+            lower_unitary(
+                self,
+                body[0].token,
+                body[0].arguments,
+                selection=(controls, self.static_integer(literal)),
+            )
             return
         if (
             len(body) == 1

@@ -616,3 +616,13 @@ Signed fractional fields and signed reads in guarded phase expressions remain
 outside this profile. The QCE Fourier-arithmetic and signed Sawtooth originals
 have independent Fourier-matrix full-state checks. Run
 `python -m pytest tests/integration/test_synthesis_qmod_fourier_phases.py -q`.
+
+## Selected Qmod unitary matrices
+
+A scalar quantum bit can choose between reversible branches containing bounded
+unitary calls. Static numeric equality can select a unitary through an indexed
+block matrix when the selector and target together fit the four-qubit matrix
+budget. Both paths preserve branch-relative phase and reject control/target
+aliases. The unchanged harmonic oscillator original has an independent
+block-matrix Circuit reference. Run
+`python -m pytest tests/integration/test_synthesis_qmod_guarded_unitary.py -q`.

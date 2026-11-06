@@ -6,6 +6,7 @@ import math
 from typing import TYPE_CHECKING
 
 from ...compiler._construction.register_profile import MAX_MATRIX_QUBITS
+from .phase import Location
 from .syntax import Expression, Token, reject
 
 if TYPE_CHECKING:
@@ -42,7 +43,13 @@ def validate_matrix_constant(token: Token, matrix: Expression) -> None:
                 reject(item.token, "unitary", "matrix entries must be finite")
 
 
-def lower_unitary(owner: _Adapt, token: Token, args: tuple[Expression, ...]) -> None:
+def lower_unitary(
+    owner: _Adapt,
+    token: Token,
+    args: tuple[Expression, ...],
+    *,
+    selection: tuple[tuple[Location, ...], int] | None = None,
+) -> None:
     if len(args) != 2:
         reject(token, "signature", "unitary requires a matrix and qubit array")
     matrix, target_arg = args
@@ -54,7 +61,11 @@ def lower_unitary(owner: _Adapt, token: Token, args: tuple[Expression, ...]) -> 
             "unitary",
             "unitary requires a literal matrix or matrix constant",
         )
-    view = owner.array_view(target_arg)
+    view = (
+        (owner.gate_target(target_arg),)
+        if target_arg.token.text == "[" and not target_arg.children[0].children
+        else owner.array_view(target_arg)
+    )
     if not 1 <= len(view) <= MAX_MATRIX_QUBITS or len(set(view)) != len(view):
         reject(
             target_arg.token,
@@ -69,13 +80,41 @@ def lower_unitary(owner: _Adapt, token: Token, args: tuple[Expression, ...]) -> 
         view_attributes["indices"] = tuple(index for _, index in wires)
     else:
         operands = (view[0][0],)
-    owner.effect_op(
-        "qreg.unitary",
-        token,
-        operands,
-        matrix=tuple(
-            tuple((value.real, value.imag) for value in map(matrix_value, row.children))
-            for row in matrix.children
-        ),
-        **view_attributes,
+    entries = tuple(
+        tuple((value.real, value.imag) for value in map(matrix_value, row.children))
+        for row in matrix.children
     )
+    if selection is not None:
+        controls, expected = selection
+        if len(set((*controls, *view))) != len(controls) + len(view):
+            reject(
+                token, "alias", "unitary targets must be disjoint from condition inputs"
+            )
+        if len(controls) + len(
+            view
+        ) > MAX_MATRIX_QUBITS or not 0 <= expected < 1 << len(controls):
+            reject(
+                token,
+                "unitary",
+                "selected unitary exceeds the matrix width or selector range",
+            )
+        size = 1 << len(view)
+        if len(entries) != size or any(len(row) != size for row in entries):
+            reject(token, "unitary", "unitary matrix must match the target width")
+        expanded_size = size << len(controls)
+        start = expected * size
+        entries = tuple(
+            tuple(
+                (
+                    entries[row - start][col - start]
+                    if start <= row < start + size and start <= col < start + size
+                    else (float(row == col), 0.0)
+                )
+                for col in range(expanded_size)
+            )
+            for row in range(expanded_size)
+        )
+        wires = (*reversed(controls), *reversed(view))
+        operands = tuple(register for register, _ in wires)
+        view_attributes["indices"] = tuple(index for _, index in wires)
+    owner.effect_op("qreg.unitary", token, operands, matrix=entries, **view_attributes)
