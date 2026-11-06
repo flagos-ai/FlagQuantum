@@ -65,6 +65,7 @@ from .iterations import expand_iterations
 from .local_cleanup import lower_free
 from .matrices import lower_unitary, validate_matrix_constant
 from .oracles import expand_static_oracles
+from .pauli_schedule import ceiling_repetitions, compact_commuting
 from .permutations import is_const_cx_permutation, verify_permutations
 from .phase import MAX_PHASE_INPUT_BITS, expand_phase
 from .phase_factors import Cube, preserve_factors
@@ -1608,6 +1609,7 @@ class _Adapt:
             if is_modular_power(statement)
         }
         phase_exports: dict[str, str] = {}
+        signed_bit_exports: dict[str, int] = {}
         deferred: dict[str, Token] = {}
         for argument, parameter in zip(arguments, syntax.parameters, strict=True):
             name = parameter.name.text
@@ -1719,12 +1721,15 @@ class _Adapt:
             if (
                 actual_port is not None
                 and actual_port.kind == "qphase_signed"
-                and (parameter.kind != "qbit[]" or parameter.role != "const")
+                and (
+                    parameter.kind != "qbit[]"
+                    or parameter.role not in {"const", "inout"}
+                )
             ):
                 reject(
                     argument.token,
                     "precision",
-                    "signed phase storage requires a Const bit view",
+                    "signed phase storage requires a borrowed bit view",
                 )
             borrowed_counter = (
                 name in modular_phase_ports
@@ -1800,6 +1805,12 @@ class _Adapt:
                 )
             actuals.update(view)
             child.widths[name] = len(view)
+            if (
+                actual_port is not None
+                and actual_port.kind == "qphase_signed"
+                and parameter.role == "inout"
+            ):
+                signed_bit_exports[argument.token.text] = len(view)
             if (
                 parameter.kind == "qnum"
                 and not argument.children
@@ -1914,6 +1925,7 @@ class _Adapt:
         for name, actual_name in phase_exports.items():
             if name in child.fractional_bits:
                 self.fractional_bits[actual_name] = child.fractional_bits[name]
+        self.fractional_bits.update(signed_bit_exports)
         self.helper_expansions = child.helper_expansions
         self.loop_iterations = child.loop_iterations
         for op in child.operations:
@@ -3095,18 +3107,32 @@ class _Adapt:
             terms, time = terms.children[0], times[0]
         else:
             time = self.evolution_angle(time_arg, token)
-        if any(
-            arg.children or not arg.token.text.isdecimal()
-            for arg in (order_arg, repetitions_arg)
+        computed = repetitions_arg.token.text == "$ceiling_repetitions"
+        if (
+            order_arg.children
+            or not order_arg.token.text.isdecimal()
+            or not computed
+            and (repetitions_arg.children or not repetitions_arg.token.text.isdecimal())
         ):
-            reject(token, "evolution", "order and repetitions must be integer literals")
+            reject(
+                token,
+                "evolution",
+                "order and repetitions must be integer literals or a static ceiling",
+            )
         order = int(order_arg.token.text)
-        repetitions = int(repetitions_arg.token.text)
+        repetitions = (
+            ceiling_repetitions(self, repetitions_arg.children[0])
+            if computed
+            else int(repetitions_arg.token.text)
+        )
         if order not in {1, 2} or not 1 <= repetitions <= 256:
             reject(token, "evolution", "use order 1 or 2 and 1..256 repetitions")
-        (self.pauli_evolution if emit is None else emit)(
-            token, terms, time, target_arg, order, repetitions
-        )
+        if emit is not None:
+            emit(token, terms, time, target_arg, order, repetitions)
+        else:
+            self.pauli_evolution(
+                token, terms, time, target_arg, order, repetitions, compact=computed
+            )
 
     def exponentiate(self, token: Token, args: tuple[Expression, ...]) -> None:
         if len(args) != 3:
@@ -3127,12 +3153,21 @@ class _Adapt:
         target_arg: Expression,
         order: int,
         repetitions: int,
+        *,
+        compact: bool = False,
     ) -> None:
         register, terms = self.pauli_terms(token, operator, target_arg)
         step = time / repetitions
         if order == 2:
             step /= 2
         sequence = terms if order == 1 else [*terms, *reversed(terms)]
+        if compact:
+            angles = [(support, step * weight) for support, weight in sequence]
+            coalesced = compact_commuting(token, angles, repetitions)
+            if coalesced is not None:
+                for support, angle in coalesced:
+                    self.pauli_exponential(token, register, support, angle)
+                return
         for _ in range(repetitions):
             for support, weight in sequence:
                 self.pauli_exponential(token, register, support, step * weight)
@@ -4406,7 +4441,7 @@ class _Adapt:
                 reject(
                     parameter.name,
                     "qpe",
-                    "fixed-point phase output requires qpe_flexible",
+                    "signed fixed-point output requires phase estimation or a checked writable bit view",
                 )
             if kind == "qphase":
                 width = self.widths[parameter.name.text]

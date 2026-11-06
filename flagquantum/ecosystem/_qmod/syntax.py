@@ -1398,6 +1398,22 @@ class Parser:
                         ):
                             args.append(self.expression(static=True))
                             continue
+                        if (
+                            len(args) == 3
+                            and target.text == "suzuki_trotter"
+                            and self.current.text == "ceiling"
+                        ):
+                            start = self.take("ceiling")
+                            self.take("(")
+                            scalar = self.real_angle()
+                            self.take(")")
+                            args.append(
+                                Expression(
+                                    replace(start, text="$ceiling_repetitions"),
+                                    (scalar,),
+                                )
+                            )
+                            continue
                         if len(args) == 3 and target.text == "full_hea":
                             args.append(
                                 self.literal_array(

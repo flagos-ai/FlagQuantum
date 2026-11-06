@@ -395,6 +395,27 @@ program = synth.synthesize(source, max_workspace=0)
 print(program.probabilities(fq.run(program), registers=("qba",)))
 ```
 
+## Static real repetition counts for molecular QPE (UP-06 integration candidate)
+
+The Suzuki-Trotter repetition slot accepts a static ceiling of bounded
+real arithmetic, including nonnegative powers. The evaluated count still
+must fit 1 through 256. Repeated Pauli rotations may coalesce across
+commuting intervening terms within a bounded lookback. The scheduler
+preserves anticommuting order and retains the identity contribution as
+an explicit phase. Signed all-fractional outputs can borrow writable
+raw-bit views through checked helper ports and retain their readout scale.
+
+```python
+from pathlib import Path
+
+import flagquantum as fq
+from flagquantum import synth
+
+source = Path("tests/fixtures/classiq_qmod/qpe_for_molecules.qmod")
+program = synth.synthesize(source, max_workspace=0)
+print(program.probabilities(fq.run(program), registers=("phase",)))
+```
+
 ## Compact Pauli evolution integration slice
 
 Qmod acquisition is bounded at 512 KiB and 65536 tokens for large Pauli data.
