@@ -2517,3 +2517,36 @@ has 9,176 historical T gates before rotation synthesis, 24 rotations and
 `1e-11` synthesis tolerance gives 10,424 T gates. The default QEC conversion
 uses 11 T equivalents per rotation and gives 9,440 T equivalents. These are
 model values. The cubic execution example reports separately counted IR.
+
+## Single-factorization PREPARE and SELECT models
+
+The chemistry QROAM placeholders retain the original analytical costs.
+The two-axis model counts blocks along both axes and reports the original
+signature width, which includes only the first address. The default
+one-axis forward optimizer requires at least as many rows as target bits.
+
+```python
+from flagquantum.algorithms.primitives.single_factorization_resource_model import (
+    source_single_factorization_inner_prepare_cost,
+    source_single_factorization_outer_prepare_cost,
+    source_single_factorization_select_cost,
+)
+from flagquantum.qec.resources.estimation import estimate_ftqc_resources
+
+inner = estimate_ftqc_resources(
+    source_single_factorization_inner_prepare_cost(50, 10, 12, 7, 4, 8)
+)
+outer = estimate_ftqc_resources(source_single_factorization_outer_prepare_cost(50, 12))
+select = estimate_ftqc_resources(source_single_factorization_select_cost(10))
+assert inner.logical.gates.toffoli == 682
+assert inner.logical.peak_logical_qubits == 60
+assert outer.logical.gates.toffoli == 46
+assert outer.logical.gates.rotation == 2
+assert select.logical.gates.toffoli == 16
+assert select.logical.peak_logical_qubits == 9
+```
+
+These source components provide resource graphs. SELECT's
+`additional_control` parameter leaves the locked signature and estimate
+unchanged. The model does not imply that the control acts on a physical
+system register.
