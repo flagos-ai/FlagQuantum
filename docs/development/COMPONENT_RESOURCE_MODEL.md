@@ -627,6 +627,25 @@ its outcome probability, including zero for an impossible outcome.
 Taking the outer product of each branch in a separate classical block
 reproduces the source superoperator.
 
+## Discarding quantum and classical outputs
+
+`discard_basis_measurement_result` traces the classical result of an X
+or Z measurement. It sums branch density matrices and preserves each
+branch's probability weight. `tensor_network_discard_qubit` uses the
+same partial trace to consume one quantum output. Both keep spectator
+wires in their original order. Tracing out the only wire returns a
+batched one-by-one matrix containing the input trace.
+
+The pinned `Discard` consumes a classical bit with zero modeled gates
+and zero quantum width. Its tensor behavior agrees with tracing the
+classical result of a composed measurement. The pinned `DiscardQ`
+consumes a quantum wire, reports peak width one, and has no QEC gate
+cost declaration. Its composed quantum behavior agrees with the
+native partial trace. On fixed-width dynamic IR, `discard_qubit_ir`
+emits one reset so the consumed physical slot is reusable in zero.
+It allocates no classical result bit. That physical reset is an
+emitted instruction and is reported separately from the source model.
+
 ## Register identity
 
 The source models Identity as one atomic call with zero QEC gates.

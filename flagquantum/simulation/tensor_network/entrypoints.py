@@ -251,6 +251,23 @@ def tensor_network_basis_measurement(
     )
 
 
+def discard_basis_measurement_result(
+    outcomes: tuple[torch.Tensor, torch.Tensor],
+) -> torch.Tensor:
+    """Trace the classical result and return the batched survivor density matrix."""
+    branches = torch.stack(outcomes, dim=-2)
+    return branches.transpose(-2, -1) @ branches.conj()
+
+
+def tensor_network_discard_qubit(
+    plan: TensorNetworkContractionPlan, wire: int
+) -> torch.Tensor:
+    """Trace out a quantum output, keeping the other wires in their original order."""
+    return discard_basis_measurement_result(
+        tensor_network_basis_measurement(plan, wire, basis="z")
+    )
+
+
 def _amplitude_batch_projection(
     plan: TensorNetworkContractionPlan,
     bitstrings: Sequence[int | str | Sequence[int]],
