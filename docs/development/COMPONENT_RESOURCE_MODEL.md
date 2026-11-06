@@ -2831,3 +2831,42 @@ With a two-bit rank and a four-bit angle, each direction emits 64 T-family
 instructions, 16 measurements and 12 controlled rotations. It uses seven
 clean scratch qubits. The controlled Hadamards and rotations are native
 IR operations. Their synthesis cost belongs to a separate resource model.
+
+### Executable inner double-factorization PREPARE
+
+The inner alias binds the rank, offset and rotation words returned by the
+indexed data loader. It computes the contiguous address by adding the
+prepared local orbital to the factor offset. A coherent alias comparison
+can exchange the orbital and its sign on a successful preparation branch.
+The failure branch preserves its orbital. The address and lookup banks
+remain live until the matching adjoint.
+
+```python
+from flagquantum.algorithms.primitives.double_factorization_inner_prepare import (
+    PrepareDoubleFactorizationInner,
+)
+from flagquantum.compiler.registers.partition import partition_register
+from flagquantum.dynamic import DynamicCircuit
+
+prepare = PrepareDoubleFactorizationInner.from_eigenvalues(
+    (1.0, -3.0), ((-2.0,),), probability_bits=1, rotation_bits=2,
+)
+metadata = prepare.indexed_data()
+layout = (*metadata.layout, *(port for port in prepare.layout if port[0] not in dict(metadata.layout)))
+logical = sum(width for _, width in layout)
+ports = partition_register(tuple(range(logical)), layout)
+work, _ = prepare.requirements()
+scratch = tuple(range(logical, logical + work))
+circuit = DynamicCircuit(logical + work)
+circuit.append(metadata.make_on(
+    {name: ports[name] for name, _ in metadata.layout},
+    workspace=scratch[:metadata.workspace_size()],
+))
+circuit.append(prepare.make_on(
+    {name: ports[name] for name, _ in prepare.layout}, workspace=scratch,
+))
+```
+
+The two-factor fixture emits 54 T-family instructions, ten measurements and
+six native controlled rotations per inner direction. It uses three clean
+scratch wires. The chemistry resource placeholder is counted separately.
