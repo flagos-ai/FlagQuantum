@@ -1136,3 +1136,39 @@ on the signed-conversion signature. The combined estimator requires at least
 two momentum bits.
 
 - [Qualtran v0.7.0 first-quantized SELECT call graph](https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/bloqs/chemistry/pbc/first_quantization/select_and_prepare.py)
+
+## First-quantized kinetic PREPARE
+
+The same estimator accepts first-quantized PREPARE models before a circuit is
+built. The pinned source declares 13 Toffolis for the coordinate register
+`w`, while its composite uses uniform preparation over three values.
+Select the composite cost explicitly to see that difference.
+
+```python
+from flagquantum.algorithms.first_quantization_resource_model import (
+    source_prepare_t_cost,
+)
+from flagquantum.qec.resources.estimation import estimate_ftqc_resources
+
+declared = estimate_ftqc_resources(source_prepare_t_cost(6))
+composite = estimate_ftqc_resources(source_prepare_t_cost(6, decomposed=True))
+assert declared.logical.gates.toffoli == 21
+assert composite.logical.gates.toffoli == 8
+assert composite.logical.gates.measurement == 5
+assert declared.logical.peak_logical_qubits == 18
+assert composite.logical.peak_logical_qubits == 18
+```
+
+For six momentum bits, the resource counts are:
+
+| Scope | Logical Toffoli | Logical And | Logical Clifford | Logical rotations | Logical measurements | Peak logical qubits |
+|---|---:|---:|---:|---:|---:|---:|
+| Declared PREPARE T | 21 | 0 | 0 | 0 | 0 | 18 |
+| Composite PREPARE T | 8 | 5 | 35 | 2 | 5 | 18 |
+
+The emitted `w` preparation alone has 20 T/T† instructions, five
+measurements, two Rz instructions and six declared wires, including four
+clean work wires. Both PREPARE T estimates include the declared costs for
+`r` and `s`. Their pinned `PreparePowerTwoState` has only a cost model,
+as does the separate distinct-particle `i/j` preparation. The original
+one-bit power-of-two cost of −1 Toffoli is preserved for source comparison.

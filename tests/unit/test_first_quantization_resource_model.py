@@ -1,4 +1,4 @@
-"""Check first-quantized SELECT models against the original cost graph."""
+"""Check first-quantized SELECT and PREPARE models against the original cost graph."""
 
 from dataclasses import asdict
 
@@ -6,6 +6,9 @@ import pytest
 
 from flagquantum.algorithms.first_quantization_resource_model import (
     source_apply_nuclear_phase_cost,
+    source_prepare_ij_cost,
+    source_prepare_power_two_cost,
+    source_prepare_t_cost,
     source_select_first_quantization_cost,
     source_select_t_cost,
     source_select_uv_cost,
@@ -126,3 +129,100 @@ def test_source_one_bit_momentum_width_failure_is_explicit() -> None:
         get_cost_value(source, QubitCount())
     with pytest.raises(ValueError, match="at least two momentum bits"):
         source_select_first_quantization_cost(1, 2, 2)
+
+
+@pytest.mark.parametrize(("p", "eta", "precision"), [(1, 2, 1), (2, 3, 5), (6, 10, 8)])
+@pytest.mark.ftqc_reference
+def test_prepare_t_cost_paths(p: int, eta: int, precision: int) -> None:
+    pytest.importorskip("qualtran")
+    from qualtran import DecomposeNotImplementedError, LeftDangle, RightDangle
+    from qualtran.bloqs.basic_gates import Toffoli
+    from qualtran.bloqs.chemistry.pbc.first_quantization.prepare_t import (
+        PreparePowerTwoState,
+        PrepareTFirstQuantization,
+    )
+    from qualtran.bloqs.state_preparation.prepare_uniform_superposition import (
+        PrepareUniformSuperposition,
+    )
+
+    power = PreparePowerTwoState(p)
+    assert_source_model(source_prepare_power_two_cost(p), power)
+    with pytest.raises(DecomposeNotImplementedError):
+        power.decompose_bloq()
+
+    source = PrepareTFirstQuantization(p, eta, precision)
+    declared = source_prepare_t_cost(p)
+    assert_source_model(declared, source)
+    assert source.bloq_counts() == {Toffoli(): 13, power: 2}
+    assert [(call.component.name, call.repetitions) for call in declared.calls] == [
+        ("Toffoli", 13),
+        ("PreparePowerTwoState", 2),
+    ]
+
+    composite = source.decompose_bloq()
+    assert_source_model(source_prepare_t_cost(p, decomposed=True), composite)
+    # The three operations are disjoint. Check register bindings independently
+    # of their ordering in the composite's topological traversal.
+    assert {
+        (node.bloq, incoming[0].left.reg.name, outgoing[0].right.reg.name)
+        for node, incoming, outgoing in composite.iter_bloqnections()
+        if incoming[0].left.binst == LeftDangle
+        and outgoing[0].right.binst == RightDangle
+    } == {
+        (PrepareUniformSuperposition(3), "w", "w"),
+        (power, "r", "r"),
+        (power, "s", "s"),
+    }
+
+
+@pytest.mark.parametrize(("eta", "precision"), [(1, 8), (2, 1), (10, 8)])
+@pytest.mark.ftqc_reference
+def test_prepare_ij_cost(eta: int, precision: int) -> None:
+    pytest.importorskip("qualtran")
+    from qualtran import DecomposeNotImplementedError
+    from qualtran.bloqs.chemistry.pbc.first_quantization import (
+        prepare,
+        select_and_prepare,
+    )
+
+    for source_module in (prepare, select_and_prepare):
+        source = source_module.UniformSuperpostionIJFirstQuantization(eta, precision)
+        assert_source_model(source_prepare_ij_cost(eta, precision), source)
+        with pytest.raises(DecomposeNotImplementedError):
+            source.decompose_bloq()
+
+
+def test_kinetic_prepare_resource_report_separates_emitted_coordinate() -> None:
+    from flagquantum.compiler.registers.uniform_preparation import (
+        uniform_preparation_ir,
+        uniform_preparation_requirements,
+    )
+    from flagquantum.core.ir import CircuitIR
+
+    target, work, slots = uniform_preparation_requirements(3)
+    coordinate = uniform_preparation_ir(
+        3,
+        tuple(range(target)),
+        tuple(range(target, target + work)),
+        tuple(range(slots)),
+    )
+    declared = estimate_ftqc_resources(source_prepare_t_cost(6))
+    composite = estimate_ftqc_resources(source_prepare_t_cost(6, decomposed=True))
+    emitted = estimate_ftqc_resources(
+        source_prepare_t_cost(6, decomposed=True).calls[0].component,
+        emitted_ir=CircuitIR(target + work, coordinate),
+    )
+    assert declared.logical.gates.toffoli == 21
+    assert composite.logical.gates.toffoli == 8
+    assert (
+        declared.logical.peak_logical_qubits
+        == composite.logical.peak_logical_qubits
+        == 18
+    )
+    assert declared.emitted is composite.emitted is None
+    assert emitted.emitted is not None
+    assert emitted.emitted.t_count == 20
+    assert emitted.emitted.unconditional["measure"] == 5
+    assert emitted.emitted.declared_qubits == 6
+    ij = estimate_ftqc_resources(source_prepare_ij_cost(10))
+    assert 2 * (ij.logical.gates.toffoli + declared.logical.gates.toffoli) == 126
