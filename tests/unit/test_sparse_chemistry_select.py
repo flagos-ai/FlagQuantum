@@ -119,10 +119,18 @@ def test_sparse_select_preserves_superposition_and_cleans_reused_workspace():
     norm = state.norm()
     state /= norm
     expected /= norm * 2 ** (events / 2)
+    inverse = op.emit(adjoint=True)
+    assert inverse[-1] == Instruction("sdg", ports["flag_1b"])
     for pattern in ((0,), (1,), (0, 1), (1, 0)):
         history = (pattern * events)[:events]
         torch.testing.assert_close(
             forced_branch(state, gates, history), expected, atol=2e-12, rtol=0
+        )
+        torch.testing.assert_close(
+            forced_branch(expected, inverse, history),
+            state * 2**-events,
+            atol=2e-12,
+            rtol=0,
         )
 
 

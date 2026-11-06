@@ -94,6 +94,28 @@ class SelectSparse:
         )
 
     @classmethod
+    def source_resource_model(
+        cls, num_spin_orb: int, *, control_value: int | None = None
+    ) -> ComponentCost:
+        """Count the locked SELECT graph without assigning physical wires."""
+        width = sum(
+            bits
+            for _, bits in cls.source_layout(num_spin_orb, control_value=control_value)
+        )
+        active = num_spin_orb + (num_spin_orb - 1).bit_length()
+        calls = tuple(
+            CostCall(
+                source_bounded_majorana_cost(
+                    num_spin_orb, pauli, controlled=controlled
+                ),
+                bystander_qubits=width - active - int(controlled),
+            )
+            for controlled in (True, False)
+            for pauli in ("Y", "X")
+        )
+        return ComponentCost("SelectSparse", width, GateCost(clifford=1), calls)
+
+    @classmethod
     def make_source_on(
         cls,
         num_spin_orb: int,
@@ -126,7 +148,9 @@ class SelectSparse:
             ports["flag_1b"][0],
             ports["sys"],
         )
-        return _BoundSourceSelectSparse(select, logical, workspace, classical_bits)
+        return _BoundSourceSelectSparse(
+            select, logical, workspace, classical_bits, control_value
+        )
 
     def _majoranas(self) -> tuple[SelectedMajoranaFermion, ...]:
         return tuple(
@@ -185,10 +209,16 @@ class _BoundSourceSelectSparse:
     logical: tuple[int, ...]
     workspace: tuple[int, ...]
     classical_bits: tuple[int, ...]
+    control_value: int | None
 
-    def emit(self) -> tuple[Instruction, ...]:
-        gates = [Instruction("s", (self.select.flag_1b,))]
-        for majorana in self.select._majoranas():
+    def emit(self, *, adjoint: bool = False) -> tuple[Instruction, ...]:
+        """Reverse the self-adjoint Majorana calls and conjugate S if requested."""
+        if type(adjoint) is not bool:
+            raise ValueError("Sparse SELECT direction must be boolean")
+        phase = Instruction("sdg" if adjoint else "s", (self.select.flag_1b,))
+        gates = [] if adjoint else [phase]
+        majoranas = self.select._majoranas()
+        for majorana in reversed(majoranas) if adjoint else majoranas:
             control = majorana.control[0] if majorana.control else None
             work = bounded_majorana_workspace(
                 len(majorana.target), controlled=control is not None
@@ -203,23 +233,15 @@ class _BoundSourceSelectSparse:
                     self.classical_bits[: work - 1],
                 )
             )
+        if adjoint:
+            gates.append(phase)
         return tuple(gates)
 
     def resource_model(self) -> ComponentCost:
         """Count source Majorana calls with their inactive ports live."""
-        width = len(self.logical)
-        calls = []
-        for majorana in self.select._majoranas():
-            cost = source_bounded_majorana_cost(
-                len(majorana.target),
-                majorana.target_gate,
-                controlled=bool(majorana.control),
-            )
-            active = (
-                len(majorana.control) + len(majorana.selection) + len(majorana.target)
-            )
-            calls.append(CostCall(cost, bystander_qubits=width - active))
-        return ComponentCost("SelectSparse", width, GateCost(clifford=1), tuple(calls))
+        return self.select.source_resource_model(
+            len(self.select.sys), control_value=self.control_value
+        )
 
     def append_to(self, circuit: Circuit) -> Circuit:
         if max((*self.logical, *self.workspace)) >= circuit.n_qubits:
