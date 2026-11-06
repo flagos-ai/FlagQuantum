@@ -7,7 +7,8 @@
 """Unsigned greater-than as the source complement of less-or-equal."""
 
 from ...core.ir import Instruction
-from .less_equal import less_equal_ir
+from .._component_trace.resource_model import ComponentCost, CostCall, GateCost
+from .less_equal import less_equal_ir, less_equal_requirements
 
 
 def greater_ir(
@@ -43,3 +44,38 @@ def greater_adjoint_ir(
     """
     comparison = less_equal_ir(left, right, target, workspace, classical_bits)
     return (Instruction("x", (target,)), *comparison)
+
+
+def source_greater_cost(left_width: int, right_width: int) -> ComponentCost:
+    """Model the source LessThanEqual tree followed by the final X."""
+    work, measurements = less_equal_requirements(left_width, right_width)
+    ports = left_width + right_width + 1
+    overlap = min(left_width, right_width)
+    excess = abs(left_width - right_width)
+    cliffords = 22 * overlap - 9  # Mixer/adjoint pairs and final one-bit compare.
+    if excess:
+        # The equal-width final X/CX and the unequal-width final And pair/CX
+        # each contribute two Clifford gates. Count the extra prefix separately.
+        if excess <= 2:
+            cliffords += 4 if excess == 1 else 1
+        else:
+            cliffords += 5 * excess - 1
+        cliffords += 2 * (right_width > left_width)
+    return ComponentCost(
+        "GreaterThan",
+        ports,
+        GateCost(clifford=1),
+        (
+            CostCall(
+                ComponentCost(
+                    "LessThanEqual",
+                    ports + work,
+                    GateCost(
+                        and_bloq=measurements,
+                        clifford=cliffords,
+                        measurement=measurements,
+                    ),
+                )
+            ),
+        ),
+    )

@@ -7,6 +7,7 @@
 
 from ..compiler._component_trace.resource_model import ComponentCost, CostCall, GateCost
 from ..compiler.registers.arithmetic_resource_model import source_add_cost
+from ..compiler.registers.uniform_preparation import source_uniform_preparation_cost
 from .first_quantization import source_multiplexed_cswap_3d_cost
 
 
@@ -145,11 +146,7 @@ def source_prepare_t_cost(
     # declared Toffolis. The w preparation holds four additional clean wires.
     if decomposed:
         coordinate_call = CostCall(
-            ComponentCost(
-                "PrepareUniformSuperposition(3)",
-                6,
-                GateCost(and_bloq=5, clifford=35, rotation=2, measurement=5),
-            ),
+            source_uniform_preparation_cost(3),
             bystander_qubits=ports - 2,
         )
         width = ports

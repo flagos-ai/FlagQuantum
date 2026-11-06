@@ -9,6 +9,7 @@
 from math import acos
 
 from ...core.ir import Instruction
+from .._component_trace.resource_model import ComponentCost, GateCost
 from .bitwise import _validate_wires
 from .comparison import less_than_constant_ir, less_than_constant_workspace_size
 from .multi_control import multi_and_ir
@@ -155,3 +156,25 @@ def uniform_preparation_ir(
     if adjoint:
         return (*h, *zero_phase, *h, *threshold_phase, *initial)
     return (*initial, *threshold_phase, *h, *zero_phase, *h)
+
+
+def source_uniform_preparation_cost(count: int) -> ComponentCost:
+    """Estimate the uncontrolled source decomposition without emitting gates."""
+    width, work, _ = uniform_preparation_requirements(count)
+    odd = _odd_factor(count)
+    if odd == 1:
+        gates = GateCost(clifford=width)
+    else:
+        high = (odd - 1).bit_length()
+        # Two constant comparisons and a zero reflection, with one Clifford
+        # per And uncompute and explicit negative-control Xs for MultiAnd.
+        comparison_cliffords = 3 * high + 3 * odd.bit_count() + 2
+        reflection_cliffords = high - 1 + (4 * high if high > 2 else 0)
+        ands = 3 * high - 1
+        gates = GateCost(
+            and_bloq=ands,
+            clifford=width + 2 * high + 2 * comparison_cliffords + reflection_cliffords,
+            rotation=2,
+            measurement=ands,
+        )
+    return ComponentCost(f"PrepareUniformSuperposition({count})", width + work, gates)
