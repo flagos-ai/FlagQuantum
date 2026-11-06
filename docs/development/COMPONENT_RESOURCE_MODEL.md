@@ -2358,3 +2358,42 @@ the central Clifford basis change. The source plaquette resource graph
 counts the Fourier and phase calls separately. The implementation uses no
 work wires or measurements. Complete complex matrices are tested against an
 independent Jordan–Wigner Hamiltonian.
+
+### Executable periodic Suzuki step
+
+The lattice binding uses the paper's shifted on-site interaction and
+periodic plaquettes. Supply two row-major spin registers, each with
+`length**2` wires. At length two both colors contribute the same square,
+counting periodic bonds with multiplicity. Larger even lattices partition
+the nearest-neighbor edges between the colors.
+
+```python
+from flagquantum.algorithms.primitives.hubbard_lattice import HubbardSuzukiStep
+from flagquantum.dynamic import DynamicCircuit
+from flagquantum.qec.resources.estimation import estimate_ftqc_resources
+
+op = HubbardSuzukiStep.make_on(
+    length=2,
+    up=(0, 1, 2, 3),
+    down=(4, 5, 6, 7),
+    hubb_u=2.1,
+    timestep=0.123,
+    hamming_weight=True,
+    workspace=(8, 9, 10),
+)
+circuit = DynamicCircuit(11).append(op)
+report = estimate_ftqc_resources(op, emitted_ir=circuit.to_ir())
+assert report.emitted is not None
+assert report.emitted.t_count == 88
+assert report.emitted.unconditional["measure"] == 10
+assert report.emitted.declared_qubits == 11
+assert report.logical.peak_logical_qubits == 5
+```
+
+Workspace starts and ends at zero for each phase batch. A feedback slot is
+reused after its correction and allocated above any preexisting classical
+bits. The Hamming-weight phases include the scalar correction needed to
+recover the absolute Rz phase. The native lattice uses the paper's physical
+angles, while the separately reported model preserves the locked source's
+angle and width conventions. Set `adjoint=True` to reverse the layers and
+negate their physical angles, including in the measured construction.

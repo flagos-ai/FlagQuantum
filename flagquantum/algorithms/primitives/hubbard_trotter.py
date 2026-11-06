@@ -12,6 +12,20 @@ from .hubbard_resource_model import (
 )
 
 
+def _suzuki_schedule(strip_layer: bool) -> tuple[tuple[str, float], ...]:
+    return (
+        (("pink", 0.5), ("gold", 1), ("pink", 0.5), ("interaction", 1))
+        if strip_layer
+        else (
+            ("interaction", 0.5),
+            ("pink", 0.5),
+            ("gold", 1),
+            ("pink", 0.5),
+            ("interaction", 0.5),
+        )
+    )
+
+
 def source_hubbard_suzuki_cost(
     length: int,
     hubb_u: float,
@@ -27,19 +41,8 @@ def source_hubbard_suzuki_cost(
     for use when consecutive steps share that layer. The model uses the
     source signature and recursive width fallback for opaque leaves.
     """
-    schedule = (
-        (("pink", 0.5), ("gold", 1), ("pink", 0.5), ("interaction", 1))
-        if strip_layer
-        else (
-            ("interaction", 0.5),
-            ("pink", 0.5),
-            ("gold", 1),
-            ("pink", 0.5),
-            ("interaction", 0.5),
-        )
-    )
     calls = []
-    for term, coefficient in schedule:
+    for term, coefficient in _suzuki_schedule(strip_layer):
         angle = 2 * coefficient * timestep
         if term == "interaction":
             cost = source_hubbard_interaction_cost(

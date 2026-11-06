@@ -29,6 +29,20 @@ def _routed_fourier(
     )
 
 
+def _plaquette_basis(wires: tuple[int, ...]) -> tuple[Instruction, ...]:
+    # V† uses the first two Fourier pairs from Eq. E10. The third pair
+    # and the occupation phases combine into the XX and YY block.
+    a, b = wires[1:3]
+    return (
+        *_routed_fourier(wires, 2, 0),
+        *_routed_fourier(wires, 1, 3),
+        Instruction("cx", (a, b)),
+        Instruction("h", (a,)),
+        Instruction("cx", (a, b)),
+        Instruction("x", (b,)),
+    )
+
+
 class HubbardPlaquette:
     """Positive-time hopping on four consecutive modes in cyclic site order."""
 
@@ -39,17 +53,8 @@ class HubbardPlaquette:
         """Bind exp(i timestep K), where K is the unit-coupling cycle hopping."""
         _validate_angle(timestep)
         wires = unpartition_register({"modes": modes}, (("modes", 4),))
-        # V† uses the first two Fourier pairs from Eq. E10. The third pair
-        # and the occupation phases combine into the XX and YY block.
         a, b = wires[1:3]
-        basis = (
-            *_routed_fourier(wires, 2, 0),
-            *_routed_fourier(wires, 1, 3),
-            Instruction("cx", (a, b)),
-            Instruction("h", (a,)),
-            Instruction("cx", (a, b)),
-            Instruction("x", (b,)),
-        )
+        basis = _plaquette_basis(wires)
         theta = -2 * timestep
         instructions = (
             *basis,
