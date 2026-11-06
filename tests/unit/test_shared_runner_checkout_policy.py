@@ -75,6 +75,7 @@ def _labels(job: dict[str, object]) -> tuple[str, ...]:
                 "flagquantum-a100-cpu",
                 "flagquantum-cpu-general",
                 "flagcicd-r300-",
+                "needs.prepare-source.outputs.r300-routes",
             )
         ):
             return ("self-hosted", "flagquantum-a100-cpu")
