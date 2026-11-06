@@ -5,8 +5,11 @@
 
 """Zero-based triangular indexing with shared square and add circuits."""
 
+from collections.abc import Iterator
+
 from ...core.ir import Instruction
 from .arithmetic import add_adjoint_ir, add_ir
+from .bit_compression import with_weighted_columns_ir
 from .bitwise import _validate_wires, xor_ir
 from .integer_square import integer_square_ir, integer_square_workspace_size
 
@@ -68,4 +71,81 @@ def contiguous_index_ir(
         *add_adjoint_ir(mu, quotient, carries, classical_bits),
         *add_adjoint_ir(nu, numerator, carries, classical_bits),
         *square,
+    )
+
+
+def _triangular_terms(width: int) -> Iterator[tuple[int, int, int]]:
+    """Yield (column, little-endian nu bit, other nu bit) for pair products."""
+    for i in range(1, width):
+        for j in range(i):
+            yield i + j, i, j
+
+
+def contiguous_index_columns_workspace_size(width: int) -> int:
+    """Return work for Appendix F's linear copies, products and carries."""
+    products = integer_square_workspace_size(width) // 2
+    counts = [1] * width + [0] * width
+    counts[0] += 1
+    for i in range(1, width):
+        counts[i - 1] += 1
+        counts[2 * i - 1] += 1
+    for column, _, _ in _triangular_terms(width):
+        counts[column] += 1
+    carries = 0
+    for i in range(len(counts) - 1):
+        count = counts[i] // 2
+        carries += count
+        counts[i + 1] += count
+    return width - 1 + products + carries
+
+
+def contiguous_index_columns_ir(
+    mu: tuple[int, ...],
+    nu: tuple[int, ...],
+    result: tuple[int, ...],
+    workspace: tuple[int, ...],
+    *,
+    measurement_bit: int = 0,
+) -> tuple[Instruction, ...]:
+    """XOR the index using direct weighted columns and one classical slot.
+
+    Each linear occurrence has a distinct qubit because the compressor
+    temporarily mutates parity operands. The work pool is restored.
+    """
+    width = len(nu)
+    required = contiguous_index_columns_workspace_size(width)
+    if len(mu) != width or not result:
+        raise ValueError(
+            "Contiguous index requires matching inputs and nonempty result"
+        )
+    if len(workspace) != required:
+        raise ValueError(f"Contiguous index columns require {required} work qubits")
+    _validate_wires((*mu, *nu, *result, *workspace))
+
+    p = nu[::-1]
+    copies = workspace[: width - 1]
+    bind = xor_ir(p[1:], copies) if copies else ()
+    # Appendix F, Eq. F6/F7: https://arxiv.org/pdf/2011.03494#page=68
+    terms: list[tuple[int, int, int | None]] = [
+        (i, qubit, None) for i, qubit in enumerate(reversed(mu))
+    ]
+    terms.append((0, p[0], None))
+    for i, copy in enumerate(copies, start=1):
+        terms.extend(((i - 1, p[i], None), (2 * i - 1, copy, None)))
+    terms.extend((column, p[i], p[j]) for column, i, j in _triangular_terms(width))
+    copied = min(len(result), 2 * width)
+
+    def consume(word: tuple[int | None, ...]) -> tuple[Instruction, ...]:
+        return tuple(
+            Instruction("cx", (qubit, target))
+            for qubit, target in zip(word[-copied:], result[-copied:], strict=True)
+            if qubit is not None
+        )
+
+    return (
+        *bind,
+        *with_weighted_columns_ir(
+            2 * width, workspace[width - 1 :], measurement_bit, terms, consume
+        ),
+        *bind,
     )

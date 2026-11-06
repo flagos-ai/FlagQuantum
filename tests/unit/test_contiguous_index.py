@@ -9,6 +9,8 @@ import pytest
 import torch
 
 from flagquantum.compiler.registers.contiguous_index import (
+    contiguous_index_columns_ir,
+    contiguous_index_columns_workspace_size,
     contiguous_index_ir,
     contiguous_index_requirements,
 )
@@ -18,8 +20,12 @@ from tests.unit.sparse_register_execution import execute_sparse_register
 pytestmark = pytest.mark.unit
 
 
-def layout(n, out):
-    work, slots = contiguous_index_requirements(n)
+def layout(n, out, columns=False):
+    work, slots = (
+        (contiguous_index_columns_workspace_size(n), 1)
+        if columns
+        else contiguous_index_requirements(n)
+    )
     return (
         tuple(range(n)),
         tuple(range(n, 2 * n)),
@@ -27,6 +33,15 @@ def layout(n, out):
         tuple(range(2 * n + out, 2 * n + out + work)),
         tuple(range(slots)),
     )
+
+
+def emit(bound, columns):
+    if columns:
+        mu, nu, result, workspace, (slot,) = bound
+        return contiguous_index_columns_ir(
+            mu, nu, result, workspace, measurement_bit=slot
+        )
+    return contiguous_index_ir(*bound)
 
 
 def bits(word, width):
@@ -37,16 +52,22 @@ def triangular(mu, nu, out):
     return (mu + nu * (nu + 1) // 2) % (1 << out)
 
 
+@pytest.mark.parametrize("columns", [False, True], ids=["square-add", "columns"])
 @pytest.mark.parametrize("n,out", [(1, 1), (1, 2), (2, 5), (3, 3), (4, 8), (5, 10)])
-def test_contiguous_index_all_inputs_occupied_results_and_histories(n, out):
-    bound = layout(n, out)
-    gates = contiguous_index_ir(*bound)
+def test_contiguous_index_all_inputs_occupied_results_and_histories(n, out, columns):
+    bound = layout(n, out, columns)
+    gates = emit(bound, columns)
     counts = Counter(g.name for g in gates)
-    events = 2 * (n * (n - 1) + 2 * (2 * n - 1))
+    work = len(bound[3])
+    if columns:
+        events = n * n + n - 1
+        assert work == events + n - 1
+    else:
+        events = 2 * (n * (n - 1) + 2 * (2 * n - 1))
+        assert work == 2 * n + max(n * (n - 1), 2 * n - 1)
     assert counts["measure"] == counts["reset"] == events
     assert counts["t"] + counts["tdg"] == 4 * events
     assert counts["ccx"] == 0
-    assert len(bound[3]) == 2 * n + max(n * (n - 1), 2 * n - 1)
     before, after = [], []
     clean = (0,) * len(bound[3])
     for mu, nu in product(range(1 << n), repeat=2):
@@ -58,14 +79,15 @@ def test_contiguous_index_all_inputs_occupied_results_and_histories(n, out):
     assert certified_and_channel_map(gates, tuple(after)) == (tuple(before), events)
 
 
+@pytest.mark.parametrize("columns", [False, True], ids=["square-add", "columns"])
 @pytest.mark.parametrize("n,out", [(1, 2), (2, 3), (3, 6)])
-def test_contiguous_index_append_complex_and_work_cleanup(n, out):
+def test_contiguous_index_append_complex_and_work_cleanup(n, out, columns):
     from examples.algorithms.binary_field_arithmetic import FieldOperation
     from flagquantum.dynamic import DynamicCircuit
 
-    bound = layout(n, out)
+    bound = layout(n, out, columns)
     work = len(bound[3])
-    gates = contiguous_index_ir(*bound)
+    gates = emit(bound, columns)
     qubits = 2 * n + out + work + 1
     ir = DynamicCircuit(qubits).append(FieldOperation(qubits, gates)).to_ir()
     before, after = {}, {}
@@ -88,10 +110,11 @@ def test_contiguous_index_append_complex_and_work_cleanup(n, out):
                 state[i] = amp
             for i, amp in expected.items():
                 desired[i] = amp
-            for history in product((0, 1), repeat=4):
+            events = sum(gate.name == "measure" for gate in gates)
+            for history in product((0, 1), repeat=events):
                 torch.testing.assert_close(
                     forced_branch(state, gates, history),
-                    desired / 4,
+                    desired / sqrt(2**events),
                     atol=2e-12,
                     rtol=0,
                 )
@@ -135,3 +158,19 @@ def test_contiguous_index_rejects_invalid_layout(change, match):
     bound = dict(zip(names, layout(2, 4), strict=True))
     with pytest.raises(ValueError, match=match):
         contiguous_index_ir(**(bound | change))
+
+
+@pytest.mark.parametrize(
+    "change,match",
+    [
+        ({"mu": ()}, "matching inputs"),
+        ({"result": ()}, "nonempty result"),
+        ({"workspace": ()}, "work qubits"),
+        ({"measurement_bit": -1}, "nonnegative measurement slot"),
+    ],
+)
+def test_contiguous_index_columns_rejects_invalid_layout(change, match):
+    names = ("mu", "nu", "result", "workspace")
+    bound = dict(zip(names, layout(2, 4, True)[:4], strict=True))
+    with pytest.raises(ValueError, match=match):
+        contiguous_index_columns_ir(**(bound | change))
