@@ -860,3 +860,15 @@ The supported coherent rotation effects preserve absolute phase when
 controls and targets are physically disjoint, including views of one owner.
 Run `python -m pytest tests/integration/test_synthesis_qmod_time_marching.py -q`
 to check the unchanged four-slice source against independent block matrices.
+
+## Exact basis MPS corpus profile
+
+The unchanged 50-control MCX source allocates 51 logical bits and lowers to
+169 Toffoli gates on 64 physical bits, including 13 clean work bits. Use
+`tools/audit_qmod_corpus.py --execute --basis-mps-paths FILE` with a JSON
+list of paths relative to the corpus. This explicit CPU profile checks for
+a closed I/X/CCX circuit, starts from zero and admits only rank-one MPS
+execution without truncation or dense fallback. Its complex128 state
+tensors occupy 2 KiB for this original. The usual `synth.synthesize` full
+state profile continues to enforce the dense state-buffer limit. The
+basis profile provides a bitstring in physical wire order.
