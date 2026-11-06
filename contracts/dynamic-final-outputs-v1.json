@@ -1,0 +1,30 @@
+{
+  "schema_version": "1.0",
+  "status": "approved_implementation_candidate",
+  "proposal": "docs/development/DYNAMIC_FINAL_OUTPUTS_API_PROPOSAL.md",
+  "approval_sha256": "909183d0664fbf04aca8073d29ae350a8aacbd80b3d511076a7afd96cb8cb2fa",
+  "entry_points": [
+    "flagquantum.run",
+    "flagquantum.plan"
+  ],
+  "admission": {
+    "device": "cpu",
+    "batch_size": 1,
+    "basis": "z",
+    "qubit_order": "full_register_logical",
+    "output_kinds": [
+      "samples",
+      "counts"
+    ],
+    "existing_terminal_measurement_block": "refused"
+  },
+  "results": {
+    "samples": "existing_final_sample_rows",
+    "counts": "histogram_of_same_rows",
+    "mid_circuit_measurement": "existing_classical_register"
+  },
+  "conformance_tests": [
+    "tests/unit/test_dynamic_final_outputs_contract.py",
+    "tests/integration/test_dynamic_final_outputs.py"
+  ]
+}

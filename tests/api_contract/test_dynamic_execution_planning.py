@@ -134,7 +134,7 @@ def test_dynamic_planning_rejects_outputs_before_compilation() -> None:
         fq.plan(
             _feedback_program(),
             options=fq.ExecutionOptions(shots=8),
-            outputs=fq.samples(),
+            outputs=fq.samples((0,)),
         )
 
 
