@@ -1277,6 +1277,15 @@ class Parser:
                         ):
                             args.append(self.expression(static=True))
                             continue
+                        if len(args) == 3 and target.text == "full_hea":
+                            args.append(
+                                self.literal_array(
+                                    lambda: self.literal_array(
+                                        lambda: self.expression(static=True)
+                                    )
+                                )
+                            )
+                            continue
                         if len(args) == 1 and target.text == "multi_suzuki_trotter":
                             args.append(self.call_argument())
                             continue

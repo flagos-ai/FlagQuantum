@@ -52,6 +52,7 @@ from .controlled_evolution import EVOLUTION_CALLS, controlled_evolution
 from .cscope import QaoaWorkflow, VqeSettings, split_cscope
 from .decisions import lower_decision_phase
 from .diffusion import lower_diffuser
+from .hea import lower_hea
 from .indexed_control import (
     lower_indexed_control,
     lower_nested_indexed_control,
@@ -155,6 +156,7 @@ _INTRINSICS = (
         "exponentiate",
         "qdrift",
         "qaoa_penalty",
+        "full_hea",
         "qft",
         "swap_test",
         "drop",
@@ -3361,6 +3363,9 @@ class _Adapt:
             return
         if token.text == "qaoa_penalty":
             lower_qaoa_penalty(self, token, args)
+            return
+        if token.text == "full_hea":
+            lower_hea(self, token, args)
             return
         if token.text == "CPHASE":
             if len(args) != 3:

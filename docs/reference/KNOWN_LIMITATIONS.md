@@ -671,3 +671,15 @@ wire order. Output readout projects disjoint leaf paths such as
 `packet.data.body.flags`. A containing record is a layout and does not
 introduce extra storage. Signed fields and assignment to existing nested
 fields remain separate capabilities.
+
+## Qmod hardware-efficient ansatz
+
+The checked `full_hea` profile binds finite real angles, fixed connectivity
+and closed one-gate lambdas. Each repetition applies the single-qubit
+operands and then the listed edges. At most one parameterized operand per
+arity is admitted, and multiple pair operands require disjoint edges while
+their ordering across overlapping edges is unverified. Gate, angle, edge
+and callback contracts are checked before emitting register effects. The
+unchanged chemistry original is independently checked at two nonzero
+parameter vectors. Run
+`python -m pytest tests/integration/test_synthesis_qmod_hea.py -q`.
