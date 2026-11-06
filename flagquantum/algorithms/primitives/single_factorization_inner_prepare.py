@@ -2,6 +2,7 @@
 
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
+from functools import cached_property
 from math import isfinite
 
 from ...circuit import Circuit
@@ -120,15 +121,27 @@ class PrepareSingleFactorizationInner:
             *self._banks,
         )
 
+    @cached_property
+    def _lookup_table(self) -> QroamCleanTable:
+        # A singleton axis has no address qubits. Remove it before binding
+        # a nonuniform lookup to the remaining address.
+        if self.table.shape.count(1) == 1:
+            return QroamCleanTable((max(self.table.shape),), (0,), self.table.datasets)
+        return self.table
+
     def requirements(self) -> tuple[int, int]:
         """Return borrowed qubits and feedback slots, excluding named outputs."""
         factors, pairs = self.table.shape
         width = (self.orbitals - 1).bit_length()
         triangle_work, triangle_slots = triangular_uniform_requirements(self.orbitals)
         index_work = contiguous_index_columns_workspace_size(width) if width else 0
-        lookup = self.table.workspace_size(
-            0, ((factors - 1).bit_length(), (pairs - 1).bit_length())
+        lookup_widths: tuple[int, ...] = (
+            (factors - 1).bit_length(),
+            (pairs - 1).bit_length(),
         )
+        if len(self._lookup_table.shape) == 1:
+            lookup_widths = (max(lookup_widths),)
+        lookup = self._lookup_table.workspace_size(0, lookup_widths)
         compare_work, compare_slots = less_equal_requirements(
             self.probability_bits, self.probability_bits
         )
@@ -183,8 +196,10 @@ class PrepareSingleFactorizationInner:
             if p
             else ()
         )
-        selections = (ports["l"], address)
-        lookup_work = self.table.workspace_size(0, tuple(map(len, selections)))
+        selections: tuple[tuple[int, ...], ...] = (ports["l"], address)
+        if len(self._lookup_table.shape) == 1:
+            selections = tuple(word for word in selections if word)
+        lookup_work = self._lookup_table.workspace_size(0, tuple(map(len, selections)))
         first, second = self.table.block_shape
         banks = bind_clean_banks(
             {name: ports[name] for name, _ in self._banks},
@@ -194,7 +209,12 @@ class PrepareSingleFactorizationInner:
         )
         load = source_qroam_clean_uncompute_ir if adjoint else source_qroam_clean_ir
         lookup = load(
-            self.table, (), selections, banks, work[:lookup_work], slots[:lookup_work]
+            self._lookup_table,
+            (),
+            selections,
+            banks,
+            work[:lookup_work],
+            slots[:lookup_work],
         )
         sigma = tuple(Instruction("h", (wire,)) for wire in ports["sigma"])
         (flag,) = ports["choose_alt"]

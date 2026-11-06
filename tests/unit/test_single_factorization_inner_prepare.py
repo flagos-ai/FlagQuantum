@@ -21,7 +21,8 @@ pytestmark = pytest.mark.unit
 
 @pytest.mark.ftqc_reference
 @pytest.mark.parametrize(
-    "spatial,factor_count,blocked", [(1, 1, False), (2, 2, False), (3, 3, True)]
+    "spatial,factor_count,blocked",
+    [(1, 1, False), (1, 2, False), (2, 1, False), (2, 2, False), (3, 3, True)],
 )
 def test_inner_prepare_complex_alias_signal(spatial, factor_count, blocked):
     pytest.importorskip("qualtran")
@@ -160,10 +161,12 @@ def test_inner_prepare_complex_alias_signal(spatial, factor_count, blocked):
         counts = count_emitted_instructions(ir)
         events = counts.unconditional.get("measure", 0)
         assert (counts.t_count, events, work) == {
-            1: (11, 1, 2),
-            2: (65, 11, 4),
-            3: (219, 25, 7),
-        }[spatial]
+            (1, 1): (11, 1, 2),
+            (1, 2): (11, 1, 2),
+            (2, 1): (53, 8, 4),
+            (2, 2): (65, 11, 4),
+            (3, 3): (219, 25, 7),
+        }[spatial, factor_count]
         histories = (
             product((0, 1), repeat=events)
             if events <= 11
