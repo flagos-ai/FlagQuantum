@@ -2328,3 +2328,33 @@ The Hamming-weight phase graph charges repeated copies of the same Z power.
 The executable phasing primitive uses a different power for each bit of the
 computed weight. The one-bit source width query fails on an empty junk
 register. The native model derives its width from the two bound qubits.
+
+### Executable hopping plaquette
+
+`HubbardPlaquette` implements the four-mode hopping of Appendix E in
+[Early fault-tolerant simulations of the Hubbard model](https://arxiv.org/abs/2012.09238).
+Supply four consecutive Jordan–Wigner modes in cyclic site order. The wire
+labels can be remapped by the caller. Two Fourier pairs enter the rotated
+basis, where a Clifford maps the XX and YY terms to two equal-angle Rz
+rotations. The inverse basis restores the original mode order.
+
+```python
+from flagquantum.algorithms.primitives.hubbard_plaquette import HubbardPlaquette
+from flagquantum.circuit import Circuit
+
+op = HubbardPlaquette.make_on(modes=(0, 1, 2, 3), timestep=0.123)
+circuit = Circuit(4).append(op)
+report = estimate_ftqc_resources(op, emitted_ir=circuit.to_ir())
+assert report.logical.gates.t == 8
+assert report.logical.gates.rotation == 2
+assert report.emitted is not None
+assert report.emitted.t_count == 8
+assert report.emitted.unconditional["rz"] == 6
+```
+
+The extra four emitted Rz instructions have zero angle and belong to the
+reused Fourier decomposition. Emission includes the fermionic routing and
+the central Clifford basis change. The source plaquette resource graph
+counts the Fourier and phase calls separately. The implementation uses no
+work wires or measurements. Complete complex matrices are tested against an
+independent Jordan–Wigner Hamiltonian.
