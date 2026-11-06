@@ -86,3 +86,48 @@ extra work qubits, because the sign correction needs a larger
 clean carry bank while the product remains live. Qualtran v0.7.0 still exposes the
 unsigned-format ArcSin resource model and no executable gate flow
 for the signed wrapper.
+
+## Reproducible coefficient profile
+
+The paper identifies its approximation method and domain. The cited
+sections and the locked Qualtran source do not give its numerical
+coefficient table. `arcsine_polynomial_coefficients` constructs an
+independent, rational Chebyshev projection for
+`asin(sqrt(z))/sqrt(z)` on [0, 1/4], with value one at z=0.
+It uses no external solver or floating-point arithmetic.
+[Paper, Sections IV and VI and Appendix D](https://arxiv.org/pdf/1805.12445)
+[Locked ArcSin source](https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/bloqs/arithmetic/trigonometric/arcsin.py)
+
+The series coefficient of z^n is binomial(2n,n)/(4^n·(2n+1)).
+Under z=(1+cos θ)/8, the powers of z have nonnegative Chebyshev
+coefficients. Their dropped sum bounds the projection error because
+each Chebyshev polynomial has magnitude at most one. The omitted
+Taylor series is bounded by 1/(3·4^N) after order N. The routine adds
+the monomial quantization bound, rounding each coefficient to
+nearest with ties to even. These bounds cover the continuous factor
+before reversible arithmetic. The approximation is a Chebyshev
+projection and does not claim the paper's minimax coefficients.
+
+| Degree | Coefficient fractional bits | Uniform factor bound |
+| --- | ---: | ---: |
+| 3 | 24 | 1.661e−6 |
+| 4 | 18 | 5.387e−7 |
+| 4 | 24 | 1.114e−7 |
+| 5 | 24 | 1.231e−8 |
+
+For example, degree four with 12 coefficient fraction bits gives
+(207, 163, 309, 683, 4096), in descending order. With three input
+fraction bits, a ten-bit signed output, seven square-root working
+fraction bits and two Newton updates, the maximum error over all
+17 encoded signed inputs is 0.008463 rad. The factor bound before
+arithmetic is 2.742e−5, and the maximum observed difference between
+the rounded polynomial and its per-partial Horner circuit is
+0.000307 in factor units. Square-root, product and output truncation
+contribute to the final angle error.
+
+That profile emits 60,688 T/T†, 153,766 CX, 166 CCX and 15,172
+measurements with 765 work qubits and 27 classical slots, including
+cleanup. Tests independently enclose the exact factor at rational
+points, check the full encoded signed domain and all measurement
+histories, and execute representative coherent amplitudes from the
+IR produced by `circuit.append(op)`.
