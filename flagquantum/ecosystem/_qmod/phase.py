@@ -22,6 +22,7 @@ def expand_phase(
     number: Callable[[Expression], float],
     *,
     condition: Expression | None = None,
+    disjoint_condition_target: Location | None = None,
 ) -> tuple[Polynomial, tuple[Location, ...]]:
     """Expand real arithmetic with b*b=b, retaining every encountered input bit."""
     locations: list[Location] = []
@@ -218,6 +219,12 @@ def expand_phase(
     guard: Polynomial | None = None
     if condition is not None:
         evaluate = predicate(condition)
+        if disjoint_condition_target in locations:
+            reject(
+                condition.token,
+                "predicate.alias",
+                "predicate cannot read its XOR target",
+            )
         if len(locations) > MAX_PHASE_PREDICATE_BITS:
             reject(
                 condition.token,

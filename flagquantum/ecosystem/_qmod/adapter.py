@@ -64,6 +64,7 @@ from .phase_factors import Cube, preserve_factors
 from .predicates import expand_predicate_oracles
 from .preparation import lower_inplace_preparation
 from .qpe import infer_phase_allocation, lower_qpe
+from .qsvt import lower_qsvt_inversion
 from .quantum_callbacks import (
     BORROWED_EFFECT_SIGNATURES,
     CALLBACK_ARRAY,
@@ -120,6 +121,7 @@ _INTRINSICS = (
         "inplace_encode_on_bloch",
         "phase",
         "grover_diffuser",
+        "qsvt_inversion",
         "multiswap",
         "pi",
         "control",
@@ -1805,6 +1807,7 @@ class _Adapt:
         coefficient: Expression,
         *,
         condition: Expression | None = None,
+        disjoint_condition_target: tuple[Value, int] | None = None,
     ) -> None:
         def quantum_word(node: Expression) -> tuple[tuple[Value, int], ...] | None:
             if node.token.text == "$predicate_word":
@@ -1859,12 +1862,20 @@ class _Adapt:
         factor_values: tuple[Value, ...] = ()
         try:
             polynomial, locations = expand_phase(
-                expression, quantum_word, self.classical_number, condition=condition
+                expression,
+                quantum_word,
+                self.classical_number,
+                condition=condition,
+                disjoint_condition_target=disjoint_condition_target,
             )
         except HybridVerificationError as error:
-            if condition is not None and all(
-                diagnostic.code == "qmod.budget.phase"
-                for diagnostic in error.diagnostics
+            if (
+                condition is not None
+                and disjoint_condition_target is None
+                and all(
+                    diagnostic.code == "qmod.budget.phase"
+                    for diagnostic in error.diagnostics
+                )
             ):
                 lower_decision_phase(
                     self, token, expression, coefficient, condition, quantum_word
@@ -2964,6 +2975,23 @@ class _Adapt:
             amplitudes = tuple(math.sqrt(value) for value in amplitudes)
             # The shared preparation is exact, independent of the probability tolerance.
             bound = 0.0
+        if inplace and (output.children or output.token.text in self.views):
+            locations = tuple(reversed(self.array_view(output)))
+            if len(locations) != count.bit_length() - 1:
+                reject(
+                    output.token,
+                    "width",
+                    "amplitude vector must match the output width",
+                )
+            self.effect_op(
+                "qreg.inplace_prepare_amplitudes",
+                token,
+                tuple(value for value, _ in locations),
+                indices=tuple(index for _, index in locations),
+                amplitudes=amplitudes,
+                bound=bound,
+            )
+            return
         target = self.atom(output)
         width = count.bit_length() - 1
         destination = self.register(
@@ -2982,6 +3010,19 @@ class _Adapt:
     def xor_update(
         self, token: Token, destination: Expression, source: Expression
     ) -> None:
+        if source.token.text in _STATIC_COMPARISONS:
+            register, bit = self.gate_target(destination, allow_numeric=True)
+            pi = Expression(Token("pi", token.location))
+            self.effect_op("qreg.gate", token, (register,), gate="h", index=bit)
+            self.real_phase(
+                token,
+                destination,
+                pi,
+                condition=source,
+                disjoint_condition_target=(register, bit),
+            )
+            self.effect_op("qreg.gate", token, (register,), gate="h", index=bit)
+            return
         target = self.atom(destination)
         register = self.register(target)
         if self.local_scope is not None or self.parameters[target.text].kind != "qnum":
@@ -3049,6 +3090,9 @@ class _Adapt:
             return
         if token.text == "swap_test":
             lower_swap_test(self, token, args)
+            return
+        if token.text == "qsvt_inversion":
+            lower_qsvt_inversion(self, token, args)
             return
         if token.text == "grover_diffuser":
             lower_diffuser(self, token, args)
@@ -4178,6 +4222,7 @@ def parse_qmod(
                     "multiswap",
                     "unitary",
                     "+=",
+                    "^=",
                     "phase",
                     "inplace_prepare_state",
                     "inplace_prepare_amplitudes",

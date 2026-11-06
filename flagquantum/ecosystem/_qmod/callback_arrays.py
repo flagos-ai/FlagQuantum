@@ -41,59 +41,67 @@ def capture_callbacks(
                 "callback.signature",
                 "callback array requires nonempty zero-argument lambdas",
             )
-        location = callback.token.location
-        syntax = Function(
-            Token(f"$capture_{location.line}_{location.column}", location),
-            tuple(owner.parameters.values()),
-            callback.body,
-        )
-        child = type(owner)(
-            syntax,
-            owner.resolve,
-            owner.definitions,
-            owner.constants,
-            owner.record_types,
-        )
-        child.classical_values = dict(owner.classical_values)
-        child.classical_arrays = dict(owner.classical_arrays)
-        child.classical_integers = dict(owner.classical_integers)
-        child.integer_arrays = dict(owner.integer_arrays)
-        child.loop_indices = dict(owner.loop_indices)
-        child.widths = dict(owner.widths)
-        child.registers = dict(owner.registers)
-        child.views = dict(owner.views)
-        child.suspended = set(owner.suspended)
-        child.dropped = set(owner.dropped)
-        child.signed = set(owner.signed)
-        child.fractional_bits = dict(owner.fractional_bits)
-        child.helper_stack = owner.helper_stack
-        child.helper_expansions = owner.helper_expansions
-        child.loop_iterations = owner.loop_iterations
-        for ordinal, statement in enumerate(callback.body):
-            child.statement(statement, str(ordinal))
-        if (
-            any(op.name not in PURE_EFFECTS for op in child.operations)
-            or child.functions
-            or child.registers != owner.registers
-            or child.views != owner.views
-            or child.suspended != owner.suspended
-        ):
-            reject(
-                callback.token,
-                "callback.escape",
-                "lexical callback requires pure effects on existing storage",
-            )
-        total_effects += len(child.operations)
+        effects = capture_effects(owner, callback.token, callback.body)
+        total_effects += len(effects)
         if total_effects > MAX_CALLBACK_STATEMENTS:
             reject(
                 callback.token,
                 "budget.callback",
                 "callback array exceeds 4096 captured effects",
             )
-        owner.helper_expansions = child.helper_expansions
-        owner.loop_iterations = child.loop_iterations
-        captured.append(tuple(child.operations))
+        captured.append(effects)
     return tuple(captured)
+
+
+def capture_effects(
+    owner: _Adapt, token: Token, statements: tuple[Statement, ...]
+) -> tuple[Operation, ...]:
+    """Compile a lexical body against a snapshot of its borrowed locations."""
+    location = token.location
+    syntax = Function(
+        Token(f"$capture_{location.line}_{location.column}", location),
+        tuple(owner.parameters.values()),
+        statements,
+    )
+    child = type(owner)(
+        syntax,
+        owner.resolve,
+        owner.definitions,
+        owner.constants,
+        owner.record_types,
+    )
+    child.classical_values = dict(owner.classical_values)
+    child.classical_arrays = dict(owner.classical_arrays)
+    child.classical_integers = dict(owner.classical_integers)
+    child.integer_arrays = dict(owner.integer_arrays)
+    child.loop_indices = dict(owner.loop_indices)
+    child.widths = dict(owner.widths)
+    child.registers = dict(owner.registers)
+    child.views = dict(owner.views)
+    child.suspended = set(owner.suspended)
+    child.dropped = set(owner.dropped)
+    child.signed = set(owner.signed)
+    child.fractional_bits = dict(owner.fractional_bits)
+    child.helper_stack = owner.helper_stack
+    child.helper_expansions = owner.helper_expansions
+    child.loop_iterations = owner.loop_iterations
+    for ordinal, statement in enumerate(statements):
+        child.statement(statement, str(ordinal))
+    if (
+        any(op.name not in PURE_EFFECTS for op in child.operations)
+        or child.functions
+        or child.registers != owner.registers
+        or child.views != owner.views
+        or child.suspended != owner.suspended
+    ):
+        reject(
+            token,
+            "callback.escape",
+            "lexical callback requires pure effects on existing storage",
+        )
+    owner.helper_expansions = child.helper_expansions
+    owner.loop_iterations = child.loop_iterations
+    return tuple(child.operations)
 
 
 def indexed_callback(owner: _Adapt, statement: Statement) -> tuple[Operation, ...]:
