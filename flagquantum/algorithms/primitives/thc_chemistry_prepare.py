@@ -30,6 +30,9 @@ from ...compiler.registers.less_equal import (
 )
 from ...compiler.registers.multi_control import multi_control_x_ir
 from ...compiler.registers.partition import RegisterLayout, unpartition_register
+from ...compiler.registers.qroam_resource_model import (
+    source_qroam_measurement_erase_cost,
+)
 from ...core.ir import CircuitIR, Instruction
 from .thc_chemistry_data import THCChemistryData
 from .thc_uniform_preparation import THCUniformPreparation
@@ -193,24 +196,34 @@ class PrepareTHCChemistry:
         gates = tuple(gate for stage in ordered for gate in stage)
         return _BoundPrepareTHCChemistry(gates, max((*logical, *workspace)) + 1)
 
-    def source_gate_cost(self) -> GateCost:
-        """Count the locked forward graph even if its peak width is unavailable."""
-        return estimate_component_resources(self._source_model()).gates
+    def source_gate_cost(self, *, adjoint: bool = False) -> GateCost:
+        """Count the locked graph even if its peak width is unavailable."""
+        return estimate_component_resources(self._source_model(adjoint=adjoint)).gates
 
-    def source_resource_model(self) -> ComponentCost:
+    def source_resource_model(self, *, adjoint: bool = False) -> ComponentCost:
         """Count the locked graph and width on its supported blocked layout."""
         if self.data.log_block_size == 0:
             raise ValueError("The unblocked source PREPARE cannot bind junk_target0_")
-        return self._source_model()
+        return self._source_model(adjoint=adjoint)
 
-    def _source_model(self) -> ComponentCost:
+    def _source_model(self, *, adjoint: bool) -> ComponentCost:
+        if type(adjoint) is not bool:
+            raise ValueError("THC preparation direction must be boolean")
         data = self.data
         width = data.num_mu.bit_length()
         uniform = THCUniformPreparation(
             data.num_mu, data.num_spin_orb
         ).source_resource_model()
         index = source_contiguous_index_cost(width, data.address_width)
-        lookup = data.lookup_cost(source_order=True)
+        lookup = (
+            source_qroam_measurement_erase_cost(
+                data.lookup_table(source_order=True),
+                0,
+                tuple(size for _, size in data.target_layout),
+            ).wrapper
+            if adjoint
+            else data.lookup_cost(source_order=True)
+        )
         compare = source_equal_width_less_equal_cost(data.probability_bits)
         swap = ComponentCost("CSwap", 1 + 2 * width, GateCost(cswap=width))
         symmetry = ComponentCost(
@@ -219,18 +232,19 @@ class PrepareTHCChemistry:
         logical = sum(bits for _, bits in (*self.selection_layout, *self.junk_layout))
         banks = sum(bits for _, bits in data.lookup_output_layout)
         before_lookup = logical - banks
+        calls = (
+            CostCall(uniform, bystander_qubits=before_lookup - (2 * width + 3)),
+            CostCall(index, bystander_qubits=before_lookup - index.qubits),
+            CostCall(lookup, bystander_qubits=before_lookup - data.address_width),
+            CostCall(compare, 2, logical - (2 * data.probability_bits + 1)),
+            CostCall(swap, 3, logical - swap.qubits),
+            CostCall(symmetry, bystander_qubits=logical - 3),
+        )
         return ComponentCost(
-            "PrepareTHC",
+            "PrepareTHC†" if adjoint else "PrepareTHC",
             logical,
             GateCost(clifford=data.probability_bits + 7),
-            (
-                CostCall(uniform, bystander_qubits=before_lookup - (2 * width + 3)),
-                CostCall(index, bystander_qubits=before_lookup - index.qubits),
-                CostCall(lookup, bystander_qubits=before_lookup - data.address_width),
-                CostCall(compare, 2, logical - (2 * data.probability_bits + 1)),
-                CostCall(swap, 3, logical - swap.qubits),
-                CostCall(symmetry, bystander_qubits=logical - 3),
-            ),
+            calls[::-1] if adjoint else calls,
         )
 
 

@@ -47,11 +47,19 @@ def test_source_prepare_cost_and_unchanged_original_body_flag(m, bits, log):
     assert {k: v for k, v in asdict(native.source_gate_cost()).items() if v} == (
         get_cost_value(source, QECGatesCost()).asdict()
     )
+    source_adjoint = source.adjoint()
+    assert {
+        k: v for k, v in asdict(native.source_gate_cost(adjoint=True)).items() if v
+    } == get_cost_value(source_adjoint, QECGatesCost()).asdict()
     if log == 0:
         with pytest.raises(RuntimeError, match="junk_target0_"):
             get_cost_value(source, QubitCount())
         with pytest.raises(ValueError, match="junk_target0_"):
             native.source_resource_model()
+        with pytest.raises(RuntimeError, match="junk_target0_"):
+            get_cost_value(source_adjoint, QubitCount())
+        with pytest.raises(ValueError, match="junk_target0_"):
+            native.source_resource_model(adjoint=True)
     else:
         assert (*native.selection_layout, *native.junk_layout) == tuple(
             (reg.name, reg.total_bits()) for reg in source.signature
@@ -65,6 +73,7 @@ def test_source_prepare_cost_and_unchanged_original_body_flag(m, bits, log):
         assert isinstance(controls[0].binst.bloq, UniformSuperpositionTHC)
         assert graph.final_soqs()["nu_eq_mp1"].binst.bloq.cvs == (0, 1)
         assert_source_model(native.source_resource_model(), source)
+        assert_source_model(native.source_resource_model(adjoint=True), source_adjoint)
 
 
 def _loaded_words(data, address, exchange_matrices):
