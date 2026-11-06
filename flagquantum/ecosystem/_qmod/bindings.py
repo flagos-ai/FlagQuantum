@@ -39,7 +39,6 @@ def lower_binding_scope(owner: _Adapt, statement: Statement, index: str) -> bool
     views = dict(owner.views)
     widths = dict(owner.widths)
     suspended = set(owner.suspended)
-    registers = dict(owner.registers)
     start = len(owner.operations)
     reversible = []
     try:
@@ -50,6 +49,7 @@ def lower_binding_scope(owner: _Adapt, statement: Statement, index: str) -> bool
                 before = len(owner.operations)
                 owner.statement(child, f"{index}.binding_prepare{ordinal}")
                 reversible.extend(owner.operations[before:])
+        prepared_registers = dict(owner.registers)
         prepared_views = dict(owner.views)
         prepared_suspended = set(owner.suspended)
         for ordinal, child in enumerate(statement.apply):
@@ -58,7 +58,7 @@ def lower_binding_scope(owner: _Adapt, statement: Statement, index: str) -> bool
             any(op.name not in PURE_EFFECTS for op in owner.operations[start:])
             or owner.views != prepared_views
             or owner.suspended != prepared_suspended
-            or owner.registers != registers
+            or owner.registers != prepared_registers
         ):
             reject(
                 statement.token,
