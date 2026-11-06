@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # Adapted from Qualtran v0.7.0 PrepareUniformSuperposition.decompose_from_registers.
 # https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/bloqs/state_preparation/prepare_uniform_superposition.py
-# Changes: bound IR, shared clean work, and exact native CH on a shared control flag.
+# Changes: bound IR, shared clean work, and exact native CH per source Hadamard.
 
 """Prepare uniform amplitudes over a concrete prefix of a binary register."""
 
@@ -48,20 +48,22 @@ def _initial_hadamards(
 ) -> tuple[Instruction, ...]:
     if not controls:
         return tuple(Instruction("h", (qubit,)) for qubit in target)
-    if len(controls) == 1:
-        flips = (Instruction("x", controls),) if values == (0,) else ()
-        return (
-            *flips,
-            *(Instruction("ch", (*controls, qubit)) for qubit in target),
-            *flips,
-        )
-    work = workspace[: len(controls) - 1]
-    return (
-        *multi_and_ir(controls, values, work),
-        *(Instruction("ch", (work[-1], qubit)) for qubit in target),
-        *multi_and_ir(
+    control = controls[0]
+    prepare: tuple[Instruction, ...] = (
+        (Instruction("x", controls),) if values == (0,) else ()
+    )
+    erase: tuple[Instruction, ...] = prepare
+    if len(controls) > 1:
+        work = workspace[: len(controls) - 1]
+        control = work[-1]
+        prepare = multi_and_ir(controls, values, work)
+        erase = multi_and_ir(
             controls, values, work, classical_bits=slots[: len(work)], uncompute=True
-        ),
+        )
+    return tuple(
+        gate
+        for qubit in target
+        for gate in (*prepare, Instruction("ch", (control, qubit)), *erase)
     )
 
 

@@ -18,7 +18,6 @@ from flagquantum.dynamic import DynamicCircuit
 from flagquantum.runtime.dynamic.execution import run_dynamic
 from tests.unit.measurement_checks import forced_branch
 from tests.unit.test_register_constant_addition import reference_arithmetic_gates
-from tests.unit.test_register_subtraction import assert_source
 
 pytestmark = pytest.mark.unit
 
@@ -77,7 +76,7 @@ def test_uniform_support_relative_phase_inverse_and_counts(count, values):
     )
     gates = emitted(count, values)
     counts = Counter(gate.name for gate in gates)
-    ands = max(0, len(values) - 1)
+    ands = len(target) * max(0, len(values) - 1)
     if odd > 1:
         ands += 3 * high + len(values) - 1
     assert counts["measure"] == counts["reset"] == ands
@@ -232,13 +231,24 @@ def test_full_source_complex_map_and_erasure_histories(count, values, adjoint):
 
 
 @pytest.mark.ftqc_reference
-@pytest.mark.parametrize("count,values", [(3, ()), (6, (0,)), (10, (1, 0))])
+@pytest.mark.parametrize(
+    "count,values",
+    [
+        (2, ()),
+        (4, (1, 0)),
+        (3, ()),
+        (6, (0,)),
+        (6, (1, 0)),
+        (10, (1, 0)),
+        (5, (1, 0, 1)),
+    ],
+)
 def test_pinned_outer_generator_and_inner_source_streams(count, values):
     pytest.importorskip("qualtran")
     import cirq
-    import numpy as np
     from qualtran._infra.gate_with_registers import split_qubits
     from qualtran.bloqs.arithmetic import LessThanConstant
+    from qualtran.bloqs.mcmt.and_bloq import And, MultiAnd
     from qualtran.bloqs.state_preparation.prepare_uniform_superposition import (
         PrepareUniformSuperposition,
     )
@@ -254,72 +264,136 @@ def test_pinned_outer_generator_and_inner_source_streams(count, values):
     ops = list(
         cirq.flatten_op_tree(source.decompose_from_registers(context=manager, **quregs))
     )
-    _, odd, high = source.k_l_logL()
-    assert [op.qubits for op in ops[: len(target)]] == [
-        tuple(cirq.LineQubit(q) for q in (*controls, wire)) for wire in target
-    ]
-    assert all(
-        op.gate.sub_gate == cirq.H if controls else op.gate == cirq.H
-        for op in ops[: len(target)]
-    )
-    lt, rz, undo = ops[len(target) : len(target) + 3]
-    assert lt.gate == undo.gate == LessThanConstant(high, odd)
-    reflect, rotate, _ = ops[len(target) + 3 + high : len(target) + 6 + high]
-    angle = rz.gate._rads
-    assert angle == rotate.gate._rads
-    gates = emitted(count, values)
-    rz_locations = [i for i, g in enumerate(gates) if g.name == "rz"]
-    assert [gates[i].params["theta"] for i in rz_locations] == pytest.approx(
-        [angle, angle]
-    )
-    less_work = workspace[1 : high + 2]
-    compare = reference_arithmetic_gates(
-        lt.gate,
-        {"x": target[:high], "target": workspace[:1]},
-        less_work,
-        dict(zip(less_work[1:], slots[:high], strict=True)),
-        cirq_style=True,
-    )
-    a, b = rz_locations
-    assert_source(gates[a - len(compare) : a], compare)
-    assert_source(gates[a + 1 : a + 1 + len(compare)], compare)
 
-    prefix = workspace[: high + len(values) - 1]
-    bindings = {"ctrl": (*target[:high], *controls), "target": prefix[-1:]}
-    if len(prefix) > 1:
-        bindings["junk"] = prefix[:-1]
-    bloq = getattr(reflect.gate, "bloq", reflect.gate)
-    expected = reference_arithmetic_gates(bloq, bindings, (), {}, cirq_style=True)
-    assert_source(gates[b - len(expected) : b], expected)
-    source_prefix = (
-        list(
-            cirq.flatten_op_tree(
-                bloq.decompose_from_registers(
-                    context=manager,
-                    **split_qubits(
-                        bloq.signature,
-                        tuple(cirq.LineQubit(q) for q in (*bindings["ctrl"], *prefix)),
-                    ),
+    def source_predicate(bloq, ctrl, prefix):
+        qubits = tuple(cirq.LineQubit(q) for q in (*ctrl, *prefix))
+        source_leaves = (
+            tuple(
+                cirq.flatten_op_tree(
+                    bloq.decompose_from_registers(
+                        context=manager, **split_qubits(bloq.signature, qubits)
+                    )
                 )
             )
+            if len(prefix) > 1
+            else (bloq.on(*qubits),)
         )
-        if len(prefix) > 1
-        else [bloq.on(*(cirq.LineQubit(q) for q in (*bindings["ctrl"], *prefix)))]
-    )
-    erased = []
-    for leaf in reversed(source_prefix):
-        left, right, flag = (q.x for q in leaf.qubits)
-        erased.extend(
-            reference_arithmetic_gates(
-                leaf.gate.adjoint(),
-                {"ctrl": (left, right), "target": (flag,)},
-                (),
-                {flag: slots[prefix.index(flag)]},
+        compute, erase = [], []
+        for leaf in source_leaves:
+            left, right, flag = (q.x for q in leaf.qubits)
+            binding = {"ctrl": (left, right), "target": (flag,)}
+            compute.extend(
+                reference_arithmetic_gates(leaf.gate, binding, (), {}, cirq_style=True)
+            )
+            erase.append(
+                reference_arithmetic_gates(
+                    leaf.gate.adjoint(),
+                    binding,
+                    (),
+                    {flag: slots[prefix.index(flag)]},
+                    cirq_style=True,
+                )
+            )
+        return tuple(compute), tuple(g for block in reversed(erase) for g in block)
+
+    initial = []
+    for op in ops[: len(target)]:
+        *ctrl, wire = (q.x for q in op.qubits)
+        if op.gate == cirq.H:
+            initial.append((Instruction("h", (wire,)),))
+            continue
+        assert op.gate.sub_gate == cirq.H
+        pattern = tuple(next(iter(v)) for v in op.gate.control_values)
+        assert tuple(ctrl) == controls and pattern == values
+        if len(ctrl) == 1:
+            flip = (Instruction("x", tuple(ctrl)),) if pattern == (0,) else ()
+            initial.append((*flip, Instruction("ch", (ctrl[0], wire)), *flip))
+        else:
+            work = workspace[: len(ctrl) - 1]
+            predicate = And(*pattern) if len(ctrl) == 2 else MultiAnd(pattern)
+            compute, erase = source_predicate(predicate, tuple(ctrl), work)
+            initial.append((*compute, Instruction("ch", (work[-1], wire)), *erase))
+
+    _, odd, high = source.k_l_logL()
+    assert tuple(q.x for q in quregs["target"]) == target
+    for adjoint in (False, True):
+        h_stage = tuple(
+            gate
+            for part in (reversed(initial) if adjoint else initial)
+            for gate in part
+        )
+        if high == 0:
+            expected = h_stage
+        else:
+            rest = ops[len(target) :]
+            lt, rz, undo = rest[:3]
+            assert lt.gate == undo.gate == LessThanConstant(high, odd)
+            middle = tuple(
+                Instruction("h", (op.qubits[0].x,)) for op in rest[3 : 3 + high]
+            )
+            reflect, rotate, _ = rest[3 + high : 6 + high]
+            final = tuple(
+                Instruction("h", (op.qubits[0].x,)) for op in rest[6 + high :]
+            )
+            assert middle == final
+            assert all(
+                op.gate == cirq.H for op in (*rest[3 : 3 + high], *rest[6 + high :])
+            )
+            less_work = workspace[1 : high + 2]
+            compare = reference_arithmetic_gates(
+                lt.gate,
+                {"x": target[:high], "target": workspace[:1]},
+                less_work,
+                dict(zip(less_work[1:], slots[:high], strict=True)),
                 cirq_style=True,
             )
+            prefix = workspace[: high + len(values) - 1]
+            assert tuple(q.x for q in reflect.qubits[: high + len(values)]) == (
+                *target[:high],
+                *controls,
+            )
+            compute, erase = source_predicate(
+                getattr(reflect.gate, "bloq", reflect.gate),
+                (*target[:high], *controls),
+                prefix,
+            )
+            sign = -1 if adjoint else 1
+            threshold = (
+                *compare,
+                Instruction("rz", workspace[:1], {"theta": sign * rz.gate._rads}),
+                *compare,
+            )
+            zero = (
+                *compute,
+                Instruction("rz", prefix[-1:], {"theta": sign * rotate.gate._rads}),
+                *erase,
+            )
+            expected = (
+                (*final[::-1], *zero, *middle[::-1], *threshold, *h_stage)
+                if adjoint
+                else (*h_stage, *threshold, *middle, *zero, *final)
+            )
+
+        def fixed_basis(stream):
+            for gate in stream:
+                if gate.name == "ch":
+                    leaves = translate(
+                        gate, can_run=lambda candidate: candidate.name != "ch"
+                    )
+                    assert leaves is not None
+                    yield from leaves
+                else:
+                    yield gate
+
+        actual = tuple(fixed_basis(emitted(count, values, adjoint)))
+        expected = tuple(fixed_basis(expected))
+        assert [(g.name, g.wires, g.metadata) for g in actual] == [
+            (g.name, g.wires, g.metadata) for g in expected
+        ]
+        assert Counter(g.name for g in actual) == Counter(g.name for g in expected)
+        assert [g.params["theta"] for g in actual if g.name == "rz"] == pytest.approx(
+            [g.params["theta"] for g in expected if g.name == "rz"], abs=2e-15, rel=0
         )
-    assert_source(gates[b + 1 : b + 1 + len(erased)], tuple(erased))
-    np.testing.assert_array_equal(np.asarray([q.x for q in quregs["target"]]), target)
 
 
 @pytest.mark.ftqc_reference
@@ -346,8 +420,8 @@ def test_empty_source_binding_and_concrete_resource_model():
     for count, values, model_t, rotations, native_t in (
         (3, (), 20, 2, 20),
         (3, (0,), 24, 6, 28),
-        (6, (1, 0), 40, 8, 38),
-        (5, (1, 0, 1), 68, 8, 58),
+        (6, (1, 0), 40, 8, 46),
+        (5, (1, 0, 1), 68, 8, 74),
     ):
         model = t_complexity(PrepareUniformSuperposition(count, values))
         assert (model.t, model.rotations) == (model_t, rotations)
