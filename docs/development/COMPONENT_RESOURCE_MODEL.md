@@ -567,6 +567,14 @@ rotations. The scalar keeps the source's default precision and zero
 modeled cost. The emitted circuit retains the three rotation angles
 for later synthesis.
 
+Use `su2_angles_from_matrix` to recover the four parameters from a
+2-by-2 unitary. The source sets one phase to zero when the sine or
+cosine is within an absolute tolerance of 1e-8. For a near-singular
+input, the reconstructed unitary can therefore differ slightly from
+the input. Use `su2_angles_from_zxz` to convert first Rz, middle Rx,
+and final Rz angles in circuit order, with an optional scalar shift.
+The ZXZ conversion accepts symbolic angles for resource queries.
+
 - [Qualtran v0.7.0 SU(2) rotation](https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/bloqs/basic_gates/su2_rotation.py)
 
 ## THC SELECT before lowering
