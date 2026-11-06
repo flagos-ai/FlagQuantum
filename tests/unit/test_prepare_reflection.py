@@ -8,9 +8,14 @@ import pytest
 import torch
 
 from examples.algorithms.binary_field_arithmetic import FieldOperation
+from flagquantum.compiler._component_trace.resource_model import (
+    ComponentCost,
+    estimate_component_resources,
+)
 from flagquantum.compiler.registers.prepare_reflection import (
     prepare_reflection_ir,
     prepare_reflection_requirements,
+    source_uncontrolled_prepare_reflection_cost,
 )
 from flagquantum.compiler.registers.uniform_preparation import (
     uniform_preparation_ir,
@@ -24,6 +29,24 @@ from tests.unit.test_register_constant_addition import reference_arithmetic_gate
 from tests.unit.test_uniform_preparation import embedded
 
 pytestmark = pytest.mark.unit
+
+
+def test_sided_junk_releases_slots_before_the_zero_mark():
+    prepare = ComponentCost("Prepare", 23)
+    inverse = ComponentCost("Unprepare", 23)
+    through = source_uncontrolled_prepare_reflection_cost(9, 14, prepare, inverse)
+    sided = source_uncontrolled_prepare_reflection_cost(
+        9, 14, prepare, inverse, mark_junk_width=1
+    )
+    through_cost = estimate_component_resources(through)
+    sided_cost = estimate_component_resources(sided)
+    assert through_cost.gates == sided_cost.gates
+    assert through_cost.peak_logical_qubits == 32
+    assert sided_cost.peak_logical_qubits == 23
+    with pytest.raises(ValueError, match="Junk live at the mark"):
+        source_uncontrolled_prepare_reflection_cost(
+            9, 14, prepare, inverse, mark_junk_width=15
+        )
 
 
 def layout(width, value):

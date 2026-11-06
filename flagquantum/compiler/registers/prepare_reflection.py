@@ -92,10 +92,17 @@ def source_uncontrolled_prepare_reflection_cost(
     junk_width: int,
     prepare_cost: ComponentCost,
     unprepare_cost: ComponentCost,
+    *,
+    mark_junk_width: int | None = None,
 ) -> ComponentCost:
     """Estimate the locked uncontrolled reflection with scalar coefficient -1."""
     return source_prepare_reflection_cost(
-        selection_width, junk_width, prepare_cost, unprepare_cost, controlled=False
+        selection_width,
+        junk_width,
+        prepare_cost,
+        unprepare_cost,
+        controlled=False,
+        mark_junk_width=mark_junk_width,
     )
 
 
@@ -106,13 +113,21 @@ def source_prepare_reflection_cost(
     unprepare_cost: ComponentCost,
     *,
     controlled: bool,
+    mark_junk_width: int | None = None,
 ) -> ComponentCost:
-    """Estimate the locked reflection with scalar -1 under optional positive control."""
+    """Estimate the locked reflection with scalar -1 under optional positive control.
+
+    By default the junk passes through both directions. For sided preparation
+    outputs, supply the subset width still live at the mark after unpreparing.
+    """
     work, slots = prepare_reflection_requirements(
         selection_width, controlled=controlled
     )
     if type(junk_width) is not int or junk_width < 0:
         raise ValueError("Reflection junk width must be a nonnegative integer")
+    live_junk = junk_width if mark_junk_width is None else mark_junk_width
+    if type(live_junk) is not int or not 0 <= live_junk <= junk_width:
+        raise ValueError("Junk live at the mark must fit the reflection junk width")
     # The source QEC model prices the scalar at zero. MultiControlZ uses
     # dedicated zero/one/two-control paths and an all-zero MultiAnd above two.
     if selection_width < 3:
@@ -131,7 +146,7 @@ def source_prepare_reflection_cost(
         GateCost(clifford=1 if controlled else 2),
         (
             CostCall(unprepare_cost, bystander_qubits=int(controlled)),
-            CostCall(mark, bystander_qubits=junk_width),
+            CostCall(mark, bystander_qubits=live_junk),
             CostCall(prepare_cost, bystander_qubits=int(controlled)),
         ),
     )
