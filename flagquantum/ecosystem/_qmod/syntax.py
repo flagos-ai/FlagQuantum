@@ -163,6 +163,7 @@ class Parameter:
     record: str | None = None
     length: int | None = None
     width_expression: Expression | None = None
+    fractional_bits: int = 0
 
 
 @dataclass(frozen=True)
@@ -789,7 +790,7 @@ class Parser:
         allow_fixed_array: bool = False,
         allow_numeric_array: bool = False,
         allow_signed_integer: bool = False,
-    ) -> tuple[str, int | None]:
+    ) -> tuple[str, int | None, int]:
         kind = self.current
         if kind.text not in {"qbit", "qnum"}:
             reject(
@@ -806,11 +807,11 @@ class Parser:
                 self.take(",")
                 from .qpe import parse_fraction
 
-                phase_kind = parse_fraction(
+                phase_kind, fractional_bits = parse_fraction(
                     self, width, allow_phase, allow_signed_integer=allow_signed_integer
                 )
                 if phase_kind is not None:
-                    return phase_kind, width
+                    return phase_kind, width, fractional_bits
             if self.current.text != ">":
                 reject(
                     self.current,
@@ -826,21 +827,21 @@ class Parser:
         ):
             self.take("[")
             self.take("]")
-            return "qbit[]", None
+            return "qbit[]", None, 0
         if kind.text == "qbit" and self.current.text == "[" and allow_fixed_array:
             self.take("[")
             width = self.width()
             self.take("]")
-            return "qbit[]", width
+            return "qbit[]", width, 0
         if self.current.text == "[" and kind.text == "qnum" and allow_numeric_array:
-            return kind.text, width
+            return kind.text, width, 0
         if self.current.text == "[":
             reject(
                 self.current,
                 "type",
                 "arrays, slices and bind require separate view semantics",
             )
-        return kind.text, width
+        return kind.text, width, 0
 
     def function(self) -> Function:
         annotation = None
@@ -918,6 +919,7 @@ class Parser:
             parameter = self.name()
             self.take(":")
             record = None
+            fractional_bits = 0
             if self.current.text in self.records:
                 if role not in {"output", "inout", "const"}:
                     reject(
@@ -956,7 +958,7 @@ class Parser:
                         "Pauli arrays are admitted as static helper ports",
                     )
             else:
-                kind, width = self.scalar_type(
+                kind, width, fractional_bits = self.scalar_type(
                     allow_qubit_array=name.text == "main" or role in {"inout", "const"},
                     allow_phase=True,
                     allow_signed_integer=role in {"const", "inout"}
@@ -971,7 +973,16 @@ class Parser:
                         "type",
                         "signed fixed-point helper ports are not admitted",
                     )
-            parameters.append(Parameter(parameter, kind, width, role, record))
+            parameters.append(
+                Parameter(
+                    parameter,
+                    kind,
+                    width,
+                    role,
+                    record,
+                    fractional_bits=fractional_bits,
+                )
+            )
             if self.current.text != ",":
                 break
             self.take(",")
@@ -1261,6 +1272,7 @@ class Parser:
                 record = None
                 local_width: int | None
                 width_expression = None
+                fractional_bits = 0
                 if (
                     self.current.text == "qnum"
                     and self.tokens[self.position + 1].text == "<"
@@ -1287,7 +1299,7 @@ class Parser:
                     record = self.name().text
                     kind, local_width = "qbit[]", self.records[record].width
                 else:
-                    kind, local_width = self.scalar_type(
+                    kind, local_width, fractional_bits = self.scalar_type(
                         allow_fixed_array=True, allow_qubit_array=True, allow_phase=True
                     )
                     if kind == "qphase_signed":
@@ -1306,6 +1318,7 @@ class Parser:
                             "local",
                             record,
                             width_expression=width_expression,
+                            fractional_bits=fractional_bits,
                         ),
                     )
                 )
@@ -1516,13 +1529,13 @@ class Parser:
                 self.take(";")
                 fields.append(Parameter(field, "qbit[]", None, record=nested.text))
                 continue
-            kind, width = self.scalar_type(
+            kind, width, fractional_bits = self.scalar_type(
                 allow_fixed_array=True,
                 allow_numeric_array=True,
                 allow_phase=True,
                 allow_signed_integer=True,
             )
-            if kind in {"qphase", "qphase_signed"}:
+            if fractional_bits or kind in {"qphase", "qphase_signed"}:
                 reject(
                     field,
                     "type",
@@ -1543,7 +1556,11 @@ class Parser:
                     "record numeric fields support one array dimension; bit fields support two array dimensions",
                 )
             self.take(";")
-            fields.append(Parameter(field, kind, width, length=length))
+            fields.append(
+                Parameter(
+                    field, kind, width, length=length, fractional_bits=fractional_bits
+                )
+            )
             if sum((item.width or 0) * (item.length or 1) for item in fields) > 256:
                 reject(field, "budget.record", "record exceeds 256 bits")
         self.take("}")

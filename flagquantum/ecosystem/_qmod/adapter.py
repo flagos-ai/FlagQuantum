@@ -50,6 +50,12 @@ from .callback_arrays import (
     lower_callback_control,
     lower_selected_effects,
 )
+from .computed_rotation import (
+    composed_rotation,
+    computed_output,
+    lower_computed_rotation,
+    reinterpreted_selector,
+)
 from .controlled_evolution import EVOLUTION_CALLS, controlled_evolution
 from .cscope import QaoaWorkflow, VqeSettings, split_cscope
 from .decisions import lower_decision_phase
@@ -1577,6 +1583,12 @@ class _Adapt:
     ) -> None:
         if len(arguments) != len(syntax.parameters):
             reject(token, "signature", "helper argument count disagrees")
+        if any(port.fractional_bits for port in syntax.parameters):
+            reject(
+                token,
+                "precision",
+                "fixed-point helpers require a checked computed rotation",
+            )
         if any(p.kind == "SparsePauliOp" for p in syntax.parameters):
             reject(
                 token,
@@ -1882,6 +1894,10 @@ class _Adapt:
         if not lower_narrow_pauli_sequence(child, syntax.statements):
             snapshot = snapshot_start(syntax.statements)
             for index, statement in enumerate(syntax.statements):
+                if index + 3 == len(syntax.statements) and lower_computed_rotation(
+                    child, syntax.statements[index:]
+                ):
+                    break
                 if index == snapshot:
                     lower_snapshot(child, syntax.statements, index)
                     break
@@ -3832,6 +3848,12 @@ class _Adapt:
         elif statement.declaration is not None:
             parameter = statement.declaration
             name = parameter.name.text
+            if parameter.fractional_bits:
+                reject(
+                    parameter.name,
+                    "precision",
+                    "fixed-point locals require a checked computed rotation",
+                )
             if name in self.parameters or name in _INTRINSICS or name in self.constants:
                 reject(
                     parameter.name,
@@ -4612,6 +4634,7 @@ def _bound_helper(syntax: Function) -> bool:
     ) or any(
         port.role in {"real", "integer", "inout", "callable", "operator"}
         or port.kind == "qphase"
+        or port.fractional_bits
         for port in syntax.parameters
     )
 
@@ -4767,6 +4790,12 @@ def parse_qmod(
     definitions = expand_predicate_oracles(definitions, constants, parser.records)
     definitions = expand_static_oracles(definitions, constants, parser.records)
     main = definitions["main"]
+    if any(port.fractional_bits for port in main.parameters):
+        reject(
+            main.name,
+            "precision",
+            "fixed-point outputs require a checked synthesis path",
+        )
     workflow = (
         _qaoa_workflow(settings, main, constants) if settings is not None else None
     )
@@ -4834,6 +4863,32 @@ def parse_qmod(
             syntax.parameters
         ):
             reject(syntax.name, "name", "duplicate helper parameter")
+        if any(port.fractional_bits for port in syntax.parameters):
+            if (
+                computed_output(syntax) is None
+                and reinterpreted_selector(syntax, definitions) is None
+            ):
+                reject(
+                    syntax.name,
+                    "precision",
+                    "fixed-point helpers require a checked computed rotation",
+                )
+            continue
+        fixed_locals = [
+            position
+            for position, statement in enumerate(syntax.statements)
+            if statement.declaration is not None
+            and statement.declaration.fractional_bits
+        ]
+        if fixed_locals and (
+            fixed_locals != [len(syntax.statements) - 3]
+            or composed_rotation(syntax.statements[-3:], definitions) is None
+        ):
+            reject(
+                syntax.name,
+                "precision",
+                "fixed-point locals require a checked computed rotation",
+            )
         if any(
             port.role not in {"real", "integer", "inout", "callable"}
             and port.kind != "PauliTerm[]"

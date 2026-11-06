@@ -1,5 +1,7 @@
 """Checked uniformly controlled rotations on a statically resolved bit view."""
 
+from __future__ import annotations
+
 import math
 from collections.abc import Mapping
 from dataclasses import replace
@@ -11,6 +13,7 @@ from .syntax import Expression, Function, Statement, Token, reject
 
 if TYPE_CHECKING:
     from .adapter import _Adapt
+    from .phase import Location
 
 
 def is_selector_helper(function: Function) -> bool:
@@ -145,6 +148,29 @@ def lower_select_rotation(
             angle if compare(i, threshold) else 0.0 for i, angle in enumerate(angles)
         )
 
+    emit_rotation_table(owner, token, axis.token.text, selector, (target, wire), angles)
+
+
+def emit_rotation_table(
+    owner: "_Adapt",
+    token: Token,
+    axis: str,
+    selector: tuple[Location, ...],
+    destination: Location,
+    angles: tuple[float, ...],
+) -> None:
+    target, wire = destination
+    if not selector:
+        owner.effect_op(
+            "qreg.gate",
+            token,
+            (target,),
+            gate=f"r{axis.lower()}",
+            index=wire,
+            angle=angles[0],
+        )
+        return
+    size = len(angles)
     # The Walsh coefficients in cyclic Gray order give one CX transition per
     # step. Selector bits are controls throughout, including the closing edge.
     coefficients = [angle / size for angle in angles]
@@ -160,9 +186,9 @@ def lower_select_rotation(
     def gate(name: str, **attrs: object) -> None:
         owner.effect_op("qreg.gate", token, (target,), gate=name, index=wire, **attrs)
 
-    if axis.token.text == "X":
+    if axis == "X":
         gate("h")
-    rotation = "ry" if axis.token.text == "Y" else "rz"
+    rotation = "ry" if axis == "Y" else "rz"
     for step in range(size):
         gray = step ^ (step >> 1)
         gate(rotation, angle=coefficients[gray])
@@ -172,7 +198,7 @@ def lower_select_rotation(
         owner.effect_op(
             "qreg.pair_gate", token, (control, target), gate="cx", indices=(index, wire)
         )
-    if axis.token.text == "X":
+    if axis == "X":
         gate("h")
 
 

@@ -422,7 +422,7 @@ def infer_phase_allocation(
 
 def parse_fraction(
     parser: Parser, width: int, allow_phase: bool, *, allow_signed_integer: bool
-) -> str | None:
+) -> tuple[str | None, int]:
     sign = parser.current
     if sign.text not in (
         {"UNSIGNED", "SIGNED", "True", "False"} if allow_phase else {"False"}
@@ -440,15 +440,19 @@ def parse_fraction(
     if allow_phase and value == width:
         parser.take(fraction.text)
         parser.take(">")
-        return "qphase_signed" if signed else "qphase"
+        return ("qphase_signed" if signed else "qphase"), 0
     if allow_signed_integer and value == 0 and signed:
         parser.take(fraction.text)
         parser.take(">")
-        return "qnum_signed"
+        return "qnum_signed", 0
+    if allow_phase and not signed and value is not None and 0 < value < width:
+        parser.take(fraction.text)
+        parser.take(">")
+        return "qnum", value
     if value != 0 or signed:
         reject(fraction, "type", "fractional modifiers are not admitted")
     parser.take(fraction.text)
-    return None
+    return None, 0
 
 
 def _atom(node: Expression, name: str) -> bool:

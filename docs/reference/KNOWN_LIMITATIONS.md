@@ -872,3 +872,26 @@ execution without truncation or dense fallback. Its complex128 state
 tensors occupy 2 KiB for this original. The usual `synth.synthesize` full
 state profile continues to enforce the dense state-buffer limit. The
 basis profile provides a bitstring in physical wire order.
+
+## Bounded fixed-point compute-to-rotation composition
+
+A borrowed Qmod helper can compute a fresh unsigned fixed-point value and
+immediately consume its raw bits as a literal rotation-table selector. The
+adapter checks the matched Output width, scale, and ownership, and requires
+the selector helper to restore its borrowed view. It evaluates the closed
+arithmetic expression exactly over up to eight distinct input bits, rejects
+unrepresentable indices, and emits the existing coherent rotation-table
+lowering. A selector bit is omitted only if both of its angle branches are
+identical across the complete domain. The resulting circuit needs no storage
+for the computed word.
+
+```python
+from pathlib import Path
+
+import flagquantum as fq
+from flagquantum import synth
+
+source = Path("tests/fixtures/classiq_qmod/rainbow_options_bruteforce_method.qmod")
+program = synth.synthesize(source, classical_inputs={"k": 2}, max_workspace=0)
+print(dict(program.probabilities(fq.run(program), registers=("indicator",))))
+```
