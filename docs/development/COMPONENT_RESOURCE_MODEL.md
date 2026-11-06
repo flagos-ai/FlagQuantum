@@ -3091,3 +3091,32 @@ final word. Work and feedback slots belong to the caller.
 The locked source specifies the permutation and a five-Add resource
 declaration. `source_bounded_increment_cost` reports that declaration
 separately from the native stream.
+
+### Hubbard qubitization preparation
+
+`PrepareHubbard` binds the locked square-lattice selection registers.
+The two `temp` direction bits remain live in the prepared state. They
+belong to the signal and differ from the clean work wires. The adjoint
+undoes the same preparation and supports coherent unpreparation.
+
+```python
+from flagquantum.algorithms.primitives.hubbard_prepare import PrepareHubbard
+from flagquantum.compiler.registers.partition import partition_register
+from flagquantum.dynamic import DynamicCircuit
+
+prepare = PrepareHubbard(3, t=2, u=8)
+logical = sum(width for _, width in prepare.layout)
+work, _ = prepare.requirements()
+ports = partition_register(tuple(range(logical)), prepare.layout)
+circuit = DynamicCircuit(logical + work)
+circuit.append(prepare.make_on(ports, workspace=tuple(range(logical, logical + work))))
+assert prepare.alpha == 144
+```
+
+For this input the native circuit emits 155 T/T†, 23 measurements and
+uses six work qubits. The locked analytical model counts nine CSwap,
+17 And, 116 Clifford, eight rotations, 17 measurements and 18 peak
+logical qubits. The source and native counts use different decompositions
+for the bounded increment. The executable interface accepts square
+side lengths of at least two. The source decomposition fails at side one
+when binding the zero-width coordinate registers.
