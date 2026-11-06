@@ -20,6 +20,7 @@ MAX_BYTES = 524288
 MAX_TOKENS = 65536
 MAX_DEPTH = 40
 MAX_EXPRESSION_DEPTH = 128
+MAX_PHASE_EXPRESSION_DEPTH = 256
 MAX_SCOPE_DEPTH = 32
 MAX_FUNCTIONS = 64
 ANGLE_CALLS = frozenset({"PHASE", "RX", "RY", "RZ", "RZZ", "CRX", "CPHASE", "R", "U"})
@@ -294,13 +295,14 @@ class Parser:
         difference: bool = False,
         allow_slice: bool = False,
         real: bool = False,
+        depth_limit: int = MAX_EXPRESSION_DEPTH,
     ) -> Expression:
         token = self.current
-        if nesting >= MAX_EXPRESSION_DEPTH:
+        if nesting >= depth_limit:
             reject(
                 token,
                 "budget.depth",
-                f"expression nesting exceeds {MAX_EXPRESSION_DEPTH}",
+                f"expression nesting exceeds {depth_limit}",
             )
         if (not static and token.text in {"~", "not"}) or (
             (static or difference) and token.text == "-"
@@ -313,12 +315,13 @@ class Parser:
                 decimal=decimal,
                 difference=difference,
                 real=real,
+                depth_limit=depth_limit,
             )
-            if operand.depth >= MAX_EXPRESSION_DEPTH:
+            if operand.depth >= depth_limit:
                 reject(
                     token,
                     "budget.depth",
-                    f"expression tree exceeds depth {MAX_EXPRESSION_DEPTH}",
+                    f"expression tree exceeds depth {depth_limit}",
                 )
             if token.text == "not":
                 zero = Expression(Token("0", token.location))
@@ -335,6 +338,7 @@ class Parser:
                 decimal=decimal,
                 difference=difference,
                 real=real,
+                depth_limit=depth_limit,
             )
             self.take(")")
         elif (
@@ -344,7 +348,9 @@ class Parser:
         ):
             self.take("log")
             self.take("(")
-            argument = self.expression(static=True, nesting=nesting + 1)
+            argument = self.expression(
+                static=True, nesting=nesting + 1, depth_limit=depth_limit
+            )
             self.take(",")
             self.take("2")
             self.take(")")
@@ -352,7 +358,9 @@ class Parser:
                 replace(token, text="$exact_log2"), (argument,), argument.depth + 1
             )
         elif static and token.text == "ceiling":
-            left = self.binary_log_width(symbolic=True, nesting=nesting)
+            left = self.binary_log_width(
+                symbolic=True, nesting=nesting, depth_limit=depth_limit
+            )
         elif (
             static
             and token.text == "floor"
@@ -360,7 +368,9 @@ class Parser:
         ):
             self.take("floor")
             self.take("(")
-            argument = self.expression(nesting=nesting + 1, static=True)
+            argument = self.expression(
+                nesting=nesting + 1, static=True, depth_limit=depth_limit
+            )
             self.take(")")
             left = Expression(token, (argument,), argument.depth + 1)
         elif (
@@ -369,7 +379,11 @@ class Parser:
             self.take("acos")
             self.take("(")
             argument = self.expression(
-                nesting=nesting + 1, decimal=True, difference=True, real=True
+                nesting=nesting + 1,
+                decimal=True,
+                difference=True,
+                real=True,
+                depth_limit=depth_limit,
             )
             self.take(")")
             left = Expression(token, (argument,), argument.depth + 1)
@@ -397,19 +411,25 @@ class Parser:
         ):
             self.take("(")
             first = self.expression(
-                nesting=nesting + 1, decimal=True, difference=difference
+                nesting=nesting + 1,
+                decimal=True,
+                difference=difference,
+                depth_limit=depth_limit,
             )
             self.take(",")
             second = self.expression(
-                nesting=nesting + 1, decimal=True, difference=difference
+                nesting=nesting + 1,
+                decimal=True,
+                difference=difference,
+                depth_limit=depth_limit,
             )
             self.take(")")
             depth = max(first.depth, second.depth) + 1
-            if depth > MAX_EXPRESSION_DEPTH:
+            if depth > depth_limit:
                 reject(
                     token,
                     "budget.depth",
-                    f"expression tree exceeds depth {MAX_EXPRESSION_DEPTH}",
+                    f"expression tree exceeds depth {depth_limit}",
                 )
             left = Expression(token, (first, second), depth)
         while True:
@@ -460,10 +480,14 @@ class Parser:
                 )
             ):
                 bracket = self.take("[")
-                index = self.expression(nesting=nesting + 1, static=True)
+                index = self.expression(
+                    nesting=nesting + 1, static=True, depth_limit=depth_limit
+                )
                 if allow_slice and self.current.text == ":":
                     colon = self.take(":")
-                    stop = self.expression(nesting=nesting + 1, static=True)
+                    stop = self.expression(
+                        nesting=nesting + 1, static=True, depth_limit=depth_limit
+                    )
                     left = Expression(
                         colon,
                         (left, index, stop),
@@ -476,11 +500,11 @@ class Parser:
                 self.take("]")
             else:
                 break
-            if left.depth > MAX_EXPRESSION_DEPTH:
+            if left.depth > depth_limit:
                 reject(
                     token,
                     "budget.depth",
-                    f"expression tree exceeds depth {MAX_EXPRESSION_DEPTH}",
+                    f"expression tree exceeds depth {depth_limit}",
                 )
         precedence = {
             "and": 3,
@@ -519,6 +543,7 @@ class Parser:
                 decimal=decimal,
                 difference=difference,
                 real=real,
+                depth_limit=depth_limit,
             )
             if (
                 operator.text == "**"
@@ -535,11 +560,11 @@ class Parser:
                     "power requires a literal exponent in 1..8",
                 )
             depth = max(left.depth, right.depth) + 1
-            if depth > MAX_EXPRESSION_DEPTH:
+            if depth > depth_limit:
                 reject(
                     operator,
                     "budget.depth",
-                    f"expression tree exceeds depth {MAX_EXPRESSION_DEPTH}",
+                    f"expression tree exceeds depth {depth_limit}",
                 )
             left = Expression(operator, (left, right), depth)
         if self.current.text in {"/", "[", ".", "("} or (
@@ -553,15 +578,21 @@ class Parser:
         return left
 
     def binary_log_width(
-        self, *, symbolic: bool = False, nesting: int = 0
+        self,
+        *,
+        symbolic: bool = False,
+        nesting: int = 0,
+        depth_limit: int = MAX_EXPRESSION_DEPTH,
     ) -> Expression:
         token = self.take(self.current.text)
         self.take("(")
         self.take("log")
         self.take("(")
         if symbolic:
-            operand = self.expression(nesting=nesting + 1, static=True)
-            if operand.depth >= MAX_EXPRESSION_DEPTH:
+            operand = self.expression(
+                nesting=nesting + 1, static=True, depth_limit=depth_limit
+            )
+            if operand.depth >= depth_limit:
                 reject(
                     token, "budget.depth", "binary log width exceeds expression depth"
                 )
@@ -1465,7 +1496,12 @@ class Parser:
                         args.append(self.expression(difference=True, allow_slice=True))
                     elif target.text == "phase":
                         args.append(
-                            self.expression(decimal=True, difference=True, real=True)
+                            self.expression(
+                                decimal=True,
+                                difference=True,
+                                real=True,
+                                depth_limit=MAX_PHASE_EXPRESSION_DEPTH,
+                            )
                         )
                     elif target.text in ANGLE_CALLS:
                         args.append(self.real_angle())

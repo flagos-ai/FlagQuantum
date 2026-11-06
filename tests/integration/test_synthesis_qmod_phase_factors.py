@@ -169,21 +169,21 @@ def test_original_factor_candidate_obeys_actual_resource_budgets(
 
 
 def test_large_expression_preserves_order_and_has_a_separate_depth_bound() -> None:
-    cost = "+".join(["q[0]"] * 80)
+    cost = "+".join(["q[0]"] * 200)
     source = f"qfunc main(output q:qbit[1]) {{allocate(q);hadamard_transform(q);phase({cost},0.003);}}"
     program = synth.synthesize(source, source_format="qmod")
-    reference = fq.Circuit(1, dtype=torch.complex128).h(0).phase(0, theta=0.24)
+    reference = fq.Circuit(1, dtype=torch.complex128).h(0).phase(0, theta=0.6)
     torch.testing.assert_close(
         fq.run(program).statevector(),
         fq.run(reference).statevector(),
         atol=1e-12,
         rtol=0,
     )
-    oversized = "+".join(["q[0]"] * 129)
-    with pytest.raises(ValueError, match="depth 128"):
+    oversized = "+".join(["q[0]"] * 257)
+    with pytest.raises(ValueError, match="depth 256"):
         Parser(tokenize(source.replace(cost, oversized), "deep.qmod")).parse()
-    nested = "(" * 129 + "q[0]" + ")" * 129
-    with pytest.raises(ValueError, match="nesting exceeds 128"):
+    nested = "(" * 257 + "q[0]" + ")" * 257
+    with pytest.raises(ValueError, match="nesting exceeds 256"):
         Parser(tokenize(source.replace(cost, nested), "deep.qmod")).parse()
 
 

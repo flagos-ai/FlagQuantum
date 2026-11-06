@@ -1510,3 +1510,27 @@ result = fq.run(program)
 print(program.report["qmod_fractional_bits"])
 print(dict(program.probabilities(result, registers=("x", "y"))))
 ```
+
+### Bounded deep phase expressions
+
+The first argument of `phase` admits nesting and expression trees up to depth
+256, preserving the source operator order. Its existing source-size, token,
+phase expansion and construction budgets still apply. The general expression
+depth limit remains 128. For example, the pinned vehicle-routing model takes
+24 classical angles for 12 phase and RX mixer layers.
+
+```python
+from pathlib import Path
+
+import flagquantum as fq
+from flagquantum import synth
+
+source = Path("tests/fixtures/classiq_qmod/vehicle_routing_problem.qmod")
+angles = [0.013 * (i + 1) for i in range(24)]
+program = synth.synthesize(
+    source, classical_inputs={"params": angles}, max_qubits=16, max_workspace=0
+)
+result = fq.run(program)
+print(program.report["resources"])
+print(result.statevector().shape)
+```
