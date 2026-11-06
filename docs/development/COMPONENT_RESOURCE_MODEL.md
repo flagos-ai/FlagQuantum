@@ -1810,3 +1810,48 @@ the selected data and blocked junk. Temporary lookup scratch is cleaned.
 Integral preprocessing supports one spatial orbital. The lookup binding
 requires nonempty orbital words. The source's full PREPARE fails when it
 tries to bind its omitted zero-width target.
+
+### Forward sparse chemistry PREPARE
+
+`PrepareSparseChemistry` binds the uniform address preparation, clean
+lookup, probability comparison, signed alias selection and symmetry swaps.
+Provide clean selection and output registers in the published layouts.
+The lookup banks and comparison flag are retained outputs. The temporary
+scratch is reusable after the step.
+
+```python
+import numpy as np
+
+from flagquantum.algorithms.primitives.sparse_chemistry_data import sparse_chemistry_data
+from flagquantum.algorithms.primitives.sparse_chemistry_prepare import PrepareSparseChemistry
+from flagquantum.compiler.registers.partition import partition_register
+from flagquantum.dynamic import DynamicCircuit
+from flagquantum.qec.resources.estimation import estimate_ftqc_resources
+
+one = np.array([[1.0, -0.75], [-0.75, 1.0]])
+two = np.zeros((2, 2, 2, 2))
+two[0, 0, 0, 0] = -0.5
+prepare = PrepareSparseChemistry(
+    sparse_chemistry_data(one, two, probability_bits=1, log_block_size=0)
+)
+layout = (*prepare.selection_layout, *prepare.junk_layout)
+width = sum(size for _, size in layout)
+ports = partition_register(tuple(range(width)), layout)
+work, slots = prepare.requirements()
+circuit = DynamicCircuit(width + work)
+circuit.append(prepare.make_on(
+    ports,
+    workspace=tuple(range(width, width + work)),
+    classical_bits=tuple(range(slots)),
+))
+report = estimate_ftqc_resources(prepare.resource_model(), emitted_ir=circuit.to_ir())
+assert report.logical.gates.cswap == 8
+assert report.emitted is not None
+assert report.emitted.t_count == 75
+assert report.emitted.unconditional["measure"] == 3
+```
+
+At one-bit orbital width, the source's call dictionary assigns the same
+key to the flag swap and orbital swaps. Its model counts eight CSwap while
+the executable decomposition contains nine Fredkin gates. The emitter and
+resource estimate each preserve their corresponding source behavior.
