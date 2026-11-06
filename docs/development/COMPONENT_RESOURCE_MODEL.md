@@ -584,6 +584,24 @@ separately.
 
 - [Qualtran v0.7.0 Hadamard](https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/bloqs/basic_gates/hadamard.py)
 
+## Fixed Pauli controls
+
+`pauli_gate_ir` binds a fixed X, Y or Z to an ordered group of binary
+controls. A single positive control emits CX, CY or CZ. The source
+specializes the two-wire all-positive X control group to atomic CCX
+with no work or measurement. Other multi-wire groups use the shared
+AND predicate and measured cleanup. A single negative control wraps
+the positive leaf with X before and after.
+
+The compiler and the Cirq adapter use the same QEC keys. The atomic CCX
+is one modeled Toffoli. Its emitted instruction has no explicit T gates
+before basis lowering. The general `multi_control_x_ir` ladder retains
+its original behavior for callers that request that decomposition.
+
+- [Qualtran v0.7.0 X basis](https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/bloqs/basic_gates/x_basis.py)
+- [Qualtran v0.7.0 Y gate](https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/bloqs/basic_gates/y_gate.py)
+- [Qualtran v0.7.0 Z basis](https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/bloqs/basic_gates/z_basis.py)
+
 ## Additional controls on CNOT and Toffoli
 
 `cnot_with_controls_ir` binds one positive added control to a native

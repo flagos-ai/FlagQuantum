@@ -124,7 +124,7 @@ def multi_control_h_ir(
 
 
 def _multi_control_gate_ir(
-    gate: Literal["x", "z", "h"],
+    gate: Literal["x", "y", "z", "h"],
     controls: tuple[int, ...],
     values: tuple[int, ...],
     target: int,

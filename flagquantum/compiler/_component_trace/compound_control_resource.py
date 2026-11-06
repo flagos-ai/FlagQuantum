@@ -27,6 +27,13 @@ CONTROLLED_HADAMARD_COST = ComponentCost(
 )
 
 
+_CONTROLLED_PAULI = {
+    "x": CliffordCall("cx", 2),
+    "y": CliffordCall("cy", 2),
+    "z": CliffordCall("cz", 2),
+}
+
+
 def global_phase_cost_key(
     exponent: SymbolicReal,
     controls: tuple[int, ...] = (),
@@ -54,6 +61,11 @@ def compound_control_key(
     if isinstance(gate, PhaseCall):
         phase = ControlledRotationCall(gate, (1,))
         return phase if controls == (1,) else PredicateControlledCall(phase, controls)
+    if isinstance(gate, CliffordCall) and gate.opcode in _CONTROLLED_PAULI:
+        if gate.opcode == "x" and controls == (1, 1):
+            return FixedTCall("toffoli")
+        pauli = _CONTROLLED_PAULI[gate.opcode]
+        return pauli if controls == (1,) else PredicateControlledCall(pauli, controls)
     if isinstance(gate, CliffordCall) and gate.opcode == "h":
         return (
             CONTROLLED_HADAMARD_COST
