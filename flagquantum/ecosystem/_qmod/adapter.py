@@ -3584,8 +3584,9 @@ class _Adapt:
             return
         target = self.atom(destination)
         if (
-            self.parameters.get(target.text) is not None
+            target.text in self.views
             and self.parameters[target.text].kind == "qbit"
+            and self.parameters[target.text].role == "inout"
             and not source.children
             and source.token.text in {"0", "1"}
         ):

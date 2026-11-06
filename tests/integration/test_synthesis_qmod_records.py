@@ -162,7 +162,10 @@ def test_matrix_row_views_lengths_and_writable_helper_share_storage():
         ("qstruct R {size:qbit;} qfunc main(output r:R) {}", "shadow size"),
         ("qstruct R {a:qbit[256];b:qbit;} qfunc main(output r:R) {}", "exceeds 256"),
         ("qstruct R {a:qnum;} qfunc main(output r:R) {}", "fixed width"),
-        ("qstruct R {a:qnum<2,True,0>;} qfunc main(output r:R) {}", "signed"),
+        (
+            "qstruct R {a:qnum<2,True,0>;} qfunc main(output r:R) {}",
+            "return every initialized register",
+        ),
         ("qstruct R {a:qnum<2,False,1>;} qfunc main(output r:R) {}", "fractional"),
         ("qstruct R {a:qnum<8>[33];} qfunc main(output r:R) {}", "exceeds 256"),
         (
