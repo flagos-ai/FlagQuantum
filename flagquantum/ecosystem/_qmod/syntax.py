@@ -610,8 +610,11 @@ class Parser:
 
     def pauli_axis(self) -> Expression:
         self.take("Pauli")
-        self.take(":")
-        self.take(":")
+        if self.current.text == ".":
+            self.take(".")
+        else:
+            self.take(":")
+            self.take(":")
         axis = self.name()
         if axis.text not in {"I", "X", "Y", "Z"}:
             reject(axis, "pauli", "expected Pauli::I, X, Y or Z")
@@ -1293,7 +1296,7 @@ class Parser:
                             1,
                             2,
                         }:
-                            args.append(self.literal_array(self.signed_angle_argument))
+                            args.append(self.literal_array(self.real_angle))
                             continue
                         if len(args) == 1 and target.text in {
                             "exponentiate",

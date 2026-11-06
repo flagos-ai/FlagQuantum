@@ -683,3 +683,14 @@ and callback contracts are checked before emitting register effects. The
 unchanged chemistry original is independently checked at two nonzero
 parameter vectors. Run
 `python -m pytest tests/integration/test_synthesis_qmod_hea.py -q`.
+
+## User-defined Qmod amplitude estimation
+
+Linear Pauli Y rotations accept disjoint physical views, including slices
+and a scalar target on the same register owner. Angles may use bound real
+constants. Static QPE can coherently control checked in-place real preparation
+and CRY effects inside a reversible callback. The original user-defined QMC
+example retains four hidden semantic bits after drop and returns a signed
+three-bit fractional phase. Independent Circuit and Fourier checks compare the
+entire physical state. Run
+`python -m pytest tests/integration/test_synthesis_qmod_user_defined_qmc.py -q`.

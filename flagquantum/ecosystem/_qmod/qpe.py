@@ -219,6 +219,7 @@ def lower_qpe(owner: _Adapt, statement: Statement, index: str) -> None:
         "qreg.array_phase_flip",
         "qreg.pauli_rotation",
         "qreg.unitary",
+        "qreg.inplace_prepare_amplitudes",
     }
     for op in body:
         if phase in op.operands[1:]:
@@ -318,6 +319,39 @@ def _controlled(
         owner.effect_op(
             op.name, token, (*values, control), **dict(attrs), control_index=bit
         )
+    elif op.name == "qreg.inplace_prepare_amplitudes" and "control_count" not in attrs:
+        locations = (
+            tuple(zip(values, attrs["indices"], strict=True))
+            if "indices" in attrs
+            else tuple(
+                (values[0], i) for i in reversed(range(register_width(values[0])))
+            )
+        )
+        selected = ((control, bit), *locations)
+        owner.effect_op(
+            op.name,
+            token,
+            tuple(value for value, _ in selected),
+            **{**attrs, "control_count": 1, "indices": tuple(i for _, i in selected)},
+        )
+    elif op.name == "qreg.pair_gate" and attrs["gate"] == "cry":
+        control_wire, target_wire = attrs.get("indices", (0, 0))
+        angle = attrs["angle"] / 2
+        for radians in (angle, -angle):
+            owner.effect_op(
+                "qreg.gate",
+                token,
+                (values[1],),
+                gate="ry",
+                index=target_wire,
+                angle=radians,
+            )
+            owner.effect_op(
+                "qreg.control_x",
+                token,
+                (control, *values),
+                indices=(bit, control_wire, target_wire),
+            )
     elif op.name == "qreg.pair_gate" and attrs["gate"] in {"cx", "cz"}:
         coordinates = tuple(zip(values, attrs.get("indices", (0, 0)), strict=True))
         if attrs["gate"] == "cz":

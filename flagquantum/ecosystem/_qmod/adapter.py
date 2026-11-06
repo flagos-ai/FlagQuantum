@@ -1333,6 +1333,9 @@ class _Adapt:
                 return self.classical_values[text]
             if text == "pi" and text not in self.parameters:
                 return math.pi
+            constant = self.constants.get(text)
+            if constant is not None and text not in self.parameters:
+                return _literal_angle(constant, node.token)
             return _literal_angle(node, node.token)
         if text == "[":
             source, offset = node.children
@@ -2768,24 +2771,25 @@ class _Adapt:
                 "linear_pauli_rotations requires bases, slopes, offsets, control and target",
             )
         bases, slopes, offsets, control_arg, target_arg = args
-        control_name, target_name = self.atom(control_arg), self.atom(target_arg)
-        control = self.register(control_name, allow_qubit_array=True)
-        target = self.register(target_name, allow_qubit_array=True)
-        if (
-            self.parameters[control_name.text].kind != "qbit[]"
-            or self.parameters[target_name.text].kind != "qbit[]"
-            or control == target
-        ):
+
+        def bit_view(node: Expression) -> tuple[tuple[Value, int], ...]:
+            if node.token.text == "[" and not node.children[0].children:
+                return (self.gate_target(node),)
+            return self.array_view(node)
+
+        controls = bit_view(control_arg)
+        targets = bit_view(target_arg)
+        if len(set((*controls, *targets))) != len(controls) + len(targets):
             reject(
-                token, "type", "linear_pauli_rotations requires disjoint qubit arrays"
+                token, "alias", "linear_pauli_rotations requires disjoint qubit arrays"
             )
-        width = register_width(target)
+        width = len(targets)
         if any(len(node.children) != width for node in (bases, slopes, offsets)):
             reject(
                 token, "width", "bases, slopes and offsets must match the target width"
             )
-        for wire, (basis, slope, offset) in enumerate(
-            zip(bases.children, slopes.children, offsets.children, strict=True)
+        for (target, wire), basis, slope, offset in zip(
+            targets, bases.children, slopes.children, offsets.children, strict=True
         ):
             if basis.token.text not in {"Y", "2"}:
                 reject(basis.token, "pauli", "linear_pauli_rotations supports only Y")
@@ -2795,16 +2799,16 @@ class _Adapt:
                 (target,),
                 gate="ry",
                 index=wire,
-                angle=self.evolution_angle(offset, token),
+                angle=self.classical_number(offset),
             )
-            coefficient = self.evolution_angle(slope, token)
-            for index in range(register_width(control)):
+            coefficient = self.classical_number(slope)
+            for index, (control, control_wire) in enumerate(controls):
                 self.effect_op(
                     "qreg.pair_gate",
                     token,
                     (control, target),
                     gate="cry",
-                    indices=(index, wire),
+                    indices=(control_wire, wire),
                     angle=math.ldexp(coefficient, index),
                 )
 
@@ -4508,6 +4512,7 @@ def parse_qmod(
                     "inplace_prepare_amplitudes",
                     "prepare_amplitudes",
                     "select_rotation",
+                    "linear_pauli_rotations",
                     "allocate",
                     "free",
                     "->",
