@@ -663,7 +663,7 @@ Trusted core and runtime suites use the qualified A800 image caches. The
 locked core images still prove the absence of NumPy and optional frameworks.
 Quality and online SDK downloads use hosted runners. Coverage and distributed
 CPU work use the locked coverage image on the generic CPU pool.
-Source preparation and source hygiene use the separate A100 entry pool.
+Source preparation and source hygiene also use the generic CPU pool.
 Dependency-bound and supply-chain checks retain the general CPU pool.
 Fork PRs use hosted runners.
 
@@ -953,7 +953,7 @@ Trusted same-repository PRs run distributed and coverage suites on the
 self-hosted CPU pool. Core compatibility, Python 3.12 unit tests, and runtime
 suites use the 16 A800 CPU slots with qualified locked image caches. Each
 matrix leg has a run-specific concurrency group. Source preparation and
-pre-commit use the separate CPU entry pool. Fork PRs use GitHub-hosted runners.
+pre-commit use the generic CPU pool. Fork PRs use GitHub-hosted runners.
 
 The images in `docker/ci/images.lock` pin both the registry manifest digest and
 the OCI manifest digest in its offline archive. **Prewarm locked CPU environments** verifies both A800

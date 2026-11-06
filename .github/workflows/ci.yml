@@ -8,7 +8,7 @@ on:
 # Hosted jobs share eight repository-wide concurrency groups across workflows.
 # Trusted coverage uses prewarmed locked images on the CPU pool.
 # Core suites use qualified A800 caches; SDK downloads stay hosted.
-# Entry jobs use a separate pool and never wait behind coverage or SDK checks.
+# Entry jobs share the generic CPU pool and have independent concurrency groups.
 # queue: max keeps waiting jobs in the queue instead of replacing them.
 # Self-hosted CPU jobs keep independent groups keyed by run and matrix index.
 # Main pushes use Main smoke. PR pushes cancel superseded runs of the same PR.
@@ -18,7 +18,7 @@ concurrency:
 
 jobs:
   pre-commit:
-    runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'flagquantum-a100-cpu-entry' || 'ubuntu-latest' }}
+    runs-on: ${{ fromJSON((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","linux","x64","flagquantum-cpu"]' || '["ubuntu-latest"]') }}
     timeout-minutes: 15
     env:
       # Self-hosted GitHub connections can reset HTTP/2 streams.
@@ -26,7 +26,7 @@ jobs:
       GIT_CONFIG_KEY_0: http.version
       GIT_CONFIG_VALUE_0: HTTP/1.1
     concurrency:
-      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('a100-cpu-{0}-pre-commit-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-2
+      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('self-hosted-{0}-pre-commit-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-2
       queue: max
     steps:
       - name: Restore verified source through the GitHub API
@@ -87,7 +87,7 @@ jobs:
   prepare-source:
     outputs:
       artifact-key: ${{ steps.pack-source.outputs.artifact-key }}
-    runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'flagquantum-a100-cpu-entry' || 'ubuntu-latest' }}
+    runs-on: ${{ fromJSON((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","linux","x64","flagquantum-cpu"]' || '["ubuntu-latest"]') }}
     timeout-minutes: 15
     env:
       # Self-hosted GitHub connections can reset HTTP/2 streams.
@@ -97,7 +97,7 @@ jobs:
     permissions:
       contents: read
     concurrency:
-      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('a100-cpu-{0}-prepare-source-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-5
+      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('self-hosted-{0}-prepare-source-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-5
       queue: max
     steps:
       - name: Restore verified source through the GitHub API

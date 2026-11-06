@@ -355,6 +355,7 @@ def test_cpu_suites_attach_the_locked_image(job: str, profile: str) -> None:
         ("ci.yml", "pre-commit"),
         ("ci.yml", "prepare-source"),
         ("local-gpu.yml", "prepare-source"),
+        ("pre-commit.yaml", "pre-commit"),
         ("main-smoke.yml", "installed-wheel-smoke"),
     ],
 )
@@ -363,24 +364,14 @@ def test_linux_prerequisites_keep_forks_off_private_cpu_runners(
 ) -> None:
     document = yaml.safe_load((WORKFLOWS / workflow).read_text())
     job = document["jobs"][name]
-    if workflow == "ci.yml":
-        assert job["runs-on"] == (
-            "${{ (github.event_name != 'pull_request' || "
-            "github.event.pull_request.head.repo.full_name == github.repository) "
-            "&& 'flagquantum-a100-cpu-entry' || 'ubuntu-latest' }}"
-        )
-        assert f"a100-cpu-{{0}}-{name}-{{1}}" in job["concurrency"]["group"]
+    if workflow in {"ci.yml", "local-gpu.yml", "pre-commit.yaml"}:
+        assert job["runs-on"] == FULL_CPU_ROUTE
+        assert f"self-hosted-{{0}}-{name}-{{1}}" in job["concurrency"]["group"]
         assert "github.run_id" in job["concurrency"]["group"]
-        assert job["env"]["GIT_CONFIG_COUNT"] == "1"
-        assert job["env"]["GIT_CONFIG_KEY_0"] == "http.version"
-        assert job["env"]["GIT_CONFIG_VALUE_0"] == "HTTP/1.1"
-    elif workflow == "local-gpu.yml":
-        assert job["runs-on"] == (
-            "${{ (github.event_name != 'pull_request' || "
-            "github.event.pull_request.head.repo.full_name == github.repository) "
-            "&& 'flagquantum-a100-cpu-entry' || 'ubuntu-latest' }}"
-        )
-        assert "github.run_id" in job["concurrency"]["group"]
+        if workflow != "pre-commit.yaml":
+            assert job["env"]["GIT_CONFIG_COUNT"] == "1"
+            assert job["env"]["GIT_CONFIG_KEY_0"] == "http.version"
+            assert job["env"]["GIT_CONFIG_VALUE_0"] == "HTTP/1.1"
     else:
         assert job["runs-on"] == "ubuntu-latest"
     assert "pull_request_target" not in document.get("on", document.get(True, {}))
