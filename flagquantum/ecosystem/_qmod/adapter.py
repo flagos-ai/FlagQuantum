@@ -1807,6 +1807,8 @@ class _Adapt:
         condition: Expression | None = None,
     ) -> None:
         def quantum_word(node: Expression) -> tuple[tuple[Value, int], ...] | None:
+            if node.token.text == "$predicate_word":
+                return self.array_view(node.children[0])
             cell = self.record_bit(node)
             if cell is not None:
                 return (cell,)

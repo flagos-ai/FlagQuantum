@@ -97,14 +97,6 @@ def specialize_quantum_callbacks(
         )
     }
     if not wrappers:
-        for function in definitions.values():
-            for p in function.parameters:
-                if p.role == "const" and p.kind == "qnum" and p.width is None:
-                    reject(
-                        p.name,
-                        "width",
-                        "Const qnum requires an explicit unsigned width",
-                    )
         return dict(definitions)
     count = 0
     types: dict[str, Parameter] = {}

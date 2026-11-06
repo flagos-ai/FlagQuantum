@@ -110,6 +110,16 @@ def expand_predicate_oracles(
             )
         predicates[name] = Predicate(function, read, flag, assignment.arguments[1])
 
+    # A numeric Const width may be inferred only for a checked borrowed predicate.
+    for name, function in definitions.items():
+        if name in predicates:
+            continue
+        for port in function.parameters:
+            if port.role == "const" and port.kind == "qnum" and port.width is None:
+                reject(
+                    port.name, "width", "Const qnum requires an explicit unsigned width"
+                )
+
     def expression(
         node: Expression,
         predicate: Predicate,
@@ -244,6 +254,8 @@ def expand_predicate_oracles(
         target: Expression,
         marker: Expression,
         actual: Parameter,
+        *,
+        borrow_array_word: bool = False,
     ) -> Expression:
         predicate = predicates.get(token.text)
         if predicate is None:
@@ -275,8 +287,15 @@ def expand_predicate_oracles(
                 "predicate.alias",
                 "callback must forward its distinct whole input and marker without capture or aliases",
             )
+        array_word = (
+            borrow_array_word
+            and actual.kind == "qbit[]"
+            and predicate.read.kind == "qnum"
+            and actual.record is None
+            and predicate.read.record is None
+        )
         if (
-            actual.kind != predicate.read.kind
+            (actual.kind != predicate.read.kind and not array_word)
             or actual.record != predicate.read.record
             or (
                 predicate.read.width is not None
@@ -309,7 +328,12 @@ def expand_predicate_oracles(
                 (-1 if negative else 1) * int(magnitude.token.text), argument.token
             )
             integers[port.name.text] = value
-        return expression(predicate.expression, predicate, integers, target)
+        word = (
+            Expression(Token("$predicate_word", target.token.location), (target,))
+            if array_word
+            else target
+        )
+        return expression(predicate.expression, predicate, integers, word)
 
     def phase_statement(
         token: Token, condition: Expression, value: Expression
@@ -448,7 +472,9 @@ def expand_predicate_oracles(
                         "predicate.alias",
                         "direct predicate requires a distinct writable initialized one-bit marker",
                     )
-                condition = specialize(token, args, target, marker, actual)
+                condition = specialize(
+                    token, args, target, marker, actual, borrow_array_word=True
+                )
                 h = Statement(Token("hadamard_transform", token.location), (marker,))
                 result.extend((h, phase_statement(token, condition, marker), h))
             else:
