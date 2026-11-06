@@ -8,6 +8,8 @@
 from __future__ import annotations
 
 import re
+import shutil
+import subprocess
 from collections.abc import Callable, Mapping
 from dataclasses import asdict
 from graphlib import TopologicalSorter
@@ -182,3 +184,34 @@ def export_modeled_call_graph_dot(
         title=lambda node: node.name,
         annotations=annotations,
     )
+
+
+def render_call_graph_svg(
+    dot_source: str, *, executable: str = "dot", timeout: float = 30.0
+) -> bytes:
+    """Render exported DOT to SVG using a local Graphviz executable.
+
+    Pass source from the call-graph exporters or other trusted DOT. The
+    executable can be a name on PATH or an explicit path.
+    """
+    dot = shutil.which(executable)
+    if dot is None:
+        raise ImportError(
+            f"Call-graph SVG rendering requires Graphviz ({executable!r}). "
+            "Install Graphviz or use the DOT source directly."
+        )
+    try:
+        return subprocess.run(
+            [dot, "-Tsvg"],
+            input=dot_source.encode("utf-8"),
+            capture_output=True,
+            check=True,
+            timeout=timeout,
+        ).stdout
+    except subprocess.TimeoutExpired as exc:
+        raise RuntimeError(f"Graphviz rendering timed out after {timeout:g}s") from exc
+    except subprocess.CalledProcessError as exc:
+        diagnostic = exc.stderr[-4000:].decode("utf-8", errors="replace").strip()
+        raise RuntimeError(f"Graphviz SVG rendering failed: {diagnostic}") from exc
+    except OSError as exc:
+        raise RuntimeError(f"Cannot run Graphviz executable {dot}: {exc}") from exc

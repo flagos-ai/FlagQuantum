@@ -198,6 +198,7 @@ from flagquantum.compiler._component_trace.call_graph import modeled_call_graph
 from flagquantum.drawer.call_graph import (
     export_modeled_call_graph_dot,
     format_call_graph_markdown,
+    render_call_graph_svg,
 )
 
 model = select_thc_cost(2, 4, 8, 1)
@@ -205,12 +206,12 @@ graph = modeled_call_graph(model)
 print(format_call_graph_markdown(
     graph.root, graph.direct_calls, graph.leaf_counts, title=lambda node: node.name
 ))
-Path("thc.dot").write_text(
-    export_modeled_call_graph_dot(model, max_depth=1, aggregation="t_and_ccz"),
-    encoding="utf-8",
-)
+source = export_modeled_call_graph_dot(model, max_depth=1, aggregation="t_and_ccz")
+Path("thc.dot").write_text(source, encoding="utf-8")
+Path("thc.svg").write_bytes(render_call_graph_svg(source))
 ```
 
-Run `dot -Tsvg thc.dot -o thc.svg` with Graphviz installed to render the
-source. The export itself does not require Graphviz. Symbolic resource
-graphs use the same formatting functions and preserve their expressions.
+SVG rendering requires a local Graphviz `dot` executable. Supply an explicit
+path with `executable=` when it is outside PATH. The DOT and Markdown exports
+work independently of Graphviz. Symbolic resource graphs use the same
+formatting functions and preserve their expressions.

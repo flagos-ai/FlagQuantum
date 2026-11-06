@@ -19,9 +19,17 @@ from flagquantum.drawer.call_graph import (
     export_call_graph_dot,
     export_modeled_call_graph_dot,
     format_call_graph_markdown,
+    render_call_graph_svg,
 )
 
 pytestmark = pytest.mark.unit
+
+
+def test_svg_requires_graphviz() -> None:
+    with pytest.raises(ImportError, match="requires Graphviz"):
+        render_call_graph_svg(
+            "digraph counts {}", executable="/nonexistent-flagquantum-graphviz/dot"
+        )
 
 
 def test_shared_leaf_weights_and_distinct_node_ids() -> None:
