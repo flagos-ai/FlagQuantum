@@ -587,6 +587,26 @@ ket, with the original batch axis and the unprojected wire order. A
 zero-probability projection returns the zero ket. The contraction creates
 no circuit instructions, auxiliary wires, or measurement samples.
 
+## Integer basis vectors
+
+`int_state_ir` binds an unsigned integer to caller-owned clean wires in
+big-endian order. The source joins a sequence of zero and one states.
+The emitted stream contains one X for each set bit. `int_effect_bindings`
+binds the source's corresponding sequence of Z covectors to the existing
+partial contraction. It preserves unnormalized complex amplitudes and
+the surviving wire order. Neither path requires auxiliary qubits or
+measurement samples.
+
+The source declares one arbitrary Clifford for either vector, even when
+preparation emits zero or several X gates. `int_vector_cost_key` preserves
+this declaration for concrete and symbolic widths. The source models
+width zero, but its state and effect decompositions both fail at that
+width. FlagQuantum requires a nonempty physical binding. The controlled
+modular constant adder shares the load stream. On its declared input
+domain the adder preserves the loaded word, so the matching unload
+returns the allocated work wires to zero. Its existing source call graph
+charges the controlled modular add alone.
+
 ## Register identity
 
 The source models Identity as one atomic call with zero QEC gates.

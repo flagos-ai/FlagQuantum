@@ -31,11 +31,15 @@ def xor_ir(source: tuple[int, ...], target: tuple[int, ...]) -> tuple[Instructio
     return tuple(Instruction("cx", (a, b)) for a, b in zip(source, target, strict=True))
 
 
+def _validate_unsigned_constant(width: int, value: int) -> None:
+    if type(value) is not int or not 0 <= value < 1 << width:
+        raise ValueError("XOR constant must fit the unsigned register")
+
+
 def xor_constant_ir(target: tuple[int, ...], value: int) -> tuple[Instruction, ...]:
     """XOR a concrete unsigned bit pattern into a big-endian register."""
     _validate_wires(target)
-    if type(value) is not int or not 0 <= value < 1 << len(target):
-        raise ValueError("XOR constant must fit the unsigned register")
+    _validate_unsigned_constant(len(target), value)
     return tuple(
         Instruction("x", (wire,))
         for i, wire in enumerate(target)

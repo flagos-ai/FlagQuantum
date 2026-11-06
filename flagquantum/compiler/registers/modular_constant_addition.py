@@ -7,12 +7,12 @@
 """Controlled modular constant addition through source load/add/unload stages."""
 
 from ...core.ir import Instruction
-from .bitwise import xor_constant_ir
 from .controlled_modular_addition import (
     controlled_modular_add_ir,
     controlled_modular_requirements,
 )
 from .controlled_modular_addition_adjoint import controlled_modular_add_adjoint_ir
+from .int_vector import int_state_ir
 
 
 def modular_constant_requirements(width: int) -> tuple[int, int]:
@@ -80,5 +80,5 @@ def _controlled_modular_constant_ir(
     loaded, inner = workspace[:n], workspace[n:]
     emit = controlled_modular_add_adjoint_ir if adjoint else controlled_modular_add_ir
     gates = emit(control, loaded, target, modulus, inner, classical_bits)
-    load = xor_constant_ir(loaded, value)
+    load = int_state_ir(loaded, value)
     return (*load, *gates, *load)
