@@ -141,7 +141,9 @@ def test_invalid_control_reduction_inputs() -> None:
         multi_control_x_ir((0, 1), (1, 1), 2, (), ())
     with pytest.raises(ValueError, match="classical slots"):
         multi_control_x_ir((0, 1), (1, 1), 2, (3,), (-1,))
-    with pytest.raises(ValueError, match="target"):
+    with pytest.raises(
+        ValueError, match="operands must be distinct from controls and work"
+    ):
         multi_control_x_ir((0, 1), (1, 1), 0, (3,), (40,))
     with pytest.raises(ValueError, match="at least two"):
         multi_and_ir((0,), (1,), ())
