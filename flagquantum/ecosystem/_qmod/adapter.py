@@ -67,6 +67,7 @@ from .oracles import expand_static_oracles
 from .permutations import is_const_cx_permutation, verify_permutations
 from .phase import MAX_PHASE_INPUT_BITS, expand_phase
 from .phase_factors import Cube, preserve_factors
+from .phase_kickback import expand_phase_kickbacks
 from .predicates import expand_predicate_oracles
 from .preparation import lower_inplace_preparation
 from .qpe import (
@@ -1962,6 +1963,7 @@ class _Adapt:
         condition: Expression | None = None,
         disjoint_condition_target: tuple[Value, int] | None = None,
         conjugate_xor: bool = False,
+        phase_sign: bool = False,
     ) -> None:
         def signed_word(node: Expression) -> bool:
             return (
@@ -2129,6 +2131,13 @@ class _Adapt:
                 "qreg.control_phase", token, (value,), indices=(wire,), angle=0.0
             )
         for mask, coefficient_value in sorted(polynomial.items()):
+            if phase_sign:
+                # The folded bit contributes only (-1) to the selected basis states.
+                # Even terms of this Boolean Möbius expansion are exact identities.
+                assert coefficient_value == int(coefficient_value) and angle == math.pi
+                if not int(coefficient_value) % 2:
+                    continue
+                coefficient_value = 1
             radians = angle * coefficient_value
             if not math.isfinite(radians) or abs(radians) > 2**53:
                 reject(token, "phase", "phase angle exceeds finite ±2**53 range")
@@ -3730,6 +3739,15 @@ class _Adapt:
                 )
             if fractional_bits:
                 self.fractional_bits[target.text] = fractional_bits
+        elif token.text == "$kickback_phase":
+            condition, kickback_coefficient = args
+            self.real_phase(
+                token,
+                Expression(replace(token, text="1")),
+                kickback_coefficient,
+                condition=condition,
+                phase_sign=True,
+            )
         elif token.text == "phase":
             default_coefficient = len(args) == 1
             if default_coefficient:
@@ -4376,7 +4394,10 @@ def check_source_version(source_version: str, token: Token) -> None:
 
 
 def _bound_helper(syntax: Function) -> bool:
-    return any(
+    return (
+        len(syntax.statements) == 1
+        and syntax.statements[0].token.text == "$kickback_phase"
+    ) or any(
         port.role in {"real", "integer", "inout", "callable"} or port.kind == "qphase"
         for port in syntax.parameters
     )
@@ -4526,6 +4547,7 @@ def parse_qmod(
     definitions = expand_amplification(definitions, constants)
     definitions = expand_iterations(definitions)
     definitions = specialize_quantum_callbacks(definitions, constants)
+    definitions = expand_phase_kickbacks(definitions)
     verify_permutations(definitions)
     definitions = expand_predicate_oracles(definitions, constants, parser.records)
     definitions = expand_static_oracles(definitions, constants, parser.records)
@@ -4694,6 +4716,7 @@ def parse_qmod(
                     "^=",
                     "phase",
                     "$projected_rz",
+                    "$kickback_phase",
                     "inplace_prepare_state",
                     "inplace_prepare_amplitudes",
                     "prepare_amplitudes",

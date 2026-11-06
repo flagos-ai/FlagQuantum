@@ -27,7 +27,7 @@ _TOKEN = re.compile(
     r"(?P<space>\s+)|(?P<comment>//[^\n]*|/\*[\s\S]*?\*/)"
     rf"|(?P<scientific>{SCIENTIFIC_LITERAL.pattern})(?![A-Za-z_0-9])"
     r"|(?P<number>[0-9]+)|(?P<name>[A-Za-z_][A-Za-z_0-9]*)"
-    r"|(?P<symbol>\*\*|\^=|\+=|->|==|!=|<=|>=|[{}()<>,:;=+*%\[\].^/\-&|~])"
+    r"|(?P<symbol>\*\*|\^=|\+=|->|==|!=|<=|>=|[{}()<>,:;=+*%\[\].^/\-&|~@])"
 )
 _RESERVED = frozenset(
     {
@@ -216,6 +216,7 @@ class Function:
     parameters: tuple[Parameter, ...]
     statements: tuple[Statement, ...]
     permutation: bool = False
+    disable_permutation_check: Token | None = None
 
 
 class Parser:
@@ -821,7 +822,13 @@ class Parser:
         return kind.text, width
 
     def function(self) -> Function:
+        annotation = None
+        if self.current.text == "@":
+            self.take("@")
+            annotation = self.take("disable_perm_check")
         permutation = self.current.text == "qperm"
+        if annotation is not None and not permutation:
+            reject(annotation, "permutation", "permutation annotation requires qperm")
         self.take("qperm" if permutation else "qfunc")
         name = self.name()
         self.take("(")
@@ -928,7 +935,13 @@ class Parser:
                     self.current, "syntax", "trailing parameter commas are not admitted"
                 )
         self.take(")")
-        return Function(name, tuple(parameters), self.block(), permutation=permutation)
+        return Function(
+            name,
+            tuple(parameters),
+            self.block(),
+            permutation=permutation,
+            disable_permutation_check=annotation,
+        )
 
     def call_argument(self) -> Expression:
         if self.current.text == "lambda":

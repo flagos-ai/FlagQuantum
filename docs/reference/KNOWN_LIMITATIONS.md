@@ -304,6 +304,30 @@ work with first order and one repetition; other multi-operator formulas and
 mismatched lengths are rejected. These are local
 integration slices pending the complete original corpus gate and integration CI.
 
+## Checked phase-kickback cleanup (UP-06 integration candidate)
+
+A scalar-bit helper can prepare a fresh local bit with X then H, apply a
+borrowed arithmetic comparison through a qperm XOR marker, and invert the
+preparation before free. Lowering proves the whole lifetime and emits its
+diagonal sign directly. Multiple distinct scalar integer inputs are supported
+with the existing bounded phase predicate lowering. The optional marker X
+complements the comparison and retains its global phase. The source
+`@disable_perm_check` annotation is accepted only when this proof succeeds.
+
+Run the pinned Grover workshop source with the public CPU workflow:
+
+```python
+from pathlib import Path
+
+import flagquantum as fq
+from flagquantum import synth
+
+path = Path("tests/fixtures/classiq_qmod/grover_workshop.qmod")
+program = synth.synthesize(path, max_workspace=0)
+result = fq.run(program)
+print(program.probabilities(result, registers=("a", "b", "c")))
+```
+
 ## Compact Pauli evolution integration slice
 
 Qmod acquisition is bounded at 512 KiB and 65536 tokens for large Pauli data.

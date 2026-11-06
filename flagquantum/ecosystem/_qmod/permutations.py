@@ -21,6 +21,7 @@ _BASIS_OPERATIONS = frozenset(
         "+=",
         "->",
         "phase",
+        "$kickback_phase",
     }
 )
 

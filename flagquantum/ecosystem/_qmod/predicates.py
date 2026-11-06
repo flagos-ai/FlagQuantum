@@ -111,7 +111,10 @@ def expand_predicate_oracles(
 
     # A numeric Const width may be inferred only for a checked borrowed predicate.
     for name, function in definitions.items():
-        if name in predicates:
+        if name in predicates or (
+            len(function.statements) == 1
+            and function.statements[0].token.text == "$kickback_phase"
+        ):
             continue
         for port in function.parameters:
             if port.role == "const" and port.kind == "qnum" and port.width is None:
