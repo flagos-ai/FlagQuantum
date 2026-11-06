@@ -257,6 +257,8 @@ class _Adapt:
         }
         self.fractional_bits: dict[str, int] = {}
         self.borrowed_zero_phases: set[Value] = set()
+        self.zero_entry: Callable[[Value], bool] | None = None
+        self.certified_workspace: set[Value] = set()
         self.registers: dict[str, Value] = {}
         self.views: dict[str, tuple[tuple[Value, int], ...]] = {}
         self.suspended: set[str] = set()
@@ -1046,6 +1048,7 @@ def parse_qmod(
                 | {
                     "swap_test",
                     "qsvt_lcu",
+                    "exact_amplitude_amplification",
                     "grover_diffuser",
                     "multiswap",
                     "unitary",

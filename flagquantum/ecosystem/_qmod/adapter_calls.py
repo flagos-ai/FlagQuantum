@@ -39,6 +39,7 @@ from .quantum_callbacks import (
     Lambda,
 )
 from .real_matrices import bound_matrix
+from .scoped_amplification import declare_workspace, known_zero
 from .small_pauli import lower_narrow_pauli_sequence
 from .syntax import (
     Expression,
@@ -440,6 +441,10 @@ def call_bound_helper(
             phase_borrows.add(value)
         elif parameter.role == "const":
             readonly.update(view)
+    borrowed_owners = {value for value, _ in actuals} - outputs
+    child.zero_entry = lambda value: value in borrowed_owners and known_zero(
+        self, value
+    )
     if not lower_narrow_pauli_sequence(child, syntax.statements):
         snapshot = snapshot_start(syntax.statements)
         for index, statement in enumerate(syntax.statements):
@@ -508,7 +513,10 @@ def call_bound_helper(
             )
     if not outputs <= initialized_outputs:
         reject(token, "ownership", "bound helper must initialize each Output")
-    if any(op.name == "qreg.hidden" for op in child.operations):
+    if any(
+        op.name == "qreg.hidden" and op.results[0] not in child.certified_workspace
+        for op in child.operations
+    ):
         reject(token, "free", "bound helper must free each allocated local qbit")
     for name, actual_name in phase_exports.items():
         if name in child.fractional_bits:
@@ -517,6 +525,9 @@ def call_bound_helper(
     self.helper_expansions = child.helper_expansions
     self.loop_iterations = child.loop_iterations
     for op in child.operations:
+        if op.name == "qreg.hidden":
+            materialized[op.results[0]] = declare_workspace(self, token)
+            continue
         operands = tuple(materialized.get(value, value) for value in op.operands[1:])
         if op.name == "qreg.local":
             reject(

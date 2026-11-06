@@ -1887,3 +1887,30 @@ qfunc main(output x: qnum, output flag: qbit) {
   s -> {x, flag};
 }
 ```
+
+### Scoped exact amplitude amplification
+
+A borrowed helper can use `exact_amplitude_amplification` on a proved-zero
+packed view of up to twelve bits. Lexical preparation and oracle callbacks
+operate on those bits. The preparation must compile to a bounded reversible
+sequence and the oracle must apply basis signs. Synthesis checks the supplied
+amplitude against the prepared marked subspace, then checks the Grover
+remainder before releasing the owned auxiliary.
+
+```qmod
+qfunc prepare(q: qbit[2]) {
+  H(q[0]); S(q[0]); CX(q[0], q[1]);
+}
+
+qfunc amplify(q: qbit[2]) {
+  exact_amplitude_amplification(0.7071067811865476,
+    lambda(mark) { Z(mark[1]); },
+    lambda(state) { prepare(state); },
+    q);
+}
+
+qfunc main(output q: qbit[2]) {
+  allocate(q);
+  amplify(q);
+}
+```

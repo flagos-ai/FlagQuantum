@@ -45,6 +45,7 @@ from .qpe import (
 )
 from .qsvt import lower_qsvt_inversion, lower_qsvt_lcu
 from .real_matrices import lower_matrix_iteration
+from .scoped_amplification import lower_scoped_amplification
 from .selector_rotations import (
     lower_select_rotation,
 )
@@ -75,6 +76,9 @@ def statement(self: _Adapt, statement: Statement, index: str) -> None:
         return
     if statement.amplification is not None:
         lower_amplification(self, token, args[0], statement.amplification)
+        return
+    if token.text == "exact_amplitude_amplification":
+        lower_scoped_amplification(self, token, args)
         return
     if token.text == "RESET":
         if len(args) != 1:

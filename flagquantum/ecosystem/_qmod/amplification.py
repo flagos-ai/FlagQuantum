@@ -401,6 +401,47 @@ def marked_words(
     return tuple(marked)
 
 
+def exact_rotation(
+    token: Token, amplitude: float, actual_amplitude: float
+) -> tuple[int, float]:
+    if not 0 < amplitude <= 1:
+        reject(
+            token,
+            "amplification.amplitude",
+            "success amplitude must lie in (0,1]",
+        )
+    if abs(amplitude - actual_amplitude) > AMPLITUDE_TOLERANCE:
+        reject(
+            token,
+            "amplification.amplitude",
+            f"supplied amplitude {amplitude:.17g} disagrees with proven amplitude {actual_amplitude:.17g}; original parameters are not corrected",
+        )
+    theta = math.asin(amplitude)
+    if theta < math.pi / (4 * MAX_AMPLIFICATION_ROUNDS + 2) - 1e-15:
+        reject(
+            token,
+            "amplification.budget",
+            "exact amplification exceeds 32 rounds",
+        )
+    rounds = max(0, math.ceil(math.pi / (4 * theta) - 0.5 - 1e-14))
+    if rounds > MAX_AMPLIFICATION_ROUNDS:
+        reject(
+            token,
+            "amplification.budget",
+            "exact amplification exceeds 32 rounds",
+        )
+    ratio = min(1.0, math.sin(math.pi / (4 * rounds + 2)) / amplitude)
+    rotated = min(1.0, actual_amplitude * ratio)
+    residual = abs(math.cos((2 * rounds + 1) * math.asin(rotated)))
+    if residual > 1e-12:
+        reject(
+            token,
+            "amplification.amplitude",
+            "supplied amplitude leaves a nonzero Grover remainder above 1e-12; exact cleanup is not certified",
+        )
+    return rounds, 2 * math.acos(ratio)
+
+
 def expand_amplification(
     definitions: Mapping[str, Function], constants: Mapping[str, Expression]
 ) -> dict[str, Function]:
@@ -461,41 +502,9 @@ def expand_amplification(
         ]
         actual_amplitude = math.sqrt(math.fsum(probabilities[w] for w in marked))
         amplitude = number(amplitude_arg, constants)
-        if not 0 < amplitude <= 1:
-            reject(
-                amplitude_arg.token,
-                "amplification.amplitude",
-                "success amplitude must lie in (0,1]",
-            )
-        if abs(amplitude - actual_amplitude) > AMPLITUDE_TOLERANCE:
-            reject(
-                amplitude_arg.token,
-                "amplification.amplitude",
-                f"supplied amplitude {amplitude:.17g} disagrees with proven amplitude {actual_amplitude:.17g}; original parameters are not corrected",
-            )
-        theta = math.asin(amplitude)
-        if theta < math.pi / (4 * MAX_AMPLIFICATION_ROUNDS + 2) - 1e-15:
-            reject(
-                amplitude_arg.token,
-                "amplification.budget",
-                "exact amplification exceeds 32 rounds",
-            )
-        rounds = max(0, math.ceil(math.pi / (4 * theta) - 0.5 - 1e-14))
-        if rounds > MAX_AMPLIFICATION_ROUNDS:
-            reject(
-                amplitude_arg.token,
-                "amplification.budget",
-                "exact amplification exceeds 32 rounds",
-            )
-        ratio = min(1.0, math.sin(math.pi / (4 * rounds + 2)) / amplitude)
-        rotated = min(1.0, actual_amplitude * ratio)
-        residual = abs(math.cos((2 * rounds + 1) * math.asin(rotated)))
-        if residual > 1e-12:
-            reject(
-                amplitude_arg.token,
-                "amplification.amplitude",
-                "supplied amplitude leaves a nonzero Grover remainder above 1e-12; exact cleanup is not certified",
-            )
+        rounds, ancilla_angle = exact_rotation(
+            amplitude_arg.token, amplitude, actual_amplitude
+        )
         recipe = Amplification(
             width,
             angles,
@@ -504,7 +513,7 @@ def expand_amplification(
             amplitude,
             actual_amplitude,
             rounds,
-            2 * math.acos(ratio),
+            ancilla_angle,
         )
         statements.append(replace(s, arguments=(target,), amplification=recipe))
         # Width specialization is justified only for predicates participating here.
