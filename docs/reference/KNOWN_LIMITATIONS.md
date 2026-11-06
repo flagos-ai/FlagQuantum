@@ -416,6 +416,26 @@ program = synth.synthesize(source, max_workspace=0)
 print(program.probabilities(fq.run(program), registers=("phase",)))
 ```
 
+## Terminal output partition publication (UP-06 integration candidate)
+
+A final Qmod binding can publish a complete partition of initialized
+hidden data to fresh declared outputs. Sources can span multiple owners
+and one destination width can be inferred. The existing readout order
+follows the output declarations. Publication moves ownership without
+emitting gates or increasing the physical width. Compiler verification
+checks exact coverage, disjointness and initialization before assigning
+physical wires. Work bits and partial owner transfers are excluded.
+
+```qmod
+qfunc main(output first:qbit, output rest:qnum<2>) {
+  data:qbit[3];
+  allocate(data);
+  H(data[0]);
+  CX(data[0],data[2]);
+  data -> {first,rest};
+}
+```
+
 ## Compact Pauli evolution integration slice
 
 Qmod acquisition is bounded at 512 KiB and 65536 tokens for large Pauli data.

@@ -136,3 +136,74 @@ def publish_bound_array(
     # The output declaration introduces this value before its existing allocation.
     owner.operations.remove(declaration)
     owner.registers[token.text] = value
+
+
+def publish_partition(
+    owner: _Adapt,
+    token: Token,
+    source: Expression,
+    destination: Expression,
+) -> bool:
+    destinations = (
+        destination.children if destination.token.text == "{" else (destination,)
+    )
+    names = tuple(owner.atom(item).text for item in destinations)
+    if any(
+        name not in owner.parameters
+        or owner.parameters[name].role != "output"
+        or name in owner.registers
+        or name in owner.views
+        for name in names
+    ):
+        return False
+    sources = source.children if source.token.text == "{" else (source,)
+    source_names = tuple(owner.atom(item).text for item in sources)
+    if len(set((*names, *source_names))) != len(names) + len(source_names):
+        reject(token, "binding", "publication names must be distinct")
+    view = tuple(location for item in sources for location in owner.array_view(item))
+    owners = tuple(dict.fromkeys(value for value, _ in view))
+    if (
+        len(names) == 1
+        and len(owners) == 1
+        and owner.parameters[names[0]].kind == "qbit[]"
+        and view == tuple((owners[0], bit) for bit in range(register_width(owners[0])))
+    ):
+        # Keep whole-array promotion, including its existing lexical uses.
+        return False
+    if any(
+        not any(
+            op.name == "qreg.hidden" and op.results == (value,)
+            for op in owner.operations
+        )
+        for value in owners
+    ):
+        reject(token, "binding", "publication requires complete owned hidden storage")
+    widths = tuple(owner.widths[name] for name in names)
+    if widths.count(None) > 1:
+        reject(token, "binding", "publication may infer at most one output width")
+    inferred = len(view) - sum(width for width in widths if width is not None)
+    if (None in widths and inferred <= 0) or (None not in widths and inferred != 0):
+        reject(token, "binding", "publication widths must cover the source exactly")
+    outputs = tuple(
+        owner.register(
+            item.token,
+            inferred if width is None else width,
+            allow_qubit_array=True,
+            allow_fractional_output=True,
+        )
+        for item, width in zip(destinations, widths, strict=True)
+    )
+    for name, value in zip(names, outputs, strict=True):
+        if owner.parameters[name].kind in {"qphase", "qphase_signed"}:
+            owner.fractional_bits[name] = register_width(value)
+    owner_indices = {value: index for index, value in enumerate(owners)}
+    locations = tuple((owner_indices[value], bit) for value, bit in view)
+    owner.effect_op(
+        "qreg.publish",
+        token,
+        (*outputs, *owners),
+        destinations=len(outputs),
+        locations=locations,
+    )
+    owner.suspended.update(source_names)
+    return True

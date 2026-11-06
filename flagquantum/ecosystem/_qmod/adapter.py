@@ -40,6 +40,7 @@ from .bindings import (
     is_binding_scope,
     lower_binding_scope,
     publish_bound_array,
+    publish_partition,
     record_view,
 )
 from .borrowed_phase_views import expand_borrowed_phase_views
@@ -3706,6 +3707,10 @@ class _Adapt:
                 self.widths.pop(name)
             return
         if token.text == "->":
+            if self.scope == "main" and publish_partition(
+                self, token, args[0], args[1]
+            ):
+                return
             self.bind_registers(token, args[0], args[1], publish_output=True)
             return
         if token.text == "+=":
