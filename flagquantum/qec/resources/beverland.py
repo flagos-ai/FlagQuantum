@@ -6,10 +6,11 @@
 """Beverland resource estimates from declared logical component costs."""
 
 from dataclasses import dataclass, replace
-from math import ceil, isfinite, log, log2, sqrt
+from math import ceil, isfinite, log, log2
 
 from ...compiler._component_trace.gate_budget import beverland_gate_budget
 from ...compiler._component_trace.resource_model import GateCost, ModeledResources
+from .data_block import fast_data_block_tiles
 
 _ERROR_RATE_SCALER = 0.03
 _ERROR_RATE_THRESHOLD = 0.01
@@ -75,7 +76,7 @@ def estimate_beverland_resources(
         discrete = discrete.plus(GateCost(t=per_rotation), rotations)
 
     width = logical.peak_logical_qubits
-    tiles = ceil(2 * width + sqrt(8 * width) + 1)
+    tiles = fast_data_block_tiles(width)
     budget_steps = minimum if time_steps is None else time_steps
     distance: int | None = None
     physical_qubits: int | None = None
