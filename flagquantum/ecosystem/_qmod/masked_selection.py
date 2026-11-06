@@ -211,7 +211,7 @@ def emit_selected(
             reject(token, "control", f"unsupported selected effect {effect.name}")
 
 
-def emit_signed_predicate_xor(
+def emit_predicate_xor(
     owner: _Adapt,
     token: Token,
     locations: tuple[Location, ...],

@@ -507,6 +507,24 @@ def scalar_control(self: _Adapt, statement: Statement, index: str) -> None:
         destination, _ = self.gate_target(operation.arguments[0])
         self.effect_op("qreg.control_x", token, (control, destination))
         return
+    if (
+        self.views
+        and operation.token.text == "X"
+        and len(args) == 1
+        and condition.token.text
+        in {"==", "!=", "<", "<=", ">", ">=", "and", "&", "|", "^", "~"}
+    ):
+        target_location = self.gate_target(args[0])
+        self.real_phase(
+            operation.token,
+            args[0],
+            Expression(Token(repr(math.pi), token.location)),
+            condition=condition,
+            disjoint_condition_target=target_location,
+            conjugate_xor=True,
+            xor_cubes=True,
+        )
+        return
     expression = _Expression(
         condition, self.widths, f"{self.scope}.control{index}", self.signed
     )

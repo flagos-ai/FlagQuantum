@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import math
+from dataclasses import replace
 from typing import TYPE_CHECKING
 
 from .syntax import Expression, Statement, Token, reject
@@ -70,6 +71,8 @@ def lower_indexed_control(
             if operand.token.text == "and":
                 pending.extend(reversed(operand.children))
             else:
+                if operand.children and operand.token.text not in {"[", "."}:
+                    return False
                 controls.append(owner.gate_target(operand))
                 if len(controls) > 8:
                     reject(
@@ -243,15 +246,13 @@ def lower_nested_indexed_control(
 
 def lower_guarded_field_increment(owner: _Adapt, statement: Statement) -> bool:
     body = statement.control_body
-    if (
-        body is None
-        or len(body) != 1
-        or statement.control_else is not None
-        or body[0].token.text != "+="
-        or body[0].arguments[0].token.text != "."
-    ):
+    if body is None or len(body) != 1 or statement.control_else is not None:
         return False
     update = body[0]
+    if update.control_body is not None:
+        return _lower_field_increment_branches(owner, statement, update)
+    if update.token.text != "+=" or update.arguments[0].token.text != ".":
+        return False
     target, amount = update.arguments
     pending = [statement.arguments[0]]
     selected: list[tuple[Value, int]] = []
@@ -289,6 +290,39 @@ def lower_guarded_field_increment(owner: _Adapt, statement: Statement) -> bool:
     owner.increment(update.token, target, amount, controls=tuple(selected))
     for value, index in reversed(negative):
         owner.effect_op("qreg.gate", update.token, (value,), gate="x", index=index)
+    return True
+
+
+def _lower_field_increment_branches(
+    owner: _Adapt, outer: Statement, inner: Statement
+) -> bool:
+    """Select literal updates on the disjoint branches of a scalar record flag."""
+    if len(inner.arguments) != 1 or inner.control_body is None:
+        return False
+    selector = inner.arguments[0]
+    field = owner.record_field(selector)
+    if field is None or field[0].kind != "qbit":
+        return False
+    branches = [(1, inner.control_body)]
+    if inner.control_else is not None:
+        branches.append((0, inner.control_else))
+    if any(
+        len(body) != 1
+        or body[0].token.text != "+="
+        or body[0].arguments[0].token.text != "."
+        for _, body in branches
+    ):
+        return False
+    for state, body in branches:
+        position = selector.token.location
+        flag = Expression(
+            Token("==", position), (selector, Expression(Token(str(state), position)))
+        )
+        condition = Expression(Token("&", position), (outer.arguments[0], flag))
+        if not lower_guarded_field_increment(
+            owner, replace(outer, arguments=(condition,), control_body=body)
+        ):
+            return False
     return True
 
 

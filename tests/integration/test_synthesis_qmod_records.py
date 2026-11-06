@@ -434,3 +434,75 @@ def test_nested_record_rejects_invalid_layout_and_views(definitions, body, diagn
     source = definitions + f" qfunc main(output r:R) {{{body}}}"
     with pytest.raises(InteropConversionError, match=diagnostic):
         synth.synthesize(source, source_format="qmod")
+
+
+@pytest.mark.parametrize("lower,excluded", [(0, 2), (1, 3)])
+def test_nested_field_increment_and_bound_predicate_x(
+    lower: int, excluded: int
+) -> None:
+    source = """qstruct State {velocity:qnum<2>; direction:qbit; pos:qnum<2>;}
+      qfunc stream(s:State) {
+        control(s.velocity == 2) {
+          control(s.direction) {s.pos += 1;} else {s.pos += -1;}
+        }
+      }
+      qfunc reflect(velocity:qnum<2>, pos:qnum<2>, direction:qbit, limits:real[]) {
+        control(velocity == 2 and pos >= limits[0] and not (pos == limits[1])) {
+          X(direction);
+        }
+      }
+      qfunc main(output s:State) {
+        allocate(s); hadamard_transform(s.velocity); H(s.direction);
+        hadamard_transform(s.pos); phase(s.pos, 0.31); S(s.direction);
+        stream(s); reflect(s.velocity, s.pos, s.direction, [LOWER, EXCLUDED]);
+      }""".replace("LOWER", str(lower)).replace("EXCLUDED", str(excluded))
+    program = synth.synthesize(source, source_format="qmod")
+    assert dict(program.registers) == {
+        "s.velocity": (3, 4),
+        "s.direction": (2,),
+        "s.pos": (0, 1),
+    }
+
+    permutation = torch.zeros((32, 32), dtype=DTYPE)
+    for index in range(32):
+        position, remainder = divmod(index, 8)
+        direction, velocity = divmod(remainder, 4)
+        if velocity == 2:
+            position = (position + (1 if direction else -1)) % 4
+            if position >= lower and position != excluded:
+                direction ^= 1
+        permutation[8 * position + 4 * direction + velocity, index] = 1
+    reference = fq.Circuit(5, dtype=DTYPE)
+    for qubit in range(5):
+        reference.h(qubit)
+    reference.phase(0, theta=0.62).phase(1, theta=0.31).s(2)
+    reference.any(0, 1, 2, 3, 4, matrix=permutation)
+    actual = fq.run(program).statevector()
+    expected = fq.run(reference).statevector()
+    workspace = program.report["workspace_qubits"]
+    assert tuple(actual.shape) == (1, 1 << (5 + workspace))
+    actual = actual.reshape(1, 32, 1 << workspace)
+    torch.testing.assert_close(actual[:, :, 0], expected, atol=1e-12, rtol=0)
+    assert actual[:, :, 1:].abs().sum().item() < 1e-12
+
+
+def test_nested_field_increment_and_bound_predicate_reject_control_aliases() -> None:
+    nested = """qstruct State {value:qnum<2>; flag:qbit;}
+      qfunc apply_update(s:State) {
+        control(s.value == 1) {control(s.flag) {s.value += 1;}}
+      }
+      qfunc main(output s:State) {allocate(s); apply_update(s);}"""
+    with pytest.raises(
+        InteropConversionError, match="controls and target must be disjoint"
+    ):
+        synth.synthesize(nested, source_format="qmod")
+
+    alias = """qstruct State {value:qnum<2>; flag:qbit;}
+      qfunc toggle(value:qnum<2>, flag:qbit) {
+        control(value <= 2 and flag) {X(flag);}
+      }
+      qfunc main(output s:State) {allocate(s); toggle(s.value, s.flag);}"""
+    with pytest.raises(
+        InteropConversionError, match="predicate cannot read its XOR target"
+    ):
+        synth.synthesize(alias, source_format="qmod")

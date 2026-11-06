@@ -25,7 +25,7 @@ from .bindings import (
 )
 from .decisions import lower_decision_phase
 from .masked_selection import (
-    emit_signed_predicate_xor,
+    emit_predicate_xor,
 )
 from .phase import MAX_PHASE_INPUT_BITS, expand_phase
 from .phase_factors import Cube, preserve_factors
@@ -48,6 +48,7 @@ def real_phase(
     condition: Expression | None = None,
     disjoint_condition_target: tuple[Value, int] | None = None,
     conjugate_xor: bool = False,
+    xor_cubes: bool = False,
     phase_sign: bool = False,
 ) -> None:
     saw_signed = False
@@ -219,9 +220,9 @@ def real_phase(
         if len(physical_reads) > MAX_PHASE_INPUT_BITS:
             reject(token, "budget.phase", "phase exceeds 24 quantum input bits")
         self.counter += len(factors)
-    if conjugate_xor and saw_signed:
+    if conjugate_xor and (saw_signed or xor_cubes):
         assert disjoint_condition_target is not None
-        emit_signed_predicate_xor(
+        emit_predicate_xor(
             self, token, locations, polynomial, disjoint_condition_target
         )
         return
