@@ -843,11 +843,11 @@ class Parser:
             elif [
                 token.text
                 for token in self.tokens[self.position + 1 : self.position + 3]
-            ] in ([":", "real"], [":", "int"]):
+            ] in ([":", "real"], [":", "int"], [":", "Pauli"]):
                 role = (
-                    "integer"
-                    if self.tokens[self.position + 2].text == "int"
-                    else "real"
+                    "real"
+                    if self.tokens[self.position + 2].text == "real"
+                    else "integer"
                 )
             elif (
                 name.text != "main"
@@ -888,7 +888,7 @@ class Parser:
 
                 kind, width = parse_signature(self), None
             elif role in {"real", "integer"}:
-                kind = "int" if role == "integer" else "real"
+                kind = self.current.text
                 self.take(kind)
                 width = None
                 if self.current.text == "[":
@@ -897,6 +897,14 @@ class Parser:
                         width = self.width()
                     self.take("]")
                     kind += "[]"
+                if kind.startswith("Pauli") and (
+                    kind != "Pauli[]" or name.text == "main"
+                ):
+                    reject(
+                        parameter,
+                        "pauli",
+                        "Pauli arrays are admitted as static helper ports",
+                    )
             else:
                 kind, width = self.scalar_type(
                     allow_qubit_array=name.text == "main" or role in {"inout", "const"},
@@ -928,6 +936,11 @@ class Parser:
 
             return parse_lambda(self)
         if self.current.text == "[":
+            if self.tokens[self.position + 1].text == "Pauli":
+                array = self.literal_array(self.pauli_axis)
+                return Expression(
+                    Token("$pauli_axes", array.token.location), array.children
+                )
             if self.tokens[self.position + 1].text == "lambda":
                 from .quantum_callbacks import parse_lambda
 
@@ -1050,12 +1063,6 @@ class Parser:
                 continue
             if self.current.text == "if" and self.tokens[self.position + 1].text == "(":
                 token = self.take("if")
-                if scope_depth and not static_loop_body:
-                    reject(
-                        token,
-                        "scope",
-                        "static if requires function scope or a static loop",
-                    )
                 self.take("(")
                 if self.current.text in {"True", "False", "true", "false"}:
                     literal = self.take(self.current.text)
@@ -1093,9 +1100,46 @@ class Parser:
                 self.take(comparison.text)
                 right = self.expression(static=True)
                 self.take(")")
-                body = self.block(allow_scopes=False, scope_depth=1)
+                body = self.block(
+                    allow_scopes=False,
+                    scope_depth=scope_depth + 1,
+                    static_loop_body=True,
+                )
                 condition = Expression(comparison, (left, right))
                 statements.append(Statement(token, (condition,), static_if_body=body))
+                if self.current.text == "else":
+                    self.take("else")
+                    alternative = self.block(
+                        allow_scopes=False,
+                        scope_depth=scope_depth + 1,
+                        static_loop_body=True,
+                    )
+                    opposite = {
+                        "==": "!=",
+                        "!=": "==",
+                        "<": ">=",
+                        ">=": "<",
+                        "<=": ">",
+                        ">": "<=",
+                    }
+                    inverse = replace(comparison, text=opposite[comparison.text])
+                    statements.append(
+                        Statement(
+                            token,
+                            (Expression(inverse, (left, right)),),
+                            static_if_body=alternative,
+                        )
+                    )
+                continue
+            if self.records and self.tokens[self.position + 1].text == ".":
+                target_path = self.expression()
+                op = self.current
+                if op.text not in {"+=", "^="}:
+                    reject(op, "statement", "record field updates require += or ^=")
+                self.take(op.text)
+                right = self.expression(difference=True)
+                self.take(";")
+                statements.append(Statement(op, (target_path, right)))
                 continue
             target = self.name()
             arguments: tuple[Expression, ...]

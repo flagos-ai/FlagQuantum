@@ -694,3 +694,14 @@ example retains four hidden semantic bits after drop and returns a signed
 three-bit fractional phase. Independent Circuit and Fourier checks compare the
 entire physical state. Run
 `python -m pytest tests/integration/test_synthesis_qmod_user_defined_qmc.py -q`.
+
+## Qmod time marching over nested fields
+
+Static integer branches can specialize nested helper dispatch. Pauli axis
+arrays bind to checked integer codes at helper boundaries. Nested record
+fields admit literal modular increments and checked scalar or integer XOR.
+Conjunctions of bounded field equalities can guard a disjoint increment.
+The supported coherent rotation effects preserve absolute phase when
+controls and targets are physically disjoint, including views of one owner.
+Run `python -m pytest tests/integration/test_synthesis_qmod_time_marching.py -q`
+to check the unchanged four-slice source against independent block matrices.

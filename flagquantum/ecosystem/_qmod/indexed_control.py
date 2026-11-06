@@ -228,3 +228,54 @@ def lower_nested_indexed_control(
         )
         leaf = leaf.control_body[0]
     return lower_indexed_control(owner, conjunction, leaf)
+
+
+def lower_guarded_field_increment(owner: _Adapt, statement: Statement) -> bool:
+    body = statement.control_body
+    if (
+        body is None
+        or len(body) != 1
+        or statement.control_else is not None
+        or body[0].token.text != "+="
+        or body[0].arguments[0].token.text != "."
+    ):
+        return False
+    update = body[0]
+    target, amount = update.arguments
+    pending = [statement.arguments[0]]
+    selected: list[tuple[Value, int]] = []
+    negative: list[tuple[Value, int]] = []
+    while pending:
+        guard = pending.pop()
+        if guard.token.text in {"and", "&"}:
+            pending.extend(guard.children)
+            continue
+        if guard.token.text != "==":
+            return False
+        word, literal = guard.children
+        field = owner.record_field(word)
+        if field is None or field[0].kind not in {"qbit", "qnum"}:
+            return False
+        expected = owner.static_integer(literal)
+        view = field[1]
+        if not 0 <= expected < 1 << len(view):
+            reject(
+                literal.token, "control", "control equality value must fit its field"
+            )
+        selected.extend(view)
+        negative.extend(
+            location for i, location in enumerate(view) if not (expected >> i) & 1
+        )
+        if len(selected) > 8:
+            reject(guard.token, "control", "field control exceeds eight input bits")
+    target_locations = owner.array_view(target)
+    if len(set((*selected, *target_locations))) != len(selected) + len(
+        target_locations
+    ):
+        reject(target.token, "alias", "field controls and target must be disjoint")
+    for value, index in negative:
+        owner.effect_op("qreg.gate", update.token, (value,), gate="x", index=index)
+    owner.increment(update.token, target, amount, controls=tuple(selected))
+    for value, index in reversed(negative):
+        owner.effect_op("qreg.gate", update.token, (value,), gate="x", index=index)
+    return True

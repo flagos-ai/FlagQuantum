@@ -43,6 +43,11 @@ def preserves_basis_labels(op: Operation, readonly: set[tuple[Value, int]]) -> b
         )
     if op.name == "qreg.control_x" and "indices" in op.attributes:
         return (operands[-1], op.attributes["indices"][-1]) not in readonly
+    if op.name == "qreg.pauli_rotation":
+        return all(
+            axis == "Z" or (operands[0], wire) not in readonly
+            for wire, axis in op.attributes["support"]
+        )
     if op.name == "qreg.pair_gate":
         gate = op.attributes.get("gate")
         if gate in {"cz", "rzz"}:
@@ -53,6 +58,57 @@ def preserves_basis_labels(op: Operation, readonly: set[tuple[Value, int]]) -> b
                 op.attributes.get("indices", (0, 0))[-1],
             ) not in readonly
     return False
+
+
+def emit_controlled_pauli(
+    owner: _Adapt,
+    token: Token,
+    target: Value,
+    support: tuple[tuple[int, str], ...],
+    angle: float,
+    controls: tuple[tuple[Value, int], ...],
+) -> None:
+    """Apply a Pauli exponential using physically disjoint indexed controls."""
+    positions = tuple((target, index) for index, _ in support)
+    if len(set((*controls, *positions))) != len(controls) + len(positions):
+        reject(token, "alias", "Pauli controls and support must be disjoint")
+
+    def phase(locations: tuple[tuple[Value, int], ...], angle: float) -> None:
+        owner.effect_op(
+            "qreg.control_phase",
+            token,
+            tuple(value for value, _ in locations),
+            indices=tuple(wire for _, wire in locations),
+            angle=angle,
+        )
+
+    for index, axis in support:
+        if axis == "X":
+            owner.effect_op("qreg.gate", token, (target,), gate="h", index=index)
+        elif axis == "Y":
+            owner.effect_op(
+                "qreg.gate", token, (target,), gate="rx", index=index, angle=math.pi / 2
+            )
+    if positions:
+        for source in positions[1:]:
+            owner.emit_indexed_x(token, (source, positions[0]))
+    phase(controls, -angle)
+    if positions:
+        phase((*controls, positions[0]), 2 * angle)
+        for source in reversed(positions[1:]):
+            owner.emit_indexed_x(token, (source, positions[0]))
+    for index, axis in reversed(support):
+        if axis == "X":
+            owner.effect_op("qreg.gate", token, (target,), gate="h", index=index)
+        elif axis == "Y":
+            owner.effect_op(
+                "qreg.gate",
+                token,
+                (target,),
+                gate="rx",
+                index=index,
+                angle=-math.pi / 2,
+            )
 
 
 def emit_inverse(owner: _Adapt, token: Token, operations: Sequence[Operation]) -> None:

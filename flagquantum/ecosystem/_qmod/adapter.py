@@ -54,6 +54,7 @@ from .decisions import lower_decision_phase
 from .diffusion import lower_diffuser
 from .hea import lower_hea
 from .indexed_control import (
+    lower_guarded_field_increment,
     lower_indexed_control,
     lower_nested_indexed_control,
     lower_zero_reflection_control,
@@ -101,6 +102,7 @@ from .syntax import (
 )
 from .unitary_effects import (
     PURE_EFFECTS,
+    emit_controlled_pauli,
     emit_inverse,
     is_reversible_scope,
     lower_reversible_scope,
@@ -1611,8 +1613,24 @@ class _Adapt:
                 child.callback_bindings[name] = callback
                 continue
             if parameter.role == "integer":
-                if parameter.kind == "int[]":
-                    values_int = self.integer_array(argument)
+                if parameter.kind in {"int[]", "Pauli[]"}:
+                    if (
+                        parameter.kind == "Pauli[]"
+                        and argument.token.text == "$pauli_axes"
+                    ):
+                        values_int = tuple(
+                            "IXYZ".index(item.token.text) for item in argument.children
+                        )
+                    else:
+                        values_int = self.integer_array(argument)
+                    if parameter.kind == "Pauli[]" and any(
+                        item not in range(4) for item in values_int
+                    ):
+                        reject(
+                            argument.token,
+                            "pauli",
+                            "Pauli array contains an invalid axis",
+                        )
                     child.integer_arrays[name] = checked_integer_array(
                         values_int, argument.token, parameter.width
                     )
@@ -2282,9 +2300,17 @@ class _Adapt:
             else:
                 self.views[name] = view
 
-    def increment(self, token: Token, target: Expression, amount: Expression) -> None:
-        name = self.atom(target).text
-        parameter = self.parameters.get(name)
+    def increment(
+        self,
+        token: Token,
+        target: Expression,
+        amount: Expression,
+        *,
+        controls: tuple[tuple[Value, int], ...] = (),
+    ) -> None:
+        field = self.record_field(target)
+        name = target.token.text if field is not None else self.atom(target).text
+        parameter = field[0] if field is not None else self.parameters.get(name)
         if parameter is None or parameter.kind != "qnum":
             reject(target.token, "type", "in-place increment requires an integer")
         if name in self.fractional_bits:
@@ -2292,7 +2318,7 @@ class _Adapt:
         negative = amount.token.text == "-" and len(amount.children) == 1
         magnitude = amount.children[0] if negative else amount
         if magnitude.children or not magnitude.token.text.isdecimal():
-            if name in self.signed:
+            if field is not None or controls or name in self.signed:
                 reject(
                     target.token, "type", "signed increment requires a constant offset"
                 )
@@ -2315,8 +2341,8 @@ class _Adapt:
         for _ in range(abs(offset)):
             order = range(len(view)) if offset < 0 else reversed(range(len(view)))
             for bit in order:
-                if bit:
-                    self.emit_indexed_x(token, (*view[:bit], view[bit]))
+                if bit or controls:
+                    self.emit_indexed_x(token, (*controls, *view[:bit], view[bit]))
                 else:
                     value, wire = view[0]
                     self.effect_op("qreg.gate", token, (value,), gate="x", index=wire)
@@ -2444,6 +2470,88 @@ class _Adapt:
                                 )
                             self.effect_op(name, statement.token, operands, **attrs)
                             continue
+                    elif name == "qreg.pauli_rotation":
+                        selectors = (
+                            (control, (operands[1], attrs["control_index"]))
+                            if "control_index" in attrs
+                            else (control,)
+                        )
+                        emit_controlled_pauli(
+                            self,
+                            statement.token,
+                            operands[0],
+                            attrs["support"],
+                            attrs["angle"],
+                            selectors,
+                        )
+                        continue
+                    elif name == "qreg.phase" or (
+                        name == "qreg.control_phase" and "indices" in attrs
+                    ):
+                        phase_inputs = tuple(
+                            zip(operands, attrs.get("indices", ()), strict=True)
+                        )
+                        if control in phase_inputs:
+                            reject(
+                                statement.token,
+                                "alias",
+                                "control and target must be disjoint",
+                            )
+                        selected = (control, *phase_inputs)
+                        self.effect_op(
+                            "qreg.control_phase",
+                            statement.token,
+                            tuple(value for value, _ in selected),
+                            indices=tuple(wire for _, wire in selected),
+                            angle=attrs["angle"],
+                        )
+                        continue
+                    elif name == "qreg.gate" and attrs["gate"] in {
+                        "rx",
+                        "ry",
+                        "rz",
+                        "h",
+                    }:
+                        destination = operands[0]
+                        wire = attrs["index"]
+                        if control == (destination, wire):
+                            reject(
+                                statement.token,
+                                "alias",
+                                "control and target must be disjoint",
+                            )
+                        if attrs["gate"] == "h":
+                            self.effect_op(
+                                "qreg.control_phase",
+                                statement.token,
+                                (control[0], destination),
+                                indices=(control[1], wire),
+                                angle=math.pi,
+                            )
+                            axis, angle = "Y", math.pi / 4
+                        else:
+                            axis, angle = attrs["gate"][-1].upper(), attrs["angle"] / 2
+                            if attrs.get("inverse"):
+                                angle = -angle
+                        support = ((wire, axis),)
+                        if control[0] == destination:
+                            emit_controlled_pauli(
+                                self,
+                                statement.token,
+                                destination,
+                                support,
+                                angle,
+                                (control,),
+                            )
+                        else:
+                            self.pauli_exponential(
+                                statement.token,
+                                destination,
+                                support,
+                                angle,
+                                control=control,
+                            )
+                        continue
                     elif name == "qreg.pair_gate" and attrs["gate"] == "swap":
                         left, right = zip(
                             operands, attrs.get("indices", (0, 0)), strict=True
@@ -2475,6 +2583,31 @@ class _Adapt:
                 )
         return True
 
+    def controlled_rz_branches(self, statement: Statement) -> bool:
+        yes, no = statement.control_body, statement.control_else
+        if yes is None or no is None or len(yes) != 1 or len(no) != 1:
+            return False
+        if any(
+            action.token.text != "RZ" or len(action.arguments) != 2
+            for action in (*yes, *no)
+        ):
+            return False
+        condition = statement.arguments[0]
+        negative = Expression(Token("~", condition.token.location), (condition,))
+        for branch, guard in ((yes[0], condition), (no[0], negative)):
+            angle, marker = branch.arguments
+            location = self.gate_target(marker, allow_numeric=True)
+            half = Expression(Token("0.5", marker.token.location))
+            weighted = Expression(Token("-", marker.token.location), (marker, half))
+            self.real_phase(
+                branch.token,
+                weighted,
+                angle,
+                condition=guard,
+                disjoint_condition_target=location,
+            )
+        return True
+
     def scalar_control(self, statement: Statement, index: str) -> None:
         token = statement.token
         body = statement.control_body
@@ -2486,6 +2619,10 @@ class _Adapt:
         if controlled_evolution(self, statement, index):
             return
         if lower_fourier_control(self, statement):
+            return
+        if lower_guarded_field_increment(self, statement):
+            return
+        if self.controlled_rz_branches(statement):
             return
         if self.coherent_helper_control(statement, index):
             return
@@ -3250,6 +3387,27 @@ class _Adapt:
                 conjugate_xor=True,
             )
             return
+        field = self.record_field(destination)
+        if field is not None:
+            parameter, view = field
+            if parameter.kind == "qbit" and source.token.text == ".":
+                control = self.gate_target(source)
+                self.emit_indexed_x(token, (control, view[0]))
+                return
+            if parameter.kind not in {"qbit", "qnum"}:
+                reject(
+                    destination.token, "type", "XOR requires an unsigned scalar field"
+                )
+            mask = self.static_integer(source)
+            if not 0 <= mask < 1 << len(view):
+                reject(source.token, "width", "XOR mask must fit the target width")
+            for i, (owner, bit) in enumerate(view):
+                if mask & (1 << i):
+                    self.effect_op("qreg.gate", token, (owner,), gate="x", index=bit)
+            if not mask:
+                owner, bit = view[0]
+                self.effect_op("qreg.gate", token, (owner,), gate="i", index=bit)
+            return
         target = self.atom(destination)
         register = self.register(target)
         if self.local_scope is not None or self.parameters[target.text].kind != "qnum":
@@ -3423,7 +3581,13 @@ class _Adapt:
             return
         if statement.static_if_body is not None:
             if any(
-                item.declaration is not None or item.token.text not in _STATIC_GATES
+                item.declaration is not None
+                or (
+                    item.token.text not in _STATIC_GATES
+                    and item.static_if_body is None
+                    and item.control_body is None
+                    and item.token.text not in self.definitions
+                )
                 for item in statement.static_if_body
             ):
                 reject(token, "scope", "static if bodies admit only gates")
@@ -3799,10 +3963,26 @@ class _Adapt:
             if len(args) != 1:
                 reject(token, "signature", "IDENTITY requires one register")
             locations = self.array_view(args[0])
+            port = (
+                self.parameters.get(args[0].token.text)
+                if not args[0].children
+                else None
+            )
             checked: set[Value] = set()
             for value, bit in locations:
                 if value not in checked:
-                    self.effect_op("qreg.gate", token, (value,), gate="i", index=bit)
+                    if port is not None and port.role == "const":
+                        self.effect_op(
+                            "qreg.control_phase",
+                            token,
+                            (value,),
+                            indices=(bit,),
+                            angle=0.0,
+                        )
+                    else:
+                        self.effect_op(
+                            "qreg.gate", token, (value,), gate="i", index=bit
+                        )
                     checked.add(value)
         elif token.text == "qft":
             if len(args) != 1:
@@ -4429,6 +4609,12 @@ def parse_qmod(
                         port.record is not None
                         and len(syntax.statements) == 1
                         and syntax.statements[0].token.text == "$projected_rz"
+                    )
+                    or (
+                        port.kind == "qbit[]"
+                        and port.record is None
+                        and not syntax.permutation
+                        and any(p.role == "inout" for p in syntax.parameters)
                     )
                     or is_const_cx_permutation(syntax)
                     or is_selector_helper(syntax)
