@@ -1087,7 +1087,24 @@ def _annotated_stim_text(
     detector_columns: tuple[tuple[int, ...], ...],
     observable_columns: tuple[tuple[int, ...], ...],
 ) -> str:
-    """Serialize the actual positioned program with QEC-owned parity columns."""
+    """Serialize and validate a positioned program with QEC-owned parity columns."""
+    text = _annotated_stim_source(
+        program,
+        terminal_qubits=terminal_qubits,
+        detector_columns=detector_columns,
+        observable_columns=observable_columns,
+    )
+    _parse_stim_experiment(text)
+    return text
+
+
+def _annotated_stim_source(
+    program: CircuitIR,
+    *,
+    terminal_qubits: tuple[int, ...],
+    detector_columns: tuple[tuple[int, ...], ...],
+    observable_columns: tuple[tuple[int, ...], ...],
+) -> str:
     ir = _measurement_record_ir(program)
     circuit = _noisy_engine_circuit(_noisy_operations(ir), terminal_qubits)
     recorded = circuit.num_measurements
@@ -1113,9 +1130,7 @@ def _annotated_stim_text(
             values = ", ".join(map(repr, arguments))
             line = f"{prefix}({values}){suffix.split(')', 1)[1]}"
         lines.append(line)
-    text = "\n".join(lines)
-    _parse_stim_experiment(text)
-    return text
+    return "\n".join(lines)
 
 
 def _validate_stim_reference(circuit: Any) -> None:
@@ -1125,72 +1140,6 @@ def _validate_stim_reference(circuit: Any) -> None:
         raise CapabilityError(
             "Stim experiment has nondeterministic declared parities"
         ) from error
-
-
-def _stim_record_array(
-    record: torch.Tensor, width: int, packed: bool, name: str
-) -> Any:
-    expected = (width + 7) // 8 if packed else width
-    if record.shape[1] != expected:
-        raise ValueError(f"{name} has the wrong declared width")
-    if packed and width % 8 and bool((record[:, -1] >> (width % 8)).any()):
-        raise ValueError(f"{name} has nonzero packed padding")
-    return record.to(dtype=torch.uint8 if packed else torch.bool).contiguous().numpy()
-
-
-def _convert_stim_measurements(
-    circuit_text: str,
-    measurements: torch.Tensor,
-    *,
-    sweep_bits: torch.Tensor | None,
-    bit_packed_measurements: bool,
-    bit_packed_sweep_bits: bool,
-) -> tuple[torch.Tensor, torch.Tensor]:
-    """Convert existing records at the same deterministic-reference boundary."""
-    circuit = _parse_stim_experiment(circuit_text)
-    raw = _stim_record_array(
-        measurements, circuit.num_measurements, bit_packed_measurements, "measurements"
-    )
-    sweeps = None
-    if sweep_bits is not None:
-        sweeps = _stim_record_array(
-            sweep_bits, circuit.num_sweep_bits, bit_packed_sweep_bits, "sweep_bits"
-        )
-    _validate_stim_reference(circuit)
-    shapes = (
-        (measurements.shape[0], circuit.num_detectors),
-        (measurements.shape[0], circuit.num_observables),
-    )
-    if measurements.shape[0] == 0:
-        return torch.empty(shapes[0], dtype=torch.bool), torch.empty(
-            shapes[1], dtype=torch.bool
-        )
-    try:
-        converter = circuit.compile_m2d_converter(skip_reference_sample=False)
-        result = converter.convert(
-            measurements=raw,
-            sweep_bits=sweeps,
-            separate_observables=True,
-            bit_packed=False,
-        )
-    except (ValueError, RuntimeError) as error:
-        raise CapabilityError("Stim measurement conversion failed") from error
-    if not isinstance(result, tuple) or len(result) != 2:
-        raise CapabilityError("Stim returned an invalid conversion pair")
-    return (
-        _owned_stim_conversion_bits(result[0], shapes[0]),
-        _owned_stim_conversion_bits(result[1], shapes[1]),
-    )
-
-
-def _owned_stim_conversion_bits(buffer: Any, shape: tuple[int, int]) -> torch.Tensor:
-    try:
-        bits = torch.from_numpy(buffer)
-    except (TypeError, ValueError, RuntimeError) as error:
-        raise CapabilityError("Stim returned an invalid conversion buffer") from error
-    if bits.dtype != torch.bool or bits.shape != shape:
-        raise CapabilityError("Stim returned an invalid conversion dtype or shape")
-    return bits.clone()
 
 
 def _prepare_stim_experiment(

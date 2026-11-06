@@ -33,6 +33,11 @@ execution, core IR, noise channels and the optional stabilizer sampler.
   `circuit_format="stim"` and run
   `python -m examples.qec.stim_measurement_conversion` with the Stim extra.
   Simulation selects and owns the current execution implementation.
+  For a bound native `fq.Circuit`, pass logical terminal Z readout order and
+  detector/observable maps to `compile_m2d_converter`. Reuse the returned
+  reference for successive CPU bool record batches. Run
+  `python -m examples.qec.terminal_measurement_conversion` to compare original,
+  compiled and placed circuits.
 - `noise_sweep.py`: the existing finite-shot loop over repetition execution.
 
 The approved 0.4.0 retirement removes flat execution imports and their pickle
