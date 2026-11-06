@@ -167,6 +167,12 @@ External measurement conversion shares the text parser and deterministic
 reference check with the Stim experiment sampler. The SDK converter stays in
 the engine and returns owned bool tensors to the QEC adapter.
 
+`_record_conversion.py` also prepares a reference once for native static
+terminal Z readout. It reuses the annotation emitter, parser, deterministic
+reference check and owned-buffer validation. Layout and readout column
+selection are owned by QEC composition. The private preparation returns a
+tensor-only callable, keeping Stim's converter inside Simulation.
+
 ## Engine design notes
 
 A stabilizer circuit conjugates a Pauli group instead of evolving an amplitude

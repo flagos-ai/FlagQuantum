@@ -724,3 +724,16 @@ The backend-neutral `convert_measurement_records` entry selects the source
 text dialect with `circuit_format`. The [conversion contract](../development/QEC_STIM_MEASUREMENT_CONVERSION_API_PROPOSAL.md)
 covers existing CPU records, reference normalization, and sweep controls.
 Installed-package and main acceptance are tracked separately.
+
+
+## Native terminal measurement conversion candidate
+
+The [native terminal readout contract](../development/QEC_TERMINAL_READOUT_CONVERSION_PROPOSAL.md)
+extends the same FlagQuantum circuit from ordinary local simulation to
+conversion of CPU terminal Z records into detector and logical flips. It uses
+explicit logical readout columns, shared parity maps, and one prepared
+reference per converter. The conformance suite compares all eight records
+across bound, compiled and placed variants against independent XOR and checks
+the emitted physical measurement order. This advances the terminal-measurement
+slice of FTS-04 after acceptance. Mid-circuit records, full upstream parity
+and broader QEC or FTQC milestone acceptance remain separate work.
