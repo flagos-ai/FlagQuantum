@@ -11,6 +11,7 @@ from flagquantum.compiler._component_trace.qec_gate_cost import (
 )
 from flagquantum.compiler.registers.basis_state import (
     Basis,
+    basis_effect_cost_key,
     basis_state_cost_key,
     basis_state_ir,
 )
@@ -81,3 +82,34 @@ def test_basis_state_rejects_invalid_bit_and_wire() -> None:
         basis_state_ir("z", 0, -1)
     with pytest.raises(ValueError, match="binary bit"):
         basis_state_cost_key("x", True)
+
+
+@pytest.mark.ftqc_reference
+@pytest.mark.parametrize("basis", ["x", "z"])
+@pytest.mark.parametrize("bit", [0, 1])
+def test_basis_effect_cost_and_source_left_boundary(basis: Basis, bit: int) -> None:
+    pytest.importorskip("qualtran")
+    cirq = pytest.importorskip("cirq")
+    from qualtran import Side
+    from qualtran.bloqs.basic_gates import (
+        MinusEffect,
+        OneEffect,
+        PlusEffect,
+        ZeroEffect,
+    )
+    from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
+
+    source = ((PlusEffect, MinusEffect) if basis == "x" else (ZeroEffect, OneEffect))[
+        bit
+    ]()
+    (port,) = source.signature
+    assert port.side == Side.LEFT and port.name == "q"
+    with pytest.raises(ValueError, match="no Cirq equivalent"):
+        source.as_cirq_op(qubit_manager=cirq.SimpleQubitManager())
+
+    key = basis_effect_cost_key(basis, bit)
+    assert key.opcode == f"{basis}_effect"
+    assert key.parameters == (bit,)
+    assert query_qec_gate_cost(key) == QECGateCost()
+    assert get_cost_value(source, QECGatesCost()).asdict() == {}
+    assert get_cost_value(source, QubitCount()) == 1
