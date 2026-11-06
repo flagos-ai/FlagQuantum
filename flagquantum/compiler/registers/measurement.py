@@ -1,8 +1,10 @@
 # Copyright 2023 Google LLC
+# Copyright 2025 Google LLC
 # SPDX-License-Identifier: Apache-2.0
 # X-basis clearing moved from the paired QROAM emitter adapted from Qualtran.
 # Source: https://github.com/quantumlib/Qualtran/tree/v0.7.0/qualtran/bloqs/data_loading
 # Basis instruments: https://github.com/quantumlib/Qualtran/tree/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/bloqs/basic_gates
+# DiscardQ: https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/bloqs/basic_gates/discard.py
 # Changes: caller-owned physical clearing and explicit parity-controlled phase expansion.
 
 """Shared basis measurement clearing and classical-parity phase decompositions."""
@@ -33,6 +35,13 @@ def measure_x_clear_ir(qubit: int, classical_bit: int) -> tuple[Instruction, ...
     """Record the X outcome and return the consumed qubit's physical slot in zero."""
     clear = measure_z_clear_ir(qubit, classical_bit)
     return (Instruction("h", (qubit,)), *clear)
+
+
+def discard_qubit_ir(qubit: int) -> tuple[Instruction, ...]:
+    """Consume a logical qubit and return its physical slot in zero without a result bit."""
+    if type(qubit) is not int or qubit < 0:
+        raise ValueError("Discard qubit must be a nonnegative integer")
+    return (Instruction("reset", (qubit,), metadata={"is_dynamic": True}),)
 
 
 @dataclass(frozen=True)
