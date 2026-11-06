@@ -80,3 +80,24 @@ adjoint emits 32 T/T† and 66 CX with clean banks, or 48 T/T† and 90 CX with
 borrowed banks. Both use four measurements and 12 total qubits. The source
 gate categories, T-equivalent totals and peak width match the corresponding
 forward resource model.
+
+## Generic outer control
+
+`control_select_swap_qrom_ir` applies the pinned generic control to the QROM
+loads, bank routing and copy stages. It shares one outer predicate across the
+entire forward or adjoint graph. The existing `controls` still belong to the
+lookup, while `outer_controls` gate the whole operation. The caller supplies
+separate QROM and outer-predicate workspace. Clean and borrowed banks keep
+their original ownership and are restored in every measurement branch.
+
+The pinned generic controlled And and And-adjoint reject their non-through
+registers. This entry therefore accepts layouts whose emitted QROM load is
+only X and CX, and rejects layouts that require those And operations. The
+abstract QEC query can also fail on an unused controlled And in the source
+model or a controlled ArbitraryClifford from the routing cost graph. Those
+failures are independent of executable gate parity.
+
+For the borrowed four-row table `(1, 2, 2, 3)` with a two-row block and outer
+pattern `(1, 0, 1)`, the actual stream includes 58 CCX, 64 CH and 96
+controlled phases. It emits eight T/T† and two measurements for the outer
+predicate, uses two predicate work qubits, and has source peak width 13.

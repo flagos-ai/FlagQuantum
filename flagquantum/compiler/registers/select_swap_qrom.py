@@ -7,12 +7,14 @@
 
 from ...core.ir import Instruction
 from .bitwise import _validate_wires, xor_ir
+from .control_predicate import ControlRegister
+from .controlled_component import controlled_component_ir
 from .source_qroam_clean import (
     QroamCleanTable,
     _source_qroam_batch_ir,
     optimal_qroam_clean_log_block_size,
 )
-from .swap_with_zero import swap_with_zero_ir
+from .swap_with_zero import control_swap_with_zero_ir, swap_with_zero_ir
 
 
 def optimal_select_swap_log_block_sizes(
@@ -55,6 +57,86 @@ def select_swap_qrom_ir(
     adjoint reverses component calls and retains each QROM's measured And
     schedule.
     """
+    return _select_swap_qrom_ir(
+        table,
+        controls,
+        selections,
+        targets,
+        banks,
+        workspace,
+        classical_bits,
+        dirty=dirty,
+        adjoint=adjoint,
+    )
+
+
+def control_select_swap_qrom_ir(
+    outer_controls: tuple[tuple[int, ...], ...],
+    registers: tuple[ControlRegister, ...],
+    table: QroamCleanTable,
+    controls: tuple[int, ...],
+    selections: tuple[tuple[int, ...], ...],
+    targets: tuple[tuple[int, ...], ...],
+    banks: tuple[tuple[tuple[int, ...], ...], ...],
+    workspace: tuple[int, ...],
+    classical_bits: tuple[int, ...],
+    predicate_workspace: tuple[int, ...],
+    predicate_bits: tuple[int, ...],
+    *,
+    dirty: bool = True,
+    adjoint: bool = False,
+) -> tuple[Instruction, ...]:
+    """Add source generic controls for layouts with executable controlled loads.
+
+    Qualtran's generic controlled And and its adjoint have no decomposition.
+    This entry accepts QROM loads composed only of X and CX.
+    """
+    _validate_wires(
+        (
+            *controls,
+            *(
+                wire
+                for group in (*outer_controls, *selections, *targets)
+                for wire in group
+            ),
+            *(wire for bank in banks for word in bank for wire in word),
+            *workspace,
+            *predicate_workspace,
+        )
+    )
+    return controlled_component_ir(
+        outer_controls,
+        registers,
+        lambda control: _select_swap_qrom_ir(
+            table,
+            controls,
+            selections,
+            targets,
+            banks,
+            workspace,
+            classical_bits,
+            dirty=dirty,
+            adjoint=adjoint,
+            outer_control=control,
+        ),
+        predicate_workspace,
+        predicate_bits,
+    )
+
+
+def _select_swap_qrom_ir(
+    table: QroamCleanTable,
+    controls: tuple[int, ...],
+    selections: tuple[tuple[int, ...], ...],
+    targets: tuple[tuple[int, ...], ...],
+    banks: tuple[tuple[tuple[int, ...], ...], ...],
+    workspace: tuple[int, ...],
+    classical_bits: tuple[int, ...],
+    *,
+    dirty: bool,
+    adjoint: bool,
+    outer_control: int | None = None,
+) -> tuple[Instruction, ...]:
     if type(dirty) is not bool or type(adjoint) is not bool:
         raise ValueError("Select-swap dirty and adjoint flags must be boolean")
     load, low = _source_qroam_batch_ir(
@@ -80,17 +162,47 @@ def select_swap_qrom_ir(
     copy = tuple(
         gate for bank, target in bank_targets for gate in xor_ir(bank[0], target)
     )
+
+    def swap(
+        bank: tuple[tuple[int, ...], ...], *, inverse: bool
+    ) -> tuple[Instruction, ...]:
+        if outer_control is None:
+            return swap_with_zero_ir(low, table.block_shape, bank, adjoint=inverse)
+        return control_swap_with_zero_ir(
+            ((outer_control,),),
+            (ControlRegister(1, (1,)),),
+            low,
+            table.block_shape,
+            bank,
+            (),
+            (),
+            adjoint=inverse,
+        )
+
+    if outer_control is not None:
+        if any(gate.name not in ("x", "cx") for gate in load):
+            raise ValueError("Pinned controlled QROM cannot decompose controlled And")
+        load = _control_xor_gates(outer_control, load)
+        copy = _control_xor_gates(outer_control, copy)
+
     route: list[Instruction] = []
     unroute: list[Instruction] = []
     if any(table.log_block_sizes):
         for bank, _ in bank_targets:
-            route.extend(swap_with_zero_ir(low, table.block_shape, bank))
-            unroute.extend(
-                swap_with_zero_ir(low, table.block_shape, bank, adjoint=True)
-            )
+            route.extend(swap(bank, inverse=False))
+            unroute.extend(swap(bank, inverse=True))
     select = (*route, *copy, *unroute)
     if not dirty:
         return (*load, *select, *load)
     if adjoint:
         return (*select, *load, *select, *load)
     return (*load, *select, *load, *select)
+
+
+def _control_xor_gates(
+    control: int, gates: tuple[Instruction, ...]
+) -> tuple[Instruction, ...]:
+    return tuple(
+        Instruction("cx" if gate.name == "x" else "ccx", (control, *gate.wires))
+        for gate in gates
+    )

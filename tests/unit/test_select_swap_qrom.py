@@ -12,10 +12,12 @@ import torch
 from flagquantum.compiler._component_trace.resource_model import (
     estimate_component_resources,
 )
+from flagquantum.compiler.registers.control_predicate import ControlRegister
 from flagquantum.compiler.registers.qroam_resource_model import (
     source_select_swap_qrom_cost,
 )
 from flagquantum.compiler.registers.select_swap_qrom import (
+    control_select_swap_qrom_ir,
     optimal_select_swap_log_block_sizes,
     select_swap_qrom_ir,
 )
@@ -26,12 +28,16 @@ from tests.unit.measurement_checks import certified_and_channel_map, forced_bran
 from tests.unit.register_source_graph import (
     SourcePorts,
     SourceResult,
+    source_control_predicate_leaf,
     walk_source_graph,
 )
 from tests.unit.sparse_register_execution import execute_sparse_register
 from tests.unit.test_register_constant_addition import reference_arithmetic_gates
 from tests.unit.test_register_subtraction import assert_source
-from tests.unit.test_relative_controlled_swap import source_relative_swap
+from tests.unit.test_relative_controlled_swap import (
+    assert_source_dependencies,
+    source_relative_swap,
+)
 from tests.unit.test_source_qrom import source_qrom_gates
 
 pytestmark = pytest.mark.unit
@@ -45,11 +51,16 @@ def original_select_swap_gates(
     bits: tuple[int, ...],
     *,
     adjoint: bool = False,
+    outer_values: tuple[int, ...] = (),
+    predicate_workspace: tuple[int, ...] = (),
+    predicate_bits: tuple[int, ...] = (),
 ) -> tuple[tuple[Instruction, ...], tuple[tuple[Instruction, ...], ...]]:
     pytest.importorskip("qualtran")
     cirq = pytest.importorskip("cirq")
     np = pytest.importorskip("numpy")
+    from qualtran import Controlled, CtrlSpec
     from qualtran.bloqs.arithmetic import Xor
+    from qualtran.bloqs.basic_gates import XGate
     from qualtran.bloqs.bookkeeping import Allocate, Free, Partition
     from qualtran.bloqs.data_loading.qrom import QROM
     from qualtran.bloqs.swap_network.cswap_approx import CSwapApprox
@@ -88,6 +99,23 @@ def original_select_swap_gates(
             }
             assert all(physical[name] == wires for name, wires in desired.items())
             return (), physical
+        if isinstance(bloq, XGate):
+            gates = reference_arithmetic_gates(bloq.as_composite_bloq(), inputs, (), {})
+            return gates, inputs
+        predicate = source_control_predicate_leaf(
+            bloq, inputs, predicate_workspace, predicate_bits
+        )
+        if predicate is not None:
+            return predicate
+        if isinstance(bloq, Controlled) and isinstance(
+            bloq.subbloq, (QROM, Xor, CSwapApprox)
+        ):
+            gates = reference_arithmetic_gates(
+                bloq, inputs, (), {}, keep_exchange_leaves=True
+            )
+            if isinstance(bloq.subbloq, QROM):
+                loads.append(gates)
+            return gates, inputs
         if isinstance(bloq, (QROM, Xor, CSwapApprox)):
             assert all(inputs[name] == wires for name, wires in desired.items())
             if isinstance(bloq, QROM):
@@ -107,7 +135,8 @@ def original_select_swap_gates(
         # The source creates adjoint allocations from forward Free nodes,
         # in reverse graph order. Bind their physical names by that graph.
         forward = source.decompose_bloq()
-        walk_source_graph(forward, ports, ports, leaf)
+        forward_ports = {reg.name: ports[reg.name] for reg in source.signature}
+        walk_source_graph(forward, forward_ports, forward_ports, leaf)
         forward_nodes = [node for node, _, _ in forward.iter_bloqnections()]
         free_nodes = [node for node in forward_nodes if isinstance(node.bloq, Free)]
         freed_by_node = dict(zip(free_nodes, freed, strict=True))
@@ -127,6 +156,11 @@ def original_select_swap_gates(
         freed.clear()
         loads.clear()
         inverse_graph = True
+    if outer_values:
+        base = source.adjoint() if adjoint else source
+        graph = base.controlled(
+            CtrlSpec(cvs=outer_values[0] if len(outer_values) == 1 else outer_values)
+        )
     gates, outputs = walk_source_graph(graph, ports, ports, leaf)
     assert outputs == ports and next(allocate, None) is None
     assert Counter(freed) == Counter(words)
@@ -427,3 +461,178 @@ def test_append_borrowed_bank_example() -> None:
     from examples.algorithms.register_select_swap_qrom import main
 
     main()
+
+
+@pytest.mark.ftqc_reference
+@pytest.mark.parametrize(
+    ("data", "log", "width", "inner"),
+    [
+        ((1,), 0, 1, 0),
+        ((0, 1), 0, 1, 0),
+        ((1, 2, 2, 3), 1, 2, 0),
+        ((1, 1, 1, 1), 1, 1, 1),
+    ],
+)
+@pytest.mark.parametrize("outer", [(1,), (0,), (1, 0, 1)])
+@pytest.mark.parametrize(
+    ("dirty", "adjoint"), [(False, False), (False, True), (True, False), (True, True)]
+)
+def test_select_swap_generic_outer_control(
+    data: tuple[int, ...],
+    log: int,
+    width: int,
+    inner: int,
+    outer: tuple[int, ...],
+    dirty: bool,
+    adjoint: bool,
+) -> None:
+    pytest.importorskip("qualtran")
+    from qualtran import CtrlSpec, DecomposeNotImplementedError, DecomposeTypeError
+    from qualtran.bloqs.data_loading.select_swap_qrom import SelectSwapQROM
+    from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
+
+    cursor = 0
+
+    def alloc(size: int) -> tuple[int, ...]:
+        nonlocal cursor
+        start = cursor
+        cursor += size
+        return tuple(range(start, cursor))
+
+    shape = (len(data),)
+    table = QroamCleanTable(shape, (log,), (data,))
+    outside = alloc(len(outer))
+    controls = alloc(inner)
+    selection = alloc((len(data) - 1).bit_length())
+    target = alloc(width)
+    bank = tuple(alloc(width) for _ in range(1 << log))
+    data_width = cursor
+    work = alloc(table.workspace_size(inner, (len(selection),)))
+    assert not work
+    predicate = alloc(len(outer) - 1)
+    bits = tuple(range(31, 31 + len(predicate)))
+    args = (
+        (outside,),
+        (ControlRegister(1, outer),),
+        table,
+        controls,
+        (selection,),
+        (target,),
+        (bank,),
+        work,
+        (),
+        predicate,
+        bits,
+    )
+    actual = control_select_swap_qrom_ir(*args, dirty=dirty, adjoint=adjoint)
+    opposite = control_select_swap_qrom_ir(*args, dirty=dirty, adjoint=not adjoint)
+    base = SelectSwapQROM.build_from_data(
+        data,
+        target_bitsizes=(width,),
+        num_controls=inner,
+        log_block_sizes=(log,),
+        use_dirty_ancilla=dirty,
+    )
+    source = (base.adjoint() if adjoint else base).controlled(
+        CtrlSpec(cvs=outer[0] if len(outer) == 1 else outer)
+    )
+    ports = {
+        reg.name: wires
+        for reg, wires in zip(
+            base.signature, (*filter(None, (controls, selection)), target), strict=True
+        )
+    }
+    ports[next(iter(source.signature)).name] = outside
+    reference, _ = original_select_swap_gates(
+        base,
+        ports,
+        (bank,),
+        work,
+        (),
+        adjoint=adjoint,
+        outer_values=outer,
+        predicate_workspace=predicate,
+        predicate_bits=bits,
+    )
+    assert_source_dependencies(actual, reference)
+    counts = Counter(gate.name for gate in actual)
+    assert counts["t"] + counts["tdg"] == 4 * len(predicate)
+    assert counts["measure"] == counts["reset"] == len(predicate)
+    assert get_cost_value(source, QubitCount()) == cursor
+    if len(data) == 1:
+        assert get_cost_value(source, QECGatesCost()).toffoli == 1 + dirty
+    else:
+        with pytest.raises(
+            (DecomposeNotImplementedError, DecomposeTypeError),
+            match="And|ArbitraryClifford",
+        ):
+            get_cost_value(source, QECGatesCost())
+
+    # Cover all public inputs, arbitrary borrowed banks and an entangled spectator.
+    bank_width = len(bank) * width
+    bank_mask = (1 << bank_width) - 1
+    words = torch.arange(1 << data_width)
+    if not dirty:
+        words = words[(words & bank_mask) == 0]
+    activation = int("".join(map(str, outer)), 2)
+    address = (words >> (bank_width + width)) & ((1 << len(selection)) - 1)
+    enabled = (words >> (data_width - len(outer))) == activation
+    if inner:
+        enabled &= ((words >> (bank_width + width + len(selection))) & 1) == 1
+    selected = torch.tensor(data)[address] << bank_width
+    end = torch.where(enabled, words ^ selected, words)
+    indices = (words << (len(predicate) + 1)).repeat_interleave(2)
+    result_indices = (end << (len(predicate) + 1)).repeat_interleave(2)
+    spectator = torch.arange(indices.numel()) & 1
+    weights = torch.arange(1, indices.numel() + 1, dtype=torch.float64)
+    amplitudes = torch.complex(weights, weights * (weights % 5 - 2))
+    amplitudes /= amplitudes.norm()
+    initial = torch.zeros(1 << (cursor + 1), dtype=torch.complex128)
+    expected = torch.zeros_like(initial)
+    initial[indices | spectator] = amplitudes
+    expected[result_indices | spectator] = amplitudes
+    for history in product((0, 1), repeat=len(predicate)):
+        result = forced_branch(initial, actual, history)
+        torch.testing.assert_close(
+            result, expected * 2 ** (-len(predicate) / 2), atol=2e-12, rtol=0
+        )
+        torch.testing.assert_close(
+            forced_branch(result, opposite, tuple(1 - bit for bit in history)),
+            initial * 2 ** (-len(predicate)),
+            atol=2e-12,
+            rtol=0,
+        )
+
+
+@pytest.mark.ftqc_reference
+def test_generic_outer_control_rejects_source_non_thru_and() -> None:
+    pytest.importorskip("qualtran")
+    from qualtran import DecomposeTypeError
+    from qualtran.bloqs.data_loading.select_swap_qrom import SelectSwapQROM
+    from qualtran.bloqs.mcmt import And
+
+    source = SelectSwapQROM.build_from_data(
+        (1, 2), num_controls=1, log_block_sizes=(0,)
+    )
+    leaves = {
+        str(node.bloq)
+        for node in source.controlled().decompose_bloq().flatten().bloq_instances
+    }
+    assert {"C[And]", "C[And†]"} <= leaves
+    for bloq in (And(), And().adjoint()):
+        with pytest.raises(DecomposeTypeError, match="non-thru registers"):
+            bloq.controlled().decompose_bloq()
+    with pytest.raises(ValueError, match="cannot decompose controlled And"):
+        control_select_swap_qrom_ir(
+            ((0,),),
+            (ControlRegister(1, (1,)),),
+            QroamCleanTable((2,), (0,), ((1, 2),)),
+            (1,),
+            ((2,),),
+            ((3, 4),),
+            (((5, 6),),),
+            (7,),
+            (30,),
+            (),
+            (),
+        )
