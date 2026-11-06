@@ -31,7 +31,9 @@ MAX_SCOPE_DEPTH = 32
 
 MAX_FUNCTIONS = 64
 
-ANGLE_CALLS = frozenset({"PHASE", "RX", "RY", "RZ", "RZZ", "CRX", "CPHASE", "R", "U"})
+ANGLE_CALLS = frozenset(
+    {"PHASE", "RX", "RY", "RZ", "RZZ", "CRX", "CRY", "CPHASE", "R", "U"}
+)
 
 _TOKEN = re.compile(
     r"(?P<space>\s+)|(?P<comment>//[^\n]*|/\*[\s\S]*?\*/)"

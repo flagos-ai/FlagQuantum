@@ -1036,6 +1036,7 @@ def parse_qmod(
                 | EVOLUTION_CALLS
                 | {
                     "swap_test",
+                    "qsvt_lcu",
                     "grover_diffuser",
                     "multiswap",
                     "unitary",

@@ -1840,3 +1840,29 @@ result = fq.run(program)
 probabilities = program.probabilities(result, registers=("t", "ell.succ"))
 print(probabilities[(0, 0)])  # about 0.856332
 ```
+
+### Coherent even and odd QSVT
+
+`qsvt_lcu` accepts adjacent even and odd polynomial degrees, two lexical
+projector callbacks, a reversible block callback, an auxiliary bit, and
+a distinct parity selector. The selector's zero branch takes the even
+sequence. The one branch takes the odd sequence. Both branches share the
+alternating block and inverse where possible. Prepare the auxiliary in
+zero for the usual block-encoding interpretation.
+
+The projector callbacks must XOR a comparison into their auxiliary.
+They cannot read the parity selector. The block uses existing storage
+disjoint from both auxiliary and selector, and its effects must admit
+checked inverse and conditional replay.
+
+```qmod
+qfunc main(output signal: qbit, output aux: qbit, output parity: qbit) {
+  allocate(signal); allocate(aux); allocate(parity);
+  H(signal); H(parity);
+  qsvt_lcu([0.53, -0.12, 1.1], [0.7, -0.9],
+    lambda(marker) { marker ^= signal == 0; },
+    lambda(marker) { marker ^= signal == 1; },
+    lambda() { RY(2 ** (-2), signal); },
+    aux, parity);
+}
+```

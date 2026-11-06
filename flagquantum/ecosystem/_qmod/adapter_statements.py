@@ -43,7 +43,7 @@ from .qpe import (
     infer_phase_allocation,
     lower_qpe,
 )
-from .qsvt import lower_qsvt_inversion
+from .qsvt import lower_qsvt_inversion, lower_qsvt_lcu
 from .real_matrices import lower_matrix_iteration
 from .selector_rotations import (
     lower_select_rotation,
@@ -102,6 +102,9 @@ def statement(self: _Adapt, statement: Statement, index: str) -> None:
             disjoint_condition_target=location,
         )
         self.real_phase(token, literal("-", marker, literal("0.5")), phase_angle)
+        return
+    if token.text == "qsvt_lcu":
+        lower_qsvt_lcu(self, token, args)
         return
     if token.text == "qsvt_inversion":
         lower_qsvt_inversion(self, token, args)

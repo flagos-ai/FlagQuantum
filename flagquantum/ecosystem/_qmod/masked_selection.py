@@ -167,6 +167,21 @@ def emit_selected(
             flip((left,), 1, right)
             if attributes["gate"] == "swap":
                 owner.emit_indexed_x(token, (right, left))
+        elif effect.name == "qreg.pair_gate" and attributes["gate"] == "cry":
+            source, target = tuple(zip(operands, indices or (0, 0), strict=True))
+            if target in controls or source == target:
+                reject(token, "alias", "selected rotation cannot write its control")
+            half = attributes["angle"] / 2
+            for angle in (half, -half):
+                owner.effect_op(
+                    "qreg.gate",
+                    token,
+                    (target[0],),
+                    gate="ry",
+                    index=target[1],
+                    angle=angle,
+                )
+                phase((source, target), 3, math.pi)
         elif effect.name == "qreg.gate":
             gate = attributes["gate"]
             target = operands[0], attributes["index"]

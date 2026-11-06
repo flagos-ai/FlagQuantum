@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import math
 from collections.abc import Sequence
+from dataclasses import replace
 from typing import TYPE_CHECKING
 
 from ...compiler._hybrid.model import Operation, Value
@@ -116,7 +117,9 @@ def emit_controlled_pauli(
             )
 
 
-def emit_inverse(owner: _Adapt, token: Token, operations: Sequence[Operation]) -> None:
+def _inverse_specs(
+    token: Token, operations: Sequence[Operation]
+) -> list[tuple[str, Operation, dict[str, object]]]:
     inverses: list[tuple[str, Operation, dict[str, object]]] = []
     for op in reversed(operations):
         attributes: dict[str, object] = dict(op.attributes)
@@ -162,7 +165,20 @@ def emit_inverse(owner: _Adapt, token: Token, operations: Sequence[Operation]) -
                 "invert cannot allocate or change ownership and requires checked reversible gates",
             )
         inverses.append((opcode, op, attributes))
-    for opcode, op, attributes in inverses:
+    return inverses
+
+
+def inverse_effects(
+    token: Token, operations: Sequence[Operation]
+) -> tuple[Operation, ...]:
+    return tuple(
+        replace(op, name=opcode, attributes=attributes)
+        for opcode, op, attributes in _inverse_specs(token, operations)
+    )
+
+
+def emit_inverse(owner: _Adapt, token: Token, operations: Sequence[Operation]) -> None:
+    for opcode, op, attributes in _inverse_specs(token, operations):
         owner.effect_op(opcode, token, op.operands[1:], **attributes)
 
 

@@ -499,14 +499,26 @@ def classical_number(self: _Adapt, node: Expression) -> float:
     if text == ".":
         return float(self.static_integer(node))
     if text == "**":
-        value = self.static_integer(node)
-        if abs(value) > 2**53:
-            reject(
-                node.token,
-                "precision",
-                "integer angle conversion exceeds exact real range",
-            )
-        result = float(value)
+        base, power = (self.static_integer(child) for child in node.children)
+        if power < 0:
+            if power < -255 or not 0 < abs(base) <= 2**53:
+                reject(
+                    node.token,
+                    "budget.number",
+                    "negative real powers require a nonzero exact integer base and exponent in -255..-1",
+                )
+            result = math.pow(base, power)
+            if result == 0:
+                reject(node.token, "precision", "negative real power underflows")
+        else:
+            value = self.static_integer(node)
+            if abs(value) > 2**53:
+                reject(
+                    node.token,
+                    "precision",
+                    "integer angle conversion exceeds exact real range",
+                )
+            result = float(value)
     elif text in {"acos", "asin", "sqrt", "exp"}:
         value_real = self.classical_number(node.children[0])
         if text in {"acos", "asin"}:

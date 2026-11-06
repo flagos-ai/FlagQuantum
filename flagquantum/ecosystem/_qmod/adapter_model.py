@@ -47,7 +47,7 @@ QDRIFT_SEED = 0
 
 _GATE_CALLS = frozenset({"X", "Y", "H", "S", "Z", "I", "SX", "hadamard_transform"})
 
-_PAIR_CALLS = frozenset({"CX", "CZ", "SWAP", "CRX"})
+_PAIR_CALLS = frozenset({"CX", "CZ", "SWAP", "CRX", "CRY"})
 
 _STATIC_COMPARISONS = {"==": eq, "!=": ne, "<": lt, "<=": le, ">": gt, ">=": ge}
 
@@ -76,6 +76,7 @@ _INTRINSICS = (
         "phase",
         "grover_diffuser",
         "qsvt_inversion",
+        "qsvt_lcu",
         "multiswap",
         "pi",
         "control",
