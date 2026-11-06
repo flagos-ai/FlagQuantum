@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections.abc import Iterable
 
 from ..errors import ValidationError
+from .classical_dataflow import parse_classical_xor
 from .ir import Instruction
 
 CLASSICAL_CONTROL_KEYS: tuple[str, ...] = (
@@ -99,7 +100,7 @@ def validate_classical_control(
 ) -> int:
     """Validate classical-control metadata and return its register width.
 
-    Conditions may read only classical bits produced by an earlier measurement.
+    Conditions may read only classical bits defined by measurement or XOR.
     The validator intentionally leaves the public ``CircuitIR`` schema unchanged:
     it validates the four metadata keys already used by dynamic execution.
     """
@@ -117,6 +118,16 @@ def validate_classical_control(
             raise ValidationError("dynamic instruction qubit is outside the circuit")
 
         metadata = instruction.metadata
+        if instruction.name == "classical_xor":
+            operation = parse_classical_xor(instruction)
+            unread = sorted(set(operation.sources) - measured_bits)
+            if unread:
+                raise ValidationError(
+                    f"classical bit {unread[0]} was read before definition"
+                )
+            measured_bits.add(operation.target)
+            width = max(width, operation.target + 1)
+            continue
         if "is_dynamic" in metadata and not isinstance(metadata["is_dynamic"], bool):
             raise TypeError("is_dynamic must be a bool")
         classical_bit: int | None = None

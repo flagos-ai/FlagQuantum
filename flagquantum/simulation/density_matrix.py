@@ -179,11 +179,18 @@ def _channel_operators(
 def _read_classical_bits(ir: CircuitIR) -> frozenset[int]:
     """Return every classical bit some instruction conditions on."""
 
+    from ..core.classical_dataflow import parse_classical_xor
+
     return frozenset(
         bit
         for instruction in ir
         for clause in _condition_clauses(instruction)
         for bit, _value in clause
+    ) | frozenset(
+        bit
+        for instruction in ir
+        if instruction.name == "classical_xor"
+        for bit in parse_classical_xor(instruction).sources
     )
 
 
@@ -232,6 +239,15 @@ def _execute_density_ensemble(
     for instruction in ir:
         metadata = instruction.metadata
         clauses = _condition_clauses(instruction)
+        if instruction.name == "classical_xor":
+            from ..core.classical_dataflow import parse_classical_xor
+
+            operation = parse_classical_xor(instruction)
+            ensemble = [
+                (item, {**record, operation.target: operation.evaluate(record)})
+                for item, record in ensemble
+            ]
+            continue
         if metadata.get("is_dynamic") and instruction.name == "measure":
             bit = int(metadata.get("classical_bit", instruction.wires[0]))
             if bit not in tracked:

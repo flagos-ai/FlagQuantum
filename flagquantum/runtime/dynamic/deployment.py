@@ -68,6 +68,10 @@ def _assess_dynamic_package_compatibility(
     """Check experimental package and dialect constraints only."""
 
     blockers: list[str] = []
+    if any(
+        instruction.name == "classical_xor" for instruction in circuit._instructions
+    ):
+        blockers.append("backend_classical_computation_is_unqualified")
     program_ir_blockers = _dynamic_program_ir_blockers(circuit)
     blockers.extend(program_ir_blockers)
     raw_capacity = getattr(backend, "n_qubits", None)

@@ -2,6 +2,7 @@
 
 from typing import Any
 
+from ....core.classical_dataflow import parse_classical_xor
 from .._conditions import (
     classical_width as _classical_width,
 )
@@ -25,7 +26,11 @@ def export_dynamic_qasm3(circuit: DynamicCircuit) -> str:
     ]
     for instruction in circuit._instructions:
         wire_text = ", ".join(f"q[{wire}]" for wire in instruction.wires)
-        if instruction.name == "measure":
+        if instruction.name == "classical_xor":
+            operation = parse_classical_xor(instruction)
+            expression = " ^ ".join(f"c[{bit}]" for bit in operation.sources) or "false"
+            statement = f"c[{operation.target}] = {expression};"
+        elif instruction.name == "measure":
             bit = int(instruction.metadata["classical_bit"])
             statement = f"c[{bit}] = measure {wire_text};"
         elif instruction.name == "reset":
