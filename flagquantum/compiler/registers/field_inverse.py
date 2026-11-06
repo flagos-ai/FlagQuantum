@@ -61,11 +61,11 @@ def gf2_inverse_decomposition(
             emitter.cx(a, b)
 
     def multiply(left: tuple[int, ...], right: tuple[int, ...]) -> tuple[int, ...]:
-        target = emitter.allocate(n)
+        target = emitter.workspace.allocate(n).wires
         return emitter.multiply(left[::-1], right[::-1], target[::-1])[::-1]
 
     if n == 1:
-        result = emitter.allocate(n)
+        result = emitter.workspace.allocate(n).wires
         add(source, result)
         return FieldDecomposition(tuple(emitter.instructions), (source, result), ())
 
@@ -73,7 +73,8 @@ def gf2_inverse_decomposition(
     k1 = (n - 1).bit_length() - 1
     k = max(k1 + t - 1, k1 + 1)
     f = [source] + [()] * k
-    f[k] = emitter.allocate(n)
+    temporary = emitter.workspace.allocate(n)
+    f[k] = temporary.wires
     for i in range(1, k1 + 1):
         add(f[i - 1], f[k])
         f[k] = _square(emitter, f[k], 2 ** (i - 1))
@@ -82,7 +83,7 @@ def gf2_inverse_decomposition(
         add(f[i - 1], f[k])
     bits = [-1] + [i for i in reversed(range(k1 + 1)) if (n - 1) >> i & 1]
     if k1 + t - 1 == k:
-        emitter.free(f[k])
+        emitter.workspace.free(temporary, order=f[k])
     for s in range(1, t):
         f[k1 + s - 1] = _square(emitter, f[k1 + s - 1], 2 ** bits[s + 1])
         f[k1 + s] = multiply(f[k1 + s - 1], f[bits[s + 1]])
@@ -93,7 +94,9 @@ def gf2_inverse_decomposition(
     f[k] = _square(emitter, f[k])
     outputs = (f[0], f[k], *f[1:k])
     logical = {w for reg in outputs for w in reg}
-    scratch = tuple(sorted(emitter.used - logical))
+    scratch = tuple(
+        wire for wire in emitter.workspace.used_wires if wire not in logical
+    )
     return FieldDecomposition(tuple(emitter.instructions), outputs, scratch)
 
 

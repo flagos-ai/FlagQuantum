@@ -8,25 +8,15 @@
 """Binary polynomial multiply-accumulate networks without field reduction."""
 
 from ...core.ir import Instruction
+from .workspace import RegisterWorkspace
 
 
 class _PolynomialEmitter:
     """Shared recursive polynomial gates and caller-owned compile-time workspace."""
 
     def __init__(self, workspace: tuple[int, ...]) -> None:
-        self.available = list(reversed(workspace))
-        self.used: set[int] = set()
+        self.workspace = RegisterWorkspace(workspace)
         self.instructions: list[Instruction] = []
-
-    def allocate(self, count: int) -> tuple[int, ...]:
-        if count > len(self.available):
-            raise ValueError("Insufficient clean field workspace")
-        wires = tuple(self.available.pop() for _ in range(count))
-        self.used.update(wires)
-        return wires
-
-    def free(self, qubits: tuple[int, ...]) -> None:
-        self.available.extend(reversed(qubits))
 
     def cx(self, source: int, target: int) -> None:
         self.instructions.append(Instruction("cx", (source, target)))
@@ -65,10 +55,10 @@ class _PolynomialEmitter:
         self.one_plus(f[:k], g[:k], h[: 3 * k - 1], k)
         width = 2 * k + max(0, 2 * (n - k) - k - 1)
         delta = max(0, k + width - len(h))
-        aux = self.allocate(delta)
-        extended = h + aux
+        aux = self.workspace.allocate(delta)
+        extended = h + aux.wires
         self.one_plus(f[k:], g[k:], extended[k : k + width], k)
-        self.free(aux)
+        self.workspace.free(aux)
         for i in range(n - k):
             self.cx(f[k + i], f[i])
         for i in range(n - k):

@@ -20,6 +20,7 @@ from flagquantum.compiler.registers.select_swap_qrom import (
     select_swap_qrom_ir,
 )
 from flagquantum.compiler.registers.source_qroam_clean import QroamCleanTable
+from flagquantum.compiler.registers.workspace import RegisterWorkspace
 from flagquantum.core.ir import CircuitIR, Instruction
 from tests.unit.measurement_checks import certified_and_channel_map, forced_branch
 from tests.unit.register_source_graph import (
@@ -152,9 +153,20 @@ def test_source_gate_graph_and_bank_channel(
     controls = alloc(control_count)
     selectors = tuple(alloc((extent - 1).bit_length()) for extent in shape)
     targets = tuple(alloc(width) for width in widths)
-    banks = tuple(
-        tuple(alloc(width) for _ in range(prod(table.block_shape))) for width in widths
+    bank_wires = alloc(sum(widths) * prod(table.block_shape))
+    bank_pool = (
+        RegisterWorkspace((), borrowed=bank_wires)
+        if dirty
+        else RegisterWorkspace(bank_wires)
     )
+    leases = tuple(
+        tuple(
+            bank_pool.allocate(width, dirty=dirty)
+            for _ in range(prod(table.block_shape))
+        )
+        for width in widths
+    )
+    banks = tuple(tuple(lease.wires for lease in bank) for bank in leases)
     work = alloc(table.workspace_size(control_count, tuple(map(len, selectors))))
     bits = tuple(range(30, 30 + len(work)))
     ports = {
@@ -169,6 +181,10 @@ def test_source_gate_graph_and_bank_channel(
         table, controls, selectors, targets, banks, work, bits, dirty=dirty
     )
     expected, loads = original_select_swap_gates(source, ports, banks, work, bits)
+    for bank in reversed(leases):
+        for lease in reversed(bank):
+            bank_pool.free(lease)
+    assert bank_pool.allocate(len(bank_wires), dirty=dirty).wires == bank_wires
     assert_source(gates, expected)
     model = get_cost_value(source, QECGatesCost())
     estimate = estimate_component_resources(

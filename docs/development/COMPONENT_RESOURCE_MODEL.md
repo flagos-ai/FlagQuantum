@@ -646,6 +646,24 @@ emits one reset so the consumed physical slot is reusable in zero.
 It allocates no classical result bit. That physical reset is an
 emitted instruction and is reported separately from the source model.
 
+## Allocate and free workspace
+
+The source's Allocate and Free bookkeeping leaves each have zero modeled
+gates and a peak logical width equal to the register size. FlagQuantum's
+`RegisterWorkspace` binds caller-owned wires in order and returns them
+to their original clean or borrowed pool. Freeing a whole-register lease
+makes those wires available for reuse. It emits no reset or quantum
+gates. The polynomial and finite-field emitters use this pool and keep
+their existing ordered allocation and scratch records.
+
+A clean lease must begin in zero and return to zero before release.
+A borrowed lease can carry arbitrary amplitudes and spectator
+entanglement. Its consumer must restore the joint state before release.
+The pinned Cirq adapter distinguishes clean allocation from borrowing.
+Its tensor Allocate/Free view uses zero even with the dirty flag.
+Use the zero covector to compare that tensor view, and check an actual
+borrowed circuit with a coherent input to verify restoration.
+
 ## Register identity
 
 The source models Identity as one atomic call with zero QEC gates.

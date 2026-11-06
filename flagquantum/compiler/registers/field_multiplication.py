@@ -192,7 +192,7 @@ def gf2_multiplication(
     return FieldDecomposition(
         tuple(emitter.instructions),
         (left, right, result[::-1]),
-        tuple(sorted(emitter.used)),
+        emitter.workspace.used_wires,
     )
 
 
