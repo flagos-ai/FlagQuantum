@@ -118,6 +118,39 @@ def test_unsupported_programs_refuse_before_preparation() -> None:
             program.compile_sampler()
 
 
+@pytest.mark.parametrize(
+    ("program", "reason"),
+    [
+        (
+            DynamicCircuit(2)
+            .h(0)
+            .t(0)
+            .h(0)
+            .measure(0, classical_bit=0)
+            .conditional("x", 1, classical_bit=0),
+            "outside the exact Clifford slice",
+        ),
+        (
+            DynamicCircuit(2)
+            .h(0)
+            .measure(0, classical_bit=0)
+            .conditional("h", 1, classical_bit=0),
+            "supports one classical test on X",
+        ),
+    ],
+)
+def test_route_boundaries_refuse_before_engine_preparation(
+    program: DynamicCircuit, reason: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    def unexpected_prepare(*args: object) -> None:
+        pytest.fail("rejected circuit entered engine preparation")
+
+    monkeypatch.setattr(implementation, "_prepare_sdk_sampler", unexpected_prepare)
+    monkeypatch.setattr(implementation, "_prepare_embedded_sampler", unexpected_prepare)
+    with pytest.raises(CapabilityError, match=reason):
+        program.compile_sampler()
+
+
 def test_exact_budget_boundaries_without_large_allocations(
     fake: _FakeSampler, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
