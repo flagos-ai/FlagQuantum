@@ -362,6 +362,32 @@ the concrete width gives 20 because the equality has a decomposition at
 that width. Both are shape models. Concrete coefficient data use the
 separate rotation-tree and cycle construction.
 
+Use `estimate_symbolic_ftqc_resources` to report the logical costs of an
+existing shape formula before supplying a table or constructing a circuit.
+The report keeps the gate categories and peak logical width, and gives both
+the default T-equivalent cost and the separate T and CCZ state budgets.
+
+```python
+from sympy import symbols
+
+from flagquantum.compiler.registers.symbolic_resource_model import (
+    source_qrom_resource_formula,
+)
+from flagquantum.qec.resources.estimation import estimate_symbolic_ftqc_resources
+
+rows = symbols("rows", positive=True, integer=True)
+formula = source_qrom_resource_formula((rows,), (8,), control_count=1)
+estimate = estimate_symbolic_ftqc_resources(formula)
+assert estimate.t_equivalents.subs(rows, 17) == 64
+assert estimate.ccz_states.subs(rows, 17) == 16
+assert estimate.logical.measurement.subs(rows, 17) == 16
+assert estimate.logical.logical_qubits.subs(rows, 17) == 19
+```
+
+These values describe the shape-only model. For a concrete component, use
+`estimate_ftqc_resources` and supply its emitted IR to count the instructions
+in the chosen lowering.
+
 Use `symbolic_call_graph` to apply the same traversal to declared symbolic
 call multiplicities. Each terminal supplies the cost for one invocation.
 For a terminal selected by a cutoff, provide the cost of that whole

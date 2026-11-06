@@ -6,8 +6,15 @@ from examples.algorithms.ftqc_resource_estimation import make_circuit
 from flagquantum.algorithms.primitives.multiplexers.thc_resource_model import (
     select_thc_cost,
 )
-from flagquantum.compiler._component_trace.resource_model import ComponentCost
-from flagquantum.qec.resources.estimation import estimate_ftqc_resources
+from flagquantum.compiler._component_trace.resource_model import ComponentCost, GateCost
+from flagquantum.compiler.registers.symbolic_resource_model import (
+    SymbolicResourceFormula,
+    source_qrom_resource_formula,
+)
+from flagquantum.qec.resources.estimation import (
+    estimate_ftqc_resources,
+    estimate_symbolic_ftqc_resources,
+)
 
 pytestmark = pytest.mark.unit
 
@@ -64,3 +71,53 @@ def test_operation_model_can_be_used_without_lowering() -> None:
 def test_ir_alone_does_not_supply_an_algorithm_model() -> None:
     with pytest.raises(TypeError, match="concrete ComponentCost"):
         estimate_ftqc_resources(make_circuit().to_ir())  # type: ignore[arg-type]
+
+
+def test_symbolic_report_uses_the_concrete_conversion_policy() -> None:
+    gates = GateCost(
+        t=2, toffoli=3, cswap=4, and_bloq=5, clifford=6, rotation=7, measurement=8
+    )
+    formula = SymbolicResourceFormula(
+        and_bloq=gates.and_bloq,
+        clifford=gates.clifford,
+        measurement=gates.measurement,
+        logical_qubits=10,
+        t=gates.t,
+        toffoli=gates.toffoli,
+        cswap=gates.cswap,
+        rotation=gates.rotation,
+    )
+    report = estimate_symbolic_ftqc_resources(formula)
+    assert report.logical == formula
+    assert report.t_states == 79
+    assert report.ccz_states == 12
+    assert report.t_equivalents == gates.total_t_count()
+
+
+@pytest.mark.ftqc_reference
+def test_symbolic_qrom_report_matches_the_pinned_source() -> None:
+    pytest.importorskip("qualtran")
+    sympy = pytest.importorskip("sympy")
+    from qualtran.bloqs.data_loading.qrom import QROM
+    from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
+
+    rows = sympy.Symbol("rows", integer=True, positive=True)
+    report = estimate_symbolic_ftqc_resources(
+        source_qrom_resource_formula((rows,), (8,), control_count=1)
+    )
+    source = QROM.build_from_bitsize((rows,), (8,), num_controls=1)
+    gates = get_cost_value(source, QECGatesCost())
+    magic = gates.total_t_and_ccz_count()
+    assert sympy.simplify(report.t_equivalents - gates.total_t_count()) == 0
+    assert sympy.simplify(report.t_states - magic["n_t"]) == 0
+    assert sympy.simplify(report.ccz_states - magic["n_ccz"]) == 0
+    assert sympy.simplify(report.logical.measurement - gates.measurement) == 0
+    assert (
+        sympy.simplify(
+            report.logical.logical_qubits - get_cost_value(source, QubitCount())
+        )
+        == 0
+    )
+    assert report.t_equivalents.subs(rows, 17) == 64
+    assert report.logical.measurement.subs(rows, 17) == 16
+    assert report.logical.logical_qubits.subs(rows, 17) == 19

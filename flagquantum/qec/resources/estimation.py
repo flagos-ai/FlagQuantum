@@ -1,8 +1,11 @@
 """Report analytical fault-tolerant resources alongside optional emitted IR."""
 
+from __future__ import annotations
+
 from dataclasses import dataclass
 from typing import Protocol, runtime_checkable
 
+from ...compiler._component_trace.gate_budget import t_and_ccz_budget
 from ...compiler._component_trace.resource_comparison import (
     EmittedInstructionCounts,
     count_emitted_instructions,
@@ -12,6 +15,8 @@ from ...compiler._component_trace.resource_model import (
     ModeledResources,
     estimate_component_resources,
 )
+from ...compiler._component_trace.symbolic_math import SymbolicInt
+from ...compiler.registers.symbolic_resource_model import SymbolicResourceFormula
 from ...core.ir import CircuitIR
 from .beverland import BeverlandEstimate, estimate_beverland_resources
 
@@ -29,6 +34,35 @@ class FTQCResourceReport:
     logical: ModeledResources
     emitted: EmittedInstructionCounts | None
     surface_code: BeverlandEstimate | None
+
+
+@dataclass(frozen=True)
+class SymbolicFTQCResourceReport:
+    """Analytical shape costs with both folded and separate magic-state budgets."""
+
+    logical: SymbolicResourceFormula
+    t_equivalents: SymbolicInt
+    t_states: SymbolicInt
+    ccz_states: SymbolicInt
+
+
+def estimate_symbolic_ftqc_resources(
+    formula: SymbolicResourceFormula,
+) -> SymbolicFTQCResourceReport:
+    """Evaluate a shape-level model before dimensions or table data are available.
+
+    Use the same default conversion as the concrete model, with 11 T per
+    rotation and four T equivalents per Toffoli, controlled swap, or And.
+    The logical gate counts and peak width retain any symbolic dimensions.
+    """
+    budget = t_and_ccz_budget(formula)
+    t_states, ccz_states = budget["n_t"], budget["n_ccz"]
+    return SymbolicFTQCResourceReport(
+        logical=formula,
+        t_equivalents=t_states + 4 * ccz_states,
+        t_states=t_states,
+        ccz_states=ccz_states,
+    )
 
 
 def estimate_ftqc_resources(
