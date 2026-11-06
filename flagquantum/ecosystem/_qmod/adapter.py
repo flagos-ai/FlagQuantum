@@ -120,6 +120,7 @@ _INTRINSICS = (
         "inplace_encode_on_bloch",
         "phase",
         "grover_diffuser",
+        "multiswap",
         "pi",
         "control",
         "prepare_ghz_state",
@@ -2290,11 +2291,16 @@ class _Adapt:
             and condition.token.text == "=="
             and not condition.children[0].children
             and (self.widths.get(condition.children[0].token.text) or 0) > 1
-            and (helper := self.definitions.get(body[0].token.text)) is not None
-            and _bound_helper(helper)
+            and (
+                body[0].token.text in {"grover_diffuser", "inplace_prepare_state"}
+                or (
+                    (helper := self.definitions.get(body[0].token.text)) is not None
+                    and _bound_helper(helper)
+                )
+            )
         ):
             start, incoming = len(self.operations), self.effect
-            self.call_bound_helper(helper, body[0].token, body[0].arguments)
+            self.statement(body[0], f"{index}.select")
             effects = tuple(self.operations[start:])
             del self.operations[start:]
             self.effect = incoming
@@ -3044,6 +3050,23 @@ class _Adapt:
             return
         if token.text == "grover_diffuser":
             lower_diffuser(self, token, args)
+            return
+        if token.text == "multiswap":
+            if len(args) != 2:
+                reject(token, "signature", "multiswap requires two register views")
+            left_view, right_view = (self.array_view(arg) for arg in args)
+            if len(left_view) != len(right_view) or len(
+                set((*left_view, *right_view))
+            ) != len(left_view) + len(right_view):
+                reject(token, "alias", "multiswap needs equally sized disjoint views")
+            for (first, i), (second, j) in zip(left_view, right_view, strict=True):
+                self.effect_op(
+                    "qreg.pair_gate",
+                    token,
+                    (first, second),
+                    gate="swap",
+                    indices=(i, j),
+                )
             return
         if token.text == "inplace_prepare_state":
             lower_inplace_preparation(self, token, args)
@@ -4156,6 +4179,7 @@ def parse_qmod(
                 | {
                     "swap_test",
                     "grover_diffuser",
+                    "multiswap",
                     "unitary",
                     "+=",
                     "phase",

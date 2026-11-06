@@ -17,6 +17,7 @@ MAX_CALLBACK_DEPTH = 16
 BORROWED_EFFECT_SIGNATURES = {
     "qfunc(qbit[],qbit[])": ("qbit[]", "qbit[]"),
     "qfunc(qnum)": ("qnum",),
+    "qfunc(qnum,qnum)": ("qnum", "qnum"),
 }
 CALLBACK_ARRAY = "qfunc[]()"
 

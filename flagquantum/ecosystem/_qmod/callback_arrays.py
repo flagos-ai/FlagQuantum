@@ -5,12 +5,14 @@ from __future__ import annotations
 import math
 from typing import TYPE_CHECKING
 
+from ...compiler._construction.register_profile import register_width
 from ...compiler._hybrid.model import Operation
 from .quantum_callbacks import MAX_CALLBACK_STATEMENTS, Lambda
 from .syntax import Expression, Function, Statement, Token, reject
 from .unitary_effects import PURE_EFFECTS
 
 if TYPE_CHECKING:
+    from ...compiler._hybrid.model import Value
     from .adapter import _Adapt
 
 MAX_CALLBACK_ARRAY_LENGTH = 64
@@ -145,12 +147,68 @@ def lower_selected_effects(
     )
     for value, index in negative:
         owner.effect_op("qreg.gate", token, (value,), gate="x", index=index)
+
+    def phase(locations: tuple[tuple[Value, int], ...], angle: float) -> None:
+        selected = (*controls, *locations)
+        if len(selected) > 8 or len(set(selected)) != len(selected):
+            reject(
+                token,
+                "callback.control",
+                "selected phase needs at most eight distinct bits",
+            )
+        owner.effect_op(
+            "qreg.control_phase",
+            token,
+            tuple(value for value, _ in selected),
+            indices=tuple(bit for _, bit in selected),
+            angle=angle,
+        )
+
     for operation in effects:
         operands = operation.operands[1:]
         attributes = operation.attributes
         if operation.name == "qreg.control_x" and "indices" in attributes:
             locations = tuple(zip(operands, attributes["indices"], strict=True))
             owner.emit_indexed_x(token, (*controls, *locations))
+            continue
+        if operation.name == "qreg.phase" and not operands:
+            phase((), attributes["angle"])
+            continue
+        if operation.name == "qreg.control_phase" and "indices" in attributes:
+            phase(
+                tuple(zip(operands, attributes["indices"], strict=True)),
+                attributes["angle"],
+            )
+            continue
+        if (
+            operation.name == "qreg.inplace_prepare_amplitudes"
+            and "control_count" not in attributes
+        ):
+            targets = (
+                tuple(zip(operands, attributes["indices"], strict=True))
+                if "indices" in attributes
+                else tuple(
+                    (operands[0], bit)
+                    for bit in reversed(range(register_width(operands[0])))
+                )
+            )
+            selected = (*controls, *targets)
+            if len(selected) > 8 or len(set(selected)) != len(selected):
+                reject(
+                    token,
+                    "callback.control",
+                    "selected preparation needs at most eight distinct bits",
+                )
+            owner.effect_op(
+                operation.name,
+                token,
+                tuple(value for value, _ in selected),
+                **{
+                    **attributes,
+                    "indices": tuple(bit for _, bit in selected),
+                    "control_count": len(controls),
+                },
+            )
             continue
         if operation.name != "qreg.gate":
             reject(
@@ -169,32 +227,26 @@ def lower_selected_effects(
             owner.effect_op("qreg.gate", token, (value,), gate="i", index=index)
         elif gate == "x":
             owner.emit_indexed_x(token, (*controls, (value, index)))
-        elif gate in {"rx", "ry"}:
-            angle = attributes["angle"] / 2
-            if attributes.get("inverse"):
+        elif gate in {"h", "rx", "ry"}:
+            angle = -math.pi / 4 if gate == "h" else attributes["angle"] / 2
+            if attributes.get("inverse") and gate != "h":
                 angle = -angle
-            locations = (*controls, (value, index))
             for direction in (1, -1):
                 owner.effect_op(
                     "qreg.gate",
                     token,
                     (value,),
-                    gate=gate,
+                    gate="ry" if gate == "h" else gate,
                     index=index,
                     angle=direction * angle,
                 )
-                owner.effect_op(
-                    "qreg.control_phase",
-                    token,
-                    tuple(register for register, _ in locations),
-                    indices=tuple(bit for _, bit in locations),
-                    angle=math.pi,
-                )
+                if direction == 1 or gate != "h":
+                    phase(((value, index),), math.pi)
         else:
             reject(
                 token,
                 "callback.control",
-                "controlled callback scalar gate must be I, X, RX or RY",
+                "controlled callback scalar gate must be I, X, H, RX or RY",
             )
     for value, index in reversed(negative):
         owner.effect_op("qreg.gate", token, (value,), gate="x", index=index)
