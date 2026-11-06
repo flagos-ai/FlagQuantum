@@ -2997,3 +2997,21 @@ FlagQuantum circuit to report its instruction counts separately.
 | FlagQuantum emitted IR | 2,650 T/T† instructions | 603 | 82 declared qubits, including seven scratch wires |
 
 The emitted IR also contains 36 native controlled rotations before synthesis.
+
+### Double-factorization notebook resource queries
+
+Run `python -m examples.algorithms.double_factorization_resources` to print
+the ordered stages, depth-one call multiplicities, logical gate categories
+and peak logical width for both examples from the
+[locked notebook](https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/bloqs/chemistry/df/double_factorization.ipynb).
+It uses 10 spin orbitals, 50 auxiliary factors, 250 factor eigenvalues,
+12 alias bits and seven basis-rotation bits. The standalone one-body
+example uses eight inner rotation bits. The full block uses seven.
+
+| Locked notebook model | Toffoli | CSwap | And | Clifford | Rotation | Measurement | Peak logical qubits |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| One body | 549 | 10 | 14 | 94 | 0 | 14 | 74 |
+| Full block | 1,245 | 20 | 65 | 431 | 4 | 65 | 95 |
+
+The text output represents the stage order and call multiplicities. The
+notebook's graphical circuit and musical score are outside this example.

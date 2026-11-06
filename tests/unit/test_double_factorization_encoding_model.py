@@ -6,6 +6,7 @@ from math import sqrt
 
 import pytest
 
+from examples.algorithms.double_factorization_resources import notebook_models
 from flagquantum.algorithms.primitives.double_factorization_block_encoding import (
     DoubleFactorizationBlockEncoding as ExecutableDoubleFactorization,
 )
@@ -13,6 +14,7 @@ from flagquantum.algorithms.primitives.double_factorization_encoding_model impor
     source_double_factorization_block_encoding_cost,
     source_double_factorization_one_body_cost,
 )
+from flagquantum.compiler._component_trace.call_graph import modeled_call_graph
 from flagquantum.compiler._component_trace.resource_model import (
     estimate_component_resources,
 )
@@ -137,6 +139,49 @@ def test_df_source_estimate_rejects_distinct_alias_precisions():
     )
     with pytest.raises(ValueError, match="requires shared alias precision"):
         encoding.source_resource_model()
+
+
+def test_df_notebook_models_match_both_locked_depth_one_graphs():
+    pytest.importorskip("qualtran")
+    from qualtran.bloqs.chemistry.df.double_factorization import (
+        DoubleFactorizationBlockEncoding,
+        DoubleFactorizationOneBody,
+    )
+    from qualtran.resource_counting.generalizers import ignore_split_join
+
+    params = dict(
+        num_aux=50,
+        num_spin_orb=10,
+        num_eig=250,
+        num_bits_state_prep=12,
+        num_bits_rot=7,
+    )
+    originals = (
+        DoubleFactorizationOneBody(**params),
+        DoubleFactorizationBlockEncoding(
+            **params, num_bits_rot_aa_outer=1, num_bits_rot_aa_inner=7
+        ),
+    )
+    for model, source in zip(notebook_models(), originals, strict=True):
+        ordered = _assert_ordered_graph(model, source)
+        keys = {
+            edge.component: instance.bloq
+            for edge, (instance, _, _) in zip(model.calls, ordered, strict=True)
+        }
+        graph = modeled_call_graph(model, max_depth=1)
+        expected_graph, expected_counts = source.call_graph(
+            max_depth=1, generalizer=ignore_split_join
+        )
+        assert {
+            (source, keys[child]): count
+            for (_, child), count in graph.direct_calls.items()
+        } == {
+            (parent, child): edge["n"]
+            for parent, child, edge in expected_graph.edges(data=True)
+        }
+        assert {keys[child]: count for child, count in graph.leaf_counts.items()} == (
+            expected_counts
+        )
 
 
 @pytest.mark.parametrize("spatial,controls", [(3, 2), (5, 2), (3, 3)])
