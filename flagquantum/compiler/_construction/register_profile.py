@@ -924,8 +924,8 @@ def _verify_body(
                     or destination in borrowed
                     or destination in arguments
                     or any(v.id not in initialized for v in operands)
-                    or not 1 <= register_width(arguments[0]) <= 8
-                    or not 1 <= register_width(destination) <= 4
+                    or not 1 <= register_width(arguments[0]) <= 10
+                    or not 1 <= register_width(destination) <= 5
                 ):
                     _fail(
                         "register.modular_exp",
