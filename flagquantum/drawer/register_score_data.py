@@ -58,6 +58,12 @@ class MusicalScoreData(TypedDict):
 def _port_symbol(
     step: RegisterStep, register: str, side: PortSide
 ) -> tuple[SymbolClass, dict[str, str | int | bool]]:
+    if step.gate == "and" and step.control_values is not None:
+        if side == "THRU":
+            return "Circle", {
+                "filled": bool(step.control_values[step.inputs.index(register)])
+            }
+        return ("LarrowTextBox" if side == "RIGHT" else "RarrowTextBox"), {"text": "∧"}
     if step.gate == "cx" and side == "THRU" and len(step.inputs) == 2:
         if register == step.inputs[0]:
             return "Circle", {"filled": True}
@@ -146,7 +152,8 @@ def register_score_data(
         if column.lanes:
             title = (
                 ""
-                if step.gate == "cx" or step.name in {"qreg.local", "qreg.release"}
+                if step.gate in {"cx", "and"}
+                or step.name in {"qreg.local", "qreg.release"}
                 else step.gate or step.name.removeprefix("qreg.")
             )
             connectors.append(

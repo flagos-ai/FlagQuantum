@@ -18,6 +18,7 @@ from ..compiler._construction.register_profile import (
     verify_register_program,
 )
 from ..compiler._hybrid.model import HybridProgram, ValueId
+from ..compiler.registers.multi_control import multi_and_stages
 
 
 @dataclass(frozen=True)
@@ -32,6 +33,7 @@ class RegisterStep:
     inputs: tuple[str, ...] = ()
     outputs: tuple[str, ...] = ()
     gate: str | None = None
+    control_values: tuple[int, int] | None = None
 
 
 @dataclass(frozen=True)
@@ -139,6 +141,24 @@ def layout_register_score(
     )
     lines.sort(key=lambda line: (line.lane, line.start))
     return RegisterScore(tuple(columns), tuple(lines), output_generation)
+
+
+def multi_and_register_score(values: tuple[int, ...]) -> RegisterScore:
+    """Draw the shared MultiAnd ladder with its live prefix outputs."""
+    controls = tuple(f"ctrl[{i}]" for i in range(len(values)))
+    prefixes = tuple(f"junk[{i}]" for i in range(len(values) - 2))
+    names = (*controls, *prefixes, "target")
+    steps = tuple(
+        RegisterStep(
+            "And",
+            (names[left], names[right]),
+            (names[left], names[right], names[target]),
+            gate="and",
+            control_values=cvs,
+        )
+        for left, right, target, cvs in multi_and_stages(values)
+    )
+    return layout_register_score(dict.fromkeys(names, 1), controls, steps)
 
 
 def register_program_score(

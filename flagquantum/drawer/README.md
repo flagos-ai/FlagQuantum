@@ -259,3 +259,25 @@ dense scores or long register names.
 Open the HTML file directly in a browser to switch between sequential and
 dependency columns. Dependency view repacks lanes whose lifetimes overlap
 after projection. The HTML embeds its data and renderer and works offline.
+
+The locked musical-score notebook uses a four-control MultiAnd with one
+negative control. The native score uses the same ladder stages as the
+compiler. The prefix results appear as named output lanes.
+
+```python
+from pathlib import Path
+
+from flagquantum.drawer.register_score import multi_and_register_score
+from flagquantum.drawer.register_score_data import (
+    export_register_score_json,
+    register_score_data,
+)
+from flagquantum.drawer.register_score_html import export_register_score_html
+from flagquantum.drawer.register_score_mpl import draw_register_score
+
+data = register_score_data(multi_and_register_score((1, 1, 0, 1)))
+Path("multi-and.json").write_text(export_register_score_json(data), encoding="utf-8")
+Path("multi-and.html").write_text(export_register_score_html(data), encoding="utf-8")
+figure, _ = draw_register_score(data)
+figure.savefig("multi-and.svg")
+```

@@ -10,7 +10,7 @@
 
 """Concrete logical-And ladders and single-target controlled gates."""
 
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
 from typing import Literal
 
 from ...core.ir import Instruction
@@ -46,6 +46,20 @@ def _validate_controls(
         )
 
 
+def multi_and_stages(
+    values: tuple[int, ...],
+) -> Iterator[tuple[int, int, int, tuple[int, int]]]:
+    """Yield the forward ladder on controls followed by logical prefix outputs."""
+    n = len(values)
+    if n < 2:
+        raise ValueError("And ladder requires at least two controls")
+    if any(type(value) is not int or value not in (0, 1) for value in values):
+        raise ValueError("Controls require one concrete zero/one value per wire")
+    yield 0, 1, n, (values[0], values[1])
+    for i in range(2, n):
+        yield n + i - 2, i, n + i - 1, (1, values[i])
+
+
 def multi_and_ir(
     controls: tuple[int, ...],
     values: tuple[int, ...],
@@ -66,10 +80,10 @@ def multi_and_ir(
             "And ladder requires at least two controls and a boolean uncompute flag"
         )
     _validate_controls(controls, values, workspace, classical_bits, measured=uncompute)
-    steps = [(controls[0], controls[1], workspace[0], (values[0], values[1]))]
-    steps.extend(
-        (workspace[i - 2], controls[i], workspace[i - 1], (1, values[i]))
-        for i in range(2, len(controls))
+    wires = controls + workspace
+    steps = tuple(
+        (wires[left], wires[right], wires[target], cvs)
+        for left, right, target, cvs in multi_and_stages(values)
     )
     if uncompute:
         return tuple(
