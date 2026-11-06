@@ -65,8 +65,6 @@ def certified_and_channel_map(
     are independently proved on all eight inputs before composition. This is a test certificate,
     not an execution backend or a sampled branch check.
     """
-    import numpy as np
-
     from flagquantum.compiler.registers.and_compute import (
         and_compute_ir,
         and_uncompute_ir,
@@ -77,7 +75,7 @@ def certified_and_channel_map(
         raise AssertionError("Channel certificate needs nonempty basis inputs")
     width = len(basis_bits[0])
     assert all(len(word) == width and set(word) <= {0, 1} for word in basis_bits)
-    values = np.asarray(basis_bits, dtype=np.uint8).T.copy()
+    values = torch.tensor(basis_bits, dtype=torch.uint8).T.contiguous()
     i, events = 0, 0
     while i < len(gates):
         gate = gates[i]
@@ -92,9 +90,9 @@ def certified_and_channel_map(
             if len({control, left, right}) == 3:
                 swap = controlled_swap_bit_ir(control, left, right)
                 if gates[i : i + len(swap)] == swap:
-                    a, b = values[left].copy(), values[right].copy()
-                    values[left] = np.where(values[control], b, a)
-                    values[right] = np.where(values[control], a, b)
+                    a, b = values[left].clone(), values[right].clone()
+                    values[left] = torch.where(values[control].bool(), b, a)
+                    values[right] = torch.where(values[control].bool(), a, b)
                     i += len(swap)
                     continue
         if gate.name == "h" and i + 3 < len(gates):
@@ -104,7 +102,7 @@ def certified_and_channel_map(
                 x, y = gates[i + 2].wires[0], gates[i + 3].wires[0]
                 block = and_compute_ir(x, y, target)
                 assert gates[i : i + len(block)] == block
-                np.testing.assert_array_equal(values[target], 0)
+                assert torch.count_nonzero(values[target]) == 0
                 values[target] = values[x] & values[y]
             else:
                 assert gates[i + 1].name == "measure"
@@ -112,7 +110,7 @@ def certified_and_channel_map(
                 x, y = gates[i + 2].wires
                 block = and_uncompute_ir(x, y, target, bit)
                 assert gates[i : i + len(block)] == block
-                np.testing.assert_array_equal(values[target], values[x] & values[y])
+                assert torch.equal(values[target], values[x] & values[y])
                 values[target] = 0
                 events += 1
             i += len(block)
@@ -126,4 +124,4 @@ def certified_and_channel_map(
             a, b, target = gate.wires
             values[target] ^= values[a] & values[b]
         i += 1
-    return tuple(tuple(int(v) for v in word) for word in values.T), events
+    return tuple(tuple(word) for word in values.T.tolist()), events

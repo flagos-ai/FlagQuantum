@@ -113,6 +113,52 @@ SCRIPTS = (
     "synthesis_source_trial",
 )
 
+# Register examples verify their circuits in main() and report the outcome.
+REGISTER_EXAMPLES = {
+    "binary_field_arithmetic": "second accumulation restores h",
+    "register_bitonic_sort": "Logical histories:",
+    "register_compare_exchange": "Measured forward primitives:",
+    "register_comparison": "all complex amplitudes correct; work is zero",
+    "register_constant_addition": "A second negation restores the input and clean workspace",
+    "register_controlled_add_or_subtract": "Measured forward primitives:",
+    "register_controlled_addition": "phase preserved and all 5 work wires zero",
+    "register_controlled_comparison": "all complex amplitudes correct, work zero, double XOR verified",
+    "register_controlled_modular_adjoint": "Measured primitives:",
+    "register_controlled_modular_arithmetic": "Work budget: nine quantum wires",
+    "register_equality": "both work wires zero, twice restores input",
+    "register_greater": "all work zero; double XOR restores input",
+    "register_half_comparison": "Logical adjoint output ports:",
+    "register_hamming_weight": "Source tree junk: 3; temporary count: 3; retained result: 3.",
+    "register_hamming_weight_gradient_phasing": "gradient and work returned to zero",
+    "register_hamming_weight_phasing": "count and junk returned to zero",
+    "register_inverse_addition": "Measured inverse gates:",
+    "register_inverse_algorithm": "Original inverse appended using the actual forward coefficient/work roles.",
+    "register_inverse_flags": "Measured forward primitives:",
+    "register_inverse_iteration": "Measured primitives:",
+    "register_inverse_selection": "Measured forward primitives:",
+    "register_inverse_updates": "Measured scaling primitives:",
+    "register_less_equal": "Clean quantum work:",
+    "register_modular_arithmetic": "Work budget: eight quantum wires",
+    "register_modular_constant_adjoint": "Measured primitives:",
+    "register_modular_doubling": "Measured primitive gates:",
+    "register_modular_inverse": "Matching inverse appended",
+    "register_modular_multiplication": "Work: thirteen quantum wires",
+    "register_modular_negation": "Work: ordinary six wires",
+    "register_modular_scaled_addition": "Constant work: ten wires; scaled work: eleven wires",
+    "register_permutation": "Measured forward gates:",
+    "register_phase_addition": "gradient and work returned to zero",
+    "register_phase_gradient": "the inverse restored the input and clean work",
+    "register_phase_gradient_rotations": "the shared gradient and work returned to zero",
+    "register_qvr_phase_gradient": "restored the gradient and work",
+    "register_qvr_zpow": "preserved the complete complex phase",
+    "register_scaled_phase_addition": "gradient and work returned to zero",
+    "register_select_swap_qrom": "borrowed bank restored with its coherence",
+    "register_signed_difference_sign": "overflow and width-one cases do not implement full signed ordering",
+    "register_sorted_duplicates": "workspace returned to zero",
+    "register_subtraction": "both carry wires zero",
+    "register_windowed_mod_mul": "After uncomputation:",
+}
+
 # One or more phrases per script, each the load-bearing half of that unit's
 # advantage premise: what the unit gives up rather than what it does. Chosen by
 # reading the unit's own ``limitations`` in ``capability-maturity.toml`` and taking
@@ -1744,13 +1790,20 @@ def test_synthesis_source_trial_runs_text_and_local_file(
     _assert_premise("synthesis_source_trial", output)
 
 
+@pytest.mark.parametrize("name", REGISTER_EXAMPLES)
+def test_register_example_executes_its_workflow(name: str) -> None:
+    output = _run(name)
+    assert REGISTER_EXAMPLES[name] in output, output
+
+
 def test_the_example_directory_is_covered_and_indexed() -> None:
     scripts = sorted(path.name for path in EXAMPLES.glob("*.py"))
-    expected = sorted(f"{name}.py" for name in SCRIPTS)
+    assert set(SCRIPTS).isdisjoint(REGISTER_EXAMPLES)
+    expected = sorted(f"{name}.py" for name in (*SCRIPTS, *REGISTER_EXAMPLES))
 
     assert scripts == expected, (
         "every script in examples/algorithms/ must be run by this module: add it to "
-        f"SCRIPTS, or remove it. Found {scripts}, expected {expected}"
+        f"the corresponding inventory, or remove it. Found {scripts}, expected {expected}"
     )
     assert sorted(PREMISE_PHRASES) == sorted(SCRIPTS), (
         "every script in SCRIPTS needs a premise phrase in PREMISE_PHRASES, so a new "
