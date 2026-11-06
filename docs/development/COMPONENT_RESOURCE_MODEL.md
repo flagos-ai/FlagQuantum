@@ -551,6 +551,10 @@ The emitted phase instruction retains its angle. The model recognizes
 that angle as one additional T independently of the four emitted T-family
 instructions in the AND computation.
 
+Use `global_phase_exponent` to obtain the principal argument of a
+complex coefficient in units of pi. As in the source, the coefficient
+magnitude is discarded and a concrete zero maps to the identity phase.
+
 - [Qualtran v0.7.0 global phase](https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/bloqs/basic_gates/global_phase.py)
 
 ## SU(2) rotation decomposition

@@ -14,7 +14,10 @@ from flagquantum.compiler._component_trace.compound_control_resource import (
     global_phase_cost_key,
 )
 from flagquantum.compiler._component_trace.qec_gate_cost import query_qec_gate_cost
-from flagquantum.compiler.registers.global_phase import global_phase_ir
+from flagquantum.compiler.registers.global_phase import (
+    global_phase_exponent,
+    global_phase_ir,
+)
 from flagquantum.core.ir import Instruction
 from tests.unit.measurement_checks import forced_branch
 from tests.unit.register_source_graph import (
@@ -184,3 +187,54 @@ def test_global_phase_binding_validation() -> None:
         global_phase_ir(0.5, controls=(0, 1), values=(0, 1), workspace=(2,))
     with pytest.raises(ValueError, match="finite"):
         global_phase_ir(float("inf"), anchor=0)
+
+
+@pytest.mark.ftqc_reference
+@pytest.mark.parametrize(
+    "coefficient", [0j, -0.0, 2j, -2 - 3j, complex(-1, -0.0), 1 + 1j]
+)
+def test_phase_coefficient_conversion_and_controlled_application(
+    coefficient: complex,
+) -> None:
+    pytest.importorskip("qualtran")
+    from qualtran.bloqs.basic_gates import GlobalPhase
+    from qualtran.resource_counting import QECGatesCost, get_cost_value
+
+    source = GlobalPhase.from_coefficient(coefficient)
+    exponent = float(global_phase_exponent(coefficient))
+    assert exponent == pytest.approx(source.exponent, rel=0, abs=2e-15)
+
+    state = torch.tensor([1 + 1j, -2 + 3j], dtype=torch.complex128)
+    state /= state.norm()
+    expected = torch.as_tensor(source.controlled().tensor_contract()) @ state
+    gates = global_phase_ir(exponent, controls=(0,), values=(1,))
+    assert [g.name for g in gates] == ["phase"]
+    assert gates[0].params["theta"] == pytest.approx(
+        pi * source.exponent, rel=0, abs=2e-15
+    )
+    circuit = fq.Circuit(1, inputs=state, dtype=torch.complex128)
+    circuit.append(FieldOperation(1, gates))
+    torch.testing.assert_close(circuit.state().flatten(), expected, rtol=0, atol=2e-12)
+    model = query_qec_gate_cost(global_phase_cost_key(exponent, (1,)))
+    expected_model = get_cost_value(source.controlled(), QECGatesCost())
+    assert (model.t, model.clifford, model.rotation) == (
+        expected_model.t,
+        expected_model.clifford,
+        expected_model.rotation,
+    )
+
+
+@pytest.mark.ftqc_reference
+def test_symbolic_phase_coefficient_uses_source_argument() -> None:
+    pytest.importorskip("qualtran")
+    from qualtran.bloqs.basic_gates import GlobalPhase
+    from sympy import Symbol
+
+    coefficient = Symbol("coefficient")
+    exponent = global_phase_exponent(coefficient)
+    assert exponent == GlobalPhase.from_coefficient(coefficient).exponent
+
+
+def test_nonfinite_coefficient_rejected() -> None:
+    with pytest.raises(ValueError, match="finite"):
+        global_phase_exponent(complex(1, float("inf")))

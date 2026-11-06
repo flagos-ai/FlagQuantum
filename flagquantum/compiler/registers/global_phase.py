@@ -5,11 +5,35 @@
 
 """Exact scalar and control-pattern phase emission."""
 
+from __future__ import annotations
+
+from cmath import isfinite as isfinite_complex
+from cmath import phase
 from math import isfinite, pi
+from typing import TYPE_CHECKING, cast
 
 from ...core.ir import Instruction
+from .._component_trace.symbolic_math import SymbolicReal
 from .bitwise import _validate_wires
 from .multi_control import _validate_controls, multi_and_ir
+
+if TYPE_CHECKING:
+    from sympy import Expr
+
+
+def global_phase_exponent(coefficient: complex | Expr) -> SymbolicReal:
+    """Return the source principal argument in units of pi.
+
+    The magnitude is ignored. A concrete zero coefficient has exponent zero.
+    """
+    if isinstance(coefficient, (int, float, complex)):
+        if not isfinite_complex(coefficient):
+            raise ValueError("Global phase coefficient must be finite")
+        return phase(coefficient) / pi
+    from sympy import arg
+    from sympy import pi as symbolic_pi
+
+    return cast(SymbolicReal, arg(coefficient) / symbolic_pi)
 
 
 def _finite_angle(value: float, scale: float = 1.0) -> float:
