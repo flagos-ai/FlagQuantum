@@ -125,6 +125,59 @@ def test_df_coefficient_factory_projects_spin_summed_fermion_operator():
         np.testing.assert_allclose(projected, expected @ vector, atol=6e-12, rtol=0)
 
 
+@pytest.mark.parametrize(
+    "one_body,factors,angles",
+    [
+        ((1.0,), ((2.0,), (-2.0,)), ((), (), ())),
+        ((1.0, -3.0), ((2.0,),), ((1,), (3,), (2,))),
+    ],
+)
+def test_df_adjoint_on_persistent_signal_and_system(one_body, factors, angles):
+    encoding = DoubleFactorizationBlockEncoding.from_eigenvalues(
+        one_body,
+        factors,
+        angles,
+        outer_bits=1,
+        inner_bits=1,
+        rank_rotation_bits=2,
+        basis_rotation_bits=4,
+    )
+    logical = sum(size for _, size in encoding.layout)
+    work, _ = encoding.requirements()
+    width = logical + work
+    ports = partition_register(tuple(range(logical)), encoding.layout)
+    workspace = tuple(range(logical, width))
+    allowed = (
+        tuple(wire for name, _ in encoding.signal_layout for wire in ports[name])
+        + ports["system"]
+    )
+    bit_masks = tuple(1 << (width - 1 - wire) for wire in allowed)
+    words = (0, *bit_masks, sum(bit_masks))
+    initial = {word: (1j ** (i % 4)) / sqrt(len(words)) for i, word in enumerate(words)}
+    forward = encoding.make_on(ports, workspace=workspace)
+    backward = encoding.make_on(ports, workspace=workspace, adjoint=True)
+    forward_ir = DynamicCircuit(width).append(forward).to_ir()
+    backward_ir = DynamicCircuit(width).append(backward).to_ir()
+    forward_counts = count_emitted_instructions(forward_ir)
+    backward_counts = count_emitted_instructions(backward_ir)
+    events = forward_counts.unconditional["measure"]
+    assert backward_counts.unconditional["measure"] == events
+    assert backward_counts.t_count == forward_counts.t_count
+
+    def run(ir, state, history):
+        result = _branch(
+            ir.instructions, width, history, state, normalize_measurements=True
+        )
+        assert all(index & ~sum(bit_masks) == 0 for index in result)
+        return result
+
+    reference = run(forward_ir, initial, (0,) * events)
+    for pattern in ((1,), (0, 1), (1, 0)):
+        history = (pattern * events)[:events]
+        assert run(backward_ir, initial, history) == pytest.approx(reference, abs=1e-11)
+        assert run(backward_ir, reference, history) == pytest.approx(initial, abs=1e-11)
+
+
 def _expected_block(rows, angles, alias_bits, angle_bits, rank_bits):
     spatial = len(rows[0])
     identity = np.eye(1 << spatial)

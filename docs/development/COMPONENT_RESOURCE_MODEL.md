@@ -3023,6 +3023,15 @@ FlagQuantum circuit to report its instruction counts separately.
 
 The emitted IR also contains 36 native controlled rotations before synthesis.
 
+The binding accepts `adjoint=True` and exchanges the order of the two
+inner bodies around the middle reflection. Each body is a conjugated
+number reflection. For a successful nonzero factor the two bodies agree
+on the active subspace. For factor zero the additional control makes the
+second body and middle reflection the identity. The executable signal
+includes the two alias samples as well as the factor, orbital, spin and
+rank-rotation ports. `encoding.signal_layout` identifies these persistent
+ports, and the other non-system ports require clean input.
+
 ### Double-factorization notebook resource queries
 
 Run `python -m examples.algorithms.double_factorization_resources` to print

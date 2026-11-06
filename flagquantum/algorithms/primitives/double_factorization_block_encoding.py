@@ -25,6 +25,7 @@ from .double_factorization_outer_prepare import PrepareDoubleFactorizationOuter
 from .multiplexers.select_double_factorization import SelectDoubleFactorization
 
 _METADATA = {"xi", "offset", "rot_data"}
+_SIGNAL = {"l", "sigma", "inner_p", "inner_sigma", "inner_rotation", "spin"}
 _SELECT_SHARED = {
     "offset",
     "p",
@@ -41,9 +42,9 @@ _SELECT_SHARED = {
 class DoubleFactorizationBlockEncoding:
     """Compose the factor signal, signed number selection and middle reflection.
 
-    All non-system ports start in zero. Project them onto zero to read the
-    encoded block. Angle rows follow the concatenated eigenvalue order, and
-    the system is spin-major.
+    Project the signal onto zero to read the encoded block. Other non-system
+    ports are clean at the boundary. Angle rows follow the concatenated
+    eigenvalue order, and the system is spin-major.
     """
 
     outer: PrepareDoubleFactorizationOuter
@@ -207,6 +208,11 @@ class DoubleFactorizationBlockEncoding:
             ("system", 2 * self.select.orbitals),
         )
 
+    @property
+    def signal_layout(self) -> RegisterLayout:
+        """Return the persistent zero-projection ports in binding order."""
+        return tuple((name, width) for name, width in self.layout if name in _SIGNAL)
+
     def requirements(self) -> tuple[int, int]:
         """Return reusable scratch wires and feedback slots for the full block."""
         outer_work, outer_slots = self.outer.requirements()
@@ -244,14 +250,17 @@ class DoubleFactorizationBlockEncoding:
         ports: Mapping[str, tuple[int, ...]],
         *,
         workspace: tuple[int, ...],
+        adjoint: bool = False,
     ) -> "_BoundDoubleFactorization":
         """Bind the block encoding for circuit.append on a DynamicCircuit."""
         wires = unpartition_register(ports, self.layout)
         _validate_wires((*wires, *workspace))
-        if len(workspace) != self.requirements()[0]:
-            raise ValueError("DF block encoding requires matching clean workspace")
+        if type(adjoint) is not bool or len(workspace) != self.requirements()[0]:
+            raise ValueError(
+                "DF block encoding requires matching workspace and direction"
+            )
         return _BoundDoubleFactorization(
-            self, dict(ports), workspace, max((*wires, *workspace)) + 1
+            self, dict(ports), workspace, adjoint, max((*wires, *workspace)) + 1
         )
 
     def _emit(
@@ -259,6 +268,8 @@ class DoubleFactorizationBlockEncoding:
         ports: Mapping[str, tuple[int, ...]],
         work: tuple[int, ...],
         start: int,
+        *,
+        adjoint: bool = False,
     ) -> tuple[Instruction, ...]:
         slots = tuple(range(start, start + self.requirements()[1]))
         outer_ports = {name: ports[name] for name, _ in self.outer.layout}
@@ -339,9 +350,9 @@ class DoubleFactorizationBlockEncoding:
                 outer_ports, work[:outer_work], slots[:outer_slots], False
             ),
             *load._emit(start),
-            *body(False),
+            *body(adjoint),
             *reflection,
-            *body(True),
+            *body(not adjoint),
             *unload._emit(start),
             *self.outer._emit(
                 outer_ports, work[:outer_work], slots[:outer_slots], True
@@ -354,6 +365,7 @@ class _BoundDoubleFactorization:
     encoding: DoubleFactorizationBlockEncoding
     ports: Mapping[str, tuple[int, ...]]
     workspace: tuple[int, ...]
+    adjoint: bool
     required_qubits: int
 
     def append_to(self, circuit: Circuit) -> Circuit:
@@ -366,7 +378,9 @@ class _BoundDoubleFactorization:
         start = validate_classical_control(
             circuit.to_ir().instructions, n_qubits=circuit.n_qubits
         )
-        gates = self.encoding._emit(self.ports, self.workspace, start)
+        gates = self.encoding._emit(
+            self.ports, self.workspace, start, adjoint=self.adjoint
+        )
         return circuit.compose(
             CircuitIR(
                 circuit.n_qubits, gates, metadata={"batch_size": circuit.bsz}
