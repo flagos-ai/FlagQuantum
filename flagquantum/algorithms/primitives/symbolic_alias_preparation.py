@@ -6,6 +6,8 @@
 
 """Shape-only alias preparation with locked precision and resource rules."""
 
+from __future__ import annotations
+
 from dataclasses import dataclass
 from typing import cast
 
@@ -41,6 +43,7 @@ class AliasPreparationShape:
     rows: SymbolicInt
     normalization: SymbolicReal
     probability_bits: SymbolicInt
+    support_size: SymbolicInt | None = None
 
     @classmethod
     def from_precision(
@@ -58,17 +61,55 @@ class AliasPreparationShape:
             rows, normalization, alias_probability_bits(rows, precision / normalization)
         )
 
+    @classmethod
+    def from_sparse_precision(
+        cls,
+        selection_size: SymbolicInt,
+        support_size: SymbolicInt,
+        normalization: SymbolicReal,
+        precision: SymbolicReal,
+    ) -> "AliasPreparationShape":
+        """Build the three-table source shape at normalized precision."""
+        if isinstance(selection_size, int) and isinstance(support_size, int):
+            if not 1 <= support_size <= selection_size:
+                raise ValueError("Sparse support must fit the selection domain")
+        if isinstance(support_size, int) and support_size < 1:
+            raise ValueError("Sparse support must be positive")
+        if isinstance(normalization, (int, float)) and not 0 < normalization < float(
+            "inf"
+        ):
+            raise ValueError("Alias normalization must be positive and finite")
+        return cls(
+            selection_size,
+            normalization,
+            alias_probability_bits(selection_size, precision),
+            support_size,
+        )
+
     @property
     def selection_width(self) -> SymbolicInt:
         return bit_length(self.rows - 1)
 
     @property
+    def sparse_index_width(self) -> SymbolicInt:
+        return 0 if self.support_size is None else bit_length(self.support_size - 1)
+
+    @property
     def junk_width(self) -> SymbolicInt:
-        return self.selection_width + 2 * self.probability_bits + 1
+        return (
+            self.selection_width
+            + self.sparse_index_width
+            + 2 * self.probability_bits
+            + 1
+        )
 
     def resource_model(self) -> SymbolicResourceFormula:
         """Estimate the source call graph for at least two table-free rows."""
-        rows, address, mu = self.rows, self.selection_width, self.probability_bits
+        sparse = self.support_size is not None
+        rows = self.rows if self.support_size is None else self.support_size
+        selection, mu = self.selection_width, self.probability_bits
+        sparse_width = self.sparse_index_width
+        address = sparse_width if sparse else selection
         if isinstance(rows, int) and rows < 2:
             raise ValueError("The shape-only cost requires at least two rows")
         uniform_peak: SymbolicReal
@@ -84,7 +125,10 @@ class AliasPreparationShape:
             uniform_rotations = 2
             uniform_peak = smax(3, address + 1, 2 * address - 1)
 
-        qrom = source_qrom_resource_formula((rows,), (address, mu))
+        targets = (selection, selection, mu) if sparse else (selection, mu)
+        qrom = source_qrom_resource_formula(
+            (rows,), targets, selection_widths=(address,)
+        )
         compare_ands = 2 * mu - 1 if isinstance(mu, int) else 2 * mu + 1
         compare_cliffords = 22 * mu - 9 if isinstance(mu, int) else 22 * mu + 11
         compare_peak = 5 * mu if isinstance(mu, int) else smax(7, 2 * mu + 1)
@@ -93,12 +137,12 @@ class AliasPreparationShape:
             SymbolicInt,
             smax(
                 0,
-                address + self.junk_width,
-                uniform_peak + self.junk_width,
+                selection + self.junk_width,
+                uniform_peak + selection + self.junk_width - address,
                 qrom.logical_qubits + mu + 1,
-                compare_peak + 2 * address,
-                smax(3, 2 * address + 1) + 2 * mu,
-                smax(1, mu) + 2 * address + mu + 1,
+                compare_peak + 2 * selection + sparse_width,
+                smax(3, 2 * selection + 1) + 2 * mu + sparse_width,
+                smax(1, mu) + 2 * selection + sparse_width + mu + 1,
             ),
         )
         return SymbolicResourceFormula(
@@ -106,6 +150,6 @@ class AliasPreparationShape:
             uniform_cliffords + qrom.clifford + compare_cliffords + mu,
             ands,
             peak,
-            cswap=address,
+            cswap=selection,
             rotation=uniform_rotations,
         )

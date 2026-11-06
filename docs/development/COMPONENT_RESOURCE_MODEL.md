@@ -1774,3 +1774,20 @@ categories. The pinned source cannot compute the complete walk's logical
 peak when the reflection junk has symbolic width. With a concrete
 precision, `ising_walk` returns the bounded Pauli walk and its concrete
 alias table, and the full resource model is available.
+
+### Sparse alias costs
+
+`source_sparse_alias_preparation_cost(table)` counts a populated sparse
+table. The lookup address covers the support, and the three datasets load
+selection, alternate and keep in that order. The full selection width
+determines the swap width. For `{3: 1, 0: 3}` over four selections at
+precision 0.25, the source reports two CSwap, one And, one measurement,
+20 Cliffords and a peak of ten logical qubits. The native circuit emits
+18 T/T† instructions using exact seven-T Fredkin gates.
+
+`AliasPreparationShape.from_sparse_precision` estimates a table-free
+sparse declaration. Its probability width uses the full selection count
+at normalized precision, as specified by the locked source. A populated
+table uses the support count at normalized precision. The source composite
+has no `sparse_index` port for a single support row, so the source cost query
+raises in that case. Native singleton preparation remains executable.
