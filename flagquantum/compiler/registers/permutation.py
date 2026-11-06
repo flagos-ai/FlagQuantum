@@ -6,9 +6,47 @@
 
 """Ordered basis-state permutation cycles with measured equality cleanup."""
 
+from collections.abc import Mapping
+
 from ...core.ir import Instruction
 from .bitwise import controlled_xor_constant_ir
 from .equality import equality_constant_ir
+
+
+def source_partial_permutation_cycles(
+    size: int, mapping: Mapping[int, int]
+) -> tuple[tuple[int, ...], ...]:
+    """Read nontrivial cycles in the locked source's mapping iteration order.
+
+    A path ends on a missing outgoing edge or an already visited vertex. A
+    prefix reaching an earlier path does not merge into it. Callers requiring
+    all partial edges must verify the resulting mapping.
+
+    Source: Qualtran v0.7.0 qualtran/linalg/permutation.py.
+    """
+    if type(size) is not int or size < 1:
+        raise ValueError("Permutation size must be a positive integer")
+    if len(set(mapping.values())) != len(mapping) or any(
+        type(value) is not int or not 0 <= value < size
+        for edge in mapping.items()
+        for value in edge
+    ):
+        raise ValueError("Partial permutation must be injective and in range")
+
+    seen: set[int] = set()
+    cycles = []
+    for start in mapping:
+        cycle = []
+        node = start
+        while node not in seen:
+            seen.add(node)
+            cycle.append(node)
+            if node not in mapping:
+                break
+            node = mapping[node]
+        if len(cycle) >= 2:
+            cycles.append(tuple(cycle))
+    return tuple(cycles)
 
 
 def permutation_cycle_ir(
