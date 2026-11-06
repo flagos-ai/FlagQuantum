@@ -3,7 +3,7 @@
 # Adapted from Qualtran v0.7.0 chemistry/sparse/prepare.py.
 # https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/bloqs/chemistry/sparse/prepare.py
 
-"""Sparse chemistry preparation and explicit coherent reversal."""
+"""Sparse chemistry preparation and explicit reversal strategies."""
 
 from collections.abc import Mapping
 from dataclasses import dataclass
@@ -95,6 +95,23 @@ class PrepareSparseChemistry:
         """
         return self._bind(ports, workspace, classical_bits, adjoint=True)
 
+    def make_measurement_adjoint_on(
+        self,
+        ports: Mapping[str, tuple[int, ...]],
+        *,
+        workspace: tuple[int, ...],
+        classical_bits: tuple[int, ...],
+        bank_bits: tuple[int, ...],
+    ) -> "_BoundPrepareSparseChemistry":
+        """Reverse preparation and consume matching lookup banks by measurement.
+
+        Provide one outcome slot per bank wire in dataset, block cell and
+        big-endian wire order, separate from all traversal scratch slots.
+        """
+        return self._bind(
+            ports, workspace, classical_bits, adjoint=True, bank_bits=bank_bits
+        )
+
     def _bind(
         self,
         ports: Mapping[str, tuple[int, ...]],
@@ -102,6 +119,7 @@ class PrepareSparseChemistry:
         classical_bits: tuple[int, ...],
         *,
         adjoint: bool,
+        bank_bits: tuple[int, ...] | None = None,
     ) -> "_BoundPrepareSparseChemistry":
         logical = unpartition_register(
             ports, (*self.selection_layout, *self.junk_layout)
@@ -128,13 +146,27 @@ class PrepareSparseChemistry:
             adjoint=adjoint,
         )
         lookup_work = data.lookup_table().workspace_size(0, (len(address),))
-        lookup = data.lookup_ir(
-            address,
-            {name: ports[name] for name, _ in data.lookup_output_layout},
-            workspace[:lookup_work],
-            classical_bits[:lookup_work],
-            uncompute=adjoint,
-        )
+        lookup_outputs = {name: ports[name] for name, _ in data.lookup_output_layout}
+        if bank_bits is None:
+            lookup = data.lookup_ir(
+                address,
+                lookup_outputs,
+                workspace[:lookup_work],
+                classical_bits[:lookup_work],
+                uncompute=adjoint,
+            )
+        else:
+            if set(bank_bits).intersection(classical_bits):
+                raise ValueError(
+                    "Sparse PREPARE bank slots must be separate from scratch"
+                )
+            lookup = data.lookup_measurement_erase_ir(
+                address,
+                lookup_outputs,
+                workspace[:lookup_work],
+                classical_bits[:lookup_work],
+                bank_bits,
+            )
         sigma = ports["sigma"]
         flag = ports["less_than"][0]
         compare_work, compare_slots = less_equal_requirements(len(sigma), len(sigma))

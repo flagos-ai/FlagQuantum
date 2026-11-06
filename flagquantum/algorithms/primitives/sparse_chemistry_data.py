@@ -15,6 +15,7 @@ from numpy.typing import ArrayLike
 
 from ...compiler._component_trace.resource_model import ComponentCost
 from ...compiler.registers.partition import RegisterLayout, unpartition_register
+from ...compiler.registers.qroam_clean_erasure import qroam_clean_measurement_erase_ir
 from ...compiler.registers.qroam_resource_model import source_qroam_clean_cost
 from ...compiler.registers.source_qroam_clean import (
     QroamCleanTable,
@@ -96,6 +97,34 @@ class SparseChemistryData:
     ) -> tuple[Instruction, ...]:
         """Load clean banks or coherently erase matching signed lookup outputs."""
         table = self.lookup_table()
+        banks = self._bind_lookup_banks(address, outputs)
+        emit = source_qroam_clean_uncompute_ir if uncompute else source_qroam_clean_ir
+        return emit(table, (), (address,), banks, workspace, classical_bits)
+
+    def lookup_measurement_erase_ir(
+        self,
+        address: tuple[int, ...],
+        outputs: Mapping[str, tuple[int, ...]],
+        workspace: tuple[int, ...],
+        classical_bits: tuple[int, ...],
+        bank_bits: tuple[int, ...],
+    ) -> tuple[Instruction, ...]:
+        """Measure and clear the matching lookup outputs in their declared order."""
+        return qroam_clean_measurement_erase_ir(
+            self.lookup_table(),
+            (),
+            (address,),
+            self._bind_lookup_banks(address, outputs),
+            workspace,
+            classical_bits,
+            bank_bits,
+        )
+
+    def _bind_lookup_banks(
+        self,
+        address: tuple[int, ...],
+        outputs: Mapping[str, tuple[int, ...]],
+    ) -> tuple[tuple[tuple[int, ...], ...], ...]:
         if len(address) != self.address_width:
             raise ValueError("Sparse chemistry address width must match the row count")
         unpartition_register(outputs, self.lookup_output_layout)
@@ -111,8 +140,7 @@ class SparseChemistryData:
                     ),
                 )
             )
-        emit = source_qroam_clean_uncompute_ir if uncompute else source_qroam_clean_ir
-        return emit(table, (), (address,), tuple(banks), workspace, classical_bits)
+        return tuple(banks)
 
     def lookup_cost(self) -> ComponentCost:
         """Estimate the source forward lookup with the declared target widths."""

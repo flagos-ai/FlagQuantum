@@ -1915,3 +1915,30 @@ The coherent circuit's counts describe its actual instructions, and
 the forward output banks must satisfy their lookup invariant when
 uncomputed. The branch checks include a padded lookup with an odd
 number of rows.
+
+For the same ports, call `make_measurement_adjoint_on` to consume the
+lookup banks by X-basis measurement and apply the resulting phase
+corrections before reversing uniform preparation. Supply one extra
+classical outcome slot per bank wire.
+
+```python
+bank_width = sum(size for _, size in prepare.data.lookup_output_layout)
+measured = prepare.make_measurement_adjoint_on(
+    ports,
+    workspace=tuple(range(width, width + work)),
+    classical_bits=tuple(range(slots)),
+    bank_bits=tuple(range(slots, slots + bank_width)),
+)
+measured_circuit = DynamicCircuit(width + work).append(measured)
+measured_cost = estimate_ftqc_resources(
+    prepare.resource_model(adjoint=True), emitted_ir=measured_circuit.to_ir()
+)
+assert measured_cost.logical == source_cost.logical
+assert measured_cost.emitted is not None
+assert measured_cost.emitted.t_count == 75
+assert measured_cost.emitted.unconditional["measure"] == 16
+```
+
+The executable path retains the coherent path's T count and scratch
+width and adds one measurement per lookup bank wire. The separate source
+model keeps the upstream abstract erasure formula.

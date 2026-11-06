@@ -17,6 +17,7 @@ from flagquantum.algorithms.primitives.sparse_chemistry_prepare import (
 from flagquantum.compiler.registers.partition import partition_register
 from flagquantum.core.ir import Instruction
 from flagquantum.dynamic import DynamicCircuit
+from flagquantum.qec.resources.estimation import estimate_ftqc_resources
 from tests.unit.register_source_graph import walk_source_graph
 from tests.unit.test_first_quantization_resource_model import assert_source_model
 from tests.unit.test_register_constant_addition import reference_arithmetic_gates
@@ -310,3 +311,72 @@ def test_padded_lookup_adjoint_and_non_power_of_two_uniform_round_trip():
             inverse, width + work, tuple(1 - bit for bit in history), output
         )
         assert restored == pytest.approx({0: 2**-events}, abs=2e-12)
+
+
+@pytest.mark.parametrize(("log", "include_two_body"), [(0, True), (1, False)])
+def test_measurement_adjoint_consumes_lookup_banks(log, include_two_body):
+    one = np.array([[1.0, -0.75], [-0.75, 1.0]])
+    two = np.zeros((2,) * 4)
+    if include_two_body:
+        two[0, 0, 0, 0] = -0.5
+    data = sparse_chemistry_data(one, two, probability_bits=1, log_block_size=log)
+    prepare = PrepareSparseChemistry(data)
+    layout = (*prepare.selection_layout, *prepare.junk_layout)
+    width = sum(bits for _, bits in layout)
+    ports = partition_register(tuple(range(width)), layout)
+    work, slots = prepare.requirements()
+    n_qubits = width + work + 1
+    scratch = tuple(range(width, width + work))
+    bits = tuple(range(slots))
+    bank_width = sum(bits for _, bits in data.lookup_output_layout)
+    bank_bits = tuple(range(slots, slots + bank_width))
+    forward = DynamicCircuit(n_qubits).append(
+        prepare.make_on(ports, workspace=scratch, classical_bits=bits)
+    )
+    coherent = DynamicCircuit(n_qubits).append(
+        prepare.make_coherent_adjoint_on(ports, workspace=scratch, classical_bits=bits)
+    )
+    measured = DynamicCircuit(n_qubits).append(
+        prepare.make_measurement_adjoint_on(
+            ports, workspace=scratch, classical_bits=bits, bank_bits=bank_bits
+        )
+    )
+    with pytest.raises(ValueError, match="separate from scratch"):
+        prepare.make_measurement_adjoint_on(
+            ports,
+            workspace=scratch,
+            classical_bits=bits,
+            bank_bits=(bits[0], *bank_bits[1:]),
+        )
+
+    model = prepare.resource_model(adjoint=True)
+    report = estimate_ftqc_resources(model, emitted_ir=measured.to_ir())
+    baseline = estimate_ftqc_resources(model, emitted_ir=coherent.to_ir())
+    assert report.logical == baseline.logical
+    assert report.emitted is not None and baseline.emitted is not None
+    assert report.emitted.t_count == baseline.emitted.t_count
+    erase = measured.to_ir().instructions
+    outcomes = tuple(g.metadata["classical_bit"] for g in erase if g.name == "measure")
+    is_bank = tuple(bit in bank_bits for bit in outcomes)
+    assert tuple(bit for bit in outcomes if bit in bank_bits) == bank_bits
+    assert len(outcomes) == bank_width + baseline.emitted.unconditional["measure"]
+    gates = forward.to_ir().instructions
+    events = sum(gate.name == "measure" for gate in gates)
+    initial = {0: (1 + 1j) / 2, 1: (1 - 1j) / 2}
+    expected = {
+        index: amplitude * 2 ** (-(events + len(outcomes)) / 2)
+        for index, amplitude in initial.items()
+    }
+    # The register-level test exhausts bank histories. Exercise both values
+    # of every bank slot in the much larger composed operation.
+    for history in product((0, 1), repeat=events):
+        prepared = _branch(gates, n_qubits, history, initial)
+        for pattern in ((0,), (1,), (0, 1), (1, 0)):
+            bank_history = iter(pattern * bank_width)
+            traversal_history = iter(1 - bit for bit in history)
+            erase_history = tuple(
+                next(bank_history) if bank else next(traversal_history)
+                for bank in is_bank
+            )
+            restored = _branch(erase, n_qubits, erase_history, prepared)
+            assert restored == pytest.approx(expected, abs=2e-12)
