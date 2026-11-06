@@ -8,8 +8,8 @@ import pytest
 import torch
 
 import flagquantum as fq
-from flagquantum import synth
 from flagquantum.ecosystem import InteropConversionError
+from flagquantum.services.synthesis import _synthesize
 
 pytestmark = pytest.mark.integration
 FIXTURES = Path(__file__).resolve().parents[1] / "fixtures/classiq_qmod"
@@ -42,7 +42,7 @@ def test_real_array_original_against_circuit(name, blob, parameter, values):
     source = FIXTURES / f"{name}.qmod"
     raw = source.read_bytes()
     assert hashlib.sha1(f"blob {len(raw)}\0".encode() + raw).hexdigest() == blob
-    program = synth.synthesize(source, classical_inputs={parameter: values})
+    program = _synthesize(source, classical_inputs={parameter: values})
     if name == "execution_tutorial_part2":
         reference = fq.Circuit(2, dtype=torch.complex128)
         reference.rx(0, theta=0.2).ry(0, theta=-0.3).cx(0, 1)
@@ -75,7 +75,7 @@ def test_real_array_original_against_circuit(name, blob, parameter, values):
 )
 def test_real_array_binding_errors(values, diagnostic):
     with pytest.raises(InteropConversionError, match=diagnostic):
-        synth.synthesize(
+        _synthesize(
             FIXTURES / "execution_tutorial_part2.qmod",
             classical_inputs={"angles": values},
         )
@@ -86,7 +86,7 @@ def test_real_array_binding_errors(values, diagnostic):
 )
 def test_real_array_index_errors(index, diagnostic):
     with pytest.raises(InteropConversionError, match=diagnostic):
-        synth.synthesize(
+        _synthesize(
             f"qfunc main(data:real[2],output q:qbit) {{ allocate(q); RY(data[{index}],q); }}",
             source_format="qmod",
             classical_inputs={"data": (0.1, 0.2)},

@@ -8,8 +8,8 @@ import pytest
 import torch
 
 import flagquantum as fq
-from flagquantum import synth
 from flagquantum.ecosystem import InteropConversionError
+from flagquantum.services.synthesis import _synthesize
 
 pytestmark = pytest.mark.integration
 SOURCE = Path(__file__).resolve().parents[1] / "fixtures/classiq_qmod/qsvm.qmod"
@@ -24,9 +24,7 @@ def test_original_qsvm_against_circuit(data2: tuple[float, float]) -> None:
         hashlib.sha1(f"blob {len(raw)}\0".encode() + raw).hexdigest()
         == "21d0c54b64a84b211c8a2238152e6d37a06ce778"
     )
-    program = synth.synthesize(
-        SOURCE, classical_inputs={"data1": DATA1, "data2": data2}
-    )
+    program = _synthesize(SOURCE, classical_inputs={"data1": DATA1, "data2": data2})
     reference = fq.Circuit(1, dtype=torch.complex128)
     reference.rx(0, theta=math.pi * DATA1[0])
     reference.rz(0, theta=math.pi * DATA1[1])
@@ -47,7 +45,7 @@ def test_original_qsvm_against_circuit(data2: tuple[float, float]) -> None:
 
 
 def test_inplace_encoding_on_a_nonzero_input():
-    program = synth.synthesize(
+    program = _synthesize(
         """qfunc main(data:real[2], output q:qnum<1>) {
             q=1; inplace_encode_on_bloch(data,q);
         }""",
@@ -81,7 +79,7 @@ def test_bloch_inverse_rejects_out_of_profile_calls(replacement, diagnostic):
     else:
         source = source.replace("inplace_encode_on_bloch(data2", replacement, 1)
     with pytest.raises(InteropConversionError, match=diagnostic):
-        synth.synthesize(
+        _synthesize(
             source,
             source_format="qmod",
             classical_inputs={"data1": DATA1, "data2": DATA2},

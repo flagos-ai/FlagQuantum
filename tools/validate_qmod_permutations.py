@@ -12,8 +12,8 @@ from pathlib import Path
 import torch
 
 import flagquantum as fq
-from flagquantum import synth
 from flagquantum.compiler.resource_estimation import ResourceEstimate
+from flagquantum.services.synthesis import _synthesize
 
 FIXTURES = Path(__file__).resolve().parents[1] / "tests/fixtures/classiq_qmod"
 BLOBS = {
@@ -56,7 +56,7 @@ def validate(case: str, parameter: float | None = None) -> Validation:
     if not walk:
         assert parameter is not None
         inputs = {"params": [parameter]}
-    program = synth.synthesize(
+    program = _synthesize(
         source, classical_inputs=inputs, memory_limit_bytes=64 * 1024**2
     )
     resources = program.report["resources"]

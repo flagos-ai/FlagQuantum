@@ -135,6 +135,7 @@ def test_output_binding_requires_complete_unique_storage(
             msb: qnum<2>;
             allocate(3, x);
             x -> {lsb, msb};
-    """ + transfer + "}"
+    """
+    source += transfer + "}"
     with pytest.raises(InteropConversionError, match=diagnostic):
         synth.synthesize(source, source_format="qmod")

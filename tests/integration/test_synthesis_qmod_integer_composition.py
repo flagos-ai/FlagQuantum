@@ -7,6 +7,7 @@ import torch
 
 import flagquantum as fq
 from flagquantum import synth
+from flagquantum.services.synthesis import _synthesize
 from tools.validate_qmod_integer_composition import FIXTURES, validate
 
 pytestmark = pytest.mark.integration
@@ -42,7 +43,7 @@ qfunc main(steps:int,bits:int[3],output q:qbit[3]) {
 def test_exact_integer_arrays_and_static_loop_composition(
     bits: tuple[int, ...], steps: int
 ) -> None:
-    program = synth.synthesize(
+    program = _synthesize(
         STATIC, source_format="qmod", classical_inputs={"steps": steps, "bits": bits}
     )
     circuit = fq.Circuit(3, dtype=DTYPE)
@@ -59,7 +60,7 @@ def test_exact_integer_arrays_and_static_loop_composition(
 @pytest.mark.parametrize("value", [True, 1.0, 1.5, float("nan"), 1 << 256, "1"])
 def test_integer_ports_do_not_coerce_reals_booleans_or_overflow(value: object) -> None:
     with pytest.raises(ValueError, match="exact non-Boolean integer"):
-        synth.synthesize(
+        _synthesize(
             STATIC,
             source_format="qmod",
             classical_inputs={"steps": value, "bits": [1, 0, 1]},
@@ -71,7 +72,7 @@ def test_integer_ports_do_not_coerce_reals_booleans_or_overflow(value: object) -
 )
 def test_integer_array_kind_and_length_are_checked(bits: object) -> None:
     with pytest.raises(ValueError, match="integer|elements|length"):
-        synth.synthesize(
+        _synthesize(
             STATIC, source_format="qmod", classical_inputs={"steps": 1, "bits": bits}
         )
 
@@ -79,7 +80,7 @@ def test_integer_array_kind_and_length_are_checked(bits: object) -> None:
 @pytest.mark.parametrize("steps", [-1, 257])
 def test_static_count_caps_are_independent_of_integer_range(steps: int) -> None:
     with pytest.raises(ValueError, match="0..256"):
-        synth.synthesize(
+        _synthesize(
             STATIC,
             source_format="qmod",
             classical_inputs={"steps": steps, "bits": [1, 0, 1]},
@@ -89,7 +90,7 @@ def test_static_count_caps_are_independent_of_integer_range(steps: int) -> None:
 def test_large_integers_are_compared_exactly_without_float_rounding() -> None:
     large = 1 << 200
     source = f"""qfunc main(n:int,output q:qbit) {{allocate(q);if(n-{large}==1) {{X(q);}}}}"""
-    program = synth.synthesize(
+    program = _synthesize(
         source, source_format="qmod", classical_inputs={"n": large + 1}
     )
     torch.testing.assert_close(
@@ -111,9 +112,7 @@ def test_static_if_cannot_read_a_quantum_condition(condition: str) -> None:
 def test_integer_array_bounds_are_checked(index: int) -> None:
     source = f"""qfunc main(bits:int[2],output q:qbit) {{allocate(q);if(bits[{index}]==1) {{X(q);}}}}"""
     with pytest.raises(ValueError, match="bounds|expression"):
-        synth.synthesize(
-            source, source_format="qmod", classical_inputs={"bits": [1, 0]}
-        )
+        _synthesize(source, source_format="qmod", classical_inputs={"bits": [1, 0]})
 
 
 OP = "SparsePauliOp {terms=[SparsePauliTerm {paulis=[IndexedPauli {pauli=Pauli::X,index=0},IndexedPauli {pauli=Pauli::Y,index=1}],coefficient=1}],num_qubits=2}"
@@ -169,7 +168,7 @@ SINGLE_Z = SINGLE_X.replace("Pauli::X", "Pauli::Z")
 def test_noncommuting_multi_operator_order_and_classical_expression_times() -> None:
     source = f"""qfunc model(data:real[2],q:qbit[]) {{multi_suzuki_trotter([{SINGLE_X},{SINGLE_Z}],[data[0]*0.5,-(data[1]+0.1)],1,1,q);}}
     qfunc main(data:real[2],output q:qbit[1]) {{allocate(q);H(q[0]);S(q[0]);power(1) {{model(data,q);}}}}"""
-    program = synth.synthesize(
+    program = _synthesize(
         source, source_format="qmod", classical_inputs={"data": [0.74, 0.11]}
     )
     reference = (
@@ -208,7 +207,7 @@ def test_original_fermi_obeys_resource_budgets(constraint: str, value: int) -> N
     with pytest.raises(
         ValueError, match="budget|qubit|operation|depth|memory|limit|candidate"
     ):
-        synth.synthesize(
+        _synthesize(
             FIXTURES / "fermi_hubbard_1D.qmod",
             classical_inputs={"num_iter": 2},
             **{constraint: value},
@@ -231,7 +230,7 @@ def test_native_qfunc_qmod_and_circuit_user_example() -> None:
 def test_integer_helper_phase_and_exact_angle_conversion() -> None:
     source = """qfunc mark(n:int,q:qbit) {phase(q,n);}
       qfunc main(n:int,output q:qbit) {allocate(q);H(q);mark(n,q);}"""
-    program = synth.synthesize(source, source_format="qmod", classical_inputs={"n": 2})
+    program = _synthesize(source, source_format="qmod", classical_inputs={"n": 2})
     expected = fq.Circuit(1, dtype=DTYPE).h(0).phase(0, theta=2.0)
     torch.testing.assert_close(
         fq.run(program).statevector(),
@@ -240,7 +239,7 @@ def test_integer_helper_phase_and_exact_angle_conversion() -> None:
         rtol=0,
     )
     with pytest.raises(ValueError, match="exact real range"):
-        synth.synthesize(
+        _synthesize(
             source, source_format="qmod", classical_inputs={"n": (1 << 100) + 1}
         )
 

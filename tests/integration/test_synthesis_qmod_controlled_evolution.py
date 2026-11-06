@@ -7,6 +7,7 @@ import torch
 
 import flagquantum as fq
 from flagquantum import synth
+from flagquantum.services.synthesis import _synthesize
 from tools.validate_qmod_controlled_evolution import FIXTURES, validate
 
 pytestmark = pytest.mark.integration
@@ -84,7 +85,7 @@ def test_classical_angle_arithmetic_without_quantum_workspace(
     gate: str, expression: str, value: float
 ) -> None:
     source = f"qfunc main(theta:real,output q:qbit) {{allocate(q);H(q);{gate}({expression},q);}}"
-    p = synth.synthesize(
+    p = _synthesize(
         source,
         source_format="qmod",
         classical_inputs={"theta": 0.37},
@@ -103,7 +104,7 @@ def test_classical_angle_arithmetic_without_quantum_workspace(
 )
 def test_invalid_angle_expressions_refuse(expression: str) -> None:
     with pytest.raises(ValueError):
-        synth.synthesize(
+        _synthesize(
             f"qfunc main(theta:real,output q:qbit) {{allocate(q);PHASE({expression},q);}}",
             source_format="qmod",
             classical_inputs={"theta": 2.0},
@@ -174,7 +175,7 @@ def test_numeric_one_bit_control_and_bound_static_helper() -> None:
 )
 def test_original_actual_resource_budgets_refuse(key: str, value: int) -> None:
     with pytest.raises(ValueError):
-        synth.synthesize(
+        _synthesize(
             FIXTURES / "bpde.qmod", classical_inputs={"delta_e": 0.37}, **{key: value}
         )
 
@@ -293,9 +294,7 @@ def test_helper_cannot_capture_another_quantum_register() -> None:
 
 def test_all_u_angles_accept_classical_expressions_with_global_phase() -> None:
     text = "qfunc main(theta:real,output q:qbit) {allocate(q);H(q);U(theta*2,pi/3,-theta+0.2,pi/7,q);}"
-    program = synth.synthesize(
-        text, source_format="qmod", classical_inputs={"theta": 0.37}
-    )
+    program = _synthesize(text, source_format="qmod", classical_inputs={"theta": 0.37})
     c = fq.Circuit(1, dtype=DTYPE).h(0).u3(0, theta=0.74, phi=math.pi / 3, lbd=-0.17)
     c.x(0).phase(0, theta=math.pi / 7).x(0).phase(0, theta=math.pi / 7)
     torch.testing.assert_close(

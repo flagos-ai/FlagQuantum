@@ -15,8 +15,8 @@ from pathlib import Path
 import torch
 
 import flagquantum as fq
-from flagquantum import synth
 from flagquantum.compiler.resource_estimation import ResourceEstimate
+from flagquantum.services.synthesis import _synthesize
 from tools.validate_qmod_large_pauli import real_literal
 
 FIXTURES = Path(__file__).resolve().parents[1] / "tests/fixtures/classiq_qmod"
@@ -194,7 +194,7 @@ def validate(case: str, *, iterations: int = 1, data_case: int = 0) -> Validatio
         reference = credit_reference(data1, data2)
     else:
         reference = bb84_reference(source)
-    program = synth.synthesize(
+    program = _synthesize(
         path,
         classical_inputs=bindings,
         max_workspace=0,

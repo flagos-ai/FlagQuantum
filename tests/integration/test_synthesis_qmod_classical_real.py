@@ -8,8 +8,8 @@ import pytest
 import torch
 
 import flagquantum as fq
-from flagquantum import synth
 from flagquantum.ecosystem import InteropConversionError
+from flagquantum.services.synthesis import _synthesize
 
 pytestmark = pytest.mark.integration
 SOURCE = (
@@ -23,7 +23,7 @@ def test_original_qml_angles_match_combined_rx():
     blob = f"blob {len(raw)}\0".encode() + raw
     assert hashlib.sha1(blob).hexdigest() == "d0879a1decbdc9d1ef8a9045d24901b97dd090f7"
     input_0, weight_0 = 0.37, -0.81
-    program = synth.synthesize(
+    program = _synthesize(
         SOURCE, classical_inputs={"input_0": input_0, "weight_0": weight_0}
     )
     reference = fq.Circuit(1, dtype=torch.complex128).rx(0, input_0 + weight_0)
@@ -48,13 +48,13 @@ def test_original_qml_angles_match_combined_rx():
 )
 def test_classical_bindings_require_exact_names_and_finite_reals(bindings):
     with pytest.raises(InteropConversionError, match=r"qmod\.binding"):
-        synth.synthesize(SOURCE, classical_inputs=bindings)
+        _synthesize(SOURCE, classical_inputs=bindings)
 
 
 def test_bound_helper_checks_caller_array_bounds():
     source = SOURCE.read_text().replace("q[0]", "q[1]", 1)
     with pytest.raises(InteropConversionError, match="out of bounds"):
-        synth.synthesize(
+        _synthesize(
             source,
             source_format="qmod",
             classical_inputs={"input_0": 0.37, "weight_0": -0.81},

@@ -12,6 +12,7 @@ import torch
 import flagquantum as fq
 from flagquantum import synth
 from flagquantum.ecosystem import InteropConversionError
+from flagquantum.services.synthesis import _synthesize
 
 pytestmark = pytest.mark.integration
 SOURCE = (
@@ -46,7 +47,7 @@ def test_original_hamiltonian_simulation_matches_full_statevector(time):
     raw = SOURCE.read_bytes()
     blob = f"blob {len(raw)}\0".encode() + raw
     assert hashlib.sha1(blob).hexdigest() == "523a87121cc5f69215d6bf1a99d19d2c9bc9f331"
-    program = synth.synthesize(SOURCE, classical_inputs={"t": time})
+    program = _synthesize(SOURCE, classical_inputs={"t": time})
     torch.testing.assert_close(
         fq.run(program).statevector(),
         fq.run(_reference(time)).statevector(),
@@ -69,7 +70,7 @@ def test_original_hamiltonian_simulation_matches_full_statevector(time):
 )
 def test_exponentiate_rejects_malformed_sparse_operators(old, new, diagnostic):
     with pytest.raises(InteropConversionError, match=diagnostic):
-        synth.synthesize(
+        _synthesize(
             SOURCE.read_text().replace(old, new, 1),
             source_format="qmod",
             classical_inputs={"t": 0.37},
@@ -95,9 +96,7 @@ def test_sparse_identity_preserves_global_phase_and_signed_values():
 def test_inline_sparse_operator_also_works_with_suzuki_trotter():
     source = SOURCE.read_text().replace("exponentiate(", "suzuki_trotter(")
     source = source.replace("}, t, qba);", "}, t, 1, 1, qba);")
-    program = synth.synthesize(
-        source, source_format="qmod", classical_inputs={"t": 0.37}
-    )
+    program = _synthesize(source, source_format="qmod", classical_inputs={"t": 0.37})
     torch.testing.assert_close(
         fq.run(program).statevector(),
         fq.run(_reference(0.37)).statevector(),

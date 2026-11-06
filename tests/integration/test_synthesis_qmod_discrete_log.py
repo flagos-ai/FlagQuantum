@@ -109,6 +109,7 @@ def test_symbolic_output_refuses_invalid_width_or_alias(
             allocate(ceiling(log(n,2))+1,a);allocate(1,b);
         }
         qfunc main(output x:qnum,output y:qnum) {
-    """ + call + "}"
+    """
+    source += call + "}"
     with pytest.raises(InteropConversionError, match=diagnostic):
         synth.synthesize(source, source_format="qmod")

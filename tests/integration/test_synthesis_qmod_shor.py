@@ -94,6 +94,7 @@ def test_modular_phase_counter_lifetime(call: str, diagnostic: str) -> None:
         }
         qfunc main(output x:qnum<2>,output p:qnum<2,UNSIGNED,2>) {
             allocate(x);allocate(p);x ^= 1;
-    """ + call + "}"
+    """
+    source += call + "}"
     with pytest.raises(InteropConversionError, match=diagnostic):
         synth.synthesize(source, source_format="qmod")

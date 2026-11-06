@@ -10,6 +10,7 @@ import torch
 import flagquantum as fq
 from flagquantum import synth
 from flagquantum.ecosystem import InteropConversionError
+from flagquantum.services.synthesis import _synthesize
 
 pytestmark = pytest.mark.integration
 FIXTURES = Path(__file__).resolve().parents[1] / "fixtures/classiq_qmod"
@@ -54,7 +55,7 @@ def reference(steps: int, balanced: bool) -> fq.Circuit:
 def test_original_circle_walk_state_and_wrap(steps: int, balanced: bool) -> None:
     name = "quantum_walk_circle_balanced_coin" if balanced else "quantum_walk_circle"
     path, _ = original(name)
-    program = synth.synthesize(path, classical_inputs={"t": steps})
+    program = _synthesize(path, classical_inputs={"t": steps})
     result = fq.run(program)
     assert program.report["qmod_signed_registers"] == ("x",)
     actual = result.statevector().reshape(2 * POSITIONS, -1)
@@ -73,7 +74,7 @@ def test_original_circle_walk_state_and_wrap(steps: int, balanced: bool) -> None
 def test_circle_walk_repeat_budget(steps: int) -> None:
     source, _ = original("quantum_walk_circle")
     with pytest.raises(InteropConversionError, match="repeat count must be in 0..256"):
-        synth.synthesize(source, classical_inputs={"t": steps})
+        _synthesize(source, classical_inputs={"t": steps})
 
 
 def test_signed_literal_updates_refuse_conflicting_allocation() -> None:

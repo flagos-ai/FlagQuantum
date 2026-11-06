@@ -129,7 +129,7 @@ def test_unproved_kickback_and_indexes_are_rejected(
 
 def test_selected_pauli_preserves_relative_phase_on_all_control_values() -> None:
     original = _original().read_text()
-    modified = original.split("qfunc main(", 1)[0] + """
+    modified = """
     qfunc main(output data:qbit[2], output block:qnum<2>) {
       allocate(data); allocate(block);
       hadamard_transform(data); hadamard_transform(block);
@@ -137,6 +137,7 @@ def test_selected_pauli_preserves_relative_phase_on_all_control_values() -> None
       select_0_lambda___0_0_expanded___0(block, data);
     }
     """
+    modified = original.split("qfunc main(", 1)[0] + modified
     program = synth.synthesize(modified, source_format="qmod", max_workspace=0)
     reference = fq.Circuit(4, dtype=torch.complex128)
     for wire in range(4):

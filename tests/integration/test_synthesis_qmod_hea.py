@@ -10,6 +10,7 @@ import torch
 import flagquantum as fq
 from flagquantum import synth
 from flagquantum.ecosystem import InteropConversionError
+from flagquantum.services.synthesis import _synthesize
 
 pytestmark = pytest.mark.integration
 FIXTURES = Path(__file__).resolve().parents[1] / "fixtures/classiq_qmod"
@@ -49,7 +50,7 @@ def reference(angles: tuple[float, ...]) -> fq.Circuit:
 @pytest.mark.parametrize("angles", ANGLES)
 def test_original_hea_preserves_full_vector_and_parameter_order(angles):
     path, _ = original()
-    program = synth.synthesize(path, classical_inputs={"params": angles})
+    program = _synthesize(path, classical_inputs={"params": angles})
     torch.testing.assert_close(
         fq.run(program).statevector(),
         fq.run(reference(angles)).statevector(),

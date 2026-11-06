@@ -16,6 +16,7 @@ import torch
 import flagquantum as fq
 from flagquantum import synth
 from flagquantum.ecosystem import InteropConversionError
+from flagquantum.services.synthesis import _synthesize
 
 
 def rainbow_reference(source: str, repetitions: int) -> fq.Circuit:
@@ -84,7 +85,7 @@ def test_rainbow_original_matches_every_amplitude(
     repetitions: int, source_index: int
 ) -> None:
     path = _originals()[source_index]
-    program = synth.synthesize(
+    program = _synthesize(
         path, classical_inputs={"k": repetitions}, max_workspace=0, max_qubits=5
     )
     reference = rainbow_reference(path.read_text(), repetitions)

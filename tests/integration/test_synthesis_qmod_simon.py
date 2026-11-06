@@ -81,12 +81,13 @@ qfunc evaluate(f:qfunc(qnum,output qnum), a:qnum, output b:qnum) {
 
 
 def test_named_initializer_has_one_fresh_output() -> None:
-    source = WRAPPER + """
+    source = """
         qperm evaluate_oracle(const r:qnum, output v:qnum) {v = r;}
         qfunc main(output a:qnum<2>,output b:qnum) {
             allocate(a); evaluate(evaluate_oracle,a,b);
         }
     """
+    source = WRAPPER + source
     program = synth.synthesize(source, source_format="qmod")
     reference = fq.Circuit(4, dtype=DTYPE).h(0).h(1).cnot(0, 2).cnot(1, 3).h(0).h(1)
     torch.testing.assert_close(
@@ -118,9 +119,10 @@ def test_named_initializer_has_one_fresh_output() -> None:
 def test_output_initializer_rejects_alias_escape_and_double_init(
     oracle: str, call: str, diagnostic: str
 ) -> None:
-    source = WRAPPER + f"""
+    source = f"""
         qperm evaluate_oracle(const r:qnum, output v:qnum) {{{oracle}}}
         qfunc main(output a:qnum<2>,output b:qnum) {{allocate(a);{call}}}
     """
+    source = WRAPPER + source
     with pytest.raises(InteropConversionError, match=diagnostic):
         synth.synthesize(source, source_format="qmod")

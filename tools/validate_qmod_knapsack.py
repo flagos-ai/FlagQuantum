@@ -16,8 +16,8 @@ from pathlib import Path
 import torch
 
 import flagquantum as fq
-from flagquantum import synth
 from flagquantum.compiler.resource_estimation import ResourceEstimate
+from flagquantum.services.synthesis import _synthesize
 
 FIXTURES = Path(__file__).resolve().parents[1] / "tests/fixtures/classiq_qmod"
 BLOBS = {
@@ -76,7 +76,7 @@ def validate(case: str, scale: float) -> Validation:
         raise ValueError("original source blob mismatch")
     parameters = [scale * (i + 1) * (-1 if i % 2 else 1) for i in range(6)]
     started = time.perf_counter()
-    program = synth.synthesize(
+    program = _synthesize(
         source,
         classical_inputs={"params": parameters},
         max_qubits=5,

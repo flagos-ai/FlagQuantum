@@ -8,6 +8,7 @@ import torch
 
 import flagquantum as fq
 from flagquantum import synth
+from flagquantum.services.synthesis import _synthesize
 from tools.validate_qmod_knapsack import BLOBS, FIXTURES, validate
 
 pytestmark = pytest.mark.integration
@@ -58,7 +59,7 @@ def test_shared_fields_and_integer_predicate_boundaries(
       qfunc main(alpha:real, output v:State) {{
         allocate(v);hadamard_transform(v);kick(v,alpha);
       }}"""
-    program = synth.synthesize(
+    program = _synthesize(
         source, source_format="qmod", classical_inputs={"alpha": -0.37}, max_workspace=0
     )
     actual = fq.run(program).statevector().reshape(-1)
@@ -71,7 +72,7 @@ def test_shared_fields_and_integer_predicate_boundaries(
     assert program.report["workspace_qubits"] == 0
     assert program.report["resources"].n_qubits == 5
     if guard == "2*v.a+3*v.b<=12":
-        assert actual[6] == pytest.approx(complex(expected[6]), abs=1e-12)
+        assert complex(actual[6]) == pytest.approx(complex(expected[6]), abs=1e-12)
         assert complex(actual[5 + 8]) == pytest.approx(1 / sqrt(32), abs=1e-12)
 
 
@@ -82,7 +83,7 @@ def test_conditional_constant_is_a_relative_phase_with_interference() -> None:
         control(2*v.a+3*v.b<=12) {phase(1,alpha);}
         hadamard_transform(v);
       }"""
-    program = synth.synthesize(
+    program = _synthesize(
         source, source_format="qmod", classical_inputs={"alpha": 0.83}, max_workspace=0
     )
     result = fq.run(program)
@@ -118,7 +119,7 @@ def test_slice_element_binding_and_loop_rotation() -> None:
         repeat(i:2) {RX(params[1:3][i],q);}
       }"""
     params = [0.19, -0.37, 0.81, -0.11]
-    program = synth.synthesize(
+    program = _synthesize(
         source, source_format="qmod", classical_inputs={"params": params}
     )
     expected = fq.Circuit(1, dtype=torch.complex128).rx(
@@ -138,7 +139,7 @@ def test_quantum_slice_control_composes_with_guarded_real_phase() -> None:
       control(x[0:2]) {X(target);}
       control(x[2]==1) {phase(x[0]+1,alpha);}
     }"""
-    program = synth.synthesize(
+    program = _synthesize(
         source, source_format="qmod", classical_inputs={"alpha": 0.37}
     )
     expected = fq.Circuit(4, dtype=torch.complex128).h(0).h(1).h(2).ccx(2, 1, 3)
@@ -159,7 +160,7 @@ def test_slice_bounds_do_not_escape_to_the_original_array(
 ) -> None:
     source = f"qfunc main(params:real[4],output q:qbit) {{allocate(q);RX({slice_expression},q);}}"
     with pytest.raises(ValueError, match="bounds|empty"):
-        synth.synthesize(
+        _synthesize(
             source,
             source_format="qmod",
             classical_inputs={"params": [0.1, 0.2, 0.3, 0.4]},
@@ -170,7 +171,7 @@ def test_slice_bounds_do_not_escape_to_the_original_array(
 def test_decision_budget_preserves_phase_and_cancelled_reads(guard: str) -> None:
     source = f"""qstruct State {{a:qnum<9>;}}
       qfunc main(alpha:real,output v:State) {{allocate(v);hadamard_transform(v);control({guard}) {{phase(v.a+1,alpha);}}}}"""
-    program = synth.synthesize(
+    program = _synthesize(
         source, source_format="qmod", classical_inputs={"alpha": 0.37}
     )
     state = fq.run(program).statevector().reshape(-1)
@@ -193,7 +194,7 @@ def test_predicate_rejects_noninteger_classical_threshold() -> None:
         allocate(v);control(v.a<limit) {phase(v.a,alpha);}
       }"""
     with pytest.raises(ValueError, match="integer arithmetic"):
-        synth.synthesize(
+        _synthesize(
             source, source_format="qmod", classical_inputs={"alpha": 0.37, "limit": 0.5}
         )
 
@@ -202,7 +203,7 @@ def test_factored_guard_times_cost_preserves_phase_and_clean_scratch() -> None:
     source = """qfunc main(alpha:real,output x:qnum<8>,output y:qbit) {
       allocate(x);allocate(y);hadamard_transform(x);H(y);control(x==255) {phase(y,alpha);}
     }"""
-    program = synth.synthesize(
+    program = _synthesize(
         source, source_format="qmod", classical_inputs={"alpha": 0.37}
     )
     state = fq.run(program).statevector().reshape(-1)
@@ -221,7 +222,7 @@ def test_cancelled_cost_still_checks_initialization() -> None:
       qfunc main(alpha:real,output v:State) {control(v.a==0) {phase(0,alpha);}}
     """
     with pytest.raises(ValueError, match="uninitialized"):
-        synth.synthesize(source, source_format="qmod", classical_inputs={"alpha": 0.37})
+        _synthesize(source, source_format="qmod", classical_inputs={"alpha": 0.37})
 
 
 def test_integer_predicate_normalization_preserves_large_cancellation() -> None:
@@ -231,7 +232,7 @@ def test_integer_predicate_normalization_preserves_large_cancellation() -> None:
         phase(1,alpha);
       }
     }"""
-    program = synth.synthesize(
+    program = _synthesize(
         source, source_format="qmod", classical_inputs={"alpha": 0.37}
     )
     expected = fq.Circuit(1, dtype=torch.complex128).h(0).phase(0, theta=0.37)
@@ -248,7 +249,7 @@ def test_original_guarded_phase_keeps_resource_admission(
     limits: dict[str, int],
 ) -> None:
     with pytest.raises(ValueError, match="qubit|budget|width|state|limit"):
-        synth.synthesize(
+        _synthesize(
             FIXTURES / "qaoa.qmod", classical_inputs={"params": [0.01] * 6}, **limits
         )
 

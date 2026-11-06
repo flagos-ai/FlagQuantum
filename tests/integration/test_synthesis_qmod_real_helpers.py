@@ -7,8 +7,8 @@ import pytest
 import torch
 
 import flagquantum as fq
-from flagquantum import synth
 from flagquantum.ecosystem import InteropConversionError
+from flagquantum.services.synthesis import _synthesize
 
 pytestmark = pytest.mark.integration
 FIXTURES = Path(__file__).resolve().parents[1] / "fixtures/classiq_qmod"
@@ -80,7 +80,7 @@ def test_real_helper_original(name, blob, binding, size, oracle, scale):
     raw = source.read_bytes()
     assert hashlib.sha1(f"blob {len(raw)}\0".encode() + raw).hexdigest() == blob
     values = [scale * (index + 1) for index in range(size)]
-    program = synth.synthesize(source, classical_inputs={binding: values})
+    program = _synthesize(source, classical_inputs={binding: values})
     torch.testing.assert_close(
         fq.run(program).statevector(),
         fq.run(oracle(values)).statevector(),
@@ -104,7 +104,7 @@ def test_real_helper_original(name, blob, binding, size, oracle, scale):
 )
 def test_invalid_helper_views(actuals, diagnostic):
     with pytest.raises(InteropConversionError, match=diagnostic):
-        synth.synthesize(
+        _synthesize(
             "qfunc layer(p:real[2], a:qbit[2], b:qbit) { RY(p[0],a[0]); CX(a[1],b); }"
             f"qfunc main(data:real[2], output q:qbit[3]) {{allocate(q); layer({actuals});}}",
             source_format="qmod",
@@ -120,9 +120,7 @@ def test_view_order_survives_nested_helper_and_pair_gate():
           allocate(q); layer(p,{q[2],q[0]});
         }
     """
-    program = synth.synthesize(
-        source, source_format="qmod", classical_inputs={"p": [0.31]}
-    )
+    program = _synthesize(source, source_format="qmod", classical_inputs={"p": [0.31]})
     reference = fq.Circuit(3, dtype=DTYPE).ry(0, theta=0.31).cx(0, 2)
     torch.testing.assert_close(
         fq.run(program).statevector(),

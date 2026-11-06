@@ -9,6 +9,7 @@ import torch
 import flagquantum as fq
 from flagquantum import synth
 from flagquantum.ecosystem import InteropConversionError
+from flagquantum.services.synthesis import _synthesize
 
 pytestmark = pytest.mark.integration
 SOURCE = (
@@ -44,7 +45,7 @@ def test_original_exponential_state_full_state() -> None:
 
 @pytest.mark.parametrize("rate", [-0.4, 0.0, 0.23, -float(2**53), float(2**53)])
 def test_exponential_state_rotates_existing_input(rate: float) -> None:
-    program = synth.synthesize(
+    program = _synthesize(
         """qfunc main(output q:qbit[], rate:real) {
             allocate(2,q); X(q[0]); prepare_exponential_state(rate,q);
         }""",

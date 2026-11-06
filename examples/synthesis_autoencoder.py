@@ -12,6 +12,7 @@ import torch
 
 import flagquantum as fq
 from flagquantum import synth
+from flagquantum.services.synthesis import _synthesize
 from flagquantum.synth import CX, Output, Program, QBit, R, allocate, qfunc
 
 HALF_PI = math.pi / 2
@@ -80,7 +81,7 @@ def run_example() -> None:
     for case in (0, 1):
         expected = fq.run(circuit(case)).statevector().reshape(-1)
         programs = (
-            synth.synthesize(
+            _synthesize(
                 source, classical_inputs={"w": WEIGHTS[case], "input_data": DATA[case]}
             ),
             native_program(case),

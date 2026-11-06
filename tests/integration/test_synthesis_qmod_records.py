@@ -12,6 +12,7 @@ from flagquantum.compiler._construction.register_profile import verify_register_
 from flagquantum.compiler._hybrid.verifier import HybridVerificationError
 from flagquantum.ecosystem import InteropConversionError
 from flagquantum.ecosystem._qmod.adapter import SUPPORTED_SOURCE_VERSION, parse_qmod
+from flagquantum.services.synthesis import _synthesize
 
 pytestmark = pytest.mark.integration
 DTYPE = torch.complex128
@@ -318,7 +319,7 @@ def test_small_original_records_against_independent_cost(name, scale):
     params = [
         scale * (index + 1) * (-1 if index % 2 else 1) for index in range(oracle.count)
     ]
-    program = synth.synthesize(source, classical_inputs={"params": params})
+    program = _synthesize(source, classical_inputs={"params": params})
     terms = independent_terms(oracle, oracle.degree, oracle.width)
     midpoint = oracle.count // 2
     interleaved = (
@@ -359,7 +360,7 @@ def test_original_matrix_records_keep_shape_and_resource_budget(
     assert hashlib.sha1(f"blob {len(raw)}\0".encode() + raw).hexdigest() == BLOBS[name]
     count = RecordCost(raw.decode()).count
     bindings = {"params": [0.003 * (i + 1) for i in range(count)]}
-    program = synth.synthesize(source, classical_inputs=bindings)
+    program = _synthesize(source, classical_inputs=bindings)
     assert program.report["resources"].n_qubits == width
     assert program.report["workspace_qubits"] == 0
     assert program.report["qmod_records"][0][2][0] == ("x", "qbit[][]", columns, rows)
@@ -367,7 +368,7 @@ def test_original_matrix_records_keep_shape_and_resource_budget(
         wire for ports in program.registers.values() for wire in ports
     ) == list(range(width))
     with pytest.raises(synth.SynthesisError):
-        synth.synthesize(source, classical_inputs=bindings, max_qubits=width - 1)
+        _synthesize(source, classical_inputs=bindings, max_qubits=width - 1)
 
 
 def test_nested_nominal_views_and_qualified_leaves_match_circuit():
@@ -455,7 +456,8 @@ def test_nested_field_increment_and_bound_predicate_x(
         allocate(s); hadamard_transform(s.velocity); H(s.direction);
         hadamard_transform(s.pos); phase(s.pos, 0.31); S(s.direction);
         stream(s); reflect(s.velocity, s.pos, s.direction, [LOWER, EXCLUDED]);
-      }""".replace("LOWER", str(lower)).replace("EXCLUDED", str(excluded))
+      }"""
+    source = source.replace("LOWER", str(lower)).replace("EXCLUDED", str(excluded))
     program = synth.synthesize(source, source_format="qmod")
     assert dict(program.registers) == {
         "s.velocity": (3, 4),
@@ -540,7 +542,8 @@ def test_partition_preserves_complete_fractional_field(numeric_type: str) -> Non
       qfunc main(output x:OUTPUT_TYPE, output flag:qbit) {
         s:Coordinate;
         allocate(s); hadamard_transform(s.x); X(s.flag); s -> {x, flag};
-      }""".replace("OUTPUT_TYPE", numeric_type)
+      }"""
+    source = source.replace("OUTPUT_TYPE", numeric_type)
     program = synth.synthesize(source, source_format="qmod")
     assert program.report["qmod_fractional_bits"] == {"x": 3}
     assert dict(program.registers) == {"x": (0, 1, 2), "flag": (3,)}

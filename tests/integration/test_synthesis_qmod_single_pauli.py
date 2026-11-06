@@ -11,6 +11,7 @@ import torch
 import flagquantum as fq
 from flagquantum import synth
 from flagquantum.ecosystem import InteropConversionError
+from flagquantum.services.synthesis import _synthesize
 
 pytestmark = pytest.mark.integration
 SOURCE = (
@@ -27,7 +28,7 @@ def test_original_varqite_full_state() -> None:
         hashlib.sha1(f"blob {len(raw)}\0".encode() + raw).hexdigest()
         == "45875e31fddf68e9632687358ec55da086e45dbb"
     )
-    program = synth.synthesize(SOURCE, classical_inputs={"angles": ANGLES})
+    program = _synthesize(SOURCE, classical_inputs={"angles": ANGLES})
     reference = fq.Circuit(4, dtype=DTYPE)
     identity = torch.eye(16, dtype=DTYPE)
     axes = {
@@ -78,7 +79,7 @@ def test_identity_word_keeps_global_phase() -> None:
 )
 def test_single_pauli_rejects_invalid_operands(before, after, diagnostic):
     with pytest.raises(InteropConversionError, match=diagnostic):
-        synth.synthesize(
+        _synthesize(
             SOURCE.read_text().replace(before, after, 1),
             source_format="qmod",
             classical_inputs={"angles": ANGLES},

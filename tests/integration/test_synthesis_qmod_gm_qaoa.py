@@ -11,6 +11,7 @@ import torch
 import flagquantum as fq
 from flagquantum import synth
 from flagquantum.ecosystem import InteropConversionError
+from flagquantum.services.synthesis import _synthesize
 
 pytestmark = pytest.mark.integration
 FIXTURES = Path(__file__).resolve().parents[1] / "fixtures/classiq_qmod"
@@ -74,7 +75,7 @@ def test_original_gm_qaoa_full_state_and_clean_workspace(
     params: tuple[float, ...],
 ) -> None:
     path, _ = original()
-    program = synth.synthesize(path, classical_inputs={"params": params})
+    program = _synthesize(path, classical_inputs={"params": params})
     actual = fq.run(program).statevector().reshape(16, -1)
     expected = fq.run(reference(params)).statevector().flatten()
     torch.testing.assert_close(actual[:, 0], expected, atol=1e-12, rtol=0)

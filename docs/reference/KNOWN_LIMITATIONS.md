@@ -346,14 +346,16 @@ guarded by a static integer comparison over the same ordered selector. The
 guard masks table entries prior to lowering, so rejected values see identity.
 Ordinary helper width, initialization and alias checks still apply.
 
+Repository validation example using the internal Qmod binding path.
+
 ```python
 from pathlib import Path
 
 import flagquantum as fq
-from flagquantum import synth
+from flagquantum.services.synthesis import _synthesize
 
 source = Path("tests/fixtures/classiq_qmod/option_pricing.qmod")
-program = synth.synthesize(source, classical_inputs={"k": 2}, max_workspace=0)
+program = _synthesize(source, classical_inputs={"k": 2}, max_workspace=0)
 print(program.probabilities(fq.run(program), registers=("indicator",)))
 ```
 
@@ -894,14 +896,16 @@ lowering. A selector bit is omitted only if both of its angle branches are
 identical across the complete domain. The resulting circuit needs no storage
 for the computed word.
 
+Repository validation example using the internal Qmod binding path.
+
 ```python
 from pathlib import Path
 
 import flagquantum as fq
-from flagquantum import synth
+from flagquantum.services.synthesis import _synthesize
 
 source = Path("tests/fixtures/classiq_qmod/rainbow_options_bruteforce_method.qmod")
-program = synth.synthesize(source, classical_inputs={"k": 2}, max_workspace=0)
+program = _synthesize(source, classical_inputs={"k": 2}, max_workspace=0)
 print(dict(program.probabilities(fq.run(program), registers=("indicator",))))
 ```
 

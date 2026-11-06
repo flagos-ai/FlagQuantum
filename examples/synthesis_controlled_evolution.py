@@ -11,6 +11,7 @@ import torch
 
 import flagquantum as fq
 from flagquantum import synth
+from flagquantum.services.synthesis import _synthesize
 from flagquantum.synth import (
     Const,
     Output,
@@ -155,7 +156,7 @@ def run_example() -> None:
     for delta in (0.37, -0.81):
         expected = fq.run(reference(delta)).statevector().reshape(-1)
         for program in (
-            synth.synthesize(
+            _synthesize(
                 source,
                 classical_inputs={"delta_e": delta},
                 memory_limit_bytes=64 * 1024**2,

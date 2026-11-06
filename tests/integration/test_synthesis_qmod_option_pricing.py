@@ -13,6 +13,7 @@ import torch
 import flagquantum as fq
 from flagquantum import synth
 from flagquantum.ecosystem import InteropConversionError
+from flagquantum.services.synthesis import _synthesize
 
 
 def option_reference(source: str, repetitions: int) -> fq.Circuit:
@@ -78,7 +79,7 @@ def originals() -> tuple[Path, ...]:
 @pytest.mark.parametrize("source_index", [0, 1])
 def test_original_option_pricing_full_state(k, source_index):
     source = originals()[source_index]
-    program = synth.synthesize(source, classical_inputs={"k": k}, max_workspace=0)
+    program = _synthesize(source, classical_inputs={"k": k}, max_workspace=0)
     expected = fq.run(option_reference(source.read_text(), k)).statevector()
     actual = fq.run(program).statevector()
     assert dict(program.registers) == {"indicator": (0,)}
@@ -112,7 +113,7 @@ def test_borrowed_phase_view_refuses_escape_or_mismatched_annotations(
     raw = originals()[0].read_text()
     assert before in raw
     with pytest.raises(InteropConversionError, match=diagnostic):
-        synth.synthesize(
+        _synthesize(
             raw.replace(before, after, 1),
             source_format="qmod",
             classical_inputs={"k": 1},

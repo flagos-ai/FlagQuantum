@@ -8,12 +8,11 @@ import operator
 import re
 from pathlib import Path
 
-import numpy as np
 import pytest
 import torch
 
 import flagquantum as fq
-from flagquantum import synth
+from flagquantum.services.synthesis import _synthesize
 
 pytestmark = pytest.mark.integration
 _FIXTURES = Path(__file__).resolve().parents[1] / "fixtures/classiq_qmod"
@@ -70,8 +69,8 @@ def _reference(source: str, params: tuple[float, ...]) -> fq.Circuit:
     expressions = {expression for expression, _, _ in layers}
     [expression] = expressions
     node = ast.parse(expression, mode="eval").body
-    words = np.arange(1 << _WIDTH)
-    bits = [(words >> i) & 1 for i in range(_WIDTH)]
+    words = torch.arange(1 << _WIDTH)
+    bits = [((words >> i) & 1).to(torch.float64) for i in range(_WIDTH)]
     costs = _cost(node, bits)
     constant = float(costs[0])
     linear = [float(costs[1 << i]) - constant for i in range(_WIDTH)]
@@ -82,7 +81,7 @@ def _reference(source: str, params: tuple[float, ...]) -> fq.Circuit:
     reconstructed = constant + sum(a * bit for a, bit in zip(linear, bits, strict=True))
     for i, j, coefficient in pairs:
         reconstructed += coefficient * bits[i] * bits[j]
-    np.testing.assert_allclose(reconstructed, costs, atol=2e-12, rtol=0)
+    torch.testing.assert_close(reconstructed, costs, atol=2e-12, rtol=0)
 
     circuit = fq.Circuit(_WIDTH, dtype=torch.complex128)
     for wire in range(_WIDTH):
@@ -109,7 +108,7 @@ def _reference(source: str, params: tuple[float, ...]) -> fq.Circuit:
 @pytest.mark.parametrize("params", _PARAMS)
 def test_vehicle_routing_all_amplitudes(params: tuple[float, ...]) -> None:
     path = _original()
-    program = synth.synthesize(
+    program = _synthesize(
         path, classical_inputs={"params": params}, max_qubits=16, max_workspace=0
     )
     assert program.report["workspace_qubits"] == 0
@@ -120,6 +119,6 @@ def test_vehicle_routing_all_amplitudes(params: tuple[float, ...]) -> None:
 
 def test_vehicle_routing_respects_operation_budget() -> None:
     with pytest.raises(ValueError, match="operation|budget"):
-        synth.synthesize(
+        _synthesize(
             _original(), classical_inputs={"params": _PARAMS[0]}, max_operations=100
         )

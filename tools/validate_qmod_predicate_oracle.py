@@ -11,8 +11,8 @@ from pathlib import Path
 import torch
 
 import flagquantum as fq
-from flagquantum import synth
 from flagquantum.compiler.resource_estimation import ResourceEstimate
+from flagquantum.services.synthesis import _synthesize
 
 FIXTURES = Path(__file__).resolve().parents[1] / "tests/fixtures/classiq_qmod"
 DTYPE = torch.complex128
@@ -92,7 +92,7 @@ def validate(case: str, iterations: int = 2) -> Validation:
         != manifest["license_sha256"]
     ):
         raise ValueError("original license digest mismatch")
-    program = synth.synthesize(
+    program = _synthesize(
         path,
         classical_inputs={"r": iterations} if case == "grover" else {},
         memory_limit_bytes=64 * 1024**2,

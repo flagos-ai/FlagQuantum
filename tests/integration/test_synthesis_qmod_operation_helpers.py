@@ -10,6 +10,7 @@ import torch
 import flagquantum as fq
 from flagquantum import synth
 from flagquantum.ecosystem import InteropConversionError
+from flagquantum.services.synthesis import _synthesize
 
 pytestmark = pytest.mark.integration
 FIXTURES = Path(__file__).resolve().parents[1] / "fixtures/classiq_qmod"
@@ -26,7 +27,7 @@ def _original(name: str, blob: str) -> Path:
 @pytest.mark.parametrize("theta", [0.23, -0.41])
 def test_original_adapt_vqe(theta):
     source = _original("adapt_vqe.qmod", "3bd4550d1ddcca756681abcc76758cd8b997a662")
-    program = synth.synthesize(source, classical_inputs={"params": [theta]})
+    program = _synthesize(source, classical_inputs={"params": [theta]})
     reference = fq.Circuit(4, dtype=DTYPE).rxx(0, 3, theta=2 * theta)
     torch.testing.assert_close(
         fq.run(program).statevector(),

@@ -17,7 +17,7 @@ from pathlib import Path
 import torch
 
 import flagquantum as fq
-from flagquantum import synth
+from flagquantum.services.synthesis import _synthesize
 from tools.validate_qmod_sparse_phase import (
     CHUNK,
     independent_terms,
@@ -158,7 +158,7 @@ class RecordCost:
 def compare_classical_phase(source, oracle):
     params = [0.0] * oracle.count
     params[0] = 0.19
-    program = synth.synthesize(
+    program = _synthesize(
         source, classical_inputs={"params": params}, memory_limit_bytes=512 * 1024**2
     )
     state = fq.run(program).statevector().reshape(-1)
@@ -198,7 +198,7 @@ def main():
     ]
     started = time.perf_counter()
     checkpoint = started
-    program = synth.synthesize(
+    program = _synthesize(
         source, classical_inputs={"params": params}, memory_limit_bytes=512 * 1024**2
     )
     times = {"synthesis_seconds": time.perf_counter() - checkpoint}

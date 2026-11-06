@@ -10,8 +10,8 @@ from pathlib import Path
 import torch
 
 import flagquantum as fq
-from flagquantum import synth
 from flagquantum.compiler.resource_estimation import ResourceEstimate
+from flagquantum.services.synthesis import _synthesize
 
 FIXTURES = Path(__file__).resolve().parents[1] / "tests/fixtures/classiq_qmod"
 DTYPE = torch.complex128
@@ -63,7 +63,7 @@ def validate(delta: float) -> dict[str, object]:
         hashlib.sha256((FIXTURES / manifest["license_file"]).read_bytes()).hexdigest()
         == manifest["license_sha256"]
     )
-    program = synth.synthesize(
+    program = _synthesize(
         FIXTURES / "bpde.qmod",
         classical_inputs={"delta_e": delta},
         memory_limit_bytes=64 * 1024**2,

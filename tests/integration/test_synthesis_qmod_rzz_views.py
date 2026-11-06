@@ -10,6 +10,7 @@ import torch
 import flagquantum as fq
 from flagquantum import synth
 from flagquantum.ecosystem import InteropConversionError
+from flagquantum.services.synthesis import _synthesize
 
 pytestmark = pytest.mark.integration
 FIXTURES = Path(__file__).resolve().parents[1] / "fixtures/classiq_qmod"
@@ -33,7 +34,7 @@ def test_original_against_independent_circuit(name, blob, weight_count, scale):
     assert hashlib.sha1(f"blob {len(raw)}\0".encode() + raw).hexdigest() == blob
     data = [0.2 * scale, -0.3 * scale, 0.4 * scale, -0.5 * scale]
     weights = [0.1 * scale * (index + 1) for index in range(weight_count)]
-    program = synth.synthesize(
+    program = _synthesize(
         source, classical_inputs={"input_vec": data, "weight": weights}
     )
     if weight_count == 3:

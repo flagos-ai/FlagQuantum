@@ -11,6 +11,7 @@ import torch
 import flagquantum as fq
 from flagquantum import synth
 from flagquantum.ecosystem import InteropConversionError
+from flagquantum.services.synthesis import _synthesize
 
 pytestmark = pytest.mark.integration
 FIXTURES = Path(__file__).resolve().parents[1] / "fixtures/classiq_qmod"
@@ -86,7 +87,7 @@ def test_original_sawtooth_preserves_twos_complement_phases(
     kicks: int, input_kick: float
 ) -> None:
     path, _ = original("quantum_sawtooth_map.qmod")
-    program = synth.synthesize(
+    program = _synthesize(
         path, classical_inputs={"num_kicks": kicks, "kick_mag": input_kick}
     )
     actual = fq.run(program).statevector()

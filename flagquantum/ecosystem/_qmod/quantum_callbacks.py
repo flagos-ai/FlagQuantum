@@ -322,7 +322,8 @@ def specialize_quantum_callbacks(
             if (
                 len(function.parameters) != 3
                 or role_ports.keys() != {"callable", "inout", "output"}
-                or any(role_ports[role].kind != "qnum" for role in ("inout", "output"))
+                or role_ports["inout"].kind != "qnum"
+                or role_ports["output"].kind != "qnum"
                 or len(function.statements) != 1
             ):
                 reject(

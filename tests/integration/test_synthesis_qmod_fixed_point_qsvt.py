@@ -86,11 +86,12 @@ qperm rotate(theta:real,const m:qbit,const r:Data) {
 
 
 def test_forwarded_projector_keeps_conjunction_and_absolute_phase() -> None:
-    source = PROJECT + """
+    source = """
         qfunc main(output r:Data,output m:qbit) {
             allocate(r); allocate(m); hadamard_transform(r); H(m); rotate(0.7,m,r);
         }
     """
+    source = PROJECT + source
     program = synth.synthesize(source, source_format="qmod")
     diagonal = torch.tensor(
         [
@@ -114,10 +115,11 @@ def test_forwarded_projector_keeps_conjunction_and_absolute_phase() -> None:
 
 @pytest.mark.parametrize("call", ["pred(r,r);", "pred(r,m); X(m);"])
 def test_projector_refuses_alias_or_nonforwarding_helper(call: str) -> None:
-    source = PROJECT.replace("pred(r,m);", call) + """
+    source = """
         qfunc main(output r:Data,output m:qbit) {
             allocate(r); allocate(m); rotate(0.7,m,r);
         }
     """
+    source = PROJECT.replace("pred(r,m);", call) + source
     with pytest.raises(InteropConversionError):
         synth.synthesize(source, source_format="qmod")

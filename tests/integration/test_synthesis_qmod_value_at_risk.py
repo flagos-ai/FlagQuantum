@@ -11,6 +11,7 @@ import torch
 import flagquantum as fq
 from flagquantum import synth
 from flagquantum.ecosystem import InteropConversionError
+from flagquantum.services.synthesis import _synthesize
 
 pytestmark = pytest.mark.integration
 FIXTURES = Path(__file__).resolve().parents[1] / "fixtures/classiq_qmod"
@@ -56,7 +57,7 @@ def reference(source: Path, iterations: int) -> fq.Circuit:
 @pytest.mark.parametrize("iterations", [0, 1, 2])
 def test_original_value_at_risk_full_state_and_indicator(iterations: int) -> None:
     path, _ = original()
-    program = synth.synthesize(path, classical_inputs={"k": iterations})
+    program = _synthesize(path, classical_inputs={"k": iterations})
     result = fq.run(program)
     actual = result.statevector().reshape(256, -1)
     expected = fq.run(reference(path, iterations)).statevector().flatten()

@@ -7,8 +7,8 @@ import pytest
 import torch
 
 import flagquantum as fq
-from flagquantum import synth
 from flagquantum.ecosystem import InteropConversionError
+from flagquantum.services.synthesis import _synthesize
 
 pytestmark = pytest.mark.integration
 FIXTURES = Path(__file__).resolve().parents[1] / "fixtures/classiq_qmod"
@@ -64,7 +64,7 @@ def test_original_qaoa_against_classical_cost_circuit(name, blob, width, count, 
     raw = source.read_bytes()
     assert hashlib.sha1(f"blob {len(raw)}\0".encode() + raw).hexdigest() == blob
     params = [scale * (index + 1) * (-1 if index % 2 else 1) for index in range(count)]
-    program = synth.synthesize(source, classical_inputs={"params": params})
+    program = _synthesize(source, classical_inputs={"params": params})
     reference = fq.Circuit(width, dtype=DTYPE)
     for wire in range(width):
         reference.h(wire)
@@ -107,7 +107,7 @@ def test_real_phase_preserves_constant_global_phase_and_boolean_powers():
         allocate(q); hadamard_transform(q); layer(params[0],q);
       }"""
     gamma = -0.31
-    program = synth.synthesize(
+    program = _synthesize(
         source, source_format="qmod", classical_inputs={"params": [gamma]}
     )
     costs = []
@@ -151,16 +151,14 @@ def test_phase_domain_and_budget_rejections(expression, width, diagnostic):
         f"qfunc main(params:real[1],output q:qbit[{width}]) {{allocate(q); layer(params[0],q);}}"
     )
     with pytest.raises(InteropConversionError, match=diagnostic):
-        synth.synthesize(
-            source, source_format="qmod", classical_inputs={"params": [0.2]}
-        )
+        _synthesize(source, source_format="qmod", classical_inputs={"params": [0.2]})
 
 
 def test_cancelled_polynomial_still_checks_initialization():
     source = """qfunc layer(g:real,q:qbit[]) {phase(q[0]-q[0],g);}
       qfunc main(p:real[1],output q:qbit[1]) {layer(p[0],q); allocate(q);}"""
     with pytest.raises(InteropConversionError, match="initialized qubits"):
-        synth.synthesize(source, source_format="qmod", classical_inputs={"p": [0.1]})
+        _synthesize(source, source_format="qmod", classical_inputs={"p": [0.1]})
 
 
 def test_callback_signature_and_recursion_are_checked():
@@ -168,15 +166,14 @@ def test_callback_signature_and_recursion_are_checked():
         ("qfunc cost(q:qbit[]) {H(q[0]);}", "named"),
         ("qfunc cost(g:real,q:qbit[]) {cost(g,q);}", "acyclic"),
     ):
-        source = helper + """
+        source = """
           qfunc run_cost(f:qfunc(real,qbit[]),g:real,q:qbit[]) {f(g,q);}
           qfunc main(p:real[1],output q:qbit[1]) {
             allocate(q); run_cost(cost,p[0],q);
           }"""
+        source = helper + source
         with pytest.raises(InteropConversionError, match=diagnostic):
-            synth.synthesize(
-                source, source_format="qmod", classical_inputs={"p": [0.2]}
-            )
+            _synthesize(source, source_format="qmod", classical_inputs={"p": [0.2]})
 
 
 def test_map_callback_rejects_shadowing():
@@ -185,4 +182,4 @@ def test_map_callback_rejects_shadowing():
       }
       qfunc main(p:real[1],output q:qbit[1]) {allocate(q); layer(p[0],q);}"""
     with pytest.raises(InteropConversionError, match="cannot shadow"):
-        synth.synthesize(source, source_format="qmod", classical_inputs={"p": [0.1]})
+        _synthesize(source, source_format="qmod", classical_inputs={"p": [0.1]})

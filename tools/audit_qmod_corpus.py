@@ -18,6 +18,7 @@ from flagquantum.ecosystem import InteropConversionError
 from flagquantum.ecosystem._qmod.source import load_qmod
 from flagquantum.services import synthesis
 from flagquantum.services._qmod_workflow import run_qaoa_workflow
+from flagquantum.services.synthesis import _synthesize
 from tools._qmod_basis_mps import probe_basis_mps
 
 
@@ -45,7 +46,7 @@ def probe(
     from flagquantum import run
 
     try:
-        program = synthesis.synthesize(
+        program = _synthesize(
             path,
             source_version=revision,
             memory_limit_bytes=memory_bytes,

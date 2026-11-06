@@ -12,8 +12,8 @@ from typing import TypedDict
 import torch
 
 import flagquantum as fq
-from flagquantum import synth
 from flagquantum.compiler.resource_estimation import ResourceEstimate
+from flagquantum.services.synthesis import _synthesize
 
 FIXTURES = Path(__file__).resolve().parents[1] / "tests/fixtures/classiq_qmod"
 WEIGHTS = (
@@ -68,7 +68,7 @@ def validate(case: int) -> Validation:
         hashlib.sha256((FIXTURES / manifest["license_file"]).read_bytes()).hexdigest()
         == manifest["license_sha256"]
     )
-    program = synth.synthesize(
+    program = _synthesize(
         source,
         classical_inputs={"w": WEIGHTS[case], "input_data": DATA[case]},
         memory_limit_bytes=64 * 1024**2,

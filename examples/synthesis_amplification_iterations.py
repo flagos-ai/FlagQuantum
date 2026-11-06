@@ -11,6 +11,7 @@ import torch
 
 import flagquantum as fq
 from flagquantum import synth
+from flagquantum.services.synthesis import _synthesize
 from flagquantum.synth import (
     CX,
     Const,
@@ -97,7 +98,7 @@ def run_example() -> None:
         expected = fq.run(circuit).statevector().reshape(-1)
         for p in (
             synth.synthesize(function),
-            synth.synthesize(QMOD, source_format="qmod", classical_inputs={"k": k}),
+            _synthesize(QMOD, source_format="qmod", classical_inputs={"k": k}),
         ):
             result = fq.run(p)
             state = result.statevector().reshape(4, -1)

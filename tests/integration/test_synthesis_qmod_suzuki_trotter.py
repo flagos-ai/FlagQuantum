@@ -11,6 +11,7 @@ import torch
 import flagquantum as fq
 from flagquantum import synth
 from flagquantum.ecosystem import InteropConversionError
+from flagquantum.services.synthesis import _synthesize
 
 pytestmark = pytest.mark.integration
 SOURCE = (
@@ -45,10 +46,10 @@ def test_suzuki_trotter_matches_independent_circuit(order, repetitions):
     assert hashlib.sha1(blob).hexdigest() == "82b981254ad43471828386aeb8f4ed1546bc6a90"
     time = 0.37
     if order == 1:
-        program = synth.synthesize(SOURCE, classical_inputs={"x": time})
+        program = _synthesize(SOURCE, classical_inputs={"x": time})
     else:
         source = raw.decode().replace("x, 1, 1", f"x, {order}, {repetitions}")
-        program = synth.synthesize(
+        program = _synthesize(
             source, source_format="qmod", classical_inputs={"x": time}
         )
     torch.testing.assert_close(
@@ -71,7 +72,7 @@ def test_suzuki_trotter_matches_independent_circuit(order, repetitions):
 )
 def test_suzuki_trotter_rejects_invalid_inputs(old, new, diagnostic):
     with pytest.raises(InteropConversionError, match=diagnostic):
-        synth.synthesize(
+        _synthesize(
             SOURCE.read_text().replace(old, new, 1),
             source_format="qmod",
             classical_inputs={"x": 0.37},

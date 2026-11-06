@@ -7,6 +7,7 @@ import torch
 
 import flagquantum as fq
 from flagquantum import synth
+from flagquantum.services.synthesis import _synthesize
 from tools.validate_qmod_grover import FIXTURES, validate
 
 pytestmark = pytest.mark.integration
@@ -79,9 +80,7 @@ def test_callbacks_reject_alias_capture_and_escape_even_at_zero_power(
         "mark(v);", callback
     )
     with pytest.raises(ValueError, match="oracle|scope|phase|callback|function level"):
-        synth.synthesize(
-            source, source_format="qmod", classical_inputs={"r": iterations}
-        )
+        _synthesize(source, source_format="qmod", classical_inputs={"r": iterations})
 
 
 @pytest.mark.parametrize(
@@ -107,13 +106,13 @@ def test_borrowed_definitions_are_checked_even_when_unused(
 
 def test_fixed_width_borrow_and_preparation_profile_are_checked() -> None:
     with pytest.raises(ValueError, match="width"):
-        synth.synthesize(
+        _synthesize(
             ORACLE.replace("qbit[]", "qbit[4]") + MAIN,
             source_format="qmod",
             classical_inputs={"r": 0},
         )
     with pytest.raises(ValueError, match="preparation"):
-        synth.synthesize(
+        _synthesize(
             ORACLE + MAIN.replace("hadamard_transform,q", "custom,q"),
             source_format="qmod",
             classical_inputs={"r": 0},
@@ -156,7 +155,7 @@ def test_actual_grover_resource_budgets(constraint: str, value: int) -> None:
         ValueError,
         match="budget|qubit|operation|depth|memory|limit|candidate|workspace",
     ):
-        synth.synthesize(
+        _synthesize(
             FIXTURES / "grover_max_cut.qmod",
             classical_inputs={"r": 2},
             **{constraint: value},
@@ -166,15 +165,13 @@ def test_actual_grover_resource_budgets(constraint: str, value: int) -> None:
 @pytest.mark.parametrize("value", [-1, 257, True, 1.0])
 def test_grover_iteration_bounds(value: object) -> None:
     with pytest.raises(ValueError, match="integer|repeat count"):
-        synth.synthesize(
-            ORACLE + MAIN, source_format="qmod", classical_inputs={"r": value}
-        )
+        _synthesize(ORACLE + MAIN, source_format="qmod", classical_inputs={"r": value})
 
 
 def test_expansion_retains_the_global_owned_node_cap() -> None:
     source = ORACLE + MAIN.replace("power(r)", "power(256)")
     with pytest.raises(ValueError, match="4096|budget"):
-        synth.synthesize(source, source_format="qmod", classical_inputs={"r": 0})
+        _synthesize(source, source_format="qmod", classical_inputs={"r": 0})
 
 
 def test_phase_borrow_does_not_erase_the_original_predicate_order() -> None:
@@ -202,9 +199,7 @@ def test_callback_index_checks_precede_zero_iteration_erasure(
 ) -> None:
     source = ORACLE.replace("q[2]", "q[" + index + "]") + MAIN
     with pytest.raises(ValueError, match="oracle|index|expression"):
-        synth.synthesize(
-            source, source_format="qmod", classical_inputs={"r": iterations}
-        )
+        _synthesize(source, source_format="qmod", classical_inputs={"r": iterations})
 
 
 def test_nested_checked_oracle_calls_and_integer_specialization() -> None:

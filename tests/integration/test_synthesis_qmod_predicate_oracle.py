@@ -7,6 +7,7 @@ import torch
 
 import flagquantum as fq
 from flagquantum import synth
+from flagquantum.services.synthesis import _synthesize
 from tools.validate_qmod_predicate_oracle import FIXTURES, marked_states, validate
 
 pytestmark = pytest.mark.integration
@@ -124,9 +125,7 @@ def test_predicate_callbacks_reject_capture_alias_and_escape_at_zero_rounds(
         + "},x);},hadamard_transform,q);}}"
     )
     with pytest.raises(ValueError, match="predicate|scope|function level"):
-        synth.synthesize(
-            source, source_format="qmod", classical_inputs={"r": iterations}
-        )
+        _synthesize(source, source_format="qmod", classical_inputs={"r": iterations})
 
 
 @pytest.mark.parametrize(
@@ -203,9 +202,7 @@ def test_actual_original_resource_budgets_fail_closed(key: str, value: int) -> N
         ValueError,
         match="budget|qubit|workspace|operation|depth|memory|limit|candidate",
     ):
-        synth.synthesize(
-            FIXTURES / "grover.qmod", classical_inputs={"r": 2}, **{key: value}
-        )
+        _synthesize(FIXTURES / "grover.qmod", classical_inputs={"r": 2}, **{key: value})
 
 
 @pytest.mark.parametrize("expression", ["p.x", "p.x+1", "p.x & p.y"])

@@ -119,7 +119,8 @@ def test_borrowed_pair_rejects_bad_callbacks(call: str, diagnostic: str) -> None
         qfunc invoke(u:qfunc(qbit[],qbit[]), x:qbit[], y:qbit[]) {u(x,y);}
         qfunc main(output q:qbit[2], output r:qbit[2], output secret:qbit[2]) {
             allocate(q); allocate(r); allocate(secret);
-    """ + call + "}"
+    """
+    source += call + "}"
     with pytest.raises(InteropConversionError, match=diagnostic):
         synth.synthesize(source, source_format="qmod")
 

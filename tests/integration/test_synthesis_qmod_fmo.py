@@ -8,8 +8,8 @@ import pytest
 import torch
 
 import flagquantum as fq
-from flagquantum import synth
 from flagquantum.ecosystem import InteropConversionError
+from flagquantum.services.synthesis import _synthesize
 
 pytestmark = pytest.mark.integration
 SOURCE = (
@@ -63,7 +63,7 @@ def test_original_fmo_matches_full_state(time: float) -> None:
         hashlib.sha1(f"blob {len(raw)}\0".encode() + raw).hexdigest()
         == "f8a538767b019c1cd8600afb30bcc213a110c6cd"
     )
-    program = synth.synthesize(SOURCE, classical_inputs={"time_point": time})
+    program = _synthesize(SOURCE, classical_inputs={"time_point": time})
     axes = {
         "I": torch.eye(2, dtype=DTYPE),
         "X": torch.tensor([[0, 1], [1, 0]], dtype=DTYPE),
@@ -90,7 +90,7 @@ def test_original_fmo_matches_full_state(time: float) -> None:
 
 def test_fmo_rejects_nonzero_imaginary_coefficient() -> None:
     with pytest.raises(InteropConversionError, match="expected '0'"):
-        synth.synthesize(
+        _synthesize(
             SOURCE.read_text().replace("+ 0j", "+ 1j", 1),
             source_format="qmod",
             classical_inputs={"time_point": 0.037},

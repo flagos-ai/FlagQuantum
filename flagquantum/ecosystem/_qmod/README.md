@@ -340,14 +340,16 @@ operators also work with `suzuki_trotter` and its existing order and step limits
 
 Run the pinned original from the repository root:
 
+Repository validation example using the internal Qmod binding path.
+
 ```python
 from pathlib import Path
 
 import flagquantum as fq
-from flagquantum import synth
+from flagquantum.services.synthesis import _synthesize
 
 source = Path("tests/fixtures/classiq_qmod/hamiltonian_simulation_guide.qmod")
-program = synth.synthesize(source, classical_inputs={"t": 0.37})
+program = _synthesize(source, classical_inputs={"t": 0.37})
 print(fq.run(program).statevector())
 ```
 
@@ -470,7 +472,7 @@ gate count grows with the transform matrix dimension.
 ### Fixed real arrays and encoding
 
 Entry parameters declared as `real[N]` accept fixed-length sequences of
-finite real values through `classical_inputs`. Rotation angles can read
+finite real values through the internal `classical_inputs` binding. Rotation angles can read
 elements at literal indices, as in `RY(data[0], q)`.
 
 `encode_in_angle(data, out)` prepares one output qubit per element using
@@ -573,14 +575,16 @@ with one entry per qubit, indexed in Qmod array order. The coefficient can
 be a supported numeric literal, bound real, or literal-index read from a bound
 real array. Identity words preserve the global phase.
 
+Repository validation example using the internal Qmod binding path.
+
 ```python
 from pathlib import Path
 
 import flagquantum as fq
-from flagquantum import synth
+from flagquantum.services.synthesis import _synthesize
 
 source = Path("tests/fixtures/classiq_qmod/variational_quantum_imaginary_time_evolution.qmod")
-program = synth.synthesize(
+program = _synthesize(
     source, classical_inputs={"angles": [0.13, -0.29, 0.41, -0.57, 0.68, -0.83]}
 )
 state = fq.run(program).statevector()
@@ -846,14 +850,16 @@ as unsigned bit patterns; no overlapping whole-matrix readout is introduced.
 Run an unchanged original portfolio program without designing gates or decoding
 physical bit strings:
 
+Repository validation example using the internal Qmod binding path.
+
 ```python
 from pathlib import Path
 
 import flagquantum as fq
-from flagquantum import synth
+from flagquantum.services.synthesis import _synthesize
 
 source = Path("tests/fixtures/classiq_qmod/portfolio_optimization.qmod")
-program = synth.synthesize(
+program = _synthesize(
     source,
     classical_inputs={"params": [0.003, -0.006, 0.009, -0.012, 0.015, -0.018]},
     memory_limit_bytes=64 * 1024**2,
@@ -867,13 +873,15 @@ print(program.report["resources"])  # 12 qubits, 271 operations, depth 51.
 The original electric-grid program uses `x:qbit[4][3]`. Run all four QAOA
 layers and read the first row without physical wire numbers:
 
+Repository validation example using the internal Qmod binding path.
+
 ```python
 from pathlib import Path
 
 import flagquantum as fq
-from flagquantum import synth
+from flagquantum.services.synthesis import _synthesize
 
-program = synth.synthesize(
+program = _synthesize(
     Path("tests/fixtures/classiq_qmod/electric_grid_optimization.qmod"),
     classical_inputs={"params": [0.003 * (i + 1) * (-1 if i % 2 else 1) for i in range(8)]},
     memory_limit_bytes=64 * 1024**2,
@@ -927,13 +935,15 @@ rejected. This introduces no quantum-dependent host indexing.
 
 Run the unchanged original Knapsack program, including helpers and three layers:
 
+Repository validation example using the internal Qmod binding path.
+
 ```python
 from pathlib import Path
 
 import flagquantum as fq
-from flagquantum import synth
+from flagquantum.services.synthesis import _synthesize
 
-program = synth.synthesize(
+program = _synthesize(
     Path("tests/fixtures/classiq_qmod/qaoa_knapsack.qmod"),
     classical_inputs={"params": [0.003, -0.006, 0.009, -0.012, 0.015, -0.018]},
     max_qubits=5,
@@ -981,13 +991,15 @@ lowering, widths, global phases and expansion limits; no term is discarded.
 
 Run either unchanged molecular example with one nonzero time:
 
+Repository validation example using the internal Qmod binding path.
+
 ```python
 from pathlib import Path
 
 import flagquantum as fq
-from flagquantum import synth
+from flagquantum.services.synthesis import _synthesize
 
-program = synth.synthesize(
+program = _synthesize(
     Path("tests/fixtures/classiq_qmod/molecular_energy_curve.qmod"),
     classical_inputs={"params": [0.37]},
     max_qubits=1,
@@ -1034,7 +1046,7 @@ See docs/api-changes/FQ-SYNTH-UP06-PAULI-20261105.md and the independent tool
 Qmod main and ordinary bound helpers accept int and int[N] parameters. Helpers
 may use inferred-length int[] arrays. Values must be exact non-Boolean Python
 integers of at most 256 magnitude bits; arrays have 1..256 elements and exact
-main-port lengths. Main values use the existing classical_inputs mapping.
+main-port lengths. Main values use the internal classical_inputs mapping.
 No real-to-integer rounding or quantum-state read supplies a static value.
 
 power(count) repeats a checked static body 0..256 times without exposing an
@@ -1450,7 +1462,7 @@ typed `vqe(... optimizer=Optimizer.COBYLA ...)` assignment and one `save`
 mapping. The importer accepts a sized QAOA angle vector and an I/Z
 Hamiltonian for exact diagonal CVaR. The scope is parsed as data. Run the
 quantum circuit at the source's initial point with `synth.synthesize`, or
-override that point with `classical_inputs`. Run the complete workflow with
+override that point through the internal `classical_inputs` binding. Run the complete workflow with
 the repository's local command.
 
 ```sh
@@ -1519,15 +1531,17 @@ phase expansion and construction budgets still apply. The general expression
 depth limit remains 128. For example, the pinned vehicle-routing model takes
 24 classical angles for 12 phase and RX mixer layers.
 
+Repository validation example using the internal Qmod binding path.
+
 ```python
 from pathlib import Path
 
 import flagquantum as fq
-from flagquantum import synth
+from flagquantum.services.synthesis import _synthesize
 
 source = Path("tests/fixtures/classiq_qmod/vehicle_routing_problem.qmod")
 angles = [0.013 * (i + 1) for i in range(24)]
-program = synth.synthesize(
+program = _synthesize(
     source, classical_inputs={"params": angles}, max_qubits=16, max_workspace=0
 )
 result = fq.run(program)
@@ -1665,14 +1679,16 @@ the original numeric inputs available, and no physical score register is
 needed. Allocations, escaping aliases, and writes to the inferred value
 outside a reversible private view are refused.
 
+Repository validation example using the internal Qmod binding path.
+
 ```python
 from pathlib import Path
 
 import flagquantum as fq
-from flagquantum import synth
+from flagquantum.services.synthesis import _synthesize
 
 source = Path("tests/fixtures/classiq_qmod/rainbow_options_integration_method.qmod")
-program = synth.synthesize(
+program = _synthesize(
     source, classical_inputs={"k": 1}, max_qubits=14, max_workspace=4,
     max_operations=35_000,
 )
@@ -1769,7 +1785,7 @@ probabilities = program.probabilities(result, registers=("x1", "x2", "ecp.x", "e
 The bounded scalar-indicator amplification profile reads
 `preferences.machine_precision` from the adjacent Classiq
 `*.synthesis_options.json` file. For source text, pass
-`qmod_machine_precision` explicitly. The checked affine expressions
+`qmod_machine_precision` explicitly through the internal Qmod validation path. The checked affine expressions
 quantize their coefficients toward zero at the declared precision.
 
 The compiler proves the callback over its bounded sparse support. It keeps
@@ -1779,14 +1795,16 @@ indicator permits moving the Grover rounds before a shared preparation.
 The returned statevector includes the private environment and named
 probabilities expose the indicator.
 
+Repository validation example using the internal Qmod binding path.
+
 ```python
 from pathlib import Path
 
 import flagquantum as fq
-from flagquantum import synth
+from flagquantum.services.synthesis import _synthesize
 
 source = Path("tests/fixtures/classiq_qmod/quantum_autocallable_option_pricing.qmod")
-program = synth.synthesize(
+program = _synthesize(
     source, classical_inputs={"k": 1},
     max_qubits=11, max_workspace=0, max_operations=4_200,
 )

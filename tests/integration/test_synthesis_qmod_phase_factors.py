@@ -9,6 +9,7 @@ from flagquantum import synth
 from flagquantum.compiler._construction.boolean_lowering import lower_boolean_value
 from flagquantum.ecosystem._qmod.adapter import SUPPORTED_SOURCE_VERSION, parse_qmod
 from flagquantum.ecosystem._qmod.syntax import Parser, tokenize
+from flagquantum.services.synthesis import _synthesize
 from tools.validate_qmod_phase_factors import FIXTURES, validate
 
 pytestmark = pytest.mark.integration
@@ -161,7 +162,7 @@ def test_original_factor_candidate_obeys_actual_resource_budgets(
     with pytest.raises(
         ValueError, match="workspace|qubit|operation|memory|limit|budget|candidate"
     ):
-        synth.synthesize(
+        _synthesize(
             FIXTURES / "facility_location.qmod",
             classical_inputs={"params": [0.003 * (i + 1) for i in range(10)]},
             **{constraint: value},

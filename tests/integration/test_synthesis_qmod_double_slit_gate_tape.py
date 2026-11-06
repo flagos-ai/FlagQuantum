@@ -3,10 +3,9 @@
 import hashlib
 import json
 import re
-from math import atan2, hypot, sqrt
+from math import atan2, cos, hypot, pi, sin, sqrt
 from pathlib import Path
 
-import numpy as np
 import pytest
 import torch
 
@@ -18,7 +17,7 @@ from flagquantum.simulation.statevector.basis_workspace import compact_workspace
 pytestmark = pytest.mark.integration
 _FIXTURES = Path(__file__).resolve().parents[1] / "fixtures/classiq_qmod"
 
-BASIS = np.arange(1 << 15)
+BASIS = torch.arange(1 << 15)
 AUX = 0
 BLOCK = tuple(range(1, 7))
 Y = tuple(range(7, 11))
@@ -28,33 +27,37 @@ _y = (BASIS >> Y[0]) & 15
 _select = (BASIS >> BLOCK[4]) & 3
 _axis = (BASIS >> BLOCK[1]) & 1
 _direction = (BASIS >> BLOCK[0]) & 1
-_SCATTER = ((_y >> 1) == 3) & ~np.isin(_x >> 1, (2, 5))
+_SCATTER = ((_y >> 1) == 3) & ((_x >> 1) != 2) & ((_x >> 1) != 5)
 _BOUNDARY_X = (_x == 0) | (_x == 15)
 _BOUNDARY_Y = (_y == 0) | (_y == 15)
 
 
 def mask_phase(active, theta, state):
-    return state * np.exp(1j * theta * active)
+    return state * torch.exp(1j * theta * active.to(torch.float64))
 
 
 def flip_if(state, wire, active):
-    return state[BASIS ^ (active.astype(np.int64) << wire)]
+    return state.index_select(0, BASIS ^ (active.to(torch.int64) << wire))
 
 
 def rotate(state, wire, active, angle):
-    cosine, sine = np.cos(angle / 2), np.sin(angle / 2)
+    cosine, sine = cos(angle / 2), sin(angle / 2)
     target = (BASIS >> wire) & 1
-    return np.where(
-        active,
-        state * cosine + state[BASIS ^ (1 << wire)] * sine * (2 * target - 1),
+    return torch.where(
+        torch.as_tensor(active, dtype=torch.bool),
+        state * cosine
+        + state.index_select(0, BASIS ^ (1 << wire)) * sine * (2 * target - 1),
         state,
     )
 
 
 def hadamard(state, wire, active=True):
-    return np.where(
-        active,
-        (state * (1 - 2 * ((BASIS >> wire) & 1)) + state[BASIS ^ (1 << wire)])
+    return torch.where(
+        torch.as_tensor(active, dtype=torch.bool),
+        (
+            state * (1 - 2 * ((BASIS >> wire) & 1))
+            + state.index_select(0, BASIS ^ (1 << wire))
+        )
         / sqrt(2),
         state,
     )
@@ -76,9 +79,11 @@ def prepare_selector(state, amplitudes, adjoint=False):
 def shift(state, adjoint=False):
     for axis, values, wires in ((0, _x, X), (1, _y, Y)):
         mask = (_select == 0) & (_axis == axis)
-        delta = np.where(_direction, -1, 1)
+        delta = torch.where(_direction.bool(), -1, 1)
         inverse_index = (values - (-delta if adjoint else delta)) % 16
-        state = state[BASIS ^ np.where(mask, (values ^ inverse_index) << wires[0], 0)]
+        state = state.index_select(
+            0, BASIS ^ torch.where(mask, (values ^ inverse_index) << wires[0], 0)
+        )
     return state
 
 
@@ -124,13 +129,13 @@ def hamiltonian(state, amplitudes, phase, adjoint=False):
     state = semi_absorbing(state, adjoint)
     sign = -1 if adjoint else 1
     state = mask_phase(_select == 1, sign * phase, state)
-    state = mask_phase(_select == 2, sign * np.pi, state)
+    state = mask_phase(_select == 2, sign * pi, state)
     return prepare_selector(state, amplitudes, adjoint=True)
 
 
 def project(state, angle):
     aux_after_compute = (BASIS & 1) ^ (((BASIS >> 1) & 63) == 0)
-    return state * np.exp(1j * angle * (aux_after_compute - 0.5))
+    return state * torch.exp(1j * angle * (aux_after_compute.to(torch.float64) - 0.5))
 
 
 def reference(source, cycles=95):
@@ -150,7 +155,7 @@ def reference(source, cycles=95):
         .split(",")
     ]
     [absorbing_phase] = re.findall(r"U\(0, 0, 0, ([\d.]+), block1\[0\]\)", source)
-    state = np.zeros(1 << 15, dtype=np.complex128)
+    state = torch.zeros(1 << 15, dtype=torch.complex128)
     for word in (0, 1):
         mask = (word ^ (word >> 7)) & 1
         data = word ^ mask ^ (mask << 7)
@@ -210,7 +215,7 @@ def test_double_slit_matches_complete_independent_state(cycles: int) -> None:
     assert program.registers == {"res": tuple(range(8)), "block": tuple(range(8, 15))}
     result = fq.run(program)
     actual = result.statevector().reshape(1 << 15, 1 << 9)
-    expected = torch.from_numpy(reference(source, cycles))
+    expected = reference(source, cycles)
     torch.testing.assert_close(actual[:, 0], expected, atol=1e-11, rtol=0)
     assert torch.count_nonzero(actual[:, 1:]) == 0
     assert result.plan.state_bytes == 256 * 1024**2

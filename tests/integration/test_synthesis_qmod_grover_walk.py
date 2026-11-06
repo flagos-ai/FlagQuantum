@@ -10,6 +10,7 @@ import torch
 import flagquantum as fq
 from flagquantum import synth
 from flagquantum.ecosystem import InteropConversionError
+from flagquantum.services.synthesis import _synthesize
 
 pytestmark = pytest.mark.integration
 FIXTURES = Path(__file__).resolve().parents[1] / "fixtures/classiq_qmod"
@@ -64,7 +65,7 @@ def reference(steps: int, hypercube: bool) -> fq.Circuit:
 def test_original_grover_walk_full_state(steps: int, hypercube: bool) -> None:
     name = "quantum_walk_hypercube" if hypercube else "discrete_time_quantum_walk"
     path, _ = original(name)
-    program = synth.synthesize(path, classical_inputs={"t": steps})
+    program = _synthesize(path, classical_inputs={"t": steps})
     result = fq.run(program)
     expected = fq.run(reference(steps, hypercube)).statevector().flatten()
     actual = result.statevector().reshape(expected.numel(), -1)

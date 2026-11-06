@@ -15,6 +15,7 @@ from flagquantum import synth
 from flagquantum.ecosystem import InteropConversionError
 from flagquantum.ecosystem._qmod.source import load_qmod
 from flagquantum.services._qmod_workflow import run_qaoa_workflow
+from flagquantum.services.synthesis import _synthesize
 
 pytestmark = pytest.mark.integration
 FIXTURES = Path(__file__).resolve().parents[1] / "fixtures/classiq_qmod"
@@ -147,7 +148,7 @@ def test_explicit_bindings_and_source_initial_point_agree_with_circuit() -> None
     terms = original_terms(source_text(name))
     for bindings in (None, {"params_list": (0.12, -0.29, 0.53, 0.83)}):
         params = (0.0, 1.0, 1.0, 0.0) if bindings is None else bindings["params_list"]
-        program = synth.synthesize(path, classical_inputs=bindings)
+        program = _synthesize(path, classical_inputs=bindings)
         actual = fq.run(program).statevector().reshape(-1)
         torch.testing.assert_close(
             actual, reference_state(terms, params), atol=1e-12, rtol=0

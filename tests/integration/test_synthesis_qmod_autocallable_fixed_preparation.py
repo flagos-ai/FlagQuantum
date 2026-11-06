@@ -10,8 +10,8 @@ import pytest
 import torch
 
 import flagquantum as fq
-from flagquantum import synth
 from flagquantum.ecosystem import InteropConversionError
+from flagquantum.services.synthesis import _synthesize
 
 pytestmark = pytest.mark.integration
 _FIXTURES = Path(__file__).resolve().parents[1] / "fixtures/classiq_qmod"
@@ -97,7 +97,7 @@ def test_autocallable_full_purification(rounds: int, changed: bool) -> None:
     inputs = {"k": rounds}
     if changed:
         source = original.read_text().replace("0.1274075 +", "0.22 +")
-        program = synth.synthesize(
+        program = _synthesize(
             source,
             source_format="qmod",
             qmod_machine_precision=2,
@@ -105,7 +105,7 @@ def test_autocallable_full_purification(rounds: int, changed: bool) -> None:
             **bounds,
         )
     else:
-        program = synth.synthesize(original, classical_inputs=inputs, **bounds)
+        program = _synthesize(original, classical_inputs=inputs, **bounds)
     assert program.registers == {"indicator": (0,)}
     assert program.report["workspace_qubits"] == 0
     result = fq.run(program)
@@ -127,13 +127,13 @@ def test_autocallable_checks_precision_aliases_and_budgets() -> None:
     original = _original()
     inputs = {"k": 1}
     with pytest.raises(ValueError, match="budget|operation"):
-        synth.synthesize(original, classical_inputs=inputs, max_operations=100)
+        _synthesize(original, classical_inputs=inputs, max_operations=100)
     source = original.read_text()
     with pytest.raises(
         InteropConversionError,
         match="actual and formal formats|declared machine precision",
     ):
-        synth.synthesize(
+        _synthesize(
             source,
             source_format="qmod",
             qmod_machine_precision=3,
@@ -141,11 +141,11 @@ def test_autocallable_checks_precision_aliases_and_budgets() -> None:
         )
     wrong_oracle = source.replace("Z(est_reg[est_reg.len - 1]);", "Z(est_reg[0]);")
     with pytest.raises(InteropConversionError, match="must mark the indicator"):
-        synth.synthesize(
+        _synthesize(
             wrong_oracle,
             source_format="qmod",
             qmod_machine_precision=2,
             classical_inputs=inputs,
         )
     with pytest.raises(InteropConversionError, match="at most four rounds"):
-        synth.synthesize(original, classical_inputs={"k": 5})
+        _synthesize(original, classical_inputs={"k": 5})

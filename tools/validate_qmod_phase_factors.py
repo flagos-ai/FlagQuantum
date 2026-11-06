@@ -17,8 +17,8 @@ from pathlib import Path
 import torch
 
 import flagquantum as fq
-from flagquantum import synth
 from flagquantum.compiler.resource_estimation import ResourceEstimate
+from flagquantum.services.synthesis import _synthesize
 
 FIXTURES = Path(__file__).resolve().parents[1] / "tests/fixtures/classiq_qmod"
 
@@ -206,7 +206,7 @@ def validate(case: str, scale: float) -> Validation:
         raise ValueError("original source digest mismatch")
     oracle = ArithmeticOracle(raw.decode())
     params = tuple(scale * (i + 1) * (-1 if i % 2 else 1) for i in range(oracle.count))
-    program = synth.synthesize(
+    program = _synthesize(
         path, classical_inputs={"params": params}, memory_limit_bytes=512 * 1024**2
     )
     actual = fq.run(program).statevector().reshape(-1)

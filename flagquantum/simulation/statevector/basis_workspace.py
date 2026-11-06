@@ -4,9 +4,7 @@ import cmath
 import math
 from collections.abc import Sequence
 
-import numpy as np
 import torch
-from numpy.typing import NDArray
 
 from ...core.ir import CircuitIR, Instruction
 
@@ -17,14 +15,12 @@ class _UnsupportedWorkspaceError(ValueError):
     pass
 
 
-def _propagate(
-    instructions: Sequence[Instruction], data: int
-) -> NDArray[np.complex128]:
+def _propagate(instructions: Sequence[Instruction], data: int) -> torch.Tensor:
     """Apply only gates whose exact computational workspace labels stay defined."""
     size = 1 << data
-    indices = np.arange(size, dtype=np.int64)
-    work = np.zeros(size, dtype=np.int64)
-    state = np.zeros(size, dtype=np.complex128)
+    indices = torch.arange(size, dtype=torch.int64)
+    work = torch.zeros(size, dtype=torch.int64)
+    state = torch.zeros(size, dtype=torch.complex128)
     state[0] = 1
     mixed = {"h", "ry", "rx", "u3"}
     for instruction in instructions:
@@ -43,11 +39,11 @@ def _propagate(
                 "compact workspace requires finite static gate parameters"
             )
 
-        def bit(wire: int, work_words: NDArray[np.int64] = work) -> NDArray[np.int64]:
+        def bit(qubit: int, work_words: torch.Tensor = work) -> torch.Tensor:
             return (
-                indices >> (data - wire - 1) & 1
-                if wire < data
-                else work_words >> (wire - data) & 1
+                indices >> (data - qubit - 1) & 1
+                if qubit < data
+                else work_words >> (qubit - data) & 1
             )
 
         if op == "swap":
@@ -58,8 +54,8 @@ def _propagate(
                 (1 << (data - 1 - wires[0])) | (1 << (data - 1 - wires[1]))
             )
             perm = indices ^ offsets
-            work = work[perm]
-            state = state[perm]
+            work = work.index_select(0, perm)
+            state = state.index_select(0, perm)
         elif op in {"x", "cx", "ccx"}:
             controls = wires[:-1]
             selected = bit(controls[0]) if controls else 1
@@ -71,29 +67,28 @@ def _propagate(
                 perm = indices ^ (selected << (data - target - 1))
                 # Every basis word is a unique label in the same workspace
                 # fiber. A target-dependent scratch predicate would violate this.
-                if not np.array_equal(perm[perm], indices):
+                if not torch.equal(perm.index_select(0, perm), indices):
                     raise _UnsupportedWorkspaceError(
                         f"work map cannot preserve reversible target {instruction}"
                     )
-                work = work[perm]
-                state = state[perm]
+                work = work.index_select(0, perm)
+                state = state.index_select(0, perm)
         elif op in mixed:
             if target >= data:
                 raise _UnsupportedWorkspaceError(
                     "workspace cannot be in a superposition"
                 )
             permutation = indices ^ (1 << (data - target - 1))
-            if not np.array_equal(work[permutation], work):
+            if not torch.equal(work.index_select(0, permutation), work):
                 raise _UnsupportedWorkspaceError(
                     f"quantum gate leaves the classical workspace domain {instruction}"
                 )
-            flipped = state[permutation]
+            flipped = state.index_select(0, permutation)
             if op == "h":
                 state = _S * (state * (1 - 2 * bit(target)) + flipped)
             elif op == "ry":
-                state = (
-                    math.cos(phi / 2) * state
-                    + math.sin(phi / 2) * (2 * bit(target) - 1) * flipped
+                state = math.cos(phi / 2) * state + math.sin(phi / 2) * flipped * (
+                    2 * bit(target) - 1
                 )
             elif op == "rx":
                 state = math.cos(phi / 2) * state - 1j * math.sin(phi / 2) * flipped
@@ -104,8 +99,8 @@ def _propagate(
                 c, s = math.cos(theta / 2), math.sin(theta / 2)
                 phi_unit, lam_unit = cmath.exp(1j * phase), cmath.exp(1j * lam)
                 target_one = bit(target)
-                state = np.where(
-                    target_one,
+                state = torch.where(
+                    target_one.bool(),
                     c * phi_unit * lam_unit * state + s * phi_unit * flipped,
                     c * state - s * lam_unit * flipped,
                 )
@@ -121,12 +116,12 @@ def _propagate(
                 phase = -1j
             else:
                 phase = cmath.exp(1j * phi)
-            state *= np.where(mask, phase, 1)
+            state = torch.where(mask.bool(), state * phase, state)
             if op == "rz":
                 state *= cmath.exp(-0.5j * phi)
         else:
             raise _UnsupportedWorkspaceError(f"unsupported {op}")
-    if np.any(work):
+    if torch.any(work):
         raise _UnsupportedWorkspaceError("workspace did not return to zero")
     return state
 
@@ -151,5 +146,5 @@ def compact_workspace_state(program: CircuitIR) -> torch.Tensor | None:
     result = torch.zeros(
         (1 << prefix, 1 << (program.n_wires - prefix)), dtype=torch.complex128
     )
-    result[:, 0] = torch.from_numpy(state)
+    result[:, 0] = state
     return result.reshape(1, -1)

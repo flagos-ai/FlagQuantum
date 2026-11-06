@@ -14,6 +14,7 @@ import torch
 import flagquantum as fq
 from flagquantum import synth
 from flagquantum.ecosystem import InteropConversionError
+from flagquantum.services.synthesis import _synthesize
 
 DTYPE = torch.complex128
 pytestmark = pytest.mark.integration
@@ -121,7 +122,7 @@ def _original(method: str) -> Path:
 @pytest.mark.parametrize("rounds", [0, 1, 2])
 def test_original_payoff_complex_state_and_workspace(method: str, rounds: int) -> None:
     path = _original(method)
-    program = synth.synthesize(
+    program = _synthesize(
         path,
         classical_inputs={"k": rounds},
         max_qubits=14,
@@ -215,6 +216,4 @@ def test_payoff_rejects_unchecked_inputs(old: str, new: str, diagnostic: str) ->
 
 def test_original_rejects_workspace_budget_below_measured() -> None:
     with pytest.raises(ValueError, match="budget|workspace"):
-        synth.synthesize(
-            _original("direct"), classical_inputs={"k": 0}, max_workspace=3
-        )
+        _synthesize(_original("direct"), classical_inputs={"k": 0}, max_workspace=3)

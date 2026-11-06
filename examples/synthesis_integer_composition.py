@@ -34,9 +34,11 @@ def main(a: Output[QBit], b: Output[QBit]) -> None:
     twist(a, b)
 
 
-QMOD = """qfunc main(steps:int,output q:qbit[2]) {
-  allocate(q);hadamard_transform(q);
+QMOD = """qfunc twist(steps:int, q:qbit[2]) {
   power(steps) {phase(0.6*q[0]*q[1]);}
+}
+qfunc main(output q:qbit[2]) {
+  allocate(q);hadamard_transform(q);twist(2,q);
 }"""
 
 
@@ -47,7 +49,7 @@ def run_example() -> None:
         .reshape(-1)
     )
     programs = (
-        synth.synthesize(QMOD, source_format="qmod", classical_inputs={"steps": 2}),
+        synth.synthesize(QMOD, source_format="qmod"),
         synth.synthesize(main),
     )
     for program in programs:

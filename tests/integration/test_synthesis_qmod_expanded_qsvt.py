@@ -100,13 +100,14 @@ qperm rotate(angle:real,const m:qbit,const q:qbit) {
 
 @pytest.mark.parametrize("marker", [0, 1])
 def test_projector_keeps_absolute_phase_for_either_marker(marker: int) -> None:
-    source = PROJECTOR + f"""
+    source = f"""
         qfunc main(output q:qbit,output m:qbit) {{
             allocate(q); allocate(m); H(q);
             if (False) {{X(q);}} else {{ {"X(m);" if marker else ""} }}
             rotate(0.81,m,q);
         }}
     """
+    source = PROJECTOR + source
     program = synth.synthesize(source, source_format="qmod")
     reference = fq.Circuit(2, dtype=DTYPE).h(0)
     if marker:

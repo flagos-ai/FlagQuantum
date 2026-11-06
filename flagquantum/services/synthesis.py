@@ -475,8 +475,6 @@ def synthesize(
     source_format: Literal["qmod"],
     source_name: str | None = None,
     source_version: str | None = None,
-    classical_inputs: Mapping[str, float | Sequence[float]] | None = None,
-    qmod_machine_precision: int | None = None,
     memory_limit_bytes: int | None = None,
     output_mode: Literal["value"] = "value",
 ) -> Program: ...
@@ -503,8 +501,6 @@ def synthesize(
     source_format: Literal["qmod"] | None = None,
     source_name: None = None,
     source_version: str | None = None,
-    classical_inputs: Mapping[str, float | Sequence[float]] | None = None,
-    qmod_machine_precision: int | None = None,
     memory_limit_bytes: int | None = None,
     output_mode: Literal["value"] = "value",
 ) -> Program: ...
@@ -556,8 +552,6 @@ def synthesize(
     source_format: Literal["qmod"] | None = None,
     source_name: str | None = None,
     source_version: str | None = None,
-    classical_inputs: Mapping[str, float | Sequence[float]] | None = None,
-    qmod_machine_precision: int | None = None,
     memory_limit_bytes: int | None = None,
     output_mode: Literal["value", "phase"] = "value",
 ) -> Program:
@@ -569,8 +563,8 @@ def synthesize(
     and target support are documented in flagquantum.synth/README.md.
 
     PathLike[str] accepts local .qmod files; strings require source_format="qmod"
-    and are always source text. Bind declared real inputs by name using
-    classical_inputs. Native source declares its own preparation and output names. Its default planned-state buffer ceiling is 512 MiB; explicit
+    and are always source text. Native source declares its own preparation and
+    output names. Its default planned-state buffer ceiling is 512 MiB; explicit
     memory_limit_bytes applies to both source profiles. This is not a process
     peak-memory limit. Scalar Python retains its existing memory behavior.
     A typed qfunc root owns Output ports and in-program preparation, reusing the
@@ -613,6 +607,56 @@ def synthesize(
             result = fq.run(program)
             probabilities = program.probabilities(result)
     """
+    return _synthesize(
+        function,
+        inputs=inputs,
+        input_state=input_state,
+        constants=constants,
+        functions=functions,
+        max_qubits=max_qubits,
+        max_operations=max_operations,
+        max_depth=max_depth,
+        max_workspace=max_workspace,
+        construction_budget=construction_budget,
+        objective=objective,
+        basis=basis,
+        topology=topology,
+        preparation=preparation,
+        preparation_map=preparation_map,
+        source_format=source_format,
+        source_name=source_name,
+        source_version=source_version,
+        memory_limit_bytes=memory_limit_bytes,
+        output_mode=output_mode,
+    )
+
+
+def _synthesize(
+    function: Definition | str | PathLike[str],
+    *,
+    inputs: Mapping[str, UInt] | None = None,
+    input_state: InputState | None = None,
+    constants: Mapping[str, int] | None = None,
+    functions: Sequence[Definition] = (),
+    max_qubits: int | None = 256,
+    max_operations: int | None = 100_000,
+    max_depth: int | None = None,
+    max_workspace: int | None = None,
+    construction_budget: ConstructionBudget = _DEFAULT_BUDGET,
+    objective: Literal["width", "depth"] = "width",
+    basis: Iterable[str] | None = None,
+    topology: Literal["line"] | None = None,
+    preparation: CircuitIR | None = None,
+    preparation_map: Mapping[str, Sequence[int]] | None = None,
+    source_format: Literal["qmod"] | None = None,
+    source_name: str | None = None,
+    source_version: str | None = None,
+    classical_inputs: Mapping[str, float | Sequence[float]] | None = None,
+    qmod_machine_precision: int | None = None,
+    memory_limit_bytes: int | None = None,
+    output_mode: Literal["value", "phase"] = "value",
+) -> Program:
+    """Compile admitted programs, including private Qmod audit bindings."""
     if not isinstance(output_mode, str):
         raise TypeError("output_mode must be a string: value or phase")
     if output_mode not in {"value", "phase"}:
