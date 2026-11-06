@@ -13,6 +13,8 @@ from math import prod
 from ...core.ir import Instruction
 from .and_compute import and_compute_ir, and_uncompute_ir
 from .bitwise import _validate_wires
+from .control_predicate import ControlRegister
+from .controlled_component import controlled_component_ir
 from .multi_control import multi_and_ir
 
 
@@ -82,12 +84,16 @@ def source_qrom_ir(
     datasets: tuple[tuple[int, ...], ...],
     workspace: tuple[int, ...],
     classical_bits: tuple[int, ...],
+    *,
+    outer_control: int | None = None,
 ) -> tuple[Instruction, ...]:
     """XOR concrete datasets into target words and return the And pool to zero.
 
     Each dataset is flattened in row-major order, with each selected row
     containing one word per corresponding target word. Singleton axes have
     empty physical selections. The source channel assumes an in-range index.
+    An optional positive outer control follows the generic source decomposition
+    for loads containing only X and CX.
     """
     if len(selections) != len(shape) or any(
         type(extent) is not int
@@ -134,7 +140,7 @@ def source_qrom_ir(
         *(wire for group in targets for word in group for wire in word),
         *workspace,
     )
-    _validate_wires(wires)
+    _validate_wires(wires if outer_control is None else (*wires, outer_control))
 
     gates: list[Instruction] = []
     reduction_size = max(0, len(controls) - 1)
@@ -204,4 +210,52 @@ def source_qrom_ir(
                 uncompute=True,
             )
         )
-    return tuple(gates)
+    if outer_control is None:
+        return tuple(gates)
+    if any(gate.name not in ("x", "cx") for gate in gates):
+        raise ValueError("Pinned controlled QROM cannot decompose controlled And")
+    return tuple(
+        Instruction("cx" if gate.name == "x" else "ccx", (outer_control, *gate.wires))
+        for gate in gates
+    )
+
+
+def control_source_qrom_ir(
+    outer_controls: tuple[tuple[int, ...], ...],
+    registers: tuple[ControlRegister, ...],
+    controls: tuple[int, ...],
+    selections: tuple[tuple[int, ...], ...],
+    shape: tuple[int, ...],
+    targets: tuple[tuple[tuple[int, ...], ...], ...],
+    datasets: tuple[tuple[int, ...], ...],
+    workspace: tuple[int, ...],
+    classical_bits: tuple[int, ...],
+    predicate_workspace: tuple[int, ...],
+    predicate_bits: tuple[int, ...],
+) -> tuple[Instruction, ...]:
+    """Apply a shared outer predicate to an executable generic controlled lookup."""
+    _validate_wires(
+        (
+            *controls,
+            *(wire for group in (*outer_controls, *selections) for wire in group),
+            *(wire for group in targets for word in group for wire in word),
+            *workspace,
+            *predicate_workspace,
+        )
+    )
+    return controlled_component_ir(
+        outer_controls,
+        registers,
+        lambda control: source_qrom_ir(
+            controls,
+            selections,
+            shape,
+            targets,
+            datasets,
+            workspace,
+            classical_bits,
+            outer_control=control,
+        ),
+        predicate_workspace,
+        predicate_bits,
+    )

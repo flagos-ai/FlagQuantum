@@ -1,5 +1,6 @@
 """Concrete QROM source gates and complete measured lookup channels."""
 
+from collections import Counter
 from dataclasses import asdict
 from itertools import product
 from math import prod
@@ -11,8 +12,10 @@ import torch
 from flagquantum.compiler._component_trace.resource_model import (
     estimate_component_resources,
 )
+from flagquantum.compiler.registers.control_predicate import ControlRegister
 from flagquantum.compiler.registers.qrom_resource_model import source_qrom_cost
 from flagquantum.compiler.registers.source_qrom import (
+    control_source_qrom_ir,
     source_qrom_ir,
     source_qrom_workspace_size,
 )
@@ -20,6 +23,7 @@ from flagquantum.core.ir import Instruction
 from tests.unit.measurement_checks import certified_and_channel_map, forced_branch
 from tests.unit.test_register_constant_addition import reference_arithmetic_gates
 from tests.unit.test_register_subtraction import assert_source
+from tests.unit.test_relative_controlled_swap import assert_source_dependencies
 
 pytestmark = pytest.mark.unit
 
@@ -223,3 +227,143 @@ def test_rejects_invalid_qrom_bindings(
 def test_rejects_missing_target_group() -> None:
     with pytest.raises(ValueError, match="one target group per dataset"):
         source_qrom_ir((), (), (), (), ((1,),), (), ())
+
+
+@pytest.mark.ftqc_reference
+@pytest.mark.parametrize(
+    ("shape", "inner", "target_layout", "datasets"),
+    [
+        ((1,), 0, ((2, 2), (1, 1)), ((1, 2), (1,))),
+        ((2,), 0, ((2, 1), (1, 1)), ((1, 0, 0, 1), (0, 1))),
+        ((4,), 0, ((1, 2), (1, 1)), ((1, 1, 2, 2), (0, 0, 1, 1))),
+        ((2, 2), 0, ((1, 2), (2, 1)), ((3,) * 4, (1,) * 8)),
+        ((2, 2), 1, ((1, 2), (1, 1)), ((3,) * 4, (1,) * 4)),
+        ((2, 1), 1, ((1, 1), (2, 1)), ((1, 1), (0,) * 4)),
+    ],
+)
+@pytest.mark.parametrize("outer", [(0,), (1,), (0, 1), (1, 0, 1)])
+def test_shared_generic_qrom_control(
+    shape: tuple[int, ...],
+    inner: int,
+    target_layout: tuple[tuple[int, int], ...],
+    datasets: tuple[tuple[int, ...], ...],
+    outer: tuple[int, ...],
+) -> None:
+    pytest.importorskip("qualtran")
+    np = pytest.importorskip("numpy")
+    from qualtran import CtrlSpec
+    from qualtran.bloqs.data_loading.qrom import QROM
+    from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
+
+    cursor = 0
+
+    def alloc(size: int) -> tuple[int, ...]:
+        nonlocal cursor
+        start = cursor
+        cursor += size
+        return tuple(range(start, cursor))
+
+    outside = alloc(len(outer))
+    controls = alloc(inner)
+    widths = tuple((extent - 1).bit_length() for extent in shape)
+    selections = tuple(alloc(width) for width in widths)
+    targets = tuple(
+        tuple(alloc(width) for _ in range(count)) for count, width in target_layout
+    )
+    data_width = cursor
+    work = alloc(source_qrom_workspace_size(inner, widths, datasets))
+    work_bits = tuple(range(40, 40 + len(work)))
+    pred = alloc(len(outer) - 1)
+    pred_bits = tuple(range(80, 80 + len(pred)))
+    actual = control_source_qrom_ir(
+        (outside,),
+        (ControlRegister(1, outer),),
+        controls,
+        selections,
+        shape,
+        targets,
+        datasets,
+        work,
+        work_bits,
+        pred,
+        pred_bits,
+    )
+    target_shapes = tuple(() if count == 1 else (count,) for count, _ in target_layout)
+    base = QROM(
+        tuple(
+            np.array(data).reshape((*shape, *target_shape))
+            for data, target_shape in zip(datasets, target_shapes, strict=True)
+        ),
+        widths,
+        tuple(width for _, width in target_layout),
+        target_shapes,
+        num_controls=inner,
+    )
+    source = base.controlled(CtrlSpec(cvs=outer[0] if len(outer) == 1 else outer))
+    ports = {next(iter(source.signature)).name: outside}
+    if controls:
+        ports["control"] = controls
+    ports.update(
+        zip(
+            (reg.name for reg in base.selection_registers),
+            filter(None, selections),
+            strict=True,
+        )
+    )
+    ports.update(
+        (reg.name, tuple(w for word in group for w in word))
+        for reg, group in zip(base.target_registers, targets, strict=True)
+    )
+    reference = reference_arithmetic_gates(
+        source,
+        ports,
+        pred,
+        dict(zip(pred, pred_bits, strict=True)),
+        keep_exchange_leaves=True,
+    )
+    assert_source_dependencies(actual, reference)
+    counts = Counter(gate.name for gate in actual)
+    assert counts["measure"] == counts["reset"] == len(pred)
+    assert counts["t"] + counts["tdg"] == 4 * len(pred)
+    emitted_wires = {wire for gate in actual for wire in gate.wires}
+    assert not emitted_wires.intersection(work)
+    assert get_cost_value(source, QubitCount()) == data_width + len(pred)
+    concrete_cost = get_cost_value(source.decompose_bloq().flatten(), QECGatesCost())
+    assert concrete_cost.toffoli == counts["ccx"]
+    assert concrete_cost.measurement == len(pred)
+
+    # Distinct complex amplitudes on all addresses, controls, targets and a spectator.
+    target_width = sum(count * width for count, width in target_layout)
+    masks = []
+    for row in range(prod(shape)):
+        mask = 0
+        for (count, width), data in zip(target_layout, datasets, strict=True):
+            for word in data[row * count : (row + 1) * count]:
+                mask = (mask << width) | word
+        masks.append(mask)
+    words = torch.arange(1 << data_width)
+    address = (words >> target_width) & ((1 << sum(widths)) - 1)
+    active = (words >> (data_width - len(outer))) == int("".join(map(str, outer)), 2)
+    if inner:
+        active &= ((words >> (target_width + sum(widths))) & 1) == 1
+    output = torch.where(active, words ^ torch.tensor(masks)[address], words)
+    shift = len(pred) + len(work) + 1
+    weights = torch.arange(1, 2 * words.numel() + 1, dtype=torch.float64)
+    amplitudes = torch.complex(weights, (weights % 7 - 3) * weights)
+    amplitudes /= amplitudes.norm()
+    state = torch.zeros(1 << (cursor + 1), dtype=torch.complex128)
+    expected = torch.zeros_like(state)
+    spectator = torch.arange(weights.numel()) & 1
+    state[(words << shift).repeat_interleave(2) | spectator] = amplitudes
+    expected[(output << shift).repeat_interleave(2) | spectator] = amplitudes
+    for history in product((0, 1), repeat=len(pred)):
+        result = forced_branch(state, actual, history)
+        torch.testing.assert_close(
+            result, expected * 2 ** (-len(pred) / 2), atol=2e-12, rtol=0
+        )
+        torch.testing.assert_close(
+            forced_branch(result, actual, history),
+            state * 2 ** (-len(pred)),
+            atol=2e-12,
+            rtol=0,
+        )

@@ -140,7 +140,13 @@ def _select_swap_qrom_ir(
     if type(dirty) is not bool or type(adjoint) is not bool:
         raise ValueError("Select-swap dirty and adjoint flags must be boolean")
     load, low = _source_qroam_batch_ir(
-        table, controls, selections, banks, workspace, classical_bits
+        table,
+        controls,
+        selections,
+        banks,
+        workspace,
+        classical_bits,
+        outer_control=outer_control,
     )
     if len(targets) != len(banks) or any(
         len(target) != len(bank[0]) for target, bank in zip(targets, banks, strict=True)
@@ -180,10 +186,7 @@ def _select_swap_qrom_ir(
         )
 
     if outer_control is not None:
-        if any(gate.name not in ("x", "cx") for gate in load):
-            raise ValueError("Pinned controlled QROM cannot decompose controlled And")
-        load = _control_xor_gates(outer_control, load)
-        copy = _control_xor_gates(outer_control, copy)
+        copy = tuple(Instruction("ccx", (outer_control, *gate.wires)) for gate in copy)
 
     route: list[Instruction] = []
     unroute: list[Instruction] = []
@@ -197,12 +200,3 @@ def _select_swap_qrom_ir(
     if adjoint:
         return (*select, *load, *select, *load)
     return (*load, *select, *load, *select)
-
-
-def _control_xor_gates(
-    control: int, gates: tuple[Instruction, ...]
-) -> tuple[Instruction, ...]:
-    return tuple(
-        Instruction("cx" if gate.name == "x" else "ccx", (control, *gate.wires))
-        for gate in gates
-    )

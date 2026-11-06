@@ -200,6 +200,8 @@ def _source_qroam_batch_ir(
     banks: tuple[tuple[tuple[int, ...], ...], ...],
     workspace: tuple[int, ...],
     classical_bits: tuple[int, ...],
+    *,
+    outer_control: int | None = None,
 ) -> tuple[tuple[Instruction, ...], tuple[tuple[int, ...], ...]]:
     """Validate the common batch layout and return its load and low selectors."""
     high_widths = table._high_widths(tuple(map(len, selections)))
@@ -227,5 +229,6 @@ def _source_qroam_batch_ir(
         table.batched_data,
         workspace,
         classical_bits,
+        outer_control=outer_control,
     )
     return load, low

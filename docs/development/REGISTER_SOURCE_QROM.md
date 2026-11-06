@@ -47,3 +47,24 @@ The concentrated dependency regression passed 295 tests. The final
 regression checks the existing source reader consumers. The source QROM and
 unary iteration blobs match the pinned inventory. The paired lookup
 regressions exercise the existing G1 consumer path.
+
+## Generic outer control
+
+`control_source_qrom_ir` accepts a structured outer predicate, separate
+from the lookup's existing positive controls. The caller supplies its
+clean predicate wires and measurement slots. `source_qrom_ir` also
+accepts a single positive `outer_control` for a containing component
+that already owns the predicate. SelectSwapQROM uses this shared path.
+
+The generic controlled lookup preserves the emitted X and CX order by
+mapping them to CX and CCX. A load that emits an And computation or
+erasure is rejected because the pinned generic controlled versions of
+those components cannot decompose their non-through registers. This
+check follows the concrete load, so a reserved but unused QROM work
+wire does not prevent a pruned lookup from being controlled.
+
+For the two datasets `(1, 1, 2, 2)` and `(0, 0, 1, 1)` with outer
+pattern `(1, 0, 1)`, the controlled load uses three CCX instructions.
+The outer predicate adds eight T/T† and two measurements and clears
+both work wires. The caller reserves 11 total wires including the
+unused lookup work wire, while the source peak estimate is 10.
