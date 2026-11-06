@@ -176,6 +176,19 @@ class PowerCall:
             raise ValueError("Register power requires a positive integer")
 
 
+@dataclass(frozen=True)
+class OnEachCall:
+    """One single-qubit resource call for every wire of the register."""
+
+    child: ResourceCall
+    width: SymbolicInt
+
+    def __post_init__(self) -> None:
+        width = self.width
+        if isinstance(width, (int, float)) and (type(width) is not int or width < 0):
+            raise ValueError("OnEach requires a nonnegative integer width")
+
+
 ResourceCall = (
     ComponentCost
     | RotationCall
@@ -197,6 +210,7 @@ ResourceCall = (
     | ZeroCostCall
     | PartitionedCall
     | PowerCall
+    | OnEachCall
 )
 
 DeclaredResourceCalls = Mapping[ResourceCall, Mapping[ResourceCall, SymbolicInt]]
@@ -211,6 +225,8 @@ def _resource_callees(
         yield from _component_calls(node)
     elif isinstance(node, PowerCall):
         yield node.child, node.repetitions
+    elif isinstance(node, OnEachCall):
+        yield node.child, node.width
 
 
 def _inside_partition(

@@ -3,12 +3,14 @@
 # SPDX-License-Identifier: Apache-2.0
 # Adapted from Qualtran v0.7.0 Xor, XorK and BitwiseNot.
 # Source: https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/bloqs/arithmetic/bitwise.py
+# OnEach source: https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/bloqs/basic_gates/on_each.py
 # Fanout source: https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/bloqs/mcmt/multi_target_cnot.py
 # Changes: explicit big-endian qubit tuples, concrete unsigned constants and
 # one positive controlled XorK, all emitting native IR.
 
 """Shared register bit permutations without hidden work or dtype conversion."""
 
+from ...core.classical_control import is_classical_control_instruction
 from ...core.ir import Instruction
 
 
@@ -41,10 +43,38 @@ def xor_constant_ir(target: tuple[int, ...], value: int) -> tuple[Instruction, .
     )
 
 
+def on_each_ir(gate: Instruction, target: tuple[int, ...]) -> tuple[Instruction, ...]:
+    """Bind a single-wire gate on each wire in register order.
+
+    An empty register emits no gates. The bound leaf must carry no classical
+    operands, measurement, reset, or channel behavior.
+    """
+    if (
+        len(gate.wires) != 1
+        or gate.name in {"measure", "reset"}
+        or gate.metadata.get("is_channel")
+        or is_classical_control_instruction(gate)
+    ):
+        raise ValueError("OnEach requires one unconditioned single-qubit gate")
+    if target:
+        _validate_wires(target)
+    return tuple(
+        Instruction(
+            gate.name,
+            (wire,),
+            params=gate.params,
+            matrix=gate.matrix,
+            metadata=gate.metadata,
+        )
+        for wire in target
+    )
+
+
 def bitwise_not_ir(target: tuple[int, ...]) -> tuple[Instruction, ...]:
     """Flip every bit, preserving the source OnEach order."""
-    _validate_wires(target)
-    return tuple(Instruction("x", (wire,)) for wire in target)
+    if not target:
+        raise ValueError("Bitwise operation requires nonempty registers")
+    return on_each_ir(Instruction("x", (0,)), target)
 
 
 def controlled_xor_constant_ir(

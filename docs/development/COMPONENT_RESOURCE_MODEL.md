@@ -517,6 +517,20 @@ power, the X/Y global shift becomes a phase on the control wire. Qualtran
 delegates these leaf unitaries to Cirq. FlagQuantum uses phase instructions
 and basis changes to preserve the full complex action.
 
+## Applying a leaf to each wire
+
+`on_each_ir` binds an unconditioned single-qubit gate to each wire in
+the supplied register order. Split and join are wire bookkeeping.
+An empty register emits no gates. The same path emits the existing
+`bitwise_not_ir` X sequence, whose register must be nonempty.
+
+`OnEachCall` contributes one child call per wire. Its width may be
+symbolic in the cost model. For atomic one-qubit leaves the locked
+source models a peak of one qubit per wire. A concrete wire binding
+is required for emission.
+
+- [Qualtran v0.7.0 OnEach](https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/bloqs/basic_gates/on_each.py)
+
 ## Repeated register operations
 
 `register_power_ir` repeats a positive concrete number of calls to a
