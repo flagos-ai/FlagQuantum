@@ -95,6 +95,15 @@ Both report zero measurements in the locked cost declarations. The source
 measurement-erasure leaf has no executable decomposition. These counts are
 separate from the emitted reverse-lookup circuit.
 
+Use `modeled_call_graph` from
+`flagquantum.compiler._component_trace.call_graph` to inspect the declared
+direct edge weights and weighted terminal calls. Structurally equal
+components share a node. Ordered generalizers can merge or omit children.
+A keep predicate or maximum depth can stop expansion. A shared node's first
+depth-first visit determines its expansion, matching the locked source.
+The terminal counts describe calls and omit exclusive gate costs declared
+on interior nodes. Use the resource estimate for those totals.
+
 A component can declare `success_probability` to override its local
 probability model. Without a declaration, the estimator multiplies child
 probabilities, raised to their call multiplicities. A zero-call edge has no
@@ -110,3 +119,4 @@ error-correction models remain separate.
 - [Qualtran v0.7.0 gate costs](https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/resource_counting/_bloq_counts.py)
 - [Qualtran v0.7.0 logical width](https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/resource_counting/_qubit_counts.py)
 - [Qualtran v0.7.0 success probability](https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/resource_counting/_success_prob.py)
+- [Qualtran v0.7.0 call graph](https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/resource_counting/_call_graph.py)
