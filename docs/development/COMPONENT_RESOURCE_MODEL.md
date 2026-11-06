@@ -3146,3 +3146,39 @@ clean work qubits. Its locked analytical model counts ten CSwap,
 43 And, 62 Clifford, 43 measurements and 37 peak logical qubits.
 The emitted stream expands each CSwap to seven T-family instructions.
 The source exposes control-on-zero through a separate control wrapper.
+
+### Hubbard qubitization walk
+
+Prepare the full signal before the first step and keep the two direction
+bits live between steps. The native walk applies SELECT followed by the
+reflection about that full prepared state. Its adjoint reverses the order.
+
+```python
+from flagquantum.algorithms.primitives.hubbard_walk import HubbardWalk
+
+prepare = PrepareHubbard(2, t=2, u=8)
+walk = HubbardWalk(prepare)
+logical = sum(width for _, width in walk.layout)
+work, _ = walk.requirements()
+ports = partition_register(tuple(range(logical)), walk.layout)
+workspace = tuple(range(logical, logical + work))
+prep_ports = {name: ports[name] for name, _ in prepare.layout}
+prep_work, _ = prepare.requirements()
+circuit = DynamicCircuit(logical + work)
+circuit.append(prepare.make_on(prep_ports, workspace=workspace[:prep_work]))
+circuit.append(walk.make_on(ports, workspace=workspace))
+assert walk.alpha == 64
+```
+
+One native 2×2 step emits 232 T/T† and 30 measurements with ten work
+qubits. The locked model reports 16 CSwap, 26 And, 87 Clifford, eight
+rotations, 26 measurements and 26 peak logical qubits for this shape.
+The locked reflection allocates its direction bits internally and omits
+them from the zero mark. On the expanded signal it reflects about a
+larger subspace. Set `HubbardWalk(prepare, reflect_directions=False)`
+to reproduce that mark with explicit direction wires. Initialize those
+wires to zero when using the locked walk's selection-only interface.
+The default native reflection marks both direction bits and
+has a one-dimensional prepared signal. The native spectral check uses
+the projected operator obtained from the locked PREPARE weights and
+SELECT address conventions.
