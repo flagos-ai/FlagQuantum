@@ -65,9 +65,9 @@ def parse_signature(parser: Parser) -> str:
     return signature
 
 
-def parse_lambda(parser: Parser) -> Lambda:
+def parse_lambda(parser: Parser, *, preparation: bool = False) -> Lambda:
     token = parser.take("lambda")
-    if parser.callback_depth:
+    if parser.callback_depth >= (2 if preparation else 1):
         reject(token, "callback.escape", "nested callback values are not admitted")
     parser.take("(")
     parameters = []

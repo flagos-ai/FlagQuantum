@@ -122,6 +122,15 @@ def lower_callback_control(owner: _Adapt, statement: Statement) -> bool:
             "callback.control",
             "indexed callback control requires one equality and no else",
         )
+    lower_selected_effects(
+        owner, statement.token, condition, indexed_callback(owner, body[0])
+    )
+    return True
+
+
+def lower_selected_effects(
+    owner: _Adapt, token: Token, condition: Expression, effects: tuple[Operation, ...]
+) -> None:
     selector, literal = condition.children
     controls = owner.array_view(selector)
     expected = owner.static_integer(literal)
@@ -131,13 +140,12 @@ def lower_callback_control(owner: _Adapt, statement: Statement) -> bool:
             "callback.control",
             "selector must be at most seven bits and equality must fit",
         )
-    token = statement.token
     negative = tuple(
         location for bit, location in enumerate(controls) if not (expected >> bit) & 1
     )
     for value, index in negative:
         owner.effect_op("qreg.gate", token, (value,), gate="x", index=index)
-    for operation in indexed_callback(owner, body[0]):
+    for operation in effects:
         operands = operation.operands[1:]
         attributes = operation.attributes
         if operation.name == "qreg.control_x" and "indices" in attributes:
@@ -190,4 +198,3 @@ def lower_callback_control(owner: _Adapt, statement: Statement) -> bool:
             )
     for value, index in reversed(negative):
         owner.effect_op("qreg.gate", token, (value,), gate="x", index=index)
-    return True

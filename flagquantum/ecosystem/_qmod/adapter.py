@@ -42,10 +42,16 @@ from .bindings import (
     publish_bound_array,
     record_view,
 )
-from .callback_arrays import capture_callbacks, indexed_callback, lower_callback_control
+from .callback_arrays import (
+    capture_callbacks,
+    indexed_callback,
+    lower_callback_control,
+    lower_selected_effects,
+)
 from .controlled_evolution import EVOLUTION_CALLS, controlled_evolution
 from .cscope import QaoaWorkflow, VqeSettings, split_cscope
 from .decisions import lower_decision_phase
+from .diffusion import lower_diffuser
 from .indexed_control import lower_indexed_control, lower_zero_reflection_control
 from .integers import checked_integer, checked_integer_array, integer_operation
 from .iterations import expand_iterations
@@ -113,6 +119,7 @@ _INTRINSICS = (
         "encode_on_bloch",
         "inplace_encode_on_bloch",
         "phase",
+        "grover_diffuser",
         "pi",
         "control",
         "prepare_ghz_state",
@@ -2277,6 +2284,22 @@ class _Adapt:
             return
         if self.coherent_helper_control(statement, index):
             return
+        if (
+            len(body) == 1
+            and statement.control_else is None
+            and condition.token.text == "=="
+            and not condition.children[0].children
+            and (self.widths.get(condition.children[0].token.text) or 0) > 1
+            and (helper := self.definitions.get(body[0].token.text)) is not None
+            and _bound_helper(helper)
+        ):
+            start, incoming = len(self.operations), self.effect
+            self.call_bound_helper(helper, body[0].token, body[0].arguments)
+            effects = tuple(self.operations[start:])
+            del self.operations[start:]
+            self.effect = incoming
+            lower_selected_effects(self, token, condition, effects)
+            return
         if len(body) != 1:
             reject(token, "control", "control requires one condition and one operation")
         if statement.control_else is not None:
@@ -2935,7 +2958,9 @@ class _Adapt:
             bound = 0.0
         target = self.atom(output)
         width = count.bit_length() - 1
-        destination = self.register(target, width, allow_qubit_array=True)
+        destination = self.register(
+            target, width, allow_qubit_array=True, allocate_local=not inplace
+        )
         if register_width(destination) != width:
             reject(target, "width", "amplitude vector must match the output width")
         self.effect_op(
@@ -3016,6 +3041,9 @@ class _Adapt:
             return
         if token.text == "swap_test":
             lower_swap_test(self, token, args)
+            return
+        if token.text == "grover_diffuser":
+            lower_diffuser(self, token, args)
             return
         if token.text == "inplace_prepare_state":
             lower_inplace_preparation(self, token, args)
@@ -3556,7 +3584,7 @@ class _Adapt:
                 )
             start = 0 if trimmed else int(bounds[0].token.text)
             stop = int(bounds[-1].token.text)
-            destination = self.register(self.atom(args[-1]))
+            destination = self.register(self.atom(args[-1]), allow_qubit_array=True)
             self.effect_op(
                 "qreg.uniform_interval", token, (destination,), start=start, stop=stop
             )
@@ -4127,6 +4155,7 @@ def parse_qmod(
                 | EVOLUTION_CALLS
                 | {
                     "swap_test",
+                    "grover_diffuser",
                     "unitary",
                     "+=",
                     "phase",

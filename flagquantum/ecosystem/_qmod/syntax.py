@@ -1141,6 +1141,13 @@ class Parser:
                             args.append(Expression(self.name()))
                     elif target.text == "allocate" and self.current.text == "ceiling":
                         args.append(self.binary_log_width())
+                    elif (
+                        target.text == "grover_diffuser"
+                        and self.current.text == "lambda"
+                    ):
+                        from .quantum_callbacks import parse_lambda
+
+                        args.append(parse_lambda(self, preparation=True))
                     elif target.text == "prepare_exponential_state":
                         args.append(self.signed_angle_argument())
                     elif target.text == "unitary":
