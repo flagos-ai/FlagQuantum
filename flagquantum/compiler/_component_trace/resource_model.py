@@ -1,4 +1,5 @@
 # Copyright 2023 Google LLC
+# Copyright 2024 Google LLC
 # SPDX-License-Identifier: Apache-2.0
 # Adapted from Qualtran v0.7.0 GateCounts and sequential width accounting.
 # https://github.com/quantumlib/Qualtran/tree/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/resource_counting
@@ -6,6 +7,7 @@
 """Evaluate declared component costs independently of emitted instructions."""
 
 from dataclasses import dataclass
+from math import isfinite
 
 
 @dataclass(frozen=True)
@@ -55,12 +57,14 @@ class ComponentCost:
 
     The local qubit count covers ports and any local peak between calls.
     Child edges explicitly state how many other qubits are live during the call.
+    An explicit success probability overrides the product of child probabilities.
     """
 
     name: str
     qubits: int
     gates: GateCost = GateCost()
     calls: tuple["CostCall", ...] = ()
+    success_probability: float | None = None
 
 
 @dataclass(frozen=True)
@@ -76,10 +80,11 @@ class CostCall:
 class ModeledResources:
     gates: GateCost
     peak_logical_qubits: int
+    success_probability: float = 1.0
 
 
 def estimate_component_resources(component: ComponentCost) -> ModeledResources:
-    """Sum logical gates and take the maximum scheduled width along the call tree."""
+    """Sum gates, take peak width, and multiply declared success probabilities."""
     cache: dict[int, ModeledResources] = {}
 
     def visit(node: ComponentCost) -> ModeledResources:
@@ -88,6 +93,16 @@ def estimate_component_resources(component: ComponentCost) -> ModeledResources:
             return cache[key]
         if type(node.qubits) is not int or node.qubits < 0:
             raise ValueError("Component width must be a nonnegative integer")
+        override = node.success_probability
+        if override is not None and (
+            isinstance(override, bool)
+            or not isfinite(override)
+            or not 0 <= override <= 1
+        ):
+            raise ValueError(
+                "Success probability must be finite and between zero and one"
+            )
+        success = 1.0 if override is None else float(override)
         gates, peak = node.gates, node.qubits
         for call in node.calls:
             if (
@@ -103,7 +118,9 @@ def estimate_component_resources(component: ComponentCost) -> ModeledResources:
                 child = visit(call.component)
                 gates = gates.plus(child.gates, call.repetitions)
                 peak = max(peak, child.peak_logical_qubits + call.bystander_qubits)
-        estimate = ModeledResources(gates, peak)
+                if override is None:
+                    success *= child.success_probability**call.repetitions
+        estimate = ModeledResources(gates, peak, success)
         cache[key] = estimate
         return estimate
 

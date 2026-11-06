@@ -95,9 +95,18 @@ Both report zero measurements in the locked cost declarations. The source
 measurement-erasure leaf has no executable decomposition. These counts are
 separate from the emitted reverse-lookup circuit.
 
+A component can declare `success_probability` to override its local
+probability model. Without a declaration, the estimator multiplies child
+probabilities, raised to their call multiplicities. A zero-call edge has no
+effect. The probability override leaves gate and width aggregation intact.
+This models declared algorithm success. An And uncompute, for example, can
+have two equiprobable measurement histories that both restore the state and
+therefore succeed with probability one.
+
 The model assumes concrete counts and explicit sequential bystanders.
 Symbolic aggregation, automatic graph scheduling, and physical
 error-correction models remain separate.
 
 - [Qualtran v0.7.0 gate costs](https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/resource_counting/_bloq_counts.py)
 - [Qualtran v0.7.0 logical width](https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/resource_counting/_qubit_counts.py)
+- [Qualtran v0.7.0 success probability](https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/resource_counting/_success_prob.py)
