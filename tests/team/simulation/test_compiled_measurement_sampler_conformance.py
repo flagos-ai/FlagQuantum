@@ -74,9 +74,11 @@ def test_inverted_feedback_and_cross_byte_output(tmp_path: Path) -> None:
 
 
 def test_overwrite_feedback_targets_and_b8_invariants(tmp_path: Path) -> None:
-    if not Path(measurement_sampler.__file__).with_name(
-        "_embedded_stim_profile.txt"
-    ).is_file():
+    if (
+        not Path(measurement_sampler.__file__)
+        .with_name("_embedded_stim_profile.txt")
+        .is_file()
+    ):
         pytest.importorskip("stim")
     program = (
         DynamicCircuit(3)

@@ -23,7 +23,9 @@ class _EmbeddedSampler:
         for gate, wires, arguments in operations:
             if arguments is not None:
                 raise ValueError("embedded measurement operations take no parameters")
-            targets = " ".join(f"rec[{wire}]" if wire < 0 else str(wire) for wire in wires)
+            targets = " ".join(
+                f"rec[{wire}]" if wire < 0 else str(wire) for wire in wires
+            )
             lines.append(f"{gate} {targets}")
         self._handle = self._native.prepare("\n".join(lines), seed)
         self._columns = columns
