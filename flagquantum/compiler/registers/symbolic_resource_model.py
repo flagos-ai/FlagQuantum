@@ -24,6 +24,8 @@ class SymbolicResourceFormula:
     clifford: SymbolicInt
     measurement: SymbolicInt
     logical_qubits: SymbolicInt
+    t: SymbolicInt = 0
+    toffoli: SymbolicInt = 0
 
 
 def source_add_resource_formula(

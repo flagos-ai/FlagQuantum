@@ -158,7 +158,18 @@ The symbolic Add width follows the source signature fallback. Rebuilding
 the formula with concrete widths includes the decomposed carries. A QROM
 formula uses the shape-only source model, including its product across
 target word widths. Concrete table costs use the separate unary QROM model
-and its early termination for uniform subtrees. Symbolic aggregation
+and its early termination for uniform subtrees.
+
+Shape-level blocked lookup and erasure formulas live in
+`flagquantum.compiler.registers.symbolic_qroam_resource_model`.
+They preserve the source's default and explicit block exponents. A
+shape-only erasure returns separate wrapper and leaf widths and uses
+the same original extent for both Toffoli formulas. Padding of the
+erase leaf is specific to the concrete data model above. Bind concrete
+sizes and rebuild the model to select integer blocks with the concrete
+optimizer.
+
+Symbolic aggregation
 across arbitrary component graphs, automatic scheduling and physical
 error-correction models remain separate.
 
