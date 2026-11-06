@@ -345,9 +345,19 @@ def schedule_register_program(
                 if "indices" in op.attributes
                 else bindings[op.operands[1].id]
             )
-            gates = _synthesize_real_state(op.attributes["amplitudes"], wires)
+            control_count = op.attributes.get("control_count", 0)
+            controls = wires[:control_count]
+            gates = _synthesize_real_state(
+                op.attributes["amplitudes"], wires[control_count:]
+            )
             if op.attributes.get("inverse"):
                 gates = tuple(inverted_instruction(gate) for gate in reversed(gates))
+            if controls:
+                gates = tuple(
+                    controlled
+                    for gate in gates
+                    for controlled in controlled_instruction(gate, controls)
+                )
         elif op.name == "qreg.unitary":
             unitary_data = op.operands[1:]
             control = None

@@ -461,6 +461,12 @@ def _verify_body(
         ):
             assert attributes is not None
             attributes = attributes | {"indices"}
+        if (
+            op.name == "qreg.inplace_prepare_amplitudes"
+            and "control_count" in op.attributes
+        ):
+            assert attributes is not None
+            attributes = attributes | {"control_count"}
         if op.name == "qreg.declare" and (
             "fields" in op.attributes or "record_type" in op.attributes
         ):
@@ -973,9 +979,22 @@ def _verify_body(
                     )
                 changed = tuple(arguments)
             elif op.name == "qreg.inplace_prepare_amplitudes":
-                if any(
-                    value in borrowed or value.id not in initialized
-                    for value in operands
+                control_count = op.attributes.get("control_count", 0)
+                if "control_count" in op.attributes and (
+                    type(control_count) is not int
+                    or not 1 <= control_count <= 7
+                    or len(operands) > 8
+                    or control_count >= len(operands)
+                    or "indices" not in op.attributes
+                ):
+                    _fail(
+                        "register.amplitudes",
+                        "invalid indexed preparation control extent",
+                        op,
+                    )
+                targets = operands[control_count:]
+                if any(value.id not in initialized for value in operands) or any(
+                    value in borrowed for value in targets
                 ):
                     _fail(
                         "register.amplitudes",
@@ -1002,7 +1021,7 @@ def _verify_body(
                             "preparation indices must be bounded and distinct",
                             op,
                         )
-                    width = len(indices)
+                    width = len(indices) - control_count
                 else:
                     if arguments:
                         _fail(
@@ -1012,7 +1031,7 @@ def _verify_body(
                         )
                     width = register_width(destination)
                 _check_real_preparation(op, width)
-                changed = tuple(dict.fromkeys(operands))
+                changed = tuple(dict.fromkeys(targets))
             elif op.name == "qreg.drop":
                 if (
                     arguments
