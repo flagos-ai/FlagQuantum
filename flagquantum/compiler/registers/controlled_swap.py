@@ -1,4 +1,5 @@
 # Copyright 2023 Google LLC
+# Copyright 2024 Google LLC
 # SPDX-License-Identifier: Apache-2.0
 # Adapted from Qualtran v0.7.0 TwoBitCSwap.to_clifford_t_circuit and CSwap.
 # Source: https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/bloqs/basic_gates/swap.py
@@ -10,8 +11,9 @@
 from ...core.ir import Instruction
 from .and_compute import and_compute_ir, and_uncompute_ir
 from .bitwise import _validate_wires
-from .control_predicate import ControlRegister
+from .control_predicate import ControlRegister, bind_control_registers
 from .controlled_component import controlled_component_ir
+from .multi_control import multi_and_ir
 
 
 def controlled_swap_bit_ir(
@@ -74,6 +76,59 @@ def controlled_swap_with_predicate_ir(
         controls,
         registers,
         lambda control: controlled_swap_ir(control, left, right),
+        workspace,
+        classical_bits,
+    )
+
+
+def control_bit_cswap_ir(
+    controls: tuple[tuple[int, ...], ...],
+    registers: tuple[ControlRegister, ...],
+    existing_controls: tuple[int, ...],
+    existing_values: tuple[int, ...],
+    left: int,
+    right: int,
+    workspace: tuple[int, ...],
+    classical_bits: tuple[int, ...],
+) -> tuple[Instruction, ...]:
+    """Add controls to an exact Fredkin with the pinned specialization.
+
+    A single new control prepends its activation bit to the existing
+    predicate. Multiple new controls wrap an atomic Fredkin, with the last
+    work wire and slot used by the inner conjunction.
+    """
+    outer, values = bind_control_registers(controls, registers)
+    _validate_wires((*outer, *existing_controls, left, right, *workspace))
+    if (
+        not outer
+        or not existing_controls
+        or len(existing_controls) != len(existing_values)
+    ):
+        raise ValueError(
+            "Fredkin control requires nonempty outer and existing patterns"
+        )
+    if type(existing_values[-1]) is not int or existing_values[-1] != 1:
+        raise ValueError("The original atomic Fredkin requires a positive control")
+
+    if len(outer) == 1:
+        merged = (*outer, *existing_controls)
+        activation = (*values, *existing_values)
+        compute = multi_and_ir(merged, activation, workspace)
+        erase = multi_and_ir(
+            merged, activation, workspace, classical_bits=classical_bits, uncompute=True
+        )
+        return (*compute, *controlled_swap_bit_ir(workspace[-1], left, right), *erase)
+
+    if len(existing_controls) != 1:
+        raise ValueError(
+            "Multiple outer controls on a merged Fredkin have no pinned decomposition"
+        )
+    return control_register_cswap_ir(
+        controls,
+        registers,
+        existing_controls[0],
+        (left,),
+        (right,),
         workspace,
         classical_bits,
     )

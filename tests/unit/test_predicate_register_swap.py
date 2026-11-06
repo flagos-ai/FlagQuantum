@@ -16,9 +16,12 @@ from flagquantum.compiler._component_trace.qec_gate_cost import query_qec_gate_c
 from flagquantum.compiler._component_trace.resource_generalization import (
     CliffordCall,
     ControlledSwapCall,
+    FixedTCall,
+    MergedFredkinCall,
 )
 from flagquantum.compiler.registers.control_predicate import ControlRegister
 from flagquantum.compiler.registers.controlled_swap import (
+    control_bit_cswap_ir,
     control_register_cswap_ir,
     controlled_swap_with_predicate_ir,
 )
@@ -191,3 +194,100 @@ def test_outer_control_on_register_cswap(width: int, values: tuple[int, ...]) ->
     assert counts["measure"] == counts["reset"] == cost.measurement == width + size - 1
     assert get_cost_value(source, QubitCount()) == size + 1 + 2 * width + len(workspace)
     assert_swap_branches(gates, width, (*values, 1), workspace, cost.measurement)
+
+
+@pytest.mark.ftqc_reference
+@pytest.mark.parametrize(
+    ("prior", "outer"),
+    [
+        ((), (0,)),
+        ((), (1,)),
+        ((), (0, 1)),
+        ((), (1, 0, 1)),
+        ((0,), (0,)),
+        ((0,), (1,)),
+        ((1,), (0,)),
+        ((1,), (1,)),
+        ((0, 1), (0,)),
+        ((1, 0, 0), (1,)),
+    ],
+)
+def test_atomic_fredkin_control_specialization(
+    prior: tuple[int, ...], outer: tuple[int, ...]
+) -> None:
+    pytest.importorskip("qualtran")
+    from qualtran import CtrlSpec
+    from qualtran.bloqs.basic_gates.swap import TwoBitCSwap
+    from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
+
+    original = (*reversed(prior), 1)
+    size = len(outer) + len(original)
+    outside = tuple(range(len(outer)))
+    inside = tuple(range(len(outer), size))
+    left, right = size, size + 1
+    workspace = tuple(range(size + 2, 2 * size + 1))
+    bits = tuple(range(30, 30 + len(workspace)))
+    gates = control_bit_cswap_ir(
+        (outside,),
+        (ControlRegister(1, outer),),
+        inside,
+        original,
+        left,
+        right,
+        workspace,
+        bits,
+    )
+    child = TwoBitCSwap()
+    for value in prior:
+        child = child.controlled(CtrlSpec(cvs=value))
+    source = child.controlled(CtrlSpec(cvs=outer[0] if len(outer) == 1 else outer))
+    names = [register.name for register in source.signature]
+    bindings = (
+        {names[0]: (*outside, *inside)}
+        if len(outer) == 1
+        else {names[0]: outside, names[1]: inside}
+    )
+    reference = reference_arithmetic_gates(
+        source,
+        {**bindings, "x": (left,), "y": (right,)},
+        workspace,
+        dict(zip(workspace, bits, strict=True)),
+        preserve_components=True,
+    )
+    assert_source(gates, reference)
+
+    key = compound_control_key(
+        MergedFredkinCall(original) if prior else FixedTCall("fredkin"), outer
+    )
+    assert key is not None
+    cost = get_cost_value(source, QECGatesCost())
+    assert {
+        name: count for name, count in asdict(query_qec_gate_cost(key)).items() if count
+    } == cost.asdict()
+    counts = Counter(gate.name for gate in gates)
+    assert counts["t"] + counts["tdg"] == cost.total_t_count(ts_per_cswap=7)
+    assert counts["measure"] == counts["reset"] == cost.measurement == size - 1
+    assert get_cost_value(source, QubitCount()) == size + 2 + len(workspace)
+    assert_swap_branches(gates, 1, (*outer, *original), workspace, cost.measurement)
+
+
+@pytest.mark.ftqc_reference
+def test_atomic_fredkin_rejects_pinned_undecomposable_control() -> None:
+    pytest.importorskip("qualtran")
+    from qualtran import CtrlSpec
+    from qualtran.bloqs.basic_gates.swap import TwoBitCSwap
+
+    source = TwoBitCSwap().controlled(CtrlSpec(cvs=0)).controlled(CtrlSpec(cvs=(0, 1)))
+    with pytest.raises(TypeError, match="only integer scalar arrays"):
+        source.decompose_bloq()
+    with pytest.raises(ValueError, match="no pinned decomposition"):
+        control_bit_cswap_ir(
+            ((0, 1),),
+            (ControlRegister(1, (0, 1)),),
+            (2, 3),
+            (0, 1),
+            4,
+            5,
+            (6, 7, 8),
+            (30, 31, 32),
+        )

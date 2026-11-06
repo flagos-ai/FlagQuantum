@@ -840,6 +840,26 @@ logical qubits. That is 32 default T equivalents or 41 with exact seven-T
 Fredkin leaves. The emitted circuit uses 41 T/T†, five measurements and
 three work qubits.
 
+### Controls added to atomic Fredkin
+
+`control_bit_cswap_ir` prepends a single outer control to the existing
+activation pattern. For an outer zero and the original positive control,
+the source calls And with polarities `(0, 1)` directly. Additional
+single controls extend the same prefix ladder. The original positive
+control remains the final entry in the activation pattern.
+
+A group of multiple controls on atomic Fredkin uses an outer predicate
+and an inner positive-control And. For outer pattern `(1, 0, 1)`, it
+emits 19 T/T† and three measurements, uses three clean work qubits,
+and returns them to zero in every branch. The source reports one
+CSwap, three And, seven Clifford and three measurements, with peak
+width nine. The default conversion is 16 T equivalents. The exact
+Fredkin conversion is 19.
+
+Adding multiple controls to an already merged atomic Fredkin raises
+inside the pinned source's `numpy.concatenate` call. The native emitter
+rejects that combination explicitly.
+
 ## Register identity
 
 The source models Identity as one atomic call with zero QEC gates.

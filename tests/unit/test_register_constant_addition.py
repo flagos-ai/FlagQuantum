@@ -241,6 +241,7 @@ def reference_arithmetic_gates(
             "AddK",
             "Controlled",
             "ControlledViaAnd",
+            "_MultiControlledFromSinglyControlled",
             "MultiControlX",
             "GreaterThan",
             "ModAdd",
@@ -267,11 +268,11 @@ def reference_arithmetic_gates(
             "CtrlScaleModAdd",
         }:
             component = component.flatten()
-        if (
-            kind == "Controlled"
-            and type(bloq.subbloq).__name__ == "CSwap"
-            and type(getattr(source, "subbloq", None)).__name__ == "CSwap"
-        ):
+        root_child = type(getattr(source, "subbloq", None)).__name__
+        if (kind, root_child) in {
+            ("Controlled", "CSwap"),
+            ("_MultiControlledFromSinglyControlled", "TwoBitCSwap"),
+        }:
             # The enclosing CtrlSpecAnd has exported its later cleanup, so
             # its target and prefix junk appear free to the manager. Both
             # remain live during CSwap; only the inner scratch can be reused.
