@@ -458,6 +458,25 @@ cost = query_qec_gate_cost(call)
 assert (cost.and_bloq, cost.rotation, cost.measurement, cost.clifford) == (1, 1, 1, 1)
 ```
 
+Supported controlled gates with a single binary activation pattern
+reuse the positive-controlled child. A negative single control
+adds two X gates. Multiple controls count the predicate and its
+measured inverse around the child. For a structured integer predicate,
+encode the activation values with `ControlRegister.bits()` in port
+order before constructing a `ControlPredicateCall`. A symbolic
+control width can be supplied when the polarities are unspecified.
+
+```python
+call = cirq_gate_resource_key(cirq.ControlledGate(cirq.T, control_values=(0,)))
+assert call is not None
+cost = query_qec_gate_cost(call)
+assert (cost.rotation, cost.clifford) == (1, 2)
+```
+
+The dedicated controlled Rz uses two Z powers and two CNOTs.
+Non-singleton control conditions and wrappers over unsupported child
+gates stay at the adapter boundary.
+
 - [Qualtran v0.7.0 gate costs](https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/resource_counting/_bloq_counts.py)
 - [Qualtran v0.7.0 logical width](https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/resource_counting/_qubit_counts.py)
 - [Qualtran v0.7.0 success probability](https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/resource_counting/_success_prob.py)

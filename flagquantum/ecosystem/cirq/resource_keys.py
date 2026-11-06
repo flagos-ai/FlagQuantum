@@ -13,8 +13,10 @@ from ...compiler._component_trace.resource_generalization import (
     ControlledRotationCall,
     ControlledSwapCall,
     ControlledZPowerCall,
+    ControlledZRotationCall,
     FixedTCall,
     PhaseCall,
+    PredicateControlledCall,
     ResourceCall,
     RotationCall,
     ZeroCostCall,
@@ -65,10 +67,11 @@ def cirq_gate_resource_key(gate: object) -> ResourceCall | None:
     if isinstance(gate, cirq.ControlledGate):
         controls = gate.control_values
         if isinstance(controls, cirq.ProductOfSums) and all(
-            allowed == (1,) for allowed in controls
+            len(allowed) == 1 for allowed in controls
         ):
-            return _positive_controlled_key(
-                cirq_gate_resource_key(gate.sub_gate), gate.num_controls()
+            return _controlled_key(
+                cirq_gate_resource_key(gate.sub_gate),
+                tuple(allowed[0] for allowed in controls),
             )
         return None
 
@@ -95,22 +98,37 @@ def cirq_gate_resource_key(gate: object) -> ResourceCall | None:
     return None
 
 
-def _positive_controlled_key(
-    key: ResourceCall | None, count: int
+def _controlled_key(
+    key: ResourceCall | None, controls: tuple[int, ...]
 ) -> ResourceCall | None:
     if isinstance(key, ZeroCostCall) and key.opcode == "identity":
-        return ZeroCostCall("identity", (1 + count,))
-    if isinstance(key, CliffordCall) and key.opcode == "x" and count == 2:
+        return ZeroCostCall("identity", (1 + len(controls),))
+    if isinstance(key, CliffordCall) and key.opcode == "x" and controls == (1, 1):
         return FixedTCall("toffoli")
-    if count != 1:
-        return None
-    if isinstance(key, RotationCall) and key.opcode == "zpow":
+    positive = _single_positive_key(key)
+    if positive is None or controls == (1,):
+        return positive
+    return PredicateControlledCall(positive, controls)
+
+
+def _single_positive_key(key: ResourceCall | None) -> ResourceCall | None:
+    if isinstance(key, RotationCall) and key.opcode in {"zpow", "rz"}:
         assert key.parameter is not None
+        if key.opcode == "rz":
+            return ControlledZRotationCall(key.parameter, key.precision)
         return ControlledZPowerCall(key.parameter, key.precision)
     if isinstance(key, (RotationCall, PhaseCall)):
         return ControlledRotationCall(key, (1,))
-    if isinstance(key, CliffordCall) and key.opcode == "x":
+    if not isinstance(key, CliffordCall):
+        return None
+    if key.opcode == "x":
         return CliffordCall("cx", 2)
-    if isinstance(key, CliffordCall) and key.opcode == "z":
+    if key.opcode == "y":
+        return CliffordCall("cy", 2)
+    if key.opcode == "z":
         return CliffordCall("cz", 2)
+    if key.opcode == "h":
+        return _CONTROLLED_H
+    if key.opcode == "swap_bit":
+        return FixedTCall("fredkin")
     return None

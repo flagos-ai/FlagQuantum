@@ -13,6 +13,7 @@ from flagquantum.compiler._component_trace.resource_generalization import (
     ControlledRotationCall,
     ControlledSwapCall,
     ControlledZPowerCall,
+    ControlledZRotationCall,
     FixedTCall,
     PhaseCall,
     RotationCall,
@@ -100,7 +101,46 @@ def test_unsupported_sdk_wrappers_remain_at_the_boundary() -> None:
     ):
         assert type(cirq_gate_to_bloq(gate)).__name__ == "CirqGateAsBloq"
         assert cirq_gate_resource_key(gate) is None
-    negative = cirq.ControlledGate(cirq.T, control_values=(0,))
-    assert type(cirq_gate_to_bloq(negative)).__name__ == "ControlledViaAnd"
-    assert cirq_gate_resource_key(negative) is None
+    assert (
+        cirq_gate_resource_key(cirq.ControlledGate(cirq.CNOT, control_values=(0,)))
+        is None
+    )
     assert cirq_gate_resource_key(cirq.H.on(cirq.LineQubit(0))) is None
+
+
+@pytest.mark.ftqc_reference
+@pytest.mark.parametrize("controls", [(0,), (1, 1), (1, 0), (0, 1, 0)])
+def test_predicate_controls_map_to_source_costs(controls: tuple[int, ...]) -> None:
+    cirq = pytest.importorskip("cirq")
+    pytest.importorskip("qualtran")
+    from qualtran.cirq_interop._cirq_to_bloq import cirq_gate_to_bloq
+    from qualtran.resource_counting import QECGatesCost, get_cost_value
+
+    for base in (
+        cirq.X,
+        cirq.Y,
+        cirq.Z,
+        cirq.H,
+        cirq.T,
+        cirq.SWAP,
+        cirq.S**-1,
+        cirq.rx(0.3),
+        cirq.rz(-0.7),
+        cirq.ZPowGate(exponent=0.3),
+    ):
+        gate = cirq.ControlledGate(base, control_values=controls)
+        key = cirq_gate_resource_key(gate)
+        assert key is not None
+        source = get_cost_value(cirq_gate_to_bloq(gate), QECGatesCost())
+        assert asdict(query_qec_gate_cost(key)) == {
+            field.name: getattr(source, field.name) for field in fields(QECGateCost)
+        }
+
+
+def test_positive_rz_uses_dedicated_resource_decomposition() -> None:
+    cirq = pytest.importorskip("cirq")
+    gate = cirq.ControlledGate(cirq.rz(0.3))
+    assert cirq_gate_resource_key(gate) == ControlledZRotationCall(0.3)
+    assert query_qec_gate_cost(ControlledZRotationCall(0.3)) == QECGateCost(
+        clifford=2, rotation=2
+    )
