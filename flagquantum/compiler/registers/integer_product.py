@@ -5,6 +5,8 @@
 
 """Unsigned products using measured reversible column compression."""
 
+from collections.abc import Iterator
+
 from ...core.ir import Instruction
 from .bit_compression import weighted_columns_xor_ir
 
@@ -42,9 +44,13 @@ def integer_product_ir(
         result,
         workspace,
         measurement_bit,
-        (
-            (i + j, a, b)
-            for i, a in enumerate(reversed(left))
-            for j, b in enumerate(reversed(right))
-        ),
+        _product_terms(left, right),
     )
+
+
+def _product_terms(
+    left: tuple[int, ...], right: tuple[int, ...]
+) -> Iterator[tuple[int, int, int]]:
+    for i, a in enumerate(reversed(left)):
+        for j, b in enumerate(reversed(right)):
+            yield i + j, a, b
