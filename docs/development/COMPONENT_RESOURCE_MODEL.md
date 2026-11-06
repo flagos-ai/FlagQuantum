@@ -2784,3 +2784,36 @@ one measurement and one clean work wire with two success controls. A third
 control for the nonzero-factor flag uses eight T-family instructions, two
 measurements and two work wires. These are leaf-level emitted counts. The
 full encoding above is an analytical model.
+
+### Executable outer double-factorization PREPARE
+
+Outer PREPARE samples a factor with coherent aliases, preserving the sample,
+comparison bit and loaded banks for the adjoint. Supply the factor weights
+directly, or build them from the eigenvalues of the effective one-body matrix
+and retained factors. The latter uses the one-body trace norm and one fourth
+of the squared absolute eigenvalue sum of each remaining factor, as in
+Eq. C11. Factor zero is the one-body term.
+
+```python
+from flagquantum.algorithms.primitives.double_factorization_outer_prepare import (
+    PrepareDoubleFactorizationOuter,
+)
+from flagquantum.compiler.registers.partition import partition_register
+from flagquantum.dynamic import DynamicCircuit
+
+prepare = PrepareDoubleFactorizationOuter.from_weights(
+    (1, 3, 1, 7), probability_bits=1, log_block_size=1,
+)
+logical = sum(size for _, size in prepare.layout)
+work, _ = prepare.requirements()
+ports = partition_register(tuple(range(logical)), prepare.layout)
+scratch = tuple(range(logical, logical + work))
+circuit = DynamicCircuit(logical + work)
+circuit.append(prepare.make_on(ports, workspace=scratch))
+circuit.append(prepare.make_on(ports, workspace=scratch, adjoint=True))
+```
+
+Each direction in this fixture emits 30 T-family instructions and one
+measurement and uses two scratch qubits. The lookup stream follows the
+concrete locked QROAMClean. The top-level Qualtran outer PREPARE is a
+resource declaration.
