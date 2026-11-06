@@ -12,7 +12,7 @@ repos:
       - id: end-of-file-fixer
         # Preserve the unmodified LPPL runtime, including absent final newlines.
         # Resource integrity tests protect these exact upstream bytes.
-        exclude: ^(benchmarks/results/|flagquantum/drawer/tex/(yquant[^/]*\.(sty|tex)|licenses/yquant\.txt)$)
+        exclude: ^(benchmarks/results/|flagquantum/drawer/tex/(yquant[^/]*\.(sty|tex)|licenses/yquant\.txt)$|flagquantum/simulation/stabilizer/csrc/vendor/stim\-1\.16\.0/LICENSE$)
       - id: check-docstring-first
       - id: check-yaml
       - id: debug-statements
