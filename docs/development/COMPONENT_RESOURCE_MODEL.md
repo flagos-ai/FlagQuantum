@@ -2588,3 +2588,34 @@ The default blocking gives 3,103 Toffolis, 50 controlled swaps, 179
 measurements, 13,372 T equivalents, and a peak of 80 logical qubits.
 With total error budget `1e-3` and physical error `1e-4`, the Beverland fast
 data block uses 30,294 physical qubits.
+
+### Executable single-factorization SELECT
+
+`SelectSingleFactorization` implements Eq. A4 using the selected Majorana
+sequence in Fig. 13 of [arXiv:2011.03494](https://arxiv.org/abs/2011.03494).
+It uses orbital-major, spin-minor system order. Spatial addresses must be
+populated. Both success flags activate the selected operator. A caller can
+bind the nonzero-factor flag for the second SELECT in Fig. 15. The caller
+provides clean workspace, and the dynamic circuit assigns feedback slots.
+
+```python
+from flagquantum.algorithms.primitives.multiplexers.select_single_factorization import (
+    SelectSingleFactorization,
+)
+from flagquantum.dynamic import DynamicCircuit
+
+op = SelectSingleFactorization(
+    p=(0,), q=(1,), spin=2, succ_pq=3, succ_l=4,
+    system=(5, 6, 7, 8), workspace=(9, 10, 11, 12),
+)
+circuit = DynamicCircuit(13)
+circuit.append(op)
+gates = circuit.to_ir().instructions
+assert sum(g.name in {"t", "tdg"} for g in gates) == 28
+assert sum(g.name == "measure" for g in gates) == 7
+```
+
+Four spin orbitals with the additional control emit 32 T-family instructions
+and eight measurements with five work wires. The locked source declares four
+Toffolis for either control configuration and leaves SELECT undecomposed.
+The emitted counts include activation and measurement-based uncomputation.
