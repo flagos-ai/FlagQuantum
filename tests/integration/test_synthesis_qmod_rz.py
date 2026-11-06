@@ -19,7 +19,7 @@ CORPUS = Path(__file__).resolve().parents[1] / "fixtures/classiq_qmod"
 
 
 @pytest.mark.parametrize("objective", ["width", "depth"])
-@pytest.mark.parametrize("angle", ["0", "1.9", "0.25", "9007199254740992.0"])
+@pytest.mark.parametrize("angle", ["0", "1.9", "0.25", "1e-3", "9007199254740992.0"])
 def test_entangled_rz_matches_native_circuit_and_absolute_oracle(
     objective: Literal["width", "depth"], angle: str
 ) -> None:
@@ -60,7 +60,7 @@ def test_phase_decimal_extension_preserves_old_parenthesized_integers(
         "9007199254740993",
         "1.",
         ".5",
-        "1e-3",
+        "1e-",
         "unknown_angle",
         "q",
         "1 .9",
