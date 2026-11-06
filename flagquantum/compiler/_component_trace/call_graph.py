@@ -103,6 +103,13 @@ def compose_cost_generalizer(
     return apply
 
 
+def _component_calls(node: ComponentCost) -> Iterable[tuple[ComponentCost, int]]:
+    for call in node.calls:
+        if type(call.repetitions) is not int or call.repetitions < 0:
+            raise ValueError("Call multiplicity must be a nonnegative integer")
+        yield call.component, call.repetitions
+
+
 def modeled_call_graph(
     component: ComponentCost,
     *,
@@ -117,13 +124,7 @@ def modeled_call_graph(
     A zero edge remains in the graph and contributes zero terminal calls.
     """
 
-    def calls(node: ComponentCost) -> Iterable[tuple[ComponentCost, int]]:
-        for call in node.calls:
-            if type(call.repetitions) is not int or call.repetitions < 0:
-                raise ValueError("Call multiplicity must be a nonnegative integer")
-            yield call.component, call.repetitions
-
-    graph = _build_call_graph(component, calls, generalizer, keep, max_depth)
+    graph = _build_call_graph(component, _component_calls, generalizer, keep, max_depth)
     return ModeledCallGraph(
         graph.root,
         cast(dict[tuple[ComponentCost, ComponentCost], int], graph.direct_calls),

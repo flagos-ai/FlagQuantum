@@ -308,6 +308,25 @@ that filter before generalizing angles if the classification needs the
 original angle. An opaque component retains its own identity regardless
 of its name.
 
+Use `attribute_t_cost` for a model T budget by component family.
+A recognized family stops graph expansion at that component. The
+component's full unit cost is then multiplied by its weighted call
+count. Unclassified terminal calls contribute to `other`. A component
+that declares exclusive T costs on an expanded interior node should
+expose those costs as child calls to include them in the attribution.
+
+```python
+from flagquantum.compiler._component_trace.resource_classification import attribute_t_cost
+from flagquantum.compiler._component_trace.resource_model import ComponentCost, CostCall
+from flagquantum.compiler.registers.arithmetic_resource_model import source_add_cost
+
+adder = source_add_cost(4, 4)
+program = ComponentCost("program", 11, calls=(CostCall(adder, 3),))
+assert attribute_t_cost(program, lambda call: "arithmetic" if call == adder else None) == {
+    "arithmetic": 36
+}
+```
+
 - [Qualtran v0.7.0 gate costs](https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/resource_counting/_bloq_counts.py)
 - [Qualtran v0.7.0 logical width](https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/resource_counting/_qubit_counts.py)
 - [Qualtran v0.7.0 success probability](https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/resource_counting/_success_prob.py)
