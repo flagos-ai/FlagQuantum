@@ -35,6 +35,82 @@ def parse_qpe_call(parser: Parser, token: Token, depth: int) -> Statement:
     )
 
 
+def is_modular_power(statement: Statement) -> bool:
+    if statement.power_callback is None:
+        return False
+    _, body = statement.power_callback
+    return len(body) == 1 and body[0].token.text == "modular_multiply_constant_inplace"
+
+
+def lower_modular_qpe(owner: _Adapt, statement: Statement) -> None:
+    token = statement.token
+    assert statement.power_callback is not None
+    power, body = statement.power_callback
+    if len(body[0].arguments) != 3:
+        reject(
+            token,
+            "qpe.modular",
+            "modular power requires modulus, base**power and target",
+        )
+    modulus_arg, multiplier, target = body[0].arguments
+    if (
+        multiplier.token.text != "**"
+        or multiplier.children[1].children
+        or multiplier.children[1].token.text != power.text
+    ):
+        reject(
+            token,
+            "qpe.modular",
+            "modular power requires a static base raised to the power parameter",
+        )
+    modulus = owner.static_integer(modulus_arg)
+    base = owner.static_integer(multiplier.children[0])
+    name = owner.atom(statement.arguments[0])
+    parameter = owner.parameters.get(name.text)
+    width = owner.widths.get(name.text)
+    if (
+        parameter is None
+        or parameter.kind != "qphase"
+        or width is None
+        or not 1 <= width <= 10
+    ):
+        reject(
+            name, "qpe.modular", "modular QPE requires one to ten unsigned phase bits"
+        )
+    phase = owner.register(name, allow_fractional_output=True)
+    last = next(
+        (op for op in reversed(owner.operations) if phase in op.operands[1:]), None
+    )
+    if not (
+        last is not None
+        and last.name == "qreg.allocate"
+        or last is None
+        and phase in owner.borrowed_zero_phases
+    ):
+        reject(name, "qpe", "phase output must be initialized by allocate and unused")
+    target_name = owner.atom(target)
+    if (
+        target_name.text in owner.signed
+        or owner.parameters.get(target_name.text) is None
+        or owner.parameters[target_name.text].kind != "qnum"
+    ):
+        reject(
+            target_name,
+            "qpe.modular",
+            "modular QPE residue requires an unsigned numeric register",
+        )
+    residue = owner.register(target_name)
+    if residue == phase:
+        reject(target_name, "qpe.alias", "phase counter and residue must be disjoint")
+    for bit in range(width):
+        owner.effect_op("qreg.gate", token, (phase,), gate="h", index=bit)
+    owner.effect_op(
+        "qreg.modular_exp", token, (residue, phase), modulus=modulus, base=base
+    )
+    owner.effect_op("qreg.inverse_qft", token, (phase,))
+    owner.fractional_bits[name.text] = width
+
+
 def lower_qpe(owner: _Adapt, statement: Statement, index: str) -> None:
     token = statement.token
     name = owner.atom(statement.arguments[0])

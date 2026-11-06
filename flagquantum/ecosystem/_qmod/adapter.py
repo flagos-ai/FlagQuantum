@@ -63,7 +63,7 @@ from .phase import MAX_PHASE_INPUT_BITS, expand_phase
 from .phase_factors import Cube, preserve_factors
 from .predicates import expand_predicate_oracles
 from .preparation import lower_inplace_preparation
-from .qpe import infer_phase_allocation, lower_qpe
+from .qpe import infer_phase_allocation, is_modular_power, lower_modular_qpe, lower_qpe
 from .qsvt import lower_qsvt_inversion
 from .quantum_callbacks import (
     BORROWED_EFFECT_SIGNATURES,
@@ -149,6 +149,7 @@ _INTRINSICS = (
         "drop",
         "free",
         "modular_exp",
+        "modular_multiply_constant_inplace",
         "qpe_flexible",
         "qpe",
         "qct_qst_type1",
@@ -806,6 +807,7 @@ class _Adapt:
             if p.kind in {"qphase_signed", "qnum_signed"}
         }
         self.fractional_bits: dict[str, int] = {}
+        self.borrowed_zero_phases: set[Value] = set()
         self.registers: dict[str, Value] = {}
         self.views: dict[str, tuple[tuple[Value, int], ...]] = {}
         self.suspended: set[str] = set()
@@ -1521,6 +1523,12 @@ class _Adapt:
         actuals: set[tuple[Value, int]] = set()
         outputs: set[Value] = set()
         phase_borrows: set[Value] = set()
+        modular_phase_ports = {
+            statement.arguments[0].token.text
+            for statement in syntax.statements
+            if is_modular_power(statement)
+        }
+        phase_exports: dict[str, str] = {}
         for argument, parameter in zip(arguments, syntax.parameters, strict=True):
             name = parameter.name.text
             if parameter.kind in BORROWED_EFFECT_SIGNATURES:
@@ -1592,6 +1600,17 @@ class _Adapt:
                 if not argument.children
                 else None
             )
+            borrowed_counter = (
+                name in modular_phase_ports
+                and actual_port is not None
+                and actual_port.kind == "qphase"
+                and actual_port.role != "const"
+                and parameter.role == "inout"
+                and parameter.kind == "qnum"
+            )
+            if borrowed_counter:
+                parameter = replace(parameter, kind="qphase")
+                child.parameters[name] = parameter
             if (
                 actual_port is not None
                 and actual_port.kind == "qphase"
@@ -1651,6 +1670,28 @@ class _Adapt:
                 child.registers[name] = value
             else:
                 child.views[name] = view
+            if borrowed_counter:
+                last = next(
+                    (
+                        op
+                        for op in reversed(self.operations)
+                        if value in op.operands[1:]
+                    ),
+                    None,
+                )
+                if name not in child.registers or not (
+                    last is not None
+                    and last.name == "qreg.allocate"
+                    or last is None
+                    and value in self.borrowed_zero_phases
+                ):
+                    reject(
+                        argument.token,
+                        "qpe",
+                        "phase output must be initialized by allocate and unused",
+                    )
+                child.borrowed_zero_phases.add(value)
+                phase_exports[name] = argument.token.text
             if parameter.role == "output":
                 if name not in child.registers:
                     reject(
@@ -1695,6 +1736,9 @@ class _Adapt:
             reject(token, "ownership", "bound helper must initialize each Output")
         if any(op.name == "qreg.hidden" for op in child.operations):
             reject(token, "free", "bound helper must free each allocated local qbit")
+        for name, actual_name in phase_exports.items():
+            if name in child.fractional_bits:
+                self.fractional_bits[actual_name] = child.fractional_bits[name]
         self.helper_expansions = child.helper_expansions
         self.loop_iterations = child.loop_iterations
         for op in child.operations:
@@ -2795,17 +2839,21 @@ class _Adapt:
         assert statement.power_callback is not None
         power, body = statement.power_callback
         if (
+            power.text in self.parameters
+            or power.text in self.constants
+            or power.text in _INTRINSICS
+            or power.text in self.loop_indices
+        ):
+            reject(power, "qpe", "power parameter must be unshadowed")
+        if is_modular_power(statement):
+            lower_modular_qpe(self, statement)
+            return
+        if (
             len(body) != 1
             or body[0].token.text != "suzuki_trotter"
             or len(body[0].arguments) != 5
         ):
             reject(token, "qpe", "power callback requires one suzuki_trotter call")
-        if (
-            power.text in self.parameters
-            or power.text in self.constants
-            or power.text in _INTRINSICS
-        ):
-            reject(power, "qpe", "power parameter must be unshadowed")
         phase_name = self.atom(statement.arguments[0])
         parameter = self.parameters.get(phase_name.text)
         if parameter is None or parameter.kind != "qphase" or parameter.width is None:
@@ -3420,7 +3468,10 @@ class _Adapt:
                 ):
                     size = self.static_integer(args[0])
                 elif not args[0].children:
-                    size = exact_unsigned_literal(args[0].token.text)
+                    name = args[0].token.text
+                    size = self.classical_integers.get(name)
+                    if size is None:
+                        size = exact_unsigned_literal(name)
                 if size is None:
                     reject(
                         args[0].token,
@@ -4233,6 +4284,7 @@ def parse_qmod(
                     "->",
                 }
                 and not controlled_qft
+                and not is_modular_power(statement)
                 and not hadamard_within
                 and not is_binding_scope(statement)
                 and not is_reversible_scope(statement)
