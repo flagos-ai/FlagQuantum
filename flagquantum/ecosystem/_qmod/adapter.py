@@ -63,7 +63,13 @@ from .phase import MAX_PHASE_INPUT_BITS, expand_phase
 from .phase_factors import Cube, preserve_factors
 from .predicates import expand_predicate_oracles
 from .preparation import lower_inplace_preparation
-from .qpe import infer_phase_allocation, is_modular_power, lower_modular_qpe, lower_qpe
+from .qpe import (
+    infer_phase_allocation,
+    is_modular_power,
+    lower_modular_loop,
+    lower_modular_qpe,
+    lower_qpe,
+)
 from .qsvt import lower_qsvt_inversion
 from .quantum_callbacks import (
     BORROWED_EFFECT_SIGNATURES,
@@ -1005,6 +1011,15 @@ class _Adapt:
 
     def static_integer(self, node: Expression) -> int:
         text = node.token.text
+        if text == "$ceil_log2":
+            size = self.static_integer(node.children[0])
+            if size < 2:
+                reject(
+                    node.token,
+                    "width",
+                    "binary log width requires a static integer of at least two",
+                )
+            return (size - 1).bit_length()
         if text.isdecimal():
             return checked_integer(int(text), node.token)
         if not node.children and text in self.classical_integers:
@@ -1245,6 +1260,8 @@ class _Adapt:
                 "budget.expansion",
                 "static loops exceed 4096 iterations",
             )
+        if lower_modular_loop(self, statement, count):
+            return
         for item in statement.repeat_body:
             callee = self.callback_bindings.get(
                 item.token.text
@@ -1529,6 +1546,7 @@ class _Adapt:
             if is_modular_power(statement)
         }
         phase_exports: dict[str, str] = {}
+        deferred: dict[str, Token] = {}
         for argument, parameter in zip(arguments, syntax.parameters, strict=True):
             name = parameter.name.text
             if parameter.kind in BORROWED_EFFECT_SIGNATURES:
@@ -1640,6 +1658,21 @@ class _Adapt:
                     "ownership",
                     "bound helper Output requires a whole caller Output",
                 )
+            if (
+                parameter.role == "output"
+                and self.widths.get(argument.token.text) is None
+            ):
+                if any(
+                    previous.text == argument.token.text
+                    for previous in deferred.values()
+                ):
+                    reject(
+                        argument.token,
+                        "alias",
+                        "writable helper arguments must be disjoint",
+                    )
+                deferred[name] = argument.token
+                continue
             view = (
                 record_view(self, parameter, argument)
                 if parameter.record is not None
@@ -1714,6 +1747,30 @@ class _Adapt:
                 "binding",
                 "bound helper must restore every formal port before return",
             )
+        materialized: dict[Value, Value] = {}
+        for name, actual in deferred.items():
+            child_output = child.registers.get(name)
+            if child_output is None:
+                reject(actual, "ownership", "bound helper must initialize each Output")
+            parameter = child.parameters[name]
+            if parameter.kind == "qphase":
+                if self.parameters[actual.text].kind != "qnum":
+                    reject(
+                        actual,
+                        "precision",
+                        "inferred fractional Output requires a numeric caller port",
+                    )
+                self.parameters[actual.text] = replace(
+                    self.parameters[actual.text], kind="qphase"
+                )
+            output = self.register(
+                actual,
+                register_width(child_output),
+                allow_qubit_array=True,
+                allow_fractional_output=parameter.kind == "qphase",
+            )
+            materialized[child_output] = output
+            outputs.add(child_output)
         initialized_outputs = set()
         for op in child.operations:
             operands = op.operands[1:]
@@ -1742,8 +1799,10 @@ class _Adapt:
         self.helper_expansions = child.helper_expansions
         self.loop_iterations = child.loop_iterations
         for op in child.operations:
-            # Replay the specialized operations with the caller's linear effect.
-            self.effect_op(op.name, token, op.operands[1:], **op.attributes)
+            operands = tuple(
+                materialized.get(value, value) for value in op.operands[1:]
+            )
+            self.effect_op(op.name, token, operands, **op.attributes)
 
     def call(
         self,
@@ -3472,6 +3531,8 @@ class _Adapt:
                     size = self.classical_integers.get(name)
                     if size is None:
                         size = exact_unsigned_literal(name)
+                elif args[0].token.text in {"+", "-", "*", "%", "**", "$ceil_log2"}:
+                    size = self.static_integer(args[0])
                 if size is None:
                     reject(
                         args[0].token,
@@ -3605,8 +3666,14 @@ class _Adapt:
             if len(args) != 1:
                 reject(token, "signature", "qft requires one qubit array")
             target = self.atom(args[0])
-            register = self.register(target, allow_qubit_array=True)
-            if self.parameters[target.text].kind not in {"qbit[]", "qnum"}:
+            fourier_parameter = self.parameters.get(target.text)
+            kind = fourier_parameter.kind if fourier_parameter is not None else None
+            if target.text in self.fractional_bits:
+                reject(target, "precision", "a fractional result is a terminal output")
+            register = self.register(
+                target, allow_qubit_array=True, allow_fractional_output=kind == "qphase"
+            )
+            if kind not in {"qbit[]", "qnum", "qphase"}:
                 reject(target, "type", "qft requires a qubit array or integer register")
             self.effect_op("qreg.qft", token, (register,))
         elif token.text == "qct_qst_type1":
@@ -3824,7 +3891,19 @@ class _Adapt:
                     if target.text in self.views:
                         gate_locations = self.array_view(args[0])
                     else:
-                        destination = self.register(target, allow_qubit_array=True)
+                        if target.text in self.fractional_bits:
+                            reject(
+                                target,
+                                "precision",
+                                "a fractional result is a terminal output",
+                            )
+                        hadamard_parameter = self.parameters.get(target.text)
+                        destination = self.register(
+                            target,
+                            allow_qubit_array=True,
+                            allow_fractional_output=hadamard_parameter is not None
+                            and hadamard_parameter.kind == "qphase",
+                        )
                         gate_locations = tuple(
                             (destination, bit)
                             for bit in range(register_width(destination))
@@ -4192,7 +4271,8 @@ def parse_qmod(
         if any(
             port.role not in {"real", "integer", "inout", "callable"}
             and not (
-                port.role == "output" and port.kind in {"qbit", "qbit[]", "qphase"}
+                port.role == "output"
+                and port.kind in {"qbit", "qbit[]", "qphase", "qnum"}
             )
             and not (
                 port.role == "const"

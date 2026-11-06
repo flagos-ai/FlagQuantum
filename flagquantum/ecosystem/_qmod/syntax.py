@@ -312,6 +312,8 @@ class Parser:
                 real=real,
             )
             self.take(")")
+        elif static and token.text == "ceiling":
+            left = self.binary_log_width(symbolic=True, nesting=nesting)
         elif (
             static
             and token.text == "floor"
@@ -506,11 +508,24 @@ class Parser:
             )
         return left
 
-    def binary_log_width(self) -> Expression:
+    def binary_log_width(
+        self, *, symbolic: bool = False, nesting: int = 0
+    ) -> Expression:
         token = self.take(self.current.text)
         self.take("(")
         self.take("log")
         self.take("(")
+        if symbolic:
+            operand = self.expression(nesting=nesting + 1, static=True)
+            if operand.depth >= MAX_EXPRESSION_DEPTH:
+                reject(
+                    token, "budget.depth", "binary log width exceeds expression depth"
+                )
+            for part in (",", "2", ")", ")"):
+                self.take(part)
+            return Expression(
+                Token("$ceil_log2", token.location), (operand,), operand.depth + 1
+            )
         value = self.current
         size = (
             int(value.text)
@@ -1161,7 +1176,7 @@ class Parser:
                         else:
                             args.append(Expression(self.name()))
                     elif target.text == "allocate" and self.current.text == "ceiling":
-                        args.append(self.binary_log_width())
+                        args.append(self.expression(static=True))
                     elif (
                         target.text == "grover_diffuser"
                         and self.current.text == "lambda"
@@ -1209,6 +1224,13 @@ class Parser:
                         args.append(self.call_argument())
                     while self.current.text == ",":
                         self.take(",")
+                        if (
+                            len(args) == 2
+                            and target.text == "allocate"
+                            and self.current.text == "ceiling"
+                        ):
+                            args.append(self.expression(static=True))
+                            continue
                         if len(args) == 1 and target.text == "multi_suzuki_trotter":
                             args.append(self.call_argument())
                             continue

@@ -111,6 +111,77 @@ def lower_modular_qpe(owner: _Adapt, statement: Statement) -> None:
     owner.fractional_bits[name.text] = width
 
 
+def lower_modular_loop(owner: _Adapt, statement: Statement, count: int) -> bool:
+    if not count or statement.repeat_index is None or len(statement.repeat_body) != 1:
+        return False
+    selector = statement.repeat_body[0]
+    if (
+        selector.control_body is None
+        or selector.control_else is not None
+        or len(selector.control_body) != 1
+        or len(selector.arguments) != 1
+    ):
+        return False
+    action = selector.control_body[0]
+    if (
+        action.token.text != "modular_multiply_constant_inplace"
+        or len(action.arguments) != 3
+    ):
+        return False
+    (condition,) = selector.arguments
+    modulus, multiplier, target = action.arguments
+    index = statement.repeat_index.text
+
+    def atom(node: Expression, name: str) -> bool:
+        return not node.children and node.token.text == name
+
+    if (
+        condition.token.text != "["
+        or not atom(condition.children[1], index)
+        or multiplier.token.text != "**"
+    ):
+        return False
+    exponent, base, power = condition.children[0], *multiplier.children
+    if (
+        power.token.text != "**"
+        or not atom(power.children[0], "2")
+        or not atom(power.children[1], index)
+    ):
+        return False
+    exponent_name = owner.atom(exponent)
+    exponent_port = owner.parameters.get(exponent_name.text)
+    if exponent_port is None or exponent_port.kind != "qbit[]":
+        reject(
+            exponent_name, "modular", "modular bit loop requires an indexed qubit array"
+        )
+    counter = owner.register(exponent_name, allow_qubit_array=True)
+    if count != register_width(counter):
+        reject(
+            statement.token,
+            "modular",
+            "modular bit loop must cover its whole exponent register",
+        )
+    target_name = owner.atom(target)
+    target_port = owner.parameters.get(target_name.text)
+    if (
+        target_port is None
+        or target_port.kind not in {"qnum", "qbit[]"}
+        or target_name.text in owner.signed
+    ):
+        reject(
+            target_name, "modular", "modular bit loop requires unsigned residue storage"
+        )
+    residue = owner.register(target_name, allow_qubit_array=True)
+    owner.effect_op(
+        "qreg.modular_exp",
+        action.token,
+        (residue, counter),
+        modulus=owner.static_integer(modulus),
+        base=owner.static_integer(base),
+    )
+    return True
+
+
 def lower_qpe(owner: _Adapt, statement: Statement, index: str) -> None:
     token = statement.token
     name = owner.atom(statement.arguments[0])
@@ -269,8 +340,6 @@ def infer_phase_allocation(
         return False
     sign, fraction = args[1:3]
     if sign.children or sign.token.text not in {"True", "False", "SIGNED", "UNSIGNED"}:
-        return False
-    if fraction.children:
         return False
     point = owner.static_integer(fraction)
     if point != size:
