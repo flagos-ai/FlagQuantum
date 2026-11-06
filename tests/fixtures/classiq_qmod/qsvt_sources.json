@@ -1,0 +1,14 @@
+{
+  "repository": "https://github.com/Classiq/classiq-library",
+  "commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "license_file": "LICENSE.txt",
+  "license_sha256": "241f68c9f35357f97e8a2a195e447d4f80098c140f0b3b3c770a11eed96f58e0",
+  "fixtures": [
+    {
+      "file": "classiq_qsvt.qmod",
+      "source_path": "tutorials/technology_demonstrations/classiq_paper/qsvt/classiq_qsvt.qmod",
+      "git_blob_sha1": "2045c54435394681506fb43c0977d0deb0fca2f3",
+      "sha256": "db9e50097a11725bcc6a6cb4ffcaaf0ab0dcc62739d6c759721aa169303afe8e"
+    }
+  ]
+}

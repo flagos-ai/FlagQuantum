@@ -135,6 +135,7 @@ class Parameter:
     ] = "output"
     record: str | None = None
     length: int | None = None
+    width_expression: Expression | None = None
 
 
 @dataclass(frozen=True)
@@ -356,12 +357,8 @@ class Parser:
                 or (real and self.tokens[self.position + 1].text == "len")
             ):
                 dot = self.take(".")
-                if static and not self.records:
-                    self.take("len")
-                    left = Expression(dot, (left,), left.depth + 1)
-                else:
-                    member = Expression(self.name())
-                    left = Expression(dot, (left, member), left.depth + 1)
+                member = Expression(self.name())
+                left = Expression(dot, (left, member), left.depth + 1)
             elif self.current.text == "[" and (
                 (not left.children)
                 or (not static and left.token.text == ":")
@@ -1025,7 +1022,19 @@ class Parser:
                     )
                 record = None
                 local_width: int | None
-                if self.current.text in self.records:
+                width_expression = None
+                if (
+                    self.current.text == "qnum"
+                    and self.tokens[self.position + 1].text == "<"
+                    and self.position + 3 < len(self.tokens)
+                    and self.tokens[self.position + 3].text == "."
+                ):
+                    self.take("qnum")
+                    self.take("<")
+                    width_expression = self.expression(static=True)
+                    self.take(">")
+                    kind, local_width = "qnum", None
+                elif self.current.text in self.records:
                     record = self.name().text
                     kind, local_width = "qbit[]", self.records[record].width
                 else:
@@ -1042,7 +1051,12 @@ class Parser:
                         token,
                         (),
                         declaration=Parameter(
-                            target, kind, local_width, "local", record
+                            target,
+                            kind,
+                            local_width,
+                            "local",
+                            record,
+                            width_expression=width_expression,
                         ),
                     )
                 )

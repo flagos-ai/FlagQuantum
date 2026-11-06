@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 
 from ...compiler._construction.register_profile import register_width
 from .syntax import MAX_SCOPE_DEPTH, Expression, Parameter, Statement, Token, reject
-from .unitary_effects import PURE_EFFECTS
+from .unitary_effects import PURE_EFFECTS, emit_inverse
 
 if TYPE_CHECKING:
     from ...compiler._hybrid.model import Value
@@ -15,9 +15,7 @@ if TYPE_CHECKING:
 
 
 def is_binding_scope(statement: Statement) -> bool:
-    return bool(statement.within) and all(
-        child.token.text == "->" for child in statement.within or ()
-    )
+    return any(child.token.text == "->" for child in statement.within or ())
 
 
 def parse_within(parser: Parser, allow_scopes: bool, scope_depth: int) -> Statement:
@@ -30,8 +28,8 @@ def parse_within(parser: Parser, allow_scopes: bool, scope_depth: int) -> Statem
         allow_scopes=False, scope_depth=scope_depth + 1, binding_preparation=True
     )
     parser.take("apply")
-    binding_only = bool(preparation) and all(s.token.text == "->" for s in preparation)
-    actions = parser.block(scope_depth=scope_depth + 1, binding_actions=binding_only)
+    has_bindings = any(s.token.text == "->" for s in preparation)
+    actions = parser.block(scope_depth=scope_depth + 1, binding_actions=has_bindings)
     return Statement(token, (), within=preparation, apply=actions)
 
 
@@ -41,18 +39,33 @@ def lower_binding_scope(owner: _Adapt, statement: Statement, index: str) -> bool
     views = dict(owner.views)
     widths = dict(owner.widths)
     suspended = set(owner.suspended)
+    registers = dict(owner.registers)
     start = len(owner.operations)
+    reversible = []
     try:
-        for child in statement.within or ():
-            owner.bind_registers(child.token, *child.arguments)
+        for ordinal, child in enumerate(statement.within or ()):
+            if child.token.text == "->":
+                owner.bind_registers(child.token, *child.arguments)
+            else:
+                before = len(owner.operations)
+                owner.statement(child, f"{index}.binding_prepare{ordinal}")
+                reversible.extend(owner.operations[before:])
+        prepared_views = dict(owner.views)
+        prepared_suspended = set(owner.suspended)
         for ordinal, child in enumerate(statement.apply):
             owner.statement(child, f"{index}.binding{ordinal}")
-        if any(op.name not in PURE_EFFECTS for op in owner.operations[start:]):
+        if (
+            any(op.name not in PURE_EFFECTS for op in owner.operations[start:])
+            or owner.views != prepared_views
+            or owner.suspended != prepared_suspended
+            or owner.registers != registers
+        ):
             reject(
                 statement.token,
                 "binding.scope",
                 "binding apply admits only static gates; allocation and ownership changes refuse",
             )
+        emit_inverse(owner, statement.token, reversible)
     finally:
         owner.views = views
         owner.widths = widths

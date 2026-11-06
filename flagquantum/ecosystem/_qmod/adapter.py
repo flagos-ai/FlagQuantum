@@ -45,7 +45,7 @@ from .bindings import (
 from .controlled_evolution import EVOLUTION_CALLS, controlled_evolution
 from .cscope import QaoaWorkflow, VqeSettings, split_cscope
 from .decisions import lower_decision_phase
-from .indexed_control import lower_indexed_control
+from .indexed_control import lower_indexed_control, lower_zero_reflection_control
 from .integers import checked_integer, checked_integer_array, integer_operation
 from .iterations import expand_iterations
 from .local_cleanup import lower_free
@@ -57,7 +57,7 @@ from .phase_factors import Cube, preserve_factors
 from .predicates import expand_predicate_oracles
 from .preparation import lower_inplace_preparation
 from .qpe import infer_phase_allocation, lower_qpe
-from .quantum_callbacks import specialize_quantum_callbacks
+from .quantum_callbacks import BORROWED_ARRAY_PAIR, Lambda, specialize_quantum_callbacks
 from .scope_control import lower_fourier_control
 from .selector_rotations import is_selector_helper, lower_select_rotation
 from .swap_test import lower_swap_test
@@ -74,7 +74,12 @@ from .syntax import (
     reject,
     tokenize,
 )
-from .unitary_effects import emit_inverse, is_reversible_scope, lower_reversible_scope
+from .unitary_effects import (
+    PURE_EFFECTS,
+    emit_inverse,
+    is_reversible_scope,
+    lower_reversible_scope,
+)
 from .variational import lower_qaoa_penalty
 
 SUPPORTED_SOURCE_VERSION = "2bfd835e73b6882fcc515a725098b04766c238e7"
@@ -1009,8 +1014,13 @@ class _Adapt:
             member = node.children[1].token.text if len(node.children) == 2 else "len"
             if member == "size" and not root.children:
                 parameter = self.parameters.get(root.token.text)
-                if parameter is not None and parameter.record is not None:
-                    return self.record_types[parameter.record].width
+                width = self.widths.get(root.token.text)
+                if (
+                    parameter is not None
+                    and parameter.kind in {"qbit", "qbit[]", "qnum"}
+                    and width is not None
+                ):
+                    return width
             if member != "len":
                 reject(node.token, "field", "expected array len or record size")
             if root.children:
@@ -1410,6 +1420,46 @@ class _Adapt:
                 angle=scale * value,
             )
 
+    def borrowed_array_callback(self, argument: Expression) -> Function:
+        if isinstance(argument, Lambda):
+            if (
+                len(argument.parameters) != 2
+                or len({p.text for p in argument.parameters}) != 2
+            ):
+                reject(
+                    argument.token,
+                    "callback.signature",
+                    "callback requires two distinct array ports",
+                )
+            location = argument.token.location
+            return Function(
+                Token(f"$callback_{location.line}_{location.column}", location),
+                tuple(
+                    Parameter(port, "qbit[]", None, "inout")
+                    for port in argument.parameters
+                ),
+                argument.body,
+            )
+        name = self.atom(argument)
+        callback = self.callback_bindings.get(name.text) or self.definitions.get(
+            name.text
+        )
+        if (
+            callback is None
+            or tuple((p.role, p.kind) for p in callback.parameters)
+            != (
+                ("inout", "qbit[]"),
+                ("inout", "qbit[]"),
+            )
+            or any(p.record is not None for p in callback.parameters)
+        ):
+            reject(
+                name,
+                "callback.signature",
+                "callback requires two borrowed qubit arrays",
+            )
+        return callback
+
     def call_bound_helper(
         self, syntax: Function, token: Token, arguments: tuple[Expression, ...]
     ) -> None:
@@ -1443,6 +1493,9 @@ class _Adapt:
         phase_borrows: set[Value] = set()
         for argument, parameter in zip(arguments, syntax.parameters, strict=True):
             name = parameter.name.text
+            if parameter.kind == BORROWED_ARRAY_PAIR:
+                child.callback_bindings[name] = self.borrowed_array_callback(argument)
+                continue
             if parameter.role == "callable":
                 actual = self.atom(argument)
                 callback = self.callback_bindings.get(
@@ -1626,7 +1679,16 @@ class _Adapt:
         if callback is not None:
             if const_only or control_bit is not None:
                 reject(token, "scope", "callbacks require ordinary static calls")
+            start = len(self.operations)
             self.call_bound_helper(callback, token, arguments)
+            if self.parameters[token.text].kind == BORROWED_ARRAY_PAIR and any(
+                op.name not in PURE_EFFECTS for op in self.operations[start:]
+            ):
+                reject(
+                    token,
+                    "callback.escape",
+                    "borrowed callback requires pure unitary effects",
+                )
             return
         if token.text in self.parameters:
             reject(token, "call", "an output variable shadows this helper call")
@@ -2075,6 +2137,7 @@ class _Adapt:
             return any(
                 child.inverse_body is not None
                 or child.repeat_index is not None
+                or child.token.text == "+="
                 or child.token.text in self.definitions
                 or (
                     child.control_body is not None
@@ -2092,6 +2155,12 @@ class _Adapt:
         for value, children in branches:
             start, incoming = len(self.operations), self.effect
             for ordinal, child in enumerate(children):
+                if (
+                    child.token.text == "IDENTITY"
+                    and len(child.arguments) == 1
+                    and control in self.array_view(child.arguments[0])
+                ):
+                    reject(child.token, "alias", "control and target must be disjoint")
                 self.statement(child, f"{index}.control{value}.{ordinal}")
             expanded = self.operations[start:]
             del self.operations[start:]
@@ -2127,8 +2196,17 @@ class _Adapt:
                 for _ in run:
                     if name == "qreg.control_x" and "indices" in attrs:
                         locations = tuple(zip(operands, attrs["indices"], strict=True))
-                    elif name == "qreg.gate" and attrs["gate"] == "x":
+                    elif name == "qreg.gate" and attrs["gate"] in {"i", "x"}:
                         locations = ((operands[0], attrs["index"]),)
+                        if attrs["gate"] == "i":
+                            if control in locations:
+                                reject(
+                                    statement.token,
+                                    "alias",
+                                    "control and target must be disjoint",
+                                )
+                            self.effect_op(name, statement.token, operands, **attrs)
+                            continue
                     elif name == "qreg.pair_gate" and attrs["gate"] == "swap":
                         left, right = zip(
                             operands, attrs.get("indices", (0, 0)), strict=True
@@ -2181,6 +2259,8 @@ class _Adapt:
         operation = body[0]
         if operation.control_body is not None:
             reject(token, "scope", "nested scalar control requires function scope")
+        if lower_zero_reflection_control(self, condition, operation):
+            return
         if lower_indexed_control(self, condition, operation):
             return
         if condition.token.text == ":":
@@ -2990,6 +3070,7 @@ class _Adapt:
             if not body or any(
                 child.token.text not in allowed
                 and child.token.text not in self.definitions
+                and child.token.text not in self.callback_bindings
                 and child.inverse_body is None
                 for child in body
             ):
@@ -3020,8 +3101,13 @@ class _Adapt:
                     "name",
                     "local names cannot shadow parameters, locals or intrinsics",
                 )
+            width = parameter.width
+            if parameter.width_expression is not None:
+                width = self.static_integer(parameter.width_expression)
+                if not 1 <= width <= 256:
+                    reject(parameter.name, "width", "local width must be in 1..256")
             self.parameters[name] = parameter
-            self.widths[name] = parameter.width
+            self.widths[name] = width
         elif statement.control_body is not None:
             self.scalar_control(statement, index)
         elif statement.within is not None:
@@ -3322,8 +3408,12 @@ class _Adapt:
         elif token.text == "IDENTITY":
             if len(args) != 1:
                 reject(token, "signature", "IDENTITY requires one register")
-            identity_target = self.register(self.atom(args[0]), allow_qubit_array=True)
-            self.effect_op("qreg.gate", token, (identity_target,), gate="i", index=0)
+            locations = self.array_view(args[0])
+            checked: set[Value] = set()
+            for value, bit in locations:
+                if value not in checked:
+                    self.effect_op("qreg.gate", token, (value,), gate="i", index=bit)
+                    checked.add(value)
         elif token.text == "qft":
             if len(args) != 1:
                 reject(token, "signature", "qft requires one qubit array")
@@ -3545,7 +3635,7 @@ class _Adapt:
                 else:
                     target = self.atom(args[0])
                     if target.text in self.views:
-                        gate_locations = self.views[target.text]
+                        gate_locations = self.array_view(args[0])
                     else:
                         destination = self.register(target, allow_qubit_array=True)
                         gate_locations = tuple(
@@ -3962,7 +4052,13 @@ def parse_qmod(
             if declaration is not None and (
                 declaration.kind == "qbit"
                 or (declaration.kind == "qbit[]" and declaration.width is None)
-                or (declaration.kind == "qnum" and declaration.width is not None)
+                or (
+                    declaration.kind == "qnum"
+                    and (
+                        declaration.width is not None
+                        or declaration.width_expression is not None
+                    )
+                )
             ):
                 continue
             controlled_qft = (

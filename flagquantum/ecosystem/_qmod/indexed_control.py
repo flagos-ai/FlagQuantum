@@ -109,3 +109,51 @@ def lower_indexed_control(
     for register, bit in reversed(negative):
         owner.effect_op("qreg.gate", token, (register,), gate="x", index=bit)
     return True
+
+
+def lower_zero_reflection_control(
+    owner: _Adapt, condition: Expression, operation: Statement
+) -> bool:
+    if operation.token.text != "reflect_about_zero":
+        return False
+    token = operation.token
+    if len(operation.arguments) != 1:
+        reject(token, "signature", "reflect_about_zero requires one quantum array")
+    positive = True
+    selector = condition
+    if condition.token.text == "==":
+        selector, literal = condition.children
+        expected = owner.static_integer(literal)
+        if expected not in {0, 1}:
+            reject(
+                literal.token,
+                "control",
+                "reflection selector must compare against zero or one",
+            )
+        positive = bool(expected)
+    control, bit = owner.gate_target(selector)
+    data = owner.array_view(operation.arguments[0])
+    locations = ((control, bit), *data)
+    if len(set(locations)) != len(locations) or len(data) > 8:
+        reject(
+            token,
+            "control",
+            "reflection requires distinct locations and at most eight data bits",
+        )
+    if not positive:
+        owner.effect_op("qreg.gate", token, (control,), gate="x", index=bit)
+    owner.effect_op("qreg.gate", token, (control,), gate="z", index=bit)
+    for register, index in data:
+        owner.effect_op("qreg.gate", token, (register,), gate="x", index=index)
+    owner.effect_op(
+        "qreg.control_phase",
+        token,
+        tuple(register for register, _ in locations),
+        indices=tuple(index for _, index in locations),
+        angle=math.pi,
+    )
+    for register, index in reversed(data):
+        owner.effect_op("qreg.gate", token, (register,), gate="x", index=index)
+    if not positive:
+        owner.effect_op("qreg.gate", token, (control,), gate="x", index=bit)
+    return True
