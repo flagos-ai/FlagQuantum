@@ -6,7 +6,7 @@ import math
 from collections.abc import Sequence
 from typing import TYPE_CHECKING
 
-from ...compiler._hybrid.model import Operation
+from ...compiler._hybrid.model import Operation, Value
 from .syntax import Statement, Token, reject
 
 if TYPE_CHECKING:
@@ -28,6 +28,31 @@ PURE_EFFECTS = frozenset(
         "qreg.unitary",
     }
 )
+
+
+def preserves_basis_labels(op: Operation, readonly: set[tuple[Value, int]]) -> bool:
+    """Check borrowed locations even after nested helper arguments are remapped."""
+    operands = op.operands[1:]
+    if op.name == "qreg.control_phase":
+        return True
+    if op.name == "qreg.gate":
+        return (
+            op.attributes.get("gate")
+            in {"i", "z", "s", "sdg", "t", "tdg", "rz", "phase"}
+            or (operands[0], op.attributes["index"]) not in readonly
+        )
+    if op.name == "qreg.control_x" and "indices" in op.attributes:
+        return (operands[-1], op.attributes["indices"][-1]) not in readonly
+    if op.name == "qreg.pair_gate":
+        gate = op.attributes.get("gate")
+        if gate in {"cz", "rzz"}:
+            return True
+        if gate in {"cx", "crx", "cry"}:
+            return (
+                operands[-1],
+                op.attributes.get("indices", (0, 0))[-1],
+            ) not in readonly
+    return False
 
 
 def emit_inverse(owner: _Adapt, token: Token, operations: Sequence[Operation]) -> None:

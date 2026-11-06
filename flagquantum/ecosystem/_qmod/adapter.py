@@ -99,6 +99,7 @@ from .unitary_effects import (
     emit_inverse,
     is_reversible_scope,
     lower_reversible_scope,
+    preserves_basis_labels,
 )
 from .variational import lower_qaoa_penalty
 
@@ -1540,6 +1541,7 @@ class _Adapt:
         actuals: set[tuple[Value, int]] = set()
         outputs: set[Value] = set()
         phase_borrows: set[Value] = set()
+        readonly: set[tuple[Value, int]] = set()
         modular_phase_ports = {
             statement.arguments[0].token.text
             for statement in syntax.statements
@@ -1735,6 +1737,8 @@ class _Adapt:
                 outputs.add(value)
             if parameter.kind == "qphase" and parameter.role == "const":
                 phase_borrows.add(value)
+            elif parameter.role == "const":
+                readonly.update(view)
         snapshot = snapshot_start(syntax.statements)
         for index, statement in enumerate(syntax.statements):
             if index == snapshot:
@@ -1771,11 +1775,18 @@ class _Adapt:
             )
             materialized[child_output] = output
             outputs.add(child_output)
+        readonly_owners = {owner for owner, _ in readonly}
         initialized_outputs = set()
         for op in child.operations:
             operands = op.operands[1:]
             if op.name in {"qreg.allocate", "qreg.prepare_amplitudes"}:
                 initialized_outputs.add(operands[0])
+            if readonly_owners.intersection(operands) and not preserves_basis_labels(
+                op, readonly
+            ):
+                reject(
+                    token, "ownership", "bound helper cannot write a Const quantum port"
+                )
             if phase_borrows.intersection(operands):
                 if op.name == "qreg.control_phase" or (
                     op.name == "qreg.pair_gate"
@@ -1911,6 +1922,7 @@ class _Adapt:
         *,
         condition: Expression | None = None,
         disjoint_condition_target: tuple[Value, int] | None = None,
+        conjugate_xor: bool = False,
     ) -> None:
         def quantum_word(node: Expression) -> tuple[tuple[Value, int], ...] | None:
             if node.token.text == "$predicate_word":
@@ -1972,6 +1984,39 @@ class _Adapt:
                 disjoint_condition_target=disjoint_condition_target,
             )
         except HybridVerificationError as error:
+            if conjugate_xor and all(
+                d.code == "qmod.budget.phase" for d in error.diagnostics
+            ):
+                assert disjoint_condition_target is not None
+                owner, wire = disjoint_condition_target
+                terms, reads = expand_phase(
+                    Expression(Token("1", token.location)),
+                    quantum_word,
+                    self.classical_number,
+                    condition=condition,
+                    disjoint_condition_target=disjoint_condition_target,
+                )
+                for value, bit in reads:
+                    self.effect_op(
+                        "qreg.control_phase", token, (value,), indices=(bit,), angle=0.0
+                    )
+                for mask, weight in sorted(terms.items()):
+                    if int(weight) % 2 == 0:
+                        continue
+                    if mask:
+                        controls = tuple(
+                            location
+                            for i, location in enumerate(reads)
+                            if mask & (1 << i)
+                        )
+                        self.emit_indexed_x(
+                            token, (*controls, disjoint_condition_target)
+                        )
+                    else:
+                        self.effect_op(
+                            "qreg.gate", token, (owner,), gate="x", index=wire
+                        )
+                return
             if (
                 condition is not None
                 and disjoint_condition_target is None
@@ -2020,6 +2065,10 @@ class _Adapt:
             and "pi" not in self.parameters
             else self.classical_number(coefficient)
         )
+        if conjugate_xor:
+            assert disjoint_condition_target is not None
+            owner, wire = disjoint_condition_target
+            self.effect_op("qreg.gate", token, (owner,), gate="h", index=wire)
         for factor, value in zip(factors, factor_values, strict=True):
             self.phase_factor(token, factor, value)
         # Check reads even when algebraic cancellation removes their phase terms.
@@ -2047,6 +2096,11 @@ class _Adapt:
         for value in reversed(factor_values):
             self.effect_op("qreg.uncompute", token, (value,))
             self.effect_op("qreg.release", token, (value,))
+
+        if conjugate_xor:
+            assert disjoint_condition_target is not None
+            owner, wire = disjoint_condition_target
+            self.effect_op("qreg.gate", token, (owner,), gate="h", index=wire)
 
     def phase_factor(self, token: Token, factor: Cube, value: Value) -> None:
         owners = tuple(dict.fromkeys(owner for (owner, _), _ in factor))
@@ -3120,15 +3174,14 @@ class _Adapt:
         if source.token.text in _STATIC_COMPARISONS:
             register, bit = self.gate_target(destination, allow_numeric=True)
             pi = Expression(Token("pi", token.location))
-            self.effect_op("qreg.gate", token, (register,), gate="h", index=bit)
             self.real_phase(
                 token,
                 destination,
                 pi,
                 condition=source,
                 disjoint_condition_target=(register, bit),
+                conjugate_xor=True,
             )
-            self.effect_op("qreg.gate", token, (register,), gate="h", index=bit)
             return
         target = self.atom(destination)
         register = self.register(target)
@@ -3197,6 +3250,24 @@ class _Adapt:
             return
         if token.text == "swap_test":
             lower_swap_test(self, token, args)
+            return
+        if token.text == "$projected_rz":
+            phase_angle, marker, condition = args
+            location = self.gate_target(marker, allow_numeric=True)
+
+            def literal(text: str, *children: Expression) -> Expression:
+                return Expression(Token(text, token.location), children)
+
+            # XOR conjugation maps the RZ exponent to t - 1/2 + b(1 - 2t).
+            weighted = literal("-", literal("1"), literal("*", literal("2"), marker))
+            self.real_phase(
+                token,
+                weighted,
+                phase_angle,
+                condition=condition,
+                disjoint_condition_target=location,
+            )
+            self.real_phase(token, literal("-", marker, literal("0.5")), phase_angle)
             return
         if token.text == "qsvt_inversion":
             lower_qsvt_inversion(self, token, args)
@@ -4278,6 +4349,7 @@ def parse_qmod(
                 port.role == "const"
                 and (
                     port.kind == "qphase"
+                    or (port.kind in {"qbit", "qnum"} and port.record is None)
                     or is_const_cx_permutation(syntax)
                     or is_selector_helper(syntax)
                 )
@@ -4355,6 +4427,7 @@ def parse_qmod(
                     "+=",
                     "^=",
                     "phase",
+                    "$projected_rz",
                     "inplace_prepare_state",
                     "inplace_prepare_amplitudes",
                     "prepare_amplitudes",

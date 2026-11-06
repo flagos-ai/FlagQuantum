@@ -58,14 +58,13 @@ def expand_predicate_oracles(
         reads = [
             p
             for p in function.parameters
-            if p.role == "const" and p.kind in {"qbit[]", "qnum"}
+            if p.role == "const" and p.kind in {"qbit", "qbit[]", "qnum"}
         ]
         writes = [p for p in function.parameters if p.role == "inout"]
-        if not reads or not writes:
+        if not function.permutation or not reads or not writes:
             continue
         if (
-            not function.permutation
-            or len(reads) != 1
+            len(reads) != 1
             or len(writes) != 1
             or any(
                 p not in reads + writes
@@ -358,6 +357,47 @@ def expand_predicate_oracles(
             Token("control", token.location), (condition,), control_body=(phase,)
         )
 
+    def projected_rotation(
+        statement: Statement, parameters: Mapping[str, Parameter]
+    ) -> Statement | None:
+        if (
+            statement.within is None
+            or len(statement.within) != 1
+            or len(statement.apply) != 1
+        ):
+            return None
+        (prepare,) = statement.within
+        (rotate,) = statement.apply
+        predicate = predicates.get(prepare.token.text)
+        if predicate is None or rotate.token.text != "RZ" or len(rotate.arguments) != 2:
+            return None
+        ports = predicate.function.parameters
+        args = prepare.arguments
+        if len(args) != len(ports):
+            return None
+        target, marker = (
+            args[ports.index(predicate.read)],
+            args[ports.index(predicate.flag)],
+        )
+        angle, destination = rotate.arguments
+        if destination.children or destination.token.text != marker.token.text:
+            return None
+        actual = parameters.get(target.token.text)
+        marker_port = parameters.get(marker.token.text)
+        if (
+            actual is None
+            or marker_port is None
+            or marker_port.width != 1
+            or marker_port.role != "const"
+        ):
+            return None
+        condition = specialize(
+            prepare.token, args, target, marker, actual, borrow_array_word=True
+        )
+        return Statement(
+            Token("$projected_rz", statement.token.location), (angle, marker, condition)
+        )
+
     count = 0
 
     def bind_input(node: Expression, formal: Token, target: Expression) -> Expression:
@@ -392,7 +432,10 @@ def expand_predicate_oracles(
                     "predicate expansion exceeds 4096 statements",
                 )
             token, args = statement.token, statement.arguments
-            if token.text == "phase_oracle":
+            projector = projected_rotation(statement, parameters)
+            if projector is not None:
+                result.append(projector)
+            elif token.text == "phase_oracle":
                 reference, target = args
                 actual = parameters.get(target.token.text)
                 if target.children or actual is None:

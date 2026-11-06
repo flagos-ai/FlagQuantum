@@ -589,3 +589,20 @@ there is no normalization, dense runtime fallback or unbounded callback expansio
 The three unchanged counting/matrix originals have independent complex128 CPU
 full-vector comparisons. This does not establish arbitrary QPE callback coverage,
 hardware qualification or general resource optimality.
+
+## Expanded Qmod QSVT projector phases
+
+The Qmod adapter accepts Boolean negation, literal Boolean branches and a
+checked form of predicate-XOR conjugation around a scalar RZ on a Const marker.
+The conjugation emits a diagonal phase with the original global phase and
+preserves the computational-basis labels of the borrowed ports. Other writes
+through a bound scalar Const port are rejected by checking the physical targets
+of the resulting effects. For a comparison XOR that exceeds the real phase
+degree budget, the adapter can lower the bounded eight-input predicate to XOR
+monomials and use the existing indexed controlled-X operations.
+
+The pinned expanded library QSVT example is compared to an independent Circuit
+over all 1,024 logical amplitudes, with three clean work bits. Run
+`python -m pytest tests/integration/test_synthesis_qmod_expanded_qsvt.py -q`.
+This is a bounded Qmod source profile. Arbitrary reversible operations on a
+Const marker require a separate proof.

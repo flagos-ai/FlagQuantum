@@ -38,6 +38,7 @@ _RESERVED = frozenset(
         "const",
         "qbit",
         "qnum",
+        "not",
         "true",
         "false",
     }
@@ -283,12 +284,12 @@ class Parser:
                 "budget.depth",
                 f"expression nesting exceeds {MAX_EXPRESSION_DEPTH}",
             )
-        if (not static and token.text == "~") or (
+        if (not static and token.text in {"~", "not"}) or (
             (static or difference) and token.text == "-"
         ):
             self.take(token.text)
             operand = self.expression(
-                25,
+                4 if token.text == "not" else 25,
                 nesting + 1,
                 static=static,
                 decimal=decimal,
@@ -301,7 +302,13 @@ class Parser:
                     "budget.depth",
                     f"expression tree exceeds depth {MAX_EXPRESSION_DEPTH}",
                 )
-            left = Expression(token, (operand,), operand.depth + 1)
+            if token.text == "not":
+                zero = Expression(Token("0", token.location))
+                left = Expression(
+                    Token("==", token.location), (operand, zero), operand.depth + 1
+                )
+            else:
+                left = Expression(token, (operand,), operand.depth + 1)
         elif token.text == "(":
             self.take("(")
             left = self.expression(
@@ -1034,6 +1041,31 @@ class Parser:
                         "static if requires function scope or a static loop",
                     )
                 self.take("(")
+                if self.current.text in {"True", "False", "true", "false"}:
+                    literal = self.take(self.current.text)
+                    self.take(")")
+                    first = self.block(
+                        allow_scopes=allow_scopes,
+                        scope_depth=scope_depth + 1,
+                        static_loop_body=static_loop_body,
+                    )
+                    second: tuple[Statement, ...] = ()
+                    if self.current.text == "else":
+                        self.take("else")
+                        second = self.block(
+                            allow_scopes=allow_scopes,
+                            scope_depth=scope_depth + 1,
+                            static_loop_body=static_loop_body,
+                        )
+                    selected = first if literal.text in {"True", "true"} else second
+                    if any(item.declaration is not None for item in (*first, *second)):
+                        reject(
+                            token,
+                            "scope",
+                            "static Boolean branches cannot declare local storage",
+                        )
+                    statements.extend(selected)
+                    continue
                 left = self.expression(static=True)
                 comparison = self.current
                 if comparison.text not in _COMPARISONS:
