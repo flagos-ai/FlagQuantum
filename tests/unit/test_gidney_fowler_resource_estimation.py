@@ -11,6 +11,7 @@ from flagquantum.compiler._component_trace.resource_model import (
     GateCost,
     ModeledResources,
 )
+from flagquantum.qec.resources.data_block import DataLayout
 from flagquantum.qec.resources.estimation import estimate_ftqc_resources
 from flagquantum.qec.resources.gidney_fowler import estimate_gidney_fowler_resources
 
@@ -128,3 +129,56 @@ def test_rejects_invalid_scenarios() -> None:
         estimate_gidney_fowler_resources(
             ModeledResources(GateCost(t=-1), 1), data_distance=3
         )
+
+
+@pytest.mark.ftqc_reference
+@pytest.mark.parametrize(
+    ("layout", "source_name", "distance", "factories", "expected_cycles"),
+    [
+        ("simple", "SimpleDataBlock", 7, 1, 20119),
+        ("compact", "CompactDataBlock", 21, 1, 22302),
+        ("intermediate", "IntermediateDataBlock", 21, 4, 12390),
+        ("fast", "FastDataBlock", 7, 4, 5030),
+    ],
+)
+def test_factory_and_data_bottlenecks(
+    layout: DataLayout,
+    source_name: str,
+    distance: int,
+    factories: int,
+    expected_cycles: int,
+) -> None:
+    surface_code = pytest.importorskip("qualtran.surface_code")
+    from qualtran.resource_counting import GateCounts
+    from qualtran.surface_code.multi_factory import MultiFactory
+
+    logical = estimate_ftqc_resources(select_thc_cost(2, 4, 8, 1)).logical
+    summary = surface_code.AlgorithmSummary(
+        n_algo_qubits=logical.peak_logical_qubits,
+        n_logical_gates=GateCounts(**asdict(logical.gates)),
+    )
+    reference = surface_code.PhysicalCostModel(
+        surface_code.PhysicalParameters(physical_error=1e-4, cycle_time_us=1.0),
+        getattr(surface_code, source_name)(data_d=distance),
+        MultiFactory(surface_code.CCZ2TFactory(), factories),
+        surface_code.QECScheme.make_gidney_fowler(),
+    )
+    result = estimate_gidney_fowler_resources(
+        logical,
+        data_distance=distance,
+        physical_error=1e-4,
+        data_layout=layout,
+        factory_count=factories,
+    )
+
+    assert result.cycles == reference.n_cycles(summary) == expected_cycles
+    assert result.duration_hours == reference.duration_hr(summary)
+    assert result.physical_qubits == reference.n_phys_qubits(summary)
+    assert result.failure_probability == reference.error(summary)
+    assert result.factory_physical_qubits == factories * 147904
+
+
+def test_factory_count_must_be_positive() -> None:
+    logical = ModeledResources(GateCost(t=1), 2)
+    with pytest.raises(ValueError, match="Factory count"):
+        estimate_gidney_fowler_resources(logical, data_distance=3, factory_count=0)

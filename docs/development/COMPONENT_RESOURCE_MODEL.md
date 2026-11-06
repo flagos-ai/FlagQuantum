@@ -73,7 +73,7 @@ IR level, before further synthesis or measurement branch selection. The
 surface-code scenario uses the declared model and is independent of the
 optional circuit. The caller pairs the model with its corresponding circuit.
 
-## Factory-limited Gidney-Fowler scenario
+## Gidney-Fowler data and factory scenario
 
 Pass `report.logical` to
 `flagquantum.qec.resources.gidney_fowler.estimate_gidney_fowler_resources`.
@@ -90,6 +90,15 @@ data block uses 3,528 physical qubits and the factory uses 147,904. The
 first-order failure estimate is 0.000724284. This scenario is computed
 independently of the Beverland data-block calculation and the emitted IR
 counts above.
+
+Set `data_layout` to `"compact"`, `"intermediate"`, or `"fast"` to
+model consumption at nine, five, or one surface-code step per magic
+state. Set `factory_count` for parallel identical factories. Their
+footprint scales with the count and production cycles divide by the count,
+rounded up. Total cycles are the larger of production and consumption.
+For the same THC workload, a distance-21 compact block with one factory
+takes 22,302 cycles, limited by the data block. The default simple layout
+and one factory retain the original 20,119-cycle estimate.
 
 ## Beverland surface-code estimate
 
