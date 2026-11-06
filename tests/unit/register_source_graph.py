@@ -96,3 +96,35 @@ def walk_source_graph(
     }
     assert all(outputs[name] == wires for name, wires in desired.items())
     return tuple(gates), outputs
+
+
+def source_control_predicate_leaf(
+    bloq: Any, inputs: SourcePorts, work: tuple[int, ...], bits: tuple[int, ...]
+) -> SourceResult | None:
+    """Bind the locked CtrlSpecAnd and its adjoint to one caller-owned workspace."""
+    from qualtran.bloqs.mcmt.ctrl_spec_and import CtrlSpecAnd
+
+    from tests.unit.test_register_constant_addition import reference_arithmetic_gates
+
+    is_adjoint = isinstance(getattr(bloq, "subbloq", None), CtrlSpecAnd)
+    if not (isinstance(bloq, CtrlSpecAnd) or is_adjoint):
+        return None
+    outputs = {
+        reg.name: inputs[reg.name]
+        for reg in bloq.signature.rights()
+        if reg.name in inputs
+    }
+    if not is_adjoint:
+        outputs["target"] = work[-1:]
+        if work[:-1]:
+            outputs["junk"] = work[:-1]
+    return (
+        reference_arithmetic_gates(
+            bloq,
+            inputs,
+            () if is_adjoint else work,
+            dict(zip(work, bits, strict=True)),
+            expected_outputs=outputs,
+        ),
+        outputs,
+    )

@@ -10,6 +10,7 @@
 
 """Concrete logical-And ladders and single-target controlled gates."""
 
+from collections.abc import Callable
 from typing import Literal
 
 from ...core.ir import Instruction
@@ -130,18 +131,38 @@ def _multi_control_gate_ir(
     workspace: tuple[int, ...],
     classical_bits: tuple[int, ...],
 ) -> tuple[Instruction, ...]:
+    if type(target) is not int or target < 0:
+        raise ValueError("Controlled gate target must be a distinct nonnegative wire")
+    return _controlled_target_ir(
+        Instruction(gate, (target,)),
+        lambda control: Instruction(f"c{gate}", (control, target)),
+        controls,
+        values,
+        workspace,
+        classical_bits,
+    )
+
+
+def _controlled_target_ir(
+    gate: Instruction,
+    positive_controlled: Callable[[int], Instruction],
+    controls: tuple[int, ...],
+    values: tuple[int, ...],
+    workspace: tuple[int, ...],
+    classical_bits: tuple[int, ...],
+) -> tuple[Instruction, ...]:
     _validate_controls(controls, values, workspace, classical_bits, measured=True)
-    if type(target) is not int or target < 0 or target in (*controls, *workspace):
+    (target,) = gate.wires
+    if target in (*controls, *workspace):
         raise ValueError("Controlled gate target must be a distinct nonnegative wire")
     if not controls:
-        return (Instruction(gate, (target,)),)
-    controlled = f"c{gate}"
+        return (gate,)
     if len(controls) == 1:
         flip = (Instruction("x", controls),) if values[0] == 0 else ()
-        return (*flip, Instruction(controlled, (*controls, target)), *flip)
+        return (*flip, positive_controlled(controls[0]), *flip)
     return (
         *multi_and_ir(controls, values, workspace),
-        Instruction(controlled, (workspace[-1], target)),
+        positive_controlled(workspace[-1]),
         *multi_and_ir(
             controls, values, workspace, classical_bits=classical_bits, uncompute=True
         ),

@@ -23,9 +23,9 @@ from tests.unit.measurement_checks import forced_branch
 from tests.unit.register_source_graph import (
     SourcePorts,
     SourceResult,
+    source_control_predicate_leaf,
     walk_source_graph,
 )
-from tests.unit.test_register_constant_addition import reference_arithmetic_gates
 from tests.unit.test_register_subtraction import assert_source
 
 pytestmark = pytest.mark.unit
@@ -35,7 +35,6 @@ def reference_controlled_phase(
     source: Any, controls: tuple[int, ...], work: tuple[int, ...], bits: tuple[int, ...]
 ) -> tuple[Instruction, ...]:
     from qualtran.bloqs.basic_gates import XGate, ZPowGate
-    from qualtran.bloqs.mcmt.ctrl_spec_and import CtrlSpecAnd
 
     def leaf(
         bloq: Any, inputs: SourcePorts, desired: SourcePorts
@@ -46,28 +45,7 @@ def reference_controlled_phase(
             return (
                 Instruction("phase", inputs["q"], params={"theta": pi * bloq.exponent}),
             ), inputs
-        is_adjoint = isinstance(getattr(bloq, "subbloq", None), CtrlSpecAnd)
-        if isinstance(bloq, CtrlSpecAnd) or is_adjoint:
-            outputs = {
-                reg.name: inputs[reg.name]
-                for reg in bloq.signature.rights()
-                if reg.name in inputs
-            }
-            if not is_adjoint:
-                outputs["target"] = work[-1:]
-                if work[:-1]:
-                    outputs["junk"] = work[:-1]
-            return (
-                reference_arithmetic_gates(
-                    bloq,
-                    inputs,
-                    () if is_adjoint else work,
-                    dict(zip(work, bits, strict=True)),
-                    expected_outputs=outputs,
-                ),
-                outputs,
-            )
-        return None
+        return source_control_predicate_leaf(bloq, inputs, work, bits)
 
     ports = {next(iter(source.signature)).name: controls}
     gates, returned = walk_source_graph(source, ports, ports, leaf)

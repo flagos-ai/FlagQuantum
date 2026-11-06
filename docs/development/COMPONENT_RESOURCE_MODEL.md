@@ -584,6 +584,24 @@ separately.
 
 - [Qualtran v0.7.0 Hadamard](https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/bloqs/basic_gates/hadamard.py)
 
+## Fixed S and T phases
+
+`phase_family_ir` emits S, S†, T or T† directly. Under a positive
+control it binds the source's atomic controlled phase to a native
+`cphase` with the corresponding signed angle. The source does not
+decompose this leaf. Its QEC model counts one rotation, while the
+precision-sensitive terminal model cannot estimate its T cost because
+the controlled leaf does not supply a precision.
+
+A single negative control wraps the leaf in two X instructions.
+Multiple controls reuse the measured AND predicate and its inverse.
+For two controls the wrapper emits four T-family instructions, uses
+one clean work wire and measures once. These counts exclude subsequent
+basis synthesis of the controlled phase.
+
+- [Qualtran v0.7.0 S gate](https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/bloqs/basic_gates/s_gate.py)
+- [Qualtran v0.7.0 T gate](https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/bloqs/basic_gates/t_gate.py)
+
 ## Scalar and controlled phases
 
 Qualtran's atomic global phase multiplies amplitudes by

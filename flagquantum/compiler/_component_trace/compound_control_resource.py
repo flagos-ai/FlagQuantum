@@ -9,9 +9,11 @@
 from .resource_generalization import (
     CliffordCall,
     ControlledRegisterSwapCall,
+    ControlledRotationCall,
     ControlledSwapCall,
     FixedTCall,
     MergedFredkinCall,
+    PhaseCall,
     PredicateControlledCall,
     ResourceCall,
     RotationCall,
@@ -49,6 +51,9 @@ def compound_control_key(
         raise ValueError(
             "Compound control requires a nonempty binary activation pattern"
         )
+    if isinstance(gate, PhaseCall):
+        phase = ControlledRotationCall(gate, (1,))
+        return phase if controls == (1,) else PredicateControlledCall(phase, controls)
     if isinstance(gate, CliffordCall) and gate.opcode == "h":
         return (
             CONTROLLED_HADAMARD_COST
