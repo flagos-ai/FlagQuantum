@@ -12,11 +12,11 @@ from flagquantum.compiler.resource_estimation import estimate_resources
 from flagquantum.ecosystem._qmod.adapter import QmodImport
 from flagquantum.simulation.mps.entrypoints import run_mps
 
-_BASIS_GATE_WIDTH = {"i": 1, "x": 1, "ccx": 3}
+_BASIS_GATE_WIDTH = {"i": 1, "x": 1, "z": 1, "cx": 2, "ccx": 3}
 
 
 def probe_basis_mps(imported: QmodImport, memory_bytes: int) -> dict[str, str | int]:
-    """Verify and execute an all-zero-entry basis permutation without truncation."""
+    """Verify and execute an all-zero-entry basis permutation with an exact sign and no truncation."""
     if imported.workflow is not None:
         return {"stage": "planning_refused", "detail": "expected a static Qmod program"}
     selection = select_register_program(
@@ -45,7 +45,7 @@ def probe_basis_mps(imported: QmodImport, memory_bytes: int) -> dict[str, str | 
     ):
         return {
             "stage": "planning_refused",
-            "detail": "basis MPS requires a closed I/X/CCX circuit",
+            "detail": "basis MPS requires a closed I/X/Z/CX/CCX circuit",
         }
 
     resources = estimate_resources(circuit)
@@ -77,7 +77,7 @@ def probe_basis_mps(imported: QmodImport, memory_bytes: int) -> dict[str, str | 
         phase *= one if bit else zero
     if not math.isclose(abs(phase), 1.0, abs_tol=1e-12, rel_tol=0):
         return {"stage": "execution_failed", "detail": "basis MPS norm is not one"}
-    return {
+    result: dict[str, str | int] = {
         "stage": "execution_smoke_passed",
         "execution_profile": "basis_mps",
         "qubits": resources.n_qubits,
@@ -87,3 +87,12 @@ def probe_basis_mps(imported: QmodImport, memory_bytes: int) -> dict[str, str | 
         "state_bytes": storage,
         "basis_state": "".join(bits),
     }
+    if any(gate.name == "z" for gate in circuit.instructions):
+        sign = 1 if phase.real >= 0 else -1
+        if not math.isclose(abs(phase - sign), 0.0, abs_tol=1e-12):
+            return {
+                "stage": "execution_failed",
+                "detail": "basis MPS sign proof failed",
+            }
+        result["basis_sign"] = sign
+    return result

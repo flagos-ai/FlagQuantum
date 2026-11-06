@@ -636,6 +636,7 @@ def synthesize(
     owned_version: str | None = None
     fractional_bits: Mapping[str, int] | None = None
     signed_registers: tuple[str, ...] = ()
+    deferred_measurements = False
     if isinstance(function, (PathLike, str)):
         if not is_file and source_format != "qmod":
             raise ValueError("text requires source_format='qmod'; use Path for files")
@@ -666,6 +667,7 @@ def synthesize(
         owned_program, owned_functions = imported.program, imported.functions
         fractional_bits = imported.fractional_bits
         signed_registers = imported.signed_registers
+        deferred_measurements = imported.deferred_measurements
         owned_source = "qmod"
         owned_name, owned_version = imported.source_name, imported.source_version
     elif isinstance(function, _QuantumFunction) and function.source.program:
@@ -715,6 +717,7 @@ def synthesize(
             source_version=owned_version,
             fractional_bits=fractional_bits,
             signed_registers=signed_registers,
+            deferred_measurements=deferred_measurements,
         )
     assert not isinstance(function, (PathLike, str))
     if not isinstance(inputs, Mapping) or (

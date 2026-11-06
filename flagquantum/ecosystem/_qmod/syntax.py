@@ -507,6 +507,7 @@ class Parser:
                     f"expression tree exceeds depth {depth_limit}",
                 )
         precedence = {
+            "or": 2,
             "and": 3,
             **dict.fromkeys(_COMPARISONS, 5),
             "|": 6,
@@ -1268,6 +1269,23 @@ class Parser:
                     continue
                 left = self.expression(static=True)
                 comparison = self.current
+                if comparison.text == ")" and not left.children:
+                    if scope_depth:
+                        reject(
+                            token,
+                            "measurement",
+                            "measurement feedback requires function scope",
+                        )
+                    self.take(")")
+                    body = self.block(allow_scopes=False, scope_depth=scope_depth + 1)
+                    statements.append(
+                        Statement(
+                            replace(token, text="$measured_if"),
+                            (left,),
+                            control_body=body,
+                        )
+                    )
+                    continue
                 if comparison.text not in _COMPARISONS:
                     reject(
                         comparison,
@@ -1392,6 +1410,9 @@ class Parser:
                         self.take("0")
                     self.take(">")
                     kind, local_width = "qnum", None
+                elif self.current.text == "bool":
+                    self.take("bool")
+                    kind, local_width = "bool", None
                 elif self.current.text in self.records:
                     record = self.name().text
                     kind, local_width = "qbit[]", self.records[record].width
@@ -1429,6 +1450,25 @@ class Parser:
                 continue
             if self.current.text in {"=", "^=", "+="}:
                 operator = self.take(self.current.text)
+                if operator.text == "=" and self.current.text == "measure":
+                    if scope_depth:
+                        reject(
+                            operator,
+                            "measurement",
+                            "measure assignment requires function scope",
+                        )
+                    operator = self.take("measure")
+                    self.take("(")
+                    measured = Expression(self.name())
+                    self.take(")")
+                    self.take(";")
+                    statements.append(
+                        Statement(
+                            replace(operator, text="$measure"),
+                            (Expression(target), measured),
+                        )
+                    )
+                    continue
                 rhs = (
                     self.signed_angle_argument()
                     if operator.text == "^=" and self.current.text == "-"

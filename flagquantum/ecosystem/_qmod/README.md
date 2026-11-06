@@ -1534,3 +1534,33 @@ result = fq.run(program)
 print(program.report["resources"])
 print(result.statevector().shape)
 ```
+
+### Clause phase kickback and private measurement feedback
+
+A terminal `within`/`apply` phase-kickback region may XOR a Boolean CNF into
+a fresh one-bit marker that is freed after the region. Each clause admits
+up to three signed indexed bits, and the formula admits up to 80 clauses.
+The lowering computes the clause flags, applies the conjunction phase and
+uncomputes all flags. The wide 3-SAT fixture uses the explicit rank-one MPS
+profile in the corpus audit. General synthesis retains its dense state budget.
+
+A checked helper may measure distinct scalar qbits into private Boolean
+locals, then use those flags to apply X or Z on disjoint unmeasured qbits.
+The caller must immediately drop every measured register. Synthesis defers
+the measurements as coherent controls and reports
+`qmod_measurement_profile="deferred_private_measurements"`. This preserves
+the joint density matrix of the named outputs. The full simulator statevector
+includes the hidden purification wires, so it represents the lowered
+circuit. The original measurement records are private to the source helper.
+
+```python
+from pathlib import Path
+
+import flagquantum as fq
+from flagquantum import synth
+
+source = Path("tests/fixtures/classiq_qmod/quantum_teleportation.qmod")
+program = synth.synthesize(source)
+result = fq.run(program)
+print(dict(program.probabilities(result, registers=("bob_qubit",))))
+```

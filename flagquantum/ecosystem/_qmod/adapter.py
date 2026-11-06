@@ -52,6 +52,7 @@ from .callback_arrays import (
     lower_callback_control,
     lower_selected_effects,
 )
+from .cnf_kickback import lower_cnf_kickback
 from .computed_rotation import (
     composed_rotation,
     computed_output,
@@ -62,6 +63,7 @@ from .controlled_evolution import EVOLUTION_CALLS, controlled_evolution
 from .copied_selector import lower_copied_selector, slice_output
 from .cscope import QaoaWorkflow, VqeSettings, split_cscope
 from .decisions import lower_decision_phase
+from .deferred_measurement import defer_private_measurements
 from .diffusion import lower_diffuser
 from .fixed_xor import lower_fixed_xor
 from .hea import lower_hea
@@ -311,6 +313,7 @@ class QmodImport:
     fractional_bits: Mapping[str, int]
     signed_registers: tuple[str, ...]
     workflow: QaoaWorkflow | None = None
+    deferred_measurements: bool = False
 
 
 class _Expression:
@@ -4632,7 +4635,11 @@ class _Adapt:
             self.call(token, args)
 
     def adapt(self) -> HybridProgram:
-        for index, statement in enumerate(self.syntax.statements):
+        statements = self.syntax.statements
+        for index, statement in enumerate(statements):
+            if self.scope == "main" and index + 4 == len(statements):
+                if lower_cnf_kickback(self, statements[index:]):
+                    break
             self.statement(statement, str(index))
         if any(
             parameter.role == "output" and name in self.suspended
@@ -4901,6 +4908,7 @@ def parse_qmod(
         definitions[name] = syntax
     if "main" not in definitions:
         reject(tokens[0], "entry", "source requires one qfunc main")
+    definitions, deferred_measurements = defer_private_measurements(definitions)
     definitions = fold_skip_control_tables(definitions)
     definitions = expand_amplification(definitions, constants)
     definitions = expand_iterations(definitions)
@@ -5246,4 +5254,5 @@ def parse_qmod(
             )
         ),
         workflow,
+        deferred_measurements,
     )
