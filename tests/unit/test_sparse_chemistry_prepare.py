@@ -63,15 +63,21 @@ def _branch(gates, width, history, state=None):
                 updated[index | mask] += (-amp if index & mask else amp) / sqrt(2)
             elif gate.name == "x" or (gate.name == "cx" and index & masks[0]):
                 updated[index ^ mask] += amp
+            elif gate.name == "cy" and index & masks[0]:
+                updated[index ^ mask] += amp * (-1j if index & mask else 1j)
             elif gate.name == "reset":
                 updated[index & ~mask] += amp
             elif gate.name == "rz":
                 theta = gate.params["theta"]
                 updated[index] += amp * exp((1j if index & mask else -1j) * theta / 2)
+            elif gate.name == "phase":
+                updated[index] += amp * (
+                    exp(1j * gate.params["theta"]) if index & mask else 1
+                )
             elif gate.name == "cz":
                 updated[index] += -amp if all(index & m for m in masks) else amp
             else:
-                assert gate.name in (*phase, "cx")
+                assert gate.name in (*phase, "cx", "cy")
                 updated[index] += amp * phase.get(gate.name, 1) if index & mask else amp
         state = {index: amp for index, amp in updated.items() if abs(amp) > 1e-12}
     assert next(outcomes, None) is None

@@ -1985,3 +1985,51 @@ can alias padded addresses to populated rows, while the existing
 source `control_value` adds a pass-through wire for either polarity.
 The one-body flag gates the first two Majorana calls. Source resource
 queries fail at one spatial orbital, which the bounded binding excludes.
+
+### Sparse chemistry walk with the full preparation signal
+
+`SparseChemistryWalk` composes bounded SELECT with the reflection
+$2|L\rangle\langle L|-I$, where `L` is the state prepared across all
+PREPARE registers. The caller retains those registers between steps.
+SELECT uses the orbital and body-flag wires among them. The reflection
+uses coherent PREPARE reversal, a zero mark over the entire signal, and
+forward PREPARE. Its phase target and unary workspace return to zero.
+The adjoint reverses SELECT's Majorana order and applies the reflection
+first.
+
+Using the unblocked two-spatial-orbital `prepare` above:
+
+```python
+from flagquantum.algorithms.primitives.sparse_chemistry_walk import SparseChemistryWalk
+
+walk = SparseChemistryWalk(prepare)
+walk_width = sum(size for _, size in walk.layout)
+walk_ports = partition_register(tuple(range(walk_width)), walk.layout)
+walk_work, walk_slots = walk.requirements()
+step = walk.make_on(
+    walk_ports,
+    workspace=tuple(range(walk_width, walk_width + walk_work)),
+    classical_bits=tuple(range(walk_slots)),
+)
+walk_circuit = DynamicCircuit(walk_width + walk_work).append(step)
+walk_report = estimate_ftqc_resources(
+    walk.source_resource_model(), emitted_ir=walk_circuit.to_ir()
+)
+assert walk.alpha == 3.75
+assert walk_report.logical.gates.total_t_count() == 152
+assert walk_report.logical.gates.measurement == 22
+assert walk_report.logical.peak_logical_qubits == 34
+assert walk_report.emitted is not None
+assert walk_report.emitted.t_count == 278
+assert walk_report.emitted.unconditional["measure"] == 38
+assert walk_report.emitted.declared_qubits == 50
+```
+
+The source model counts a narrower reflection and an abstract QROAM
+erase. Its adjoint consumes the bank ports before the zero mark, while
+the comparison flag stays live. The original erase leaf has no gate
+decomposition. Using the verified coherent inverse and preserving the
+source mark and fresh-junk layout leaves a nonzero probability of
+occupied junk on zero input: 3/64 for the unblocked example and 1/32
+with two rows per block. The executable full-signal reflection keeps
+those registers logical and marks their zero state as well.
