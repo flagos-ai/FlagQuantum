@@ -275,6 +275,31 @@ supply an expanded effect's modeled peak, including its distinct operands
 and any workspace. The estimator keeps the other live registers as
 bystanders and respects the original effect order.
 
+Resource call keys preserve gate parameters for call-graph grouping. The
+optional rules in `resource_generalization` can group rotations by family
+and precision, group conjunctions by arity, and omit bookkeeping calls.
+For comparison with the source's swap abstraction, the approximate swap
+rule maps forward and inverse calls to the exact controlled-swap key.
+Use unmodified call keys when counting approximate swap costs.
+
+```python
+from flagquantum.compiler._component_trace.call_graph import symbolic_call_graph
+from flagquantum.compiler._component_trace.resource_generalization import (
+    ResourceCall,
+    RotationCall,
+    generalize_rotation,
+)
+from flagquantum.compiler._component_trace.resource_model import ComponentCost
+from flagquantum.compiler._component_trace.symbolic_math import SymbolicInt
+
+root: ResourceCall = ComponentCost("program", 1)
+calls: dict[ResourceCall, dict[ResourceCall, SymbolicInt]] = {
+    root: {RotationCall("rx", 0.2): 2, RotationCall("rx", -0.1): 3},
+}
+graph = symbolic_call_graph(root, calls, generalizer=generalize_rotation)
+assert graph.leaf_counts == {RotationCall("rx", None): 5}
+```
+
 - [Qualtran v0.7.0 gate costs](https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/resource_counting/_bloq_counts.py)
 - [Qualtran v0.7.0 logical width](https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/resource_counting/_qubit_counts.py)
 - [Qualtran v0.7.0 success probability](https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/resource_counting/_success_prob.py)
