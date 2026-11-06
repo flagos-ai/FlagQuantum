@@ -337,6 +337,20 @@ class Parser:
                 real=real,
             )
             self.take(")")
+        elif (
+            (static or real)
+            and token.text == "log"
+            and self.tokens[self.position + 1].text == "("
+        ):
+            self.take("log")
+            self.take("(")
+            argument = self.expression(static=True, nesting=nesting + 1)
+            self.take(",")
+            self.take("2")
+            self.take(")")
+            left = Expression(
+                replace(token, text="$exact_log2"), (argument,), argument.depth + 1
+            )
         elif static and token.text == "ceiling":
             left = self.binary_log_width(symbolic=True, nesting=nesting)
         elif (
@@ -974,7 +988,10 @@ class Parser:
                     )
             else:
                 kind, width, fractional_bits = self.scalar_type(
-                    allow_qubit_array=name.text == "main" or role in {"inout", "const"},
+                    allow_qubit_array=name.text == "main"
+                    or role in {"inout", "const"}
+                    or permutation
+                    and role == "output",
                     allow_phase=True,
                     allow_signed_integer=role in {"const", "inout"}
                     or name.text == "main"
@@ -1385,8 +1402,9 @@ class Parser:
                     self.signed_angle_argument()
                     if operator.text == "^=" and self.current.text == "-"
                     else self.expression(
-                        decimal=operator.text == "=",
+                        decimal=operator.text in {"=", "^="},
                         difference=True,
+                        allow_slice=operator.text == "=",
                     )
                 )
                 arguments = (Expression(target), rhs)
@@ -1455,6 +1473,16 @@ class Parser:
                         args.append(self.call_argument())
                     while self.current.text == ",":
                         self.take(",")
+                        if (
+                            len(args) == 1
+                            and target.text == "allocate"
+                            and self.current.text in {"false", "true"}
+                        ):
+                            sign = self.take(self.current.text)
+                            args.append(
+                                Expression(replace(sign, text=sign.text.capitalize()))
+                            )
+                            continue
                         if (
                             len(args) == 2
                             and target.text == "allocate"

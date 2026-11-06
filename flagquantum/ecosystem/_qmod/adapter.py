@@ -59,9 +59,11 @@ from .computed_rotation import (
     reinterpreted_selector,
 )
 from .controlled_evolution import EVOLUTION_CALLS, controlled_evolution
+from .copied_selector import lower_copied_selector, slice_output
 from .cscope import QaoaWorkflow, VqeSettings, split_cscope
 from .decisions import lower_decision_phase
 from .diffusion import lower_diffuser
+from .fixed_xor import lower_fixed_xor
 from .hea import lower_hea
 from .indexed_control import (
     lower_guarded_field_increment,
@@ -1058,6 +1060,15 @@ class _Adapt:
 
     def static_integer(self, node: Expression) -> int:
         text = node.token.text
+        if text == "$exact_log2":
+            size = self.static_integer(node.children[0])
+            if size < 1 or size & (size - 1):
+                reject(
+                    node.token,
+                    "width",
+                    "static log base two requires a positive power of two",
+                )
+            return size.bit_length() - 1
         if text == "$ceil_log2":
             size = self.static_integer(node.children[0])
             if size < 2:
@@ -1949,8 +1960,11 @@ class _Adapt:
         if not lower_narrow_pauli_sequence(child, syntax.statements):
             snapshot = snapshot_start(syntax.statements)
             for index, statement in enumerate(syntax.statements):
-                if index + 3 == len(syntax.statements) and lower_computed_rotation(
-                    child, syntax.statements[index:]
+                if index + 3 == len(syntax.statements) and (
+                    lower_computed_rotation(child, syntax.statements[index:])
+                    or lower_copied_selector(
+                        child, syntax.statements[index:], str(index)
+                    )
                 ):
                     break
                 if index == snapshot:
@@ -2835,6 +2849,20 @@ class _Adapt:
         if len(statement.arguments) != 1 or body is None:
             reject(token, "control", "control requires one condition and one operation")
         condition = statement.arguments[0]
+        if (
+            len(body) == 1
+            and body[0].token.text == "^="
+            and len(body[0].arguments) == 2
+            and statement.control_else is None
+            and lower_fixed_xor(
+                self,
+                body[0].token,
+                body[0].arguments[0],
+                body[0].arguments[1],
+                guard=condition,
+            )
+        ):
+            return
         if lower_guarded_selector(self, statement, index):
             return
         if lower_callback_control(self, statement):
@@ -4146,7 +4174,8 @@ class _Adapt:
                 "qreg.phase", token, inputs, callee=graph.name, **phase_attributes
             )
         elif token.text == "^=":
-            self.xor_update(token, args[0], args[1])
+            if not lower_fixed_xor(self, token, args[0], args[1]):
+                self.xor_update(token, args[0], args[1])
         elif token.text in {
             "encode_in_angle",
             "encode_on_bloch",
@@ -4951,6 +4980,8 @@ def parse_qmod(
             continue
         if any(port.kind == "SparsePauliOp" for port in syntax.parameters):
             power_action(syntax)
+            continue
+        if slice_output(syntax) is not None:
             continue
         if len({port.name.text for port in syntax.parameters}) != len(
             syntax.parameters

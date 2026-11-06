@@ -234,6 +234,17 @@ def emit_signed_predicate_xor(
         owner.effect_op(
             "qreg.control_phase", token, (value,), indices=(wire,), angle=0.0
         )
+    emit_truth_xor(owner, token, reads, target, coefficients)
+
+
+def emit_truth_xor(
+    owner: _Adapt,
+    token: Token,
+    reads: tuple[Location, ...],
+    target: Location,
+    coefficients: list[int],
+) -> None:
+    """Emit disjoint Boolean cofactor cubes into a known distinct target."""
 
     def walk(
         values: list[int], width: int, fixed: tuple[tuple[Location, int], ...]

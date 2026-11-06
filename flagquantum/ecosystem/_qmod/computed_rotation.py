@@ -51,7 +51,7 @@ def computed_output(function: Function) -> tuple[Parameter, Expression] | None:
     ):
         return None
     expression = statement.arguments[1]
-    _evaluator(
+    exact_expression(
         expression,
         {port.name.text for port in function.parameters if port.role == "const"},
     )
@@ -139,9 +139,14 @@ _BINARY: dict[str, Callable[[Fraction, Fraction], Fraction]] = {
 }
 
 
-def _evaluator(
-    node: Expression, ports: set[str]
+def exact_expression(
+    node: Expression,
+    ports: set[str],
+    constants: Mapping[Expression, Fraction] | None = None,
 ) -> Callable[[dict[str, Fraction]], Fraction]:
+    if constants is not None and node in constants:
+        literal = constants[node]
+        return lambda inputs: literal
     text = node.token.text
     if not node.children:
         if text in ports:
@@ -157,10 +162,12 @@ def _evaluator(
                 )
             return lambda inputs: literal
     if text == "-" and len(node.children) == 1:
-        operand = _evaluator(node.children[0], ports)
+        operand = exact_expression(node.children[0], ports, constants)
         return lambda inputs: -operand(inputs)
     if text in _BINARY and len(node.children) == 2:
-        left, right = (_evaluator(child, ports) for child in node.children)
+        left, right = (
+            exact_expression(child, ports, constants) for child in node.children
+        )
         operation = _BINARY[text]
 
         def checked(inputs: dict[str, Fraction]) -> Fraction:
@@ -276,7 +283,9 @@ def lower_computed_rotation(owner: _Adapt, statements: tuple[Statement, ...]) ->
     assert local.width is not None
     if axis.token.text not in {"X", "Y", "Z"} or len(angles) != 1 << local.width:
         reject(table.token, "rotation", "invalid rotation table for fixed-point word")
-    evaluate = _evaluator(matched.expression, {port.name.text for port, _ in operands})
+    evaluate = exact_expression(
+        matched.expression, {port.name.text for port, _ in operands}
+    )
     result = []
     for basis in range(1 << len(locations)):
         values: dict[str, Fraction] = {}

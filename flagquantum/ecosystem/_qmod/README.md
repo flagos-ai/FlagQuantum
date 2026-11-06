@@ -1484,3 +1484,29 @@ a bound helper can feed terminal comparison-controlled X operations across
 one checked reversible integer update. The flags are independent of that
 update, so their comparisons are evaluated on the captured input before
 the update, with signed thresholds and no exposed temporary storage.
+
+### Bounded fixed-point XOR and piecewise selection
+
+An allocated unsigned fixed-point word can be XOR-updated with a bounded
+arithmetic expression over disjoint initialized unsigned words. Coefficients must
+be exactly dyadic. The result aligns by bit significance with the target and
+discards bits outside the target range. The adapter admits at most eight
+target bits and seven read bits, including any equality guard. An immutable
+raw-bit slice copied into a
+fresh local can be substituted into a terminal checked selector use. Other
+reads, writes and escapes of the copy require separate lifetime support.
+
+Run the pinned piecewise-linear example from the repository root.
+
+```python
+from pathlib import Path
+
+import flagquantum as fq
+from flagquantum import synth
+
+source = Path("tests/fixtures/classiq_qmod/tanh.qmod")
+program = synth.synthesize(source, max_qubits=10, max_workspace=2)
+result = fq.run(program)
+print(program.report["qmod_fractional_bits"])
+print(dict(program.probabilities(result, registers=("x", "y"))))
+```

@@ -99,6 +99,8 @@ def expand_static_oracles(
     General callable values, quantum captures and consuming ports are refused.
     All bodies are checked before expansion, including unused and zero-power ones.
     """
+    from .copied_selector import slice_output
+
     oracles = {
         name: function
         for name, function in definitions.items()
@@ -110,6 +112,7 @@ def expand_static_oracles(
         and not any(p.kind == "IndexedPauli[]" for p in function.parameters)
         and not is_const_cx_permutation(function)
         and not is_selector_helper(function)
+        and slice_output(function) is None
         and not (
             len(function.statements) == 1
             and function.statements[0].token.text == "$projected_rz"
