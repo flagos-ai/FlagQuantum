@@ -3077,3 +3077,17 @@ example uses eight inner rotation bits. The full block uses seven.
 
 The text output represents the stage order and call multiplicities. The
 notebook's graphical circuit and musical score are outside this example.
+
+### Bounded modular increment
+
+`bounded_increment_ir` implements the unit-step permutation of the
+locked [ModAddK](https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/bloqs/mod_arithmetic/mod_addition.py#L182).
+It increments a big-endian word modulo the declared bound and preserves
+padding words under either control branch. The adjoint subtracts one.
+For a partial range the emitter computes membership, uses an ordinary
+binary increment, wraps at the modulus and erases membership using the
+final word. Work and feedback slots belong to the caller.
+
+The locked source specifies the permutation and a five-Add resource
+declaration. `source_bounded_increment_cost` reports that declaration
+separately from the native stream.
