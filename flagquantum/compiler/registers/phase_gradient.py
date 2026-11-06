@@ -10,8 +10,8 @@
 from math import isfinite, pi
 
 from ...core.ir import Instruction
-from .and_compute import and_compute_ir, and_uncompute_ir
 from .bitwise import _validate_wires
+from .controlled_rotation import controlled_z_power_ir
 
 
 def phase_gradient_unitary_ir(
@@ -42,14 +42,13 @@ def phase_gradient_unitary_ir(
     if work is None or classical_bit is None:
         raise ValueError("Controlled phase gradient requires work and a classical slot")
     _validate_wires((*gradient, control, work))
-    gates: list[Instruction] = []
-    for i, wire in enumerate(gradient):
-        gates.extend(and_compute_ir(control, wire, work))
-        gates.append(
-            Instruction("phase", (work,), params={"theta": pi * (exponent / (1 << i))})
+    return tuple(
+        gate
+        for i, wire in enumerate(gradient)
+        for gate in controlled_z_power_ir(
+            control, wire, exponent / (1 << i), work, classical_bit
         )
-        gates.extend(and_uncompute_ir(control, wire, work, classical_bit))
-    return tuple(gates)
+    )
 
 
 def phase_gradient_state_ir(

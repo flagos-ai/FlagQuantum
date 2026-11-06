@@ -485,6 +485,31 @@ positive control decomposes one bit at a time, charging the predicate
 once per bit. The bitwise Fredkin can merge its original control
 directly with one added control.
 
+The register emitters `controlled_rz_ir` and
+`controlled_z_power_ir` share the same source decompositions as their
+resource models. CRz takes radians and emits two half-angle phases
+and two CNOTs. CZPow takes an exponent and emits a phase of
+`pi * exponent` on the And result. Its clean work qubit and
+measurement slot belong to the caller. Negating the parameter
+emits the corresponding inverse.
+
+```python
+from flagquantum.compiler.registers.controlled_rotation import (
+    controlled_rz_ir,
+    controlled_z_power_ir,
+)
+
+crz = controlled_rz_ir(0, 1, angle=0.3)
+czpow = controlled_z_power_ir(0, 1, exponent=0.3, work=2, classical_bit=0)
+assert [op.name for op in crz] == ["phase", "cx", "phase", "cx"]
+assert sum(op.name in {"t", "tdg"} for op in czpow) == 4
+assert sum(op.name == "measure" for op in czpow) == 1
+```
+
+The emitted phase instructions retain their angles for later synthesis.
+The QEC model classifies those angles separately as Clifford, T-like
+or arbitrary rotations.
+
 - [Qualtran v0.7.0 gate costs](https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/resource_counting/_bloq_counts.py)
 - [Qualtran v0.7.0 logical width](https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/resource_counting/_qubit_counts.py)
 - [Qualtran v0.7.0 success probability](https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/resource_counting/_success_prob.py)

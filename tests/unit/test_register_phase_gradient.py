@@ -34,7 +34,7 @@ def source_gradient_gates(
     bit: int = 0,
 ) -> tuple[tuple[Instruction, ...], tuple[Any, ...]]:
     pytest.importorskip("qualtran")
-    from qualtran.bloqs.basic_gates import Hadamard
+    from qualtran.bloqs.basic_gates import CNOT, Hadamard
     from qualtran.bloqs.basic_gates.rotation import ZPowGate
     from qualtran.bloqs.bookkeeping import Allocate
     from qualtran.bloqs.mcmt import And
@@ -49,6 +49,8 @@ def source_gradient_gates(
             return (), {"reg": outputs["phase_grad"]}
         if isinstance(bloq, Hadamard):
             return (Instruction("h", inputs["q"]),), inputs
+        if isinstance(bloq, CNOT):
+            return (Instruction("cx", (*inputs["ctrl"], *inputs["target"])),), inputs
         if isinstance(bloq, ZPowGate):
             phases.append(bloq)
             return (
