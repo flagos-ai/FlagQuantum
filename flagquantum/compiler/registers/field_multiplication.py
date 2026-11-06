@@ -11,6 +11,7 @@ from typing import Literal
 
 from ...core.ir import Instruction
 from .polynomial import _PolynomialEmitter, _validate_registers
+from .swap import swap_bit_ir
 
 
 def _remainder(value: int, modulus: int) -> int:
@@ -208,6 +209,6 @@ def bind_field_outputs(
     for i, wire in enumerate(desired):
         j = current.index(wire)
         if i != j:
-            gates.append(Instruction("swap", (current[i], current[j])))
+            gates.extend(swap_bit_ir(current[i], current[j]))
             current[i], current[j] = current[j], current[i]
     return tuple(gates)

@@ -760,6 +760,22 @@ width includes unused wires live during the child. Symbolic widths are
 available to the resource model, while binding requires concrete widths.
 BlackBoxPrepare shares the same binding path.
 
+## Literal register swaps
+
+`swap_bit_ir` emits the atomic SWAP. `swap_register_ir` emits one SWAP
+per corresponding bit pair in declared order. The operation preserves
+its physical output bindings and is its own inverse. Field output
+materialization uses the same leaf after choosing which wires must
+be exchanged. A virtual output permutation alone emits no gates.
+
+The pinned source models a Clifford per bit pair and twice the word
+width in logical qubits. This formula accepts symbolic widths. The
+native emitter requires a nonempty concrete pair, since the pinned
+zero-width source fails during decomposition. The source's single
+positive control specializes to the separately verified exact Fredkin
+path. Its actual Clifford+T stream and abstract model are accounted
+for separately from literal SWAP.
+
 ## Register identity
 
 The source models Identity as one atomic call with zero QEC gates.
