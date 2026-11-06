@@ -40,7 +40,36 @@ Each measurement has one reset. The paper's n-bit seed model gives
 3n² + 5n Toffolis for its initial guess, or 182 at n=7, under its
 fixed-width addition assumptions. Qualtran v0.7.0 gives no gate
 decomposition or standalone cost for this seed. Its chemistry module
-uses a distinct coefficient-based initialization. The tuned C2
-constants and the complete iterative wrapper remain separate.
+uses a distinct coefficient-based initialization.
 [Appendix C cost model](https://arxiv.org/pdf/1805.12445#page=8)
 [Locked chemistry source](https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/bloqs/chemistry/trotter/grid_ham/inverse_sqrt.py)
+
+## Tuned initial estimate
+
+Pass `tuned=True` to use the Appendix C2 coefficients 1.613, 1.5 and
+1.62 for negative, zero and positive k, respectively. The shifted
+source is integral on the guard grid, so flooring the rational
+constant at that grid commutes with the subtraction and with the
+final truncation. Only the controlled constant loads and unloads
+change. [Appendix C, Eq. C2](https://arxiv.org/pdf/1805.12445#page=8)
+
+The tuned estimate can start above the true inverse square root.
+For example, with five fraction bits, a=4 starts at 17/32 and
+the first Newton update gives 15/32. At a=1/4 the first update takes
+71/32 to 62/32. If u=a·2^(2k), the squared normalized unrounded seed
+is u·(C−u/2)². Its maximum for the stated coefficients is bounded by
+(2·1.62/3)³ < (9/8)². Therefore the first Newton update is
+nonnegative and at or below the root. Both complete wrappers require
+at least one update when tuning is enabled.
+
+| Seed source / source fraction / result fraction | C1 CX | C2 CX | T/T† on either path | Measurements | Work wires |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| 3 / 0 / 5 | 270 | 274 | 120 | 30 | 18 |
+| 5 / 2 / 4 | 680 | 696 | 304 | 76 | 26 |
+| 7 / 5 / 8 | 1,239 | 1,289 | 552 | 138 | 38 |
+
+For the 3 / 0 / 5 configuration, one full inverse-square-root update
+with C2 instead of C1 changes 8,109 CX to 8,117 CX. T/T† stays at
+3,224, measurements at 806, CCX at 12, and work wires at 218. These
+counts include complete cleanup. The locked Qualtran resource model
+does not estimate this seed choice.

@@ -17,7 +17,7 @@ component XORs its output, so the original measured cleanup stays
 valid. Work starts and ends at zero and classical slots are reusable.
 
 For a positive input, the exact C1 seed lies between 1/√(2a) and
-1/√a. Every truncated estimate is nondecreasing and at most 1/√a.
+1/√a. For C1 every truncated estimate is nondecreasing and at most 1/√a.
 For the untruncated iteration with normalized error e=1−x√a, the
 next error is (3e²−e³)/2. On the underestimation interval the
 update's absolute derivative is at most 3/2. After s updates, the
@@ -49,6 +49,8 @@ cleanup scope from the native table. Qualtran v0.7.0 has no gate
 decomposition or independent model for this C1 iteration wrapper.
 The chemistry update uses an integer source and a distinct resource
 graph, recorded in [the Newton update evidence](REGISTER_INVERSE_SQRT_NEWTON.md).
-The tuned C2 initialization and multiplication back to obtain the
-square root remain separate.
+The optional C2 path requires at least one update. Its initialization
+can start above the inverse square root and the first update restores
+a lower estimate. [C2 evidence](REGISTER_INVERSE_SQRT_SEED.md)
+The multiply-back is covered in [the square root evidence](REGISTER_FIXED_POINT_SQRT.md).
 [Appendix C resource formulas](https://arxiv.org/pdf/1805.12445#page=9)

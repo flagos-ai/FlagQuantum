@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0
-# First-set-bit initial estimate from Appendix C Eq. C1:
+# First-set-bit initial estimate from Appendix C Eqs. C1 and C2:
 # https://arxiv.org/pdf/1805.12445#page=8
 
 """Power-of-two-selected initial estimate for inverse square root."""
@@ -39,13 +39,17 @@ def inverse_sqrt_seed_ir(
     *,
     source_fraction_bits: int,
     result_fraction_bits: int,
+    tuned: bool = False,
 ) -> tuple[Instruction, ...]:
-    """XOR the truncated C1 estimate into an unsigned big-endian result.
+    """XOR the truncated C1 or C2 estimate into an unsigned big-endian result.
 
     A zero source yields a zero mask. The result has b fractional bits
     and at least floor(f/2)+1 integer bits, where f is the source fraction
-    width. Both source and initially clean work are restored.
+    width. Both source and initially clean work are restored. The optional
+    C2 seed may exceed the true inverse square root.
     """
+    if type(tuned) is not bool:
+        raise ValueError("Inverse square root tuning must be boolean")
     n, f, b = len(source), source_fraction_bits, result_fraction_bits
     width, guard = _seed_format(n, f, b)
     if len(result) < b + f // 2 + 1:
@@ -85,7 +89,12 @@ def inverse_sqrt_seed_ir(
     undo: list[tuple[Instruction, ...]] = []
     for i, selected in enumerate(selectors):
         k = (f - n + 1 + i) // 2
-        constant = controlled_xor_constant_ir(selected, value, 3 << (b + guard + k - 1))
+        if tuned and k:
+            numerator = 1613 if k < 0 else 1620
+            constant_word = (numerator << (b + guard + k)) // 1000
+        else:
+            constant_word = 3 << (b + guard + k - 1)
+        constant = controlled_xor_constant_ir(selected, value, constant_word)
         shift = b + guard + 3 * k - 1 - f
         shifted_target = value[: width - shift]
         carry_count = len(shifted_target) - 1

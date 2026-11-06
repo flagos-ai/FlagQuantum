@@ -2,7 +2,7 @@
 
 Appendix C obtains the square root by multiplying the source by its
 inverse-square-root estimate. This compiler component consumes the last
-live C1/Newton history word, computes the exact unsigned column product
+live Newton history word, computes the exact unsigned column product
 and XORs the requested slice into the result. Product workspace reuses
 the clean iteration scratch and is erased before the inverse-square-root
 history is uncomputed. [Appendix C, square root](https://arxiv.org/pdf/1805.12445#page=9)
@@ -12,7 +12,9 @@ bits. The result has ceil((n−f)/2) integer bits and uses its remaining
 bits for the fraction. This includes pure fractional source and result
 words. An output finer than the exact product's fractional width adds
 constant zero low bits to the mask. Zero input leaves the result
-unchanged. All clean caller-owned workspace returns to zero.
+unchanged. All clean caller-owned workspace returns to zero. Optional C2 tuning
+requires at least one Newton update before the product.
+[C2 evidence](REGISTER_INVERSE_SQRT_SEED.md)
 
 If the inverse estimate is x and the input is a>0, the error in the
 unrounded product is a·(1/√a−x). Truncating the product adds less than

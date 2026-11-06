@@ -66,13 +66,15 @@ def inverse_sqrt_ir(
     source_fraction_bits: int,
     precision: int,
     iterations: int,
+    tuned: bool = False,
 ) -> tuple[Instruction, ...]:
     """XOR the C1/Newton estimate into a big-endian result and erase history.
 
     Positive inputs give a lower estimate of the inverse square root. Zero
     gives a zero mask. Keep floor(source_fraction_bits/2)+1 integer bits
     and optionally shorten the fractional suffix. The caller provides clean
-    workspace and reusable classical slots.
+    workspace and reusable classical slots. Tuning uses the C2 seed and
+    requires at least one Newton update to recover a lower estimate.
     """
     estimate_width, (seed_work, seed_slots), (step_work, step_slots) = (
         _inverse_sqrt_layout(len(source), source_fraction_bits, precision, iterations)
@@ -100,6 +102,7 @@ def inverse_sqrt_ir(
         source_fraction_bits=source_fraction_bits,
         precision=precision,
         iterations=iterations,
+        tuned=tuned,
         consume=lambda estimate: xor_ir(estimate[: len(result)], result),
     )
 
@@ -112,12 +115,19 @@ def _with_inverse_sqrt_estimate_ir(
     source_fraction_bits: int,
     precision: int,
     iterations: int,
+    tuned: bool,
     consume: Callable[[tuple[int, ...]], tuple[Instruction, ...]],
 ) -> tuple[Instruction, ...]:
     """Use the last estimate before uncomputing history and with scratch clean."""
     estimate_width, (seed_work, seed_slots), (step_work, step_slots) = (
         _inverse_sqrt_layout(len(source), source_fraction_bits, precision, iterations)
     )
+    if type(tuned) is not bool:
+        raise ValueError("Inverse square root tuning must be boolean")
+    if tuned and not iterations:
+        raise ValueError(
+            "Tuned inverse square root requires at least one Newton update"
+        )
     history_width = (iterations + 1) * estimate_width
     history = tuple(
         workspace[i : i + estimate_width]
@@ -131,6 +141,7 @@ def _with_inverse_sqrt_estimate_ir(
         classical_bits[:seed_slots],
         source_fraction_bits=source_fraction_bits,
         result_fraction_bits=precision,
+        tuned=tuned,
     )
     updates = tuple(
         inverse_sqrt_newton_step_ir(

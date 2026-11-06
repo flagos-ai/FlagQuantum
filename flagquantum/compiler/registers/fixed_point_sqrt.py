@@ -33,12 +33,14 @@ def fixed_point_sqrt_ir(
     source_fraction_bits: int,
     precision: int,
     iterations: int,
+    tuned: bool = False,
 ) -> tuple[Instruction, ...]:
     """XOR the truncated C1/Newton square root into a big-endian result.
 
     The result uses ceil(source_integer_bits/2) integer bits. Its remaining
     bits are fractional. The source is preserved, zero has a zero mask and
-    clean caller-owned history and scratch are restored.
+    clean caller-owned history and scratch are restored. Tuning uses the
+    C2 seed and requires at least one Newton update.
     """
     n = len(source)
     f = source_fraction_bits
@@ -91,5 +93,6 @@ def fixed_point_sqrt_ir(
         source_fraction_bits=f,
         precision=precision,
         iterations=iterations,
+        tuned=tuned,
         consume=multiply,
     )
