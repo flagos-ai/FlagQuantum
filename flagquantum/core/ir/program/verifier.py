@@ -229,7 +229,13 @@ def _verify_conditions(
     if not clauses:
         return []
     diagnostics: list[LevelDiagnostic] = []
-    if operation.opcode in {CONSTANT_OPCODE, MEASURE_OPCODE, RESET_OPCODE}:
+    if operation.opcode in {
+        CONSTANT_OPCODE,
+        MEASURE_OPCODE,
+        RESET_OPCODE,
+        "bool_zero",
+        "bool_xor",
+    }:
         diagnostics.append(
             _diagnostic(
                 "program.condition_target",

@@ -251,3 +251,54 @@ Cuccaro's ripple rather than the smaller Gidney-Ekera construction, because
 uncomputing by measurement and feedforward needs a mid-circuit measurement path
 this repository does not have in a circuit it can cost. The guide holds the full
 boundary for each.
+
+## Reversible register examples
+
+These examples exercise compiler register components on small circuits and report
+the resulting states, workspace cleanup, or primitive resource counts. Run any
+example from the repository root with `python -m examples.algorithms.<module>`.
+For instance, `python -m examples.algorithms.register_phase_gradient` checks a
+controlled phase and confirms that its inverse restores the input and clean work.
+
+- [`binary_field_arithmetic.py`](binary_field_arithmetic.py)
+- [`register_bitonic_sort.py`](register_bitonic_sort.py)
+- [`register_compare_exchange.py`](register_compare_exchange.py)
+- [`register_comparison.py`](register_comparison.py)
+- [`register_constant_addition.py`](register_constant_addition.py)
+- [`register_controlled_add_or_subtract.py`](register_controlled_add_or_subtract.py)
+- [`register_controlled_addition.py`](register_controlled_addition.py)
+- [`register_controlled_comparison.py`](register_controlled_comparison.py)
+- [`register_controlled_modular_adjoint.py`](register_controlled_modular_adjoint.py)
+- [`register_controlled_modular_arithmetic.py`](register_controlled_modular_arithmetic.py)
+- [`register_equality.py`](register_equality.py)
+- [`register_greater.py`](register_greater.py)
+- [`register_half_comparison.py`](register_half_comparison.py)
+- [`register_hamming_weight.py`](register_hamming_weight.py)
+- [`register_hamming_weight_gradient_phasing.py`](register_hamming_weight_gradient_phasing.py)
+- [`register_hamming_weight_phasing.py`](register_hamming_weight_phasing.py)
+- [`register_inverse_addition.py`](register_inverse_addition.py)
+- [`register_inverse_algorithm.py`](register_inverse_algorithm.py)
+- [`register_inverse_flags.py`](register_inverse_flags.py)
+- [`register_inverse_iteration.py`](register_inverse_iteration.py)
+- [`register_inverse_selection.py`](register_inverse_selection.py)
+- [`register_inverse_updates.py`](register_inverse_updates.py)
+- [`register_less_equal.py`](register_less_equal.py)
+- [`register_modular_arithmetic.py`](register_modular_arithmetic.py)
+- [`register_modular_constant_adjoint.py`](register_modular_constant_adjoint.py)
+- [`register_modular_doubling.py`](register_modular_doubling.py)
+- [`register_modular_inverse.py`](register_modular_inverse.py)
+- [`register_modular_multiplication.py`](register_modular_multiplication.py)
+- [`register_modular_negation.py`](register_modular_negation.py)
+- [`register_modular_scaled_addition.py`](register_modular_scaled_addition.py)
+- [`register_permutation.py`](register_permutation.py)
+- [`register_phase_addition.py`](register_phase_addition.py)
+- [`register_phase_gradient.py`](register_phase_gradient.py)
+- [`register_phase_gradient_rotations.py`](register_phase_gradient_rotations.py)
+- [`register_qvr_phase_gradient.py`](register_qvr_phase_gradient.py)
+- [`register_qvr_zpow.py`](register_qvr_zpow.py)
+- [`register_scaled_phase_addition.py`](register_scaled_phase_addition.py)
+- [`register_select_swap_qrom.py`](register_select_swap_qrom.py)
+- [`register_signed_difference_sign.py`](register_signed_difference_sign.py)
+- [`register_sorted_duplicates.py`](register_sorted_duplicates.py)
+- [`register_subtraction.py`](register_subtraction.py)
+- [`register_windowed_mod_mul.py`](register_windowed_mod_mul.py)

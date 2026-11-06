@@ -35,6 +35,7 @@ from ...classical_control import (
     instruction_condition_clauses,
     validate_classical_control,
 )
+from ...classical_dataflow import parse_classical_xor
 from .. import CircuitIR, Instruction, IRSerializationError, IRValidationError
 from ..diagnostics import LEVEL_PROGRAM, PUBLIC_LEVEL, LevelDiagnostic, _diagnostic
 from .model import (
@@ -132,6 +133,7 @@ def classify_public_circuit(program: Any) -> LevelConversion:
         if instruction.metadata.get("is_dynamic") and instruction.name not in {
             "measure",
             "reset",
+            "classical_xor",
         }:
             return LevelConversion(
                 state=UNSUPPORTED_WITH_DIAGNOSTICS,
@@ -205,6 +207,21 @@ def _lower_instructions(circuit: CircuitIR) -> BlockRecord:
     classical_values: dict[int, ValueRef] = {}
     operations: list[Operation] = []
     for index, instruction in enumerate(circuit.instructions):
+        if instruction.name == "classical_xor":
+            operation = parse_classical_xor(instruction)
+            # Read all old definitions before binding the new destination, so
+            # overwritten slots and destination aliases have the same semantics.
+            sources = tuple(classical_values[bit] for bit in operation.sources)
+            value = builder.define("bool")
+            operations.append(Operation("bool_zero", results=(value,)))
+            for source in sources:
+                result = builder.define("bool")
+                operations.append(
+                    Operation("bool_xor", operands=(value, source), results=(result,))
+                )
+                value = result
+            classical_values[operation.target] = value
+            continue
         signature = opcode_signature(instruction.name)
         if signature is None:
             raise _UnmodelledOpcodeError(

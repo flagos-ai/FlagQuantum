@@ -6,6 +6,7 @@ from time import perf_counter
 import torch
 
 from ...core.classical_control import validate_classical_control
+from ...core.classical_dataflow import parse_classical_xor
 from ...core.ir import Instruction
 from ...core.operator_schema import canonical_opcode
 from ...errors import ValidationError
@@ -366,7 +367,13 @@ def _run_dynamic_trajectory(
                     conditional_skipped += 1
                     continue
                 conditional_applied += int(conditional)
-                if instruction.name == "measure":
+                if instruction.name == "classical_xor":
+                    operation = parse_classical_xor(instruction)
+                    classical[operation.target] = operation.evaluate(classical)
+                    true_classical[operation.target] = operation.evaluate(
+                        true_classical
+                    )
+                elif instruction.name == "measure":
                     state, true_bit, bit, classical_bit, count = _measure_instruction(
                         state,
                         instruction,
@@ -632,7 +639,13 @@ def _run_dynamic_batched(
         if active_count == 0:
             continue
 
-        if instruction.name in {"measure", "reset"}:
+        if instruction.name == "classical_xor":
+            operation = parse_classical_xor(instruction)
+            values = classical[:, list(operation.sources)]
+            if bool(torch.any(values < 0)):
+                raise ValidationError("Classical XOR reads an undefined classical bit")
+            classical[:, operation.target] = values.sum(dim=1).remainder(2)
+        elif instruction.name in {"measure", "reset"}:
             state, indices, recorded, count = _measure_or_reset_active_shots(
                 state,
                 active,

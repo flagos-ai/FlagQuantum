@@ -377,10 +377,22 @@ class Instruction:
             raise IRValidationError("instruction opcode cannot be empty")
         object.__setattr__(self, "name", name)
         object.__setattr__(
-            self, "wires", _normalize_wires(self.wires, owner=f"instruction {name!r}")
+            self,
+            "wires",
+            (
+                ()
+                if name == "classical_xor" and not self.wires
+                else _normalize_wires(self.wires, owner=f"instruction {name!r}")
+            ),
         )
         object.__setattr__(self, "params", dict(self.params))
         object.__setattr__(self, "metadata", dict(self.metadata))
+
+        if name == "classical_xor":
+            from ..classical_dataflow import parse_classical_xor
+
+            parse_classical_xor(self)
+            return
 
         schema = get_operator_schema(name)
         is_channel = bool(self.metadata.get("is_channel"))

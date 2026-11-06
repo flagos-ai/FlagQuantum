@@ -9,6 +9,8 @@
 from collections.abc import Sequence
 
 from ...core.ir import CircuitIR, Instruction
+from .._component_trace.trace import ComponentCall, ComponentTrace
+from .measurement import ParityPhase, measure_x_clear_ir
 from .unary_iteration import append_unary_iteration
 
 
@@ -20,6 +22,8 @@ def paired_lookup_ir(
     measurement_bits: tuple[int, ...],
     blocked: bool,
     inverse: bool,
+    trace: ComponentTrace | None = None,
+    trace_offset: int = 0,
 ) -> CircuitIR:
     """Lower paired lookup or erasure for a validated QROM table."""
     banks = 2 if blocked else 1
@@ -29,18 +33,9 @@ def paired_lookup_ir(
     if measurement_bits:
         for offset, bit in enumerate(measurement_bits):
             wire = data_start + offset
-            instructions.extend(
-                (
-                    Instruction("h", (wire,)),
-                    Instruction(
-                        "measure",
-                        (wire,),
-                        metadata={"is_dynamic": True, "classical_bit": bit},
-                    ),
-                    Instruction("x", (wire,), metadata={"conditions": ((bit, 1),)}),
-                )
-            )
+            instructions.extend(measure_x_clear_ir(wire, bit))
 
+    measurement_stop = len(instructions)
     swaps = (
         [
             Instruction("cswap", (width, data_start + i, data_start + data_width + i))
@@ -70,15 +65,13 @@ def paired_lookup_ir(
         for offset, bit in enumerate(measurement_bits):
             bank, position = divmod(offset, data_width)
             mask = 1 << (data_width - position - 1)
-            condition = {"conditions": ((bit, 1),)}
             base_word = odd if bank else even
             if base_word & mask:
-                instructions.append(Instruction("z", (predicate,), metadata=condition))
+                instructions.extend(ParityPhase((predicate,), (bit,)).lower())
             if (even ^ odd) & mask:
-                instructions.append(
-                    Instruction("cz", (predicate, width), metadata=condition)
-                )
+                instructions.extend(ParityPhase((predicate, width), (bit,)).lower())
 
+    traversal_start = len(instructions)
     append_unary_iteration(
         instructions,
         operand_count=operand_count,
@@ -88,6 +81,28 @@ def paired_lookup_ir(
         apply_branch=apply_block,
         coherent=True,
     )
+    traversal_stop = len(instructions)
     if not inverse and not measurement_bits:
         instructions.extend(swaps)
-    return CircuitIR(operand_count + width, tuple(instructions))
+    ir = CircuitIR(operand_count + width, tuple(instructions))
+    if trace is not None:
+        children = tuple(
+            ComponentCall(name, trace_offset + start, trace_offset + stop)
+            for name, start, stop in (
+                ("BankMeasurement", 0, measurement_stop),
+                ("BankExchange", measurement_stop, traversal_start),
+                ("AddressTraversal", traversal_start, traversal_stop),
+                ("BankExchange", traversal_stop, len(instructions)),
+            )
+            if stop > start
+        )
+        trace.calls.append(
+            ComponentCall(
+                "PairedErasure" if measurement_bits else "PairedLookup",
+                trace_offset,
+                trace_offset + len(instructions),
+                (width, data_width, tuple(words), inverse, measurement_bits),
+                children,
+            )
+        )
+    return ir
