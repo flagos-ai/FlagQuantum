@@ -517,6 +517,43 @@ power, the X/Y global shift becomes a phase on the control wire. Qualtran
 delegates these leaf unitaries to Cirq. FlagQuantum uses phase instructions
 and basis changes to preserve the full complex action.
 
+## THC SELECT before lowering
+
+For THC SELECT, the model needs only the dimensions, angle precision,
+alias-sampling keep width and optional erasure block sizes. The block
+sizes `kr1` and `kr2` default to one. No angle tables are required.
+
+```python
+from flagquantum.algorithms.primitives.multiplexers.thc_resource_model import (
+    select_thc_cost,
+)
+from flagquantum.compiler._component_trace.resource_model import (
+    estimate_component_resources,
+)
+
+model = select_thc_cost(num_mu=2, num_spin_orb=4, num_bits_theta=8, keep_bitsize=1)
+estimate = estimate_component_resources(model)
+assert estimate.gates.toffoli == 107
+assert estimate.gates.cswap == 11
+assert estimate.gates.total_t_count() == 472
+assert estimate.peak_logical_qubits == 24
+```
+
+The 24 logical qubits include the source's keep register, rotation flag,
+shared angle register and one temporary bit for the two-control reflection.
+The source declares zero measurements because its THC rotations are
+cost-only leaves. To report a FlagQuantum implementation alongside this
+model, use `compare_component_resources(model, circuit.to_ir())` after
+`circuit.append(op)`. For the two-index, four-spin-orbital test case, the
+8-bit native path with measurement erasure and the measured adder declares
+39 wires (13 data and 26 work). It emits 112 T/T†, 60 measurements, 49
+CCX and 11 CSwap instructions, among other gates. The remaining compound
+gates still need synthesis. The 472 T equivalents are the logical model's
+conversion at four per Toffoli or CSwap.
+
+- [Qualtran v0.7.0 THC SELECT and rotation costs](https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/bloqs/chemistry/thc/select_bloq.py)
+- [Qualtran v0.7.0 controlled reflection costs](https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/bloqs/chemistry/black_boxes.py)
+
 - [Qualtran v0.7.0 gate costs](https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/resource_counting/_bloq_counts.py)
 - [Qualtran v0.7.0 logical width](https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/resource_counting/_qubit_counts.py)
 - [Qualtran v0.7.0 success probability](https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/resource_counting/_success_prob.py)
