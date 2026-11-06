@@ -506,3 +506,74 @@ def test_nested_field_increment_and_bound_predicate_reject_control_aliases() -> 
         InteropConversionError, match="predicate cannot read its XOR target"
     ):
         synth.synthesize(alias, source_format="qmod")
+
+
+def test_fully_fractional_record_field_keeps_bit_order_and_scale() -> None:
+    source = """qstruct Coordinate {x:qnum<3, UNSIGNED, 3>; flag:qbit;}
+      qstruct State {coord:Coordinate; tail:qbit;}
+      qfunc mark(bits:qbit[3], flag:qbit) {
+        X(bits[0]); CX(bits[0], flag); CRY(0.41, bits[0], bits[2]);
+      }
+      qfunc main(output s:State) {
+        allocate(s); mark(s.coord.x, s.coord.flag); X(s.tail);
+      }"""
+    program = synth.synthesize(source, source_format="qmod", max_workspace=0)
+    assert program.report["qmod_fractional_bits"] == {"s.coord.x": 3}
+    assert dict(program.registers) == {
+        "s.coord.x": (2, 3, 4),
+        "s.coord.flag": (1,),
+        "s.tail": (0,),
+    }
+    expected = fq.Circuit(5, dtype=DTYPE).x(4).cx(4, 1).cry(4, 2, theta=0.41).x(0)
+    result = fq.run(program)
+    torch.testing.assert_close(
+        result.statevector(), fq.run(expected).statevector(), atol=1e-12, rtol=0
+    )
+    assert dict(
+        program.probabilities(result, registers=("s.coord.x",))
+    ) == pytest.approx({(1,): 1 - sin(0.41 / 2) ** 2, (5,): sin(0.41 / 2) ** 2})
+
+
+@pytest.mark.parametrize("numeric_type", ["qnum", "qnum<3, UNSIGNED, 3>"])
+def test_partition_preserves_complete_fractional_field(numeric_type: str) -> None:
+    source = """qstruct Coordinate {x:qnum<3, UNSIGNED, 3>; flag:qbit;}
+      qfunc main(output x:OUTPUT_TYPE, output flag:qbit) {
+        s:Coordinate;
+        allocate(s); hadamard_transform(s.x); X(s.flag); s -> {x, flag};
+      }""".replace("OUTPUT_TYPE", numeric_type)
+    program = synth.synthesize(source, source_format="qmod")
+    assert program.report["qmod_fractional_bits"] == {"x": 3}
+    assert dict(program.registers) == {"x": (0, 1, 2), "flag": (3,)}
+    expected = fq.Circuit(4, dtype=DTYPE).h(0).h(1).h(2).x(3)
+    torch.testing.assert_close(
+        fq.run(program).statevector(),
+        fq.run(expected).statevector(),
+        atol=1e-12,
+        rtol=0,
+    )
+
+
+@pytest.mark.parametrize(
+    "signature,publication",
+    [
+        ("output x:qnum<3>, output flag:qbit", "s -> {x, flag};"),
+        ("output x:qnum<2>, output rest:qnum<2>", "s -> {x, rest};"),
+        ("output bits:qbit[]", "s -> bits;"),
+    ],
+)
+def test_fractional_record_publication_refuses_reinterpretation(
+    signature: str, publication: str
+) -> None:
+    source = f"""qstruct Coordinate {{x:qnum<3, UNSIGNED, 3>; flag:qbit;}}
+      qfunc main({signature}) {{s:Coordinate; allocate(s); {publication}}}"""
+    with pytest.raises(InteropConversionError, match="publish fractional fields whole"):
+        synth.synthesize(source, source_format="qmod")
+
+
+def test_fractional_record_borrowing_cannot_write_through_const() -> None:
+    source = """qstruct Coordinate {x:qnum<3, UNSIGNED, 3>; flag:qbit;}
+      qfunc flip(bits:qbit[3]) {X(bits[0]);}
+      qfunc violate(const s:Coordinate) {flip(s.x);}
+      qfunc main(output s:Coordinate) {allocate(s); violate(s);}"""
+    with pytest.raises(InteropConversionError, match="no writes or Output escape"):
+        synth.synthesize(source, source_format="qmod")

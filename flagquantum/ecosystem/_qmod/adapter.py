@@ -490,6 +490,15 @@ class _Adapt:
                 width = self.widths[parameter.name.text]
                 assert width is not None
                 self.fractional_bits.setdefault(parameter.name.text, width)
+            if parameter.record is not None:
+                for field in self.record_types[parameter.record].leaves(
+                    self.record_types
+                ):
+                    if field.kind == "qphase":
+                        assert field.width is not None
+                        self.fractional_bits[
+                            f"{parameter.name.text}.{field.name.text}"
+                        ] = field.width
         declared = tuple(
             self.register(p.name, allow_qubit_array=True, allow_fractional_output=True)
             for p in output_parameters
@@ -516,7 +525,7 @@ class _Adapt:
                                         field.name.text,
                                         (
                                             "qnum"
-                                            if field.kind == "qnum_signed"
+                                            if field.kind in {"qnum_signed", "qphase"}
                                             else field.kind
                                         ),
                                         field.width,
@@ -1157,7 +1166,7 @@ def parse_qmod(
                     tuple(
                         f"{p.name.text}.{field.name.text}"
                         for field in parser.records[p.record].leaves(parser.records)
-                        if field.kind == "qnum_signed"
+                        if field.kind in {"qnum_signed", "qphase"}
                     )
                     if p.record is not None
                     else ()

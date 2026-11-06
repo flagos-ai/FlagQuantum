@@ -164,6 +164,25 @@ def publish_bound_array(
     owner.registers[token.text] = value
 
 
+def record_phase_spans(owner: _Adapt, names: tuple[str, ...]) -> set[tuple[int, int]]:
+    """Locate fully fractional record leaves in concatenated whole registers."""
+    spans: set[tuple[int, int]] = set()
+    offset = 0
+    for name in names:
+        parameter = owner.parameters.get(name)
+        if parameter is not None and parameter.record is not None:
+            for field in owner.record_types[parameter.record].leaves(
+                owner.record_types
+            ):
+                assert field.width is not None
+                if field.kind == "qphase":
+                    spans.add((offset, offset + field.width))
+                offset += field.width * (field.length or 1)
+        else:
+            offset += owner.widths.get(name) or 0
+    return spans
+
+
 def publish_partition(
     owner: _Adapt,
     token: Token,
@@ -188,8 +207,10 @@ def publish_partition(
         reject(token, "binding", "publication names must be distinct")
     view = tuple(location for item in sources for location in owner.array_view(item))
     owners = tuple(dict.fromkeys(value for value, _ in view))
+    phase_spans = record_phase_spans(owner, source_names)
     if (
-        len(names) == 1
+        not phase_spans
+        and len(names) == 1
         and len(owners) == 1
         and owner.parameters[names[0]].kind == "qbit[]"
     ):
@@ -209,6 +230,23 @@ def publish_partition(
     inferred = len(view) - sum(width for width in widths if width is not None)
     if (None in widths and inferred <= 0) or (None not in widths and inferred != 0):
         reject(token, "binding", "publication widths must cover the source exactly")
+    phase_outputs: dict[str, int] = {}
+    offset = 0
+    for name, width in zip(names, widths, strict=True):
+        size = inferred if width is None else width
+        end = offset + size
+        if any(offset < stop and start < end for start, stop in phase_spans):
+            port = owner.parameters[name]
+            if (offset, end) not in phase_spans or not (
+                port.kind == "qphase" or port.kind == "qnum" and width is None
+            ):
+                reject(
+                    port.name,
+                    "precision",
+                    "publish fractional fields whole into a matching or inferred numeric Output",
+                )
+            phase_outputs[name] = size
+        offset = end
     outputs = tuple(
         owner.register(
             item.token,
@@ -221,6 +259,7 @@ def publish_partition(
     for name, value in zip(names, outputs, strict=True):
         if owner.parameters[name].kind in {"qphase", "qphase_signed"}:
             owner.fractional_bits[name] = register_width(value)
+    owner.fractional_bits.update(phase_outputs)
     owner_indices = {value: index for index, value in enumerate(owners)}
     locations = tuple((owner_indices[value], bit) for value, bit in view)
     owner.effect_op(

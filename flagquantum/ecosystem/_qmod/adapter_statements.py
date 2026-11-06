@@ -883,7 +883,7 @@ def statement(self: _Adapt, statement: Statement, index: str) -> None:
             reject(token, "signature", f"{token.text} requires one output variable")
         if token.text == "hadamard_transform":
             if args[0].token.text in {".", "["}:
-                gate_locations = self.array_view(args[0])
+                gate_locations = self.array_view(args[0], allow_phase=True)
             else:
                 target = self.atom(args[0])
                 if target.text in self.views:

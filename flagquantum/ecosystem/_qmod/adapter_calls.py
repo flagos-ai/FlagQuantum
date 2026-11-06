@@ -280,7 +280,12 @@ def call_bound_helper(
             else:
                 child.classical_values[name] = self.angle(argument, token)
             continue
-        field_port = self.record_field(argument) if argument.token.text == "." else None
+        raw_field = parameter.kind == "qbit[]" and parameter.role in {"const", "inout"}
+        field_port = (
+            self.record_field(argument, allow_fractional=raw_field)
+            if argument.token.text == "."
+            else None
+        )
         actual_port = (
             field_port[0]
             if field_port is not None

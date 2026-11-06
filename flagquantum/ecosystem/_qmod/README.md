@@ -1866,3 +1866,24 @@ qfunc main(output signal: qbit, output aux: qbit, output parity: qbit) {
     aux, parity);
 }
 ```
+
+### Fully fractional unsigned fields
+
+A record can store an unsigned scalar field with one fractional bit per
+qubit. `hadamard_transform` and borrowed `qbit[]` helpers can operate on
+its bits. A direct record Output records the scale under its qualified
+field name in `program.report["qmod_fractional_bits"]`. Whole-field
+publication into an inferred numeric Output or a matching fixed-point
+Output preserves the same scale. Named probabilities use encoded
+integer keys, so a key of 5 with three fractional bits represents 5/8.
+
+```qmod
+qstruct Coordinate { x: qnum<3, UNSIGNED, 3>; flag: qbit; }
+
+qfunc main(output x: qnum, output flag: qbit) {
+  s: Coordinate;
+  allocate(s);
+  hadamard_transform(s.x);
+  s -> {x, flag};
+}
+```

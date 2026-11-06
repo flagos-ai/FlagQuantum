@@ -771,8 +771,8 @@ class Parser:
                 allow_signed_integer=True,
             )
             if (
-                kind in {"qphase", "qphase_signed"}
-                or fractional_bits
+                kind == "qphase_signed"
+                or (kind == "qphase" or fractional_bits)
                 and self.current.text == "["
             ):
                 reject(

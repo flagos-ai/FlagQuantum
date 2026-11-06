@@ -58,7 +58,9 @@ def record_field(
         assert field.width is not None
         size = field.width * (field.length or 1)
         if field.name.text == member.token.text:
-            if field.fractional_bits and not allow_fractional:
+            if (
+                field.fractional_bits or field.kind == "qphase"
+            ) and not allow_fractional:
                 reject(
                     member.token,
                     "precision",
@@ -149,7 +151,7 @@ def static_integer(self: _Adapt, node: Expression) -> int:
         if (entry := indexed_pauli_member(self, node, root, member)) is not None:
             return entry
         if member == "size" and root.children:
-            field = self.record_field(root)
+            field = self.record_field(root, allow_fractional=True)
             if field is not None:
                 return len(field[1])
         if member == "size" and not root.children:
@@ -303,8 +305,14 @@ def array_view(
             reject(node.token, "width", "field index is out of bounds")
         return word_locations[index * field.width : (index + 1) * field.width]
     if node.token.text == ".":
-        resolved = self.record_field(node)
+        resolved = self.record_field(node, allow_fractional=allow_phase)
         assert resolved is not None
+        if resolved[0].fractional_bits:
+            reject(
+                node.token,
+                "precision",
+                "only fully fractional unsigned fields admit this bit view",
+            )
         if resolved[0].kind == "qnum_signed" and not allow_signed:
             reject(
                 node.token,

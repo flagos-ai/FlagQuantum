@@ -22,6 +22,7 @@ from .adapter_model import (
 from .affine import lower_affine_update
 from .bindings import (
     publish_bound_array,
+    record_phase_spans,
 )
 from .decisions import lower_decision_phase
 from .masked_selection import (
@@ -338,6 +339,14 @@ def bind_registers(
         source_names + destination_names
     ):
         reject(token, "binding", "binding names must be distinct")
+    if record_phase_spans(self, source_names) or record_phase_spans(
+        self, destination_names
+    ):
+        reject(
+            token,
+            "precision",
+            "fractional record binding requires checked output publication",
+        )
     locations = tuple(
         location for item in sources for location in self.array_view(item)
     )
