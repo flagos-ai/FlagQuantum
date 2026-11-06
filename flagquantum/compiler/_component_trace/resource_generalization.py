@@ -56,6 +56,14 @@ class ControlledRotationCall:
 
 
 @dataclass(frozen=True)
+class ControlledZPowerCall:
+    """Dedicated controlled Z power with a measured conjunction decomposition."""
+
+    exponent: SymbolicReal
+    precision: SymbolicReal = 1e-11
+
+
+@dataclass(frozen=True)
 class ConjunctionCall:
     """Binary And when the control tuple has two entries, otherwise MultiAnd.
 
@@ -121,6 +129,7 @@ ResourceCall = (
     | FixedTCall
     | CliffordCall
     | ControlledRotationCall
+    | ControlledZPowerCall
     | ConjunctionCall
     | ControlledSwapCall
     | BookkeepingCall

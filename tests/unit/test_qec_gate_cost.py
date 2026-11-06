@@ -15,6 +15,7 @@ from flagquantum.compiler._component_trace.resource_generalization import (
     ConjunctionCall,
     ControlledRotationCall,
     ControlledSwapCall,
+    ControlledZPowerCall,
     DeclaredResourceCalls,
     FanoutCall,
     FixedTCall,
@@ -36,6 +37,21 @@ pytestmark = pytest.mark.unit
 
 def source_categories(cost: object) -> dict[str, object]:
     return {field.name: getattr(cost, field.name) for field in fields(QECGateCost)}
+
+
+@pytest.mark.ftqc_reference
+def test_controlled_z_power_is_a_dedicated_resource_call() -> None:
+    pytest.importorskip("qualtran")
+    from qualtran.bloqs.basic_gates import CZPowGate
+    from qualtran.resource_counting import QECGatesCost, get_cost_value
+    from sympy import Symbol
+
+    for exponent in (0.125, -0.25, 1, Symbol("alpha", real=True)):
+        call = ControlledZPowerCall(exponent, 1e-8)
+        source = CZPowGate(exponent=exponent, eps=1e-8)
+        assert asdict(query_qec_gate_cost(call)) == source_categories(
+            get_cost_value(source, QECGatesCost())
+        )
 
 
 @pytest.mark.ftqc_reference

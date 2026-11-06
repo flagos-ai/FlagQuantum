@@ -19,6 +19,7 @@ from .resource_generalization import (
     CliffordCall,
     ConjunctionCall,
     ControlledSwapCall,
+    ControlledZPowerCall,
     DeclaredResourceCalls,
     FanoutCall,
     FixedTCall,
@@ -26,6 +27,7 @@ from .resource_generalization import (
     PartitionedCall,
     PhaseCall,
     ResourceCall,
+    RotationCall,
     ZeroCostCall,
     _resource_callees,
 )
@@ -156,6 +158,10 @@ def _qec_callees(
             yield CliffordCall("arbitrary", 2, node.adjoint), 6 * node.width - 1
         else:
             yield FixedTCall("fredkin"), node.width
+    elif isinstance(node, ControlledZPowerCall):
+        yield ConjunctionCall((1, 1)), 1
+        yield RotationCall("zpow", node.exponent, node.precision), 1
+        yield ConjunctionCall((1, 1), adjoint=True), 1
     elif isinstance(node, PartitionedCall):
         yield node.call, 1
     else:
