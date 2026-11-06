@@ -327,6 +327,37 @@ assert attribute_t_cost(program, lambda call: "arithmetic" if call == adder else
 }
 ```
 
+`estimate_terminal_t_cost` reproduces the locked source's deprecated
+terminal-count convention when comparing historical estimates. Each
+recognized rotation contributes
+`ceil(1.149 * log2(1 / precision) + 9.2)` before multiplication by its
+call count. A bare T-like rotation angle contributes zero under this
+convention. Use an explicit T key to count a T gate. The exact bitwise
+controlled swap contributes seven T gates, whereas the default QEC
+conversion assigns four T equivalents to the CSWAP category.
+
+```python
+from flagquantum.compiler._component_trace.resource_generalization import (
+    FixedTCall,
+    ResourceCall,
+    RotationCall,
+)
+from flagquantum.compiler._component_trace.symbolic_math import SymbolicInt
+from flagquantum.compiler._component_trace.terminal_t_cost import estimate_terminal_t_cost
+
+sigma: dict[ResourceCall, SymbolicInt] = {
+    RotationCall("rx", 0.2, precision=1e-4): 3,
+    FixedTCall("fredkin"): 1,
+}
+assert estimate_terminal_t_cost(sigma) == 82
+```
+
+The single-control rule charges a rotation at nonintegral Pauli power
+exponents. The locked source lacks a stabilizer verdict for symbolic
+controlled angles and lacks a precision for controlled S or T. The
+terminal model reports those cases as unsupported. Its totals are
+separate from emitted gate counts.
+
 - [Qualtran v0.7.0 gate costs](https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/resource_counting/_bloq_counts.py)
 - [Qualtran v0.7.0 logical width](https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/resource_counting/_qubit_counts.py)
 - [Qualtran v0.7.0 success probability](https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/resource_counting/_success_prob.py)

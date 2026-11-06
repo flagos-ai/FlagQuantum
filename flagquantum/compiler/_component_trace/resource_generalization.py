@@ -32,6 +32,13 @@ class PhaseCall:
 
 
 @dataclass(frozen=True)
+class FixedTCall:
+    """An explicit Toffoli or exact bitwise controlled swap."""
+
+    opcode: Literal["toffoli", "fredkin"]
+
+
+@dataclass(frozen=True)
 class CliffordCall:
     """An explicit gate family recognized by the source Clifford predicate."""
 
@@ -85,6 +92,7 @@ ResourceCall = (
     ComponentCost
     | RotationCall
     | PhaseCall
+    | FixedTCall
     | CliffordCall
     | ControlledRotationCall
     | ConjunctionCall
