@@ -7,7 +7,7 @@ import torch
 
 from flagquantum.errors import CapabilityError
 from flagquantum.qec.execution.measurement_conversion import convert_measurement_records
-from flagquantum.simulation.stabilizer import engine
+from flagquantum.simulation.stabilizer import _record_conversion
 
 pytestmark = pytest.mark.integration
 
@@ -112,15 +112,15 @@ def test_refuses_width_padding_and_nondeterminism() -> None:
 def test_sdk_buffers_are_validated_and_owned() -> None:
     pytest.importorskip("stim")
     source = torch.tensor([[True]])
-    owned = engine._owned_stim_conversion_bits(source.numpy(), (1, 1))
+    owned = _record_conversion._owned_stim_conversion_bits(source.numpy(), (1, 1))
     source.zero_()
     assert owned.tolist() == [[True]]
     with pytest.raises(CapabilityError, match="dtype or shape"):
-        engine._owned_stim_conversion_bits(source.numpy(), (2, 1))
+        _record_conversion._owned_stim_conversion_bits(source.numpy(), (2, 1))
     with pytest.raises(CapabilityError, match="dtype or shape"):
-        engine._owned_stim_conversion_bits(
+        _record_conversion._owned_stim_conversion_bits(
             torch.tensor([[float("nan")]]).numpy(), (1, 1)
         )
     with pytest.raises(CapabilityError, match="invalid conversion buffer") as caught:
-        engine._owned_stim_conversion_bits([[True]], (1, 1))
+        _record_conversion._owned_stim_conversion_bits([[True]], (1, 1))
     assert isinstance(caught.value.__cause__, TypeError)

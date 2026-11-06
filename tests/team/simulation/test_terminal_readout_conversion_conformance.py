@@ -15,6 +15,7 @@ from flagquantum.errors import CapabilityError
 from flagquantum.qec.execution.context import MeasurementMap
 from flagquantum.qec.execution.measurement_conversion import compile_m2d_converter
 from flagquantum.simulation.stabilizer import _record_conversion
+from flagquantum.simulation.stabilizer.engine import _annotated_stim_source
 
 pytestmark = pytest.mark.integration
 
@@ -37,7 +38,6 @@ def test_native_compiled_and_placed_match_independent_parities(
         observable_map=MeasurementMap(3, ((0,),)),
     )
     emitted: list[tuple[int, ...]] = []
-    original = _record_conversion._annotated_stim_text
 
     def annotate(
         program: CircuitIR,
@@ -46,7 +46,7 @@ def test_native_compiled_and_placed_match_independent_parities(
         detector_columns: tuple[tuple[int, ...], ...],
         observable_columns: tuple[tuple[int, ...], ...],
     ) -> str:
-        text = original(
+        text = _annotated_stim_source(
             program,
             terminal_qubits=terminal_qubits,
             detector_columns=detector_columns,
@@ -56,7 +56,7 @@ def test_native_compiled_and_placed_match_independent_parities(
         emitted.append(tuple(target.value for target in measurement.targets_copy()))
         return text
 
-    monkeypatch.setattr(_record_conversion, "_annotated_stim_text", annotate)
+    monkeypatch.setattr(_record_conversion, "_annotated_stim_source", annotate)
     for program in (bound, compiled, placed):
         converter = compile_m2d_converter(program, measurement_qubits=order, **maps)
         assert converter.measurement_qubits == order

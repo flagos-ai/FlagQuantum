@@ -215,6 +215,11 @@ retained beside this proposal.
 14. `examples/qec/terminal_measurement_conversion.py` (new)
 15. `examples/README.md`
 16. `tests/api_contract/test_public_docstring_examples.py`
+17. `tests/qec/test_stim_measurement_conversion.py` (approved scope amendment)
+
+The legacy export check continues to enforce the original entry's position,
+signature and namespace isolation. The new contract checks the complete
+ordered export list. The amendment leaves the earlier contract JSON intact.
 
 Register the proposed public converter example in the existing doctest list.
 The #1096 follow-up established that a module being covered does not itself
@@ -231,7 +236,7 @@ No workflow changes, frozen fixture changes or hardware runs.
 ## Verification commands
 
 ```bash
-python tools/check_team_scope.py --team integration --files <the-16-listed-paths>
+python tools/check_team_scope.py --team integration --files <the-17-listed-paths>
 python -m pytest -q \
   tests/qec/test_terminal_measurement_conversion.py \
   tests/team/simulation/test_terminal_readout_conversion_conformance.py \

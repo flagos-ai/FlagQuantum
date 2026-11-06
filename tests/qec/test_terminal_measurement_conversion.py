@@ -2,6 +2,7 @@
 
 import json
 import pickle
+from collections.abc import Callable
 from dataclasses import replace
 from inspect import signature
 from pathlib import Path
@@ -30,7 +31,7 @@ def test_public_contract_and_prepared_engine_replacement(
         terminal_qubits: tuple[int, ...],
         detector_columns: tuple[tuple[int, ...], ...],
         observable_columns: tuple[tuple[int, ...], ...],
-    ):
+    ) -> Callable[[torch.Tensor], tuple[torch.Tensor, torch.Tensor]]:
         nonlocal prepared
         prepared += 1
         assert tuple(gate.name for gate in program.instructions) == ("x",)
