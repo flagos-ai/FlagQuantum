@@ -7,11 +7,35 @@ import torch
 
 from examples.algorithms.binary_field_arithmetic import FieldOperation
 from flagquantum.algorithms.primitives.fermionic_fourier import (
+    source_two_bit_fermionic_fourier_cost,
     two_bit_fermionic_fourier_ir,
 )
 from flagquantum.circuit import Circuit
 
 pytestmark = pytest.mark.unit
+
+
+@pytest.mark.ftqc_reference
+@pytest.mark.parametrize("k,n", [(0, 1), (1, 8), (-1, 8), (1, 4), (2, 3)])
+def test_fourier_declared_model_matches_original_resource_query(k, n):
+    pytest.importorskip("qualtran")
+    from qualtran.bloqs.qft.two_bit_ffft import TwoBitFFFT
+    from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
+
+    source = TwoBitFFFT(k, n)
+    expected = get_cost_value(source, QECGatesCost())
+    model = source_two_bit_fermionic_fourier_cost(k, n)
+    assert model.qubits == get_cost_value(source, QubitCount())
+    for field in (
+        "t",
+        "clifford",
+        "rotation",
+        "measurement",
+        "and_bloq",
+        "toffoli",
+        "cswap",
+    ):
+        assert getattr(model.gates, field) == getattr(expected, field)
 
 
 @pytest.mark.ftqc_reference
