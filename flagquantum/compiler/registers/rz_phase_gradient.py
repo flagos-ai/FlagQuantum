@@ -7,6 +7,7 @@
 
 from ...core.ir import Instruction
 from .arithmetic import measurement_add_or_subtract_ir
+from .register_cast import RegisterCast
 
 
 def rz_via_phase_gradient_ir(
@@ -29,8 +30,8 @@ def rz_via_phase_gradient_ir(
         raise ValueError("Rz phase gradient adjoint must be boolean")
     return measurement_add_or_subtract_ir(
         target,
-        angle,
-        gradient,
+        RegisterCast(len(angle), len(angle)).bind(angle),
+        RegisterCast(len(gradient), len(gradient)).bind(gradient),
         carries,
         classical_bits,
         add_when_ctrl_is_on=not adjoint,

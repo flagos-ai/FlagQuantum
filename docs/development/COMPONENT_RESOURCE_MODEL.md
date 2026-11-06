@@ -698,6 +698,22 @@ Classical Join2 accepts one empty input and rejects an empty result.
 Its array conversion masks nonnegative machine words to the declared
 width and checks the range of wider values.
 
+## Cast register views
+
+`RegisterCast` reinterprets a word or a shaped array of words at the
+same width. It binds the same ordered slots and emits no gates.
+`reinterpret_integer` encodes and decodes one stored word. A fixed-point
+word is already a stored integer, so the cast applies no scale or
+rounding. The source reports zero gate cost and the greater of its
+input and output quantum widths, including any symbolic shape.
+
+Casting between quantum and classical kinds requires explicit opt-in.
+The cast is metadata only. Use a measurement to obtain a classical
+outcome from a quantum state. The native adjoint retains the shape
+and opt-in. The pinned source adjoint drops both, and its shaped
+tensor export fails. The native shaped view uses the original Cirq
+wire order and reports the pinned shape-level width.
+
 ## Register identity
 
 The source models Identity as one atomic call with zero QEC gates.
