@@ -249,10 +249,14 @@ def test_checked_plan_execution_and_verification_do_not_replan(
         raise AssertionError("checked-plan path must not replan or recompile")
 
     import flagquantum.compiler as compiler
+    import flagquantum.runtime.execution as execution
     import flagquantum.runtime.planner as planner
 
+    # Import consumers before patching the compiler so their lazy initialization
+    # cannot retain the temporary refusal after this test restores its patches.
     monkeypatch.setattr(fq, "plan", forbidden)
     monkeypatch.setattr(compiler, "compile", forbidden)
+    monkeypatch.setattr(execution, "compile_program", forbidden)
     monkeypatch.setattr(planner, "compile_program", forbidden)
     result = fq.run(checked.plan)
     monkeypatch.setattr(fq, "run", forbidden)

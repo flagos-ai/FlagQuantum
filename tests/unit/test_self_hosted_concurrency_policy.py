@@ -57,7 +57,7 @@ def test_self_hosted_cpu_capacity_groups_do_not_serialize_ready_work() -> None:
                 ):
                     assert "concurrency" not in job, (workflow, name)
                 continue
-            if name == "coverage-shard":
+            if name in {"coverage-shard", "coverage-plan"}:
                 guard = guard.replace("!= 'pull_request' ||", "== 'pull_request' &&")
             found.append(name)
             selector = (
@@ -72,6 +72,8 @@ def test_self_hosted_cpu_capacity_groups_do_not_serialize_ready_work() -> None:
             template = job["concurrency"]["group"]
             assert selector in template, (workflow, name)
             matrix = job.get("strategy", {}).get("matrix", {})
+            if matrix == "${{ fromJSON(needs.coverage-plan.outputs.matrix) }}":
+                matrix = {"include": [{"shard": i} for i in range(192)]}
             rows = matrix.get("include") or [
                 dict(zip(matrix, values, strict=True))
                 for values in product(*matrix.values())

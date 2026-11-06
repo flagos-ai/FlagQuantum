@@ -73,6 +73,8 @@ def _groups(job: dict[str, object]) -> set[str]:
         return {group}
     strategy = job.get("strategy")
     matrix = strategy.get("matrix") if isinstance(strategy, dict) else None
+    if matrix == "${{ fromJSON(needs.coverage-plan.outputs.matrix) }}":
+        matrix = {"include": [{"shard": i, "hosted-bucket": i % 8} for i in range(192)]}
     assert isinstance(matrix, dict), f"{group}: job declares no matrix"
     values = matrix.get(reference.group(1))
     if values is None and isinstance(matrix.get("include"), list):
@@ -232,7 +234,11 @@ def test_cpu_pytest_tiers_use_sixteen_bounded_work_stealing_workers() -> None:
 )
 def test_migrated_cpu_jobs_keep_frameworks_and_processes_isolated(job: str) -> None:
     definition = _document("ci.yml")["jobs"][job]
-    assert definition["needs"] == "prepare-source"
+    assert definition["needs"] == (
+        ["prepare-source", "coverage-plan"]
+        if job == "coverage-shard"
+        else "prepare-source"
+    )
     assert definition["env"]["CUDA_VISIBLE_DEVICES"] == ""
     for variable in ("OMP_NUM_THREADS", "MKL_NUM_THREADS", "OPENBLAS_NUM_THREADS"):
         assert definition["env"][variable] == "1"
@@ -253,9 +259,14 @@ def test_migrated_cpu_jobs_keep_frameworks_and_processes_isolated(job: str) -> N
     else:
         assert definition["timeout-minutes"] == 30
     if job == "coverage-shard":
-        assert [
-            row["shard"] for row in definition["strategy"]["matrix"]["include"]
-        ] == list(range(16))
+        assert (
+            definition["strategy"]["matrix"]
+            == "${{ fromJSON(needs.coverage-plan.outputs.matrix) }}"
+        )
+        assert (
+            "192"
+            in _document("ci.yml")["jobs"]["coverage-plan"]["env"]["FQ_COVERAGE_SHARDS"]
+        )
     else:
         assert "python tools/ci_tier.py pr-distributed" in commands
 
@@ -356,8 +367,8 @@ def test_coverage_uses_the_same_bounded_work_stealing_policy() -> None:
             assert token in command
         for token in (
             "-p tools.pytest_shard",
-            "--fq-shard-count 16",
-            "--fq-shard-index ${{ matrix.shard }}",
+            '"@$plan"',
+            'python -m tools.ci_coverage_plan "$FQ_COVERAGE_PLAN" ${{ matrix.shard }}',
         ):
             assert token in command
 
@@ -380,12 +391,12 @@ def test_coverage_shards_are_combined_before_the_policy_is_enforced() -> None:
     shard = _document("ci.yml")["jobs"]["coverage-shard"]
     strategy = shard.get("strategy")
     assert isinstance(strategy, dict)
-    assert strategy.get("matrix") == {
-        "include": [{"shard": i, "hosted-bucket": i % 8} for i in range(16)]
-    }
+    assert (
+        strategy.get("matrix") == "${{ fromJSON(needs.coverage-plan.outputs.matrix) }}"
+    )
 
     final = _github_hosted_jobs("ci.yml")["coverage"]
-    assert final.get("needs") == ["prepare-source", "coverage-shard"]
+    assert final.get("needs") == ["prepare-source", "coverage-plan", "coverage-shard"]
     assert final["runs-on"] == A800_CPU_ROUTE
     assert final["timeout-minutes"] == 20
     source_steps = final["steps"]
@@ -405,25 +416,29 @@ def test_coverage_shards_are_combined_before_the_policy_is_enforced() -> None:
     download = next(
         step
         for step in _steps("ci.yml", "coverage")
-        if step.get("uses") == "actions/download-artifact@v8.0.2"
+        if step.get("uses") == "./.github/actions/download-artifact"
         and "pattern" in step.get("with", {})
     )
-    assert download["with"]["digest-mismatch"] == "error"
-    assert commands.index("rm -rf coverage-data") < commands.index("integrity_check")
+    assert download["with"]["merge-multiple"] is True
+    assert download["timeout-minutes"] == 6
+    assert not download.get("continue-on-error", False)
     assert commands.index("integrity_check") < commands.index(
-        "coverage combine coverage-data"
+        'coverage combine "$FQ_COVERAGE_INPUTS"'
     )
-    assert "coverage combine coverage-data" in commands
-    assert commands.index("coverage combine coverage-data") < commands.index(
+    assert 'coverage combine "$FQ_COVERAGE_INPUTS"' in commands
+    assert commands.index('coverage combine "$FQ_COVERAGE_INPUTS"') < commands.index(
         "tools/check_coverage.py"
     )
 
 
 @pytest.mark.parametrize("case", ["complete", "missing", "corrupt", "unexpected"])
-def test_coverage_download_validation_refuses_partial_or_corrupt_inputs(tmp_path, case):
+@pytest.mark.parametrize("count", [16, 192])
+def test_coverage_download_validation_refuses_partial_or_corrupt_inputs(
+    tmp_path, case, count
+):
     directory = tmp_path / "coverage-data"
     directory.mkdir()
-    for i in range(16):
+    for i in range(count):
         with sqlite3.connect(directory / f".coverage.{i}") as connection:
             connection.execute("CREATE TABLE sample (value INTEGER)")
             connection.execute("INSERT INTO sample VALUES (1)")
@@ -432,7 +447,7 @@ def test_coverage_download_validation_refuses_partial_or_corrupt_inputs(tmp_path
     elif case == "corrupt":
         (directory / ".coverage.2").write_bytes(b"truncated sqlite database")
     elif case == "unexpected":
-        (directory / ".coverage.16").write_bytes(b"stale prior shard")
+        (directory / f".coverage.{count}").write_bytes(b"stale prior shard")
     before = {p.name: p.read_bytes() for p in directory.iterdir()}
     step = next(
         step
@@ -442,6 +457,11 @@ def test_coverage_download_validation_refuses_partial_or_corrupt_inputs(tmp_path
     script = step["run"].split("<<'PY'\n", 1)[1].rsplit("\nPY", 1)[0]
     result = subprocess.run(
         [sys.executable, "-c", script],
+        env={
+            **os.environ,
+            "FQ_COVERAGE_SHARDS": str(count),
+            "FQ_COVERAGE_INPUTS": str(directory),
+        },
         cwd=tmp_path,
         capture_output=True,
         text=True,
@@ -449,7 +469,7 @@ def test_coverage_download_validation_refuses_partial_or_corrupt_inputs(tmp_path
     )
     if case == "complete":
         assert result.returncode == 0, result.stderr
-        assert "Validated all 16" in result.stdout
+        assert f"Validated all {count}" in result.stdout
     else:
         assert result.returncode != 0
         assert (
@@ -740,3 +760,25 @@ def test_distributed_cpu_retains_its_stable_check_and_rejects_a_failed_partition
             "run": "test '${{ needs.distributed-cpu-shard.result }}' = success",
         }
     ]
+
+
+def test_coverage_data_stays_outside_the_source_tree_copied_by_mutation_tests():
+    job = _document("ci.yml")["jobs"]["coverage-shard"]
+    expected = "${{ runner.temp }}/fq-coverage/.coverage.${{ matrix.shard }}"
+    assert "COVERAGE_FILE" not in job["env"]
+    upload = next(
+        s
+        for s in job["steps"]
+        if s.get("with", {}).get("name", "").startswith("coverage-shard-")
+    )
+    assert upload["with"]["path"] == expected
+    commands = [
+        s["run"] for s in job["steps"] if "python -m pytest" in s.get("run", "")
+    ]
+    assert len(commands) == 2
+    assert all('mkdir -p "$RUNNER_TEMP/fq-coverage"' in command for command in commands)
+    assert all(
+        'export COVERAGE_FILE="$RUNNER_TEMP/fq-coverage/.coverage.${{ matrix.shard }}"'
+        in command
+        for command in commands
+    )
