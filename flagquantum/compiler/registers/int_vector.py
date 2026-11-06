@@ -10,7 +10,8 @@ from typing import Literal
 from ...core.ir import Instruction
 from .._component_trace.resource_generalization import CliffordCall
 from .._component_trace.symbolic_math import SymbolicInt
-from .bitwise import _validate_unsigned_constant, _validate_wires, xor_constant_ir
+from .bitwise import xor_constant_ir
+from .register_bits import split_integer, split_register
 
 
 def int_state_ir(target: tuple[int, ...], value: int) -> tuple[Instruction, ...]:
@@ -22,12 +23,11 @@ def int_effect_bindings(
     target: tuple[int, ...], value: int
 ) -> dict[int, tuple[Literal["z"], int]]:
     """Bind the source's left-sided Z covectors for exact partial contraction."""
-    _validate_wires(target)
-    _validate_unsigned_constant(len(target), value)
-    return {
-        wire: ("z", (value >> position) & 1)
-        for position, wire in zip(reversed(range(len(target))), target, strict=True)
-    }
+    if not target:
+        raise ValueError("Integer effect requires a nonempty register")
+    wires = split_register(target)
+    bits = split_integer(value, len(wires))
+    return {wire: ("z", bit) for (wire,), bit in zip(wires, bits, strict=True)}
 
 
 def int_vector_cost_key(width: SymbolicInt) -> CliffordCall:

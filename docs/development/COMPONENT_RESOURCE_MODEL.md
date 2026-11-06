@@ -664,6 +664,21 @@ Its tensor Allocate/Free view uses zero even with the dirty flag.
 Use the zero covector to compare that tensor view, and check an actual
 borrowed circuit with a coherent input to verify restoration.
 
+## Split and join register views
+
+`split_register` binds an ordered word to one-wire ports, and
+`join_register` packs those ports in the supplied order. Reordering the
+ports changes the logical wire mapping without emitting SWAP gates.
+The source's concrete leaves have zero modeled gates and peak logical
+width equal to the original word width. Both accept an empty physical
+binding. The pinned leaves reject symbolic dtypes.
+
+Integer values use a separate big-endian encoder and decoder. Signed
+words use two's complement. Integer effects share the split binding and
+unsigned encoder. Integer conversion requires a positive concrete width.
+The pinned source accepts a zero-width physical binding, while its
+zero-width integer conversion fails.
+
 ## Register identity
 
 The source models Identity as one atomic call with zero QEC gates.
