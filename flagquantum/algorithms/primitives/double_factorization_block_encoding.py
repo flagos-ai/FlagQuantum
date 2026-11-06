@@ -3,6 +3,8 @@
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 
+import torch
+
 from ...circuit import Circuit
 from ...compiler._component_trace.resource_model import ComponentCost
 from ...compiler.registers.bitwise import _validate_wires
@@ -13,6 +15,7 @@ from ...core.classical_control import validate_classical_control
 from ...core.ir import CircuitIR, Instruction
 from ...dynamic import DynamicCircuit
 from .double_factorization_angles import orbital_rotation_words
+from .double_factorization_coefficients import coefficient_eigenpairs
 from .double_factorization_encoding_model import (
     source_double_factorization_block_encoding_cost,
 )
@@ -133,6 +136,43 @@ class DoubleFactorizationBlockEncoding:
                 orbital_rotation_words(vector, basis_rotation_bits)
                 for vector in vectors
             ),
+            outer_bits=outer_bits,
+            inner_bits=inner_bits,
+            rank_rotation_bits=rank_rotation_bits,
+            basis_rotation_bits=basis_rotation_bits,
+            outer_log_block=outer_log_block,
+            metadata_log_block=metadata_log_block,
+            inner_log_block=inner_log_block,
+            basis_log_block=basis_log_block,
+        )
+
+    @classmethod
+    def from_coefficients(
+        cls,
+        one_body: torch.Tensor,
+        factors: Sequence[torch.Tensor],
+        *,
+        outer_bits: int = 8,
+        inner_bits: int = 8,
+        rank_rotation_bits: int = 8,
+        basis_rotation_bits: int = 8,
+        outer_log_block: int = 0,
+        metadata_log_block: int = 0,
+        inner_log_block: int = 0,
+        basis_log_block: int = 0,
+    ) -> "DoubleFactorizationBlockEncoding":
+        """Build from effective one-body and already factorized real matrices.
+
+        The caller supplies the trace-adjusted one-body matrix. Each factor
+        uses the same spatial basis. All eigenpairs are retained, including
+        zero eigenvalues. Use the eigensystem input for explicit rank truncation.
+        """
+        one_body_pairs = coefficient_eigenpairs(one_body)
+        if any(factor.shape != one_body.shape for factor in factors):
+            raise ValueError("DF coefficient matrices must share one orbital basis")
+        return cls.from_eigensystems(
+            one_body_pairs,
+            tuple(coefficient_eigenpairs(factor) for factor in factors),
             outer_bits=outer_bits,
             inner_bits=inner_bits,
             rank_rotation_bits=rank_rotation_bits,

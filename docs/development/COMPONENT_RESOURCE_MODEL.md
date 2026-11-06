@@ -2956,9 +2956,34 @@ encoding = DoubleFactorizationBlockEncoding.from_eigensystems(
 
 The conversion follows the adjacent rotation chain in Eq. 57 of
 [von Burg et al.](https://arxiv.org/pdf/2007.14460#page=71) and rounds the
-half angles to the nearest fractional-turn word. It consumes already
-factorized real eigenpairs. The locked Qualtran Hamiltonian factory raises
+half angles to the nearest fractional-turn word.
+
+Use `from_coefficients` for dense, real symmetric PyTorch matrices in the
+same spatial basis. Supply the effective one-body matrix $T'$ from
+[Appendix C](https://arxiv.org/pdf/2011.03494#page=48) and the already
+factorized matrices $W_j$. The factory diagonalizes in CPU float64 and
+keeps every eigenpair. To specify truncated factors, use
+`from_eigensystems`. The locked Qualtran Hamiltonian factory raises
 `NotImplementedError`.
+
+```python
+import torch
+
+encoding = DoubleFactorizationBlockEncoding.from_coefficients(
+    torch.tensor([[0.0, 0.5], [0.5, 0.0]]),
+    (torch.diag(torch.tensor([1.5, 0.5])),),
+    outer_bits=1, inner_bits=1, rank_rotation_bits=2, basis_rotation_bits=4,
+)
+assert encoding.outer.normalization == 2
+```
+
+Write $D(M)=d\Gamma(M)-\operatorname{tr}(M)I$, where $d\Gamma(M)$ sums
+the fermion operator over both spins. With exact PREPARE and rotations,
+the projected block multiplied by $\lambda$ is
+$D(T')+\tfrac12\sum_j D(W_j)^2-\sum_j\|W_j\|_*^2 I/4$.
+Here $\lambda=\|T'\|_*+\sum_j\|W_j\|_*^2/4$, and $\|\cdot\|_*$
+is the trace norm. The finite-precision circuit includes the coherent
+rank-preparation failure term described above.
 
 The locked resource declaration retains its original reflection
 ports and the outer success control. The executable model uses the paper

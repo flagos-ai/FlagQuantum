@@ -4,6 +4,7 @@ from math import acos, cos, floor, sin, sqrt, tau
 
 import numpy as np
 import pytest
+import torch
 
 from flagquantum.algorithms.primitives.double_factorization_angles import (
     orbital_rotation_words,
@@ -44,6 +45,84 @@ def test_df_eigenvector_words_reject_invalid_vectors(vector):
 def test_df_eigensystem_rejects_wrong_orbital_width():
     with pytest.raises(ValueError, match="spatial orbital count"):
         DoubleFactorizationBlockEncoding.from_eigensystems(((1.0, (1.0, 0.0)),), ())
+
+
+@pytest.mark.parametrize(
+    "one_body,factors,match",
+    [
+        ([[1, 0, 0], [0, 1, 0]], (), "square real"),
+        ([[1j]], (), "square real"),
+        ([[float("inf")]], (), "finite and symmetric"),
+        ([[0, 1], [0, 0]], (), "finite and symmetric"),
+        ([[1]], ([[1, 0], [0, 1]],), "share one orbital basis"),
+    ],
+)
+def test_df_coefficient_factory_rejects_invalid_matrices(one_body, factors, match):
+    with pytest.raises(ValueError, match=match):
+        DoubleFactorizationBlockEncoding.from_coefficients(
+            torch.tensor(one_body), tuple(torch.tensor(factor) for factor in factors)
+        )
+
+
+def test_df_coefficient_factory_retains_zero_eigenvalues():
+    one_body = torch.diag(torch.tensor([0.0, 1.0]))
+    encoding = DoubleFactorizationBlockEncoding.from_coefficients(one_body, (one_body,))
+    assert encoding.inner.ranks == (2, 2)
+    assert encoding.outer.normalization == 1.25
+
+
+def test_df_coefficient_factory_projects_spin_summed_fermion_operator():
+    one_body = torch.tensor([[0.0, 0.5], [0.5, 0.0]])
+    factor = torch.diag(torch.tensor([1.5, 0.5]))
+    encoding = DoubleFactorizationBlockEncoding.from_coefficients(
+        one_body,
+        (factor,),
+        outer_bits=1,
+        inner_bits=1,
+        rank_rotation_bits=2,
+        basis_rotation_bits=4,
+    )
+    assert encoding.outer.normalization == 2
+
+    identity = np.eye(16)
+
+    def centered_spin_sum(matrix):
+        spinless = np.zeros((4, 4))
+        spinless[1:3, 1:3] = matrix.numpy()[::-1, ::-1]
+        spinless[3, 3] = matrix.trace().item()
+        return (
+            np.kron(spinless, np.eye(4))
+            + np.kron(np.eye(4), spinless)
+            - matrix.trace().item() * identity
+        )
+
+    # For either two-orbital row the quantized rank preparation succeeds
+    # with probability 1/2, so the remaining half contributes identity.
+    one_body_block = (centered_spin_sum(one_body) + identity) / 2
+    factor_block = (identity - centered_spin_sum(factor) / 2) / 2
+    expected = (one_body_block + 2 * factor_block @ factor_block - identity) / 2
+    logical = sum(size for _, size in encoding.layout)
+    work, _ = encoding.requirements()
+    width = logical + work
+    ports = partition_register(tuple(range(logical)), encoding.layout)
+    circuit = DynamicCircuit(width).append(
+        encoding.make_on(ports, workspace=tuple(range(logical, width)))
+    )
+    ir = circuit.to_ir()
+    counts = count_emitted_instructions(ir)
+    events = counts.unconditional["measure"]
+    assert (counts.t_count, events, work, width) == (482, 89, 4, 42)
+    vector = np.arange(1, 17) + 1j * np.arange(16, 0, -1)
+    vector /= np.linalg.norm(vector)
+    initial = {state << work: value for state, value in enumerate(vector)}
+    for pattern in ((0,), (1,), (0, 1), (1, 0)):
+        history = (pattern * events)[:events]
+        state = _branch(
+            ir.instructions, width, history, initial, normalize_measurements=True
+        )
+        assert all(index % (1 << work) == 0 for index in state)
+        projected = np.array([state.get(index << work, 0) for index in range(16)])
+        np.testing.assert_allclose(projected, expected @ vector, atol=6e-12, rtol=0)
 
 
 def _expected_block(rows, angles, alias_bits, angle_bits, rank_bits):
