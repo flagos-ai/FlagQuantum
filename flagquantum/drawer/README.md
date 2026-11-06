@@ -181,3 +181,36 @@ validation and composes that renderer. The owned flaghybrid.sty supplies separat
 TeX box registers. Font selection stays local to the generated hybrid figure,
 preserving the enclosing paper's sans-serif default; upstream
 yquant/PlotNeuralNet sources and licenses remain unmodified.
+
+## Declared resource call graphs
+
+Use the existing resource model to export a weighted call graph as Markdown
+or Graphviz DOT. A display depth limit still uses the full declared costs
+for the visible annotations.
+
+```python
+from pathlib import Path
+
+from flagquantum.algorithms.primitives.multiplexers.thc_resource_model import (
+    select_thc_cost,
+)
+from flagquantum.compiler._component_trace.call_graph import modeled_call_graph
+from flagquantum.drawer.call_graph import (
+    export_modeled_call_graph_dot,
+    format_call_graph_markdown,
+)
+
+model = select_thc_cost(2, 4, 8, 1)
+graph = modeled_call_graph(model)
+print(format_call_graph_markdown(
+    graph.root, graph.direct_calls, graph.leaf_counts, title=lambda node: node.name
+))
+Path("thc.dot").write_text(
+    export_modeled_call_graph_dot(model, max_depth=1, aggregation="t_and_ccz"),
+    encoding="utf-8",
+)
+```
+
+Run `dot -Tsvg thc.dot -o thc.svg` with Graphviz installed to render the
+source. The export itself does not require Graphviz. Symbolic resource
+graphs use the same formatting functions and preserve their expressions.
