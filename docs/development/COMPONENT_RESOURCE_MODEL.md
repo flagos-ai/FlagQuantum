@@ -553,6 +553,22 @@ instructions in the AND computation.
 
 - [Qualtran v0.7.0 global phase](https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/bloqs/basic_gates/global_phase.py)
 
+## SU(2) rotation decomposition
+
+`su2_rotation_ir` emits the source's scalar phase followed by Rz, Rx
+and Rz in circuit order. Negating the global shift and exchanging and
+negating the two phase parameters gives the source adjoint. All three
+rotations and the scalar use the target wire, with zero additional
+qubits and zero measurements.
+
+`su2_rotation_calls` preserves the source's symbolic parameters and
+divides the requested synthesis precision by three for the three
+rotations. The scalar keeps the source's default precision and zero
+modeled cost. The emitted circuit retains the three rotation angles
+for later synthesis.
+
+- [Qualtran v0.7.0 SU(2) rotation](https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/bloqs/basic_gates/su2_rotation.py)
+
 ## THC SELECT before lowering
 
 For THC SELECT, the model needs only the dimensions, angle precision,
