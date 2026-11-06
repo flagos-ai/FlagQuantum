@@ -20,7 +20,7 @@ from .resource_generalization import (
     ZeroCostCall,
 )
 from .resource_model import ComponentCost, GateCost
-from .symbolic_math import SymbolicReal
+from .symbolic_math import SymbolicInt, SymbolicReal
 
 CONTROLLED_HADAMARD_COST = ComponentCost(
     "CHadamard", 2, GateCost(clifford=4, rotation=2)
@@ -48,6 +48,20 @@ def global_phase_cost_key(
     return positive if controls == (1,) else PredicateControlledCall(positive, controls)
 
 
+def controlled_swap_cost_key(
+    width: SymbolicInt, controls: tuple[int, ...]
+) -> ResourceCall:
+    """Model the source register swap under its first group of controls."""
+    if not controls or any(
+        type(bit) is not int or bit not in (0, 1) for bit in controls
+    ):
+        raise ValueError(
+            "Controlled swap requires a nonempty binary activation pattern"
+        )
+    child = ControlledSwapCall(width)
+    return child if controls == (1,) else PredicateControlledCall(child, controls)
+
+
 def compound_control_key(
     gate: ResourceCall, controls: tuple[int, ...]
 ) -> ResourceCall | None:
@@ -66,6 +80,9 @@ def compound_control_key(
             return FixedTCall("toffoli")
         pauli = _CONTROLLED_PAULI[gate.opcode]
         return pauli if controls == (1,) else PredicateControlledCall(pauli, controls)
+    if isinstance(gate, CliffordCall) and gate.opcode == "swap_bit":
+        swap = FixedTCall("fredkin")
+        return swap if controls == (1,) else PredicateControlledCall(swap, controls)
     if isinstance(gate, CliffordCall) and gate.opcode == "h":
         return (
             CONTROLLED_HADAMARD_COST

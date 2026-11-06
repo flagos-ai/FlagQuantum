@@ -806,6 +806,24 @@ positive control specializes to the separately verified exact Fredkin
 path. Its actual Clifford+T stream and abstract model are accounted
 for separately from literal SWAP.
 
+For a negative control or a mixed control register, use
+`controlled_swap_with_predicate_ir`. Its control wires and activation values
+follow the declared register order. A single negative control conjugates the
+Fredkin stream with X on the control. Multiple controls share one prefix
+conjunction per extra control across the entire register swap. Each prefix
+uses one clean work qubit and one classical slot. The reverse measurement
+sequence clears every work qubit and preserves the controls and their
+relative phases.
+
+For three-bit words and activation pattern `(1, 0, 1)`, the model reports
+three CSwap, two And, six Clifford and two measurements with peak width 11.
+At the source's default CSwap conversion this is 20 T equivalents. With
+`ts_per_cswap=7` it is 29, matching the T/T† count emitted with exact Fredkin
+leaves. The emitted instructions and the model retain separate Clifford
+counts.
+
+- [Qualtran v0.7.0 SWAP controls](https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/bloqs/basic_gates/swap.py)
+
 ## Register identity
 
 The source models Identity as one atomic call with zero QEC gates.

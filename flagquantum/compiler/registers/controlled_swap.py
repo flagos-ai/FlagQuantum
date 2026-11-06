@@ -8,6 +8,8 @@
 
 from ...core.ir import Instruction
 from .bitwise import _validate_wires
+from .control_predicate import ControlRegister
+from .controlled_component import controlled_component_ir
 
 
 def controlled_swap_bit_ir(
@@ -47,4 +49,29 @@ def controlled_swap_ir(
         gate
         for x, y in zip(left, right, strict=True)
         for gate in controlled_swap_bit_ir(control, x, y)
+    )
+
+
+def controlled_swap_with_predicate_ir(
+    controls: tuple[tuple[int, ...], ...],
+    registers: tuple[ControlRegister, ...],
+    left: tuple[int, ...],
+    right: tuple[int, ...],
+    workspace: tuple[int, ...],
+    classical_bits: tuple[int, ...],
+) -> tuple[Instruction, ...]:
+    """Apply exact register SWAP under the source's negative or mixed controls.
+
+    One control requires no scratch. For multiple controls the shared ladder
+    owns one clean wire and one classical slot per prefix conjunction.
+    """
+    _validate_wires(
+        (*left, *right, *workspace, *(q for word in controls for q in word))
+    )
+    return controlled_component_ir(
+        controls,
+        registers,
+        lambda control: controlled_swap_ir(control, left, right),
+        workspace,
+        classical_bits,
     )
