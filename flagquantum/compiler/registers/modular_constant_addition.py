@@ -33,7 +33,7 @@ def controlled_modular_add_constant_ir(
 
     Target is big-endian and lies in [0,p) in both control branches. The source
     CModAdd clean domain requires 0 <= k <= p. Work starts/ends zero; first n
-    wires store k during the shared component and are unloaded by the same Xs.
+    qubits store k during the shared component and are unloaded by the same Xs.
     """
     return _controlled_modular_constant_ir(
         control, target, value, modulus, workspace, classical_bits, adjoint=False

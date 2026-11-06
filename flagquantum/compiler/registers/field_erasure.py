@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # Adapted from Qualtran v0.7.0, GF2MulMBUC in gf2_multiplication.py.
 # Source: https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/bloqs/gf_arithmetic/gf2_multiplication.py
-# Changes: explicit wires, measured-slot cleanup, shared classical-parity phases.
+# Changes: explicit qubits, measured-slot cleanup, shared classical-parity phases.
 
 """Measurement-assisted erasure of a known binary-field product."""
 
@@ -25,7 +25,7 @@ class FieldProductErasure:
 
     def lower(self, *, parity_bit: int) -> tuple[Instruction, ...]:
         """Emit source calls with one reusable caller-owned classical parity slot."""
-        ClassicalXor((), parity_bit)  # Validate without reserving a quantum wire.
+        ClassicalXor((), parity_bit)  # Validate without reserving a quantum qubit.
         if any(parity_bit == bit for _, bit in self.measurements):
             raise ValueError("Parity scratch must be distinct from measurement slots")
         instructions = [
@@ -42,7 +42,7 @@ class FieldProductErasure:
             count = width - i - 1
             for correction in self.corrections[offset : offset + count]:
                 instructions.extend(
-                    ParityPhase(correction.wires, (parity_bit,)).lower()
+                    ParityPhase(correction.qubits, (parity_bit,)).lower()
                 )
             offset += count
         return tuple(instructions)

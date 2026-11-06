@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # Adapted from Qualtran v0.7.0 HasDuplicates.
 # Source: https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/bloqs/arithmetic/lists/has_duplicates.py
-# Changes: explicit wire lifetimes and an operand-preserving cleanup route.
+# Changes: explicit qubit lifetimes and an operand-preserving cleanup route.
 
 """Detect adjacent duplicates in a sorted register list."""
 

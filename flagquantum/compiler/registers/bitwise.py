@@ -4,7 +4,7 @@
 # Adapted from Qualtran v0.7.0 Xor, XorK and BitwiseNot.
 # Source: https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/bloqs/arithmetic/bitwise.py
 # Fanout source: https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/bloqs/mcmt/multi_target_cnot.py
-# Changes: explicit big-endian wire tuples, concrete unsigned constants and
+# Changes: explicit big-endian qubit tuples, concrete unsigned constants and
 # one positive controlled XorK, all emitting native IR.
 
 """Shared register bit permutations without hidden work or dtype conversion."""
@@ -12,10 +12,12 @@
 from ...core.ir import Instruction
 
 
-def _validate_wires(wires: tuple[int, ...]) -> None:
-    if not wires:
+def _validate_wires(qubits: tuple[int, ...]) -> None:
+    if not qubits:
         raise ValueError("Bitwise operation requires nonempty registers")
-    if any(type(w) is not int or w < 0 for w in wires) or len(set(wires)) != len(wires):
+    if any(type(w) is not int or w < 0 for w in qubits) or len(set(qubits)) != len(
+        qubits
+    ):
         raise ValueError("Bitwise operation requires distinct nonnegative wires")
 
 

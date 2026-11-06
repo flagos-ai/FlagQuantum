@@ -36,7 +36,7 @@ def equality_ir(
     """XOR a==b into target, following Xor -> all-zero MultiControlX -> Xor.
 
     Registers have equal positive width and big-endian bit order. Supply n-1
-    initially zero work wires and n-1 measurement slots (none for one bit).
+    initially zero work qubits and n-1 measurement slots (none for one bit).
     Inputs, target phases and clean work are preserved except for the target XOR.
     """
     if not left or len(left) != len(right):

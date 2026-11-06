@@ -16,9 +16,9 @@ _OPERAND = re.compile(r"[qb][0-9]+")
 
 def encode_kmx(program: ReversiblePhaseProgram) -> str:
     """Encode operations and preserve declared register widths in a native info tag."""
-    lines = [_HEADER.format(wires=program.n_wires, bits=program.n_bits)]
+    lines = [_HEADER.format(wires=program.n_qubits, bits=program.n_bits)]
     for operation in program.operations:
-        fields = [operation.opcode.upper(), *(f"q{wire}" for wire in operation.wires)]
+        fields = [operation.opcode.upper(), *(f"q{wire}" for wire in operation.qubits)]
         if operation.result_bit is not None:
             fields.append(f"b{operation.result_bit}")
         if operation.condition_bit is not None:

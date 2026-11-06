@@ -44,7 +44,7 @@ def add_adjoint_ir(
     """Port the exact Add adjoint, b-=a, with measured borrow-prefix cleanup.
 
     Big-endian unsigned registers have 1 <= len(a) <= len(b). All n-1 caller
-    carry wires start and end in zero, with one distinct classical slot each.
+    carry qubits start and end in zero, with one distinct classical slot each.
     Preserve the source component inverse, not a different subtraction network.
     """
     wires = (*left, *right, *carries)
@@ -161,7 +161,7 @@ def add_constant_ir(
     """Port unsigned AddK: load a constant, add it, then erase the load.
 
     Big-endian target and clean constant registers have equal positive width n.
-    Supply n-1 clean carry wires and distinct nonnegative classical slots.
+    Supply n-1 clean carry qubits and distinct nonnegative classical slots.
     The target is incremented modulo 2**n; all quantum work returns to zero.
     Negative constants follow upstream unsigned normalization. Positive constants
     must fit n bits. No constant-specific gate simplification is performed.

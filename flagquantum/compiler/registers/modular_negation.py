@@ -16,7 +16,7 @@ from .multi_control import multi_control_x_ir
 
 
 def modular_negation_requirements(width: int) -> tuple[int, int]:
-    """Reserve a flag, loaded constant, and reusable reduction/carry wires."""
+    """Reserve a flag, loaded constant, and reusable reduction/carry qubits."""
     if type(width) is not int or width < 1:
         raise ValueError("Modular negation requires a positive concrete width")
     return 2 * width, width - 1

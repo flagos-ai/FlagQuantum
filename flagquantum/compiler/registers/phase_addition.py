@@ -35,7 +35,7 @@ def phase_add_workspace_size(
     right_shift: int = 0,
     controlled: bool = False,
 ) -> int:
-    """Count clean work wires and equally many reusable classical slots."""
+    """Count clean work qubits and equally many reusable classical slots."""
     if type(controlled) is not bool:
         raise ValueError("Phase addition controlled mode must be boolean")
     active, prefix = _active_widths(input_width, gradient_width, right_shift)

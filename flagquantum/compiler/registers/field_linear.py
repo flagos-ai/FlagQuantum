@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # Adapted from Qualtran v0.7.0, GF2MulK/GF2ShiftRight/GF2ShiftLeft.
 # Source: https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/bloqs/gf_arithmetic/gf2_multiplication.py
-# Changes: native IR and explicit polynomial-basis wires/output mappings.
+# Changes: native IR and explicit polynomial-basis qubits/output mappings.
 
 """In-place binary-field constant and signed monomial multiplication."""
 
@@ -42,7 +42,7 @@ def gf2_monomial_multiplication(
     Positive powers port GF2ShiftRight; negative powers port GF2ShiftLeft.
     Gate ordering is preserved rather than reducing the exponent modulo the
     field order. Compilation scales with abs(power). Outputs retain the source's
-    free wire permutation; fixed-wire consumers can bind it explicitly.
+    free qubit permutation; fixed-qubit consumers can bind it explicitly.
     """
     width = len(target)
     _validate_field(width, modulus)

@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # Adapted from Qualtran v0.7.0, bloqs/gf_arithmetic/gf2_multiplication.py.
 # Source: https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/bloqs/gf_arithmetic/gf2_multiplication.py
-# Changes: native IR, explicit scratch, integer polynomial arithmetic, wire maps.
+# Changes: native IR, explicit scratch, integer polynomial arithmetic, qubit maps.
 
 """Concrete polynomial-basis multiplication with upstream gate ordering."""
 
@@ -49,11 +49,11 @@ def _validate_field(width: int, modulus: int) -> None:
 
 @dataclass(frozen=True)
 class FieldDecomposition:
-    """Native gates and logical output wires, including upstream virtual relabeling.
+    """Native gates and logical output qubits, including upstream virtual relabeling.
 
-    Scratch excludes logical outputs. Every listed scratch wire ends in zero.
-    The caller owns allocation. Newly allocated result and scratch wires must
-    start in zero; logical input wires can carry arbitrary quantum states.
+    Scratch excludes logical outputs. Every listed scratch qubit ends in zero.
+    The caller owns allocation. Newly allocated result and scratch qubits must
+    start in zero; logical input qubits can carry arbitrary quantum states.
     """
 
     instructions: tuple[Instruction, ...]
@@ -69,10 +69,10 @@ class _FieldEmitter(_PolynomialEmitter):
         self.modulus = modulus
 
     def linear(
-        self, wires: tuple[int, ...], matrix: list[list[int]]
+        self, qubits: tuple[int, ...], matrix: list[list[int]]
     ) -> tuple[int, ...]:
         """Qualtran SynthesizeLRCircuit with galois's first-pivot PLU order."""
-        n = len(wires)
+        n = len(qubits)
         upper = [row[:] for row in matrix]
         lower = [[0] * n for _ in range(n)]
         permutation = list(range(n))
@@ -89,12 +89,12 @@ class _FieldEmitter(_PolynomialEmitter):
         for i in range(n):
             for j in range(i + 1, n):
                 if upper[i][j]:
-                    self.cx(wires[j], wires[i])
+                    self.cx(qubits[j], qubits[i])
         for i in reversed(range(n)):
             for j in reversed(range(i)):
                 if lower[i][j]:
-                    self.cx(wires[j], wires[i])
-        result = list(wires)
+                    self.cx(qubits[j], qubits[i])
+        result = list(qubits)
         column = list(range(n))
         for i in range(n):
             for j in range(i + 1, n):
@@ -103,33 +103,33 @@ class _FieldEmitter(_PolynomialEmitter):
                     column[i], column[j] = column[j], column[i]
         return tuple(result)
 
-    def constant(self, wires: tuple[int, ...], value: int) -> tuple[int, ...]:
-        n = len(wires)
+    def constant(self, qubits: tuple[int, ...], value: int) -> tuple[int, ...]:
+        n = len(qubits)
         columns = [_product(value, 1 << i, self.modulus) for i in range(n)]
         matrix = [[(columns[j] >> i) & 1 for j in range(n)] for i in range(n)]
-        return self.linear(wires, matrix)
+        return self.linear(qubits, matrix)
 
-    def shift(self, wires: tuple[int, ...], count: int) -> tuple[int, ...]:
-        result = wires
-        if len(wires) > 1:
-            degrees = [i for i in range(1, len(wires)) if self.modulus >> i & 1]
+    def shift(self, qubits: tuple[int, ...], count: int) -> tuple[int, ...]:
+        result = qubits
+        if len(qubits) > 1:
+            degrees = [i for i in range(1, len(qubits)) if self.modulus >> i & 1]
             for _ in range(count):
                 result = result[-1:] + result[:-1]
                 for i in degrees:
                     self.cx(result[0], result[i])
         return result
 
-    def inverse_constant(self, wires: tuple[int, ...], value: int) -> tuple[int, ...]:
+    def inverse_constant(self, qubits: tuple[int, ...], value: int) -> tuple[int, ...]:
         start = len(self.instructions)
-        outputs = self.constant(wires, value)
+        outputs = self.constant(qubits, value)
         gates = self.instructions[start:]
         del self.instructions[start:]
-        binding = dict(zip(outputs, wires, strict=True))
+        binding = dict(zip(outputs, qubits, strict=True))
         self.instructions.extend(
             Instruction(g.name, tuple(binding[w] for w in g.wires))
             for g in reversed(gates)
         )
-        return tuple(binding[w] for w in wires)
+        return tuple(binding[w] for w in qubits)
 
     def multiply(
         self, x: tuple[int, ...], y: tuple[int, ...], target: tuple[int, ...]
@@ -165,7 +165,7 @@ def gf2_multiplication(
     modulus: int,
     algorithm: Literal["karatsuba", "quadratic"] = "karatsuba",
 ) -> FieldDecomposition:
-    """Compute a product into a clean target; preserve upstream output wire maps.
+    """Compute a product into a clean target; preserve upstream output qubit maps.
 
     All registers are big-endian. Quadratic multiplication needs no scratch;
     Karatsuba uses caller-owned clean scratch for odd recursive widths.
@@ -199,7 +199,7 @@ def gf2_multiplication(
 def bind_field_outputs(
     decomposition: FieldDecomposition, targets: tuple[tuple[int, ...], ...]
 ) -> tuple[Instruction, ...]:
-    """Materialize upstream virtual permutations at a fixed-wire consumer boundary."""
+    """Materialize upstream virtual permutations at a fixed-qubit consumer boundary."""
     current = [w for reg in decomposition.outputs for w in reg]
     desired = [w for reg in targets for w in reg]
     if len(current) != len(desired) or set(current) != set(desired):

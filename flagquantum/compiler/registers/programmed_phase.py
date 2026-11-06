@@ -3,7 +3,7 @@
 # Adapted from Qualtran v0.7.0 ZPowProgrammedAncilla.
 # Source: https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/bloqs/rotations/programmable_ancilla_rotation.py
 
-"""Prepare a reusable phase resource on a clean output wire."""
+"""Prepare a reusable phase resource on a clean output qubit."""
 
 from math import isfinite, pi
 
@@ -41,11 +41,11 @@ def programmed_phase_rotation_ir(
     epsilon: float = 1e-11,
     apply_final_correction: bool = False,
 ) -> tuple[Instruction, ...]:
-    """Emit a bounded programmed rotation with one reusable clean work wire.
+    """Emit a bounded programmed rotation with one reusable clean work qubit.
 
     Each outcome slot belongs to one round. Zero indicates success or padding.
     With correction disabled, a one in every slot indicates failure. The work
-    wire returns to zero. The flat IR measures the idle zero wire in skipped
+    qubit returns to zero. The flat IR measures the idle zero qubit in skipped
     rounds, since measurement itself cannot be predicated.
     """
     _validate_wires((data, work))

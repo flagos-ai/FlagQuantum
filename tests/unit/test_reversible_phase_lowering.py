@@ -81,9 +81,9 @@ def test_paired_lookup_and_erasure_lower_to_hmr_with_feedback() -> None:
     ir = _paired_circuit(2, (8, 20))
     lowered = lower_reversible_phase(ir)
     measured = [op for op in lowered.operations if op.opcode == "hmr"]
-    assert lowered.n_wires == ir.n_wires == 21
+    assert lowered.n_qubits == ir.n_wires == 21
     assert lowered.n_bits == 16
-    assert [(op.wires, op.result_bit) for op in measured] == [
+    assert [(op.qubits, op.result_bit) for op in measured] == [
         ((wire,), bit) for bit, wire in enumerate(range(3, 19))
     ]
     assert len(ir.instructions) - len(lowered.operations) == 32
@@ -147,7 +147,9 @@ def test_trace_counts_and_kmx_round_trip(width: int, words: tuple[int, ...]) -> 
     assert counts["measure", False] == counts["x", True] == 16
     program = lower_reversible_phase(ir)
     # The highest scratch slot can be idle, and the format must preserve it.
-    enlarged = replace(program, n_wires=program.n_wires + 1, n_bits=program.n_bits + 2)
+    enlarged = replace(
+        program, n_qubits=program.n_qubits + 1, n_bits=program.n_bits + 2
+    )
     assert decode_kmx(encode_kmx(enlarged)) == enlarged
     assert Counter(op.opcode for op in program.operations)["hmr"] == 16
 
@@ -186,8 +188,8 @@ def test_paired_lookup_and_erasure_against_native_reference(
         sim.do(reference)
         assert [
             sim.read_across_shots(km.q(wire), out=int)
-            for wire in range(program.n_wires)
-        ] == expected + [0] * (program.n_wires - n_input)
+            for wire in range(program.n_qubits)
+        ] == expected + [0] * (program.n_qubits - n_input)
         # The target subset has only integral half-turn phases.
         assert sim.read_phase_flipped_across_shots(out=int) == 0
         measurements = tuple(
@@ -277,14 +279,14 @@ def _expand_for_dynamic_reference(program: ReversiblePhaseProgram) -> CircuitIR:
         if op.opcode == "hmr":
             instructions.extend(
                 (
-                    Instruction("h", op.wires),
+                    Instruction("h", op.qubits),
                     Instruction(
                         "measure",
-                        op.wires,
+                        op.qubits,
                         metadata={"is_dynamic": True, "classical_bit": op.result_bit},
                     ),
                     Instruction(
-                        "x", op.wires, metadata={"conditions": ((op.result_bit, 1),)}
+                        "x", op.qubits, metadata={"conditions": ((op.result_bit, 1),)}
                     ),
                 )
             )
@@ -294,8 +296,8 @@ def _expand_for_dynamic_reference(program: ReversiblePhaseProgram) -> CircuitIR:
                 if op.condition_bit is not None
                 else {}
             )
-            instructions.append(Instruction(op.opcode, op.wires, metadata=metadata))
-    return CircuitIR(program.n_wires, tuple(instructions))
+            instructions.append(Instruction(op.opcode, op.qubits, metadata=metadata))
+    return CircuitIR(program.n_qubits, tuple(instructions))
 
 
 @pytest.mark.parametrize("width,words", ANGLE_TABLES)
@@ -310,7 +312,7 @@ def test_reconstructed_ir_preserves_all_complex_measurement_branches(
     outcomes = np.arange(1 << 16, dtype=np.uint32)
     for prefix in range(1 << (width + 1)):
         state = [(prefix >> shift) & 1 for shift in range(width, -1, -1)]
-        state += [0] * (program.n_wires - len(state))
+        state += [0] * (program.n_qubits - len(state))
         # Different complex phases expose address-dependent phase errors.
         amplitude = (1j) ** prefix / (1 << (width + 1)) ** 0.5
         actual = np.full(outcomes.size, amplitude, dtype=np.complex128)
@@ -343,7 +345,7 @@ def test_reconstructed_ir_preserves_all_complex_measurement_branches(
                     actual[((outcomes >> bit) & 1) == expected] *= -1
         assert state == [(prefix >> shift) & 1 for shift in range(width, -1, -1)] + [
             0
-        ] * (program.n_wires - width - 1)
+        ] * (program.n_qubits - width - 1)
         np.testing.assert_allclose(actual, amplitude / 256, rtol=0, atol=1e-14)
         np.testing.assert_allclose(
             abs(actual / amplitude) ** 2, 1 / (1 << 16), rtol=0, atol=1e-16
@@ -368,9 +370,9 @@ def test_same_artifact_can_switch_between_dynamic_and_native_execution(
             )
         )
     artifact = decode_kmx(encode_kmx(lower_reversible_phase(circuit.to_ir())))
-    prefix = torch.zeros(1 << artifact.n_wires, dtype=torch.complex128)
+    prefix = torch.zeros(1 << artifact.n_qubits, dtype=torch.complex128)
     prefix[::8] = torch.tensor([1, 1j, -1, -1j], dtype=torch.complex128) / 2
-    dynamic = DynamicCircuit(artifact.n_wires, dtype=torch.complex128, inputs=prefix)
+    dynamic = DynamicCircuit(artifact.n_qubits, dtype=torch.complex128, inputs=prefix)
     dynamic.compose(_expand_for_dynamic_reference(artifact))
     result = run_dynamic(dynamic, shots=64, seed=123, strategy="trajectory")
     assert len(set(map(tuple, result.classical_bits.tolist()))) == 4
@@ -429,7 +431,7 @@ def test_native_forward_banks_match_upstream_lookup(
             ]
             assert [
                 sim.read_across_shots(km.q(wire), out=int)
-                for wire in range(width + 1, artifact.n_wires)
+                for wire in range(width + 1, artifact.n_qubits)
             ] == payload + [0] * width
 
 

@@ -20,9 +20,9 @@ def qvr_zpow_schedule(
     signed: bool = False,
     adjoint: bool = False,
 ) -> tuple[tuple[int, float, float], ...]:
-    """Return source (wire, Z exponent, synthesis tolerance) in gate order.
+    """Return source (qubit, Z exponent, synthesis tolerance) in gate order.
 
-    The concrete unsigned route visits retained wires from least to most
+    The concrete unsigned route visits retained qubits from least to most
     significant. The inverse reverses the same schedule and negates its
     exponents. A negative source rotation count skips the rotation loop,
     retaining the standalone sign phase in a signed layout. A signed

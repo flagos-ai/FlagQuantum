@@ -26,7 +26,7 @@ def phase_gradient_unitary_ir(
 
     The positive-control path implements each CZ power with a logical And,
     a phase on its target, and measured uncomputation. Supply one clean work
-    wire and one classical slot, reused for the full register. Negate the
+    qubit and one classical slot, reused for the full register. Negate the
     exponent for the adjoint. Angles are emitted directly in radians.
     """
     if type(exponent) not in (int, float) or not isfinite(pi * exponent):
@@ -55,7 +55,7 @@ def phase_gradient_unitary_ir(
 def phase_gradient_state_ir(
     gradient: tuple[int, ...], *, inverse: bool = False, exponent: float = 1.0
 ) -> tuple[Instruction, ...]:
-    """Prepare or unprepare a phase-gradient state on caller-owned wires.
+    """Prepare or unprepare a phase-gradient state on caller-owned qubits.
 
     The existing FlagQuantum default prepares the positive exponent. Pass
     exponent=-1 for the pinned source state's default. The forward input is

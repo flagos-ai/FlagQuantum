@@ -26,8 +26,8 @@ def inverse_ordering_ir(
     """XOR (left>right)&active&~branch into parity and marker; clear all work.
 
     Equal-width positive big-endian words and logical flags may be coherent.
-    Supply n+4 clean work wires and max(n,2) distinct classical slots. The two
-    comparison sign wires are reused as And outputs only at clean boundaries.
+    Supply n+4 clean work qubits and max(n,2) distinct classical slots. The two
+    comparison sign qubits are reused as And outputs only at clean boundaries.
     There are n+2 measurements. All inputs except parity/marker are restored.
     """
     n = len(left)

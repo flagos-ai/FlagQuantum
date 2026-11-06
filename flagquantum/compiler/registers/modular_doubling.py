@@ -4,7 +4,7 @@
 # Source: https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/bloqs/mod_arithmetic/mod_multiplication.py
 # Changes: native shared arithmetic and explicit source output/work port aliases.
 
-"""Modular doubling retaining the original logical output-wire exchange."""
+"""Modular doubling retaining the original logical output-qubit exchange."""
 
 from ...core.ir import Instruction
 from .arithmetic import add_constant_ir

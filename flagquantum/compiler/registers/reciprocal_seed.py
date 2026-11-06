@@ -23,7 +23,7 @@ def reciprocal_seed_ir(
     """Compute 2**(-p) for p equal to the integer part's bit length.
 
     Source and seed are big endian, with the seed entirely fractional.
-    Supply one clean flag and one fewer cleanup work wire than integer
+    Supply one clean flag and one fewer cleanup work qubit than integer
     input bits. Forward requires a zero seed. The adjoint requires the
     computed seed. Both restore flag and work. A zero integer part yields
     a zero seed.

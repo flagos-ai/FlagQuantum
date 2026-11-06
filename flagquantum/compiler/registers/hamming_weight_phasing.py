@@ -51,7 +51,7 @@ def hamming_weight_phasing_ir(
 ) -> tuple[Instruction, ...]:
     """Apply a Z power to each source bit through the shared count tree.
 
-    The caller owns the clean count and junk wires. Only the measured
+    The caller owns the clean count and junk qubits. Only the measured
     erase uses the classical slots. The forward phase order is least
     significant first, and the adjoint reverses and negates those phases.
     The output preserves the source bits and clears all work.

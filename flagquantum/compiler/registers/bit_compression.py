@@ -16,7 +16,7 @@ from .bitwise import _validate_wires
 def compress_three_bits_ir(
     a: int, b: int, total: int, carry: int, *, erase_bit: int | None = None
 ) -> tuple[Instruction, ...]:
-    """Replace total by a XOR b XOR total and write carry into a clean wire."""
+    """Replace total by a XOR b XOR total and write carry into a clean qubit."""
     if erase_bit is not None:
         return (
             Instruction("cx", (b, total)),
@@ -46,7 +46,7 @@ def weighted_columns_xor_ir(
     """Reduce bound bit terms, copy the parity word, then erase products and carries.
 
     The caller computes column capacity and the exact work width. A term
-    provides a little-endian column and either one wire or a pair to AND.
+    provides a little-endian column and either one qubit or a pair to AND.
     """
     _validate_wires((*inputs, *result, *workspace))
 
@@ -72,7 +72,7 @@ def with_weighted_columns_ir(
     """Use the live big-endian parity word before reversing the column network.
 
     A missing column is a constant zero. The consumer must restore the
-    parity wires so the products and carries can be erased.
+    parity qubits so the products and carries can be erased.
     """
     if type(measurement_bit) is not int or measurement_bit < 0:
         raise ValueError("Column compression requires a nonnegative measurement slot")

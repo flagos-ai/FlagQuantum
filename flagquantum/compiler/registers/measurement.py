@@ -12,20 +12,20 @@ from ...core.classical_dataflow import ClassicalXor
 from ...core.ir import Instruction
 
 
-def measure_x_clear_ir(wire: int, classical_bit: int) -> tuple[Instruction, ...]:
-    """Demolish an X-basis measured wire and leave its physical slot in zero."""
-    if any(type(value) is not int or value < 0 for value in (wire, classical_bit)):
+def measure_x_clear_ir(qubit: int, classical_bit: int) -> tuple[Instruction, ...]:
+    """Demolish an X-basis measured qubit and leave its physical slot in zero."""
+    if any(type(value) is not int or value < 0 for value in (qubit, classical_bit)):
         raise ValueError(
-            "Measurement wire and classical bit must be nonnegative integers"
+            "Measurement qubit and classical bit must be nonnegative integers"
         )
     return (
-        Instruction("h", (wire,)),
+        Instruction("h", (qubit,)),
         Instruction(
             "measure",
-            (wire,),
+            (qubit,),
             metadata={"is_dynamic": True, "classical_bit": classical_bit},
         ),
-        Instruction("x", (wire,), metadata={"conditions": ((classical_bit, 1),)}),
+        Instruction("x", (qubit,), metadata={"conditions": ((classical_bit, 1),)}),
     )
 
 
@@ -37,14 +37,14 @@ class ParityPhase:
     The caller owns its scratch bit. Singleton feedback needs no computation.
     """
 
-    wires: tuple[int, ...]
+    qubits: tuple[int, ...]
     bits: tuple[int, ...]
 
     def __post_init__(self) -> None:
-        if not 1 <= len(self.wires) <= 2 or len(set(self.wires)) != len(self.wires):
+        if not 1 <= len(self.qubits) <= 2 or len(set(self.qubits)) != len(self.qubits):
             raise ValueError("Parity phase requires one or two distinct quantum wires")
         if len(set(self.bits)) != len(self.bits) or any(
-            type(value) is not int or value < 0 for value in (*self.wires, *self.bits)
+            type(value) is not int or value < 0 for value in (*self.qubits, *self.bits)
         ):
             raise ValueError(
                 "Parity phase operands require distinct nonnegative integer bits"
@@ -54,7 +54,7 @@ class ParityPhase:
         """Compute parity in a classical slot, preserving one quantum phase gate."""
         if not self.bits:
             return ()
-        name = ("z", "cz")[len(self.wires) - 1]
+        name = ("z", "cz")[len(self.qubits) - 1]
         prefix: tuple[Instruction, ...] = ()
         bit = self.bits[0]
         if len(self.bits) > 1:
@@ -66,5 +66,5 @@ class ParityPhase:
             bit = parity_bit
         return (
             *prefix,
-            Instruction(name, self.wires, metadata={"conditions": ((bit, 1),)}),
+            Instruction(name, self.qubits, metadata={"conditions": ((bit, 1),)}),
         )

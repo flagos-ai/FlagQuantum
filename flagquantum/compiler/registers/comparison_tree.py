@@ -11,11 +11,13 @@ from .and_compute import and_compute_ir, and_uncompute_ir
 
 
 def _validate(
-    wires: tuple[int, ...], bits: tuple[int, ...], count: int, adjoint: bool
+    qubits: tuple[int, ...], bits: tuple[int, ...], count: int, adjoint: bool
 ) -> None:
     if type(adjoint) is not bool:
         raise ValueError("Comparison adjoint flag must be boolean")
-    if any(type(w) is not int or w < 0 for w in wires) or len(set(wires)) != len(wires):
+    if any(type(w) is not int or w < 0 for w in qubits) or len(set(qubits)) != len(
+        qubits
+    ):
         raise ValueError("Comparison components require distinct nonnegative wires")
     expected = count if adjoint else 0
     if (
@@ -82,7 +84,7 @@ def bi_qubits_mixer_ir(
 ) -> tuple[Instruction, ...]:
     """Preserve comparison sign in low bits; work is logical output until erased.
 
-    Each input has two bits, with three initially zero work wires. The exact
+    Each input has two bits, with three initially zero work qubits. The exact
     source adjoint requires the forward output (including all three work flags)
     and restores the inputs and work, measuring only the last two flags.
     """

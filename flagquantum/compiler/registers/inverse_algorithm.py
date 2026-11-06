@@ -51,7 +51,7 @@ def inverse_algorithm_ir(
 
     Equal n>=2 big-endian words; marker/terminal histories each have 2n bits.
     The forward input right contains x=0 or a unit modulo positive odd modulus;
-    all other logical inputs and 2n+7 work wires start zero. Output coefficient
+    all other logical inputs and 2n+7 work qubits start zero. Output coefficient
     is x^-1 * 2**(2n) mod p (zero maps to zero); histories remain logical data.
     The other words and active flag clear on this domain. Use the returned
     roles from inverse_algorithm_outputs, including for the inverse input.

@@ -28,7 +28,7 @@ def inverse_arithmetic_ir(
 
     Four equal-width positive big-endian words are bit patterns modulo 2**n.
     The source classical model additionally requires no arithmetic overflow.
-    Supply 2n clean work wires and 2n-1 reusable classical slots; 4n-1 measured
+    Supply 2n clean work qubits and 2n-1 reusable classical slots; 4n-1 measured
     erasures occur. Work and all inputs except the two target words are restored.
     """
     n = len(left)

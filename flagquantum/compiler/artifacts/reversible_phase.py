@@ -19,31 +19,31 @@ REVERSIBLE_OPCODE_ARITIES = {
 
 @dataclass(frozen=True)
 class ReversiblePhaseOperation:
-    """A lowered opcode with ordered wires and optional classical operands."""
+    """A lowered opcode with ordered qubits and optional classical operands."""
 
     opcode: str
-    wires: tuple[int, ...]
+    qubits: tuple[int, ...]
     result_bit: int | None = None
     condition_bit: int | None = None
 
 
 @dataclass(frozen=True)
 class ReversiblePhaseProgram:
-    """A validated operation stream using logical wire order."""
+    """A validated operation stream using logical qubit order."""
 
-    n_wires: int
+    n_qubits: int
     n_bits: int
     operations: tuple[ReversiblePhaseOperation, ...]
 
     def __post_init__(self) -> None:
-        if self.n_wires < 1 or self.n_bits < 0:
+        if self.n_qubits < 1 or self.n_bits < 0:
             raise ValueError("Invalid reversible-phase register widths")
         written: set[int] = set()
         for op in self.operations:
             if (
-                REVERSIBLE_OPCODE_ARITIES.get(op.opcode) != len(op.wires)
-                or len(set(op.wires)) != len(op.wires)
-                or any(not 0 <= wire < self.n_wires for wire in op.wires)
+                REVERSIBLE_OPCODE_ARITIES.get(op.opcode) != len(op.qubits)
+                or len(set(op.qubits)) != len(op.qubits)
+                or any(not 0 <= wire < self.n_qubits for wire in op.qubits)
             ):
                 raise ValueError(f"Invalid reversible-phase operation {op.opcode!r}")
             if op.opcode in {"bit_store0", "bit_invert"}:

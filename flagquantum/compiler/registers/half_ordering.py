@@ -31,7 +31,7 @@ def half_compare_outputs(
     """Bind logical ports for the same validated layout passed to half_compare_ir.
 
     Preserve the pinned executable port aliases: ge/lt adjoints return a on
-    the original right wires and b on the left, although the physical state
+    the original right qubits and b on the left, although the physical state
     is restored. This source decomposition differs from its classical model;
     callers must retain these bindings rather than silently assume identity.
     """
@@ -59,7 +59,7 @@ def half_compare_ir(
 
     gt/le retain b-a, while ge/lt retain a-b, modulo 2**(n+1).
     Output/initialization and measured-adjoint contracts are half_greater_ir's.
-    Physical input wires and the original pre/post flip order are preserved.
+    Physical input qubits and the original pre/post flip order are preserved.
     Logical ports must be read through half_compare_outputs, including the
     pinned ge/lt adjoint output-alias exchange.
     """

@@ -125,7 +125,7 @@ class QroamCleanTable:
     def workspace_size(
         self, control_count: int, selection_widths: tuple[int, ...]
     ) -> int:
-        """Count temporary And wires, excluding the output banks."""
+        """Count temporary And qubits, excluding the output banks."""
         return source_qrom_workspace_size(
             control_count, self._high_widths(selection_widths), self.batched_data
         )

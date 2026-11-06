@@ -25,8 +25,8 @@ class _PolynomialEmitter:
         self.used.update(wires)
         return wires
 
-    def free(self, wires: tuple[int, ...]) -> None:
-        self.available.extend(reversed(wires))
+    def free(self, qubits: tuple[int, ...]) -> None:
+        self.available.extend(reversed(qubits))
 
     def cx(self, source: int, target: int) -> None:
         self.instructions.append(Instruction("cx", (source, target)))

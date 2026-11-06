@@ -26,8 +26,8 @@ def half_greater_ir(
     """Compute (b-a mod 2**(n+1), a>b), or clear the correct computed pair.
 
     Equal positive-width operands and outputs are big-endian. Difference has
-    n+1 wires; target and difference are initially zero in forward mode. Two
-    zero sign work wires are always restored. Operands are preserved. Measured
+    n+1 qubits; target and difference are initially zero in forward mode. Two
+    zero sign work qubits are always restored. Operands are preserved. Measured
     adjoint requires the correct logical pair and n distinct classical slots;
     it restores both outputs to zero without more quantum scratch.
     """

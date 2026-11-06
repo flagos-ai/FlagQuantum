@@ -35,7 +35,7 @@ def windowed_mod_mul_ir(
     chunks are ordered from the least-significant multiplier window upward.
     The forward path starts with target, indices, reduced, padding, bank and
     work clean. Result bits occupy target[w:] followed by padding. The first
-    w wires of target become clean work. Both directions accept the original
+    w qubits of target become clean work. Both directions accept the original
     layout; the adjoint reads the result and retained outputs in that layout.
 
     Width w=len(padding) divides n=len(x); odd p>1 requires 2*p-1 < 2**n.

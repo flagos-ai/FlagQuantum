@@ -28,9 +28,9 @@ def less_than_constant_ir(
 ) -> tuple[Instruction, ...]:
     """XOR x<threshold into target, preserving input amplitudes and clean work.
 
-    The source is big-endian. Normal paths require n+1 zero work wires and n
+    The source is big-endian. Normal paths require n+1 zero work qubits and n
     distinct nonnegative classical slots; the always-true path requires neither.
-    Every quantum work wire is zero at exit. Target need not start in zero.
+    Every quantum work qubit is zero at exit. Target need not start in zero.
     """
     required = less_than_constant_workspace_size(len(source), threshold)
     wires = (*source, target, *workspace)

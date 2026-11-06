@@ -41,8 +41,8 @@ def subtract_ir(
 ) -> tuple[Instruction, ...]:
     """Preserve a and replace b with a-b modulo the right register width.
 
-    Big-endian a may be narrower than b. Supply n-m clean prefix wires for
-    zero/sign extension and n-1 clean carry wires with distinct classical slots.
+    Big-endian a may be narrower than b. Supply n-m clean prefix qubits for
+    zero/sign extension and n-1 clean carry qubits with distinct classical slots.
     All quantum work returns to zero. signed controls a's extension only; the
     output bit pattern can be interpreted in either signed or unsigned form.
     """
@@ -66,7 +66,7 @@ def subtract_from_ir(
     """Preserve a and replace b with b-a on equal-width big-endian registers.
 
     Carry ownership and measured cleanup follow add_ir. This is the upstream
-    SubtractFrom chain, not a rewired or optimized version of Subtract.
+    SubtractFrom chain, not a remapped or optimized version of Subtract.
     """
     _validate_subtraction(left, right, (), carries, classical_bits)
     addition = add_ir(left, right, carries, classical_bits)

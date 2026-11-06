@@ -30,7 +30,7 @@ def _validate_modular_layout(
     classical_bits: tuple[int, ...],
     requirements: tuple[int, int],
     *,
-    extra_wires: tuple[int, ...] = (),
+    extra_qubits: tuple[int, ...] = (),
 ) -> None:
     """Share operand/domain/layout validation across actual modular consumers."""
     n, (q, c) = len(left), requirements
@@ -38,7 +38,7 @@ def _validate_modular_layout(
         raise ValueError("Modular arithmetic requires equal operand widths")
     if type(modulus) is not int or not 1 <= modulus < 1 << n:
         raise ValueError("Modulus must be a positive integer fitting the operand")
-    wires = (*extra_wires, *left, *right, *workspace)
+    wires = (*extra_qubits, *left, *right, *workspace)
     if any(type(w) is not int or w < 0 for w in wires) or len(set(wires)) != len(wires):
         raise ValueError(
             "Modular arithmetic requires distinct nonnegative quantum wires"

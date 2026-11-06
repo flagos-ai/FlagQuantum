@@ -18,28 +18,28 @@ from .polynomial import _validate_registers
 
 def _square(
     emitter: _FieldEmitter,
-    wires: tuple[int, ...],
+    qubits: tuple[int, ...],
     count: int = 1,
     *,
     adjoint: bool = False,
 ) -> tuple[int, ...]:
     """Port GF2Square and its PLU network for powers used in Itoh--Tsujii."""
-    n = len(wires)
+    n = len(qubits)
     columns = [1 << i for i in range(n)]
     for _ in range(count):
         columns = [_product(value, value, emitter.modulus) for value in columns]
     matrix = [[(columns[j] >> i) & 1 for j in range(n)] for i in range(n)]
     start = len(emitter.instructions)
-    result = emitter.linear(wires[::-1], matrix)[::-1]
+    result = emitter.linear(qubits[::-1], matrix)[::-1]
     if not adjoint:
         return result
     gates = emitter.instructions[start:]
     del emitter.instructions[start:]
-    binding = dict(zip(result, wires, strict=True))
+    binding = dict(zip(result, qubits, strict=True))
     emitter.instructions.extend(
         Instruction(g.name, tuple(binding[w] for w in g.wires)) for g in reversed(gates)
     )
-    return tuple(binding[w] for w in wires)
+    return tuple(binding[w] for w in qubits)
 
 
 def gf2_inverse_decomposition(
@@ -107,7 +107,7 @@ def gf2_inverse_ir(
     """XOR the inverse into target and erase all upstream intermediate products.
 
     Target need not be zero. Workspace must start in zero and returns to zero.
-    Source is preserved on its original physical wires, including GF(2) and GF(4).
+    Source is preserved on its original physical qubits, including GF(2) and GF(4).
     """
     _validate_registers(source, target, workspace)
     if len(source) != len(target):

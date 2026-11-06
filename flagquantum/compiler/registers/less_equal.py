@@ -13,7 +13,7 @@ from .multi_control import multi_and_ir
 
 
 def less_equal_requirements(left_width: int, right_width: int) -> tuple[int, int]:
-    """Return (clean quantum wires, distinct classical slots) for concrete widths."""
+    """Return (clean quantum qubits, distinct classical slots) for concrete widths."""
     if any(type(n) is not int or n < 1 for n in (left_width, right_width)):
         raise ValueError("Less-equal requires positive concrete register widths")
     n = min(left_width, right_width)

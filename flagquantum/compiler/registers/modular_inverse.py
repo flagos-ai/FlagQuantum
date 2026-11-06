@@ -21,7 +21,7 @@ def modular_inverse_outputs(
 
     Forward target becomes the body's coefficient output. Original target
     becomes the clean auxiliary coefficient word. The inverse consumes these
-    physical roles; it does not presume a materialized fixed-wire output.
+    physical roles; it does not presume a materialized fixed-qubit output.
     """
     n = len(target)
     if n < 2 or len(workspace) != 5 * n + 8 or type(adjoint) is not bool:
@@ -51,7 +51,7 @@ def modular_inverse_ir(
     """Port the original public compute/uncompute wrapper with zero work promises.
 
     Forward target is zero or a unit modulo positive odd p with p+1<2**n.
-    All 4n history bits and 5n+8 work wires start zero. The result is the
+    All 4n history bits and 5n+8 work qubits start zero. The result is the
     Montgomery-scaled inverse x^-1*2**(2n) mod p, with zero mapped to zero;
     junk retains 4n logical history bits. Work returns zero on the output roles.
     The inverse consumes the matching result/history and actual output roles,

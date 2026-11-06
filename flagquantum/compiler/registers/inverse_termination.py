@@ -22,7 +22,7 @@ def inverse_termination_ir(
 ) -> tuple[Instruction, ...]:
     """Update logical inverse flags; restore value and all clean work.
 
-    Value has at least two bits and is big-endian. Supply len(value) clean quantum wires
+    Value has at least two bits and is big-endian. Supply len(value) clean quantum qubits
     and classical slots. Forward first XORs active & (value==0) into marker,
     then XORs marker into active and terminal. Terminal starts in zero for the
     source classical contract; the emitted gates are reversible on either bit.

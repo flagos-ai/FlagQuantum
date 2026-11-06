@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # Adapted from Qualtran v0.7.0 HammingWeightCompute and its source adjoint.
 # Source: https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/bloqs/arithmetic/hamming_weight.py
-# Changes: explicit logical garbage/output wires, measured erasure and native IR.
+# Changes: explicit logical garbage/output qubits, measured erasure and native IR.
 
 """Three-to-two Hamming-weight tree with explicit logical garbage and cleanup."""
 
@@ -31,7 +31,7 @@ def hamming_weight_ir(
     Registers are big-endian. Forward changes source and leaves logical junk;
     neither is advertised as preserved/clean until the measured adjoint runs.
     The adjoint takes the entire correct computed state and restores source,
-    clearing both junk and output. Supply one classical slot per junk wire.
+    clearing both junk and output. Supply one classical slot per junk qubit.
     """
     j, o = hamming_weight_requirements(len(source))
     if type(adjoint) is not bool:

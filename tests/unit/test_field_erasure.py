@@ -157,8 +157,8 @@ def test_all_input_pairs_all_branch_phases_and_workspace(
         if op.opcode == "hmr":
             assert op.result_bit is not None
             classical_masks[op.result_bit] = 1 << op.result_bit
-            phase_mask ^= states[op.wires[0]] << op.result_bit
-            states[op.wires[0]] = np.zeros_like(phase_mask)
+            phase_mask ^= states[op.qubits[0]] << op.result_bit
+            states[op.qubits[0]] = np.zeros_like(phase_mask)
         elif op.opcode == "bit_store0":
             assert op.result_bit is not None
             classical_masks[op.result_bit] = 0
@@ -167,12 +167,12 @@ def test_all_input_pairs_all_branch_phases_and_workspace(
             classical_masks[op.result_bit] ^= classical_masks[op.condition_bit]
         elif op.opcode == "cz":
             assert op.condition_bit is not None
-            phase_mask ^= (states[op.wires[0]] & states[op.wires[1]]) * classical_masks[
-                op.condition_bit
-            ]
+            phase_mask ^= (
+                states[op.qubits[0]] & states[op.qubits[1]]
+            ) * classical_masks[op.condition_bit]
         else:
             assert op.opcode in {"cx", "ccx"} and op.condition_bit is None
-            *controls, target = op.wires
+            *controls, target = op.qubits
             active = np.ones_like(phase_mask)
             for wire in controls:
                 active &= states[wire]

@@ -55,7 +55,7 @@ def multi_and_ir(
     At least two controls are required. Work starts in zero for compute; at its
     exit work[i] is the conjunction through control i+1. These are logical
     prefix outputs, not clean scratch. Erase requires those correct prefix
-    values and restores every work wire to zero using caller-owned measurements.
+    values and restores every work qubit to zero using caller-owned measurements.
     """
     if len(controls) < 2 or type(uncompute) is not bool:
         raise ValueError(

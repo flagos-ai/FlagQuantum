@@ -25,7 +25,7 @@ def inverse_parity_ir(
     """Update logical parity/marker/branch data and return shared work to zero.
 
     Equal-width positive big-endian words are preserved. Supply two clean work
-    wires and two reusable classical slots; three measurements occur. All flags
+    qubits and two reusable classical slots; three measurements occur. All flags
     may be coherent. The marker update uses the already-updated parity bit.
     The adjoint restores flags by reversing original components, not primitives.
     """

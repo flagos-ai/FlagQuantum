@@ -48,7 +48,7 @@ def inverse_iteration_ir(
     Words are equal-width big-endian; n>=2 and modulus is a fitting positive
     odd integer. Supply 2n+7 clean work and max(2n-1,n+1) reusable classical
     slots. Marker and terminal are fresh zero logical outputs on forward
-    algorithm-reachable inputs. Internal parity/branch wires clear on those
+    algorithm-reachable inputs. Internal parity/branch qubits clear on those
     inputs; arbitrary words/flags need not satisfy this promise. The inverse
     consumes the full forward image and inverse_iteration_outputs' roles.
     There are 8n+5 measurement events; none forcibly resets logical work.

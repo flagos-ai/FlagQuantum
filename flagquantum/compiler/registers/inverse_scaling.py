@@ -22,7 +22,7 @@ def inverse_scaling_outputs(
 ) -> tuple[tuple[int, ...], tuple[int, ...]]:
     """Resolve this layer's changed coefficient/clean-work roles for its consumers.
 
-    Other logical word/flag wire tuples are unchanged. Read these returned
+    Other logical word/flag qubit tuples are unchanged. Read these returned
     roles before composing the next stage or the original adjoint. There is no
     materializing SWAP. The inverse consumes the actual forward output roles.
     """

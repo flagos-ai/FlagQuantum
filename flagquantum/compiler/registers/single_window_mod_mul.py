@@ -51,7 +51,7 @@ def single_window_mod_mul_ir(
     *,
     adjoint: bool = False,
 ) -> tuple[tuple[Instruction, ...], tuple[int, ...]]:
-    """Emit one source window and return the logical target wire order.
+    """Emit one source window and return the logical target qubit order.
 
     x is little-endian; other words are big-endian. The w-bit index starts
     at zero in the forward direction and is a retained output. Forward target
@@ -59,8 +59,8 @@ def single_window_mod_mul_ir(
     The integer recurrence applies on the carry-safe domain, for example
     2*p-1 < 2**n, y < p and target < 2*p. The gates retain source wraparound.
 
-    Supply n+w-1 work wires, 2n classical slots and the clean lookup bank.
-    Controlled addition borrows vacant bank wires. Bank and work return to
+    Supply n+w-1 work qubits, 2n classical slots and the clean lookup bank.
+    Controlled addition borrows vacant bank qubits. Bank and work return to
     zero. The executable bank clear reverses the forward lookup components.
     """
     n, w = len(y), len(x)

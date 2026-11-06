@@ -31,7 +31,7 @@ def _controlled_modular_workspace(
     classical_bits: tuple[int, ...],
     control_value: int,
 ) -> tuple[int, tuple[int, ...], tuple[int, ...], tuple[int, ...]]:
-    """Bind reused roles with a stable classical slot per measured physical wire."""
+    """Bind reused roles with a stable classical slot per measured physical qubit."""
     n = len(left)
     requirements = controlled_modular_requirements(n)
     if type(control_value) is not int or control_value not in (0, 1):

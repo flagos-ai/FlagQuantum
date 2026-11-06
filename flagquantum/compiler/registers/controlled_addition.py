@@ -24,7 +24,7 @@ def controlled_add_ir(
 ) -> tuple[Instruction, ...]:
     """Add a zero-extended word on the selected coherent control branch.
 
-    Supply one clean loaded wire per left bit and len(right)-1 clean carries,
+    Supply one clean loaded qubit per left bit and len(right)-1 clean carries,
     each with a distinct classical slot. Quantum work starts/ends zero; the
     slots retain latest measurement outcomes.
     Unequal-width bit patterns use zero extension, not signed extension.
@@ -55,7 +55,7 @@ def controlled_add_adjoint_ir(
 ) -> tuple[Instruction, ...]:
     """Port CAdd.adjoint with original loaded bits and exact shared Add adjoint.
 
-    Supply one clean loaded wire per left bit and len(right)-1 clean carries,
+    Supply one clean loaded qubit per left bit and len(right)-1 clean carries,
     each with a distinct classical slot. Quantum work starts/ends zero; the
     slots retain latest measurement outcomes.
     Unequal-width bit patterns use zero extension, not signed extension.
@@ -87,8 +87,8 @@ def _controlled_addition_ir(
 ) -> tuple[Instruction, ...]:
     """Share loaded-word validation, compute, exact Add/adjoint and erase stages.
 
-    All registers are big-endian. Supply m clean loaded wires, n-1 clean carries
-    for m<=n, and one distinct classical measurement slot for each work wire.
+    All registers are big-endian. Supply m clean loaded qubits, n-1 clean carries
+    for m<=n, and one distinct classical measurement slot for each work qubit.
     Left and control retain their values; right is updated and all work cleared.
     Equal-width bit patterns also implement signed addition modulo 2**n.
     Unequal-width signed sign extension is not supplied by this entry point.
