@@ -9,6 +9,7 @@ from flagquantum.algorithms.first_quantization_resource_model import (
     source_prepare_ij_cost,
     source_prepare_power_two_cost,
     source_prepare_t_cost,
+    source_prepare_zeta_cost,
     source_select_first_quantization_cost,
     source_select_t_cost,
     source_select_uv_cost,
@@ -226,3 +227,31 @@ def test_kinetic_prepare_resource_report_separates_emitted_coordinate() -> None:
     assert emitted.emitted.declared_qubits == 6
     ij = estimate_ftqc_resources(source_prepare_ij_cost(10))
     assert 2 * (ij.logical.gates.toffoli + declared.logical.gates.toffoli) == 126
+
+
+@pytest.mark.parametrize(
+    ("atoms", "charge", "precision"),
+    [(1, 0, 1), (1, 1, 8), (2, 4, 8), (9, 10, 16), (33, 15, 2), (2, 2**54 + 1, 8)],
+)
+@pytest.mark.parametrize("adjoint", [False, True])
+@pytest.mark.ftqc_reference
+def test_prepare_zeta_cost(
+    atoms: int, charge: int, precision: int, adjoint: bool
+) -> None:
+    pytest.importorskip("qualtran")
+    from qualtran import DecomposeNotImplementedError, Side
+    from qualtran.bloqs.chemistry.pbc.first_quantization.prepare_zeta import (
+        PrepareZetaState,
+    )
+
+    source = PrepareZetaState(atoms, charge, precision)
+    if adjoint:
+        source = source.adjoint()
+    index = source.signature.get_left("l")
+    assert index.side == Side.THRU
+    assert index.bitsize == (atoms - 1).bit_length()
+    assert_source_model(
+        source_prepare_zeta_cost(atoms, charge, adjoint=adjoint), source
+    )
+    with pytest.raises(DecomposeNotImplementedError):
+        source.decompose_bloq()

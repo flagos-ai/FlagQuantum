@@ -5,6 +5,8 @@
 
 """Declared costs for first-quantized plane-wave SELECT and PREPARE."""
 
+from math import ceil
+
 from ..compiler._component_trace.resource_model import ComponentCost, CostCall, GateCost
 from ..compiler.registers.arithmetic_resource_model import source_add_cost
 from ..compiler.registers.uniform_preparation import source_uniform_preparation_cost
@@ -163,3 +165,20 @@ def source_prepare_t_cost(
             CostCall(power_two, repetitions=2, bystander_qubits=ports - num_bits_p),
         ),
     )
+
+
+def source_prepare_zeta_cost(
+    num_atoms: int, lambda_zeta: int, *, adjoint: bool = False
+) -> ComponentCost:
+    """Estimate preparation of the nuclear index, or its source adjoint.
+
+    The single big-endian index is a through register. The source has a cost
+    declaration without a gate decomposition or work-register contract.
+    """
+    _require_positive(num_atoms)
+    if type(lambda_zeta) is not int or lambda_zeta < 0:
+        raise ValueError("Total nuclear charge must be a nonnegative integer")
+    width = (num_atoms - 1).bit_length()
+    # Keep the source's floating square-root rounding in the adjoint model.
+    toffoli = ceil(lambda_zeta**0.5) if adjoint else lambda_zeta
+    return ComponentCost("PrepareZetaState", max(width, 3), GateCost(toffoli=toffoli))
