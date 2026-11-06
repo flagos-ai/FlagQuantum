@@ -6,6 +6,7 @@ import pytest
 
 from flagquantum.algorithms.first_quantization_resource_model import (
     source_apply_nuclear_phase_cost,
+    source_prepare_first_quantization_cost,
     source_prepare_ij_cost,
     source_prepare_power_two_cost,
     source_prepare_t_cost,
@@ -346,3 +347,107 @@ def test_prepare_tuv_source_cost(
         assert_source_model(model, operation)
         with pytest.raises(DecomposeNotImplementedError):
             operation.decompose_bloq()
+
+
+@pytest.mark.parametrize(
+    ("p", "eta", "atoms", "charge", "m", "term_bits", "rotation_bits"),
+    [
+        (1, 2, 1, 0, 3, 1, 1),
+        (2, 3, 1, 1, 5, 9, 2),
+        (2, 2, 4, 4, 64, 7, 3),
+        (3, 9, 5, 15, 9, 12, 8),
+        (6, 10, 10, 10, 32768, 16, 8),
+    ],
+)
+@pytest.mark.parametrize("adjoint", [False, True])
+@pytest.mark.ftqc_reference
+def test_prepare_first_quantization_source_graph(
+    p: int,
+    eta: int,
+    atoms: int,
+    charge: int,
+    m: int,
+    term_bits: int,
+    rotation_bits: int,
+    adjoint: bool,
+) -> None:
+    pytest.importorskip("qualtran")
+    from qualtran import LeftDangle, RightDangle
+    from qualtran.bloqs.chemistry.pbc.first_quantization.select_and_prepare import (
+        PrepareFirstQuantization,
+    )
+
+    source = PrepareFirstQuantization(
+        p,
+        eta,
+        atoms,
+        charge,
+        m_param=m,
+        num_bits_t=term_bits,
+        num_bits_rot_aa=rotation_bits,
+    )
+    if adjoint:
+        source = source.adjoint()
+    model = source_prepare_first_quantization_cost(
+        p,
+        eta,
+        atoms,
+        charge,
+        m_param=m,
+        num_bits_t=term_bits,
+        num_bits_rot_aa=rotation_bits,
+        adjoint=adjoint,
+    )
+    assert_source_model(model, source)
+    assert model.qubits == source.signature.n_qubits()
+    graph = source.decompose_bloq()
+    live = {edge for edge in graph.connections if edge.left.binst == LeftDangle}
+    assert [
+        (edge.left.reg.name, edge.right.reg.name)
+        for edge in live
+        if edge.right.binst == RightDangle
+    ] == [("plus_t", "plus_t")]
+    stages = []
+    for node, incoming, outgoing in graph.iter_bloqnections():
+        live.difference_update(incoming)
+        stages.append((str(node.bloq), sum(edge.shape for edge in live)))
+        if str(node.bloq).startswith("PrepareUV"):
+            assert {
+                (edge.left.reg.name, edge.right.idx)
+                for edge in incoming
+                if edge.right.reg.name == "nu"
+            } == {("nu_x", (0,)), ("nu_y", (1,)), ("nu_z", (2,))}
+            assert {
+                (edge.right.reg.name, edge.left.idx)
+                for edge in outgoing
+                if edge.left.reg.name == "nu"
+            } == {("nu_x", (0,)), ("nu_y", (1,)), ("nu_z", (2,))}
+            assert any(
+                edge.left.reg.name == "succ_nu" and edge.right.reg.name == "flag_nu"
+                for edge in incoming
+            )
+        live.update(outgoing)
+    assert stages == [
+        (call.component.name, call.bystander_qubits) for call in model.calls
+    ]
+
+
+@pytest.mark.parametrize(
+    ("eta", "m", "missing", "error"),
+    [(1, 8, "i.*j|j.*i", "at least two particles"), (2, 1, "target", "m_param >= 2")],
+)
+@pytest.mark.ftqc_reference
+def test_prepare_first_quantization_source_zero_width_failure(
+    eta: int, m: int, missing: str, error: str
+) -> None:
+    pytest.importorskip("qualtran")
+    from qualtran import BloqError
+    from qualtran.bloqs.chemistry.pbc.first_quantization.select_and_prepare import (
+        PrepareFirstQuantization,
+    )
+    from qualtran.resource_counting import QubitCount, get_cost_value
+
+    with pytest.raises((BloqError, RuntimeError), match=missing):
+        get_cost_value(PrepareFirstQuantization(2, eta, 1, 1, m_param=m), QubitCount())
+    with pytest.raises(ValueError, match=error):
+        source_prepare_first_quantization_cost(2, eta, 1, 1, m_param=m)

@@ -1232,3 +1232,33 @@ zero-width for one atom, and the source width model still includes the
 three-wire Toffoli callee. The example above reports analytical resources
 for the potential preparation. Its complete emitted gate count is
 unavailable.
+
+## First-quantized top-level PREPARE
+
+The top-level model combines term selection, distinct-particle preparation,
+and kinetic and potential preparation. The three momentum-transfer axes
+keep the source x/y/z order. The `plus_t` port is a bystander at each call.
+
+```python
+from flagquantum.algorithms.first_quantization_resource_model import (
+    source_prepare_first_quantization_cost,
+)
+from flagquantum.qec.resources.estimation import estimate_ftqc_resources
+
+forward = estimate_ftqc_resources(
+    source_prepare_first_quantization_cost(6, 10, 10, 10, m_param=32768)
+)
+reverse = estimate_ftqc_resources(
+    source_prepare_first_quantization_cost(6, 10, 10, 10, m_param=32768, adjoint=True)
+)
+assert forward.logical.gates.toffoli == 680
+assert forward.logical.gates.and_bloq == 28
+assert forward.logical.peak_logical_qubits == 102
+assert reverse.logical.gates.toffoli == 127
+assert reverse.logical.peak_logical_qubits == 76
+```
+
+The report follows the locked source cost declarations. The top-level
+graph contains leaves without gate decompositions, including term selection.
+The source composite also requires at least two particles and a nonempty
+`m` register. The model reports those unsupported boundaries explicitly.

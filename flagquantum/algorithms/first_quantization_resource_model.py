@@ -5,6 +5,7 @@
 
 """Declared costs for first-quantized plane-wave SELECT and PREPARE."""
 
+from dataclasses import replace
 from math import ceil
 
 from ..compiler._component_trace.resource_model import ComponentCost, CostCall, GateCost
@@ -226,4 +227,46 @@ def source_prepare_tuv_cost(
         "PrepareTUVSuperpositions",
         3,
         GateCost(toffoli=num_bits_t + 4 * width + 2 * num_bits_rot_aa - 12),
+    )
+
+
+def source_prepare_first_quantization_cost(
+    num_bits_p: int,
+    eta: int,
+    num_atoms: int,
+    lambda_zeta: int,
+    *,
+    m_param: int = 2**8,
+    num_bits_t: int = 16,
+    num_bits_rot_aa: int = 8,
+    adjoint: bool = False,
+) -> ComponentCost:
+    """Estimate the source top-level PREPARE and its live through registers."""
+    term = source_prepare_tuv_cost(num_bits_t, eta, lambda_zeta, num_bits_rot_aa)
+    if eta < 2:
+        raise ValueError("Source PREPARE requires at least two particles")
+    particles = source_prepare_ij_cost(eta, num_bits_rot_aa)
+    kinetic = source_prepare_t_cost(num_bits_p)
+    potential = source_prepare_uv_cost(
+        num_bits_p, num_atoms, m_param, lambda_zeta, adjoint=adjoint
+    )
+    # The groups are disjoint. plus_t is wired straight through the composite.
+    particle_ports = 2 * (eta - 1).bit_length()
+    kinetic_ports = 2 + 2 * num_bits_p
+    ports = 3 + particle_ports + kinetic_ports + potential.qubits
+    if adjoint:
+        # These three source adjoints retain their forward cost declarations.
+        term = replace(term, name=f"{term.name}†")
+        particles = replace(particles, name=f"{particles.name}†")
+        kinetic = replace(kinetic, name=f"{kinetic.name}†")
+    calls = (
+        CostCall(term, bystander_qubits=ports - 2),
+        CostCall(particles, bystander_qubits=ports - particle_ports),
+        CostCall(kinetic, bystander_qubits=ports - kinetic_ports),
+        CostCall(potential, bystander_qubits=ports - potential.qubits),
+    )
+    return ComponentCost(
+        "PrepareFirstQuantization†" if adjoint else "PrepareFirstQuantization",
+        ports,
+        calls=calls[::-1] if adjoint else calls,
     )
