@@ -2033,3 +2033,49 @@ source mark and fresh-junk layout leaves a nonzero probability of
 occupied junk on zero input: 3/64 for the unblocked example and 1/32
 with two rows per block. The executable full-signal reflection keeps
 those registers logical and marks their zero state as well.
+
+### THC uniform address preparation
+
+`THCUniformPreparation` prepares the address domain used by the alias
+table. It assigns equal positive amplitudes to the upper triangle
+`mu <= nu < num_mu` and the one-body column `nu == num_mu` with
+`mu < num_spin_orb // 2`. The one-body flag retains the source port
+name `nu_eq_mp1`. On zero input the success flag is one and the rotation
+wire and temporary workspace return to zero. The circuit uses one or two
+exact amplitude-amplification steps according to the domain fraction.
+
+```python
+from flagquantum.algorithms.primitives.thc_uniform_preparation import THCUniformPreparation
+from flagquantum.compiler.registers.partition import partition_register
+from flagquantum.dynamic import DynamicCircuit
+from flagquantum.qec.resources.estimation import estimate_ftqc_resources
+
+prep = THCUniformPreparation(2, 4)
+width = sum(size for _, size in prep.layout)
+ports = partition_register(tuple(range(width)), prep.layout)
+work, slots = prep.requirements()
+op = prep.make_on(
+    ports,
+    workspace=tuple(range(width, width + work)),
+    classical_bits=tuple(range(slots)),
+)
+circuit = DynamicCircuit(width + work).append(op)
+report = estimate_ftqc_resources(prep.source_resource_model(), emitted_ir=circuit.to_ir())
+assert report.logical.gates.and_bloq == 40
+assert report.logical.gates.toffoli == 4
+assert report.logical.peak_logical_qubits == 16
+assert report.emitted is not None
+assert report.emitted.t_count == 152
+assert report.emitted.unconditional["ccx"] == 8
+assert report.emitted.unconditional["ry"] == 3
+assert report.emitted.unconditional["measure"] == 38
+assert report.emitted.declared_qubits == 17
+```
+
+The locked source graph flags `nu == num_mu + 1` and requires that
+condition together with `nu < num_mu` to set success from zero. Its
+greater-than leaf supplies costs only. Its last X also flips the junk
+bit immediately before a clean Free. The source model follows those
+original calls. The executable circuit uses the alias table's sentinel
+and a clean predicate for the union of the two domains. The report
+therefore keeps source logical costs separate from emitted instructions.

@@ -3,7 +3,7 @@
 from cmath import exp
 from collections import defaultdict
 from itertools import product
-from math import sqrt
+from math import cos, sin, sqrt
 
 import numpy as np
 import pytest
@@ -28,7 +28,7 @@ from tests.unit.test_source_qroam_clean import source_clean_graph
 pytestmark = pytest.mark.unit
 
 
-def _branch(gates, width, history, state=None):
+def _branch(gates, width, history, state=None, *, normalize_measurements=False):
     """Evaluate the small-support fixture without allocating dense bank states."""
     state = {0: 1 + 0j} if state is None else state
     bits = {}
@@ -50,11 +50,19 @@ def _branch(gates, width, history, state=None):
         if gate.name == "measure":
             outcome = next(outcomes)
             bits[gate.metadata["classical_bit"]] = outcome
-            state = {
+            projected = {
                 index: amp
                 for index, amp in state.items()
                 if bool(index & mask) == outcome
             }
+            if normalize_measurements:
+                assert sum(
+                    abs(amp) ** 2 for amp in projected.values()
+                ) == pytest.approx(
+                    sum(abs(amp) ** 2 for amp in state.values()) / 2, abs=2e-12
+                )
+                projected = {index: amp * sqrt(2) for index, amp in projected.items()}
+            state = projected
             continue
         updated = defaultdict(complex)
         for index, amp in state.items():
@@ -65,11 +73,19 @@ def _branch(gates, width, history, state=None):
                 updated[index ^ mask] += amp
             elif gate.name == "cy" and index & masks[0]:
                 updated[index ^ mask] += amp * (-1j if index & mask else 1j)
+            elif gate.name == "ccx" and all(index & control for control in masks[:-1]):
+                updated[index ^ mask] += amp
             elif gate.name == "reset":
                 updated[index & ~mask] += amp
             elif gate.name == "rz":
                 theta = gate.params["theta"]
                 updated[index] += amp * exp((1j if index & mask else -1j) * theta / 2)
+            elif gate.name == "ry":
+                half_angle = gate.params["theta"] / 2
+                updated[index] += amp * cos(half_angle)
+                updated[index ^ mask] += (
+                    amp * sin(half_angle) * (-1 if index & mask else 1)
+                )
             elif gate.name == "phase":
                 updated[index] += amp * (
                     exp(1j * gate.params["theta"]) if index & mask else 1
@@ -77,7 +93,7 @@ def _branch(gates, width, history, state=None):
             elif gate.name == "cz":
                 updated[index] += -amp if all(index & m for m in masks) else amp
             else:
-                assert gate.name in (*phase, "cx", "cy")
+                assert gate.name in (*phase, "cx", "cy", "ccx")
                 updated[index] += amp * phase.get(gate.name, 1) if index & mask else amp
         state = {index: amp for index, amp in updated.items() if abs(amp) > 1e-12}
     assert next(outcomes, None) is None
