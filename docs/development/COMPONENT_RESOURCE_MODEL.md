@@ -2870,3 +2870,35 @@ circuit.append(prepare.make_on(
 The two-factor fixture emits 54 T-family instructions, ten measurements and
 six native controlled rotations per inner direction. It uses three clean
 scratch wires. The chemistry resource placeholder is counted separately.
+
+### Executable double-factorization number SELECT
+
+The SELECT computes a fresh contiguous index from the factor offset and the
+post-alias orbital. The loaded binary angle words program adjacent rotations
+on a spin-major system. Each pair uses the commuting XY and YX rotations
+from Eq. 62 of [arXiv:2007.14460](https://arxiv.org/abs/2007.14460), lowered
+through a shared phase gradient and measured addition. The number phase and
+coefficient sign use the same success predicate. Reversing the basis, spin
+swap, lookup and address computation clears the entire clean bank.
+
+```python
+from flagquantum.algorithms.primitives.multiplexers.select_double_factorization import (
+    SelectDoubleFactorization,
+)
+from flagquantum.compiler.registers.partition import partition_register
+from flagquantum.dynamic import DynamicCircuit
+
+select = SelectDoubleFactorization.from_angle_words(
+    2, ((1,), (2,), (3,), (4,)), angle_bits=4,
+)
+logical = sum(width for _, width in select.layout())
+work = select.workspace_size()
+ports = partition_register(tuple(range(logical)), select.layout())
+circuit = DynamicCircuit(logical + work)
+circuit.append(select.make_on(ports, workspace=tuple(range(logical, logical + work))))
+```
+
+The two-orbital fixture emits 104 T-family instructions and 19 measurements
+with three scratch wires. The three-orbital blocked fixture emits 218
+T-family instructions and 28 measurements with three scratch wires. The
+locked DF programmed-rotation component remains a separate cost declaration.
