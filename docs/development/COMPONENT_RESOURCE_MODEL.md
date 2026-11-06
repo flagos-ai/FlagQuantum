@@ -135,8 +135,31 @@ This models declared algorithm success. An And uncompute, for example, can
 have two equiprobable measurement histories that both restore the state and
 therefore succeed with probability one.
 
-The model assumes concrete counts and explicit sequential bystanders.
-Symbolic aggregation, automatic graph scheduling, and physical
+Concrete call aggregation uses explicit sequential bystanders. The
+shape-level formulas in
+`flagquantum.compiler.registers.symbolic_resource_model` can also accept
+SymPy expressions. The concrete path needs no SymPy import.
+
+```python
+from sympy import Symbol
+from flagquantum.compiler.registers.symbolic_resource_model import (
+    source_add_resource_formula,
+    source_qrom_resource_formula,
+)
+
+n = Symbol("n", positive=True, integer=True)
+adder = source_add_resource_formula(n, n)
+lookup = source_qrom_resource_formula((n,), (2,), control_count=1)
+assert adder.measurement.subs(n, 5) == 4
+assert lookup.and_bloq.subs(n, 5) == 4
+```
+
+The symbolic Add width follows the source signature fallback. Rebuilding
+the formula with concrete widths includes the decomposed carries. A QROM
+formula uses the shape-only source model, including its product across
+target word widths. Concrete table costs use the separate unary QROM model
+and its early termination for uniform subtrees. Symbolic aggregation
+across arbitrary component graphs, automatic scheduling and physical
 error-correction models remain separate.
 
 - [Qualtran v0.7.0 gate costs](https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/resource_counting/_bloq_counts.py)
@@ -144,3 +167,4 @@ error-correction models remain separate.
 - [Qualtran v0.7.0 success probability](https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/resource_counting/_success_prob.py)
 - [Qualtran v0.7.0 call graph](https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/resource_counting/_call_graph.py)
 - [Qualtran v0.7.0 cost queries](https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/resource_counting/_costing.py)
+- [Qualtran v0.7.0 symbolic mathematics](https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/symbolics/math_funcs.py)
