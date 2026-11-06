@@ -24,6 +24,7 @@ from ...compiler._component_trace.resource_generalization import (
     ResourceCall,
     RotationCall,
     ZeroCostCall,
+    identity_cost_key,
 )
 from ...compiler._component_trace.symbolic_math import SymbolicReal
 from .conversion import _cirq
@@ -56,7 +57,7 @@ def cirq_gate_resource_key(gate: object) -> ResourceCall | None:
         cirq.CZ: CliffordCall("cz", 2),
         cirq.SWAP: CliffordCall("swap_bit", 2),
         cirq.CSWAP: ControlledSwapCall(1),
-        cirq.I: ZeroCostCall("identity", (1,)),
+        cirq.I: identity_cost_key(1),
     }
     try:
         key = fixed.get(gate)
@@ -103,7 +104,7 @@ def _controlled_key(
     key: ResourceCall | None, controls: tuple[int, ...]
 ) -> ResourceCall | None:
     if isinstance(key, ZeroCostCall) and key.opcode == "identity":
-        return ZeroCostCall("identity", (1 + len(controls),))
+        return identity_cost_key(1, control_width=len(controls))
     if isinstance(key, CliffordCall) and key.opcode == "x" and controls == (1, 1):
         return FixedTCall("toffoli")
     if key is not None:

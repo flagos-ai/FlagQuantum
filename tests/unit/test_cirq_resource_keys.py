@@ -22,6 +22,7 @@ from flagquantum.compiler._component_trace.resource_generalization import (
     PhaseCall,
     RotationCall,
     ZeroCostCall,
+    identity_cost_key,
 )
 from flagquantum.ecosystem.cirq.resource_keys import cirq_gate_resource_key
 
@@ -161,3 +162,20 @@ def test_nested_singleton_controls_preserve_original_activation_order() -> None:
     nested = cirq.ControlledGate(inner, control_values=(1, 0))
     flat = cirq.ControlledGate(cirq.T, control_values=(1, 0, 0))
     assert cirq_gate_resource_key(nested) == cirq_gate_resource_key(flat)
+
+
+@pytest.mark.ftqc_reference
+def test_identity_resource_key_respects_the_source_cirq_boundary() -> None:
+    cirq = pytest.importorskip("cirq")
+    pytest.importorskip("qualtran")
+    from qualtran.bloqs.basic_gates import Identity
+    from qualtran.cirq_interop._cirq_to_bloq import cirq_gate_to_bloq
+
+    controlled = cirq.ControlledGate(cirq.I, control_values=(0, 1))
+    source = cirq_gate_to_bloq(controlled)
+    assert source == Identity(3)
+    assert cirq_gate_resource_key(controlled) == identity_cost_key(3)
+
+    atomic = cirq.IdentityGate(3)
+    assert type(cirq_gate_to_bloq(atomic)).__name__ == "CirqGateAsBloq"
+    assert cirq_gate_resource_key(atomic) is None
