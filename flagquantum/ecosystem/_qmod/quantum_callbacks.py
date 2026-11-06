@@ -14,7 +14,10 @@ if TYPE_CHECKING:
 MAX_CALLBACK_STATEMENTS = 4096
 MAX_CALLBACK_DEPTH = 16
 
-BORROWED_ARRAY_PAIR = "qfunc(qbit[],qbit[])"
+BORROWED_EFFECT_SIGNATURES = {
+    "qfunc(qbit[],qbit[])": ("qbit[]", "qbit[]"),
+    "qfunc(qnum)": ("qnum",),
+}
 CALLBACK_ARRAY = "qfunc[]()"
 
 QUANTUM_SIGNATURES = {
@@ -55,10 +58,9 @@ def parse_signature(parser: Parser) -> str:
         parser.take(",")
     parser.take(")")
     signature = "qfunc(" + ",".join(types) + ")"
-    if signature not in QUANTUM_SIGNATURES and signature not in {
-        BORROWED_ARRAY_PAIR,
-        "qfunc(real,qbit[])",
-    }:
+    if signature not in QUANTUM_SIGNATURES and signature not in (
+        BORROWED_EFFECT_SIGNATURES.keys() | {"qfunc(real,qbit[])"}
+    ):
         reject(token, "callback.signature", "unsupported callback signature")
     return signature
 

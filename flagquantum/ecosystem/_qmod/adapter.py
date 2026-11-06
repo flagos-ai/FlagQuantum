@@ -59,7 +59,7 @@ from .predicates import expand_predicate_oracles
 from .preparation import lower_inplace_preparation
 from .qpe import infer_phase_allocation, lower_qpe
 from .quantum_callbacks import (
-    BORROWED_ARRAY_PAIR,
+    BORROWED_EFFECT_SIGNATURES,
     CALLBACK_ARRAY,
     Lambda,
     specialize_quantum_callbacks,
@@ -783,11 +783,17 @@ class _Adapt:
             name = parameter.name.text
             if name in self.parameters:
                 reject(parameter.name, "name", f"duplicate output {name!r}")
-            self.parameters[name] = parameter
+            self.parameters[name] = (
+                replace(parameter, kind="qnum")
+                if parameter.kind == "qnum_signed"
+                else parameter
+            )
         self.widths = {name: p.width for name, p in self.parameters.items()}
         self.inferred: dict[str, int] = {}
         self.signed: set[str] = {
-            name for name, p in self.parameters.items() if p.kind == "qphase_signed"
+            p.name.text
+            for p in syntax.parameters
+            if p.kind in {"qphase_signed", "qnum_signed"}
         }
         self.fractional_bits: dict[str, int] = {}
         self.registers: dict[str, Value] = {}
@@ -1120,7 +1126,7 @@ class _Adapt:
         return value, index
 
     def array_view(
-        self, node: Expression, *, allow_phase: bool = False
+        self, node: Expression, *, allow_phase: bool = False, allow_signed: bool = False
     ) -> tuple[tuple[Value, int], ...]:
         cell = self.record_bit(node)
         if cell is not None:
@@ -1160,7 +1166,7 @@ class _Adapt:
             parameter.kind not in {"qbit[]", "qnum", "qbit"} and not phase
         ):
             reject(target, "type", "expected an unsigned quantum register or view")
-        if target.text in self.signed or (
+        if (target.text in self.signed and not allow_signed) or (
             target.text in self.fractional_bits and not phase
         ):
             reject(target, "type", "views require an unsigned integer register")
@@ -1431,23 +1437,28 @@ class _Adapt:
                 angle=scale * value,
             )
 
-    def borrowed_array_callback(self, argument: Expression) -> Function:
+    def borrowed_effect_callback(
+        self, argument: Expression, kinds: tuple[str, ...]
+    ) -> Function:
         if isinstance(argument, Lambda):
-            if (
-                len(argument.parameters) != 2
-                or len({p.text for p in argument.parameters}) != 2
-            ):
+            if len(argument.parameters) != len(kinds) or len(
+                {p.text for p in argument.parameters}
+            ) != len(kinds):
                 reject(
                     argument.token,
                     "callback.signature",
-                    "callback requires two distinct array ports",
+                    (
+                        "callback requires two distinct array ports"
+                        if len(kinds) == 2
+                        else "callback requires one numeric port"
+                    ),
                 )
             location = argument.token.location
             return Function(
                 Token(f"$callback_{location.line}_{location.column}", location),
                 tuple(
-                    Parameter(port, "qbit[]", None, "inout")
-                    for port in argument.parameters
+                    Parameter(port, kind, None, "inout")
+                    for port, kind in zip(argument.parameters, kinds, strict=True)
                 ),
                 argument.body,
             )
@@ -1457,17 +1468,15 @@ class _Adapt:
         )
         if (
             callback is None
-            or tuple((p.role, p.kind) for p in callback.parameters)
-            != (
-                ("inout", "qbit[]"),
-                ("inout", "qbit[]"),
+            or tuple(p.kind for p in callback.parameters) != kinds
+            or any(
+                p.record is not None or p.role != "inout" for p in callback.parameters
             )
-            or any(p.record is not None for p in callback.parameters)
         ):
             reject(
                 name,
                 "callback.signature",
-                "callback requires two borrowed qubit arrays",
+                "callback requires matching borrowed quantum ports",
             )
         return callback
 
@@ -1504,8 +1513,10 @@ class _Adapt:
         phase_borrows: set[Value] = set()
         for argument, parameter in zip(arguments, syntax.parameters, strict=True):
             name = parameter.name.text
-            if parameter.kind == BORROWED_ARRAY_PAIR:
-                child.callback_bindings[name] = self.borrowed_array_callback(argument)
+            if parameter.kind in BORROWED_EFFECT_SIGNATURES:
+                child.callback_bindings[name] = self.borrowed_effect_callback(
+                    argument, BORROWED_EFFECT_SIGNATURES[parameter.kind]
+                )
                 continue
             if parameter.kind == CALLBACK_ARRAY:
                 child.callback_arrays[name] = capture_callbacks(self, argument)
@@ -1604,7 +1615,7 @@ class _Adapt:
                 record_view(self, parameter, argument)
                 if parameter.record is not None
                 else (
-                    self.array_view(argument, allow_phase=True)
+                    self.array_view(argument, allow_phase=True, allow_signed=True)
                     if parameter.kind in {"qbit[]", "qnum", "qphase"}
                     else (self.gate_target(argument),)
                 )
@@ -1695,7 +1706,7 @@ class _Adapt:
                 reject(token, "scope", "callbacks require ordinary static calls")
             start = len(self.operations)
             self.call_bound_helper(callback, token, arguments)
-            if self.parameters[token.text].kind == BORROWED_ARRAY_PAIR and any(
+            if self.parameters[token.text].kind in BORROWED_EFFECT_SIGNATURES and any(
                 op.name not in PURE_EFFECTS for op in self.operations[start:]
             ):
                 reject(
@@ -2063,16 +2074,16 @@ class _Adapt:
         name = self.atom(target).text
         parameter = self.parameters.get(name)
         if parameter is None or parameter.kind != "qnum":
-            reject(
-                target.token, "type", "in-place increment requires an unsigned integer"
-            )
-        if name in self.signed or name in self.fractional_bits:
-            reject(
-                target.token, "type", "constant increment requires an unsigned integer"
-            )
+            reject(target.token, "type", "in-place increment requires an integer")
+        if name in self.fractional_bits:
+            reject(target.token, "type", "constant increment requires an integer")
         negative = amount.token.text == "-" and len(amount.children) == 1
         magnitude = amount.children[0] if negative else amount
         if magnitude.children or not magnitude.token.text.isdecimal():
+            if name in self.signed:
+                reject(
+                    target.token, "type", "signed increment requires a constant offset"
+                )
             lower_affine_update(self, token, target, amount)
             return
         if int(magnitude.token.text) > 256:
@@ -2081,7 +2092,7 @@ class _Adapt:
                 "arithmetic",
                 "constant increment requires a literal offset in -256..256",
             )
-        view = self.array_view(target)
+        view = self.array_view(target, allow_signed=True)
         modulus = 1 << len(view)
         offset = ((-1 if negative else 1) * int(magnitude.token.text)) % modulus
         if offset > modulus // 2:
@@ -3376,6 +3387,12 @@ class _Adapt:
                             "signed allocation is supported only at main scope",
                         )
                     self.signed.add(target.text)
+                elif target.text in self.signed:
+                    reject(
+                        sign.token,
+                        "type",
+                        "allocation signedness must agree with the declared type",
+                    )
             self.effect_op("qreg.allocate", token, (destination,))
         elif token.text in {
             "prepare_amplitudes",
@@ -3665,7 +3682,9 @@ class _Adapt:
                             for bit in range(register_width(destination))
                         )
             else:
-                gate_locations = (self.gate_target(args[0]),)
+                gate_locations = (
+                    self.gate_target(args[0], allow_numeric=token.text == "H"),
+                )
             for destination, bit in gate_locations:
                 if token.text == "Y":
                     for gate, gate_attributes in (

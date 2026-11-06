@@ -221,6 +221,11 @@ class Parser:
 
     def width(self) -> int:
         token = self.current
+        if token.text == "floor":
+            derived = int(self.binary_log_width().token.text)
+            if not 1 <= derived <= 256:
+                reject(token, "width", "derived width must be in 1..256")
+            return derived
         value = (
             int(token.text)
             if token.text.isdecimal()
@@ -481,12 +486,17 @@ class Parser:
         return left
 
     def binary_log_width(self) -> Expression:
-        token = self.take("ceiling")
+        token = self.take(self.current.text)
         self.take("(")
         self.take("log")
         self.take("(")
         value = self.current
-        if not value.text.isdecimal() or int(value.text) < 2:
+        size = (
+            int(value.text)
+            if value.text.isdecimal()
+            else self.integer_values.get(value.text)
+        )
+        if size is None or size < 2:
             reject(
                 value,
                 "width",
@@ -497,9 +507,10 @@ class Parser:
         self.take("2")
         self.take(")")
         self.take(")")
-        return Expression(
-            Token(str((int(value.text) - 1).bit_length()), token.location)
+        width = (
+            size.bit_length() - 1 if token.text == "floor" else (size - 1).bit_length()
         )
+        return Expression(Token(str(width), token.location))
 
     def angle_argument(self) -> Expression:
         return parse_literal(self)
@@ -696,6 +707,7 @@ class Parser:
         allow_phase: bool = False,
         allow_fixed_array: bool = False,
         allow_numeric_array: bool = False,
+        allow_signed_integer: bool = False,
     ) -> tuple[str, int | None]:
         kind = self.current
         if kind.text not in {"qbit", "qnum"}:
@@ -713,7 +725,9 @@ class Parser:
                 self.take(",")
                 from .qpe import parse_fraction
 
-                phase_kind = parse_fraction(self, width, allow_phase)
+                phase_kind = parse_fraction(
+                    self, width, allow_phase, allow_signed_integer=allow_signed_integer
+                )
                 if phase_kind is not None:
                     return phase_kind, width
             if self.current.text != ">":
@@ -828,6 +842,7 @@ class Parser:
                 kind, width = self.scalar_type(
                     allow_qubit_array=name.text == "main" or role in {"inout", "const"},
                     allow_phase=True,
+                    allow_signed_integer=name.text == "main" and role == "output",
                     allow_fixed_array=role in {"inout", "output", "const"}
                     or name.text == "main",
                 )

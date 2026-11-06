@@ -238,7 +238,9 @@ def infer_phase_allocation(
     return True
 
 
-def parse_fraction(parser: Parser, width: int, allow_phase: bool) -> str | None:
+def parse_fraction(
+    parser: Parser, width: int, allow_phase: bool, *, allow_signed_integer: bool
+) -> str | None:
     sign = parser.current
     if sign.text not in ({"UNSIGNED", "SIGNED", "False"} if allow_phase else {"False"}):
         reject(sign, "type", "signed modifiers are not admitted")
@@ -254,6 +256,10 @@ def parse_fraction(parser: Parser, width: int, allow_phase: bool) -> str | None:
         parser.take(fraction.text)
         parser.take(">")
         return "qphase_signed" if sign.text == "SIGNED" else "qphase"
+    if allow_signed_integer and value == 0 and sign.text == "SIGNED":
+        parser.take(fraction.text)
+        parser.take(">")
+        return "qnum_signed"
     if value != 0 or sign.text == "SIGNED":
         reject(fraction, "type", "fractional modifiers are not admitted")
     parser.take(fraction.text)
