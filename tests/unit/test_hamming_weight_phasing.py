@@ -9,8 +9,12 @@ from typing import Any
 import pytest
 import torch
 
+from flagquantum.compiler._component_trace.resource_model import (
+    estimate_component_resources,
+)
 from flagquantum.compiler.registers.hamming_weight_phasing import (
     hamming_weight_phasing_ir,
+    source_hamming_weight_phasing_cost,
 )
 from flagquantum.core.ir import CircuitIR, Instruction
 from tests.unit.measurement_checks import certified_and_channel_map, forced_branch
@@ -92,6 +96,9 @@ def test_hamming_phasing_source_graph_and_complete_complex_state(
     x, junk, count, bits = layout(n)
     width = n + len(junk) + len(count)
     src = HammingWeightPhasing(n, exponent, eps=3e-8)
+    declared = estimate_component_resources(
+        source_hamming_weight_phasing_cost(n, exponent)
+    )
     parts = {"x": x, "junk": junk, "out": count}
     for adjoint in (False, True):
         source = src.adjoint() if adjoint else src
@@ -122,6 +129,17 @@ def test_hamming_phasing_source_graph_and_complete_complex_state(
         )
         counts = Counter(g.name for g in gates)
         model = get_cost_value(src, QECGatesCost())
+        for category in (
+            "t",
+            "toffoli",
+            "cswap",
+            "and_bloq",
+            "clifford",
+            "rotation",
+            "measurement",
+        ):
+            assert getattr(declared.gates, category) == getattr(model, category)
+        assert declared.peak_logical_qubits == width
         assert counts["phase"] == len(count)
         assert counts["measure"] == counts["reset"] == model.measurement == len(junk)
         assert counts["t"] + counts["tdg"] == 4 * model.and_bloq == 4 * len(junk)
