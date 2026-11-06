@@ -185,9 +185,31 @@ the concrete width gives 20 because the equality has a decomposition at
 that width. Both are shape models. Concrete coefficient data use the
 separate rotation-tree and cycle construction.
 
-Symbolic aggregation
-across arbitrary component graphs, automatic scheduling and physical
-error-correction models remain separate.
+Use `symbolic_call_graph` to apply the same traversal to declared symbolic
+call multiplicities. Each terminal supplies the cost for one invocation.
+For a terminal selected by a cutoff, provide the cost of that whole
+component. Represent any exclusive interior costs as explicit terminal calls.
+
+```python
+from sympy import symbols
+
+from flagquantum.compiler._component_trace.call_graph import symbolic_call_graph
+from flagquantum.compiler.registers.symbolic_resource_model import (
+    source_qrom_resource_formula,
+)
+
+repeats, rows = symbols("repeats rows", positive=True, integer=True)
+graph = symbolic_call_graph("program", {"program": {"lookup": repeats}})
+lookup = source_qrom_resource_formula((rows,), (8,), control_count=1)
+t_count = graph.estimate_leaf_cost(lambda _: 4 * lookup.and_bloq)
+measurements = graph.estimate_leaf_cost(lambda _: lookup.measurement)
+assert t_count.subs({repeats: 3, rows: 17}) == 192
+assert measurements.subs({repeats: 3, rows: 17}) == 48
+```
+
+This counts a shape-only program under the source gate model. Peak qubits
+depend on register lifetimes and use the separate width model. Automatic
+scheduling and physical error-correction estimates remain separate.
 
 - [Qualtran v0.7.0 gate costs](https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/resource_counting/_bloq_counts.py)
 - [Qualtran v0.7.0 logical width](https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/resource_counting/_qubit_counts.py)

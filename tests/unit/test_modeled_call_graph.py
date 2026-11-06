@@ -4,7 +4,10 @@ from dataclasses import replace
 
 import pytest
 
-from flagquantum.compiler._component_trace.call_graph import modeled_call_graph
+from flagquantum.compiler._component_trace.call_graph import (
+    modeled_call_graph,
+    symbolic_call_graph,
+)
 from flagquantum.compiler._component_trace.resource_model import ComponentCost, CostCall
 
 pytestmark = pytest.mark.unit
@@ -146,3 +149,102 @@ def test_rotation_lookup_leaf_counts_from_declared_model() -> None:
     )
     assert sum(stopped.leaf_counts.values()) == 3
     assert {node.name for node in stopped.leaf_counts} == {"PhaseGradientLookup"}
+
+
+@pytest.mark.ftqc_reference
+@pytest.mark.parametrize("depth", [None, 1, 2])
+def test_symbolic_multiplicities_match_source(depth: int | None) -> None:
+    pytest.importorskip("qualtran")
+    from qualtran.bloqs.for_testing.costing import CostingBloq
+    from qualtran.resource_counting import get_bloq_call_graph
+    from sympy import Symbol, expand
+
+    n = Symbol("n", nonnegative=True, integer=True)
+    m = Symbol("m", nonnegative=True, integer=True)
+    calls = {
+        "root": {"left": n, "right": m, "shared": 1, "zero": 0, "omit": 4},
+        "left": {"shared": m, "alias": 2},
+        "right": {"shared": n},
+        "shared": {"leaf": n + 1},
+    }
+
+    def source(node: str) -> CostingBloq:
+        return CostingBloq(
+            node,
+            1,
+            [(source(callee), count) for callee, count in calls.get(node, {}).items()],
+        )
+
+    graph = symbolic_call_graph(
+        "root",
+        calls,
+        max_depth=depth,
+        generalizer=lambda node: {"omit": None, "alias": "shared"}.get(node, node),
+    )
+    upstream, sigma = get_bloq_call_graph(
+        source("root"),
+        max_depth=depth,
+        generalizer=lambda node: {"omit": None, "alias": source("shared")}.get(
+            node.name, node
+        ),
+    )
+    assert graph.direct_calls == {
+        (parent.name, child.name): data["n"]
+        for parent, child, data in upstream.edges.data()
+    }
+    expected = {node.name: count for node, count in sigma.items()}
+    assert graph.leaf_counts.keys() == expected.keys()
+    for name, count in graph.leaf_counts.items():
+        assert expand(count - expected[name]) == 0
+        assert expand(count - expected[name]).subs({n: 0, m: 3}) == 0
+    assert graph.leaf_counts["zero"] == 0
+
+
+@pytest.mark.ftqc_reference
+def test_symbolic_gate_estimate_matches_source_before_and_after_binding() -> None:
+    pytest.importorskip("qualtran")
+    from qualtran.bloqs.basic_gates import TGate, Toffoli
+    from qualtran.bloqs.for_testing.costing import CostingBloq
+    from qualtran.resource_counting import QECGatesCost, get_cost_value
+    from sympy import Symbol, expand
+
+    n = Symbol("n", nonnegative=True, integer=True)
+    graph = symbolic_call_graph(
+        "program", {"program": {"step": n}, "step": {"T": 2, "Toffoli": n + 1}}
+    )
+    estimate = graph.estimate_leaf_cost({"T": 1, "Toffoli": 4}.__getitem__)
+    step = CostingBloq("step", 3, [(TGate(), 2), (Toffoli(), n + 1)])
+    source = CostingBloq("program", 3, [(step, n)])
+    expected = get_cost_value(source, QECGatesCost()).total_t_count()
+    assert expand(estimate - expected) == 0
+    for size in (0, 1, 8):
+        assert estimate.subs(n, size) == size * (2 + 4 * (size + 1))
+
+
+@pytest.mark.ftqc_reference
+def test_repeated_shape_qrom_estimate_matches_source() -> None:
+    pytest.importorskip("qualtran")
+    from qualtran.bloqs.data_loading.qrom import QROM
+    from qualtran.bloqs.for_testing.costing import CostingBloq
+    from qualtran.resource_counting import QECGatesCost, get_cost_value
+    from sympy import expand, symbols
+
+    from flagquantum.compiler.registers.symbolic_resource_model import (
+        source_qrom_resource_formula,
+    )
+
+    repeats, rows = symbols("repeats rows", positive=True, integer=True)
+    graph = symbolic_call_graph("program", {"program": {"lookup": repeats}})
+    lookup = source_qrom_resource_formula((rows,), (8,), control_count=1)
+    t_count = graph.estimate_leaf_cost(lambda _: 4 * lookup.and_bloq)
+    measurements = graph.estimate_leaf_cost(lambda _: lookup.measurement)
+    source = CostingBloq(
+        "program",
+        1,
+        [(QROM.build_from_bitsize((rows,), (8,), num_controls=1), repeats)],
+    )
+    expected = get_cost_value(source, QECGatesCost())
+    assert expand(t_count - expected.total_t_count()) == 0
+    assert expand(measurements - expected.measurement) == 0
+    assert t_count.subs({repeats: 3, rows: 17}) == 192
+    assert measurements.subs({repeats: 3, rows: 17}) == 48
