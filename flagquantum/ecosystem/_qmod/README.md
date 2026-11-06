@@ -1709,3 +1709,32 @@ result = fq.run(program)
 print(dict(program.probabilities(result, registers=("be.state",))))
 # Approximately {(0,): 0.18097, (1,): 0.24856, (2,): 0.34812, (3,): 0.22235}
 ```
+
+### Bounded quantized numeric preparation
+
+A closed numeric preparation can combine up to five uniform bits with
+inferred fixed-point arithmetic and reversible helper calls. Synthesis
+checks the output format and keeps the exact branch weights. A discarded
+register must distinguish all input branches before it can be represented
+by private branch storage.
+
+```python
+from pathlib import Path
+
+import flagquantum as fq
+from flagquantum import synth
+
+source = Path("tests/fixtures/classiq_qmod/brownian_chebyshev_polynomials.qmod")
+program = synth.synthesize(
+    source, max_qubits=23, max_workspace=2, max_operations=2_000,
+)
+result = fq.run(program)
+probabilities = program.probabilities(
+    result, registers=("t", "G"), max_amplitudes=2**23,
+)
+# Decode the signed, 15-bit raw word with eight fractional bits.
+decoded = {
+    (t, (raw - 2**15 if raw >= 2**14 else raw) / 2**8): probability
+    for (t, raw), probability in probabilities.items()
+}
+```

@@ -106,6 +106,7 @@ from .qpe import (
     specialize_power_body,
 )
 from .qsvt import lower_qsvt_inversion
+from .quantized_numeric import emit_numeric_program, try_numeric_program
 from .quantum_callbacks import (
     BORROWED_EFFECT_SIGNATURES,
     CALLBACK_ARRAY,
@@ -5101,6 +5102,9 @@ def parse_qmod(
         definitions[name] = syntax
     if "main" not in definitions:
         reject(tokens[0], "entry", "source requires one qfunc main")
+    numeric_program = try_numeric_program(definitions)
+    if numeric_program is not None:
+        definitions = {"main": replace(definitions["main"], statements=())}
     definitions, deferred_measurements = defer_private_measurements(definitions)
     definitions = fold_skip_control_tables(definitions)
     definitions = expand_amplification(definitions, constants)
@@ -5431,6 +5435,8 @@ def parse_qmod(
                 adapter.classical_arrays.update(arrays)
                 adapter.classical_integers.update(integer_bindings)
                 adapter.integer_arrays.update(integer_arrays)
+                if numeric_program is not None:
+                    emit_numeric_program(adapter, numeric_program)
             program = adapter.adapt()
             compiled[name] = adapter, program
             active.remove(name)
