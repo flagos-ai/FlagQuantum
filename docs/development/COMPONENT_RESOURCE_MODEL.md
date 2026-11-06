@@ -1791,3 +1791,22 @@ at normalized precision, as specified by the locked source. A populated
 table uses the support count at normalized precision. The source composite
 has no `sparse_index` port for a single support row, so the source cost query
 raises in that case. Native singleton preparation remains executable.
+
+### Sparse chemistry integral data and named lookup
+
+`sparse_chemistry_data` in
+`flagquantum.algorithms.primitives.sparse_chemistry_data` prepares the locked
+source's ordered integral representatives. One-body lower-triangle entries
+are retained, including zeros. The threshold applies only to the two-body
+representatives. The full integral tensors determine the normalization.
+
+The 13 datasets contain orbital labels, sign and body flags, their alias
+alternates, and keep values. `lookup_ir` loads these through the named
+`lookup_output_layout`, including the extra banks for a blocked table.
+The caller provides clean output banks and lookup scratch. The banks retain
+the selected data and blocked junk. Temporary lookup scratch is cleaned.
+`lookup_cost` reports the locked forward QROAM resource model.
+
+Integral preprocessing supports one spatial orbital. The lookup binding
+requires nonempty orbital words. The source's full PREPARE fails when it
+tries to bind its omitted zero-width target.

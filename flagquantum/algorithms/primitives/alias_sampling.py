@@ -67,8 +67,19 @@ def _normalization(weights: Sequence[float], precision: float) -> float:
 def _table(
     weights: Sequence[float], epsilon: float
 ) -> tuple[tuple[int, ...], tuple[int, ...], int]:
+    mu = max(1, ceil(log2(1 / (epsilon * len(weights)))))
+    alternate, keep = alias_numerators(weights, mu=mu)
+    return alternate, keep, mu
+
+
+def alias_numerators(
+    weights: Sequence[float], *, mu: int
+) -> tuple[tuple[int, ...], tuple[int, ...]]:
+    """Build the source alternate and keep rows at a fixed bit precision."""
+    _normalization(weights, 1.0)
+    if type(mu) is not int or mu < 1:
+        raise ValueError("Alias bit precision must be a positive integer")
     size = len(weights)
-    mu = max(1, ceil(log2(1 / (epsilon * size))))
     per_row = 1 << mu
     cumulative = tuple(accumulate(weights, initial=0))
     rounded = (
@@ -90,7 +101,7 @@ def _table(
             alternate[i] = donor
             keep[i] = bins[i]
             bins[i] = per_row
-    return tuple(alternate), tuple(keep), mu
+    return tuple(alternate), tuple(keep)
 
 
 def alias_sampling_table(
