@@ -1,8 +1,14 @@
+# Copyright 2023 Google LLC
+# SPDX-License-Identifier: Apache-2.0
+# Bounded traversal adapted from Qualtran v0.7.0 unary_iteration_bloq.py.
+# https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/bloqs/multiplexers/unary_iteration_bloq.py
+
 """Measurement-assisted traversal of a quantum address register."""
 
 from collections.abc import Callable
 
 from ...core.ir import Instruction
+from .and_compute import and_compute_ir, and_uncompute_ir
 
 
 def unary_iteration_workspace(selection_width: int, control_value: int | None) -> int:
@@ -96,3 +102,49 @@ def append_unary_iteration(
         visit(0, 1, half, half)
     else:
         apply_branch(0, None)
+
+
+def append_bounded_unary_tree(
+    gates: list[Instruction],
+    control: int | None,
+    selection: tuple[int, ...],
+    extent: int,
+    workspace: tuple[int, ...],
+    classical_bits: tuple[int, ...],
+    visit_leaf: Callable[[int, int], None],
+    *,
+    break_early: Callable[[int, int], bool] | None = None,
+) -> None:
+    """Visit the source's bounded tree with one effective control."""
+
+    def visit(predicate: int, depth: int, start: int, stop: int) -> None:
+        if stop <= extent and (
+            stop - start == 1 or (break_early is not None and break_early(start, stop))
+        ):
+            visit_leaf(start, predicate)
+            return
+        middle = (start + stop) // 2
+        if extent <= middle:
+            visit(predicate, depth + 1, start, middle)
+            return
+        wire, work = selection[depth], workspace[depth]
+        gates.extend(and_compute_ir(predicate, wire, work, values=(1, 0)))
+        visit(work, depth + 1, start, middle)
+        gates.append(Instruction("cx", (predicate, work)))
+        visit(work, depth + 1, middle, stop)
+        gates.extend(and_uncompute_ir(predicate, wire, work, classical_bits[depth]))
+
+    capacity = 1 << len(selection)
+    if control is not None:
+        visit(control, 0, 0, capacity)
+        return
+    # The first address bit that distinguishes populated halves is the predicate.
+    while extent <= capacity // 2:
+        selection = selection[1:]
+        capacity //= 2
+    predicate, selection = selection[0], selection[1:]
+    middle = capacity // 2
+    gates.append(Instruction("x", (predicate,)))
+    visit(predicate, 0, 0, middle)
+    gates.append(Instruction("x", (predicate,)))
+    visit(predicate, 0, middle, capacity)

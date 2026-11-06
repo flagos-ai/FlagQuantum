@@ -7,15 +7,14 @@
 
 """Bounded unary XOR lookup using the original measured And tree."""
 
-from collections.abc import Callable
 from math import prod
 
 from ...core.ir import Instruction
-from .and_compute import and_compute_ir, and_uncompute_ir
 from .bitwise import _validate_wires
 from .control_predicate import ControlRegister
 from .controlled_component import controlled_component_ir
 from .multi_control import multi_and_ir
+from .unary_iteration import append_bounded_unary_tree
 
 
 def _uniform(words: tuple[int, ...]) -> bool:
@@ -31,49 +30,6 @@ def source_qrom_workspace_size(
     if not any(selection_widths) or all(_uniform(data) for data in datasets):
         return max(0, control_count - 1)
     return sum(selection_widths) + control_count - 1
-
-
-def _append_unary_tree(
-    gates: list[Instruction],
-    control: int | None,
-    selection: tuple[int, ...],
-    extent: int,
-    workspace: tuple[int, ...],
-    classical_bits: tuple[int, ...],
-    uniform: Callable[[int, int], bool],
-    load: Callable[[int, int], None],
-) -> None:
-    """Visit the source's bounded tree with one effective control."""
-
-    def visit(predicate: int, depth: int, start: int, stop: int) -> None:
-        if stop <= extent and (stop - start == 1 or uniform(start, stop)):
-            load(start, predicate)
-            return
-        middle = (start + stop) // 2
-        if extent <= middle:
-            visit(predicate, depth + 1, start, middle)
-            return
-        wire, work = selection[depth], workspace[depth]
-        gates.extend(and_compute_ir(predicate, wire, work, values=(1, 0)))
-        visit(work, depth + 1, start, middle)
-        gates.append(Instruction("cx", (predicate, work)))
-        visit(work, depth + 1, middle, stop)
-        gates.extend(and_uncompute_ir(predicate, wire, work, classical_bits[depth]))
-
-    capacity = 1 << len(selection)
-    if control is not None:
-        visit(control, 0, 0, capacity)
-        return
-    # The first address bit that distinguishes populated halves is the predicate.
-    while extent <= capacity // 2:
-        selection = selection[1:]
-        capacity //= 2
-    predicate, selection = selection[0], selection[1:]
-    middle = capacity // 2
-    gates.append(Instruction("x", (predicate,)))
-    visit(predicate, 0, 0, middle)
-    gates.append(Instruction("x", (predicate,)))
-    visit(predicate, 0, middle, capacity)
 
 
 def source_qrom_ir(
@@ -183,17 +139,17 @@ def source_qrom_ir(
                 for group, data in zip(targets, datasets, strict=True)
             )
 
-        _append_unary_tree(
+        append_bounded_unary_tree(
             gates,
             predicate,
             selections[axis],
             shape[axis],
             workspace[offset:work_end],
             classical_bits[offset:work_end],
-            uniform,
             lambda index, leaf: visit_axis(
                 axis + 1, row + index * stride, leaf, work_end
             ),
+            break_early=uniform,
         )
 
     if not any(widths) or constant:

@@ -80,3 +80,26 @@ emit 22 CCX, 32 CH and 48 controlled phase instructions. The outer predicate
 adds eight T/T† instructions and two measurements, returning both work
 qubits to zero. The source peak is 13 logical qubits. Its QEC gate query
 encounters the same controlled `ArbitraryClifford` limitation as the leaf.
+
+## Multiplexed exact exchange
+
+`multiplexed_cswap_ir` exchanges the addressed row with a caller-owned
+output word. The bounded traversal is shared with QROM. Selection words
+are big-endian, the row layout is row-major, and all targets and the
+output can hold coherent data. Any initial controls are positive.
+Traversal qubits and classical slots are caller-owned and reused
+between siblings. All work qubits return to zero.
+
+The source defines the selected exchange on in-range inputs. Tests
+also compare padded addresses to its actual gate stream, including
+cases where a skipped high selection bit changes the padded behavior.
+An empty selection axis and a singleton first axis with no control
+are rejected because the pinned traversal cannot decompose those
+cases.
+
+For three two-bit rows and no explicit control, the exact stream emits
+46 T/T† and one measurement with one work qubit. The source model
+declares six CSwap, one And, four Clifford and one measurement with
+peak width 11. Its default conversion gives 28 T equivalents. The
+source's seven-T Fredkin conversion and its legacy T complexity both
+give 46.
