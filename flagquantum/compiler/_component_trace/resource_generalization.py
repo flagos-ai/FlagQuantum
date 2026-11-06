@@ -7,11 +7,11 @@
 
 from __future__ import annotations
 
-from collections.abc import Hashable
+from collections.abc import Hashable, Iterable, Mapping
 from dataclasses import dataclass, replace
 from typing import Literal
 
-from .call_graph import Generalizer
+from .call_graph import Generalizer, _component_calls
 from .resource_model import ComponentCost
 from .symbolic_math import SymbolicInt, SymbolicReal
 
@@ -100,6 +100,17 @@ ResourceCall = (
     | BookkeepingCall
     | PartitionedCall
 )
+
+DeclaredResourceCalls = Mapping[ResourceCall, Mapping[ResourceCall, SymbolicInt]]
+
+
+def _resource_callees(
+    node: ResourceCall, declared_calls: DeclaredResourceCalls | None
+) -> Iterable[tuple[ResourceCall, SymbolicInt]]:
+    if declared_calls is not None and node in declared_calls:
+        yield from declared_calls[node].items()
+    elif isinstance(node, ComponentCost):
+        yield from _component_calls(node)
 
 
 def _inside_partition(

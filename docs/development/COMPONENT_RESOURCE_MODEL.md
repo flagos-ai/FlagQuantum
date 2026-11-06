@@ -358,6 +358,40 @@ controlled angles and lacks a precision for controlled S or T. The
 terminal model reports those cases as unsupported. Its totals are
 separate from emitted gate counts.
 
+`count_selected_calls` counts exact declared gate or component keys.
+Each matched key stops expansion along that path. The preset
+`t+tof+cswap` returns separate T, T adjoint, Toffoli and Fredkin keys.
+Pass the leaf keys of a declared call graph to count at its leaf
+boundary. Other explicit selections can include interior components.
+
+```python
+from flagquantum.compiler._component_trace.resource_generalization import (
+    DeclaredResourceCalls,
+    FixedTCall,
+    PhaseCall,
+)
+from flagquantum.compiler._component_trace.resource_model import ComponentCost
+from flagquantum.compiler._component_trace.selected_call_count import (
+    count_selected_calls,
+    resource_gateset,
+)
+
+program = ComponentCost("program", 3)
+tof = FixedTCall("toffoli")
+t = PhaseCall("t")
+tdg = PhaseCall("t", adjoint=True)
+calls: DeclaredResourceCalls = {
+    program: {tof: 2, tdg: 1},
+    tof: {t: 4},
+}
+assert count_selected_calls(
+    program, resource_gateset("t+tof"), declared_calls=calls
+) == {tof: 2, tdg: 1}
+assert count_selected_calls(
+    program, resource_gateset("t"), declared_calls=calls
+) == {t: 8, tdg: 1}
+```
+
 - [Qualtran v0.7.0 gate costs](https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/resource_counting/_bloq_counts.py)
 - [Qualtran v0.7.0 logical width](https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/resource_counting/_qubit_counts.py)
 - [Qualtran v0.7.0 success probability](https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/resource_counting/_success_prob.py)

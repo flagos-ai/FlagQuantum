@@ -5,24 +5,25 @@
 
 """Classify resource call keys and attribute weighted model T costs."""
 
-from collections.abc import Callable, Iterable, Mapping, Sequence
+from collections.abc import Callable, Sequence
 from math import pi
 from typing import Literal
 
 from .call_graph import (
     Generalizer,
     _build_call_graph,
-    _component_calls,
     compose_cost_generalizer,
 )
 from .cost_query import GATE_COST, query_component_cost
 from .resource_generalization import (
     CliffordCall,
     ControlledRotationCall,
+    DeclaredResourceCalls,
     PhaseCall,
     ResourceCall,
     RotationCall,
     _inside_partition,
+    _resource_callees,
     ignore_allocation,
     ignore_register_partition,
 )
@@ -73,9 +74,7 @@ def attribute_t_cost(
     root: ResourceCall,
     family: Callable[[ResourceCall], str | None],
     *,
-    declared_calls: (
-        Mapping[ResourceCall, Mapping[ResourceCall, SymbolicInt]] | None
-    ) = None,
+    declared_calls: DeclaredResourceCalls | None = None,
     unit_t_cost: Callable[[ResourceCall], SymbolicInt] | None = None,
     generalizer: (
         Generalizer[ResourceCall] | Sequence[Generalizer[ResourceCall]] | None
@@ -90,18 +89,12 @@ def attribute_t_cost(
     A custom unit cost is required for terminal keys outside ComponentCost.
     """
 
-    def calls(node: ResourceCall) -> Iterable[tuple[ResourceCall, SymbolicInt]]:
-        if declared_calls is not None and node in declared_calls:
-            yield from declared_calls[node].items()
-        elif isinstance(node, ComponentCost):
-            yield from _component_calls(node)
-
     def keep(node: ResourceCall) -> bool:
         return family(node) not in {None, "other"}
 
     graph = _build_call_graph(
         root,
-        calls,
+        lambda node: _resource_callees(node, declared_calls),
         (
             ignore_register_partition,
             ignore_allocation,
