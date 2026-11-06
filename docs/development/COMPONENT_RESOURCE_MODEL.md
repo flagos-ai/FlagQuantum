@@ -3185,3 +3185,20 @@ The default native reflection marks both direction bits and
 has a one-dimensional prepared signal. The native spectral check uses
 the projected operator obtained from the locked PREPARE weights and
 SELECT address conventions.
+
+### Hubbard notebook resource queries
+
+Run `python -m examples.algorithms.hubbard_qubitization_resources` for
+the depth-one call multiplicities and gate costs of the concrete examples
+in the locked Hubbard notebooks. The two 4×4 cases reproduce the original
+call-graph queries. The controlled 11×11 case gives a text resource view
+of the source notebook's larger diagram example.
+
+| Locked notebook model | CSwap | And | Clifford | Rotation | Measurement | Peak logical qubits |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| 4×4 SELECT | 10 | 75 | 107 | 0 | 75 | 49 |
+| 4×4 PREPARE | 9 | 7 | 50 | 4 | 7 | 16 |
+| 11×11 controlled SELECT | 18 | 603 | 846 | 0 | 603 | 273 |
+
+Symbolic diagrams and graphical circuit views remain separate from
+these resource queries.

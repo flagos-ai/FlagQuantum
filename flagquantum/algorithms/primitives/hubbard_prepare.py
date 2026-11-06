@@ -97,20 +97,32 @@ class PrepareHubbard:
         ports = 4 * width + 6
         uniform = source_uniform_preparation_cost(self.dimension)
         increment = source_bounded_increment_cost(width, 2)
-        local = GateCost(
-            cswap=4 * width + 1,
-            and_bloq=2,
-            clifford=22 + 2 * width,
-            rotation=4,
-            measurement=2,
+        swap = ComponentCost("CSwap", 2 * width + 1, GateCost(cswap=width))
+        direction_swap = ComponentCost(
+            "CSwap", 4 * width + 3, GateCost(cswap=2 * width + 1)
         )
         return ComponentCost(
             "PrepareHubbard",
             ports + 2,
-            local,
-            (
+            calls=(
+                CostCall(ComponentCost("Ry", 1, GateCost(rotation=1))),
+                CostCall(ComponentCost("Controlled", 2, GateCost(rotation=1))),
                 CostCall(uniform, 2, bystander_qubits=ports - width),
+                CostCall(ComponentCost("Hadamard", 1, GateCost(clifford=1)), 2),
+                CostCall(ComponentCost("XGate", 1, GateCost(clifford=1)), 3),
+                CostCall(ComponentCost("CNOT", 2, GateCost(clifford=1)), 2 * width + 3),
+                CostCall(
+                    ComponentCost("CHadamard", 2, GateCost(clifford=4, rotation=2))
+                ),
+                CostCall(swap, 2),
                 CostCall(increment, bystander_qubits=ports - increment.qubits),
+                CostCall(
+                    ComponentCost("MultiAnd", 5, GateCost(and_bloq=2, clifford=4))
+                ),
+                CostCall(direction_swap),
+                CostCall(
+                    ComponentCost("Adjoint", 5, GateCost(clifford=6, measurement=2))
+                ),
             ),
         )
 

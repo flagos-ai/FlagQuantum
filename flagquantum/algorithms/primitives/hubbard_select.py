@@ -70,17 +70,59 @@ class SelectHubbard:
         """Report the source wrapper's declared costs and its decomposed width."""
         sites = self.dimension**2
         controls = int(self.controlled)
-        majorana = 2 * sites - 2 + controls
-        spin_up = sites - 1 + controls
-        ands = 2 * majorana + spin_up
+        coordinate = (self.dimension - 1).bit_length()
+        width = sum(size for _, size in self.layout)
+        majorana_ands = 2 * sites - 2 + controls
+        majorana_ports = 2 * sites + 2 * coordinate + 1 + controls
+        majorana_cost = GateCost(
+            and_bloq=majorana_ands,
+            clifford=majorana_ands,
+            measurement=majorana_ands,
+        )
+        majorana_peak = majorana_ports + self.requirements()[0]
+        spin_ands = sites - 1 + controls
+        spin = ComponentCost(
+            "HubbardSpinUpZ",
+            majorana_ports + 2 * coordinate + controls,
+            GateCost(
+                and_bloq=spin_ands,
+                clifford=spin_ands + 2 * sites - 1,
+                measurement=spin_ands,
+            ),
+        )
+        swap = ComponentCost("CSwap", 2 * coordinate + 1, GateCost(cswap=coordinate))
+        swap_spin = ComponentCost("TwoBitCSwap", 3, GateCost(cswap=1))
+        scalar = (
+            ComponentCost("SGate", 1, GateCost(clifford=1))
+            if self.controlled
+            else ComponentCost("GlobalPhase", 0)
+        )
+        sign = ComponentCost(
+            "CZ" if self.controlled else "ZGate", 1 + controls, GateCost(clifford=1)
+        )
         select = ComponentCost(
             "SelectHubbard",
-            sum(width for _, width in self.layout) + self.requirements()[0],
-            GateCost(
-                cswap=4 * (self.dimension - 1).bit_length() + 2,
-                and_bloq=ands,
-                clifford=ands + 2 * sites + controls,
-                measurement=ands,
+            width,
+            calls=(
+                CostCall(
+                    ComponentCost(
+                        "HubbardMajorannaOperator(Y)", majorana_peak, majorana_cost
+                    ),
+                    bystander_qubits=width - majorana_ports,
+                ),
+                CostCall(swap, 2, bystander_qubits=width - swap.qubits),
+                CostCall(swap_spin, bystander_qubits=width - swap_spin.qubits),
+                CostCall(
+                    ComponentCost(
+                        "HubbardMajorannaOperator(X)", majorana_peak, majorana_cost
+                    ),
+                    bystander_qubits=width - majorana_ports,
+                ),
+                CostCall(swap_spin, bystander_qubits=width - swap_spin.qubits),
+                CostCall(swap, 2, bystander_qubits=width - swap.qubits),
+                CostCall(scalar, bystander_qubits=width - scalar.qubits),
+                CostCall(sign, bystander_qubits=width - sign.qubits),
+                CostCall(spin, bystander_qubits=width - majorana_ports),
             ),
         )
         if self.control_value == 0:
