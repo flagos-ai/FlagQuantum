@@ -824,6 +824,22 @@ counts.
 
 - [Qualtran v0.7.0 SWAP controls](https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/bloqs/basic_gates/swap.py)
 
+### Outer controls on register CSwap
+
+`control_register_cswap_ir` accepts an existing positive control and a group
+of outer controls. It preserves the pinned source's per-pair sequence:
+compute the conjunction of the outer predicate and existing control, emit
+one exact Fredkin, then measure and erase that conjunction. Each pair reuses
+the last work qubit and classical slot. Earlier work qubits and slots belong
+to the outer predicate. For a single negative outer control, X conjugates
+the full register block.
+
+For three-bit words and outer pattern `(1, 0, 1)`, the source model reports
+three CSwap, five And, nine Clifford and five measurements, with 13 peak
+logical qubits. That is 32 default T equivalents or 41 with exact seven-T
+Fredkin leaves. The emitted circuit uses 41 T/T†, five measurements and
+three work qubits.
+
 ## Register identity
 
 The source models Identity as one atomic call with zero QEC gates.

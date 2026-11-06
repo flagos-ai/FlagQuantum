@@ -267,9 +267,28 @@ def reference_arithmetic_gates(
             "CtrlScaleModAdd",
         }:
             component = component.flatten()
-        circuit, outputs = component.to_cirq_circuit_and_quregs(
-            qubit_manager=manager, **quregs
-        )
+        if (
+            kind == "Controlled"
+            and type(bloq.subbloq).__name__ == "CSwap"
+            and type(getattr(source, "subbloq", None)).__name__ == "CSwap"
+        ):
+            # The enclosing CtrlSpecAnd has exported its later cleanup, so
+            # its target and prefix junk appear free to the manager. Both
+            # remain live during CSwap; only the inner scratch can be reused.
+            outer_count = source.ctrl_spec.num_qubits - 1
+            reserved = set(allocations[:outer_count])
+            available = manager.available
+            manager.available = [wire for wire in available if wire not in reserved]
+            try:
+                circuit, outputs = component.to_cirq_circuit_and_quregs(
+                    qubit_manager=manager, **quregs
+                )
+            finally:
+                manager.available = available
+        else:
+            circuit, outputs = component.to_cirq_circuit_and_quregs(
+                qubit_manager=manager, **quregs
+            )
         assert all(
             np.array_equal(outputs[name], wires) for name, wires in quregs.items()
         )

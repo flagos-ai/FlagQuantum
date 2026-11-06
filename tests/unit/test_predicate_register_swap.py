@@ -13,11 +13,16 @@ from flagquantum.compiler._component_trace.compound_control_resource import (
     controlled_swap_cost_key,
 )
 from flagquantum.compiler._component_trace.qec_gate_cost import query_qec_gate_cost
-from flagquantum.compiler._component_trace.resource_generalization import CliffordCall
+from flagquantum.compiler._component_trace.resource_generalization import (
+    CliffordCall,
+    ControlledSwapCall,
+)
 from flagquantum.compiler.registers.control_predicate import ControlRegister
 from flagquantum.compiler.registers.controlled_swap import (
+    control_register_cswap_ir,
     controlled_swap_with_predicate_ir,
 )
+from flagquantum.core.ir import Instruction
 from tests.unit.measurement_checks import forced_branch
 from tests.unit.test_register_constant_addition import reference_arithmetic_gates
 from tests.unit.test_register_subtraction import assert_source
@@ -77,7 +82,17 @@ def test_controlled_swap_source_gates_models_and_all_branches(
             workspace
         )
 
-    logical = size + 2 * width
+    assert_swap_branches(gates, width, values, workspace, size - 1)
+
+
+def assert_swap_branches(
+    gates: tuple[Instruction, ...],
+    width: int,
+    values: tuple[int, ...],
+    workspace: tuple[int, ...],
+    measurements: int,
+) -> None:
+    logical = len(values) + 2 * width
     wires = logical + len(workspace) + 1
     data = torch.arange(1 << (logical + 1))
     spectator = data & 1
@@ -94,8 +109,8 @@ def test_controlled_swap_source_gates_models_and_all_branches(
     amplitudes /= amplitudes.norm()
     state[(operands << (len(workspace) + 1)) | spectator] = amplitudes
     expected[(output << (len(workspace) + 1)) | spectator] = amplitudes
-    scale = sqrt(2 ** len(workspace))
-    for outcomes in product((0, 1), repeat=len(workspace)):
+    scale = sqrt(2**measurements)
+    for outcomes in product((0, 1), repeat=measurements):
         result = forced_branch(state, gates, outcomes)
         torch.testing.assert_close(result, expected / scale, atol=2e-12, rtol=0)
         torch.testing.assert_close(
@@ -126,3 +141,53 @@ def test_symbolic_predicate_swap_resource_formula() -> None:
         get_cost_value(source, QECGatesCost()).asdict()
     )
     assert get_cost_value(source, QubitCount()) == 2 * n + 3
+
+
+@pytest.mark.ftqc_reference
+@pytest.mark.parametrize("width", [1, 2, 3])
+@pytest.mark.parametrize("values", [(0,), (1,), (0, 1), (1, 0, 1)])
+def test_outer_control_on_register_cswap(width: int, values: tuple[int, ...]) -> None:
+    pytest.importorskip("qualtran")
+    from qualtran import CtrlSpec
+    from qualtran.bloqs.basic_gates.swap import CSwap
+    from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
+
+    size = len(values)
+    controls = tuple(range(size))
+    original_control = size
+    left = tuple(range(size + 1, size + width + 1))
+    right = tuple(range(size + width + 1, size + 2 * width + 1))
+    workspace = tuple(range(size + 2 * width + 1, 2 * size + 2 * width + 1))
+    bits = tuple(range(30, 30 + size))
+    gates = control_register_cswap_ir(
+        (controls,),
+        (ControlRegister(1, values),),
+        original_control,
+        left,
+        right,
+        workspace,
+        bits,
+    )
+    source = CSwap(width).controlled(CtrlSpec(cvs=values[0] if size == 1 else values))
+    # Use the pinned signature to bind the inherited and added controls.
+    names = [register.name for register in source.signature]
+    inner_name, outer_name = names[1], names[0]
+    reference = reference_arithmetic_gates(
+        source,
+        {outer_name: controls, inner_name: (original_control,), "x": left, "y": right},
+        workspace,
+        dict(zip(workspace, bits, strict=True)),
+        preserve_components=True,
+    )
+    assert_source(gates, reference)
+
+    key = compound_control_key(ControlledSwapCall(width), values)
+    assert key is not None
+    modeled = query_qec_gate_cost(key)
+    cost = get_cost_value(source, QECGatesCost())
+    assert {name: n for name, n in asdict(modeled).items() if n} == cost.asdict()
+    counts = Counter(gate.name for gate in gates)
+    assert counts["t"] + counts["tdg"] == cost.total_t_count(ts_per_cswap=7)
+    assert counts["measure"] == counts["reset"] == cost.measurement == width + size - 1
+    assert get_cost_value(source, QubitCount()) == size + 1 + 2 * width + len(workspace)
+    assert_swap_branches(gates, width, (*values, 1), workspace, cost.measurement)

@@ -2,11 +2,13 @@
 # SPDX-License-Identifier: Apache-2.0
 # Adapted from Qualtran v0.7.0 TwoBitCSwap.to_clifford_t_circuit and CSwap.
 # Source: https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/bloqs/basic_gates/swap.py
+# Source: https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/bloqs/mcmt/specialized_ctrl.py
 # Changes: explicit native operands, retaining the literal exact seven-T stream.
 
 """Exact controlled bit/register exchange without relative-phase substitution."""
 
 from ...core.ir import Instruction
+from .and_compute import and_compute_ir, and_uncompute_ir
 from .bitwise import _validate_wires
 from .control_predicate import ControlRegister
 from .controlled_component import controlled_component_ir
@@ -74,4 +76,49 @@ def controlled_swap_with_predicate_ir(
         lambda control: controlled_swap_ir(control, left, right),
         workspace,
         classical_bits,
+    )
+
+
+def control_register_cswap_ir(
+    controls: tuple[tuple[int, ...], ...],
+    registers: tuple[ControlRegister, ...],
+    original_control: int,
+    left: tuple[int, ...],
+    right: tuple[int, ...],
+    workspace: tuple[int, ...],
+    classical_bits: tuple[int, ...],
+) -> tuple[Instruction, ...]:
+    """Control a register CSwap while preserving the source's per-pair Ands.
+
+    Reserve the last work wire and slot for each pair in turn. The other
+    pairs of work wires and slots belong to the outer control predicate.
+    """
+    if not left or len(left) != len(right):
+        raise ValueError("Controlled swap requires equal nonempty register widths")
+    if not workspace or not classical_bits:
+        raise ValueError("Controlling a CSwap requires a work wire and classical slot")
+    if len(set(classical_bits)) != len(classical_bits):
+        raise ValueError("Outer and inner classical slots must be distinct")
+    _validate_wires(
+        (
+            original_control,
+            *left,
+            *right,
+            *workspace,
+            *(q for word in controls for q in word),
+        )
+    )
+    work, slot = workspace[-1], classical_bits[-1]
+
+    def emit(outer_control: int) -> tuple[Instruction, ...]:
+        compute = and_compute_ir(outer_control, original_control, work)
+        erase = and_uncompute_ir(outer_control, original_control, work, slot)
+        return tuple(
+            gate
+            for x, y in zip(left, right, strict=True)
+            for gate in (*compute, *controlled_swap_bit_ir(work, x, y), *erase)
+        )
+
+    return controlled_component_ir(
+        controls, registers, emit, workspace[:-1], classical_bits[:-1]
     )
