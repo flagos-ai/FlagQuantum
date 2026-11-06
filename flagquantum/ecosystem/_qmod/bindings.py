@@ -166,9 +166,8 @@ def publish_partition(
         len(names) == 1
         and len(owners) == 1
         and owner.parameters[names[0]].kind == "qbit[]"
-        and view == tuple((owners[0], bit) for bit in range(register_width(owners[0])))
     ):
-        # Keep whole-array promotion, including its existing lexical uses.
+        # Keep the existing complete, ordered single-owner array contract.
         return False
     if any(
         not any(
