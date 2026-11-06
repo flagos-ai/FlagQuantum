@@ -42,6 +42,7 @@ from .bindings import (
     publish_bound_array,
     record_view,
 )
+from .borrowed_phase_views import expand_borrowed_phase_views
 from .callback_arrays import (
     capture_callbacks,
     indexed_callback,
@@ -85,7 +86,11 @@ from .quantum_callbacks import (
     specialize_quantum_callbacks,
 )
 from .scope_control import lower_fourier_control
-from .selector_rotations import is_selector_helper, lower_select_rotation
+from .selector_rotations import (
+    is_selector_helper,
+    lower_guarded_selector,
+    lower_select_rotation,
+)
 from .swap_test import lower_swap_test
 from .syntax import (
     ANGLE_CALLS,
@@ -838,6 +843,9 @@ class _Adapt:
         self.helper_stack: tuple[str, ...] = ()
         self.helper_expansions = 0
         self.loop_iterations = 0
+        self.selector_guard: tuple[tuple[tuple[Value, int], ...], str, int] | None = (
+            None
+        )
 
     def register(
         self,
@@ -1557,6 +1565,7 @@ class _Adapt:
         child.helper_stack = (*self.helper_stack, syntax.name.text)
         child.helper_expansions = self.helper_expansions + 1
         child.loop_iterations = self.loop_iterations
+        child.selector_guard = self.selector_guard
         child.classical_integers.update(
             (name, value)
             for name, value in self.classical_integers.items()
@@ -2623,6 +2632,8 @@ class _Adapt:
         if len(statement.arguments) != 1 or body is None:
             reject(token, "control", "control requires one condition and one operation")
         condition = statement.arguments[0]
+        if lower_guarded_selector(self, statement, index):
+            return
         if lower_callback_control(self, statement):
             return
         if controlled_evolution(self, statement, index):
@@ -4547,6 +4558,7 @@ def parse_qmod(
     definitions = expand_amplification(definitions, constants)
     definitions = expand_iterations(definitions)
     definitions = specialize_quantum_callbacks(definitions, constants)
+    definitions = expand_borrowed_phase_views(definitions, constants)
     definitions = expand_phase_kickbacks(definitions)
     verify_permutations(definitions)
     definitions = expand_predicate_oracles(definitions, constants, parser.records)

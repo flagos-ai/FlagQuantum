@@ -1,8 +1,9 @@
 """Checked uniformly controlled rotations on a statically resolved bit view."""
 
+from operator import eq, ge, gt, le, lt, ne
 from typing import TYPE_CHECKING
 
-from .syntax import Expression, Function, Token, reject
+from .syntax import Expression, Function, Statement, Token, reject
 
 if TYPE_CHECKING:
     from .adapter import _Adapt
@@ -30,6 +31,64 @@ def is_selector_helper(function: Function) -> bool:
         and not target.children
         and all(port in (read, write) or port.role == "real" for port in ports.values())
     )
+
+
+_GUARDS = {"==": eq, "!=": ne, ">=": ge, ">": gt, "<=": le, "<": lt}
+
+
+def lower_guarded_selector(owner: "_Adapt", statement: Statement, index: str) -> bool:
+    body = statement.control_body
+    condition = statement.arguments[0]
+    if (
+        body is None
+        or len(body) != 1
+        or statement.control_else is not None
+        or condition.token.text not in _GUARDS
+        or len(condition.children) != 2
+    ):
+        return False
+    call = body[0]
+    cursor = call
+    seen: set[str] = set()
+    while cursor == Statement(cursor.token, cursor.arguments):
+        name = cursor.token.text
+        helper = owner.definitions.get(name)
+        if (
+            helper is None
+            or name in seen
+            or len(seen) >= 16
+            or len(helper.statements) != 1
+        ):
+            return False
+        if is_selector_helper(helper):
+            break
+        if any(
+            port.role not in {"const", "inout", "real"} for port in helper.parameters
+        ):
+            return False
+        seen.add(name)
+        (cursor,) = helper.statements
+    else:
+        return False
+    word, threshold = condition.children
+    if word.children or word.token.text not in owner.parameters:
+        return False
+    port = owner.parameters[word.token.text]
+    if port.kind != "qnum" or port.record is not None:
+        return False
+    guard = owner.selector_guard
+    if guard is not None:
+        return False
+    owner.selector_guard = (
+        owner.array_view(word),
+        condition.token.text,
+        owner.static_integer(threshold),
+    )
+    try:
+        owner.statement(call, index)
+    finally:
+        owner.selector_guard = guard
+    return True
 
 
 def lower_select_rotation(
@@ -70,6 +129,16 @@ def lower_select_rotation(
             table.token,
             "rotation",
             "rotation table length must equal 2**selector width",
+        )
+
+    guard = owner.selector_guard
+    if guard is not None:
+        guarded_locations, comparison, threshold = guard
+        if guarded_locations != selector:
+            reject(token, "rotation", "guard must read exactly the rotation selector")
+        compare = _GUARDS[comparison]
+        angles = tuple(
+            angle if compare(i, threshold) else 0.0 for i, angle in enumerate(angles)
         )
 
     # The Walsh coefficients in cyclic Gray order give one CX transition per

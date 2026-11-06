@@ -217,6 +217,7 @@ class Function:
     statements: tuple[Statement, ...]
     permutation: bool = False
     disable_permutation_check: Token | None = None
+    disable_const_checks: Token | None = None
 
 
 class Parser:
@@ -823,9 +824,18 @@ class Parser:
 
     def function(self) -> Function:
         annotation = None
-        if self.current.text == "@":
-            self.take("@")
-            annotation = self.take("disable_perm_check")
+        disable_const = None
+        while self.current.text == "@":
+            marker = self.take("@")
+            if self.current.text == "disable_perm_check" and annotation is None:
+                annotation = self.take("disable_perm_check")
+            elif self.current.text == "disable_const_checks" and disable_const is None:
+                self.take("disable_const_checks")
+                self.take("(")
+                disable_const = self.name()
+                self.take(")")
+            else:
+                reject(marker, "annotation", "unknown or repeated Qmod annotation")
         permutation = self.current.text == "qperm"
         if annotation is not None and not permutation:
             reject(annotation, "permutation", "permutation annotation requires qperm")
@@ -941,6 +951,7 @@ class Parser:
             self.block(),
             permutation=permutation,
             disable_permutation_check=annotation,
+            disable_const_checks=disable_const,
         )
 
     def call_argument(self) -> Expression:

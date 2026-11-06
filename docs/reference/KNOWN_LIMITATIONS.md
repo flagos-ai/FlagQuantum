@@ -328,6 +328,26 @@ result = fq.run(program)
 print(program.probabilities(result, registers=("a", "b", "c")))
 ```
 
+## Guarded rotation tables and borrowed reflections (UP-06 integration candidate)
+
+A borrowed fixed-width qbit array can act as an equal-width unsigned numeric
+view for a diagonal equality phase. The adapter proves the alias is confined
+to that phase before consuming any annotation. Rotation table helpers can be
+guarded by a static integer comparison over the same ordered selector. The
+guard masks table entries prior to lowering, so rejected values see identity.
+Ordinary helper width, initialization and alias checks still apply.
+
+```python
+from pathlib import Path
+
+import flagquantum as fq
+from flagquantum import synth
+
+source = Path("tests/fixtures/classiq_qmod/option_pricing.qmod")
+program = synth.synthesize(source, classical_inputs={"k": 2}, max_workspace=0)
+print(program.probabilities(fq.run(program), registers=("indicator",)))
+```
+
 ## Compact Pauli evolution integration slice
 
 Qmod acquisition is bounded at 512 KiB and 65536 tokens for large Pauli data.
