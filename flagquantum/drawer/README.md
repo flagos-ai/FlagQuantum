@@ -232,14 +232,16 @@ from flagquantum.drawer.register_score_data import (
     export_register_score_json,
     register_score_data,
 )
+from flagquantum.drawer.register_score_mpl import draw_register_score
 
-program, helpers = local_composition(overlapping=False, helpers=True)
+program, helpers = local_composition(overlapping=False, helpers=False)
 score = register_program_score(program, helpers)
 for column in score.columns:
     print(column.sequence, column.generation, column.step.name, column.lanes)
-Path("register-score.json").write_text(
-    export_register_score_json(register_score_data(score)), encoding="utf-8"
-)
+data = register_score_data(score)
+Path("register-score.json").write_text(export_register_score_json(data), encoding="utf-8")
+figure, axes = draw_register_score(data, unit_to_inches=1.1, max_width=18)
+figure.savefig("register-score.svg")
 ```
 
 The sequence is the drawing order. Independent operations can share a
@@ -247,5 +249,7 @@ dependency generation. This placement describes register connectivity and
 lifetimes, while the compiler still uses the verified effect order for
 execution. The JSON contains port symbols, vertical connectors, and
 horizontal lifetimes. Quantum registers are the default. Supply
-`classical={...}` when exporting a mixed register graph. Image and browser
-renderers consume these presentation records separately.
+`classical={...}` when exporting a mixed register graph. With
+`flagquantum[viz]` installed, Matplotlib renders the sequential view from the
+same records and returns a caller-owned figure. Increase the figure width for
+dense scores or long register names.
