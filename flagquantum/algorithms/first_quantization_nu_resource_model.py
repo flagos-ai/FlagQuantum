@@ -1,7 +1,9 @@
 # Copyright 2023 Google LLC
 # SPDX-License-Identifier: Apache-2.0
-# Adapted from Qualtran v0.7.0 PrepareNuState and its subcomponents.
+# Adapted from Qualtran v0.7.0 PrepareNuState, its projectile variant and subcomponents.
 # https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/bloqs/chemistry/pbc/first_quantization/prepare_nu.py
+
+# https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/bloqs/chemistry/pbc/first_quantization/projectile/prepare_nu.py
 
 """Resource models for preparing the first-quantized momentum transfer."""
 
@@ -46,9 +48,27 @@ def source_prepare_nu_cost(
     """
     if type(num_bits_p) is not int or num_bits_p < 1:
         raise ValueError("Momentum width must be a positive integer")
+    p = num_bits_p
+    mu = ComponentCost(
+        "PrepareMuUnaryEncodedOneHot", max(p + 1, 3), GateCost(toffoli=p - 1)
+    )
+    return _prepare_nu_cost(
+        p, m_param, mu, "PrepareNuState", adjoint=adjoint, decomposed=decomposed
+    )
+
+
+def _prepare_nu_cost(
+    p: int,
+    m_param: int,
+    mu: ComponentCost,
+    name: str,
+    *,
+    adjoint: bool,
+    decomposed: bool,
+) -> ComponentCost:
     if type(m_param) is not int or m_param < 2:
         raise ValueError("Source momentum transfer requires m_param >= 2")
-    p, m = num_bits_p, (m_param - 1).bit_length()
+    m = (m_param - 1).bit_length()
     nu_width = 3 * (p + 1)
     ports = p + nu_width + m + 1
     uniform = source_uniform_preparation_cost(m_param)
@@ -57,17 +77,12 @@ def source_prepare_nu_cost(
     # before the three flags exist, or after they have been consumed.
     width = ports if decomposed else max(ports, uniform.qubits + ports - m)
     calls: tuple[CostCall, ...] = (
-        CostCall(
-            ComponentCost(
-                "PrepareMuUnaryEncodedOneHot", max(p + 1, 3), GateCost(toffoli=p - 1)
-            ),
-            bystander_qubits=ports - p,
-        ),
+        CostCall(mu, bystander_qubits=ports - p),
         CostCall(
             ComponentCost(
                 "PrepareNuSuperPositionState",
                 p + nu_width,
-                GateCost(toffoli=3 * (p - 1)),
+                _nu_superposition_gates(p),
             ),
             bystander_qubits=m + 2,
         ),
@@ -92,7 +107,53 @@ def source_prepare_nu_cost(
     if decomposed:
         calls = (m_call, *calls)
     return ComponentCost(
-        "PrepareNuState†" if adjoint else "PrepareNuState",
+        f"{name}†" if adjoint else name,
         width,
         calls=calls[::-1] if adjoint else calls,
     )
+
+
+def _nu_superposition_gates(width: int) -> GateCost:
+    return GateCost(toffoli=3 * (width - 1))
+
+
+def source_projectile_prepare_mu_cost(
+    num_bits_p: int, num_bits_n: int, *, adjoint: bool = False
+) -> ComponentCost:
+    """Estimate the projectile unary word with its source right-only flag."""
+    if any(type(width) is not int or width < 1 for width in (num_bits_p, num_bits_n)):
+        raise ValueError("Momentum widths must be positive integers")
+    if num_bits_n < num_bits_p:
+        raise ValueError(
+            "Projectile momentum width must be at least the electron width"
+        )
+    toffoli = num_bits_n if adjoint else 2 * num_bits_n - num_bits_p - 1
+    return ComponentCost(
+        "PrepareMuUnaryEncodedOneHotWithProj",
+        max(num_bits_n + 1, 3),
+        GateCost(toffoli=toffoli),
+    )
+
+
+def source_projectile_prepare_nu_cost(
+    num_bits_p: int, num_bits_n: int, m_param: int, *, decomposed: bool = False
+) -> ComponentCost:
+    """Report the projectile forward declaration or forward composite cost."""
+    mu = source_projectile_prepare_mu_cost(num_bits_p, num_bits_n)
+    return _prepare_nu_cost(
+        num_bits_n,
+        m_param,
+        mu,
+        "PrepareNuStateWithProj",
+        adjoint=False,
+        decomposed=decomposed,
+    )
+
+
+def source_projectile_prepare_nu_adjoint_gate_cost(
+    num_bits_p: int, num_bits_n: int
+) -> GateCost:
+    """Count declared adjoint gates. The source adjoint has no valid peak width."""
+    mu = source_projectile_prepare_mu_cost(num_bits_p, num_bits_n, adjoint=True)
+    # The other three children have empty adjoint gate declarations.
+    return mu.gates.plus(_nu_superposition_gates(num_bits_n), 1)
