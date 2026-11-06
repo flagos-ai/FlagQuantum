@@ -2079,3 +2079,54 @@ bit immediately before a clean Free. The source model follows those
 original calls. The executable circuit uses the alias table's sentinel
 and a clean predicate for the union of the two domains. The report
 therefore keeps source logical costs separate from emitted instructions.
+
+### THC alias rows and named lookup
+
+`thc_chemistry_data` constructs the five source columns in row-major
+upper-triangle order and appends the one-body eigenvalues. It uses that
+ordering for alias sampling and preserves the normalized-zeta and
+eigenvalue contributions to the source normalization.
+
+`lookup_table()` permutes the resulting rows into the address order
+`nu * (nu + 1) // 2 + mu`. Alternate coordinates, sign bits and keep
+values move together. Use `lookup_table(source_order=True)` or
+`lookup_cost(source_order=True)` for the original row declaration.
+The unblocked layout has only the five selected words. The blocked
+layout also binds retained words in dataset and cell order.
+
+```python
+import numpy as np
+
+from flagquantum.algorithms.primitives.thc_chemistry_data import thc_chemistry_data
+from flagquantum.compiler.registers.partition import partition_register
+from flagquantum.core.ir import CircuitIR
+from flagquantum.qec.resources.estimation import estimate_ftqc_resources
+
+matrix = np.arange(1, 17).reshape(4, 4)
+data = thc_chemistry_data(
+    [2.0, -3.0], np.ones((4, 2)), (matrix + matrix.T) / 2,
+    probability_bits=4, log_block_size=1,
+)
+assert data.normalization == 277
+address = tuple(range(data.address_width))
+layout = data.lookup_output_layout
+width = len(address) + sum(size for _, size in layout)
+ports = partition_register(tuple(range(len(address), width)), layout)
+work = data.lookup_table().workspace_size(0, (len(address),))
+gates = data.lookup_ir(address, ports, tuple(range(width, width + work)), tuple(range(work)))
+report = estimate_ftqc_resources(
+    data.lookup_cost(), emitted_ir=CircuitIR(width + work, gates).validate()
+)
+assert report.logical.gates.total_t_count() == 64
+assert report.emitted is not None
+assert report.emitted.t_count == 64
+assert report.emitted.unconditional["measure"] == 4
+assert report.emitted.declared_qubits == 30
+```
+
+Call `lookup_ir(..., uncompute=True)` with matching signed bank outputs
+to reverse the routing and clear the loaded words. The tests compare
+forward and reverse gate dependencies with the pinned QROAM using the
+same permuted inputs, including every measurement history of the small
+blocked and unblocked fixtures. The original preprocessing uses the
+unpermuted declaration and has its own model comparison.
