@@ -1763,3 +1763,33 @@ result = fq.run(program)
 probabilities = program.probabilities(result, registers=("x1", "x2", "ecp.x", "ecp.y"))
 # The raw x1 and x2 words represent values on the 1/8 grid.
 ```
+
+### Coherent signed fixed-point payoffs
+
+The bounded scalar-indicator amplification profile reads
+`preferences.machine_precision` from the adjacent Classiq
+`*.synthesis_options.json` file. For source text, pass
+`qmod_machine_precision` explicitly. The checked affine expressions
+quantize their coefficients toward zero at the declared precision.
+
+The compiler proves the callback over its bounded sparse support. It keeps
+an injective label for every discarded environment word, preserving the
+indicator's reduced density matrix. An oracle that marks only the
+indicator permits moving the Grover rounds before a shared preparation.
+The returned statevector includes the private environment and named
+probabilities expose the indicator.
+
+```python
+from pathlib import Path
+
+import flagquantum as fq
+from flagquantum import synth
+
+source = Path("tests/fixtures/classiq_qmod/quantum_autocallable_option_pricing.qmod")
+program = synth.synthesize(
+    source, classical_inputs={"k": 1},
+    max_qubits=11, max_workspace=0, max_operations=4_200,
+)
+result = fq.run(program)
+print(program.probabilities(result, registers=("indicator",))[(1,)])  # about 0.760137
+```

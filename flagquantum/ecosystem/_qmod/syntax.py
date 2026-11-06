@@ -238,6 +238,7 @@ class Parser:
     def __init__(self, tokens: tuple[Token, ...]) -> None:
         self.tokens = tokens
         self.position = 0
+        self.closed_fixed_point = False
         self.callback_depth = 0
         self.records: dict[str, Record] = {}
         self.integer_constants: set[str] = set()
@@ -1088,14 +1089,17 @@ class Parser:
                     self.take("[")
                     numeric_length = self.width()
                     self.take("]")
-                    if width is None or width * numeric_length > 256:
+                    if self.closed_fixed_point and width is None:
+                        kind = "qnum[]"
+                    elif width is None or width * numeric_length > 256:
                         reject(
                             parameter,
                             "width",
                             "numeric array requires a fixed element width within 256 total bits",
                         )
-                    width *= numeric_length
-                    kind = "qbit[]"
+                    else:
+                        width *= numeric_length
+                        kind = "qbit[]"
                 if kind == "qphase_signed" and name.text != "main":
                     reject(
                         parameter,
@@ -1558,7 +1562,8 @@ class Parser:
                     self.signed_angle_argument()
                     if operator.text == "^=" and self.current.text == "-"
                     else self.expression(
-                        decimal=operator.text in {"=", "^="},
+                        decimal=self.closed_fixed_point or operator.text in {"=", "^="},
+                        real=self.closed_fixed_point,
                         difference=True,
                         allow_slice=operator.text == "=",
                     )

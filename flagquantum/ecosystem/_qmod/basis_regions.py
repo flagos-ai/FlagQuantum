@@ -5,7 +5,7 @@ from __future__ import annotations
 import cmath
 import math
 from collections.abc import Callable, Mapping
-from dataclasses import dataclass, replace
+from dataclasses import dataclass, field, replace
 from operator import eq, ge, gt, le, lt, ne
 from typing import TYPE_CHECKING
 
@@ -34,6 +34,8 @@ class Scalar:
 class View:
     bits: tuple[int, ...]
     signed: bool = False
+    fraction: int = 0
+    element_width: int = 1
 
     def read(self, row: int) -> int:
         word = sum((row >> bit & 1) << offset for offset, bit in enumerate(self.bits))
@@ -53,6 +55,7 @@ class Frame:
     views: dict[str, View]
     classical: dict[str, int]
     forbidden: frozenset[int]
+    reals: dict[str, float] = field(default_factory=dict)
 
 
 def _name(node: Expression) -> str:
@@ -195,6 +198,12 @@ _Kernel = Callable[[int, bool, bool], int]
 
 
 class Region:
+    def view(self, node: Expression, frame: Frame) -> View:
+        return view(node, frame)
+
+    def expression(self, node: Expression, frame: Frame) -> Scalar:
+        return expression(node, frame)
+
     def __init__(
         self, functions: Mapping[str, Function], records: Mapping[str, Record]
     ) -> None:
@@ -213,7 +222,12 @@ class Region:
         return result
 
     def bind(
-        self, frame: Frame, label: str, bits: tuple[int, ...], token: Token
+        self,
+        frame: Frame,
+        label: str,
+        bits: tuple[int, ...],
+        token: Token,
+        actual: View | None = None,
     ) -> None:
         port = frame.declarations.get(label)
         if (
@@ -245,9 +259,9 @@ class Region:
     @staticmethod
     def remove(frame: Frame, label: str) -> View:
         prior = frame.views.pop(label)
-        for field in tuple(frame.views):
-            if field.startswith(label + "."):
-                del frame.views[field]
+        for field_name in tuple(frame.views):
+            if field_name.startswith(label + "."):
+                del frame.views[field_name]
         return prior
 
     def mutation(
@@ -306,17 +320,21 @@ class Region:
         for port, node in zip(function.parameters, nodes, strict=True):
             label = port.name.text
             if port.role == "integer" and port.kind == "int":
-                frame.classical[label] = expression(node, caller).static(node.token)
+                frame.classical[label] = self.expression(node, caller).static(
+                    node.token
+                )
+            elif port.role == "real":
+                self.bind_real(frame, label, node, caller)
             elif port.role == "output":
                 outputs[label] = node
             elif port.role in {"inout", "const"}:
-                register = view(node, caller)
+                register = self.view(node, caller)
                 if seen.intersection(register.bits):
                     reject(
                         node.token, "alias", "static proof call ports must be disjoint"
                     )
                 seen.update(register.bits)
-                self.bind(frame, label, register.bits, node.token)
+                self.bind(frame, label, register.bits, node.token, actual=register)
                 borrowed[label] = frame.views[label]
                 if port.role == "const":
                     frame.forbidden |= frozenset(register.bits)
@@ -361,7 +379,7 @@ class Region:
                 continue
             if statement.repeat_index is not None:
                 index = statement.repeat_index
-                count = expression(args[0], frame).static(token)
+                count = self.expression(args[0], frame).static(token)
                 if not 0 <= count <= 16 or index.text in frame.classical:
                     reject(
                         token,
@@ -376,13 +394,13 @@ class Region:
                 frame.classical.pop(index.text, None)
                 continue
             if statement.static_if_body is not None:
-                if expression(args[0], frame).static(token):
+                if self.expression(args[0], frame).static(token):
                     effects.extend(
                         self.block(statement.static_if_body, frame, guards, stack)
                     )
                 continue
             if statement.control_body is not None:
-                condition = expression(args[0], frame)
+                condition = self.expression(args[0], frame)
                 original = dict(frame.views)
                 effects.extend(
                     self.block(
@@ -416,9 +434,7 @@ class Region:
                 continue
             if statement.within is not None:
                 outer_views = dict(frame.views)
-                compute = self.block(
-                    statement.within, frame, () if self.quantum else guards, stack
-                )
+                compute = self.compute_within(statement, frame, guards, stack)
                 within_views = dict(frame.views)
                 apply = self.block(statement.apply, frame, guards, stack)
                 if frame.views != within_views:
@@ -454,14 +470,14 @@ class Region:
                     effects.extend(self.quantum_call(helper, args, frame, guards))
                 else:
                     effects.extend(self.invoke(helper, args, frame, guards, stack))
-            elif op == "allocate" and len(args) in {2, 4}:
+            elif op == "allocate" and len(args) in self.allocation_arities:
                 label = _name(args[-1])
                 if len(args) == 4:
                     sign, fraction = args[1:3]
                     port = frame.declarations[label]
                     if (
                         sign.token.text != "False"
-                        or expression(fraction, frame).static(token) != port.width
+                        or self.expression(fraction, frame).static(token) != port.width
                         or port.kind != "qphase"
                     ):
                         reject(
@@ -469,11 +485,11 @@ class Region:
                             "proof",
                             "unsupported fixed-point allocation in proof prelude",
                         )
-                width = expression(args[0], frame).static(token)
+                width = self.allocation_width(args, label, frame, token)
                 self.bind(frame, label, self.fresh(width, token), token)
                 effects.append(self.clean(frame.views[label], token))
             elif op == "free" and len(args) == 1:
-                register = view(args[0], frame)
+                register = self.view(args[0], frame)
                 if set(register.bits) & frame.forbidden:
                     reject(token, "ownership", "static proof cannot free a const port")
                 self.remove(frame, _name(args[0]))
@@ -481,8 +497,8 @@ class Region:
             elif op == "->" and len(args) == 2:
                 self.transfer(args[0], args[1], frame)
             elif op in {"^=", "+="} and len(args) == 2:
-                target = view(args[0], frame)
-                value = expression(args[1], frame)
+                target = self.view(args[0], frame)
+                value = self.update_value(args[1], frame, target)
                 writes = frozenset(target.bits)
                 if writes & value.reads:
                     reject(
@@ -517,7 +533,7 @@ class Region:
                     effect = Effect(add, subtract)
                 effects.append(self.mutation(token, frame, guards, writes, effect))
             elif op in {"X", "SWAP"}:
-                registers = tuple(view(node, frame) for node in args)
+                registers = tuple(self.view(node, frame) for node in args)
                 bits = tuple(bit for register in registers for bit in register.bits)
                 if (
                     len(registers) != (1 if op == "X" else 2)
@@ -555,8 +571,40 @@ class Region:
             elif self.quantum and op in {"H", "PHASE", "CPHASE"}:
                 effects.append(self.phase_gate(op, token, args, frame, guards))
             else:
-                reject(token, "proof", "unsupported reversible proof statement")
+                effects.extend(self.extra(statement, frame, guards))
         return effects
+
+    allocation_arities = frozenset({2, 4})
+
+    def allocation_width(
+        self, args: tuple[Expression, ...], label: str, frame: Frame, token: Token
+    ) -> int:
+        return self.expression(args[0], frame).static(token)
+
+    def update_value(self, source: Expression, frame: Frame, target: View) -> Scalar:
+        return self.expression(source, frame)
+
+    def bind_real(
+        self, frame: Frame, label: str, node: Expression, caller: Frame
+    ) -> None:
+        reject(node.token, "proof", "unsupported real proof port")
+
+    def compute_within(
+        self,
+        statement: Statement,
+        frame: Frame,
+        guards: _Guards,
+        stack: tuple[str, ...],
+    ) -> list[Effect]:
+        assert statement.within is not None
+        return self.block(
+            statement.within, frame, () if self.quantum else guards, stack
+        )
+
+    def extra(
+        self, statement: Statement, frame: Frame, guards: _Guards
+    ) -> list[Effect]:
+        reject(statement.token, "proof", "unsupported reversible proof statement")
 
     def transfer(self, source: Expression, target: Expression, frame: Frame) -> None:
         sources = source.children if source.token.text == "{" else (source,)
@@ -565,22 +613,26 @@ class Region:
         outputs = tuple(_name(node) for node in targets)
         if len(set((*inputs, *outputs))) != len(inputs) + len(outputs):
             reject(target.token, "alias", "static proof transfer requires unique names")
-        bits = tuple(bit for node in sources for bit in view(node, frame).bits)
+        bits = tuple(bit for node in sources for bit in self.view(node, frame).bits)
         for label in inputs:
             self.remove(frame, label)
         offset = 0
         for label in outputs:
             port = frame.declarations.get(label)
-            if port is None or port.width is None or offset + port.width > len(bits):
+            width = self.transfer_width(port, frame)
+            if width is None or offset + width > len(bits):
                 reject(
                     target.token,
                     "width",
                     "static proof transfer needs known output widths",
                 )
-            self.bind(frame, label, bits[offset : offset + port.width], target.token)
-            offset += port.width
+            self.bind(frame, label, bits[offset : offset + width], target.token)
+            offset += width
         if offset != len(bits):
             reject(target.token, "width", "static proof transfer must move all wires")
+
+    def transfer_width(self, port: Parameter | None, frame: Frame) -> int | None:
+        return port.width if port is not None else None
 
     def phase_gate(
         self,
@@ -591,7 +643,7 @@ class Region:
         guards: _Guards,
     ) -> Effect:
         targets = args if op == "H" else args[1:]
-        registers = tuple(view(arg, frame) for arg in targets)
+        registers = tuple(self.view(arg, frame) for arg in targets)
         bits = tuple(bit for register in registers for bit in register.bits)
         required = 2 if op == "CPHASE" else 1
         if (
@@ -653,7 +705,7 @@ class Region:
         op = token.text
         if op == "qft_const_adder_phase" and len(children) == 3:
             i, value, width = (
-                expression(child, frame).static(token) for child in children
+                self.expression(child, frame).static(token) for child in children
             )
             if not 0 <= i < width <= 8:
                 reject(token, "proof", "Fourier phase index or width is out of range")
@@ -663,11 +715,11 @@ class Region:
             return math.pi
         if op == "/" and len(children) == 2:
             left, right = children
-            divisor = expression(right, frame).static(token)
+            divisor = self.expression(right, frame).static(token)
             if divisor <= 0:
                 reject(token, "proof", "Fourier phase requires a positive divisor")
             return self.angle(left, frame) / divisor
-        return float(expression(node, frame).static(token))
+        return float(self.expression(node, frame).static(token))
 
     def quantum_call(
         self,
@@ -686,9 +738,9 @@ class Region:
         for port, node in zip(helper.parameters, args, strict=True):
             name = port.name.text
             if port.role == "integer":
-                classical[name] = expression(node, frame).static(node.token)
+                classical[name] = self.expression(node, frame).static(node.token)
             elif port.role in {"inout", "const"}:
-                register = view(node, frame)
+                register = self.view(node, frame)
                 if port.width != len(register.bits) or set(register.bits).intersection(
                     bits
                 ):

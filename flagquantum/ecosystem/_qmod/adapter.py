@@ -69,6 +69,11 @@ from .decisions import lower_decision_phase
 from .deferred_measurement import defer_private_measurements
 from .diffusion import lower_diffuser
 from .fixed_payoff import inferred_computation, lower_fixed_payoff, payoff_helpers
+from .fixed_regions import (
+    FixedPreparation,
+    build_fixed_preparation,
+    emit_fixed_preparation,
+)
 from .fixed_xor import lower_fixed_xor
 from .hea import lower_hea
 from .indexed_control import (
@@ -5027,6 +5032,7 @@ def parse_qmod(
     filename: str = "<qmod>",
     source_version: str,
     classical_inputs: Mapping[str, float | Sequence[float]] | None = None,
+    machine_precision: int | None = None,
 ) -> QmodImport:
     """Adapt the pinned unsigned scalar native subset to verified owned records.
 
@@ -5039,6 +5045,12 @@ def parse_qmod(
     check_source_version(source_version, tokens[0])
     definitions: dict[str, Function] = {}
     parser = Parser(tokens)
+    token_names = {token.text for token in tokens}
+    parser.closed_fixed_point = (
+        machine_precision is not None
+        and "amplitude_amplification" in token_names
+        and bool({"SIGNED", "True"} & token_names)
+    )
     functions_syntax, declarations = parser.parse()
     constants: dict[str, Expression] = {}
     constant_integers: dict[str, int] = {}
@@ -5103,11 +5115,37 @@ def parse_qmod(
         definitions[name] = syntax
     if "main" not in definitions:
         reject(tokens[0], "entry", "source requires one qfunc main")
+    fixed_program: FixedPreparation | None = None
+    if parser.closed_fixed_point:
+        assert machine_precision is not None
+        if not 1 <= machine_precision <= 8:
+            reject(tokens[0], "precision", "machine precision must be in 1..8")
+        root = definitions["main"]
+        declared = {
+            p.name.text: p for p in root.parameters if p.role in {"real", "integer"}
+        }
+        supplied = classical_inputs or {}
+        if (
+            not isinstance(supplied, Mapping)
+            or set(declared) != set(supplied)
+            or any(p.kind != "int" for p in declared.values())
+        ):
+            reject(
+                root.name, "binding", f"classical inputs must match {sorted(declared)}"
+            )
+        integer_values = {
+            name: checked_integer(supplied[name], port.name)
+            for name, port in declared.items()
+        }
+        fixed_program = build_fixed_preparation(
+            definitions, parser.records, machine_precision, integer_values
+        )
+        definitions = {"main": replace(root, statements=())}
     numeric_program = try_numeric_program(definitions)
     if numeric_program is not None:
         definitions = {"main": replace(definitions["main"], statements=())}
     closed_region = None
-    if {"skip_control", "qft_const_adder_phase"} <= {token.text for token in tokens}:
+    if {"skip_control", "qft_const_adder_phase"} <= token_names:
         closed_region = try_closed_region(definitions, parser.records)
         if closed_region is not None:
             definitions = {"main": replace(definitions["main"], statements=())}
@@ -5445,6 +5483,8 @@ def parse_qmod(
                     emit_numeric_program(adapter, numeric_program)
                 if closed_region is not None:
                     emit_closed_region(adapter, closed_region)
+                if fixed_program is not None:
+                    emit_fixed_preparation(adapter, fixed_program)
             program = adapter.adapt()
             compiled[name] = adapter, program
             active.remove(name)

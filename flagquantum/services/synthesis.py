@@ -476,6 +476,7 @@ def synthesize(
     source_name: str | None = None,
     source_version: str | None = None,
     classical_inputs: Mapping[str, float | Sequence[float]] | None = None,
+    qmod_machine_precision: int | None = None,
     memory_limit_bytes: int | None = None,
     output_mode: Literal["value"] = "value",
 ) -> Program: ...
@@ -503,6 +504,7 @@ def synthesize(
     source_name: None = None,
     source_version: str | None = None,
     classical_inputs: Mapping[str, float | Sequence[float]] | None = None,
+    qmod_machine_precision: int | None = None,
     memory_limit_bytes: int | None = None,
     output_mode: Literal["value"] = "value",
 ) -> Program: ...
@@ -555,6 +557,7 @@ def synthesize(
     source_name: str | None = None,
     source_version: str | None = None,
     classical_inputs: Mapping[str, float | Sequence[float]] | None = None,
+    qmod_machine_precision: int | None = None,
     memory_limit_bytes: int | None = None,
     output_mode: Literal["value", "phase"] = "value",
 ) -> Program:
@@ -646,6 +649,8 @@ def synthesize(
     )
     is_file = isinstance(function, PathLike)
     is_native_source = isinstance(function, (PathLike, str))
+    if not is_native_source and qmod_machine_precision is not None:
+        raise ValueError("qmod_machine_precision applies only to native Qmod source")
     if not is_native_source and classical_inputs is not None:
         raise ValueError("classical_inputs apply only to native Qmod source")
     if not is_native_source and any(
@@ -684,6 +689,7 @@ def synthesize(
             source_name=source_name,
             source_version=source_version,
             classical_inputs=classical_inputs,
+            machine_precision=qmod_machine_precision,
         )
         owned_program, owned_functions = imported.program, imported.functions
         fractional_bits = imported.fractional_bits

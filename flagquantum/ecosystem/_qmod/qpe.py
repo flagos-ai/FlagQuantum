@@ -445,6 +445,16 @@ def parse_fraction(
         parser.take(fraction.text)
         parser.take(">")
         return "qnum_signed", 0
+    if (
+        allow_phase
+        and signed
+        and value is not None
+        and 0 < value < width
+        and parser.closed_fixed_point
+    ):
+        parser.take(fraction.text)
+        parser.take(">")
+        return "qnum_signed", value
     if allow_phase and not signed and value is not None and 0 < value < width:
         parser.take(fraction.text)
         parser.take(">")

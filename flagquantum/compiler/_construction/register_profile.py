@@ -25,6 +25,7 @@ from .profile import _fail, _positive_integer, _width, verify_construction
 from .register_expansion import expand_register_calls, is_register_function
 
 MAX_PREPARED_AMPLITUDES = 256
+_MAX_INPLACE_AMPLITUDES = 4096
 MAX_TRANSFORM_WIDTH = 4
 
 _ATTRIBUTES = MappingProxyType(
@@ -101,9 +102,16 @@ def unitary_matrix(entries: object, width: int, op: Operation) -> torch.Tensor:
 def _check_real_preparation(op: Operation, width: int) -> None:
     amplitudes = op.attributes["amplitudes"]
     bound = op.attributes["bound"]
+    limit = (
+        _MAX_INPLACE_AMPLITUDES
+        if op.name == "qreg.inplace_prepare_amplitudes"
+        and "indices" in op.attributes
+        and not op.attributes.get("control_count")
+        else MAX_PREPARED_AMPLITUDES
+    )
     if (
         not isinstance(amplitudes, tuple)
-        or not 2 <= len(amplitudes) <= MAX_PREPARED_AMPLITUDES
+        or not 2 <= len(amplitudes) <= limit
         or len(amplitudes) & (len(amplitudes) - 1)
         or len(amplitudes).bit_length() - 1 != width
         or any(
@@ -1161,7 +1169,14 @@ def _verify_body(
                         or len(indices) != len(operands)
                         or not 1
                         <= len(indices)
-                        <= (MAX_PREPARED_AMPLITUDES.bit_length() - 1)
+                        <= (
+                            (
+                                _MAX_INPLACE_AMPLITUDES
+                                if not control_count
+                                else MAX_PREPARED_AMPLITUDES
+                            ).bit_length()
+                            - 1
+                        )
                         or any(
                             type(index) is not int
                             or not 0 <= index < register_width(value)
