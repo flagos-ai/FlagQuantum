@@ -61,7 +61,7 @@ def certified_and_channel_map(
     iff its target is the controls' And. Check that invariant for every basis
     input and every block. Linearity then gives the same map / sqrt(2**events)
     for every branch on every superposition of these inputs. Only unconditional
-    X/CX and literal known And/exact-CSwap blocks are accepted. CSwap columns
+    X/CX/CCX and literal known And/exact-CSwap blocks are accepted. CSwap columns
     are independently proved on all eight inputs before composition. This is a test certificate,
     not an execution backend or a sampled branch check.
     """
@@ -117,10 +117,13 @@ def certified_and_channel_map(
                 events += 1
             i += len(block)
             continue
-        assert gate.name in {"x", "cx"} and not gate.metadata and not gate.params
+        assert gate.name in {"x", "cx", "ccx"} and not gate.metadata and not gate.params
         if gate.name == "x":
             values[gate.wires[0]] ^= 1
-        else:
+        elif gate.name == "cx":
             values[gate.wires[1]] ^= values[gate.wires[0]]
+        else:
+            a, b, target = gate.wires
+            values[target] ^= values[a] & values[b]
         i += 1
     return tuple(tuple(int(v) for v in word) for word in values.T), events
