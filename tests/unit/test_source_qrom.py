@@ -1,5 +1,6 @@
 """Concrete QROM source gates and complete measured lookup channels."""
 
+from dataclasses import asdict
 from itertools import product
 from math import prod
 from typing import Any
@@ -7,6 +8,10 @@ from typing import Any
 import pytest
 import torch
 
+from flagquantum.compiler._component_trace.resource_model import (
+    estimate_component_resources,
+)
+from flagquantum.compiler.registers.qrom_resource_model import source_qrom_cost
 from flagquantum.compiler.registers.source_qrom import (
     source_qrom_ir,
     source_qrom_workspace_size,
@@ -114,6 +119,13 @@ def test_literal_qrom_and_complete_channel(
     model = get_cost_value(source, QECGatesCost())
     assert model.total_t_count() == 4 * events
     assert model.measurement == events
+    estimated = estimate_component_resources(
+        source_qrom_cost(controls_count, widths, shape, target_layout, datasets)
+    )
+    assert {
+        key: value for key, value in asdict(estimated.gates).items() if value
+    } == model.asdict()
+    assert estimated.peak_logical_qubits == get_cost_value(source, QubitCount())
     # The static estimate always includes the full selection pool.
     assert (
         get_cost_value(source, QubitCount())
