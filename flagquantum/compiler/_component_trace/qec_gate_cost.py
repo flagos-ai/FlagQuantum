@@ -19,6 +19,7 @@ from .resource_generalization import (
     BookkeepingCall,
     CliffordCall,
     ConjunctionCall,
+    ControlledRegisterSwapCall,
     ControlledSwapCall,
     ControlledZPowerCall,
     ControlledZRotationCall,
@@ -27,6 +28,7 @@ from .resource_generalization import (
     FanoutCall,
     FixedTCall,
     MeasurementCall,
+    MergedFredkinCall,
     PartitionedCall,
     PhaseCall,
     PredicateControlledCall,
@@ -162,6 +164,16 @@ def _qec_callees(
             yield CliffordCall("arbitrary", 2, node.adjoint), 6 * node.width - 1
         else:
             yield FixedTCall("fredkin"), node.width
+    elif isinstance(node, ControlledRegisterSwapCall):
+        if not isinstance(node.width, int) or node.width < 1:
+            raise TypeError("Controlled register swap requires positive concrete width")
+        yield MergedFredkinCall((1, 1)), node.width
+    elif isinstance(node, MergedFredkinCall):
+        if len(node.controls) < 2:
+            raise ValueError("Merged Fredkin requires at least two controls")
+        yield ConjunctionCall(node.controls), 1
+        yield FixedTCall("fredkin"), 1
+        yield ConjunctionCall(node.controls, adjoint=True), 1
     elif isinstance(node, ControlledZPowerCall):
         yield ConjunctionCall((1, 1)), 1
         yield RotationCall("zpow", node.exponent, node.precision), 1

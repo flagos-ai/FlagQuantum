@@ -110,6 +110,20 @@ class ControlledSwapCall:
 
 
 @dataclass(frozen=True)
+class MergedFredkinCall:
+    """A bitwise Fredkin whose existing control joins a new predicate."""
+
+    controls: tuple[int, ...]
+
+
+@dataclass(frozen=True)
+class ControlledRegisterSwapCall:
+    """A positive control on a register CSwap, decomposed bit by bit."""
+
+    width: SymbolicInt
+
+
+@dataclass(frozen=True)
 class BookkeepingCall:
     opcode: Literal[
         "split", "split2", "join", "join2", "partition", "cast", "allocate", "free"
@@ -162,6 +176,8 @@ ResourceCall = (
     | PredicateControlledCall
     | ConjunctionCall
     | ControlledSwapCall
+    | MergedFredkinCall
+    | ControlledRegisterSwapCall
     | BookkeepingCall
     | MeasurementCall
     | FanoutCall
