@@ -1564,3 +1564,31 @@ program = synth.synthesize(source)
 result = fq.run(program)
 print(dict(program.probabilities(result, registers=("bob_qubit",))))
 ```
+
+### Prepared record widths and controlled matrix powers
+
+A flat record with one unsized unsigned integer field can infer that
+field's width from an unambiguous whole-record amplitude or probability
+preparation. All preparations of that nominal type must agree on the
+total width. Matrix literals accept scientific notation for both real
+and imaginary components, with up to five writable target qubits.
+
+When consecutive controlled powers of the same verified five-qubit
+unitary act on the same data wires, Compiler checks a shared eigenbasis
+and each matrix power. It uses one pair of basis changes and applies the
+controlled diagonal phases in their original order. The emitted circuit
+uses registered gates, and ordinary operation and workspace limits apply.
+
+```python
+from pathlib import Path
+
+import flagquantum as fq
+from flagquantum import synth
+
+source = Path("tests/fixtures/classiq_qmod/hhl_lanchester.qmod")
+program = synth.synthesize(
+    source, max_qubits=16, max_workspace=4, max_operations=25_000
+)
+result = fq.run(program)
+print(dict(program.probabilities(result, registers=("indicator",))))
+```

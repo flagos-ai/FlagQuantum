@@ -145,7 +145,7 @@ def _two_level_instructions(
         matrix = matrix.flip((0, 1))
     gates = [gate for permutation in permutations for gate in permutation]
     local, angle = _small_decomposition(matrix, (target,), op, zyz=True)
-    if len(wires) == 4:
+    if len(wires) >= 4:
         gates.extend(_pattern_block(local, wires, left, controls, scratch))
     else:
         for gate in local:
@@ -180,10 +180,10 @@ def _givens_instructions(
     controls: tuple[int, ...] = (),
     scratch: tuple[int, ...] = (),
 ) -> tuple[Instruction, ...]:
-    # Four-bit elimination in Gray order makes consecutive basis words differ
+    # Elimination in Gray order makes consecutive basis words differ
     # by one bit, avoiding reversible transpositions around each rotation.
     order = list(range(matrix.shape[0]))
-    if len(wires) == 4:
+    if len(wires) >= 4:
         order = [word ^ (word >> 1) for word in order]
         matrix = matrix[order][:, order]
     reduced = matrix.clone()

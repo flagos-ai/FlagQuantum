@@ -26,7 +26,7 @@ MAX_FUNCTIONS = 64
 ANGLE_CALLS = frozenset({"PHASE", "RX", "RY", "RZ", "RZZ", "CRX", "CPHASE", "R", "U"})
 _TOKEN = re.compile(
     r"(?P<space>\s+)|(?P<comment>//[^\n]*|/\*[\s\S]*?\*/)"
-    rf"|(?P<scientific>{SCIENTIFIC_LITERAL.pattern})(?![A-Za-z_0-9])"
+    rf"|(?P<scientific>{SCIENTIFIC_LITERAL.pattern})(?=j?(?:[^A-Za-z_0-9]|$))"
     r"|(?P<number>[0-9]+)|(?P<name>[A-Za-z_][A-Za-z_0-9]*)"
     r"|(?P<symbol>\*\*|\^=|\+=|->|==|!=|<=|>=|[{}()<>,:;=+*%\[\].^/\-&|~@])"
 )
@@ -706,9 +706,12 @@ class Parser:
             entry = self.matrix_entry(depth + 1)
             self.take(")")
             return entry
-        if not token.text.isdecimal():
+        if not token.text.isdecimal() and not SCIENTIFIC_LITERAL.fullmatch(token.text):
             reject(token, "matrix", "expected a numeric matrix literal")
-        if self.tokens[self.position + 1].text == ".":
+        if (
+            SCIENTIFIC_LITERAL.fullmatch(token.text)
+            or self.tokens[self.position + 1].text == "."
+        ):
             number = self.angle_argument()
         else:
             self.position += 1
@@ -1694,8 +1697,12 @@ class Parser:
                     "type",
                     "fractional record fields require fixed-point field lowering",
                 )
-            if width is None:
-                reject(field, "width", "record numeric fields require a fixed width")
+            if width is None and (kind != "qnum" or self.current.text == "["):
+                reject(
+                    field,
+                    "width",
+                    "record numeric arrays require a fixed element width",
+                )
             length = None
             if kind in {"qnum", "qbit[]"} and self.current.text == "[":
                 self.take("[")
@@ -1724,7 +1731,7 @@ class Parser:
     def resolve_records(self) -> None:
         def resolve(name: str, active: tuple[str, ...]) -> int:
             layout = self.records[name]
-            if all(field.width is not None for field in layout.fields):
+            if all(field.record is None for field in layout.fields):
                 return layout.width
             if name in active or len(active) >= MAX_SCOPE_DEPTH:
                 reject(
@@ -1837,6 +1844,12 @@ class Parser:
             else:
                 self.resolve_records()
                 functions.append(self.function())
+        from .record_inference import bind_record_widths, infer_prepared_record_widths
+
+        parsed = tuple(functions)
+        changed = infer_prepared_record_widths(self.records, parsed)
         self.resolve_records()
+        if changed:
+            parsed = bind_record_widths(self.records, parsed)
         self.take("<eof>")
-        return tuple(functions), tuple(constants)
+        return parsed, tuple(constants)

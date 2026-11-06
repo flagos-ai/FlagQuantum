@@ -40,6 +40,7 @@ from .register_profile import (
     unitary_matrix,
     verify_register_program,
 )
+from .spectral_powers import lower_spectral_powers
 from .unitary import unitary_instructions
 
 
@@ -353,7 +354,11 @@ def schedule_register_program(
     used_boolean = False
     control_workspace = 0
     symbols = {f.name: f for f in functions}
-    for ordinal, op in enumerate(program.body.blocks[0].operations):
+    operations = program.body.blocks[0].operations
+    skip_until = 0
+    for ordinal, op in enumerate(operations):
+        if ordinal < skip_until:
+            continue
         gates: tuple[Instruction, ...] = ()
         if op.name == "qreg.initialize":
             gates = _copy(op.attributes["value"], bindings[op.operands[1].id])
@@ -399,17 +404,27 @@ def schedule_register_program(
             else:
                 wires = bindings[unitary_data[0].id]
             matrix = unitary_matrix(op.attributes["matrix"], len(wires), op)
-            if "power" in op.attributes:
-                matrix = torch.linalg.matrix_power(matrix, op.attributes["power"])
-            needed = 2 + (control is not None) if len(wires) == 4 else 0
+            needed = len(wires) - 2 + (control is not None) if len(wires) >= 4 else 0
             scratch = (
                 tuple(range(position, position + needed))
                 if position + needed <= n_qubits
                 else ()
             )
-            gates = unitary_instructions(
-                matrix, wires, op, () if control is None else (control,), scratch
+            shared = (
+                lower_spectral_powers(
+                    operations, ordinal, bindings, matrix, wires, scratch
+                )
+                if len(wires) == 5 and control is not None and scratch
+                else None
             )
+            if shared is None:
+                if "power" in op.attributes:
+                    matrix = torch.linalg.matrix_power(matrix, op.attributes["power"])
+                gates = unitary_instructions(
+                    matrix, wires, op, () if control is None else (control,), scratch
+                )
+            else:
+                gates, skip_until = shared
             if scratch:
                 used = {
                     wire for gate in gates for wire in gate.wires if wire in scratch

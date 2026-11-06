@@ -138,7 +138,7 @@ def test_reject_malformed_power_and_control(attributes: dict[str, object]) -> No
 )
 def test_reject_unsafe_unitary_programs(case: str) -> None:
     p = Registers()
-    width = 5 if case == "width" else 3
+    width = 6 if case == "width" else 3
     data = p.declare("data", width)
     p.emit("qreg.allocate", data)
     control = data if case == "alias" else p.declare("control", 1)

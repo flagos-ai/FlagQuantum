@@ -70,7 +70,7 @@ def lower_unitary(
         reject(
             target_arg.token,
             "unitary",
-            "unitary requires one to four distinct qubit locations",
+            "unitary requires one to five distinct qubit locations",
         )
     view_attributes: dict[str, object] = {}
     if target_arg.children or target_arg.token.text in owner.views:
