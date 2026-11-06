@@ -86,3 +86,29 @@ Callers supply the selected exponent to `QroamCleanTable`.
 
 This batch passed 21 module cases and 146 dependency cases. Statement
 coverage for the combined forward and reverse module reached 100%.
+
+## Measurement-assisted clearing of signed banks
+
+`qroam_clean_measurement_erase_ir` accepts the same layout and scratch
+as the forward operation. The caller also supplies a distinct outcome
+slot for each bank wire in dataset, block cell and big-endian wire order.
+The operation first runs the exact signed routing in reverse. It measures
+and clears all banks in the X basis, then replays the QROM address
+traversal with outcome-conditioned Z feedback in place of bank writes.
+Unconditional writes can contribute a scalar branch phase. A temporarily
+flipped bank wire applies that correction and returns to zero.
+
+The five-row, single-control example with one-bit words and two rows
+per block emits 12 T/T† instructions and four measurements, including
+two address-scratch cleanups. It uses two scratch wires and eight wires
+in total. The corresponding locked adjoint wrapper estimates two
+Toffolis, zero explicit measurements and a six-qubit peak. That source
+estimate describes its resource-only leaf. The executable clearing here
+keeps the reverse routing and address traversal, so it retains their
+T cost and adds the bank measurements.
+
+Six fixtures use the locked forward gate stream, including singleton and
+constant tables, signed exchange, padded and extra physical addresses,
+multiple controls and multidimensional blocking. The tests exhaust
+forward and erase measurement histories and compare complete complex
+vectors with an entangled spectator, including bank and scratch cleanup.

@@ -182,15 +182,25 @@ def _emit_clean_qroam(
     load, low = _source_qroam_batch_ir(
         table, controls, selections, banks, workspace, classical_bits
     )
+    route = _source_qroam_route_ir(table, low, banks, reverse=reverse)
+    return (*route, *load) if reverse else (*load, *route)
+
+
+def _source_qroam_route_ir(
+    table: QroamCleanTable,
+    low: tuple[tuple[int, ...], ...],
+    banks: tuple[tuple[tuple[int, ...], ...], ...],
+    *,
+    reverse: bool,
+) -> tuple[Instruction, ...]:
     if not any(table.log_block_sizes):
-        return load
+        return ()
     bank_order = reversed(banks) if reverse else iter(banks)
-    route = tuple(
+    return tuple(
         gate
         for bank in bank_order
         for gate in swap_with_zero_ir(low, table.block_shape, bank, adjoint=reverse)
     )
-    return (*route, *load) if reverse else (*load, *route)
 
 
 def _source_qroam_batch_ir(
