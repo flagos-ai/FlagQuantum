@@ -43,6 +43,48 @@ in native IR has a different resource profile. The existing
 `estimate_resources` entry point continues to describe static instructions
 and basis conversion, with its existing data-dependence rules.
 
+## Beverland surface-code estimate
+
+A declared logical cost can feed a surface-code model before any circuit
+is generated. The experimental QEC estimator applies the pinned Qualtran
+v0.7.0 Beverland logarithmic rotation model, with one third of the total
+error budget reserved for synthesis. It estimates T-state equivalents,
+a minimum number of time steps, and the physical-qubit footprint of the
+fast data block. Code distance defaults to the minimum-time scenario.
+Pass `time_steps` to estimate distance at another time budget and
+`rotation_layers` to replace the rotation-count proxy for layer depth.
+
+```python
+from flagquantum.algorithms.primitives.multiplexers.thc_resource_model import (
+    select_thc_cost,
+)
+from flagquantum.compiler._component_trace.resource_model import (
+    estimate_component_resources,
+)
+from flagquantum.qec.resources.beverland import estimate_beverland_resources
+
+logical = estimate_component_resources(select_thc_cost(2, 4, 8, 1))
+report = estimate_beverland_resources(
+    logical, error_budget=1e-3, physical_error=1e-4
+)
+assert logical.peak_logical_qubits == 24
+assert report.t_states == 472
+assert report.minimum_time_steps == 354
+assert report.code_distance == 7
+assert report.data_block_physical_qubits == 6174
+```
+
+The 6,174 physical qubits cover the 63 fast data-block tiles, including
+their layout overhead. A full machine estimate also needs factory sizing
+and throughput. An estimate with zero modeled time steps and no override
+leaves distance and footprint undefined. Read T-state demand separately
+from the number of T and T-dagger instructions emitted for a concrete
+circuit. The fixed-precision THC model already declares its phase
+addition costs, so this estimate applies no extra rotation synthesis to
+those operations.
+
+## Model and emitted instructions
+
 For a generated circuit, call
 `compare_component_resources(model, circuit_ir)` from
 `flagquantum.compiler._component_trace.resource_comparison`. Its JSON report
