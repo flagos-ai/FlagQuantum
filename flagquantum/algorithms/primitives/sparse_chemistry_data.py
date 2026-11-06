@@ -14,7 +14,11 @@ import numpy as np
 from numpy.typing import ArrayLike
 
 from ...compiler._component_trace.resource_model import ComponentCost
-from ...compiler.registers.partition import RegisterLayout, unpartition_register
+from ...compiler.registers.partition import RegisterLayout
+from ...compiler.registers.qroam_bank_binding import (
+    bind_clean_banks,
+    clean_bank_output_layout,
+)
 from ...compiler.registers.qroam_clean_erasure import qroam_clean_measurement_erase_ir
 from ...compiler.registers.qroam_resource_model import source_qroam_clean_cost
 from ...compiler.registers.source_qroam_clean import (
@@ -76,14 +80,8 @@ class SparseChemistryData:
     @property
     def lookup_output_layout(self) -> RegisterLayout:
         """List selected words followed by dataset-major clean bank outputs."""
-        extra = (1 << self.log_block_size) - 1
-        return (
-            *self.target_layout,
-            *(
-                (f"jnk_{name}", width * extra)
-                for name, width in self.target_layout
-                if extra
-            ),
+        return clean_bank_output_layout(
+            self.target_layout, 1 << self.log_block_size, junk_prefix="jnk_"
         )
 
     def lookup_ir(
@@ -127,20 +125,9 @@ class SparseChemistryData:
     ) -> tuple[tuple[tuple[int, ...], ...], ...]:
         if len(address) != self.address_width:
             raise ValueError("Sparse chemistry address width must match the row count")
-        unpartition_register(outputs, self.lookup_output_layout)
-        banks = []
-        for name, width in self.target_layout:
-            junk = outputs.get(f"jnk_{name}", ())
-            banks.append(
-                (
-                    outputs[name],
-                    *(
-                        junk[start : start + width]
-                        for start in range(0, len(junk), width)
-                    ),
-                )
-            )
-        return tuple(banks)
+        return bind_clean_banks(
+            outputs, self.target_layout, 1 << self.log_block_size, junk_prefix="jnk_"
+        )
 
     def lookup_cost(self) -> ComponentCost:
         """Estimate the source forward lookup with the declared target widths."""
