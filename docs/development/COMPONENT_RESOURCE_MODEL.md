@@ -2180,3 +2180,52 @@ costs but fails to bind the omitted `junk_target0_` port in its
 decomposition. Use `source_gate_cost()` for those counts. The native
 unblocked preparation and coherent inverse support the five selected
 words without extra banks.
+
+### THC walk with the full preparation signal
+
+The executable `THCChemistryWalk` binds the supplied Givens networks
+to SELECT and reflects about the full signed PREPARE state. It keeps
+the prepared ports live between steps and cleans the temporary work.
+Its inverse applies the same involutory SELECT after the reflection.
+Use exact angles with no SELECT workspace, or pass the existing
+eight-bit lookup workspace size. For the measured path SELECT owns
+feedback slots above the existing circuit and reflection slots.
+
+Using the blocked two-index `prepare` above:
+
+```python
+from math import tau
+
+from flagquantum.algorithms.primitives.thc_chemistry_walk import THCChemistryWalk
+
+walk = THCChemistryWalk(
+    prepare,
+    networks=(((0, 1, tau / 8),), ((0, 1, -tau / 16),)),
+    one_body_networks=((), ((0, 1, tau / 32),)),
+    select_workspace_qubits=26,
+    measurement_erasure=True,
+)
+width = sum(size for _, size in walk.layout)
+work, slots = walk.requirements()
+ports = partition_register(tuple(range(width)), walk.layout)
+step = walk.make_on(
+    ports, workspace=tuple(range(width, width + work)), classical_bits=tuple(range(slots))
+)
+circuit = DynamicCircuit(width + work).append(step)
+report = estimate_ftqc_resources(walk.source_resource_model(), emitted_ir=circuit.to_ir())
+assert report.logical.gates.total_t_count() == 1056
+assert report.logical.gates.measurement == 97
+assert report.logical.peak_logical_qubits == 36
+assert report.emitted is not None
+assert report.emitted.t_count == 760
+assert report.emitted.unconditional["measure"] == 187
+assert report.emitted.declared_qubits == 64
+```
+
+The model uses the locked narrower reflection and the directional PREPARE
+costs. In the source adjoint, the QROAM bank is consumed by an opaque
+measurement-erase leaf. The executable walk uses coherent PREPARE
+reversal and a zero mark on all of its signal wires. Its gate stream
+therefore includes the SELECT implementation, the wider mark and the
+coherent lookup inverse. Gate-only source queries remain available when
+the unblocked source peak query fails.

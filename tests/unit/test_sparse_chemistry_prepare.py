@@ -75,6 +75,12 @@ def _branch(gates, width, history, state=None, *, normalize_measurements=False):
                 updated[index ^ mask] += amp * (-1j if index & mask else 1j)
             elif gate.name == "ccx" and all(index & control for control in masks[:-1]):
                 updated[index ^ mask] += amp
+            elif gate.name == "cswap":
+                control, left, right = masks
+                destination = index
+                if index & control and bool(index & left) != bool(index & right):
+                    destination ^= left | right
+                updated[destination] += amp
             elif gate.name == "reset":
                 updated[index & ~mask] += amp
             elif gate.name == "rz":
@@ -86,9 +92,11 @@ def _branch(gates, width, history, state=None, *, normalize_measurements=False):
                 updated[index ^ mask] += (
                     amp * sin(half_angle) * (-1 if index & mask else 1)
                 )
-            elif gate.name == "phase":
+            elif gate.name in ("phase", "cphase"):
                 updated[index] += amp * (
-                    exp(1j * gate.params["theta"]) if index & mask else 1
+                    exp(1j * gate.params["theta"])
+                    if all(index & wire for wire in masks)
+                    else 1
                 )
             elif gate.name == "cz":
                 updated[index] += -amp if all(index & m for m in masks) else amp
