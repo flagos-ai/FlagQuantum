@@ -23,5 +23,14 @@ example has 12 T/T†, three measurements, and three work qubits across the
 two levels. Every small measurement history retains the full expected
 complex amplitudes and restores the work qubits.
 
+Classical controls bind earlier measurement or XOR results using the
+same integer bit encoding. The lowering attaches a condition to each
+child instruction, intersecting it with an existing child condition.
+Contradictory child branches are omitted, and surviving clauses are
+canonicalized. The flat IR supports guarded quantum gates; a guarded
+measurement, reset or classical write requires a different execution
+representation.
+
 - [CtrlSpecAnd](https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/bloqs/mcmt/ctrl_spec_and.py)
 - [ControlledViaAnd](https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/bloqs/mcmt/controlled_via_and.py)
+- [ClassicallyControlled](https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/bloqs/mcmt/classically_controlled.py)
