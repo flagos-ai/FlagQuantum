@@ -46,6 +46,7 @@ def layout(
 
 
 def original_ordering_gates(n: int, adjoint: bool) -> tuple[Instruction, ...]:
+    pytest.importorskip("qualtran")
     from qualtran.bloqs.mod_arithmetic.mod_division import _KaliskiIterationStep3
 
     u, v, b, a, m, f, work, bits = layout(n)
@@ -95,6 +96,7 @@ def original_ordering_gates(n: int, adjoint: bool) -> tuple[Instruction, ...]:
     return gates
 
 
+@pytest.mark.ftqc_reference
 @pytest.mark.parametrize("n", [1, 2, 3, 5, 8])
 @pytest.mark.parametrize("adjoint", [False, True])
 def test_complete_source_graph_gates_and_independent_costs(

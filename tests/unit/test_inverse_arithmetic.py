@@ -44,6 +44,7 @@ def layout(
 
 
 def source_gates(n: int, adjoint: bool) -> tuple[Instruction, ...]:
+    pytest.importorskip("qualtran")
     from qualtran.bloqs.mod_arithmetic.mod_division import _KaliskiIterationStep5
 
     u, v, r, s, b, f, w, bits = layout(n)
@@ -95,6 +96,7 @@ def source_gates(n: int, adjoint: bool) -> tuple[Instruction, ...]:
     return gates
 
 
+@pytest.mark.ftqc_reference
 @pytest.mark.parametrize("n", [1, 2, 3, 5, 8])
 @pytest.mark.parametrize("adjoint", [False, True])
 def test_whole_source_component_gates_and_models(n: int, adjoint: bool) -> None:
@@ -168,6 +170,7 @@ def test_eight_bit_edges_and_all_control_histories() -> None:
     assert restored == tuple(before)
 
 
+@pytest.mark.ftqc_reference
 def test_source_classical_nonwrapping_domain_and_overflow_witness() -> None:
     pytest.importorskip("qualtran")
     from qualtran.bloqs.mod_arithmetic.mod_division import _KaliskiIterationStep5

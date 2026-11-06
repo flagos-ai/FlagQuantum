@@ -22,6 +22,7 @@ from tests.unit.test_register_subtraction import assert_source
 pytestmark = pytest.mark.unit
 
 
+@pytest.mark.ftqc_reference
 @pytest.mark.parametrize("n,p", CASES)
 @pytest.mark.parametrize("montgomery", [False, True])
 def test_source_adjoint_gates_ports_and_models(

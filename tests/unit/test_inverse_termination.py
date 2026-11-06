@@ -25,6 +25,7 @@ def layout(
     )
 
 
+@pytest.mark.ftqc_reference
 @pytest.mark.parametrize("n", [2, 3, 5, 8])
 @pytest.mark.parametrize("adjoint", [False, True])
 def test_original_gates_feedback_outputs_and_costs(n: int, adjoint: bool) -> None:
@@ -74,6 +75,7 @@ def test_every_input_every_history_and_inverse(n: int) -> None:
     )
 
 
+@pytest.mark.ftqc_reference
 def test_original_classical_promise_and_one_bit_source_failure() -> None:
     pytest.importorskip("qualtran")
     from qualtran.bloqs.mod_arithmetic.mod_division import _KaliskiIterationStep1

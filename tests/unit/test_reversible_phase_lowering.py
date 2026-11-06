@@ -161,6 +161,7 @@ def test_kmx_decode_rejects_unsupported_or_invalid_stream(payload: str) -> None:
         decode_kmx(f"{header}\n{payload}\n")
 
 
+@pytest.mark.ftqc_reference
 @pytest.mark.parametrize("width,words", ANGLE_TABLES)
 def test_paired_lookup_and_erasure_against_native_reference(
     width: int, words: tuple[int, ...], native_reference: ModuleType, tmp_path: Path
@@ -210,6 +211,7 @@ def test_paired_lookup_and_erasure_against_native_reference(
         assert measurements == common_measurement
 
 
+@pytest.mark.ftqc_reference
 @pytest.mark.parametrize(
     "turns", [Fraction(1, 128), Fraction(-1, 128), Fraction(1, 2**127)]
 )
@@ -227,6 +229,7 @@ def test_exact_half_turns_round_trip(
     assert sim.read_shot_phase(0) == turns % 2
 
 
+@pytest.mark.ftqc_reference
 def test_reversible_gates_hmr_and_feedback(native_reference: ModuleType) -> None:
     km = native_reference
     payload = """
@@ -248,6 +251,7 @@ def test_reversible_gates_hmr_and_feedback(native_reference: ModuleType) -> None
     assert all(sim.read_shot_phase(i) == Fraction(1, 128) for i in range(64))
 
 
+@pytest.mark.ftqc_reference
 def test_native_parser_rejects_standalone_h(native_reference: ModuleType) -> None:
     km = native_reference
     with pytest.raises(
@@ -257,6 +261,7 @@ def test_native_parser_rejects_standalone_h(native_reference: ModuleType) -> Non
         km.Circuit("H q0")
 
 
+@pytest.mark.ftqc_reference
 @pytest.mark.parametrize("turns", [Fraction(1, 3), Fraction(1, 2**128)])
 def test_native_rounds_off_grid_phases(
     turns: Fraction, native_reference: ModuleType
@@ -352,6 +357,7 @@ def test_reconstructed_ir_preserves_all_complex_measurement_branches(
         )
 
 
+@pytest.mark.ftqc_reference
 def test_same_artifact_can_switch_between_dynamic_and_native_execution(
     native_reference: ModuleType,
 ) -> None:
@@ -396,6 +402,7 @@ def test_same_artifact_can_switch_between_dynamic_and_native_execution(
         ]
 
 
+@pytest.mark.ftqc_reference
 @pytest.mark.parametrize("width,words", ANGLE_TABLES)
 def test_native_forward_banks_match_upstream_lookup(
     width: int, words: tuple[int, ...], native_reference: ModuleType

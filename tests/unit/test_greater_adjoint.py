@@ -15,6 +15,7 @@ from tests.unit.test_register_subtraction import assert_source
 pytestmark = pytest.mark.unit
 
 
+@pytest.mark.ftqc_reference
 @pytest.mark.parametrize("m,n", CASES)
 def test_original_inverse_gates_feedback_and_models(m: int, n: int) -> None:
     pytest.importorskip("qualtran")

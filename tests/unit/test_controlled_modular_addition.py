@@ -59,6 +59,7 @@ def reference_binding(
     return allocations, measured
 
 
+@pytest.mark.ftqc_reference
 @pytest.mark.parametrize("n,p", CASES)
 @pytest.mark.parametrize("montgomery", [False, True])
 @pytest.mark.parametrize("cv", [0, 1])

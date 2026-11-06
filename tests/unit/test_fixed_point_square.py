@@ -44,11 +44,13 @@ def truncated_square(value, width):
     return total
 
 
+@pytest.mark.ftqc_reference
 @pytest.mark.parametrize(
     "d,ands,model",
     [(3, 2, 0), (4, 7, 4), (5, 7, 8), (6, 15, 14), (8, 29, 28), (10, 46, 46)],
 )
 def test_fixed_square_source_boundary_columns_and_all_histories(d, ands, model):
+    pytest.importorskip("qualtran")
     from qualtran import DecomposeNotImplementedError, QFxp, Side
     from qualtran.bloqs.arithmetic.multiplication import SquareRealNumber
     from qualtran.resource_counting import QECGatesCost, get_cost_value

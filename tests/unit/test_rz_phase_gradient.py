@@ -24,11 +24,12 @@ from tests.unit.test_register_subtraction import assert_source
 pytestmark = pytest.mark.unit
 
 
+@pytest.mark.ftqc_reference
 @pytest.mark.parametrize("m,n", [(1, 1), (2, 3), (3, 3), (4, 5), (8, 8)])
 def test_rz_source_graph_angle_encoding_and_complex_phase(m: int, n: int) -> None:
     pytest.importorskip("qualtran")
-    import cirq
-    import numpy as np
+    cirq = pytest.importorskip("cirq")
+    np = pytest.importorskip("numpy")
     from qualtran import QFxp, QUInt
     from qualtran.bloqs.arithmetic.controlled_add_or_subtract import (
         ControlledAddOrSubtract,

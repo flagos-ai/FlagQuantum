@@ -34,13 +34,14 @@ CASES = [
 ]
 
 
+@pytest.mark.ftqc_reference
 @pytest.mark.parametrize("m,f,n,gamma,k,kf,dtype_failure", CASES)
 def test_scaled_source_schedule_and_complex_roundtrip(
     m: int, f: int, n: int, gamma: float, k: int, kf: int, dtype_failure: bool
 ) -> None:
     pytest.importorskip("qualtran")
-    import cirq
-    import numpy as np
+    cirq = pytest.importorskip("cirq")
+    np = pytest.importorskip("numpy")
     from qualtran import BloqError, QFxp, QUInt
     from qualtran.bloqs.arithmetic import Add
     from qualtran.bloqs.rotations.phase_gradient import (

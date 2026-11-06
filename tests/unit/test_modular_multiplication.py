@@ -29,6 +29,7 @@ def layout(n: int) -> tuple[tuple[int, ...], ...]:
     )
 
 
+@pytest.mark.ftqc_reference
 @pytest.mark.parametrize("n,p,k", CASES)
 @pytest.mark.parametrize("montgomery", [False, True])
 def test_original_source_components_feedback_and_resource_models(
@@ -127,6 +128,7 @@ def test_raw_primitive_full_complex_channels_with_spectator() -> None:
         )
 
 
+@pytest.mark.ftqc_reference
 def test_validation_and_source_outside_residue_promise() -> None:
     target, w, bits = layout(3)
     for k in (0, 6, True, 3):

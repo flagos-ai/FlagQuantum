@@ -948,6 +948,29 @@ the PR. An outdated image is rejected when its dependency manifest differs from
 the checkout.
 
 
+## FTQC compiler reference comparisons
+
+The `ftqc_reference` marker selects comparisons against Qualtran 0.7.0 and
+Kickmix 0.1.dev0, plus field arithmetic comparisons using galois 0.4.11.
+These packages are test dependencies only. Qualtran
+supplies independent source gate graphs and resource models. Kickmix runs the
+emitted KMX stream in an independent simulator. The compiler and its native
+tests retain their usual dependencies. The required hosted comparison job
+installs the pinned releases from PyPI on Python 3.12 and checks that both
+reference modules import before running the marked tests. Qualtran's published wheel
+metadata declares Cirq and NumPy; Kickmix declares NumPy.
+
+To run the comparison job locally with Python 3.12:
+
+```bash
+python -m pip install -e '.[dev,ftqc-reference]'
+python -m pytest -m ftqc_reference -q
+```
+
+The reference objects stay in test functions and helpers. Retiring either
+dependency requires replacing its corresponding source graph or execution
+checks with an independent oracle.
+
 ## CPU runner routing and reliability
 
 Trusted same-repository PRs run distributed and coverage suites on the

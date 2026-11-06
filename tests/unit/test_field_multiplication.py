@@ -30,7 +30,7 @@ def reference_gates(
     pytest.importorskip("qualtran")
     if version("qualtran") != "0.7.0":
         pytest.skip("Gate comparison pins Qualtran v0.7.0")
-    import cirq
+    cirq = pytest.importorskip("cirq")
     import numpy as np
     from qualtran.bloqs.basic_gates import CNOT, Toffoli
     from qualtran.cirq_interop import BloqAsCirqGate
@@ -106,6 +106,7 @@ def assert_gate_streams(
         ]
 
 
+@pytest.mark.ftqc_reference
 @pytest.mark.parametrize(
     "width,modulus", [(2, 7), (3, 11), (4, 19), (5, 37), (6, 67), (8, 283)]
 )
@@ -170,6 +171,7 @@ class Product:
         )
 
 
+@pytest.mark.ftqc_reference
 @pytest.mark.parametrize("algorithm", ["quadratic", "karatsuba"])
 @pytest.mark.integration
 def test_product_complex_amplitudes_and_clean_workspace(
@@ -210,6 +212,7 @@ def test_multiplication_invalid_registers_and_workspace() -> None:
         )
 
 
+@pytest.mark.ftqc_reference
 @pytest.mark.parametrize("width,modulus", [(5, 37), (8, 283)])
 def test_recursive_scratch_and_sparse_complex_amplitudes(
     width: int, modulus: int
@@ -251,6 +254,7 @@ def test_recursive_scratch_and_sparse_complex_amplitudes(
     )
 
 
+@pytest.mark.ftqc_reference
 def test_pinned_upstream_adjoint_counterexample() -> None:
     """Unmodified v0.7.0 emits its forward linear network for the adjoint too."""
     pytest.importorskip("qualtran")

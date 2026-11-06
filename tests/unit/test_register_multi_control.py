@@ -24,6 +24,7 @@ PATTERNS = [
 ]
 
 
+@pytest.mark.ftqc_reference
 @pytest.mark.parametrize("values", PATTERNS)
 def test_source_multi_control_x_gates_and_model(values: tuple[int, ...]) -> None:
     pytest.importorskip("qualtran")

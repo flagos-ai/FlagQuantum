@@ -19,8 +19,10 @@ from tests.unit.test_register_subtraction import assert_source
 pytestmark = pytest.mark.unit
 
 
+@pytest.mark.ftqc_reference
 @pytest.mark.parametrize("n,p,k", CASES)
 def test_exact_reverse_source_traversal_and_models(n: int, p: int, k: int) -> None:
+    pytest.importorskip("qualtran")
     from qualtran.bloqs.mod_arithmetic.mod_addition import CtrlScaleModAdd
     from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
 

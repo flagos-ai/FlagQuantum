@@ -15,6 +15,7 @@ from tests.unit.test_register_subtraction import assert_source
 pytestmark = pytest.mark.unit
 
 
+@pytest.mark.ftqc_reference
 @pytest.mark.parametrize("width", [1, 2, 3, 4, 5, 8])
 def test_linear_greater_source_stream_and_model(width: int) -> None:
     pytest.importorskip("qualtran")

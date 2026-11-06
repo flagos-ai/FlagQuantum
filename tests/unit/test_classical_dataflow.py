@@ -191,6 +191,7 @@ def test_qasm3_emits_boolean_assignment() -> None:
     assert "c[4] = false;" in text
 
 
+@pytest.mark.ftqc_reference
 def test_kmx_classical_assignment_round_trip_and_native_execution(
     tmp_path: Path,
 ) -> None:

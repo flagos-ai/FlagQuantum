@@ -49,6 +49,7 @@ def reference_binding(n: int, modulus: int) -> tuple[tuple[int, ...], dict[int, 
     return allocations, measurements
 
 
+@pytest.mark.ftqc_reference
 @pytest.mark.parametrize("n,modulus", CASES)
 def test_modular_add_literal_source_stream_and_model(n: int, modulus: int) -> None:
     pytest.importorskip("qualtran")
@@ -110,6 +111,7 @@ def test_every_residue_amplitude_left_modulus_and_all_measurement_events(
         )
 
 
+@pytest.mark.ftqc_reference
 def test_target_at_modulus_is_not_a_clean_source_domain() -> None:
     pytest.importorskip("qualtran")
     from qualtran.bloqs.mod_arithmetic.mod_addition import ModAdd

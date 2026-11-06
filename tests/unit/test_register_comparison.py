@@ -32,6 +32,7 @@ def layout(n: int, t: int) -> tuple[tuple[int, ...], tuple[int, ...], tuple[int,
     )
 
 
+@pytest.mark.ftqc_reference
 @pytest.mark.parametrize("width,threshold", CASES)
 def test_literal_source_comparison_gates_outputs_conditions_and_cost(
     width: int, threshold: int

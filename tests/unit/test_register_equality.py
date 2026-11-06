@@ -20,6 +20,7 @@ CASES = [
 ]
 
 
+@pytest.mark.ftqc_reference
 @pytest.mark.parametrize("width,value", CASES)
 def test_constant_equality_source_gate_dependencies_and_model(
     width: int, value: int
@@ -43,6 +44,7 @@ def test_constant_equality_source_gate_dependencies_and_model(
     assert counts["measure"] == model.measurement == width - 1
 
 
+@pytest.mark.ftqc_reference
 @pytest.mark.parametrize("width", [1, 2, 3, 5, 8])
 @pytest.mark.parametrize("dtype", ["unsigned", "signed", "montgomery", "bits"])
 def test_register_equality_source_gates_and_model(width: int, dtype: str) -> None:

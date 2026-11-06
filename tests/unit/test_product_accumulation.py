@@ -34,11 +34,13 @@ def layout(n, m, width):
     )
 
 
+@pytest.mark.ftqc_reference
 @pytest.mark.parametrize(
     "n,m,width", [(1, 1, 2), (1, 2, 3), (2, 1, 4), (2, 2, 4), (2, 3, 5), (3, 2, 6)]
 )
 @pytest.mark.parametrize("adjoint", [False, True])
 def test_accumulation_component_stream_and_full_classical_domain(n, m, width, adjoint):
+    pytest.importorskip("qualtran")
     from qualtran import DecomposeNotImplementedError, QUInt
     from qualtran.bloqs.arithmetic.addition import Add
     from qualtran.bloqs.arithmetic.multiplication import PlusEqualProduct
@@ -94,9 +96,11 @@ def test_accumulation_component_stream_and_full_classical_domain(n, m, width, ad
     )
 
 
+@pytest.mark.ftqc_reference
 @pytest.mark.parametrize("n,m,width", [(1, 1, 2), (1, 2, 3), (2, 2, 4)])
 @pytest.mark.parametrize("adjoint", [False, True])
 def test_accumulation_original_tensor_and_complex_branches(n, m, width, adjoint):
+    pytest.importorskip("qualtran")
     from qualtran.bloqs.arithmetic.multiplication import PlusEqualProduct
 
     bound = layout(n, m, width)

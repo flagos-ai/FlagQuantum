@@ -36,8 +36,10 @@ def inverse_constant_binding(
     }
 
 
+@pytest.mark.ftqc_reference
 @pytest.mark.parametrize("n,p,k", CASES)
 def test_original_adjoint_source_and_independent_models(n: int, p: int, k: int) -> None:
+    pytest.importorskip("qualtran")
     from qualtran.bloqs.mod_arithmetic.mod_addition import CModAddK
     from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
 

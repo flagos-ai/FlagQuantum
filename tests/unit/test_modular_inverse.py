@@ -29,7 +29,8 @@ def layout(n: int) -> tuple[tuple[int, ...], ...]:
 
 
 def original_public(n: int, p: int, adjoint: bool) -> tuple[Instruction, ...]:
-    import numpy as np
+    pytest.importorskip("qualtran")
+    np = pytest.importorskip("numpy")
     from qualtran.bloqs.mod_arithmetic.mod_division import KaliskiModInverse
 
     target, junk, work, bits = layout(n)
@@ -106,11 +107,13 @@ def original_public(n: int, p: int, adjoint: bool) -> tuple[Instruction, ...]:
     return gates
 
 
+@pytest.mark.ftqc_reference
 @pytest.mark.parametrize("n,p", [(2, 1), (3, 5), (4, 9), (8, 251)])
 @pytest.mark.parametrize("adjoint", [False, True])
 def test_original_compute_uncompute_graph_ports_and_models(
     n: int, p: int, adjoint: bool
 ) -> None:
+    pytest.importorskip("qualtran")
     from qualtran.bloqs.mod_arithmetic.mod_division import KaliskiModInverse
     from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
 
@@ -139,6 +142,7 @@ def test_original_compute_uncompute_graph_ports_and_models(
     )
 
 
+@pytest.mark.ftqc_reference
 @pytest.mark.parametrize("n,p", [(2, 1), (3, 3), (3, 5), (4, 9), (4, 13), (8, 251)])
 def test_all_units_zero_junk_and_clean_work_complete_history_channel(
     n: int, p: int
@@ -166,6 +170,7 @@ def test_all_units_zero_junk_and_clean_work_complete_history_channel(
     assert modular_inverse_outputs(result, returned, adjoint=True) == (x, work)
 
 
+@pytest.mark.ftqc_reference
 @pytest.mark.parametrize("n,p", [(3, 5), (4, 9), (8, 251)])
 def test_full_complex_spectator_sparse_primitive_channels(n: int, p: int) -> None:
     x, junk, work, bits = layout(n)
@@ -241,6 +246,7 @@ def test_layout_and_source_boundaries_rejected(bad: str) -> None:
         modular_inverse_ir(x, junk, p, w, bits, adjoint=reverse)
 
 
+@pytest.mark.ftqc_reference
 def test_uncompute_requires_matching_original_history() -> None:
     x, junk, work, bits = layout(3)
     result, returned = modular_inverse_outputs(x, work)

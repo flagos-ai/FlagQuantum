@@ -180,6 +180,7 @@ def test_reciprocal_append_round_trip():
     )
 
 
+@pytest.mark.ftqc_reference
 @pytest.mark.parametrize(
     "n,f,expected", [(1, 0, None), (2, 0, None), (3, 1, (21, 5)), (4, 2, (47, 7))]
 )

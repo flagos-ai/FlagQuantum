@@ -34,6 +34,7 @@ def layout(
     )
 
 
+@pytest.mark.ftqc_reference
 @pytest.mark.parametrize("k,offset,n", CASES)
 @pytest.mark.parametrize("adjoint", [False, True])
 def test_original_traversal_ports_full_source_and_models(
@@ -167,6 +168,7 @@ def test_full_raw_complex_branches_and_work(
         )
 
 
+@pytest.mark.ftqc_reference
 def test_zero_pairs_and_validation() -> None:
     pytest.importorskip("qualtran")
     from qualtran.bloqs.arithmetic.sorting import ParallelComparators

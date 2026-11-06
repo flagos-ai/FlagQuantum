@@ -29,6 +29,7 @@ def layout(m: int, n: int) -> tuple[tuple[int, ...], ...]:
     )
 
 
+@pytest.mark.ftqc_reference
 @pytest.mark.parametrize("m,n", WIDTHS)
 @pytest.mark.parametrize("kind", ["unsigned", "signed", "montgomery"])
 @pytest.mark.parametrize("add_on", [False, True])
@@ -178,6 +179,7 @@ def test_invalid_layouts_fail_before_emission(bad: str) -> None:
         measurement_add_or_subtract_ir(c, a, b, w, bits, add_when_ctrl_is_on=add_on)
 
 
+@pytest.mark.ftqc_reference
 @pytest.mark.parametrize("add_on", [False, True])
 def test_original_component_chain_is_retained(add_on: bool) -> None:
     pytest.importorskip("qualtran")
@@ -197,6 +199,7 @@ def test_original_component_chain_is_retained(add_on: bool) -> None:
     assert counts == expected
 
 
+@pytest.mark.ftqc_reference
 def test_narrow_signed_classical_model_and_source_gates_differ() -> None:
     pytest.importorskip("qualtran")
     from qualtran import QInt

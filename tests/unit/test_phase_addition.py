@@ -19,6 +19,7 @@ from tests.unit.test_register_subtraction import assert_source
 pytestmark = pytest.mark.unit
 
 
+@pytest.mark.ftqc_reference
 @pytest.mark.parametrize(
     "m,n,shift", [(1, 1, 0), (2, 5, 0), (5, 2, 0), (3, 4, 2), (2, 3, 3), (8, 8, 2)]
 )
@@ -28,7 +29,7 @@ def test_fixed_point_action_components_and_complex_channel(
     m: int, n: int, shift: int, cv: int | None, sign: int
 ) -> None:
     pytest.importorskip("qualtran")
-    import cirq
+    cirq = pytest.importorskip("cirq")
     from qualtran import DecomposeNotImplementedError, QUInt
     from qualtran.bloqs.arithmetic import Add
     from qualtran.bloqs.arithmetic.controlled_addition import CAdd

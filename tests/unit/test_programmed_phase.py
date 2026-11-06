@@ -25,6 +25,7 @@ from tests.unit.register_source_graph import (
 pytestmark = pytest.mark.unit
 
 
+@pytest.mark.ftqc_reference
 @pytest.mark.parametrize("exponent", [0.0, 0.25, -0.375, 0.625, 2.75])
 @pytest.mark.parametrize("output", [0, 1])
 def test_programmed_phase_complex_state_and_source(
@@ -148,6 +149,7 @@ def test_programmed_rotation_all_raw_branches(exponent, slots, correct):
         torch.testing.assert_close(actual, expected, atol=2e-12, rtol=0)
 
 
+@pytest.mark.ftqc_reference
 @pytest.mark.parametrize("correct", [False, True])
 def test_programmed_rotation_matches_source_resource_schedule(monkeypatch, correct):
     pytest.importorskip("qualtran")

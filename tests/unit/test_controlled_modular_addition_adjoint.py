@@ -51,6 +51,7 @@ def adjoint_reference_binding(
     return alloc, measured
 
 
+@pytest.mark.ftqc_reference
 @pytest.mark.parametrize("n,p", CASES)
 @pytest.mark.parametrize("montgomery", [False, True])
 @pytest.mark.parametrize("cv", [0, 1])
@@ -82,6 +83,7 @@ def test_full_source_adjoint_and_models(
     assert get_cost_value(source, QubitCount()) == 1 + 2 * n + len(w)
 
 
+@pytest.mark.ftqc_reference
 @pytest.mark.parametrize("n", [1, 2, 8])
 @pytest.mark.parametrize("cv", [0, 1])
 def test_original_comparator_adjoint_literal_palindrome(n: int, cv: int) -> None:

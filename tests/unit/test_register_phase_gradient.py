@@ -33,6 +33,7 @@ def source_gradient_gates(
     work: int | None = None,
     bit: int = 0,
 ) -> tuple[tuple[Instruction, ...], tuple[Any, ...]]:
+    pytest.importorskip("qualtran")
     from qualtran.bloqs.basic_gates import Hadamard
     from qualtran.bloqs.basic_gates.rotation import ZPowGate
     from qualtran.bloqs.bookkeeping import Allocate
@@ -77,6 +78,7 @@ def source_gradient_gates(
     return gates, tuple(phases)
 
 
+@pytest.mark.ftqc_reference
 @pytest.mark.parametrize("n,exponent", [(1, 1.0), (3, -0.75), (4, 1.0), (8, 0.625)])
 @pytest.mark.parametrize("controlled", [False, True])
 def test_pinned_gradient_gates_and_resource_model(
@@ -158,10 +160,11 @@ def test_gradient_complex_phases_and_measured_branches(
         )
 
 
+@pytest.mark.ftqc_reference
 @pytest.mark.parametrize("exponent", [-1.0, 1.0, -0.625])
 def test_source_state_preparation_and_unpreparation(exponent: float) -> None:
     pytest.importorskip("qualtran")
-    import numpy as np
+    np = pytest.importorskip("numpy")
     from qualtran.bloqs.rotations.phase_gradient import PhaseGradientState
     from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
 

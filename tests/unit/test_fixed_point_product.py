@@ -36,8 +36,10 @@ def layout(d):
     )
 
 
+@pytest.mark.ftqc_reference
 @pytest.mark.parametrize("d", [1, 2, 3, 4, 6])
 def test_fixed_point_product_source_contract_children_and_all_histories(d):
+    pytest.importorskip("qualtran")
     from qualtran import DecomposeNotImplementedError, QFxp, QUInt
     from qualtran.bloqs.arithmetic.controlled_addition import CAdd
     from qualtran.bloqs.arithmetic.multiplication import MultiplyTwoReals

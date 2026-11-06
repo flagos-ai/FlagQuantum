@@ -19,6 +19,7 @@ from tests.unit.register_source_graph import (
 pytestmark = pytest.mark.unit
 
 
+@pytest.mark.ftqc_reference
 @pytest.mark.parametrize(
     "m,f,gamma,epsilon,signed",
     [
@@ -128,6 +129,7 @@ def test_direct_qvr_source_schedule_and_full_complex_action(
         )
 
 
+@pytest.mark.ftqc_reference
 def test_pinned_qvr_rotation_count_and_signed_index_boundaries() -> None:
     pytest.importorskip("qualtran")
     from qualtran import QFxp, Register

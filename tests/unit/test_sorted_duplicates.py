@@ -44,6 +44,7 @@ def layout(
     )
 
 
+@pytest.mark.ftqc_reference
 @pytest.mark.parametrize(
     "length,n,controlled",
     [(1, 2, True), (2, 1, False), (2, 2, True), (3, 2, False), (4, 3, True)],
@@ -197,9 +198,10 @@ def test_clean_channel_all_sorted_inputs_and_measurements(
             )
 
 
+@pytest.mark.ftqc_reference
 def test_original_source_failure_and_native_channel_witnesses() -> None:
     pytest.importorskip("qualtran")
-    import numpy as np
+    np = pytest.importorskip("numpy")
     from qualtran import BloqError, QUInt
     from qualtran.bloqs.arithmetic.lists.has_duplicates import HasDuplicates
 

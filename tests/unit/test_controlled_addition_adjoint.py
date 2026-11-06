@@ -19,6 +19,7 @@ pytestmark = pytest.mark.unit
 CASES = [(1, 1), (2, 2), (3, 3), (5, 5), (8, 8), (1, 3), (3, 8)]
 
 
+@pytest.mark.ftqc_reference
 @pytest.mark.parametrize("m,n", CASES)
 @pytest.mark.parametrize("dtype", ["unsigned", "signed", "montgomery"])
 @pytest.mark.parametrize("cv", [0, 1])

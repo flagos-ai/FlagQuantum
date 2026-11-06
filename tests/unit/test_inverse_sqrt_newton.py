@@ -185,6 +185,7 @@ def test_inverse_sqrt_invalid_layout(overrides, match):
         inverse_sqrt_newton_step_ir(**(bound | settings | overrides))
 
 
+@pytest.mark.ftqc_reference
 @pytest.mark.parametrize(
     "n,m,o,expected",
     [(2, 3, 3, (15, 2)), (5, 15, 22, (1140, 21)), (7, 8, 12, (345, 11))],

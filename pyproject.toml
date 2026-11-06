@@ -74,6 +74,15 @@ cuda = [
     "triton>=3.1,<4",
 ]
 
+# Independent source and native-simulator comparisons for compiler tests.
+ftqc-reference = [
+    "qualtran==0.7.0; python_version >= '3.12'",
+    "kickmix==0.1.dev0; python_version >= '3.12'",
+    "galois==0.4.11; python_version >= '3.12'",
+    "numpy>=2.1,<3; python_version >= '3.12'",
+    "cirq-core>=1.6.1,<1.8; python_version >= '3.12'",
+]
+
 azure = [
     # The Azure Quantum workspace client and the OpenQASM 3 to QIR compiler both
     # arrive through the QDK `azure` extra. The QDK distribution and

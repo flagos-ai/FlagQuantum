@@ -13,13 +13,14 @@ from flagquantum.core.ir import CircuitIR
 pytestmark = pytest.mark.unit
 
 
+@pytest.mark.ftqc_reference
 @pytest.mark.parametrize("width", [1, 3, 8])
 def test_qualtran_binary_field_addition_gate_order(width: int) -> None:
     np = pytest.importorskip("numpy")
     pytest.importorskip("qualtran")
     if version("qualtran") != "0.7.0":
         pytest.skip("Gate comparison pins Qualtran v0.7.0")
-    import cirq
+    cirq = pytest.importorskip("cirq")
     from qualtran import QGF
     from qualtran.bloqs.basic_gates import CNOT
     from qualtran.bloqs.gf_arithmetic.gf2_add_k import GF2AddK
@@ -51,6 +52,7 @@ def test_qualtran_binary_field_addition_gate_order(width: int) -> None:
     ]
 
 
+@pytest.mark.ftqc_reference
 @pytest.mark.parametrize("controlled", [False, True])
 def test_native_binary_field_register_addition_gate_order(controlled: bool) -> None:
     km = pytest.importorskip("kickmix")

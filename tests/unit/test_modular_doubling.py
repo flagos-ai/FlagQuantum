@@ -24,6 +24,7 @@ def layout(n: int) -> tuple[tuple[int, ...], ...]:
     return tuple(range(n)), tuple(range(n, n + q)), tuple(range(40, 40 + c))
 
 
+@pytest.mark.ftqc_reference
 @pytest.mark.parametrize("n,p", CASES)
 @pytest.mark.parametrize("montgomery", [False, True])
 def test_source_gates_ports_and_models(n: int, p: int, montgomery: bool) -> None:
@@ -142,6 +143,7 @@ def test_validation() -> None:
         modular_double_outputs(t, (t[0], *w[1:]))
 
 
+@pytest.mark.ftqc_reference
 def test_upstream_out_of_residue_model_disagrees_without_dirty_work() -> None:
     pytest.importorskip("qualtran")
     from qualtran import QUInt

@@ -28,6 +28,7 @@ def layout(width: int) -> tuple[tuple[int, ...], ...]:
     )
 
 
+@pytest.mark.ftqc_reference
 @pytest.mark.parametrize("width,value", CASES)
 @pytest.mark.parametrize("cv", [0, 1])
 def test_controlled_constant_unmodified_source_gates_and_resource_model(

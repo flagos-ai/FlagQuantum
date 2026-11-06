@@ -3,6 +3,8 @@
 from collections.abc import Callable
 from typing import Any
 
+import pytest
+
 from flagquantum.core.ir import Instruction
 
 SourcePorts = dict[str, tuple[int, ...]]
@@ -19,7 +21,8 @@ def walk_source_graph(
     bindings: dict[Any, tuple[int, ...]] | None = None,
 ) -> SourceResult:
     """Bind original Soquet connections; only the caller binds leaf physical work."""
-    import numpy as np
+    pytest.importorskip("qualtran")
+    np = pytest.importorskip("numpy")
     from qualtran import LeftDangle, Soquet
     from qualtran.bloqs.bookkeeping import Join, Split
 
@@ -30,7 +33,7 @@ def walk_source_graph(
         assert set(inputs) == {"reg"}
         assert len(inputs["reg"]) == bloq.signature.get_left("reg").total_bits()
         assert len(inputs["reg"]) == bloq.signature.get_right("reg").total_bits()
-        import cirq
+        cirq = pytest.importorskip("cirq")
 
         register = bloq.signature.get_left("reg")
         qureg = np.asarray(

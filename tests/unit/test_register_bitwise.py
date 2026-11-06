@@ -18,6 +18,7 @@ from tests.unit.test_register_subtraction import assert_source
 pytestmark = pytest.mark.unit
 
 
+@pytest.mark.ftqc_reference
 @pytest.mark.parametrize("n", [1, 2, 3, 5, 8])
 @pytest.mark.parametrize("dtype", ["unsigned", "signed", "montgomery"])
 @pytest.mark.parametrize("kind", ["xor", "constant", "not"])

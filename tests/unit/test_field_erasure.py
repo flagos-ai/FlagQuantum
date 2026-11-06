@@ -25,6 +25,7 @@ from flagquantum.runtime.dynamic.execution import run_dynamic
 pytestmark = pytest.mark.unit
 
 
+@pytest.mark.ftqc_reference
 @pytest.mark.parametrize("width,modulus", [(2, 7), (3, 11), (5, 37), (8, 283)])
 def test_erasure_matches_unmodified_source_calls(width: int, modulus: int) -> None:
     np = pytest.importorskip("numpy")
@@ -221,6 +222,7 @@ def test_append_dynamic_complex_superposition(width: int, modulus: int) -> None:
     )
 
 
+@pytest.mark.ftqc_reference
 @pytest.mark.parametrize("width,modulus", [(3, 11), (8, 283)])
 def test_kmx_execution_against_native_reference(
     width: int, modulus: int, tmp_path: Path

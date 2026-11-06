@@ -60,6 +60,7 @@ def reference_binding(
     }
 
 
+@pytest.mark.ftqc_reference
 @pytest.mark.parametrize("n,p,k", CASES)
 def test_original_source_gates_feedback_and_independent_models(
     n: int, p: int, k: int
@@ -148,6 +149,7 @@ def test_raw_complex_projection_with_spectator(n: int, p: int, k: int) -> None:
         )
 
 
+@pytest.mark.ftqc_reference
 def test_validation_and_source_constant_overflow() -> None:
     target, work, bits = layout(2)
     for value in (-1, 4, True):
@@ -164,6 +166,7 @@ def test_validation_and_source_constant_overflow() -> None:
         CModAddK(k=4, mod=3, bitsize=2).decompose_bloq().flatten()
 
 
+@pytest.mark.ftqc_reference
 def test_fitting_constant_outside_clean_source_domain_is_not_normalized() -> None:
     pytest.importorskip("qualtran")
     from qualtran.bloqs.mod_arithmetic.mod_addition import CModAddK

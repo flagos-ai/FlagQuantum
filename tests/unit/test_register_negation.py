@@ -16,6 +16,7 @@ from tests.unit.test_register_constant_addition import layout, source_gates
 pytestmark = pytest.mark.unit
 
 
+@pytest.mark.ftqc_reference
 @pytest.mark.parametrize("width", [1, 2, 3, 5, 8])
 @pytest.mark.parametrize("dtype", ["unsigned", "signed", "montgomery"])
 def test_negation_unmodified_source_gates_and_cost(width: int, dtype: str) -> None:

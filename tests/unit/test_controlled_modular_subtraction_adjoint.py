@@ -29,12 +29,14 @@ from tests.unit.test_register_subtraction import assert_source
 pytestmark = pytest.mark.unit
 
 
+@pytest.mark.ftqc_reference
 @pytest.mark.parametrize("n,p", CASES)
 @pytest.mark.parametrize("montgomery", [False, True])
 @pytest.mark.parametrize("cv", [0, 1])
 def test_original_adjoint_gates_feedback_and_models(
     n: int, p: int, montgomery: bool, cv: int
 ) -> None:
+    pytest.importorskip("qualtran")
     from qualtran import QMontgomeryUInt, QUInt
     from qualtran.bloqs.mod_arithmetic.mod_subtraction import CModSub
     from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value

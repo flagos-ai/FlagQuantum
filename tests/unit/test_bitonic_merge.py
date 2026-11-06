@@ -145,6 +145,7 @@ def input_words(k: int, n: int, *, merge: bool) -> tuple[tuple[int, ...], ...]:
     ) or (tuple([0] * k),)
 
 
+@pytest.mark.ftqc_reference
 @pytest.mark.parametrize("half,n", CASES)
 @pytest.mark.parametrize("adjoint", [False, True])
 def test_original_gate_chain_ports_and_models(half: int, n: int, adjoint: bool) -> None:
@@ -212,7 +213,8 @@ def raw_channels(
     merge: bool,
     adjoint: bool,
 ) -> None:
-    import numpy as np
+    pytest.importorskip("qualtran")
+    np = pytest.importorskip("numpy")
 
     n = len(words[0])
     k = len(words)
@@ -256,6 +258,7 @@ def raw_channels(
         )
 
 
+@pytest.mark.ftqc_reference
 @pytest.mark.parametrize("half,n", [(1, 1), (2, 1), (1, 2)])
 @pytest.mark.parametrize("adjoint", [False, True])
 def test_all_small_raw_complex_branches_against_source_values(
@@ -268,9 +271,10 @@ def test_all_small_raw_complex_branches_against_source_values(
     raw_channels(BitonicMerge(half, n), words, h, w, bits, merge=True, adjoint=adjoint)
 
 
+@pytest.mark.ftqc_reference
 def test_bounds_and_unsorted_halves_are_not_globally_sorted() -> None:
     pytest.importorskip("qualtran")
-    import numpy as np
+    np = pytest.importorskip("numpy")
     from qualtran import DecomposeNotImplementedError
     from qualtran.bloqs.arithmetic.sorting import BitonicMerge
 

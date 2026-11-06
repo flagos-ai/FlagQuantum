@@ -36,8 +36,9 @@ def source_clean_graph(
     bits: tuple[int, ...],
 ) -> tuple[tuple[Instruction, ...], int, list[SourcePorts]]:
     """Bind output allocations by actual QROM and SWZ Soquet edges."""
-    import cirq
-    import numpy as np
+    pytest.importorskip("qualtran")
+    cirq = pytest.importorskip("cirq")
+    np = pytest.importorskip("numpy")
     from qualtran.bloqs.bookkeeping import Allocate, Partition
     from qualtran.bloqs.data_loading.qrom import QROM
     from qualtran.bloqs.swap_network.cswap_approx import CSwapApprox
@@ -116,6 +117,7 @@ def source_clean_graph(
     return gates, qrom_lengths[0], exchanges
 
 
+@pytest.mark.ftqc_reference
 @pytest.mark.parametrize(
     "shape,logs,control_count,target_widths,datasets,static_extra",
     [
@@ -137,8 +139,9 @@ def test_original_graph_signed_banks_and_branch_cleanup(
     datasets: tuple[tuple[int, ...], ...],
     static_extra: int,
 ) -> None:
-    import cirq
-    import numpy as np
+    pytest.importorskip("qualtran")
+    cirq = pytest.importorskip("cirq")
+    np = pytest.importorskip("numpy")
     from qualtran.bloqs.data_loading.qroam_clean import QROAMClean
     from qualtran.bloqs.swap_network.cswap_approx import CSwapApprox
     from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
@@ -309,6 +312,7 @@ def test_original_graph_signed_banks_and_branch_cleanup(
         )
 
 
+@pytest.mark.ftqc_reference
 @pytest.mark.parametrize(
     "shape,logs",
     [((4,), (2,)), ((2, 4), (1, 1)), ((3, 4), (1, 0)), ((3, 4), (0, 1))],
@@ -316,7 +320,8 @@ def test_original_graph_signed_banks_and_branch_cleanup(
 def test_locked_source_omitted_selectors(
     shape: tuple[int, ...], logs: tuple[int, ...]
 ) -> None:
-    import numpy as np
+    pytest.importorskip("qualtran")
+    np = pytest.importorskip("numpy")
     from qualtran.bloqs.data_loading.qroam_clean import QROAMClean
 
     dataset = tuple(range(prod(shape)))
@@ -345,7 +350,9 @@ def test_rejects_bad_table_and_bank_bindings() -> None:
         source_qroam_clean_ir(table, (), ((0, 1),), (((2,),),), (), ())
 
 
+@pytest.mark.ftqc_reference
 def test_source_adjoint_wrapper_and_padded_leaf_models() -> None:
+    pytest.importorskip("qualtran")
     from qualtran import DecomposeNotImplementedError
     from qualtran.bloqs.data_loading.qroam_clean import QROAMClean
     from qualtran.resource_counting import QECGatesCost, get_cost_value
@@ -364,10 +371,12 @@ def test_source_adjoint_wrapper_and_padded_leaf_models() -> None:
         leaf.decompose_bloq()
 
 
+@pytest.mark.ftqc_reference
 @pytest.mark.parametrize(
     "size,bits", [(1, 8), (8, 8), (16, 8), (32, 8), (128, 16), (1000, 3)]
 )
 def test_original_forward_block_selection(size: int, bits: int) -> None:
+    pytest.importorskip("qualtran")
     from qualtran.bloqs.data_loading.qroam_clean import (
         QROAMClean,
         get_optimal_log_block_size_clean_ancilla,

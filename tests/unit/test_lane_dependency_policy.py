@@ -841,8 +841,8 @@ def test_the_lane_audit_reads_the_workflows_it_claims_to() -> None:
         }
     )
     assert coverage.expressions == (
-        "(smoke or unit or integration or jax) and not slow and not qiskit and not cudaq and not triton",
-        "(smoke or unit or integration or jax) and not qiskit and not cudaq and not triton",
+        "(smoke or unit or integration or jax) and not slow and not qiskit and not cudaq and not triton and not ftqc_reference",
+        "(smoke or unit or integration or jax) and not qiskit and not cudaq and not triton and not ftqc_reference",
     )
     # A conjunction stays a conjunction: `and not qiskit` must not read as "any
     # of these names", which is what would hand a skipped test a clean bill.

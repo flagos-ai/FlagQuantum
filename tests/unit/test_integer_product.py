@@ -31,10 +31,12 @@ def layout(n, m):
     )
 
 
+@pytest.mark.ftqc_reference
 @pytest.mark.parametrize(
     "n,m", [(1, 1), (1, 4), (4, 1), (2, 3), (3, 2), (3, 3), (4, 6)]
 )
 def test_unsigned_product_source_contract_and_all_history_certificate(n, m):
+    pytest.importorskip("qualtran")
     import qualtran
     from qualtran import Side
     from qualtran.bloqs.arithmetic.multiplication import PlusEqualProduct, Product
@@ -85,8 +87,10 @@ def test_unsigned_product_source_contract_and_all_history_certificate(n, m):
     assert certified_and_channel_map(gates, tuple(after)) == (tuple(before), len(work))
 
 
+@pytest.mark.ftqc_reference
 @pytest.mark.parametrize("n,m", [(1, 1), (1, 2), (2, 2), (2, 3)])
 def test_unsigned_product_complex_forward_and_erase(n, m):
+    pytest.importorskip("qualtran")
     from qualtran.bloqs.arithmetic.multiplication import PlusEqualProduct
 
     left, right, result, work = layout(n, m)

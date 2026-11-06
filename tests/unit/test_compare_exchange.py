@@ -54,6 +54,7 @@ def original_gates(n: int, *, adjoint: bool = False) -> tuple[Instruction, ...]:
     )
 
 
+@pytest.mark.ftqc_reference
 @pytest.mark.parametrize("n", [1, 2, 3, 5, 8])
 @pytest.mark.parametrize("adjoint", [False, True])
 def test_original_source_gates_feedback_and_model(n: int, adjoint: bool) -> None:

@@ -32,6 +32,7 @@ def layout(n: int) -> tuple[tuple[int, ...], int, tuple[int, ...], tuple[int, ..
     return tuple(range(n)), n, tuple(range(n + 1, 2 * n)), tuple(range(40, 40 + n - 1))
 
 
+@pytest.mark.ftqc_reference
 @pytest.mark.parametrize("n,size,cycle", CASES)
 @pytest.mark.parametrize("composed", [False, True])
 def test_cycles_source_gates_feedback_and_model(

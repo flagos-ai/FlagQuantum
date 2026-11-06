@@ -26,6 +26,7 @@ pytestmark = pytest.mark.unit
 CASES = [(2, 1), (2, 2), (3, 3), (3, 5), (5, 13), (8, 251)]
 
 
+@pytest.mark.ftqc_reference
 @pytest.mark.parametrize("n,p", CASES)
 @pytest.mark.parametrize("montgomery", [False, True])
 @pytest.mark.parametrize("cv", [0, 1])
@@ -94,6 +95,7 @@ def test_raw_primitive_complex_channels(n: int, p: int, cv: int) -> None:
         )
 
 
+@pytest.mark.ftqc_reference
 @pytest.mark.parametrize("n", [1, 2, 3])
 @pytest.mark.parametrize("cv", [0, 1])
 def test_upstream_all_ones_modulus_boundary_is_explicit(n: int, cv: int) -> None:

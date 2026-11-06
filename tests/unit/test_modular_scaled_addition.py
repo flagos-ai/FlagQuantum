@@ -37,6 +37,7 @@ def layout(n: int) -> tuple[tuple[int, ...], ...]:
     )
 
 
+@pytest.mark.ftqc_reference
 @pytest.mark.parametrize("n,p,k", CASES)
 def test_original_source_gate_dependencies_and_model(n: int, p: int, k: int) -> None:
     pytest.importorskip("qualtran")

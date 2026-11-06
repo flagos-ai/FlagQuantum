@@ -24,8 +24,10 @@ def square_layout(n: int) -> tuple[tuple[int, ...], tuple[int, ...], tuple[int, 
     )
 
 
+@pytest.mark.ftqc_reference
 @pytest.mark.parametrize("n", range(1, 9))
 def test_square_all_basis_inputs_all_history_certificate(n: int) -> None:
+    pytest.importorskip("qualtran")
     import qualtran
     from qualtran.bloqs.arithmetic.multiplication import Square
     from qualtran.resource_counting import QECGatesCost, get_cost_value
@@ -58,8 +60,10 @@ def test_square_all_basis_inputs_all_history_certificate(n: int) -> None:
     assert certified_and_channel_map(gates, tuple(squared)) == (tuple(blank), cost)
 
 
+@pytest.mark.ftqc_reference
 @pytest.mark.parametrize("n", [1, 2, 3])
 def test_square_pinned_complex_tensors_and_cleanup(n: int) -> None:
+    pytest.importorskip("qualtran")
     from qualtran.bloqs.arithmetic.multiplication import Square
 
     source, result, work = square_layout(n)

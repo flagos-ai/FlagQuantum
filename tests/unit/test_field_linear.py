@@ -45,6 +45,7 @@ def _source_type(width: int, modulus: int) -> Any:
 
 
 def _assert_source(plan: FieldDecomposition, source: Any, register: str) -> None:
+    pytest.importorskip("qualtran")
     from qualtran.resource_counting import QECGatesCost, get_cost_value
 
     target = tuple(range(len(plan.outputs[0])))
@@ -59,10 +60,12 @@ def _assert_source(plan: FieldDecomposition, source: Any, register: str) -> None
     assert model.toffoli == 0
 
 
+@pytest.mark.ftqc_reference
 @pytest.mark.parametrize("width,modulus,value", CONSTANT_CASES)
 def test_constant_source_gate_order_mapping_and_resources(
     width: int, modulus: int, value: int
 ) -> None:
+    pytest.importorskip("qualtran")
     dtype = _source_type(width, modulus)
     from qualtran.bloqs.gf_arithmetic.gf2_multiplication import GF2MulK
 
@@ -70,10 +73,12 @@ def test_constant_source_gate_order_mapping_and_resources(
     _assert_source(plan, GF2MulK(dtype, value), "g")
 
 
+@pytest.mark.ftqc_reference
 @pytest.mark.parametrize("width,modulus,power", SHIFT_CASES)
 def test_monomial_source_gate_order_mapping_and_resources(
     width: int, modulus: int, power: int
 ) -> None:
+    pytest.importorskip("qualtran")
     dtype = _source_type(width, modulus)
     from qualtran.bloqs.gf_arithmetic.gf2_multiplication import (
         GF2ShiftLeft,
@@ -96,6 +101,7 @@ class LinearFieldOperation:
         )
 
 
+@pytest.mark.ftqc_reference
 @pytest.mark.integration
 @pytest.mark.parametrize("width,modulus", FIELDS)
 def test_all_complex_amplitudes_and_inverse_round_trips(

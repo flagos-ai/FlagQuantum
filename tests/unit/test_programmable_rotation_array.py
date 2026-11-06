@@ -19,6 +19,7 @@ from tests.unit.test_source_qrom import source_qrom_gates
 pytestmark = pytest.mark.unit
 
 
+@pytest.mark.ftqc_reference
 @pytest.mark.parametrize(
     "angles,kappa,gate_name",
     [
@@ -32,8 +33,9 @@ pytestmark = pytest.mark.unit
     ],
 )
 def test_pinned_generator_and_complex_branches(angles, kappa, gate_name):
-    import cirq
-    import numpy as np
+    pytest.importorskip("qualtran")
+    cirq = pytest.importorskip("cirq")
+    np = pytest.importorskip("numpy")
     from qualtran.bloqs.data_loading.qrom import QROM
     from qualtran.bloqs.rotations.programmable_rotation_gate_array import (
         ProgrammableRotationGateArray,

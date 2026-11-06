@@ -19,6 +19,7 @@ from tests.unit.test_register_subtraction import assert_source
 pytestmark = pytest.mark.unit
 
 
+@pytest.mark.ftqc_reference
 @pytest.mark.parametrize("mixer", [False, True])
 def test_component_pair_source_gates_complex_restore_and_cleanup(mixer: bool) -> None:
     pytest.importorskip("qualtran")

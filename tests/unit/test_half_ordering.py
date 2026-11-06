@@ -17,6 +17,7 @@ from tests.unit.test_half_comparison import (
 pytestmark = pytest.mark.unit
 
 
+@pytest.mark.ftqc_reference
 @pytest.mark.parametrize("n", [1, 2, 3, 5, 8])
 @pytest.mark.parametrize("dtype", ["unsigned", "signed", "montgomery"])
 @pytest.mark.parametrize("relation", ["gt", "ge", "lt", "le"])
@@ -116,6 +117,7 @@ def test_output_binding_validation() -> None:
         half_compare_outputs((0,), (1,), (3, 4), 2, adjoint=1)
 
 
+@pytest.mark.ftqc_reference
 @pytest.mark.parametrize("relation", ["ge", "lt"])
 @pytest.mark.parametrize("signed", [False, True])
 def test_pinned_reversed_adjoint_port_alias_disagrees_with_classical_model(

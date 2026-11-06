@@ -36,6 +36,7 @@ from tests.unit.test_register_subtraction import assert_source
 pytestmark = pytest.mark.unit
 
 
+@pytest.mark.ftqc_reference
 @pytest.mark.parametrize("fraction", [0, 2])
 @pytest.mark.parametrize("use_gradient", [False, True])
 def test_locked_cost_graph_and_all_branches(fraction: int, use_gradient: bool) -> None:

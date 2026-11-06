@@ -30,6 +30,7 @@ def layout(n: int, k: int):
     )
 
 
+@pytest.mark.ftqc_reference
 @pytest.mark.parametrize(
     "n,k,ands,model",
     [
@@ -45,6 +46,7 @@ def layout(n: int, k: int):
     ],
 )
 def test_sum_of_squares_layout_resources_and_every_branch(n, k, ands, model):
+    pytest.importorskip("qualtran")
     import qualtran
     from qualtran import Side
     from qualtran.bloqs.arithmetic.multiplication import SumOfSquares

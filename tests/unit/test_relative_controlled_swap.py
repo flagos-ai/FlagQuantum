@@ -18,7 +18,8 @@ pytestmark = pytest.mark.unit
 def source_relative_swap(
     control: int, left: tuple[int, ...], right: tuple[int, ...]
 ) -> tuple[Instruction, ...]:
-    import cirq
+    pytest.importorskip("qualtran")
+    cirq = pytest.importorskip("cirq")
     from qualtran.bloqs.swap_network.cswap_approx import CSwapApprox
 
     op = CSwapApprox(len(left)).on(*map(cirq.LineQubit, (control, *left, *right)))
@@ -42,8 +43,9 @@ def assert_complex_stream(
     inverse: tuple[Instruction, ...],
     width: int,
 ) -> None:
-    import cirq
-    import numpy as np
+    pytest.importorskip("qualtran")
+    cirq = pytest.importorskip("cirq")
+    np = pytest.importorskip("numpy")
 
     names = {
         "cx": cirq.CNOT,
@@ -79,8 +81,10 @@ def assert_complex_stream(
     torch.testing.assert_close(circuit.state().flatten(), state, rtol=0, atol=2e-12)
 
 
+@pytest.mark.ftqc_reference
 @pytest.mark.parametrize("width", [1, 2, 3, 5, 8])
 def test_original_exchange_stream_and_cost(width: int) -> None:
+    pytest.importorskip("qualtran")
     from qualtran.bloqs.swap_network.cswap_approx import CSwapApprox
     from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
 

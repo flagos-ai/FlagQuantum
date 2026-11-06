@@ -52,7 +52,8 @@ def layout(
 
 
 def source_gates(n: int, p: int, adjoint: bool) -> tuple[Instruction, ...]:
-    import cirq
+    pytest.importorskip("qualtran")
+    cirq = pytest.importorskip("cirq")
     from qualtran.bloqs.mod_arithmetic.mod_division import _KaliskiIterationStep6
 
     u, v, r, s, b, a, m, f, initial_work, bits = layout(n)
@@ -131,6 +132,7 @@ def source_gates(n: int, p: int, adjoint: bool) -> tuple[Instruction, ...]:
     return gates
 
 
+@pytest.mark.ftqc_reference
 @pytest.mark.parametrize("n,p", CASES)
 @pytest.mark.parametrize("adjoint", [False, True])
 def test_source_gates_ports_and_default_exact_models(
@@ -281,6 +283,7 @@ def test_small_complete_complex_all_raw_branches_and_clean_roles(
         )
 
 
+@pytest.mark.ftqc_reference
 def test_odd_active_word_is_rotation_not_classical_division() -> None:
     pytest.importorskip("qualtran")
     from qualtran.bloqs.mod_arithmetic.mod_division import _KaliskiIterationStep6
@@ -324,6 +327,7 @@ def test_invalid_output_role_mode() -> None:
         inverse_scaling_outputs(r, w, adjoint=1)
 
 
+@pytest.mark.ftqc_reference
 def test_original_classical_agreement_on_even_residue_domain() -> None:
     pytest.importorskip("qualtran")
     from qualtran.bloqs.mod_arithmetic.mod_division import _KaliskiIterationStep6
@@ -370,6 +374,7 @@ def test_original_classical_agreement_on_even_residue_domain() -> None:
     assert witnessed
 
 
+@pytest.mark.ftqc_reference
 def test_out_of_residue_three_source_contracts_are_distinct() -> None:
     pytest.importorskip("qualtran")
     from qualtran.bloqs.mod_arithmetic.mod_division import _KaliskiIterationStep6

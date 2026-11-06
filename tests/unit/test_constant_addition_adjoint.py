@@ -34,6 +34,7 @@ def layout(n: int, controlled: bool) -> tuple[tuple[int, ...], ...]:
     )
 
 
+@pytest.mark.ftqc_reference
 @pytest.mark.parametrize("n,k", VALUES)
 @pytest.mark.parametrize("cv", [None, 0, 1])
 def test_literal_constant_inverse_gates_feedback_and_source_model(

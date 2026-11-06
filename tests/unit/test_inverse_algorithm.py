@@ -51,6 +51,7 @@ def pack(
 
 
 def original_algorithm(n: int, p: int, adjoint: bool) -> tuple[Instruction, ...]:
+    pytest.importorskip("qualtran")
     from qualtran.bloqs.mod_arithmetic.mod_division import _KaliskiModInverseImpl
 
     u, v, r, s, m, f, t, work, bits = layout(n)
@@ -71,11 +72,13 @@ def original_algorithm(n: int, p: int, adjoint: bool) -> tuple[Instruction, ...]
     return gates
 
 
+@pytest.mark.ftqc_reference
 @pytest.mark.parametrize("n,p", [(2, 1), (3, 5), (4, 13), (8, 251)])
 @pytest.mark.parametrize("adjoint", [False, True])
 def test_full_source_stream_ports_and_cost_models(
     n: int, p: int, adjoint: bool
 ) -> None:
+    pytest.importorskip("qualtran")
     from qualtran.bloqs.mod_arithmetic.mod_division import _KaliskiModInverseImpl
     from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
 
@@ -105,6 +108,7 @@ def test_full_source_stream_ports_and_cost_models(
 
 
 def cases(n: int, p: int) -> tuple[tuple[int, ...], ...]:
+    pytest.importorskip("qualtran")
     from qualtran.bloqs.mod_arithmetic.mod_division import KaliskiModInverse
 
     source = KaliskiModInverse(n, p)
@@ -119,6 +123,7 @@ def cases(n: int, p: int) -> tuple[tuple[int, ...], ...]:
     return tuple(out)
 
 
+@pytest.mark.ftqc_reference
 @pytest.mark.parametrize("n,p", [(2, 1), (3, 3), (3, 5), (4, 9), (4, 13), (8, 251)])
 def test_all_units_zero_full_history_channels_and_inverse(n: int, p: int) -> None:
     u, v, r, s, m, f, t, work, bits = layout(n)
@@ -153,6 +158,7 @@ def assert_complex_maps(
     )
 
 
+@pytest.mark.ftqc_reference
 @pytest.mark.parametrize("n,p", [(3, 5), (4, 9), (8, 251)])
 def test_primitive_sparse_complex_vectors_and_source_replacement(
     n: int, p: int
@@ -188,8 +194,10 @@ def test_primitive_sparse_complex_vectors_and_source_replacement(
     )
 
 
+@pytest.mark.ftqc_reference
 @pytest.mark.parametrize("n", [2, 3, 5])
 def test_original_all_ones_modulus_load_failure(n: int) -> None:
+    pytest.importorskip("qualtran")
     from qualtran.bloqs.mod_arithmetic.mod_division import _KaliskiModInverseImpl
     from qualtran.resource_counting import QECGatesCost, get_cost_value
 
@@ -243,8 +251,10 @@ def test_empty_output_roles_rejected() -> None:
         inverse_algorithm_outputs((), ())
 
 
+@pytest.mark.ftqc_reference
 @pytest.mark.parametrize("x", [3, 6])
 def test_nonunit_inputs_do_not_claim_zero_logical_cleanup(x: int) -> None:
+    pytest.importorskip("qualtran")
     from qualtran.bloqs.mod_arithmetic.mod_division import KaliskiModInverse
 
     n, p = 4, 9

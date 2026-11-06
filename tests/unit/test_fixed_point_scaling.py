@@ -41,10 +41,12 @@ def truncated(real, integer, width):
     )
 
 
+@pytest.mark.ftqc_reference
 @pytest.mark.parametrize(
     "r,n", [(1, 1), (4, 1), (2, 2), (3, 2), (4, 2), (4, 4), (6, 4)]
 )
 def test_scaling_pinned_layout_children_and_every_branch(r, n):
+    pytest.importorskip("qualtran")
     from qualtran import DecomposeNotImplementedError, QUInt
     from qualtran.bloqs.arithmetic.controlled_addition import CAdd
     from qualtran.bloqs.arithmetic.multiplication import ScaleIntByReal

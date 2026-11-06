@@ -39,6 +39,7 @@ def reference_binding(
     }
 
 
+@pytest.mark.ftqc_reference
 @pytest.mark.parametrize("n,p", CASES)
 @pytest.mark.parametrize("montgomery", [False, True])
 def test_original_source_gates_and_resource_models(
@@ -133,6 +134,7 @@ def test_raw_complex_channels_spectator_and_work(n: int, p: int) -> None:
         )
 
 
+@pytest.mark.ftqc_reference
 @pytest.mark.parametrize("n", [1, 2, 3])
 def test_source_all_ones_modulus_load_failure(n: int) -> None:
     pytest.importorskip("qualtran")
@@ -147,6 +149,7 @@ def test_source_all_ones_modulus_load_failure(n: int) -> None:
         modular_negate_ir(target, p, work, bits)
 
 
+@pytest.mark.ftqc_reference
 def test_validation_and_source_outside_residue_domain() -> None:
     target, work, bits = layout(2)
     with pytest.raises(ValueError, match="positive"):

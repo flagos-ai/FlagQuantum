@@ -39,6 +39,7 @@ def assert_half_source(
     flipped: bool = False,
     erased_outputs: dict[str, tuple[int, ...]] | None = None,
 ) -> None:
+    pytest.importorskip("qualtran")
     a, b, target, difference, signs, bits = layout(n)
     inputs = {"a": a, "b": b}
     outputs = {**inputs, "c": difference, "target": target}
@@ -77,6 +78,7 @@ def assert_half_source(
     assert forward["x"] == reverse["x"] == 3 * (n + 1) + flipped
 
 
+@pytest.mark.ftqc_reference
 @pytest.mark.parametrize("n", [1, 2, 3, 5, 8])
 @pytest.mark.parametrize("dtype", ["unsigned", "signed", "montgomery"])
 def test_half_greater_source_outputs_gates_and_models(n: int, dtype: str) -> None:

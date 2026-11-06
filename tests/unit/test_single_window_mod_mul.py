@@ -36,6 +36,7 @@ def original_window_gates(
     bits: tuple[int, ...],
     adjoint: bool,
 ) -> tuple[Instruction, ...]:
+    pytest.importorskip("qualtran")
     from qualtran import Adjoint
     from qualtran.bloqs.arithmetic import Add, Xor
     from qualtran.bloqs.arithmetic.controlled_addition import CAdd
@@ -106,13 +107,15 @@ def original_window_gates(
     return gates
 
 
+@pytest.mark.ftqc_reference
 @pytest.mark.parametrize(
     "n,w,modulus", [(1, 1, 1), (2, 1, 3), (3, 1, 3), (4, 2, 5), (5, 5, 13)]
 )
 def test_source_window_graph_branches_and_bank_cleanup(
     n: int, w: int, modulus: int
 ) -> None:
-    import numpy as np
+    pytest.importorskip("qualtran")
+    np = pytest.importorskip("numpy")
     from qualtran.bloqs.mod_arithmetic.mod_multiplication import SingleWindowModMul
     from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
 

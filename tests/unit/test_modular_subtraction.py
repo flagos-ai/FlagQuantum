@@ -20,6 +20,7 @@ pytestmark = pytest.mark.unit
 CASES = [(2, 1), (2, 2), (3, 3), (3, 5), (5, 13), (8, 251)]
 
 
+@pytest.mark.ftqc_reference
 @pytest.mark.parametrize("n,modulus", CASES)
 @pytest.mark.parametrize("montgomery", [False, True])
 def test_modular_subtract_source_chain_gates_and_model(
@@ -94,6 +95,7 @@ def test_nonbinary_modulus_complete_amplitudes_selected_branches() -> None:
         )
 
 
+@pytest.mark.ftqc_reference
 @pytest.mark.parametrize("n", [1, 2, 3])
 def test_pinned_all_ones_modulus_cannot_load_modulus_plus_one(n: int) -> None:
     pytest.importorskip("qualtran")

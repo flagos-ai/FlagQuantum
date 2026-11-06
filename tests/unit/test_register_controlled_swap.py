@@ -18,6 +18,7 @@ from tests.unit.test_register_subtraction import assert_source
 pytestmark = pytest.mark.unit
 
 
+@pytest.mark.ftqc_reference
 @pytest.mark.parametrize("value", range(8))
 def test_all_literal_columns_have_exact_positive_phase(value: int) -> None:
     state = torch.zeros(8, dtype=torch.complex128)
@@ -41,8 +42,8 @@ def test_all_literal_columns_have_exact_positive_phase(value: int) -> None:
     mapped, events = certified_and_channel_map(gates, ((control, left, right),))
     assert mapped == (((out >> 2) & 1, (out >> 1) & 1, out & 1),) and events == 0
     pytest.importorskip("qualtran")
-    import cirq
-    import numpy as np
+    cirq = pytest.importorskip("cirq")
+    np = pytest.importorskip("numpy")
     from qualtran.bloqs.basic_gates.swap import TwoBitCSwap
 
     upstream = cirq.unitary(TwoBitCSwap().to_clifford_t_circuit())
@@ -50,6 +51,7 @@ def test_all_literal_columns_have_exact_positive_phase(value: int) -> None:
     np.testing.assert_allclose(upstream[:, value], expected.numpy(), rtol=0, atol=1e-12)
 
 
+@pytest.mark.ftqc_reference
 @pytest.mark.parametrize("n", [1, 2, 3, 5, 8])
 def test_original_register_gate_order_and_independent_resources(n: int) -> None:
     pytest.importorskip("qualtran")

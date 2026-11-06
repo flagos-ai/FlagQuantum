@@ -27,6 +27,7 @@ from tests.unit.test_register_subtraction import assert_source
 pytestmark = pytest.mark.unit
 
 
+@pytest.mark.ftqc_reference
 @pytest.mark.parametrize(
     "n,exponent,quantized",
     [
@@ -168,6 +169,7 @@ def test_zpow_source_graph_resources_and_kickback(
     assert get_cost_value(source, QubitCount()) == max(4, 2 * n + 1)
 
 
+@pytest.mark.ftqc_reference
 def test_zpow_source_negative_exponent_and_layout_boundaries() -> None:
     pytest.importorskip("qualtran")
     from qualtran.bloqs.rotations.zpow_via_phase_gradient import (

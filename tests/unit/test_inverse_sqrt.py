@@ -22,8 +22,8 @@ from flagquantum.compiler.registers.inverse_sqrt_seed import (
     inverse_sqrt_seed_requirements,
 )
 from flagquantum.core.ir import CircuitIR, Instruction
-from tests.unit.algorithms.primitives.multiplexers.test_thc_qrom import _execute_sparse
 from tests.unit.measurement_checks import certified_and_channel_map
+from tests.unit.sparse_register_execution import execute_sparse_register
 
 pytestmark = pytest.mark.unit
 
@@ -160,7 +160,7 @@ def test_inverse_sqrt_complex_amplitudes_and_clean_history(n, f, b, s, o):
         )
     for initial, expected in ((before, after), (after, before)):
         for seed in (7, 21, 91):
-            actual = _execute_sparse(ir, initial, seed=seed)
+            actual = execute_sparse_register(ir, initial, seed=seed)
             assert all(
                 abs(actual.get(i, 0) - expected.get(i, 0)) < 2e-12
                 for i in actual.keys() | expected.keys()

@@ -36,6 +36,7 @@ def layout(
     )
 
 
+@pytest.mark.ftqc_reference
 @pytest.mark.parametrize("n", [1, 2, 3, 5, 8])
 @pytest.mark.parametrize("adjoint", [False, True])
 def test_original_gates_feedback_outputs_and_costs(n: int, adjoint: bool) -> None:

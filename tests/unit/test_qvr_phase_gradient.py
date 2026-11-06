@@ -25,6 +25,7 @@ from tests.unit.sparse_register_execution import execute_sparse_register
 pytestmark = pytest.mark.unit
 
 
+@pytest.mark.ftqc_reference
 @pytest.mark.parametrize(
     "m,f,gamma,epsilon",
     [
@@ -50,6 +51,7 @@ def test_qvr_source_precision_choice(
     )
 
 
+@pytest.mark.ftqc_reference
 @pytest.mark.parametrize(
     "m,f,gamma,epsilon",
     [(2, 2, 0.5, 0.5), (3, 3, 0.75, 0.25), (4, 1, -0.375, 0.1), (8, 8, 0.625, 0.03)],
@@ -171,6 +173,7 @@ def test_qvr_source_binding_complex_phase_and_cleanup(
                 )
 
 
+@pytest.mark.ftqc_reference
 @pytest.mark.parametrize("gamma", [0.0, 1e-9])
 def test_qvr_source_quantized_zero_boundary(gamma: float) -> None:
     pytest.importorskip("qualtran")

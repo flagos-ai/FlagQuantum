@@ -20,6 +20,7 @@ def words(n: int) -> tuple[tuple[int, ...], ...]:
     return tuple(tuple(range(1 + i * n, 1 + (i + 1) * n)) for i in range(4))
 
 
+@pytest.mark.ftqc_reference
 @pytest.mark.parametrize("n", [1, 2, 3, 5, 8])
 @pytest.mark.parametrize("adjoint", [False, True])
 def test_original_whole_layer_gates_and_two_model_weights(

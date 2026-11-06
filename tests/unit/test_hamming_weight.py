@@ -29,6 +29,7 @@ def layout(n: int) -> tuple[tuple[int, ...], ...]:
     )
 
 
+@pytest.mark.ftqc_reference
 @pytest.mark.parametrize("n", [1, 2, 3, 4, 5, 7, 8, 9, 16])
 def test_source_compute_and_measured_adjoint_stream_and_cost(n: int) -> None:
     pytest.importorskip("qualtran")

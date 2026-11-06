@@ -36,8 +36,9 @@ def original_select_swap_gates(
     work: tuple[int, ...],
     bits: tuple[int, ...],
 ) -> tuple[tuple[Instruction, ...], tuple[tuple[Instruction, ...], ...]]:
-    import cirq
-    import numpy as np
+    pytest.importorskip("qualtran")
+    cirq = pytest.importorskip("cirq")
+    np = pytest.importorskip("numpy")
     from qualtran.bloqs.arithmetic import Xor
     from qualtran.bloqs.bookkeeping import Allocate, Free, Partition
     from qualtran.bloqs.data_loading.qrom import QROM
@@ -106,6 +107,7 @@ CASES = (
 )
 
 
+@pytest.mark.ftqc_reference
 @pytest.mark.parametrize("shape,logs,control_count,widths,datasets", CASES)
 @pytest.mark.parametrize("dirty", [False, True])
 def test_source_gate_graph_and_bank_channel(
@@ -117,7 +119,7 @@ def test_source_gate_graph_and_bank_channel(
     dirty: bool,
 ) -> None:
     pytest.importorskip("qualtran")
-    import numpy as np
+    np = pytest.importorskip("numpy")
     from qualtran.bloqs.data_loading.select_swap_qrom import SelectSwapQROM
     from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
 
@@ -268,6 +270,7 @@ def test_source_gate_graph_and_bank_channel(
             )
 
 
+@pytest.mark.ftqc_reference
 @pytest.mark.parametrize(
     "shape,widths", [((5,), (2,)), ((64,), (1,)), ((10, 32), (1, 2)), ((4,), (3,))]
 )
@@ -275,7 +278,7 @@ def test_concrete_source_block_minimizer(
     shape: tuple[int, ...], widths: tuple[int, ...]
 ) -> None:
     pytest.importorskip("qualtran")
-    import numpy as np
+    np = pytest.importorskip("numpy")
     from qualtran.bloqs.data_loading.select_swap_qrom import SelectSwapQROM
 
     for dirty in (False, True):
@@ -303,6 +306,7 @@ def test_select_swap_validation() -> None:
         optimal_select_swap_log_block_sizes((1,), (0,))
 
 
+@pytest.mark.ftqc_reference
 @pytest.mark.parametrize(
     "shape,logs", [((4,), (2,)), ((3, 4), (0, 1)), ((2, 4), (1, 1))]
 )
@@ -311,7 +315,7 @@ def test_source_omitted_selector_failures(
     shape: tuple[int, ...], logs: tuple[int, ...], dirty: bool
 ) -> None:
     pytest.importorskip("qualtran")
-    import numpy as np
+    np = pytest.importorskip("numpy")
     from qualtran import BloqError
     from qualtran.bloqs.data_loading.select_swap_qrom import SelectSwapQROM
 

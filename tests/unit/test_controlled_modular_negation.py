@@ -32,6 +32,7 @@ def layout(n: int) -> tuple[tuple[int, ...], ...]:
     )
 
 
+@pytest.mark.ftqc_reference
 @pytest.mark.parametrize("n,p", CASES)
 @pytest.mark.parametrize("montgomery", [False, True])
 @pytest.mark.parametrize("cv", [0, 1])
@@ -96,6 +97,7 @@ def test_raw_complex_channels_spectator_and_every_small_outcome(
         )
 
 
+@pytest.mark.ftqc_reference
 @pytest.mark.parametrize("n", [1, 2, 3])
 @pytest.mark.parametrize("cv", [0, 1])
 def test_source_all_ones_modulus_failure(n: int, cv: int) -> None:
@@ -122,6 +124,7 @@ def test_validation() -> None:
         controlled_modular_negation_requirements(0)
 
 
+@pytest.mark.ftqc_reference
 @pytest.mark.parametrize("cv", [0, 1])
 def test_source_outside_domain_retains_dirty_flag_on_active_branch(cv: int) -> None:
     pytest.importorskip("qualtran")

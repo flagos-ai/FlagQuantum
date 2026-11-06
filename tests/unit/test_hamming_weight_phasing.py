@@ -31,6 +31,7 @@ def source_count_leaf(
     bloq: Any, inputs: SourcePorts, parts: SourcePorts, bits: tuple[int, ...]
 ) -> SourceResult | None:
     """Read a pinned Hamming count or its measured adjoint."""
+    pytest.importorskip("qualtran")
     from qualtran import Adjoint
     from qualtran.bloqs.arithmetic.hamming_weight import HammingWeightCompute
 
@@ -75,6 +76,7 @@ def source_count_leaf(
     return None
 
 
+@pytest.mark.ftqc_reference
 @pytest.mark.parametrize(
     "n,exponent",
     [(1, 0.25), (2, 1.0), (3, -0.375), (4, 0.125), (7, -0.375), (8, 0.625)],

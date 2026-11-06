@@ -63,8 +63,8 @@ def reference_arithmetic_gates(
     pytest.importorskip("qualtran")
     if version("qualtran") != "0.7.0":
         pytest.skip("Reference gate stream requires Qualtran v0.7.0")
-    import cirq
-    import numpy as np
+    cirq = pytest.importorskip("cirq")
+    np = pytest.importorskip("numpy")
     from qualtran import CompositeBloq
     from qualtran.bloqs.basic_gates import CNOT, XGate
     from qualtran.cirq_interop import BloqAsCirqGate
@@ -306,10 +306,12 @@ def reference_arithmetic_gates(
     return tuple(gates)
 
 
+@pytest.mark.ftqc_reference
 @pytest.mark.parametrize("width,value", CASES)
 def test_literal_source_gates_classical_conditions_and_resources(
     width: int, value: int
 ) -> None:
+    pytest.importorskip("qualtran")
     expected, source = source_gates(width, value)
     from qualtran.resource_counting import QECGatesCost, get_cost_value
 

@@ -15,6 +15,7 @@ pytestmark = pytest.mark.unit
 WIDTHS = [(1, 1), (2, 2), (3, 3), (5, 5), (8, 8), (1, 3), (2, 5), (3, 8)]
 
 
+@pytest.mark.ftqc_reference
 @pytest.mark.parametrize("m,n", WIDTHS)
 @pytest.mark.parametrize("montgomery", [False, True])
 def test_literal_add_adjoint_source_gates_and_model(

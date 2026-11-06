@@ -40,6 +40,7 @@ def original_gates(
     output: tuple[int, ...],
     adjoint: bool,
 ) -> tuple[Instruction, ...]:
+    pytest.importorskip("qualtran")
     from qualtran import Adjoint
     from qualtran.bloqs.arithmetic.comparison import LessThanConstant
     from qualtran.bloqs.basic_gates import XGate
@@ -125,10 +126,12 @@ def original_gates(
     return gates
 
 
+@pytest.mark.ftqc_reference
 @pytest.mark.parametrize(
     "n,w,p", [(3, 1, 3), (4, 2, 5), (5, 1, 9), (5, 5, 13), (6, 2, 7)]
 )
 def test_locked_windowed_source_and_complex_roundtrip(n: int, w: int, p: int) -> None:
+    pytest.importorskip("qualtran")
     from qualtran.bloqs.mod_arithmetic.mod_multiplication import (
         DirtyOutOfPlaceMontgomeryModMul,
     )

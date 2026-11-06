@@ -48,8 +48,10 @@ def basis_inputs(
     return tuple(before), tuple(after)
 
 
+@pytest.mark.ftqc_reference
 @pytest.mark.parametrize("n,p", CASES)
 def test_full_source_inverse_and_independent_models(n: int, p: int) -> None:
+    pytest.importorskip("qualtran")
     from qualtran.bloqs.mod_arithmetic.mod_addition import ModAdd
     from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
 
@@ -74,8 +76,10 @@ def test_full_source_inverse_and_independent_models(n: int, p: int) -> None:
     assert counts == Counter(g.name for g in modular_add_ir(a, b, p, w, bits))
 
 
+@pytest.mark.ftqc_reference
 @pytest.mark.parametrize("n", [1, 2, 3, 5, 8])
 def test_original_unsigned_comparator_inverse_palindrome(n: int) -> None:
+    pytest.importorskip("qualtran")
     from qualtran.bloqs.arithmetic.comparison import LinearDepthGreaterThan
 
     a, b, w, bits = layout(n)

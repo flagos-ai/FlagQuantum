@@ -35,6 +35,7 @@ def registers(
     )
 
 
+@pytest.mark.ftqc_reference
 @pytest.mark.parametrize("width,shift", CASES)
 def test_literal_source_gate_dependencies_outputs_and_resources(
     width: int, shift: int | None

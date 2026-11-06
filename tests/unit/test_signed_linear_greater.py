@@ -35,6 +35,7 @@ def source_predicate(n: int, a: int, b: int) -> int:
     return int(a > b) if n == 1 else ((b - a) % (1 << n)) >> (n - 1)
 
 
+@pytest.mark.ftqc_reference
 @pytest.mark.parametrize("n", [1, 2, 3, 4, 5, 8])
 @pytest.mark.parametrize("adjoint", [False, True])
 def test_source_gates_feedback_and_cost(n: int, adjoint: bool) -> None:
@@ -118,6 +119,7 @@ def test_complex_amplitudes_spectator_all_raw_measurement_branches(n: int) -> No
         )
 
 
+@pytest.mark.ftqc_reference
 @pytest.mark.parametrize(
     "n,a,b,executed,mathematical",
     [(1, 1, 0, 1, 0), (2, 3, 0, 0, 0), (2, 2, 1, 1, 0), (3, 3, 4, 0, 1)],

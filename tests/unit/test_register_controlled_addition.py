@@ -28,6 +28,7 @@ def layout(m: int, n: int) -> tuple[tuple[int, ...], ...]:
     )
 
 
+@pytest.mark.ftqc_reference
 @pytest.mark.parametrize(
     "m,n", [(1, 1), (2, 2), (3, 3), (5, 5), (8, 8), (1, 3), (3, 8)]
 )
@@ -60,12 +61,13 @@ def test_controlled_addition_literal_source_gates_and_model(
     assert counts["x"] == (4 * m if cv == 0 else 0)
 
 
+@pytest.mark.ftqc_reference
 @pytest.mark.parametrize("values", [(0, 0), (0, 1), (1, 0), (1, 1)])
 def test_shared_and_literal_source_and_clean_coherent_erase(
     values: tuple[int, int],
 ) -> None:
     pytest.importorskip("qualtran")
-    import numpy as np
+    np = pytest.importorskip("numpy")
     from qualtran import BloqBuilder, Signature
     from qualtran.bloqs.mcmt.and_bloq import And
 
@@ -181,6 +183,7 @@ def test_invalid_work_slots_polarities_and_aliases() -> None:
         and_uncompute_ir(0, 1, 2, -1)
 
 
+@pytest.mark.ftqc_reference
 def test_pinned_narrow_signed_source_semantics_exception() -> None:
     pytest.importorskip("qualtran")
     from qualtran import QInt

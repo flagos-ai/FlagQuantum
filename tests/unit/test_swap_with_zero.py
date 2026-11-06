@@ -20,6 +20,7 @@ from tests.unit.test_relative_controlled_swap import (
 pytestmark = pytest.mark.unit
 
 
+@pytest.mark.ftqc_reference
 @pytest.mark.parametrize(
     "shape,widths,word_width",
     [
@@ -35,6 +36,7 @@ pytestmark = pytest.mark.unit
 def test_source_network_phases_and_resources(
     shape: tuple[int, ...], widths: tuple[int, ...], word_width: int
 ) -> None:
+    pytest.importorskip("qualtran")
     from qualtran.bloqs.swap_network.cswap_approx import CSwapApprox
     from qualtran.bloqs.swap_network.swap_with_zero import SwapWithZero
     from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
@@ -97,7 +99,9 @@ def test_source_network_phases_and_resources(
     )
 
 
+@pytest.mark.ftqc_reference
 def test_original_zero_bit_axis_limitation() -> None:
+    pytest.importorskip("qualtran")
     from qualtran.bloqs.swap_network.swap_with_zero import SwapWithZero
 
     with pytest.raises(IndexError):

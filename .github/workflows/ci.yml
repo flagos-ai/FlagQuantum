@@ -2192,7 +2192,7 @@ jobs:
       - name: Collect the complete coverage selection and publish a balanced plan
         id: plan
         run: |
-          marker="(smoke or unit or integration or jax) and not qiskit and not cudaq and not triton"
+          marker="(smoke or unit or integration or jax) and not qiskit and not cudaq and not triton and not ftqc_reference"
           if [ "$GITHUB_EVENT_NAME" = pull_request ]; then
             marker="$marker and not slow"
           fi
@@ -2318,7 +2318,7 @@ jobs:
           mkdir -p "$RUNNER_TEMP/fq-coverage"
           export COVERAGE_FILE="$RUNNER_TEMP/fq-coverage/.coverage.${{ matrix.shard }}"
           plan="$(python -m tools.ci_coverage_plan "$FQ_COVERAGE_PLAN" ${{ matrix.shard }})"
-          python -m pytest "@$plan" -m "(smoke or unit or integration or jax) and not slow and not qiskit and not cudaq and not triton" \
+          python -m pytest "@$plan" -m "(smoke or unit or integration or jax) and not slow and not qiskit and not cudaq and not triton and not ftqc_reference" \
             -n ${{ env.FQ_PYTEST_WORKERS }} --dist=worksteal --durations=50 \
             -p tools.pytest_shard --cov=flagquantum --cov-report=
       - name: Run this exact coverage partition (integration revisions)
@@ -2329,7 +2329,7 @@ jobs:
           mkdir -p "$RUNNER_TEMP/fq-coverage"
           export COVERAGE_FILE="$RUNNER_TEMP/fq-coverage/.coverage.${{ matrix.shard }}"
           plan="$(python -m tools.ci_coverage_plan "$FQ_COVERAGE_PLAN" ${{ matrix.shard }})"
-          python -m pytest "@$plan" -m "(smoke or unit or integration or jax) and not qiskit and not cudaq and not triton" \
+          python -m pytest "@$plan" -m "(smoke or unit or integration or jax) and not qiskit and not cudaq and not triton and not ftqc_reference" \
             -n ${{ env.FQ_PYTEST_WORKERS }} --dist=worksteal --durations=50 \
             -p tools.pytest_shard --cov=flagquantum --cov-report=
       - uses: ./.github/actions/upload-artifact
@@ -2595,6 +2595,37 @@ jobs:
           path: ${{ env.FQ_CI_REPORT_DIR }}
           retention-days: 7
 
+  ftqc-reference:
+    needs: prepare-source
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    concurrency:
+      group: flagquantum-gh-4
+      queue: max
+    env:
+      OMP_NUM_THREADS: "1"
+      MKL_NUM_THREADS: "1"
+      OPENBLAS_NUM_THREADS: "1"
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - uses: ./.github/actions/isolated-python
+      - uses: ./.github/actions/install-cpu-torch
+        timeout-minutes: 8
+      - name: Install independent FTQC references
+        run: |
+          python -m pip install -e '.[dev,ftqc-reference]'
+          python -m pip check
+          python -c "import galois, kickmix, qualtran"
+      - name: Compare compiler behavior with the pinned references
+        run: python -m pytest tests/unit -m "ftqc_reference" -n 2 --dist=worksteal -ra
+
   ci-complete:
     name: CI complete
     needs:
@@ -2623,6 +2654,7 @@ jobs:
       - coverage-shard
       - coverage
       - supply-chain
+      - ftqc-reference
     # Required checks must reject cancelled/skipped dependencies, never skip.
     if: ${{ always() }}
     timeout-minutes: 2

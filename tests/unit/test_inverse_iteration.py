@@ -53,7 +53,8 @@ def layout(n: int) -> tuple[
 
 def original_iteration(n: int, p: int, adjoint: bool) -> tuple[Instruction, ...]:
     """Walk the unchanged whole graph, binding allocations by actual input edges."""
-    import numpy as np
+    pytest.importorskip("qualtran")
+    np = pytest.importorskip("numpy")
     from qualtran.bloqs.mod_arithmetic.mod_division import _KaliskiIteration
 
     u, v, r, s, m, f, t, work, bits = layout(n)
@@ -161,11 +162,13 @@ def original_iteration(n: int, p: int, adjoint: bool) -> tuple[Instruction, ...]
     return gates
 
 
+@pytest.mark.ftqc_reference
 @pytest.mark.parametrize("n,p", [(2, 3), (3, 5), (5, 31), (8, 251)])
 @pytest.mark.parametrize("adjoint", [False, True])
 def test_original_full_graph_stream_roles_and_models(
     n: int, p: int, adjoint: bool
 ) -> None:
+    pytest.importorskip("qualtran")
     from qualtran.bloqs.mod_arithmetic.mod_division import _KaliskiIteration
     from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
 
@@ -190,6 +193,7 @@ def test_original_full_graph_stream_roles_and_models(
 
 
 def reachable(n: int, p: int, xs: tuple[int, ...]) -> tuple[tuple[int, ...], ...]:
+    pytest.importorskip("qualtran")
     from qualtran.bloqs.mod_arithmetic.mod_division import _KaliskiIteration
 
     source = _KaliskiIteration(n, p)
@@ -208,8 +212,10 @@ def reachable(n: int, p: int, xs: tuple[int, ...]) -> tuple[tuple[int, ...], ...
     return tuple(sorted(cases))
 
 
+@pytest.mark.ftqc_reference
 @pytest.mark.parametrize("n,p", [(2, 3), (3, 5), (3, 7), (4, 13), (8, 251)])
 def test_reachable_complete_channels_and_reverse(n: int, p: int) -> None:
+    pytest.importorskip("qualtran")
     from qualtran.bloqs.mod_arithmetic.mod_division import _KaliskiIteration
 
     u, v, r, s, m, f, t, work, bits = layout(n)
@@ -244,7 +250,9 @@ def test_reachable_complete_channels_and_reverse(n: int, p: int) -> None:
     assert inverse_iteration_outputs(rr, ww, adjoint=True) == (r, work)
 
 
+@pytest.mark.ftqc_reference
 def test_raw_complex_selected_full_histories() -> None:
+    pytest.importorskip("qualtran")
     n, p = 2, 3
     u, v, r, s, m, f, t, work, bits = layout(n)
     rr, ww = inverse_iteration_outputs(r, work)
@@ -313,8 +321,10 @@ def test_invalid_layout_rejected(bad: str) -> None:
         inverse_iteration_ir(u, v, r, s, m, f, t, p, work, bits, adjoint=adjoint)
 
 
+@pytest.mark.ftqc_reference
 def test_off_domain_source_free_is_not_a_reset() -> None:
     """Inactive even s is not a reachable terminal state and leaves original a=1."""
+    pytest.importorskip("qualtran")
     from qualtran.bloqs.mod_arithmetic.mod_division import _KaliskiIteration
 
     u, v, r, s, m, f, t, work, bits = layout(2)

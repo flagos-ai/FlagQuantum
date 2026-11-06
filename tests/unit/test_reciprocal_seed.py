@@ -34,10 +34,12 @@ def seed_word(value, frac, precision):
     return 1 << (precision - exponent) if exponent else 0
 
 
+@pytest.mark.ftqc_reference
 @pytest.mark.parametrize(
     "m,f,b", [(1, 0, 1), (2, 0, 2), (3, 2, 3), (4, 3, 6), (8, 2, 8)]
 )
 def test_seed_figure_resources_and_all_histories(m, f, b):
+    pytest.importorskip("qualtran")
     from qualtran import DecomposeNotImplementedError
     from qualtran.bloqs.arithmetic.multiplication import InvertRealNumber
     from qualtran.bloqs.basic_gates import CNOT, Toffoli, XGate

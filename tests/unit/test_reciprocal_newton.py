@@ -126,7 +126,9 @@ def test_newton_primitive_complex_trajectories(n, f, b):
                 )
 
 
+@pytest.mark.ftqc_reference
 def test_locked_reciprocal_graph_records_mixed_format_gap():
+    pytest.importorskip("qualtran")
     from qualtran import DecomposeNotImplementedError
     from qualtran.bloqs.arithmetic.multiplication import (
         InvertRealNumber,

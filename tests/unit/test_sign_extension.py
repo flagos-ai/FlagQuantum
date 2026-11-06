@@ -14,6 +14,7 @@ from tests.unit.test_register_subtraction import assert_source
 pytestmark = pytest.mark.unit
 
 
+@pytest.mark.ftqc_reference
 @pytest.mark.parametrize("n,extra", [(1, 1), (2, 1), (3, 2), (3, 5), (5, 3), (8, 8)])
 @pytest.mark.parametrize("ones", [False, True])
 def test_sign_extension_source_pair_and_complex_outputs(

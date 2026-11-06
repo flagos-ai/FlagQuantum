@@ -34,9 +34,11 @@ from tests.unit.test_register_subtraction import assert_source
 pytestmark = pytest.mark.unit
 
 
+@pytest.mark.ftqc_reference
 @pytest.mark.parametrize("fraction", [0, 4])
 @pytest.mark.parametrize("use_gradient", [False, True])
 def test_square_cost_original_graph_phases_and_cleanup(fraction, use_gradient) -> None:
+    pytest.importorskip("qualtran")
     from qualtran import QFxp, Register
     from qualtran.bloqs.arithmetic.multiplication import Square
     from qualtran.bloqs.basic_gates import ZPowGate

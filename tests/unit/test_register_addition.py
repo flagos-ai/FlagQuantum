@@ -16,13 +16,14 @@ from flagquantum.runtime.dynamic.execution import run_dynamic
 pytestmark = pytest.mark.unit
 
 
+@pytest.mark.ftqc_reference
 @pytest.mark.parametrize("width_a,width_b", [(1, 1), (1, 3), (2, 3), (3, 3), (3, 8)])
 def test_add_matches_qualtran_gate_order(width_a: int, width_b: int) -> None:
     np = pytest.importorskip("numpy")
     pytest.importorskip("qualtran")
     if version("qualtran") != "0.7.0":
         pytest.skip("Gate comparison pins Qualtran v0.7.0")
-    import cirq
+    cirq = pytest.importorskip("cirq")
     from qualtran import QUInt
     from qualtran.bloqs.arithmetic import Add
     from qualtran.bloqs.basic_gates import CNOT

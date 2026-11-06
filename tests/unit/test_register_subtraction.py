@@ -27,6 +27,7 @@ def registers(m: int, n: int) -> tuple[tuple[int, ...], ...]:
     )
 
 
+@pytest.mark.ftqc_reference
 @pytest.mark.parametrize("m,n", WIDTHS)
 @pytest.mark.parametrize("dtype", ["unsigned", "signed", "montgomery"])
 def test_subtract_source_gates_and_resources(m: int, n: int, dtype: str) -> None:
@@ -63,6 +64,7 @@ def assert_source(
         ]
 
 
+@pytest.mark.ftqc_reference
 @pytest.mark.parametrize("width", [1, 2, 3, 5, 8])
 @pytest.mark.parametrize("dtype", ["unsigned", "signed", "montgomery"])
 def test_subtract_from_source_gates_and_resources(width: int, dtype: str) -> None:

@@ -22,6 +22,7 @@ pytestmark = pytest.mark.unit
 CASES = [(1, 1), (2, 1), (2, 2), (2, 8), (4, 1), (4, 2), (8, 1), (8, 3)]
 
 
+@pytest.mark.ftqc_reference
 @pytest.mark.parametrize("k,n", CASES)
 @pytest.mark.parametrize("adjoint", [False, True])
 def test_original_recursion_ports_gates_and_models(
@@ -81,6 +82,7 @@ def test_all_small_input_lists_history_work_and_restore(k: int, n: int) -> None:
     assert restored == before and m2 == m
 
 
+@pytest.mark.ftqc_reference
 @pytest.mark.parametrize("k,n", [(2, 1), (4, 1), (2, 2)])
 @pytest.mark.parametrize("adjoint", [False, True])
 def test_all_small_raw_complex_histories_and_source_values(
@@ -93,6 +95,7 @@ def test_all_small_raw_complex_histories_and_source_values(
     raw_channels(BitonicSort(k, n), words, h, w, bits, merge=False, adjoint=adjoint)
 
 
+@pytest.mark.ftqc_reference
 def test_source_bounds_and_native_layout_refusal() -> None:
     pytest.importorskip("qualtran")
     from qualtran.bloqs.arithmetic.sorting import BitonicSort

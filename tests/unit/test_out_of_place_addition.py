@@ -16,6 +16,7 @@ from tests.unit.test_register_subtraction import assert_source
 pytestmark = pytest.mark.unit
 
 
+@pytest.mark.ftqc_reference
 @pytest.mark.parametrize("n", [1, 2, 3, 5, 8])
 @pytest.mark.parametrize("msb", [False, True])
 def test_adder_compute_erase_source_gates_and_model(n: int, msb: bool) -> None:

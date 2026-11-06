@@ -34,6 +34,7 @@ def source_qrom_gates(
     )
 
 
+@pytest.mark.ftqc_reference
 @pytest.mark.parametrize(
     "controls_count,shape,widths,target_layout,datasets",
     [
@@ -57,7 +58,8 @@ def test_literal_qrom_and_complete_channel(
     target_layout: tuple[tuple[int, int], ...],
     datasets: tuple[tuple[int, ...], ...],
 ) -> None:
-    import numpy as np
+    pytest.importorskip("qualtran")
+    np = pytest.importorskip("numpy")
     from qualtran.bloqs.data_loading.qrom import QROM
     from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
 
@@ -166,9 +168,11 @@ def test_literal_qrom_and_complete_channel(
             )
 
 
+@pytest.mark.ftqc_reference
 def test_locked_source_singleton_failure() -> None:
-    import cirq
-    import numpy as np
+    pytest.importorskip("qualtran")
+    cirq = pytest.importorskip("cirq")
+    np = pytest.importorskip("numpy")
     from qualtran.bloqs.data_loading.qrom import QROM
 
     source = QROM((np.array([[0, 1]]),), (0, 1), (1,), ((),))

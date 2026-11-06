@@ -50,6 +50,7 @@ def layout(
     )
 
 
+@pytest.mark.ftqc_reference
 @pytest.mark.parametrize("m,n", CASES)
 def test_less_equal_source_gates_work_measurements_and_model(m: int, n: int) -> None:
     pytest.importorskip("qualtran")

@@ -128,6 +128,7 @@ def test_arcsine_reduction_append_round_trip():
     )
 
 
+@pytest.mark.ftqc_reference
 @pytest.mark.parametrize("f,model", [(2, 2826), (3, 2520), (4, 1908)])
 def test_pinned_arcsine_encoding_and_resource_boundary(f, model):
     pytest.importorskip("qualtran")
