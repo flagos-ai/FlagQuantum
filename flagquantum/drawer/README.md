@@ -232,6 +232,7 @@ from flagquantum.drawer.register_score_data import (
     export_register_score_json,
     register_score_data,
 )
+from flagquantum.drawer.register_score_html import export_register_score_html
 from flagquantum.drawer.register_score_mpl import draw_register_score
 
 program, helpers = local_composition(overlapping=False, helpers=False)
@@ -240,6 +241,7 @@ for column in score.columns:
     print(column.sequence, column.generation, column.step.name, column.lanes)
 data = register_score_data(score)
 Path("register-score.json").write_text(export_register_score_json(data), encoding="utf-8")
+Path("register-score.html").write_text(export_register_score_html(data), encoding="utf-8")
 figure, axes = draw_register_score(data, unit_to_inches=1.1, max_width=18)
 figure.savefig("register-score.svg")
 ```
@@ -253,3 +255,7 @@ horizontal lifetimes. Quantum registers are the default. Supply
 `flagquantum[viz]` installed, Matplotlib renders the sequential view from the
 same records and returns a caller-owned figure. Increase the figure width for
 dense scores or long register names.
+
+Open the HTML file directly in a browser to switch between sequential and
+dependency columns. Dependency view repacks lanes whose lifetimes overlap
+after projection. The HTML embeds its data and renderer and works offline.
