@@ -90,19 +90,30 @@ def test_final_outputs_reuse_one_readout(
             assert sum(actual.counts[0].values()) == shots
 
 
-@pytest.mark.parametrize("outcome", [0, 1])
-def test_mixed_feedback_preserves_born_weights_and_final_outputs(outcome: int) -> None:
+@pytest.mark.parametrize(
+    ("feedback", "outcome", "terminal_weights"),
+    [
+        ("x", 0, (1.0, 0.0, 0.0, 0.0)),
+        ("x", 1, (0.0, 0.0, 0.0, 1.0)),
+        ("h", 0, (1.0, 0.0, 0.0, 0.0)),
+        ("h", 1, (0.0, 0.0, 0.5, 0.5)),
+    ],
+)
+def test_mixed_feedback_preserves_born_weights_and_final_outputs(
+    feedback: str, outcome: int, terminal_weights: tuple[float, ...]
+) -> None:
     circuit = (
         DynamicCircuit(2, dtype=torch.complex128, device="cpu")
         .h(0)
         .t(0)
         .h(0)
         .measure(0, classical_bit=0)
-        .conditional("x", 1, classical_bit=0)
+        .conditional(feedback, 1, classical_bit=0)
     )
     born = torch.tensor(
         [(2 + math.sqrt(2)) / 4, (2 - math.sqrt(2)) / 4], dtype=torch.float64
     )
+    terminal = torch.tensor(terminal_weights, dtype=torch.float64)
     draws: list[tuple[int, ...]] = []
     original_draw = torch.multinomial
 
@@ -118,6 +129,7 @@ def test_mixed_feedback_preserves_born_weights_and_final_outputs(outcome: int) -
             torch.testing.assert_close(probabilities, born, atol=1e-12, rtol=0)
             assert probabilities[outcome] > 0
             return torch.tensor([outcome], dtype=torch.int64)
+        torch.testing.assert_close(probabilities, terminal, atol=1e-12, rtol=0)
         return original_draw(probabilities, num_samples, generator=generator)
 
     with patch.object(torch, "multinomial", side_effect=draw):
@@ -140,6 +152,9 @@ def test_mixed_feedback_preserves_born_weights_and_final_outputs(outcome: int) -
     assert isinstance(mid.value, torch.Tensor) and mid.value.shape == (1, 1)
     assert isinstance(final.value, torch.Tensor) and final.value.shape == (1, 2)
     assert mid.value.tolist() == [[outcome]]
-    assert final.value.tolist() == [[outcome, outcome]]
+    control_bit, target_bit = final.value[0].tolist()
+    assert control_bit == outcome
+    assert target_bit in (0, 1)
+    assert terminal_weights[2 * control_bit + target_bit] > 0
     assert result.samples is final.value
-    assert result.counts[0] == {str(outcome) * 2: 1}
+    assert result.counts[0] == {f"{control_bit}{target_bit}": 1}
