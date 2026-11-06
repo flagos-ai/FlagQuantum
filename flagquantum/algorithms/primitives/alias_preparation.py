@@ -14,7 +14,11 @@ from ...compiler._component_trace.resource_model import (
 )
 from ...compiler.registers.bitwise import _validate_wires
 from ...compiler.registers.controlled_swap import controlled_swap_ir
-from ...compiler.registers.less_equal import less_equal_ir, less_equal_requirements
+from ...compiler.registers.less_equal import (
+    less_equal_ir,
+    less_equal_requirements,
+    source_equal_width_less_equal_cost,
+)
 from ...compiler.registers.qrom_resource_model import source_qrom_cost
 from ...compiler.registers.source_qrom import source_qrom_ir, source_qrom_workspace_size
 from ...compiler.registers.uniform_preparation import (
@@ -180,12 +184,7 @@ def _source_alias_preparation_cost(table: AliasSamplingTable) -> ComponentCost:
     sparse = table.indices is not None
     sparse_width = address if sparse else 0
     width = 2 * selection + sparse_width + 2 * mu + 1
-    work, slots = less_equal_requirements(mu, mu)
-    compare = ComponentCost(
-        "LessThanEqual",
-        2 * mu + 1 + work,
-        GateCost(and_bloq=slots, clifford=22 * mu - 9, measurement=slots),
-    )
+    compare = source_equal_width_less_equal_cost(mu)
     target_widths = (selection, selection, mu) if sparse else (selection, mu)
     lookup = source_qrom_cost(
         0,

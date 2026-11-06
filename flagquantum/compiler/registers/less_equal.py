@@ -7,6 +7,7 @@
 """Unsigned register less-or-equal with the source comparison tree."""
 
 from ...core.ir import Instruction
+from .._component_trace.resource_model import ComponentCost, GateCost
 from .and_compute import and_compute_ir, and_uncompute_ir
 from .comparison_tree import bi_qubits_mixer_ir, single_qubit_compare_ir
 from .multi_control import multi_and_ir
@@ -21,6 +22,16 @@ def less_equal_requirements(left_width: int, right_width: int) -> tuple[int, int
     return (
         3 * n - 1 + (max(1, d - 1) + 1 if d else 0),
         2 * n - 1 + (max(0, d - 1) + 1 if d else 0),
+    )
+
+
+def source_equal_width_less_equal_cost(width: int) -> ComponentCost:
+    """Count the source comparison tree for two equal-width concrete words."""
+    work, slots = less_equal_requirements(width, width)
+    return ComponentCost(
+        "LessThanEqual",
+        2 * width + 1 + work,
+        GateCost(and_bloq=slots, clifford=13 + 22 * (width - 1), measurement=slots),
     )
 
 
