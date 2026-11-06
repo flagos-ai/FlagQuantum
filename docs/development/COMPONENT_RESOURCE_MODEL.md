@@ -439,6 +439,25 @@ categories after seeded and static costs. Legacy fanout requires
 a positive concrete width because the locked source uses its
 decomposition for this convention.
 
+At the optional Cirq boundary, `cirq_gate_resource_key` maps supported
+gates to the same resource identities. Exact gate instances take
+precedence over parameterized powers. For example, CZ maps to a
+Clifford, while a fractional CZ power maps to a conjunction, a Z
+power and measured uncompute. Unrecognized gates and unsupported
+control wrappers return `None` at the adapter boundary.
+
+```python
+import cirq
+
+from flagquantum.compiler._component_trace.qec_gate_cost import query_qec_gate_cost
+from flagquantum.ecosystem.cirq.resource_keys import cirq_gate_resource_key
+
+call = cirq_gate_resource_key(cirq.CZPowGate(exponent=0.3))
+assert call is not None
+cost = query_qec_gate_cost(call)
+assert (cost.and_bloq, cost.rotation, cost.measurement, cost.clifford) == (1, 1, 1, 1)
+```
+
 - [Qualtran v0.7.0 gate costs](https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/resource_counting/_bloq_counts.py)
 - [Qualtran v0.7.0 logical width](https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/resource_counting/_qubit_counts.py)
 - [Qualtran v0.7.0 success probability](https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/resource_counting/_success_prob.py)
