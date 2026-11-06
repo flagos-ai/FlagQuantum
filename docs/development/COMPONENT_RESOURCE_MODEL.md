@@ -2298,3 +2298,33 @@ term retains both directed edges on a two-site ring. A one-site ZZ ring is
 rejected because the source edge gives CNOT the same control and target.
 These terms declare no work wires or measurements. The source ZZ rotation
 tolerance is synthesis metadata, while the native IR keeps an exact Rz.
+
+## Square-lattice Hubbard resource schedules
+
+The Hubbard interaction and hopping terms in Qualtran v0.7.0 declare cost
+graphs. The native model preserves both plaquette colors, the full and
+stripped second-order schedules, and the Hamming-weight phasing alternative.
+It keeps the original `2 * length` signature width as the starting point
+for the source maximum-of-callees fallback. A physical square lattice with
+two spin sectors uses `2 * length**2` system wires.
+
+```python
+from flagquantum.algorithms.primitives.hubbard_trotter import source_hubbard_suzuki_cost
+from flagquantum.qec.resources.estimation import estimate_ftqc_resources
+
+model = source_hubbard_suzuki_cost(4, 4.0, 0.1234, hamming_weight=True)
+report = estimate_ftqc_resources(model)
+assert report.logical.gates.t == 192
+assert report.logical.gates.and_bloq == 70
+assert report.logical.gates.clifford == 2038
+assert report.logical.gates.rotation == 40
+assert report.logical.gates.measurement == 70
+assert report.logical.peak_logical_qubits == 19
+assert report.logical.gates.total_t_count() == 912
+assert report.emitted is None
+```
+
+The Hamming-weight phase graph charges repeated copies of the same Z power.
+The executable phasing primitive uses a different power for each bit of the
+computed weight. The one-bit source width query fails on an empty junk
+register. The native model derives its width from the two bound qubits.
