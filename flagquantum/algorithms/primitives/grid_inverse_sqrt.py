@@ -64,7 +64,11 @@ def _real_product_cost(width: int) -> ComponentCost:
 
 
 def source_grid_inverse_sqrt_polynomial_cost(
-    distance_width: int, coefficient_width: int, output_width: int
+    distance_width: int,
+    coefficient_width: int,
+    output_width: int,
+    *,
+    legacy_shims: bool = False,
 ) -> ComponentCost:
     """Count the three source real products and three signed additions."""
     if any(
@@ -79,13 +83,22 @@ def source_grid_inverse_sqrt_polynomial_cost(
         distance_width + 4 * coefficient_width + output_width,
         calls=(
             CostCall(_real_product_cost(coefficient_width), 3),
-            CostCall(source_add_cost(coefficient_width, coefficient_width), 3),
+            CostCall(
+                source_add_cost(
+                    coefficient_width, coefficient_width, legacy_shims=legacy_shims
+                ),
+                3,
+            ),
         ),
     )
 
 
 def source_grid_inverse_sqrt_newton_cost(
-    distance_width: int, polynomial_width: int, target_width: int
+    distance_width: int,
+    polynomial_width: int,
+    target_width: int,
+    *,
+    legacy_shims: bool = False,
 ) -> ComponentCost:
     """Count the locked square, scale, two real products and one signed add."""
     if any(
@@ -114,6 +127,8 @@ def source_grid_inverse_sqrt_newton_cost(
             CostCall(square),
             CostCall(scale),
             CostCall(_real_product_cost(target_width), 2),
-            CostCall(source_add_cost(target_width, target_width)),
+            CostCall(
+                source_add_cost(target_width, target_width, legacy_shims=legacy_shims)
+            ),
         ),
     )

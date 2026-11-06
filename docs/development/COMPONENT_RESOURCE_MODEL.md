@@ -2501,3 +2501,19 @@ For the two-electron example above, use five fractional bits and
 and 1,034 measurements. The locked source model still reports a peak of 81
 logical qubits. These figures include reversible clearing in the emitted
 circuit.
+
+### Grid notebook resource queries
+
+Run `python -m examples.algorithms.grid_hamiltonian_resources` to reproduce
+the locked grid notebook's component resource queries without a notebook
+runtime. The example keeps QEC categories and the historical T-complexity
+convention separate. The historical calculation first enables the legacy
+Clifford shims for And compute and erase in addition and QROM, then folds
+the resulting categories into T, Clifford, and rotation counts.
+
+For the notebook's two electrons and 21 points per axis, the pair potential
+has 9,176 historical T gates before rotation synthesis, 24 rotations and
+2,646 historical Cliffords. Counting each rotation at the historical
+`1e-11` synthesis tolerance gives 10,424 T gates. The default QEC conversion
+uses 11 T equivalents per rotation and gives 9,440 T equivalents. These are
+model values. The cubic execution example reports separately counted IR.
