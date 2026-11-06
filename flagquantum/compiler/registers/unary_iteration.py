@@ -1,3 +1,8 @@
+# The early-stop rule is adapted from Qualtran v0.7.0.
+# Copyright 2023 Google LLC
+# SPDX-License-Identifier: Apache-2.0
+# Source: qualtran/bloqs/multiplexers/unary_iteration_bloq.py
+
 """Measurement-assisted traversal of a quantum address register."""
 
 from collections.abc import Callable
@@ -19,6 +24,8 @@ def append_unary_iteration(
     control_value: int | None,
     apply_branch: Callable[[int, int | None], None],
     coherent: bool = False,
+    break_early: Callable[[int, int], bool] | None = None,
+    classical_bits: tuple[int, ...] = (),
 ) -> None:
     """Visit populated addresses in ascending order and clear all workspace.
 
@@ -36,7 +43,11 @@ def append_unary_iteration(
     def visit(control: int, depth: int, start: int, size: int) -> None:
         if start >= entries:
             return
-        if size == 1:
+        if size == 1 or (
+            break_early is not None
+            and start + size <= entries
+            and break_early(start, start + size)
+        ):
             apply_branch(start, control)
             return
         right = control_width + depth
@@ -70,13 +81,14 @@ def append_unary_iteration(
         emit("cx", control, work)
         visit(work, depth + 1, start + half, half)
         emit("h", work)
+        bit = classical_bits[work - operand_count] if classical_bits else work
         instructions.append(
             Instruction(
-                "measure", (work,), metadata={"is_dynamic": True, "classical_bit": work}
+                "measure", (work,), metadata={"is_dynamic": True, "classical_bit": bit}
             )
         )
         instructions.append(
-            Instruction("cz", (control, right), metadata={"conditions": ((work, 1),)})
+            Instruction("cz", (control, right), metadata={"conditions": ((bit, 1),)})
         )
         instructions.append(
             Instruction("reset", (work,), metadata={"is_dynamic": True})

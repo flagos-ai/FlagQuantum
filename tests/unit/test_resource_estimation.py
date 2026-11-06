@@ -12,6 +12,7 @@ import flagquantum as fq
 from flagquantum.compiler import ESTIMATE_BASIS, ResourceEstimate, estimate_resources
 from flagquantum.compiler.basis_conversion import BasisConversionError, convert_basis
 from flagquantum.compiler.pipeline import schedule_layers
+from flagquantum.compiler.resource_estimation import count_instruction_resources
 from flagquantum.core.ir import CircuitIR, Instruction
 from flagquantum.errors import CapabilityError
 
@@ -548,3 +549,26 @@ def test_the_two_basis_labels_are_distinguishable_without_parsing_one() -> None:
 
     assert estimate_resources(program).basis == ESTIMATE_BASIS
     assert estimate_resources(program, gates=("h",)).basis != ESTIMATE_BASIS
+
+
+def test_emitted_counts_separate_conditionals_from_fixed_instructions() -> None:
+    program = CircuitIR(
+        n_wires=2,
+        instructions=(
+            Instruction("t", (0,)),
+            Instruction(
+                "measure", (1,), metadata={"is_dynamic": True, "classical_bit": 0}
+            ),
+            Instruction("reset", (1,), metadata={"is_dynamic": True}),
+            Instruction("tdg", (0,), metadata={"conditions": ((0, 0),)}),
+            Instruction("tdg", (0,), metadata={"conditions": ((0, 1),)}),
+        ),
+    )
+
+    report = count_instruction_resources(program, logical_qubits=1)
+
+    assert report.fixed_counts == {"t": 1, "measure": 1, "reset": 1}
+    # Both instructions are emitted, but only one executes per shot.
+    assert report.conditional_counts == {"tdg": 2}
+    assert report.workspace_qubits == 1
+    assert report.n_qubits == 2
