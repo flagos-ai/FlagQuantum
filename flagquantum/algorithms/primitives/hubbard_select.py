@@ -29,6 +29,10 @@ from ...core.classical_control import validate_classical_control
 from ...core.ir import CircuitIR, Instruction
 from ...dynamic import DynamicCircuit
 from .hubbard_prepare import hubbard_selection_layout
+from .hubbard_qubitization_resource_model import (
+    source_hubbard_majorana_formula,
+    source_hubbard_spin_up_formula,
+)
 
 
 @dataclass(frozen=True)
@@ -72,22 +76,26 @@ class SelectHubbard:
         controls = int(self.controlled)
         coordinate = (self.dimension - 1).bit_length()
         width = sum(size for _, size in self.layout)
-        majorana_ands = 2 * sites - 2 + controls
         majorana_ports = 2 * sites + 2 * coordinate + 1 + controls
-        majorana_cost = GateCost(
-            and_bloq=majorana_ands,
-            clifford=majorana_ands,
-            measurement=majorana_ands,
+        majorana = source_hubbard_majorana_formula(
+            self.dimension, controlled=self.controlled
         )
-        majorana_peak = majorana_ports + self.requirements()[0]
-        spin_ands = sites - 1 + controls
+        majorana_cost = GateCost(
+            and_bloq=int(majorana.and_bloq),
+            clifford=int(majorana.clifford),
+            measurement=int(majorana.measurement),
+        )
+        majorana_peak = int(majorana.logical_qubits)
+        spin_up = source_hubbard_spin_up_formula(
+            self.dimension, controlled=self.controlled
+        )
         spin = ComponentCost(
             "HubbardSpinUpZ",
-            majorana_ports + 2 * coordinate + controls,
+            int(spin_up.logical_qubits),
             GateCost(
-                and_bloq=spin_ands,
-                clifford=spin_ands + 2 * sites - 1,
-                measurement=spin_ands,
+                and_bloq=int(spin_up.and_bloq),
+                clifford=int(spin_up.clifford),
+                measurement=int(spin_up.measurement),
             ),
         )
         swap = ComponentCost("CSwap", 2 * coordinate + 1, GateCost(cswap=coordinate))

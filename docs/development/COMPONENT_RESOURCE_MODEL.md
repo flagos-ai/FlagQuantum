@@ -3200,5 +3200,15 @@ of the source notebook's larger diagram example.
 | 4×4 PREPARE | 9 | 7 | 50 | 4 | 7 | 16 |
 | 11×11 controlled SELECT | 18 | 603 | 846 | 0 | 603 | 273 |
 
-Symbolic diagrams and graphical circuit views remain separate from
-these resource queries.
+Add `--symbolic` to include the controlled Majorana and spin-up Z
+examples with a symbolic side length `n`. The former declares
+`2*n**2 - 1` And operations and the latter declares `n**2`. Both have
+one measurement per And and a symbolic width of
+`max(3, 2*n**2 + 2*ceil(log2(n)) + 2)`. The source uses that width
+when decomposition is unavailable for a symbolic dimension. Query
+the formulas with a concrete side length to include workspace.
+For example, the controlled 3×3 Majorana and spin-up Z use 30 and
+29 peak logical qubits, while substituting three into the symbolic
+width expression gives 24 for either.
+
+Graphical circuit views remain separate from these resource queries.
