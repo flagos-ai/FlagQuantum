@@ -134,6 +134,28 @@ def _exercise(profile: str) -> list[dict[str, object]]:
     return records
 
 
+def _exercise_stim_conversion(profile: str) -> dict[str, object] | None:
+    import torch
+
+    from flagquantum.qec.adapters.stim import convert_stim_measurements
+    from flagquantum.simulation.stabilizer import StabilizerDependencyError
+
+    text = "R 0\nX 0\nM 0\nDETECTOR rec[-1]\nOBSERVABLE_INCLUDE(0) rec[-1]"
+    raw = torch.tensor([[1], [0]], dtype=torch.uint8)
+    if not PROFILES[profile][0]:
+        try:
+            convert_stim_measurements(text, raw, bit_packed_measurements=True)
+        except StabilizerDependencyError:
+            return None
+        raise AssertionError("conversion ignored missing Stim")
+    batch = convert_stim_measurements(text, raw, bit_packed_measurements=True)
+    assert batch.detectors.tolist() == batch.observables.tolist() == [[False], [True]]
+    return {
+        "detectors": batch.detectors.tolist(),
+        "observables": batch.observables.tolist(),
+    }
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("profile", choices=PROFILES)
@@ -183,6 +205,7 @@ def main() -> int:
                     if present
                 },
                 "cells": records,
+                "stim_conversion": _exercise_stim_conversion(args.profile),
             },
             sort_keys=True,
         )

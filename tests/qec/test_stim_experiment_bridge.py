@@ -29,8 +29,15 @@ def test_approved_opt_in_surface_only() -> None:
             Path(__file__).parents[2] / "contracts/qec-stim-experiment-bridge-v1.json"
         ).read_text()
     )
-    assert tuple(contract["signatures"]) == bridge.__all__
-    for name, signature in contract["signatures"].items():
+    conversion_contract = json.loads(
+        (
+            Path(__file__).parents[2]
+            / "contracts/qec-stim-measurement-conversion-v1.json"
+        ).read_text()
+    )
+    signatures = {**contract["signatures"], **conversion_contract["signatures"]}
+    assert tuple(signatures) == bridge.__all__
+    for name, signature in signatures.items():
         assert str(inspect.signature(getattr(bridge, name))) == signature
         assert not hasattr(qec, name)
 
@@ -47,6 +54,10 @@ def test_missing_engine_is_explicit_and_lazy(
         if operation == "memory_to_stim_text":
             memory = qec.build_memory_circuit(qec.RepetitionCode(distance=3), rounds=1)
             bridge.memory_to_stim_text(memory, noise=qec.PhenomenologicalNoise())
+        elif operation == "convert_stim_measurements":
+            bridge.convert_stim_measurements(
+                SOURCE, torch.zeros((1, 1), dtype=torch.bool)
+            )
         else:
             getattr(bridge, operation)(SOURCE)
 

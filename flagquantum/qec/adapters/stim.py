@@ -6,13 +6,18 @@ numerical execution and text conversion; no vendor object leaves that boundary.
 
 from __future__ import annotations
 
+import torch
+
+from ...errors import CapabilityError
 from ...noise import NoiseModel
 from ...simulation.stabilizer.engine import (
     _annotated_stim_text,
+    _convert_stim_measurements,
     _prepare_stim_experiment,
     _stim_experiment_dem_text,
 )
 from ..circuits.memory import MemoryCircuit
+from ..dem.model import DemSample
 from ..execution.sampling import (
     MemorySampler,
     _checked_seed,
@@ -27,6 +32,7 @@ __all__ = (
     "memory_to_stim_text",
     "compile_stim_sampler",
     "stim_circuit_to_dem_text",
+    "convert_stim_measurements",
 )
 
 
@@ -117,3 +123,77 @@ def stim_circuit_to_dem_text(
     if not isinstance(decompose_errors, bool):
         raise TypeError("decompose_errors must be a boolean")
     return _stim_experiment_dem_text(circuit_text, decompose_errors=decompose_errors)
+
+
+def _check_stim_record(record: torch.Tensor, packed: bool, name: str) -> None:
+    if not isinstance(record, torch.Tensor) or record.layout != torch.strided:
+        raise TypeError(f"{name} must be a dense tensor")
+    if record.device.type != "cpu":
+        raise CapabilityError(f"{name} must be on CPU")
+    if record.ndim != 2:
+        raise ValueError(f"{name} must have shot and record dimensions")
+    if packed:
+        if record.dtype != torch.uint8:
+            raise TypeError(f"packed {name} must be uint8")
+        return
+    if record.dtype == torch.bool:
+        return
+    if record.dtype not in (
+        torch.int8,
+        torch.int16,
+        torch.int32,
+        torch.int64,
+        torch.uint8,
+        torch.uint16,
+        torch.uint32,
+        torch.uint64,
+    ):
+        raise TypeError(f"{name} must have bool or integer dtype")
+    if not bool(((record == 0) | (record == 1)).all()):
+        raise ValueError(f"{name} must be binary")
+
+
+def convert_stim_measurements(
+    circuit_text: str,
+    measurements: torch.Tensor,
+    *,
+    sweep_bits: torch.Tensor | None = None,
+    bit_packed_measurements: bool = False,
+    bit_packed_sweep_bits: bool = False,
+) -> DemSample:
+    """Convert external CPU records to reference-normalized detector and logical flips.
+
+    Each input uses shot-major rows. Packed inputs use LSB-first uint8 bytes
+    with zero padding. Omitted sweep controls are zero. The optional Stim
+    extra is required and nondeterministic declared parities are refused.
+
+    Examples:
+        >>> from importlib.util import find_spec
+        >>> text = "R 0\nX 0\nM 0\nDETECTOR rec[-1]"
+        >>> if find_spec("stim") is not None:
+        ...     batch = convert_stim_measurements(text, torch.tensor([[1], [0]]))
+        ...     assert batch.detectors.tolist() == [[False], [True]]
+    """
+    if (
+        type(bit_packed_measurements) is not bool
+        or type(bit_packed_sweep_bits) is not bool
+    ):
+        raise TypeError("packed flags must be bool")
+    _check_stim_record(measurements, bit_packed_measurements, "measurements")
+    if sweep_bits is None:
+        if bit_packed_sweep_bits:
+            raise ValueError("packed sweep controls require sweep_bits")
+    else:
+        _check_stim_record(sweep_bits, bit_packed_sweep_bits, "sweep_bits")
+        if sweep_bits.shape[0] != measurements.shape[0]:
+            raise ValueError(
+                "sweep_bits and measurements must have the same shot count"
+            )
+    detectors, observables = _convert_stim_measurements(
+        circuit_text,
+        measurements,
+        sweep_bits=sweep_bits,
+        bit_packed_measurements=bit_packed_measurements,
+        bit_packed_sweep_bits=bit_packed_sweep_bits,
+    )
+    return DemSample(detectors, observables)

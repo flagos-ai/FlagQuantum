@@ -44,6 +44,10 @@ Examples driven by the root-level `fq` alias use:
 
 These examples do not use that alias:
 
+- [`qec/stim_measurement_conversion.py`](qec/stim_measurement_conversion.py)
+  converts existing CPU measurement records into reference-normalized detector
+  and logical flips using the optional Stim extra.
+
 - `qec/matched_primary.py`: guarded fixed primary capture and externally hash-bound replay/32-comparison summaries; reuses shared prediction shards and existing statistics; no trusted controller or formal execution CLI.
 - `qec/matched_parity.py`: verifies frozen decisions before a single shared probe and composes explicit CNN/MLP parity paths; hardware-only receipt guards and two-host verification; no primary sampler or CLI.
 - `qec/matched_validation.py`: internal shared physical-validation capture and all sixty threshold trials with explicit architecture identities; no primary sampler or launch CLI.

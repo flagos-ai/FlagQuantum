@@ -1,6 +1,6 @@
 # External measurement-record conversion capability bundle
 
-Status: approved conversion contract. Implementation and acceptance follow in this PR.
+Status: approved contract with a locally validated implementation candidate.
 Proposed PR title: feat(qec): convert external Stim measurement records.
 Primary workflow: CPU local QEC; single_device_fast_path. Simulation owns the
 numerical SDK boundary. Protected API approval is required before implementation.
@@ -22,12 +22,10 @@ MeasurementMap describes native memory parity rows and does not own arbitrary
 external-circuit reference samples or sweep-controlled readout normalization.
 Reuse that evidence; do not relabel it acceptance for the proposed new entry.
 
-PR1087 and PR1092 are pending integration, not accepted main deliveries. This
-bundle neither depends on the matrix decoder's new records nor copies those
-branches. Cut from the then-verified main; where compile_stim_sampler is already
-present, extend its owning boundary. If the needed Stim text contract is still
-unmerged, submit the new contract/fake/conformance first and state the mainline
-prerequisite explicitly; never silently import another feature branch.
+This implementation starts from main revision
+`03017ddf96dd2d9604f2dbc4d2cdfe2f3837f878`, which contains the existing Stim
+experiment bridge. The conversion depends on that bridge's parser and
+reference check and is independent of matrix-defined matching.
 
 ## Exact proposed public entry
 
@@ -71,20 +69,26 @@ vendor-neutral tensors, with retained exception causes and no process lifecycle.
 Existing parser limits (1 MiB text, 4096 qubits, one million expanded instructions
 and one million recorded columns, at least one detector) remain unchanged.
 
-## Scope: twelve paths
+## Scope: fourteen paths
 
 - `flagquantum/qec/adapters/stim.py`
 - `flagquantum/simulation/stabilizer/engine.py`
 - `flagquantum/qec/adapters/README.md`
 - `flagquantum/simulation/stabilizer/README.md`
 - `tests/qec/test_stim_measurement_conversion.py`
-- `tests/team/simulation/test_stim_measurement_conversion.py`
+- `tests/team/simulation/test_stim_record_conversion_conformance.py`
 - `tests/unit/test_qec_installed_profiles.py`
 - `tools/qec_installed_smoke.py`
 - `examples/qec/stim_measurement_conversion.py`
 - `examples/README.md`
 - `docs/development/QEC_STIM_MEASUREMENT_CONVERSION_API_PROPOSAL.md`
 - `docs/roadmap/QEC_STIM_PYMATCHING_DELIVERY_PLAN.md`
+
+- `contracts/qec-stim-measurement-conversion-v1.json`
+- `tests/qec/test_stim_experiment_bridge.py`
+
+The approved contract amendment adds the new signature separately and extends
+the existing export and missing-SDK assertions. The original contract is retained.
 
 ## Contract-first and replacement acceptance
 
@@ -138,7 +142,7 @@ command, prerequisites and observed output from outside the checkout.
   is implied; use already available SDK/core environments for source checks.
 
 ```bash
-python -m pytest -q tests/qec/test_stim_measurement_conversion.py tests/team/simulation/test_stim_measurement_conversion.py tests/qec/test_stim_experiment_bridge.py tests/unit/test_qec_installed_profiles.py
+python -m pytest -q tests/qec/test_stim_measurement_conversion.py tests/team/simulation/test_stim_record_conversion_conformance.py tests/qec/test_stim_experiment_bridge.py tests/unit/test_qec_installed_profiles.py
 python -m examples.qec.stim_measurement_conversion
 python tools/check_qec_installed_profiles.py --dist-dir dist --report-dir /tmp/qec-installed-reports
 ```

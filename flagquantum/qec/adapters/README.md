@@ -76,3 +76,7 @@ change. The approved surface is in
 `contracts/qec-stim-experiment-bridge-v1.json`; the complete contract and numerical
 precision limitations are in
 `docs/development/QEC_STIM_EXPERIMENT_BRIDGE_PROPOSAL.md`.
+
+Use `convert_stim_measurements` to normalize existing CPU measurement records
+and optional sweep controls against the original Stim circuit. Run
+`python -m examples.qec.stim_measurement_conversion` with the Stim extra.

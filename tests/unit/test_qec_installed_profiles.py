@@ -11,7 +11,7 @@ from pathlib import Path
 import pytest
 
 from tools.check_qec_installed_profiles import _run
-from tools.qec_installed_smoke import PROFILES, _exercise
+from tools.qec_installed_smoke import PROFILES, _exercise, _exercise_stim_conversion
 
 pytestmark = pytest.mark.unit
 
@@ -23,6 +23,7 @@ def test_public_workflow_in_the_available_source_profile(profile: str) -> None:
     )
     if available != PROFILES[profile]:
         pytest.skip("this source environment does not have that real SDK configuration")
+    assert (_exercise_stim_conversion(profile) is not None) == available[0]
     records = _exercise(profile)
     assert len(records) == (4 if available[0] else 0)
     for record in records:
