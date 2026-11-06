@@ -43,8 +43,42 @@ in native IR has a different resource profile. The existing
 `estimate_resources` entry point continues to describe static instructions
 and basis conversion, with its existing data-dependence rules.
 
+For a generated circuit, call
+`compare_component_resources(model, circuit_ir)` from
+`flagquantum.compiler._component_trace.resource_comparison`. Its JSON report
+separates the model from the emitted instructions. The IR section counts each
+instruction once, including conditional instructions, without resolving a
+measurement history. It reports the declared width, the number of qubits
+touched by instructions, and output requests separately.
+
+For example, continue with the preparation above:
+
+```python
+from flagquantum.compiler._component_trace.resource_comparison import (
+    compare_component_resources,
+)
+from flagquantum.core.ir import CircuitIR
+
+work, slots = preparation.requirements(4)
+ir = CircuitIR(
+    12 + work,
+    preparation.emit(
+        tuple(range(4)), tuple(range(4, 12)),
+        tuple(range(12, 12 + work)), tuple(range(slots)),
+    ),
+)
+report = compare_component_resources(
+    sparse_rotation_preparation_cost(preparation, target_width=4), ir
+)
+assert report.emitted.t_count == 100
+assert report.emitted.unconditional["measure"] == 25
+assert report.emitted.conditional == {"cz": 25}
+assert report.emitted.declared_qubits == 28
+```
+
 Reusable register models cover concrete unary QROM, Add,
-AddIntoPhaseGrad, and equality-driven basis permutations. The QROM model
+AddIntoPhaseGrad, equality-driven basis permutations, QROAMClean and
+SelectSwapQROM with clean or borrowed banks. The QROM model
 handles bounded multidimensional axes and shaped target words. Its width
 comes from the locked static formula, including the full selection pool
 even when a uniform table uses less work. The phase-add model retains
@@ -52,6 +86,14 @@ the upstream abstract Toffoli count. The one-bit source Add reports
 −3 Clifford gates and one-bit AddIntoPhaseGrad can report a negative
 Toffoli count. These values reproduce source formulas for comparison.
 The one-bit native Add emits one CX.
+
+The QROAM measurement-erasure wrapper estimates its Toffolis from the
+original table extent. The underlying leaf uses the padded extent. For
+five rows, two-word forward banks, one control and one-word erasure blocks,
+the wrapper estimates three Toffolis and the padded leaf estimates four.
+Both report zero measurements in the locked cost declarations. The source
+measurement-erasure leaf has no executable decomposition. These counts are
+separate from the emitted reverse-lookup circuit.
 
 The model assumes concrete counts and explicit sequential bystanders.
 Symbolic aggregation, automatic graph scheduling, and physical

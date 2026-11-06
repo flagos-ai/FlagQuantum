@@ -1,6 +1,7 @@
 """Original QROAMClean graph, signed output banks, and measured scratch."""
 
 from collections import Counter
+from dataclasses import asdict
 from itertools import product
 from math import prod
 from typing import Any
@@ -8,6 +9,13 @@ from typing import Any
 import pytest
 import torch
 
+from flagquantum.compiler._component_trace.resource_model import (
+    estimate_component_resources,
+)
+from flagquantum.compiler.registers.qroam_resource_model import (
+    source_qroam_clean_cost,
+    source_qroam_measurement_erase_cost,
+)
 from flagquantum.compiler.registers.source_qroam_clean import (
     QroamCleanTable,
     optimal_qroam_clean_log_block_size,
@@ -210,6 +218,11 @@ def test_original_graph_signed_banks_and_branch_cleanup(
     counts = Counter(g.name for g in gates)
     events = counts["measure"]
     model = get_cost_value(source, QECGatesCost())
+    estimate = estimate_component_resources(
+        source_qroam_clean_cost(table, control_count, selection_widths, target_widths)
+    )
+    assert {k: v for k, v in asdict(estimate.gates).items() if v} == model.asdict()
+    assert estimate.peak_logical_qubits == get_cost_value(source, QubitCount())
     assert counts["t"] + counts["tdg"] == model.total_t_count()
     assert events == counts["reset"] == model.measurement
     assert get_cost_value(source, QubitCount()) == width + static_extra
@@ -348,6 +361,55 @@ def test_rejects_bad_table_and_bank_bindings() -> None:
         table.workspace_size(0, (1,))
     with pytest.raises(ValueError, match="one bank word"):
         source_qroam_clean_ir(table, (), ((0, 1),), (((2,),),), (), ())
+
+
+@pytest.mark.ftqc_reference
+@pytest.mark.parametrize(
+    "shape,logs,control_count,width",
+    [
+        ((1,), (0,), 0, 1),
+        ((5,), (1,), 1, 2),
+        ((3, 4), (1, 1), 0, 2),
+        ((9,), (2,), 0, 1),
+    ],
+)
+@pytest.mark.parametrize("explicit", [False, True])
+def test_modeled_erase_width_and_original_padded_cost(
+    shape: tuple[int, ...],
+    logs: tuple[int, ...],
+    control_count: int,
+    width: int,
+    explicit: bool,
+) -> None:
+    pytest.importorskip("qualtran")
+    np = pytest.importorskip("numpy")
+    from qualtran.bloqs.data_loading.qroam_clean import QROAMClean
+    from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
+
+    table = QroamCleanTable(shape, logs, ((0,) * prod(shape),))
+    source = QROAMClean.build_from_data(
+        np.zeros(shape, dtype=int),
+        target_bitsizes=(width,),
+        num_controls=control_count,
+        log_block_sizes=logs,
+    ).adjoint()
+    erase_logs = (0,) * len(shape) if explicit else None
+    if erase_logs is not None:
+        source = source.with_log_block_sizes(erase_logs)
+    costs = source_qroam_measurement_erase_cost(
+        table, control_count, (width,), erase_logs=erase_logs
+    )
+    for model, bloq in (
+        (costs.wrapper, source),
+        (costs.padded_leaf, source.qroam_clean_adjoint_bloq),
+    ):
+        assert model.gates.toffoli == get_cost_value(bloq, QECGatesCost()).toffoli
+        assert (
+            model.gates.measurement
+            == get_cost_value(bloq, QECGatesCost()).measurement
+            == 0
+        )
+        assert model.qubits == get_cost_value(bloq, QubitCount())
 
 
 @pytest.mark.ftqc_reference

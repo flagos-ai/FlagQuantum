@@ -1,6 +1,7 @@
 """Pinned SelectSwapQROM graph and complete clean/borrowed bank channels."""
 
 from collections import Counter
+from dataclasses import asdict
 from itertools import product
 from math import prod
 from typing import Any
@@ -8,6 +9,12 @@ from typing import Any
 import pytest
 import torch
 
+from flagquantum.compiler._component_trace.resource_model import (
+    estimate_component_resources,
+)
+from flagquantum.compiler.registers.qroam_resource_model import (
+    source_select_swap_qrom_cost,
+)
 from flagquantum.compiler.registers.select_swap_qrom import (
     optimal_select_swap_log_block_sizes,
     select_swap_qrom_ir,
@@ -164,6 +171,13 @@ def test_source_gate_graph_and_bank_channel(
     expected, loads = original_select_swap_gates(source, ports, banks, work, bits)
     assert_source(gates, expected)
     model = get_cost_value(source, QECGatesCost())
+    estimate = estimate_component_resources(
+        source_select_swap_qrom_cost(
+            table, control_count, tuple(map(len, selectors)), widths, dirty=dirty
+        )
+    )
+    assert {k: v for k, v in asdict(estimate.gates).items() if v} == model.asdict()
+    assert estimate.peak_logical_qubits == get_cost_value(source, QubitCount())
     counts = Counter(g.name for g in gates)
     events = counts["measure"]
     assert counts["t"] + counts["tdg"] == model.total_t_count()
