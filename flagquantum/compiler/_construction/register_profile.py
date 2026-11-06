@@ -20,6 +20,7 @@ from .._hybrid.model import (
     Value,
     ValueId,
 )
+from .gate_tape import check_gate_tape
 from .pauli_rotation import checked_support
 from .profile import _fail, _positive_integer, _width, verify_construction
 from .register_expansion import expand_register_calls, is_register_function
@@ -57,6 +58,7 @@ _ATTRIBUTES = MappingProxyType(
         "qreg.array_phase_flip": frozenset(),
         "qreg.control_phase": frozenset({"angle"}),
         "qreg.replay": frozenset({"callee", "count"}),
+        "qreg.gate_tape": frozenset({"workspace", "templates", "schedule"}),
         "qreg.reset": frozenset({"index"}),
         "qreg.gate": frozenset({"gate", "index"}),
         "qreg.compute": frozenset({"callee"}),
@@ -1239,6 +1241,27 @@ def _verify_body(
                     )
                 initialized.remove(destination.id)
                 changed = (destination,)
+            elif op.name == "qreg.gate_tape":
+                if (
+                    const_entry
+                    or len(set(operands)) != len(operands)
+                    or operands != tuple(returned)
+                    or any(v.id not in initialized for v in operands)
+                    or position != len(block.operations) - 2
+                    or any(
+                        child.name not in {"qreg.declare", "qreg.allocate"}
+                        for child in block.operations[:position]
+                    )
+                ):
+                    _fail(
+                        "register.gate_tape",
+                        "unitary tape requires fresh public output storage",
+                        op,
+                    )
+                check_gate_tape(
+                    op, sum(register_width(v) for v in operands), max_qubits
+                )
+                changed = operands
             elif op.name == "qreg.replay":
                 callee, count = (op.attributes[key] for key in ("callee", "count"))
                 if (

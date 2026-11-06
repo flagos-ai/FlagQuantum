@@ -55,7 +55,7 @@ class Frame:
     views: dict[str, View]
     classical: dict[str, int]
     forbidden: frozenset[int]
-    reals: dict[str, float] = field(default_factory=dict)
+    reals: dict[str, float | tuple[float, ...]] = field(default_factory=dict)
 
 
 def _name(node: Expression) -> str:
@@ -153,6 +153,10 @@ class Effect:
     reverse: Callable[[int], int]
     amplitude: Callable[[int, bool], tuple[tuple[int, complex], ...]] | None = None
     gate: Gate | None = None
+    target: View | None = None
+    value: Scalar | None = None
+    update: str | None = None
+    guards: tuple[tuple[Scalar, bool], ...] = ()
 
     def terms(self, row: int, reverse: bool) -> tuple[tuple[int, complex], ...]:
         if self.amplitude is not None:
@@ -171,6 +175,14 @@ class Effect:
                 else lambda row, reverse: handler(row, not reverse)
             ),
             gate,
+            self.target,
+            self.value,
+            (
+                {"+=": "-=", "-=": "+="}.get(self.update, self.update)
+                if self.update
+                else None
+            ),
+            self.guards,
         )
 
     def controlled(self, guards: tuple[tuple[Scalar, bool], ...]) -> Effect:
@@ -190,6 +202,11 @@ class Effect:
                     self.terms(row, reverse) if enabled(row) else ((row, 1 + 0j),)
                 )
             ),
+            self.gate,
+            self.target,
+            self.value,
+            self.update,
+            (*self.guards, *guards),
         )
 
 
@@ -380,7 +397,7 @@ class Region:
             if statement.repeat_index is not None:
                 index = statement.repeat_index
                 count = self.expression(args[0], frame).static(token)
-                if not 0 <= count <= 16 or index.text in frame.classical:
+                if not 0 <= count <= self.max_repeat or index.text in frame.classical:
                     reject(
                         token,
                         "budget.proof",
@@ -434,9 +451,14 @@ class Region:
                 continue
             if statement.within is not None:
                 outer_views = dict(frame.views)
+                first_temporary = self.next_wire
                 compute = self.compute_within(statement, frame, guards, stack)
+                after_compute = self.next_wire
                 within_views = dict(frame.views)
                 apply = self.block(statement.apply, frame, guards, stack)
+                self.check_workspace(
+                    statement, compute, apply, first_temporary, after_compute
+                )
                 if frame.views != within_views:
                     reject(
                         token,
@@ -513,7 +535,7 @@ class Region:
                             row, register.read(row) ^ source.evaluate(row)
                         )
 
-                    effect = Effect(xor, xor)
+                    effect = Effect(xor, xor, target=target, value=value, update="^=")
                 else:
 
                     def add(
@@ -530,7 +552,9 @@ class Region:
                             row, register.read(row) - source.evaluate(row)
                         )
 
-                    effect = Effect(add, subtract)
+                    effect = Effect(
+                        add, subtract, target=target, value=value, update="+="
+                    )
                 effects.append(self.mutation(token, frame, guards, writes, effect))
             elif op in {"X", "SWAP"}:
                 registers = tuple(self.view(node, frame) for node in args)
@@ -574,6 +598,7 @@ class Region:
                 effects.extend(self.extra(statement, frame, guards))
         return effects
 
+    max_repeat = 16
     allocation_arities = frozenset({2, 4})
 
     def allocation_width(
@@ -600,6 +625,16 @@ class Region:
         return self.block(
             statement.within, frame, () if self.quantum else guards, stack
         )
+
+    def check_workspace(
+        self,
+        statement: Statement,
+        compute: list[Effect],
+        apply: list[Effect],
+        first_temporary: int,
+        after_compute: int,
+    ) -> None:
+        pass
 
     def extra(
         self, statement: Statement, frame: Frame, guards: _Guards

@@ -155,7 +155,10 @@ class FixedRegion(Region):
         op, children = node.token.text, node.children
         if not children:
             if op in frame.reals:
-                return _constant(frame.reals[op]), frozenset()
+                real = frame.reals[op]
+                if not isinstance(real, float):
+                    reject(node.token, "proof", "real array needs an index")
+                return _constant(real), frozenset()
             if op in frame.classical:
                 return _constant(float(frame.classical[op])), frozenset()
             try:

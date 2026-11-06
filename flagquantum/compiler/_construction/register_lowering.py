@@ -23,6 +23,7 @@ from .._hybrid.model import Block, HybridProgram, Operation, Region, Value, Valu
 from ..noise import _encode_channel_instruction
 from ..state_preparation_synthesis import _synthesize_real_state
 from .boolean_lowering import BooleanCandidateError, lower_boolean_value
+from .gate_tape import expand_gate_tape
 from .lowering import (
     ArithmeticCandidate,
     BoundArithmetic,
@@ -363,7 +364,17 @@ def schedule_register_program(
         if ordinal < skip_until:
             continue
         gates: tuple[Instruction, ...] = ()
-        if op.name == "qreg.replay":
+        if op.name == "qreg.gate_tape":
+            work = op.attributes["workspace"]
+            logical = tuple(
+                wire for value in op.operands[1:] for wire in bindings[value.id]
+            )
+            if position + work > n_qubits:
+                _fail("lowering.workspace", "unitary tape exceeds clean workspace", op)
+            tape_wires = (*logical, *range(position, position + work))
+            gates = expand_gate_tape(op, tape_wires)
+            control_workspace = max(control_workspace, work)
+        elif op.name == "qreg.replay":
             template = register_templates[op.attributes["callee"]]
             names, _, width = register_ports(template)
             nested = schedule_register_program(
@@ -864,7 +875,13 @@ def schedule_register_program(
     metadata = (
         {"construction_reset_repetitions": epochs[0].attributes["count"]}
         if len(epochs) == 1 and epochs[0].name == "qreg.replay"
-        else {}
+        else (
+            {"construction_basis_workspace_prefix": output_width}
+            if len(epochs) == 1
+            and epochs[0].name == "qreg.gate_tape"
+            and epochs[0].attributes["workspace"]
+            else {}
+        )
     )
     return RegisterCandidate(
         CircuitIR(n_qubits, tuple(instructions), dtype="complex128", metadata=metadata),

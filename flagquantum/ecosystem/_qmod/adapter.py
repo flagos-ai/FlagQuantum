@@ -55,6 +55,7 @@ from .callback_arrays import (
 )
 from .clean_selector_normalization import normalize_clean_selectors, probe_source
 from .cnf_kickback import lower_cnf_kickback
+from .compact_quantum import candidate_tape, emit_compact_region
 from .computed_rotation import (
     composed_rotation,
     computed_output,
@@ -5115,6 +5116,9 @@ def parse_qmod(
         definitions[name] = syntax
     if "main" not in definitions:
         reject(tokens[0], "entry", "source requires one qfunc main")
+    compact_tape = candidate_tape(definitions, parser.records)
+    if compact_tape is not None:
+        definitions = {"main": replace(definitions["main"], statements=())}
     fixed_program: FixedPreparation | None = None
     if parser.closed_fixed_point:
         assert machine_precision is not None
@@ -5485,6 +5489,8 @@ def parse_qmod(
                     emit_closed_region(adapter, closed_region)
                 if fixed_program is not None:
                     emit_fixed_preparation(adapter, fixed_program)
+                if compact_tape is not None:
+                    emit_compact_region(adapter, compact_tape)
             program = adapter.adapt()
             compiled[name] = adapter, program
             active.remove(name)

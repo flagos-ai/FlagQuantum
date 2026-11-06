@@ -1793,3 +1793,27 @@ program = synth.synthesize(
 result = fq.run(program)
 print(program.probabilities(result, registers=("indicator",))[(1,)])  # about 0.760137
 ```
+
+### Repeated coherent block encodings
+
+A closed program with scoped reversible bit updates and a long static
+phase list can share identical native unitary segments. The construction
+budget counts all gates, including each template use. Exact CPU execution
+can track the proven computational work values separately, then return
+the ordinary full statevector with its zero workspace. Each compiled
+instruction is checked for preservation of that representation.
+
+```python
+from pathlib import Path
+
+import flagquantum as fq
+from flagquantum import synth
+
+source = Path("tests/fixtures/classiq_qmod/quantum_double_slit_experiment.qmod")
+program = synth.synthesize(
+    source, max_qubits=24, max_workspace=9, max_operations=100_000,
+)
+result = fq.run(program)
+positions = program.probabilities(result, registers=("res",), max_amplitudes=2**24)
+print(program.report["resources"].n_operations)
+```
