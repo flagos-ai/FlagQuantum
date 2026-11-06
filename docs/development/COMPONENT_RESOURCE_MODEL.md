@@ -1745,3 +1745,32 @@ qubits. Native IR emits 38 T/T† and six measurements, with exact seven-T
 Fredkin gates. The allocated circuit has 15 wires including the scalar
 phase carrier. Both directions were compared over all measurement histories,
 retaining the preparation junk in the source comparison.
+
+### Symbolic alias preparation and periodic Ising walks
+
+`AliasPreparationShape.from_precision` constructs the source register
+dimensions and resource formulas before alias values are known. The source
+rounds concrete probability precision to at least one bit. Its symbolic
+formula retains the unclamped ceiling. Shape-based QROM counts can differ
+from counts computed from a filled table.
+
+```python
+from sympy import Symbol
+
+from flagquantum.algorithms.primitives.ising_walk import ising_walk
+from flagquantum.algorithms.primitives.pauli_hamiltonian_walk import (
+    SymbolicPauliHamiltonianWalk,
+)
+
+epsilon = Symbol("epsilon", positive=True)
+plan, hamiltonian = ising_walk(4, epsilon)
+assert isinstance(plan, SymbolicPauliHamiltonianWalk)
+assert plan.prepare.normalization == 8
+assert plan.gate_cost().cswap == 6
+```
+
+The symbolic walk requires a concrete Hamiltonian and estimates gate
+categories. The pinned source cannot compute the complete walk's logical
+peak when the reflection junk has symbolic width. With a concrete
+precision, `ising_walk` returns the bounded Pauli walk and its concrete
+alias table, and the full resource model is available.

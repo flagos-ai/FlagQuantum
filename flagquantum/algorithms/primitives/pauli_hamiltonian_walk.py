@@ -10,9 +10,13 @@ from dataclasses import dataclass
 from math import isfinite, sqrt
 from typing import overload
 
+from ...compiler._component_trace.qec_gate_cost import QECGateCost, query_qec_gate_cost
 from ...compiler._component_trace.resource_model import ComponentCost
 from ...compiler._component_trace.symbolic_math import SymbolicReal
 from ...compiler.registers.bounded_pauli_select import source_bounded_pauli_select_cost
+from ...compiler.registers.prepare_reflection import (
+    source_uncontrolled_prepare_reflection_cost,
+)
 from ...core.ir import Instruction
 from ..core import Hamiltonian
 from .alias_preparation import (
@@ -23,6 +27,7 @@ from .alias_sampling import AliasSamplingTable, alias_sampling_table
 from .multiplexers.select_pauli_lcu import SelectPauliLCU
 from .qubitization_walk import QubitizationWalk
 from .select_block_encoding import SelectBlockEncoding
+from .symbolic_alias_preparation import AliasPreparationShape
 
 
 @overload
@@ -68,16 +73,55 @@ class PauliHamiltonianWalk:
 
     def resource_model(self, *, adjoint: bool = False) -> ComponentCost:
         """Price the bounded SELECT and alias reflection without emitting IR."""
-        width = self.selector.selection_bitsize
-        instruction = self.selector._instruction(
-            tuple(range(width)),
-            tuple(range(width, width + len(self.target_qubits))),
-            (),
-        )
         prep = source_dense_alias_preparation_cost(self.table)
         return self.walk.resource_model(
-            source_bounded_pauli_select_cost(instruction), prep, prep, adjoint=adjoint
+            _selector_cost(self.selector), prep, prep, adjoint=adjoint
         )
+
+
+def _selector_cost(selector: SelectPauliLCU) -> ComponentCost:
+    address = selector.selection_bitsize
+    instruction = selector._instruction(
+        tuple(range(address)),
+        tuple(range(address, address + selector.target_bitsize)),
+        (),
+    )
+    return source_bounded_pauli_select_cost(instruction)
+
+
+@dataclass(frozen=True)
+class SymbolicPauliHamiltonianWalk:
+    """Source gate-cost plan for a concrete Hamiltonian with symbolic precision."""
+
+    prepare: AliasPreparationShape
+    selector: SelectPauliLCU
+    target_qubits: tuple[int, ...]
+    coefficient_precision: SymbolicReal
+
+    def gate_cost(self) -> QECGateCost:
+        """Query symbolic gate categories while the source peak is undefined."""
+        select = query_qec_gate_cost(_selector_cost(self.selector))
+        identity = ComponentCost("Identity", self.selector.selection_bitsize)
+        reflection = source_uncontrolled_prepare_reflection_cost(
+            self.selector.selection_bitsize, 0, identity, identity
+        )
+        return select.plus(query_qec_gate_cost(reflection), 1).plus(
+            self.prepare.resource_model(), 2
+        )
+
+
+def symbolic_pauli_hamiltonian_walk(
+    hamiltonian: Hamiltonian, epsilon: SymbolicReal, *, norm_bound: float | None = None
+) -> SymbolicPauliHamiltonianWalk:
+    """Apply the source shape-only PREPARE path to a symbolic precision."""
+    targets, words, weights, norm = _walk_inputs(hamiltonian, norm_bound)
+    normalization = sum(weights)
+    precision = prepare_precision_from_eigenphase(
+        epsilon, len(words), normalization, norm
+    )
+    shape = AliasPreparationShape.from_precision(len(words), normalization, precision)
+    selector = SelectPauliLCU((len(words) - 1).bit_length(), len(targets), words)
+    return SymbolicPauliHamiltonianWalk(shape, selector, targets, precision)
 
 
 def pauli_hamiltonian_walk(
@@ -96,6 +140,38 @@ def pauli_hamiltonian_walk(
     """
     if not isfinite(epsilon) or epsilon <= 0:
         raise ValueError("Eigenphase precision must be positive and finite")
+    targets, words, weights, norm = _walk_inputs(hamiltonian, norm_bound)
+    precision = prepare_precision_from_eigenphase(
+        epsilon, len(words), sum(weights), norm
+    )
+    table = alias_sampling_table(weights, precision=precision)
+    prepare = alias_black_box_prepare(table)
+    selector = SelectPauliLCU(prepare.selection_width, len(targets), words)
+
+    def select(
+        ports: Mapping[str, tuple[int, ...]],
+        work: tuple[int, ...],
+        slots: tuple[int, ...],
+        adjoint: bool,
+    ) -> tuple[Instruction, ...]:
+        return selector.make_bounded_on(
+            selection=ports["selection"],
+            target=ports["target"],
+            workspace=work,
+            classical_bits=slots,
+        ).emit()
+
+    block = SelectBlockEncoding(
+        prepare.selection_layout, (("target", len(targets)),), select, prepare
+    )
+    return PauliHamiltonianWalk(
+        QubitizationWalk(block), table, selector, targets, precision
+    )
+
+
+def _walk_inputs(
+    hamiltonian: Hamiltonian, norm_bound: float | None
+) -> tuple[tuple[int, ...], tuple[str, ...], tuple[float, ...], float]:
     combined: dict[tuple[tuple[int, str], ...], float] = {}
     for term in hamiltonian.terms:
         coefficient = term.coefficient
@@ -131,33 +207,8 @@ def pauli_hamiltonian_walk(
     if not isfinite(norm_bound) or not 0 <= norm_bound < normalization:
         raise ValueError("Norm bound must be finite and below the L1 normalization")
 
-    precision = prepare_precision_from_eigenphase(
-        epsilon, len(terms), normalization, norm_bound
-    )
-    table = alias_sampling_table(weights, precision=precision)
-    prepare = alias_black_box_prepare(table)
     words = tuple(
         ("-" if weight < 0 else "") + "".join(ops.get(q, "i").upper() for q in targets)
         for ops, weight in terms
     )
-    selector = SelectPauliLCU(prepare.selection_width, len(targets), words)
-
-    def select(
-        ports: Mapping[str, tuple[int, ...]],
-        work: tuple[int, ...],
-        slots: tuple[int, ...],
-        adjoint: bool,
-    ) -> tuple[Instruction, ...]:
-        return selector.make_bounded_on(
-            selection=ports["selection"],
-            target=ports["target"],
-            workspace=work,
-            classical_bits=slots,
-        ).emit()
-
-    block = SelectBlockEncoding(
-        prepare.selection_layout, (("target", len(targets)),), select, prepare
-    )
-    return PauliHamiltonianWalk(
-        QubitizationWalk(block), table, selector, targets, precision
-    )
+    return targets, words, weights, norm_bound
