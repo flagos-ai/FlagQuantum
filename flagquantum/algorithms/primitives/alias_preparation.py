@@ -5,6 +5,8 @@
 
 """Coherent dense and sparse alias preparation on bound registers."""
 
+from collections.abc import Mapping
+
 from ...compiler.registers.bitwise import _validate_wires
 from ...compiler.registers.controlled_swap import controlled_swap_ir
 from ...compiler.registers.less_equal import less_equal_ir, less_equal_requirements
@@ -15,6 +17,7 @@ from ...compiler.registers.uniform_preparation import (
 )
 from ...core.ir import Instruction
 from .alias_sampling import AliasSamplingTable
+from .black_box_prepare import BlackBoxPrepare
 
 
 def _datasets(table: AliasSamplingTable) -> tuple[tuple[int, ...], ...]:
@@ -112,3 +115,38 @@ def alias_preparation_ir(
     if adjoint:
         return (*swap, *compare, *lookup, *hadamards, *uniform)
     return (*uniform, *hadamards, *lookup, *compare, *swap)
+
+
+def alias_black_box_prepare(table: AliasSamplingTable) -> BlackBoxPrepare:
+    """Expose source-ordered selection and packed logical junk for alias PREPARE."""
+    width = (table.selection_size - 1).bit_length()
+    address_width = (len(table.keep) - 1).bit_length()
+    sparse = (("sparse_index", address_width),) if table.indices is not None else ()
+    junk = (
+        ("sigma_mu", table.mu),
+        *sparse,
+        ("alt", width),
+        ("keep", table.mu),
+        ("less_than_equal", 1),
+    )
+
+    def emit(
+        ports: Mapping[str, tuple[int, ...]],
+        work: tuple[int, ...],
+        slots: tuple[int, ...],
+        adjoint: bool,
+    ) -> tuple[Instruction, ...]:
+        return alias_preparation_ir(
+            table,
+            ports["selection"],
+            ports["sigma_mu"],
+            ports["alt"],
+            ports["keep"],
+            ports["less_than_equal"][0],
+            work,
+            slots,
+            sparse_index=ports.get("sparse_index", ()),
+            adjoint=adjoint,
+        )
+
+    return BlackBoxPrepare((("selection", width),), junk, emit, table.normalization)
