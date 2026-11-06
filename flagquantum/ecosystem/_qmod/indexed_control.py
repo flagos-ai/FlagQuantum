@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING
 from .syntax import Expression, Statement, reject
 
 if TYPE_CHECKING:
+    from ...compiler._hybrid.model import Value
     from .adapter import _Adapt
 
 
@@ -21,7 +22,47 @@ def lower_indexed_control(
     ):
         return False
 
-    if condition.token.text in {"[", "and"}:
+    controls: list[tuple[Value, int]]
+    if condition.token.text == "&":
+        controls = []
+        expected = 0
+        pending = [condition]
+        while pending:
+            operand = pending.pop()
+            if operand.token.text == "&":
+                pending.extend(reversed(operand.children))
+                continue
+            if operand.token.text != "==":
+                return False
+            source, literal = operand.children
+            parameter = owner.parameters.get(source.token.text)
+            if (
+                source.children
+                or parameter is None
+                or parameter.kind not in {"qnum", "qbit"}
+                or literal.children
+                or not literal.token.text.isdecimal()
+            ):
+                return False
+            bits = owner.array_view(source)
+            pattern = owner.static_integer(literal)
+            if not 0 <= pattern < 1 << len(bits):
+                reject(
+                    literal.token,
+                    "control",
+                    "control equality value must fit its register",
+                )
+            expected |= pattern << len(controls)
+            controls.extend(bits)
+            if len(controls) > 8:
+                reject(
+                    condition.token,
+                    "control",
+                    "indexed control exceeds eight input bits",
+                )
+        if len(set(controls)) != len(controls):
+            return False
+    elif condition.token.text in {"[", "and"}:
         pending = [condition]
         controls = []
         while pending:
@@ -60,7 +101,8 @@ def lower_indexed_control(
         return False
 
     target = owner.gate_target(
-        operation.arguments[-1], allow_numeric=gate in {"RX", "RZ"}
+        operation.arguments[-1],
+        allow_numeric=gate in {"RX", "RZ"} or condition.token.text == "&",
     )
     locations = (*controls, target)
     token = operation.token

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 import re
 from collections.abc import Callable
 from dataclasses import dataclass
@@ -10,7 +11,7 @@ from typing import TYPE_CHECKING, Literal, NoReturn
 
 from ...compiler._hybrid.model import SourceLocation
 from ...compiler._hybrid.verifier import Diagnostic, HybridVerificationError
-from .angles import parse_literal
+from .angles import SCIENTIFIC_LITERAL, parse_literal
 
 if TYPE_CHECKING:
     from .amplification import Amplification
@@ -24,6 +25,7 @@ MAX_FUNCTIONS = 32
 ANGLE_CALLS = frozenset({"PHASE", "RX", "RY", "RZ", "RZZ", "CRX", "CPHASE", "R", "U"})
 _TOKEN = re.compile(
     r"(?P<space>\s+)|(?P<comment>//[^\n]*|/\*[\s\S]*?\*/)"
+    rf"|(?P<scientific>{SCIENTIFIC_LITERAL.pattern})(?![A-Za-z_0-9])"
     r"|(?P<number>[0-9]+)|(?P<name>[A-Za-z_][A-Za-z_0-9]*)"
     r"|(?P<symbol>\*\*|\^=|\+=|->|==|!=|<=|>=|[{}()<>,:;=+*%\[\].^/\-&|~])"
 )
@@ -110,6 +112,23 @@ def tokenize(source: str, filename: str) -> tuple[Token, ...]:
                     "budget.number",
                     "integer literal exceeds the 256-bit profile's digit budget",
                 )
+            if match.lastgroup == "scientific":
+                mantissa, _, exponent = text.lower().partition("e")
+                if len(text) > 78 or abs(int(exponent)) > 1024:
+                    reject(
+                        Token(text[:16], location),
+                        "budget.number",
+                        "scientific literal exceeds the numeric budget",
+                    )
+                real_value = float(text)
+                if not math.isfinite(real_value) or (
+                    real_value == 0 and any(digit in "123456789" for digit in mantissa)
+                ):
+                    reject(
+                        Token(text, location),
+                        "number",
+                        "scientific literal must fit a finite real",
+                    )
             if len(tokens) >= MAX_TOKENS:
                 reject(
                     Token(text, location),
@@ -313,6 +332,8 @@ class Parser:
             )
             self.take(")")
             left = Expression(token, (argument,), argument.depth + 1)
+        elif decimal and SCIENTIFIC_LITERAL.fullmatch(token.text):
+            left = self.angle_argument()
         elif token.text.isdecimal():
             if decimal and self.tokens[self.position + 1].text == ".":
                 left = self.angle_argument()

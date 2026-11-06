@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING
 
 from ...compiler._construction.register_profile import register_type
 from ...compiler._hybrid.model import Operation, Value, ValueId
+from .angles import REAL_LITERAL
 from .phase import expand_phase
 from .predicates import expand_predicate_oracles
 from .quantum_callbacks import Lambda
@@ -48,7 +49,7 @@ def number(
     if node.token.text == "-" and len(node.children) == 1:
         return -number(node.children[0], constants, depth + 1)
     if node.children or (
-        node.token.text != "pi" and not node.token.text.replace(".", "", 1).isdecimal()
+        node.token.text != "pi" and not REAL_LITERAL.fullmatch(node.token.text)
     ):
         reject(
             node.token,

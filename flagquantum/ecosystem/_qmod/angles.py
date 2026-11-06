@@ -2,10 +2,15 @@
 
 from __future__ import annotations
 
+import re
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from .syntax import Expression, Parser
+
+
+SCIENTIFIC_LITERAL = re.compile(r"[0-9]+(?:\.[0-9]+)?[eE][+-]?[0-9]+")
+REAL_LITERAL = re.compile(r"[0-9]+(?:\.[0-9]+)?(?:[eE][+-]?[0-9]+)?")
 
 
 def parse_literal(parser: Parser) -> Expression:
@@ -13,6 +18,9 @@ def parse_literal(parser: Parser) -> Expression:
     from .syntax import Expression, Token, reject
 
     integer = parser.current
+    if SCIENTIFIC_LITERAL.fullmatch(integer.text):
+        parser.position += 1
+        return Expression(integer)
     if not integer.text.isdecimal() or parser.tokens[parser.position + 1].text != ".":
         return parser.expression(allow_slice=True)
     parser.position += 1

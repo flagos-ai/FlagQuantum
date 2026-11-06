@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import math
 import random
-import re
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, replace
 from decimal import Decimal
@@ -36,6 +35,7 @@ from ...compiler._hybrid.model import (
 from ...compiler._hybrid.verifier import Diagnostic, HybridVerificationError
 from .affine import lower_affine_update, lower_snapshot, snapshot_start
 from .amplification import expand_amplification, lower_amplification
+from .angles import REAL_LITERAL
 from .bindings import (
     is_binding_scope,
     lower_binding_scope,
@@ -165,7 +165,7 @@ _INTRINSICS = (
 def _literal_angle(angle: Expression, gate: Token) -> float:
     if (
         angle.children
-        or not re.fullmatch(r"[0-9]+(?:\.[0-9]+)?", angle.token.text)
+        or not REAL_LITERAL.fullmatch(angle.token.text)
         or Decimal(angle.token.text) > 2**53
     ):
         reject(
@@ -188,7 +188,7 @@ def _preparation_value(node: Expression) -> float:
         return numerator / denominator
     negative = node.token.text == "-"
     value = node.children[0] if negative else node
-    if value.children or not re.fullmatch(r"[0-9]+(?:\.[0-9]+)?", value.token.text):
+    if value.children or not REAL_LITERAL.fullmatch(value.token.text):
         reject(value.token, "amplitudes", "expected a real decimal literal")
     return float(value.token.text) * (-1 if negative else 1)
 
@@ -3699,7 +3699,7 @@ class _Adapt:
                 attributes["angle"] = self.angle(args[0], token)
             targets = args[int(angled) :]
             locations = tuple(
-                self.gate_target(arg, allow_numeric=token.text == "CX")
+                self.gate_target(arg, allow_numeric=token.text in {"CX", "CZ"})
                 for arg in targets
             )
             registers, indices = zip(*locations, strict=True)
@@ -3734,7 +3734,7 @@ class _Adapt:
                         )
             else:
                 gate_locations = (
-                    self.gate_target(args[0], allow_numeric=token.text == "H"),
+                    self.gate_target(args[0], allow_numeric=token.text in {"H", "X"}),
                 )
             for destination, bit in gate_locations:
                 if token.text == "Y":
@@ -4141,17 +4141,11 @@ def parse_qmod(
                     "bound allocation and free require a local qbit",
                 )
             declaration = statement.declaration
-            if declaration is not None and (
-                declaration.kind == "qbit"
-                or declaration.kind == "qbit[]"
-                or (
-                    declaration.kind == "qnum"
-                    and (
-                        declaration.width is not None
-                        or declaration.width_expression is not None
-                    )
-                )
-            ):
+            if declaration is not None and declaration.kind in {
+                "qbit",
+                "qbit[]",
+                "qnum",
+            }:
                 continue
             controlled_qft = (
                 statement.control_body is not None
