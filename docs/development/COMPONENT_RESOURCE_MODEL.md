@@ -392,6 +392,28 @@ assert count_selected_calls(
 ) == {t: 8, tdg: 1}
 ```
 
+The gate budget converters accept the same categories from concrete
+costs and symbolic formulas. T/CCZ accounting charges rotations to T
+and preserves Toffoli-like operations as separate CCZ units. The
+Toffoli-only view requires provably zero T and rotation counts.
+The historical view keeps rotations separate and folds measurements
+into the Clifford field. The Beverland view uses rotation count as
+its `D_R` proxy. Actual rotation depth requires scheduling evidence.
+
+```python
+from flagquantum.compiler._component_trace.gate_budget import (
+    beverland_gate_budget,
+    legacy_gate_budget,
+    t_and_ccz_budget,
+)
+from flagquantum.compiler._component_trace.resource_model import GateCost
+
+gates = GateCost(t=2, toffoli=3, cswap=3, and_bloq=4, rotation=6, measurement=7)
+assert t_and_ccz_budget(gates) == {"n_t": 68, "n_ccz": 10}
+assert legacy_gate_budget(gates)["t"] == 51
+assert beverland_gate_budget(gates)["D_R"] == 6
+```
+
 - [Qualtran v0.7.0 gate costs](https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/resource_counting/_bloq_counts.py)
 - [Qualtran v0.7.0 logical width](https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/resource_counting/_qubit_counts.py)
 - [Qualtran v0.7.0 success probability](https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/resource_counting/_success_prob.py)

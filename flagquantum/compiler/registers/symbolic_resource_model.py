@@ -29,6 +29,8 @@ class SymbolicResourceFormula:
     logical_qubits: SymbolicInt
     t: SymbolicInt = 0
     toffoli: SymbolicInt = 0
+    cswap: SymbolicInt = 0
+    rotation: SymbolicInt = 0
 
 
 def source_add_resource_formula(
