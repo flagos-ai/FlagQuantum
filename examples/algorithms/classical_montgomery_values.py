@@ -4,6 +4,7 @@ Inspect numerical Montgomery history and bind the matching 21-wire append path.
 """
 
 from collections import Counter
+from typing import cast
 
 from examples.algorithms.register_windowed_mod_mul import (
     WindowedMontgomeryMultiplication,
@@ -17,6 +18,10 @@ from flagquantum.simulation.classical_montgomery_multiplication import (
     montgomery_multiply_classical_values,
     montgomery_window_classical_values,
 )
+from flagquantum.simulation.classical_montgomery_window import (
+    montgomery_window_bits_classical_values,
+)
+from flagquantum.simulation.integer_encoding import integer_from_bits, integer_to_bits
 
 
 def main() -> None:
@@ -31,6 +36,16 @@ def main() -> None:
             1 >> offset, 2, target, history, 3, 1, 3
         )
     assert target == values["target"] and history == values["qrom_indices"]
+    target_bits, bit_history = integer_to_bits(0, 4), 0
+    for offset in range(3):
+        step = montgomery_window_bits_classical_values(
+            [(1 >> offset) & 1], 2, target_bits, 0, 3, 1, 3
+        )
+        target_bits = cast(list[int], step["target"])
+        bit_history = (bit_history << 1) | cast(int, step["qrom_index"])
+    assert integer_from_bits(target_bits, 4) == target
+    assert bit_history == history
+    print("Shared bit codecs and bit-array windows agree with the integer history")
     assert montgomery_multiply_classical_values(
         1,
         2,

@@ -80,3 +80,53 @@ or warnings. Strict typing, Black/Ruff, team scope, architecture and the runnabl
 example pass. Source mod_multiplication.py blob remains
 `c0242f9735bf269564c9480c14c008d5f9621fd7`. Whole-file, mathematical repair and
 bit-array/source-graph interface work remain open.
+
+## Bit-array window action (G2-VAL13)
+
+`simulation/classical_montgomery_window.py` now ports the separate
+SingleWindowModMul bit-array value method. It reuses the shared integer scalar
+codecs and exact NumPy inversion-data helper. Target bits decode big endian,
+while left[0] is the least-significant control. The source iterates those controls
+in increasing index order, records low target bits before correction, applies
+one table correction and shift, then encodes the target back to a Python list.
+Input x/y preserve their objects. The incoming qrom_index is overwritten rather
+than XORed; the clean quantum decomposition separately assumes it starts at zero.
+No normalization of nonbinary diagnostic controls is introduced.
+
+Constructor dimension assertions, scalar codec failures, raw table arithmetic
+and required lookup metadata failures retain their original stage. In particular,
+with concrete dimensions and a symbolic modulus, the source explicitly passes
+log_block_sizes=None into QROAMClean's tuple converter and raises TypeError before
+accessing data. Native evaluation preserves this failure rather than choosing a
+block or claiming symbolic support. Negative/zero diagnostic widths, NumPy size
+metadata, even/zero moduli and malformed bit sequences are tested separately from
+the valid physical gate domain. Numerical evaluation does not allocate a bank or
+run resource block selection; Compiler retains ownership of those decisions.
+
+There are 24 new window tests. Five configurations enumerate all window controls
+with selected operands/accumulators and both clean and dirty incoming indices.
+The actual decode -> table -> encode dependency sequence is observed and its
+table implementation replaced without changing the consumer. The source is not
+patched. The n=2,w=1,p=3,x=1,y=2,target5 witness still gives high-level target5
+and original graph target1; both interfaces retain that discrepancy.
+
+The existing quantum test now compares the new value method to original
+SingleWindowModMul independently of the original source graph. Its primitive
+order/feedback, output aliases, full complex states, clean workspace, raw small
+histories and all-history certificates remain unchanged. Larger blocked layouts
+retain selected full trajectories and their independent model-versus-emitted
+resource accounting.
+
+`python -m examples.algorithms.classical_montgomery_values` now also composes the
+bit-array windows with shared codecs and compares target/history to the integer
+root chain, then constructs forward/adjoint IR through circuit.append(op). It
+still reports the 21-wire example as construction only, with no execution claim.
+
+Batch G2-VAL12/13: 401 codec/width cases plus 24 window cases = 425 new tests;
+795 concentrated passes, no skips, nine original/native NumPy warnings retained.
+The regression includes existing value binding/output collection, typed negation,
+Montgomery root methods and complete single/multiple-window quantum suites.
+Strict typing, Black/Ruff, scope, architecture and the runnable example pass.
+The data_types.py, mod_multiplication.py, qroam_clean.py and qrom_base.py source
+blobs are verified unchanged. Other integer encodings and whole source-file
+acceptance remain open.

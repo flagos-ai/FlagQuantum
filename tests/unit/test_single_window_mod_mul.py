@@ -12,6 +12,9 @@ from flagquantum.compiler.registers.single_window_mod_mul import (
     single_window_qroam_table,
 )
 from flagquantum.core.ir import CircuitIR, Instruction
+from flagquantum.simulation.classical_montgomery_window import (
+    montgomery_window_bits_classical_values,
+)
 from tests.unit.measurement_checks import certified_and_channel_map, forced_branch
 from tests.unit.register_source_graph import (
     SourcePorts,
@@ -199,8 +202,21 @@ def test_source_window_graph_branches_and_bank_cleanup(
         reference = forward_graph.on_classical_vals(**values)
         reverse_reference = reverse_graph.on_classical_vals(**reference)
         assert all(np.array_equal(values[k], reverse_reference[k]) for k in values)
+        high_level = source.on_classical_vals(**values)
+        native_values = montgomery_window_bits_classical_values(
+            values["x"],
+            values["y"],
+            values["target"],
+            values["qrom_index"],
+            n,
+            w,
+            modulus,
+        )
+        assert tuple(native_values) == tuple(high_level)
+        for key in high_level:
+            assert type(native_values[key]) is type(high_level[key])
+            assert np.array_equal(native_values[key], high_level[key])
         if 2 * modulus - 1 < 1 << n:
-            high_level = source.on_classical_vals(**values)
             assert all(np.array_equal(reference[k], high_level[k]) for k in values)
         if (n, w, modulus, multiplier, operand, accumulator) == (2, 1, 3, 1, 2, 5):
             assert tuple(reference["target"]) == (0, 0, 1)
