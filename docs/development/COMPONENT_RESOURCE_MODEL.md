@@ -104,6 +104,24 @@ measurement, T-equivalent and peak logical-qubit estimates without angle
 tables or circuit construction. The locked rotation leaf declares its
 lookup and addition costs as Toffolis. Its model has no measurement count.
 
+To estimate one rotation stage independently, use the same model that
+SELECT uses for each child. The arguments select the forward or adjoint
+direction and the one- plus two-body or two-body-only lookup. The adjoint
+uses `kr1` for the two-body-only case and `kr2` otherwise.
+
+```python
+from flagquantum.algorithms.primitives.multiplexers.thc_resource_model import (
+    thc_rotations_cost,
+)
+from flagquantum.qec.resources.estimation import estimate_ftqc_resources
+
+model = thc_rotations_cost(10, 8, 8, kr1=4, kr2=2, two_body_only=True, adjoint=True)
+report = estimate_ftqc_resources(model)
+assert report.logical.gates.toffoli == 56
+assert report.logical.gates.total_t_count() == 224
+assert report.logical.peak_logical_qubits == 17
+```
+
 Run `python -m examples.algorithms.ftqc_resource_estimation` to also construct
 the 8-bit circuit with `circuit.append(op)`. The emitted section reports 112
 T/T† instructions, 49 CCX instructions, 11 CSwap instructions and 60

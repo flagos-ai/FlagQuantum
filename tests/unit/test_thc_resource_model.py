@@ -6,6 +6,7 @@ import pytest
 
 from flagquantum.algorithms.primitives.multiplexers.thc_resource_model import (
     select_thc_cost,
+    thc_rotations_cost,
 )
 from flagquantum.compiler._component_trace.resource_model import (
     estimate_component_resources,
@@ -49,16 +50,47 @@ def test_thc_model_matches_locked_source(
     )
     assert estimate.peak_logical_qubits == get_cost_value(source, QubitCount())
 
-    expected = [
-        get_cost_value(
-            THCRotations(num_mu, spin_orb, bits, kr1, kr2, two_body, adjoint),
-            QECGatesCost(),
-        ).toffoli
-        for two_body in (False, True)
-        for adjoint in (False, True)
-    ]
-    assert [
-        call.component.gates.toffoli
+    leaves = [
+        call.component
         for call in component.calls
         if call.component.name.startswith("THCRotations(")
-    ] == expected
+    ]
+    assert len(leaves) == 4
+    for leaf, (two_body, adjoint) in zip(
+        leaves,
+        ((False, False), (False, True), (True, False), (True, True)),
+        strict=True,
+    ):
+        rotation = thc_rotations_cost(
+            num_mu,
+            spin_orb,
+            bits,
+            kr1=kr1,
+            kr2=kr2,
+            two_body_only=two_body,
+            adjoint=adjoint,
+        )
+        assert leaf == rotation
+        source_rotation = THCRotations(
+            num_mu, spin_orb, bits, kr1, kr2, two_body, adjoint
+        )
+        costs = estimate_component_resources(rotation)
+        source_gates = get_cost_value(source_rotation, QECGatesCost())
+        assert {
+            key: value for key, value in asdict(costs.gates).items() if value
+        } == source_gates.asdict()
+        assert costs.gates.total_t_count() == source_gates.total_t_count()
+        assert costs.peak_logical_qubits == get_cost_value(
+            source_rotation, QubitCount()
+        )
+
+
+def test_thc_rotations_can_be_estimated_independently() -> None:
+    from flagquantum.qec.resources.estimation import estimate_ftqc_resources
+
+    model = thc_rotations_cost(10, 8, 8, kr1=4, kr2=2, two_body_only=True, adjoint=True)
+    report = estimate_ftqc_resources(model)
+    assert report.logical.gates.toffoli == 56
+    assert report.logical.gates.total_t_count() == 224
+    assert report.logical.peak_logical_qubits == 17
+    assert report.emitted is None
