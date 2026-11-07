@@ -10,7 +10,10 @@ from importlib import import_module
 from pathlib import Path
 from unittest.mock import patch
 
+import torch
+
 from flagquantum.dynamic import DynamicCircuit
+from flagquantum.qec.execution.context import MeasurementMap
 
 
 def main() -> None:
@@ -34,6 +37,23 @@ def main() -> None:
     with patch.object(native, "sample", wraps=native.sample) as sample:
         assert sampler.sample(2, bit_packed=True).tolist() == [[1], [1]]
         sample.assert_called_once()
+    with patch.object(
+        native, "prepare_converter", wraps=native.prepare_converter
+    ) as prepare_converter:
+        converter = circuit.compile_m2d_converter(
+            detector_map=MeasurementMap(1, ((0,),)),
+            observable_map=MeasurementMap(1, ()),
+        )
+        prepare_converter.assert_called_once()
+    with patch.object(
+        native, "convert_records", wraps=native.convert_records
+    ) as convert:
+        dets, obs = converter.convert(
+            measurements=torch.tensor([[True], [False]]), separate_observables=True
+        )
+        convert.assert_called_once()
+        assert dets.tolist() == [[False], [True]] and obs.shape == (2, 0)
+    print("embedded conversion: one prepare, one convert; no Stim SDK")
     print("embedded module", native_path)
     print("embedded sha256", hashlib.sha256(native_path.read_bytes()).hexdigest())
     print("upstream commit", native.upstream_commit)

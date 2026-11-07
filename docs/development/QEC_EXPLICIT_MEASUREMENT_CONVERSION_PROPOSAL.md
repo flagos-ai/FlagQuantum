@@ -261,3 +261,23 @@ This extends the native record conversion slice of FTS-04/R08 and the R03
 replacement boundary. FTS-10/12 mixed-method selection and optimized execution,
 full W5 and R04 remain open. The previously merged #1105 covers dynamic SV
 reference behavior and does not expand the Stim Clifford/feedback admission set.
+
+## Approved source-closure amendment and implementation evidence
+
+The initial 94-file inventory above was a static candidate. Actual compilation
+found a same-directory include of `sparse_rev_frame_tracker.h` in the upstream
+error analyzer. Implementation stopped before expanding scope. The user then
+approved that header and its companion `sparse_rev_frame_tracker.cc` only:
+96 unchanged upstream files, including the original 78, and 37 translation units.
+The 18 integration paths remain unchanged. Both added files match the pinned
+PyPI and upstream tag archives; the complete relative-include scan has no
+unresolved quoted includes. No upstream file is modified.
+
+The expanded macOS arm64 sdist-to-wheel build and isolated installation passed
+without an installed or importable Stim Python package. Instrumented calls
+confirmed native converter preparation and conversion. All 16 fixed four-bit
+record combinations agree with an independently handwritten Stim 1.16.0 circuit.
+Zero shots, noncontiguous inputs, output ownership, prepared lifetime,
+nondeterministic detector/observable rejection and pre-engine T/conditional-H
+refusal were verified. These are functional conformance results; they establish
+no performance, full Stim parity, complete FTS-04/R08 or M2 claim.

@@ -44,6 +44,9 @@ Examples driven by the root-level `fq` alias use:
 
 These examples do not use that alias:
 
+- [`qec/dynamic_measurement_conversion.py`](qec/dynamic_measurement_conversion.py)
+  converts repeated-slot dynamic records to reference-normalized detector and
+  observable flips using explicit measurement ordinals.
 - [`qec/compiled_measurement_sampler.py`](qec/compiled_measurement_sampler.py)
   reuses one Clifford sampler for dense records, packed records and a b8 file
   that Stim reads back independently.

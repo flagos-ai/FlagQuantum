@@ -263,3 +263,19 @@ The opt-in macOS arm64 embedded wheel uses a private Stim source extension
 for prepared measurement sampling. The source lock and license are under
 `csrc/`. Both implementations use the same Clifford and single-slot X
 feedback admission rules before engine preparation.
+
+## Explicit dynamic measurement conversion
+
+`Circuit.compile_m2d_converter(detector_map=..., observable_map=...)` retains
+explicit measurement order, including repeated writes to one classical slot.
+QEC owns map validation and the public compiled handle; `_record_conversion.py`
+owns lowering, reference preparation and numerical conversion. The embedded
+profile reuses the pinned upstream converter and determinism analyzer without
+importing Stim; the standard profile uses Stim 1.16.0 behind the same boundary.
+No sampling is needed to convert supplied records.
+
+Run `python -m examples.qec.dynamic_measurement_conversion` for the short path,
+and the two `test_explicit_*conversion*.py` files under `tests/qec` and
+`tests/team/simulation` for core fakes and independent upstream conformance.
+The input is dense CPU bool. T, conditional H, noise, sweeps and routed programs
+are refused. Packed sampling and b8 writing remain separate sampler features.

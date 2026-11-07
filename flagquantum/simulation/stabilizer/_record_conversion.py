@@ -5,6 +5,7 @@ from __future__ import annotations
 import math
 from collections.abc import Callable
 from dataclasses import replace
+from pathlib import Path
 from typing import Any
 
 import torch
@@ -162,3 +163,118 @@ def _prepare_terminal_record_conversion(
         )
 
     return convert
+
+
+_MAX_EXPLICIT_CONVERSION_BYTES = 64 * 1024**2
+
+
+def _prepare_explicit_backend(
+    text: str, detectors: int, observables: int
+) -> Callable[[torch.Tensor], tuple[torch.Tensor, torch.Tensor]]:
+    if Path(__file__).with_name("_embedded_stim_profile.txt").is_file():
+        from ._embedded_sampler import _EmbeddedRecordConverter
+
+        try:
+            native = _EmbeddedRecordConverter(text, detectors, observables)
+        except (ValueError, RuntimeError) as error:
+            raise CapabilityError(
+                "explicit conversion has nondeterministic declared parities"
+            ) from error
+
+        def embedded_convert(
+            records: torch.Tensor,
+        ) -> tuple[torch.Tensor, torch.Tensor]:
+            try:
+                return native.convert(records)
+            except (TypeError, ValueError, RuntimeError) as error:
+                raise CapabilityError(
+                    "embedded measurement conversion failed"
+                ) from error
+
+        return embedded_convert
+
+    from .engine import _stim
+
+    if _stim().__version__ != "1.16.0":
+        raise CapabilityError("explicit measurement conversion requires Stim 1.16.0")
+    circuit = _parse_stim_experiment(text)
+    _validate_stim_reference(circuit)
+    converter = _compile_stim_converter(circuit)
+
+    def sdk_convert(records: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+        return _convert_stim_arrays(
+            converter,
+            records.contiguous().numpy(),
+            None,
+            ((len(records), detectors), (len(records), observables)),
+        )
+
+    return sdk_convert
+
+
+def _prepare_explicit_record_conversion(
+    program: CircuitIR,
+    *,
+    detector_columns: tuple[tuple[int, ...], ...],
+    observable_columns: tuple[tuple[int, ...], ...],
+) -> tuple[
+    tuple[int, ...], Callable[[torch.Tensor], tuple[torch.Tensor, torch.Tensor]]
+]:
+    from ._embedded_sampler import _operations_text
+    from .measurement_sampler import _lower_program
+
+    operations, width = _lower_program(program)
+    qubits = tuple(
+        gate.wires[0] for gate in program.instructions if gate.name == "measure"
+    )
+    lines = [_operations_text(operations)]
+    for row in detector_columns:
+        targets = " ".join(f"rec[{column - width}]" for column in row)
+        lines.append(f"DETECTOR {targets}")
+    for index, row in enumerate(observable_columns):
+        targets = " ".join(f"rec[{column - width}]" for column in row)
+        lines.append(f"OBSERVABLE_INCLUDE({index}) {targets}")
+    backend = _prepare_explicit_backend(
+        "\n".join(lines), len(detector_columns), len(observable_columns)
+    )
+    outputs = len(detector_columns) + len(observable_columns)
+
+    def convert(records: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+        shots = len(records)
+        copied_input = shots * width * (1 + int(not records.is_contiguous()))
+        output_bytes = shots * outputs
+        aligned_shots = ((shots + 1023) // 1024) * 1024
+
+        # Round both table dimensions conservatively above the pinned SIMD width.
+        # Include frame tables, growing measurement storage (with the old
+        # allocation live), observable storage, zero-width tables and scratch.
+        def padded(rows: int) -> int:
+            return max(1024, ((rows + 1023) // 1024) * 1024)
+
+        table_rows = (
+            padded(width)
+            + padded(outputs)
+            + 2 * padded(program.n_wires)
+            + 2 * padded(2 * width)
+            + padded(len(observable_columns))
+            + 4 * padded(0)
+            + 8
+        )
+        principal_bytes = table_rows * aligned_shots // 8
+        for label, needed in (
+            ("input copies", copied_input),
+            ("output payload", output_bytes),
+            ("principal tables", principal_bytes),
+        ):
+            if needed > _MAX_EXPLICIT_CONVERSION_BYTES:
+                raise CapabilityError(
+                    f"explicit conversion {label} exceeds the byte limit"
+                )
+        if not shots:
+            return (
+                torch.empty((0, len(detector_columns)), dtype=torch.bool),
+                torch.empty((0, len(observable_columns)), dtype=torch.bool),
+            )
+        return backend(records)
+
+    return qubits, convert
