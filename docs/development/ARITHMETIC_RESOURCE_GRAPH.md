@@ -33,3 +33,40 @@ Run the shortest contract checks with:
 ```sh
 python -m pytest -q tests/unit/test_arithmetic_resource_identity.py
 ```
+
+## Implemented source recipes
+
+`arithmetic_callees` retains the direct Add, CAdd and four arithmetic shim
+recipes, including source insertion order and adjoint-wrapper behavior.
+`arithmetic_call_graph` expands these plus BitwiseNot's OnEach(X) into the
+existing typed QEC leaves. Word encodings remain on arithmetic keys; OnEach
+uses the existing width/child cost key, which canonicalizes its register dtype.
+This is a logical resource graph, not a serialized SDK object graph.
+
+The seven category queries match the original source for Python and symbolic
+widths, both cost profiles and both directions. Raw negative counts, one-bit
+Add's declared negative Clifford term and zero-width BitwiseNot failures remain
+visible. No width-lifetime estimate is inferred from the call graph: concrete
+and symbolic width queries continue using the separate existing formulas.
+
+Run an end-to-end symbolic query:
+
+```sh
+python -m examples.algorithms.arithmetic_resource_graph
+python -m pytest -q tests/unit/test_arithmetic_declarations.py
+```
+
+At n=3, CSub declares 5 And, 23 Clifford, 5 measurements and 20 terminal T
+equivalents. These model values are not an emitted primitive-gate report.
+The existing concrete modular API remains unchanged; the native graph API is
+also available for symbolic raw declarations.
+
+## Validation evidence
+
+The batch adds 35 identity/replacement tests and 77 recipe/reference tests.
+The concentrated regression has 635 passing tests with no skips, including the
+existing concrete Add/CAdd full-state, measurement-feedback and clean-work tests.
+Production modules and the example pass strict mypy, formatting, lint and the
+architecture boundary check. This establishes the seven supported logical-call
+recipes and their cost queries, not full Qualtran coverage or physical execution
+of the source shims. Existing concrete aggregate APIs are unchanged.
