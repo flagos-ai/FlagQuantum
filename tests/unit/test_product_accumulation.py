@@ -13,6 +13,9 @@ from flagquantum.compiler.registers.integer_product import (
 )
 from flagquantum.compiler.registers.product_accumulation import product_accumulation_ir
 from flagquantum.core.ir import CircuitIR
+from flagquantum.simulation.classical_product_accumulation import (
+    accumulate_product_classical_values,
+)
 from tests.unit.measurement_checks import certified_and_channel_map, forced_branch
 from tests.unit.sparse_register_execution import execute_sparse_register
 from tests.unit.test_register_constant_addition import reference_arithmetic_gates
@@ -85,6 +88,11 @@ def test_accumulation_component_stream_and_full_classical_domain(n, m, width, ad
     incoming, outgoing = [], []
     for a, b, c in product(range(1 << n), range(1 << m), range(1 << width)):
         raw = source.on_classical_vals(a=a, b=b, result=c)["result"]
+        assert accumulate_product_classical_values(a, b, c, width, adjoint=adjoint) == (
+            a,
+            b,
+            raw,
+        )
         assert tuple(source.adjoint().apply(a, b, raw)) == (a, b, c)
         prefix = word(a, n) + word(b, m)
         clean = (0,) * (len(work) + len(carries))
@@ -113,6 +121,16 @@ def test_accumulation_original_tensor_and_complex_branches(n, m, width, adjoint)
     state = torch.complex(grid.remainder(7) - 3, grid.remainder(5) - 2).reshape(-1, 2)
     state /= state.norm()
     expected = torch.as_tensor(model.tensor_contract().copy()) @ state
+    numeric = torch.zeros_like(expected)
+    for label in range(1 << logical_bits):
+        a = label >> (m + width)
+        b = (label >> width) & ((1 << m) - 1)
+        c = label & ((1 << width) - 1)
+        _, _, output = accumulate_product_classical_values(
+            a, b, c, width, adjoint=adjoint
+        )
+        numeric[(a << (m + width)) | (b << width) | int(output)] = state[label]
+    torch.testing.assert_close(numeric, expected, rtol=0, atol=2e-12)
 
     def sparse(vector):
         return {
