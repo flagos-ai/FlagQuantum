@@ -107,3 +107,27 @@ alias path covered by the concentrated regression.
 G2-ALIAS09 adds 25 parameterized/contract/witness cases, following the ten new
 G2-RES36 shared-QROM cases. Final regression: 1,312 passed, no skips. Strict
 types, formatting, lint, scope and architecture checks pass.
+
+
+## Shared comparison composition (G2-ALIAS10)
+
+AliasPreparationShape now calls
+`compiler.registers.comparison_resource_model.source_less_equal_resource_formula`
+for its comparator categories and peak. The algorithm no longer contains
+comparison-tree arithmetic or selects its concrete-versus-symbolic branches.
+It passes the original mu object unchanged, including Sympy integer objects,
+and propagates the selected QEC profile. The algorithm still owns only the
+comparison call's live bystanders and the surrounding preparation composition.
+A dependency replacement test verifies the shared formula is consumed without
+normalizing width identity or recomputing its result.
+
+Existing dense/sparse, both-direction/profile, source binding witnesses and
+model-only examples are retained. Run the existing
+`python -m examples.algorithms.alias_resource_profiles` example for cost-only
+queries, and `python -m examples.algorithms.register_less_equal` for the shared
+comparator's executable append path and separate measured resource report.
+
+G2-ALIAS10 adds one shared-boundary replacement case to the existing complete
+source profile/matrix regressions. Together with the 54 new G2-CMP10 cases,
+1,367 concentrated tests pass without skips; strict types, lint, formatting,
+ownership and architecture checks pass.

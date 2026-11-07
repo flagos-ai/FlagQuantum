@@ -233,3 +233,31 @@ def test_source_symbolic_substitution_and_concrete_rebuild_are_not_conflated(leg
         )
         == 0
     )
+
+
+def test_alias_uses_shared_comparison_with_literal_width_identity_and_profile(
+    monkeypatch,
+):
+    from dataclasses import replace
+
+    import sympy
+
+    import flagquantum.algorithms.primitives.symbolic_alias_preparation as module
+
+    width = sympy.Integer(3)
+    plan = AliasPreparationShape(5, 5, width)
+    baseline = plan.resource_model(legacy_shims=True)
+    original = module.source_less_equal_resource_formula
+    seen = []
+
+    def replacement(left, right, **kwargs):
+        seen.append((left is width, right is width, kwargs["legacy_shims"]))
+        formula = original(left, right, **kwargs)
+        return replace(formula, clifford=formula.clifford + 7)
+
+    monkeypatch.setattr(module, "source_less_equal_resource_formula", replacement)
+    changed = plan.resource_model(legacy_shims=True)
+    assert seen == [(True, True, True)]
+    assert changed.clifford == baseline.clifford + 7
+    assert changed.logical_qubits == baseline.logical_qubits
+    assert changed.and_bloq == baseline.and_bloq

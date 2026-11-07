@@ -19,6 +19,9 @@ from ...compiler._component_trace.symbolic_math import (
     log2,
     smax,
 )
+from ...compiler.registers.comparison_resource_model import (
+    source_less_equal_resource_formula,
+)
 from ...compiler.registers.control_predicate_resource_model import (
     control_predicate_cost,
 )
@@ -136,12 +139,10 @@ class AliasPreparationShape:
         qrom = source_qrom_resource_formula(
             (rows,), targets, selection_widths=(address,), legacy_shims=legacy_shims
         )
-        compare_ands = 2 * mu - 1 if isinstance(mu, int) else 2 * mu + 1
-        compare_cliffords = (
-            22 * mu - 9 if isinstance(mu, int) else 22 * mu + 11
-        ) + cleanup_delta * compare_ands
-        compare_peak = 5 * mu if isinstance(mu, int) else smax(7, 2 * mu + 1)
-        ands = uniform_ands + qrom.and_bloq + compare_ands
+        comparison = source_less_equal_resource_formula(
+            mu, mu, legacy_shims=legacy_shims
+        )
+        ands = uniform_ands + qrom.and_bloq + comparison.and_bloq
         peak = cast(
             SymbolicInt,
             smax(
@@ -149,14 +150,14 @@ class AliasPreparationShape:
                 selection + self.junk_width,
                 uniform_peak + selection + self.junk_width - address,
                 qrom.logical_qubits + mu + 1,
-                compare_peak + 2 * selection + sparse_width,
+                comparison.logical_qubits + 2 * selection + sparse_width,
                 smax(3, 2 * selection + 1) + 2 * mu + sparse_width,
                 smax(1, mu) + 2 * selection + sparse_width + mu + 1,
             ),
         )
         return SymbolicResourceFormula(
             ands,
-            uniform_cliffords + qrom.clifford + compare_cliffords + mu,
+            uniform_cliffords + qrom.clifford + comparison.clifford + mu,
             ands,
             peak,
             cswap=selection,
