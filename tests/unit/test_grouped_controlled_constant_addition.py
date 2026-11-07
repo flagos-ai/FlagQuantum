@@ -143,12 +143,15 @@ def test_grouped_port_and_ownership_failures_do_not_silently_flatten_bad_inputs(
         )
 
 
-def test_concrete_grouped_model_does_not_apply_executable_lifetimes_to_symbolic_constants():
+def test_concrete_width_grouped_model_preserves_inner_symbolic_fallback_and_outer_lifetimes():
     import sympy
 
+    from flagquantum.compiler._component_trace.resource_model import (
+        estimate_component_resources,
+    )
     from flagquantum.compiler.registers.control_predicate import ControlRegister
 
-    with pytest.raises(ValueError, match="Python integer constant"):
-        source_grouped_controlled_constant_add_cost(
-            3, sympy.Integer(5), (ControlRegister(2, (1,)),)
-        )
+    model = source_grouped_controlled_constant_add_cost(
+        3, sympy.Integer(5), (ControlRegister(2, (1,)),)
+    )
+    assert estimate_component_resources(model).peak_logical_qubits == 10

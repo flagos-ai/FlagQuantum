@@ -8,6 +8,7 @@
 
 from ...core.ir import Instruction
 from .._component_trace.resource_model import ComponentCost
+from .._component_trace.symbolic_math import SymbolicInt
 from .bitwise import _validate_wires
 from .constant_add_resource_model import source_controlled_constant_add_cost
 from .control_predicate import ControlRegister, bind_control_registers
@@ -95,7 +96,7 @@ def grouped_controlled_add_constant_ir(
 
 def source_multi_controlled_constant_add_cost(
     width: int,
-    value: int,
+    value: SymbolicInt,
     values: tuple[int, ...],
     *,
     adjoint: bool = False,
@@ -117,17 +118,13 @@ def source_multi_controlled_constant_add_cost(
 
 def source_grouped_controlled_constant_add_cost(
     width: int,
-    value: int,
+    value: SymbolicInt,
     registers: tuple[ControlRegister, ...],
     *,
     adjoint: bool = False,
     legacy_shims: bool = False,
 ) -> ComponentCost:
     """Compose existing control-word equality and AddK models, without gates."""
-    if type(value) is not int:
-        raise ValueError(
-            "Concrete grouped AddK model requires a Python integer constant"
-        )
     addition = source_controlled_constant_add_cost(
         width, value, adjoint=adjoint, legacy_shims=legacy_shims
     )
