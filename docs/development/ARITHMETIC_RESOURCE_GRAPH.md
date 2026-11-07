@@ -96,3 +96,18 @@ truncate other arithmetic operations. Both inputs have width n, and the logical
 output has width n or n+1. The source-adjoint recipe changes And to measured
 And-adjoint and retains the CNOT declaration in its original order. This does
 not change the independently tested out-of-place IR emitter.
+
+## Shared Add consumers (G2-A45)
+
+Both concrete `source_add_cost` and symbolic `source_add_resource_formula` now
+query the shared native Add declaration. Gate multiplicities no longer have
+separate copies in these model consumers. The concrete carry-lifetime peak and
+symbolic Max(3, m+n) fallback remain independent width calculations.
+
+The formula's concrete route consumes the complete existing component report:
+all seven category fields and the composed peak, including nested CostCalls.
+This fixes lost non-And categories and nested lifetime costs when replacing the
+concrete model. Tests substitute declared recipes and a concrete component with
+all seven categories; neither substitution requires changing the consumers.
+The unchanged pinned Add comparisons, one-bit negative Clifford diagnostic,
+full-state and measurement/clean-work regressions remain in the batch suite.

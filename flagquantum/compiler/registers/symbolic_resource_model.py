@@ -11,11 +11,16 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, fields
 from math import prod
 from typing import cast
 
+from .._component_trace.arithmetic_call import ArithmeticCall
+from .._component_trace.gate_budget import GateCategories
+from .._component_trace.qec_gate_cost import query_qec_gate_cost
+from .._component_trace.resource_model import estimate_component_resources
 from .._component_trace.symbolic_math import SymbolicInt, bit_length, smax
+from .arithmetic_declarations import arithmetic_callees
 from .arithmetic_resource_model import source_add_cost
 from .control_predicate_resource_model import control_predicate_cost
 
@@ -43,21 +48,28 @@ def source_add_resource_formula(
     """Use the locked Add declaration and width fallback in the selected profile."""
     if type(legacy_shims) is not bool:
         raise ValueError("Add formula cost profile must be a boolean")
+    gates: GateCategories
+    peak: SymbolicInt
     if isinstance(left_width, int) and isinstance(right_width, int):
         concrete = source_add_cost(left_width, right_width, legacy_shims=legacy_shims)
-        return SymbolicResourceFormula(
-            concrete.gates.and_bloq,
-            concrete.gates.clifford,
-            concrete.gates.measurement,
-            concrete.qubits,
+        report = estimate_component_resources(concrete)
+        gates = report.gates
+        peak = report.peak_logical_qubits
+    else:
+        root = ArithmeticCall("add", (left_width, right_width))
+        gates = query_qec_gate_cost(
+            root,
+            declared_calls={root: arithmetic_callees(root)},
+            legacy_shims=legacy_shims,
         )
-    carries = right_width - 1
-    cleanup = control_predicate_cost((1, 1), uncompute=True, legacy_shims=legacy_shims)
+        peak = cast(SymbolicInt, smax(3, left_width + right_width))
     return SymbolicResourceFormula(
-        carries,
-        (right_width - 2) * 6 + 3 + carries * cleanup.gates.clifford,
-        carries,
-        cast(SymbolicInt, smax(3, left_width + right_width)),
+        logical_qubits=peak,
+        **{
+            field.name: getattr(gates, field.name)
+            for field in fields(SymbolicResourceFormula)
+            if field.name != "logical_qubits"
+        },
     )
 
 

@@ -172,3 +172,52 @@ def test_shape_only_permutation_cycle(concrete_width: int | None) -> None:
         source_permutation_cycle_resource_formula(length, width),
         PermutationCycle(2**width, Shaped((length,)), bitsize=width),
     )
+
+
+@pytest.mark.parametrize("mode", ("both", "left", "right", "literal"))
+@pytest.mark.parametrize("legacy", (False, True))
+def test_symbolic_add_queries_replaceable_native_recipe(monkeypatch, mode, legacy):
+    import sympy
+
+    import flagquantum.compiler.registers.symbolic_resource_model as module
+    from flagquantum.compiler._component_trace.arithmetic_call import ArithmeticCall
+    from flagquantum.compiler._component_trace.resource_generalization import FixedTCall
+
+    n = sympy.Symbol("n", integer=True, positive=True)
+    left, right = {
+        "both": (n, n),
+        "left": (n, 3),
+        "right": (1, n),
+        "literal": (sympy.Integer(2), sympy.Integer(3)),
+    }[mode]
+    seen = []
+
+    def recipe(root):
+        seen.append(root)
+        return {FixedTCall("fredkin"): 7 * n}
+
+    monkeypatch.setattr(module, "arithmetic_callees", recipe)
+    result = module.source_add_resource_formula(left, right, legacy_shims=legacy)
+    assert seen == [ArithmeticCall("add", (left, right))]
+    assert result.cswap == 7 * n and result.logical_qubits == sympy.Max(3, left + right)
+    assert result.and_bloq == result.clifford == result.measurement == 0
+
+
+def test_concrete_add_formula_preserves_all_child_categories_and_lifetimes(monkeypatch):
+    import flagquantum.compiler.registers.symbolic_resource_model as module
+    from flagquantum.compiler._component_trace.resource_model import (
+        ComponentCost,
+        CostCall,
+        GateCost,
+    )
+
+    gates = GateCost(
+        t=2, toffoli=3, cswap=5, and_bloq=7, clifford=11, rotation=13, measurement=17
+    )
+    child = ComponentCost("child", 19, gates)
+    replacement = ComponentCost("Add", 5, calls=(CostCall(child, 3, 4),))
+    monkeypatch.setattr(module, "source_add_cost", lambda *args, **kwargs: replacement)
+    actual = module.source_add_resource_formula(2, 3)
+    assert actual == SymbolicResourceFormula(
+        21, 33, 51, 23, t=6, toffoli=9, cswap=15, rotation=39
+    )
