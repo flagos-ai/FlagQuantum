@@ -14,17 +14,20 @@ from ...circuit import _CircuitOperation
 from ...compiler._component_trace.resource_model import (
     ComponentCost,
     CostCall,
-    GateCost,
 )
 from ...compiler._component_trace.symbolic_math import SymbolicInt, SymbolicReal, smax
 from ...compiler.registers.control_predicate import (
     ControlRegister,
     bind_control_registers,
 )
-from ...compiler.registers.control_predicate_resource_model import (
-    control_predicate_cost,
+from ...compiler.registers.controlled_component import (
+    controlled_component_ir,
+    extend_controlled_component_ir,
 )
-from ...compiler.registers.controlled_component import controlled_component_ir
+from ...compiler.registers.controlled_component_resource_model import (
+    controlled_component_cost,
+    extended_controlled_component_cost,
+)
 from ...compiler.registers.partition import partition_register
 from ...core.ir import Instruction
 from ._block_binding import _BoundBlockOperation, _validate_block_work
@@ -165,6 +168,7 @@ class LinearCombinationBlockEncoding:
         unprepare_cost: ComponentCost,
         *,
         controlled: bool = False,
+        existing_control: bool = False,
         adjoint: bool = False,
         control_registers: tuple[ControlRegister, ...] = (),
         legacy_shims: bool = False,
@@ -174,10 +178,12 @@ class LinearCombinationBlockEncoding:
         Supply the same selected direction and QEC profile in the child models.
         Structured controls require the positive singly-controlled SELECT cost.
         legacy_shims selects predicate costs; supplied children use that profile.
+        existing_control adds the source conjunction to a precontrolled LCU.
         Original generic adjoint child-cost failures remain caller-visible.
         """
         if (
             type(controlled) is not bool
+            or type(existing_control) is not bool
             or type(adjoint) is not bool
             or type(legacy_shims) is not bool
         ):
@@ -189,6 +195,10 @@ class LinearCombinationBlockEncoding:
         )
         if control_registers and not pattern:
             raise ValueError("Structured LCU control requires nonempty control words")
+        if existing_control and not pattern:
+            raise ValueError(
+                "Existing LCU control extension requires new control words"
+            )
         if pattern:
             if controlled:
                 raise ValueError(
@@ -202,32 +212,20 @@ class LinearCombinationBlockEncoding:
                 adjoint=adjoint,
                 legacy_shims=legacy_shims,
             )
-            if pattern == (1,):
-                return positive
-            if len(pattern) == 1:
-                return ComponentCost(
-                    "ControlledViaAnd",
-                    positive.qubits,
-                    GateCost(clifford=2),
-                    (CostCall(positive),),
+            payload = self.system_bitsize + self.ancilla_bitsize + self.resource_bitsize
+            if existing_control:
+                return extended_controlled_component_cost(
+                    positive,
+                    control_registers,
+                    current_control_value=1,
+                    target_width=payload,
+                    legacy_shims=legacy_shims,
                 )
-            payload = positive.qubits - 1
-            return ComponentCost(
-                "ControlledViaAnd",
-                payload + len(pattern),
-                calls=(
-                    CostCall(
-                        control_predicate_cost(pattern, legacy_shims=legacy_shims),
-                        bystander_qubits=payload,
-                    ),
-                    CostCall(positive, bystander_qubits=2 * len(pattern) - 2),
-                    CostCall(
-                        control_predicate_cost(
-                            pattern, uncompute=True, legacy_shims=legacy_shims
-                        ),
-                        bystander_qubits=payload,
-                    ),
-                ),
+            return controlled_component_cost(
+                positive,
+                control_registers,
+                target_width=payload,
+                legacy_shims=legacy_shims,
             )
         prepare = self.prepare
         if self.ancilla_bitsize == 0:
@@ -278,6 +276,7 @@ class LinearCombinationBlockEncoding:
         ancilla: tuple[int, ...],
         resource: tuple[int, ...],
         control: tuple[int, ...] = (),
+        existing_control: tuple[int, ...] = (),
         prepare_workspace: tuple[int, ...],
         prepare_classical_bits: tuple[int, ...],
         traversal_workspace: tuple[int, ...],
@@ -296,11 +295,22 @@ class LinearCombinationBlockEncoding:
         Private work may be shared across nonoverlapping PREPARE/SELECT calls.
         Logical selection, junk and signal outputs are never treated as scratch.
         Structured controls keep one predicate live around the whole block,
-        separate from all stage scratch.
+        separate from all stage scratch. existing_control binds an already
+        positive-controlled LCU before adding the structured controls. With
+        adjoint=True this takes the adjoint of that specialized root, not a
+        generic control wrapper around an already-adjoint operation.
         """
+        if len(existing_control) > 1 or (existing_control and control):
+            raise ValueError(
+                "LCU extension needs one existing positive control and no direct control"
+            )
         outer, pattern = bind_control_registers(controls, control_registers)
         if not pattern and (
-            controls or control_registers or control_workspace or control_classical_bits
+            controls
+            or control_registers
+            or control_workspace
+            or control_classical_bits
+            or existing_control
         ):
             raise ValueError(
                 "Structured LCU controls require nonempty activation words"
@@ -310,7 +320,7 @@ class LinearCombinationBlockEncoding:
                 raise ValueError(
                     "Choose direct positive control or structured LCU controls"
                 )
-            logical = (*outer, *system, *ancilla, *resource)
+            logical = (*outer, *existing_control, *system, *ancilla, *resource)
             _validate_block_work(logical, control_workspace, control_classical_bits)
             for work, bits in (
                 (prepare_workspace, prepare_classical_bits),
@@ -335,12 +345,23 @@ class LinearCombinationBlockEncoding:
                     adjoint=adjoint,
                 ).instructions
 
-            gates = controlled_component_ir(
-                controls,
-                control_registers,
-                emit,
-                control_workspace,
-                control_classical_bits,
+            gates = (
+                extend_controlled_component_ir(
+                    controls,
+                    control_registers,
+                    (existing_control[0], 1),
+                    emit,
+                    control_workspace,
+                    control_classical_bits,
+                )
+                if existing_control
+                else controlled_component_ir(
+                    controls,
+                    control_registers,
+                    emit,
+                    control_workspace,
+                    control_classical_bits,
+                )
             )
             required = (
                 max(

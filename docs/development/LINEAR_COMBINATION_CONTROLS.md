@@ -77,7 +77,65 @@ The six-T difference is the original abstract four-T versus exact seven-T
 Fredkin cost in two PREPARE calls. Shared predicate gates themselves match the
 original primitive decomposition. No physical hardware measurement is implied.
 
-This accepts external structured quantum controls on an uncontrolled parent.
-Stacking new controls on a precontrolled parent and classical controls remain
-separate source paths. Original child cost failures and zero-total-ancilla
+G2-BE09 accepts external structured quantum controls on an uncontrolled parent.
+G2-BE10 below adds the precontrolled specialization. Classical controls remain
+a separate source path. Original child cost failures and zero-total-ancilla
 boundaries remain explicit; this is not whole-file or G2 completion.
+
+
+## Extending an existing positive control (G2-BE10)
+
+Use `existing_control=(wire,)` with the new structured `controls` and
+`control_registers` in `make_on`. This binds the source
+`LinearCombination(is_controlled=True).controlled(spec)` root. The existing
+control is positive; it is a logical input/output, not a private predicate.
+`control=(wire,)` remains the distinct direct-binding mode and cannot be
+combined with either extension mode.
+
+The shared `extend_controlled_component_ir` reserves one work wire and feedback
+slot per new control bit. A single new bit computes the original two-input And
+with its literal activation, calls the original positive parent, then erases
+that And. Multiple new bits preserve the outer CtrlSpecAnd and inner existing-
+control conjunction. New controls precede the existing control in the logical
+layout, and the inner predicate is the last wrapper work wire. Parent work stays
+separate from stage work across unconditional PREPARE and unprepare.
+
+`adjoint=True` takes the direction of the specialized root: add controls first,
+then take its adjoint. This preserves the original And/erasure implementation
+around a directionally bound positive LCU. It does not request the different
+source chain that takes the adjoint before a generic negative-control wrapper.
+The latter chain remains outside this binding. No measured instruction stream
+is mechanically inverted.
+
+Pass `existing_control=True` to `resource_model` with matching structured words
+and directional, profile-specific positive SELECT/PREPARE/unprepare children.
+Both structured modes now use the shared controlled-component cost composition
+instead of a copied wrapper formula. Logical payload width comes from actual
+ports rather than a child's peak allocation. The default alias convenience
+model supplies the modern QEC profile; the legacy default-oracle composition
+tests explicitly supply original legacy child models. They certify composition
+of those inputs, not an unimplemented legacy alias factory.
+
+Validation covers nine shaped/integer control specifications, default eight-bit
+coefficient and supplied oracles, both directions, exact source primitive counts,
+wire dependencies and feedback. There are 36 original gate configurations and
+72 QEC-category/peak-width comparisons. Fourteen independent full original
+matrices exercise arbitrary complex logical inputs, all small measurement
+histories, live junk and clean private storage. Invalid existing-control/storage
+bindings fail, and resource-only queries never emit a circuit. All 131 new tests
+pass; the concentrated regression passes 717 tests without skips. Strict types,
+formatting, lint, scope and architecture checks also pass. Source blobs remain unchanged: LinearCombination
+`a3d8aa7fafa7a6f3fcaf095826751209427cd255`, specialized_ctrl
+`98b64995010da5863218dbf93b39bbffbd600a2f`.
+
+```sh
+python -m examples.algorithms.linear_combination_controls --stacked
+```
+
+Users still append the bound operation. The example keeps all eight new/old
+control words coherent, validates the projected block and restores the entire
+complex state with the adjoint. Its model reports 28 T equivalents, five
+measurements and 13 peak logical qubits; its emitted IR contains 34 T/T-dagger
+instructions. The existing six-T Fredkin accounting difference remains explicit.
+Repeated control-root extension and its original returned-adder defect, and
+classical controls, remain separately open; this does not certify the whole file.
