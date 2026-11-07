@@ -69,6 +69,18 @@ The example catalog provides the complete runnable source set without requiring
 an external corpus checkout. Regenerate catalog documentation after changing
 catalog metadata with `python -m tools.synthesis_catalog --write`.
 
+The first native completion batch adds 17 exact-original counterparts: nine
+standard gates, Bell/GHZ and real amplitude/probability preparation, unsigned
+multiplication and three quadratic-computation tutorials. Together with the six
+previous entries, 23/216 cases have runnable native/Circuit comparisons.
+Run `python -m pytest tests/integration/test_synthesis_native_catalog.py -q`
+to execute those comparisons and the preparation, phase and refusal checks.
+The shared comparison helper uses `Program.registers` in its declared bit order
+and checks every complex amplitude, including zero hidden workspace, without
+aligning away global phase. The 216-case execution smoke suite remains a
+separate scope. General native quantum arrays/views, mutable helper borrows and
+runtime classical binding are not implied by this example count.
+
 ## Module migration
 
 The former flat modules now have topic-specific paths. Update saved commands and

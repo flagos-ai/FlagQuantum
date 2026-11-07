@@ -61,6 +61,14 @@ def test_proposal_records_current_api_and_precise_pending_delta_without_fake_app
         "U",
         "prepare_uniform_interval_state",
         "control",
+        "X",
+        "RZ",
+        "PHASE",
+        "RZZ",
+        "prepare_bell_state",
+        "prepare_ghz_state",
+        "prepare_amplitudes",
+        "prepare_state",
     ]
     assert str(inspect.signature(fq.run)) == PROPOSAL["unchanged_run_signature"]
     assert (

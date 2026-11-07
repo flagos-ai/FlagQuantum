@@ -7,6 +7,15 @@ arithmetic and one-bit pi-predicate phases, known basis/uniform preparation,
 exact CPU statevectors and the admitted line profile.
 Independent developer trial records and final release review are still pending.
 
+The [original-case catalog](../../examples/synthesis/CATALOG.md) separates Qmod
+execution coverage from runnable native counterparts and independent Circuit
+references. The [native catalog admission](../../docs/api-changes/FQ-SYNTH-NATIVE-CATALOG-20261107.md)
+adds direct `X`, `RZ`, `PHASE`, `RZZ`, Bell/GHZ and real amplitude/probability
+preparation calls to the existing Python profile. They share Compiler-owned
+verification and lowering with Qmod. `synth.X` is a captured gate; the existing
+`fq.X` observable constructor is unchanged. See each case for its supported
+bindings and the remaining native array/helper limitations.
+
 
 ## Python quantum programs
 

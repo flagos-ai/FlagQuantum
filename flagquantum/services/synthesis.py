@@ -79,6 +79,14 @@ R = program_types.r
 U = program_types.u
 control = program_types.control
 prepare_uniform_interval_state = program_types.prepare_uniform_interval_state
+X = program_types.x
+RZ = program_types.rz
+PHASE = program_types.phase_gate
+RZZ = program_types.rzz
+prepare_bell_state = program_types.prepare_bell_state
+prepare_ghz_state = program_types.prepare_ghz_state
+prepare_amplitudes = program_types.prepare_amplitudes
+prepare_state = program_types.prepare_state
 
 __all__ = (
     "ConstructionBudget",
@@ -105,6 +113,14 @@ __all__ = (
     "U",
     "prepare_uniform_interval_state",
     "control",
+    "X",
+    "RZ",
+    "PHASE",
+    "RZZ",
+    "prepare_bell_state",
+    "prepare_ghz_state",
+    "prepare_amplitudes",
+    "prepare_state",
 )
 
 

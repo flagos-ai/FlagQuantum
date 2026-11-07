@@ -9,6 +9,7 @@ selection and lowering to CircuitIR.
 | Module | Responsibility |
 | --- | --- |
 | `frontend_program.py` | Capture source-retaining Python qfunc programs |
+| `frontend_preparation.py` | Capture bounded literal native preparation calls into existing register effects |
 | `frontend_python.py` | Capture the supported scalar Python expression profile |
 | `register_profile.py` | Register types, operation attribute admission, preparation and publication shapes |
 | `register_verifier.py` | Ordered effects, initialized storage, ownership, aliases and lifetime checks |

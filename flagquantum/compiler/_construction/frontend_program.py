@@ -19,6 +19,7 @@ from .._hybrid.model import (
     Value,
     ValueId,
 )
+from .frontend_preparation import capture_preparation
 from .frontend_python import _error, _QuantumFunction, _Source, capture
 from .profile import _width
 from .program_types import (
@@ -35,11 +36,19 @@ from .program_types import (
     cx,
     hadamard_transform,
     phase,
+    phase_gate,
+    prepare_amplitudes,
+    prepare_bell_state,
+    prepare_ghz_state,
+    prepare_state,
     prepare_uniform_interval_state,
     r,
+    rz,
+    rzz,
     swap,
     u,
     within,
+    x,
 )
 from .ranges import unsigned_width
 from .register_profile import (
@@ -617,13 +626,58 @@ class _Body:
             destination = self.register(node.args[0])
             for bit in range(register_width(destination)):
                 self.emit("qreg.gate", node, (destination,), gate="h", index=bit)
+        elif any(function is gate for gate in (x, rz, phase_gate, rzz)):
+            angled = function is not x
+            if len(node.args) != 1 + angled:
+                _error(self.source, node, "program.signature", "invalid gate arity")
+            destination = self.register(node.args[-1])
+            if register_width(destination) != (2 if function is rzz else 1):
+                _error(
+                    self.source, node, "program.width", "gate target width disagrees"
+                )
+            attributes: dict[str, str | float | int] = {}
+            if angled:
+                angle = self.phase_number(node.args[0])
+                if angle is None:
+                    _error(
+                        self.source,
+                        node,
+                        "program.angle",
+                        "gate angle must be a finite static real",
+                    )
+                attributes["angle"] = angle
+            if function is rzz:
+                self.emit("qreg.rzz", node, (destination,), **attributes)
+            else:
+                self.emit(
+                    "qreg.gate",
+                    node,
+                    (destination,),
+                    gate=(
+                        "phase"
+                        if function is phase_gate
+                        else "rz" if function is rz else "x"
+                    ),
+                    index=0,
+                    **attributes,
+                )
+        elif any(
+            function is preparation
+            for preparation in (
+                prepare_bell_state,
+                prepare_ghz_state,
+                prepare_amplitudes,
+                prepare_state,
+            )
+        ):
+            capture_preparation(self, node, function)
         elif function is cx or function is swap or function is crx:
             angled = function is crx
             if len(node.args) != 2 + angled:
                 _error(
                     self.source, node, "program.signature", "invalid pair gate arity"
                 )
-            attributes: dict[str, str | float] = {"gate": function.__name__}
+            attributes = {"gate": function.__name__}
             if angled:
                 angle = self.phase_number(node.args[0])
                 if angle is None:

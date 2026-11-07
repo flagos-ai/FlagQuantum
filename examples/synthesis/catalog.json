@@ -8197,14 +8197,17 @@
       "companion_files": [],
       "classical_inputs": null,
       "basis_mps": false,
-      "native_example": null,
-      "native_comparison": null,
+      "native_example": "examples/synthesis/tutorials/arithmetic/classiq/function_usage_examples/arithmetic/multiplication/multiplication_2vars_example/main.py",
+      "native_comparison": "examples/synthesis/tutorials/arithmetic/classiq/function_usage_examples/arithmetic/multiplication/multiplication_2vars_example/comparisons/circuit.py",
       "validation_sources": [
+        "tests/integration/test_synthesis_native_catalog.py",
         "tests/integration/test_synthesis_qmod_originals.py",
         "tests/team/ecosystem/test_qmod_comparisons.py",
         "tests/team/ecosystem/test_qmod_parser.py"
       ],
-      "circuit_validation_sources": [],
+      "circuit_validation_sources": [
+        "tests/integration/test_synthesis_native_catalog.py"
+      ],
       "fixture_sources": [
         "tests/fixtures/classiq_qmod/multiplication_2vars_example.qmod"
       ],
@@ -9065,12 +9068,14 @@
       "companion_files": [],
       "classical_inputs": null,
       "basis_mps": false,
-      "native_example": null,
-      "native_comparison": null,
+      "native_example": "examples/synthesis/tutorials/state_preparation/classiq/qmod_library_reference/classiq_open_library/special_state_preparations/prepare_bell_state/main.py",
+      "native_comparison": "examples/synthesis/tutorials/state_preparation/classiq/qmod_library_reference/classiq_open_library/special_state_preparations/prepare_bell_state/comparisons/circuit.py",
       "validation_sources": [
+        "tests/integration/test_synthesis_native_catalog.py",
         "tests/integration/test_synthesis_qmod_bell.py"
       ],
       "circuit_validation_sources": [
+        "tests/integration/test_synthesis_native_catalog.py",
         "tests/integration/test_synthesis_qmod_bell.py"
       ],
       "fixture_sources": [
@@ -9161,12 +9166,15 @@
       "companion_files": [],
       "classical_inputs": null,
       "basis_mps": false,
-      "native_example": null,
-      "native_comparison": null,
+      "native_example": "examples/synthesis/tutorials/state_preparation/classiq/qmod_library_reference/classiq_open_library/special_state_preparations/prepare_ghz_state/main.py",
+      "native_comparison": "examples/synthesis/tutorials/state_preparation/classiq/qmod_library_reference/classiq_open_library/special_state_preparations/prepare_ghz_state/comparisons/circuit.py",
       "validation_sources": [
+        "tests/integration/test_synthesis_native_catalog.py",
         "tests/integration/test_synthesis_qmod_ghz.py"
       ],
-      "circuit_validation_sources": [],
+      "circuit_validation_sources": [
+        "tests/integration/test_synthesis_native_catalog.py"
+      ],
       "fixture_sources": [
         "tests/fixtures/classiq_qmod/prepare_ghz_state.qmod"
       ],
@@ -9552,12 +9560,14 @@
       "companion_files": [],
       "classical_inputs": null,
       "basis_mps": false,
-      "native_example": null,
-      "native_comparison": null,
+      "native_example": "examples/synthesis/tutorials/state_preparation/classiq/qmod_library_reference/qmod_core_library/prepare_state_and_amplitudes/example_prepare_amplitudes/main.py",
+      "native_comparison": "examples/synthesis/tutorials/state_preparation/classiq/qmod_library_reference/qmod_core_library/prepare_state_and_amplitudes/example_prepare_amplitudes/comparisons/circuit.py",
       "validation_sources": [
+        "tests/integration/test_synthesis_native_catalog.py",
         "tests/integration/test_synthesis_qmod_amplitudes.py"
       ],
       "circuit_validation_sources": [
+        "tests/integration/test_synthesis_native_catalog.py",
         "tests/integration/test_synthesis_qmod_amplitudes.py"
       ],
       "fixture_sources": [
@@ -9600,12 +9610,14 @@
       "companion_files": [],
       "classical_inputs": null,
       "basis_mps": false,
-      "native_example": null,
-      "native_comparison": null,
+      "native_example": "examples/synthesis/tutorials/state_preparation/classiq/qmod_library_reference/qmod_core_library/prepare_state_and_amplitudes/example_prepare_state/main.py",
+      "native_comparison": "examples/synthesis/tutorials/state_preparation/classiq/qmod_library_reference/qmod_core_library/prepare_state_and_amplitudes/example_prepare_state/comparisons/circuit.py",
       "validation_sources": [
+        "tests/integration/test_synthesis_native_catalog.py",
         "tests/integration/test_synthesis_qmod_prepare_state.py"
       ],
       "circuit_validation_sources": [
+        "tests/integration/test_synthesis_native_catalog.py",
         "tests/integration/test_synthesis_qmod_prepare_state.py"
       ],
       "fixture_sources": [
@@ -9648,12 +9660,14 @@
       "companion_files": [],
       "classical_inputs": null,
       "basis_mps": false,
-      "native_example": null,
-      "native_comparison": null,
+      "native_example": "examples/synthesis/tutorials/gates/classiq/qmod_library_reference/qmod_core_library/standard_gates/CRX/main.py",
+      "native_comparison": "examples/synthesis/tutorials/gates/classiq/qmod_library_reference/qmod_core_library/standard_gates/CRX/comparisons/circuit.py",
       "validation_sources": [
+        "tests/integration/test_synthesis_native_catalog.py",
         "tests/integration/test_synthesis_qmod_pair_gates.py"
       ],
       "circuit_validation_sources": [
+        "tests/integration/test_synthesis_native_catalog.py",
         "tests/integration/test_synthesis_qmod_pair_gates.py"
       ],
       "fixture_sources": [
@@ -9696,12 +9710,14 @@
       "companion_files": [],
       "classical_inputs": null,
       "basis_mps": false,
-      "native_example": null,
-      "native_comparison": null,
+      "native_example": "examples/synthesis/tutorials/gates/classiq/qmod_library_reference/qmod_core_library/standard_gates/CX/main.py",
+      "native_comparison": "examples/synthesis/tutorials/gates/classiq/qmod_library_reference/qmod_core_library/standard_gates/CX/comparisons/circuit.py",
       "validation_sources": [
+        "tests/integration/test_synthesis_native_catalog.py",
         "tests/integration/test_synthesis_qmod_pair_gates.py"
       ],
       "circuit_validation_sources": [
+        "tests/integration/test_synthesis_native_catalog.py",
         "tests/integration/test_synthesis_qmod_pair_gates.py"
       ],
       "fixture_sources": [
@@ -9744,13 +9760,15 @@
       "companion_files": [],
       "classical_inputs": null,
       "basis_mps": false,
-      "native_example": null,
-      "native_comparison": null,
+      "native_example": "examples/synthesis/tutorials/gates/classiq/qmod_library_reference/qmod_core_library/standard_gates/PHASE/main.py",
+      "native_comparison": "examples/synthesis/tutorials/gates/classiq/qmod_library_reference/qmod_core_library/standard_gates/PHASE/comparisons/circuit.py",
       "validation_sources": [
+        "tests/integration/test_synthesis_native_catalog.py",
         "tests/integration/test_synthesis_qmod_controlled_evolution.py",
         "tests/integration/test_synthesis_qmod_phase_gate.py"
       ],
       "circuit_validation_sources": [
+        "tests/integration/test_synthesis_native_catalog.py",
         "tests/integration/test_synthesis_qmod_controlled_evolution.py"
       ],
       "fixture_sources": [
@@ -9793,12 +9811,14 @@
       "companion_files": [],
       "classical_inputs": null,
       "basis_mps": false,
-      "native_example": null,
-      "native_comparison": null,
+      "native_example": "examples/synthesis/tutorials/gates/classiq/qmod_library_reference/qmod_core_library/standard_gates/R/main.py",
+      "native_comparison": "examples/synthesis/tutorials/gates/classiq/qmod_library_reference/qmod_core_library/standard_gates/R/comparisons/circuit.py",
       "validation_sources": [
+        "tests/integration/test_synthesis_native_catalog.py",
         "tests/integration/test_synthesis_qmod_r.py"
       ],
       "circuit_validation_sources": [
+        "tests/integration/test_synthesis_native_catalog.py",
         "tests/integration/test_synthesis_qmod_r.py"
       ],
       "fixture_sources": [
@@ -9841,12 +9861,14 @@
       "companion_files": [],
       "classical_inputs": null,
       "basis_mps": false,
-      "native_example": null,
-      "native_comparison": null,
+      "native_example": "examples/synthesis/tutorials/gates/classiq/qmod_library_reference/qmod_core_library/standard_gates/RZ/main.py",
+      "native_comparison": "examples/synthesis/tutorials/gates/classiq/qmod_library_reference/qmod_core_library/standard_gates/RZ/comparisons/circuit.py",
       "validation_sources": [
+        "tests/integration/test_synthesis_native_catalog.py",
         "tests/integration/test_synthesis_qmod_rz.py"
       ],
       "circuit_validation_sources": [
+        "tests/integration/test_synthesis_native_catalog.py",
         "tests/integration/test_synthesis_qmod_rz.py"
       ],
       "fixture_sources": [
@@ -9889,12 +9911,15 @@
       "companion_files": [],
       "classical_inputs": null,
       "basis_mps": false,
-      "native_example": null,
-      "native_comparison": null,
+      "native_example": "examples/synthesis/tutorials/gates/classiq/qmod_library_reference/qmod_core_library/standard_gates/RZZ/main.py",
+      "native_comparison": "examples/synthesis/tutorials/gates/classiq/qmod_library_reference/qmod_core_library/standard_gates/RZZ/comparisons/circuit.py",
       "validation_sources": [
+        "tests/integration/test_synthesis_native_catalog.py",
         "tests/integration/test_synthesis_qmod_rzz.py"
       ],
-      "circuit_validation_sources": [],
+      "circuit_validation_sources": [
+        "tests/integration/test_synthesis_native_catalog.py"
+      ],
       "fixture_sources": [
         "tests/fixtures/classiq_qmod/RZZ.qmod"
       ],
@@ -9935,12 +9960,14 @@
       "companion_files": [],
       "classical_inputs": null,
       "basis_mps": false,
-      "native_example": null,
-      "native_comparison": null,
+      "native_example": "examples/synthesis/tutorials/gates/classiq/qmod_library_reference/qmod_core_library/standard_gates/SWAP/main.py",
+      "native_comparison": "examples/synthesis/tutorials/gates/classiq/qmod_library_reference/qmod_core_library/standard_gates/SWAP/comparisons/circuit.py",
       "validation_sources": [
+        "tests/integration/test_synthesis_native_catalog.py",
         "tests/integration/test_synthesis_qmod_pair_gates.py"
       ],
       "circuit_validation_sources": [
+        "tests/integration/test_synthesis_native_catalog.py",
         "tests/integration/test_synthesis_qmod_pair_gates.py"
       ],
       "fixture_sources": [
@@ -9983,12 +10010,14 @@
       "companion_files": [],
       "classical_inputs": null,
       "basis_mps": false,
-      "native_example": null,
-      "native_comparison": null,
+      "native_example": "examples/synthesis/tutorials/gates/classiq/qmod_library_reference/qmod_core_library/standard_gates/U/main.py",
+      "native_comparison": "examples/synthesis/tutorials/gates/classiq/qmod_library_reference/qmod_core_library/standard_gates/U/comparisons/circuit.py",
       "validation_sources": [
+        "tests/integration/test_synthesis_native_catalog.py",
         "tests/integration/test_synthesis_qmod_u.py"
       ],
       "circuit_validation_sources": [
+        "tests/integration/test_synthesis_native_catalog.py",
         "tests/integration/test_synthesis_qmod_u.py"
       ],
       "fixture_sources": [
@@ -10031,15 +10060,18 @@
       "companion_files": [],
       "classical_inputs": null,
       "basis_mps": false,
-      "native_example": null,
-      "native_comparison": null,
+      "native_example": "examples/synthesis/tutorials/gates/classiq/qmod_library_reference/qmod_core_library/standard_gates/X/main.py",
+      "native_comparison": "examples/synthesis/tutorials/gates/classiq/qmod_library_reference/qmod_core_library/standard_gates/X/comparisons/circuit.py",
       "validation_sources": [
         "tests/integration/test_qmod_parser_execution.py",
+        "tests/integration/test_synthesis_native_catalog.py",
         "tests/integration/test_synthesis_qmod_originals.py",
         "tests/team/ecosystem/test_qmod_comparisons.py",
         "tests/team/ecosystem/test_qmod_parser.py"
       ],
-      "circuit_validation_sources": [],
+      "circuit_validation_sources": [
+        "tests/integration/test_synthesis_native_catalog.py"
+      ],
       "fixture_sources": [
         "tests/fixtures/classiq_qmod/X.qmod"
       ],
@@ -11173,12 +11205,15 @@
       "companion_files": [],
       "classical_inputs": null,
       "basis_mps": false,
-      "native_example": null,
-      "native_comparison": null,
+      "native_example": "examples/synthesis/tutorials/basics/classiq/the_classiq_tutorial/classiq_overview_tutorial/main.py",
+      "native_comparison": "examples/synthesis/tutorials/basics/classiq/the_classiq_tutorial/classiq_overview_tutorial/comparisons/circuit.py",
       "validation_sources": [
+        "tests/integration/test_synthesis_native_catalog.py",
         "tests/team/ecosystem/test_qmod_tutorial_sources.py"
       ],
-      "circuit_validation_sources": [],
+      "circuit_validation_sources": [
+        "tests/integration/test_synthesis_native_catalog.py"
+      ],
       "fixture_sources": [
         "tests/fixtures/classiq_qmod/classiq_overview_tutorial.qmod"
       ],
@@ -11219,15 +11254,18 @@
       "companion_files": [],
       "classical_inputs": null,
       "basis_mps": false,
-      "native_example": null,
-      "native_comparison": null,
+      "native_example": "examples/synthesis/tutorials/basics/classiq/the_classiq_tutorial/execution_tutorial/main.py",
+      "native_comparison": "examples/synthesis/tutorials/basics/classiq/the_classiq_tutorial/execution_tutorial/comparisons/circuit.py",
       "validation_sources": [
+        "tests/integration/test_synthesis_native_catalog.py",
         "tests/integration/test_synthesis_qmod_originals.py",
         "tests/team/ecosystem/test_qmod_comparisons.py",
         "tests/team/ecosystem/test_qmod_parser.py",
         "tests/team/ecosystem/test_qmod_tutorial_sources.py"
       ],
-      "circuit_validation_sources": [],
+      "circuit_validation_sources": [
+        "tests/integration/test_synthesis_native_catalog.py"
+      ],
       "fixture_sources": [
         "tests/fixtures/classiq_qmod/execution_tutorial.qmod",
         "tests/fixtures/classiq_qmod/synthesis_tutorial.qmod"
@@ -11334,15 +11372,18 @@
       "companion_files": [],
       "classical_inputs": null,
       "basis_mps": false,
-      "native_example": null,
-      "native_comparison": null,
+      "native_example": "examples/synthesis/tutorials/basics/classiq/the_classiq_tutorial/synthesis_tutorial/main.py",
+      "native_comparison": "examples/synthesis/tutorials/basics/classiq/the_classiq_tutorial/synthesis_tutorial/comparisons/circuit.py",
       "validation_sources": [
+        "tests/integration/test_synthesis_native_catalog.py",
         "tests/integration/test_synthesis_qmod_originals.py",
         "tests/team/ecosystem/test_qmod_comparisons.py",
         "tests/team/ecosystem/test_qmod_parser.py",
         "tests/team/ecosystem/test_qmod_tutorial_sources.py"
       ],
-      "circuit_validation_sources": [],
+      "circuit_validation_sources": [
+        "tests/integration/test_synthesis_native_catalog.py"
+      ],
       "fixture_sources": [
         "tests/fixtures/classiq_qmod/execution_tutorial.qmod",
         "tests/fixtures/classiq_qmod/synthesis_tutorial.qmod"

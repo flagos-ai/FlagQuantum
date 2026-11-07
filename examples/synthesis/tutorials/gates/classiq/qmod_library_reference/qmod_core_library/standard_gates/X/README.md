@@ -9,8 +9,8 @@ Category: tutorials / gates.
 | Form | Availability |
 | --- | --- |
 | Qmod original | [source.qmod](comparisons/source.qmod) |
-| Native Python qfunc | Not yet provided for this exact original |
-| Circuit comparison | See the validation source links below |
+| Native Python qfunc | [Corresponding native program](main.py) |
+| Circuit comparison | [Runnable three-form comparison](comparisons/circuit.py) |
 
 ## Run
 
@@ -42,14 +42,22 @@ Batch execution checks successful exact execution and basic result validity.
 Linked tests and validators document their own input bindings, full-state
 references, global-phase and workspace checks; inspect their individual scopes.
 
+Run the native program and its three-form comparison:
+
+```sh
+python -m examples.synthesis.tutorials.gates.classiq.qmod_library_reference.qmod_core_library.standard_gates.X.main
+python -m examples.synthesis.tutorials.gates.classiq.qmod_library_reference.qmod_core_library.standard_gates.X.comparisons.circuit
+```
+
 ## Existing validation sources
 
 - [test_qmod_parser_execution.py](../../../../../../../../../tests/integration/test_qmod_parser_execution.py)
+- [test_synthesis_native_catalog.py](../../../../../../../../../tests/integration/test_synthesis_native_catalog.py)
 - [test_synthesis_qmod_originals.py](../../../../../../../../../tests/integration/test_synthesis_qmod_originals.py)
 - [test_qmod_comparisons.py](../../../../../../../../../tests/team/ecosystem/test_qmod_comparisons.py)
 - [test_qmod_parser.py](../../../../../../../../../tests/team/ecosystem/test_qmod_parser.py)
 
-Circuit-based validation source links: 0.
+Circuit-based validation source links: 1.
 
 ## Provenance
 

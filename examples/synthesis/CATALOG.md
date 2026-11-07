@@ -1,8 +1,8 @@
 # Classified Classiq Qmod cases
 
-All **216** pinned original paths are classified here. **6** have a byte-matched corresponding native example; the other native entries are explicitly marked missing.
+All **216** pinned original paths are classified here. **23** have a byte-matched corresponding native example; the other native entries are explicitly marked missing.
 
-**204** cases link existing Circuit validation sources. A link locates a validation implementation; its own bindings and scope determine what it proves.
+**211** cases link existing Circuit validation sources. A link locates a validation implementation; its own bindings and scope determine what it proves.
 
 The approved numerical revision passes 216/216 execution smoke checks. The original snapshot has 210 passes and six source-semantic refusals.
 
@@ -46,7 +46,7 @@ Use each case README for exact bindings, resource records, sources and validatio
 | [functions/function_usage_examples/arithmetic/extremum/minimum_2vars_example.qmod](tutorials/arithmetic/classiq/function_usage_examples/arithmetic/extremum/minimum_2vars_example/README.md) | Not provided | 1 | execution_smoke_passed |
 | [functions/function_usage_examples/arithmetic/modular_exp/modular_exp_example.qmod](tutorials/arithmetic/classiq/function_usage_examples/arithmetic/modular_exp/modular_exp_example/README.md) | Not provided | 1 | execution_smoke_passed |
 | [functions/function_usage_examples/arithmetic/modulo/modulo_example.qmod](tutorials/arithmetic/classiq/function_usage_examples/arithmetic/modulo/modulo_example/README.md) | Not provided | 1 | execution_smoke_passed |
-| [functions/function_usage_examples/arithmetic/multiplication/multiplication_2vars_example.qmod](tutorials/arithmetic/classiq/function_usage_examples/arithmetic/multiplication/multiplication_2vars_example/README.md) | Not provided | 0 | execution_smoke_passed |
+| [functions/function_usage_examples/arithmetic/multiplication/multiplication_2vars_example.qmod](tutorials/arithmetic/classiq/function_usage_examples/arithmetic/multiplication/multiplication_2vars_example/README.md) | Available | 1 | execution_smoke_passed |
 | [functions/function_usage_examples/arithmetic/multiplication/multiplication_float_example.qmod](tutorials/arithmetic/classiq/function_usage_examples/arithmetic/multiplication/multiplication_float_example/README.md) | Not provided | 1 | execution_smoke_passed |
 | [functions/function_usage_examples/arithmetic/negation/negation_example.qmod](tutorials/arithmetic/classiq/function_usage_examples/arithmetic/negation/negation_example/README.md) | Not provided | 1 | execution_smoke_passed |
 | [functions/function_usage_examples/arithmetic/subtraction/subtraction_2vars_example.qmod](tutorials/arithmetic/classiq/function_usage_examples/arithmetic/subtraction/subtraction_2vars_example/README.md) | Not provided | 1 | execution_smoke_passed |
@@ -70,10 +70,10 @@ Use each case README for exact bindings, resource records, sources and validatio
 | [tutorials/basic_tutorials/quantumwalk_complex_network/quantumwalk_complex_network.qmod](tutorials/basics/classiq/quantumwalk_complex_network/quantumwalk_complex_network/README.md) | Not provided | 1 | execution_smoke_passed |
 | [tutorials/basic_tutorials/the_classiq_tutorial/Qmod_tutorial_part1.qmod](tutorials/basics/classiq/the_classiq_tutorial/Qmod_tutorial_part1/README.md) | Not provided | 1 | execution_smoke_passed |
 | [tutorials/basic_tutorials/the_classiq_tutorial/Qmod_tutorial_part2.qmod](tutorials/basics/classiq/the_classiq_tutorial/Qmod_tutorial_part2/README.md) | Not provided | 1 | execution_smoke_passed |
-| [tutorials/basic_tutorials/the_classiq_tutorial/classiq_overview_tutorial.qmod](tutorials/basics/classiq/the_classiq_tutorial/classiq_overview_tutorial/README.md) | Not provided | 0 | execution_smoke_passed |
-| [tutorials/basic_tutorials/the_classiq_tutorial/execution_tutorial.qmod](tutorials/basics/classiq/the_classiq_tutorial/execution_tutorial/README.md) | Not provided | 0 | execution_smoke_passed |
+| [tutorials/basic_tutorials/the_classiq_tutorial/classiq_overview_tutorial.qmod](tutorials/basics/classiq/the_classiq_tutorial/classiq_overview_tutorial/README.md) | Available | 1 | execution_smoke_passed |
+| [tutorials/basic_tutorials/the_classiq_tutorial/execution_tutorial.qmod](tutorials/basics/classiq/the_classiq_tutorial/execution_tutorial/README.md) | Available | 1 | execution_smoke_passed |
 | [tutorials/basic_tutorials/the_classiq_tutorial/execution_tutorial_part2.qmod](tutorials/basics/classiq/the_classiq_tutorial/execution_tutorial_part2/README.md) | Not provided | 1 | execution_smoke_passed |
-| [tutorials/basic_tutorials/the_classiq_tutorial/synthesis_tutorial.qmod](tutorials/basics/classiq/the_classiq_tutorial/synthesis_tutorial/README.md) | Not provided | 0 | execution_smoke_passed |
+| [tutorials/basic_tutorials/the_classiq_tutorial/synthesis_tutorial.qmod](tutorials/basics/classiq/the_classiq_tutorial/synthesis_tutorial/README.md) | Available | 1 | execution_smoke_passed |
 
 ### evolution
 
@@ -87,15 +87,15 @@ Use each case README for exact bindings, resource records, sources and validatio
 | Original case | Native qfunc | Circuit validation links | Original status |
 | --- | --- | --- | --- |
 | [functions/function_usage_examples/mcx/mcx_example.qmod](tutorials/gates/classiq/function_usage_examples/mcx/mcx_example/README.md) | Not provided | 1 | execution_smoke_passed |
-| [functions/qmod_library_reference/qmod_core_library/standard_gates/CRX.qmod](tutorials/gates/classiq/qmod_library_reference/qmod_core_library/standard_gates/CRX/README.md) | Not provided | 1 | execution_smoke_passed |
-| [functions/qmod_library_reference/qmod_core_library/standard_gates/CX.qmod](tutorials/gates/classiq/qmod_library_reference/qmod_core_library/standard_gates/CX/README.md) | Not provided | 1 | execution_smoke_passed |
-| [functions/qmod_library_reference/qmod_core_library/standard_gates/PHASE.qmod](tutorials/gates/classiq/qmod_library_reference/qmod_core_library/standard_gates/PHASE/README.md) | Not provided | 1 | execution_smoke_passed |
-| [functions/qmod_library_reference/qmod_core_library/standard_gates/R.qmod](tutorials/gates/classiq/qmod_library_reference/qmod_core_library/standard_gates/R/README.md) | Not provided | 1 | execution_smoke_passed |
-| [functions/qmod_library_reference/qmod_core_library/standard_gates/RZ.qmod](tutorials/gates/classiq/qmod_library_reference/qmod_core_library/standard_gates/RZ/README.md) | Not provided | 1 | execution_smoke_passed |
-| [functions/qmod_library_reference/qmod_core_library/standard_gates/RZZ.qmod](tutorials/gates/classiq/qmod_library_reference/qmod_core_library/standard_gates/RZZ/README.md) | Not provided | 0 | execution_smoke_passed |
-| [functions/qmod_library_reference/qmod_core_library/standard_gates/SWAP.qmod](tutorials/gates/classiq/qmod_library_reference/qmod_core_library/standard_gates/SWAP/README.md) | Not provided | 1 | execution_smoke_passed |
-| [functions/qmod_library_reference/qmod_core_library/standard_gates/U.qmod](tutorials/gates/classiq/qmod_library_reference/qmod_core_library/standard_gates/U/README.md) | Not provided | 1 | execution_smoke_passed |
-| [functions/qmod_library_reference/qmod_core_library/standard_gates/X.qmod](tutorials/gates/classiq/qmod_library_reference/qmod_core_library/standard_gates/X/README.md) | Not provided | 0 | execution_smoke_passed |
+| [functions/qmod_library_reference/qmod_core_library/standard_gates/CRX.qmod](tutorials/gates/classiq/qmod_library_reference/qmod_core_library/standard_gates/CRX/README.md) | Available | 2 | execution_smoke_passed |
+| [functions/qmod_library_reference/qmod_core_library/standard_gates/CX.qmod](tutorials/gates/classiq/qmod_library_reference/qmod_core_library/standard_gates/CX/README.md) | Available | 2 | execution_smoke_passed |
+| [functions/qmod_library_reference/qmod_core_library/standard_gates/PHASE.qmod](tutorials/gates/classiq/qmod_library_reference/qmod_core_library/standard_gates/PHASE/README.md) | Available | 2 | execution_smoke_passed |
+| [functions/qmod_library_reference/qmod_core_library/standard_gates/R.qmod](tutorials/gates/classiq/qmod_library_reference/qmod_core_library/standard_gates/R/README.md) | Available | 2 | execution_smoke_passed |
+| [functions/qmod_library_reference/qmod_core_library/standard_gates/RZ.qmod](tutorials/gates/classiq/qmod_library_reference/qmod_core_library/standard_gates/RZ/README.md) | Available | 2 | execution_smoke_passed |
+| [functions/qmod_library_reference/qmod_core_library/standard_gates/RZZ.qmod](tutorials/gates/classiq/qmod_library_reference/qmod_core_library/standard_gates/RZZ/README.md) | Available | 1 | execution_smoke_passed |
+| [functions/qmod_library_reference/qmod_core_library/standard_gates/SWAP.qmod](tutorials/gates/classiq/qmod_library_reference/qmod_core_library/standard_gates/SWAP/README.md) | Available | 2 | execution_smoke_passed |
+| [functions/qmod_library_reference/qmod_core_library/standard_gates/U.qmod](tutorials/gates/classiq/qmod_library_reference/qmod_core_library/standard_gates/U/README.md) | Available | 2 | execution_smoke_passed |
+| [functions/qmod_library_reference/qmod_core_library/standard_gates/X.qmod](tutorials/gates/classiq/qmod_library_reference/qmod_core_library/standard_gates/X/README.md) | Available | 1 | execution_smoke_passed |
 
 ### library
 
@@ -119,15 +119,15 @@ Use each case README for exact bindings, resource records, sources and validatio
 
 | Original case | Native qfunc | Circuit validation links | Original status |
 | --- | --- | --- | --- |
-| [functions/qmod_library_reference/classiq_open_library/special_state_preparations/prepare_bell_state.qmod](tutorials/state_preparation/classiq/qmod_library_reference/classiq_open_library/special_state_preparations/prepare_bell_state/README.md) | Not provided | 1 | execution_smoke_passed |
+| [functions/qmod_library_reference/classiq_open_library/special_state_preparations/prepare_bell_state.qmod](tutorials/state_preparation/classiq/qmod_library_reference/classiq_open_library/special_state_preparations/prepare_bell_state/README.md) | Available | 2 | execution_smoke_passed |
 | [functions/qmod_library_reference/classiq_open_library/special_state_preparations/prepare_exponential_state.qmod](tutorials/state_preparation/classiq/qmod_library_reference/classiq_open_library/special_state_preparations/prepare_exponential_state/README.md) | Not provided | 1 | execution_smoke_passed |
-| [functions/qmod_library_reference/classiq_open_library/special_state_preparations/prepare_ghz_state.qmod](tutorials/state_preparation/classiq/qmod_library_reference/classiq_open_library/special_state_preparations/prepare_ghz_state/README.md) | Not provided | 0 | execution_smoke_passed |
+| [functions/qmod_library_reference/classiq_open_library/special_state_preparations/prepare_ghz_state.qmod](tutorials/state_preparation/classiq/qmod_library_reference/classiq_open_library/special_state_preparations/prepare_ghz_state/README.md) | Available | 1 | execution_smoke_passed |
 | [functions/qmod_library_reference/classiq_open_library/special_state_preparations/prepare_uniform_interval_state.qmod](tutorials/state_preparation/classiq/qmod_library_reference/classiq_open_library/special_state_preparations/prepare_uniform_interval_state/README.md) | Available | 1 | execution_smoke_passed |
 | [functions/qmod_library_reference/classiq_open_library/special_state_preparations/prepare_uniform_trimmed_state.qmod](tutorials/state_preparation/classiq/qmod_library_reference/classiq_open_library/special_state_preparations/prepare_uniform_trimmed_state/README.md) | Available | 1 | execution_smoke_passed |
 | [functions/qmod_library_reference/classiq_open_library/variational_data_encoding/encode_in_angle.qmod](tutorials/state_preparation/classiq/qmod_library_reference/classiq_open_library/variational_data_encoding/encode_in_angle/README.md) | Not provided | 1 | execution_smoke_passed |
 | [functions/qmod_library_reference/classiq_open_library/variational_data_encoding/encode_on_bloch.qmod](tutorials/state_preparation/classiq/qmod_library_reference/classiq_open_library/variational_data_encoding/encode_on_bloch/README.md) | Not provided | 1 | execution_smoke_passed |
-| [functions/qmod_library_reference/qmod_core_library/prepare_state_and_amplitudes/example_prepare_amplitudes.qmod](tutorials/state_preparation/classiq/qmod_library_reference/qmod_core_library/prepare_state_and_amplitudes/example_prepare_amplitudes/README.md) | Not provided | 1 | execution_smoke_passed |
-| [functions/qmod_library_reference/qmod_core_library/prepare_state_and_amplitudes/example_prepare_state.qmod](tutorials/state_preparation/classiq/qmod_library_reference/qmod_core_library/prepare_state_and_amplitudes/example_prepare_state/README.md) | Not provided | 1 | execution_smoke_passed |
+| [functions/qmod_library_reference/qmod_core_library/prepare_state_and_amplitudes/example_prepare_amplitudes.qmod](tutorials/state_preparation/classiq/qmod_library_reference/qmod_core_library/prepare_state_and_amplitudes/example_prepare_amplitudes/README.md) | Available | 2 | execution_smoke_passed |
+| [functions/qmod_library_reference/qmod_core_library/prepare_state_and_amplitudes/example_prepare_state.qmod](tutorials/state_preparation/classiq/qmod_library_reference/qmod_core_library/prepare_state_and_amplitudes/example_prepare_state/README.md) | Available | 2 | execution_smoke_passed |
 
 ### techniques
 

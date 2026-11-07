@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from contextlib import AbstractContextManager
 from types import GenericAlias
 from typing import Annotated, TypeAlias, TypeVar
@@ -111,6 +111,50 @@ def r(theta: float, phi: float, target: QBit, /) -> None:
 def u(theta: float, phi: float, lam: float, gamma: float, target: QBit, /) -> None:
     """Apply a single-qubit Euler rotation with an explicit global phase."""
     raise TypeError("U is captured inside qfunc")
+
+
+def x(target: QBit, /) -> None:
+    """Flip an initialized scalar qubit inside a captured qfunc."""
+    raise TypeError("X is captured inside qfunc")
+
+
+def rz(angle: float, target: QBit, /) -> None:
+    """Apply diag(exp(-i*angle/2), exp(i*angle/2)) in radians."""
+    raise TypeError("RZ is captured inside qfunc")
+
+
+def phase_gate(angle: float, target: QBit, /) -> None:
+    """Apply diag(1, exp(i*angle)) in radians inside qfunc."""
+    raise TypeError("PHASE is captured inside qfunc")
+
+
+def rzz(angle: float, target: QNum, /) -> None:
+    """Apply exp(-i*angle*Z*Z/2) to an initialized two-bit register."""
+    raise TypeError("RZZ is captured inside qfunc")
+
+
+def prepare_bell_state(state: int, target: QNum, /) -> None:
+    """Initialize a fresh two-bit register as Bell state 1 (Phi-) or 2 (Psi+)."""
+    raise TypeError("Bell preparation is captured inside qfunc")
+
+
+def prepare_ghz_state(size: int, target: QNum, /) -> None:
+    """Initialize a fresh register as (|0...0> + |1...1>)/sqrt(2)."""
+    raise TypeError("GHZ preparation is captured inside qfunc")
+
+
+def prepare_amplitudes(
+    amplitudes: Sequence[float], bound: float, target: QNum, /
+) -> None:
+    """Initialize fresh storage from a normalized real literal amplitude vector."""
+    raise TypeError("amplitude preparation is captured inside qfunc")
+
+
+def prepare_state(
+    probabilities: Sequence[float], bound: float, target: QNum, /
+) -> None:
+    """Initialize fresh storage with nonnegative square-root amplitudes."""
+    raise TypeError("probability preparation is captured inside qfunc")
 
 
 def prepare_uniform_interval_state(start: int, stop: int, target: QNum, /) -> None:
