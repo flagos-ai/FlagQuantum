@@ -8,21 +8,11 @@
 from dataclasses import fields
 
 from .._component_trace.arithmetic_call import ArithmeticCall
-from .._component_trace.qec_gate_cost import QECGateCost, query_qec_gate_cost
-from .._component_trace.resource_generalization import (
-    ControlPredicateCall,
-    PredicateControlledCall,
-)
 from .._component_trace.resource_model import estimate_component_resources
 from .._component_trace.symbolic_math import SymbolicInt
-from .._component_trace.width_schedule import (
-    WidthConnection,
-    WidthStep,
-    estimate_connection_width,
-)
 from .constant_add_resource_model import source_controlled_constant_add_resource_formula
 from .control_predicate import ControlRegister
-from .control_predicate_resource_model import control_predicate_cost
+from .controlled_component_resource_model import controlled_component_resource_formula
 from .multi_controlled_constant_addition import (
     source_grouped_controlled_constant_add_cost,
 )
@@ -71,39 +61,6 @@ def source_grouped_constant_add_resource_formula(
     addition = source_controlled_constant_add_resource_formula(
         width, constant, adjoint=adjoint, legacy_shims=legacy_shims
     )
-    compute = control_predicate_cost(values, legacy_shims=legacy_shims)
-    erase = control_predicate_cost(values, uncompute=True, legacy_shims=legacy_shims)
-    root = PredicateControlledCall(positive, values)
-    gates = query_qec_gate_cost(
-        root,
-        legacy_shims=legacy_shims,
-        static_costs={
-            positive: QECGateCost().plus(addition, 1),
-            ControlPredicateCall(values): QECGateCost().plus(compute.gates, 1),
-            ControlPredicateCall(values, adjoint=True): QECGateCost().plus(
-                erase.gates, 1
-            ),
-        },
-    )
-    count = len(values)
-    peak = estimate_connection_width(
-        (
-            WidthStep("input"),
-            WidthStep("component", compute.qubits),
-            WidthStep("component", addition.logical_qubits),
-            WidthStep("component", erase.qubits),
-            WidthStep("output"),
-        ),
-        (
-            WidthConnection(0, 1, count),
-            WidthConnection(0, 2, width),
-            WidthConnection(1, 2, 1),
-            WidthConnection(1, 3, 2 * count - 2),
-            WidthConnection(2, 3, 1),
-            WidthConnection(2, 4, width),
-            WidthConnection(3, 4, count),
-        ),
-    )
-    return SymbolicResourceFormula(
-        logical_qubits=peak, **{f.name: getattr(gates, f.name) for f in fields(gates)}
+    return controlled_component_resource_formula(
+        positive, addition, registers, target_width=width, legacy_shims=legacy_shims
     )

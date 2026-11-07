@@ -108,8 +108,10 @@ def test_all_shared_child_categories_and_symbolic_width_connections_remain_repla
     monkeypatch.setattr(
         module, "source_controlled_constant_add_resource_formula", positive
     )
+    import flagquantum.compiler.registers.controlled_component_resource_model as shared
+
     monkeypatch.setattr(
-        module,
+        shared,
         "control_predicate_cost",
         lambda *args, uncompute=False, **kwargs: erase if uncompute else compute,
     )
