@@ -59,3 +59,17 @@ no skips. Nineteen source/native unsigned arithmetic overflow warnings remain
 visible, including the explicit native underflow witness. Strict types, formatting,
 team scope, architecture and the runnable example pass. Original source blobs
 are verified against the inventory; no reference or prior defect is patched.
+
+## Modular negation value methods (G2-VAL07)
+
+`simulation/classical_modular_negation.py` ports ModNeg/CModNeg with the source's
+strict interior test `0 < x < p`. Zero, negative and at-or-above-modulus values
+return unchanged, and controlled evaluation tests activation before comparing x.
+No control validator or modulo normalization is added. The original gate cleanup
+failure outside the clean residue domain remains open.
+
+The existing basis/coherent state builders now consume this evaluator while
+retaining the independent mathematical negation assertion. Original primitive,
+feedback, QEC/QubitCount, forced-history and all-history clean-work assertions are
+unchanged. This module adds 217 source value tests covering types, symbolic
+relations, array truth behavior, exterior identities and both control polarities.

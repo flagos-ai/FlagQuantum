@@ -10,6 +10,10 @@ from flagquantum.compiler.registers.modular_negation import (
     modular_negate_ir,
     modular_negation_requirements,
 )
+from flagquantum.simulation.classical_modular_negation import (
+    controlled_modular_negate_classical_values,
+    modular_negate_classical_value,
+)
 from tests.unit.measurement_checks import certified_and_channel_map, forced_branch
 from tests.unit.test_register_constant_addition import reference_arithmetic_gates
 from tests.unit.test_register_subtraction import assert_source
@@ -81,7 +85,15 @@ def basis_inputs(
     control_values = (0,) if cv is None else (0, 1)
     for ctrl in control_values:
         for x in range(p):
-            y = (-x) % p if cv is None or ctrl == cv else x
+            if cv is None:
+                y = int(modular_negate_classical_value(x, p))
+            else:
+                y = int(
+                    controlled_modular_negate_classical_values(
+                        ctrl, x, p, control_value=cv
+                    )[1]
+                )
+            assert y == ((-x) % p if cv is None or ctrl == cv else x)
             before = ((ctrl << n) | x) << q
             after = ((ctrl << n) | y) << q
             inputs.append(tuple((before >> (width - 1 - i)) & 1 for i in range(width)))
