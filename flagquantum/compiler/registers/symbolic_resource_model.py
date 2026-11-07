@@ -35,11 +35,16 @@ class SymbolicResourceFormula:
 
 
 def source_add_resource_formula(
-    left_width: SymbolicInt, right_width: SymbolicInt
+    left_width: SymbolicInt,
+    right_width: SymbolicInt,
+    *,
+    legacy_shims: bool = False,
 ) -> SymbolicResourceFormula:
-    """Use the locked width fallback for an Add whose size is symbolic."""
+    """Use the locked Add declaration and width fallback in the selected profile."""
+    if type(legacy_shims) is not bool:
+        raise ValueError("Add formula cost profile must be a boolean")
     if isinstance(left_width, int) and isinstance(right_width, int):
-        concrete = source_add_cost(left_width, right_width)
+        concrete = source_add_cost(left_width, right_width, legacy_shims=legacy_shims)
         return SymbolicResourceFormula(
             concrete.gates.and_bloq,
             concrete.gates.clifford,
@@ -47,9 +52,10 @@ def source_add_resource_formula(
             concrete.qubits,
         )
     carries = right_width - 1
+    cleanup = control_predicate_cost((1, 1), uncompute=True, legacy_shims=legacy_shims)
     return SymbolicResourceFormula(
         carries,
-        (right_width - 2) * 6 + 3 + carries,
+        (right_width - 2) * 6 + 3 + carries * cleanup.gates.clifford,
         carries,
         cast(SymbolicInt, smax(3, left_width + right_width)),
     )

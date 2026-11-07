@@ -72,3 +72,24 @@ gate/state/clean-work evidence. The runnable example
 peak and T equivalents; it makes no physical-gate or quantum-execution claim.
 Tests compare original signatures, direct callees/multiplicities, every QEC
 category, both profiles/directions, the signed flag and source failure boundaries.
+
+## Symbolic CAdd declarations (G2-A43)
+
+`controlled_add_resource_model.source_controlled_add_resource_formula` consumes
+shared Add and predicate models. `source_add_resource_formula` now accepts the
+same explicit QEC profile, including original And-adjoint cleanup counts. The
+default queries and executable arithmetic remain unchanged.
+
+Two Python integer widths dispatch to the existing composed CAdd model. Mixed,
+symbolic and Sympy-integer dimensions retain the original undecomposable
+signature/callee maximum. They do not gain fictitious loaded/carry storage. For
+m=n=3 the original symbolic fallback is 7 logical qubits, while the concrete
+execution model peaks at 12. Substitution into a symbolic formula and rebuilding
+with Python integers are separate original paths. Sympy integers are not cast.
+
+The source's symbolic metadata can also accept reversed literal widths even
+though the concrete Add constructor rejects them; resource declarations retain
+that distinction without claiming physical execution. One-bit negative Clifford
+counts remain the original diagnostic. Tests compare uint/Montgomery, controls,
+profiles and both directions, replace all shared child categories, and verify
+both integer dispatch and the original symbolic width fallback.
