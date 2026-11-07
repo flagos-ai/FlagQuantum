@@ -66,3 +66,44 @@ by this profile propagation.
 This adapter adds 28 tests; the final combined compiler/algorithm regression
 passes 1,105 tests without skips. Strict types, formatting, lint, ownership and
 architecture checks pass. Both reference trees remain unchanged.
+
+
+## Table-free model profiles (G2-ALIAS09)
+
+`AliasPreparationShape.resource_model(legacy_shims=True)` now propagates the
+source QEC profile to shape-only QROM and concrete uniform preparation. For a
+symbolic uniform dimension or comparison width, it preserves the original
+symbolic declaration and applies the shared positive-And cleanup charge to its
+declared multiplicity. The default remains unchanged. The legacy flag selects
+QEC classification; it does not switch to the different legacy T-complexity
+folding rates or infer any primitive gate stream.
+
+All seven categories and source peak widths are compared for concrete/symbolic
+row counts and precision, dense/sparse shapes, both profiles and both source
+directions. Replacement and no-emission tests verify the shared QROM boundary.
+
+The source's symbolic declarations and concrete reconstruction are distinct
+queries. With normalization equal to row count and precision 0.125, the symbolic
+factory retains a Sympy integer for mu even after it simplifies to 3. For L=5,
+substitution of that symbolic declaration gives Clifford counts 179/215 in the
+modern/legacy profiles. Reconstructing the factory with Python integer 5 gives
+165/197. Native queries match both unchanged original results, and preserve the
+14/18 differences. Do not normalize types or optimize either reference formula
+and then claim it represents the other original call chain.
+
+```sh
+python -m examples.algorithms.alias_resource_profiles
+python -m examples.algorithms.alias_resource_profiles --symbolic
+```
+
+The default example uses five rows and three probability bits. It reports
+modern/legacy categories and model T-equivalent budgets for dense preparation
+and sparse preparation in a 16-element selection domain. The symbolic option
+prints formal declarations in L and N; its dimensions retain the source shape
+conditions. Neither example emits or simulates a circuit. Actual data, gate
+streams, complex amplitudes and work cleanup remain the separate executable
+alias path covered by the concentrated regression.
+
+G2-ALIAS09 adds 25 parameterized/contract/witness cases, following the ten new
+G2-RES36 shared-QROM cases. Final regression: 1,312 passed, no skips. Strict
+types, formatting, lint, scope and architecture checks pass.

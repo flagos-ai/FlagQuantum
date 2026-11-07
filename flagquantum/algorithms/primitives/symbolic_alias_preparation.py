@@ -19,6 +19,9 @@ from ...compiler._component_trace.symbolic_math import (
     log2,
     smax,
 )
+from ...compiler.registers.control_predicate_resource_model import (
+    control_predicate_cost,
+)
 from ...compiler.registers.symbolic_resource_model import (
     SymbolicResourceFormula,
     source_qrom_resource_formula,
@@ -103,8 +106,12 @@ class AliasPreparationShape:
             + 1
         )
 
-    def resource_model(self) -> SymbolicResourceFormula:
+    def resource_model(self, *, legacy_shims: bool = False) -> SymbolicResourceFormula:
         """Estimate the source call graph for at least two table-free rows."""
+        cleanup = control_predicate_cost(
+            (1, 1), uncompute=True, legacy_shims=legacy_shims
+        )
+        cleanup_delta = cleanup.gates.clifford - 1
         sparse = self.support_size is not None
         rows = self.rows if self.support_size is None else self.support_size
         selection, mu = self.selection_width, self.probability_bits
@@ -114,23 +121,25 @@ class AliasPreparationShape:
             raise ValueError("The shape-only cost requires at least two rows")
         uniform_peak: SymbolicReal
         if isinstance(rows, int):
-            uniform = source_uniform_preparation_cost(rows)
+            uniform = source_uniform_preparation_cost(rows, legacy_shims=legacy_shims)
             uniform_ands = uniform.gates.and_bloq
             uniform_cliffords = uniform.gates.clifford
             uniform_rotations = uniform.gates.rotation
             uniform_peak = uniform.qubits
         else:
             uniform_ands = 3 * address - 1
-            uniform_cliffords = 16 * address + 3
+            uniform_cliffords = 16 * address + 3 + cleanup_delta * uniform_ands
             uniform_rotations = 2
             uniform_peak = smax(3, address + 1, 2 * address - 1)
 
         targets = (selection, selection, mu) if sparse else (selection, mu)
         qrom = source_qrom_resource_formula(
-            (rows,), targets, selection_widths=(address,)
+            (rows,), targets, selection_widths=(address,), legacy_shims=legacy_shims
         )
         compare_ands = 2 * mu - 1 if isinstance(mu, int) else 2 * mu + 1
-        compare_cliffords = 22 * mu - 9 if isinstance(mu, int) else 22 * mu + 11
+        compare_cliffords = (
+            22 * mu - 9 if isinstance(mu, int) else 22 * mu + 11
+        ) + cleanup_delta * compare_ands
         compare_peak = 5 * mu if isinstance(mu, int) else smax(7, 2 * mu + 1)
         ands = uniform_ands + qrom.and_bloq + compare_ands
         peak = cast(
