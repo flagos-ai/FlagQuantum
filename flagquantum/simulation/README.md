@@ -675,6 +675,13 @@ not enable unconditional `fql.plan` or the future native sampled plan reader.
 
 ## Classical lookup values
 
+`classical_control_activation.py` evaluates bound control patterns with original
+symbolic-first guards, exact shape checks and first-mismatch short circuits.
+It reuses `value_parameters.py`; Compiler keeps register binding and predicate
+emission. Run `python -m examples.algorithms.classical_control_activation` for
+measured word-controlled X, complex amplitudes and clean inverse. See
+[activation semantics](../../docs/development/CLASSICAL_CONTROL_ACTIVATION.md).
+
 `classical_auto_partition.py` composes bound numerical partitions, one child
 callback and output restoration while preserving unused values. It reuses
 `classical_partition.py`; Compiler retains the separate binding metadata.
