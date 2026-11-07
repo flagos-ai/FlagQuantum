@@ -195,3 +195,59 @@ assertions pass all 117 model tests. Strict mypy covers the new model and
 example, and Black/Ruff/scope/architecture checks pass. Symbolic extents,
 legacy cost profiles and source specialized control wrappers are not closed
 by this concrete default-QEC model slice.
+
+## G2-IDX04 source control-system composition
+
+`indexed_component_control.py` owns concrete specialization of ApplyLthBloq's
+`get_ctrl_system` chain. Its grouped `ControlRegister` input uses the existing
+big-endian encoding authority; an optional `(wire, activation)` describes the
+component's existing control. All controls and addresses are THRU ports. Storage
+is explicitly ordered: new-control predicate ladder, conjunction with the
+existing control if present, address traversal. Children keep ownership of
+binding, target storage and adjoint direction. No public API/schema changes.
+
+The original call chain is `get_ctrl_system_1bit_cv` -> either direct specialized
+ApplyLthBloq or `_MultiControlledFromSinglyControlled`. More than one new control
+first takes the default `ControlledViaAnd` route. When a control already exists,
+its conjunction remains a separate inner And. Reuse `controlled_component_ir`
+and indexed traversal for these stages; flattening all controls changes source
+gate dependencies and is not allowed. Inverse traversal propagates through
+`AdjointWithSpecializedCtrl`; the child supplies its adjoint.
+
+One source defect remains explicit: direct single-bit negative specialization
+without an existing control executes as positive. Both emitter and model retain
+that behavior for source fidelity; this internal adapter does not certify that
+case as correct negative control. Multi-bit activation values and an additional
+single bit on an existing control execute the specified polarities correctly.
+
+`indexed_component_control_resource_model.py` composes the same nested calls
+using the existing `ControlPredicateCall` query and `ComponentCost` authority.
+It does not emit instructions. All seven logical categories and source logical
+peak match independently from primitive T/T-dagger and measurement counts.
+Forty-eight untouched source graphs cover forward/inverse direction, one to
+three new controls, both existing polarities, QBit-shaped and integer-word
+CtrlSpec encodings. Reference export flattens the original component graph
+before Cirq export so the allocator sees enclosing predicate lifetimes; no
+source code or source gate logic is patched. Twenty-four full complex-state
+scenarios enumerate every measurement history, including inactive controls,
+and prove all owned work returns to zero. Six rejection cases fail before child
+emission. Two source module blobs match the pinned inventory and installed
+reference environment (`98b64995010da5863218dbf93b39bbffbd600a2f` and
+`3947ddf86be37f4ff3ba58fcc316a8a64922f84f`).
+
+Run `python -m examples.algorithms.indexed_component_controls`. The append
+example selects X/Z under new control word 01 and existing control zero:
+
+| Quantity | Logical model | Emitted IR |
+|---|---:|---:|
+| T equivalents / T instructions | 12 | 12 |
+| Measurements | 3 | 3 |
+| Peak logical qubits / reserved wires | 8 | 8 |
+
+These are separate reports even when numerical values coincide. The example
+checks runtime complex states; exhaustive branch verification belongs to tests.
+The new tests total 79 and the concentrated indexed/control regression passes
+343 tests without skips. Strict mypy, Black, Ruff, compiler scope and architecture
+checks pass. Symbolic control shapes/extents, legacy indexed model profiles,
+repeated control stacking beyond this call and whole upstream file acceptance
+remain open G2 work.
