@@ -15,6 +15,7 @@ from ..artifacts.reversible_phase import (
 
 _REVERSIBLE_OPCODES = frozenset(REVERSIBLE_OPCODE_ARITIES) - {
     "hmr",
+    "neg",
     "push_condition",
     "pop_condition",
 }
@@ -50,6 +51,33 @@ def _demolition_measurement(
     return ReversiblePhaseOperation("hmr", basis.wires, result_bit=bit)
 
 
+def _is_scalar_sign(span: tuple[Instruction, ...]) -> bool:
+    if tuple(instruction.name for instruction in span) != ("x", "z", "x", "z"):
+        return False
+    anchor = span[0]
+    return len(anchor.wires) == 1 and all(
+        _plain(instruction)
+        and instruction.wires == anchor.wires
+        and instruction.metadata == anchor.metadata
+        for instruction in span
+    )
+
+
+def _ccz_conjugation(span: tuple[Instruction, ...]) -> Instruction | None:
+    if tuple(instruction.name for instruction in span) != ("h", "ccx", "h"):
+        return None
+    before, controlled_x, after = span
+    if (
+        not before.metadata
+        and not after.metadata
+        and all(_plain(instruction) for instruction in span)
+        and len(controlled_x.wires) == 3
+        and before.wires == after.wires == controlled_x.wires[-1:]
+    ):
+        return controlled_x
+    return None
+
+
 def lower_reversible_phase(ir: CircuitIR) -> ReversiblePhaseProgram:
     """Lower exact reversible operations and adjacent X-basis clear sequences.
 
@@ -63,6 +91,8 @@ def lower_reversible_phase(ir: CircuitIR) -> ReversiblePhaseProgram:
     index = 0
     while index < len(ir.instructions):
         instruction = ir.instructions[index]
+        opcode = instruction.name
+        consumed = 1
         if instruction.name == "classical_xor":
             assignment = parse_classical_xor(instruction)
             if assignment.sources.count(assignment.target) % 2 == 0:
@@ -81,13 +111,24 @@ def lower_reversible_phase(ir: CircuitIR) -> ReversiblePhaseProgram:
             index += 1
             continue
         if instruction.name == "h":
-            hmr = _demolition_measurement(ir.instructions[index : index + 3])
+            span = ir.instructions[index : index + 3]
+            hmr = _demolition_measurement(span)
             if hmr is not None:
                 operations.append(hmr)
                 index += 3
                 continue
+            controlled_x = _ccz_conjugation(span)
+            if controlled_x is not None:
+                instruction = controlled_x
+                opcode = "ccz"
+                consumed = 3
+        if instruction.name == "x" and _is_scalar_sign(
+            ir.instructions[index : index + 4]
+        ):
+            opcode = "neg"
+            consumed = 4
         if (
-            instruction.name not in _REVERSIBLE_OPCODES
+            (consumed == 1 and opcode not in _REVERSIBLE_OPCODES)
             or not _plain(instruction)
             or set(instruction.metadata) - {"conditions", "condition_clauses"}
         ):
@@ -111,9 +152,11 @@ def lower_reversible_phase(ir: CircuitIR) -> ReversiblePhaseProgram:
             )
         operations.append(
             ReversiblePhaseOperation(
-                instruction.name, instruction.wires, condition_bit=bit
+                opcode,
+                () if opcode == "neg" else instruction.wires,
+                condition_bit=bit,
             )
         )
         operations.extend(ReversiblePhaseOperation("pop_condition", ()) for _ in scopes)
-        index += 1
+        index += consumed
     return ReversiblePhaseProgram(ir.n_wires, n_bits, tuple(operations))

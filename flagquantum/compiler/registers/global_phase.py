@@ -58,6 +58,24 @@ def scalar_phase_ir(anchor: int, angle: float) -> tuple[Instruction, ...]:
     return (flip, shift, flip, shift)
 
 
+def scalar_sign_ir(
+    anchor: int, *, conditions: tuple[tuple[int, int], ...] = ()
+) -> tuple[Instruction, ...]:
+    """Apply the exact scalar -1, optionally under a classical condition."""
+    _validate_wires((anchor,))
+    metadata = {"conditions": conditions} if conditions else {}
+    flip = Instruction("x", (anchor,), metadata=metadata)
+    sign = Instruction("z", (anchor,), metadata=metadata)
+    return (flip, sign, flip, sign)
+
+
+def ccz_ir(wires: tuple[int, int, int]) -> tuple[Instruction, ...]:
+    """Negate the all-ones basis state on three wires."""
+    _validate_wires(wires)
+    basis = Instruction("h", (wires[-1],))
+    return (basis, Instruction("ccx", wires), basis)
+
+
 def global_phase_ir(
     exponent: float,
     *,

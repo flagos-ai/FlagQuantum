@@ -11,6 +11,7 @@ REVERSIBLE_OPCODE_ARITIES = {
     "z": 1,
     "cz": 2,
     "ccz": 3,
+    "neg": 0,
     "hmr": 1,
     "bit_store0": 0,
     "bit_invert": 0,
