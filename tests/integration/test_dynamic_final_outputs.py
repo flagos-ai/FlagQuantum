@@ -90,19 +90,30 @@ def test_final_outputs_reuse_one_readout(
             assert sum(actual.counts[0].values()) == shots
 
 
-@pytest.mark.parametrize("outcome", [0, 1])
-def test_mixed_feedback_preserves_born_weights_and_final_outputs(outcome: int) -> None:
+@pytest.mark.parametrize(
+    ("feedback", "outcome", "terminal_weights"),
+    [
+        ("x", 0, (1.0, 0.0, 0.0, 0.0)),
+        ("x", 1, (0.0, 0.0, 0.0, 1.0)),
+        ("h", 0, (1.0, 0.0, 0.0, 0.0)),
+        ("h", 1, (0.0, 0.0, 0.5, 0.5)),
+    ],
+)
+def test_mixed_feedback_preserves_born_weights_and_final_outputs(
+    feedback: str, outcome: int, terminal_weights: tuple[float, ...]
+) -> None:
     circuit = (
         DynamicCircuit(2, dtype=torch.complex128, device="cpu")
         .h(0)
         .t(0)
         .h(0)
         .measure(0, classical_bit=0)
-        .conditional("x", 1, classical_bit=0)
+        .conditional(feedback, 1, classical_bit=0)
     )
     born = torch.tensor(
         [(2 + math.sqrt(2)) / 4, (2 - math.sqrt(2)) / 4], dtype=torch.float64
     )
+    terminal = torch.tensor(terminal_weights, dtype=torch.float64)
     draws: list[tuple[int, ...]] = []
     original_draw = torch.multinomial
 
@@ -118,6 +129,7 @@ def test_mixed_feedback_preserves_born_weights_and_final_outputs(outcome: int) -
             torch.testing.assert_close(probabilities, born, atol=1e-12, rtol=0)
             assert probabilities[outcome] > 0
             return torch.tensor([outcome], dtype=torch.int64)
+        torch.testing.assert_close(probabilities, terminal, atol=1e-12, rtol=0)
         return original_draw(probabilities, num_samples, generator=generator)
 
     with patch.object(torch, "multinomial", side_effect=draw):
@@ -140,6 +152,75 @@ def test_mixed_feedback_preserves_born_weights_and_final_outputs(outcome: int) -
     assert isinstance(mid.value, torch.Tensor) and mid.value.shape == (1, 1)
     assert isinstance(final.value, torch.Tensor) and final.value.shape == (1, 2)
     assert mid.value.tolist() == [[outcome]]
-    assert final.value.tolist() == [[outcome, outcome]]
+    control_bit, target_bit = final.value[0].tolist()
+    assert control_bit == outcome
+    assert target_bit in (0, 1)
+    assert terminal_weights[2 * control_bit + target_bit] > 0
     assert result.samples is final.value
-    assert result.counts[0] == {str(outcome) * 2: 1}
+    assert result.counts[0] == {f"{control_bit}{target_bit}": 1}
+
+
+@pytest.mark.parametrize(("first", "second"), [(0, 0), (1, 0), (1, 1)])
+def test_two_round_mixed_feedback_retains_both_slots(first: int, second: int) -> None:
+    circuit = (
+        DynamicCircuit(2, dtype=torch.complex128, device="cpu")
+        .h(0)
+        .t(0)
+        .h(0)
+        .measure(0, classical_bit=0)
+        .conditional("h", 1, classical_bit=0)
+        .measure(1, classical_bit=1)
+        .reset(0)
+        .conditional("x", 0, classical_bit=1)
+    )
+    p = (2 - math.sqrt(2)) / 4
+    expected = (
+        (1 - p, p),
+        (0.5, 0.5) if first else (1.0, 0.0),
+        (0.0, 1.0) if first else (1.0, 0.0),
+        (0.0, 0.0, 0.0, 1.0) if second else (1.0, 0.0, 0.0, 0.0),
+    )
+    controlled = (first, second)
+    original_draw = torch.multinomial
+    stages = iter(range(len(expected)))
+
+    def draw(
+        probabilities: torch.Tensor,
+        num_samples: int,
+        *,
+        generator: torch.Generator | None = None,
+    ) -> torch.Tensor:
+        stage = next(stages)
+        assert num_samples == 1
+        torch.testing.assert_close(
+            probabilities,
+            torch.tensor(expected[stage], dtype=torch.float64),
+            atol=1e-12,
+            rtol=0,
+        )
+        if stage < len(controlled):
+            selected = controlled[stage]
+            assert probabilities[selected] > 0
+            return torch.tensor([selected], dtype=torch.int64)
+        return original_draw(probabilities, num_samples, generator=generator)
+
+    with patch.object(torch, "multinomial", side_effect=draw) as draw_spy:
+        result = fq.run(
+            circuit,
+            outputs=(fq.samples(name="final"), fq.counts()),
+            options=fq.ExecutionOptions(
+                seed=7,
+                device="cpu",
+                allow_approximate=False,
+                allow_backend_fallback=False,
+            ),
+            shots=1,
+        )
+
+    assert draw_spy.call_count == 4
+    mid = result.measurement("mid_circuit_measurement").value
+    final = result.measurement("final").value
+    assert isinstance(mid, torch.Tensor) and mid.tolist() == [[first, second]]
+    assert isinstance(final, torch.Tensor) and final.tolist() == [[second, second]]
+    assert result.samples is final
+    assert result.counts[0] == {str(second) * 2: 1}
