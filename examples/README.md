@@ -4,6 +4,28 @@ Choose [high-level quantum programming with synth](synthesis/README.md) for
 computation, quantum data and synthesis constraints. The examples below cover
 Circuit construction, training, simulation and deployment.
 
+## Start with the integrated QEC workflow
+
+Follow the [Stim/PyMatching quickstart](../docs/guides/QEC_INTEGRATION_QUICKSTART.md)
+for installation, a complete original-circuit report, decoder selection and
+lower-level samples. The [compatibility table](../docs/reference/QEC_STIM_PYMATCHING_COMPATIBILITY.md)
+distinguishes native code and optional SDK routes.
+
+- [Existing Stim circuit report](qec/stim_memory_experiment.py): run
+  `python examples/qec/stim_memory_experiment.py`; CPU plus Stim/PyMatching,
+  35 shots and two deliberately swapped logical columns. Expected output is
+  `35 0 (0, 0)` followed by `stim_circuit`.
+- [Native memory declarations](qec/memory_experiment.py): use repetition or
+  `--code surface --basis x` / `--code surface --basis z` for fixed-shot reports.
+- [Inspect the bridge](qec/stim_experiment_bridge.py) and
+  [compare complete records](qec/decoder_comparison.py) for step-by-step use.
+
+These supported software workflows do not start hardware jobs or scientific
+performance studies. The historical migration/reference demonstrations are
+listed separately below.
+
+## Circuit, training and deployment workflows
+
 Runnable, copy-ready workflows for building and training quantum AI programs
 with the current FlagQuantum API.
 
@@ -16,6 +38,9 @@ Examples driven by the root-level `fq` alias use:
 
 These examples do not use that alias:
 
+- [`qec/dynamic_measurement_conversion.py`](qec/dynamic_measurement_conversion.py)
+  converts repeated-slot dynamic records to reference-normalized detector and
+  observable flips using explicit measurement ordinals.
 - [`synthesis/run_qmod.py`](synthesis/run_qmod.py) verifies catalog source hashes
   and delegates execution to the existing Qmod corpus audit tool.
 
@@ -205,6 +230,10 @@ These examples do not use that alias:
   compares native matching and PyMatching on the same 35 distance-three Z
   memory shots. It uses the existing Stim and PyMatching extras on CPU and
   reports four paired outcome counts after all three batches complete.
+- [`qec/stim_memory_experiment.py`](qec/stim_memory_experiment.py) runs an
+  external Stim circuit through the canonical QEC fixed-shot report entry,
+  using domain imports rather than the root-level alias. CPU and the existing
+  Stim/PyMatching extras are required; it prints `35 0 (0, 0)` and `stim_circuit`.
 - [`qec/memory_experiment.py`](qec/memory_experiment.py) composes the approved
   fixed-shot experiment through its canonical QEC execution import. It uses one
   original source and exact final partial batches with five default decoders;

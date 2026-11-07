@@ -366,3 +366,43 @@ The runnable, gate-checked version of every block above is
 [`tests/qec/test_stim_user_migration.py`](../../tests/qec/test_stim_user_migration.py),
 which executes each block in one namespace and compares its output against the
 values quoted here.
+
+
+## Fixed-shot reports from your Stim circuit
+
+Use `run_stim_experiment` when you already hold supported Stim circuit text and
+want complete logical-failure counts and a confidence interval. This entry uses
+the original circuit as its sampling source, strict DEM analysis and the selected
+decoder's existing default configuration. Install the `stim` extra; the
+`pymatching` selection additionally requires that extra.
+
+```python
+from flagquantum.qec.execution.experiments import run_stim_experiment
+
+text = (
+    "R 0 1\nX_ERROR(0.125) 0\nX_ERROR(0.25) 1\nM 0 1\n"
+    "DETECTOR rec[-2]\nDETECTOR rec[-1]\n"
+    "OBSERVABLE_INCLUDE(0) rec[-1]\nOBSERVABLE_INCLUDE(1) rec[-2]\n"
+)
+result = run_stim_experiment(
+    text, decoder="minimum_weight_matching", shots=35, batch_size=16, seed=53
+)
+print(result.shots, result.logical_failures, result.observable_failures)
+# 35 0 (0, 0) -- exact decoding of all four independent-fault outcomes
+print(result.sampling_source)
+# stim_circuit -- original external circuit sampling source
+```
+
+Expected: `35 0 (0, 0)` followed by `stim_circuit`. The swapped logical columns
+are deliberate. This small independent-fault example has an exact logical
+prediction for each syndrome; it makes no physical suppression or speed claim.
+The runnable script is
+[`stim_memory_experiment.py`](../../examples/qec/stim_memory_experiment.py).
+
+`StimExperimentResult` is separate from the existing `MemoryExperimentResult`.
+For FlagQuantum memory declarations continue using `run_memory_experiment`.
+Keep using the lower-level bridge when you need direct samples or manual decoder
+control. Unsupported hyperedges, isolated-detector/parallel-edge translation
+cases and other existing refusals remain explicit; this entry does not enable
+approximate graph conversion, implicit decoder fallback or adaptive stopping.
+See the [approved contract](../development/QEC_STIM_TEXT_EXPERIMENT_CONTRACT.md).

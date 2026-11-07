@@ -1,0 +1,45 @@
+{
+  "schema": "flagquantum_qec_stim_text_experiment_v1",
+  "status": "approved_implementation",
+  "canonical_module": "flagquantum.qec.execution.experiments",
+  "function": "run_stim_experiment",
+  "parameters": [
+    "circuit_text",
+    "decoder",
+    "shots",
+    "batch_size",
+    "seed"
+  ],
+  "keyword_only": [
+    "decoder",
+    "shots",
+    "batch_size",
+    "seed"
+  ],
+  "defaults": {
+    "seed": null
+  },
+  "result": "StimExperimentResult",
+  "result_fields": [
+    "shots",
+    "logical_failures",
+    "logical_error_rate",
+    "observable_failures",
+    "confidence_interval",
+    "seed",
+    "sampling_source"
+  ],
+  "result_frozen": true,
+  "sampling_source": "stim_circuit",
+  "module_exports": [
+    "MemoryExperimentResult",
+    "run_memory_experiment",
+    "StimExperimentResult",
+    "run_stim_experiment"
+  ],
+  "root_reexports": false,
+  "parent_reexports": false,
+  "decompose_errors": false,
+  "partial_result": false,
+  "implicit_retry": false
+}

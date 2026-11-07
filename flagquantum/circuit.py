@@ -41,6 +41,10 @@ if TYPE_CHECKING:
     from .core._gate_typing import _BuiltinGateMethods
     from .noise import NoiseModel
     from .observables import OutputRequest
+    from .qec.execution.context import MeasurementMap
+    from .qec.execution.measurement_conversion import (
+        CompiledMeasurementsToDetectionEventsConverter,
+    )
     from .runtime.builder_compilation import BuilderBindings
     from .runtime.execution_plan import CircuitAnalysis, ExecutionPlan
     from .runtime.options import ExecutionOptions
@@ -1021,6 +1025,39 @@ class Circuit(_BuiltinGateMethods):
         )
 
         return _compile_measurement_sampler(self, seed=seed)
+
+    def compile_m2d_converter(
+        self,
+        *,
+        detector_map: MeasurementMap,
+        observable_map: MeasurementMap,
+    ) -> CompiledMeasurementsToDetectionEventsConverter:
+        """Prepare QEC event conversion for this circuit's explicit Z measurements.
+
+        Map columns follow measurement instruction order, including repeated
+        measurements of the same qubit or classical slot.
+
+        Examples:
+            >>> from importlib.util import find_spec
+            >>> from flagquantum.dynamic import DynamicCircuit
+            >>> from flagquantum.qec.execution.context import MeasurementMap
+            >>> if find_spec("stim") is not None:
+            ...     converter = DynamicCircuit(1).x(0).measure(0).compile_m2d_converter(
+            ...         detector_map=MeasurementMap(1, ((0,),)),
+            ...         observable_map=MeasurementMap(1, ()),
+            ...     )
+            ...     dets, obs = converter.convert(
+            ...         measurements=torch.tensor([[True]]), separate_observables=True
+            ...     )
+            ...     assert dets.tolist() == [[False]] and obs.shape == (1, 0)
+        """
+        from .qec.execution.measurement_conversion import (
+            _compile_explicit_m2d_converter,
+        )
+
+        return _compile_explicit_m2d_converter(
+            self, detector_map=detector_map, observable_map=observable_map
+        )
 
     def run(
         self,

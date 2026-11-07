@@ -274,6 +274,25 @@ explicit JAX policy, manual Module loops, checkpoint schemas or capability level
 See `TORCH_TRAINING_COMPILATION_CONTRACT.md` in `docs/development/`; #936 and
 #918 remain open pending performance/adoption and the stronger comparisons.
 
+## Explicit dynamic measurement conversion
+
+The `Circuit.compile_m2d_converter` method accepts one default-initial-state CPU
+PyTorch circuit with explicit Z measurements, resets and single-slot X feedback
+for equals 0 or 1. It inherits the prepared sampler's source and qubit limits.
+T, conditional H, noise, sweeps, layout/routing and packed conversion inputs are
+outside this method. Nondeterministic declared detector or observable parities
+are refused before conversion. Classical slot overwrite does not erase earlier
+measurement columns.
+
+Maps are limited to 65,536 total rows and 100,000 column references. Contiguous
+input copies, combined output payload and a conservative padded-table estimate
+are each limited to 64 MiB before numerical conversion. The estimate includes
+frame and growing record storage; it is not a process RSS guarantee and excludes
+allocator, code and circuit preparation overhead. Zero shots retain exact empty
+shapes after circuit validation. Broad text/file conversion still uses the
+optional SDK; native source integration here proves explicit-record conversion,
+not complete Stim coverage or a performance claim.
+
 ## Qmod integer record fields (UP-06 integration candidate)
 
 Flat records support fixed-width unsigned integer scalars and one-dimensional
