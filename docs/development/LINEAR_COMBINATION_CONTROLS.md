@@ -137,5 +137,78 @@ control words coherent, validates the projected block and restores the entire
 complex state with the adjoint. Its model reports 28 T equivalents, five
 measurements and 13 peak logical qubits; its emitted IR contains 34 T/T-dagger
 instructions. The existing six-T Fredkin accounting difference remains explicit.
-Repeated control-root extension and its original returned-adder defect, and
-classical controls, remain separately open; this does not certify the whole file.
+G2-BE11 below supplies repeated scalar root execution; its original returned-adder
+defect and classical controls remain separate boundaries. This does not certify
+the whole file.
+
+
+## Repeated scalar control roots (G2-BE11)
+
+The next source call after a two-control root does not create another nested
+predicate. `_MultiControlledFromSinglyControlled.get_ctrl_system` prepends the
+new scalar activation to its existing `cvs` vector. Its returned root computes
+one MultiAnd over the full ordered vector, invokes the original positive LCU,
+and erases that predicate. No algebraic flattening of a grouped-control request
+is used to infer this path.
+
+Bind the previous root's packed logical wires with `existing_control` and its
+literal newest-first activations with `existing_control_values`. Values must
+end in one, the original positive LCU control. Add exactly one structured bit
+with the ordinary `controls` and `control_registers`. For k existing bits this
+reserves k clean wrapper work wires and k feedback slots. Those outputs enter
+and leave zero, while logical controls, signal and junk remain logical state.
+The compiler's existing `controlled_component_ir`/MultiAnd emits the full vector;
+`controlled_component_cost` supplies the matching model and private lifetimes.
+The algorithm only validates/binds these components. `adjoint=True` follows the
+returned root's adjoint and asks the positive child for its own direction.
+
+```python
+# Existing root 01, then prepend a new zero control: ordered root 001.
+op = encoding.make_on(
+    binders,
+    system=system, ancilla=ancilla, resource=resource,
+    controls=((0,),), control_registers=(ControlRegister(1, (0,)),),
+    existing_control=(1, 2), existing_control_values=(0, 1),
+    control_workspace=predicate, control_classical_bits=predicate_bits,
+    prepare_workspace=work, prepare_classical_bits=stage_bits,
+    traversal_workspace=work[:1], traversal_classical_bits=stage_bits,
+    workspaces=((), ()), classical_bits=((), ()),
+)
+circuit.append(op)
+```
+
+Run the self-contained version:
+
+```sh
+python -m examples.algorithms.linear_combination_controls --repeated
+```
+
+The example keeps all eight control words coherent, verifies the projected
+block and restores the entire complex state using the root adjoint. The model
+has 28 T equivalents, five measurements and 13 peak logical qubits. The emitted
+stream has 34 T/T-dagger instructions. The six-T difference is still the two
+original abstract-versus-exact Fredkin costs, not a control-predicate mismatch.
+
+Source returned-root acceptance and source returned-builder acceptance are
+separate. Sixteen probes execute the unchanged later `get_ctrl_system` adder:
+it raises TypeError at `np.concatenate(ctrl_soqs, in_soqs[...])`, even though
+its returned root decomposes and has valid costs. Native root binding does not
+repair that source callback or certify its equivalence. Grouped multi-bit
+extension of an already conjoined root routes through that callback while
+building its composite; two probes reproduce the TypeError and failed
+QubitCount. Native execution and the combined model report reject that specific
+request rather than replace it with a different root. Original reference code
+and tests remain unchanged.
+
+Validation covers eight existing activation vectors of lengths two through four,
+both new polarities, two directions, eight-bit default coefficient oracles and
+supplied oracles: 64 exact primitive-count/dependency configurations and 128
+QEC-category/width comparisons. Profile-specific child inputs retain the BE10
+legacy-alias distinction. Twenty-six full original matrix tests enumerate all
+small branch histories. Four additional cases use non-Hermitian S/T children,
+verify distinct adjoint matrices, literal source phase gates and absolute complex
+branch phases without phase alignment. Invalid ownership, activation and mode
+contracts and circuit-free model queries complete 250 new tests. The concentrated
+regression passes 967 tests without skips; strict types, lint, formatting, scope
+and architecture boundaries pass. No whole-file
+or G2-completion claim follows from these subcapabilities.

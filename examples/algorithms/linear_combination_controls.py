@@ -2,6 +2,7 @@
 
 Run python -m examples.algorithms.linear_combination_controls.
 Add --stacked to extend an existing positive control.
+Add --repeated to extend an existing two-control root by one bit.
 """
 
 import argparse
@@ -25,7 +26,11 @@ from flagquantum.qec.resources.estimation import estimate_ftqc_resources
 from flagquantum.runtime.dynamic.execution import run_dynamic
 
 
-def main(*, stacked: bool = False) -> None:
+def main(*, stacked: bool = False, repeated: bool = False) -> None:
+    if stacked and repeated:
+        raise ValueError("Choose one control extension scenario")
+    extended = stacked or repeated
+
     def block(label: str) -> UnitaryBlockEncoding:
         def emit(
             ports: Mapping[str, tuple[int, ...]],
@@ -59,10 +64,11 @@ def main(*, stacked: bool = False) -> None:
 
     encoding = LinearCombinationBlockEncoding((block("x"), block("z")), (1.0, -3.0), 1)
     binders = (factory("x"), factory("z"))
-    registers = (ControlRegister(2, (1,)),)
+    registers = (ControlRegister(1, (0,)),) if repeated else (ControlRegister(2, (1,)),)
+    controls = ((0,),) if repeated else ((0, 1),)
     psi = torch.tensor([1, 1j], dtype=torch.complex128) / sqrt(2)
-    count = 2 + int(stacked)
-    width = 11 + 2 * int(stacked)
+    count = 2 + int(extended)
+    width = 11 + 2 * int(extended)
     amplitudes = torch.complex(
         torch.arange(1, (1 << count) + 1).double(),
         torch.arange(1 << count).double(),
@@ -78,9 +84,10 @@ def main(*, stacked: bool = False) -> None:
     system = (count,)
     ancilla = (count + 1,)
     resource = tuple(range(count + 2, count + 6))
-    predicate = tuple(range(count + 6, count + 7 + int(stacked)))
+    predicate = tuple(range(count + 6, count + 7 + int(extended)))
     work = (predicate[-1] + 1, predicate[-1] + 2)
-    current = (2,) if stacked else ()
+    current = (1, 2) if repeated else ((2,) if stacked else ())
+    current_values = (0, 1) if repeated else ()
     circuit = DynamicCircuit(width, inputs=initial, dtype=torch.complex128)
     circuit.append(
         encoding.make_on(
@@ -94,11 +101,12 @@ def main(*, stacked: bool = False) -> None:
             traversal_classical_bits=(len(predicate),),
             workspaces=((), ()),
             classical_bits=((), ()),
-            controls=((0, 1),),
+            controls=controls,
             control_registers=registers,
             control_workspace=predicate,
             control_classical_bits=tuple(range(len(predicate))),
             existing_control=current,
+            existing_control_values=current_values,
         )
     )
     ir = circuit.to_ir()
@@ -131,11 +139,12 @@ def main(*, stacked: bool = False) -> None:
             traversal_classical_bits=(len(predicate),),
             workspaces=((), ()),
             classical_bits=((), ()),
-            controls=((0, 1),),
+            controls=controls,
             control_registers=registers,
             control_workspace=predicate,
             control_classical_bits=tuple(range(len(predicate))),
             existing_control=current,
+            existing_control_values=current_values,
             adjoint=True,
         )
     )
@@ -152,15 +161,24 @@ def main(*, stacked: bool = False) -> None:
     )
     report = estimate_ftqc_resources(
         encoding.resource_model(
-            select, prep, prep, control_registers=registers, existing_control=stacked
+            select,
+            prep,
+            prep,
+            control_registers=registers,
+            existing_control=extended,
+            existing_control_values=current_values,
         ),
         emitted_ir=ir,
     )
     assert report.emitted is not None
     print(
-        "Activation word 01 and existing positive control; all eight words remain coherent"
-        if stacked
-        else "Activation word 01; all four control words remain coherent"
+        "Repeated scalar controls 001; all eight words remain coherent"
+        if repeated
+        else (
+            "Activation word 01 and existing positive control; all eight words remain coherent"
+            if stacked
+            else "Activation word 01; all four control words remain coherent"
+        )
     )
     print(
         "Model T equivalents (abstract Fredkin)", report.logical.gates.total_t_count()
@@ -176,4 +194,6 @@ def main(*, stacked: bool = False) -> None:
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--stacked", action="store_true")
-    main(stacked=parser.parse_args().stacked)
+    parser.add_argument("--repeated", action="store_true")
+    args = parser.parse_args()
+    main(stacked=args.stacked, repeated=args.repeated)

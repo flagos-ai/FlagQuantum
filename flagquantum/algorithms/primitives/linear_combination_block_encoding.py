@@ -1,6 +1,6 @@
 # Copyright 2024 Google LLC
 # SPDX-License-Identifier: Apache-2.0
-# Adapted from Qualtran v0.7.0 LinearCombination.
+# Adapted from Qualtran v0.7.0 LinearCombination and specialized_ctrl.
 # https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/bloqs/block_encoding/linear_combination.py
 
 """Compose coefficient PREPARE, signed SELECT and PREPARE-adjoint."""
@@ -39,6 +39,29 @@ from .linear_combination_preparation import (
 )
 from .linear_combination_select import LinearCombinationSelect
 from .select_block_encoding import ControlledSelectEmitter, SelectBlockEncoding
+
+
+def _existing_lcu_control_values(
+    count: int, values: tuple[int, ...], new_count: int
+) -> tuple[int, ...]:
+    """Validate the source root's newest-first controls ending in positive LCU."""
+    if not values and count == 1:
+        values = (1,)
+    if len(values) != count or any(
+        type(value) is not int or value not in (0, 1) for value in values
+    ):
+        raise ValueError(
+            "Existing LCU controls need one literal binary activation per wire"
+        )
+    if values and values[-1] != 1:
+        raise ValueError(
+            "Existing LCU control roots must end in the original positive control"
+        )
+    if count > 1 and new_count != 1:
+        raise ValueError(
+            "Original repeated LCU root supports only one added bit; grouped extension builder fails"
+        )
+    return values
 
 
 @dataclass(frozen=True)
@@ -169,6 +192,7 @@ class LinearCombinationBlockEncoding:
         *,
         controlled: bool = False,
         existing_control: bool = False,
+        existing_control_values: tuple[int, ...] = (),
         adjoint: bool = False,
         control_registers: tuple[ControlRegister, ...] = (),
         legacy_shims: bool = False,
@@ -193,6 +217,11 @@ class LinearCombinationBlockEncoding:
         pattern = tuple(
             bit for register in control_registers for bit in register.bits()
         )
+        old_values = _existing_lcu_control_values(
+            (len(existing_control_values) or 1) if existing_control else 0,
+            existing_control_values,
+            len(pattern),
+        )
         if control_registers and not pattern:
             raise ValueError("Structured LCU control requires nonempty control words")
         if existing_control and not pattern:
@@ -213,6 +242,13 @@ class LinearCombinationBlockEncoding:
                 legacy_shims=legacy_shims,
             )
             payload = self.system_bitsize + self.ancilla_bitsize + self.resource_bitsize
+            if len(old_values) > 1:
+                return controlled_component_cost(
+                    positive,
+                    (ControlRegister(1, (*pattern, *old_values)),),
+                    target_width=payload,
+                    legacy_shims=legacy_shims,
+                )
             if existing_control:
                 return extended_controlled_component_cost(
                     positive,
@@ -277,6 +313,7 @@ class LinearCombinationBlockEncoding:
         resource: tuple[int, ...],
         control: tuple[int, ...] = (),
         existing_control: tuple[int, ...] = (),
+        existing_control_values: tuple[int, ...] = (),
         prepare_workspace: tuple[int, ...],
         prepare_classical_bits: tuple[int, ...],
         traversal_workspace: tuple[int, ...],
@@ -298,13 +335,17 @@ class LinearCombinationBlockEncoding:
         separate from all stage scratch. existing_control binds an already
         positive-controlled LCU before adding the structured controls. With
         adjoint=True this takes the adjoint of that specialized root, not a
-        generic control wrapper around an already-adjoint operation.
+        generic control wrapper around an already-adjoint operation. Repeated
+        roots pass packed existing_control wires and their newest-first
+        existing_control_values, ending in one. Only one new bit is supported
+        on those roots, preserving the source builder boundary.
         """
-        if len(existing_control) > 1 or (existing_control and control):
-            raise ValueError(
-                "LCU extension needs one existing positive control and no direct control"
-            )
+        if existing_control and control:
+            raise ValueError("Choose direct control or an existing LCU control root")
         outer, pattern = bind_control_registers(controls, control_registers)
+        old_values = _existing_lcu_control_values(
+            len(existing_control), existing_control_values, len(pattern)
+        )
         if not pattern and (
             controls
             or control_registers
@@ -345,8 +386,16 @@ class LinearCombinationBlockEncoding:
                     adjoint=adjoint,
                 ).instructions
 
-            gates = (
-                extend_controlled_component_ir(
+            if len(existing_control) > 1:
+                gates = controlled_component_ir(
+                    ((*outer, *existing_control),),
+                    (ControlRegister(1, (*pattern, *old_values)),),
+                    emit,
+                    control_workspace,
+                    control_classical_bits,
+                )
+            elif existing_control:
+                gates = extend_controlled_component_ir(
                     controls,
                     control_registers,
                     (existing_control[0], 1),
@@ -354,15 +403,14 @@ class LinearCombinationBlockEncoding:
                     control_workspace,
                     control_classical_bits,
                 )
-                if existing_control
-                else controlled_component_ir(
+            else:
+                gates = controlled_component_ir(
                     controls,
                     control_registers,
                     emit,
                     control_workspace,
                     control_classical_bits,
                 )
-            )
             required = (
                 max(
                     (
