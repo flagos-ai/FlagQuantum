@@ -17,6 +17,7 @@ from typing import cast
 
 from .._component_trace.symbolic_math import SymbolicInt, bit_length, smax
 from .arithmetic_resource_model import source_add_cost
+from .control_predicate_resource_model import control_predicate_cost
 
 
 @dataclass(frozen=True)
@@ -61,6 +62,7 @@ def source_qrom_resource_formula(
     target_shapes: tuple[tuple[SymbolicInt, ...], ...] | None = None,
     control_count: SymbolicInt = 0,
     selection_widths: tuple[SymbolicInt, ...] | None = None,
+    legacy_shims: bool = False,
 ) -> SymbolicResourceFormula:
     """Use the locked QROM formula for a shape without concrete table data."""
     if not target_widths:
@@ -83,7 +85,10 @@ def source_qrom_resource_formula(
     # Preserve the shape-only source formula, which multiplies target widths.
     loads = rows * prod(word_widths)
     width = sum(word_widths) + 2 * sum(selection_widths) + 2 * control_count - 1
-    return SymbolicResourceFormula(ands, loads + ands, ands, width)
+    cleanup = control_predicate_cost((1, 1), uncompute=True, legacy_shims=legacy_shims)
+    return SymbolicResourceFormula(
+        ands, loads + cleanup.gates.clifford * ands, ands, width
+    )
 
 
 def source_phase_gradient_lookup_resource_formula(

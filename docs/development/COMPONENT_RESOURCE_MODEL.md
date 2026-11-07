@@ -3277,3 +3277,28 @@ For example, the controlled 3×3 Majorana and spin-up Z use 30 and
 width expression gives 24 for either.
 
 Graphical circuit views remain separate from these resource queries.
+
+
+### Shape-only QROM cost profiles (G2-RES36)
+
+`source_qrom_resource_formula(..., legacy_shims=True)` queries the shared
+positive-And cleanup charge rather than assuming the modern one-Clifford
+uncompute. Unknown data retains the original shape formula, including its
+product of target word widths. Profile selection affects Clifford accounting
+only; no data-dependent pruning or primitive circuit is inferred.
+
+```python
+from flagquantum.compiler.registers.symbolic_resource_model import source_qrom_resource_formula
+modern = source_qrom_resource_formula((5,), (3,))
+legacy = source_qrom_resource_formula((5,), (3,), legacy_shims=True)
+assert modern.clifford == 18
+assert legacy.clifford == 24
+assert modern.and_bloq == legacy.and_bloq == 3
+assert modern.logical_qubits == legacy.logical_qubits == 8
+```
+
+The unchanged source is queried with one/two axes, target shapes and explicit
+selection widths, in both QEC profiles and after binding dimensions. All seven
+categories and peak widths agree. Ten new tests and 22 concentrated tests pass
+without skips, including concrete-use checks that do not import Sympy. This
+extends a table-free model, not an emitted-gate equivalence claim.
