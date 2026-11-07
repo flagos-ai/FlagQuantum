@@ -7,8 +7,31 @@
 """Three-to-two Hamming-weight tree with explicit logical garbage and cleanup."""
 
 from ...core.ir import Instruction
+from .._component_trace.symbolic_math import SymbolicInt, bit_length
 from .bit_compression import compress_three_bits_ir
 from .bitwise import xor_ir
+
+
+def hamming_weight_resource_widths(
+    width: SymbolicInt,
+) -> tuple[SymbolicInt, SymbolicInt]:
+    """Return original junk/output declarations, retaining symbolic lower bounds.
+
+    Python widths use their population count. Symbolic expressions, including
+    Sympy integer literals, use the original worst-case lower bound of one.
+    These declared widths are not a claim of successful gate construction.
+    """
+    if isinstance(width, (bool, float)) or isinstance(width, int) and width < 0:
+        raise ValueError("Hamming resource width requires a nonnegative integer")
+    if type(width) is int:
+        ones = width.bit_count()
+    else:
+        from sympy import Expr
+
+        if not isinstance(width, Expr):
+            raise ValueError("Hamming resource width requires an integer expression")
+        ones = 1
+    return width - ones, bit_length(width)
 
 
 def hamming_weight_requirements(width: int) -> tuple[int, int]:

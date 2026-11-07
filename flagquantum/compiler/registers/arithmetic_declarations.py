@@ -20,6 +20,7 @@ from .._component_trace.resource_generalization import (
     ResourceCall,
 )
 from .._component_trace.symbolic_math import SymbolicInt
+from .hamming_weight import hamming_weight_resource_widths
 
 
 def arithmetic_callees(call: ArithmeticCall) -> dict[ResourceCall, SymbolicInt]:
@@ -93,6 +94,12 @@ def arithmetic_callees(call: ArithmeticCall) -> dict[ResourceCall, SymbolicInt]:
                 pattern = constant
             flips = pattern.bit_count()
         return {CliffordCall("x", 1): flips}
+    if call.operation == "hamming_weight":
+        junk, _ = hamming_weight_resource_widths(width)
+        return {
+            ConjunctionCall((1, 1)): junk,
+            CliffordCall("cx", 2): 5 * junk + (width - junk),
+        }
     if call.operation == "xor":
         return {CliffordCall("cx", 2): width}
     if call.operation == "controlled_xor":

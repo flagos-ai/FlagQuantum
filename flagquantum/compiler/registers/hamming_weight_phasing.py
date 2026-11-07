@@ -13,6 +13,7 @@ from .._component_trace.resource_generalization import RotationCall
 from .._component_trace.resource_model import ComponentCost, CostCall, GateCost
 from .cost_function_phasing import BoundStage, RegisterPorts, cost_function_phasing_ir
 from .hamming_weight import hamming_weight_ir, hamming_weight_requirements
+from .hamming_weight_resource_model import source_hamming_weight_cost
 from .qvr_phase_gradient import qvr_phase_gradient_ir
 
 
@@ -26,7 +27,6 @@ def source_hamming_weight_phasing_cost(width: int, exponent: float) -> Component
         raise ValueError("Hamming phasing requires a finite exponent")
     junk, weight = hamming_weight_requirements(width)
     peak = width + junk + weight
-    cnot = 5 * junk + width.bit_count()
     family = classify_resource_gate(RotationCall("zpow", exponent))
     phase = ComponentCost(
         "ZPowGate",
@@ -41,19 +41,9 @@ def source_hamming_weight_phasing_cost(width: int, exponent: float) -> Component
         "HammingWeightPhasing",
         peak,
         calls=(
-            CostCall(
-                ComponentCost(
-                    "HammingWeightCompute", peak, GateCost(and_bloq=junk, clifford=cnot)
-                )
-            ),
+            CostCall(source_hamming_weight_cost(width)),
             CostCall(phase, weight, peak - 1),
-            CostCall(
-                ComponentCost(
-                    "HammingWeightComputeAdjoint",
-                    peak,
-                    GateCost(clifford=cnot + junk, measurement=junk),
-                )
-            ),
+            CostCall(source_hamming_weight_cost(width, adjoint=True)),
         ),
     )
 

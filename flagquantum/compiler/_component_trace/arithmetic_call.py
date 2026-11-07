@@ -28,6 +28,7 @@ ArithmeticOperation: TypeAlias = Literal[
     "controlled_subtraction",
     "less_than",
     "controlled_half",
+    "hamming_weight",
 ]
 ArithmeticEncoding: TypeAlias = Literal["unsigned", "twos_complement", "montgomery"]
 
@@ -72,6 +73,7 @@ class ArithmeticCall:
             "controlled_subtraction",
             "less_than",
             "controlled_half",
+            "hamming_weight",
         )
         if self.operation not in operations:
             raise ValueError("Unknown arithmetic resource operation")

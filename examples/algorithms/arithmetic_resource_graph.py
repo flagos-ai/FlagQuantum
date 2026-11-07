@@ -22,6 +22,9 @@ from flagquantum.compiler.registers.control_predicate import ControlRegister
 from flagquantum.compiler.registers.grouped_constant_add_resource_model import (
     source_grouped_constant_add_resource_formula,
 )
+from flagquantum.compiler.registers.hamming_weight_resource_model import (
+    source_hamming_weight_resource_formula,
+)
 from flagquantum.compiler.registers.out_of_place_add_resource_model import (
     source_out_of_place_add_resource_formula,
 )
@@ -63,6 +66,16 @@ def main() -> None:
         print(
             "Grouped XOR model:",
             source_grouped_xor_resource_formula(width, (ControlRegister(2, (2,)),)),
+        )
+    for width in (3, Integer(3), n):
+        print(
+            "Hamming count model:",
+            type(width).__name__,
+            source_hamming_weight_resource_formula(width),
+        )
+        print(
+            "Hamming erase model:",
+            source_hamming_weight_resource_formula(width, adjoint=True),
         )
     k = Symbol("k", integer=True)
     for label, width, value in (
