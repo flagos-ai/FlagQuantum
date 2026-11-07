@@ -12,6 +12,9 @@ from flagquantum.compiler.registers.kickmix_field_inverse import (
     kickmix_field_inverse_chain_erase_ir,
     kickmix_field_inverse_chain_ir,
     kickmix_field_inverse_chain_size,
+    kickmix_field_inverse_erase_ir,
+    kickmix_field_inverse_ir,
+    kickmix_field_inverse_workspace_size,
 )
 from flagquantum.core.ir import CircuitIR
 from flagquantum.dynamic import DynamicCircuit
@@ -22,8 +25,15 @@ from tests.unit.test_kickmix_field_linear import _block
 pytestmark = pytest.mark.unit
 
 
-def _words(width: int, *, reversed_wires: bool = False) -> tuple[tuple[int, ...], ...]:
-    total = 2 * width + kickmix_field_inverse_chain_size(width)
+def _words(
+    width: int, *, reversed_wires: bool = False, retain: bool = True
+) -> tuple[tuple[int, ...], ...]:
+    workspace = (
+        kickmix_field_inverse_chain_size(width)
+        if retain
+        else kickmix_field_inverse_workspace_size(width)
+    )
+    total = 2 * width + workspace
     words = [tuple(range(start, start + width)) for start in range(0, total, width)]
     if reversed_wires:
         words = [word[::-1] for word in words]
@@ -34,6 +44,10 @@ def _bits(width: int) -> tuple[int, ...]:
     return tuple(
         reversed(range(width if kickmix_field_inverse_chain_size(width) else 1))
     )
+
+
+def _self_clean_bits(width: int) -> tuple[int, ...]:
+    return tuple(reversed(range(width if width > 3 else int(width == 3))))
 
 
 @pytest.mark.ftqc_reference
@@ -92,18 +106,96 @@ def test_explicit_chain_matches_pinned_gate_stream(width: int) -> None:
 
 
 @pytest.mark.ftqc_reference
+@pytest.mark.parametrize("width", [1, 2, 3, 4, 5, 6, 8, 9, 17])
+def test_self_cleaning_inverse_matches_pinned_stream(width: int) -> None:
+    km = pytest.importorskip("kickmix")
+    assert km.__version__ in {"0.1", "0.1.dev0"}
+    field = km.GF2Field(width, modulus=0x11B if width == 8 else None)
+    builder = km.CircuitBuilder()
+    source, target = (
+        builder.create_quantum_register(width, name=name)
+        for name in ("input", "target")
+    )
+    target = builder.init_gf2_inverse(source, target=target, field=field)
+    builder.del_gf2_inverse(source, target=target, field=field)
+    reference_circuit = str(builder.finish_circuit())
+    registers = _words(width, reversed_wires=True, retain=False)
+    workspace = registers[2]
+    forward = kickmix_field_inverse_ir(
+        *registers, _self_clean_bits(width), modulus=field.modulus, parity_bit=width
+    )
+    erase = kickmix_field_inverse_erase_ir(
+        *registers, _bits(width), modulus=field.modulus, parity_bit=width
+    )
+    parity_initialized = False
+    for name, ir in (("gf_inverse", forward), ("gf_uninverse", erase)):
+        program = lower_reversible_phase(CircuitIR(2 * width + len(workspace), ir))
+        source_lines = [
+            line
+            for line in _block(reference_circuit, name).splitlines()
+            if not line.startswith("INFO_TAG")
+        ]
+        initial_resets = [
+            f"R q{wire}"
+            for i in range(0, len(workspace), width)
+            for wire in workspace[i : i + width][::-1]
+        ]
+        extra_resets = []
+        if name == "gf_inverse" and (width - 1).bit_count() > 1:
+            scratch = ((width - 1).bit_length() - 1) * width
+            extra_resets = [
+                f"R q{wire}" for wire in workspace[scratch : scratch + width][::-1]
+            ]
+        assert source_lines[: len(initial_resets)] == initial_resets
+        assert [
+            line for line in source_lines if line.startswith("R ")
+        ] == initial_resets + extra_resets
+        reference = [line for line in source_lines if not line.startswith("R ")]
+        first_toggle = next(
+            (i for i, line in enumerate(reference) if line.startswith("BIT_INVERT ")),
+            None,
+        )
+        if first_toggle is not None and not parity_initialized:
+            reference.insert(first_toggle, f"BIT_STORE0 b{width}")
+            parity_initialized = True
+        assert encode_kmx(program).splitlines()[1:] == reference
+        if width == 8:
+            counts = Counter(op.opcode for op in program.operations)
+            assert len(workspace) == 32
+            assert counts["ccx"] == 108
+            assert counts["hmr"] == 40
+            assert counts["cz"] == 256
+            assert program.n_bits == 9
+
+
+@pytest.mark.ftqc_reference
 @pytest.mark.parametrize(
     "width,modulus", [(1, 3), (2, 7), (3, 11), (4, 19), (5, 37), (8, 283)]
 )
-def test_every_branch_preserves_all_field_inputs(width: int, modulus: int) -> None:
+@pytest.mark.parametrize("retain", [True, False])
+def test_every_branch_preserves_all_field_inputs(
+    width: int, modulus: int, retain: bool
+) -> None:
     np = pytest.importorskip("numpy")
     field = _source_type(width, modulus).gf_type
     values = np.arange(1 << width)
     inverses = values.copy()
     inverses[1:] = field(values[1:]) ** -1
-    source, target, chain = _words(width)
-    forward = kickmix_field_inverse_chain_ir(source, target, chain, modulus=modulus)
-    erase = kickmix_field_inverse_chain_erase_ir(
+    source, target, chain = _words(width, retain=retain)
+    if retain:
+        forward = kickmix_field_inverse_chain_ir(source, target, chain, modulus=modulus)
+        erase_inverse = kickmix_field_inverse_chain_erase_ir
+    else:
+        forward = kickmix_field_inverse_ir(
+            source,
+            target,
+            chain,
+            _self_clean_bits(width),
+            modulus=modulus,
+            parity_bit=width,
+        )
+        erase_inverse = kickmix_field_inverse_erase_ir
+    erase = erase_inverse(
         source, target, chain, _bits(width), modulus=modulus, parity_bit=width
     )
     wires = [(values >> shift) & 1 for shift in reversed(range(width))]
@@ -112,6 +204,8 @@ def test_every_branch_preserves_all_field_inputs(width: int, modulus: int) -> No
     _apply_phase_certified_block(np, wires, forward, width)
     result = sum(wires[wire] << shift for shift, wire in enumerate(reversed(target)))
     np.testing.assert_array_equal(result, inverses)
+    if not retain:
+        np.testing.assert_array_equal(wires[2 * width :], 0)
     _apply_phase_certified_block(np, wires, erase, width)
     np.testing.assert_array_equal(wires[:width], original)
     np.testing.assert_array_equal(wires[width:], 0)
@@ -152,12 +246,29 @@ def _apply_phase_certified_block(np, wires, block, parity_bit):
     assert slots.get(parity_bit, 0) == 0
 
 
-@pytest.mark.parametrize("width,modulus", [(2, 7), (3, 11)])
-def test_append_roundtrip_restores_complex_amplitudes(width: int, modulus: int) -> None:
-    source, target, chain = _words(width)
+@pytest.mark.parametrize(
+    "width,modulus,retain",
+    [(2, 7, True), (3, 11, True), (3, 11, False), (4, 19, False)],
+)
+def test_append_roundtrip_restores_complex_amplitudes(
+    width: int, modulus: int, retain: bool
+) -> None:
+    source, target, chain = _words(width, retain=retain)
     total = 2 * width + len(chain)
-    forward = kickmix_field_inverse_chain_ir(source, target, chain, modulus=modulus)
-    erase = kickmix_field_inverse_chain_erase_ir(
+    if retain:
+        forward = kickmix_field_inverse_chain_ir(source, target, chain, modulus=modulus)
+        erase_inverse = kickmix_field_inverse_chain_erase_ir
+    else:
+        forward = kickmix_field_inverse_ir(
+            source,
+            target,
+            chain,
+            _self_clean_bits(width),
+            modulus=modulus,
+            parity_bit=width,
+        )
+        erase_inverse = kickmix_field_inverse_erase_ir
+    erase = erase_inverse(
         source, target, chain, _bits(width), modulus=modulus, parity_bit=width
     )
     state = torch.zeros(1 << total, dtype=torch.complex128)
