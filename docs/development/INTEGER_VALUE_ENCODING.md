@@ -70,3 +70,24 @@ The unchanged source graph remains the reference for quantum amplitudes,
 measurement histories and clean-work evidence, including known source graph/value
 disagreements. Ones' complement, fixed-point and finite-field encodings remain
 separate unaccepted portions of the source inventory.
+
+## Shared default array vectorization (G2-VAL14)
+
+`vectorized_integer_array_to_bits` and `vectorized_integer_array_from_bits` factor
+the exact original BitEncoding default into reusable numerical functions. The
+signed and >64-bit unsigned routes consume them; the latter retains its original
+width precheck before dispatch. Stored Montgomery arrays use the same default
+without an unsigned-mask precheck or forced output dtype. Per-element scalar
+codec evaluation, vectorize signatures and inference are unchanged.
+
+These interfaces preserve the source's differences: a two-dimensional stored
+Montgomery array can encode to input_shape+(width,), while the optimized _UInt
+mask path may fail broadcasting. Default array decoding does not add _UInt's
+width equality guard. Sympy integer widths may work in default unsigned encoding
+while the optimized unsigned array path rejects symbolic width before evaluating
+scalars. Empty vectorization and arbitrary-wide output inference failures remain.
+
+There are 140 new source Montgomery array and replacement tests. Existing signed
+and wide unsigned consumers are tested with an injected helper implementation,
+proving they use this shared route. No reference implementation is replaced or
+modified, and the earlier 389 scalar/array codec tests remain in regression.

@@ -71,6 +71,39 @@ def integer_from_bits(
     return ~value if sign else value
 
 
+def vectorized_integer_array_to_bits(
+    values: NDArray[Any], width: int | Expr, *, signed: bool = False
+) -> NDArray[np.uint8]:
+    """Apply the original default integer codec to every scalar using vectorize.
+
+    This is also the stored Montgomery word's source array path. It deliberately
+    adds no unsigned-mask fast path or symbolic-width precheck before scalar
+    evaluation. Empty input and output dtype/shape inference remain upstream.
+    """
+    return cast(
+        "NDArray[np.uint8]",
+        np.vectorize(
+            lambda value: np.asarray(
+                integer_to_bits(value, width, signed=signed), dtype=np.uint8
+            ),
+            signature="()->(n)",
+        )(values),
+    )
+
+
+def vectorized_integer_array_from_bits(
+    bits: NDArray[Any], width: int | Expr, *, signed: bool = False
+) -> NDArray[Any]:
+    """Decode each bit row using the source's unchecked scalar decode contract."""
+    return cast(
+        "NDArray[Any]",
+        np.vectorize(
+            lambda row: integer_from_bits(row, width, signed=signed),
+            signature="(n)->()",
+        )(bits),
+    )
+
+
 def integer_array_to_bits(
     values: NDArray[Any], width: int | Expr, *, signed: bool = False
 ) -> NDArray[np.uint8]:
@@ -81,25 +114,11 @@ def integer_array_to_bits(
     inputs propagate. The fast unsigned path does not add scalar range checks.
     """
     if signed:
-        return cast(
-            "NDArray[np.uint8]",
-            np.vectorize(
-                lambda x: np.asarray(
-                    integer_to_bits(x, width, signed=True), dtype=np.uint8
-                ),
-                signature="()->(n)",
-            )(values),
-        )
+        return vectorized_integer_array_to_bits(values, width, signed=True)
     if _symbolic_width(width):
         raise ValueError("Cannot compute unsigned array bits with a symbolic width")
     if width > 64:
-        return cast(
-            "NDArray[np.uint8]",
-            np.vectorize(
-                lambda x: np.asarray(integer_to_bits(x, width), dtype=np.uint8),
-                signature="()->(n)",
-            )(values),
-        )
+        return vectorized_integer_array_to_bits(values, width)
     w = int(width)
     array = np.atleast_1d(values)
     if not np.issubdtype(array.dtype, np.uint):
@@ -119,24 +138,13 @@ def integer_array_from_bits(
 ) -> NDArray[Any]:
     """Retain source array reduction and vectorize result inference above 64 bits."""
     if signed:
-        return cast(
-            "NDArray[Any]",
-            np.vectorize(
-                lambda row: integer_from_bits(row, width, signed=True),
-                signature="(n)->()",
-            )(bits),
-        )
+        return vectorized_integer_array_from_bits(bits, width, signed=True)
     bitstrings = np.atleast_2d(bits)
     if bitstrings.shape[1] != width:
         raise ValueError(
             f"Input bitsize {bitstrings.shape[1]} does not match width={width}"
         )
     if width > 64:
-        return cast(
-            "NDArray[Any]",
-            np.vectorize(
-                lambda row: integer_from_bits(row, width), signature="(n)->()"
-            )(bits),
-        )
+        return vectorized_integer_array_from_bits(bits, width)
     basis = 2 ** np.arange(width - 1, -1, -1, dtype=np.uint64)
     return np.sum(basis * bitstrings, axis=1, dtype=np.uint64)
