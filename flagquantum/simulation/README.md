@@ -21,6 +21,7 @@ Runtime owns those decisions and calls the appropriate numerical primitives.
 | Classical XOR lookup values and checked target erasure | [classical_lookup.py](classical_lookup.py) |
 | Classical register binding, output collection and scalar/array integer bounds | [classical_registers.py](classical_registers.py), [integer_values.py](integer_values.py) |
 | Classical integer arithmetic value models | [classical_addition.py](classical_addition.py), [classical_subtraction.py](classical_subtraction.py), [classical_negation.py](classical_negation.py) |
+| Comparison predicates, controlled flag updates and checked half erasure | [classical_comparison.py](classical_comparison.py), [classical_greater_comparison.py](classical_greater_comparison.py), [classical_half_comparison.py](classical_half_comparison.py) |
 | Classical multiply-accumulate and checked square erasure | [classical_product_accumulation.py](classical_product_accumulation.py), [classical_square.py](classical_square.py) |
 | Classical modular residue arithmetic and controlled value semantics | [classical_modular_addition.py](classical_modular_addition.py), [classical_modular_subtraction.py](classical_modular_subtraction.py) |
 | Classical modular negation, constant addition and scaled accumulation | [classical_modular_negation.py](classical_modular_negation.py), [classical_modular_constant_addition.py](classical_modular_constant_addition.py), [classical_modular_scaled_addition.py](classical_modular_scaled_addition.py) |
@@ -69,6 +70,10 @@ The [numerical symbolic parameter guide](../../docs/development/NUMERICAL_SYMBOL
 explains the shared predicate used by integer, bounded, fixed-point and Montgomery
 values. An integer subclass's symbolic callback must not be bypassed by a numeric
 fast path; concrete execution still works when optional Sympy is absent.
+`python -m examples.algorithms.classical_comparison_values` connects native
+[comparison values](../../docs/development/CLASSICAL_COMPARISON_VALUES.md) to the
+existing measured equality operation. Numerical target rules, quantum work and
+known source interface conflicts remain separate.
 
 ## One instruction, one dense operator
 
