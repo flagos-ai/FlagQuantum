@@ -6,6 +6,8 @@
 
 """Fixed-wire quantum comparison in the locked Kickmix carry schedule."""
 
+from math import ceil, inf, isnan
+
 from ...core.ir import Instruction
 from .finite_field import ClassicalFieldCoefficient
 from .global_phase import ccz_ir, scalar_sign_ir
@@ -334,19 +336,36 @@ def kickmix_less_than_ir(
     control: int | bool = True,
     measurement_bit: int | None = None,
     minimize_qubits: bool = False,
+    btol: float = inf,
 ) -> tuple[Instruction, ...]:
-    """Emit the locked exact comparison for equal-width mixed words.
+    """Emit the locked comparison for equal-width mixed words.
 
     All words are big-endian. The full carry ladder requires width minus
     one clean wires and one reusable result slot. Homogeneous quantum words
     with fewer than width work wires use the dedicated quantum schedule.
     A None target selects a phase output.
+    A bit tolerance below the input width compares only the most significant
+    `ceil(btol) - 1` coefficients. A budget of one or less skips the
+    comparison when below the word width. Infinity selects exact dispatch.
     """
     width = len(left)
     if len(right) != width:
         raise ValueError("Comparison requires equal word widths")
+    if isnan(btol):
+        raise ValueError("Comparison bit tolerance must be ordered")
+    quantum_rhs = all(type(coefficient) is int for coefficient in right)
+    classical_slot_rhs = all(
+        isinstance(coefficient, ClassicalFieldCoefficient) for coefficient in right
+    )
+    if btol < width:
+        if btol <= 1:
+            return ()
+        width = ceil(btol) - 1
+        left, right = left[:width], right[:width]
+        btol = inf
+        # The source's subspan retains the original RHS dispatch tag.
     quantum_right = tuple(q for q in right if type(q) is int)
-    if width and len(quantum_right) == width and len(workspace) < width:
+    if width and quantum_rhs and btol == inf and len(workspace) < width:
         return kickmix_quantum_compare_ir(
             left,
             quantum_right,
@@ -432,9 +451,7 @@ def kickmix_less_than_ir(
         *_flip(clean[0], rhs[0]),
         *_flip(clean[0], rhs[1]),
     ]
-    loop_dispatch = len(quantum_right) == width or all(
-        isinstance(coefficient, ClassicalFieldCoefficient) for coefficient in rhs
-    )
+    loop_dispatch = quantum_rhs or classical_slot_rhs
     for i in range(1, width - 1):
         controls = (clean[i - 1], lhs[i]) if loop_dispatch else (lhs[i], clean[i - 1])
         gates.extend(

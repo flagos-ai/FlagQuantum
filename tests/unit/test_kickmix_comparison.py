@@ -415,3 +415,61 @@ def test_exact_less_than_dispatch_and_missing_resources() -> None:
         kickmix_less_than_ir(
             left, (ClassicalFieldCoefficient(1), 2), 4, (5,), measurement_bit=1
         )
+
+
+def test_fractional_budget_preserves_locked_unmarked_xzxz_stream() -> None:
+    ir = kickmix_less_than_ir(
+        (1, 0), (True, False), None, (6,), or_equal=True, btol=1.01
+    )
+    program = lower_reversible_phase(CircuitIR(7, ir))
+    assert encode_kmx(program).splitlines()[1:] == [
+        "X q1",
+        "Z q1",
+        "X q1",
+        "Z q1",
+        "X q1",
+        "X q1",
+    ]
+
+
+def test_bit_tolerance_retains_source_exact_dispatch_threshold() -> None:
+    args = ((0, 1), (2, 3), 4, (5,))
+    dedicated = kickmix_less_than_ir(*args, measurement_bit=0)
+    full = kickmix_less_than_ir(*args, measurement_bit=0, btol=2.0)
+    assert "measure" not in {gate.name for gate in dedicated}
+    assert "measure" in {gate.name for gate in full}
+    assert not kickmix_less_than_ir(*args, btol=1)
+    assert not kickmix_less_than_ir((), (), 0, btol=-1)
+    assert kickmix_less_than_ir((), (), 0, or_equal=True, btol=0)[0].name == "x"
+    with pytest.raises(ValueError, match="ordered"):
+        kickmix_less_than_ir(*args, btol=float("nan"))
+
+
+@pytest.mark.parametrize("budget,retained", [(1.01, 1), (2.0, 1), (2.01, 2)])
+def test_fractional_tolerance_preserves_complex_prefix_comparison(
+    budget: float,
+    retained: int,
+) -> None:
+    width = 4
+    logical = 2 * width + 1
+    total = logical + 1
+    basis = torch.arange(1 << logical)
+    amplitudes = torch.complex((basis + 1).double(), (3 * basis - 5).double())
+    amplitudes /= amplitudes.norm()
+    state = torch.zeros(1 << total, dtype=torch.complex128)
+    state[::2] = amplitudes
+    left, right, target = tuple(range(width)), tuple(range(width, 2 * width)), 8
+    ir = kickmix_less_than_ir(left, right, target, (9,), btol=budget, measurement_bit=0)
+    assert not {wire for op in ir for wire in op.wires} & set(
+        (*left[retained:], *right[retained:])
+    )
+    circuit = DynamicCircuit(total, inputs=state, dtype=torch.complex128)
+    circuit.append(FieldOperation(total, ir))
+    result = run_dynamic(circuit, shots=16, seed=41, strategy="trajectory")
+    lhs = basis >> (2 * width + 1 - retained)
+    rhs = (basis >> (width + 1 - retained)) & ((1 << retained) - 1)
+    expected = torch.zeros_like(state)
+    expected[::2] = amplitudes[basis ^ (lhs < rhs).long()]
+    torch.testing.assert_close(
+        result.final_states.reshape(16, -1), expected.expand(16, -1), rtol=0, atol=1e-12
+    )
