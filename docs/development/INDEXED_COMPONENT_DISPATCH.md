@@ -55,7 +55,7 @@ A source-only reproducer records that direct ApplyLthBloq(control_val=0)
 emits exactly the same stream as control_val=1 and preserves an input with
 control zero. The positive parent API does not advertise that source bug as
 negative-control support. An empty inner address axis asserts in the source;
-our validation refuses it explicitly. Adjoint dispatch, symbolic extents and
+our validation refuses it explicitly. G2-IDX02 below covers adjoint dispatch. Symbolic extents and
 specialized control wrappers remain separate G2 items.
 
 Run `python -m examples.algorithms.indexed_component_dispatch` for the
@@ -66,3 +66,55 @@ wrapper leaves and omits exact identity leaves; no reference source is changed.
 Strict mypy covers the emitter and example; Black, Ruff, compiler scope and
 architecture checks pass. This is a forward executable slice, not whole-file
 acceptance for either upstream class or completion of G2.
+
+## G2-IDX02 reverse traversal contract
+
+Adjoint dispatch reverses each nested source segment tree, swaps its And
+compute/erase activation values, and visits leaves in the reversed component
+order. The existing shared one-axis adjoint performs the primitive And duality;
+this extension propagates it through all axes. Multi-control prefix preparation
+and erasure retain their source ordering. Classical slots remain per physical
+work wire and can be reused across successive calls.
+
+The generic callback owns child direction: with `adjoint=True`, it must emit
+the controlled adjoint of the selected child. The parent must not invert an
+arbitrary measured IR list. Pauli target leaves are self-adjoint. This is an
+internal compiler option and changes no Core/public schema or execution backend.
+
+Reference extraction uses the original `source.adjoint().decompose_bloq()`
+graph. Calling the inherited `decompose_from_registers` stub on Adjoint is not
+its executable export path. Preserve source reverse component dependencies and
+map the original atomic leaves; do not replace the reference with an inverse
+of the native output.
+
+
+### Reverse acceptance
+
+Forty-eight original adjoint configurations preserve ordered primitive
+operands/dependencies, classical feedback, T/measurement categories and used
+peak width. Coverage includes three address axes, three positive controls,
+oversized address words, I/X/Y/Z leaves and both component/target-position
+consumers. Six additional forward/reverse S/T cases match the original
+CompositeBloq export, retaining the controlled phase leaves without synthesizing
+or modifying the source. The four reference modules' Git blob hashes match the
+locked CSV, including the original Adjoint implementation.
+
+Five full complex scenarios enumerate every small inverse measurement history
+and every complete forward/inverse history. They compare against the independent
+negative-phase SELECT formula and the original input, respectively. Predicate
+work is zero in each branch; original quantum inputs, absolute phase and reused
+measurement slots are preserved. Composite export omits unused reserved source
+ancillas: the test binding maps its occupied logical work onto the same physical
+parent work wires, keeping unused caller storage distinct.
+
+The runnable example is
+`python -m examples.algorithms.indexed_component_round_trip`. It emits eight
+T/T-dagger instructions, four unsynthesized controlled phases and two measured
+erasures, with one parent clean qubit. Those phase leaves have no claimed
+synthesized T count. Generic child resource-model composition and source control
+specialization remain separate tasks.
+
+Sixty-one new tests pass in the concentrated register, SELECT, block encoding,
+walk and control regression: 339 tests, no skips. Strict mypy covers both shared
+emitters and the example. Black, Ruff, compiler scope and architecture checks
+pass. The prior forward behavior and source boundaries remain unchanged.

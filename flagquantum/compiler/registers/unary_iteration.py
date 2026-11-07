@@ -174,8 +174,12 @@ def append_nested_bounded_unary_tree(
     workspace: tuple[int, ...],
     classical_bits: tuple[int, ...],
     visit_leaf: Callable[[int, int], None],
+    *,
+    adjoint: bool = False,
 ) -> None:
-    """Visit axes of extent at least two and flatten only the output index."""
+    """Visit bounded axes in source component order, flattening only the index."""
+    if type(adjoint) is not bool:
+        raise ValueError("Nested traversal direction must be a boolean")
 
     def walk(depth: int, prefix: int, predicate: int | None, used: int) -> None:
         word, extent = axes[depth], extents[depth]
@@ -196,6 +200,7 @@ def append_nested_bounded_unary_tree(
             workspace[used:stop],
             classical_bits[used:stop],
             leaf,
+            adjoint=adjoint,
         )
 
     walk(0, 0, control, 0)

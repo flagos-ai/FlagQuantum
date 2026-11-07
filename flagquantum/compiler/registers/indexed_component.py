@@ -37,14 +37,18 @@ def indexed_component_ir(
     controls: tuple[int, ...] = (),
     workspace: tuple[int, ...],
     classical_bits: tuple[int, ...],
+    adjoint: bool = False,
 ) -> tuple[Instruction, ...]:
     """Apply one child per selected tuple, preserving the source bounded tree.
 
     Controls are positive. The callback receives the flattened C-order index
     and a positive predicate; it owns child binding and must preserve that
-    predicate, the input axes and this parent's workspace.
+    predicate, the input axes and this parent's workspace. For adjoint traversal,
+    it must emit the child adjoint; the parent does not invert child IR.
     """
     required = indexed_component_workspace(tuple(map(len, axes)), len(controls))
+    if type(adjoint) is not bool:
+        raise ValueError("Indexed traversal direction must be a boolean")
     if len(axes) != len(extents) or any(
         type(size) is not int or size < 1 or size > 1 << len(axis)
         for axis, size in zip(axes, extents, strict=True)
@@ -82,6 +86,7 @@ def indexed_component_ir(
         workspace[prefix:],
         classical_bits[prefix:],
         visit,
+        adjoint=adjoint,
     )
     if prefix:
         gates.extend(
@@ -105,6 +110,7 @@ def indexed_pauli_targets_ir(
     controls: tuple[int, ...] = (),
     workspace: tuple[int, ...],
     classical_bits: tuple[int, ...],
+    adjoint: bool = False,
 ) -> tuple[Instruction, ...]:
     """Apply the selected Pauli to the selected target in C-order layout."""
     if (
@@ -134,4 +140,5 @@ def indexed_pauli_targets_ir(
         controls=controls,
         workspace=workspace,
         classical_bits=classical_bits,
+        adjoint=adjoint,
     )
