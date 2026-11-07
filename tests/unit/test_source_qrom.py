@@ -130,6 +130,12 @@ def test_literal_qrom_and_complete_channel(
     assert table.resource_model() == source_qrom_cost(
         controls_count, widths, shape, target_layout, datasets
     )
+    packed = (
+        *controls,
+        *(w for axis in selections for w in axis),
+        *(w for group in targets for word in group for w in word),
+    )
+    assert table.bind_packed(packed, workspace, bits) == gates
     original = source_qrom_gates(source, ports, workspace, bits)
     assert_source(gates, original)
     events = sum(g.name == "measure" for g in gates)

@@ -70,3 +70,24 @@ and every measurement history with coherent initial targets and inactive control
 absolute complex phase and zero work. A replacement test proves the table
 consumes the shared formula instead of reimplementing it. Concrete QROM/QROAM
 regressions continue to run through the previously accepted emitters.
+
+## Named registers and packed binding (G2-ROM11)
+
+`register_layout` maps QROMBase's control/selection/target signature into the
+existing FQ `(name, width)` partition layout. Target array axes are flattened
+only for physical port packing; their shape remains in the table metadata.
+One surviving selection axis is named `selection`; multiple surviving axes are
+numbered in source signature order. Concrete singleton axes and zero-width
+targets are omitted, while symbolic literals follow the original symbolic
+inclusion rules. The original bounded-selection dtype failure is also rejected
+before offering a physical layout.
+
+`bind_packed(ports, workspace, classical_bits)` delegates partition validation to
+`partition_register`, reconstructs grouped target words, and calls `bind`.
+The example now uses this path before `circuit.append(op)`. No gates are added
+by partitioning. All 11 original gate/channel cases also compare packed binding
+with the explicit-port binding, including multi-axis tables, grouped targets,
+controls, omitted singleton axes and zero selection. Twenty-five new tests
+compare source signature names and total widths, symbolic controls/literals,
+invalid packing and work/feedback ownership. Source dtype objects and
+LEFT/RIGHT ownership semantics are not introduced as new FQ public concepts.

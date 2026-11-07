@@ -30,7 +30,7 @@ def main(*, symbolic: bool = False) -> None:
         print("No lookup values or circuit emission; dimensions remain symbolic")
         return
     table = QromTable.from_shape(4, 2).with_data([1, 3, 0, 2])
-    gates = table.bind((), ((0, 1),), (((2, 3),),), (4,), (0,))
+    gates = table.bind_packed((0, 1, 2, 3), (4,), (0,))
     initial = torch.zeros(32, dtype=torch.complex128)
     amplitudes = torch.tensor([1, 1j, -1, -1j], dtype=torch.complex128) / 2
     initial[::8] = amplitudes

@@ -17,6 +17,7 @@ from numpy.typing import ArrayLike
 from ...core.ir import Instruction
 from .._component_trace.resource_model import ComponentCost
 from .._component_trace.symbolic_math import SymbolicInt, bit_length
+from .partition import RegisterLayout, partition_register
 from .qrom_resource_model import source_qrom_cost
 from .source_qrom import source_qrom_ir, source_qrom_workspace_size
 from .symbolic_resource_model import (
@@ -182,6 +183,67 @@ class QromTable:
             for shape, bits in zip(
                 self.target_shapes, self.target_bitsizes, strict=True
             )
+        )
+
+    def _selection_layout(self) -> tuple[tuple[str, SymbolicInt], ...]:
+        widths = []
+        for extent, width in zip(self.shape, self.selection_bitsizes, strict=True):
+            if (
+                isinstance(extent, int)
+                and isinstance(width, int)
+                and extent > 1 << width
+            ):
+                raise ValueError("QROM selection widths must fit the source axes")
+            if not isinstance(extent, int) or extent > 1:
+                widths.append(width)
+        if len(widths) == 1:
+            return (("selection", widths[0]),)
+        return tuple((f"selection{i}", width) for i, width in enumerate(widths))
+
+    @property
+    def register_layout(self) -> tuple[tuple[str, SymbolicInt], ...]:
+        """Flatten source control/selection/target names into FQ partition widths.
+
+        Target array shapes remain in ``target_shapes``. Singleton selection
+        axes and Python-integer zero-width targets are omitted as in the source.
+        Symbolic integer literals retain the original symbolic dispatch.
+        """
+        controls = (("control", self.num_controls),) if self.num_controls else ()
+        targets = tuple(
+            (f"target{i}_", width * prod(shape))
+            for i, (width, shape) in enumerate(
+                zip(self.target_bitsizes, self.target_shapes, strict=True)
+            )
+            if not isinstance(width, int) or width
+        )
+        return controls + self._selection_layout() + targets
+
+    def bind_packed(
+        self,
+        ports: tuple[int, ...],
+        workspace: tuple[int, ...],
+        classical_bits: tuple[int, ...],
+    ) -> tuple[Instruction, ...]:
+        """Partition one caller-owned port tuple and bind the existing QROM body."""
+        self._data()
+        self._require_concrete_dimensions()
+        parts = partition_register(ports, cast(RegisterLayout, self.register_layout))
+        selected = iter(parts[name] for name, _ in self._selection_layout())
+        selections = tuple(
+            next(selected) if extent > 1 else ()
+            for extent in cast(tuple[int, ...], self.shape)
+        )
+        targets = tuple(
+            tuple(
+                parts.get(f"target{i}_", ())[j * width : (j + 1) * width]
+                for j in range(words)
+            )
+            for i, (words, width) in enumerate(
+                cast(tuple[tuple[int, int], ...], self.target_layout)
+            )
+        )
+        return self.bind(
+            parts.get("control", ()), selections, targets, workspace, classical_bits
         )
 
     @property
