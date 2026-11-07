@@ -405,7 +405,7 @@ def test_exact_less_than_dispatch_and_missing_resources() -> None:
     assert kickmix_less_than_ir(left, right, 4, (5,)) == (
         kickmix_quantum_compare_ir(left, right, 4, (5,))
     )
-    with pytest.raises(ValueError, match="low-space classical"):
+    with pytest.raises(ValueError, match="Low-space classical"):
         kickmix_less_than_ir(left, (True, False), 4)
     with pytest.raises(ValueError, match="minus one"):
         kickmix_less_than_ir(left, (True, 2), 4)

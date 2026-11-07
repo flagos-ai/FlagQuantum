@@ -7,70 +7,14 @@
 """Fixed-wire quantum comparison in the locked Kickmix carry schedule."""
 
 from math import ceil, inf, isnan
+from typing import cast
 
 from ...core.ir import Instruction
+from ._kickmix_comparison_gates import _flip, _parity_controlled_flip
 from .finite_field import ClassicalFieldCoefficient
-from .global_phase import ccz_ir, scalar_sign_ir
+from .kickmix_low_space_comparison import kickmix_low_space_less_than_ir
 from .measurement import measure_x_clear_ir
 from .polynomial import _validate_registers
-
-
-def _flip(
-    target: int | None,
-    *controls: int | bool | ClassicalFieldCoefficient,
-    scratch: int | None = None,
-    measurement_bit: int | None = None,
-) -> tuple[Instruction, ...]:
-    if any(control is False for control in controls):
-        return ()
-    wires = tuple(control for control in controls if type(control) is int)
-    bits = tuple(
-        sorted(
-            {
-                (control.slot, 1)
-                for control in controls
-                if isinstance(control, ClassicalFieldCoefficient)
-            }
-        )
-    )
-    if target is None:
-        if not wires:
-            return scalar_sign_ir(0, conditions=bits)
-        if len(wires) == 3:
-            return ccz_ir((wires[0], wires[1], wires[2]))
-        return (
-            Instruction(
-                ("z", "cz")[len(wires) - 1],
-                wires,
-                metadata={"conditions": bits} if bits else {},
-            ),
-        )
-    if len(wires) < 3:
-        return (
-            Instruction(
-                ("x", "cx", "ccx")[len(wires)],
-                (*wires, target),
-                metadata={"conditions": bits} if bits else {},
-            ),
-        )
-    first, second, last = wires
-    if scratch is None:
-        # With no clean scratch the source picks the lowest free wire ID.
-        helper = next(q for q in range(5) if q not in (*wires, target))
-        return (
-            Instruction("ccx", (first, second, helper)),
-            Instruction("ccx", (helper, last, target)),
-        ) * 2
-    if measurement_bit is None:
-        raise ValueError("Measured comparison requires a classical result slot")
-    return (
-        Instruction("ccx", (first, second, scratch)),
-        Instruction("ccx", (scratch, last, target)),
-        *measure_x_clear_ir(scratch, measurement_bit),
-        Instruction(
-            "cz", (first, second), metadata={"conditions": ((measurement_bit, 1),)}
-        ),
-    )
 
 
 def kickmix_quantum_compare_ir(
@@ -309,23 +253,6 @@ def kickmix_quantum_equal_ir(
     return (*gates, *invert, *difference)
 
 
-def _parity_controlled_flip(
-    target: int,
-    first: int | bool | ClassicalFieldCoefficient,
-    second: int | bool | ClassicalFieldCoefficient,
-    control: int,
-) -> tuple[Instruction, ...]:
-    if type(first) is type(second) and first == second:
-        return ()
-    if type(first) is int:
-        parity = _flip(first, second)
-        return (*parity, *_flip(target, first, control), *parity)
-    if type(second) is int:
-        parity = _flip(second, first)
-        return (*parity, *_flip(target, second, control), *parity)
-    return (*_flip(target, first, control), *_flip(target, second, control))
-
-
 def kickmix_less_than_ir(
     left: tuple[int, ...],
     right: tuple[int | bool | ClassicalFieldCoefficient, ...],
@@ -337,6 +264,7 @@ def kickmix_less_than_ir(
     measurement_bit: int | None = None,
     minimize_qubits: bool = False,
     btol: float = inf,
+    low_space_bits: tuple[int, ...] = (),
 ) -> tuple[Instruction, ...]:
     """Emit the locked comparison for equal-width mixed words.
 
@@ -347,6 +275,8 @@ def kickmix_less_than_ir(
     A bit tolerance below the input width compares only the most significant
     `ceil(btol) - 1` coefficients. A budget of one or less skips the
     comparison when below the word width. Infinity selects exact dispatch.
+    The three-clean-wire classical schedule uses the caller's
+    `low_space_bits` instead of the full ladder's single result slot.
     """
     width = len(left)
     if len(right) != width:
@@ -430,8 +360,14 @@ def kickmix_less_than_ir(
         )
 
     if not quantum_right and (minimize_qubits or len(workspace) < width - 1):
-        raise ValueError(
-            "Comparison requires the low-space classical schedule for this workspace"
+        return kickmix_low_space_less_than_ir(
+            left,
+            cast(tuple[bool | ClassicalFieldCoefficient, ...], right),
+            target,
+            workspace,
+            measurement_bits=low_space_bits,
+            or_equal=or_equal,
+            control=control,
         )
     if len(workspace) < width - 1:
         raise ValueError("Comparison requires at least width minus one clean wires")

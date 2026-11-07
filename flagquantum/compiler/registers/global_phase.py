@@ -71,11 +71,14 @@ def scalar_sign_ir(
     return (flip, sign, flip, sign)
 
 
-def ccz_ir(wires: tuple[int, int, int]) -> tuple[Instruction, ...]:
+def ccz_ir(
+    wires: tuple[int, int, int], *, conditions: tuple[tuple[int, int], ...] = ()
+) -> tuple[Instruction, ...]:
     """Negate the all-ones basis state on three wires."""
     _validate_wires(wires)
     basis = Instruction("h", (wires[-1],))
-    return (basis, Instruction("ccx", wires), basis)
+    metadata = {"conditions": conditions} if conditions else {}
+    return (basis, Instruction("ccx", wires, metadata=metadata), basis)
 
 
 def global_phase_ir(
