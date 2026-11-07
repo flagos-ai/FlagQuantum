@@ -5,11 +5,83 @@
 # Sources:
 # https://github.com/quantumlib/Qualtran/tree/v0.7.0/qualtran/bloqs/gf_arithmetic
 # https://github.com/quantumlib/Qualtran/blob/9a0c11a4ee7697c082fbf8f2e1e8bf4a71fcb453/kickmix/src/kickmix/gen/gf_arithmetic/gen_gf_iadd.cc
+# https://github.com/quantumlib/Qualtran/blob/9a0c11a4ee7697c082fbf8f2e1e8bf4a71fcb453/kickmix/src/kickmix/build/circuit_builder.cc
 # Changes: bind polynomial-basis registers and emit native instructions.
 
 """Register operations over binary extension fields."""
 
+from dataclasses import dataclass
+
 from ...core.ir import Instruction
+
+
+@dataclass(frozen=True)
+class ClassicalFieldCoefficient:
+    """Reference a classical slot supplying one polynomial coefficient."""
+
+    slot: int
+
+    def __post_init__(self) -> None:
+        if type(self.slot) is not int or self.slot < 0:
+            raise ValueError("Field coefficient slot must be a nonnegative integer")
+
+
+def gf2_add_coefficients_ir(
+    source: tuple[int | bool | ClassicalFieldCoefficient, ...],
+    target: tuple[int, ...],
+    *,
+    control: int | None = None,
+) -> tuple[Instruction, ...]:
+    """XOR aligned quantum wires, classical slots, and constants into target.
+
+    Both words use big-endian coefficient order. Emit from the least
+    significant coefficient in the locked generator's broadcast order.
+    Classical slots must have been defined by the caller.
+    """
+    if len(source) != len(target):
+        raise ValueError("Binary-field addition requires equal register widths")
+    targets = target if control is None else (*target, control)
+    if len(set(targets)) != len(targets) or any(
+        type(wire) is not int or wire < 0 for wire in targets
+    ):
+        raise ValueError(
+            "Binary-field target and control require distinct quantum wires"
+        )
+    homogeneous_quantum = all(type(coefficient) is int for coefficient in source)
+    gates: list[Instruction] = []
+    for coefficient, wire in zip(source[::-1], target[::-1], strict=True):
+        if coefficient is False:
+            continue
+        if isinstance(coefficient, ClassicalFieldCoefficient):
+            conditions = {"conditions": ((coefficient.slot, 1),)}
+            gates.append(
+                Instruction("x", (wire,), metadata=conditions)
+                if control is None
+                else Instruction("cx", (control, wire), metadata=conditions)
+            )
+        elif coefficient is True:
+            gates.append(
+                Instruction("x", (wire,))
+                if control is None
+                else Instruction("cx", (control, wire))
+            )
+        else:
+            if (
+                type(coefficient) is not int
+                or coefficient < 0
+                or coefficient in targets
+            ):
+                raise ValueError(
+                    "Binary-field source wires must be disjoint from target and control"
+                )
+            if control is None:
+                gates.append(Instruction("cx", (coefficient, wire)))
+            elif homogeneous_quantum:
+                gates.append(Instruction("ccx", (coefficient, control, wire)))
+            else:
+                # Kickmix's mixed dispatch puts the common control first.
+                gates.append(Instruction("ccx", (control, coefficient, wire)))
+    return tuple(gates)
 
 
 def gf2_add_ir(

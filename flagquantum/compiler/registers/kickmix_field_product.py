@@ -8,7 +8,7 @@ from collections.abc import Iterator
 
 from ...core.ir import Instruction
 from .field_multiplication import _field_power, _validate_field
-from .finite_field import gf2_add_ir
+from .finite_field import gf2_add_coefficients_ir, gf2_add_ir
 from .kickmix_field_erasure import kickmix_field_product_erase_ir
 from .kickmix_field_linear import (
     kickmix_field_constant_scale_ir,
@@ -131,7 +131,7 @@ def kickmix_controlled_field_product_xor_ir(
     slot when the modulus needs one. The same schedule is its XOR inverse.
     """
     _validate_registers((control,), left, right, target, workspace)
-    add = gf2_add_ir(workspace[::-1], target[::-1], control=control)
+    add = gf2_add_coefficients_ir(workspace, target, control=control)
     return (
         *kickmix_field_product_xor_ir(left, right, workspace, modulus=modulus),
         *add,
