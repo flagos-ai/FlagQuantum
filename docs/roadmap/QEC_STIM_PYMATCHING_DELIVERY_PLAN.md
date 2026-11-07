@@ -719,6 +719,16 @@ CI/GPU, reviews/rules, normal pinned merge and exact merge/Main smoke acceptance
 are still required. No performance, threshold, GPU or capacity claim is made.
 
 
+## Matrix-defined weighted matching capability candidate
+
+The approved13-path bundle adds neutral weighted graph records, explicit matrix
+column/boundary/merge semantics, signed-cost SDK decoding and an installed
+user route. It replaces private preparation behind the existing DEM adapter
+without widening its public graph type. The contract commit preceded implementation.
+Local validation and actual-main admission remain separate; no new candidate
+is accepted by reusing PR1087 evidence. Negative-cost and probability domains
+remain distinct. This is not full graph mutation, correlated decoding, all
+upstream input compatibility, native replacement or performance certification.
 ## November 5 external Stim experiment integration
 
 C/007's original fixed-shot memory implementation was merged in
@@ -796,6 +806,31 @@ slice of FTS-04 after acceptance. Mid-circuit records, full upstream parity
 and broader QEC or FTQC milestone acceptance remain separate work.
 
 
+## PR1092 bounded integration after native conversion
+
+PR1092 is reconciled with actual main
+`290d80ec3e2ffc958a3da5221e4a076e4e8a5900` within its original 14 paths plus
+one explicitly approved doctest execution path. The complete existing main
+sampling/conversion and installed-profile checks are retained. PR1087's SDK
+experiment/output-view bundle remains a separate branch; neither PR is merged
+into the other and its pending checks are not counted as main acceptance.
+
+`MatchingGraph` and `PyMatchingGraphDecoder` now join the real public docstring
+execution list, preserving all 105 prior entries and the discovery assertion.
+The graph adapter resolves the current loader from the authoritative probability
+adapter module instead of keeping an imported function binding. Existing missing
+SDK behavior and error identity therefore remain replaceable for both consumers;
+no matching algorithm, cost interpretation, public signature or refusal domain
+changes. The former installed-profile fake now replaces that same authoritative
+loader, preserving its exception assertion. Its initial local failure is retained.
+
+Local core and real-SDK correctness, independent optimization references and the
+matrix user example passed. Minimum and observed-CI versions of Ruff, Black and
+strict Mypy were checked using existing tools. Old CI formatting, missing
+executable doctest registration, loader replacement and artifact-upload failures
+remain separately recorded. No old CI attempt is manually rerun. Final-head CI
+and real installed-profile/main admission remain separate gates. FTS-04/R08 and
+full Stim/PyMatching parity remain partial; FTS-02 and M2 are not closed here.
 ## PR1087 integration after native conversion PR1106
 
 PR1106 was merged at `290d80ec3e2ffc958a3da5221e4a076e4e8a5900` with
@@ -819,3 +854,30 @@ those delivery gates. PR1092 remains a separate matrix/weighted-graph candidate
 with conflicts and unresolved historical failures; it is not counted as merged.
 R03/R08 and FTS-04 remain partial; FTS-02 and M2 are not closed by these changes.
 No research measurement, threshold or performance study is authorized here.
+
+
+## Current integration after PR1087 merge
+
+PR1087 is merged at `1004335d287c58952205829cef5a49636dbdfad2` with complete
+reviewed tree `1fe6e615b7c8f69ba67301a85e2a9a841f2a4336`. Its main smoke passed.
+A fresh standard-core sdist/wheel installation passed with 918 Python/typing
+members and all 96 vendor members equal. Its once-budgeted exact-main CI
+`42350953562` remains a separate admission gate; no completed full-main receipt
+or new GPU validation is inferred here.
+
+The earlier wording that PR1087 remains an unmerged branch describes the prior
+baseline. PR1092 now incorporates that actual main directly, preserving packed
+predictions, SDK weights, matched pairs, original-circuit reports and all existing
+sampling/conversion profile checks. Graph-specific helpers and tests are added
+without overwriting main's helpers/assertions or duplicating top-level test names.
+The original 15-path approval still bounds this PR's difference from main.
+
+At the previous PR1092 head, all three unsuccessful coverage partitions passed
+their test steps (183/185/185 tests); Action download failures occurred during
+artifact upload. Their raw logs remain. Main drift then required this new source
+head, so no recovery request was submitted for the superseded old head. Normal
+automatic checks must validate the reconciled source. The first local static
+check also caught an omitted test-only SimpleNamespace import during assembly;
+it was restored in the existing test path without removing an assertion, and
+its original log remains. No numerical threshold, fixture, dependency or runner
+configuration is changed. R03/R08/FTS-04 remain partial; FTS-02 and M2 remain open.
