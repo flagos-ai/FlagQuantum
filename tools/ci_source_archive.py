@@ -16,6 +16,7 @@ import tarfile
 import tempfile
 import time
 from collections.abc import Callable
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from http.client import HTTPMessage
@@ -227,63 +228,90 @@ def _materialize_api(
     pending = [(commit.tree, "tree")]
     visited: set[str] = set()
     requests = 0
-    while pending:
-        sha, kind = pending.pop()
-        if sha in visited:
-            continue
-        visited.add(sha)
-        status = _git(workspace, "cat-file", "--batch-check", data=f"{sha}\n".encode())
-        if not status.endswith(" missing"):
-            if kind == "tree":
-                try:
-                    _git(workspace, "rev-list", "--objects", "--missing=error", sha)
-                except subprocess.CalledProcessError:
-                    records = _git(workspace, "ls-tree", "-z", sha).split("\0")
-                    for record in records:
-                        if not record:
-                            continue
-                        header = record.split("\t", 1)[0]
-                        _, child_kind, child_sha = header.split()
-                        if child_kind in ("tree", "blob"):
-                            pending.append((child_sha, child_kind))
-            continue
-        requests += 1
-        if requests > 64:
-            print("Cache needs more than 64 requests; using the archive", flush=True)
-            return False
-        print(f"Fetching missing {kind} {sha} through the API", flush=True)
-        data = get_json(f"/git/{kind}s/{sha}")
-        if not isinstance(data, dict) or data.get("sha") != sha:
-            raise ValueError("GitHub returned a different Git object")
-        if kind == "blob":
-            content = data.get("content")
-            if data.get("encoding") != "base64" or not isinstance(content, str):
-                raise ValueError("GitHub returned an invalid blob encoding")
-            raw = base64.b64decode("".join(content.split()), validate=True)
-            actual = _git(workspace, "hash-object", "-w", "--stdin", data=raw)
-        else:
-            if data.get("truncated") is True:
-                return False
-            children = data.get("tree")
-            if not isinstance(children, list):
-                raise ValueError("GitHub returned an invalid tree")
-            records = []
-            for child in children:
-                if not isinstance(child, dict) or not all(
-                    isinstance(child.get(key), str)
-                    for key in ("mode", "type", "sha", "path")
-                ):
-                    raise ValueError("GitHub returned an invalid tree member")
-                if child["type"] in ("tree", "blob"):
-                    pending.append((child["sha"], child["type"]))
-                records.append(
-                    f"{child['mode']} {child['type']} {child['sha']}\t{child['path']}\0"
+    # Fetch independent missing objects concurrently, but write the object store
+    # serially. Large source additions must not force a slow full archive fetch.
+    with ThreadPoolExecutor(max_workers=8) as executor:
+        while pending:
+            missing: list[tuple[str, str]] = []
+            while pending and len(missing) < 8:
+                sha, kind = pending.pop()
+                if sha in visited:
+                    continue
+                visited.add(sha)
+                status = _git(
+                    workspace, "cat-file", "--batch-check", data=f"{sha}\n".encode()
                 )
-            actual = _git(
-                workspace, "mktree", "--missing", "-z", data="".join(records).encode()
-            )
-        if actual != sha:
-            raise ValueError("GitHub object data does not match its SHA")
+                if not status.endswith(" missing"):
+                    if kind == "tree":
+                        try:
+                            _git(
+                                workspace,
+                                "rev-list",
+                                "--objects",
+                                "--missing=error",
+                                sha,
+                            )
+                        except subprocess.CalledProcessError:
+                            records = _git(workspace, "ls-tree", "-z", sha).split("\0")
+                            for record in records:
+                                if not record:
+                                    continue
+                                header = record.split("\t", 1)[0]
+                                _, child_kind, child_sha = header.split()
+                                if child_kind in ("tree", "blob"):
+                                    pending.append((child_sha, child_kind))
+                    continue
+                missing.append((sha, kind))
+            requests += len(missing)
+            if requests > 2048:
+                print(
+                    "Cache needs more than 2048 objects; using the archive", flush=True
+                )
+                return False
+            paths = [f"/git/{kind}s/{sha}" for sha, kind in missing]
+            if missing:
+                print(
+                    f"Fetching {len(missing)} missing objects through the API ({requests} total)",
+                    flush=True,
+                )
+            for (sha, kind), data in zip(
+                missing, executor.map(get_json, paths), strict=True
+            ):
+                if not isinstance(data, dict) or data.get("sha") != sha:
+                    raise ValueError("GitHub returned a different Git object")
+                if kind == "blob":
+                    content = data.get("content")
+                    if data.get("encoding") != "base64" or not isinstance(content, str):
+                        raise ValueError("GitHub returned an invalid blob encoding")
+                    raw = base64.b64decode("".join(content.split()), validate=True)
+                    actual = _git(workspace, "hash-object", "-w", "--stdin", data=raw)
+                else:
+                    if data.get("truncated") is True:
+                        return False
+                    children = data.get("tree")
+                    if not isinstance(children, list):
+                        raise ValueError("GitHub returned an invalid tree")
+                    records = []
+                    for child in children:
+                        if not isinstance(child, dict) or not all(
+                            isinstance(child.get(key), str)
+                            for key in ("mode", "type", "sha", "path")
+                        ):
+                            raise ValueError("GitHub returned an invalid tree member")
+                        if child["type"] in ("tree", "blob"):
+                            pending.append((child["sha"], child["type"]))
+                        records.append(
+                            f"{child['mode']} {child['type']} {child['sha']}\t{child['path']}\0"
+                        )
+                    actual = _git(
+                        workspace,
+                        "mktree",
+                        "--missing",
+                        "-z",
+                        data="".join(records).encode(),
+                    )
+                if actual != sha:
+                    raise ValueError("GitHub object data does not match its SHA")
     return True
 
 
