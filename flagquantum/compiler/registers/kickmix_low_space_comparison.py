@@ -7,6 +7,7 @@
 from ...core.ir import Instruction
 from ._kickmix_comparison_gates import _flip, _parity_controlled_flip
 from .finite_field import ClassicalFieldCoefficient
+from .kickmix_prefix_phase import kickmix_masked_prefix_phase_ir
 from .measurement import measure_x_clear_ir
 from .polynomial import _validate_registers
 
@@ -16,56 +17,6 @@ def _comparison_passes(width: int) -> tuple[tuple[int, int], ...]:
     while (shift := (2 << len(passes)) + len(passes) + 1) <= width:
         passes.append((width - shift, 2 << len(passes)))
     return tuple(passes)
-
-
-def _prefix_phase(
-    targets: tuple[int, ...],
-    masks: tuple[ClassicalFieldCoefficient, ...],
-    clean: tuple[int, int],
-    dirty: tuple[int, ...],
-    scratch_bit: int | None,
-) -> tuple[Instruction, ...]:
-    n = len(targets)
-    gates = list(_flip(None, targets[0], masks[0]))
-    if n <= 3:
-        if n >= 2:
-            gates.extend(_flip(None, targets[0], targets[1], masks[1]))
-        if n == 3:
-            gates.extend(_flip(None, *targets, masks[2]))
-        return tuple(gates)
-    # The native dirty-prefix schedule emits the second prefix through
-    # the first carry, so the direct n == 2 operation is omitted here.
-    anc = (*clean, *dirty)
-    if scratch_bit is None:
-        raise ValueError("Prefix cleanup requires an extra classical result slot")
-    outcome = ClassicalFieldCoefficient(scratch_bit)
-    for step in range(2):
-        for k in reversed(range(n - 4)):
-            if step == 0 and k < len(clean):
-                continue
-            if step == 1 and k + 1 < len(clean):
-                gates.extend(measure_x_clear_ir(anc[k + 1], scratch_bit))
-                gates.extend(_flip(None, targets[k + 2], anc[k], outcome))
-            else:
-                gates.extend(_flip(anc[k + 1], targets[k + 2], anc[k]))
-        if step == 1:
-            gates.extend(measure_x_clear_ir(anc[0], scratch_bit))
-            gates.extend(_flip(None, targets[0], targets[1], outcome))
-        else:
-            gates.extend(_flip(anc[0], targets[0], targets[1]))
-            for k in range(min(len(clean), n - 4)):
-                gates.extend(_flip(anc[k + 1], targets[k + 2], anc[k]))
-        for k in range(len(clean), n - 4):
-            gates.extend(_flip(anc[k + 1], targets[k + 2], anc[k]))
-        for k in range(n - 3):
-            if k >= len(clean) or step == 0:
-                gates.extend(_flip(None, masks[k + 1], anc[k]))
-        if len(clean) < n - 3 or step == 0:
-            gates.extend(_flip(None, masks[n - 2], targets[n - 2], anc[n - 4]))
-            gates.extend(
-                _flip(None, masks[n - 1], targets[n - 1], targets[n - 2], anc[n - 4])
-            )
-    return tuple(gates)
 
 
 def _low_space_core(
@@ -163,12 +114,12 @@ def _low_space_core(
     gates.extend(measure_x_clear_ir(b if depth % 2 == 0 else a, bits[depth - 1]))
     masks = tuple(ClassicalFieldCoefficient(bit) for bit in bits[:depth])
     gates.extend(
-        _prefix_phase(
+        kickmix_masked_prefix_phase_ir(
             (c, *reversed(lhs[n - depth + 1 :])),
             masks,
-            (a, b),
-            lhs[: max(0, depth - 3)],
-            bits[depth + 1] if depth >= 4 else None,
+            clean=(a, b),
+            dirty=lhs[: max(0, depth - 3)],
+            measurement_bit=bits[depth + 1] if depth >= 4 else None,
         )
     )
     gates.extend(measure_x_clear_ir(c, bits[depth]))
