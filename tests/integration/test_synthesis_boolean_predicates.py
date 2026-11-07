@@ -287,20 +287,19 @@ def test_boolean_memory_limit_refuses_before_numerical_execution(
         )
 
 
-def test_complete_public_boolean_example_runs_without_private_imports_or_gate_design() -> (
-    None
-):
-    source = (
-        Path(__file__).resolve().parents[2]
-        / "examples/synthesis/tutorials/arithmetic/boolean_predicate/main.py"
-    )
+def test_complete_public_boolean_example_runs_without_private_imports_or_gate_design(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.delenv("PYTHONPATH", raising=False)
+    root = Path(__file__).resolve().parents[2]
+    source = root / "examples/synthesis/tutorials/arithmetic/boolean_predicate/main.py"
     completed = subprocess.run(
         [
             sys.executable,
             "-m",
             "examples.synthesis.tutorials.arithmetic.boolean_predicate.main",
         ],
-        cwd=source.parents[1],
+        cwd=root,
         capture_output=True,
         text=True,
         check=True,
