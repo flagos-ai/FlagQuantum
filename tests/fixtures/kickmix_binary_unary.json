@@ -1,0 +1,459 @@
+{
+  "source_commit": "9a0c11a4ee7697c082fbf8f2e1e8bf4a71fcb453",
+  "source_blob": "d527eeeddf06c10ffe69ab6408594c60fd248182",
+  "excluded_records": [
+    "REGISTER",
+    "APPEND_TO_REGISTER",
+    "INFO_TAG"
+  ],
+  "cases": [
+    {
+      "binary_bits": 0,
+      "inverse": false,
+      "stride": 1,
+      "offset": 0,
+      "instructions": 2,
+      "sha256": "50db853e89730b54535526fe4b9e7a244a2298c97d9f40bacdfcebc0a211926f"
+    },
+    {
+      "binary_bits": 0,
+      "inverse": false,
+      "stride": 1,
+      "offset": 1,
+      "instructions": 2,
+      "sha256": "66abcf8f42eb7a1e6617099510b4d1ac657ec7498200c79747ea01b1ee903d3a"
+    },
+    {
+      "binary_bits": 0,
+      "inverse": false,
+      "stride": 2,
+      "offset": 0,
+      "instructions": 2,
+      "sha256": "50db853e89730b54535526fe4b9e7a244a2298c97d9f40bacdfcebc0a211926f"
+    },
+    {
+      "binary_bits": 0,
+      "inverse": false,
+      "stride": 2,
+      "offset": 1,
+      "instructions": 2,
+      "sha256": "66abcf8f42eb7a1e6617099510b4d1ac657ec7498200c79747ea01b1ee903d3a"
+    },
+    {
+      "binary_bits": 0,
+      "inverse": true,
+      "stride": 1,
+      "offset": 0,
+      "instructions": 2,
+      "sha256": "059fd31189116683bc0b96ed7b59253bfb377ad13098f2461f06239714b68b06"
+    },
+    {
+      "binary_bits": 0,
+      "inverse": true,
+      "stride": 1,
+      "offset": 1,
+      "instructions": 2,
+      "sha256": "d02ba78d08579672735933de219ca28a94a9b19dbe626a372d8a76159411bfe2"
+    },
+    {
+      "binary_bits": 0,
+      "inverse": true,
+      "stride": 2,
+      "offset": 0,
+      "instructions": 2,
+      "sha256": "059fd31189116683bc0b96ed7b59253bfb377ad13098f2461f06239714b68b06"
+    },
+    {
+      "binary_bits": 0,
+      "inverse": true,
+      "stride": 2,
+      "offset": 1,
+      "instructions": 2,
+      "sha256": "d02ba78d08579672735933de219ca28a94a9b19dbe626a372d8a76159411bfe2"
+    },
+    {
+      "binary_bits": 1,
+      "inverse": false,
+      "stride": 1,
+      "offset": 0,
+      "instructions": 4,
+      "sha256": "e5377595e058732282112dfe618541177351adde5b526761915664de6cf1d12f"
+    },
+    {
+      "binary_bits": 1,
+      "inverse": false,
+      "stride": 1,
+      "offset": 1,
+      "instructions": 4,
+      "sha256": "4ef4469144206d3947a75a9326c64175626da2fda95ba8662bdad37bc2c97b20"
+    },
+    {
+      "binary_bits": 1,
+      "inverse": false,
+      "stride": 2,
+      "offset": 0,
+      "instructions": 4,
+      "sha256": "b6e93742e1d19004341da56eb5fc52e3bc6e9de3f95145f901e73a7c87b88003"
+    },
+    {
+      "binary_bits": 1,
+      "inverse": false,
+      "stride": 2,
+      "offset": 1,
+      "instructions": 4,
+      "sha256": "3f51fc992c04aea39d8e3686c3585d640fc0e14a559b7bcc4f6e5d2daec53d18"
+    },
+    {
+      "binary_bits": 1,
+      "inverse": true,
+      "stride": 1,
+      "offset": 0,
+      "instructions": 4,
+      "sha256": "699e20a0411ca836f0ed7e3a7c63817696845d7a3623bf73fe53367414c1a688"
+    },
+    {
+      "binary_bits": 1,
+      "inverse": true,
+      "stride": 1,
+      "offset": 1,
+      "instructions": 4,
+      "sha256": "b1b2c699000784e85311db510b4260271f281d24a18ae0b429456d3d23ec2a61"
+    },
+    {
+      "binary_bits": 1,
+      "inverse": true,
+      "stride": 2,
+      "offset": 0,
+      "instructions": 4,
+      "sha256": "76c7c6f25ecded2794c59a8428af807a5d4e570a874a79aa743d60e72ed8d066"
+    },
+    {
+      "binary_bits": 1,
+      "inverse": true,
+      "stride": 2,
+      "offset": 1,
+      "instructions": 4,
+      "sha256": "34b3ac4798200eb902fd966fd1d5a1cab76bac9c6a05c273c2a2dfc4f5671f09"
+    },
+    {
+      "binary_bits": 2,
+      "inverse": false,
+      "stride": 1,
+      "offset": 0,
+      "instructions": 9,
+      "sha256": "21be28bb82b2ce26cc8f7b7312c1865bba2fd74e2dcf6e016ce57d29215bde74"
+    },
+    {
+      "binary_bits": 2,
+      "inverse": false,
+      "stride": 1,
+      "offset": 1,
+      "instructions": 9,
+      "sha256": "9169831f22e8fcf98525fe2dd35a1d8bcdd121c2df767539732a100277c27ba7"
+    },
+    {
+      "binary_bits": 2,
+      "inverse": false,
+      "stride": 2,
+      "offset": 0,
+      "instructions": 9,
+      "sha256": "2a3ba237db281be613dddf0817e74be8ef3e2ef986f51dcaf37f7b41206a47a3"
+    },
+    {
+      "binary_bits": 2,
+      "inverse": false,
+      "stride": 2,
+      "offset": 1,
+      "instructions": 9,
+      "sha256": "07686b20691b7ab0ba3c4f3adae9932078c81c171bb24d0751a61448a61ec7e7"
+    },
+    {
+      "binary_bits": 2,
+      "inverse": true,
+      "stride": 1,
+      "offset": 0,
+      "instructions": 10,
+      "sha256": "506deb2b70a44667154866673171376440a265b6784d1e60fa40511b08035276"
+    },
+    {
+      "binary_bits": 2,
+      "inverse": true,
+      "stride": 1,
+      "offset": 1,
+      "instructions": 10,
+      "sha256": "24af9e4ad41853a77655ffffd4c57c019e0b1bbed825c9d3c48b6fef1e7ebed2"
+    },
+    {
+      "binary_bits": 2,
+      "inverse": true,
+      "stride": 2,
+      "offset": 0,
+      "instructions": 10,
+      "sha256": "928771e6e5f5bee9d16316b8dc986ee14c6aab514666f4d021661e6c5ccff30f"
+    },
+    {
+      "binary_bits": 2,
+      "inverse": true,
+      "stride": 2,
+      "offset": 1,
+      "instructions": 10,
+      "sha256": "05945594e74f4a182139cec9aa4f76dedc30f4a7825d8d16dc30b0b6be5aee88"
+    },
+    {
+      "binary_bits": 3,
+      "inverse": false,
+      "stride": 1,
+      "offset": 0,
+      "instructions": 20,
+      "sha256": "61e08192998678535d2ab00085c21b322d097f2e6d13551450aeef24b650caf5"
+    },
+    {
+      "binary_bits": 3,
+      "inverse": false,
+      "stride": 1,
+      "offset": 1,
+      "instructions": 20,
+      "sha256": "446fb508e8e4d7b11f34b9ba19b50c284db2055693b9efde16dc6fac82158643"
+    },
+    {
+      "binary_bits": 3,
+      "inverse": false,
+      "stride": 2,
+      "offset": 0,
+      "instructions": 20,
+      "sha256": "dc90753f3d2080975149beb573bec02c1144347c2067667a7c35c1ef1d2dac0f"
+    },
+    {
+      "binary_bits": 3,
+      "inverse": false,
+      "stride": 2,
+      "offset": 1,
+      "instructions": 20,
+      "sha256": "d7e7f01cc123553656aa16700b81163732ec38ad16553653ab76b961e7315c0a"
+    },
+    {
+      "binary_bits": 3,
+      "inverse": true,
+      "stride": 1,
+      "offset": 0,
+      "instructions": 24,
+      "sha256": "f9179e7b3ab6075a9670424c273f826961be5a23ce919e0f688efff05270dde5"
+    },
+    {
+      "binary_bits": 3,
+      "inverse": true,
+      "stride": 1,
+      "offset": 1,
+      "instructions": 24,
+      "sha256": "0217ac52c71811860a2ee1ef5adcaf321beace4285f2bdead0edb71a39be5bba"
+    },
+    {
+      "binary_bits": 3,
+      "inverse": true,
+      "stride": 2,
+      "offset": 0,
+      "instructions": 24,
+      "sha256": "14f769e91b18d92318a1a8295a901f65d146f6eea19946518e8739eb63fc8ac5"
+    },
+    {
+      "binary_bits": 3,
+      "inverse": true,
+      "stride": 2,
+      "offset": 1,
+      "instructions": 24,
+      "sha256": "edb0747c75a4e0933df634303fc6fd58f99046f807356200fc7fd0136d4cbf7f"
+    },
+    {
+      "binary_bits": 4,
+      "inverse": false,
+      "stride": 1,
+      "offset": 0,
+      "instructions": 43,
+      "sha256": "7fda41fe14175cc145bce5b00ab4360c4b337e1cb857cb6d1cbe9f8859b90f0c"
+    },
+    {
+      "binary_bits": 4,
+      "inverse": false,
+      "stride": 1,
+      "offset": 1,
+      "instructions": 43,
+      "sha256": "6f1703c16f7bf84e1c65ebf62a2068afd672dc1bf6ed2e5235856871186d6bd3"
+    },
+    {
+      "binary_bits": 4,
+      "inverse": false,
+      "stride": 2,
+      "offset": 0,
+      "instructions": 43,
+      "sha256": "1b2521f8bf05ab43fbf760c7cc80383231e6301ad5adf21cba2ce88c14aab71d"
+    },
+    {
+      "binary_bits": 4,
+      "inverse": false,
+      "stride": 2,
+      "offset": 1,
+      "instructions": 43,
+      "sha256": "1f355c66e811fb793b638ac5a0374248621dd41108cb934d60df5ed53b732f6f"
+    },
+    {
+      "binary_bits": 4,
+      "inverse": true,
+      "stride": 1,
+      "offset": 0,
+      "instructions": 54,
+      "sha256": "201b09a029039a933d0d4f3d6083eede8710ab1f4356f672370df9462b11e61d"
+    },
+    {
+      "binary_bits": 4,
+      "inverse": true,
+      "stride": 1,
+      "offset": 1,
+      "instructions": 54,
+      "sha256": "671a1f1bd9a7454a4e06e3e68169b8e4b23005052f3b4d065da05c6f3416c1f6"
+    },
+    {
+      "binary_bits": 4,
+      "inverse": true,
+      "stride": 2,
+      "offset": 0,
+      "instructions": 54,
+      "sha256": "7879a911b421b7db86081178b207f8a5c52639fd5d9b2f330beac9540f1b37d1"
+    },
+    {
+      "binary_bits": 4,
+      "inverse": true,
+      "stride": 2,
+      "offset": 1,
+      "instructions": 54,
+      "sha256": "2119d62a0c65f92d9a34b5857e035dd0d63b512864e03a33988d45a8ade96e39"
+    },
+    {
+      "binary_bits": 5,
+      "inverse": false,
+      "stride": 1,
+      "offset": 0,
+      "instructions": 90,
+      "sha256": "f211dd5973ebf1c16ad6e7ac6115257e3c2664b813eeb8aeff2ba3c25635d2ff"
+    },
+    {
+      "binary_bits": 5,
+      "inverse": false,
+      "stride": 1,
+      "offset": 1,
+      "instructions": 90,
+      "sha256": "e2e631bb6f05e9f0d300af1c4ec88ee5da38e0aff8786315c6fb2582ba0d5d01"
+    },
+    {
+      "binary_bits": 5,
+      "inverse": false,
+      "stride": 2,
+      "offset": 0,
+      "instructions": 90,
+      "sha256": "9e34733d22a0007bac96d098b1c48333b8996521a9225776be16d912e927e149"
+    },
+    {
+      "binary_bits": 5,
+      "inverse": false,
+      "stride": 2,
+      "offset": 1,
+      "instructions": 90,
+      "sha256": "c7af010c065374d406e2feb505b0204c7f299c1080b0d2de733261c165703c44"
+    },
+    {
+      "binary_bits": 5,
+      "inverse": true,
+      "stride": 1,
+      "offset": 0,
+      "instructions": 116,
+      "sha256": "283c0c83e8cae9bcb654511d0094cd37af851c0b9ba510a275390a24dc364497"
+    },
+    {
+      "binary_bits": 5,
+      "inverse": true,
+      "stride": 1,
+      "offset": 1,
+      "instructions": 116,
+      "sha256": "ad6a28f3b3807b1088f3311ec00993a0f5dea3094843e6071f403e5eaa9216da"
+    },
+    {
+      "binary_bits": 5,
+      "inverse": true,
+      "stride": 2,
+      "offset": 0,
+      "instructions": 116,
+      "sha256": "f745dcc06082e4d13b53e9611594a2d656e30ec775cf97d25780b4de4c6d5b7a"
+    },
+    {
+      "binary_bits": 5,
+      "inverse": true,
+      "stride": 2,
+      "offset": 1,
+      "instructions": 116,
+      "sha256": "ebdf4093d0a38bb81b6d8f4076a74050837fcd1599046414c306cbe8e8e12e58"
+    },
+    {
+      "binary_bits": 6,
+      "inverse": false,
+      "stride": 1,
+      "offset": 0,
+      "instructions": 185,
+      "sha256": "c96e9ca44ec058ac50f85445adbf00b2a3850725034f0d3692a4ca0147b8c029"
+    },
+    {
+      "binary_bits": 6,
+      "inverse": false,
+      "stride": 1,
+      "offset": 1,
+      "instructions": 185,
+      "sha256": "0f6b3a74e071fe0652892c34b00e8930eda40ea9c6342b0054dd6a8c84e0a822"
+    },
+    {
+      "binary_bits": 6,
+      "inverse": false,
+      "stride": 2,
+      "offset": 0,
+      "instructions": 185,
+      "sha256": "a67f66ff0df7d72db354d8739b2185418bb4ac82cc386c17ca1d21f0bad4257a"
+    },
+    {
+      "binary_bits": 6,
+      "inverse": false,
+      "stride": 2,
+      "offset": 1,
+      "instructions": 185,
+      "sha256": "c845bf3122d7603e8075ce8453f57f1867a8137d20f95b603fe8e0d61e7b945c"
+    },
+    {
+      "binary_bits": 6,
+      "inverse": true,
+      "stride": 1,
+      "offset": 0,
+      "instructions": 242,
+      "sha256": "d6c90a7b2086f1d14c42e5e4b96736f6cf833dcbe6e3792f90fb127b0c2c2a7f"
+    },
+    {
+      "binary_bits": 6,
+      "inverse": true,
+      "stride": 1,
+      "offset": 1,
+      "instructions": 242,
+      "sha256": "7f061abadaee3654b9973b132f7a024ae7f7b5b8a9e2fb5242d13bd15a359c94"
+    },
+    {
+      "binary_bits": 6,
+      "inverse": true,
+      "stride": 2,
+      "offset": 0,
+      "instructions": 242,
+      "sha256": "f353a02bdb6d31324e92e7e7cfb5960297eea955c841dc3255c7ebda4599a4eb"
+    },
+    {
+      "binary_bits": 6,
+      "inverse": true,
+      "stride": 2,
+      "offset": 1,
+      "instructions": 242,
+      "sha256": "d052828d876ee97b251ae515d6f6bce79eb6b9064eab4cd10a3f2f929ea6d9a5"
+    }
+  ]
+}

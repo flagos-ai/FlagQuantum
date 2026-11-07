@@ -20,8 +20,7 @@ from flagquantum.compiler.registers.kickmix_unary_iteration import (
     UnaryAddressCursor,
     unary_iteration_operations,
 )
-from flagquantum.core.ir import Instruction
-from tests.unit.measurement_checks import forced_branch
+from tests.unit.measurement_checks import expand_reset_branches, forced_branch
 
 pytestmark = pytest.mark.unit
 
@@ -42,29 +41,6 @@ def _program(
     )
 
 
-def _projectable(gates: tuple[Instruction, ...]) -> tuple[Instruction, ...]:
-    # Expand the actual reset channel into its two Kraus outcomes. This makes
-    # every reset and erasure branch explicit without coherently summing resets.
-    result = []
-    slot = 10
-    for gate in gates:
-        if gate.name == "reset":
-            result.extend(
-                (
-                    Instruction(
-                        "measure",
-                        gate.wires,
-                        metadata={"classical_bit": slot, "is_dynamic": True},
-                    ),
-                    Instruction("x", gate.wires, metadata={"conditions": ((slot, 1),)}),
-                )
-            )
-            slot += 1
-        else:
-            result.append(gate)
-    return tuple(result)
-
-
 @pytest.mark.parametrize("n", [0, 1, 2])
 @pytest.mark.parametrize("park", [False, True])
 @pytest.mark.parametrize("controlled", [False, True])
@@ -76,7 +52,9 @@ def test_all_reset_and_erasure_branches_preserve_complex_amplitudes(
     )
     program = _program(n, controlled, values)
     assert decode_kmx(encode_kmx(program)) == program
-    gates = _projectable(bind_reversible_phase_execution(program))
+    gates = expand_reset_branches(
+        bind_reversible_phase_execution(program), first_slot=10
+    )
     work = max(1, n)
     data_width = n + 3
     generator = torch.Generator().manual_seed(910 + n)

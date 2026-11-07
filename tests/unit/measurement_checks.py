@@ -130,3 +130,29 @@ def certified_and_channel_map(
             values[target] ^= values[a] & values[b]
         i += 1
     return tuple(tuple(word) for word in values.T.tolist()), events
+
+
+def expand_reset_branches(
+    gates: tuple[Instruction, ...], *, first_slot: int
+) -> tuple[Instruction, ...]:
+    """Expose unconditional reset Kraus outcomes for exact branch projection."""
+    result: list[Instruction] = []
+    slot = first_slot
+    for gate in gates:
+        if gate.name != "reset":
+            result.append(gate)
+            continue
+        if gate.metadata.get("conditions") or gate.metadata.get("condition_clauses"):
+            raise ValueError("Reset branch expansion requires unconditional reset")
+        result.extend(
+            (
+                Instruction(
+                    "measure",
+                    gate.wires,
+                    metadata={"classical_bit": slot, "is_dynamic": True},
+                ),
+                Instruction("x", gate.wires, metadata={"conditions": ((slot, 1),)}),
+            )
+        )
+        slot += 1
+    return tuple(result)
