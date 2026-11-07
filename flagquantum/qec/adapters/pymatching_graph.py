@@ -14,7 +14,7 @@ from flagquantum.errors import CapabilityError
 from flagquantum.qec.decoders.matching import _defects
 from flagquantum.qec.decoders.matching_graph import MatchingGraph, MatchingSolution
 
-from .pymatching import _pymatching
+from . import pymatching as _pymatching_adapter
 
 
 def _build_matching(graph: MatchingGraph, *, record_edge_ids: bool = False) -> Any:
@@ -23,7 +23,7 @@ def _build_matching(graph: MatchingGraph, *, record_edge_ids: bool = False) -> A
         faults = torch.cat(
             (faults, torch.eye(len(graph.edges), dtype=torch.uint8)), dim=0
         )
-    matching = _pymatching().Matching.from_check_matrix(
+    matching = _pymatching_adapter._pymatching().Matching.from_check_matrix(
         checks.numpy(),
         weights=weights.numpy(),
         faults_matrix=faults.numpy(),

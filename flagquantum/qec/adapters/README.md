@@ -89,3 +89,5 @@ pinned SDK. Do not assume an empty syndrome has zero cost. Run
 `python examples/qec/check_matrix_matching.py` with the PyMatching extra, then
 `python -m pytest -q tests/qec/test_pymatching_graph.py
 tests/qec/test_adapters_pymatching.py` after a representative change.
+For external measurement records, use the
+[QEC measurement conversion entry](../execution/README.md).

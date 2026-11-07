@@ -729,3 +729,49 @@ Local validation and actual-main admission remain separate; no new candidate
 is accepted by reusing PR1087 evidence. Negative-cost and probability domains
 remain distinct. This is not full graph mutation, correlated decoding, all
 upstream input compatibility, native replacement or performance certification.
+## External Stim measurement conversion candidate
+
+The backend-neutral `convert_measurement_records` entry selects the source
+text dialect with `circuit_format`. The [conversion contract](../development/QEC_STIM_MEASUREMENT_CONVERSION_API_PROPOSAL.md)
+covers existing CPU records, reference normalization, and sweep controls.
+Installed-package and main acceptance are tracked separately.
+
+
+## Native terminal measurement conversion candidate
+
+The [native terminal readout contract](../development/QEC_TERMINAL_READOUT_CONVERSION_PROPOSAL.md)
+extends the same FlagQuantum circuit from ordinary local simulation to
+conversion of CPU terminal Z records into detector and logical flips. It uses
+explicit logical readout columns, shared parity maps, and one prepared
+reference per converter. The conformance suite compares all eight records
+across bound, compiled and placed variants against independent XOR and checks
+the emitted physical measurement order. This advances the terminal-measurement
+slice of FTS-04 after acceptance. Mid-circuit records, full upstream parity
+and broader QEC or FTQC milestone acceptance remain separate work.
+
+
+## PR1092 bounded integration after native conversion
+
+PR1092 is reconciled with actual main
+`290d80ec3e2ffc958a3da5221e4a076e4e8a5900` within its original 14 paths plus
+one explicitly approved doctest execution path. The complete existing main
+sampling/conversion and installed-profile checks are retained. PR1087's SDK
+experiment/output-view bundle remains a separate branch; neither PR is merged
+into the other and its pending checks are not counted as main acceptance.
+
+`MatchingGraph` and `PyMatchingGraphDecoder` now join the real public docstring
+execution list, preserving all 105 prior entries and the discovery assertion.
+The graph adapter resolves the current loader from the authoritative probability
+adapter module instead of keeping an imported function binding. Existing missing
+SDK behavior and error identity therefore remain replaceable for both consumers;
+no matching algorithm, cost interpretation, public signature or refusal domain
+changes. The former installed-profile fake now replaces that same authoritative
+loader, preserving its exception assertion. Its initial local failure is retained.
+
+Local core and real-SDK correctness, independent optimization references and the
+matrix user example passed. Minimum and observed-CI versions of Ruff, Black and
+strict Mypy were checked using existing tools. Old CI formatting, missing
+executable doctest registration, loader replacement and artifact-upload failures
+remain separately recorded. No old CI attempt is manually rerun. Final-head CI
+and real installed-profile/main admission remain separate gates. FTS-04/R08 and
+full Stim/PyMatching parity remain partial; FTS-02 and M2 are not closed here.

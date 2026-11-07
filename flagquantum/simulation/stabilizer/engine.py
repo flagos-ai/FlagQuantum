@@ -1,82 +1,6 @@
-"""Clifford stabilizer sampling backed by the optional Stim engine.
+"""Clifford sampling, Pauli readout and external record conversion.
 
-A stabilizer circuit conjugates a Pauli group instead of evolving an amplitude
-vector, so its tableau grows quadratically with the qubit count rather than
-exponentially. Clifford circuits therefore reach qubit counts no amplitude store
-can hold while answering what a fault-tolerance workflow measures.
-What this module owns
----------------------
-One conversion and four entry points:
-
-- translating validated FlagQuantum IR while refusing unsupported instructions,
-- sampling outcomes for a requested qubit list,
-- expanding a Pauli string through the circuit and reading it against the zero
-  state for stabilizer-basis expectation requests,
-- sampling measurements recorded by a Clifford program with positioned noise, and
-- surveying that route without running it, so a caller can choose between the
-  stabilizer and dense regimes before allocating a dense state.
-
-The positioned-noise entry point exists because a detector error model is defined
-between syndrome rounds rather than at a named gate: the program locates data
-errors at round boundaries and measurement errors before check readout. It is
-deliberately not reachable from the planned stabilizer
-mode, which refuses a channel outright. The readout is reachable from it, and is
-the one entry point here that needs no external engine at all: expanding a Pauli
-through a Clifford circuit is Pauli algebra, not tableau simulation.
-
-It owns no device selection, no shot policy, no seed stream, no dispatch, and no
-public result assembly. A caller that needs those goes through Runtime, which
-owns them. The survey is not a claim about a program: it reports which
-instructions the noise route would execute and which it would refuse, and it
-decides nothing on the caller's behalf.
-
-Why the engine is an external distribution
-------------------------------------------
-The dependency policy requires a new production dependency to record a
-documented need, an ownership boundary, a licence and supply-chain review, a
-replacement interface, and an exit plan. For this module those are:
-
-- Need. Stim is the reference implementation of stabilizer simulation and of the
-  detector error model that a fault-tolerance workflow needs. Re-deriving it
-  would be research spent on an algorithm that is already solved and already
-  published, and it would put this repository's own Clifford phase bookkeeping
-  in the path of every sampling result.
-- Ownership boundary. `flagquantum.simulation.stabilizer` owns the conversion
-  and the sampling call. The dependency is never imported by Core, by the
-  import-time path, or by any other domain.
-- Licence and supply chain. Stim is Apache-2.0, published by Google Quantum AI,
-  and imports no NVIDIA component, so it sits in the open-neutral dependency
-  class rather than in the accelerated-compute class this project has to
-  replace.
-- Replacement interface and exit plan. The entry points are the seam. A native
-  tableau implementation can replace the bodies of `sample_stabilizer` and
-  `sample_noisy_measurements` without changing a caller, and the Clifford gate
-  set below is the contract a replacement has to satisfy. That work is scheduled
-  separately rather than scaffolded here, so this module holds exactly one
-  implementation of each. The readout entry point is already native for the same
-  reason it can be: the Clifford phase bookkeeping this module would otherwise
-  owe the engine is what it performs there, and it performs it without importing
-  one.
-
-Fail-closed contract
---------------------
-An instruction outside the Clifford gate set is refused with a named error
-naming the accepted set. The positioned-noise entry accepts one class of channel
-and one measurement shape: a channel whose Kraus operators are a mixture of Pauli
-operators up to a global phase, on as many qubits as the channel acts on, and one
-qubit per measurement.
-That class is not a list of names - it is decided by the operators the channel
-carries, through `KrausChannel.unitary_mixture` - and it is exactly the class a
-tableau absorbs, because sampling one branch of it moves the Pauli frame and
-leaves the tableau alone. An amplitude damping, phase damping, reset, or thermal
-relaxation channel is refused because no Pauli frame represents it; so is a
-unitary that is not a Pauli up to a global phase, such as a coherent
-over-rotation by an angle that is not a multiple of pi, even though it is a
-one-branch unitary mixture. A multi-qubit measurement is refused because the
-caller reads the record back one recorded bit at a time. Nothing is approximated,
-decomposed, or silently dropped, because a stabilizer result that quietly
-answers a different circuit is worse than a refusal: the caller cannot tell the
-two apart from the samples.
+See the stabilizer README for ownership, dependency rationale and refusals.
 """
 
 from __future__ import annotations
@@ -1163,7 +1087,24 @@ def _annotated_stim_text(
     detector_columns: tuple[tuple[int, ...], ...],
     observable_columns: tuple[tuple[int, ...], ...],
 ) -> str:
-    """Serialize the actual positioned program with QEC-owned parity columns."""
+    """Serialize and validate a positioned program with QEC-owned parity columns."""
+    text = _annotated_stim_source(
+        program,
+        terminal_qubits=terminal_qubits,
+        detector_columns=detector_columns,
+        observable_columns=observable_columns,
+    )
+    _parse_stim_experiment(text)
+    return text
+
+
+def _annotated_stim_source(
+    program: CircuitIR,
+    *,
+    terminal_qubits: tuple[int, ...],
+    detector_columns: tuple[tuple[int, ...], ...],
+    observable_columns: tuple[tuple[int, ...], ...],
+) -> str:
     ir = _measurement_record_ir(program)
     circuit = _noisy_engine_circuit(_noisy_operations(ir), terminal_qubits)
     recorded = circuit.num_measurements
@@ -1189,9 +1130,16 @@ def _annotated_stim_text(
             values = ", ".join(map(repr, arguments))
             line = f"{prefix}({values}){suffix.split(')', 1)[1]}"
         lines.append(line)
-    text = "\n".join(lines)
-    _parse_stim_experiment(text)
-    return text
+    return "\n".join(lines)
+
+
+def _validate_stim_reference(circuit: Any) -> None:
+    try:
+        circuit.without_noise().detector_error_model(allow_gauge_detectors=False)
+    except ValueError as error:
+        raise CapabilityError(
+            "Stim experiment has nondeterministic declared parities"
+        ) from error
 
 
 def _prepare_stim_experiment(
@@ -1199,12 +1147,7 @@ def _prepare_stim_experiment(
 ) -> tuple[_PreparedMeasurements, int, int]:
     """Prepare normalized flips from the original noisy circuit, not its DEM."""
     circuit = _parse_stim_experiment(circuit_text)
-    try:
-        circuit.without_noise().detector_error_model(allow_gauge_detectors=False)
-    except ValueError as error:
-        raise CapabilityError(
-            "Stim experiment has nondeterministic declared parities"
-        ) from error
+    _validate_stim_reference(circuit)
     sampler = circuit.compile_detector_sampler(seed=_validate_seed(seed))
     detectors, observables = circuit.num_detectors, circuit.num_observables
     return (

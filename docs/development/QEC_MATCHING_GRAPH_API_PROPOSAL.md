@@ -275,3 +275,15 @@ dependency/runner/threshold change or alternate numerical path. No research
 probe, worker, full matrix, package release or dependency installation is part
 of this proposal. Implementation/publication requires explicit approval of this
 larger protected scope; previous output-view approvals are not sufficient.
+
+
+## Approved doctest and integration scope amendment
+
+The owner approved expanding this PR from 14 to 15 paths solely to register
+`MatchingGraph` and `PyMatchingGraphDecoder` in
+`tests/api_contract/test_public_docstring_examples.py`. All existing executable
+entries and the discovery assertion remain. The optional-SDK loader is resolved
+through its owning module at preparation time, preserving both probability and
+weighted-graph replacement tests. This changes no approved public API. Original
+failure logs, immutable API fixtures and rejection/numerical thresholds remain
+unchanged; final-head installed-profile and main delivery gates are separate.

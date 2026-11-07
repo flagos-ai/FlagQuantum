@@ -12,7 +12,7 @@ from ..errors import CapabilityError, ValidationError
 from ..observables.boson import DEFAULT_DENSE_MATRIX_BYTES
 from ..operators import SuperOperator
 from ..simulation.lindblad_request import _require_density_matrices
-from .measurements import _draw_probability_indices
+from . import measurements
 from .result import MeasurementResult
 
 
@@ -238,7 +238,9 @@ def sample_terminal(
     return MeasurementResult(
         kind="sample",
         qubits=(),
-        value=_draw_probability_indices(probabilities, shots, generator=generator),
+        value=measurements._draw_probability_indices(
+            probabilities, shots, generator=generator
+        ),
         shots=shots,
         metadata=metadata,
     )

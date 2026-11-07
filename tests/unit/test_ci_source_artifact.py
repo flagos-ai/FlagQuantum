@@ -31,7 +31,9 @@ ROOT = Path(__file__).resolve().parents[2]
         ("ci.yml", "pennylane-optional"),
         ("ci.yml", "dependency-bounds"),
         pytest.param("ci.yml", "distributed-cpu-shard", id="ci.yml-distributed-cpu"),
+        ("ci.yml", "coverage-plan"),
         ("ci.yml", "coverage-shard"),
+        ("ci.yml", "coverage"),
         ("ci.yml", "supply-chain"),
         ("local-gpu.yml", "one-gpu-local"),
     ],
@@ -99,6 +101,9 @@ def test_source_artifact_restores_the_exact_tree_and_rejects_another_commit(
     git("config", "user.email", "liuwei.chem.phys@gmail.com")
     (source / "tracked.txt").write_text("parent\n")
     (source / "unchanged.txt").write_text("cached baseline\n")
+    (source / "tools").mkdir()
+    helper = ROOT / "tools/ci_source_archive.py"
+    (source / "tools/ci_source_archive.py").write_bytes(helper.read_bytes())
     git("add", ".")
     git("commit", "-m", "parent")
     parent = git("rev-parse", "HEAD")
@@ -124,7 +129,9 @@ def test_source_artifact_restores_the_exact_tree_and_rejects_another_commit(
     artifact_key = jobs["prepare-source"]["outputs"]["artifact-key"]
     assert artifact_key == "${{ steps.pack-source.outputs.artifact-key }}"
     for step in jobs[job]["steps"]:
-        if step.get("uses", "").startswith("actions/download-artifact@"):
+        if step.get("uses", "").startswith("actions/download-artifact@") and step.get(
+            "with", {}
+        ).get("name", "").startswith("ci-source"):
             assert (
                 "${{ needs.prepare-source.outputs.artifact-key }}"
                 in step["with"]["name"]
@@ -137,6 +144,10 @@ def test_source_artifact_restores_the_exact_tree_and_rejects_another_commit(
     if probe:
         shell(probe, target)
         assert output.read_text().splitlines()[-1] == "complete=false"
+        assert (
+            git("show", f"{sha}:tools/ci_source_archive.py", cwd=target)
+            == helper.read_text().strip()
+        )
     (temporary / "ci-source/source.pack").write_bytes(full_pack)
 
     for attempt in range(2):
@@ -170,6 +181,7 @@ def test_source_artifact_restores_the_exact_tree_and_rejects_another_commit(
     [
         pytest.param("distributed-cpu-shard", id="distributed-cpu"),
         "coverage-shard",
+        "coverage",
         "dependency-bounds",
     ],
 )
@@ -191,3 +203,67 @@ def test_checkout_jobs_use_the_exact_workflow_revision(job: str) -> None:
         if step.get("uses", "").startswith("actions/download-artifact@")
     )
     assert download["with"]["digest-mismatch"] == "error"
+
+
+def test_partial_source_caches_get_bounded_verified_api_repair_before_full_transfer() -> (
+    None
+):
+    jobs = yaml.safe_load((ROOT / ".github/workflows/ci.yml").read_text())["jobs"]
+    consumers = []
+    for name, job in jobs.items():
+        steps = job["steps"]
+        if not any(step.get("id") == "source-cache" for step in steps):
+            continue
+        consumers.append(name)
+        repair = next(step for step in steps if step.get("id") == "source-repair")
+        assert (
+            repair["if"]
+            == "runner.environment == 'self-hosted' && steps.source-cache.outputs.complete != 'true'"
+        )
+        assert 'git show "$sha:tools/ci_source_archive.py"' in repair["run"]
+        assert 'test "$sha" = "$GITHUB_SHA"' in repair["run"]
+        assert "timeout --kill-after=15s 120s python3" in repair["run"]
+        assert 'echo "complete=true"' in repair["run"]
+        assert 'echo "complete=false"' in repair["run"]
+        assert not repair.get("continue-on-error", False)
+        full = next(
+            step
+            for step in steps
+            if step.get("with", {}).get("name", "").startswith("ci-source-${{")
+        )
+        assert (
+            full["if"]
+            == "steps.source-cache.outputs.complete != 'true' && steps.source-repair.outputs.complete != 'true'"
+        )
+        assert full["with"]["digest-mismatch"] == "error"
+    assert {
+        "coverage",
+        "coverage-shard",
+        "distributed-cpu-shard",
+        "qiskit-compat",
+        "dependency-bounds",
+    } <= set(consumers)
+
+
+def test_source_cache_stops_previous_runner_writers_before_checkout():
+    for workflow in ("ci.yml", "local-gpu.yml"):
+        jobs = yaml.safe_load((ROOT / ".github/workflows" / workflow).read_text())[
+            "jobs"
+        ]
+        checked = 0
+        for job in jobs.values():
+            probe = next(
+                (
+                    s.get("run", "")
+                    for s in job["steps"]
+                    if s.get("id") == "source-cache"
+                ),
+                None,
+            )
+            if probe is None:
+                continue
+            checked += 1
+            assert 'git show "$sha:tools/ci_source_archive.py"' in probe
+            assert "--cleanup-containers" in probe
+            assert probe.index("--cleanup-containers") < probe.index("complete=false")
+        assert checked

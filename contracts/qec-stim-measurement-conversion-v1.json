@@ -1,0 +1,12 @@
+{
+  "schema_version": "1.0",
+  "status": "implemented_pending_release",
+  "proposal": "docs/development/QEC_STIM_MEASUREMENT_CONVERSION_API_PROPOSAL.md",
+  "namespace": "flagquantum.qec.execution.measurement_conversion",
+  "root_exports_added": [],
+  "signatures": {
+    "convert_measurement_records": "(circuit_text: 'str', measurements: 'torch.Tensor', *, circuit_format: \"Literal['stim']\", sweep_bits: 'torch.Tensor | None' = None, bit_packed_measurements: 'bool' = False, bit_packed_sweep_bits: 'bool' = False) -> 'DemSample'"
+  },
+  "numerical_owner": "flagquantum.simulation.stabilizer.engine",
+  "conformance_tests": "tests/qec/test_stim_measurement_conversion.py"
+}

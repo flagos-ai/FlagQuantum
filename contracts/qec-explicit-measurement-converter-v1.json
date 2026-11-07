@@ -1,0 +1,24 @@
+{
+  "schema_version": "1.0",
+  "status": "approved_implementation_candidate",
+  "proposal": "docs/development/QEC_EXPLICIT_MEASUREMENT_CONVERSION_PROPOSAL.md",
+  "approval_sha256": "fbb1609312075fbcda051b0b959954e9c6b7524a3b54f705c5ba7d67471d33c3",
+  "method_added": "Circuit.compile_m2d_converter",
+  "signature": "(self, *, detector_map: MeasurementMap, observable_map: MeasurementMap) -> CompiledMeasurementsToDetectionEventsConverter",
+  "root_exports_added": [],
+  "input": "dense shot-major CPU bool records in explicit source measurement order",
+  "output": "separate owned CPU bool detector and observable flips in map row order",
+  "measurement_qubits": "source qubit per input column, with repeated measurements preserved",
+  "reference": "deterministic declared parities relative to the ideal circuit, prepared once",
+  "native_profile": "macOS arm64 embedded Stim 1.16.0",
+  "input_copy_budget_bytes": 67108864,
+  "output_budget_bytes": 67108864,
+  "principal_table_budget_bytes": 67108864,
+  "map_rows_limit": 65536,
+  "parity_references_limit": 100000,
+  "serialization": "unsupported",
+  "tests": [
+    "tests/qec/test_explicit_measurement_conversion.py",
+    "tests/team/simulation/test_explicit_record_conversion_conformance.py"
+  ]
+}

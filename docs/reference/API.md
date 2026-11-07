@@ -938,6 +938,16 @@ remain experimental or internal. Custom initial states are refused because
 ExecutionPlan v1 does not serialize them. Provider-native state and diagnostic
 fields are not part of the stable result contract.
 
+### Prepared measurement sampling
+
+`circuit.compile_sampler(seed=7)` prepares one CPU Clifford sampler. With
+Stim 1.16.0 available, the returned handle supports `sample(shots)`,
+`sample(shots, bit_packed=True)`, and
+`sample_write(shots, filepath=path, format="b8")`. The result columns
+follow explicit measurements in circuit order, including repeated writes
+to the same classical slot. `sample_write` requires a fresh local path.
+See the [sampler example](../../examples/qec/compiled_measurement_sampler.py).
+
 ### Terminal measurements on the static Quafu route
 
 A `DynamicCircuit` whose only dynamic operations are one final measurement of
@@ -1197,3 +1207,21 @@ authoritative for exact names.
 Examples in stable documentation are executed by documentation contract tests.
 New public names must first be importable, snapshot-tested, and added to the
 stable API manifest.
+
+### Explicit measurement records to QEC events
+
+`circuit.compile_m2d_converter(detector_map=..., observable_map=...)` prepares
+reference-normalized conversion of explicit Z measurements in source order.
+`DynamicCircuit` inherits this method; the existing builder is unchanged.
+A `MeasurementMap` column denotes a measurement occurrence, not a classical
+slot. Two measurements of the same qubit keep separate columns, and
+`converter.measurement_qubits` may contain duplicates. Call
+`converter.convert(measurements=records, separate_observables=True)` with a
+shot-major CPU bool tensor to obtain separate owned detector and observable
+flip tensors. No new sampling happens during conversion.
+
+See the [runnable repeated-slot example](../../examples/qec/dynamic_measurement_conversion.py).
+The embedded macOS arm64 profile requires no Stim Python package. Standard
+builds use the optional Stim 1.16.0 SDK. The existing free
+`qec.execution.measurement_conversion.compile_m2d_converter` remains the
+terminal-readout entry point with its existing signature and support boundary.

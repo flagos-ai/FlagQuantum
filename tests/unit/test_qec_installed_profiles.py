@@ -17,7 +17,14 @@ from flagquantum.errors import CapabilityError
 from flagquantum.qec.adapters.pymatching_graph import PyMatchingGraphDecoder
 from flagquantum.qec.decoders.matching_graph import MatchingEdge, MatchingGraph
 from tools.check_qec_installed_profiles import _run
-from tools.qec_installed_smoke import PROFILES, _exercise, _exercise_matching_graph
+from tools.qec_installed_smoke import (
+    PROFILES,
+    _exercise,
+    _exercise_compiled_measurement_sampler,
+    _exercise_matching_graph,
+    _exercise_stim_conversion,
+    _exercise_terminal_conversion,
+)
 
 pytestmark = pytest.mark.unit
 
@@ -31,6 +38,9 @@ def test_public_workflow_in_the_available_source_profile(profile: str) -> None:
         pytest.skip("this source environment does not have that real SDK configuration")
     graph_report = _exercise_matching_graph(profile)
     assert (graph_report is not None) == available[1]
+    assert (_exercise_stim_conversion(profile) is not None) == available[0]
+    assert (_exercise_terminal_conversion(profile) is not None) == available[0]
+    assert (_exercise_compiled_measurement_sampler(profile) is not None) == available[0]
     records = _exercise(profile)
     assert len(records) == (4 if available[0] else 0)
     for record in records:
@@ -117,7 +127,7 @@ def graph_decoder_fake() -> tuple[PyMatchingGraphDecoder, Mock]:
 
 
 def test_graph_solution_keeps_both_weight_readings(
-    graph_decoder_fake: tuple[PyMatchingGraphDecoder, Mock]
+    graph_decoder_fake: tuple[PyMatchingGraphDecoder, Mock],
 ) -> None:
     decoder, sdk = graph_decoder_fake
     raw = torch.tensor([1, 1], dtype=torch.uint8)
@@ -173,7 +183,7 @@ def test_graph_empty_syndrome_is_not_assumed_zero_cost() -> None:
 
 
 def test_graph_rejects_invalid_events_before_sdk(
-    graph_decoder_fake: tuple[PyMatchingGraphDecoder, Mock]
+    graph_decoder_fake: tuple[PyMatchingGraphDecoder, Mock],
 ) -> None:
     decoder, sdk = graph_decoder_fake
     with pytest.raises(ValueError):
@@ -235,11 +245,11 @@ def test_graph_missing_sdk_has_existing_dependency_error(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     from flagquantum.qec import MatchingDependencyError
-    from flagquantum.qec.adapters import pymatching_graph
+    from flagquantum.qec.adapters import pymatching as owner
 
     def missing() -> SimpleNamespace:
         raise MatchingDependencyError("controlled missing SDK")
 
-    monkeypatch.setattr(pymatching_graph, "_pymatching", missing)
+    monkeypatch.setattr(owner, "_pymatching", missing)
     with pytest.raises(MatchingDependencyError):
         PyMatchingGraphDecoder(MatchingGraph(1, 0, (MatchingEdge((0,), 1.0),)))

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Iterator
+from importlib.util import module_from_spec, spec_from_file_location
 from typing import Any, NoReturn
 
 import pytest
@@ -10,7 +11,7 @@ import torch
 
 from flagquantum.errors import CapabilityError, ValidationError
 from flagquantum.runtime import _terminal_instruments as terminal
-from flagquantum.runtime import sample_terminal
+from flagquantum.runtime import measurements, sample_terminal
 from flagquantum.runtime.measurements import _DensityMatrixTarget
 from flagquantum.simulation.lindblad_request import EvolutionValidationError
 
@@ -34,7 +35,7 @@ def forbidden(*args: Any, **kwargs: Any) -> NoReturn:
 @pytest.fixture
 def before_sampling(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(terminal, "_encode_value", forbidden)
-    monkeypatch.setattr(terminal, "_draw_probability_indices", forbidden)
+    monkeypatch.setattr(measurements, "_draw_probability_indices", forbidden)
     monkeypatch.setattr(torch, "Generator", forbidden)
 
 
@@ -276,3 +277,24 @@ def test_old_unseeded_density_draw_keeps_global_generator_semantics() -> None:
         actual = _DensityMatrixTarget(density, None).sample(12, format="index")
         assert torch.equal(actual, expected)
         assert torch.equal(torch.get_rng_state(), expected_state)
+
+
+def test_lazy_import_does_not_retain_a_temporary_draw_override(
+    valid_request: tuple[torch.Tensor, Instrument], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    assert terminal.__file__ is not None
+    spec = spec_from_file_location(
+        "flagquantum.runtime._terminal_instruments_fault_probe", terminal.__file__
+    )
+    assert spec is not None and spec.loader is not None
+    probe = module_from_spec(spec)
+    with monkeypatch.context() as injected:
+        injected.setattr(
+            measurements,
+            "_draw_probability_indices",
+            lambda *args, **kwargs: torch.zeros(1, dtype=torch.int64),
+        )
+        spec.loader.exec_module(probe)
+    result = probe.sample_terminal(*valid_request, shots=7, seed=11)
+    assert result.shots == 7
+    assert result.value.shape == (7,)
