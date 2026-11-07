@@ -79,3 +79,33 @@ def test_request_failures_remain_visible_after_the_retry_bound(
     assert error.value.code == status
     assert len(calls) == attempts
     assert delays == ([1, 2] if attempts == 3 else [])
+
+
+def test_graphql_post_serializes_payload_without_mutating_headers(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import json
+
+    class Response(io.BytesIO):
+        headers = Message()
+
+    payload: dict[str, object] = {
+        "query": "query{viewer{login}}",
+        "variables": {"value": 'quoted " text'},
+    }
+    headers = {"Authorization": "Bearer fixture"}
+
+    class Opener:
+        def open(self, request: source.Request, timeout: int) -> Response:
+            assert timeout == 30
+            assert request.get_method() == "POST"
+            assert request.get_header("Content-type") == "application/json"
+            assert request.data is not None
+            assert json.loads(request.data) == payload
+            return Response(b'{"data": {}}')
+
+    monkeypatch.setattr(source, "build_opener", lambda *handlers: Opener())
+    assert source._get_json("https://api.github.com/graphql", headers, payload) == {
+        "data": {}
+    }
+    assert headers == {"Authorization": "Bearer fixture"}

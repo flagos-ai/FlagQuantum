@@ -424,7 +424,11 @@ def test_api_source_bootstrap_preserves_checkout_fallback(
     )
     assert checkout["if"] == "steps.archive-source.outcome != 'success'"
     commands = bootstrap["run"]
-    assert 'digest.hexdigest() != metadata["sha"]' in commands
+    assert 'digest.hexdigest() != metadata["oid"]' in commands
+    assert 'len(code) != metadata["byteSize"]' in commands
+    assert "GITHUB_GRAPHQL_URL" in commands
+    assert 'metadata["isBinary"] or metadata["isTruncated"]' in commands
+    assert jobs[name]["permissions"] == {"contents": "read"}
     assert commands.index("digest.hexdigest()") < commands.index("runpy.run_path")
 
 

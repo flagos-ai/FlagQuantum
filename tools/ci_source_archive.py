@@ -223,7 +223,11 @@ def _checkout(workspace: Path, commit: _Commit, baseline: str | None) -> str | N
 
 
 def _materialize_api(
-    workspace: Path, commit: _Commit, get_json: Callable[[str], object]
+    workspace: Path,
+    commit: _Commit,
+    get_json: Callable[[str], object],
+    *,
+    get_objects: Callable[[list[tuple[str, str]]], list[object]] | None = None,
 ) -> bool:
     _git(workspace, "init", "--quiet")
     pending = [(commit.tree, "tree")]
@@ -263,6 +267,8 @@ def _materialize_api(
                                     pending.append((child_sha, child_kind))
                     continue
                 missing.append((sha, kind))
+            if not missing:
+                continue
             requests += len(missing)
             if requests > 2048:
                 print(
@@ -275,9 +281,12 @@ def _materialize_api(
                     f"Fetching {len(missing)} missing objects through the API ({requests} total)",
                     flush=True,
                 )
-            for (sha, kind), data in zip(
-                missing, executor.map(get_json, paths), strict=True
-            ):
+            payloads = (
+                get_objects(missing)
+                if get_objects is not None
+                else executor.map(get_json, paths)
+            )
+            for (sha, kind), data in zip(missing, payloads, strict=True):
                 if not isinstance(data, dict) or data.get("sha") != sha:
                     raise ValueError("GitHub returned a different Git object")
                 if kind == "blob":
@@ -335,13 +344,20 @@ class _Redirect(HTTPRedirectHandler):
         return result
 
 
-def _get_json(url: str, headers: dict[str, str]) -> object:
+def _get_json(
+    url: str, headers: dict[str, str], payload: dict[str, object] | None = None
+) -> object:
     """Retry transient API transport failures at most twice, preserving refusals."""
     for attempt in range(3):
         try:
             # Each parallel request owns its redirect handler and connection.
             opener = build_opener(_Redirect())
-            with opener.open(Request(url, headers=headers), timeout=30) as response:
+            data = None if payload is None else json.dumps(payload).encode()
+            request_headers = dict(headers)
+            if data is not None:
+                request_headers["Content-Type"] = "application/json"
+            request = Request(url, data=data, headers=request_headers)
+            with opener.open(request, timeout=30) as response:
                 data = response.read()
                 if response.headers.get("Content-Encoding") == "gzip":
                     data = gzip.decompress(data)
@@ -355,6 +371,142 @@ def _get_json(url: str, headers: dict[str, str]) -> object:
         print(f"Retrying transient GitHub API request ({attempt + 1}/2)", flush=True)
         time.sleep(attempt + 1)
     raise RuntimeError("GitHub API retry loop ended unexpectedly")
+
+
+@dataclass(frozen=True)
+class _GraphQLSource:
+    """Batch Git objects using the same repository contents-read permission."""
+
+    url: str
+    repository: str
+    headers: dict[str, str]
+
+    def _query(self, fields: str) -> dict[str, object]:
+        owner, name = self.repository.split("/", 1)
+        query = (
+            "query($owner:String!,$name:String!){"
+            "repository(owner:$owner,name:$name){" + fields + "}}"
+        )
+        response = _get_json(
+            self.url,
+            self.headers,
+            {"query": query, "variables": {"owner": owner, "name": name}},
+        )
+        if not isinstance(response, dict):
+            raise ValueError("GitHub returned an invalid GraphQL response")
+        if response.get("errors"):
+            raise RuntimeError(
+                "GitHub GraphQL source request failed: "
+                + json.dumps(response["errors"])[:1000]
+            )
+        data = response.get("data")
+        repository = data.get("repository") if isinstance(data, dict) else None
+        if not isinstance(repository, dict):
+            raise ValueError("GitHub returned no source repository")
+        return repository
+
+    def commit(self, sha: str) -> object:
+        if not re.fullmatch(r"[0-9a-f]{40}", sha):
+            raise ValueError("Invalid source commit SHA")
+        row = self._query(
+            f'commit:object(oid:"{sha}"){{... on Commit{{'
+            "oid message tree{oid} author{name email date} committer{name email date} "
+            "parents(first:16){nodes{oid} pageInfo{hasNextPage}} "
+            "signature{payload signature state}}}"
+        ).get("commit")
+        if not isinstance(row, dict) or row.get("oid") != sha:
+            raise ValueError("GitHub returned a different source commit")
+        parents, tree, signature = (
+            row.get("parents"),
+            row.get("tree"),
+            row.get("signature"),
+        )
+        if not isinstance(parents, dict) or not isinstance(tree, dict):
+            raise ValueError("GitHub returned incomplete source commit metadata")
+        page = parents.get("pageInfo")
+        nodes = parents.get("nodes")
+        if (
+            not isinstance(page, dict)
+            or page.get("hasNextPage") is not False
+            or not isinstance(nodes, list)
+            or any(not isinstance(node, dict) for node in nodes)
+        ):
+            raise ValueError("GitHub source commit parents are incomplete")
+        verification = {"payload": None, "signature": None, "reason": "unsigned"}
+        if signature is not None:
+            if not isinstance(signature, dict):
+                raise ValueError("GitHub returned an invalid source signature")
+            verification = signature
+        return {
+            "sha": sha,
+            "tree": {"sha": tree.get("oid")},
+            "author": row.get("author"),
+            "committer": row.get("committer"),
+            "message": row.get("message"),
+            "parents": [{"sha": node.get("oid")} for node in nodes],
+            "verification": verification,
+        }
+
+    def objects(
+        self,
+        missing: list[tuple[str, str]],
+        get_json: Callable[[str], object],
+    ) -> list[object]:
+        if not 1 <= len(missing) <= 8 or any(
+            not re.fullmatch(r"[0-9a-f]{40}", sha) or kind not in ("tree", "blob")
+            for sha, kind in missing
+        ):
+            raise ValueError("GraphQL source batches require at most eight Git objects")
+        fields = " ".join(
+            f'o{index}:object(oid:"{sha}"){{oid '
+            "... on Blob{byteSize isBinary isTruncated text} "
+            "... on Tree{entries{mode name type oid}}}"
+            for index, (sha, _) in enumerate(missing)
+        )
+        response = self._query(fields)
+        result: list[object] = []
+        for index, (sha, kind) in enumerate(missing):
+            row = response.get(f"o{index}")
+            if not isinstance(row, dict) or row.get("oid") != sha:
+                raise ValueError("GitHub returned a different Git object")
+            if kind == "blob":
+                if row.get("isBinary") is True or row.get("isTruncated") is True:
+                    result.append(get_json(f"/git/blobs/{sha}"))
+                    continue
+                text = row.get("text")
+                if (
+                    row.get("isBinary") is not False
+                    or row.get("isTruncated") is not False
+                    or not isinstance(text, str)
+                    or type(row.get("byteSize")) is not int
+                    or len(text.encode()) != row["byteSize"]
+                ):
+                    raise ValueError("GitHub returned incomplete source blob text")
+                result.append(
+                    {
+                        "sha": sha,
+                        "encoding": "base64",
+                        "content": base64.b64encode(text.encode()).decode(),
+                    }
+                )
+                continue
+            entries = row.get("entries")
+            if not isinstance(entries, list):
+                raise ValueError("GitHub returned an incomplete source tree")
+            children = []
+            for entry in entries:
+                if not isinstance(entry, dict) or type(entry.get("mode")) is not int:
+                    raise ValueError("GitHub returned an invalid tree mode")
+                children.append(
+                    {
+                        "mode": format(entry["mode"], "o"),
+                        "type": entry.get("type"),
+                        "sha": entry.get("oid"),
+                        "path": entry.get("name"),
+                    }
+                )
+            result.append({"sha": sha, "tree": children})
+        return result
 
 
 def cleanup_runner_containers() -> None:
@@ -457,9 +609,20 @@ def _main() -> None:
         return _get_json(f"{api}/repos/{repository}{path}", headers)
 
     print("Fetching GitHub commit metadata", flush=True)
-    commit = _verified_commit(get_json(f"/git/commits/{sha}"), sha)
+    graphql_url = os.environ.get("GITHUB_GRAPHQL_URL")
+    graphql = _GraphQLSource(graphql_url, repository, headers) if graphql_url else None
+    commit = _verified_commit(
+        graphql.commit(sha) if graphql else get_json(f"/git/commits/{sha}"), sha
+    )
+
+    def get_objects(missing: list[tuple[str, str]]) -> list[object]:
+        assert graphql is not None
+        return graphql.objects(missing, get_json)
+
     workspace = Path(os.environ["GITHUB_WORKSPACE"])
-    if _materialize_api(workspace, commit, get_json):
+    if _materialize_api(
+        workspace, commit, get_json, get_objects=get_objects if graphql else None
+    ):
         try:
             baseline = _git(workspace, "rev-parse", "--verify", "HEAD")
         except subprocess.CalledProcessError:
