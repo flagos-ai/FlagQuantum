@@ -20,38 +20,48 @@ pytestmark = pytest.mark.unit
 
 
 def _certify(
-    program: ReversiblePhaseProgram, data: int, expected: torch.Tensor
+    program: ReversiblePhaseProgram,
+    data: int,
+    expected: torch.Tensor,
+    *,
+    inputs: torch.Tensor | None = None,
 ) -> None:
     np = pytest.importorskip("numpy")
     events = sum(op.opcode == "hmr" for op in program.operations)
-    basis = np.tile(np.arange(1 << data), 1 << events)
-    histories = np.repeat(np.arange(1 << events), 1 << data)
+    selected = np.arange(1 << data) if inputs is None else inputs.numpy()
+    basis = np.tile(selected, 1 << events)
+    histories = np.repeat(np.arange(1 << events), len(selected))
     wires = [((basis >> (data - 1 - i)) & 1).astype(bool) for i in range(data)]
     wires += [np.zeros_like(wires[0]) for _ in range(program.n_qubits - data)]
     bits = [np.zeros_like(wires[0]) for _ in range(program.n_bits)]
     phase = np.zeros_like(wires[0])
+    scopes = [np.ones_like(wires[0])]
     event = 0
     for op in program.operations:
-        active = (
-            np.ones_like(wires[0])
-            if op.condition_bit is None
-            else bits[op.condition_bit]
-        )
+        active = scopes[-1]
+        if op.condition_bit is not None:
+            active = active & bits[op.condition_bit]
         q = op.qubits
-        if op.opcode == "hmr":
+        if op.opcode == "push_condition":
+            scopes.append(active.copy())
+        elif op.opcode == "pop_condition":
+            scopes.pop()
+        elif op.opcode == "hmr":
             outcome = ((histories >> event) & 1).astype(bool)
-            phase ^= wires[q[0]] & outcome
-            wires[q[0]].fill(False)
-            bits[op.result_bit] = outcome
+            phase ^= active & wires[q[0]] & outcome
+            wires[q[0]] &= ~active
+            bits[op.result_bit] = np.where(active, outcome, bits[op.result_bit])
             event += 1
         elif op.opcode == "bit_store0":
             bits[op.result_bit].fill(False)
         elif op.opcode == "bit_invert":
             bits[op.result_bit] ^= active
-        elif op.opcode in {"x", "cx", "ccx", "cz"}:
+        elif op.opcode == "neg":
+            phase ^= active
+        elif op.opcode in {"x", "cx", "ccx", "z", "cz", "ccz"}:
             for wire in q[:-1]:
                 active = active & wires[wire]
-            if op.opcode == "cz":
+            if op.opcode in {"z", "cz", "ccz"}:
                 phase ^= active & wires[q[-1]]
             else:
                 wires[q[-1]] ^= active
