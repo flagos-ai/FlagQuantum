@@ -77,9 +77,22 @@ destination. Scope entry snapshots its active shot mask. HMR may overwrite
 a guard slot, which affects later inline conditions or nested scope entries
 that read it. The enclosing scope retains its saved mask. Scoped classical
 XOR and initialization remain outside the admitted
-target subset. The flat circuit IR and its provider adapters continue to
-use their own existing effect contract. Existing KMX streams keep their
-encoding.
+target subset. The compiler can bind this target to the local flat circuit. It owns the
+classical output block, initializes its slots, and copies each scope guard
+to a temporary slot on entry. The copy is unconditional so that every
+subsequent predicate is defined, even when an outer scope is inactive.
+Scratch slots are reused after scope exit. An inline guard that aliases
+the result is also snapshotted for the duration of the effect.
+
+Only compiler instructions carrying the internal `guarded_effect` marker
+may condition measurement or reset. They use one conjunction of defined
+bits. A guarded measurement must update an already defined result. Local
+trajectories and density ensembles preserve inactive data and result
+slots. R binds to a guarded H followed by reset, which discards the X
+outcome. The typed program level refuses this marker until it can express
+the conditional result merge. Textual OpenQASM can express the effect;
+provider qualification stays separate. Existing public builders and KMX
+streams keep their encoding.
 
 ## Consumer and resource acceptance
 
