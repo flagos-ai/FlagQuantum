@@ -11,9 +11,22 @@ from functools import cached_property
 from typing import cast
 
 from ...circuit import _CircuitOperation
-from ...compiler._component_trace.resource_model import ComponentCost, CostCall
+from ...compiler._component_trace.resource_model import (
+    ComponentCost,
+    CostCall,
+    GateCost,
+)
 from ...compiler._component_trace.symbolic_math import SymbolicInt, SymbolicReal, smax
+from ...compiler.registers.control_predicate import (
+    ControlRegister,
+    bind_control_registers,
+)
+from ...compiler.registers.control_predicate_resource_model import (
+    control_predicate_cost,
+)
+from ...compiler.registers.controlled_component import controlled_component_ir
 from ...compiler.registers.partition import partition_register
+from ...core.ir import Instruction
 from ._block_binding import _BoundBlockOperation, _validate_block_work
 from ._block_metadata import _BlockMetadata
 from .black_box_prepare import BlackBoxPrepare, _identity_prepare
@@ -153,14 +166,69 @@ class LinearCombinationBlockEncoding:
         *,
         controlled: bool = False,
         adjoint: bool = False,
+        control_registers: tuple[ControlRegister, ...] = (),
+        legacy_shims: bool = False,
     ) -> ComponentCost:
         """Compose directional child models and live bystanders, without emission.
 
         Supply the same selected direction and QEC profile in the child models.
+        Structured controls require the positive singly-controlled SELECT cost.
+        legacy_shims selects predicate costs; supplied children use that profile.
         Original generic adjoint child-cost failures remain caller-visible.
         """
-        if type(controlled) is not bool or type(adjoint) is not bool:
-            raise ValueError("LCU model control and direction must be boolean")
+        if (
+            type(controlled) is not bool
+            or type(adjoint) is not bool
+            or type(legacy_shims) is not bool
+        ):
+            raise ValueError(
+                "LCU model control, direction and QEC profile must be booleans"
+            )
+        pattern = tuple(
+            bit for register in control_registers for bit in register.bits()
+        )
+        if control_registers and not pattern:
+            raise ValueError("Structured LCU control requires nonempty control words")
+        if pattern:
+            if controlled:
+                raise ValueError(
+                    "Choose direct positive control or structured LCU controls"
+                )
+            positive = self.resource_model(
+                select_cost,
+                prepare_cost,
+                unprepare_cost,
+                controlled=True,
+                adjoint=adjoint,
+                legacy_shims=legacy_shims,
+            )
+            if pattern == (1,):
+                return positive
+            if len(pattern) == 1:
+                return ComponentCost(
+                    "ControlledViaAnd",
+                    positive.qubits,
+                    GateCost(clifford=2),
+                    (CostCall(positive),),
+                )
+            payload = positive.qubits - 1
+            return ComponentCost(
+                "ControlledViaAnd",
+                payload + len(pattern),
+                calls=(
+                    CostCall(
+                        control_predicate_cost(pattern, legacy_shims=legacy_shims),
+                        bystander_qubits=payload,
+                    ),
+                    CostCall(positive, bystander_qubits=2 * len(pattern) - 2),
+                    CostCall(
+                        control_predicate_cost(
+                            pattern, uncompute=True, legacy_shims=legacy_shims
+                        ),
+                        bystander_qubits=payload,
+                    ),
+                ),
+            )
         prepare = self.prepare
         if self.ancilla_bitsize == 0:
             raise ValueError(
@@ -217,13 +285,77 @@ class LinearCombinationBlockEncoding:
         workspaces: tuple[tuple[int, ...], ...] = (),
         classical_bits: tuple[tuple[int, ...], ...] = (),
         adjoint: bool = False,
+        controls: tuple[tuple[int, ...], ...] = (),
+        control_registers: tuple[ControlRegister, ...] = (),
+        control_workspace: tuple[int, ...] = (),
+        control_classical_bits: tuple[int, ...] = (),
     ) -> _BoundBlockOperation:
         """Bind the original conjugation for circuit.append(op).
 
         PREPARE is unconditional even when SELECT has an external control.
         Private work may be shared across nonoverlapping PREPARE/SELECT calls.
         Logical selection, junk and signal outputs are never treated as scratch.
+        Structured controls keep one predicate live around the whole block,
+        separate from all stage scratch.
         """
+        outer, pattern = bind_control_registers(controls, control_registers)
+        if not pattern and (
+            controls or control_registers or control_workspace or control_classical_bits
+        ):
+            raise ValueError(
+                "Structured LCU controls require nonempty activation words"
+            )
+        if pattern:
+            if control:
+                raise ValueError(
+                    "Choose direct positive control or structured LCU controls"
+                )
+            logical = (*outer, *system, *ancilla, *resource)
+            _validate_block_work(logical, control_workspace, control_classical_bits)
+            for work, bits in (
+                (prepare_workspace, prepare_classical_bits),
+                (traversal_workspace, traversal_classical_bits),
+                *tuple(zip(workspaces, classical_bits, strict=True)),
+            ):
+                _validate_block_work((*logical, *control_workspace), work, bits)
+
+            def emit(predicate: int) -> tuple[Instruction, ...]:
+                return self.make_on(
+                    bind_children,
+                    system=system,
+                    ancilla=ancilla,
+                    resource=resource,
+                    control=(predicate,),
+                    prepare_workspace=prepare_workspace,
+                    prepare_classical_bits=prepare_classical_bits,
+                    traversal_workspace=traversal_workspace,
+                    traversal_classical_bits=traversal_classical_bits,
+                    workspaces=workspaces,
+                    classical_bits=classical_bits,
+                    adjoint=adjoint,
+                ).instructions
+
+            gates = controlled_component_ir(
+                controls,
+                control_registers,
+                emit,
+                control_workspace,
+                control_classical_bits,
+            )
+            required = (
+                max(
+                    (
+                        *logical,
+                        *control_workspace,
+                        *prepare_workspace,
+                        *traversal_workspace,
+                        *(q for work in workspaces for q in work),
+                    ),
+                    default=-1,
+                )
+                + 1
+            )
+            return _BoundBlockOperation(gates, required)
         if (
             type(adjoint) is not bool
             or len(system) != self.system_bitsize

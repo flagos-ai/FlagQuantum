@@ -38,7 +38,9 @@ PREPARE path; they are not spuriously validated as a default alias request.
 The default probability factory still
 rejects symbolic precision, matching the original unsupported condition. This
 is not symbolic amplitude synthesis. Symbolic block-alpha probability
-construction and further control specifications remain separate work.
+construction remains separate work. G2-BE09 adds structured quantum controls;
+see [the control evidence](LINEAR_COMBINATION_CONTROLS.md). Repeated control
+stacking and classical controls remain separate work.
 
 Thirty-two original source configurations cover PREPARE-only, SELECT-only,
 both, and both with zero preparation junk; mixed constituent auxiliary widths;

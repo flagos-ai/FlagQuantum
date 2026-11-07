@@ -78,6 +78,7 @@ the six-T difference; the native primitive sequence matches the original.
 Custom PREPARE/SELECT overrides were outside this default-oracle slice.
 G2-BE08 extends the same composition with supplied oracles and symbolic bit
 precision bypass when PREPARE is supplied; see [the supplied-oracle evidence](LINEAR_COMBINATION_CUSTOM_ORACLES.md).
-Symbolic probability construction and additional control specifications remain
-open. The original integer-array normalization failure is retained in the
+Structured quantum controls are covered in
+[the control evidence](LINEAR_COMBINATION_CONTROLS.md). Symbolic probability
+construction, repeated control stacking and classical controls remain open. The original integer-array normalization failure is retained in the
 coefficient module. The original parent is not marked wholly accepted.
