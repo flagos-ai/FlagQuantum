@@ -336,7 +336,7 @@ def test_weighted_malformed_pair_is_atomic(
 
 
 def test_weighted_empty_and_failure_semantics(
-    weighted_fake: tuple[PyMatchingDecoder, Mock]
+    weighted_fake: tuple[PyMatchingDecoder, Mock],
 ) -> None:
     decoder, sdk = weighted_fake
     bits, costs = decoder.decode_batch_with_weights(
@@ -398,7 +398,7 @@ def matched_fake() -> tuple[PyMatchingDecoder, Mock]:
 
 
 def test_matched_pairs_cover_events_and_own_values(
-    matched_fake: tuple[PyMatchingDecoder, Mock]
+    matched_fake: tuple[PyMatchingDecoder, Mock],
 ) -> None:
     decoder, sdk = matched_fake
     raw = torch.tensor([[2, 1], [0, -1]], dtype=torch.int64)
@@ -436,7 +436,7 @@ def test_matched_malformed_result_is_atomic(
 
 
 def test_matched_validation_and_failure(
-    matched_fake: tuple[PyMatchingDecoder, Mock]
+    matched_fake: tuple[PyMatchingDecoder, Mock],
 ) -> None:
     decoder, sdk = matched_fake
     assert decoder.decode_to_matched_detectors(()) == ()
