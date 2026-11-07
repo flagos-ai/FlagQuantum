@@ -144,7 +144,17 @@ def validate_classical_control(
             raise ValidationError("a measure instruction requires classical_bit")
 
         clauses = instruction_condition_clauses(instruction)
-        if clauses and instruction.name in {"measure", "reset"}:
+        if "guarded_effect" in metadata:
+            if (
+                metadata["guarded_effect"] is not True
+                or metadata.get("is_dynamic") is not True
+                or instruction.name not in {"measure", "reset"}
+                or len(clauses) != 1
+            ):
+                raise ValidationError("Invalid internal guarded effect")
+            if instruction.name == "measure" and classical_bit not in measured_bits:
+                raise ValidationError("Guarded measurement requires a defined result")
+        elif clauses and instruction.name in {"measure", "reset"}:
             raise ValidationError(
                 f"a conditional {instruction.name} is not constructible"
             )

@@ -122,7 +122,14 @@ def _condition_feature_blockers(
         for _, value in clause
     ):
         blockers.append("condition_value_unsupported")
-    if instruction.name not in features.supported_conditional_gates:
+    local_effect = (
+        features == LOCAL_TRAJECTORY_FEATURES
+        and instruction.metadata.get("guarded_effect") is True
+    )
+    if (
+        not local_effect
+        and instruction.name not in features.supported_conditional_gates
+    ):
         blockers.append(f"conditional_gate_unsupported:{instruction.name}")
     if any(bit not in measured for clause in clauses for bit, _ in clause):
         blockers.append("classical_bit_read_before_measurement")

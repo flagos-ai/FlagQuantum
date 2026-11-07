@@ -227,6 +227,14 @@ def _execute_density(ir: CircuitIR, rho: torch.Tensor) -> torch.Tensor:
     return _execute_density_ensemble(ir, rho, tracked)
 
 
+def _condition_holds(
+    record: dict[int, int], clauses: tuple[tuple[tuple[int, int], ...], ...]
+) -> bool:
+    return not clauses or any(
+        all(record.get(bit) == value for bit, value in clause) for clause in clauses
+    )
+
+
 def _execute_density_ensemble(
     ir: CircuitIR,
     rho: torch.Tensor,
@@ -239,6 +247,13 @@ def _execute_density_ensemble(
     for instruction in ir:
         metadata = instruction.metadata
         clauses = _condition_clauses(instruction)
+        if clauses:
+            for _item, record in ensemble:
+                for bit in {bit for clause in clauses for bit, _value in clause}:
+                    if bit not in record:
+                        raise ValueError(
+                            f"classical bit {bit} was read before measurement"
+                        )
         if instruction.name == "classical_xor":
             from ..core.classical_dataflow import parse_classical_xor
 
@@ -254,7 +269,11 @@ def _execute_density_ensemble(
                 both = (_projector(0, dtype, device), _projector(1, dtype, device))
                 ensemble = [
                     (
-                        apply_kraus_density(item, both, instruction.wires, n_wires),
+                        (
+                            apply_kraus_density(item, both, instruction.wires, n_wires)
+                            if _condition_holds(record, clauses)
+                            else item
+                        ),
                         record,
                     )
                     for item, record in ensemble
@@ -262,6 +281,9 @@ def _execute_density_ensemble(
                 continue
             spread: list[tuple[torch.Tensor, dict[int, int]]] = []
             for item, record in ensemble:
+                if not _condition_holds(record, clauses):
+                    spread.append((item, record))
+                    continue
                 for outcome in (0, 1):
                     selected = apply_kraus_density(
                         item,
@@ -282,17 +304,18 @@ def _execute_density_ensemble(
             ).reshape(1, 2, 2)
             reset = (_projector(0, dtype, device), flip)
             ensemble = [
-                (apply_kraus_density(item, reset, instruction.wires, n_wires), record)
+                (
+                    (
+                        apply_kraus_density(item, reset, instruction.wires, n_wires)
+                        if _condition_holds(record, clauses)
+                        else item
+                    ),
+                    record,
+                )
                 for item, record in ensemble
             ]
             continue
         if clauses:
-            for _item, record in ensemble:
-                for bit in {bit for clause in clauses for bit, _value in clause}:
-                    if bit not in record:
-                        raise ValueError(
-                            f"classical bit {bit} was read before measurement"
-                        )
             matrix = gate_matrix(
                 instruction, bsz=rho.shape[0], device=device, dtype=dtype
             )
@@ -302,9 +325,7 @@ def _execute_density_ensemble(
                         apply_unitary_density(item, matrix, instruction.wires, n_wires),
                         record,
                     )
-                    if any(
-                        all(record.get(b) == v for b, v in clause) for clause in clauses
-                    )
+                    if _condition_holds(record, clauses)
                     else (item, record)
                 )
                 for item, record in ensemble

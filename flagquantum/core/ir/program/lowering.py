@@ -130,6 +130,17 @@ def classify_public_circuit(program: Any) -> LevelConversion:
             diagnostics=(diagnostic,),
         )
     for index, instruction in enumerate(program.instructions):
+        if instruction.metadata.get("guarded_effect"):
+            return LevelConversion(
+                state=UNSUPPORTED_WITH_DIAGNOSTICS,
+                level=PUBLIC_LEVEL,
+                diagnostics=(
+                    _diagnostic(
+                        "level.dynamic_instruction",
+                        f"instruction {index} requires a conditional effect result merge",
+                    ),
+                ),
+            )
         if instruction.metadata.get("is_dynamic") and instruction.name not in {
             "measure",
             "reset",
