@@ -242,3 +242,23 @@ def test_numpy_width_requires_explicit_native_integer_conversion():
 
     with pytest.raises(ValueError, match="Python integers or symbolic expressions"):
         source_controlled_add_resource_formula(np.int64(3), 3)
+
+
+def test_symbolic_formula_consumes_replaceable_native_call_recipe(monkeypatch):
+    import flagquantum.compiler.registers.controlled_add_resource_model as module
+    from flagquantum.compiler._component_trace.arithmetic_call import ArithmeticCall
+    from flagquantum.compiler._component_trace.resource_generalization import FixedTCall
+
+    n = sympy.Symbol("n", integer=True, positive=True)
+    seen = []
+
+    def recipe(root):
+        seen.append(root)
+        return {FixedTCall("fredkin"): 2 * n}
+
+    monkeypatch.setattr(module, "arithmetic_callees", recipe)
+    actual = module.source_controlled_add_resource_formula(n, n, control_value=0)
+    assert seen == [ArithmeticCall("controlled_add", (n, n), control_value=0)]
+    assert actual.cswap == 2 * n
+    assert actual.and_bloq == actual.clifford == actual.measurement == 0
+    assert actual.logical_qubits == sympy.Max(3, 2 * n + 1)

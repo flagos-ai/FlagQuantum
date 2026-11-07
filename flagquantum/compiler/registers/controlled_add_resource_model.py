@@ -8,8 +8,12 @@
 from dataclasses import fields
 from typing import cast
 
+from .._component_trace.arithmetic_call import ArithmeticCall
+from .._component_trace.qec_gate_cost import QECGateCost, query_qec_gate_cost
+from .._component_trace.resource_generalization import ConjunctionCall
 from .._component_trace.resource_model import estimate_component_resources
 from .._component_trace.symbolic_math import SymbolicInt, smax
+from .arithmetic_declarations import arithmetic_callees
 from .arithmetic_resource_model import source_controlled_add_cost
 from .control_predicate_resource_model import control_predicate_cost
 from .symbolic_resource_model import (
@@ -54,12 +58,12 @@ def source_controlled_add_resource_formula(
         )
         # Concrete model width is a composition, not just the root port count.
         report = estimate_component_resources(model)
-        gates = {
+        concrete_categories = {
             field.name: getattr(report.gates, field.name)
             for field in fields(report.gates)
         }
         return SymbolicResourceFormula(
-            logical_qubits=report.peak_logical_qubits, **gates
+            logical_qubits=report.peak_logical_qubits, **concrete_categories
         )
 
     addition = source_add_resource_formula(
@@ -69,12 +73,21 @@ def source_controlled_add_resource_formula(
     cleanup = control_predicate_cost(
         (control_value, 1), uncompute=True, legacy_shims=legacy_shims
     )
-    categories: dict[str, SymbolicInt] = {}
-    for field in fields(SymbolicResourceFormula):
-        if field.name != "logical_qubits":
-            categories[field.name] = getattr(addition, field.name) + left_width * (
-                getattr(compute.gates, field.name) + getattr(cleanup.gates, field.name)
-            )
+    root = ArithmeticCall(
+        "controlled_add", (left_width, right_width), control_value=control_value
+    )
+    gates = query_qec_gate_cost(
+        root,
+        declared_calls={root: arithmetic_callees(root)},
+        legacy_shims=legacy_shims,
+        static_costs={
+            ArithmeticCall("add", root.widths): QECGateCost().plus(addition, 1),
+            ConjunctionCall((control_value, 1)): QECGateCost().plus(compute.gates, 1),
+            ConjunctionCall((control_value, 1), adjoint=True): QECGateCost().plus(
+                cleanup.gates, 1
+            ),
+        },
+    )
     peak = cast(
         SymbolicInt,
         smax(
@@ -84,4 +97,7 @@ def source_controlled_add_resource_formula(
             cleanup.qubits,
         ),
     )
-    return SymbolicResourceFormula(logical_qubits=peak, **categories)
+    return SymbolicResourceFormula(
+        logical_qubits=peak,
+        **{field.name: getattr(gates, field.name) for field in fields(gates)},
+    )
