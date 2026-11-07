@@ -10,6 +10,7 @@ from flagquantum.compiler.formats.kmx import encode_kmx
 from flagquantum.compiler.lowering.reversible_phase import lower_reversible_phase
 from flagquantum.compiler.registers.finite_field import ClassicalFieldCoefficient
 from flagquantum.compiler.registers.kickmix_comparison import (
+    kickmix_greater_than_ir,
     kickmix_less_than_ir,
     kickmix_quantum_compare_ir,
     kickmix_quantum_equal_ir,
@@ -473,3 +474,94 @@ def test_fractional_tolerance_preserves_complex_prefix_comparison(
     torch.testing.assert_close(
         result.final_states.reshape(16, -1), expected.expand(16, -1), rtol=0, atol=1e-12
     )
+
+
+def test_greater_than_classical_equality_matches_pinned_cpp() -> None:
+    from flagquantum.core.classical_dataflow import ClassicalXor
+
+    gates = kickmix_greater_than_ir(
+        (0,),
+        (ClassicalFieldCoefficient(0),),
+        None,
+        (4,),
+        or_equal=ClassicalFieldCoefficient(1),
+        control=3,
+    )
+    initialize = tuple(ClassicalXor((), slot).instruction() for slot in range(2))
+    assert encode_kmx(
+        lower_reversible_phase(CircuitIR(5, (*initialize, *gates)))
+    ).splitlines()[3:] == [
+        "BIT_INVERT b1",
+        "X q0 if b0",
+        "CZ q3 q0 if b0",
+        "X q0",
+        "CZ q3 q0 if b1",
+        "X q0",
+        "X q0 if b0",
+        "Z q3",
+        "BIT_INVERT b1",
+    ]
+
+
+@pytest.mark.parametrize("phase_target", [False, True])
+def test_greater_than_restores_classical_equality_and_all_complex_branches(
+    phase_target: bool,
+) -> None:
+    total = 8
+    basis = torch.arange(32)
+    amplitudes = torch.complex((basis + 1).double(), (3 * basis - 5).double())
+    amplitudes /= amplitudes.norm()
+    state = torch.zeros(1 << total, dtype=torch.complex128)
+    state[::8] = amplitudes
+    gates = kickmix_greater_than_ir(
+        (0, 1),
+        (2, True),
+        None if phase_target else 4,
+        (5, 6),
+        or_equal=ClassicalFieldCoefficient(0),
+        control=3,
+        measurement_bit=1,
+    )
+    prefix = measure_x_clear_ir(7, 0)
+    circuit = DynamicCircuit(total, inputs=state, dtype=torch.complex128).append(
+        FieldOperation(total, (*prefix, *gates))
+    )
+    result = run_dynamic(circuit, shots=128, seed=41, strategy="trajectory")
+    program = lower_reversible_phase(CircuitIR(total, (*prefix, *gates)))
+    counts = Counter(op.opcode for op in program.operations)
+    assert counts["bit_invert"] == 2
+    assert counts["hmr"] == (2 if phase_target else 3)
+    assert result.statistics["branch_count"] == 2 ** counts["hmr"]
+    assert set(result.classical_bits[:, 0].tolist()) == {0, 1}
+    for equal in (0, 1):
+        left = basis >> 3
+        right = (((basis >> 2) & 1) << 1) | 1
+        enabled = ((left > right) | ((left == right) & bool(equal))) & (
+            ((basis >> 1) & 1) == 1
+        )
+        expected = torch.zeros_like(state)
+        if phase_target:
+            expected[::8] = amplitudes * (1 - 2 * enabled.long())
+        else:
+            expected[::8] = amplitudes[basis ^ enabled.long()]
+        actual = result.final_states.reshape(128, -1)[
+            result.classical_bits[:, 0] == equal
+        ]
+        torch.testing.assert_close(
+            actual, expected.expand_as(actual), rtol=0, atol=1e-12
+        )
+
+
+def test_greater_than_rejects_mutated_equality_aliases_and_keeps_tolerance() -> None:
+    coefficient = ClassicalFieldCoefficient(0)
+    with pytest.raises(ValueError, match="separate classical slot"):
+        kickmix_greater_than_ir((0,), (coefficient,), 1, or_equal=coefficient)
+    with pytest.raises(ValueError, match="separate quantum wire"):
+        kickmix_greater_than_ir((0,), (1,), 2, or_equal=1)
+    assert not kickmix_greater_than_ir((0, 1), (2, 3), 4, control=False)
+    gates = kickmix_greater_than_ir((0, 1), (2, 3), 4, or_equal=5, btol=1)
+    assert [(op.name, op.wires) for op in gates] == [
+        ("x", (5,)),
+        ("x", (4,)),
+        ("x", (5,)),
+    ]

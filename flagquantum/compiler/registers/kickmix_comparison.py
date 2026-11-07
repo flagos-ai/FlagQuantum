@@ -9,6 +9,7 @@
 from math import ceil, inf, isnan
 from typing import cast
 
+from ...core.classical_dataflow import ClassicalXor
 from ...core.ir import Instruction
 from ._kickmix_comparison_gates import _flip, _parity_controlled_flip
 from .finite_field import ClassicalFieldCoefficient
@@ -428,3 +429,65 @@ def kickmix_less_than_ir(
             )
         )
     return (*gates, *difference, *invert)
+
+
+def kickmix_greater_than_ir(
+    left: tuple[int, ...],
+    right: tuple[int | bool | ClassicalFieldCoefficient, ...],
+    target: int | None,
+    workspace: tuple[int, ...] = (),
+    *,
+    or_equal: int | bool | ClassicalFieldCoefficient = False,
+    control: int | bool = True,
+    measurement_bit: int | None = None,
+    minimize_qubits: bool = False,
+    btol: float = inf,
+    low_space_bits: tuple[int, ...] = (),
+) -> tuple[Instruction, ...]:
+    """Complement the locked less-than comparison and restore the equality input.
+
+    The big-endian input, output and caller-owned workspace follow less-than.
+    True equality selects greater-or-equal; true equality on less-than selects
+    less-or-equal. A mutable equality input must be separate from the other
+    operands and is restored after the output flip.
+    """
+    if control is False:
+        return ()
+    invert: tuple[Instruction, ...] = ()
+    inverted_equal = or_equal
+    if isinstance(or_equal, ClassicalFieldCoefficient):
+        if (
+            or_equal in right
+            or or_equal.slot in low_space_bits
+            or (measurement_bit == or_equal.slot)
+        ):
+            raise ValueError("Comparison equality must use a separate classical slot")
+        slot = or_equal.slot
+        invert = (ClassicalXor((slot,), slot, constant=True).instruction(),)
+    elif isinstance(or_equal, bool):
+        inverted_equal = not or_equal
+    else:
+        quantum_rhs = tuple(
+            coefficient for coefficient in right if type(coefficient) is int
+        )
+        operands = (*left, *quantum_rhs, *workspace)
+        if (
+            or_equal in operands
+            or (type(control) is int and control == or_equal)
+            or target == or_equal
+        ):
+            raise ValueError("Comparison equality must use a separate quantum wire")
+        invert = _flip(or_equal)
+    compare = kickmix_less_than_ir(
+        left,
+        right,
+        target,
+        workspace,
+        or_equal=inverted_equal,
+        control=control,
+        measurement_bit=measurement_bit,
+        minimize_qubits=minimize_qubits,
+        btol=btol,
+        low_space_bits=low_space_bits,
+    )
+    return (*invert, *compare, *_flip(target, control), *invert)
