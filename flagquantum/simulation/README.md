@@ -675,6 +675,12 @@ not enable unconditional `fql.plan` or the future native sampled plan reader.
 
 ## Classical lookup values
 
+`classical_pauli_values.py` separates X bit movement from unchanged Z/CZ named
+values and their basis-state signs. Compiler's existing Pauli emitter remains
+the gate authority. Run `python -m examples.algorithms.classical_pauli_values`
+for full complex action and inverse through `circuit.append(op)`. See
+[value and phase semantics](../../docs/development/CLASSICAL_PAULI_VALUES.md).
+
 `classical_basis_vectors.py` owns computational-basis numerical creation and
 checked consumption. It retains original constructor/callback ordering and
 returns configured objects unchanged. Compiler state emission and tensor-network
