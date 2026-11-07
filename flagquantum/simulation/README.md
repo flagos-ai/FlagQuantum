@@ -675,6 +675,13 @@ not enable unconditional `fql.plan` or the future native sampled plan reader.
 
 ## Classical lookup values
 
+`classical_controlled_bits.py` retains the distinct CNOT modulo-two, Toffoli
+binary-target assertion and fanout truthiness/XOR numerical callbacks. It does
+not replace their Compiler primitive emitters or normalize diagnostic operands.
+Run `python -m examples.algorithms.classical_controlled_bits` for coherent action
+and exact inverse with no workspace. See
+[controlled-bit contracts](../../docs/development/CLASSICAL_CONTROLLED_BITS.md).
+
 `classical_and.py` owns raw And creation/checked erasure and MultiAnd numerical
 prefix outputs. It preserves the source NumPy comparison/accumulation order;
 quantum prefix outputs remain live until Compiler's existing measured inverse.
