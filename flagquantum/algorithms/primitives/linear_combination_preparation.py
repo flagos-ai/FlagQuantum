@@ -91,9 +91,11 @@ class LinearCombinationPreparation:
         """Return clean quantum scratch and classical slots, excluding junk."""
         return alias_preparation_requirements(self.table)
 
-    def resource_model(self) -> ComponentCost:
+    def resource_model(self, *, legacy_shims: bool = False) -> ComponentCost:
         """Return the forward alias call graph, independently of emitted IR."""
-        return source_dense_alias_preparation_cost(self.table)
+        return source_dense_alias_preparation_cost(
+            self.table, legacy_shims=legacy_shims
+        )
 
     def make_on(
         self,

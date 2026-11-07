@@ -50,9 +50,9 @@ def fixture(case, mode, inverse, precision=8, legacy=False):
         native, base, _, _, _, _, _, children, binders, old = default_fixture(
             2, precision, True, True, False
         )
-        prep = native.coefficient_preparation.resource_model()
+        prep = native.coefficient_preparation.resource_model(legacy_shims=legacy)
         select = native.select.resource_model(
-            children, controlled=True, adjoint=inverse
+            children, controlled=True, adjoint=inverse, legacy_shims=legacy
         )
         unprep = prep
     else:
@@ -235,7 +235,7 @@ def test_original_dispatch_scoped_gate_operands_and_resource_profiles(
 ):
     from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
 
-    for legacy in ((False, True) if mode == "supplied" else (False,)):
+    for legacy in (False, True):
         native, _, source, op, ports, p, pb, w, b, options, _, model = fixture(
             case, mode, inverse, legacy=legacy
         )

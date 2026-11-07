@@ -163,28 +163,34 @@ def alias_black_box_prepare(table: AliasSamplingTable) -> BlackBoxPrepare:
     return BlackBoxPrepare((("selection", width),), junk, emit, table.normalization)
 
 
-def source_dense_alias_preparation_cost(table: AliasSamplingTable) -> ComponentCost:
+def source_dense_alias_preparation_cost(
+    table: AliasSamplingTable, *, legacy_shims: bool = False
+) -> ComponentCost:
     """Count the dense source call graph and active preparation width."""
     if table.indices is not None or table.selection_size < 2:
         raise ValueError("Dense alias costs require at least two rows")
-    return _source_alias_preparation_cost(table)
+    return _source_alias_preparation_cost(table, legacy_shims=legacy_shims)
 
 
-def source_sparse_alias_preparation_cost(table: AliasSamplingTable) -> ComponentCost:
+def source_sparse_alias_preparation_cost(
+    table: AliasSamplingTable, *, legacy_shims: bool = False
+) -> ComponentCost:
     """Count the source three-table preparation on at least two support rows."""
     if table.indices is None or len(table.indices) < 2:
         raise ValueError("Sparse alias costs require at least two support rows")
-    return _source_alias_preparation_cost(table)
+    return _source_alias_preparation_cost(table, legacy_shims=legacy_shims)
 
 
-def _source_alias_preparation_cost(table: AliasSamplingTable) -> ComponentCost:
+def _source_alias_preparation_cost(
+    table: AliasSamplingTable, *, legacy_shims: bool
+) -> ComponentCost:
     rows, mu = len(table.keep), table.mu
     selection = (table.selection_size - 1).bit_length()
     address = (rows - 1).bit_length()
     sparse = table.indices is not None
     sparse_width = address if sparse else 0
     width = 2 * selection + sparse_width + 2 * mu + 1
-    compare = source_equal_width_less_equal_cost(mu)
+    compare = source_equal_width_less_equal_cost(mu, legacy_shims=legacy_shims)
     target_widths = (selection, selection, mu) if sparse else (selection, mu)
     lookup = source_qrom_cost(
         0,
@@ -192,6 +198,7 @@ def _source_alias_preparation_cost(table: AliasSamplingTable) -> ComponentCost:
         (rows,),
         tuple((1, bits) for bits in target_widths),
         _datasets(table),
+        legacy_shims=legacy_shims,
     )
     return ComponentCost(
         (
@@ -203,7 +210,8 @@ def _source_alias_preparation_cost(table: AliasSamplingTable) -> ComponentCost:
         GateCost(clifford=mu, cswap=selection),
         (
             CostCall(
-                source_uniform_preparation_cost(rows), bystander_qubits=width - address
+                source_uniform_preparation_cost(rows, legacy_shims=legacy_shims),
+                bystander_qubits=width - address,
             ),
             CostCall(lookup, bystander_qubits=mu + 1),
             CostCall(compare, bystander_qubits=2 * selection + sparse_width),

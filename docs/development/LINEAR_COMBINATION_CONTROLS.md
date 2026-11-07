@@ -111,10 +111,10 @@ Pass `existing_control=True` to `resource_model` with matching structured words
 and directional, profile-specific positive SELECT/PREPARE/unprepare children.
 Both structured modes now use the shared controlled-component cost composition
 instead of a copied wrapper formula. Logical payload width comes from actual
-ports rather than a child's peak allocation. The default alias convenience
-model supplies the modern QEC profile; the legacy default-oracle composition
-tests explicitly supply original legacy child models. They certify composition
-of those inputs, not an unimplemented legacy alias factory.
+ports rather than a child's peak allocation. At BE10 the default alias convenience model supplied the modern profile only,
+and legacy composition tests supplied original child models. G2-ALIAS08 adds
+native profile propagation and removes that test adapter; the default-oracle
+legacy tests now construct every child cost through native factories.
 
 Validation covers nine shaped/integer control specifications, default eight-bit
 coefficient and supplied oracles, both directions, exact source primitive counts,
@@ -203,8 +203,8 @@ and tests remain unchanged.
 Validation covers eight existing activation vectors of lengths two through four,
 both new polarities, two directions, eight-bit default coefficient oracles and
 supplied oracles: 64 exact primitive-count/dependency configurations and 128
-QEC-category/width comparisons. Profile-specific child inputs retain the BE10
-legacy-alias distinction. Twenty-six full original matrix tests enumerate all
+QEC-category/width comparisons. After G2-ALIAS08, both profiles use native child factories; the earlier BE10
+legacy-alias distinction is historical evidence, not a current test adapter. Twenty-six full original matrix tests enumerate all
 small branch histories. Four additional cases use non-Hermitian S/T children,
 verify distinct adjoint matrices, literal source phase gates and absolute complex
 branch phases without phase alignment. Invalid ownership, activation and mode

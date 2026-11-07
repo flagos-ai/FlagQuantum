@@ -76,30 +76,6 @@ def fixture(case, mode, inverse, precision=8, legacy=False):
     elif registers[0].bits() == (0,):
         positive = old_model.calls[0].component
     prep, select, unprep = [call.component for call in positive.calls]
-    if mode == "default" and legacy:
-        # Composition accepts directional profile-specific children. The default
-        # alias convenience model currently supplies the modern profile only.
-        from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
-
-        from flagquantum.compiler._component_trace.resource_model import (
-            ComponentCost,
-            GateCost,
-        )
-
-        def source_child(child):
-            counts = get_cost_value(child, QECGatesCost(legacy_shims=True))
-            return ComponentCost(
-                str(child),
-                int(get_cost_value(child, QubitCount())),
-                GateCost(
-                    **{name: int(getattr(counts, name)) for name in asdict(GateCost())}
-                ),
-            )
-
-        prep, select, unprep = map(
-            source_child,
-            (base.prepare, base.select.controlled(), base.prepare.adjoint()),
-        )
     model = native.resource_model(
         select,
         prep,

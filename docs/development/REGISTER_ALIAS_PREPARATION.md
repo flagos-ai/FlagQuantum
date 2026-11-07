@@ -33,3 +33,36 @@ swap and separate accounting for explicit Rz. Tests check the source
 parent stage order, QROM and comparator dependencies, the exact swap
 stream, the complete source complex state, small raw measurement
 histories and inverse cleanup through the append entry point.
+
+
+## Native QEC profiles (G2-ALIAS08)
+
+`source_dense_alias_preparation_cost(table, legacy_shims=True)` and the sparse
+counterpart pass the selected profile to uniform preparation, QROM and
+LessThanEqual. `LinearCombinationPreparation.resource_model(legacy_shims=True)`
+provides the same native path for coefficient PREPARE. The default remains the
+modern profile. The source's abstract CSwap category is retained; profile
+selection does not synthesize that swap or change an emitted instruction.
+
+Dense/sparse table cases and one-, three- and eight-bit LCU coefficient cases
+compare every source gate category and logical peak in both directions.
+Structured LCU, precontrolled LCU and repeated-root legacy tests now obtain all
+child costs from FlagQuantum factories; the temporary test-only original-child
+model adapter was removed. Existing full complex-state and clean-work tests
+continue to exercise the unchanged emitters. Models never invoke these emitters.
+
+```sh
+python -m examples.algorithms.linear_combination_controls --repeated --legacy-profile
+```
+
+The runnable append example retains the same coherent state and inverse checks,
+prints the chosen model Clifford classification, and reports 28 model T
+equivalents versus 34 actual IR T/T-dagger instructions. Both profiles retain
+five measurements and 13 peak logical qubits. Profile choice changes source
+Clifford accounting, not the circuit or the explicitly separate IR report.
+Singleton model boundaries and controlled-uniform preparation are not extended
+by this profile propagation.
+
+This adapter adds 28 tests; the final combined compiler/algorithm regression
+passes 1,105 tests without skips. Strict types, formatting, lint, ownership and
+architecture checks pass. Both reference trees remain unchanged.

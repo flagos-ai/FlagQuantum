@@ -26,7 +26,9 @@ from flagquantum.qec.resources.estimation import estimate_ftqc_resources
 from flagquantum.runtime.dynamic.execution import run_dynamic
 
 
-def main(*, stacked: bool = False, repeated: bool = False) -> None:
+def main(
+    *, stacked: bool = False, repeated: bool = False, legacy_shims: bool = False
+) -> None:
     if stacked and repeated:
         raise ValueError("Choose one control extension scenario")
     extended = stacked or repeated
@@ -155,9 +157,11 @@ def main(*, stacked: bool = False, repeated: bool = False) -> None:
         atol=4e-12,
         rtol=0,
     )
-    prep = encoding.coefficient_preparation.resource_model()
+    prep = encoding.coefficient_preparation.resource_model(legacy_shims=legacy_shims)
     select = encoding.select.resource_model(
-        (ComponentCost("CX/CZ", 2, GateCost(clifford=1)),) * 2, controlled=True
+        (ComponentCost("CX/CZ", 2, GateCost(clifford=1)),) * 2,
+        controlled=True,
+        legacy_shims=legacy_shims,
     )
     report = estimate_ftqc_resources(
         encoding.resource_model(
@@ -167,6 +171,7 @@ def main(*, stacked: bool = False, repeated: bool = False) -> None:
             control_registers=registers,
             existing_control=extended,
             existing_control_values=current_values,
+            legacy_shims=legacy_shims,
         ),
         emitted_ir=ir,
     )
@@ -184,6 +189,8 @@ def main(*, stacked: bool = False, repeated: bool = False) -> None:
         "Model T equivalents (abstract Fredkin)", report.logical.gates.total_t_count()
     )
     print("Emitted T/Tdag (exact Fredkin)", report.emitted.t_count)
+    print("QEC profile", "legacy" if legacy_shims else "modern")
+    print("Model Clifford categories", report.logical.gates.clifford)
     print("Model measurements", report.logical.gates.measurement)
     print("Model peak logical qubits", report.logical.peak_logical_qubits)
     print(
@@ -195,5 +202,6 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--stacked", action="store_true")
     parser.add_argument("--repeated", action="store_true")
+    parser.add_argument("--legacy-profile", action="store_true")
     args = parser.parse_args()
-    main(stacked=args.stacked, repeated=args.repeated)
+    main(stacked=args.stacked, repeated=args.repeated, legacy_shims=args.legacy_profile)
