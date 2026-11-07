@@ -11,7 +11,7 @@ from .syntax import Statement, Token, reject
 
 if TYPE_CHECKING:
     from ...compiler._hybrid.model import Operation
-    from .adapter import _Adapt
+    from .context import _Adapt
     from .phase import Location
 
 

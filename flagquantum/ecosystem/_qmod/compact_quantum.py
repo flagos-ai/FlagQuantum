@@ -26,7 +26,7 @@ from .syntax import Expression, Function, Record, Statement, Token, reject
 from .unary_selection_proof import _reachable
 
 if TYPE_CHECKING:
-    from .adapter import _Adapt
+    from .context import _Adapt
 
 
 _Mask = tuple[tuple[int, int], ...]

@@ -12,7 +12,7 @@ from .angles import REAL_LITERAL
 from .syntax import Expression, Function, Statement, Token, reject
 
 if TYPE_CHECKING:
-    from .adapter import _Adapt
+    from .context import _Adapt
     from .phase import Location
 
 

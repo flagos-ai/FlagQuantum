@@ -10,7 +10,7 @@ from .phase import Location
 from .syntax import Expression, Token, reject
 
 if TYPE_CHECKING:
-    from .adapter import _Adapt
+    from .context import _Adapt
 
 
 def matrix_value(node: Expression) -> complex:

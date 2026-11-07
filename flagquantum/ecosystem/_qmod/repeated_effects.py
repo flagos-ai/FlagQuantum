@@ -18,7 +18,7 @@ from .syntax import Expression, Statement, reject
 from .unitary_effects import PURE_EFFECTS
 
 if TYPE_CHECKING:
-    from .adapter import _Adapt
+    from .context import _Adapt
 
 
 def lower_repeated_effects(owner: _Adapt, statement: Statement, count: int) -> bool:

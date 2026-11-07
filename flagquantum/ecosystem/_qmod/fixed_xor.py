@@ -11,7 +11,7 @@ from .masked_selection import emit_truth_xor
 from .syntax import Expression, Token, reject
 
 if TYPE_CHECKING:
-    from .adapter import _Adapt
+    from .context import _Adapt
     from .phase import Location
 
 

@@ -15,7 +15,7 @@ from .syntax import Expression, Function, Parameter, Statement, Token, reject
 
 if TYPE_CHECKING:
     from ...compiler._hybrid.model import Value
-    from .adapter import _Adapt
+    from .context import _Adapt
 
 # Qmod's default precision for the pinned native profile. Source numeric
 # literals are represented at up to twenty bits before the profile truncation.

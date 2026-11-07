@@ -18,7 +18,7 @@ from .syntax import Expression, Function, Statement, Token, reject
 
 if TYPE_CHECKING:
     from ...compiler._hybrid.model import Operation
-    from .adapter import _Adapt
+    from .context import _Adapt
     from .phase import Location
 
 Number = Fraction | float

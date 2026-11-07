@@ -10,7 +10,7 @@ from .syntax import Expression, Statement, Token, reject
 
 if TYPE_CHECKING:
     from ...compiler._hybrid.model import Value
-    from .adapter import _Adapt
+    from .context import _Adapt
 
 _COMPARE = {"<": lt, "<=": le, ">": gt, ">=": ge, "==": eq, "!=": ne}
 _MAX_BITS = 8

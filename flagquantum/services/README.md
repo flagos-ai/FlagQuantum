@@ -1,5 +1,23 @@
 # Services
 
+## Synthesis module ownership
+
+| Module | Responsibility |
+| --- | --- |
+| `synthesis.py` | Public synthesis values, input-profile dispatch and the checked Program factory |
+| `_synthesis_preparation.py` | Validate named scalar input preparation and map its initial instructions |
+| `_synthesis_registers.py` | Submit source-adapted or Python-captured register programs to Compiler selection |
+| `_synthesis_execution.py` | Inspect the selected Runtime plan against physical constraints and layout |
+| `_synthesis_readout.py` | Bounded named result reading through the existing result contract |
+| `_qmod_workflow.py` | Compose the bounded Qmod classical optimizer workflow |
+
+Input preparation imports the existing public `InputState` value at call time.
+That keeps its canonical class identity in `synthesis.py` and avoids a module
+initialization cycle. The helper owns validation and instruction construction;
+program selection, Runtime planning and execution remain at their existing
+boundaries.
+
+
 The private `_synthesis_registers.synthesize_registers` workflow admits the
 Compiler's owned fresh-register model after external source adaptation. It uses
 the same `synthesis._complete` plan/check/Program factory as Python arithmetic,

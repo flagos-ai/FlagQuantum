@@ -10,7 +10,7 @@ from ...compiler._hybrid.model import Operation, Value, ValueId
 from .syntax import Expression, Statement, reject
 
 if TYPE_CHECKING:
-    from .adapter import _Adapt
+    from .context import _Adapt
     from .phase import Location
 
 

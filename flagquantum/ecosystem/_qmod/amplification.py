@@ -16,7 +16,7 @@ from .quantum_callbacks import Lambda
 from .syntax import Expression, Function, Parameter, Statement, Token, reject
 
 if TYPE_CHECKING:
-    from .adapter import _Adapt
+    from .context import _Adapt
 
 MAX_AMPLIFICATION_BITS = 7
 MAX_AMPLIFICATION_ROUNDS = 32

@@ -10,7 +10,7 @@ from .syntax import Expression, Token, reject
 from .unitary_effects import emit_inverse
 
 if TYPE_CHECKING:
-    from .adapter import _Adapt
+    from .context import _Adapt
 
 
 def lower_diffuser(owner: _Adapt, token: Token, args: tuple[Expression, ...]) -> None:

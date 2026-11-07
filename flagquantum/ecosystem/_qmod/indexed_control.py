@@ -10,7 +10,7 @@ from .syntax import Expression, Statement, Token, reject
 
 if TYPE_CHECKING:
     from ...compiler._hybrid.model import Value
-    from .adapter import _Adapt
+    from .context import _Adapt
 
 
 def lower_indexed_control(

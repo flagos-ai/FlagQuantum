@@ -10,7 +10,7 @@ from .amplification import checked_probabilities, product_rotation_angles
 from .syntax import Expression, Token, reject
 
 if TYPE_CHECKING:
-    from .adapter import _Adapt
+    from .context import _Adapt
 
 
 def lower_inplace_preparation(

@@ -42,7 +42,7 @@ from .syntax import (
 )
 
 if TYPE_CHECKING:
-    from .adapter import _Adapt
+    from .context import _Adapt
 
 
 def evolution_angle(self: _Adapt, node: Expression, token: Token) -> float:

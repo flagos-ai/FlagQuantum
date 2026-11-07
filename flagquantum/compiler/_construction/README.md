@@ -1,4 +1,39 @@
-# Coherent integer construction profile
+# Construction compiler
+
+Python qfunc and adapted Qmod programs share the existing HybridProgram model.
+Compiler owns semantic verification, lifetime analysis, constrained candidate
+selection and lowering to CircuitIR.
+
+## Module ownership
+
+| Module | Responsibility |
+| --- | --- |
+| `frontend_program.py` | Capture source-retaining Python qfunc programs |
+| `frontend_python.py` | Capture the supported scalar Python expression profile |
+| `register_profile.py` | Register types, operation attribute admission, preparation and publication shapes |
+| `register_verifier.py` | Ordered effects, initialized storage, ownership, aliases and lifetime checks |
+| `register_expansion.py` | Expand verified static register calls and inverse composition |
+| `register_lowering.py` | Lower admitted register effects to existing gate kernels |
+| `lifetimes.py`, `lowering.py` | Arithmetic use analysis, computation and reversible workspace scheduling |
+| `selection.py`, `target.py` | Evaluate supported schedules and verify target constraints |
+
+`verify_operation_attributes` checks the operation's exact permitted attributes
+before the body verifier inspects operands or modifies its local storage state.
+The body verifier remains the single authority for effects and lifecycle. This
+ordering preserves the first rejection when malformed attributes and invalid
+storage use occur together.
+
+For a small change, start with the relevant accepted and rejected scenarios in
+`tests/team/compiler/test_construction_registers.py` and the end-to-end
+`tests/integration/test_synthesis_python_program.py`. The [synthesis examples](../../../examples/synthesis/README.md)
+provide runnable public programs and independent Circuit comparisons.
+
+## Profile development notes
+
+The following notes retain the semantics and delivery context of the successive
+construction profiles.
+
+### Coherent integer construction profile
 
 Compiler owns this private profile of the existing `_hybrid.model` records.
 It verifies coherent integer expression definitions and physical binding

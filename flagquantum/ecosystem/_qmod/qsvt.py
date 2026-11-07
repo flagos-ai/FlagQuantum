@@ -14,7 +14,7 @@ from .unitary_effects import emit_inverse, inverse_effects, preserves_basis_labe
 
 if TYPE_CHECKING:
     from ...compiler._hybrid.model import Operation
-    from .adapter import _Adapt
+    from .context import _Adapt
     from .phase import Location
 
 

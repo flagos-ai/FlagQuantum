@@ -9,7 +9,7 @@ from .syntax import Expression, Statement, reject
 from .unitary_effects import emit_controlled_pauli
 
 if TYPE_CHECKING:
-    from .adapter import _Adapt
+    from .context import _Adapt
     from .phase import Location
 
 EVOLUTION_CALLS = frozenset(

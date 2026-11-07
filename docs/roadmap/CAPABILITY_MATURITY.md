@@ -542,6 +542,6 @@ Compiler adds bounded registered-gate matrix powers and controlled Givens
 composition. Structural commutation representatives preserve the old partitions
 and logical pair counters while avoiding repeated equivalent predicates.
 No numerical kernel, public source schema or native array-QPE export is added.
-See the [source scope and runnable comparison](../../flagquantum/ecosystem/_qmod/README.md#bounded-ordinary-qpe-composition)
+See the [source scope and runnable comparison](../../flagquantum/ecosystem/_qmod/PROFILE_HISTORY.md#bounded-ordinary-qpe-composition)
 and [limitations](../reference/KNOWN_LIMITATIONS.md#ordinary-qpe-source-boundary).
 Global corpus counts remain separate from these three original acceptance cases.

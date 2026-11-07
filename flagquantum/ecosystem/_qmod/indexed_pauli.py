@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 from .syntax import Expression, reject
 
 if TYPE_CHECKING:
-    from .adapter import _Adapt
+    from .context import _Adapt
 
 
 def bind_indexed_pauli(

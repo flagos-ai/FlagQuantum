@@ -16,7 +16,7 @@ from .syntax import Expression, Function, Parameter, Record, Statement, Token, r
 from .unary_selection_proof import _children, _reachable
 
 if TYPE_CHECKING:
-    from .adapter import _Adapt
+    from .context import _Adapt
 
 
 @dataclass(frozen=True)

@@ -8,7 +8,7 @@ from ...compiler._construction.register_profile import register_width
 from .syntax import Statement, reject
 
 if TYPE_CHECKING:
-    from .adapter import _Adapt
+    from .context import _Adapt
 
 
 def lower_fourier_control(owner: _Adapt, statement: Statement) -> bool:

@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 from .syntax import Expression, Function, Parameter, Statement, reject
 
 if TYPE_CHECKING:
-    from .adapter import _Adapt
+    from .context import _Adapt
 
 
 def slice_output(function: Function) -> tuple[Parameter, Parameter, Expression] | None:

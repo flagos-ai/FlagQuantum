@@ -60,7 +60,7 @@ from .unitary_effects import (
 )
 
 if TYPE_CHECKING:
-    from .adapter import _Adapt
+    from .context import _Adapt
 
 
 def coherent_helper_control(self: _Adapt, statement: Statement, index: str) -> bool:

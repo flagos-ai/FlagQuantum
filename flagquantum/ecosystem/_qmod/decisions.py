@@ -15,7 +15,7 @@ from .phase_factors import Cube
 from .syntax import Expression, Token, reject
 
 if TYPE_CHECKING:
-    from .adapter import _Adapt
+    from .context import _Adapt
 
 MAX_DECISION_BITS = 12
 MAX_DECISION_STEPS = 262144

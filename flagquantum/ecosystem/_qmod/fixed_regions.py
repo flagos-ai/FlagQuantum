@@ -27,7 +27,7 @@ from .preparation import exponential_angles
 from .syntax import Expression, Function, Parameter, Record, Statement, Token, reject
 
 if TYPE_CHECKING:
-    from .adapter import _Adapt
+    from .context import _Adapt
 
 
 _Number = Callable[[int], float]

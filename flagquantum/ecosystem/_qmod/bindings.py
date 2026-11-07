@@ -10,7 +10,7 @@ from .unitary_effects import PURE_EFFECTS, emit_inverse
 
 if TYPE_CHECKING:
     from ...compiler._hybrid.model import Value
-    from .adapter import _Adapt
+    from .context import _Adapt
     from .syntax import Parser
 
 

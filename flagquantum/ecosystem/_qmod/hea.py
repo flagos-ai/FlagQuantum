@@ -9,7 +9,7 @@ from .quantum_callbacks import Lambda
 from .syntax import Expression, Token, reject
 
 if TYPE_CHECKING:
-    from .adapter import _Adapt
+    from .context import _Adapt
     from .phase import Location
 
 _ONE = frozenset({"H", "X", "Z", "S", "I", "SX"})

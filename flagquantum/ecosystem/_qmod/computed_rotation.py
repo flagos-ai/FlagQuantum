@@ -13,7 +13,7 @@ from .selector_rotations import emit_rotation_table, is_selector_helper
 from .syntax import Expression, Function, Parameter, Statement, Token, reject
 
 if TYPE_CHECKING:
-    from .adapter import _Adapt
+    from .context import _Adapt
 
 
 def _plain(statement: Statement) -> bool:

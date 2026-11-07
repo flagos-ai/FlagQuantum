@@ -13,7 +13,7 @@ from .unitary_effects import PURE_EFFECTS
 
 if TYPE_CHECKING:
     from ...compiler._hybrid.model import Value
-    from .adapter import _Adapt
+    from .context import _Adapt
 
 MAX_CALLBACK_ARRAY_LENGTH = 64
 

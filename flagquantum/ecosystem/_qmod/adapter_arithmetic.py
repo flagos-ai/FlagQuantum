@@ -37,7 +37,7 @@ from .syntax import (
 )
 
 if TYPE_CHECKING:
-    from .adapter import _Adapt
+    from .context import _Adapt
 
 
 def real_phase(

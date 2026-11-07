@@ -7,7 +7,7 @@ from ...compiler._hybrid.model import Operation
 from .syntax import Token, reject
 
 if TYPE_CHECKING:
-    from .adapter import _Adapt
+    from .context import _Adapt
 
 
 def lower_free(owner: "_Adapt", name: Token) -> None:

@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 from .syntax import Expression, Statement, Token, reject
 
 if TYPE_CHECKING:
-    from .adapter import _Adapt
+    from .context import _Adapt
 
 
 Matrix = list[list[complex]]

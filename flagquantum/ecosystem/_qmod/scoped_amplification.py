@@ -24,7 +24,7 @@ from .syntax import Expression, Parameter, Token, reject
 from .unitary_effects import inverse_effects
 
 if TYPE_CHECKING:
-    from .adapter import _Adapt
+    from .context import _Adapt
     from .phase import Location
 
 _PREPARATION = frozenset(

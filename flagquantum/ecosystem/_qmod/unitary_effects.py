@@ -11,7 +11,7 @@ from ...compiler._hybrid.model import Operation, Value
 from .syntax import Statement, Token, reject
 
 if TYPE_CHECKING:
-    from .adapter import _Adapt
+    from .context import _Adapt
 
 PURE_EFFECTS = frozenset(
     {

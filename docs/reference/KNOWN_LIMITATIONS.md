@@ -748,7 +748,7 @@ Ordinary qpe accepts a checked zero-argument static callback and a fresh, unused
 all-fractional counter of at most eight bits. Signed values remain metadata over
 raw Distribution words; partial fractional arithmetic and native array QPE exports
 are not added. Supported effects and rejected ownership/control cases are listed
-in the [Qmod contributor guide](../../flagquantum/ecosystem/_qmod/README.md#bounded-ordinary-qpe-composition).
+in the [Qmod contributor guide](../../flagquantum/ecosystem/_qmod/PROFILE_HISTORY.md#bounded-ordinary-qpe-composition).
 Finite real[][] constants are at most 8x8, and unitary data width is at most three.
 Unitarity, source/effect/helper limits and all physical budgets remain checked;
 there is no normalization, dense runtime fallback or unbounded callback expansion.

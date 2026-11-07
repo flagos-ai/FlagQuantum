@@ -434,3 +434,117 @@ def verify_register_program(
     if expanded is not program:
         _verify_body(expanded, arithmetic, helpers, max_qubits)
     return program
+
+
+def verify_operation_attributes(op: Operation) -> None:
+    """Check operation attributes before inspecting stateful register use."""
+    attributes = _ATTRIBUTES.get(op.name)
+    if (
+        op.name == "qreg.gate"
+        and isinstance(op.attributes.get("gate"), str)
+        and (op.attributes["gate"] in _ANGLE_GATES)
+    ):
+        assert attributes is not None
+        attributes = attributes | {"angle"}
+    if (
+        op.name in {"qreg.gate", "qreg.control_qft", "qreg.inplace_prepare_amplitudes"}
+        and "inverse" in op.attributes
+    ):
+        if op.attributes["inverse"] is not True:
+            _fail("register.adjoint", "inverse marker must be true", op)
+        assert attributes is not None
+        attributes = attributes | {"inverse"}
+    if op.name == "qreg.control_qft" and "control_value" in op.attributes:
+        assert attributes is not None
+        attributes = attributes | {"control_value"}
+    if op.name == "qreg.pauli_rotation" and "control_index" in op.attributes:
+        assert attributes is not None
+        attributes = attributes | {"control_index"}
+    if op.name == "qreg.pair_gate":
+        assert attributes is not None
+        if (
+            isinstance((gate := op.attributes.get("gate")), str)
+            and gate in _ANGLED_PAIR_GATES
+        ):
+            attributes = attributes | {"angle"}
+        if "indices" in op.attributes:
+            attributes = attributes | {"indices"}
+    if (
+        op.name
+        in {"qreg.control_x", "qreg.control_phase", "qreg.inplace_prepare_amplitudes"}
+        and "indices" in op.attributes
+    ):
+        assert attributes is not None
+        attributes = attributes | {"indices"}
+    if (
+        "control_state" in op.attributes
+        and "indices" in op.attributes
+        and (
+            op.name
+            in {
+                "qreg.control_x",
+                "qreg.control_phase",
+                "qreg.inplace_prepare_amplitudes",
+            }
+        )
+    ):
+        state = op.attributes["control_state"]
+        operand_count = len(op.operands) - 1
+        count = (
+            operand_count - 1
+            if op.name == "qreg.control_x"
+            else (
+                operand_count
+                if op.name == "qreg.control_phase"
+                else op.attributes.get("control_count")
+            )
+        )
+        if (
+            type(count) is not int
+            or not 1 <= count <= 8
+            or type(state) is not int
+            or (not 0 <= state < 1 << count)
+        ):
+            _fail("register.control", "control state must fit its indexed controls", op)
+        assert attributes is not None
+        attributes = attributes | {"control_state"}
+    if (
+        op.name == "qreg.inplace_prepare_amplitudes"
+        and "control_count" in op.attributes
+    ):
+        assert attributes is not None
+        attributes = attributes | {"control_count"}
+    if op.name == "qreg.declare" and (
+        "fields" in op.attributes or "record_type" in op.attributes
+    ):
+        assert attributes is not None
+        attributes = attributes | {"fields", "record_type"}
+    if op.name == "qreg.hidden" and "workspace" in op.attributes:
+        if op.attributes["workspace"] is not True:
+            _fail(
+                "register.workspace", "hidden workspace marker must be exactly True", op
+            )
+        assert attributes is not None
+        attributes = attributes | {"workspace"}
+    if op.name == "qreg.unitary":
+        assert attributes is not None
+        attributes = attributes | op.attributes.keys() & {
+            "indices",
+            "control_index",
+            "power",
+        }
+    if op.name == "qreg.phase" and "angle" in op.attributes:
+        angle = op.attributes["angle"]
+        if type(angle) is not float or not math.isfinite(angle):
+            _fail("register.phase", "phase angle must be a finite float", op)
+        attributes = (
+            frozenset({"angle", "callee"})
+            if len(op.operands) > 1
+            else frozenset({"angle"})
+        )
+    if op.name == "qreg.call" and "inverse" in op.attributes:
+        if op.attributes["inverse"] is not True:
+            _fail("register.adjoint", "inverse call marker must be true", op)
+        attributes = frozenset({"callee", "inverse"})
+    if attributes is None or set(op.attributes) != attributes or op.regions:
+        _fail("register.operation", "unsupported register operation or attributes", op)

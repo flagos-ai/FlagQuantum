@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 from .syntax import Expression, Statement, reject
 
 if TYPE_CHECKING:
-    from .adapter import _Adapt
+    from .context import _Adapt
 
 
 def bound_matrix(owner: _Adapt, node: Expression) -> tuple[tuple[float, ...], ...]:
