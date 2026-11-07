@@ -29,8 +29,10 @@ protocol of `call_classically` or a claim of executable symbolic gates.
 concrete scalar integer-word bounds without coercion. Python integers, booleans
 and NumPy integer scalars follow original signed/unsigned bounds. Arrays and
 noninteger scalar objects are rejected for scalar registers. Stored Montgomery
-values use the same width-bounded unsigned validation. Array-register validation,
-symbolic widths and the full foreign dtype hierarchy are outside this helper.
+values use the same width-bounded unsigned validation. At this batch's acceptance only positive concrete scalar widths were covered.
+[G2-VAL01](CLASSICAL_REGISTER_VALUES.md) subsequently extends the shared validator
+to zero/symbolic word widths and array ranges. The full foreign dtype hierarchy
+remains outside this helper; Negate still requires its concrete word contract.
 
 `simulation/classical_negation.py` composes the existing native value models in
 source order: validate input -> BitwiseNot -> validate intermediate -> AddK(1)

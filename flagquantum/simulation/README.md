@@ -19,6 +19,8 @@ Runtime owns those decisions and calls the appropriate numerical primitives.
 | Continuous-time Lindblad evolution | [lindblad.py](lindblad.py) |
 | Clifford sampling beyond an amplitude store | [stabilizer/](stabilizer/README.md) |
 | Classical XOR lookup values and checked target erasure | [classical_lookup.py](classical_lookup.py) |
+| Classical register binding and scalar/array integer bounds | [classical_registers.py](classical_registers.py), [integer_values.py](integer_values.py) |
+| Classical integer arithmetic value models | [classical_addition.py](classical_addition.py), [classical_subtraction.py](classical_subtraction.py), [classical_negation.py](classical_negation.py) |
 | Reusable arithmetic and precision | [numerics/](numerics/README.md) |
 | Optional JAX kernels | [jax/](jax/README.md) |
 
@@ -643,3 +645,12 @@ boundary. Run `pytest -q tests/unit/test_classical_lookup.py` for original-sourc
 forward/erasure comparisons and full small measured quantum channels. Raw
 source indexing failures and omitted-singleton quirks remain explicit; this
 classical oracle does not repair them or claim quantum semantics there.
+
+
+For the register-value path, run
+`python -m examples.algorithms.classical_register_values`. It binds a 2x2 array
+in row-major order, applies the existing XOR value model, and checks an ordinary
+`circuit.append(op)` workflow without an upstream package. See
+[the register-value contract](../../docs/development/CLASSICAL_REGISTER_VALUES.md)
+for source parity and diagnostic boundaries. Reference tests require the pinned
+reference extras; they do not add runtime SDK dependencies.
