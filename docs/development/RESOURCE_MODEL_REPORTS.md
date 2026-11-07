@@ -39,6 +39,25 @@ Conditional instructions are counted once syntactically. Neither this column nor
 the model is a measurement of an executed branch, elapsed time or hardware memory.
 Pairing a circuit and model does not prove their semantic equivalence.
 
+For a complete `circuit.append(op)` comparison, run:
+
+```sh
+python -m examples.algorithms.resource_model_comparison
+```
+
+The three-bit Add example reports 8 model T equivalents and 8 emitted T/T-dagger
+instructions, with 8 logical wires. The raw model retains 2 And operations;
+the emitted column records their decomposition and 2 measurements. These columns
+use different gate levels and must not be compared category by category before
+lowering to a common gate set. The report then estimates symbolic `n`-bit Add
+without building a circuit: `4*n - 4` T equivalents and `Max(3, 2*n)` logical
+qubits, preserving the pinned source's symbolic width rule. That width rule
+differs from the concrete Add model's `3*n - 1`: substituting a number into a
+symbolic source estimate need not reproduce the source's concrete estimate.
+No statevector simulation or external Qualtran installation is needed to run
+the example. Model support is explicit per component; arbitrary appended
+operations do not automatically acquire an analytical model.
+
 Raw And, Toffoli, controlled swap, Clifford, rotation, measurement and T counts
 remain separate. The report states the existing model conversion explicitly:
 11 T per arbitrary rotation and 4 T equivalents per CCZ-like resource. These are
