@@ -61,7 +61,7 @@ def _resolve(
 
             namespace = function.__globals__.get("__builtins__", builtins)
             values = vars(namespace) if type(namespace) is ModuleType else namespace
-            return values.get(node.id) if isinstance(values, dict) else None
+            return dict.get(values, node.id) if isinstance(values, dict) else None
         return None
     if isinstance(node, ast.Attribute):
         parent = _resolve(definition, node.value, depth + 1, annotation=annotation)

@@ -339,3 +339,60 @@ def test_legacy_integer_entry_retains_its_separate_input_semantics() -> None:
         synth.synthesize(
             energy, inputs={"x": synth.UInt(2)}, classical_inputs={"x": 0.3}
         )
+
+
+@pytest.mark.parametrize(
+    ("signature", "bindings", "body", "diagnostic"),
+    [
+        (
+            "adjoint: float, q: Output[QBit]",
+            {"adjoint": 0.3},
+            "allocate(q)\nwith adjoint():\n    H(q)",
+            "program.call",
+        ),
+        (
+            "H: float, q: Output[QBit]",
+            {"H": 0.3},
+            "allocate(q)\ncontrol(q,lambda: H(q))",
+            "program.call",
+        ),
+        (
+            "theta: float, q: Output[QBit]",
+            {"theta": 0.3},
+            "allocate(q)\nwith within():\n    theta: QNum[2] = q + 1\nwith apply():\n    phase(theta)",
+            "program.local",
+        ),
+    ],
+)
+def test_parameter_scope_is_checked_in_regions_and_callbacks(
+    tmp_path: Path,
+    signature: str,
+    bindings: dict[str, float],
+    body: str,
+    diagnostic: str,
+) -> None:
+    definition = _definition(tmp_path, signature, body)
+    with pytest.raises(ValueError, match=diagnostic):
+        synth.synthesize(definition, classical_inputs=bindings)
+
+
+def test_quoted_annotations_and_standard_type_aliases(tmp_path: Path) -> None:
+    definition = _definition(
+        tmp_path,
+        "theta: 'Real', angles: 'Reals[Real]', q: 'Output[QBit]'",
+        "allocate(q)\nRX(theta+angles[0],q)",
+        "from builtins import float as Real, list as Reals\n",
+    )
+    program = synth.synthesize(
+        definition, classical_inputs={"theta": 0.3, "angles": [-0.7]}
+    )
+    expected = fq.run(
+        fq.Circuit(1, dtype=torch.complex128).rx(0, theta=-0.4)
+    ).statevector()
+    torch.testing.assert_close(
+        fq.run(program).statevector(), expected, atol=1e-12, rtol=0
+    )
+    with pytest.raises(ValueError, match="annotation"):
+        _definition(
+            tmp_path, "theta: 'float', q: Output[QBit]", "allocate(q)", "float = None\n"
+        )

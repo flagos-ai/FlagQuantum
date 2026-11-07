@@ -370,6 +370,25 @@ class _Body:
     def phase_number(self, node: ast.expr) -> float | None:
         return real_number(self, node)
 
+    def resolve_callable(self, node: ast.expr) -> object:
+        """Resolve operation identities while respecting all captured local scopes."""
+        callable_root = node
+        while isinstance(callable_root, ast.Attribute):
+            callable_root = callable_root.value
+        if isinstance(callable_root, ast.Name) and (
+            callable_root.id
+            in (self.aliases if self.aliases is not None else self.ports)
+            or callable_root.id in self.classical
+            or callable_root.id in self.loop_variables
+        ):
+            _error(
+                self.source,
+                node,
+                "program.call",
+                "a quantum port cannot shadow a callable",
+            )
+        return _resolve(self.definition, node)
+
     def call(
         self,
         node: ast.Call,
@@ -385,22 +404,7 @@ class _Body:
                 "program.signature",
                 "use positional arguments without unpacking",
             )
-        callable_root = node.func
-        while isinstance(callable_root, ast.Attribute):
-            callable_root = callable_root.value
-        if isinstance(callable_root, ast.Name) and (
-            callable_root.id
-            in (self.aliases if self.aliases is not None else self.ports)
-            or callable_root.id in self.classical
-            or callable_root.id in self.loop_variables
-        ):
-            _error(
-                self.source,
-                node.func,
-                "program.call",
-                "a quantum port cannot shadow a callable",
-            )
-        function = _resolve(self.definition, node.func)
+        function = self.resolve_callable(node.func)
         if self.aliases is not None and not (
             any(
                 function is marker
@@ -796,7 +800,7 @@ class _Body:
                 and not expression.args
                 and not expression.keywords
             ):
-                return _resolve(self.definition, expression.func)
+                return self.resolve_callable(expression.func)
         return None
 
     def declare_local(self, node: ast.AnnAssign) -> str:
@@ -808,7 +812,7 @@ class _Body:
                 "assign an arithmetic expression to a fresh sized QNum local",
             )
         name = node.target.id
-        if name in self.ports:
+        if name in self.ports or name in self.classical or name in self.loop_variables:
             _error(
                 self.source,
                 node,
@@ -894,7 +898,7 @@ class _Body:
                     "program.apply",
                     "apply accepts phase and Const-only qfunc calls",
                 )
-            function = _resolve(self.definition, statement.value.func)
+            function = self.resolve_callable(statement.value.func)
             if function is not phase and (
                 not isinstance(function, _QuantumFunction)
                 or not function.source.program
@@ -950,7 +954,7 @@ class _Body:
                 "program.control",
                 "a quantum port cannot shadow a callable",
             )
-        operation = _resolve(self.definition, body.func)
+        operation = self.resolve_callable(body.func)
         if isinstance(condition, ast.Compare):
             graph, inputs = self.capture_expression(condition, node, predicate=True)
             if sum(register_width(value) for value in inputs) > 8:
