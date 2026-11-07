@@ -10,7 +10,7 @@ from ...core.ir import Instruction
 from .._component_trace.resource_model import ComponentCost
 from .bitwise import _validate_wires
 from .constant_add_resource_model import source_controlled_constant_add_cost
-from .control_predicate import ControlRegister
+from .control_predicate import ControlRegister, bind_control_registers
 from .controlled_addition import (
     controlled_add_constant_adjoint_ir,
     controlled_add_constant_ir,
@@ -40,14 +40,47 @@ def multi_controlled_add_constant_ir(
     """
     if len(controls) < 2 or len(predicate_work) != len(controls) - 1:
         raise ValueError("Multi-controlled AddK requires m>=2 and m-1 predicate wires")
+    return grouped_controlled_add_constant_ir(
+        (controls,),
+        (ControlRegister(1, values),),
+        target,
+        value,
+        predicate_work,
+        constant,
+        carries,
+        addition_bits,
+        predicate_bits,
+        adjoint=adjoint,
+    )
+
+
+def grouped_controlled_add_constant_ir(
+    controls: tuple[tuple[int, ...], ...],
+    registers: tuple[ControlRegister, ...],
+    target: tuple[int, ...],
+    value: int,
+    predicate_work: tuple[int, ...],
+    constant: tuple[int, ...],
+    carries: tuple[int, ...],
+    addition_bits: tuple[int, ...],
+    predicate_bits: tuple[int, ...],
+    *,
+    adjoint: bool = False,
+) -> tuple[Instruction, ...]:
+    """Bind row-major integer control words around the existing positive AddK.
+
+    Work ownership matches the flat entry. A single control bit needs no
+    predicate work; its activation polarity is handled by the generic wrapper.
+    """
+    wires, _ = bind_control_registers(controls, registers)
+    if not wires or len(predicate_work) != max(0, len(wires) - 1):
+        raise ValueError("Grouped AddK predicate storage must match its control bits")
     if type(adjoint) is not bool:
         raise ValueError("Constant-add direction must be boolean")
-    _validate_wires((*controls, *target, *predicate_work, *constant, *carries))
+    _validate_wires((*wires, *target, *predicate_work, *constant, *carries))
     slots = (*addition_bits, *predicate_bits)
     if len(set(slots)) != len(slots) or any(type(b) is not int or b < 0 for b in slots):
         raise ValueError("Addition and predicate measurements require distinct slots")
-    registers = (ControlRegister(1, values),)
-    groups = (controls,)
     emitter = (
         controlled_add_constant_adjoint_ir if adjoint else controlled_add_constant_ir
     )
@@ -56,7 +89,7 @@ def multi_controlled_add_constant_ir(
         return emitter(predicate, target, value, constant, carries, addition_bits)
 
     return controlled_component_ir(
-        groups, registers, body, predicate_work, predicate_bits
+        controls, registers, body, predicate_work, predicate_bits
     )
 
 
@@ -73,12 +106,30 @@ def source_multi_controlled_constant_add_cost(
         raise ValueError(
             "Multi-controlled AddK requires at least two controls and boolean direction"
         )
+    return source_grouped_controlled_constant_add_cost(
+        width,
+        value,
+        (ControlRegister(1, values),),
+        adjoint=adjoint,
+        legacy_shims=legacy_shims,
+    )
+
+
+def source_grouped_controlled_constant_add_cost(
+    width: int,
+    value: int,
+    registers: tuple[ControlRegister, ...],
+    *,
+    adjoint: bool = False,
+    legacy_shims: bool = False,
+) -> ComponentCost:
+    """Compose existing control-word equality and AddK models, without gates."""
     addition = source_controlled_constant_add_cost(
         width, value, adjoint=adjoint, legacy_shims=legacy_shims
     )
     return controlled_component_cost(
         addition,
-        (ControlRegister(1, values),),
+        registers,
         target_width=width,
         legacy_shims=legacy_shims,
     )

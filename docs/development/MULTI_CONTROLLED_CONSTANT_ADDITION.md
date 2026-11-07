@@ -47,3 +47,36 @@ Both emission and resource composition delegate to the existing generic
 `controlled_component_ir` / `controlled_component_cost` helpers. This module
 only binds the AddK body and validates the caller's complete storage ownership;
 it does not maintain a second predicate schedule or bystander-width formula.
+
+## Grouped integer controls (G2-A49)
+
+`grouped_controlled_add_constant_ir` binds existing `ControlRegister` descriptors
+and per-group flat wire tuples. Word bits are MSB first; words in shaped source
+registers flatten in row-major order. The source dtype/shape adapter remains
+outside the compiler. The native descriptor retains the activation word values
+and their unsigned, two's-complement or ones-complement encoding, rather than
+adding a new schema. Stored Montgomery/bounded words use the unsigned bit pattern.
+
+All nonempty control configurations are supported by this concrete entry. One
+control bit needs no predicate work; the generic wrapper owns its positive or
+negative polarity. The existing flat entry keeps its m>=2 contract and delegates
+to the same grouped implementation. Grouped resource queries likewise reuse the
+same control-component authority with logical target_width=n.
+
+Reference tests cover QBit arrays (including two-dimensional shapes), QAny,
+unsigned, signed, ones-complement, stored Montgomery and bounded integer groups,
+forward/inverse and both cost profiles. Small signed/ones-complement and single-bit
+control cases enumerate all coherent input and measurement histories, including
+an entangled spectator. Wire overlap, wrong group sizes, invalid encoding values,
+empty controls and overlapping measurement slots fail explicitly.
+
+This adds 55 tests; 1,358 concentrated checks pass without skips. Six numerical
+warnings are retained in the evidence log from the pre-existing LCU reference
+probe, not the grouped AddK tests. Reference Cirq 1.7.0 is restored in an isolated
+directory to provide its CY interface; project dependency files are unchanged.
+The five relevant source blobs match the pinned inventory. Symbolic grouped
+shapes remain outside this concrete implementation.
+
+Run `python -m examples.algorithms.grouped_controlled_constant_addition` to activate
+on a signed two-bit control of -1, subtract one from the target, verify clean work,
+and compare logical model counts with emitted primitive counts.
