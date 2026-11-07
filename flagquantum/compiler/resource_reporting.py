@@ -22,12 +22,13 @@ def resource_model_report(
     model: ComponentCost | SymbolicResourceFormula,
     *,
     emitted_ir: CircuitIR | None = None,
+    ts_per_rotation: int = 11,
 ) -> dict[str, Any]:
     """Build a JSON-compatible logical estimate without lowering or execution.
 
     Concrete components recursively aggregate their declared calls. Symbolic
     formulas retain expressions as strings (not executable serialized code).
-    Both use the existing budget rule: 11 T per rotation and four T equivalents
+    Both use the existing budget rule: by default 11 T per rotation and four T equivalents
     per Toffoli, controlled swap or And. These rates are assumptions, not a
     synthesis result. Raw gate categories are retained alongside that conversion.
 
@@ -36,6 +37,8 @@ def resource_model_report(
     semantic equivalence or count the instructions executed by a measured branch.
     No physical hardware, timing, or state simulation is involved.
     """
+    if type(ts_per_rotation) is not int or ts_per_rotation < 0:
+        raise ValueError("T cost per rotation must be a nonnegative integer")
     gates: GateCategories
     if isinstance(model, ComponentCost):
         estimate = estimate_component_resources(model)
@@ -52,7 +55,7 @@ def resource_model_report(
         raise TypeError(
             "Resource reporting requires a component model or symbolic formula"
         )
-    budget = t_and_ccz_budget(gates)
+    budget = t_and_ccz_budget(gates, ts_per_rotation=ts_per_rotation)
     emitted = None
     if emitted_ir is not None:
         counts = count_emitted_instructions(emitted_ir.validate())
@@ -74,7 +77,7 @@ def resource_model_report(
         "magic_states": {name: _json_count(value) for name, value in budget.items()},
         "t_equivalents": _json_count(budget["n_t"] + 4 * budget["n_ccz"]),
         "conversion": {
-            "t_per_rotation": 11,
+            "t_per_rotation": ts_per_rotation,
             "t_per_ccz_equivalent": 4,
             "ccz_categories": ["toffoli", "cswap", "and_bloq"],
         },

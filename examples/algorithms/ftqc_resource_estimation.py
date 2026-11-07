@@ -115,9 +115,17 @@ def _print_register_estimate(formula: SymbolicResourceFormula) -> None:
     print("Model peak logical qubits", formula.logical_qubits)
 
 
-def _print_json_estimate(model: ComponentCost | SymbolicResourceFormula) -> None:
+def _print_json_estimate(
+    model: ComponentCost | SymbolicResourceFormula, ts_per_rotation: int
+) -> None:
     """Serialize estimates through the shared compiler report entry."""
-    print(json.dumps(resource_model_report(model), indent=2, sort_keys=True))
+    print(
+        json.dumps(
+            resource_model_report(model, ts_per_rotation=ts_per_rotation),
+            indent=2,
+            sort_keys=True,
+        )
+    )
 
 
 def main() -> None:
@@ -168,7 +176,18 @@ def main() -> None:
         action="store_true",
         help="print a dimension-only model report; requires a model option",
     )
+    parser.add_argument(
+        "--t-per-rotation",
+        type=int,
+        help="T budget per arbitrary rotation in a JSON model report (default: 11)",
+    )
     args = parser.parse_args()
+    if args.t_per_rotation is not None:
+        if not args.json:
+            parser.error("--t-per-rotation requires --json")
+        if args.t_per_rotation < 0:
+            parser.error("--t-per-rotation must be nonnegative")
+    rotation_cost = 11 if args.t_per_rotation is None else args.t_per_rotation
     if args.json and all(
         value is None
         for value in (args.add, args.qrom, args.thc, args.single_factorization)
@@ -184,7 +203,7 @@ def main() -> None:
         except ValueError as exc:
             parser.error(str(exc))
         if args.json:
-            _print_json_estimate(formula)
+            _print_json_estimate(formula, rotation_cost)
         else:
             _print_register_estimate(formula)
         return
@@ -199,7 +218,7 @@ def main() -> None:
             (rows,), (target_bits,), control_count=controls
         )
         if args.json:
-            _print_json_estimate(formula)
+            _print_json_estimate(formula, rotation_cost)
         else:
             print(
                 "QROM shape model: table contents and uniform-region optimizations are unspecified"
@@ -213,7 +232,7 @@ def main() -> None:
         except ValueError as exc:
             parser.error(str(exc))
         if args.json:
-            _print_json_estimate(model)
+            _print_json_estimate(model, rotation_cost)
         else:
             _print_thc_estimate(estimate_ftqc_resources(model))
         return
@@ -223,7 +242,8 @@ def main() -> None:
             _print_json_estimate(
                 source_single_factorization_block_encoding_cost(
                     auxiliaries, spin_orbitals, alias_bits
-                )
+                ),
+                rotation_cost,
             )
         else:
             _report_single_factorization(*args.single_factorization)

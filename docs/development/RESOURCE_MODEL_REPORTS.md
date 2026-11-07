@@ -45,6 +45,25 @@ remain separate. The report states the existing model conversion explicitly:
 budget assumptions, not a claim that arbitrary-angle synthesis emitted 11 gates.
 Physical error-correction scenarios remain owned by `qec/resources/estimation.py`.
 
+The rotation conversion can be supplied explicitly with
+`resource_model_report(model, ts_per_rotation=37)`. This follows the pinned
+`GateCounts.total_t_and_ccz_count(ts_per_rotation=...)` budget rule. Raw categories,
+logical widths and optional emitted instruction counts remain unchanged. The
+adapter requires a nonnegative integer rate and records it in `conversion`.
+Choosing a rate does not synthesize rotations or certify an approximation error.
+In particular, eight-bit angle table precision does not itself determine a T cost.
+
+```sh
+python -m examples.algorithms.ftqc_resource_estimation --thc 2 4 8 1 --json --t-per-rotation 37
+```
+
+The CLI accepts this override only with a dimension-only JSON report so that it
+cannot silently leave a different physical-scenario or text-report conversion in
+effect. The default remains 11. The model estimates T and CCZ demand and logical
+width even when an executable decomposition is unavailable. `emitted_ir: null`
+and `execution_measurements: null` explicitly distinguish that case from measured
+execution. The report does not certify that all source decompositions are ported.
+
 Acceptance: 12 new tests compare concrete and symbolic Add reports to unmodified
 Qualtran v0.7.0 at bcb17bb25360ed68ce3bc084645db3e929799389, preserve the one-bit
 source anomaly and both QEC profiles, check recursive lifetimes and success, and
@@ -53,3 +72,8 @@ keep dynamic emitted counts independent. Run with the pinned reference environme
 ```sh
 pytest -q tests/unit/test_resource_model_report.py
 ```
+
+Additional acceptance compares concrete and symbolic rotation budgets at 0, 11
+and 37 T per rotation directly with the unchanged pinned `GateCounts` methods,
+including JSON round trips and rejection of invalid override values. CLI checks
+cover dimension-only THC and unused or negative overrides.

@@ -25,6 +25,32 @@ from flagquantum.qec.resources.estimation import (
 pytestmark = pytest.mark.unit
 
 
+def test_json_rotation_cost_is_reported_without_lowering(monkeypatch, capsys):
+    def unexpected_lowering(*args, **kwargs):
+        pytest.fail("A dimension-only estimate must not lower THC")
+
+    monkeypatch.setattr(SelectTHC, "_append_to", unexpected_lowering)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["estimate", "--thc", "2", "4", "8", "1", "--json", "--t-per-rotation", "37"],
+    )
+    ftqc_resource_estimation.main()
+    report = json.loads(capsys.readouterr().out)
+    assert report["conversion"]["t_per_rotation"] == 37
+    assert report["emitted_ir"] is report["execution_measurements"] is None
+
+
+@pytest.mark.parametrize(
+    "arguments", [["--t-per-rotation", "37"], ["--json", "--t-per-rotation", "-1"]]
+)
+def test_cli_refuses_unused_or_negative_rotation_cost(monkeypatch, arguments):
+    monkeypatch.setattr(sys, "argv", ["estimate", "--add", "8", "8", *arguments])
+    with pytest.raises(SystemExit) as error:
+        ftqc_resource_estimation.main()
+    assert error.value.code == 2
+
+
 def test_thc_cli_estimates_dimensions_without_building_ir(
     monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:

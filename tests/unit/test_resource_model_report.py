@@ -90,3 +90,54 @@ def test_ir_column_counts_actual_decomposition_without_changing_model():
 def test_missing_model_is_refused():
     with pytest.raises(TypeError, match="requires a component model"):
         resource_model_report(object())
+
+
+@pytest.mark.ftqc_reference
+@pytest.mark.parametrize("rotation_cost", [0, 11, 37])
+@pytest.mark.parametrize("symbolic", [False, True])
+def test_rotation_budget_matches_original_without_altering_categories(
+    rotation_cost, symbolic
+):
+    from qualtran.resource_counting import GateCounts
+
+    from flagquantum.compiler.registers.symbolic_resource_model import (
+        SymbolicResourceFormula,
+    )
+
+    rotations = Symbol("r", integer=True, positive=True) if symbolic else 7
+    categories = dict(
+        t=2,
+        toffoli=3,
+        cswap=4,
+        and_bloq=5,
+        rotation=rotations,
+        clifford=6,
+        measurement=8,
+    )
+    source = GateCounts(**categories)
+    model = (
+        SymbolicResourceFormula(logical_qubits=17, **categories)
+        if symbolic
+        else ComponentCost("rotations", 17, GateCost(**categories))
+    )
+    baseline = resource_model_report(model)
+    report = resource_model_report(model, ts_per_rotation=rotation_cost)
+    assert report["logical_gates"] == baseline["logical_gates"]
+    assert report["peak_logical_qubits"] == 17
+    assert report["conversion"]["t_per_rotation"] == rotation_cost
+    assert report["magic_states"] == {
+        key: value if isinstance(value, int) else str(value)
+        for key, value in source.total_t_and_ccz_count(rotation_cost).items()
+    }
+    expected = source.total_t_count(ts_per_rotation=rotation_cost)
+    assert report["t_equivalents"] == (
+        expected if isinstance(expected, int) else str(expected)
+    )
+    assert report["emitted_ir"] is report["execution_measurements"] is None
+    assert json.loads(json.dumps(report)) == report
+
+
+@pytest.mark.parametrize("rotation_cost", [-1, 1.5, True, "11"])
+def test_invalid_rotation_budget_is_refused(rotation_cost):
+    with pytest.raises(ValueError, match="nonnegative integer"):
+        resource_model_report(ComponentCost("empty", 0), ts_per_rotation=rotation_cost)
