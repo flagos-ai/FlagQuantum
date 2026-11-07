@@ -10,7 +10,13 @@
 
 """Declared arithmetic costs before selecting an IR implementation."""
 
+from dataclasses import fields
+from typing import cast
+
+from .._component_trace.arithmetic_call import ArithmeticCall
+from .._component_trace.qec_gate_cost import query_qec_gate_cost
 from .._component_trace.resource_model import ComponentCost, CostCall, GateCost
+from .arithmetic_declarations import arithmetic_callees
 from .control_predicate_resource_model import control_predicate_cost
 
 
@@ -24,14 +30,20 @@ def source_add_cost(
         or not 1 <= left_width <= right_width
     ):
         raise ValueError("Add widths must satisfy 1 <= left <= right")
-    carries = right_width - 1
+    root = ArithmeticCall("add", (left_width, right_width))
+    gates = query_qec_gate_cost(
+        root,
+        declared_calls={root: arithmetic_callees(root)},
+        legacy_shims=legacy_shims,
+    )
     return ComponentCost(
         "Add",
-        left_width + right_width + carries,
+        left_width + right_width + right_width - 1,
         GateCost(
-            and_bloq=carries,
-            clifford=(right_width - 2) * 6 + 3 + carries * (3 if legacy_shims else 1),
-            measurement=carries,
+            **{
+                field.name: cast(int, getattr(gates, field.name))
+                for field in fields(gates)
+            }
         ),
     )
 

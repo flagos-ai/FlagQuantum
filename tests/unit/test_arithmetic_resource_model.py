@@ -78,3 +78,26 @@ def test_phase_add_model(
                 *widths, right_shift=shift, sign=sign, controlled_by=control
             ),
         )
+
+
+@pytest.mark.parametrize("left,right", [(1, 1), (2, 3), (8, 8)])
+@pytest.mark.parametrize("legacy", (False, True))
+def test_add_cost_consumes_replaceable_native_recipe(monkeypatch, left, right, legacy):
+    import flagquantum.compiler.registers.arithmetic_resource_model as module
+    from flagquantum.compiler._component_trace.arithmetic_call import ArithmeticCall
+    from flagquantum.compiler._component_trace.resource_generalization import FixedTCall
+
+    seen = []
+
+    def recipe(root):
+        seen.append(root)
+        return {FixedTCall("fredkin"): 9}
+
+    monkeypatch.setattr(module, "arithmetic_callees", recipe)
+    result = module.source_add_cost(left, right, legacy_shims=legacy)
+    assert seen == [ArithmeticCall("add", (left, right))]
+    assert result.gates.cswap == 9
+    assert (
+        result.gates.and_bloq == result.gates.clifford == result.gates.measurement == 0
+    )
+    assert result.qubits == left + 2 * right - 1
