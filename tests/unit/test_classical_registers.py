@@ -7,7 +7,10 @@ import numpy as np
 import pytest
 import sympy
 
-from flagquantum.simulation.classical_registers import bind_integer_register_values
+from flagquantum.simulation.classical_registers import (
+    bind_integer_register_values,
+    collect_integer_register_value,
+)
 
 pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
 n = sympy.Symbol("n", positive=True, integer=True)
@@ -164,12 +167,17 @@ def test_bound_two_dimensional_words_keep_all_complex_amplitudes_and_source_xor_
         values = np.array([(word >> shift) & 3 for shift in (6, 4, 2, 0)]).reshape(2, 2)
         native = bind_integer_register_values("x", {"x": values}, 2, shape=(2, 2))
         original = original_bind("x", {"x": values}, 2, (2, 2), False)
-        mapped = 0
+        mapped_values = {}
         for idx in native:
             assert native[idx] == original[idx]
             result = xor_constant_classical_value(native[idx], 1)
             assert result == source.on_classical_vals(x=original[idx])["x"]
-            mapped = (mapped << 2) | int(result)
+            mapped_values[idx] = result
+        assembled = collect_integer_register_value(mapped_values, 2, shape=(2, 2))
+        assert isinstance(assembled, np.ndarray) and assembled.dtype == np.uint8
+        mapped = 0
+        for value in assembled.flat:
+            mapped = (mapped << 2) | int(value)
         expected[(mapped << 1) | (label & 1)] = amplitudes[label]
     gates = tuple(
         g for start in (0, 2, 4, 6) for g in xor_constant_ir((start, start + 1), 1)

@@ -9,7 +9,10 @@ import flagquantum as fq
 from flagquantum.compiler.registers.bitwise import xor_constant_ir
 from flagquantum.core.ir import CircuitIR
 from flagquantum.simulation.classical_bitwise import xor_constant_classical_value
-from flagquantum.simulation.classical_registers import bind_integer_register_values
+from flagquantum.simulation.classical_registers import (
+    bind_integer_register_values,
+    collect_integer_register_value,
+)
 
 
 @dataclass(frozen=True)
@@ -27,10 +30,15 @@ def main() -> None:
     assert tuple(bound) == ((0, 0), (0, 1), (1, 0), (1, 1))
     mapped = 0
     initial_word = 0
-    for value in bound.values():
+    output_values = {}
+    for idx, value in bound.items():
         assert isinstance(value, (int, np.integer))
         initial_word = (initial_word << 2) | int(value)
-        mapped = (mapped << 2) | int(xor_constant_classical_value(value, 1))
+        output_values[idx] = xor_constant_classical_value(value, 1)
+    output = collect_integer_register_value(output_values, 2, shape=(2, 2))
+    assert isinstance(output, np.ndarray) and output.dtype == np.uint8
+    for value in output.flat:
+        mapped = (mapped << 2) | int(value)
     initial = torch.zeros(256, dtype=torch.complex128)
     initial[initial_word] = 1
     circuit = fq.Circuit(8, inputs=initial, dtype=torch.complex128)

@@ -82,3 +82,37 @@ Thirty-six paired original/native NumPy warnings remain visible. Three
 production/example files pass strict typing; Black, Ruff, Simulation scope,
 architecture and the runnable example pass. No pinned source or public API was
 changed. The complete classical interpreter and G2 are not declared finished.
+
+
+## Collecting register outputs (G2-VAL02)
+
+`collect_integer_register_value(assignments, width, shape=..., signed=...)`
+ports the original `_get_in_vals` and integer NumPy storage selection into the
+same Simulation module. Keys are native row-major index tuples rather than
+foreign graph endpoints. Scalars return the original object at `()` without
+copying or revalidation. Arrays use signed or unsigned 8/16/32/64-bit NumPy
+storage at the original width thresholds, and object storage above 64 bits.
+Missing entries propagate `KeyError`; assignment conversions propagate NumPy's
+exceptions. Collection performs no second domain check. Symbolic width comparisons
+retain the source relational failure for arrays; scalars bypass dtype selection.
+Even an empty array selects its dtype before traversing its indices.
+
+This helper intentionally does not preserve the incoming array subclass: source
+output assembly allocates a fresh plain ndarray. Input binding still preserves
+`asanyarray` subclasses. Finite-field arrays, arbitrary custom dtypes, graph-edge
+routing, stochastic dispatch and the full classical graph interpreter remain
+open; the integer helper does not claim those capabilities.
+
+The runnable `examples.algorithms.classical_register_values` now binds, transforms
+and collects the two-dimensional values before comparing with `circuit.append(op)`.
+The existing coherent test feeds all 512 complex amplitudes through this collection
+path, including an untouched spectator, and checks exact double-XOR restoration.
+The quantum path remains four X/Clifford gates, zero T, measurements or work wires;
+collection is a classical numerical operation and adds no quantum resources.
+
+Acceptance: 100 new source assembly cases, 369 concentrated passes, no skips.
+Eight existing paired source/native NumPy overflow warnings remain visible.
+Checks include dtype thresholds, missing indices, empty axes, symbolic scalar
+identity, symbolic width errors, conversion failures and 65-bit exact values.
+The pinned `classical_sim.py` blob is verified against the original inventory:
+`a1933c22023d54fd7683a5a1aa29ac595a046e24`. Source code is not modified.

@@ -1,6 +1,6 @@
 # Copyright 2023 Google LLC
 # SPDX-License-Identifier: Apache-2.0
-# Adapted from Qualtran v0.7.0 ClassicalSimState._update_assign_from_vals.
+# Adapted from Qualtran v0.7.0 ClassicalSimState._update_assign_from_vals and _get_in_vals.
 # https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/simulation/classical_sim.py
 
 """Bind integer-register values without graph objects or compiler dependencies."""
@@ -38,11 +38,7 @@ def bind_integer_register_values(
         value = values[name]
     except KeyError as exc:
         raise ValueError(f"Classical input requires register {name!r}") from exc
-    if not isinstance(shape, tuple) or any(
-        not isinstance(dimension, (int, np.integer)) or dimension < 0
-        for dimension in shape
-    ):
-        raise ValueError("Classical register shapes must be concrete dimension tuples")
+    _validate_shape(shape)
     if shape:
         array = np.asanyarray(value)
         if array.shape != shape:
@@ -61,3 +57,41 @@ def bind_integer_register_values(
                 return {(): value}
     validate_integer_word_value(value, width, signed=signed)
     return {(): value}
+
+
+def _validate_shape(shape: tuple[int, ...]) -> None:
+    if not isinstance(shape, tuple) or any(
+        not isinstance(dimension, (int, np.integer)) or dimension < 0
+        for dimension in shape
+    ):
+        raise ValueError("Classical register shapes must be concrete dimension tuples")
+
+
+def collect_integer_register_value(
+    assignments: Mapping[tuple[int, ...], object],
+    width: int | Expr,
+    *,
+    shape: tuple[int, ...] = (),
+    signed: bool = False,
+) -> object:
+    """Collect indexed values using the source integer-array storage policy.
+
+    Scalar values are returned unchanged. Arrays use the smallest 8/16/32/64-bit
+    signed or unsigned NumPy storage containing the declared word width, with
+    object storage above 64 bits. Values are assigned in row-major index order;
+    missing entries and NumPy conversion errors propagate. No range validation
+    is added at collection: source validation belongs to assignment time.
+    This is value assembly, not graph traversal or quantum execution.
+    """
+    _validate_shape(shape)
+    if not shape:
+        return assignments[()]
+    storage: np.dtype[np.generic] = np.dtype(object)
+    for limit in (8, 16, 32, 64):
+        if width <= limit:
+            storage = np.dtype(f"{'int' if signed else 'uint'}{limit}")
+            break
+    array = np.empty(shape, dtype=storage)
+    for idx in product(*(range(n) for n in shape)):
+        array[idx] = assignments[idx]
+    return array
