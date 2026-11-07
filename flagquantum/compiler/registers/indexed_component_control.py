@@ -10,7 +10,10 @@ from collections.abc import Callable
 from ...core.ir import Instruction
 from .bitwise import _validate_wires
 from .control_predicate import ControlRegister, bind_control_registers
-from .controlled_component import controlled_component_ir
+from .controlled_component import (
+    controlled_component_ir,
+    extend_controlled_component_ir,
+)
 from .indexed_component import indexed_component_ir, indexed_component_workspace
 
 
@@ -128,32 +131,18 @@ def specialized_indexed_component_ir(
             adjoint=adjoint,
         )
 
-    def specialize(predicate: int) -> tuple[Instruction, ...]:
-        if current_control is None:
-            return traverse(predicate)
-        wire, value = current_control
-        return controlled_component_ir(
-            ((predicate, wire),),
-            (ControlRegister(1, (1, value)),),
+    if current_control is not None:
+        return extend_controlled_component_ir(
+            controls,
+            registers,
+            current_control,
             traverse,
-            workspace[outer : outer + inner],
-            classical_bits[outer : outer + inner],
+            workspace[: outer + inner],
+            classical_bits[: outer + inner],
         )
-
     if outer == 0:
-        if current_control is None:
-            return traverse(wires[0])
-        wire, value = current_control
-        return conjoined_indexed_component_ir(
-            axes,
-            extents,
-            emit_controlled,
-            (wires[0], wire),
-            (values[0], value),
-            workspace=workspace,
-            classical_bits=classical_bits,
-            adjoint=adjoint,
-        )
+        # Preserve the original solitary-negative ApplyLthBloq defect.
+        return traverse(wires[0])
     return controlled_component_ir(
-        controls, registers, specialize, workspace[:outer], classical_bits[:outer]
+        controls, registers, traverse, workspace[:outer], classical_bits[:outer]
     )
