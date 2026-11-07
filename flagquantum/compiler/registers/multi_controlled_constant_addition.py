@@ -124,6 +124,10 @@ def source_grouped_controlled_constant_add_cost(
     legacy_shims: bool = False,
 ) -> ComponentCost:
     """Compose existing control-word equality and AddK models, without gates."""
+    if type(value) is not int:
+        raise ValueError(
+            "Concrete grouped AddK model requires a Python integer constant"
+        )
     addition = source_controlled_constant_add_cost(
         width, value, adjoint=adjoint, legacy_shims=legacy_shims
     )

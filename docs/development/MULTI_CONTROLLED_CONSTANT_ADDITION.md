@@ -70,7 +70,7 @@ control cases enumerate all coherent input and measurement histories, including
 an entangled spectator. Wire overlap, wrong group sizes, invalid encoding values,
 empty controls and overlapping measurement slots fail explicitly.
 
-This adds 55 tests; 1,358 concentrated checks pass without skips. Six numerical
+This adds 56 tests; 1,359 concentrated checks pass without skips. Six numerical
 warnings are retained in the evidence log from the pre-existing LCU reference
 probe, not the grouped AddK tests. Reference Cirq 1.7.0 is restored in an isolated
 directory to provide its CY interface; project dependency files are unchanged.
@@ -80,3 +80,9 @@ shapes remain outside this concrete implementation.
 Run `python -m examples.algorithms.grouped_controlled_constant_addition` to activate
 on a signed two-bit control of -1, subtract one from the target, verify clean work,
 and compare logical model counts with emitted primitive counts.
+
+The grouped concrete model explicitly requires a Python integer constant;
+source symbolic constants use a different graph-width fallback and are not
+accepted as if they had executable loaded/carry lifetimes. That symbolic
+resource path remains open. The preceding flat-control limitations describe
+G2-A48; G2-A49 adds the grouped concrete paths documented here.
