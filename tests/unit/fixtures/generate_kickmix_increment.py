@@ -4,9 +4,10 @@ import argparse
 import hashlib
 import json
 import subprocess
-import tempfile
 from collections import Counter
 from pathlib import Path
+
+from kickmix_source_oracle import source_oracle
 
 SOURCE_BLOB = "890b484fb6043d45d8e60a91dd241ab8092f7b21"
 SOURCE_COMMIT = "9a0c11a4ee7697c082fbf8f2e1e8bf4a71fcb453"
@@ -19,40 +20,11 @@ def main() -> None:
     )
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
-    source = args.source_root.resolve() / "src"
-    increment = source / "kickmix/gen/adders/gen_iadd1.cc"
-    contents = increment.read_bytes()
-    blob = hashlib.sha1(
-        b"blob " + str(len(contents)).encode() + b"\0" + contents
-    ).hexdigest()
-    if blob != SOURCE_BLOB:
-        parser.error("Increment reference differs from the locked source blob")
-    root = Path(__file__).resolve().parents[3]
-    groups = ("build", "circuit", "id", "mem", "util", "py/circuit/ops")
-    sources = [
-        str(path)
-        for group in groups
-        for path in sorted((source / "kickmix" / group).glob("*.cc"))
-        if not path.name.endswith((".pybind.cc", ".test.cc", ".perf.cc"))
-    ]
     cases = []
-    with tempfile.TemporaryDirectory(prefix="fq-increment-reference-") as temporary:
-        oracle = Path(temporary) / "oracle"
-        subprocess.run(
-            [
-                "clang++",
-                "-std=c++20",
-                "-O0",
-                "-I" + str(source),
-                str(root / "tests/unit/fixtures/kickmix_increment_oracle.cc"),
-                str(increment),
-                *sources,
-                "-o",
-                str(oracle),
-            ],
-            check=True,
-            timeout=180,
-        )
+    harness = Path(__file__).with_name("kickmix_increment_oracle.cc")
+    with source_oracle(
+        args.source_root, "adders/gen_iadd1.cc", SOURCE_BLOB, harness
+    ) as oracle:
         for width in range(17):
             for controlled in (False, True):
                 for extra in (0, 2):
