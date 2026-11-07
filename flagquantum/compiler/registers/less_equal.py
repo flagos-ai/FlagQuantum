@@ -10,6 +10,7 @@ from ...core.ir import Instruction
 from .._component_trace.resource_model import ComponentCost, GateCost
 from .and_compute import and_compute_ir, and_uncompute_ir
 from .comparison_tree import bi_qubits_mixer_ir, single_qubit_compare_ir
+from .control_predicate_resource_model import control_predicate_cost
 from .multi_control import multi_and_ir
 
 
@@ -25,13 +26,22 @@ def less_equal_requirements(left_width: int, right_width: int) -> tuple[int, int
     )
 
 
-def source_equal_width_less_equal_cost(width: int) -> ComponentCost:
+def source_equal_width_less_equal_cost(
+    width: int, *, legacy_shims: bool = False
+) -> ComponentCost:
     """Count the source comparison tree for two equal-width concrete words."""
     work, slots = less_equal_requirements(width, width)
+    erase = control_predicate_cost((1, 1), uncompute=True, legacy_shims=legacy_shims)
     return ComponentCost(
         "LessThanEqual",
         2 * width + 1 + work,
-        GateCost(and_bloq=slots, clifford=13 + 22 * (width - 1), measurement=slots),
+        GateCost(
+            and_bloq=slots,
+            # Original mixers/comparator declare positive And pairs; their
+            # cleanup Clifford charge comes from the shared QEC authority.
+            clifford=13 + 22 * (width - 1) + (erase.gates.clifford - 1) * slots,
+            measurement=slots,
+        ),
     )
 
 

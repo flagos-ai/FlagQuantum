@@ -12,6 +12,7 @@ from ...core.ir import Instruction
 from .._component_trace.resource_model import ComponentCost, GateCost
 from .bitwise import _validate_wires
 from .comparison import less_than_constant_ir, less_than_constant_workspace_size
+from .control_predicate_resource_model import control_predicate_cost
 from .multi_control import multi_and_ir
 
 
@@ -158,18 +159,31 @@ def uniform_preparation_ir(
     return (*initial, *threshold_phase, *h, *zero_phase, *h)
 
 
-def source_uniform_preparation_cost(count: int) -> ComponentCost:
+def source_uniform_preparation_cost(
+    count: int, *, legacy_shims: bool = False
+) -> ComponentCost:
     """Estimate the uncontrolled source decomposition without emitting gates."""
+    if type(legacy_shims) is not bool:
+        raise ValueError("Uniform preparation cost profile must be a boolean")
     width, work, _ = uniform_preparation_requirements(count)
     odd = _odd_factor(count)
     if odd == 1:
         gates = GateCost(clifford=width)
     else:
         high = (odd - 1).bit_length()
-        # Two constant comparisons and a zero reflection, with one Clifford
-        # per And uncompute and explicit negative-control Xs for MultiAnd.
-        comparison_cliffords = 3 * high + 3 * odd.bit_count() + 2
-        reflection_cliffords = high - 1 + (4 * high if high > 2 else 0)
+        # Retain the source's two LessThanConstant calls and zero predicate.
+        # Profile charges belong to the shared And query, not emitted gates.
+        erase = control_predicate_cost(
+            (1, 1), uncompute=True, legacy_shims=legacy_shims
+        )
+        comparison_cliffords = (
+            2 * high + 3 * odd.bit_count() + 2 + high * erase.gates.clifford
+        )
+        forward = control_predicate_cost((0,) * high, legacy_shims=legacy_shims)
+        reverse = control_predicate_cost(
+            (0,) * high, uncompute=True, legacy_shims=legacy_shims
+        )
+        reflection_cliffords = forward.gates.clifford + reverse.gates.clifford
         ands = 3 * high - 1
         gates = GateCost(
             and_bloq=ands,

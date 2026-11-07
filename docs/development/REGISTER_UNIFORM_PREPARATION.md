@@ -60,3 +60,24 @@ vectors from the source forward and adjoint with occupied targets and
 a spectator. Through the append entry point they exhaust the raw
 measurement histories of the smallest circuits, sample larger mixed
 control circuits, and check forward/adjoint restoration and clean work.
+
+
+## QEC model profiles (G2-PREP07)
+
+`source_uniform_preparation_cost(count, legacy_shims=True)` retains the pinned
+legacy QEC classification. It queries the same shared And authority as the
+modern default, including the negative zero predicate and measured cleanup.
+`source_equal_width_less_equal_cost(width, legacy_shims=True)` likewise charges
+the source comparator tree's positive And pairs. The original comparator call
+graph declares those pairs independently of polarities in its gate generator.
+Neither function emits instructions, changes the circuit or substitutes a
+primitive Clifford count for the source resource categories. Both directions
+have the same declared costs, and peak logical width is unchanged by profile.
+
+Fourteen comparator and 24 uniform configurations compare all source QEC
+categories and peak widths in both directions. Invalid nonboolean profile
+flags are rejected. Existing source gate-stream, complex-state, branch-history
+and clean-work regressions cover the unchanged emitters.
+
+This dependency batch has 42 new tests and 180 concentrated passing tests
+without skips; strict types, formatting, lint and architecture checks pass.
