@@ -802,3 +802,11 @@ assert draw_classical_value(
 
 Run `pytest -q tests/unit/test_classical_distributions.py` with pinned extras for
 original RNG sequences/state, fixed identity, precedence and failure comparisons.
+
+`classical_measurement.py` owns X-measurement value/phase callbacks and phase
+resolution after named output indices have been bound. It consumes the shared
+distribution type; it does not implement graph traversal. Run
+`python -m examples.algorithms.classical_measurement_values` for numerical
+outcomes and coherent `circuit.append(op)` work erasure. See
+[measurement semantics](../../docs/development/CLASSICAL_MEASUREMENT.md) for
+source callback failures, all-branch complex amplitudes and separate model counts.
