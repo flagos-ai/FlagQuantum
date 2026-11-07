@@ -118,3 +118,80 @@ Sixty-one new tests pass in the concentrated register, SELECT, block encoding,
 walk and control regression: 339 tests, no skips. Strict mypy covers both shared
 emitters and the example. Black, Ruff, compiler scope and architecture checks
 pass. The prior forward behavior and source boundaries remain unchanged.
+
+## G2-IDX03 resource composition contract
+
+The model accepts dimensions and already-controlled child ComponentCost records,
+not emitted IR or upstream objects. Child records must describe the selected
+direction and identical THRU target-port widths. The caller declares total target
+width separately from per-child target width: ApplyLth uses the full target,
+whereas target-position dispatch gives each leaf one target among the full bank.
+
+Existing CostCall edges own each child's local and recursive work. Their
+bystander width includes all other parent ports and the parent prefix work live
+at that particular index. Non-power-of-two tail paths can be shallower, so a
+uniform maximum-parent-width charge would overestimate heterogeneous children.
+Reserved work remains distinct from modeled peak occupied work. Model queries
+must not construct a circuit or synthesize atomic controlled leaves.
+
+The source declared parent categories count traversal And/erase pairs, toggle
+CNOTs, optional uncontrolled X conjugation, and the outer MultiAnd prefix.
+Children supply their controlled gate costs. Adjoint calls reverse the visit
+order and consume child-adjoint models; parent category totals remain unchanged.
+Source formula anomalies must not be repaired in this aggregation layer.
+
+### Model composition acceptance
+
+The cost builder folds the locked declared traversal counts, while retaining
+one CostCall per controlled child in index order (reverse order for adjoints).
+For N populated entries and c controls, parent And/erase pairs total N-2+c.
+Outer control-prefix pairs do not introduce the traversal's extra toggle CNOT.
+A populated node branches only when its midpoint lies below the axis extent;
+count those active ancestors for each child to determine its live bystanders.
+This accounts for smaller tail prefixes without emitting a quantum gate list
+or allocating a padded table. Storage is proportional to the supplied children,
+not to the full capacity of oversized address words.
+
+Ninety-eight original-source model configurations compare all seven gate
+categories, separate T/CCZ budgets, T equivalents and logical peak width. They
+cover Pauli, H/S/T, singleton positive-control targets, oversized axes, nested
+shapes, multiple controls, forward/adjoint direction, phase-only components
+with no target bank, and heterogeneous arithmetic children. Every child model
+is separately checked before its parent is aggregated. An expensive three-bit
+controlled AddK placed at the first/last index gives 13/12 peak logical qubits
+in both source and native models; adding the maximum parent prefix everywhere
+would incorrectly report 13 for the tail case.
+
+The two upstream frontends use different declared phase-leaf cost routes:
+ApplyLthBloq controls SGate/TGate directly (rotation categories), whereas the
+Cirq target-position frontend converts their controlled gates to CZPowGate
+(And/erasure plus a phase leaf). Tests use the actual source converter and
+independently check the matching leaf declarations. Neither the model nor the
+source is rewritten to make these different call chains look identical.
+The original one-bit Add Clifford anomaly is retained in child aggregation.
+
+The executable heterogeneous arithmetic example is
+`python -m examples.algorithms.indexed_component_resources`. It binds children
+through `circuit.append(op)` and compares the model to explicitly paired IR:
+
+| Quantity | Model | Emitted IR |
+|---|---:|---:|
+| T equivalents / T instructions | 12 | 12 |
+| Measurements | 3 | 3 |
+| Logical peak / reserved quantum wires | 9 | 10 |
+
+The last row has different bases: no measured execution-memory peak is claimed.
+The model predicts three CCZ magic-state units at the default conversion; it
+does not claim three emitted CCZ primitives. Parent and child work remains
+separately owned. Every small forward and inverse complex measurement branch
+of this composition clears both work regions. Both composed gate flows match
+the original source dependencies, with its parent-then-child physical pool
+binding preserved. A 256-bit-address model test refuses any gate-construction
+call and verifies dimension-only queries.
+
+There are 117 new tests. The concentrated model, register, SELECT, walk and
+control regression passes 472 tests without skips; the final explicit budget
+assertions pass all 117 model tests. Strict mypy covers the new model and
+example, and Black/Ruff/scope/architecture checks pass. Symbolic extents,
+legacy cost profiles and source specialized control wrappers are not closed
+by this concrete default-QEC model slice.
