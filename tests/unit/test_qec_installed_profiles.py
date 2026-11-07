@@ -18,6 +18,7 @@ from flagquantum.qec.dem.graph import DecodingGraph
 from tools.check_qec_installed_profiles import _run
 from tools.qec_installed_smoke import (
     PROFILES,
+    _embedded_profile,
     _exercise,
     _exercise_compiled_measurement_sampler,
     _exercise_decoder_records,
@@ -48,7 +49,9 @@ def test_public_workflow_in_the_available_source_profile(profile: str) -> None:
     )
     assert (_exercise_stim_conversion(profile) is not None) == available[0]
     assert (_exercise_terminal_conversion(profile) is not None) == available[0]
-    assert (_exercise_compiled_measurement_sampler(profile) is not None) == available[0]
+    assert (_exercise_compiled_measurement_sampler(profile) is not None) == (
+        available[0] or _embedded_profile()
+    )
     records = _exercise(profile)
     assert len(records) == (4 if available[0] else 0)
     for record in records:
@@ -458,9 +461,39 @@ def test_matched_validation_and_failure(
 def test_native_detector_installed_profile(profile: str) -> None:
     from tools.qec_installed_smoke import _exercise_native_detector_execution
 
-    if profile in ("stim", "both"):
-        pytest.importorskip("stim")
+    if _embedded_profile() or profile in ("stim", "both"):
+        if not _embedded_profile():
+            pytest.importorskip("stim")
         result = _exercise_native_detector_execution(profile)
         assert result == {"packed_detector_observable": [[3], [3]], "mechanisms": 1}
     else:
         assert _exercise_native_detector_execution(profile) is None
+
+
+@pytest.mark.parametrize("embedded", (False, True))
+def test_core_sampler_success_requires_the_explicit_embedded_profile(
+    monkeypatch: pytest.MonkeyPatch,
+    embedded: bool,
+) -> None:
+    from flagquantum.dynamic import DynamicCircuit
+    from tools import qec_installed_smoke
+
+    class Sampler:
+        def sample(self, shots: int, *, bit_packed: bool) -> torch.Tensor:
+            return torch.ones((shots, 1), dtype=torch.uint8)
+
+        def sample_write(self, shots: int, *, filepath: Path, format: str) -> None:
+            filepath.write_bytes(b"\x01" * shots)
+
+    monkeypatch.setattr(qec_installed_smoke, "_embedded_profile", lambda: embedded)
+    monkeypatch.setattr(
+        DynamicCircuit, "compile_sampler", lambda self, **kwargs: Sampler()
+    )
+    if embedded:
+        assert _exercise_compiled_measurement_sampler("core") == {
+            "packed_samples": [[1], [1]],
+            "b8_hex": "0101",
+        }
+    else:
+        with pytest.raises(AssertionError, match="ignored missing Stim"):
+            _exercise_compiled_measurement_sampler("core")

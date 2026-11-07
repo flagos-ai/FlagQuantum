@@ -405,6 +405,16 @@ def _exercise_stim_conversion(profile: str) -> dict[str, object] | None:
     }
 
 
+def _embedded_profile() -> bool:
+    from flagquantum.simulation.stabilizer import measurement_sampler
+
+    return (
+        Path(measurement_sampler.__file__)
+        .with_name("_embedded_stim_profile.txt")
+        .is_file()
+    )
+
+
 def _exercise_compiled_measurement_sampler(profile: str) -> dict[str, object] | None:
     from pathlib import Path
     from tempfile import TemporaryDirectory
@@ -419,7 +429,9 @@ def _exercise_compiled_measurement_sampler(profile: str) -> dict[str, object] | 
         if PROFILES[profile][0]:
             raise
         return None
-    assert PROFILES[profile][0], "prepared sampler ignored missing Stim"
+    assert (
+        PROFILES[profile][0] or _embedded_profile()
+    ), "prepared sampler ignored missing Stim"
     samples = sampler.sample(2, bit_packed=True)
     assert samples.tolist() == [[1], [1]]
     with TemporaryDirectory() as directory:
@@ -431,7 +443,7 @@ def _exercise_compiled_measurement_sampler(profile: str) -> dict[str, object] | 
 
 
 def _exercise_native_detector_execution(profile: str) -> dict[str, object] | None:
-    if not PROFILES[profile][0]:
+    if not PROFILES[profile][0] and not _embedded_profile():
         return None
     from flagquantum.dynamic import DynamicCircuit
     from flagquantum.qec.execution.context import MeasurementMap
