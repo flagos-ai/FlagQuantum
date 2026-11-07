@@ -31,8 +31,8 @@ shape-only failures.
 ## Explicit boundaries
 
 Symbolic shape metadata and unknown-data resource queries are supported through
-`from_shape` and `resource_formula`. Source register objects, classical evaluation
-and LEFT-side target erasure remain unmapped here.
+`from_shape` and `resource_formula`. Source dtype objects and generic LEFT-side physical target lifecycle remain
+unmapped here. Classical evaluation is owned separately by Simulation.
 The source data constructor's ineffective width guard can retain undersized or
 negative values; native metadata retains those values too, while the existing
 unsigned IR/model validators reject them. Replacement uses the source's maximum
@@ -91,3 +91,30 @@ controls, omitted singleton axes and zero selection. Twenty-five new tests
 compare source signature names and total widths, symbolic controls/literals,
 invalid packing and work/feedback ownership. Source dtype objects and
 LEFT/RIGHT ownership semantics are not introduced as new FQ public concepts.
+
+
+## Classical values and checked erasure (G2-ROM12)
+
+`simulation/classical_lookup.py` ports QROMBase.on_classical_vals with plain
+integer arrays, selection dimensions and a named value mapping. Both ordinary
+QROM and QROAMCleanAdjoint's LEFT-target case consume the same source routine;
+the native `erase=True` option checks the post-XOR values and removes only zero
+targets. This is a classical lifecycle check, not quantum measurement erasure.
+No quantum instructions or work wires are allocated by this evaluator.
+
+Inactive controls preserve all input keys and bypass indexing/erasure checks;
+active controls return only the source control, selection and target keys.
+Multiple datasets and grouped target arrays retain NumPy scalar/array results.
+Inputs and arrays are not mutated. A missing one-dimensional selector defaults
+to zero; missing multidimensional selectors raise KeyError. Raw NumPy negative
+indexing, out-of-range IndexError, scalar-array indexing failure and the
+original omitted-singleton indexing quirks are retained. Those classical
+boundary behaviors are not expanded into quantum support claims.
+
+The runnable example now computes its expected amplitudes through this oracle,
+then independently emits and executes QROM IR. Tests compare untouched original
+QROM and QROAMCleanAdjoint results, failure paths, output types and input
+preservation. Three two-dataset channels with zero, one and two controls exhaust
+all measurement histories over coherent addresses, arbitrary target words and
+inactive controls, including absolute phase and clean work. Logical source
+counts and emitted primitive counts remain in their existing separate models.

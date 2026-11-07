@@ -18,6 +18,7 @@ Runtime owns those decisions and calls the appropriate numerical primitives.
 | Exact noisy evolution | [density_matrix.py](density_matrix.py) |
 | Continuous-time Lindblad evolution | [lindblad.py](lindblad.py) |
 | Clifford sampling beyond an amplitude store | [stabilizer/](stabilizer/README.md) |
+| Classical XOR lookup values and checked target erasure | [classical_lookup.py](classical_lookup.py) |
 | Reusable arithmetic and precision | [numerics/](numerics/README.md) |
 | Optional JAX kernels | [jax/](jax/README.md) |
 
@@ -629,3 +630,16 @@ positive trace, and continue the existing numerical engine on the remaining
 bound intervals. Boundary rows are post-observation; earlier rows remain forward
 states. Runtime owns private draws and canonical result records. These seams do
 not enable unconditional `fql.plan` or the future native sampled plan reader.
+
+
+## Classical lookup values
+
+`classical_lookup.lookup_classical_values` evaluates named register values from
+ordinary integer arrays. It owns numerical XOR lookup and checked erasure, not
+Compiler metadata or gate emission. It imports no Compiler, Runtime or external
+SDK types. `python -m examples.algorithms.register_qrom_table` composes this
+oracle with existing QROM metadata and circuit execution at the application
+boundary. Run `pytest -q tests/unit/test_classical_lookup.py` for original-source
+forward/erasure comparisons and full small measured quantum channels. Raw
+source indexing failures and omitted-singleton quirks remain explicit; this
+classical oracle does not repair them or claim quantum semantics there.

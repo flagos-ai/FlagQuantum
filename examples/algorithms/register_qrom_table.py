@@ -6,6 +6,7 @@ Add --symbolic to query the unknown-data model without circuit emission.
 
 import argparse
 
+import numpy as np
 import torch
 
 from examples.algorithms.binary_field_arithmetic import FieldOperation
@@ -16,6 +17,7 @@ from flagquantum.qec.resources.estimation import (
     estimate_symbolic_ftqc_resources,
 )
 from flagquantum.runtime.dynamic.execution import run_dynamic
+from flagquantum.simulation.classical_lookup import lookup_classical_values
 
 
 def main(*, symbolic: bool = False) -> None:
@@ -29,14 +31,16 @@ def main(*, symbolic: bool = False) -> None:
         print("Model T equivalents:", formula_report.t_equivalents)
         print("No lookup values or circuit emission; dimensions remain symbolic")
         return
-    table = QromTable.from_shape(4, 2).with_data([1, 3, 0, 2])
+    data = (np.array([1, 3, 0, 2], dtype=int),)
+    table = QromTable.from_shape(4, 2).with_data(*data)
     gates = table.bind_packed((0, 1, 2, 3), (4,), (0,))
     initial = torch.zeros(32, dtype=torch.complex128)
     amplitudes = torch.tensor([1, 1j, -1, -1j], dtype=torch.complex128) / 2
     initial[::8] = amplitudes
     expected = torch.zeros_like(initial)
-    for row, value in enumerate((1, 3, 0, 2)):
-        expected[(row * 4 + value) * 2] = amplitudes[row]
+    for row in range(4):
+        value = lookup_classical_values(data, (4,), {"selection": row})["target0_"]
+        expected[(row * 4 + int(value)) * 2] = amplitudes[row]
     circuit = DynamicCircuit(5, inputs=initial, dtype=torch.complex128)
     circuit.append(FieldOperation(5, gates))
     result = run_dynamic(circuit, shots=16, seed=73, strategy="batched")
