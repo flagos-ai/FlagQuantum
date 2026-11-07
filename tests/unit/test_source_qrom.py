@@ -1,7 +1,7 @@
 """Concrete QROM source gates and complete measured lookup channels."""
 
 from collections import Counter
-from dataclasses import asdict
+from dataclasses import asdict, replace
 from itertools import product
 from math import prod
 from typing import Any
@@ -14,6 +14,7 @@ from flagquantum.compiler._component_trace.resource_model import (
 )
 from flagquantum.compiler.registers.control_predicate import ControlRegister
 from flagquantum.compiler.registers.qrom_resource_model import source_qrom_cost
+from flagquantum.compiler.registers.qrom_table import QromTable
 from flagquantum.compiler.registers.source_qrom import (
     control_source_qrom_ir,
     source_qrom_ir,
@@ -113,8 +114,21 @@ def test_literal_qrom_and_complete_channel(
         for i, group in enumerate(targets)
         if group[0]
     )
-    gates = source_qrom_ir(
+    table = QromTable.from_data(
+        *source.data,
+        target_bitsizes=tuple(width for _, width in target_layout),
+        target_shapes=target_shapes,
+        num_controls=controls_count,
+    )
+    # Explicit source selection widths can exceed the inferred minimum.
+    table = replace(table, selection_bitsizes=widths)
+    assert table.workspace_size == work_size
+    gates = table.bind(controls, selections, targets, workspace, bits)
+    assert gates == source_qrom_ir(
         controls, selections, shape, targets, datasets, workspace, bits
+    )
+    assert table.resource_model() == source_qrom_cost(
+        controls_count, widths, shape, target_layout, datasets
     )
     original = source_qrom_gates(source, ports, workspace, bits)
     assert_source(gates, original)
