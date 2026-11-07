@@ -675,6 +675,13 @@ not enable unconditional `fql.plan` or the future native sampled plan reader.
 
 ## Classical lookup values
 
+`classical_and.py` owns raw And creation/checked erasure and MultiAnd numerical
+prefix outputs. It preserves the source NumPy comparison/accumulation order;
+quantum prefix outputs remain live until Compiler's existing measured inverse.
+Run `python -m examples.algorithms.classical_and_values` for compute and cleanup
+through `circuit.append(op)`. See
+[predicate value semantics](../../docs/development/CLASSICAL_AND_VALUES.md).
+
 The raw triangular-index callback lives in `classical_contiguous_index.py`.
 It preserves operand types and arithmetic order without finite-width wrapping.
 Compiler owns the separate occupied-target XOR gates. Run
