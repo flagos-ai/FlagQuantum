@@ -222,3 +222,44 @@ def test_stacked_append_example(capsys):
     assert "Legacy model Clifford count 22" in output
     assert "Emitted T/T-dagger instructions 12" in output
     assert "Model logical peak 8" in output
+
+
+@pytest.mark.ftqc_reference
+@pytest.mark.parametrize("values", [(0, 0), (0, 1), (1, 0), (1, 1)])
+@pytest.mark.parametrize("added", [(0, 1), (1, 0, 1)])
+def test_repeated_multibit_source_has_cost_graph_but_no_execution_or_width(
+    values, added
+):
+    from dataclasses import asdict
+
+    from qualtran import CtrlSpec
+    from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
+
+    from flagquantum.compiler._component_trace.qec_gate_cost import query_qec_gate_cost
+    from flagquantum.compiler._component_trace.resource_generalization import (
+        PredicateControlledCall,
+    )
+
+    source = _source(values, False).controlled(CtrlSpec(cvs=added))
+    children = (
+        ComponentCost("CX", 2, GateCost(clifford=1)),
+        ComponentCost("CZ", 2, GateCost(clifford=1)),
+    )
+    with pytest.raises(TypeError, match="integer scalar arrays"):
+        source.decompose_bloq()
+    with pytest.raises(RuntimeError, match="integer scalar arrays"):
+        get_cost_value(source, QubitCount())
+    for legacy in (False, True):
+        positive = conjoined_indexed_component_cost(
+            (1,),
+            (2,),
+            children,
+            (1, *values),
+            target_width=1,
+            legacy_shims=legacy,
+        )
+        native = query_qec_gate_cost(
+            PredicateControlledCall(positive, added), legacy_shims=legacy
+        )
+        original = get_cost_value(source, QECGatesCost(legacy_shims=legacy))
+        assert asdict(native) == {key: getattr(original, key) for key in asdict(native)}

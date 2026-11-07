@@ -347,3 +347,16 @@ are printed separately.
 Black/Ruff, compiler ownership and architecture checks pass. Locked source is
 unchanged. Repeated multi-bit additions, symbolic sizes and the upstream builder
 failure are not closed by this repeated-single-bit root slice.
+
+## G2-IDX07 repeated multi-bit source boundary
+
+Eight additional original-source cases append a two- or three-bit CtrlSpec to
+a specialized two-control root, covering all existing activation patterns.
+The unchanged source raises TypeError during decomposition and RuntimeError
+from QubitCount, both caused by the already isolated builder adder. Its QEC
+call graph remains evaluable: both profiles match existing native typed
+PredicateControlledCall composition around the positive conjoined indexed
+model (16 category comparisons). No peak-width parity or executable upstream
+whole-stream parity is certified for this failing path. No new emitter or
+patched reference is introduced;126 stack tests pass without skips. This
+boundary is recorded while independent G2 modules continue.
