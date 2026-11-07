@@ -1,8 +1,11 @@
 # Copyright 2023 Google LLC
 # Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 # SPDX-License-Identifier: Apache-2.0
 # Adapted from Qualtran v0.7.0 arithmetic Add, CAdd, BitwiseNot and _shims.
 # https://github.com/quantumlib/Qualtran/tree/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/bloqs/arithmetic
+
+# Always: https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/bloqs/bookkeeping/always.py
 
 """Register-owned source call recipes, independent of resource query policy."""
 
@@ -33,6 +36,42 @@ def arithmetic_callees(call: ArithmeticCall) -> dict[ResourceCall, SymbolicInt]:
             result[inverse] = result.get(inverse, 0) + count
         return result
     width = call.widths[0]
+    if call.operation == "constant_add":
+        constant = call.constant
+        assert constant is not None
+        if (
+            type(constant) is int
+            and constant < 0
+            and call.encodings[0] != "twos_complement"
+        ):
+            constant %= 2**width
+        load = ArithmeticCall(
+            "xor_constant", (width,), call.encodings, constant=constant
+        )
+        addition = ArithmeticCall(
+            "add", (width, width), call.encodings * 2, always=True
+        )
+        return {load: 2, addition: 1}
+    if call.operation == "xor_constant":
+        constant = call.constant
+        assert constant is not None
+        if type(width) is not int or type(constant) is not int:
+            flips = width
+        else:
+            if call.encodings[0] == "twos_complement":
+                if width < 1 or not -(1 << (width - 1)) <= constant < 1 << (width - 1):
+                    raise ValueError(
+                        "XOR constant is outside the source signed register range"
+                    )
+                pattern = constant % (1 << width)
+            else:
+                if not 0 <= constant < 1 << width:
+                    raise ValueError(
+                        "XOR constant is outside the source unsigned register range"
+                    )
+                pattern = constant
+            flips = pattern.bit_count()
+        return {CliffordCall("x", 1): flips}
     if call.operation == "add":
         n = call.widths[1]
         return {
@@ -76,7 +115,7 @@ def _adjoint(call: ResourceCall) -> ResourceCall:
     if isinstance(call, ArithmeticCall):
         return (
             call
-            if call.operation == "bitwise_not"
+            if call.operation in ("bitwise_not", "xor_constant")
             else replace(call, adjoint=not call.adjoint)
         )
     if isinstance(call, ConjunctionCall):

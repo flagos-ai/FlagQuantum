@@ -195,3 +195,33 @@ def test_out_of_place_output_width_is_identity_and_only_valid_on_its_operation()
         ArithmeticCall("add", (3, 3), include_most_significant_bit=False)
     with pytest.raises(ValueError, match="truncated sum"):
         ArithmeticCall("out_of_place_add", (3,), include_most_significant_bit=1)
+
+
+def test_constant_identity_preserves_source_dispatch_and_always_wrapper():
+    n, k = sympy.symbols("n k", integer=True, positive=True)
+    root = ArithmeticCall("constant_add", (n,), constant=k)
+    assert root.widths[0] is n and root.constant is k
+    py = ArithmeticCall("xor_constant", (3,), constant=5)
+    symbolic = replace(py, constant=sympy.Integer(5))
+    assert py != symbolic and len({py, symbolic}) == 2
+    add = ArithmeticCall("add", (n, n))
+    assert add != replace(add, always=True)
+    assert replace(add, always=True, adjoint=True).always is True
+
+
+@pytest.mark.parametrize(
+    "options",
+    [
+        dict(operation="constant_add", widths=(3,)),
+        dict(operation="xor_constant", widths=(3,)),
+        dict(operation="add", widths=(3, 3), constant=1),
+        dict(operation="constant_add", widths=(3,), constant=True),
+        dict(operation="xor_constant", widths=(3,), constant=1.5),
+        dict(operation="constant_add", widths=(3,), constant="1"),
+        dict(operation="constant_add", widths=(3,), constant=1, always=True),
+        dict(operation="add", widths=(3, 3), always=1),
+    ],
+)
+def test_constant_and_always_contract_rejects_irrelevant_or_coerced_fields(options):
+    with pytest.raises(ValueError):
+        ArithmeticCall(**options)

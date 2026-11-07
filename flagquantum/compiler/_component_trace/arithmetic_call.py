@@ -18,6 +18,8 @@ ArithmeticOperation: TypeAlias = Literal[
     "controlled_add",
     "bitwise_not",
     "out_of_place_add",
+    "constant_add",
+    "xor_constant",
     "multi_controlled_x",
     "controlled_subtraction",
     "less_than",
@@ -33,7 +35,9 @@ class ArithmeticCall:
     Width objects remain unchanged, including Sympy integers. Word encodings
     distinguish identities even when cost categories agree. Default encodings
     are unsigned. Only controlled_add uses control_value; only the less_than
-    placeholder uses signed. Direction denotes a resource adjoint, not an IR.
+    placeholder uses signed. Constant operations retain their constant object;
+    Add can retain the existing Always wrapper identity. Direction denotes a
+    resource adjoint, not an IR.
     """
 
     operation: ArithmeticOperation
@@ -43,6 +47,9 @@ class ArithmeticCall:
     signed: bool = False
     adjoint: bool = False
     include_most_significant_bit: bool = True
+    constant: SymbolicInt | None = None
+    always: bool = False
+    _python_constant: bool | None = field(init=False, repr=False)
     _python_widths: tuple[bool, ...] = field(init=False, repr=False)
 
     def __post_init__(self) -> None:
@@ -51,6 +58,8 @@ class ArithmeticCall:
             "controlled_add",
             "bitwise_not",
             "out_of_place_add",
+            "constant_add",
+            "xor_constant",
             "multi_controlled_x",
             "controlled_subtraction",
             "less_than",
@@ -91,9 +100,13 @@ class ArithmeticCall:
             raise ValueError(
                 "Arithmetic resource encodings must match the operand widths"
             )
-        if self.operation not in ("add", "controlled_add", "bitwise_not") and any(
-            encoding != "unsigned" for encoding in self.encodings
-        ):
+        if self.operation not in (
+            "add",
+            "controlled_add",
+            "bitwise_not",
+            "constant_add",
+            "xor_constant",
+        ) and any(encoding != "unsigned" for encoding in self.encodings):
             raise ValueError(
                 "Original placeholder signatures use unsigned word encodings"
             )
@@ -117,3 +130,21 @@ class ArithmeticCall:
             and self.operation != "out_of_place_add"
         ):
             raise ValueError("Only out-of-place addition accepts a truncated sum")
+
+        has_constant = self.operation in ("constant_add", "xor_constant")
+        if has_constant != (self.constant is not None):
+            raise ValueError("Only constant arithmetic identities require a constant")
+        if has_constant and type(self.constant) is not int:
+            from sympy import Expr
+
+            if not isinstance(self.constant, Expr):
+                raise ValueError(
+                    "Arithmetic constants require Python integers or symbolic expressions"
+                )
+        object.__setattr__(
+            self,
+            "_python_constant",
+            None if not has_constant else type(self.constant) is int,
+        )
+        if type(self.always) is not bool or self.always and self.operation != "add":
+            raise ValueError("The implemented Always resource identity wraps Add")
