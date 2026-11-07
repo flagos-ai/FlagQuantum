@@ -675,6 +675,13 @@ not enable unconditional `fql.plan` or the future native sampled plan reader.
 
 ## Classical lookup values
 
+`classical_basis_vectors.py` owns computational-basis numerical creation and
+checked consumption. It retains original constructor/callback ordering and
+returns configured objects unchanged. Compiler state emission and tensor-network
+effect contraction remain separate. Run
+`python -m examples.algorithms.classical_basis_values` and see
+[basis-vector values](../../docs/development/CLASSICAL_BASIS_VALUES.md).
+
 `classical_swap.py` owns raw object exchange and controlled exchange values.
 Compiler's exact and relative-phase emitters remain distinct: the approximate
 source callback specifies a permutation without its quantum relative phases.
