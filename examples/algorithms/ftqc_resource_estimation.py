@@ -3,6 +3,7 @@
 Run from the repository root with python -m examples.algorithms.ftqc_resource_estimation.
 Add --thc 2 4 8 1 for a dimension-only THC SELECT estimate.
 Add --single-factorization 10 50 12 for the single-factorization block encoding.
+Add --add 8 8 or --qrom 17 8 --qrom-controls 1 for register-level models.
 """
 
 import argparse
@@ -15,6 +16,11 @@ from flagquantum.algorithms.primitives.single_factorization_encoding_model impor
     source_single_factorization_block_encoding_cost,
 )
 from flagquantum.compiler._component_trace.gate_budget import t_and_ccz_budget
+from flagquantum.compiler.registers.symbolic_resource_model import (
+    SymbolicResourceFormula,
+    source_add_resource_formula,
+    source_qrom_resource_formula,
+)
 from flagquantum.dynamic import DynamicCircuit
 from flagquantum.qec.resources.beverland_physical import (
     estimate_beverland_physical_resources,
@@ -22,6 +28,7 @@ from flagquantum.qec.resources.beverland_physical import (
 from flagquantum.qec.resources.estimation import (
     FTQCResourceReport,
     estimate_ftqc_resources,
+    estimate_symbolic_ftqc_resources,
 )
 from flagquantum.qec.resources.gidney_fowler import estimate_gidney_fowler_resources
 
@@ -83,9 +90,47 @@ def _print_thc_estimate(report: FTQCResourceReport) -> None:
     print("Model peak logical qubits", report.logical.peak_logical_qubits)
 
 
+def _print_register_estimate(formula: SymbolicResourceFormula) -> None:
+    report = estimate_symbolic_ftqc_resources(formula)
+    print("Basis: declared component model; no circuit construction or execution")
+    for name in (
+        "t",
+        "toffoli",
+        "cswap",
+        "and_bloq",
+        "clifford",
+        "rotation",
+        "measurement",
+    ):
+        print("Model", name, getattr(formula, name))
+    print("Model T states", report.t_states)
+    print("Model CCZ states", report.ccz_states)
+    print("Model T equivalents", report.t_equivalents)
+    print("Model peak logical qubits", formula.logical_qubits)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     model_options = parser.add_mutually_exclusive_group()
+    model_options.add_argument(
+        "--add",
+        nargs=2,
+        type=int,
+        metavar=("LEFT_BITS", "RIGHT_BITS"),
+        help="estimate unsigned Add from word widths, without emitting gates",
+    )
+    model_options.add_argument(
+        "--qrom",
+        nargs=2,
+        type=int,
+        metavar=("ROWS", "TARGET_BITS"),
+        help="estimate a shape-only QROM without allocating its table",
+    )
+    parser.add_argument(
+        "--qrom-controls",
+        type=int,
+        help="number of QROM controls (default: 0); requires --qrom",
+    )
     model_options.add_argument(
         "--thc",
         nargs=4,
@@ -110,6 +155,30 @@ def main() -> None:
     args = parser.parse_args()
     if args.thc_erasure_blocks is not None and args.thc is None:
         parser.error("--thc-erasure-blocks requires --thc")
+    if args.qrom_controls is not None and args.qrom is None:
+        parser.error("--qrom-controls requires --qrom")
+    if args.add is not None:
+        try:
+            formula = source_add_resource_formula(*args.add)
+        except ValueError as exc:
+            parser.error(str(exc))
+        _print_register_estimate(formula)
+        return
+    if args.qrom is not None:
+        rows, target_bits = args.qrom
+        controls = args.qrom_controls if args.qrom_controls is not None else 0
+        if rows < 2 or target_bits < 1 or controls < 0:
+            parser.error(
+                "QROM requires at least two rows, positive target bits and nonnegative controls"
+            )
+        formula = source_qrom_resource_formula(
+            (rows,), (target_bits,), control_count=controls
+        )
+        print(
+            "QROM shape model: table contents and uniform-region optimizations are unspecified"
+        )
+        _print_register_estimate(formula)
+        return
     if args.thc is not None:
         kr1, kr2 = args.thc_erasure_blocks or (1, 1)
         try:

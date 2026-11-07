@@ -164,3 +164,90 @@ def test_symbolic_qrom_report_matches_the_pinned_source() -> None:
     assert report.t_equivalents.subs(rows, 17) == 64
     assert report.logical.measurement.subs(rows, 17) == 16
     assert report.logical.logical_qubits.subs(rows, 17) == 19
+
+
+def _run_cli(monkeypatch: pytest.MonkeyPatch, arguments: list[str]) -> None:
+    def unexpected_circuit(*args: object, **kwargs: object) -> None:
+        pytest.fail("Dimension-only estimates must not construct circuits")
+
+    monkeypatch.setattr(ftqc_resource_estimation, "make_circuit", unexpected_circuit)
+    monkeypatch.setattr(ftqc_resource_estimation, "make_select", unexpected_circuit)
+    monkeypatch.setattr(sys, "argv", ["estimate", *arguments])
+    ftqc_resource_estimation.main()
+
+
+@pytest.mark.ftqc_reference
+@pytest.mark.parametrize(
+    "arguments",
+    [
+        ["--add", "1", "1"],
+        ["--add", "3", "8"],
+        ["--add", "32", "64"],
+        ["--qrom", "17", "8", "--qrom-controls", "1"],
+        ["--qrom", "1048576", "8"],
+        ["--qrom", "8", "16", "--qrom-controls", "2"],
+    ],
+)
+def test_register_cli_matches_source_without_circuit(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    arguments: list[str],
+) -> None:
+    pytest.importorskip("qualtran")
+    from qualtran import QUInt
+    from qualtran.bloqs.arithmetic import Add
+    from qualtran.bloqs.data_loading.qrom import QROM
+    from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
+
+    if arguments[0] == "--add":
+        source = Add(QUInt(int(arguments[1])), QUInt(int(arguments[2])))
+    else:
+        controls = int(arguments[4]) if len(arguments) > 3 else 0
+        source = QROM.build_from_bitsize(
+            (int(arguments[1]),), (int(arguments[2]),), num_controls=controls
+        )
+    gates = get_cost_value(source, QECGatesCost())
+    _run_cli(monkeypatch, arguments)
+    lines = capsys.readouterr().out.splitlines()
+    for category in (
+        "t",
+        "toffoli",
+        "cswap",
+        "and_bloq",
+        "clifford",
+        "rotation",
+        "measurement",
+    ):
+        assert f"Model {category} {getattr(gates, category)}" in lines
+    assert f"Model T equivalents {gates.total_t_count()}" in lines
+    budget = gates.total_t_and_ccz_count()
+    assert f"Model T states {budget['n_t']}" in lines
+    assert f"Model CCZ states {budget['n_ccz']}" in lines
+    assert f"Model peak logical qubits {get_cost_value(source, QubitCount())}" in lines
+    assert any("no circuit construction or execution" in line for line in lines)
+    if arguments[0] == "--qrom":
+        assert any("table contents" in line for line in lines)
+
+
+@pytest.mark.parametrize(
+    "arguments,message",
+    [
+        (["--add", "3", "2"], "1 <= left <= right"),
+        (["--add", "0", "8"], "1 <= left <= right"),
+        (["--qrom", "1", "8"], "at least two rows"),
+        (["--qrom", "17", "0"], "positive target bits"),
+        (["--qrom", "17", "8", "--qrom-controls", "-1"], "nonnegative controls"),
+        (["--qrom-controls", "0"], "requires --qrom"),
+        (["--add", "8", "8", "--qrom", "17", "8"], "not allowed with argument"),
+    ],
+)
+def test_register_cli_rejects_invalid_dimensions(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    arguments: list[str],
+    message: str,
+) -> None:
+    with pytest.raises(SystemExit) as error:
+        _run_cli(monkeypatch, arguments)
+    assert error.value.code == 2
+    assert message in capsys.readouterr().err

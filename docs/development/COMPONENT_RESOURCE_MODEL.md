@@ -45,6 +45,41 @@ and basis conversion, with its existing data-dependence rules.
 
 ## Unified FTQC resource report
 
+### Estimate from dimensions
+
+The runnable example supports Add, shape-only QROM, and THC SELECT before
+any circuit is constructed. It uses FlagQuantum's ported resource models;
+Qualtran is needed only for the reference tests.
+
+```sh
+python -m examples.algorithms.ftqc_resource_estimation --add 8 8
+python -m examples.algorithms.ftqc_resource_estimation --qrom 17 8 --qrom-controls 1
+python -m examples.algorithms.ftqc_resource_estimation --thc 2 4 8 1
+```
+
+| Declared model | T equivalents | Measurements | Peak logical qubits |
+| --- | ---: | ---: | ---: |
+| Add, 8-bit input and result words | 28 | 7 | 23 |
+| QROM, 17 rows, 8-bit target, one control | 64 | 16 | 19 |
+| THC SELECT, 2 auxiliary indices, 4 spin orbitals, 8 angle bits, 1 keep bit | 472 | 0 | 24 |
+
+The register commands print every logical gate category and the separate T
+and CCZ state budgets. T equivalents charge four T per And, Toffoli, or
+controlled swap and eleven per generic rotation. These are analytical model
+costs. Counting emitted primitive gates requires a constructed IR; neither
+count is an observation of executed gates or a timing measurement.
+
+The QROM command takes dimensions without allocating table entries. It uses
+the locked source's shape-only call graph, whose load count assumes unknown
+data; a populated table's zero entries or uniform regions can reduce its
+cost. This command accepts at least two rows and uses the minimum selection
+width. The singleton case needs a populated-table model. Add accepts
+`1 <= LEFT_BITS <= RIGHT_BITS`. The locked one-bit Add model reports a
+negative Clifford count despite emitting one CNOT; that source anomaly is
+preserved in the model and is not a physical gate count.
+
+### Estimate from a component or bound operation
+
 Call the experimental `estimate_ftqc_resources` entry point in
 `flagquantum.qec.resources.estimation` with a declared component model. This
 works before circuit construction. Pass `emitted_ir=circuit.to_ir()` to include
