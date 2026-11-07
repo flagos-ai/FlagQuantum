@@ -9,10 +9,17 @@
 from math import acos
 
 from ...core.ir import Instruction
-from .._component_trace.resource_model import ComponentCost, GateCost
+from .._component_trace.compound_control_resource import CONTROLLED_HADAMARD_COST
+from .._component_trace.resource_model import (
+    ComponentCost,
+    GateCost,
+    estimate_component_resources,
+)
 from .bitwise import _validate_wires
 from .comparison import less_than_constant_ir, less_than_constant_workspace_size
+from .control_predicate import ControlRegister
 from .control_predicate_resource_model import control_predicate_cost
+from .controlled_component_resource_model import controlled_component_cost
 from .multi_control import multi_and_ir
 
 
@@ -160,16 +167,35 @@ def uniform_preparation_ir(
 
 
 def source_uniform_preparation_cost(
-    count: int, *, legacy_shims: bool = False
+    count: int, *, control_values: tuple[int, ...] = (), legacy_shims: bool = False
 ) -> ComponentCost:
-    """Estimate the uncontrolled source decomposition without emitting gates."""
+    """Estimate the literal source control pattern without emitting gates.
+
+    Each initial H uses its own source control wrapper. Comparison and two Rz
+    phases remain unconditional; only the zero predicate includes extra controls.
+    The static CH rotation model stays distinct from exact primitive lowering.
+    """
     if type(legacy_shims) is not bool:
         raise ValueError("Uniform preparation cost profile must be a boolean")
-    width, work, _ = uniform_preparation_requirements(count)
+    if any(type(value) is not int or value not in (0, 1) for value in control_values):
+        raise ValueError("Uniform cost controls require binary activation values")
+    width, work, _ = uniform_preparation_requirements(count, len(control_values))
+    if not width and control_values:
+        raise ValueError(
+            "Original controlled singleton uniform cost lacks its target port"
+        )
     odd = _odd_factor(count)
-    if odd == 1:
-        gates = GateCost(clifford=width)
-    else:
+    initial = GateCost(clifford=1)
+    if control_values:
+        child = controlled_component_cost(
+            CONTROLLED_HADAMARD_COST,
+            (ControlRegister(1, control_values),),
+            target_width=1,
+            legacy_shims=legacy_shims,
+        )
+        initial = estimate_component_resources(child).gates
+    gates = GateCost().plus(initial, width)
+    if odd != 1:
         high = (odd - 1).bit_length()
         # Retain the source's two LessThanConstant calls and zero predicate.
         # Profile charges belong to the shared And query, not emitted gates.
@@ -179,16 +205,25 @@ def source_uniform_preparation_cost(
         comparison_cliffords = (
             2 * high + 3 * odd.bit_count() + 2 + high * erase.gates.clifford
         )
-        forward = control_predicate_cost((0,) * high, legacy_shims=legacy_shims)
+        forward = control_predicate_cost(
+            (0,) * high + control_values, legacy_shims=legacy_shims
+        )
         reverse = control_predicate_cost(
-            (0,) * high, uncompute=True, legacy_shims=legacy_shims
+            (0,) * high + control_values, uncompute=True, legacy_shims=legacy_shims
         )
-        reflection_cliffords = forward.gates.clifford + reverse.gates.clifford
-        ands = 3 * high - 1
-        gates = GateCost(
-            and_bloq=ands,
-            clifford=width + 2 * high + 2 * comparison_cliffords + reflection_cliffords,
-            rotation=2,
-            measurement=ands,
+        phase = (
+            GateCost(
+                and_bloq=2 * high,
+                clifford=2 * high + 2 * comparison_cliffords,
+                rotation=2,
+                measurement=2 * high,
+            )
+            .plus(forward.gates, 1)
+            .plus(reverse.gates, 1)
         )
-    return ComponentCost(f"PrepareUniformSuperposition({count})", width + work, gates)
+        gates = gates.plus(phase, 1)
+    return ComponentCost(
+        f"PrepareUniformSuperposition({count})",
+        width + len(control_values) + work,
+        gates,
+    )

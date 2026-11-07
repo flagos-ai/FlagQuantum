@@ -81,3 +81,56 @@ and clean-work regressions cover the unchanged emitters.
 
 This dependency batch has 42 new tests and 180 concentrated passing tests
 without skips; strict types, formatting, lint and architecture checks pass.
+
+
+## Controlled source model (G2-PREP08)
+
+`source_uniform_preparation_cost(count, control_values=(...), legacy_shims=...)`
+models the existing controlled emitter without generating or running a circuit.
+The control tuple contains literal activation values in source port order.
+Initial Hadamards use the existing CHadamard static cost through the shared
+controlled-component model. Every H retains a separate compute/body/erase call;
+one predicate is not amortized across all targets. Non-power-of-two preparation
+then keeps the two original unconditional LessThanConstant comparisons, two Rz
+phases and Hadamards, and a zero predicate over the high target word followed by
+the original controls. The same shared And authority supplies both cost profiles.
+Width includes original controls plus target and the maximum reusable work.
+
+The extension compares all seven QEC categories and peak logical width with
+unchanged v0.7.0 in 128 shape/control/profile configurations, for both source
+directions. Repeated-H lifecycle tests, invalid control patterns, no-emission
+queries and the original controlled-singleton missing-target failure are
+separate checks. The existing uncontrolled zero-width metadata is preserved;
+no equivalence to that failing source cost query is asserted. Existing exact
+source-generator, full-complex-state, all-small-history and work-clear tests
+exercise the unchanged emitter.
+
+```sh
+python -m examples.algorithms.register_uniform_preparation
+```
+
+The example appends the existing bound instruction operation. It prepares six
+states under a coherent control word 10, retains the original absolute phase,
+and restores every control/target/work amplitude with the source adjoint. It
+uses the compiler's existing exact CH translation, then executes through the
+normal DynamicCircuit path. For this fixture:
+
+| Source analytical category | Value |
+| --- | ---: |
+| And | 10 |
+| Clifford | 62 |
+| Rotation | 8 |
+| Measurement | 10 |
+| Peak logical qubits | 9 |
+
+The source's atomic CH model counts two rotations and four Cliffords. Native
+exact CH lowering uses two T-family instructions for each of the three CH
+leaves. The generated circuit therefore contains 46 T/T-dagger instructions,
+two remaining unsynthesized Rz, ten measurements and four clean work qubits.
+The model's rotation-free budget is 40 T equivalents. Neither 40 nor 46 is a
+fully synthesized total that includes the remaining rotations. Report model
+categories and emitted primitive counts separately rather than rewriting the
+source's static CH model to match native lowering.
+
+G2-PREP08 acceptance: 142 new tests; 1,247 concentrated passes without skips.
+Strict types, formatting, lint, ownership and architecture checks pass.
