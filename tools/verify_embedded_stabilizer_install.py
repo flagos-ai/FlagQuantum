@@ -53,6 +53,97 @@ def main() -> None:
         )
         convert.assert_called_once()
         assert dets.tolist() == [[False], [True]] and obs.shape == (2, 0)
+    noisy = DynamicCircuit(1).x(0).bit_flip(0, 1.0).measure(0)
+    maps = MeasurementMap(1, ((0,),))
+    with patch.object(
+        native, "prepare_detector", wraps=native.prepare_detector
+    ) as prepare_detector:
+        detector_sampler = noisy.compile_detector_sampler(
+            detector_map=maps, observable_map=maps, seed=7
+        )
+        prepare_detector.assert_called_once()
+    with patch.object(
+        native, "sample_detectors", wraps=native.sample_detectors
+    ) as draw:
+        packed = detector_sampler.sample(2, append_observables=True, bit_packed=True)
+        assert isinstance(packed, torch.Tensor)
+        assert packed.tolist() == [[3], [3]]
+        draw.assert_called_once()
+    with patch.object(
+        native, "detector_error_model", wraps=native.detector_error_model
+    ) as analyze:
+        model = noisy.detector_error_model(detector_map=maps, observable_map=maps)
+        assert model.num_detectors == model.num_observables == 1
+        assert model.errors[0].probability == 1.0
+        analyze.assert_called_once()
+    detector_map = MeasurementMap(3, ((0, 1), (1, 2)))
+    observable_map = MeasurementMap(3, ((0,),))
+    for mask in range(8):
+        forced = DynamicCircuit(3).x(0).x(1).x(2)
+        for qubit in range(3):
+            forced.bit_flip(qubit, float((mask >> qubit) & 1))
+        forced.measure(0, classical_bit=0).measure(1, classical_bit=1).measure(
+            2, classical_bit=2
+        )
+        handle = forced.compile_detector_sampler(
+            detector_map=detector_map, observable_map=observable_map, seed=7
+        )
+        result = handle.sample(1, separate_observables=True)
+        assert isinstance(result, tuple)
+        a, b, c = ((mask >> qubit) & 1 for qubit in range(3))
+        assert result[0].tolist() == [[bool(a ^ b), bool(b ^ c)]]
+        assert result[1].tolist() == [[bool(a)]]
+    crossing = noisy.compile_detector_sampler(
+        detector_map=MeasurementMap(1, ((0,),) * 7),
+        observable_map=MeasurementMap(1, ((0,),) * 2),
+        seed=7,
+    )
+    packed = crossing.sample(1, append_observables=True, bit_packed=True)
+    assert isinstance(packed, torch.Tensor) and packed.tolist() == [[255, 1]]
+    repeated = (
+        DynamicCircuit(3)
+        .h(0)
+        .measure(0, classical_bit=0)
+        .conditional("x", 1, classical_bit=0)
+        .reset(0)
+        .conditional("x", 0, classical_bit=0, equals=0)
+        .measure(0, classical_bit=0)
+        .conditional("x", 2, classical_bit=0)
+        .measure(1, classical_bit=1)
+        .measure(2, classical_bit=2)
+    )
+    normalized = repeated.compile_detector_sampler(
+        detector_map=MeasurementMap(4, ((0, 1), (0, 2), (1, 3))),
+        observable_map=MeasurementMap(4, ((2, 3),)),
+        seed=7,
+    ).sample(35, append_observables=True)
+    assert isinstance(normalized, torch.Tensor) and not normalized.any()
+    print(
+        "embedded detectors: eight independent forced signatures, repeated-slot X feedback, 7+2 packed boundary"
+    )
+    from flagquantum.errors import CapabilityError
+
+    for refused in (
+        DynamicCircuit(1).t(0).measure(0),
+        DynamicCircuit(1).measure(0).conditional("h", 0, classical_bit=0).measure(0),
+    ):
+        width = len([g for g in refused.to_ir().instructions if g.name == "measure"])
+        with patch.object(
+            native, "prepare_detector", wraps=native.prepare_detector
+        ) as untouched:
+            try:
+                refused.compile_detector_sampler(
+                    detector_map=MeasurementMap(width, ((0,),)),
+                    observable_map=MeasurementMap(width, ()),
+                )
+            except CapabilityError:
+                pass
+            else:
+                raise AssertionError("unsupported program was admitted")
+            untouched.assert_not_called()
+    print(
+        "embedded detectors: one prepare/draw/analyze; T and conditional H refuse before preparation"
+    )
     print("embedded conversion: one prepare, one convert; no Stim SDK")
     print("embedded module", native_path)
     print("embedded sha256", hashlib.sha256(native_path.read_bytes()).hexdigest())

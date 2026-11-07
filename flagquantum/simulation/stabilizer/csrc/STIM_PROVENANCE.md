@@ -26,3 +26,13 @@ The initial 94-file candidate missed the same-directory include of
 approved two-file expansion supplies both, unchanged from the pinned archives.
 The source lock lists 37 translation units. The failed initial build is retained
 alongside the successful expanded build; no determinism check was removed.
+
+## Detector execution extension
+
+The private bridge also calls `sample_batch_detection_events` and
+`ErrorAnalyzer::circuit_to_detector_error_model` from the same locked 96 files.
+No upstream bytes, translation-unit list, compiler flags or dependencies changed.
+The detector producer rejects gauge parities on the noiseless circuit. Exact DEM
+analysis separately disables decomposition, gauge acceptance, disjoint
+approximation and ignored decomposition failures. Frame scratch is recreated
+on each sample call; no performance advantage is asserted.
