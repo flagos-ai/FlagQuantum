@@ -65,5 +65,6 @@ clean work and exact inverse. Model and emitted counts are printed separately:
 Additional contract tests reject wrong widths, overlapping work, missing child
 groups, escaped child wires, invalid control counts/directions and invalid term
 lists. Strict typing, formatting and architecture checks accompany the focused
-regression. The full parent PREPARE–SELECT–PREPARE-adjoint composition remains
-open; this slice does not certify every possible child control specialization.
+regression. G2-BE07 now composes the full default PREPARE–SELECT–PREPARE-adjoint
+parent; see LINEAR_COMBINATION_BLOCK_ENCODING.md. This SELECT slice does not
+certify every possible child control specialization.

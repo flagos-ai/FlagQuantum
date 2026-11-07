@@ -12,18 +12,22 @@ from typing import cast
 
 from ...circuit import _CircuitOperation
 from ...compiler._component_trace.resource_model import ComponentCost, CostCall
-from ...compiler._component_trace.symbolic_math import SymbolicReal, smax
+from ...compiler._component_trace.symbolic_math import SymbolicInt, SymbolicReal, smax
 from ...compiler.registers.partition import partition_register
 from ._block_binding import _BoundBlockOperation, _validate_block_work
 from ._block_metadata import _BlockMetadata
 from .black_box_prepare import BlackBoxPrepare, _identity_prepare
-from .linear_combination_preparation import LinearCombinationPreparation
+from .linear_combination_preparation import (
+    LinearCombinationPreparation,
+    _rescaled_lcu_coefficients,
+)
 from .linear_combination_select import LinearCombinationSelect
+from .select_block_encoding import ControlledSelectEmitter, SelectBlockEncoding
 
 
 @dataclass(frozen=True)
 class LinearCombinationBlockEncoding:
-    """Source default-oracle linear combination on packed through registers.
+    """Source linear combination with default or supplied packed oracles.
 
     Ancilla packs coefficient selection then constituent signal ancilla.
     Resource packs constituent resource then coefficient preparation junk.
@@ -32,28 +36,75 @@ class LinearCombinationBlockEncoding:
 
     block_encodings: tuple[_BlockMetadata, ...]
     coefficients: tuple[float, ...]
-    coefficient_bits: int
+    coefficient_bits: SymbolicInt
+    prepare_override: BlackBoxPrepare | None = None
+    select_override: SelectBlockEncoding | None = None
+    controlled_select: ControlledSelectEmitter | None = None
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "block_encodings", tuple(self.block_encodings))
         object.__setattr__(self, "coefficients", tuple(self.coefficients))
         self.select  # Validate child signatures, coefficients and signal states.
-        if type(self.coefficient_bits) is not int or self.coefficient_bits < 1:
+        if (
+            self.prepare_override is None
+            and isinstance(self.coefficient_bits, (int, float))
+            and (type(self.coefficient_bits) is not int or self.coefficient_bits < 1)
+        ):
             raise ValueError("LCU coefficient precision must be a positive integer")
+        if self.controlled_select is not None and self.select_override is None:
+            raise ValueError("Controlled custom SELECT requires a SELECT override")
+        if self.prepare_override is not None or self.select_override is not None:
+            selection_width = (
+                sum(width for _, width in self.select_override.selection_layout)
+                if self.select_override is not None
+                else self.select.selection_bitsize
+            )
+            if self.prepare.selection_width != selection_width:
+                raise ValueError(
+                    "Custom PREPARE and SELECT must have equal packed selection widths"
+                )
+            target_width = (
+                self.system_bitsize
+                + self.select.ancilla_bitsize
+                + self.select.resource_bitsize
+            )
+            if (
+                self.select_override is not None
+                and self.select_override.target_layout != (("system", target_width),)
+            ):
+                raise ValueError(
+                    "Custom SELECT must pack system, constituent ancilla and resource as system"
+                )
 
     @cached_property
     def select(self) -> LinearCombinationSelect:
         return LinearCombinationSelect(self.block_encodings, self.coefficients)
 
-    @cached_property
-    def coefficient_preparation(self) -> LinearCombinationPreparation:
+    def _concrete_normalizations(self) -> tuple[float, ...]:
         alphas = tuple(block.alpha for block in self.block_encodings)
         if any(not isinstance(alpha, (int, float)) for alpha in alphas):
             raise ValueError(
                 "Default LCU preparation requires concrete block normalizations"
             )
+        return cast(tuple[float, ...], alphas)
+
+    @cached_property
+    def coefficient_preparation(self) -> LinearCombinationPreparation:
+        if type(self.coefficient_bits) is not int:
+            raise ValueError(
+                "Default LCU preparation requires concrete coefficient precision"
+            )
         return LinearCombinationPreparation(
-            self.coefficients, cast(tuple[float, ...], alphas), self.coefficient_bits
+            self.coefficients, self._concrete_normalizations(), self.coefficient_bits
+        )
+
+    @property
+    def prepare(self) -> BlackBoxPrepare:
+        """Expose the supplied packed preparation or the source default factory."""
+        return (
+            self.coefficient_preparation.prepare
+            if self.prepare_override is None
+            else self.prepare_override
         )
 
     @property
@@ -62,17 +113,11 @@ class LinearCombinationBlockEncoding:
 
     @property
     def ancilla_bitsize(self) -> int:
-        return (
-            self.select.ancilla_bitsize
-            + self.coefficient_preparation.prepare.selection_width
-        )
+        return self.select.ancilla_bitsize + self.prepare.selection_width
 
     @property
     def resource_bitsize(self) -> int:
-        return (
-            self.select.resource_bitsize
-            + self.coefficient_preparation.prepare.junk_width
-        )
+        return self.select.resource_bitsize + self.prepare.junk_width
 
     @property
     def alpha(self) -> SymbolicReal:
@@ -88,7 +133,10 @@ class LinearCombinationBlockEncoding:
         # Retain the implementation's normalized weights, not the docstring's
         # unnormalized coefficient bound.
         return sum(
-            abs(weight) for weight in self.coefficient_preparation.rescaled_coefficients
+            abs(weight)
+            for weight in _rescaled_lcu_coefficients(
+                self.coefficients, self._concrete_normalizations()
+            )
         ) * smax(block.epsilon for block in self.block_encodings)
 
     @property
@@ -113,7 +161,11 @@ class LinearCombinationBlockEncoding:
         """
         if type(controlled) is not bool or type(adjoint) is not bool:
             raise ValueError("LCU model control and direction must be boolean")
-        prepare = self.coefficient_preparation.prepare
+        prepare = self.prepare
+        if self.ancilla_bitsize == 0:
+            raise ValueError(
+                "Original LCU decomposition requires a nonempty ancilla port"
+            )
         prep_ports = prepare.selection_width + prepare.junk_width
         ports = (
             self.system_bitsize
@@ -152,7 +204,7 @@ class LinearCombinationBlockEncoding:
                 _CircuitOperation,
             ],
             ...,
-        ],
+        ] = (),
         *,
         system: tuple[int, ...],
         ancilla: tuple[int, ...],
@@ -162,8 +214,8 @@ class LinearCombinationBlockEncoding:
         prepare_classical_bits: tuple[int, ...],
         traversal_workspace: tuple[int, ...],
         traversal_classical_bits: tuple[int, ...],
-        workspaces: tuple[tuple[int, ...], ...],
-        classical_bits: tuple[tuple[int, ...], ...],
+        workspaces: tuple[tuple[int, ...], ...] = (),
+        classical_bits: tuple[tuple[int, ...], ...] = (),
         adjoint: bool = False,
     ) -> _BoundBlockOperation:
         """Bind the original conjugation for circuit.append(op).
@@ -180,7 +232,11 @@ class LinearCombinationBlockEncoding:
             raise ValueError(
                 "LCU needs matching system width, boolean direction and at most one control"
             )
-        prep = self.coefficient_preparation.prepare
+        prep = self.prepare
+        if self.ancilla_bitsize == 0:
+            raise ValueError(
+                "Original LCU decomposition requires a nonempty ancilla port"
+            )
         anc = partition_register(
             ancilla,
             (
@@ -197,22 +253,46 @@ class LinearCombinationBlockEncoding:
         _validate_block_work(through, traversal_workspace, traversal_classical_bits)
         for work, bits in zip(workspaces, classical_bits, strict=True):
             _validate_block_work(through, work, bits)
+        if self.select_override is not None:
+            if bind_children or workspaces or classical_bits:
+                raise ValueError(
+                    "Custom SELECT owns its binding; child factories/work groups must be empty"
+                )
+            if control and self.controlled_select is None:
+                raise ValueError(
+                    "Controlled custom SELECT needs its positive-controlled emitter"
+                )
         before = prep.emit(
             anc["selection"], res["junk"], prepare_workspace, prepare_classical_bits
         )
-        middle = self.select.make_on(
-            bind_children,
-            selection=anc["selection"],
-            system=system,
-            ancilla=anc["ancilla"],
-            resource=res["resource"],
-            control=control,
-            traversal_workspace=traversal_workspace,
-            traversal_classical_bits=traversal_classical_bits,
-            workspaces=workspaces,
-            classical_bits=classical_bits,
-            adjoint=adjoint,
-        )
+        if self.select_override is None:
+            middle = self.select.make_on(
+                bind_children,
+                selection=anc["selection"],
+                system=system,
+                ancilla=anc["ancilla"],
+                resource=res["resource"],
+                control=control,
+                traversal_workspace=traversal_workspace,
+                traversal_classical_bits=traversal_classical_bits,
+                workspaces=workspaces,
+                classical_bits=classical_bits,
+                adjoint=adjoint,
+            )
+        else:
+            selected = self.select_override
+            if control and self.controlled_select is not None:
+                selected = selected.with_control(1, self.controlled_select)
+            middle_gates = selected.emit(
+                (*control, *anc["selection"]),
+                (*system, *anc["ancilla"], *res["resource"]),
+                traversal_workspace,
+                traversal_classical_bits,
+                adjoint=adjoint,
+            )
+            middle = _BoundBlockOperation(
+                middle_gates, max((*through, *traversal_workspace), default=-1) + 1
+            )
         after = prep.emit(
             anc["selection"],
             res["junk"],

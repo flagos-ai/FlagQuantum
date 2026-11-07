@@ -21,6 +21,19 @@ from .alias_sampling import AliasSamplingTable, alias_numerators
 from .black_box_prepare import BlackBoxPrepare
 
 
+def _rescaled_lcu_coefficients(
+    coefficients: tuple[float, ...], normalizations: tuple[float, ...]
+) -> tuple[float, ...]:
+    """Preserve the original NumPy normalization and trailing zero padding."""
+    weights = np.abs(np.array(coefficients) * np.array(normalizations))
+    total = np.linalg.norm(weights, ord=1)
+    if not np.isfinite(total):
+        raise ValueError("Rescaled LCU total weight must be finite")
+    weights /= total
+    weights.resize(1 << (len(weights) - 1).bit_length(), refcheck=False)
+    return tuple(float(x) for x in weights)
+
+
 @dataclass(frozen=True)
 class LinearCombinationPreparation:
     """Concrete coefficient preparation, with logical junk distinct from scratch.
@@ -58,14 +71,8 @@ class LinearCombinationPreparation:
 
     @property
     def rescaled_coefficients(self) -> tuple[float, ...]:
-        """Keep the original NumPy normalization and trailing zero padding."""
-        weights = np.abs(np.array(self.coefficients) * np.array(self.normalizations))
-        total = np.linalg.norm(weights, ord=1)
-        if not np.isfinite(total):
-            raise ValueError("Rescaled LCU total weight must be finite")
-        weights /= total
-        weights.resize(1 << (len(weights) - 1).bit_length(), refcheck=False)
-        return tuple(float(x) for x in weights)
+        """Keep the original normalization independently of bit precision."""
+        return _rescaled_lcu_coefficients(self.coefficients, self.normalizations)
 
     @property
     def table(self) -> AliasSamplingTable:

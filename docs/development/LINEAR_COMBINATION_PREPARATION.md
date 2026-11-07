@@ -59,8 +59,9 @@ private work amplitudes, and one original full matrix checks absolute phase.
 The runnable example and a refusal-to-emit model test complete the evidence.
 
 This accepts the coefficient PREPARE dependency only. The parent linear
-combination's signed block SELECT, padding partitions, externally controlled
-SELECT and complete PREPARE–SELECT–PREPARE-adjoint composition remain open.
+combination's signed SELECT and full default composition are now consumed by
+G2-BE06/07; see LINEAR_COMBINATION_SELECT.md and
+LINEAR_COMBINATION_BLOCK_ENCODING.md for their separate acceptance evidence.
 Symbolic coefficient precision is not executable in the original default
 factory. Native concrete validation rejects nonfinite totals and negative block
 normalizations explicitly; those rejected inputs are not certified source paths.
