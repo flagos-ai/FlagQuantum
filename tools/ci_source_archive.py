@@ -144,8 +144,17 @@ def _git(workspace: Path, *arguments: str, data: bytes | None = None) -> str:
         capture_output=True,
         check=True,
         timeout=60,
+        env={**os.environ, "GIT_NO_LAZY_FETCH": "1"},
     )
     return result.stdout.decode().strip()
+
+
+def _tree_complete(workspace: Path, reference: str) -> bool:
+    """Inspect local objects without asking a promisor remote to fill gaps."""
+    records = _git(
+        workspace, "rev-list", "--objects", "--missing=print", "--no-walk", reference
+    )
+    return not any(line.startswith("?") for line in records.splitlines())
 
 
 def _archive_members(archive: tarfile.TarFile) -> list[tarfile.TarInfo]:
@@ -174,15 +183,9 @@ def _restore(workspace: Path, archive_path: Path, commit: _Commit) -> str | None
         members = _archive_members(archive)
         _git(workspace, "init", "--quiet")
         try:
-            baseline = _git(workspace, "rev-parse", "--verify", "HEAD")
-            _git(
-                workspace,
-                "rev-list",
-                "--objects",
-                "--missing=error",
-                "--no-walk",
-                "HEAD",
-            )
+            baseline: str | None = _git(workspace, "rev-parse", "--verify", "HEAD")
+            if not _tree_complete(workspace, "HEAD"):
+                baseline = None
         except subprocess.CalledProcessError:
             baseline = None
         for key, value in (
@@ -230,6 +233,17 @@ def _materialize_api(
     get_objects: Callable[[list[tuple[str, str]]], list[object]] | None = None,
 ) -> bool:
     _git(workspace, "init", "--quiet")
+    # Enumerating local objects never requests promised blobs. Individual
+    # cat-file probes can perform an implicit network fetch in partial clones.
+    cached = set(
+        _git(
+            workspace,
+            "cat-file",
+            "--batch-all-objects",
+            "--batch-check=%(objectname)",
+            "--unordered",
+        ).splitlines()
+    )
     pending = [(commit.tree, "tree")]
     visited: set[str] = set()
     requests = 0
@@ -243,28 +257,16 @@ def _materialize_api(
                 if sha in visited:
                     continue
                 visited.add(sha)
-                status = _git(
-                    workspace, "cat-file", "--batch-check", data=f"{sha}\n".encode()
-                )
-                if not status.endswith(" missing"):
-                    if kind == "tree":
-                        try:
-                            _git(
-                                workspace,
-                                "rev-list",
-                                "--objects",
-                                "--missing=error",
-                                sha,
-                            )
-                        except subprocess.CalledProcessError:
-                            records = _git(workspace, "ls-tree", "-z", sha).split("\0")
-                            for record in records:
-                                if not record:
-                                    continue
-                                header = record.split("\t", 1)[0]
-                                _, child_kind, child_sha = header.split()
-                                if child_kind in ("tree", "blob"):
-                                    pending.append((child_sha, child_kind))
+                if sha in cached:
+                    if kind == "tree" and not _tree_complete(workspace, sha):
+                        records = _git(workspace, "ls-tree", "-z", sha).split("\0")
+                        for record in records:
+                            if not record:
+                                continue
+                            header = record.split("\t", 1)[0]
+                            _, child_kind, child_sha = header.split()
+                            if child_kind in ("tree", "blob"):
+                                pending.append((child_sha, child_kind))
                     continue
                 missing.append((sha, kind))
             if not missing:
@@ -322,6 +324,7 @@ def _materialize_api(
                     )
                 if actual != sha:
                     raise ValueError("GitHub object data does not match its SHA")
+                cached.add(sha)
     return True
 
 

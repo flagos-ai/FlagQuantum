@@ -391,3 +391,71 @@ def test_large_source_addition_uses_bounded_parallel_verified_objects(
     calls.clear()
     assert _materialize_api(workspace, commit, get_json)
     assert calls == []
+
+
+@pytest.mark.parametrize("lazy_guard", [True, False])
+def test_partial_clone_cache_repair_never_uses_implicit_git_fetch(
+    tmp_path: Path, source: _Source, monkeypatch: pytest.MonkeyPatch, lazy_guard: bool
+) -> None:
+    import base64
+    import shlex
+
+    from tools.ci_source_archive import _checkout, _materialize_api
+
+    directory = source.archive.parent / "source"
+    _git(directory, "config", "uploadpack.allowFilter", "true")
+    workspace = tmp_path / "partial-workspace"
+    _git(
+        tmp_path,
+        "clone",
+        "--quiet",
+        "--filter=blob:none",
+        "--no-checkout",
+        directory.as_uri(),
+        str(workspace),
+    )
+    assert (
+        _git(workspace, "config", "--get", "remote.origin.promisor").strip() == b"true"
+    )
+    marker = tmp_path / "implicit-fetch"
+    helper = tmp_path / "reject-upload-pack.sh"
+    helper.write_text(
+        f"#!/bin/sh\nprintf blocked > {shlex.quote(str(marker))}\nexit 99\n"
+    )
+    helper.chmod(0o755)
+    _git(workspace, "config", "remote.origin.uploadpack", shlex.quote(str(helper)))
+    missing = _git(
+        workspace, "rev-list", "--objects", "--missing=print", "--no-walk", "HEAD"
+    )
+    assert any(line.startswith(b"?") for line in missing.splitlines())
+    assert not marker.exists()
+    if not lazy_guard:
+        from tools import ci_source_archive as archive
+
+        monkeypatch.delenv("GIT_NO_LAZY_FETCH", raising=False)
+
+        def local_git(
+            directory: Path, *arguments: str, data: bytes | None = None
+        ) -> str:
+            return _git(directory, *arguments, data=data).decode().strip()
+
+        monkeypatch.setattr(archive, "_git", local_git)
+    calls = []
+
+    def get_json(path: str) -> object:
+        calls.append(path)
+        assert path.startswith("/git/blobs/")
+        sha = path.rsplit("/", 1)[1]
+        raw = _git(directory, "cat-file", "blob", sha)
+        return {
+            "sha": sha,
+            "encoding": "base64",
+            "content": base64.b64encode(raw).decode(),
+        }
+
+    assert _materialize_api(workspace, source.commit, get_json)
+    assert calls
+    assert not marker.exists(), "cache verification attempted an implicit Git fetch"
+    _checkout(workspace, source.commit, None)
+    assert _git(workspace, "status", "--porcelain") == b""
+    assert not marker.exists()
