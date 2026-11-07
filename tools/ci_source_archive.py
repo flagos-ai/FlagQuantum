@@ -19,9 +19,10 @@ from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from http.client import HTTPMessage
+from http.client import HTTPMessage, RemoteDisconnected
 from pathlib import Path, PurePosixPath
 from typing import IO
+from urllib.error import HTTPError, URLError
 from urllib.parse import urlsplit
 from urllib.request import HTTPRedirectHandler, Request, build_opener
 
@@ -334,6 +335,28 @@ class _Redirect(HTTPRedirectHandler):
         return result
 
 
+def _get_json(url: str, headers: dict[str, str]) -> object:
+    """Retry transient API transport failures at most twice, preserving refusals."""
+    for attempt in range(3):
+        try:
+            # Each parallel request owns its redirect handler and connection.
+            opener = build_opener(_Redirect())
+            with opener.open(Request(url, headers=headers), timeout=30) as response:
+                data = response.read()
+                if response.headers.get("Content-Encoding") == "gzip":
+                    data = gzip.decompress(data)
+                return json.loads(data)
+        except HTTPError as error:
+            if error.code not in (408, 429, 500, 502, 503, 504) or attempt == 2:
+                raise
+        except (URLError, RemoteDisconnected, TimeoutError):
+            if attempt == 2:
+                raise
+        print(f"Retrying transient GitHub API request ({attempt + 1}/2)", flush=True)
+        time.sleep(attempt + 1)
+    raise RuntimeError("GitHub API retry loop ended unexpectedly")
+
+
 def cleanup_runner_containers() -> None:
     """Stop leftover CI writers before this exclusive runner starts a new checkout."""
     if os.environ.get("RUNNER_ENVIRONMENT") != "self-hosted" or not shutil.which(
@@ -431,12 +454,7 @@ def _main() -> None:
     opener = build_opener(_Redirect())
 
     def get_json(path: str) -> object:
-        request = Request(f"{api}/repos/{repository}{path}", headers=headers)
-        with opener.open(request, timeout=30) as response:
-            data = response.read()
-            if response.headers.get("Content-Encoding") == "gzip":
-                data = gzip.decompress(data)
-            return json.loads(data)
+        return _get_json(f"{api}/repos/{repository}{path}", headers)
 
     print("Fetching GitHub commit metadata", flush=True)
     commit = _verified_commit(get_json(f"/git/commits/{sha}"), sha)
