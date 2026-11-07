@@ -675,6 +675,13 @@ not enable unconditional `fql.plan` or the future native sampled plan reader.
 
 ## Classical lookup values
 
+`classical_swap.py` owns raw object exchange and controlled exchange values.
+Compiler's exact and relative-phase emitters remain distinct: the approximate
+source callback specifies a permutation without its quantum relative phases.
+Run `python -m examples.algorithms.classical_swap_values` for the ordinary append
+workflow and see [exchange semantics](../../docs/development/CLASSICAL_SWAP_VALUES.md)
+for the phase and resource-counting boundaries.
+
 `classical_controlled_bits.py` retains the distinct CNOT modulo-two, Toffoli
 binary-target assertion and fanout truthiness/XOR numerical callbacks. It does
 not replace their Compiler primitive emitters or normalize diagnostic operands.
