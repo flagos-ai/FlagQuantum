@@ -7,16 +7,13 @@
 
 from collections.abc import Mapping, Sequence
 from types import NotImplementedType
-from typing import Protocol, TypeVar
+from typing import TypeVar
 
+from .classical_action import ClassicalValueCallback
 from .classical_control_activation import classical_controls_active
 from .value_dimensions import ArrayValue
 
-Result = TypeVar("Result", covariant=True)
-
-
-class _NamedCallback(Protocol[Result]):
-    def __call__(self, **values: object) -> Result: ...
+Result = TypeVar("Result")
 
 
 def _controlled_inputs(
@@ -34,7 +31,7 @@ def controlled_classical_values(
     control_names: Sequence[str],
     child_names: Sequence[str],
     patterns: Sequence[ArrayValue],
-    child: _NamedCallback[dict[str, object] | NotImplementedType],
+    child: ClassicalValueCallback[dict[str, object] | NotImplementedType],
     *,
     thru_only: bool = True,
     symbolic_parameters: Sequence[object] = (),
@@ -64,7 +61,7 @@ def controlled_basis_phase(
     control_names: Sequence[str],
     child_names: Sequence[str],
     patterns: Sequence[ArrayValue],
-    child: _NamedCallback[Result],
+    child: ClassicalValueCallback[Result],
     *,
     symbolic_parameters: Sequence[object] = (),
 ) -> Result | None:

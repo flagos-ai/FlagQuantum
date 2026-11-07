@@ -810,3 +810,10 @@ distribution type; it does not implement graph traversal. Run
 outcomes and coherent `circuit.append(op)` work erasure. See
 [measurement semantics](../../docs/development/CLASSICAL_MEASUREMENT.md) for
 source callback failures, all-branch complex amplitudes and separate model counts.
+
+`classical_action.py` selects direct values or recursive evaluation in the
+original value-callback, phase-callback, result-check order. Its named callback
+protocol is also used by controlled values/phases. It does not bind graph wires
+or apply returned phases. Run `python -m examples.algorithms.classical_action_dispatch`
+for a recursive numerical recipe and ordinary `circuit.append(op)` execution;
+see [action dispatch](../../docs/development/CLASSICAL_ACTION_DISPATCH.md).
