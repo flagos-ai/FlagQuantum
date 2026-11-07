@@ -120,10 +120,18 @@ def validate_classical_control(
         metadata = instruction.metadata
         if instruction.name == "classical_xor":
             operation = parse_classical_xor(instruction)
-            unread = sorted(set(operation.sources) - measured_bits)
+            clauses = instruction_condition_clauses(instruction)
+            reads = set(operation.sources) | {
+                bit for clause in clauses for bit, _ in clause
+            }
+            unread = sorted(reads - measured_bits)
             if unread:
                 raise ValidationError(
                     f"classical bit {unread[0]} was read before definition"
+                )
+            if clauses and operation.target not in measured_bits:
+                raise ValidationError(
+                    "Conditional classical XOR requires a defined destination"
                 )
             measured_bits.add(operation.target)
             width = max(width, operation.target + 1)

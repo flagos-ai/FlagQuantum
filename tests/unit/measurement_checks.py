@@ -33,7 +33,11 @@ def forced_branch(
         if gate.name == "classical_xor":
             flush()
             assignment = parse_classical_xor(gate)
-            classical[assignment.target] = assignment.evaluate(classical)
+            if all(
+                classical[int(bit)] == value
+                for bit, value in gate.metadata.get("conditions", ())
+            ):
+                classical[assignment.target] = assignment.evaluate(classical)
         elif gate.name == "measure":
             flush()
             outcome = next(measurements)

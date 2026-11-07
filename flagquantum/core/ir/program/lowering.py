@@ -130,7 +130,10 @@ def classify_public_circuit(program: Any) -> LevelConversion:
             diagnostics=(diagnostic,),
         )
     for index, instruction in enumerate(program.instructions):
-        if instruction.metadata.get("guarded_effect"):
+        if instruction.metadata.get("guarded_effect") or (
+            instruction.name == "classical_xor"
+            and instruction_condition_clauses(instruction)
+        ):
             return LevelConversion(
                 state=UNSUPPORTED_WITH_DIAGNOSTICS,
                 level=PUBLIC_LEVEL,

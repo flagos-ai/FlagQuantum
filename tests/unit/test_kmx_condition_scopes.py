@@ -29,8 +29,8 @@ _HEADER = 'INFO_TAG "@flagquantum:reversible-phase-v1 wires=2 bits=3"\n'
         ("BIT_STORE0 b0\nHMR q0 b1 if b0", "requires a defined result"),
         ("R q0 if b0", "read before definition"),
         (
-            "BIT_STORE0 b0\nPUSH_CONDITION if b0\nBIT_INVERT b0\nPOP_CONDITION",
-            "cannot write",
+            "BIT_STORE0 b0\nPUSH_CONDITION if b0\nBIT_STORE0 b1\nPOP_CONDITION",
+            "cannot initialize",
         ),
     ],
 )

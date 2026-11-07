@@ -61,13 +61,22 @@ def bind_reversible_phase_execution(
             sources = () if op.opcode == "bit_store0" else (result,)
             if predicate is not None:
                 sources = (*sources, predicate)
-            gates.append(
-                ClassicalXor(
-                    sources,
-                    result,
-                    constant=op.opcode == "bit_invert" and predicate is None,
-                ).instruction()
-            )
+            assignment = ClassicalXor(
+                sources,
+                result,
+                constant=op.opcode == "bit_invert" and predicate is None,
+            ).instruction()
+            if scopes:
+                assignment = Instruction(
+                    assignment.name,
+                    assignment.wires,
+                    assignment.params,
+                    metadata={
+                        **assignment.metadata,
+                        "conditions": tuple((slot, 1) for slot in scopes),
+                    },
+                )
+            gates.append(assignment)
             continue
 
         # An inline HMR predicate can alias its own output.

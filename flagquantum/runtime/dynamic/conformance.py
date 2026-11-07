@@ -122,9 +122,9 @@ def _condition_feature_blockers(
         for _, value in clause
     ):
         blockers.append("condition_value_unsupported")
-    local_effect = (
-        features == LOCAL_TRAJECTORY_FEATURES
-        and instruction.metadata.get("guarded_effect") is True
+    local_effect = features == LOCAL_TRAJECTORY_FEATURES and (
+        instruction.metadata.get("guarded_effect") is True
+        or instruction.name == "classical_xor"
     )
     if (
         not local_effect
@@ -151,6 +151,14 @@ def assess_dynamic_features(
             operation = parse_classical_xor(instruction)
             if features != LOCAL_TRAJECTORY_FEATURES:
                 blockers.append("classical_computation_unsupported")
+            blockers.extend(
+                _condition_feature_blockers(instruction, features, measured)
+            )
+            if (
+                _instruction_condition_clauses(instruction)
+                and operation.target not in measured
+            ):
+                blockers.append("classical_bit_read_before_definition")
             if set(operation.sources) - measured:
                 blockers.append("classical_bit_read_before_definition")
             measured.add(operation.target)

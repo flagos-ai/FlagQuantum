@@ -212,6 +212,13 @@ def _execute_density(ir: CircuitIR, rho: torch.Tensor) -> torch.Tensor:
     probability is discarded.
     """
 
+    if any(
+        instruction.name == "classical_xor" and _condition_clauses(instruction)
+        for instruction in ir
+    ):
+        from ..core.classical_control import validate_classical_control
+
+        validate_classical_control(ir.instructions, n_qubits=ir.n_wires)
     tracked = _read_classical_bits(ir)
     if tracked and rho.shape[0] > 1:
         # Two batch rows that measure the same qubit can record different bits, so
@@ -259,7 +266,11 @@ def _execute_density_ensemble(
 
             operation = parse_classical_xor(instruction)
             ensemble = [
-                (item, {**record, operation.target: operation.evaluate(record)})
+                (
+                    (item, {**record, operation.target: operation.evaluate(record)})
+                    if _condition_holds(record, clauses)
+                    else (item, record)
+                )
                 for item, record in ensemble
             ]
             continue

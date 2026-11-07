@@ -61,10 +61,18 @@ def parse_classical_xor(instruction: Instruction) -> ClassicalXor:
         or instruction.wires
         or instruction.matrix is not None
         or set(instruction.params) not in ({"sources"}, {"sources", "constant"})
-        or set(instruction.metadata) != {"is_dynamic", "classical_bit"}
+        or set(instruction.metadata)
+        not in (
+            {"is_dynamic", "classical_bit"},
+            {"is_dynamic", "classical_bit", "conditions"},
+        )
         or instruction.metadata["is_dynamic"] is not True
     ):
         raise ValidationError("Invalid classical XOR instruction")
+    if "conditions" in instruction.metadata:
+        from .classical_control import instruction_condition_clauses
+
+        instruction_condition_clauses(instruction)
     return ClassicalXor(
         instruction.params["sources"],
         instruction.metadata["classical_bit"],

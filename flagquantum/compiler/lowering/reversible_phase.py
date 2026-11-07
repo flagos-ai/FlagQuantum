@@ -100,6 +100,10 @@ def lower_reversible_phase(ir: CircuitIR) -> ReversiblePhaseProgram:
         opcode = instruction.name
         consumed = 1
         if instruction.name == "classical_xor":
+            if instruction_condition_clauses(instruction):
+                raise CapabilityError(
+                    "reversible-phase lowering requires a conditional classical result merge"
+                )
             assignment = parse_classical_xor(instruction)
             if assignment.sources.count(assignment.target) % 2 == 0:
                 operations.append(

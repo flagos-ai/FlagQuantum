@@ -180,7 +180,7 @@ def test_validation_rejects_undefined_sources_and_invalid_instruction_shapes() -
             "classical_xor",
             (),
             params={"sources": ()},
-            metadata={"is_dynamic": True, "classical_bit": 0, "conditions": ((1, 1),)},
+            metadata={"is_dynamic": True, "classical_bit": 0, "conditions": ()},
         )
     with pytest.raises(IRValidationError, match="at least one"):
         Instruction("x", ())

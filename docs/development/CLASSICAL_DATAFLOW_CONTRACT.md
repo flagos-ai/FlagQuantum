@@ -25,7 +25,11 @@ by parity; empty input writes the literal (zero by default). A destination alias
 reads its previous value. XOR of a slot with true, assigned to the same slot,
 inverts it in place.
 Reassignment is allowed, with program-level SSA creating a fresh boolean result.
-Conditional classical writes are outside this version and are rejected.
+The v1 baseline rejected conditional classical writes. The internal
+[guarded-dataflow addendum](CLASSICAL_GUARDED_DATAFLOW_CONTRACT.md) now admits
+a canonical conjunction on already-defined destinations, with inactive-value
+preservation and separate Runtime/Simulation conformance. Public schemas and
+unconditional encodings remain unchanged.
 
 ## Execution and interchange
 
@@ -75,9 +79,9 @@ scope and its descendants. On scope exit only previously defined slots
 remain visible. Inline guarded HMR requires a previously defined
 destination. Scope entry snapshots its active shot mask. HMR may overwrite
 a guard slot, which affects later inline conditions or nested scope entries
-that read it. The enclosing scope retains its saved mask. Scoped classical
-XOR and initialization remain outside the admitted
-target subset. The compiler can bind this target to the local flat circuit. It owns the
+that read it. The enclosing scope retains its saved mask. The v1 baseline excluded scoped classical writes. The
+[guarded-dataflow addendum](CLASSICAL_GUARDED_DATAFLOW_CONTRACT.md) admits
+scoped BIT_INVERT on a defined destination; scoped BIT_STORE0 remains refused. The compiler can bind this target to the local flat circuit. It owns the
 classical output block, initializes its slots, and copies each scope guard
 to a temporary slot on entry. The copy is unconditional so that every
 subsequent predicate is defined, even when an outer scope is inactive.

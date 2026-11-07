@@ -55,3 +55,37 @@ Acceptance includes exhaustive alias/truth tables, unchanged native nested
 scope semantics, both local trajectory strategies, density ensembles, guard
 lifetime snapshots, resource/no-RNG invariants, unchanged unguarded encodings,
 and negative boundary tests. The unlookup consumer remains a separate module.
+
+## Local acceptance
+
+The contract and independent fake landed first in `b39b12e1`. The completed
+consumer tests exhaust source/destination/guard aliases, repeated parity inputs,
+positive and negative predicates, inactive preservation, nested snapshots and
+live-guard rewriting. Locked native KMX scope execution agrees with the fake.
+Both local trajectory strategies and density ensembles agree with the declared
+semantics. Invalid reads and conditional destinations are rejected before
+execution, including inactive density branches.
+
+The runnable example is
+`python -m examples.algorithms.guarded_classical_parity`. It accumulates
+`measurement AND (table_bit_a XOR table_bit_b)` through `circuit.append(op)`
+for every table input pair, with one data qubit and no quantum scratch.
+Measurement count stays one per shot. Seed-identical controls prove the
+classical work does not consume RNG or alter the quantum state. Snapshot work
+uses one classical slot per active scope depth; result and table slots are
+caller-owned and reported separately from quantum work. No T synthesis or
+analytical quantum cost is inferred from a classical assignment count.
+
+72 contract/consumer tests pass. The integration regression passes 617 tests
+with four optional Qiskit/Aer skips; a disjoint finite-field regression passes
+366 tests without skips. Total: 983 passed, four optional skips. Strict mypy
+passes all ten touched production/example files; Black, Ruff, architecture,
+integration scope and the public API migration baseline pass. Existing
+unconditional XOR/KMX, exact phases, arithmetic measurement, lookup and field
+erasure consumers remain covered. No public API snapshot was regenerated.
+
+Core-to-KMX conditional assignment lowering and typed ProgramIR conditional
+result merge remain explicitly unsupported and open, with negative tests.
+Scoped initialization and disjunctions on classical assignments remain refused.
+The next source consumer is `gen_unlookup`, including phase-table slot ownership
+and complete small coherent branch checks; it is not marked accepted here.

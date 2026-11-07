@@ -641,10 +641,11 @@ def _run_dynamic_batched(
 
         if instruction.name == "classical_xor":
             operation = parse_classical_xor(instruction)
-            values = classical[:, list(operation.sources)]
+            rows = active if conditional else slice(None)
+            values = classical[rows][:, list(operation.sources)]
             if bool(torch.any(values < 0)):
                 raise ValidationError("Classical XOR reads an undefined classical bit")
-            classical[:, operation.target] = (
+            classical[rows, operation.target] = (
                 values.sum(dim=1) + int(operation.constant)
             ).remainder(2)
         elif instruction.name in {"measure", "reset"}:

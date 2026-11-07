@@ -90,9 +90,9 @@ class ReversiblePhaseProgram:
             if op.condition_bit is not None and not is_defined(op.condition_bit):
                 raise ValueError("Condition read before definition")
             if op.opcode in {"bit_store0", "bit_invert"}:
-                if len(definitions) > 1:
+                if len(definitions) > 1 and op.opcode == "bit_store0":
                     raise ValueError(
-                        "Condition scopes cannot write classical bits with XOR or store"
+                        "Condition scopes cannot initialize classical bits"
                     )
                 if op.result_bit is None or not 0 <= op.result_bit < self.n_bits:
                     raise ValueError("Invalid classical result bit")
