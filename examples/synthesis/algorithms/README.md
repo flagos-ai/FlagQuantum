@@ -1,5 +1,9 @@
 # Synthesis algorithms
 
+The [complete original Qmod catalog](../CATALOG.md) includes **53** classified
+algorithms cases, with source, execution and native/Circuit availability.
+The table below lists the existing teaching examples.
+
 | Example | Entry profile |
 | --- | --- |
 | [amplitude_amplification/amplification_iterations](amplitude_amplification/amplification_iterations/README.md) | High-level Python example |

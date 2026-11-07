@@ -4,6 +4,11 @@ Use `synth` to describe computation, quantum data and constraints. Start with
 [tutorials](tutorials/README.md), then explore [algorithms](algorithms/README.md)
 and [applications](applications/README.md).
 
+The [classified original-case catalog](CATALOG.md) contains all **216** pinned
+Qmod paths, each with source, bindings, resource records and native/Circuit
+availability. The tutorial, algorithm and application indexes below also retain
+the existing 48 teaching examples.
+
 Run examples as Python modules from the repository root with FlagQuantum installed.
 
 ```sh
@@ -19,8 +24,9 @@ native scalar qfunc and Circuit amplitudes, including workspace and absolute pha
 
 ## Choosing an entry
 
-Each case has a `README.md` and a runnable `main.py`. The fourteen cases with a
-`comparisons/` directory use native qfunc in `main.py`; `comparisons/source.qmod`
+Each teaching case has a `README.md` and a runnable `main.py`. The fourteen
+teaching cases with a `comparisons/` directory use native qfunc in `main.py`;
+`comparisons/source.qmod`
 and `comparisons/circuit.py` provide the corresponding source and independent
 Circuit validation. Comparison runners import the native definitions from
 `main.py` so both routes exercise the same native program.
@@ -35,12 +41,33 @@ construction, training, simulation and deployment.
 
 ## Corpus acceptance
 
-These runnable teaching examples are distinct from the 216-file compatibility
-corpus. Source bytes, licenses, verification manifests and the six approved
-numeric revisions remain under the [Classiq fixtures](../../tests/fixtures/classiq_qmod).
-Use the [acceptance instructions](../../tests/fixtures/classiq_qmod/accepted_revision/README.md)
-to reproduce the corpus audit. The 216/216 revised-corpus result does not imply
-that all 216 original cases have a native Python teaching example.
+The [216-case catalog](CATALOG.md) classifies the complete pinned snapshot under
+these same tutorial, algorithm and application directories. Each catalog case
+contains a byte-identical Qmod original and a README with a runnable command.
+Six cases additionally contain a separately identified approved numerical revision.
+
+The shared `run_qmod` runner reuses corpus auditing and its recorded classical
+bindings and exact execution profiles. Original input is the default; six case
+READMEs explicitly select `--revision approved` for successful execution.
+
+```sh
+python -m examples.synthesis.run_qmod --verify
+python -m examples.synthesis.run_qmod --all --revision approved --output /tmp/qmod-examples.json
+python -m tools.synthesis_catalog
+```
+
+Native implementations are linked only when the existing three-form comparison
+uses the exact original source bytes. Other cases mark the native implementation
+as not yet provided. The catalog also links existing tests and validators,
+including their Circuit references where found. These links preserve each
+validation's own parameters and scope.
+
+Source bytes, licenses and manifests remain independently verifiable through the
+[original fixtures](../../tests/fixtures/classiq_qmod) and
+[approved-overlay instructions](../../tests/fixtures/classiq_qmod/accepted_revision/README.md).
+The example catalog provides the complete runnable source set without requiring
+an external corpus checkout. Regenerate catalog documentation after changing
+catalog metadata with `python -m tools.synthesis_catalog --write`.
 
 ## Module migration
 

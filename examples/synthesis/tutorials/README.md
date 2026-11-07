@@ -1,5 +1,9 @@
 # Synthesis tutorials
 
+The [complete original Qmod catalog](../CATALOG.md) includes **102** classified
+tutorials cases, with source, execution and native/Circuit availability.
+The table below lists the existing teaching examples.
+
 | Example | Entry profile |
 | --- | --- |
 | [arithmetic/arithmetic_baseline](arithmetic/arithmetic_baseline/README.md) | High-level Python example |
