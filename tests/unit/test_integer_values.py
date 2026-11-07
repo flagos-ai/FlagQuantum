@@ -97,3 +97,21 @@ def test_scalar_zero_and_symbolic_word_width_bounds_keep_original_exceptions(
                 validate_integer_word_value(value, width, signed=signed)
         else:
             validate_integer_word_value(value, width, signed=signed)
+
+
+@pytest.mark.parametrize("name", ["QUInt", "QInt", "QMontgomeryUInt"])
+@pytest.mark.parametrize("width", [np.int64(3), np.int64(64), -1, 1.0])
+def test_raw_source_width_arithmetic_is_not_replaced_by_constructor_type_checks(
+    name, width
+):
+    import qualtran
+
+    source = getattr(qualtran, name)(width)
+    for value in (-1, 0, 1):
+        try:
+            source.assert_valid_classical_val(value)
+        except Exception as error:
+            with pytest.raises(type(error)):
+                validate_integer_word_value(value, width, signed=name == "QInt")
+        else:
+            validate_integer_word_value(value, width, signed=name == "QInt")

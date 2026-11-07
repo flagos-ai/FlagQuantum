@@ -54,16 +54,6 @@ def _word_bounds(
 ) -> tuple[int | float | Expr, int | float | Expr]:
     if type(signed) is not bool:
         raise ValueError("Integer word signedness must be boolean")
-    if isinstance(width, int):
-        if width < 0:
-            raise ValueError("Integer word width must be nonnegative")
-    else:
-        from sympy import Expr
-
-        if not isinstance(width, Expr):
-            raise ValueError(
-                "Integer word width must be an integer or symbolic expression"
-            )
     if signed:
         return -(2 ** (width - 1)), 2 ** (width - 1)
     return 0, 2**width
