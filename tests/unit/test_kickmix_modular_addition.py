@@ -87,18 +87,23 @@ def test_bound_modular_operation_matches_complex_amplitudes(
         )
 
 
-def _certify_all_histories(program: ReversiblePhaseProgram) -> tuple[int, ...]:
+def _certify_all_histories(
+    program: ReversiblePhaseProgram, *, width: int = 2, modulus: int = 3
+) -> tuple[int, ...]:
     # Enumerate every outcome, including unused outcomes at disabled effects.
     # Those redundant histories all implement the same signed basis map.
     np = pytest.importorskip("numpy")
     events = sum(op.opcode in {"hmr", "r"} for op in program.operations)
-    labels = np.arange((1 << events) * 18, dtype=np.int64)
-    histories, basis = labels // 18, labels % 18
-    lhs, rhs, control = basis // 6, (basis // 2) % 3, basis % 2
-    wires = [((lhs >> i) & 1).astype(bool) for i in range(2)]
-    wires += [((rhs >> i) & 1).astype(bool) for i in range(2)]
+    size = 2 * modulus * modulus
+    labels = np.arange((1 << events) * size, dtype=np.int64)
+    histories, basis = labels // size, labels % size
+    lhs, rhs, control = basis // (2 * modulus), (basis // 2) % modulus, basis % 2
+    wires = [((lhs >> i) & 1).astype(bool) for i in range(width)]
+    wires += [((rhs >> i) & 1).astype(bool) for i in range(width)]
     wires += [control.astype(bool)]
-    wires += [np.zeros_like(wires[0]) for _ in range(program.n_qubits - 5)]
+    wires += [
+        np.zeros_like(wires[0]) for _ in range(program.n_qubits - (2 * width + 1))
+    ]
     bits = [np.zeros_like(wires[0]) for _ in range(program.n_bits)]
     scopes = [np.ones_like(wires[0])]
     sign = np.zeros_like(wires[0])
@@ -134,10 +139,10 @@ def _certify_all_histories(program: ReversiblePhaseProgram) -> tuple[int, ...]:
         else:
             pytest.fail(f"Unexpected native operation {op.opcode}")
     assert not np.any(sign)
-    assert not any(np.any(wire) for wire in wires[5:])
-    assert np.all(wires[2] + 2 * wires[3] == rhs)
-    assert np.all(wires[4] == control)
-    return tuple(map(int, wires[0] + 2 * wires[1]))
+    assert not any(np.any(wire) for wire in wires[2 * width + 1 :])
+    assert np.all(sum(wires[width + i] * (1 << i) for i in range(width)) == rhs)
+    assert np.all(wires[2 * width] == control)
+    return tuple(map(int, sum(wires[i] * (1 << i) for i in range(width))))
 
 
 @pytest.mark.parametrize("subtract", [False, True])
