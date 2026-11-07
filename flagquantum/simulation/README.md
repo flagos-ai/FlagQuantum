@@ -784,3 +784,21 @@ identity and original grouping errors; it owns no dtype hierarchy or gate emissi
 The same numerical-dimensions example consumes this converter in both its oracle
 and append path. See [control grouping](../../docs/development/CLASSICAL_CONTROL_PATTERNS.md)
 and run `pytest -q tests/unit/test_classical_control_patterns.py` with pinned extras.
+
+`classical_distributions.py` owns numerical output distributions and resolution.
+It retains the original NumPy choice call or fixed-instance object lookup, with
+explicit RNG precedence and no implicit random fallback. It does not own graph
+traversal or validate an output register's domain. A minimal fixed-value workflow:
+
+```python
+from flagquantum.simulation.classical_distributions import (
+    ClassicalDistribution, draw_classical_value,
+)
+
+assert draw_classical_value(
+    ClassicalDistribution(2), instance_id=0, fixed_values={0: 1},
+) == 1
+```
+
+Run `pytest -q tests/unit/test_classical_distributions.py` with pinned extras for
+original RNG sequences/state, fixed identity, precedence and failure comparisons.
