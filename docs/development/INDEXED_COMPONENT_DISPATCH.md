@@ -251,3 +251,49 @@ The new tests total 79 and the concentrated indexed/control regression passes
 checks pass. Symbolic control shapes/extents, legacy indexed model profiles,
 repeated control stacking beyond this call and whole upstream file acceptance
 remain open G2 work.
+
+## G2-IDX05 QEC cost profiles
+
+Concrete indexed and specialized-control models now accept `legacy_shims`,
+matching the locked `QECGatesCost` option. This affects declared logical costs
+only. The emitter takes no cost-profile option, and no circuit is constructed
+by an estimate. Children must be declared under the same profile as their
+parent; the parent cannot infer or rewrite the profile of arbitrary child costs.
+
+`control_predicate_resource_model.py` owns conversion of the existing typed
+`ControlPredicateCall` query to a concrete `ComponentCost`. Controls plus prefix
+junk and target occupy `2*n-1` live wires in either direction. Indexed traversal
+and specialized-control models both consume this authority, removing the latter's
+local conversion code. Each traversal split retains compute `(1,0)` and erase
+`(1,1)` in forward direction, with directions swapped for the adjoint, plus one
+explicit CNOT. Positive prefix ladders retain their separate compute/erase calls.
+No duplicate inversion or measured-erasure accounting rules are introduced.
+
+The source profiles differ deliberately: a two-bit And erase has one Clifford
+in the modern profile versus three plus activation flips in the historical
+profile. These are model categories, not primitive counts. The append example
+now shows both results for the same emitted circuit:
+
+| Quantity | Modern model | Historical model | Emitted IR |
+|---|---:|---:|---:|
+| Clifford categories | 6 | 22 | Listed separately by opcode |
+| T equivalents / T instructions | 12 | 12 | 12 |
+| Measurements | 3 | 3 | 3 |
+| Logical peak / reserved wires | 8 | 8 | 8 |
+
+There are 112 original model configurations: 24 owned predicate cases,32 nested
+or target-position cases,48 specialized-control cases and8 phase-child cases.
+All seven categories and logical peaks match the source independently in both
+profiles. Phase children retain their actual frontend identity: Bloq-controlled
+S/T differs from the Cirq CZPowGate path. Native typed queries declare each child
+before comparing it and then its parent to the source. Source module blob
+`226e6db045513112bd3e5ff5aa79d2cb8c5bf6d4` is verified in both the pinned tree
+and installed environment. Neither is modified.
+
+The new suite has117 tests; concentrated regression has465 passing without
+skips, including existing executable gate-flow, complete complex measurement
+branch, clean-work and runtime append tests. A refusal probe proves model queries
+do not enter circuit construction, and the same emitter returns unchanged IR
+before and after both queries. Strict typing, format, lint, scope and architecture
+checks pass. This closes concrete indexed QEC-profile composition, not general
+symbolic indexed graphs or arbitrary legacy child annotations.

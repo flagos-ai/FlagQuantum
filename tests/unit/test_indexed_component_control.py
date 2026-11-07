@@ -168,6 +168,8 @@ def test_runnable_append_and_estimation_example(capsys):
     assert "Model T equivalents 12" in output
     assert "Emitted T/T-dagger instructions 12" in output
     assert "Model logical peak 8" in output
+    assert "Modern model Clifford count 6" in output
+    assert "Legacy model Clifford count 22" in output
 
 
 @pytest.mark.parametrize(

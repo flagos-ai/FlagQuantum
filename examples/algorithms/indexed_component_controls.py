@@ -65,6 +65,19 @@ def main() -> None:
     )
     report = estimate_ftqc_resources(model, emitted_ir=circuit.to_ir())
     assert report.emitted is not None
+    legacy = estimate_ftqc_resources(
+        specialized_indexed_component_cost(
+            (1,),
+            (2,),
+            children,
+            registers,
+            target_width=1,
+            current_control_value=0,
+            legacy_shims=True,
+        )
+    )
+    print("Modern model Clifford count", report.logical.gates.clifford)
+    print("Legacy model Clifford count", legacy.logical.gates.clifford)
     print("Model T equivalents", report.logical.gates.total_t_count())
     print("Emitted T/T-dagger instructions", report.emitted.t_count)
     print("Model logical peak", report.logical.peak_logical_qubits)

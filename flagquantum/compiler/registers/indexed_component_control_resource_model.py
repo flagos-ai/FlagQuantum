@@ -5,12 +5,9 @@
 
 """Compose indexed control-system models without constructing instructions."""
 
-from dataclasses import fields
-
-from .._component_trace.qec_gate_cost import query_qec_gate_cost
-from .._component_trace.resource_generalization import ControlPredicateCall
 from .._component_trace.resource_model import ComponentCost, CostCall, GateCost
 from .control_predicate import ControlRegister
+from .control_predicate_resource_model import control_predicate_cost
 from .indexed_component_resource_model import indexed_component_cost
 
 
@@ -23,10 +20,12 @@ def specialized_indexed_component_cost(
     target_width: int,
     current_control_value: int | None = None,
     adjoint: bool = False,
+    legacy_shims: bool = False,
 ) -> ComponentCost:
     """Retain the two source predicate levels and the existing cost authority.
 
-    Children include their positive predicate and all target ports. The caller
+    Children use the same QEC profile and include their positive predicate
+    and all target ports. The caller
     supplies child-adjoint models for reverse traversal. As in source, solitary
     negative specialization has the same model as its positive counterpart.
     """
@@ -44,6 +43,7 @@ def specialized_indexed_component_cost(
         target_width=target_width,
         control_count=1,
         adjoint=adjoint,
+        legacy_shims=legacy_shims,
     )
     patterns = []
     if len(values) > 1:
@@ -57,14 +57,10 @@ def specialized_indexed_component_cost(
     for pattern in patterns:
         work += len(pattern) - 1
         for reverse in (False, True):
-            cost = query_qec_gate_cost(ControlPredicateCall(pattern, reverse))
             gates = gates.plus(
-                GateCost(
-                    **{
-                        field.name: int(getattr(cost, field.name))
-                        for field in fields(GateCost)
-                    }
-                ),
+                control_predicate_cost(
+                    pattern, uncompute=reverse, legacy_shims=legacy_shims
+                ).gates,
                 1,
             )
     bystanders = len(values) + int(current_control_value is not None) + work - 1

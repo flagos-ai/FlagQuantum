@@ -10,6 +10,7 @@
 from math import prod
 
 from .._component_trace.resource_model import ComponentCost, CostCall, GateCost
+from .control_predicate_resource_model import control_predicate_cost
 from .indexed_component import indexed_component_workspace
 
 
@@ -30,15 +31,19 @@ def indexed_component_cost(
     control_count: int = 0,
     child_target_width: int | None = None,
     adjoint: bool = False,
+    legacy_shims: bool = False,
 ) -> ComponentCost:
     """Aggregate controlled THRU children without emitting or executing gates.
 
+    Child models must use the same QEC profile as this parent.
     Each child includes one positive predicate and child_target_width target
     ports, plus its own declared work. The child direction is caller-owned.
     Parent target ports not used by that child remain bystanders. Preserve
     separate child models even when their costs or gate identities coincide.
     """
     indexed_component_workspace(axis_widths, control_count)
+    if type(legacy_shims) is not bool:
+        raise ValueError("Indexed cost profile must be a boolean")
     if len(axis_widths) != len(extents) or any(
         type(extent) is not int or not 1 <= extent <= 1 << width
         for width, extent in zip(axis_widths, extents, strict=True)
@@ -73,7 +78,6 @@ def indexed_component_cost(
     signature = control_count + sum(axis_widths) + target_width
     prefix = max(0, control_count - 1)
     traversal_ands = rows - (1 if control_count else 2)
-    ands = traversal_ands + prefix
     peak_work = sum((extent - 1).bit_length() for extent in extents) + control_count - 1
     calls = []
     order = reversed(range(rows)) if adjoint else range(rows)
@@ -88,13 +92,24 @@ def indexed_component_cost(
                 children[flat_index], bystander_qubits=signature + active - child_ports
             )
         )
+    # Forward traversal computes (1,0) and erases (1,1); adjoint swaps
+    # their directions. The source has one explicit CNOT per split.
+    gates = GateCost(clifford=traversal_ands + 2 * int(control_count == 0))
+    for values, reverse, count in (
+        ((1, 0), adjoint, traversal_ands),
+        ((1, 1), not adjoint, traversal_ands),
+        ((1, 1), False, prefix),
+        ((1, 1), True, prefix),
+    ):
+        gates = gates.plus(
+            control_predicate_cost(
+                values, uncompute=reverse, legacy_shims=legacy_shims
+            ).gates,
+            count,
+        )
     return ComponentCost(
         "IndexedComponent†" if adjoint else "IndexedComponent",
         signature + peak_work,
-        GateCost(
-            and_bloq=ands,
-            clifford=2 * traversal_ands + prefix + 2 * int(control_count == 0),
-            measurement=ands,
-        ),
+        gates,
         tuple(calls),
     )
