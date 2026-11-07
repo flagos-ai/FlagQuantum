@@ -98,3 +98,9 @@ Ruff, compiler ownership scope, architecture and diff checks passed. Full
 original native fuzz/performance suites, generic external condition scopes
 and typed/reverse conditional-assignment merges remain separate open items;
 this batch does not declare G2 or the entire source file accepted.
+
+
+The G2-KCFB02 [compiler reverse-route addendum](REVERSIBLE_CLASSICAL_LOWERING.md)
+now verifies the bound full-table consumer through Core, artifact, KMX and
+local/native execution. Earlier reverse-route limitations above remain relevant
+to negative predicates and typed ProgramIR conditional merges.

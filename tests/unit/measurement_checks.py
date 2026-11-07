@@ -4,7 +4,8 @@ import torch
 
 from examples.algorithms.binary_field_arithmetic import FieldOperation
 from flagquantum.circuit import Circuit
-from flagquantum.core.classical_dataflow import parse_classical_xor
+from flagquantum.core.classical_control import instruction_condition_clauses
+from flagquantum.core.classical_dataflow import ClassicalXor, parse_classical_xor
 from flagquantum.core.ir import Instruction
 
 
@@ -30,29 +31,33 @@ def forced_branch(
             pending.clear()
 
     for gate in gates:
+        clauses = instruction_condition_clauses(gate)
+        active = not clauses or any(
+            all(classical[bit] == value for bit, value in clause) for clause in clauses
+        )
         if gate.name == "classical_xor":
             flush()
             assignment = parse_classical_xor(gate)
-            if all(
-                classical[int(bit)] == value
-                for bit, value in gate.metadata.get("conditions", ())
-            ):
+            if active:
                 classical[assignment.target] = assignment.evaluate(classical)
         elif gate.name == "measure":
             flush()
             outcome = next(measurements)
+            if not active:
+                if outcome:
+                    state = torch.zeros_like(state)
+                continue
             classical[int(gate.metadata["classical_bit"])] = outcome
             mask = (data >> (width - 1 - gate.wires[0])) & 1
             state = state * (mask == outcome)
         elif gate.name == "reset":
             flush()
+            if not active:
+                continue
             mask = 1 << (width - 1 - gate.wires[0])
             # Reset follows a projective measurement; sum the disjoint sectors.
             state = torch.where((data & mask) == 0, state + state[data ^ mask], 0)
-        elif all(
-            classical[int(bit)] == value
-            for bit, value in gate.metadata.get("conditions", ())
-        ):
+        elif active:
             pending.append(
                 Instruction(gate.name, gate.wires, gate.params, matrix=gate.matrix)
             )
@@ -139,23 +144,29 @@ def certified_and_channel_map(
 def expand_reset_branches(
     gates: tuple[Instruction, ...], *, first_slot: int
 ) -> tuple[Instruction, ...]:
-    """Expose unconditional reset Kraus outcomes for exact branch projection."""
+    """Expose reset Kraus outcomes; inactive effects use identity label zero."""
     result: list[Instruction] = []
     slot = first_slot
     for gate in gates:
         if gate.name != "reset":
             result.append(gate)
             continue
-        if gate.metadata.get("conditions") or gate.metadata.get("condition_clauses"):
-            raise ValueError("Reset branch expansion requires unconditional reset")
+        clauses = instruction_condition_clauses(gate)
+        if len(clauses) > 1:
+            raise ValueError("Reset branch expansion requires one conjunction")
+        conditions = clauses[0] if clauses else ()
+        metadata: dict[str, object] = {"classical_bit": slot, "is_dynamic": True}
+        if conditions:
+            result.append(ClassicalXor((), slot).instruction())
+            metadata.update(conditions=conditions, guarded_effect=True)
         result.extend(
             (
+                Instruction("measure", gate.wires, metadata=metadata),
                 Instruction(
-                    "measure",
+                    "x",
                     gate.wires,
-                    metadata={"classical_bit": slot, "is_dynamic": True},
+                    metadata={"conditions": tuple(sorted((*conditions, (slot, 1))))},
                 ),
-                Instruction("x", gate.wires, metadata={"conditions": ((slot, 1),)}),
             )
         )
         slot += 1

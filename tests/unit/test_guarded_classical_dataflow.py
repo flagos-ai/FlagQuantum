@@ -252,13 +252,12 @@ def test_scoped_guard_alias_and_nested_snapshots_match_native_contract(
         )
 
 
-def test_guarded_dataflow_exports_but_typed_and_reverse_routes_refuse_merge() -> None:
+def test_guarded_dataflow_exports_and_typed_route_refuses_merge() -> None:
     from examples.algorithms.binary_field_arithmetic import FieldOperation
     from flagquantum.compiler.lowering.reversible_phase import lower_reversible_phase
     from flagquantum.core.ir.program.lowering import circuit_to_program
     from flagquantum.core.ir.program.model import UNSUPPORTED_WITH_DIAGNOSTICS
     from flagquantum.dynamic import DynamicCircuit
-    from flagquantum.errors import CapabilityError
     from flagquantum.runtime.dynamic.conformance import (
         LOCAL_TRAJECTORY_FEATURES,
         assess_dynamic_features,
@@ -279,8 +278,7 @@ def test_guarded_dataflow_exports_but_typed_and_reverse_routes_refuse_merge() ->
     conversion = circuit_to_program(circuit.to_ir())
     assert conversion.state == UNSUPPORTED_WITH_DIAGNOSTICS
     assert "conditional" in conversion.diagnostics[0].message
-    with pytest.raises(CapabilityError, match="conditional classical result merge"):
-        lower_reversible_phase(circuit.to_ir())
+    assert lower_reversible_phase(circuit.to_ir()).n_bits == 1
 
 
 def test_guarded_parity_example() -> None:

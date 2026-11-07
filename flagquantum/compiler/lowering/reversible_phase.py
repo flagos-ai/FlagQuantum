@@ -4,7 +4,6 @@ from ...core.classical_control import (
     instruction_condition_clauses,
     validate_classical_control,
 )
-from ...core.classical_dataflow import parse_classical_xor
 from ...core.ir import CircuitIR, Instruction
 from ...errors import CapabilityError
 from ..artifacts.reversible_phase import (
@@ -12,6 +11,7 @@ from ..artifacts.reversible_phase import (
     ReversiblePhaseOperation,
     ReversiblePhaseProgram,
 )
+from .reversible_classical import lower_classical_assignment, positive_condition_slots
 
 _REVERSIBLE_OPCODES = frozenset(REVERSIBLE_OPCODE_ARITIES) - {
     "hmr",
@@ -31,9 +31,7 @@ def _plain(instruction: Instruction) -> bool:
     )
 
 
-def _demolition_measurement(
-    span: tuple[Instruction, ...],
-) -> ReversiblePhaseOperation | None:
+def _demolition_measurement(span: tuple[Instruction, ...]) -> int | None:
     if len(span) != 3:
         return None
     basis, measure, clear = span
@@ -42,15 +40,45 @@ def _demolition_measurement(
         or not all(_plain(item) for item in span)
         or basis.wires != measure.wires
         or basis.wires != clear.wires
-        or basis.metadata
-        or set(measure.metadata) - {"is_dynamic", "classical_bit"}
+        or set(basis.metadata) - {"conditions", "condition_clauses"}
+        or set(measure.metadata)
+        - {
+            "is_dynamic",
+            "classical_bit",
+            "guarded_effect",
+            "conditions",
+            "condition_clauses",
+        }
         or set(clear.metadata) - {"conditions", "condition_clauses"}
+        or measure.metadata.get("is_dynamic") is not True
     ):
         return None
-    bit = measure.metadata["classical_bit"]
-    if instruction_condition_clauses(clear) != (((bit, 1),),):
+    guards = positive_condition_slots(basis)
+    if instruction_condition_clauses(measure) != instruction_condition_clauses(basis):
         return None
-    return ReversiblePhaseOperation("hmr", basis.wires, result_bit=bit)
+    bit = measure.metadata["classical_bit"]
+    expected = tuple(sorted({*((slot, 1) for slot in guards), (bit, 1)}))
+    if instruction_condition_clauses(clear) != (expected,):
+        return None
+    return int(bit)
+
+
+def _x_basis_reset(span: tuple[Instruction, ...]) -> bool:
+    if len(span) != 2:
+        return False
+    basis, reset = span
+    return (
+        (basis.name, reset.name) == ("h", "reset")
+        and all(_plain(item) for item in span)
+        and basis.wires == reset.wires
+        and not (set(basis.metadata) - {"conditions", "condition_clauses"})
+        and not (
+            set(reset.metadata)
+            - {"is_dynamic", "guarded_effect", "conditions", "condition_clauses"}
+        )
+        and reset.metadata.get("is_dynamic") is True
+        and instruction_condition_clauses(basis) == instruction_condition_clauses(reset)
+    )
 
 
 def _is_scalar_sign(span: tuple[Instruction, ...]) -> bool:
@@ -99,45 +127,26 @@ def lower_reversible_phase(ir: CircuitIR) -> ReversiblePhaseProgram:
         instruction = ir.instructions[index]
         opcode = instruction.name
         consumed = 1
+        result_bit = None
         if instruction.name == "classical_xor":
-            if instruction_condition_clauses(instruction):
-                raise CapabilityError(
-                    "reversible-phase lowering requires a conditional classical result merge"
-                )
-            assignment = parse_classical_xor(instruction)
-            if assignment.sources.count(assignment.target) % 2 == 0:
-                operations.append(
-                    ReversiblePhaseOperation(
-                        "bit_store0", (), result_bit=assignment.target
-                    )
-                )
-            operations.extend(
-                ReversiblePhaseOperation(
-                    "bit_invert", (), result_bit=assignment.target, condition_bit=source
-                )
-                for source in assignment.sources
-                if source != assignment.target
-            )
-            if assignment.constant:
-                operations.append(
-                    ReversiblePhaseOperation(
-                        "bit_invert", (), result_bit=assignment.target
-                    )
-                )
+            operations.extend(lower_classical_assignment(instruction))
             index += 1
             continue
         if instruction.name == "h":
             span = ir.instructions[index : index + 3]
-            hmr = _demolition_measurement(span)
-            if hmr is not None:
-                operations.append(hmr)
-                index += 3
-                continue
-            controlled_x = _ccz_conjugation(span)
-            if controlled_x is not None:
-                instruction = controlled_x
-                opcode = "ccz"
+            result_bit = _demolition_measurement(span)
+            if result_bit is not None:
+                opcode = "hmr"
                 consumed = 3
+            elif _x_basis_reset(ir.instructions[index : index + 2]):
+                opcode = "r"
+                consumed = 2
+            else:
+                controlled_x = _ccz_conjugation(span)
+                if controlled_x is not None:
+                    instruction = controlled_x
+                    opcode = "ccz"
+                    consumed = 3
         if instruction.name == "x" and _is_scalar_sign(
             ir.instructions[index : index + 4]
         ):
@@ -155,27 +164,26 @@ def lower_reversible_phase(ir: CircuitIR) -> ReversiblePhaseProgram:
                 f"reversible-phase lowering cannot represent {instruction.name!r} "
                 f"at instruction {index}"
             )
-        clauses = instruction_condition_clauses(instruction)
-        scopes: tuple[int, ...] = ()
-        bit = None
-        if clauses:
-            if len(clauses) != 1 or any(value != 1 for _, value in clauses[0]):
-                raise CapabilityError(
-                    f"reversible-phase lowering requires one positive condition clause at {index}"
-                )
-            slots = tuple(slot for slot, _ in clauses[0])
-            scopes, bit = slots[:-1], slots[-1]
-            operations.extend(
-                ReversiblePhaseOperation("push_condition", (), condition_bit=scope)
-                for scope in scopes
-            )
+        slots = positive_condition_slots(instruction)
+        scopes, bit = slots[:-1], slots[-1] if slots else None
+        operations.extend(
+            ReversiblePhaseOperation("push_condition", (), condition_bit=scope)
+            for scope in scopes
+        )
         operations.append(
             ReversiblePhaseOperation(
                 opcode,
                 () if opcode == "neg" else instruction.wires,
                 condition_bit=bit,
+                result_bit=result_bit,
             )
         )
         operations.extend(ReversiblePhaseOperation("pop_condition", ()) for _ in scopes)
         index += consumed
-    return ReversiblePhaseProgram(ir.n_wires, n_bits, tuple(operations))
+    written = {
+        int(instruction.metadata["classical_bit"])
+        for instruction in ir.instructions
+        if instruction.name in {"measure", "classical_xor"}
+    }
+    holes = tuple(bit for bit in range(n_bits) if bit not in written)
+    return ReversiblePhaseProgram(ir.n_wires, n_bits, tuple(operations), holes)

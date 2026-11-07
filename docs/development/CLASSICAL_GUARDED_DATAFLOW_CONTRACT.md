@@ -89,3 +89,10 @@ result merge remain explicitly unsupported and open, with negative tests.
 Scoped initialization and disjunctions on classical assignments remain refused.
 The next source consumer is `gen_unlookup`, including phase-table slot ownership
 and complete small coherent branch checks; it is not marked accepted here.
+
+
+The G2-KCFB02 addendum in [atomic reversible lowering](REVERSIBLE_CLASSICAL_LOWERING.md)
+admits Core-to-KMX conditional XOR for one positive conjunction, including
+destination/guard aliases. Negative predicates and typed ProgramIR result
+merges remain explicitly unsupported. The earlier broad reverse-route refusal
+above records the G2-KCFB01 baseline, not the current positive-predicate boundary.
