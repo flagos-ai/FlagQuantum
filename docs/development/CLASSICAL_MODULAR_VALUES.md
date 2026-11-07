@@ -19,3 +19,43 @@ Input types, symbolic relations, missing residue bounds, zero modulus, unsigned
 scalars and array truth failures are compared to the original methods. Direct
 value-method tests are distinct from typed register-domain validation and from
 quantum gate-flow evidence.
+
+
+## Modular subtraction and controlled subtraction
+
+`simulation/classical_modular_subtraction.py` preserves original ModSub/CModSub
+comparison and operation order. Outside `[0,p)` both operands are returned
+unchanged. Active subtraction uses the original `right -= left`, then adds the
+modulus only if the result is negative. Single-element arrays therefore retain
+in-place mutation and caller aliases; unsigned scalar underflow is not repaired.
+Controlled subtraction checks activation before entering the shared evaluator.
+These are direct value semantics. They do not broaden the compiler's valid clean
+residue domain, or make arbitrary NumPy values valid quantum words.
+
+The source CModAdd and CModSub methods are compared for both polarities, inactive
+values and non-bit controls; the method itself does not add a control validator.
+Typed control validation remains distinct. The plain and controlled coherent
+state builders now use these evaluators while retaining independent mathematical
+assertions. Existing source primitive/feedback/resource checks remain unchanged.
+Small forced measurement histories and all-history clean-work certificates stay
+in the quantum suites, including the known y=p addition and p+1 load boundaries.
+
+Run the example without upstream reference packages:
+
+```sh
+python -m examples.algorithms.classical_modular_values
+```
+
+The example uses `circuit.append(op)` on a coherent two-bit modulo-2 pair and
+compares complete trajectory amplitudes after addition and subtraction. Both
+operations restore six work wires. Emitted ModAdd is 28 T and 7 measurements;
+ModSub is 36 T and 9 measurements. The corresponding pinned model values are
+listed separately, using `16*n-4` and `24*n-12` T-equivalent formulas at n=2.
+This example executes eight sampled trajectories; exhaustive small histories and
+larger all-history certificates are provided by the acceptance tests.
+
+Acceptance: 626 new classical cases (313 per module), 766 concentrated passes,
+no skips. Nineteen source/native unsigned arithmetic overflow warnings remain
+visible, including the explicit native underflow witness. Strict types, formatting,
+team scope, architecture and the runnable example pass. Original source blobs
+are verified against the inventory; no reference or prior defect is patched.

@@ -14,6 +14,12 @@ from flagquantum.compiler.registers.controlled_modular_addition import (
     controlled_modular_add_ir,
     controlled_modular_requirements,
 )
+from flagquantum.simulation.classical_modular_addition import (
+    controlled_modular_add_classical_values,
+)
+from flagquantum.simulation.classical_modular_subtraction import (
+    controlled_modular_subtract_classical_values,
+)
 from tests.unit.measurement_checks import certified_and_channel_map, forced_branch
 from tests.unit.test_register_constant_addition import reference_arithmetic_gates
 from tests.unit.test_register_subtraction import assert_source
@@ -130,7 +136,15 @@ def certificate_inputs(
     for control in (0, 1):
         for a in range(p + int(not subtract)):
             for b in range(p):
-                out = (b + (-a if subtract else a)) % p if control == cv else b
+                evaluate = (
+                    controlled_modular_subtract_classical_values
+                    if subtract
+                    else controlled_modular_add_classical_values
+                )
+                out = int(evaluate(control, a, b, p, control_value=cv)[2])
+                assert out == (
+                    (b + (-a if subtract else a)) % p if control == cv else b
+                )
                 before = ((control << (2 * n)) | (a << n) | b) << q
                 after = ((control << (2 * n)) | (a << n) | out) << q
                 inputs.append(
@@ -175,7 +189,13 @@ def coherent_states(
     state = torch.zeros(1 << width, dtype=torch.complex128)
     expected = torch.zeros_like(state)
     for (ctrl, a, b, s), amp in zip(words, amps, strict=True):
-        out = (b + (-a if subtract else a)) % p if ctrl == cv else b
+        evaluate = (
+            controlled_modular_subtract_classical_values
+            if subtract
+            else controlled_modular_add_classical_values
+        )
+        out = int(evaluate(ctrl, a, b, p, control_value=cv)[2])
+        assert out == ((b + (-a if subtract else a)) % p if ctrl == cv else b)
         state[(((ctrl << (2 * n)) | (a << n) | b) << (q + 1)) | s] = amp
         expected[(((ctrl << (2 * n)) | (a << n) | out) << (q + 1)) | s] = amp
     return state, expected

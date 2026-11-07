@@ -11,6 +11,12 @@ from flagquantum.compiler.registers.modular_addition import (
     modular_add_ir,
     modular_add_requirements,
 )
+from flagquantum.simulation.classical_modular_addition import (
+    modular_add_classical_values,
+)
+from flagquantum.simulation.classical_modular_subtraction import (
+    modular_subtract_classical_values,
+)
 from tests.unit.measurement_checks import forced_branch
 from tests.unit.test_register_constant_addition import reference_arithmetic_gates
 from tests.unit.test_register_subtraction import assert_source
@@ -88,7 +94,13 @@ def residue_states(
     state = torch.zeros(1 << width, dtype=torch.complex128)
     expected = torch.zeros_like(state)
     for (a, b, s), amp in zip(pairs, amps, strict=True):
-        value = (b - a if subtract else b + a) % modulus
+        evaluate = (
+            modular_subtract_classical_values
+            if subtract
+            else modular_add_classical_values
+        )
+        value = int(evaluate(a, b, modulus)[1])
+        assert value == (b - a if subtract else b + a) % modulus
         state[(((a << n) | b) << (q + 1)) | s] = amp
         expected[(((a << n) | value) << (q + 1)) | s] = amp
     return state, expected
