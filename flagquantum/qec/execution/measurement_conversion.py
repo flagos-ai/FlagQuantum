@@ -13,6 +13,7 @@ from ...core.ir import CircuitIR, ensure_circuit_ir
 from ...errors import CapabilityError
 from ...simulation.stabilizer._record_conversion import (
     _convert_stim_measurements,
+    _prepare_explicit_record_conversion,
     _prepare_terminal_record_conversion,
 )
 from ..dem.model import DemSample
@@ -110,7 +111,7 @@ def convert_measurement_records(
 
 
 class CompiledMeasurementsToDetectionEventsConverter:
-    """Reusable reference-normalized converter for terminal measurement records."""
+    """Reusable reference-normalized converter for declared measurement records."""
 
     __slots__ = ("_measurement_qubits", "_convert_records")
     _measurement_qubits: tuple[int, ...]
@@ -124,7 +125,7 @@ class CompiledMeasurementsToDetectionEventsConverter:
 
     @property
     def measurement_qubits(self) -> tuple[int, ...]:
-        """Logical qubit of each input column, in caller-specified order."""
+        """Logical qubit of each input column in its declared record order."""
         return self._measurement_qubits
 
     def convert(
@@ -249,5 +250,50 @@ def compile_m2d_converter(
     )
     handle = object.__new__(CompiledMeasurementsToDetectionEventsConverter)
     handle._measurement_qubits = measurement_qubits
+    handle._convert_records = convert
+    return handle
+
+
+def _compile_explicit_m2d_converter(
+    program: Circuit,
+    *,
+    detector_map: MeasurementMap,
+    observable_map: MeasurementMap,
+) -> CompiledMeasurementsToDetectionEventsConverter:
+    if (
+        torch.device(program.device).type != "cpu"
+        or program.runtime_config.backend != "pytorch"
+        or program.bsz != 1
+        or program.circuit_param.get("inputs") is not None
+    ):
+        raise CapabilityError(
+            "explicit conversion requires one CPU PyTorch circuit with its default initial state"
+        )
+    ir = program.to_ir()
+    width = sum(gate.name == "measure" for gate in ir.instructions)
+    if not isinstance(detector_map, MeasurementMap) or not isinstance(
+        observable_map, MeasurementMap
+    ):
+        raise TypeError(
+            "detector_map and observable_map must be MeasurementMap instances"
+        )
+    if (
+        detector_map.num_measurements != width
+        or observable_map.num_measurements != width
+    ):
+        raise ValueError("both measurement maps must match the explicit record width")
+    if not detector_map.num_rows:
+        raise ValueError("explicit conversion requires at least one detector")
+    if detector_map.num_rows + observable_map.num_rows > 65536:
+        raise CapabilityError("explicit conversion exceeds the 65536 parity row limit")
+    if detector_map.num_entries + observable_map.num_entries > 100000:
+        raise CapabilityError(
+            "explicit conversion exceeds the 100000 parity reference limit"
+        )
+    qubits, convert = _prepare_explicit_record_conversion(
+        ir, detector_columns=detector_map.rows, observable_columns=observable_map.rows
+    )
+    handle = object.__new__(CompiledMeasurementsToDetectionEventsConverter)
+    handle._measurement_qubits = qubits
     handle._convert_records = convert
     return handle

@@ -9,6 +9,8 @@
 
 #include "stim/circuit/circuit.h"
 #include "stim/simulators/frame_simulator_util.h"
+#include "stim/simulators/error_analyzer.h"
+#include "stim/simulators/measurements_to_detection_events.h"
 #include "stim/simulators/tableau_simulator.h"
 #include "stim/util_bot/probability_util.h"
 
@@ -137,7 +139,117 @@ PyObject *write_b8(PyObject *, PyObject *args) {
     }
 }
 
+
+constexpr char converter_capsule_name[] = "flagquantum.embedded_stim_converter";
+
+struct Converter {
+    stim::Circuit circuit;
+    stim::CircuitStats stats;
+    stim::simd_bits<width> reference;
+
+    explicit Converter(const char *text)
+        : circuit(text), stats(circuit.compute_stats()), reference(0) {
+        // Preserve the SDK's rejection of nondeterministic declared parities.
+        stim::ErrorAnalyzer::circuit_to_detector_error_model(
+            circuit, false, false, false, 0, false, false);
+        reference = stim::TableauSimulator<width>::reference_sample_circuit(circuit);
+    }
+};
+
+void destroy_converter(PyObject *capsule) {
+    delete static_cast<Converter *>(PyCapsule_GetPointer(capsule, converter_capsule_name));
+}
+
+PyObject *prepare_converter(PyObject *, PyObject *args) {
+    const char *text;
+    if (!PyArg_ParseTuple(args, "s", &text)) {
+        return nullptr;
+    }
+    try {
+        auto converter = std::make_unique<Converter>(text);
+        PyObject *capsule = PyCapsule_New(
+            converter.get(), converter_capsule_name, destroy_converter);
+        if (capsule != nullptr) {
+            converter.release();
+        }
+        return capsule;
+    } catch (const std::exception &error) {
+        PyErr_SetString(PyExc_RuntimeError, error.what());
+        return nullptr;
+    }
+}
+
+PyObject *convert_records(PyObject *, PyObject *args) {
+    PyObject *capsule;
+    const char *raw;
+    Py_ssize_t length, shots;
+    if (!PyArg_ParseTuple(args, "Oy#n", &capsule, &raw, &length, &shots)) {
+        return nullptr;
+    }
+    auto *converter = static_cast<Converter *>(
+        PyCapsule_GetPointer(capsule, converter_capsule_name));
+    if (converter == nullptr) {
+        return nullptr;
+    }
+    try {
+        const auto &stats = converter->stats;
+        const size_t measurements = stats.num_measurements;
+        const size_t detectors = stats.num_detectors;
+        const size_t observables = stats.num_observables;
+        const size_t limit = size_t(std::numeric_limits<Py_ssize_t>::max());
+        if (shots <= 0 || measurements == 0 || detectors == 0 ||
+            size_t(shots) > limit / measurements ||
+            size_t(length) != size_t(shots) * measurements ||
+            size_t(shots) > limit / detectors ||
+            (observables != 0 && size_t(shots) > limit / observables)) {
+            throw std::invalid_argument("Invalid embedded conversion dimensions.");
+        }
+        stim::simd_bit_table<width> records(measurements, size_t(shots));
+        stim::simd_bit_table<width> sweeps(0, size_t(shots));
+        stim::simd_bit_table<width> results(detectors + observables, size_t(shots));
+        for (size_t shot = 0; shot < size_t(shots); ++shot) {
+            for (size_t column = 0; column < measurements; ++column) {
+                const unsigned char bit = raw[shot * measurements + column];
+                if (bit > 1) {
+                    throw std::invalid_argument("Measurement bytes must be binary.");
+                }
+                records[column][shot] = bit;
+            }
+        }
+        stim::measurements_to_detection_events_helper(
+            records, sweeps, results, converter->circuit.aliased_noiseless_circuit(),
+            stats, converter->reference, true);
+        PyObject *pair = PyTuple_New(2);
+        if (pair == nullptr) {
+            return nullptr;
+        }
+        for (size_t part = 0; part < 2; ++part) {
+            const size_t columns = part == 0 ? detectors : observables;
+            const size_t offset = part == 0 ? 0 : detectors;
+            PyObject *buffer = PyByteArray_FromStringAndSize(
+                nullptr, Py_ssize_t(size_t(shots) * columns));
+            if (buffer == nullptr) {
+                Py_DECREF(pair);
+                return nullptr;
+            }
+            auto *output = PyByteArray_AsString(buffer);
+            for (size_t shot = 0; shot < size_t(shots); ++shot) {
+                for (size_t column = 0; column < columns; ++column) {
+                    output[shot * columns + column] = bool(results[offset + column][shot]);
+                }
+            }
+            PyTuple_SetItem(pair, Py_ssize_t(part), buffer);
+        }
+        return pair;
+    } catch (const std::exception &error) {
+        PyErr_SetString(PyExc_RuntimeError, error.what());
+        return nullptr;
+    }
+}
+
 PyMethodDef methods[] = {
+    {"prepare_converter", prepare_converter, METH_VARARGS, nullptr},
+    {"convert_records", convert_records, METH_VARARGS, nullptr},
     {"prepare", prepare, METH_VARARGS, nullptr},
     {"sample", sample, METH_VARARGS, nullptr},
     {"write_b8", write_b8, METH_VARARGS, nullptr},

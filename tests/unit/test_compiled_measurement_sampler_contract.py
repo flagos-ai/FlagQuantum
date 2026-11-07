@@ -270,3 +270,77 @@ def test_embedded_profile_does_not_fall_back_when_extension_is_missing(
     monkeypatch.setattr(implementation, "_prepare_sdk_sampler", unexpected_sdk)
     with pytest.raises(ModuleNotFoundError, match="_embedded_stim"):
         _program().compile_sampler(seed=7)
+
+
+def test_embedded_converter_preserves_buffers_and_missing_extension_failure(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    from flagquantum.qec.execution.context import MeasurementMap
+    from flagquantum.simulation.stabilizer import _record_conversion as conversion
+
+    (tmp_path / "_embedded_stim_profile.txt").write_text("stim-1.16.0\n")
+    monkeypatch.setattr(conversion, "__file__", str(tmp_path / "_record_conversion.py"))
+    prepared: list[str] = []
+    calls: list[bytes] = []
+
+    def prepare(text: str) -> str:
+        prepared.append(text)
+        return "handle"
+
+    def convert(handle: str, raw: bytes, shots: int) -> tuple[bytearray, bytearray]:
+        assert handle == "handle" and shots == 1
+        calls.append(raw)
+        return bytearray([0]), bytearray()
+
+    native = SimpleNamespace(prepare_converter=prepare, convert_records=convert)
+    monkeypatch.setitem(
+        sys.modules, "flagquantum.simulation.stabilizer._embedded_stim", native
+    )
+    handle = (
+        DynamicCircuit(1)
+        .x(0)
+        .measure(0)
+        .compile_m2d_converter(
+            detector_map=MeasurementMap(1, ((0,),)),
+            observable_map=MeasurementMap(1, ()),
+        )
+    )
+    first, obs = handle.convert(
+        measurements=torch.tensor([[True]]), separate_observables=True
+    )
+    second, _ = handle.convert(
+        measurements=torch.tensor([[True]]), separate_observables=True
+    )
+    first.fill_(True)
+    assert not second.any() and obs.shape == (1, 0)
+    assert calls == [b"\x01", b"\x01"]
+    assert prepared == ["X 0\nM 0\nDETECTOR rec[-1]"]
+    monkeypatch.setitem(
+        sys.modules, "flagquantum.simulation.stabilizer._embedded_stim", None
+    )
+    with pytest.raises(ModuleNotFoundError):
+        DynamicCircuit(1).measure(0).compile_m2d_converter(
+            detector_map=MeasurementMap(1, ((0,),)),
+            observable_map=MeasurementMap(1, ()),
+        )
+
+
+@pytest.mark.parametrize(
+    "result", [None, (b"\x00", bytearray()), (bytearray(), bytearray())]
+)
+def test_embedded_converter_invalid_buffers_refused(
+    result: object, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from flagquantum.simulation.stabilizer._embedded_sampler import (
+        _EmbeddedRecordConverter,
+    )
+
+    native = SimpleNamespace(
+        prepare_converter=lambda text: None, convert_records=lambda *args: result
+    )
+    monkeypatch.setitem(
+        sys.modules, "flagquantum.simulation.stabilizer._embedded_stim", native
+    )
+    converter = _EmbeddedRecordConverter("M 0\nDETECTOR rec[-1]", 1, 0)
+    with pytest.raises(ValueError, match="invalid output"):
+        converter.convert(torch.tensor([[False]]))
