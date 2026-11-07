@@ -4,7 +4,7 @@ import pytest
 
 from flagquantum.compiler._construction.register_profile import register_ports
 from flagquantum.compiler._hybrid.verifier import HybridVerificationError
-from flagquantum.ecosystem._qmod import adapter
+from flagquantum.ecosystem._qmod import context
 from flagquantum.ecosystem._qmod.adapter import (
     SUPPORTED_SOURCE_VERSION,
     QmodImport,
@@ -274,6 +274,6 @@ def test_generated_local_and_cleanup_operations_share_the_existing_budget(
     monkeypatch: pytest.MonkeyPatch,
     cap: int,
 ) -> None:
-    monkeypatch.setattr(adapter, "MAX_EFFECT_OPERATIONS", cap)
+    monkeypatch.setattr(context, "MAX_EFFECT_OPERATIONS", cap)
     with pytest.raises(HybridVerificationError, match="qmod.budget.expansion"):
         parse("within {flag=x<y;} apply {}")
