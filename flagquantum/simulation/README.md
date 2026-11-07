@@ -675,6 +675,13 @@ not enable unconditional `fql.plan` or the future native sampled plan reader.
 
 ## Classical lookup values
 
+`classical_auto_partition.py` composes bound numerical partitions, one child
+callback and output restoration while preserving unused values. It reuses
+`classical_partition.py`; Compiler retains the separate binding metadata.
+Run `python -m examples.algorithms.classical_auto_partition_values` for packed
+measured addition, complex amplitudes and clean inverse. See
+[automatic numerical partitioning](../../docs/development/CLASSICAL_AUTO_PARTITION_VALUES.md).
+
 `classical_partition.py` composes bound scalar/array codecs for shaped numerical
 Partition ports in original row-major order. Unpartition reuses the shared Join
 value boundary; Compiler retains layout legality. Run
