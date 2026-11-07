@@ -675,6 +675,13 @@ not enable unconditional `fql.plan` or the future native sampled plan reader.
 
 ## Classical lookup values
 
+The raw triangular-index callback lives in `classical_contiguous_index.py`.
+It preserves operand types and arithmetic order without finite-width wrapping.
+Compiler owns the separate occupied-target XOR gates. Run
+`python -m examples.algorithms.classical_contiguous_index_values` and see
+[the callback contract](../../docs/development/CLASSICAL_CONTIGUOUS_INDEX_VALUES.md)
+for original-source numerical parity and the missing root-decomposition boundary.
+
 `classical_lookup.lookup_classical_values` evaluates named register values from
 ordinary integer arrays. It owns numerical XOR lookup and checked erasure, not
 Compiler metadata or gate emission. It imports no Compiler, Runtime or external
