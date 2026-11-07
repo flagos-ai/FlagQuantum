@@ -17,9 +17,10 @@ import tempfile
 import time
 from collections.abc import Callable
 from dataclasses import dataclass
-from email.message import Message
+from datetime import datetime, timezone
+from http.client import HTTPMessage
 from pathlib import Path, PurePosixPath
-from typing import BinaryIO
+from typing import IO
 from urllib.parse import urlsplit
 from urllib.request import HTTPRedirectHandler, Request, build_opener
 
@@ -29,6 +30,73 @@ class _Commit:
     sha: str
     tree: str
     raw: bytes
+
+
+def _unsigned_commit(metadata: dict[str, object], sha: str, tree: str) -> _Commit:
+    """Recover omitted timezone spellings only when the exact Git SHA matches.
+
+    GitHub dates preserve Unix seconds but normalize away the original offsets;
+    messages may omit the final newline. Bound the supported encodings and keep
+    Git transport as the fallback for uncommon headers or unrecoverable bytes.
+    """
+    parents = metadata.get("parents")
+    message = metadata.get("message")
+    if (
+        not isinstance(parents, list)
+        or len(parents) > 16
+        or not isinstance(message, str)
+        or len(message) > 16384
+    ):
+        raise ValueError(
+            "Git transport is required for unsupported unsigned commit metadata"
+        )
+    headers = [f"tree {tree}"]
+    for parent in parents:
+        identifier = parent.get("sha") if isinstance(parent, dict) else None
+        if not isinstance(identifier, str) or not re.fullmatch(
+            r"[0-9a-f]{40}", identifier
+        ):
+            raise ValueError("Unsigned source commit has an invalid parent")
+        headers.append(f"parent {identifier}")
+    actors: list[str] = []
+    for role in ("author", "committer"):
+        actor = metadata.get(role)
+        if not isinstance(actor, dict) or any(
+            not isinstance(actor.get(key), str) for key in ("name", "email", "date")
+        ):
+            raise ValueError("Unsigned source commit has incomplete actor metadata")
+        name, email, date = actor["name"], actor["email"], actor["date"]
+        if (
+            any(character in name + email for character in "\r\n\0")
+            or len(name) + len(email) > 2048
+        ):
+            raise ValueError("Unsigned source commit has invalid actor metadata")
+        instant = datetime.fromisoformat(date.replace("Z", "+00:00"))
+        if instant.tzinfo is None or instant.microsecond:
+            raise ValueError(
+                "Unsigned source commit needs exact second-resolution dates"
+            )
+        seconds = int(instant.astimezone(timezone.utc).timestamp())
+        actors.append(f"{role} {name} <{email}> {seconds}")
+    # Modern civil offsets use quarter hours. Unsupported historical spellings
+    # fail closed rather than silently substituting a different source commit.
+    offsets = ["+0000", "-0000"] + [
+        f"{'+' if minutes >= 0 else '-'}{abs(minutes)//60:02d}{abs(minutes)%60:02d}"
+        for minutes in range(-12 * 60, 14 * 60 + 1, 15)
+        if minutes
+    ]
+    prefix = "\n".join(headers)
+    for author_offset in offsets:
+        for committer_offset in offsets:
+            header = f"{prefix}\n{actors[0]} {author_offset}\n{actors[1]} {committer_offset}\n\n"
+            for ending in ("", "\n"):
+                raw = (header + message + ending).encode()
+                digest = hashlib.sha1(b"commit " + str(len(raw)).encode() + b"\0" + raw)
+                if digest.hexdigest() == sha:
+                    return _Commit(sha, tree, raw)
+    raise ValueError(
+        "Git transport is required: unsigned metadata cannot reproduce the requested commit SHA"
+    )
 
 
 def _verified_commit(metadata: object, expected_sha: str) -> _Commit:
@@ -44,6 +112,12 @@ def _verified_commit(metadata: object, expected_sha: str) -> _Commit:
     if not isinstance(tree_sha, str) or not re.fullmatch(r"[0-9a-f]{40}", tree_sha):
         raise ValueError("GitHub returned an invalid source tree")
     if not isinstance(payload, str) or not isinstance(signature, str):
+        if (
+            payload is None
+            and signature is None
+            and verification.get("reason") == "unsigned"
+        ):
+            return _unsigned_commit(metadata, expected_sha, tree_sha)
         raise ValueError("Git transport is required for this unsigned commit")
     if not payload.startswith(f"tree {tree_sha}\n"):
         raise ValueError("The signed commit describes a different source tree")
@@ -217,10 +291,10 @@ class _Redirect(HTTPRedirectHandler):
     def redirect_request(
         self,
         req: Request,
-        fp: BinaryIO,
+        fp: IO[bytes],
         code: int,
         msg: str,
-        headers: Message,
+        headers: HTTPMessage,
         newurl: str,
     ) -> Request | None:
         result = super().redirect_request(req, fp, code, msg, headers, newurl)

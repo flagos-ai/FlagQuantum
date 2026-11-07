@@ -416,8 +416,6 @@ def test_api_source_bootstrap_preserves_checkout_fallback(
     steps = jobs[name]["steps"]
     bootstrap = next(step for step in steps if step.get("id") == "archive-source")
     expected_guard = "runner.environment == 'self-hosted'"
-    if workflow == "local-gpu.yml":
-        expected_guard += " && github.event_name == 'pull_request'"
     assert bootstrap["if"] == expected_guard
     assert bootstrap["continue-on-error"] is True
     assert bootstrap["timeout-minutes"] == 10

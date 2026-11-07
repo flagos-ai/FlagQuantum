@@ -46,7 +46,7 @@ jobs:
     steps:
       - name: Restore verified source through the GitHub API
         id: archive-source
-        if: runner.environment == 'self-hosted' && github.event_name == 'pull_request'
+        if: runner.environment == 'self-hosted'
         continue-on-error: true
         timeout-minutes: 10
         env:
