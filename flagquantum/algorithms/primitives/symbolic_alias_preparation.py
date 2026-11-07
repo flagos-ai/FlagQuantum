@@ -22,14 +22,13 @@ from ...compiler._component_trace.symbolic_math import (
 from ...compiler.registers.comparison_resource_model import (
     source_less_equal_resource_formula,
 )
-from ...compiler.registers.control_predicate_resource_model import (
-    control_predicate_cost,
-)
 from ...compiler.registers.symbolic_resource_model import (
     SymbolicResourceFormula,
     source_qrom_resource_formula,
 )
-from ...compiler.registers.uniform_preparation import source_uniform_preparation_cost
+from ...compiler.registers.uniform_preparation_resource_model import (
+    source_uniform_preparation_resource_formula,
+)
 
 
 def alias_probability_bits(rows: SymbolicInt, precision: SymbolicReal) -> SymbolicInt:
@@ -111,10 +110,6 @@ class AliasPreparationShape:
 
     def resource_model(self, *, legacy_shims: bool = False) -> SymbolicResourceFormula:
         """Estimate the source call graph for at least two table-free rows."""
-        cleanup = control_predicate_cost(
-            (1, 1), uncompute=True, legacy_shims=legacy_shims
-        )
-        cleanup_delta = cleanup.gates.clifford - 1
         sparse = self.support_size is not None
         rows = self.rows if self.support_size is None else self.support_size
         selection, mu = self.selection_width, self.probability_bits
@@ -122,18 +117,9 @@ class AliasPreparationShape:
         address = sparse_width if sparse else selection
         if isinstance(rows, int) and rows < 2:
             raise ValueError("The shape-only cost requires at least two rows")
-        uniform_peak: SymbolicReal
-        if isinstance(rows, int):
-            uniform = source_uniform_preparation_cost(rows, legacy_shims=legacy_shims)
-            uniform_ands = uniform.gates.and_bloq
-            uniform_cliffords = uniform.gates.clifford
-            uniform_rotations = uniform.gates.rotation
-            uniform_peak = uniform.qubits
-        else:
-            uniform_ands = 3 * address - 1
-            uniform_cliffords = 16 * address + 3 + cleanup_delta * uniform_ands
-            uniform_rotations = 2
-            uniform_peak = smax(3, address + 1, 2 * address - 1)
+        uniform = source_uniform_preparation_resource_formula(
+            rows, legacy_shims=legacy_shims
+        )
 
         targets = (selection, selection, mu) if sparse else (selection, mu)
         qrom = source_qrom_resource_formula(
@@ -142,13 +128,13 @@ class AliasPreparationShape:
         comparison = source_less_equal_resource_formula(
             mu, mu, legacy_shims=legacy_shims
         )
-        ands = uniform_ands + qrom.and_bloq + comparison.and_bloq
+        ands = uniform.and_bloq + qrom.and_bloq + comparison.and_bloq
         peak = cast(
             SymbolicInt,
             smax(
                 0,
                 selection + self.junk_width,
-                uniform_peak + selection + self.junk_width - address,
+                uniform.logical_qubits + selection + self.junk_width - address,
                 qrom.logical_qubits + mu + 1,
                 comparison.logical_qubits + 2 * selection + sparse_width,
                 smax(3, 2 * selection + 1) + 2 * mu + sparse_width,
@@ -157,9 +143,9 @@ class AliasPreparationShape:
         )
         return SymbolicResourceFormula(
             ands,
-            uniform_cliffords + qrom.clifford + comparison.clifford + mu,
+            uniform.clifford + qrom.clifford + comparison.clifford + mu,
             ands,
             peak,
             cswap=selection,
-            rotation=uniform_rotations,
+            rotation=uniform.rotation,
         )

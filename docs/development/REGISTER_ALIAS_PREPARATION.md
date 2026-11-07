@@ -131,3 +131,27 @@ G2-ALIAS10 adds one shared-boundary replacement case to the existing complete
 source profile/matrix regressions. Together with the 54 new G2-CMP10 cases,
 1,367 concentrated tests pass without skips; strict types, lint, formatting,
 ownership and architecture checks pass.
+
+
+## Shared uniform composition (G2-ALIAS11)
+
+AliasPreparationShape now consumes
+`compiler.registers.uniform_preparation_resource_model.source_uniform_preparation_resource_formula`.
+The algorithm no longer declares uniform-preparation gate arithmetic, chooses
+its concrete versus symbolic graph, or owns And cleanup-profile adjustments.
+It combines the shared uniform, QROM and comparator categories, then accounts
+for its own Hadamards, CSwap and each call's live bystanders.
+
+The original row-count object and chosen QEC profile pass through unchanged.
+A replacement test verifies that the shared uniform result is consumed. The
+original symbolic two-row uniform peak failure now remains visible through the
+alias query; the old inlined guess is not retained for that unverified input.
+All existing dense/sparse source profiles, both directions, binding witnesses,
+model-only examples and executable preparation regressions remain covered.
+Run `python -m examples.algorithms.alias_resource_profiles --symbolic` for the
+model-only path and `python -m examples.algorithms.register_uniform_preparation`
+for the related append, complex-state, cleanup and inverse example.
+
+G2-ALIAS11 adds three consumer/rejection cases. With the 110 new G2-PREP09
+cases, the final regression passes 1,480 tests without skips. Strict types,
+formatting, lint, ownership and architecture checks pass.

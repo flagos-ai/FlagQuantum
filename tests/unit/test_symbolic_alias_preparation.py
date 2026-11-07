@@ -261,3 +261,48 @@ def test_alias_uses_shared_comparison_with_literal_width_identity_and_profile(
     assert changed.clifford == baseline.clifford + 7
     assert changed.logical_qubits == baseline.logical_qubits
     assert changed.and_bloq == baseline.and_bloq
+
+
+def test_alias_consumes_shared_uniform_model_without_normalizing_row_identity(
+    monkeypatch,
+):
+    from dataclasses import replace
+
+    import sympy
+
+    import flagquantum.algorithms.primitives.symbolic_alias_preparation as module
+
+    rows = sympy.Integer(5)
+    plan = AliasPreparationShape(rows, rows, 3)
+    baseline = plan.resource_model(legacy_shims=True)
+    original = module.source_uniform_preparation_resource_formula
+    observed = []
+
+    def replacement(count, **kwargs):
+        observed.append((count is rows, kwargs["legacy_shims"]))
+        formula = original(count, **kwargs)
+        return replace(formula, clifford=formula.clifford + 7)
+
+    monkeypatch.setattr(
+        module, "source_uniform_preparation_resource_formula", replacement
+    )
+    changed = plan.resource_model(legacy_shims=True)
+    assert observed == [(True, True)]
+    assert changed.clifford == baseline.clifford + 7
+    assert changed.logical_qubits == baseline.logical_qubits
+    assert changed.and_bloq == baseline.and_bloq
+
+
+@pytest.mark.ftqc_reference
+@pytest.mark.parametrize("legacy", (False, True))
+def test_symbolic_single_bit_original_uniform_width_failure_remains_visible(legacy):
+    import sympy
+    from qualtran.bloqs.state_preparation import StatePreparationAliasSampling
+    from qualtran.resource_counting import QubitCount, get_cost_value
+
+    rows = sympy.Integer(2)
+    source = StatePreparationAliasSampling.from_n_coeff(rows, rows, precision=0.125)
+    with pytest.raises(RuntimeError):
+        get_cost_value(source, QubitCount())
+    with pytest.raises(ValueError, match="peak query"):
+        AliasPreparationShape(rows, rows, 3).resource_model(legacy_shims=legacy)
