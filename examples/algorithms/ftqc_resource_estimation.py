@@ -14,6 +14,7 @@ from flagquantum.algorithms.primitives.multiplexers.thc_resource_model import (
 from flagquantum.algorithms.primitives.single_factorization_encoding_model import (
     source_single_factorization_block_encoding_cost,
 )
+from flagquantum.compiler._component_trace.gate_budget import t_and_ccz_budget
 from flagquantum.dynamic import DynamicCircuit
 from flagquantum.qec.resources.beverland_physical import (
     estimate_beverland_physical_resources,
@@ -25,8 +26,8 @@ from flagquantum.qec.resources.estimation import (
 from flagquantum.qec.resources.gidney_fowler import estimate_gidney_fowler_resources
 
 
-def make_circuit() -> DynamicCircuit:
-    op = SelectTHC.make_on(
+def make_select() -> SelectTHC:
+    return SelectTHC.make_on(
         mu=(0, 1),
         nu=(2, 3),
         succ=4,
@@ -41,8 +42,11 @@ def make_circuit() -> DynamicCircuit:
         workspace=tuple(range(13, 39)),
         measurement_erasure=True,
     )
+
+
+def make_circuit(op: SelectTHC | None = None) -> DynamicCircuit:
     circuit = DynamicCircuit(39)
-    circuit.append(op)
+    circuit.append(make_select() if op is None else op)
     return circuit
 
 
@@ -69,9 +73,12 @@ def _report_single_factorization(
 
 def _print_thc_estimate(report: FTQCResourceReport) -> None:
     gates = report.logical.gates
+    budget = t_and_ccz_budget(gates)
     print("Model Toffoli gates", gates.toffoli)
     print("Model controlled swaps", gates.cswap)
     print("Model measurements", gates.measurement)
+    print("Model T states", budget["n_t"])
+    print("Model CCZ states", budget["n_ccz"])
     print("Model T equivalents", gates.total_t_count())
     print("Model peak logical qubits", report.logical.peak_logical_qubits)
 
@@ -115,7 +122,8 @@ def main() -> None:
         _report_single_factorization(*args.single_factorization)
         return
 
-    model = select_thc_cost(num_mu=2, num_spin_orb=4, num_bits_theta=8, keep_bitsize=1)
+    op = make_select()
+    model = op.source_resource_model(keep_bitsize=1)
     planned = estimate_ftqc_resources(model, error_budget=1e-3, physical_error=1e-4)
     assert planned.surface_code is not None
     _print_thc_estimate(planned)
@@ -142,7 +150,7 @@ def main() -> None:
     print("Duration in hours", beverland_scenario.duration_hours)
     print("Modeled failure probability", beverland_scenario.failure_probability)
 
-    observed = estimate_ftqc_resources(model, emitted_ir=make_circuit().to_ir())
+    observed = estimate_ftqc_resources(model, emitted_ir=make_circuit(op).to_ir())
     assert observed.emitted is not None
     print("Emitted T/T-dagger instructions", observed.emitted.t_count)
     print("Emitted measurements", observed.emitted.unconditional.get("measure", 0))

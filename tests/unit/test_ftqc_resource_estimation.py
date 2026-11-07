@@ -1,11 +1,13 @@
 """Exercise the same resource estimate before and after circuit construction."""
 
 import sys
+from dataclasses import replace
 
 import pytest
 
 from examples.algorithms import ftqc_resource_estimation
-from examples.algorithms.ftqc_resource_estimation import make_circuit
+from examples.algorithms.ftqc_resource_estimation import make_circuit, make_select
+from flagquantum.algorithms.primitives.multiplexers import SelectTHC
 from flagquantum.algorithms.primitives.multiplexers.thc_resource_model import (
     select_thc_cost,
 )
@@ -39,17 +41,20 @@ def test_thc_cli_estimates_dimensions_without_building_ir(
         "Model Toffoli gates 106",
         "Model controlled swaps 11",
         "Model measurements 0",
+        "Model T states 0",
+        "Model CCZ states 117",
         "Model T equivalents 468",
         "Model peak logical qubits 24",
     ]
 
 
 def test_model_and_emitted_counts_are_independent() -> None:
-    model = select_thc_cost(2, 4, 8, 1)
+    op = make_select()
+    model = op.source_resource_model(keep_bitsize=1)
     assumptions = dict(error_budget=1e-3, physical_error=1e-4)
     planned = estimate_ftqc_resources(model, **assumptions)
     report = estimate_ftqc_resources(
-        model, emitted_ir=make_circuit().to_ir(), **assumptions
+        model, emitted_ir=make_circuit(op).to_ir(), **assumptions
     )
 
     assert report.component == planned.component == "SelectTHC"
@@ -67,6 +72,19 @@ def test_model_and_emitted_counts_are_independent() -> None:
     assert report.emitted.unconditional["measure"] == 60
     assert report.emitted.unconditional["ccx"] == 49
     assert report.emitted.unconditional["cswap"] == 11
+
+
+def test_bound_thc_model_does_not_lower(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def unexpected_lowering(*args: object, **kwargs: object) -> None:
+        pytest.fail("The source estimate must not lower the operation")
+
+    monkeypatch.setattr(SelectTHC, "_append_to", unexpected_lowering)
+    op = replace(make_select(), workspace=(), measurement_erasure=False)
+    assert op.source_resource_model(keep_bitsize=3, kr1=2, kr2=1) == (
+        select_thc_cost(2, 4, 8, 3, kr1=2, kr2=1)
+    )
 
 
 def test_surface_code_assumptions_are_optional_and_paired() -> None:

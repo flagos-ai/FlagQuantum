@@ -6,10 +6,12 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 
 from ....circuit import Circuit
+from ....compiler._component_trace.resource_model import ComponentCost
 from ....compiler.registers.phase_gradient import phase_gradient_state_ir
 from ....core.classical_control import validate_classical_control
 from ....errors import ValidationError
 from ....runtime.dynamic.circuit import DynamicCircuit
+from .thc_resource_model import select_thc_cost
 from .thc_rotations import THCRotations
 
 _ANGLE_BITS = 8
@@ -86,6 +88,26 @@ class SelectTHC:
             tuple(map(tuple, one_body_networks)),
             tuple(workspace),
             measurement_erasure,
+        )
+
+    def source_resource_model(
+        self, *, keep_bitsize: int, kr1: int = 1, kr2: int = 1
+    ) -> ComponentCost:
+        """Estimate the locked SELECT model for this operation's dimensions.
+
+        The enclosing PREPARE supplies the alias keep width. The erasure
+        block sizes describe the analytical model, while the workspace and
+        measurement options describe the executable circuit.
+        """
+        if len(self.sys_a) != len(self.sys_b):
+            raise ValidationError("THC spin registers must have equal widths.")
+        return select_thc_cost(
+            len(self.networks),
+            len(self.sys_a) + len(self.sys_b),
+            _ANGLE_BITS,
+            keep_bitsize,
+            kr1=kr1,
+            kr2=kr2,
         )
 
     def append_to(self, circuit: Circuit) -> Circuit:
