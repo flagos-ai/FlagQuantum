@@ -22,6 +22,7 @@ Runtime owns those decisions and calls the appropriate numerical primitives.
 | Classical register binding, output collection and scalar/array integer bounds | [classical_registers.py](classical_registers.py), [integer_values.py](integer_values.py) |
 | Classical integer arithmetic value models | [classical_addition.py](classical_addition.py), [classical_subtraction.py](classical_subtraction.py), [classical_negation.py](classical_negation.py) |
 | Comparison predicates, controlled flag updates and checked half erasure | [classical_comparison.py](classical_comparison.py), [classical_greater_comparison.py](classical_greater_comparison.py), [classical_half_comparison.py](classical_half_comparison.py) |
+| Checked signed truncation and sorted duplicate value callbacks | [classical_signed_truncation.py](classical_signed_truncation.py), [classical_sorted_duplicates.py](classical_sorted_duplicates.py) |
 | Classical multiply-accumulate and checked square erasure | [classical_product_accumulation.py](classical_product_accumulation.py), [classical_square.py](classical_square.py) |
 | Classical modular residue arithmetic and controlled value semantics | [classical_modular_addition.py](classical_modular_addition.py), [classical_modular_subtraction.py](classical_modular_subtraction.py) |
 | Classical modular negation, constant addition and scaled accumulation | [classical_modular_negation.py](classical_modular_negation.py), [classical_modular_constant_addition.py](classical_modular_constant_addition.py), [classical_modular_scaled_addition.py](classical_modular_scaled_addition.py) |
@@ -74,6 +75,11 @@ fast path; concrete execution still works when optional Sympy is absent.
 [comparison values](../../docs/development/CLASSICAL_COMPARISON_VALUES.md) to the
 existing measured equality operation. Numerical target rules, quantum work and
 known source interface conflicts remain separate.
+`python -m examples.algorithms.classical_truncation_and_duplicates` exercises the
+[truncation and duplicate numerical slice](../../docs/development/CLASSICAL_TRUNCATION_AND_DUPLICATES.md)
+with existing sign-copy and measured duplicate operations. The guide records
+ndarray mutation, raw negative zero, retained IR capacity and the original
+controlled-callback discrepancy.
 
 ## One instruction, one dense operator
 
