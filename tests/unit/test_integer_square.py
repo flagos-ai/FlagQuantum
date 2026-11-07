@@ -11,6 +11,7 @@ from flagquantum.compiler.registers.integer_square import (
     integer_square_ir,
     integer_square_workspace_size,
 )
+from flagquantum.simulation.classical_square import square_classical_values
 from tests.unit.measurement_checks import certified_and_channel_map, forced_branch
 
 pytestmark = pytest.mark.unit
@@ -53,6 +54,8 @@ def test_square_all_basis_inputs_all_history_certificate(n: int) -> None:
     squared = []
     for a in range(1 << n):
         expected = bloq.on_classical_vals(a=a)
+        assert square_classical_values({"a": a}) == expected
+        assert square_classical_values(expected, uncompute=True) == {"a": a}
         assert bloq.adjoint().on_classical_vals(**expected) == {"a": a}
         blank.append(word(a, n) + (0,) * (2 * n + len(work)))
         squared.append(word(a, n) + word(expected["result"], 2 * n) + (0,) * len(work))
@@ -75,6 +78,11 @@ def test_square_pinned_complex_tensors_and_cleanup(n: int) -> None:
     bloq = Square(n)
     tensor = torch.as_tensor(bloq.tensor_contract().copy())
     square = tensor @ logical
+    numeric = torch.zeros_like(square)
+    for a in range(1 << n):
+        result_value = square_classical_values({"a": a})["result"]
+        numeric[(a << (2 * n)) | int(result_value)] = logical[a]
+    torch.testing.assert_close(numeric, square, rtol=0, atol=2e-12)
     inverse = torch.as_tensor(bloq.adjoint().tensor_contract().copy()) @ square
     torch.testing.assert_close(inverse, logical, atol=2e-12, rtol=0)
     embedded = torch.zeros_like(square)

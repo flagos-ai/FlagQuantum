@@ -21,6 +21,7 @@ Runtime owns those decisions and calls the appropriate numerical primitives.
 | Classical XOR lookup values and checked target erasure | [classical_lookup.py](classical_lookup.py) |
 | Classical register binding, output collection and scalar/array integer bounds | [classical_registers.py](classical_registers.py), [integer_values.py](integer_values.py) |
 | Classical integer arithmetic value models | [classical_addition.py](classical_addition.py), [classical_subtraction.py](classical_subtraction.py), [classical_negation.py](classical_negation.py) |
+| Classical multiply-accumulate and checked square erasure | [classical_product_accumulation.py](classical_product_accumulation.py), [classical_square.py](classical_square.py) |
 | Reusable arithmetic and precision | [numerics/](numerics/README.md) |
 | Optional JAX kernels | [jax/](jax/README.md) |
 

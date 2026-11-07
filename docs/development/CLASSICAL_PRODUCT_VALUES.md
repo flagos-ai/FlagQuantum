@@ -21,3 +21,34 @@ accumulation continues to use the previously accepted weighted-column product,
 shared Add/Add-adjoint and measured erasure. Its emitted instructions and source
 approximate `8 * max(a_width, b_width)**2` T model remain separate. A direct value
 port cannot establish source gate-sequence equality where no source sequence exists.
+
+
+## Square production and checked erasure
+
+`simulation/classical_square.py` ports `Square.on_classical_vals`: forward returns
+`a**2` and ignores an extra result field. Reverse requires `result == a**2`,
+raising the original assertion failure for inconsistent values. Missing fields
+keep KeyError and array equality keeps the original ambiguous-truth error. No
+width reduction or casts are introduced. This equality is not replaced by an
+unchecked delete or a different inverse formula.
+
+Run the user example without reference dependencies:
+
+```sh
+python -m examples.algorithms.classical_product_values
+```
+
+It checks occupied multiply-accumulate wraparound and inverse, then appends a
+square to a coherent state and erases it with the same clean-work decomposition.
+For two input bits the native circuit emits 8 T, 2 measurements and 2 work wires.
+The pinned source Square model declares 2 Toffoli; its 8 T-equivalent conversion
+uses the explicit four-T assumption. The source supplies tensors and classical
+values but no gate decomposition. Existing small forced-history tests compare
+complete complex amplitudes including the spectator and zero work sector;
+three-bit tests use selected histories plus the all-history channel certificate.
+
+Batch acceptance: 85 new value tests;126 concentrated passes,no skips. The 63
+visible warnings come from unchanged NumPy overflow in source `apply`, source
+`on_classical_vals` and native evaluation. They are not suppressed. Full source
+blobs remain pinned; no reference code is modified. Entire multiplication.py and
+other fixed-point/product components are not thereby declared complete.
