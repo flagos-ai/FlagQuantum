@@ -675,6 +675,13 @@ not enable unconditional `fql.plan` or the future native sampled plan reader.
 
 ## Classical lookup values
 
+`classical_controlled_values.py` composes named child value/phase callbacks with
+the shared activation helper. It retains THRU guards, inactive keyword copies,
+active output mutation, `NotImplemented` and opaque phase identity. Run
+`python -m examples.algorithms.classical_controlled_values` for word-controlled
+X/Z, complete phases and measured clean inverse. See
+[controlled value semantics](../../docs/development/CLASSICAL_CONTROLLED_VALUES.md).
+
 `classical_control_activation.py` evaluates bound control patterns with original
 symbolic-first guards, exact shape checks and first-mismatch short circuits.
 It reuses `value_parameters.py`; Compiler keeps register binding and predicate
