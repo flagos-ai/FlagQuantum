@@ -15,6 +15,7 @@ from ..artifacts.reversible_phase import (
 
 _REVERSIBLE_OPCODES = frozenset(REVERSIBLE_OPCODE_ARITIES) - {
     "hmr",
+    "r",
     "neg",
     "push_condition",
     "pop_condition",

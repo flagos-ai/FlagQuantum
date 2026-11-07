@@ -13,6 +13,7 @@ REVERSIBLE_OPCODE_ARITIES = {
     "ccz": 3,
     "neg": 0,
     "hmr": 1,
+    "r": 1,
     "bit_store0": 0,
     "bit_invert": 0,
     "push_condition": 0,
@@ -41,8 +42,11 @@ class ReversiblePhaseProgram:
     def __post_init__(self) -> None:
         if self.n_qubits < 1 or self.n_bits < 0:
             raise ValueError("Invalid reversible-phase register widths")
-        written: set[int] = set()
-        scope_depth = 0
+        definitions: list[set[int]] = [set()]
+
+        def is_defined(bit: int | None) -> bool:
+            return bit is not None and any(bit in scope for scope in definitions)
+
         for op in self.operations:
             if (
                 REVERSIBLE_OPCODE_ARITIES.get(op.opcode) != len(op.qubits)
@@ -51,45 +55,47 @@ class ReversiblePhaseProgram:
             ):
                 raise ValueError(f"Invalid reversible-phase operation {op.opcode!r}")
             if op.opcode == "push_condition":
-                if op.result_bit is not None or op.condition_bit not in written:
+                if (
+                    op.result_bit is not None
+                    or op.condition_bit is None
+                    or not is_defined(op.condition_bit)
+                ):
                     raise ValueError("Condition scope requires a defined classical bit")
-                scope_depth += 1
+                definitions.append(set())
                 continue
             if op.opcode == "pop_condition":
                 if (
-                    scope_depth == 0
+                    len(definitions) == 1
                     or op.result_bit is not None
                     or op.condition_bit is not None
                 ):
                     raise ValueError("Invalid reversible-phase condition pop")
-                scope_depth -= 1
+                definitions.pop()
                 continue
-            if scope_depth and op.result_bit is not None:
-                raise ValueError("Condition scopes cannot write classical bits")
+            if op.condition_bit is not None and not is_defined(op.condition_bit):
+                raise ValueError("Condition read before definition")
             if op.opcode in {"bit_store0", "bit_invert"}:
+                if len(definitions) > 1:
+                    raise ValueError(
+                        "Condition scopes cannot write classical bits with XOR or store"
+                    )
                 if op.result_bit is None or not 0 <= op.result_bit < self.n_bits:
                     raise ValueError("Invalid classical result bit")
                 if op.opcode == "bit_store0" and op.condition_bit is not None:
                     raise ValueError(
                         "Conditional classical initialization is unsupported"
                     )
-                if op.opcode == "bit_invert" and op.result_bit not in written:
+                if op.opcode == "bit_invert" and not is_defined(op.result_bit):
                     raise ValueError("Classical inversion reads an undefined bit")
-                if op.condition_bit is not None and op.condition_bit not in written:
-                    raise ValueError("Condition read before definition")
-                written.add(op.result_bit)
+                definitions[-1].add(op.result_bit)
                 continue
             if op.opcode == "hmr":
-                if (
-                    op.result_bit is None
-                    or not 0 <= op.result_bit < self.n_bits
-                    or op.condition_bit is not None
-                ):
+                if op.result_bit is None or not 0 <= op.result_bit < self.n_bits:
                     raise ValueError("Invalid HMR operands")
-                written.add(op.result_bit)
+                if op.condition_bit is not None and not is_defined(op.result_bit):
+                    raise ValueError("Inline guarded HMR requires a defined result")
+                definitions[-1].add(op.result_bit)
             elif op.result_bit is not None:
                 raise ValueError("Only HMR may write a classical bit")
-            if op.condition_bit is not None and op.condition_bit not in written:
-                raise ValueError("Condition read before measurement")
-        if scope_depth:
+        if len(definitions) > 1:
             raise ValueError("Unclosed reversible-phase condition scope")

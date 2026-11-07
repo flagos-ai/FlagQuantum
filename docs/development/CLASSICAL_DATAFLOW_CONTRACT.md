@@ -60,9 +60,26 @@ preserving earlier encodings byte-for-byte. Unsupported opcodes still fail close
 Positive conjunctions on reversible quantum gates lower to nested
 `PUSH_CONDITION` and `POP_CONDITION` scopes plus the last inline condition.
 Singleton conditions keep their direct encoding. Scope markers introduce
-no work bits. A scope may only read previously defined classical slots
-and may not write them. This avoids differences between the native
-executor's condition snapshot and the per-instruction IR predicate.
+no work bits.
+
+### Guarded effects in the internal KMX target
+
+The locked modular arithmetic generators use the existing native HMR and R
+operations inside condition scopes. HMR measures in the X basis, writes the
+result and returns the wire in zero. R discards the X measurement outcome
+and returns the wire in zero. With a false guard both operations leave the
+wire untouched, and HMR preserves the old result value.
+
+A scoped HMR may define a result for subsequent operations in the same
+scope and its descendants. On scope exit only previously defined slots
+remain visible. Inline guarded HMR requires a previously defined
+destination. Scope entry snapshots its active shot mask. HMR may overwrite
+a guard slot, which affects later inline conditions or nested scope entries
+that read it. The enclosing scope retains its saved mask. Scoped classical
+XOR and initialization remain outside the admitted
+target subset. The flat circuit IR and its provider adapters continue to
+use their own existing effect contract. Existing KMX streams keep their
+encoding.
 
 ## Consumer and resource acceptance
 
