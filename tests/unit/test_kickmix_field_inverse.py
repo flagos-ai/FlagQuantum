@@ -109,45 +109,47 @@ def test_every_branch_preserves_all_field_inputs(width: int, modulus: int) -> No
     wires = [(values >> shift) & 1 for shift in reversed(range(width))]
     original = np.array(wires)
     wires.extend(np.zeros_like(values) for _ in (*target, *chain))
-    slots = {}
-    phase = np.zeros_like(values)
-    outcome = 1
-    for block in (forward, erase):
-        for op in lower_reversible_phase(CircuitIR(len(wires), block)).operations:
-            match op.opcode:
-                case "cx":
-                    x, y = op.qubits
-                    wires[y] ^= wires[x]
-                case "ccx":
-                    x, y, z = op.qubits
-                    wires[z] ^= wires[x] & wires[y]
-                case "swap":
-                    x, y = op.qubits
-                    wires[x], wires[y] = wires[y], wires[x]
-                case "hmr":
-                    (wire,) = op.qubits
-                    slots[op.result_bit] = outcome
-                    phase ^= wires[wire] * outcome
-                    wires[wire].fill(0)
-                    outcome <<= 1
-                case "cz":
-                    x, y = op.qubits
-                    phase ^= (wires[x] & wires[y]) * slots[op.condition_bit]
-                case "bit_store0":
-                    slots[op.result_bit] = 0
-                case "bit_invert":
-                    slots[op.result_bit] ^= slots[op.condition_bit]
-                case _:
-                    pytest.fail(f"Unexpected opcode {op.opcode}")
-        if block is forward:
-            result = sum(
-                wires[wire] << shift for shift, wire in enumerate(reversed(target))
-            )
-            np.testing.assert_array_equal(result, inverses)
+    _apply_phase_certified_block(np, wires, forward, width)
+    result = sum(wires[wire] << shift for shift, wire in enumerate(reversed(target)))
+    np.testing.assert_array_equal(result, inverses)
+    _apply_phase_certified_block(np, wires, erase, width)
     np.testing.assert_array_equal(wires[:width], original)
     np.testing.assert_array_equal(wires[width:], 0)
+
+
+def _apply_phase_certified_block(np, wires, block, parity_bit):
+    """Verify each independent outcome sign while executing basis permutations."""
+    slots = {}
+    phase = np.zeros_like(wires[0])
+    outcome = 1
+    for op in lower_reversible_phase(CircuitIR(len(wires), block)).operations:
+        match op.opcode:
+            case "cx":
+                x, y = op.qubits
+                wires[y] ^= wires[x]
+            case "ccx":
+                x, y, z = op.qubits
+                wires[z] ^= wires[x] & wires[y]
+            case "swap":
+                x, y = op.qubits
+                wires[x], wires[y] = wires[y], wires[x]
+            case "hmr":
+                (wire,) = op.qubits
+                slots[op.result_bit] = outcome
+                phase ^= wires[wire] * outcome
+                wires[wire].fill(0)
+                outcome <<= 1
+            case "cz":
+                x, y = op.qubits
+                phase ^= (wires[x] & wires[y]) * slots[op.condition_bit]
+            case "bit_store0":
+                slots[op.result_bit] = 0
+            case "bit_invert":
+                slots[op.result_bit] ^= slots[op.condition_bit]
+            case _:
+                pytest.fail(f"Unexpected opcode {op.opcode}")
     np.testing.assert_array_equal(phase, 0)
-    assert slots.get(width, 0) == 0
+    assert slots.get(parity_bit, 0) == 0
 
 
 @pytest.mark.parametrize("width,modulus", [(2, 7), (3, 11)])
