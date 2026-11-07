@@ -6,6 +6,8 @@ Inspect numerical Montgomery history and bind the matching 21-wire append path.
 from collections import Counter
 from typing import cast
 
+import numpy as np
+
 from examples.algorithms.register_windowed_mod_mul import (
     WindowedMontgomeryMultiplication,
 )
@@ -21,12 +23,39 @@ from flagquantum.simulation.classical_montgomery_multiplication import (
 from flagquantum.simulation.classical_montgomery_window import (
     montgomery_window_bits_classical_values,
 )
-from flagquantum.simulation.integer_encoding import integer_from_bits, integer_to_bits
+from flagquantum.simulation.integer_encoding import (
+    integer_from_bits,
+    integer_to_bits,
+    vectorized_integer_array_from_bits,
+    vectorized_integer_array_to_bits,
+)
+from flagquantum.simulation.montgomery_values import (
+    integer_to_montgomery_value,
+    montgomery_inverse_value,
+    montgomery_product_values,
+    montgomery_to_integer_value,
+    montgomery_value_domain,
+)
 
 
 def main() -> None:
     assert modular_double_classical_value(2, 3) == 1
     assert controlled_modular_multiply_constant_classical_values(1, 2, 2, 3) == (1, 1)
+    encoded = integer_to_montgomery_value(1, 3, 3)
+    assert montgomery_to_integer_value(encoded, 3, 3) == 1
+    assert (
+        montgomery_product_values(
+            encoded, montgomery_inverse_value(encoded, 3, 3), 3, 3
+        )
+        == encoded
+    )
+    assert tuple(montgomery_value_domain(3, 3)) == (1, 2)
+    stored = np.array([[0, 1], [2, 7]])
+    packed = vectorized_integer_array_to_bits(stored, 3)
+    np.testing.assert_array_equal(vectorized_integer_array_from_bits(packed, 3), stored)
+    print(
+        "Montgomery representation conversion/product/inverse and generic array round trip agree"
+    )
     values = montgomery_multiply_classical_values(1, 2, 3, 1, 3)
     assert int(values["target"]) == 1 and int(values["qrom_indices"]) == 2
     assert int(values["reduced"]) == 0

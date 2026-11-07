@@ -15,6 +15,7 @@ from flagquantum.core.ir import CircuitIR, Instruction
 from flagquantum.simulation.classical_montgomery_multiplication import (
     montgomery_multiply_classical_values,
 )
+from flagquantum.simulation.montgomery_values import montgomery_product_values
 from tests.unit.measurement_checks import certified_and_channel_map
 from tests.unit.register_source_graph import (
     SourcePorts,
@@ -135,6 +136,7 @@ def original_gates(
 )
 def test_locked_windowed_source_and_complex_roundtrip(n: int, w: int, p: int) -> None:
     pytest.importorskip("qualtran")
+    from qualtran import QMontgomeryUInt
     from qualtran.bloqs.mod_arithmetic.mod_multiplication import (
         DirtyOutOfPlaceMontgomeryModMul,
     )
@@ -202,6 +204,8 @@ def test_locked_windowed_source_and_complex_roundtrip(n: int, w: int, p: int) ->
     for a, b in product(range(p), repeat=2):
         inputs = dict(x=a, y=b)
         observed = forward_graph.on_classical_vals(**inputs)
+        representation_product = montgomery_product_values(a, b, n, p)
+        assert representation_product == QMontgomeryUInt(n, p).montgomery_product(a, b)
         # Compare the original high-level method separately. It is known to
         # disagree with this unmodified decomposed graph on recorded domains.
         try:
@@ -212,6 +216,8 @@ def test_locked_windowed_source_and_complex_roundtrip(n: int, w: int, p: int) ->
         else:
             native_values = montgomery_multiply_classical_values(a, b, n, w, p)
             assert native_values == value_model
+            if p in (3, 5, 7, 13) and 0 < a < p and 0 < b < p:
+                assert native_values["target"] == representation_product
             for key in native_values:
                 assert type(native_values[key]) is type(value_model[key])
         assert reverse_graph.on_classical_vals(**observed) == inputs

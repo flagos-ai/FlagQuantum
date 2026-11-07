@@ -26,6 +26,7 @@ Runtime owns those decisions and calls the appropriate numerical primitives.
 | Classical modular negation, constant addition and scaled accumulation | [classical_modular_negation.py](classical_modular_negation.py), [classical_modular_constant_addition.py](classical_modular_constant_addition.py), [classical_modular_scaled_addition.py](classical_modular_scaled_addition.py) |
 | Classical modular multiplication and Montgomery history | [classical_modular_multiplication.py](classical_modular_multiplication.py), [classical_montgomery_multiplication.py](classical_montgomery_multiplication.py) |
 | Scalar/array integer value codecs and bit-array Montgomery windows | [integer_encoding.py](integer_encoding.py), [classical_montgomery_window.py](classical_montgomery_window.py) |
+| Montgomery numerical representation, domain, product and inverse | [montgomery_values.py](montgomery_values.py) |
 | Reusable arithmetic and precision | [numerics/](numerics/README.md) |
 | Optional JAX kernels | [jax/](jax/README.md) |
 
