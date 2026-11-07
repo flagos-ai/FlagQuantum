@@ -4,6 +4,7 @@ from itertools import product
 
 import pytest
 
+from flagquantum.compiler.registers.qrom_table import QromTable
 from flagquantum.compiler.registers.symbolic_resource_model import (
     source_qrom_resource_formula,
 )
@@ -49,6 +50,14 @@ def test_original_unknown_data_call_graph_and_bound_shape_profiles(mode, legacy)
             control_count=controls,
             legacy_shims=legacy,
         )
+        table = QromTable.from_shape(
+            shape,
+            widths,
+            target_shapes=targets,
+            selection_bitsizes=() if selection is None else selection,
+            num_controls=controls,
+        )
+        assert table.resource_formula(legacy_shims=legacy) == formula
         source = original(shape, widths, selection, controls)
         expected = get_cost_value(source, QECGatesCost(legacy_shims=legacy))
         for name in (

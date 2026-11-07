@@ -1,20 +1,28 @@
 # Copyright 2023 Google LLC
 # SPDX-License-Identifier: Apache-2.0
-# Adapted from Qualtran v0.7.0 QROMBase data and concrete shape factories.
+# Adapted from Qualtran v0.7.0 QROMBase data and shape factories.
 # https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/bloqs/data_loading/qrom_base.py
 
-"""Concrete lookup metadata shared by QROM binding and resource queries."""
+"""Lookup metadata shared by concrete binding and symbolic resource queries."""
+
+from __future__ import annotations
 
 from dataclasses import dataclass, replace
 from math import prod
+from typing import cast
 
 import numpy as np
 from numpy.typing import ArrayLike
 
 from ...core.ir import Instruction
 from .._component_trace.resource_model import ComponentCost
+from .._component_trace.symbolic_math import SymbolicInt, bit_length
 from .qrom_resource_model import source_qrom_cost
 from .source_qrom import source_qrom_ir, source_qrom_workspace_size
+from .symbolic_resource_model import (
+    SymbolicResourceFormula,
+    source_qrom_resource_formula,
+)
 
 
 @dataclass(frozen=True)
@@ -26,11 +34,11 @@ class QromTable:
     Binding never allocates wires or classical feedback slots.
     """
 
-    shape: tuple[int, ...]
-    selection_bitsizes: tuple[int, ...]
-    target_bitsizes: tuple[int, ...]
-    target_shapes: tuple[tuple[int, ...], ...]
-    num_controls: int = 0
+    shape: tuple[SymbolicInt, ...]
+    selection_bitsizes: tuple[SymbolicInt, ...]
+    target_bitsizes: tuple[SymbolicInt, ...]
+    target_shapes: tuple[tuple[SymbolicInt, ...], ...]
+    num_controls: SymbolicInt = 0
     datasets: tuple[tuple[int, ...], ...] | None = None
 
     def __post_init__(self) -> None:
@@ -38,16 +46,28 @@ class QromTable:
             not self.target_bitsizes
             or len(self.target_bitsizes) != len(self.target_shapes)
             or len(self.shape) != len(self.selection_bitsizes)
-            or type(self.num_controls) is not int
-            or self.num_controls < 0
-            or any(type(n) is not int or n < 1 for n in self.shape)
-            or any(type(n) is not int or n < 0 for n in self.selection_bitsizes)
-            or any(type(n) is not int or n < 0 for n in self.target_bitsizes)
-            or any(type(n) is not int or n < 1 for sh in self.target_shapes for n in sh)
         ):
             raise ValueError(
-                "QROM requires concrete nonnegative widths and positive axes"
+                "QROM requires one width per selection axis and target shape"
             )
+        for value, minimum in (
+            *((n, 1) for n in self.shape),
+            *((n, 1) for sh in self.target_shapes for n in sh),
+            *((n, 0) for n in self.selection_bitsizes + self.target_bitsizes),
+            (self.num_controls, 0),
+        ):
+            if type(value) is int:
+                if value < minimum:
+                    raise ValueError(
+                        "QROM requires nonnegative widths and positive axes"
+                    )
+            else:
+                from sympy import Expr
+
+                if not isinstance(value, Expr):
+                    raise ValueError(
+                        "QROM dimensions must be integers or symbolic expressions"
+                    )
         if self.datasets is not None and (
             len(self.datasets) != len(self.target_shapes)
             or any(
@@ -57,24 +77,37 @@ class QromTable:
         ):
             raise ValueError("QROM datasets must match the declared array shapes")
 
+    def _require_concrete_dimensions(self) -> None:
+        dimensions = (
+            self.num_controls,
+            *self.shape,
+            *self.selection_bitsizes,
+            *self.target_bitsizes,
+            *(n for sh in self.target_shapes for n in sh),
+        )
+        if any(type(n) is not int for n in dimensions):
+            raise ValueError("Physical QROM binding requires Python integer dimensions")
+
     @classmethod
     def from_shape(
         cls,
-        shape: int | tuple[int, ...],
-        target_bitsizes: int | tuple[int, ...],
+        shape: SymbolicInt | tuple[SymbolicInt, ...],
+        target_bitsizes: SymbolicInt | tuple[SymbolicInt, ...],
         *,
-        target_shapes: tuple[tuple[int, ...], ...] = (),
-        selection_bitsizes: tuple[int, ...] = (),
-        num_controls: int = 0,
+        target_shapes: tuple[tuple[SymbolicInt, ...], ...] = (),
+        selection_bitsizes: tuple[SymbolicInt, ...] = (),
+        num_controls: SymbolicInt = 0,
     ) -> "QromTable":
-        """Build concrete metadata without materializing any lookup data."""
-        axes = (shape,) if isinstance(shape, int) else shape
+        """Build source shape metadata without materializing any lookup data."""
+        axes = shape if isinstance(shape, tuple) else (shape,)
         widths = (
-            (target_bitsizes,) if isinstance(target_bitsizes, int) else target_bitsizes
+            target_bitsizes
+            if isinstance(target_bitsizes, tuple)
+            else (target_bitsizes,)
         )
         return cls(
             axes,
-            selection_bitsizes or tuple((n - 1).bit_length() for n in axes),
+            selection_bitsizes or tuple(bit_length(n - 1) for n in axes),
             widths,
             target_shapes or ((),) * len(widths),
             num_controls,
@@ -142,7 +175,7 @@ class QromTable:
         return self.datasets
 
     @property
-    def target_layout(self) -> tuple[tuple[int, int], ...]:
+    def target_layout(self) -> tuple[tuple[SymbolicInt, SymbolicInt], ...]:
         """Return existing compiler (word count, word width) layout pairs."""
         return tuple(
             (prod(shape), bits)
@@ -153,18 +186,41 @@ class QromTable:
 
     @property
     def workspace_size(self) -> int:
+        data = self._data()
+        self._require_concrete_dimensions()
         return source_qrom_workspace_size(
-            self.num_controls, self.selection_bitsizes, self._data()
+            cast(int, self.num_controls),
+            cast(tuple[int, ...], self.selection_bitsizes),
+            data,
+        )
+
+    def resource_formula(
+        self, *, legacy_shims: bool = False
+    ) -> SymbolicResourceFormula:
+        """Query unknown-data declarations, including symbolic dimensions.
+
+        This query deliberately ignores any concrete values. Use
+        ``resource_model`` for data-dependent pruning and physical-width checks.
+        """
+        return source_qrom_resource_formula(
+            self.shape,
+            self.target_bitsizes,
+            target_shapes=self.target_shapes,
+            control_count=self.num_controls,
+            selection_widths=self.selection_bitsizes,
+            legacy_shims=legacy_shims,
         )
 
     def resource_model(self, *, legacy_shims: bool = False) -> ComponentCost:
         """Query the existing concrete QROM model without emitting gates."""
+        data = self._data()
+        self._require_concrete_dimensions()
         return source_qrom_cost(
-            self.num_controls,
-            self.selection_bitsizes,
-            self.shape,
-            self.target_layout,
-            self._data(),
+            cast(int, self.num_controls),
+            cast(tuple[int, ...], self.selection_bitsizes),
+            cast(tuple[int, ...], self.shape),
+            cast(tuple[tuple[int, int], ...], self.target_layout),
+            data,
             legacy_shims=legacy_shims,
         )
 
@@ -177,19 +233,22 @@ class QromTable:
         classical_bits: tuple[int, ...],
     ) -> tuple[Instruction, ...]:
         """Bind caller-owned wires and slots to the existing measured XOR tree."""
+        data = self._data()
+        self._require_concrete_dimensions()
+        layout = cast(tuple[tuple[int, int], ...], self.target_layout)
         if (
             len(controls) != self.num_controls
             or tuple(map(len, selections)) != self.selection_bitsizes
             or tuple((len(group), tuple(map(len, group))) for group in targets)
-            != tuple((n, (w,) * n) for n, w in self.target_layout)
+            != tuple((n, (w,) * n) for n, w in layout)
         ):
             raise ValueError("QROM physical ports must match the table metadata")
         return source_qrom_ir(
             controls,
             selections,
-            self.shape,
+            cast(tuple[int, ...], self.shape),
             targets,
-            self._data(),
+            data,
             workspace,
             classical_bits,
         )

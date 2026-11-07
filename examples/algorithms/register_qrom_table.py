@@ -1,18 +1,34 @@
 """Bind an inferred XOR table and compare its resource model with emitted gates.
 
 Run python -m examples.algorithms.register_qrom_table.
+Add --symbolic to query the unknown-data model without circuit emission.
 """
+
+import argparse
 
 import torch
 
 from examples.algorithms.binary_field_arithmetic import FieldOperation
 from flagquantum.compiler.registers.qrom_table import QromTable
 from flagquantum.dynamic import DynamicCircuit
-from flagquantum.qec.resources.estimation import estimate_ftqc_resources
+from flagquantum.qec.resources.estimation import (
+    estimate_ftqc_resources,
+    estimate_symbolic_ftqc_resources,
+)
 from flagquantum.runtime.dynamic.execution import run_dynamic
 
 
-def main() -> None:
+def main(*, symbolic: bool = False) -> None:
+    if symbolic:
+        from sympy import symbols
+
+        rows, bits, controls = symbols("N b c", integer=True, positive=True)
+        table = QromTable.from_shape(rows, bits, num_controls=controls)
+        formula_report = estimate_symbolic_ftqc_resources(table.resource_formula())
+        print("Unknown-data logical formula:", formula_report.logical)
+        print("Model T equivalents:", formula_report.t_equivalents)
+        print("No lookup values or circuit emission; dimensions remain symbolic")
+        return
     table = QromTable.from_shape(4, 2).with_data([1, 3, 0, 2])
     gates = table.bind((), ((0, 1),), (((2, 3),),), (4,), (0,))
     initial = torch.zeros(32, dtype=torch.complex128)
@@ -37,4 +53,6 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--symbolic", action="store_true")
+    main(symbolic=parser.parse_args().symbolic)
