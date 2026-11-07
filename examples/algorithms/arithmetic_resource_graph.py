@@ -30,6 +30,7 @@ from flagquantum.compiler.registers.out_of_place_add_resource_model import (
 )
 from flagquantum.compiler.registers.xor_resource_model import (
     source_grouped_xor_resource_formula,
+    source_pattern_controlled_xor_resource_formula,
     source_xor_resource_formula,
 )
 
@@ -76,6 +77,15 @@ def main() -> None:
         print(
             "Hamming erase model:",
             source_hamming_weight_resource_formula(width, adjoint=True),
+        )
+    controls = Symbol("m", integer=True, positive=True)
+    for shape in ((controls,), ()):
+        print(
+            "Unknown activation, control shape:",
+            shape,
+            source_pattern_controlled_xor_resource_formula(
+                3, controls, control_shapes=(shape,)
+            ),
         )
     k = Symbol("k", integer=True)
     for label, width, value in (

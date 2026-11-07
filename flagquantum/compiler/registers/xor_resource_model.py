@@ -10,10 +10,14 @@ from typing import cast
 
 from .._component_trace.arithmetic_call import ArithmeticCall, ArithmeticEncoding
 from .._component_trace.qec_gate_cost import query_qec_gate_cost
+from .._component_trace.resource_generalization import ControlPattern
 from .._component_trace.symbolic_math import SymbolicInt, smax
 from .arithmetic_declarations import arithmetic_call_graph
 from .control_predicate import ControlRegister
-from .controlled_component_resource_model import controlled_component_resource_formula
+from .controlled_component_resource_model import (
+    controlled_component_resource_formula,
+    controlled_pattern_resource_formula,
+)
 from .symbolic_resource_model import SymbolicResourceFormula
 
 
@@ -69,4 +73,27 @@ def source_grouped_xor_resource_formula(
     )
     return controlled_component_resource_formula(
         positive, body, registers, target_width=2 * width, legacy_shims=legacy_shims
+    )
+
+
+def source_pattern_controlled_xor_resource_formula(
+    width: SymbolicInt,
+    controls: ControlPattern,
+    *,
+    encoding: ArithmeticEncoding = "unsigned",
+    legacy_shims: bool = False,
+    control_shapes: tuple[tuple[SymbolicInt, ...], ...] | None = None,
+) -> SymbolicResourceFormula:
+    """Query known activations or an unknown-shaped control count around XOR."""
+    positive = ArithmeticCall("controlled_xor", (width,), (encoding,))
+    body = source_xor_resource_formula(
+        width, encoding=encoding, control_value=1, legacy_shims=legacy_shims
+    )
+    return controlled_pattern_resource_formula(
+        positive,
+        body,
+        controls,
+        target_width=2 * width,
+        legacy_shims=legacy_shims,
+        control_shapes=control_shapes,
     )

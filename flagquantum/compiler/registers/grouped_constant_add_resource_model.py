@@ -8,11 +8,15 @@
 from dataclasses import fields
 
 from .._component_trace.arithmetic_call import ArithmeticCall
+from .._component_trace.resource_generalization import ControlPattern
 from .._component_trace.resource_model import estimate_component_resources
 from .._component_trace.symbolic_math import SymbolicInt
 from .constant_add_resource_model import source_controlled_constant_add_resource_formula
 from .control_predicate import ControlRegister
-from .controlled_component_resource_model import controlled_component_resource_formula
+from .controlled_component_resource_model import (
+    controlled_component_resource_formula,
+    controlled_pattern_resource_formula,
+)
 from .multi_controlled_constant_addition import (
     source_grouped_controlled_constant_add_cost,
 )
@@ -63,4 +67,30 @@ def source_grouped_constant_add_resource_formula(
     )
     return controlled_component_resource_formula(
         positive, addition, registers, target_width=width, legacy_shims=legacy_shims
+    )
+
+
+def source_pattern_controlled_constant_add_resource_formula(
+    width: SymbolicInt,
+    constant: SymbolicInt,
+    controls: ControlPattern,
+    *,
+    adjoint: bool = False,
+    legacy_shims: bool = False,
+    control_shapes: tuple[tuple[SymbolicInt, ...], ...] | None = None,
+) -> SymbolicResourceFormula:
+    """Query original symbolic control-count fallback around positive AddK."""
+    positive = ArithmeticCall(
+        "controlled_constant_add", (width,), constant=constant, adjoint=adjoint
+    )
+    body = source_controlled_constant_add_resource_formula(
+        width, constant, adjoint=adjoint, legacy_shims=legacy_shims
+    )
+    return controlled_pattern_resource_formula(
+        positive,
+        body,
+        controls,
+        target_width=width,
+        legacy_shims=legacy_shims,
+        control_shapes=control_shapes,
     )
