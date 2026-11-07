@@ -12,18 +12,23 @@ from .polynomial import _validate_registers
 _Coefficient = int | bool | ClassicalFieldCoefficient
 
 
-def _carry_parity_xor(
-    target: int,
+def _carry_parity_gate(
+    target: int | None,
     parity: tuple[_Coefficient, _Coefficient],
-    control: int | bool,
-    source: int,
+    controls: tuple[_Coefficient, ...],
     clean: tuple[int, ...],
     measurement_bit: int | None,
 ) -> tuple[Instruction, ...]:
     for first, second in (parity, parity[::-1]):
         if type(first) is int:
             update = _flip(first, second)
-            scratch = clean[0] if clean and type(control) is int else None
+            scratch = (
+                clean[0]
+                if target is not None
+                and clean
+                and all(type(c) is int for c in controls)
+                else None
+            )
             if scratch is not None and measurement_bit is None:
                 raise ValueError("Carry XOR requires a reusable measurement slot")
             return (
@@ -31,23 +36,22 @@ def _carry_parity_xor(
                 *_flip(
                     target,
                     first,
-                    control,
-                    source,
+                    *controls,
                     scratch=scratch,
                     measurement_bit=measurement_bit,
                 ),
                 *update,
             )
     return (
-        *_flip(target, parity[0], control, source),
-        *_flip(target, parity[1], control, source),
+        *_flip(target, parity[0], *controls),
+        *_flip(target, parity[1], *controls),
     )
 
 
 def _broadcast_offset(
     target: tuple[int, ...],
     offset: tuple[_Coefficient, ...],
-    control: int,
+    control: int | bool,
     quantum_offset: bool,
 ) -> tuple[Instruction, ...]:
     # The native all-quantum LoopBuilder uses coefficient before enable.
@@ -115,8 +119,8 @@ def kickmix_carry_xor_ir(
         update = _flip(lhs[0], carry_in)
         return (
             *update,
-            *_carry_parity_xor(
-                dst[0], (low_bit, carry_in), control, lhs[0], clean, measurement_bit
+            *_carry_parity_gate(
+                dst[0], (low_bit, carry_in), (control, lhs[0]), clean, measurement_bit
             ),
             *update,
             *_flip(dst[0], control, carry_in),
@@ -134,8 +138,8 @@ def kickmix_carry_xor_ir(
         *reversed(cascade),
         *toggle_target,
         *toggle_shifted,
-        *_carry_parity_xor(
-            dst[0], (carry_in, low_bit), control, lhs[0], clean, measurement_bit
+        *_carry_parity_gate(
+            dst[0], (carry_in, low_bit), (control, lhs[0]), clean, measurement_bit
         ),
         *cascade,
         *toggle_shifted,
