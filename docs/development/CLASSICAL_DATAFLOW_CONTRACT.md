@@ -84,6 +84,12 @@ subsequent predicate is defined, even when an outer scope is inactive.
 Scratch slots are reused after scope exit. An inline guard that aliases
 the result is also snapshotted for the duration of the effect.
 
+A fragment may declare an ordered set of classical input slots. The
+optional `inputs` list in the KMX metadata tag preserves this declaration.
+Binding reads these slots from the enclosing circuit and initializes only
+fragment-owned slots. A standalone native runner supplies the declared
+inputs before executing the fragment.
+
 Only compiler instructions carrying the internal `guarded_effect` marker
 may condition measurement or reset. They use one conjunction of defined
 bits. A guarded measurement must update an already defined result. Local

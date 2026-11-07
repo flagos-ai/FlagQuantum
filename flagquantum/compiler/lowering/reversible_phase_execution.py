@@ -9,7 +9,7 @@ from ..registers.global_phase import ccz_ir, scalar_sign_ir
 def bind_reversible_phase_execution(
     program: ReversiblePhaseProgram, *, classical_offset: int = 0
 ) -> tuple[Instruction, ...]:
-    """Expand target operations with an exclusively owned classical slot range.
+    """Expand target operations with caller-bound inputs and owned scratch slots.
 
     Slots start at classical_offset. A scope snapshots its guard into a slot
     above the declared result range, reusing it after scope exit. The target
@@ -19,8 +19,9 @@ def bind_reversible_phase_execution(
         raise ValueError("Classical offset must be a nonnegative integer")
     first_scratch = classical_offset + program.n_bits
     gates = [
-        ClassicalXor((), bit).instruction()
-        for bit in range(classical_offset, first_scratch)
+        ClassicalXor((), classical_offset + bit).instruction()
+        for bit in range(program.n_bits)
+        if bit not in program.input_bits
     ]
     scopes: list[int] = []
     for op in program.operations:

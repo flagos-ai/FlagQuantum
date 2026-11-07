@@ -166,3 +166,24 @@ def test_local_binding_matches_the_native_guarded_branch_table() -> None:
         )
     }
     assert actual == expected == {(4, 0, 0), (1, 0, 0), (9, 1, 1)}
+
+
+def test_declared_classical_inputs_survive_target_binding() -> None:
+    source = (
+        'INFO_TAG "@flagquantum:reversible-phase-v1 wires=1 bits=2 inputs=0"\n'
+        "X q0 if b0\n"
+    )
+    from flagquantum.compiler.formats.kmx import encode_kmx
+
+    program = decode_kmx(source)
+    assert encode_kmx(program) == source
+    assert program.input_bits == (0,)
+    with pytest.raises(ValueError, match="classical inputs"):
+        decode_kmx(source.replace("inputs=0", "inputs=0,0"))
+    gates = bind_reversible_phase_execution(program, classical_offset=2)
+    initialize = ClassicalXor((), 2, constant=True).instruction()
+    circuit = DynamicCircuit(1).append(FieldOperation(1, (initialize, *gates)))
+    result = run_dynamic(circuit, shots=8, seed=41, strategy="trajectory")
+    assert torch.all(result.samples[:, 0] == 1)
+    assert torch.all(result.classical_bits[:, 2] == 1)
+    assert torch.all(result.classical_bits[:, 3] == 0)

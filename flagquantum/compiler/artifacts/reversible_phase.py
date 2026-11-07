@@ -38,11 +38,17 @@ class ReversiblePhaseProgram:
     n_qubits: int
     n_bits: int
     operations: tuple[ReversiblePhaseOperation, ...]
+    input_bits: tuple[int, ...] = ()
 
     def __post_init__(self) -> None:
         if self.n_qubits < 1 or self.n_bits < 0:
             raise ValueError("Invalid reversible-phase register widths")
-        definitions: list[set[int]] = [set()]
+        if any(
+            type(bit) is not int or not 0 <= bit < self.n_bits
+            for bit in self.input_bits
+        ) or self.input_bits != tuple(sorted(set(self.input_bits))):
+            raise ValueError("Invalid reversible-phase classical inputs")
+        definitions: list[set[int]] = [set(self.input_bits)]
 
         def is_defined(bit: int | None) -> bool:
             return bit is not None and any(bit in scope for scope in definitions)

@@ -7,16 +7,23 @@ from ..artifacts.reversible_phase import (
     ReversiblePhaseProgram,
 )
 
-_HEADER = 'INFO_TAG "@flagquantum:reversible-phase-v1 wires={wires} bits={bits}"'
+_HEADER = (
+    'INFO_TAG "@flagquantum:reversible-phase-v1 wires={wires} bits={bits}{inputs}"'
+)
 _HEADER_PATTERN = re.compile(
-    r'INFO_TAG "@flagquantum:reversible-phase-v1 wires=([0-9]+) bits=([0-9]+)"'
+    r'INFO_TAG "@flagquantum:reversible-phase-v1 wires=([0-9]+) bits=([0-9]+)(?: inputs=([0-9]+(?:,[0-9]+)*))?"'
 )
 _OPERAND = re.compile(r"[qb][0-9]+")
 
 
 def encode_kmx(program: ReversiblePhaseProgram) -> str:
     """Encode operations and preserve declared register widths in a native info tag."""
-    lines = [_HEADER.format(wires=program.n_qubits, bits=program.n_bits)]
+    inputs = (
+        f" inputs={','.join(map(str, program.input_bits))}"
+        if program.input_bits
+        else ""
+    )
+    lines = [_HEADER.format(wires=program.n_qubits, bits=program.n_bits, inputs=inputs)]
     for operation in program.operations:
         fields = [operation.opcode.upper(), *(f"q{wire}" for wire in operation.qubits)]
         if operation.result_bit is not None:
@@ -33,7 +40,8 @@ def decode_kmx(text: str) -> ReversiblePhaseProgram:
     header = _HEADER_PATTERN.fullmatch(lines[0]) if lines else None
     if header is None:
         raise ValueError("Missing reversible-phase KMX version and register widths")
-    wires, bits = map(int, header.groups())
+    wires, bits = map(int, header.groups()[:2])
+    inputs = tuple(map(int, header[3].split(","))) if header[3] else ()
     operations = []
     for line in lines[1:]:
         opcode, *operands = line.split()
@@ -52,7 +60,7 @@ def decode_kmx(text: str) -> ReversiblePhaseProgram:
                 condition_bit=condition,
             )
         )
-    return ReversiblePhaseProgram(wires, bits, tuple(operations))
+    return ReversiblePhaseProgram(wires, bits, tuple(operations), inputs)
 
 
 def _parse_operand(text: str, prefix: str) -> int:
