@@ -5,7 +5,6 @@
 
 """Conjugate a SELECT oracle by its preparation in the zero-signal basis."""
 
-from collections.abc import Mapping
 from dataclasses import dataclass
 
 from ...circuit import Circuit
@@ -13,17 +12,8 @@ from ...compiler._component_trace.resource_model import ComponentCost, CostCall
 from ...compiler.registers.bitwise import _validate_wires
 from ...compiler.registers.partition import RegisterLayout, partition_register
 from ...core.ir import CircuitIR, Instruction
-from .black_box_prepare import BlackBoxPrepare
+from .black_box_prepare import BlackBoxPrepare, _identity_prepare
 from .select_block_encoding import ControlledSelectEmitter, SelectBlockEncoding
-
-
-def _identity_prepare(
-    ports: Mapping[str, tuple[int, ...]],
-    workspace: tuple[int, ...],
-    classical_bits: tuple[int, ...],
-    adjoint: bool,
-) -> tuple[Instruction, ...]:
-    return ()
 
 
 @dataclass(frozen=True)

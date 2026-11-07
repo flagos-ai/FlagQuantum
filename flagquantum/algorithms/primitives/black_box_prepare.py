@@ -19,6 +19,15 @@ PrepareEmitter = Callable[
 ]
 
 
+def _identity_prepare(
+    ports: Mapping[str, tuple[int, ...]],
+    workspace: tuple[int, ...],
+    classical_bits: tuple[int, ...],
+    adjoint: bool,
+) -> tuple[Instruction, ...]:
+    return ()
+
+
 @dataclass(frozen=True)
 class BlackBoxPrepare:
     """Bind a preparation emitter while preserving the order of its two port groups."""
