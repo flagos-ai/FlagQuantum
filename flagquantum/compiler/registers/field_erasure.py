@@ -74,7 +74,25 @@ def gf2_product_erasure(
         type(b) is not int or b < 0 for b in classical_bits
     ):
         raise ValueError("Product erasure requires distinct nonnegative classical bits")
-    x, y, result = left[::-1], right[::-1], classical_bits[::-1]
+    corrections, parities = _field_product_phase_masks(
+        left, right, classical_bits, modulus
+    )
+    return FieldProductErasure(
+        tuple(zip(product[::-1], classical_bits[::-1], strict=True)),
+        corrections,
+        parities,
+    )
+
+
+def _field_product_phase_masks(
+    left: tuple[int, ...],
+    right: tuple[int, ...],
+    mask_bits: tuple[int, ...],
+    modulus: int,
+) -> tuple[tuple[ParityPhase, ...], tuple[tuple[int, ...], ...]]:
+    """Return low-half and reduced high-half phase terms in source order."""
+    n = len(left)
+    x, y, result = left[::-1], right[::-1], mask_bits[::-1]
     corrections: list[ParityPhase] = []
     parities: list[tuple[int, ...]] = []
     for i in range(n):
@@ -86,8 +104,4 @@ def gf2_product_erasure(
         parities.append(parity)
         for j in range(i + 1, n):
             corrections.append(ParityPhase((x[n - j + i], y[j]), parity))
-    return FieldProductErasure(
-        tuple(zip(product[::-1], result, strict=True)),
-        tuple(corrections),
-        tuple(parities),
-    )
+    return tuple(corrections), tuple(parities)
