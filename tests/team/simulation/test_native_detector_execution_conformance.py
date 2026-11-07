@@ -9,9 +9,14 @@ pytestmark = [pytest.mark.unit]
 
 
 class DetectorStream(Protocol):
-    def sample(self, shots: int, *, separate_observables: bool = False,
-               append_observables: bool = False, bit_packed: bool = False
-               ) -> torch.Tensor | tuple[torch.Tensor, torch.Tensor]: ...
+    def sample(
+        self,
+        shots: int,
+        *,
+        separate_observables: bool = False,
+        append_observables: bool = False,
+        bit_packed: bool = False,
+    ) -> torch.Tensor | tuple[torch.Tensor, torch.Tensor]: ...
 
 
 def consume(stream: DetectorStream) -> int:
@@ -27,12 +32,34 @@ def consume(stream: DetectorStream) -> int:
 
 
 class FakeStream:
-    def sample(self, shots: int, *, separate_observables: bool = False,
-               append_observables: bool = False, bit_packed: bool = False
-               ) -> torch.Tensor | tuple[torch.Tensor, torch.Tensor]:
+    def sample(
+        self,
+        shots: int,
+        *,
+        separate_observables: bool = False,
+        append_observables: bool = False,
+        bit_packed: bool = False,
+    ) -> torch.Tensor | tuple[torch.Tensor, torch.Tensor]:
         assert separate_observables and not append_observables and not bit_packed
-        return torch.zeros((shots, 2), dtype=torch.bool), torch.zeros((shots, 1), dtype=torch.bool)
+        return torch.zeros((shots, 2), dtype=torch.bool), torch.zeros(
+            (shots, 1), dtype=torch.bool
+        )
 
 
 def test_independent_consumer_accepts_contract_fake() -> None:
     assert consume(FakeStream()) == 35
+
+
+@pytest.mark.integration
+def test_same_consumer_accepts_numerical_replacement() -> None:
+    pytest.importorskip("stim")
+    from flagquantum.dynamic import DynamicCircuit
+    from flagquantum.qec.execution.context import MeasurementMap
+
+    circuit = DynamicCircuit(2).measure(0, classical_bit=0).measure(1, classical_bit=1)
+    sampler = circuit.compile_detector_sampler(
+        detector_map=MeasurementMap(2, ((0,), (1,))),
+        observable_map=MeasurementMap(2, ((0,),)),
+        seed=7,
+    )
+    assert consume(sampler) == 35

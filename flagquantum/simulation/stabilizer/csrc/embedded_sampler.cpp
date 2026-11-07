@@ -247,7 +247,95 @@ PyObject *convert_records(PyObject *, PyObject *args) {
     }
 }
 
+
+PyObject *prepare_detector(PyObject *self, PyObject *args) {
+    const char *text;
+    PyObject *seed;
+    if (!PyArg_ParseTuple(args, "sO", &text, &seed)) {
+        return nullptr;
+    }
+    try {
+        stim::Circuit circuit(text);
+        // Gauge rejection concerns the ideal circuit, not exact noisy DEM admission.
+        stim::ErrorAnalyzer::circuit_to_detector_error_model(
+            circuit.aliased_noiseless_circuit(), false, false, false, 0, false, false);
+    } catch (const std::exception &error) {
+        PyErr_SetString(PyExc_RuntimeError, error.what());
+        return nullptr;
+    }
+    return prepare(self, args);
+}
+
+PyObject *sample_detectors(PyObject *, PyObject *args) {
+    PyObject *capsule;
+    Py_ssize_t shots;
+    if (!PyArg_ParseTuple(args, "On", &capsule, &shots)) {
+        return nullptr;
+    }
+    auto *sampler = static_cast<Sampler *>(PyCapsule_GetPointer(capsule, capsule_name));
+    if (sampler == nullptr) {
+        return nullptr;
+    }
+    try {
+        const auto stats = sampler->circuit.compute_stats();
+        const size_t limit = size_t(std::numeric_limits<Py_ssize_t>::max());
+        if (shots <= 0 || (stats.num_detectors && size_t(shots) > limit / stats.num_detectors) ||
+            (stats.num_observables && size_t(shots) > limit / stats.num_observables)) {
+            throw std::invalid_argument("Invalid embedded detector sample dimensions.");
+        }
+        auto records = stim::sample_batch_detection_events<width>(
+            sampler->circuit, size_t(shots), sampler->rng);
+        PyObject *pair = PyTuple_New(2);
+        if (pair == nullptr) {
+            return nullptr;
+        }
+        for (size_t part = 0; part < 2; ++part) {
+            const size_t columns = part == 0 ? stats.num_detectors : stats.num_observables;
+            const auto &table = part == 0 ? records.first : records.second;
+            PyObject *buffer = PyByteArray_FromStringAndSize(nullptr, Py_ssize_t(size_t(shots) * columns));
+            if (buffer == nullptr) {
+                Py_DECREF(pair);
+                return nullptr;
+            }
+            auto *output = PyByteArray_AsString(buffer);
+            for (size_t shot = 0; shot < size_t(shots); ++shot) {
+                for (size_t column = 0; column < columns; ++column) {
+                    output[shot * columns + column] = bool(table[column][shot]);
+                }
+            }
+            PyTuple_SetItem(pair, Py_ssize_t(part), buffer);
+        }
+        return pair;
+    } catch (const std::exception &error) {
+        PyErr_SetString(PyExc_RuntimeError, error.what());
+        return nullptr;
+    }
+}
+
+PyObject *detector_error_model(PyObject *, PyObject *args) {
+    const char *text;
+    if (!PyArg_ParseTuple(args, "s", &text)) {
+        return nullptr;
+    }
+    try {
+        stim::Circuit circuit(text);
+        auto model = stim::ErrorAnalyzer::circuit_to_detector_error_model(
+            circuit, false, false, false, 0, false, false);
+        const auto result = model.str();
+        if (result.size() > 16 * 1024 * 1024) {
+            throw std::invalid_argument("Embedded DEM text exceeds 16 MiB.");
+        }
+        return PyUnicode_FromStringAndSize(result.data(), Py_ssize_t(result.size()));
+    } catch (const std::exception &error) {
+        PyErr_SetString(PyExc_RuntimeError, error.what());
+        return nullptr;
+    }
+}
+
 PyMethodDef methods[] = {
+    {"prepare_detector", prepare_detector, METH_VARARGS, nullptr},
+    {"sample_detectors", sample_detectors, METH_VARARGS, nullptr},
+    {"detector_error_model", detector_error_model, METH_VARARGS, nullptr},
     {"prepare_converter", prepare_converter, METH_VARARGS, nullptr},
     {"convert_records", convert_records, METH_VARARGS, nullptr},
     {"prepare", prepare, METH_VARARGS, nullptr},

@@ -279,3 +279,15 @@ and the two `test_explicit_*conversion*.py` files under `tests/qec` and
 `tests/team/simulation` for core fakes and independent upstream conformance.
 The input is dense CPU bool. T, conditional H, noise, sweeps and routed programs
 are refused. Packed sampling and b8 writing remain separate sampler features.
+
+## Embedded detector producer
+
+`_detector_sampling.py` owns bounded source lowering, numerical preparation and
+exact error analysis. `_embedded_sampler.py` is the numerical wheel boundary.
+QEC owns maps, output layout, packed padding and the public handle lifecycle.
+Reuse the existing Pauli classifier; old sampler/converter noise refusals stay.
+The current embedded bridge invokes pinned FrameSimulator and ErrorAnalyzer
+without importing Stim Python. No additional upstream file is introduced. Run
+`tests/qec/test_native_detector_execution.py` and
+`tests/team/simulation/test_native_detector_execution_conformance.py`; the latter
+replaces a fake stream with the numerical stream behind one unchanged consumer.

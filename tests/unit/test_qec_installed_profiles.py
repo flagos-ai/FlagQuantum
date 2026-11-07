@@ -452,3 +452,15 @@ def test_matched_validation_and_failure(
     with pytest.raises(CapabilityError) as caught:
         decoder.decode_to_matched_detectors((0,))
     assert caught.value.__cause__ is error
+
+
+@pytest.mark.parametrize("profile", ("core", "stim", "pymatching", "both"))
+def test_native_detector_installed_profile(profile: str) -> None:
+    from tools.qec_installed_smoke import _exercise_native_detector_execution
+
+    if profile in ("stim", "both"):
+        pytest.importorskip("stim")
+        result = _exercise_native_detector_execution(profile)
+        assert result == {"packed_detector_observable": [[3], [3]], "mechanisms": 1}
+    else:
+        assert _exercise_native_detector_execution(profile) is None

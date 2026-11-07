@@ -430,6 +430,31 @@ def _exercise_compiled_measurement_sampler(profile: str) -> dict[str, object] | 
     return {"packed_samples": samples.tolist(), "b8_hex": packed.hex()}
 
 
+def _exercise_native_detector_execution(profile: str) -> dict[str, object] | None:
+    if not PROFILES[profile][0]:
+        return None
+    from flagquantum.dynamic import DynamicCircuit
+    from flagquantum.qec.execution.context import MeasurementMap
+
+    circuit = DynamicCircuit(1).x(0).bit_flip(0, 1.0).measure(0)
+    maps = MeasurementMap(1, ((0,),))
+    sampler = circuit.compile_detector_sampler(
+        detector_map=maps, observable_map=maps, seed=7
+    )
+    packed = sampler.sample(2, append_observables=True, bit_packed=True)
+    import torch
+
+    assert isinstance(packed, torch.Tensor)
+    assert packed.tolist() == [[3], [3]]
+    model = circuit.detector_error_model(detector_map=maps, observable_map=maps)
+    assert model.num_detectors == model.num_observables == 1
+    assert len(model.errors) == 1 and model.errors[0].probability == 1.0
+    return {
+        "packed_detector_observable": packed.tolist(),
+        "mechanisms": len(model.errors),
+    }
+
+
 def _exercise_terminal_conversion(profile: str) -> dict[str, object] | None:
     import torch
 
@@ -517,6 +542,9 @@ def main() -> int:
                 "matched_detectors": _exercise_matched_detectors(args.profile),
                 "stim_experiment": experiment,
                 "full_record_decoders": record_decoders,
+                "native_detector_execution": _exercise_native_detector_execution(
+                    args.profile
+                ),
                 "stim_conversion": _exercise_stim_conversion(args.profile),
                 "terminal_conversion": _exercise_terminal_conversion(args.profile),
                 "compiled_measurement_sampler": _exercise_compiled_measurement_sampler(

@@ -111,6 +111,7 @@ Do not edit this generated region. Capability boundaries come from
 | Target-directed local emulation | `experimental` | A declared profile is not a device. The snapshot's target identity names an emulator, and only the device kind and precision facts are observed on the local CPU; the qubit capacity, native gate set, result formats, and limits are the profile's declaration, pinned by a digest of its payload. Compilation, routing, native-gate legalization, emission, and conformance run as they do for a submission, but execution happens on this machine, so a noiseless record is a simulation of the compiled program and not of the hardware. Noise is opt-in and applied to the compiled program, so its rules name the target's native opcodes plus swap when routing inserted one; the noisy record names whether its channels came from a caller model or a device calibration, the representation the planner chose, and whether the channel evolution is exact. Only terminal full-register samples or counts requests are accepted, because the static text emission profile refuses every other measurement request; observables, dynamic circuits, channels written into the program, and arbitrary matrices are refused rather than partially supported. emulate_declared_target reaches the same execution from a provider's own declaration instead of a caller-built profile: the declaration is validated fail-closed first, its own shot limit is the limit enforced while its declared operation limit becomes the emulated target's own declared limit, and a declaration that offers several devices is refused unless the caller names one. The emission dialect stays the caller's request rather than a fact read out of the declaration, because artifacts.profiles is an open collection of the profiles a device publishes and not a syntax claim. Nothing here contacts a provider, and the entry point is reached by its module path rather than through the remote facade. |
 | Huawei Ascend 910C native quantum workflows | `development_evidence` | Requires the exact source fixes and dependencies in the Ascend guide; published wheels alone are insufficient. The hardware record covers complex64/complex128 circuit workflows and the stated dynamics/QEC cases, with explicit CPU references, I/O and global QEC decoding boundaries. Optional JAX, CUDA-specific external simulators and quantum-cloud backends retain their own requirements. This is bounded hardware development evidence, not production, performance, capacity or hardware certification. |
 | Huawei Ascend 910C sharded quantum training | `development_evidence` | Requires pinned Torch-FL and patched pure FlagOS FlagCX builds. The statevector ladder covers 2/4/8 logical NPUs, corresponding to 1/2/4 physical 910C cards. Two-host tests use one logical NPU per host and shared LeoFS checkpoints. FP64 reductions use blocking lossless int64 broadcasts plus device arithmetic. Small correctness workloads and real owner-sharded updates do not establish capacity expansion, speedup, convergence, production support or release certification. DDP evidence is separately labeled data_parallel_replicated. |
+| Native circuit detector sampling and exact DEM | `development_evidence` | Explicit Z records, default-state CPU PyTorch batch1, fixed Clifford/reset/single-slot X feedback and one-/two-qubit Pauli channels only. Exact DEM refusal is separate from sampling admission. No approximation, general feedback, mixed non-Clifford routing, detector file writer, performance, threshold or full parity claim. |
 
 ## Validated public performance claims
 
@@ -292,3 +293,30 @@ allocator, code and circuit preparation overhead. Zero shots retain exact empty
 shapes after circuit validation. Broad text/file conversion still uses the
 optional SDK; native source integration here proves explicit-record conversion,
 not complete Stim coverage or a performance claim.
+
+## Native detector sampling and exact DEM
+
+`Circuit.compile_detector_sampler(detector_map=..., observable_map=..., seed=...)`
+uses explicit measurement instruction order, including repeated classical slots.
+`sample(shots)` returns reference-normalized CPU bool detector flips; use
+`separate_observables=True` for a pair, `append_observables=True` for one array,
+and `bit_packed=True` for LSB-first uint8. Appended packing crosses the parity
+boundary without intermediate byte padding. Zero shots do not advance RNG.
+`Circuit.detector_error_model` returns the existing FlagQuantum DEM record.
+
+Run `python -m examples.qec.native_detector_sampling` with PyMatching and either
+the embedded wheel or the Stim 1.16.0 extra. This bounded three-data-qubit
+code-capacity example is not a threshold study. The default source must have
+explicit Z records and a default CPU PyTorch initial state. Fixed Clifford
+gates, resets, single-slot X feedback and one-/two-qubit Pauli channels are
+supported. T, conditional H, general noise and unsupported exact DEM analysis
+refuse; there is no approximation or SV fallback. A channel may be sampleable
+but not convertible to an exact independent-mechanism DEM.
+
+The approved contract is [QEC native detector execution](../development/QEC_NATIVE_DETECTOR_EXECUTION_PROPOSAL.md).
+Output copies and conservatively padded tables are individually bounded at
+64 MiB, exact-analysis support at one million cells and DEM text at 16 MiB.
+These are allocation/work guards, not an RSS or performance claim. Compiled
+sampling reuses lowered source and RNG, not frame scratch. No detector file
+writer, MemoryCircuit backend replacement, new builder, SDK source integration
+for PyMatching, or broad parity certification is implied.

@@ -1038,3 +1038,8 @@ to display the detector and logical rows in the same fault-column order.
 
 Run `PYTHONPATH=. python examples/qec/dem_model_and_chunks.py --decode-rounds`
 to feed fixed detector events in round-local order and inspect the decoder records.
+
+[Native detector sampling and exact DEM](qec/native_detector_sampling.py): run
+`python -m examples.qec.native_detector_sampling` with PyMatching and either
+the embedded wheel or Stim 1.16.0. The three-data-qubit code-capacity workflow
+samples 35 shots in 16/16/3 batches and reports actual logical failures.
