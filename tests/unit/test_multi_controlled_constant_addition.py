@@ -183,8 +183,10 @@ def test_shared_component_implementations_can_be_replaced_without_consumer_chang
     compute = ComponentCost("predicate", 5, GateCost(t=2))
     erase = ComponentCost("erase", 7, GateCost(measurement=3))
     addition = ComponentCost("addition", 11, GateCost(cswap=5))
+    import flagquantum.compiler.registers.controlled_component_resource_model as owner
+
     monkeypatch.setattr(
-        module,
+        owner,
         "control_predicate_cost",
         lambda *args, uncompute=False, **kwargs: erase if uncompute else compute,
     )

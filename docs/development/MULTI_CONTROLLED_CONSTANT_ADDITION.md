@@ -42,3 +42,8 @@ python -m pytest -q tests/unit/test_multi_controlled_constant_addition.py
 The example uses `circuit.append(op)`, activates on control 10, computes
 1-1=0 modulo four, checks all four work bits and prints the logical model
 separately from the emitted primitive counts.
+
+Both emission and resource composition delegate to the existing generic
+`controlled_component_ir` / `controlled_component_cost` helpers. This module
+only binds the AddK body and validates the caller's complete storage ownership;
+it does not maintain a second predicate schedule or bystander-width formula.

@@ -7,15 +7,16 @@
 """Multi-bit activation around shared constant addition, with explicit clean work."""
 
 from ...core.ir import Instruction
-from .._component_trace.resource_model import ComponentCost, CostCall
+from .._component_trace.resource_model import ComponentCost
 from .bitwise import _validate_wires
 from .constant_add_resource_model import source_controlled_constant_add_cost
-from .control_predicate import ControlRegister, control_predicate_ir
-from .control_predicate_resource_model import control_predicate_cost
+from .control_predicate import ControlRegister
 from .controlled_addition import (
     controlled_add_constant_adjoint_ir,
     controlled_add_constant_ir,
 )
+from .controlled_component import controlled_component_ir
+from .controlled_component_resource_model import controlled_component_cost
 
 
 def multi_controlled_add_constant_ir(
@@ -47,22 +48,16 @@ def multi_controlled_add_constant_ir(
         raise ValueError("Addition and predicate measurements require distinct slots")
     registers = (ControlRegister(1, values),)
     groups = (controls,)
-    predicate = predicate_work[-1]
-    junk = predicate_work[:-1]
-    compute = control_predicate_ir(groups, registers, predicate, junk)
     emitter = (
         controlled_add_constant_adjoint_ir if adjoint else controlled_add_constant_ir
     )
-    addition = emitter(predicate, target, value, constant, carries, addition_bits)
-    erase = control_predicate_ir(
-        groups,
-        registers,
-        predicate,
-        junk,
-        classical_bits=predicate_bits,
-        uncompute=True,
+
+    def body(predicate: int) -> tuple[Instruction, ...]:
+        return emitter(predicate, target, value, constant, carries, addition_bits)
+
+    return controlled_component_ir(
+        groups, registers, body, predicate_work, predicate_bits
     )
-    return (*compute, *addition, *erase)
 
 
 def source_multi_controlled_constant_add_cost(
@@ -78,17 +73,12 @@ def source_multi_controlled_constant_add_cost(
         raise ValueError(
             "Multi-controlled AddK requires at least two controls and boolean direction"
         )
-    compute = control_predicate_cost(values, legacy_shims=legacy_shims)
     addition = source_controlled_constant_add_cost(
         width, value, adjoint=adjoint, legacy_shims=legacy_shims
     )
-    erase = control_predicate_cost(values, uncompute=True, legacy_shims=legacy_shims)
-    return ComponentCost(
-        "MultiControlledAddK",
-        width + len(values),
-        calls=(
-            CostCall(compute, bystander_qubits=width),
-            CostCall(addition, bystander_qubits=2 * len(values) - 2),
-            CostCall(erase, bystander_qubits=width),
-        ),
+    return controlled_component_cost(
+        addition,
+        (ControlRegister(1, values),),
+        target_width=width,
+        legacy_shims=legacy_shims,
     )
