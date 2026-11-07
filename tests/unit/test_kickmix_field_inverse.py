@@ -218,6 +218,10 @@ def _apply_phase_certified_block(np, wires, block, parity_bit):
     outcome = 1
     for op in lower_reversible_phase(CircuitIR(len(wires), block)).operations:
         match op.opcode:
+            case "x":
+                assert op.condition_bit is None
+                (wire,) = op.qubits
+                wires[wire] ^= 1
             case "cx":
                 x, y = op.qubits
                 wires[y] ^= wires[x]
@@ -236,6 +240,9 @@ def _apply_phase_certified_block(np, wires, block, parity_bit):
             case "cz":
                 x, y = op.qubits
                 phase ^= (wires[x] & wires[y]) * slots[op.condition_bit]
+            case "z":
+                (wire,) = op.qubits
+                phase ^= wires[wire] * slots[op.condition_bit]
             case "bit_store0":
                 slots[op.result_bit] = 0
             case "bit_invert":

@@ -1,0 +1,172 @@
+"""Check Kickmix's equal-width comparison gate flow and coherent cleanup."""
+
+from collections import Counter
+
+import pytest
+import torch
+
+from examples.algorithms.binary_field_arithmetic import FieldOperation
+from flagquantum.compiler.formats.kmx import encode_kmx
+from flagquantum.compiler.lowering.reversible_phase import lower_reversible_phase
+from flagquantum.compiler.registers.finite_field import ClassicalFieldCoefficient
+from flagquantum.compiler.registers.kickmix_comparison import kickmix_quantum_compare_ir
+from flagquantum.compiler.registers.measurement import measure_x_clear_ir
+from flagquantum.core.ir import CircuitIR
+from flagquantum.dynamic import DynamicCircuit
+from flagquantum.runtime.dynamic.execution import run_dynamic
+from tests.unit.test_kickmix_field_inverse import _apply_phase_certified_block
+
+pytestmark = pytest.mark.unit
+
+
+def test_single_bit_clean_carry_matches_pinned_cpp() -> None:
+    # Locked gen_flip_if_lt_qq with width one, a quantum control, and one
+    # initially clean scratch wire. The source's R q4 is the clean contract.
+    ir = kickmix_quantum_compare_ir((0,), (1,), 2, (4,), control=3, measurement_bit=0)
+    program = lower_reversible_phase(CircuitIR(5, ir))
+    assert encode_kmx(program).splitlines()[1:] == [
+        "CX q1 q0",
+        "CCX q1 q3 q4",
+        "CCX q4 q0 q2",
+        "HMR q4 b0",
+        "CZ q1 q3 if b0",
+        "CX q1 q0",
+    ]
+
+
+def test_mixed_carry_schedule_matches_pinned_cpp() -> None:
+    ir = kickmix_quantum_compare_ir((2, 1, 0), (5, 4, 3), 6, or_equal=7)
+    program = lower_reversible_phase(CircuitIR(8, ir))
+    assert encode_kmx(program).splitlines()[1:] == [
+        "X q3",
+        "X q4",
+        "X q5",
+        "X q7",
+        "CX q3 q0",
+        "CX q3 q7",
+        "CCX q7 q0 q3",
+        "CX q4 q1",
+        "CX q4 q3",
+        "CCX q1 q3 q4",
+        "CX q5 q2",
+        "CX q5 q4",
+        "CCX q2 q4 q6",
+        "CX q5 q6",
+        "CX q5 q2",
+        "CX q5 q4",
+        "CCX q1 q3 q4",
+        "CX q4 q3",
+        "CX q4 q1",
+        "CCX q7 q0 q3",
+        "CX q3 q7",
+        "CX q3 q0",
+        "X q7",
+        "X q3",
+        "X q4",
+        "X q5",
+        "X q6",
+    ]
+
+
+@pytest.mark.parametrize(
+    "workspace_width,minimize", [(0, False), (2, False), (4, False), (4, True)]
+)
+def test_all_basis_inputs_and_measurement_phases(
+    workspace_width: int, minimize: bool
+) -> None:
+    np = pytest.importorskip("numpy")
+    width = 4
+    left, right = tuple(range(width)), tuple(range(width, 2 * width))
+    target, equal, control = 2 * width, 2 * width + 1, 2 * width + 2
+    workspace = tuple(range(control + 1, control + 1 + workspace_width))
+    inputs = np.arange(1 << (control + 1))
+    wires = [(inputs >> bit) & 1 for bit in reversed(range(control + 1))]
+    wires.extend(np.zeros_like(inputs) for _ in workspace)
+    expected = np.array(wires)
+    lhs = inputs >> (width + 3)
+    rhs = (inputs >> 3) & ((1 << width) - 1)
+    expected[target] ^= (inputs & 1) & (
+        (lhs < rhs) | ((lhs == rhs) & ((inputs >> 1) & 1))
+    )
+    ir = kickmix_quantum_compare_ir(
+        left,
+        right,
+        target,
+        workspace,
+        or_equal=equal,
+        control=control,
+        measurement_bit=0,
+        minimize_qubits=minimize,
+    )
+    _apply_phase_certified_block(np, wires, ir, None)
+    np.testing.assert_array_equal(wires, expected)
+    program = lower_reversible_phase(CircuitIR(len(wires), ir))
+    counts = Counter(op.opcode for op in program.operations)
+    measured = 0 if minimize else max(0, min(width - 1, workspace_width - 1))
+    assert counts["hmr"] == measured
+    assert counts["z"] == counts["cz"] == measured
+    assert program.n_bits == int(measured > 0)
+
+
+@pytest.mark.parametrize("clean_width", [0, 1])
+def test_narrow_comparison_preserves_complex_amplitudes(clean_width: int) -> None:
+    # Wire four is an entangled dirty helper when it is not supplied clean.
+    total = 5
+    basis = torch.arange(32)
+    state = torch.complex((basis + 1).double(), (3 * basis - 7).double())
+    if clean_width:
+        state[1::2] = 0
+    state /= state.norm()
+    delta = (((basis >> 4) & 1) < ((basis >> 3) & 1)) & (((basis >> 1) & 1) == 1)
+    expected = state[basis ^ (delta.long() << 2)]
+    ir = kickmix_quantum_compare_ir(
+        (0,), (1,), 2, (4,) if clean_width else (), control=3, measurement_bit=0
+    )
+    circuit = DynamicCircuit(total, inputs=state, dtype=torch.complex128)
+    circuit.append(FieldOperation(total, ir))
+    result = run_dynamic(circuit, shots=32, seed=41, strategy="trajectory")
+    torch.testing.assert_close(
+        result.final_states.reshape(32, -1), expected.expand(32, -1), rtol=0, atol=1e-12
+    )
+
+
+def test_classical_equality_and_feedback_preserve_each_complex_branch() -> None:
+    total = 10
+    basis = torch.arange(1 << 6)
+    amplitudes = torch.complex((basis + 1).double(), (3 * basis - 5).double())
+    amplitudes /= amplitudes.norm()
+    state = torch.zeros(1 << total, dtype=torch.complex128)
+    state[::16] = amplitudes
+    circuit = DynamicCircuit(total, inputs=state, dtype=torch.complex128)
+    ir = kickmix_quantum_compare_ir(
+        (0, 1),
+        (2, 3),
+        4,
+        (6, 7, 8),
+        or_equal=ClassicalFieldCoefficient(0),
+        control=5,
+        measurement_bit=1,
+    )
+    circuit.append(FieldOperation(total, (*measure_x_clear_ir(9, 0), *ir)))
+    result = run_dynamic(circuit, shots=64, seed=41, strategy="trajectory")
+    history = result.classical_bits[:, :2]
+    assert set(map(tuple, history.tolist())) == {(0, 0), (0, 1), (1, 0), (1, 1)}
+    for equality in (0, 1):
+        delta = ((basis >> 4) < (((basis >> 2) & 3) + equality)) & ((basis & 1) == 1)
+        expected = torch.zeros_like(state)
+        expected[::16] = amplitudes[basis ^ (delta.long() << 1)]
+        branch = result.final_states.reshape(64, -1)[history[:, 0] == equality]
+        torch.testing.assert_close(
+            branch, expected.expand_as(branch), rtol=0, atol=1e-12
+        )
+
+
+def test_comparator_validates_workspace_and_preserves_empty_behavior() -> None:
+    assert not kickmix_quantum_compare_ir((), (), 0)
+    assert kickmix_quantum_compare_ir((), (), 0, or_equal=True)[0].name == "x"
+    with pytest.raises(ValueError, match="equal word"):
+        kickmix_quantum_compare_ir((), (0,), 1)
+    with pytest.raises(ValueError, match="clean carry"):
+        kickmix_quantum_compare_ir((0, 1), (2, 3), 4)
+    with pytest.raises(ValueError, match="result slot"):
+        kickmix_quantum_compare_ir((0,), (1,), 2, (4,), control=3)
