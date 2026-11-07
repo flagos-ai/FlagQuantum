@@ -198,10 +198,65 @@ def test_source_symbolic_peak_substitution_differs_from_concrete_reconstruction(
             )
 
 
-def test_raw_concrete_callee_contract_does_not_cast_symbolic_dimensions():
-    for width in (dimension("positive"), sympy.Integer(3)):
-        with pytest.raises(ValueError, match="Python integer widths"):
-            modular_arithmetic_calls("controlled_subtraction", width)
+@pytest.mark.parametrize(
+    "kind,mode",
+    tuple(
+        product(
+            (
+                "multi_controlled_x",
+                "controlled_subtraction",
+                "less_than",
+                "controlled_half",
+            ),
+            (
+                "positive",
+                "nonnegative",
+                "integer",
+                "expression",
+                "zero",
+                "one",
+                "three",
+                "python_three",
+            ),
+        )
+    ),
+)
+def test_raw_callees_preserve_symbolic_dimensions_and_profile_independent_identity(
+    kind, mode
+):
+    from flagquantum.compiler._component_trace.arithmetic_call import ArithmeticCall
+    from flagquantum.compiler._component_trace.resource_generalization import FixedTCall
+
+    width = dimension(mode)
+    root = original(kind, width)
+    native = modular_arithmetic_calls(kind, width)
+    assert native == modular_arithmetic_calls(kind, width, legacy_shims=True)
+    if kind == "controlled_subtraction":
+        add, invert = native
+        assert add == ArithmeticCall(
+            "controlled_add", (width, width), ("montgomery", "montgomery")
+        )
+        assert invert == ArithmeticCall("bitwise_not", (width,), ("montgomery",))
+        assert all(w is width for w in add.widths)
+        assert invert.widths[0] is width
+        source_add, source_invert = root.build_call_graph(None)
+        assert all(
+            w is width
+            for w in (
+                source_add.a_dtype.bitsize,
+                source_add.b_dtype.bitsize,
+                source_invert.dtype.bitsize,
+            )
+        )
+        assert (
+            list(native.values())
+            == list(root.build_call_graph(None).values())
+            == [1, 3]
+        )
+    else:
+        key = FixedTCall("fredkin" if kind == "controlled_half" else "toffoli")
+        expected_count = next(iter(root.build_call_graph(None).values()))
+        assert native == {key: expected_count}
 
 
 @pytest.mark.parametrize(

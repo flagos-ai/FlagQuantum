@@ -4,7 +4,7 @@ from itertools import product
 
 import pytest
 
-from flagquantum.compiler._component_trace.resource_generalization import FixedTCall
+from flagquantum.compiler._component_trace.arithmetic_call import ArithmeticCall
 from flagquantum.compiler.registers.modular_declarations import (
     modular_arithmetic_calls,
     modular_arithmetic_registers,
@@ -50,6 +50,39 @@ def test_original_registers_direct_calls_categories_and_fallback_peak(
     assert modular_arithmetic_registers(kind, width) == tuple(
         (r.name, r.total_bits()) for r in source.signature
     )
+    calls = modular_arithmetic_calls(kind, width, legacy_shims=legacy)
+    expected_calls = source.build_call_graph(None)
+    if kind == "controlled_subtraction":
+        from qualtran import QMontgomeryUInt
+        from qualtran.bloqs.arithmetic.bitwise import BitwiseNot
+        from qualtran.bloqs.arithmetic.controlled_addition import CAdd
+
+        add, invert = calls
+        assert add == ArithmeticCall(
+            "controlled_add", (width, width), ("montgomery", "montgomery")
+        )
+        assert invert == ArithmeticCall("bitwise_not", (width,), ("montgomery",))
+        assert list(calls.values()) == [1, 3]
+        assert list(expected_calls.items()) == [
+            (
+                CAdd(
+                    QMontgomeryUInt(add.widths[0]),
+                    QMontgomeryUInt(add.widths[1]),
+                    cv=add.control_value,
+                ),
+                1,
+            ),
+            (BitwiseNot(QMontgomeryUInt(invert.widths[0])), 3),
+        ]
+    else:
+        from qualtran.bloqs.basic_gates import Toffoli
+        from qualtran.bloqs.basic_gates.swap import TwoBitCSwap
+
+        actual = {
+            Toffoli() if child.opcode == "toffoli" else TwoBitCSwap(): count
+            for child, count in calls.items()
+        }
+        assert list(actual.items()) == list(expected_calls.items())
     if kind == "controlled_subtraction" and width == 0:
         with pytest.raises(TypeError, match="missing 1 required positional argument"):
             get_cost_value(source, QECGatesCost(legacy_shims=legacy))
@@ -58,18 +91,6 @@ def test_original_registers_direct_calls_categories_and_fallback_peak(
         with pytest.raises(ValueError, match="zero-width CSub"):
             source_modular_arithmetic_resource_formula(kind, width, legacy_shims=legacy)
         return
-    calls = modular_arithmetic_calls(kind, width, legacy_shims=legacy)
-    expected_calls = source.build_call_graph(None)
-    expected = {type(child).__name__: count for child, count in expected_calls.items()}
-    actual = {
-        (
-            ("Toffoli" if child.opcode == "toffoli" else "TwoBitCSwap")
-            if isinstance(child, FixedTCall)
-            else child.name
-        ): count
-        for child, count in calls.items()
-    }
-    assert tuple(actual.items()) == tuple(expected.items())
     formula = source_modular_arithmetic_resource_formula(
         kind, width, legacy_shims=legacy
     )

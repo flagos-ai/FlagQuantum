@@ -15,13 +15,10 @@ from .._component_trace.qec_gate_cost import (
 )
 from .._component_trace.resource_generalization import (
     CliffordCall,
-    FixedTCall,
     OnEachCall,
     ResourceCall,
 )
 from .._component_trace.resource_model import (
-    ComponentCost,
-    GateCost,
     estimate_component_resources,
 )
 from .._component_trace.symbolic_math import SymbolicInt, smax
@@ -71,36 +68,20 @@ def _validate_options(
 
 def modular_arithmetic_calls(
     kind: ModularDeclaration,
-    width: int,
+    width: SymbolicInt,
     *,
     signed: bool = False,
     legacy_shims: bool = False,
-) -> dict[FixedTCall | ComponentCost, int]:
-    """Retain original direct callees and multiplicities as declaration data.
+) -> dict[ResourceCall, SymbolicInt]:
+    """Return native direct source callees with unchanged dimension objects.
 
-    Negative and zero multi-control counts are intentional source diagnostics.
-    They are not validated executable CostCalls. Lt's signed flag has no effect
-    on its original registers or calls. Zero-width CSub has failing source
-    resource queries and is rejected explicitly.
+    Keys are independent of the cost profile. Negative/zero multiplicities and
+    zero-width CSub's direct children are inspectable declaration data; recursive
+    QEC or width queries can still fail when their source decomposition fails.
     """
-    if type(width) is not int:
-        raise ValueError("Direct modular callees require Python integer widths")
     modular_arithmetic_registers(kind, width)
     _validate_options(kind, signed, legacy_shims)
-    if kind == "multi_controlled_x":
-        return {FixedTCall("toffoli"): width - 2}
-    if kind == "less_than":
-        return {FixedTCall("toffoli"): width}
-    if kind == "controlled_half":
-        return {FixedTCall("fredkin"): width}
-    if width == 0:
-        raise ValueError(
-            "Original zero-width CSub has no successful paired resource query"
-        )
-    return {
-        source_controlled_add_cost(width, width, legacy_shims=legacy_shims): 1,
-        ComponentCost("BitwiseNot", width, GateCost(clifford=width)): 3,
-    }
+    return arithmetic_callees(ArithmeticCall(kind, (width,), signed=signed))
 
 
 def source_modular_arithmetic_resource_formula(

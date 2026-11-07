@@ -50,7 +50,8 @@ symbolic expressions describe source declarations without physical binding.
 | `controlled_half` | CHalf | n TwoBitCSwap |
 
 `modular_arithmetic_registers` preserves the source names and flat widths.
-`modular_arithmetic_calls` returns the literal direct multiplicities.
+`modular_arithmetic_calls` returns native direct keys and literal multiplicities,
+including symbolic widths. Arithmetic children retain their Montgomery encodings.
 `source_modular_arithmetic_resource_formula` consumes the existing typed QEC
 query and original signature/callee width fallback. CSub uses the shared CAdd
 composition in the chosen profile; it does not duplicate predicate/Add math.
@@ -61,8 +62,8 @@ controls declares -2/-1 Toffoli; those diagnostics remain declaration data and
 are not passed off as executable repetition counts. The original width fallback
 also includes the three-bit atomic callee at zero/negative multiplicity. Native
 executable `CostCall` validation is unchanged. Zero-width CSub has failing source
-QEC and width queries and is rejected explicitly; its register metadata can
-still be inspected.
+QEC and width queries and is rejected by the aggregate formula; its register
+metadata and successful direct source declaration can still be inspected.
 
 All four original placeholders lack gate and classical decompositions. There
 is therefore no source gate stream, complex-amplitude channel or measurement
@@ -99,11 +100,11 @@ both integer dispatch and the original symbolic width fallback.
 ## Symbolic modular signatures and aggregate formulas (G2-MOD22)
 
 `modular_arithmetic_registers` and the aggregate formula now retain symbolic
-widths, including Sympy integer literals. Existing concrete direct-callee
-aggregation is unchanged. Symbolic CSub consumes the shared CAdd declaration
+widths, including Sympy integer literals. Concrete and symbolic aggregation
+now both consume the shared native arithmetic recipes. Symbolic CSub consumes the shared CAdd declaration
 and queries BitwiseNot through the existing typed `OnEachCall(X, n)` rule.
 The original signature/callee width fallback is preserved. Other declarations
-fold their original Toffoli/Fredkin multiplicities with the existing QEC query.
+query their original Toffoli/Fredkin edges with the existing QEC counter.
 
 The example accepts `--symbolic` and `--legacy-profile`. Tests compare every
 source gate category and peak width in both directions/profiles, positive,
@@ -112,10 +113,24 @@ three and Python integers. Lt's signed flag still leaves its original unsigned
 signature and costs unchanged. Literal-zero CSub keeps its original query
 failure, and concrete/symbolic peaks are not conflated after substitution.
 
-The raw `modular_arithmetic_calls` interface still requires Python integers:
-its concrete ComponentCost keys cannot encode symbolic CAdd identities. That
-remaining graph capability is explicitly open; no symbolic literal is cast to
-fit that interface. The formula path is complete for the compared symbolic
-cases, not a claim of full symbolic call-graph or executable support. Width
-objects outside Python integers and Sympy expressions are refused by the new
-controlled-add query rather than silently entering symbolic dispatch.
+The raw `modular_arithmetic_calls` interface now returns the same native
+identity type for concrete and symbolic arithmetic children. It delegates to
+`arithmetic_callees`, eliminating its duplicate source multiplicity formulas and
+folded ComponentCost keys. The cost profile changes query results, not key
+identity. No symbolic literal is cast. All four source shims remain declarations,
+not executable implementations.
+
+## Native graph consumers (G2-RES38)
+
+Symbolic CAdd and all four modular aggregate formulas now query the same native
+source edges. Existing Add/predicate/CAdd model implementations are injected as
+static child costs through the established QEC query interface. This preserves
+replaceability, including all seven category fields, without duplicating edge
+multiplication. Concrete loaded/carry lifetimes and symbolic maximum-width
+fallbacks remain separate from additive gate aggregation.
+
+Tests replace native rows without changing these formula consumers, and separately
+replace their existing child models. The n=3 symbolic peak of 7 versus concrete
+peak of 12 remains unchanged. These are declaration/model tests; existing concrete
+Add/CAdd execution tests independently verify complex states, feedback branches
+and clean work.

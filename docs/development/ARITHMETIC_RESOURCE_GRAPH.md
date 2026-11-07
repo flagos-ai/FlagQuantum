@@ -58,8 +58,8 @@ python -m pytest -q tests/unit/test_arithmetic_declarations.py
 
 At n=3, CSub declares 5 And, 23 Clifford, 5 measurements and 20 terminal T
 equivalents. These model values are not an emitted primitive-gate report.
-The existing concrete modular API remains unchanged; the native graph API is
-also available for symbolic raw declarations.
+The modular raw declaration API now delegates to these native recipes for both
+concrete and symbolic widths. Aggregate estimate results remain unchanged.
 
 ## Validation evidence
 
@@ -70,3 +70,21 @@ Production modules and the example pass strict mypy, formatting, lint and the
 architecture boundary check. This establishes the seven supported logical-call
 recipes and their cost queries, not full Qualtran coverage or physical execution
 of the source shims. Existing concrete aggregate APIs are unchanged.
+
+## Formula consumers (G2-RES38)
+
+`source_controlled_add_resource_formula` now queries the declared CAdd edges for
+symbolic dimensions, with shared Add and predicate model costs supplied through
+existing static overrides. `source_modular_arithmetic_resource_formula` queries
+all four native placeholder recipes for both concrete and symbolic dimensions.
+Their width-lifetime calculations remain independent. `modular_arithmetic_calls`
+uses the same recipes and returns unfurled native keys, replacing its previous
+concrete-only folded costs; it no longer owns duplicate edge formulas.
+
+Replacement tests prove both recipe and model substitution without consumer edits.
+The source zero-width CSub direct declaration is now inspectable, while its
+failing recursive/aggregate resource query remains explicit.
+
+The consumer batch passes 683 concentrated tests without skips (48 net new
+cases), strict mypy and architecture checks. Both existing modular examples and
+the symbolic call-graph example remain runnable.
