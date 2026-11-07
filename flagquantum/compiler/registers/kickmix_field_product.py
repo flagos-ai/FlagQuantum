@@ -9,6 +9,7 @@ from collections.abc import Iterator
 from ...core.ir import Instruction
 from .field_multiplication import _field_power, _validate_field
 from .finite_field import gf2_add_ir
+from .kickmix_field_erasure import kickmix_field_product_erase_ir
 from .kickmix_field_linear import (
     kickmix_field_constant_scale_ir,
     kickmix_field_monomial_scale_ir,
@@ -109,4 +110,37 @@ def kickmix_field_product_xor_ir(
         *kickmix_field_monomial_scale_ir(target, half, modulus=modulus),
         *_polynomial_product(result[: 2 * half - 1], x[:half], y[:half]),
         *kickmix_field_constant_scale_ir(target, factor, modulus=modulus),
+    )
+
+
+def kickmix_controlled_field_product_xor_ir(
+    control: int,
+    left: tuple[int, ...],
+    right: tuple[int, ...],
+    target: tuple[int, ...],
+    workspace: tuple[int, ...],
+    measurement_bits: tuple[int, ...],
+    *,
+    modulus: int,
+    parity_bit: int | None = None,
+) -> tuple[Instruction, ...]:
+    """XOR the product into target under a positive quantum control.
+
+    Big-endian workspace starts clean and returns to zero on every branch.
+    The caller provides one result slot per field bit and a separate parity
+    slot when the modulus needs one. The same schedule is its XOR inverse.
+    """
+    _validate_registers((control,), left, right, target, workspace)
+    add = gf2_add_ir(workspace[::-1], target[::-1], control=control)
+    return (
+        *kickmix_field_product_xor_ir(left, right, workspace, modulus=modulus),
+        *add,
+        *kickmix_field_product_erase_ir(
+            left,
+            right,
+            workspace,
+            measurement_bits,
+            modulus=modulus,
+            parity_bit=parity_bit,
+        ),
     )
