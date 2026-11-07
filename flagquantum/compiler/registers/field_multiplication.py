@@ -62,6 +62,27 @@ class FieldDecomposition:
     scratch: tuple[int, ...]
 
 
+def _field_plu(
+    matrix: list[list[int]],
+) -> tuple[list[list[int]], list[list[int]], list[int]]:
+    """Factor a binary matrix with the first available pivot in each column."""
+    n = len(matrix)
+    upper = [row[:] for row in matrix]
+    lower = [[0] * n for _ in range(n)]
+    permutation = list(range(n))
+    for i in range(n):
+        pivot = next(j for j in range(i, n) if upper[j][i])
+        upper[i], upper[pivot] = upper[pivot], upper[i]
+        lower[i], lower[pivot] = lower[pivot], lower[i]
+        permutation[i], permutation[pivot] = permutation[pivot], permutation[i]
+        lower[i][i] = 1
+        for j in range(i + 1, n):
+            if upper[j][i]:
+                lower[j][i] = 1
+                upper[j] = [a ^ b for a, b in zip(upper[j], upper[i], strict=True)]
+    return upper, lower, permutation
+
+
 class _FieldEmitter(_PolynomialEmitter):
     """Field reduction and linear maps over the shared polynomial gate sink."""
 
@@ -74,19 +95,7 @@ class _FieldEmitter(_PolynomialEmitter):
     ) -> tuple[int, ...]:
         """Qualtran SynthesizeLRCircuit with galois's first-pivot PLU order."""
         n = len(qubits)
-        upper = [row[:] for row in matrix]
-        lower = [[0] * n for _ in range(n)]
-        permutation = list(range(n))
-        for i in range(n):
-            pivot = next(j for j in range(i, n) if upper[j][i])
-            upper[i], upper[pivot] = upper[pivot], upper[i]
-            lower[i], lower[pivot] = lower[pivot], lower[i]
-            permutation[i], permutation[pivot] = permutation[pivot], permutation[i]
-            lower[i][i] = 1
-            for j in range(i + 1, n):
-                if upper[j][i]:
-                    lower[j][i] = 1
-                    upper[j] = [a ^ b for a, b in zip(upper[j], upper[i], strict=True)]
+        upper, lower, permutation = _field_plu(matrix)
         for i in range(n):
             for j in range(i + 1, n):
                 if upper[i][j]:
