@@ -14,6 +14,9 @@ from flagquantum.compiler.registers.uniform_preparation import (
     source_uniform_preparation_cost,
     uniform_preparation_ir,
 )
+from flagquantum.compiler.registers.uniform_preparation_resource_model import (
+    source_uniform_preparation_resource_formula,
+)
 from flagquantum.core.ir import Instruction
 from flagquantum.dynamic import DynamicCircuit
 from flagquantum.qec.resources.estimation import estimate_ftqc_resources
@@ -53,6 +56,12 @@ def main() -> None:
     model = source_uniform_preparation_cost(6, control_values=values)
     report = estimate_ftqc_resources(model, emitted_ir=circuit.to_ir())
     assert report.emitted is not None
+    formula = source_uniform_preparation_resource_formula(6, control_values=values)
+    assert (formula.and_bloq, formula.rotation, formula.logical_qubits) == (
+        report.logical.gates.and_bloq,
+        report.logical.gates.rotation,
+        report.logical.peak_logical_qubits,
+    )
     reverse = uniform_preparation_ir(
         6, target, work, slots, controls=(0, 1), control_values=values, adjoint=True
     )
@@ -66,6 +75,7 @@ def main() -> None:
     )
     primitives = Counter(g.name for g in lowered)
     print("Source model categories", report.logical.gates)
+    print("Shared resource formula", formula)
     print(
         "Model T equivalents excluding rotations",
         report.logical.gates.total_t_count(ts_per_rotation=0),

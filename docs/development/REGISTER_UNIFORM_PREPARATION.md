@@ -134,3 +134,37 @@ source's static CH model to match native lowering.
 
 G2-PREP08 acceptance: 142 new tests; 1,247 concentrated passes without skips.
 Strict types, formatting, lint, ownership and architecture checks pass.
+
+
+## Shared symbolic uniform declaration (G2-PREP09)
+
+`compiler.registers.uniform_preparation_resource_model` owns
+`source_uniform_preparation_resource_formula(count, control_values=..., legacy_shims=...)`.
+Python integer counts reuse the existing concrete model, including literal
+controls and both QEC profiles. A symbolic count, including Sympy integers,
+retains the source's `3*width-1` And declaration, two rotations and measured
+cleanup. The source symbolic call graph omits control modes from gate counts;
+its signature still contributes the control ports to the peak-width fallback.
+The native formula preserves both facts, without claiming they describe an
+executable symbolic circuit or a concrete controlled rebuild.
+
+The symbolic peak remains
+`max(3, width+1, 2*width-1, width+number_of_controls)`. For Sympy integer 2 the
+original QubitCount query fails; the combined formula rejects that known input
+instead of inventing a width. Singleton paired queries also reject. The old
+uncontrolled zero-width concrete metadata function is unchanged. Formal
+substitution and reconstructing a concrete source object remain distinct.
+Symbolic-length control arrays are outside this literal-pattern interface.
+
+Ninety dimension/control/profile configurations compare all original gate
+categories and peak widths in both directions. Dispatch and replacement tests
+prove that concrete queries consume the existing model, while Sympy integer
+queries are not coerced to Python integers. Known original failures and input
+contracts complete 110 new cases; 278 concentrated checks pass without skips.
+Strict types, lint, formatting, scope and architecture checks pass.
+
+Run the existing `python -m examples.algorithms.register_uniform_preparation`
+append example. It now also checks the shared formula against the concrete
+report, while retaining full absolute complex phase, coherent inactive control,
+work cleanup and inverse verification. The model categories and actual lowered
+T/Rz counts remain explicitly separate.
