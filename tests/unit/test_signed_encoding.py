@@ -12,6 +12,12 @@ from flagquantum.compiler.registers.signed_encoding import (
     signed_encoding_workspace_size,
 )
 from flagquantum.core.ir import Instruction
+from flagquantum.simulation.integer_encoding import integer_to_bits
+from flagquantum.simulation.ones_complement_encoding import (
+    ones_complement_domain,
+    ones_complement_from_bits,
+    ones_complement_to_bits,
+)
 from tests.unit.measurement_checks import certified_and_channel_map, forced_branch
 from tests.unit.test_register_constant_addition import reference_arithmetic_gates
 from tests.unit.test_register_subtraction import assert_source
@@ -107,11 +113,21 @@ def test_locked_word_encoding_and_model(n):
 
     word, work = layout(n)
     gates = ones_complement_to_twos_ir(word, work)
-    domain = tuple(QIntOnesComp(n).get_classical_domain())
+    domain = tuple(ones_complement_domain(n))
+    assert domain == tuple(QIntOnesComp(n).get_classical_domain())
     initial = tuple(
+        tuple(ones_complement_to_bits(i, n)) + (0,) * len(work) for i in domain
+    )
+    expected = tuple(
+        tuple(integer_to_bits(i, n, signed=True)) + (0,) * len(work) for i in domain
+    )
+    assert initial == tuple(
         tuple(QIntOnesComp(n).to_bits(i)) + (0,) * len(work) for i in domain
     )
-    expected = tuple(tuple(QInt(n).to_bits(i)) + (0,) * len(work) for i in domain)
+    assert expected == tuple(
+        tuple(QInt(n).to_bits(i)) + (0,) * len(work) for i in domain
+    )
+    assert ones_complement_from_bits([1] * n, n) == 0
     assert certified_and_channel_map(gates, initial) == (expected, n - 2)
     assert QIntOnesComp(n).from_bits([1] * n) == 0
     assert QInt(n).from_bits([1] + [0] * (n - 1)) == -(1 << (n - 1))

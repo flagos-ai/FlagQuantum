@@ -26,6 +26,7 @@ Runtime owns those decisions and calls the appropriate numerical primitives.
 | Classical modular negation, constant addition and scaled accumulation | [classical_modular_negation.py](classical_modular_negation.py), [classical_modular_constant_addition.py](classical_modular_constant_addition.py), [classical_modular_scaled_addition.py](classical_modular_scaled_addition.py) |
 | Classical modular multiplication and Montgomery history | [classical_modular_multiplication.py](classical_modular_multiplication.py), [classical_montgomery_multiplication.py](classical_montgomery_multiplication.py) |
 | Scalar/array integer value codecs and bit-array Montgomery windows | [integer_encoding.py](integer_encoding.py), [classical_montgomery_window.py](classical_montgomery_window.py) |
+| Shared scalar array vectorization, bit values and ones' complement codecs | [value_encoding.py](value_encoding.py), [bit_encoding.py](bit_encoding.py), [ones_complement_encoding.py](ones_complement_encoding.py) |
 | Montgomery numerical representation, domain, product and inverse | [montgomery_values.py](montgomery_values.py) |
 | Reusable arithmetic and precision | [numerics/](numerics/README.md) |
 | Optional JAX kernels | [jax/](jax/README.md) |
@@ -47,6 +48,12 @@ Choose the suite for the affected representation, then broaden by the
 against independent references; truncation and emulated precision need their
 own error envelope. Local numerical changes must not introduce a dependency on
 Runtime orchestration.
+
+For scalar encodings and their reversible conversion consumer, run
+`python -m examples.algorithms.classical_signed_values`. The
+[scalar encoding guide](../../docs/development/SCALAR_VALUE_ENCODINGS.md) explains
+bit order, value-versus-gate ownership, source diagnostic differences and the
+separate model and emitted resource columns.
 
 ## One instruction, one dense operator
 

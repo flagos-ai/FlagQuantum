@@ -66,3 +66,61 @@ The coherent check compares all complex amplitudes of CNOT on two bit values
 with the unchanged source tensor, including a spectator. Applying CNOT twice
 restores the state. Its model is one Clifford, zero T and no work or measurements;
 the value codecs themselves emit no quantum gates.
+
+## Ones' complement values
+
+`simulation/ones_complement_encoding.py` owns the `_IntOnesComp` numerical
+methods shared by the upstream quantum and classical types. Words are big endian:
+index zero is the sign; remaining bits hold the magnitude XOR the sign. Unsigned
+magnitude encoding and decoding reuse `integer_encoding.py`. The array methods
+reuse the callable boundary above. Inputs and scalar values are not silently
+normalized to Python integers before source arithmetic.
+
+The port preserves these upstream distinctions:
+
+| Method | Source behavior retained |
+| --- | --- |
+| Constructor guard | Rejects a Python integer width of one; no new nonpositive-width guard |
+| Domain | Excludes both magnitude endpoints, from `-2**(width-1)+1` through `2**(width-1)-1` |
+| Scalar validation | Includes both endpoints; magnitude encoding subsequently rejects them |
+| Array validation | Flattens and checks scalars, rather than applying a range-only array rule |
+| Decode | XORs the suffix before applying the sign power; does not repair length or validate bits |
+| All-one word | Decodes the negative-zero representation to numeric zero |
+
+Tests compare `QIntOnesComp` and `CIntOnesComp` at concrete, NumPy and symbolic
+widths, including malformed inputs, output types, empty arrays and overflow
+diagnostics. These diagnostic interfaces are not a claim of executable symbolic
+quantum arithmetic.
+
+The existing reversible ones-to-twos conversion now consumes the native codecs
+in its tests while retaining explicit equality with the upstream value encoders.
+Its physical implementation is unchanged. Source `SignedIntegerToTwosComplement`
+declares an abstract Toffoli cost but has no root gate decomposition; only its
+available component gate sequences are compared directly with upstream.
+
+Scalar negative-zero decoding must not replace the reversible full-word mapping.
+For width three, canonical zero and all-one negative zero cannot both map to the
+same output in a reversible circuit. The established full-word extension maps
+the latter to the otherwise unused two's-complement minimum. Existing tests cover
+all small raw words and forced measurement histories, complete complex amplitudes
+and work cleanup in both directions. Every wire outside the word is a work wire
+owned by the existing conversion or an explicitly tested spectator.
+
+```sh
+python -m examples.algorithms.classical_signed_values
+pytest -q tests/unit/test_ones_complement_encoding.py tests/unit/test_signed_encoding.py
+```
+
+The example uses `circuit.append(op)` and restores all complex amplitudes after
+forward and adjoint conversion, including a spectator and zeroed work. It prints
+the emitted four T instructions, one measurement and one work wire separately
+from the source model's one Toffoli, zero explicit measurements and four T
+equivalents. This is a model/decomposition distinction, not a claim that the
+unavailable source root decomposition has been matched.
+
+Batch acceptance: 490 new cases, 1,441 concentrated passes with no skips; 207
+reference/native numerical diagnostic warnings retained. The pinned
+`data_types.py` Git blob is unchanged. Production modules and the example pass
+strict typing for the changed surface, formatting, ownership and architecture
+checks. The broader dependency type-check limitation is recorded separately in
+the integration ledger.
