@@ -432,3 +432,18 @@ def test_noiseless_nonzero_reference_and_zero_error_dimensions() -> None:
     sampler = c.compile_detector_sampler(detector_map=d, observable_map=o, seed=7)
     actual = sampler.sample(3, append_observables=True, bit_packed=True)
     assert array(actual).tolist() == [[0], [0], [0]]
+
+
+def test_gauge_analysis_budget_precedes_sampler_preparation(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(numerical, "_MAX_ANALYSIS_CELLS", 1)
+    monkeypatch.setattr(
+        numerical,
+        "_SdkDetectorSampler",
+        lambda *a, **k: pytest.fail("preparation reached"),
+    )
+    with pytest.raises(CapabilityError, match="support cells"):
+        program().compile_detector_sampler(
+            detector_map=DETECTORS, observable_map=OBSERVABLES
+        )

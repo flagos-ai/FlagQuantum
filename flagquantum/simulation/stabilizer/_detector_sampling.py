@@ -32,12 +32,11 @@ def _source_text(
     branches = sum(
         4 ** len(g.wires) - 1 for g in ir.instructions if g.metadata.get("is_channel")
     )
+    # Sampler preparation also runs noiseless DEM analysis to reject gauge parities.
+    _require_within_limit(
+        "DEM support cells", (ir.n_wires + measurements) * outputs, _MAX_ANALYSIS_CELLS
+    )
     if analysis:
-        _require_within_limit(
-            "DEM support cells",
-            (ir.n_wires + measurements) * outputs,
-            _MAX_ANALYSIS_CELLS,
-        )
         _require_within_limit(
             "DEM fault support cells", branches * outputs, _MAX_ANALYSIS_CELLS
         )
