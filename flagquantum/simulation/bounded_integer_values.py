@@ -12,7 +12,7 @@ from typing import TYPE_CHECKING, Any
 import numpy as np
 from numpy.typing import NDArray
 
-from .integer_encoding import _symbolic_width
+from .value_parameters import is_symbolic_value
 
 if TYPE_CHECKING:
     from sympy import Expr
@@ -25,7 +25,7 @@ def bounded_integer_default_bound(width: int | Expr) -> int | Expr:
 
 def validate_bounded_integer_shape(width: int | Expr, bound: int | Expr) -> None:
     """Retain symbolic short circuits and only the source upper-capacity check."""
-    if _symbolic_width(width) or _symbolic_width(bound):
+    if is_symbolic_value(width) or is_symbolic_value(bound):
         return
     if bound > 2**width:
         raise ValueError(

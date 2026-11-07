@@ -15,20 +15,10 @@ from numpy.typing import NDArray
 
 from .integer_values import validate_integer_word_value
 from .value_encoding import decode_value_array, encode_value_array
+from .value_parameters import is_symbolic_value
 
 if TYPE_CHECKING:
     from sympy import Expr
-
-
-def _symbolic_width(width: int | Expr) -> bool:
-    if isinstance(width, (int, np.integer)):
-        return False
-    from sympy import Basic
-
-    if isinstance(width, Basic):
-        return True
-    checker = getattr(width, "is_symbolic", None)
-    return False if checker is None else bool(checker())
 
 
 def integer_to_bits(
@@ -40,7 +30,7 @@ def integer_to_bits(
     Unsigned scalar formatting retains its original symbolic-literal behavior.
     No dtype casts precede the source range checks.
     """
-    if signed and _symbolic_width(width):
+    if signed and is_symbolic_value(width):
         raise ValueError("Cannot compute signed bits with a symbolic width")
     validate_integer_word_value(value, width, signed=signed)
     if signed:
@@ -107,7 +97,7 @@ def integer_array_to_bits(
     """
     if signed:
         return vectorized_integer_array_to_bits(values, width, signed=True)
-    if _symbolic_width(width):
+    if is_symbolic_value(width):
         raise ValueError("Cannot compute unsigned array bits with a symbolic width")
     if width > 64:
         return vectorized_integer_array_to_bits(values, width)

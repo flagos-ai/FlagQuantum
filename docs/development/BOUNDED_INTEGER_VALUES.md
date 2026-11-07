@@ -56,6 +56,8 @@ superposition. Tests also include a spectator and force every measurement histor
 comparing the complete complex state against both unchanged source instructions
 and the independent Pauli action. Work returns to zero. The existing traversal is
 not changed; source dependencies, operands and feedback are compared directly.
+A spectator used in tests belongs to the caller and is excluded from the
+operation-only analytical model; emitted circuit width records it separately.
 
 The two-bit, three-row example emits four T/T-dagger instructions, one measurement
 and uses one work wire. Its analytical model separately reports four T equivalents,

@@ -27,6 +27,7 @@ Runtime owns those decisions and calls the appropriate numerical primitives.
 | Classical modular multiplication and Montgomery history | [classical_modular_multiplication.py](classical_modular_multiplication.py), [classical_montgomery_multiplication.py](classical_montgomery_multiplication.py) |
 | Scalar/array integer value codecs and bit-array Montgomery windows | [integer_encoding.py](integer_encoding.py), [classical_montgomery_window.py](classical_montgomery_window.py) |
 | Shared scalar array vectorization, bit values and ones' complement codecs | [value_encoding.py](value_encoding.py), [bit_encoding.py](bit_encoding.py), [ones_complement_encoding.py](ones_complement_encoding.py) |
+| Numerical symbolic parameter dispatch and object protocol | [value_parameters.py](value_parameters.py) |
 | Fixed-point stored integer encoding and fractional scale | [fixed_point_encoding.py](fixed_point_encoding.py) |
 | Bounded unsigned domains, validation and scalar/array codecs | [bounded_integer_values.py](bounded_integer_values.py), [bounded_integer_encoding.py](bounded_integer_encoding.py) |
 | Montgomery numerical representation, domain, product and inverse | [montgomery_values.py](montgomery_values.py) |
@@ -64,6 +65,10 @@ dependency.
 bounded addresses and executes existing measured Pauli SELECT. The
 [bounded integer guide](../../docs/development/BOUNDED_INTEGER_VALUES.md) explains
 the separate numerical validation, quantum padding and work ownership rules.
+The [numerical symbolic parameter guide](../../docs/development/NUMERICAL_SYMBOLIC_PARAMETERS.md)
+explains the shared predicate used by integer, bounded, fixed-point and Montgomery
+values. An integer subclass's symbolic callback must not be bypassed by a numeric
+fast path; concrete execution still works when optional Sympy is absent.
 
 ## One instruction, one dense operator
 

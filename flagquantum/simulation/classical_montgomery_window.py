@@ -13,7 +13,8 @@ from typing import TYPE_CHECKING, cast
 
 from .classical_bitwise import IntegerValue
 from .classical_montgomery_multiplication import _inversion_data
-from .integer_encoding import _symbolic_width, integer_from_bits, integer_to_bits
+from .integer_encoding import integer_from_bits, integer_to_bits
+from .value_parameters import is_symbolic_value
 
 if TYPE_CHECKING:
     from sympy import Expr
@@ -37,7 +38,7 @@ def montgomery_window_bits_classical_values(
     Clean quantum execution separately requires a zero initial index and the
     compiler's valid layout/domain, not arbitrary values admitted by this method.
     """
-    symbolic_shape = _symbolic_width(width) or _symbolic_width(window)
+    symbolic_shape = is_symbolic_value(width) or is_symbolic_value(window)
     if not symbolic_shape:
         if not width % window == 0:
             raise AssertionError
@@ -52,7 +53,7 @@ def montgomery_window_bits_classical_values(
         if left[i]:
             value += right << i
     index = value & (2**w - 1)
-    if _symbolic_width(modulus):
+    if is_symbolic_value(modulus):
         # Original SingleWindow passes log_block_sizes=None explicitly to a
         # QROAM tuple converter. Preserve that construction failure before
         # metadata validation rather than silently choosing a block size.

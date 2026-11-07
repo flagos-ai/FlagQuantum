@@ -68,8 +68,10 @@ window and its history chain. The shared scalar codec does not allocate quantum
 work or add gates.
 The unchanged source graph remains the reference for quantum amplitudes,
 measurement histories and clean-work evidence, including known source graph/value
-disagreements. Ones' complement, fixed-point and finite-field encodings remain
-separate unaccepted portions of the source inventory.
+disagreements. [Ones' complement value codecs](SCALAR_VALUE_ENCODINGS.md) and
+[fixed-point stored integer codecs](FIXED_POINT_VALUE_ENCODING.md) are now separate
+accepted slices. Real fixed-point quantization and finite-field dtype codecs
+remain unaccepted portions of the source inventory.
 
 ## Shared default array vectorization (G2-VAL14)
 

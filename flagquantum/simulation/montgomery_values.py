@@ -10,7 +10,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, cast
 
 from .classical_bitwise import IntegerValue
-from .integer_encoding import _symbolic_width
+from .value_parameters import is_symbolic_value
 
 if TYPE_CHECKING:
     from sympy import Expr
@@ -18,13 +18,13 @@ if TYPE_CHECKING:
 
 def montgomery_value_domain(width: int | Expr, modulus: int | Expr | None) -> range:
     """Enumerate source nonzero residues, or all stored words for an absent/symbolic mod."""
-    if modulus is None or _symbolic_width(modulus):
+    if modulus is None or is_symbolic_value(modulus):
         return range(cast(int, 2**width))
     return range(1, int(modulus))
 
 
 def _modulus(modulus: int | Expr | None) -> int:
-    if modulus is None or _symbolic_width(modulus):
+    if modulus is None or is_symbolic_value(modulus):
         raise AssertionError
     # Narrow only; the source casts the modulus to int at selected pow calls,
     # but not at the inverse's first pow or the final remainder.

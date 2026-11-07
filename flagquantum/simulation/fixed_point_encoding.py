@@ -13,9 +13,10 @@ from typing import TYPE_CHECKING, Any, cast
 import numpy as np
 from numpy.typing import NDArray
 
-from .integer_encoding import _symbolic_width, integer_from_bits, integer_to_bits
+from .integer_encoding import integer_from_bits, integer_to_bits
 from .integer_values import validate_integer_word_value
 from .value_encoding import decode_value_array, encode_value_array
+from .value_parameters import is_symbolic_value
 
 if TYPE_CHECKING:
     from sympy import Expr
@@ -25,9 +26,9 @@ def validate_fixed_point_shape(
     width: int | Expr, fractional_width: int | Expr, *, signed: bool = False
 ) -> None:
     """Keep the source _Fxp constructor checks and symbolic short circuits."""
-    if not _symbolic_width(width) and width == 1 and signed:
+    if not is_symbolic_value(width) and width == 1 and signed:
         raise ValueError("bitsize must be > 1.")
-    if not _symbolic_width(width) and not _symbolic_width(fractional_width):
+    if not is_symbolic_value(width) and not is_symbolic_value(fractional_width):
         if signed and width == fractional_width:
             raise ValueError("num_frac must be less than bitsize if the Fxp is signed.")
         if width < fractional_width:
