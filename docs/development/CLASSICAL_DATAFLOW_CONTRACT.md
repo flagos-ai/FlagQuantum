@@ -51,6 +51,13 @@ from read/modify/write and checks conditions and initialization before use.
 The unreleased tagged KMX subset admits these native classical opcodes while
 preserving earlier encodings byte-for-byte. Unsupported opcodes still fail closed.
 
+Positive conjunctions on reversible quantum gates lower to nested
+`PUSH_CONDITION` and `POP_CONDITION` scopes plus the last inline condition.
+Singleton conditions keep their direct encoding. Scope markers introduce
+no work bits. A scope may only read previously defined classical slots
+and may not write them. This avoids differences between the native
+executor's condition snapshot and the per-instruction IR predicate.
+
 ## Consumer and resource acceptance
 
 Parity-controlled Z/CZ computes a reusable classical result before applying one

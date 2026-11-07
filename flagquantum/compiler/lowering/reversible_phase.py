@@ -1,4 +1,4 @@
-"""Legalize the paired lookup and erasure instruction set."""
+"""Legalize the restricted reversible-phase instruction set."""
 
 from ...core.classical_control import (
     instruction_condition_clauses,
@@ -13,7 +13,11 @@ from ..artifacts.reversible_phase import (
     ReversiblePhaseProgram,
 )
 
-_REVERSIBLE_OPCODES = frozenset(REVERSIBLE_OPCODE_ARITIES) - {"hmr"}
+_REVERSIBLE_OPCODES = frozenset(REVERSIBLE_OPCODE_ARITIES) - {
+    "hmr",
+    "push_condition",
+    "pop_condition",
+}
 
 
 def _plain(instruction: Instruction) -> bool:
@@ -92,17 +96,24 @@ def lower_reversible_phase(ir: CircuitIR) -> ReversiblePhaseProgram:
                 f"at instruction {index}"
             )
         clauses = instruction_condition_clauses(instruction)
+        scopes: tuple[int, ...] = ()
         bit = None
         if clauses:
-            if len(clauses) != 1 or len(clauses[0]) != 1 or clauses[0][0][1] != 1:
+            if len(clauses) != 1 or any(value != 1 for _, value in clauses[0]):
                 raise CapabilityError(
-                    f"reversible-phase lowering requires one positive condition at {index}"
+                    f"reversible-phase lowering requires one positive condition clause at {index}"
                 )
-            bit = clauses[0][0][0]
+            slots = tuple(slot for slot, _ in clauses[0])
+            scopes, bit = slots[:-1], slots[-1]
+            operations.extend(
+                ReversiblePhaseOperation("push_condition", (), condition_bit=scope)
+                for scope in scopes
+            )
         operations.append(
             ReversiblePhaseOperation(
                 instruction.name, instruction.wires, condition_bit=bit
             )
         )
+        operations.extend(ReversiblePhaseOperation("pop_condition", ()) for _ in scopes)
         index += 1
     return ReversiblePhaseProgram(ir.n_wires, n_bits, tuple(operations))

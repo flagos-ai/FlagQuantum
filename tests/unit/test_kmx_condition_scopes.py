@@ -1,0 +1,94 @@
+"""Check read-only KMX condition scopes against the pinned native executor."""
+
+from itertools import product
+
+import pytest
+
+from flagquantum.compiler.formats.kmx import decode_kmx, encode_kmx
+from flagquantum.compiler.lowering.reversible_phase import lower_reversible_phase
+from flagquantum.compiler.registers.measurement import measure_x_clear_ir
+from flagquantum.core.ir import CircuitIR, Instruction
+from flagquantum.errors import CapabilityError
+
+pytestmark = pytest.mark.unit
+_HEADER = 'INFO_TAG "@flagquantum:reversible-phase-v1 wires=2 bits=3"\n'
+
+
+@pytest.mark.parametrize(
+    "payload,reason",
+    [
+        ("PUSH_CONDITION if b0", "defined classical bit"),
+        ("PUSH_CONDITION", "defined classical bit"),
+        ("POP_CONDITION", "condition pop"),
+        ("BIT_STORE0 b0\nPUSH_CONDITION if b0", "Unclosed"),
+        ("BIT_STORE0 b0\nPUSH_CONDITION if b0\nPOP_CONDITION if b0", "condition pop"),
+        (
+            "BIT_STORE0 b0\nPUSH_CONDITION if b0\nHMR q0 b1\nPOP_CONDITION",
+            "cannot write",
+        ),
+        (
+            "BIT_STORE0 b0\nPUSH_CONDITION if b0\nBIT_INVERT b0\nPOP_CONDITION",
+            "cannot write",
+        ),
+    ],
+)
+def test_decoder_rejects_invalid_condition_scopes(payload: str, reason: str) -> None:
+    with pytest.raises(ValueError, match=reason):
+        decode_kmx(_HEADER + payload)
+
+
+@pytest.mark.parametrize(
+    "metadata",
+    [
+        {"conditions": ((0, 0),)},
+        {"condition_clauses": (((0, 1),), ((1, 1),))},
+    ],
+)
+def test_lowering_rejects_unrepresentable_predicates(metadata: dict) -> None:
+    ir = CircuitIR(
+        2,
+        (
+            *measure_x_clear_ir(0, 0),
+            *measure_x_clear_ir(0, 1),
+            Instruction("x", (1,), metadata=metadata),
+        ),
+    )
+    with pytest.raises(CapabilityError, match="one positive condition clause"):
+        lower_reversible_phase(ir)
+
+
+@pytest.mark.ftqc_reference
+def test_nested_conjunction_round_trips_and_matches_native_truth_table() -> None:
+    km = pytest.importorskip("kickmix")
+    assert km.__version__ in {"0.1", "0.1.dev0"} and hasattr(km, "Simulator")
+    ir = CircuitIR(
+        2,
+        (
+            *(gate for bit in range(3) for gate in measure_x_clear_ir(0, bit)),
+            Instruction("x", (0,), metadata={"conditions": ((0, 1), (1, 1), (2, 1))}),
+            Instruction("x", (1,), metadata={"conditions": ((2, 1),)}),
+        ),
+    )
+    lowered = lower_reversible_phase(ir)
+    text = encode_kmx(lowered)
+    assert decode_kmx(text) == lowered
+    expected = [
+        "PUSH_CONDITION if b0",
+        "PUSH_CONDITION if b1",
+        "X q0 if b2",
+        "POP_CONDITION",
+        "POP_CONDITION",
+        "X q1 if b2",
+    ]
+    assert text.splitlines()[4:] == expected
+    assert lowered.n_bits == 3
+    for inputs in product((0, 1), repeat=3):
+        setup = [f"BIT_STORE0 b{bit}" for bit in range(3)]
+        setup.extend(f"BIT_INVERT b{bit}" for bit, value in enumerate(inputs) if value)
+        sim = km.Simulator(batch_size=1, seed=1)
+        sim.do(km.Circuit("\n".join((*setup, *expected))))
+        assert sim.read_across_shots(km.q(0), out=int) == int(all(inputs))
+        assert sim.read_across_shots(km.q(1), out=int) == inputs[2]
+        assert (
+            tuple(sim.read_across_shots(km.b(i), out=int) for i in range(3)) == inputs
+        )
