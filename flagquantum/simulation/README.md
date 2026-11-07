@@ -675,6 +675,13 @@ not enable unconditional `fql.plan` or the future native sampled plan reader.
 
 ## Classical lookup values
 
+`classical_partition.py` composes bound scalar/array codecs for shaped numerical
+Partition ports in original row-major order. Unpartition reuses the shared Join
+value boundary; Compiler retains layout legality. Run
+`python -m examples.algorithms.classical_partition_values` for a 2x2 port, scalar
+flag, full complex action and inverse. See
+[shaped partition values](../../docs/development/CLASSICAL_PARTITION_VALUES.md).
+
 `classical_bit_binding.py` composes existing scalar codecs for raw numerical
 Allocate/Free/Split/Join/Cast callbacks. Compiler keeps static register binding
 and workspace ownership; no foreign dtype enters Simulation. Run
