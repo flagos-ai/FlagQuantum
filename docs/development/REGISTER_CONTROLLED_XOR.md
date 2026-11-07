@@ -72,3 +72,52 @@ The concentrated acceptance log records 435 passing control/bitwise/AddK tests,
 without skips. Twelve existing controlled-Toffoli/LCU tensor warnings are preserved without suppression or a new LCU
 numerical claim. Symbolic widths and a full Clifford+T decomposition of the atomic
 upstream Toffoli are outside this slice. The parent migration entry remains open.
+
+## Symbolic declarations and shared lifetime queries (G2-BIT05)
+
+`ArithmeticCall("xor", (n,))` and `ArithmeticCall("controlled_xor", (n,))`
+retain the original equal-word width, data encoding and activation. The direct
+native graphs declare respectively n CNOT and n atomic Toffoli calls. Negative
+activation wraps the entire positive body with two X calls. The shared identity
+keeps Python and Sympy width objects distinct without converting them; these
+resource identities do not allocate wires or execute symbolic gates.
+
+`registers/xor_resource_model.py` exposes `source_xor_resource_formula` (plain or
+single-bit activation) and `source_grouped_xor_resource_formula` (existing concrete
+control-word descriptors). They consume the native declarations and generic QEC
+query. The existing concrete `source_grouped_xor_cost` now queries the same raw
+positive declarations instead of repeating the Toffoli multiplicity equation.
+The model's encoding distinguishes source objects without changing XOR behavior.
+
+The shared `controlled_component_resource_formula` in
+`controlled_component_resource_model.py` owns the outer lifetime calculation for
+both AddK and XOR. Its positive resource key/formula, logical target width and
+control descriptors remain replaceable. It uses the existing QEC query and
+connection-width scheduler. For XOR the logical target width is **both data
+words**, 2n; private child peak is not substituted for those logical ports. AddK's
+existing replacement test now patches this shared predicate-cost owner and still
+verifies all seven categories and the symbolic storage graph.
+
+Unknown integer symbols retain the original peak lower bounds:
+
+| Query | Original peak |
+|---|---|
+| Plain Xor(z) | Max(2, 2z) |
+| Positive or negative single control | Max(3, 2z+1) |
+| Two control bits | Max(2z+3, Max(3, 2z+1)+2) |
+
+For positive n these simplify to 2n, 2n+1 and 2n+3. Original zero-width Xor has a
+failed QubitCount query for Python and Sympy zero; native aggregate formulas
+raise explicitly. Raw declaration graphs can still represent zero multiplicity.
+No reference failure is silently repaired by a formula or a width cast.
+
+The batch adds 499 tests: 468 plain/single/grouped queries, 18 direct-source graph
+comparisons, six literal-zero source failures, one unconstrained-symbol witness,
+five invalid-parameter cases and a concrete-consumer declaration replacement.
+Every query compares all seven categories and QubitCount against unmodified
+v0.7.0, including both cost profiles and three encodings. The combined existing
+source gates, full complex branches, clean-work and AddK regression passes 1,706
+tests without skips; six existing LCU reference warnings remain visible. Strict
+typing of seven production/example files, Black, Ruff, scope and architecture
+checks pass. Run `python -m examples.algorithms.arithmetic_resource_graph` for
+concrete and symbolic models; it constructs no symbolic executable circuit.

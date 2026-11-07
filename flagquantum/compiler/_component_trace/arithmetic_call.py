@@ -16,6 +16,8 @@ from .symbolic_math import SymbolicInt
 ArithmeticOperation: TypeAlias = Literal[
     "add",
     "controlled_add",
+    "xor",
+    "controlled_xor",
     "bitwise_not",
     "out_of_place_add",
     "constant_add",
@@ -58,6 +60,8 @@ class ArithmeticCall:
         operations = (
             "add",
             "controlled_add",
+            "xor",
+            "controlled_xor",
             "bitwise_not",
             "out_of_place_add",
             "constant_add",
@@ -107,6 +111,8 @@ class ArithmeticCall:
         if self.operation not in (
             "add",
             "controlled_add",
+            "xor",
+            "controlled_xor",
             "bitwise_not",
             "constant_add",
             "xor_constant",
@@ -122,6 +128,7 @@ class ArithmeticCall:
             self.operation
             not in (
                 "controlled_add",
+                "controlled_xor",
                 "controlled_constant_add",
                 "controlled_xor_constant",
             )

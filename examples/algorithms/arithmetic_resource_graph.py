@@ -25,6 +25,10 @@ from flagquantum.compiler.registers.grouped_constant_add_resource_model import (
 from flagquantum.compiler.registers.out_of_place_add_resource_model import (
     source_out_of_place_add_resource_formula,
 )
+from flagquantum.compiler.registers.xor_resource_model import (
+    source_grouped_xor_resource_formula,
+    source_xor_resource_formula,
+)
 
 
 def main() -> None:
@@ -54,6 +58,12 @@ def main() -> None:
                     n, include_msb=msb, adjoint=adjoint
                 ),
             )
+    for width in (3, n, Symbol("z", integer=True)):
+        print("Plain XOR model:", source_xor_resource_formula(width))
+        print(
+            "Grouped XOR model:",
+            source_grouped_xor_resource_formula(width, (ControlRegister(2, (2,)),)),
+        )
     k = Symbol("k", integer=True)
     for label, width, value in (
         ("Python width and constant", 3, 5),

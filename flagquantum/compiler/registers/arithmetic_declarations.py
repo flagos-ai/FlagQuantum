@@ -93,6 +93,12 @@ def arithmetic_callees(call: ArithmeticCall) -> dict[ResourceCall, SymbolicInt]:
                 pattern = constant
             flips = pattern.bit_count()
         return {CliffordCall("x", 1): flips}
+    if call.operation == "xor":
+        return {CliffordCall("cx", 2): width}
+    if call.operation == "controlled_xor":
+        if call.control_value == 0:
+            return {replace(call, control_value=1): 1, CliffordCall("x", 1): 2}
+        return {FixedTCall("toffoli"): width}
     if call.operation == "add":
         n = call.widths[1]
         return {
@@ -137,7 +143,13 @@ def _adjoint(call: ResourceCall) -> ResourceCall:
         return (
             call
             if call.operation
-            in ("bitwise_not", "xor_constant", "controlled_xor_constant")
+            in (
+                "xor",
+                "controlled_xor",
+                "bitwise_not",
+                "xor_constant",
+                "controlled_xor_constant",
+            )
             else replace(call, adjoint=not call.adjoint)
         )
     if isinstance(call, ConjunctionCall):

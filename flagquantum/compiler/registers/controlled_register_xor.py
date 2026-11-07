@@ -7,8 +7,13 @@
 
 """Controlled register XOR with shared activation and original atomic Toffolis."""
 
+from dataclasses import fields
+
 from ...core.ir import Instruction
+from .._component_trace.arithmetic_call import ArithmeticCall
+from .._component_trace.qec_gate_cost import query_qec_gate_cost
 from .._component_trace.resource_model import ComponentCost, GateCost
+from .arithmetic_declarations import arithmetic_call_graph
 from .bitwise import _validate_wires
 from .control_predicate import ControlRegister, bind_control_registers
 from .controlled_component import controlled_component_ir
@@ -72,7 +77,15 @@ def source_grouped_xor_cost(
     """
     if type(width) is not int or width < 1:
         raise ValueError("Controlled XOR model requires positive concrete width")
-    positive = ComponentCost("ControlledXor", 2 * width + 1, GateCost(toffoli=width))
+    root = ArithmeticCall("controlled_xor", (width,))
+    gates = query_qec_gate_cost(
+        root, declared_calls=arithmetic_call_graph(root), legacy_shims=legacy_shims
+    )
+    positive = ComponentCost(
+        "ControlledXor",
+        2 * width + 1,
+        GateCost(**{f.name: getattr(gates, f.name) for f in fields(gates)}),
+    )
     return controlled_component_cost(
         positive, registers, target_width=2 * width, legacy_shims=legacy_shims
     )
