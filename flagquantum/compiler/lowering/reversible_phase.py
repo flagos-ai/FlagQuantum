@@ -19,6 +19,7 @@ _REVERSIBLE_OPCODES = frozenset(REVERSIBLE_OPCODE_ARITIES) - {
     "neg",
     "push_condition",
     "pop_condition",
+    "z_pow",
 }
 
 

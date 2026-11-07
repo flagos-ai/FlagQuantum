@@ -2,6 +2,8 @@
 
 from dataclasses import dataclass
 
+from .phase_angle import PhaseAngle128
+
 REVERSIBLE_OPCODE_ARITIES = {
     "x": 1,
     "cx": 2,
@@ -9,6 +11,7 @@ REVERSIBLE_OPCODE_ARITIES = {
     "swap": 2,
     "cswap": 3,
     "z": 1,
+    "z_pow": 1,
     "cz": 2,
     "ccz": 3,
     "neg": 0,
@@ -29,6 +32,7 @@ class ReversiblePhaseOperation:
     qubits: tuple[int, ...]
     result_bit: int | None = None
     condition_bit: int | None = None
+    angle: PhaseAngle128 | None = None
 
 
 @dataclass(frozen=True)
@@ -54,6 +58,11 @@ class ReversiblePhaseProgram:
             return bit is not None and any(bit in scope for scope in definitions)
 
         for op in self.operations:
+            if op.opcode == "z_pow":
+                if not isinstance(op.angle, PhaseAngle128):
+                    raise ValueError("Z_POW requires an exact PhaseAngle128")
+            elif op.angle is not None:
+                raise ValueError("Only Z_POW may carry an angle")
             if (
                 REVERSIBLE_OPCODE_ARITIES.get(op.opcode) != len(op.qubits)
                 or len(set(op.qubits)) != len(op.qubits)

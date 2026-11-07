@@ -1,9 +1,26 @@
 """Bind the reversible-phase target to local dynamic instructions."""
 
+from math import pi
+
 from ...core.classical_dataflow import ClassicalXor
 from ...core.ir import Instruction
-from ..artifacts.reversible_phase import ReversiblePhaseProgram
+from ..artifacts.reversible_phase import (
+    ReversiblePhaseOperation,
+    ReversiblePhaseProgram,
+)
 from ..registers.global_phase import ccz_ir, scalar_sign_ir
+
+
+def _phase_instruction(
+    operation: ReversiblePhaseOperation, metadata: dict[str, object]
+) -> Instruction:
+    assert operation.angle is not None
+    return Instruction(
+        "phase",
+        operation.qubits,
+        {"theta": pi * operation.angle.signed_half_turns_float()},
+        metadata=metadata,
+    )
 
 
 def bind_reversible_phase_execution(
@@ -81,6 +98,8 @@ def bind_reversible_phase_execution(
                 )
             else:
                 gates.append(Instruction("reset", op.qubits, metadata=effect))
+        elif op.opcode == "z_pow":
+            gates.append(_phase_instruction(op, metadata))
         elif op.opcode == "ccz":
             a, b, c = op.qubits
             gates.extend(ccz_ir((a, b, c), conditions=conditions))

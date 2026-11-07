@@ -2,6 +2,7 @@
 
 import re
 
+from ..artifacts.phase_angle import PhaseAngle128
 from ..artifacts.reversible_phase import (
     ReversiblePhaseOperation,
     ReversiblePhaseProgram,
@@ -26,6 +27,8 @@ def encode_kmx(program: ReversiblePhaseProgram) -> str:
     lines = [_HEADER.format(wires=program.n_qubits, bits=program.n_bits, inputs=inputs)]
     for operation in program.operations:
         fields = [operation.opcode.upper(), *(f"q{wire}" for wire in operation.qubits)]
+        if operation.angle is not None:
+            fields.append(operation.angle.to_decimal_half_turns())
         if operation.result_bit is not None:
             fields.append(f"b{operation.result_bit}")
         if operation.condition_bit is not None:
@@ -50,6 +53,11 @@ def decode_kmx(text: str) -> ReversiblePhaseProgram:
             condition = _parse_operand(operands[-1], "b")
             del operands[-2:]
         result = None
+        angle = None
+        if opcode == "Z_POW":
+            if len(operands) != 2:
+                raise ValueError("Z_POW requires one qubit and an exact decimal angle")
+            angle = PhaseAngle128.from_rounded_decimal_half_turns(operands.pop())
         if opcode in {"HMR", "BIT_STORE0", "BIT_INVERT"} and operands:
             result = _parse_operand(operands.pop(), "b")
         operations.append(
@@ -58,6 +66,7 @@ def decode_kmx(text: str) -> ReversiblePhaseProgram:
                 tuple(_parse_operand(operand, "q") for operand in operands),
                 result_bit=result,
                 condition_bit=condition,
+                angle=angle,
             )
         )
     return ReversiblePhaseProgram(wires, bits, tuple(operations), inputs)
