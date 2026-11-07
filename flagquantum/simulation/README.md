@@ -675,6 +675,13 @@ not enable unconditional `fql.plan` or the future native sampled plan reader.
 
 ## Classical lookup values
 
+`classical_bit_binding.py` composes existing scalar codecs for raw numerical
+Allocate/Free/Split/Join/Cast callbacks. Compiler keeps static register binding
+and workspace ownership; no foreign dtype enters Simulation. Run
+`python -m examples.algorithms.classical_bit_binding` for reversed signed views,
+complex amplitudes and inverse through `circuit.append(op)`. See
+[bit-binding contracts](../../docs/development/CLASSICAL_BIT_BINDING.md).
+
 `classical_pauli_values.py` separates X bit movement from unchanged Z/CZ named
 values and their basis-state signs. Compiler's existing Pauli emitter remains
 the gate authority. Run `python -m examples.algorithms.classical_pauli_values`
