@@ -23,6 +23,7 @@ Runtime owns those decisions and calls the appropriate numerical primitives.
 | Classical integer arithmetic value models | [classical_addition.py](classical_addition.py), [classical_subtraction.py](classical_subtraction.py), [classical_negation.py](classical_negation.py) |
 | Classical multiply-accumulate and checked square erasure | [classical_product_accumulation.py](classical_product_accumulation.py), [classical_square.py](classical_square.py) |
 | Classical modular residue arithmetic and controlled value semantics | [classical_modular_addition.py](classical_modular_addition.py), [classical_modular_subtraction.py](classical_modular_subtraction.py) |
+| Classical modular negation, constant addition and scaled accumulation | [classical_modular_negation.py](classical_modular_negation.py), [classical_modular_constant_addition.py](classical_modular_constant_addition.py), [classical_modular_scaled_addition.py](classical_modular_scaled_addition.py) |
 | Reusable arithmetic and precision | [numerics/](numerics/README.md) |
 | Optional JAX kernels | [jax/](jax/README.md) |
 

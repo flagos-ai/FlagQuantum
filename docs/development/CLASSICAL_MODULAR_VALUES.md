@@ -93,3 +93,38 @@ There are 966 new source value cases. Existing CModAddK gate/feedback, coherent
 branches, model and clean-work certificates now consume the classical evaluator.
 Standalone ModAddK has no source gate decomposition; this is a value-method port,
 not a claim of executable primitive parity for that separate source component.
+
+## Controlled scaled modular accumulation (G2-VAL09)
+
+`simulation/classical_modular_scaled_addition.py` retains CtrlScaleModAdd's zero
+control normalization, active-control assertion, and raw `y + x*k` before modulo.
+Unlike CModAddK, this source value method imposes no active residue bounds.
+Unsigned overflow is not repaired, and inactive arrays are returned by identity
+without evaluating a zero modulus. There are 121 new source value cases.
+
+The existing complete valid-basis channel certificates and coherent primitive
+histories now use this evaluator, retaining independent arithmetic assertions.
+The compiler's source-ordered per-bit decomposition and its per-bit reduction of
+k remain unchanged. Those reductions are part of the original gate algorithm;
+they are not introduced into this direct numerical expression.
+
+Run all three new numerical paths through the existing append protocol:
+
+```sh
+python -m examples.algorithms.classical_modular_controls
+```
+
+The example compares complete complex output states and exact adjoint restoration
+across eight sampled trajectories per case, with zero work at both boundaries.
+Its emitted T/measurement counts are ModNeg 24/6 (three-bit, p=3), CModAddK 44/11
+(two-bit, p=3, k=1) and CtrlScaleModAdd 96/24 (two-bit, p=3, k=-1). Corresponding
+pinned model T-equivalent/measurement values are printed in a separate line.
+Raw source gates and all-history/selected-history evidence remain in the tests;
+these sampled example trajectories are not advertised as exhaustive enumeration.
+
+Batch G2-VAL07/08/09 acceptance: 217 + 966 + 121 = 1,304 new value cases;
+1,423 concentrated passes, no skips. Four original/native NumPy overflow warnings
+remain visible. Strict typing, Black/Ruff, team scope, architecture and the
+reference-free executable example pass. The original mod_addition.py and
+mod_subtraction.py blobs remain unchanged. Existing out-of-domain defects and
+standalone ModAddK's missing gate decomposition remain explicitly open.

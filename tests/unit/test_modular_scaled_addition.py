@@ -9,6 +9,9 @@ from flagquantum.compiler.registers.modular_scaled_addition import (
     controlled_modular_scaled_add_ir,
     modular_scaled_requirements,
 )
+from flagquantum.simulation.classical_modular_scaled_addition import (
+    controlled_modular_scaled_add_classical_values,
+)
 from tests.unit.measurement_checks import certified_and_channel_map, forced_branch
 from tests.unit.test_modular_constant_addition import reference_binding
 from tests.unit.test_register_constant_addition import reference_arithmetic_gates
@@ -79,7 +82,10 @@ def basis_inputs(
     for c in (0, 1):
         for a in range(1 << n):
             for b in range(p):
-                y = (b + k * a) % p if c else b
+                y = int(
+                    controlled_modular_scaled_add_classical_values(c, a, b, k, p)[2]
+                )
+                assert y == ((b + k * a) % p if c else b)
                 x = ((c << (2 * n)) | (a << n) | b) << q
                 z = ((c << (2 * n)) | (a << n) | y) << q
                 before.append(tuple((x >> (width - 1 - i)) & 1 for i in range(width)))
