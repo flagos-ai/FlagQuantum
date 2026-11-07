@@ -16,17 +16,21 @@ The internal unreleased dynamic instruction vocabulary gains `classical_xor`.
 
 An instruction has no quantum wires or matrix, `params={"sources": tuple[int,
 ...]}`, and exactly `metadata={"is_dynamic": True, "classical_bit": target}`.
+An optional Boolean `constant` parameter XORs a literal into the assignment.
+The encoder omits false and uses `constant=True` to complement the parity.
 All indices are nonnegative concrete integers, excluding bool. Inputs must have
 been defined earlier by measurement or classical computation. Validation reads
 the old sources before declaring the destination defined. Repeated inputs cancel
-by parity; empty input writes zero; destination aliases read its previous value.
+by parity; empty input writes the literal (zero by default). A destination alias
+reads its previous value. XOR of a slot with true, assigned to the same slot,
+inverts it in place.
 Reassignment is allowed, with program-level SSA creating a fresh boolean result.
 Conditional classical writes are outside this version and are rejected.
 
 ## Execution and interchange
 
-The operation replaces its destination with XOR of source values, leaving inputs
-and quantum state unchanged. Source bits are snapshotted before the write. Reading
+The operation replaces its destination with XOR of source values and the literal.
+The write affects only the destination slot. Source bits are snapshotted before the write. Reading
 an undefined source is an error even when duplicated sources would cancel.
 Scalar and batched trajectories implement identical semantics, including observed
 readout bits. True-bit audit records are transformed separately where present.
@@ -37,7 +41,7 @@ must explicitly refuse unsupported classical computation. Backend package admiss
 remains blocked until a qualified classical-computation capability is available;
 textual OpenQASM export alone is not hardware qualification.
 
-The program graph uses boolean `bool_zero` and binary `bool_xor` definitions;
+The program graph uses boolean `bool_zero` or `bool_one` seeds and binary `bool_xor` definitions;
 conditions reference those definitions through the existing `ConditionRef`.
 The public instruction and program graph must round-trip and pass def-use/kind
 verification. Existing circuits and serialized payloads remain unchanged.
@@ -45,7 +49,9 @@ verification. Existing circuits and serialized payloads remain unchanged.
 KMX lowers assignment to `BIT_STORE0 bTarget` followed by
 `BIT_INVERT bTarget if bSource` for each non-target source. If the old destination
 appears an odd number of times, it is preserved instead of initialized; all
-destination occurrences are removed from the inversion list. This handles
+destination occurrences are removed from the inversion list. A true constant
+appends one unconditional `BIT_INVERT bTarget`. In-place NOT lowers to just
+that operation. This handles
 aliasing without an implicit scratch bit. Target validation distinguishes writes
 from read/modify/write and checks conditions and initialization before use.
 The unreleased tagged KMX subset admits these native classical opcodes while

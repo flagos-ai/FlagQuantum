@@ -28,7 +28,10 @@ def export_dynamic_qasm3(circuit: DynamicCircuit) -> str:
         wire_text = ", ".join(f"q[{wire}]" for wire in instruction.wires)
         if instruction.name == "classical_xor":
             operation = parse_classical_xor(instruction)
-            expression = " ^ ".join(f"c[{bit}]" for bit in operation.sources) or "false"
+            terms = [f"c[{bit}]" for bit in operation.sources]
+            if operation.constant:
+                terms.append("true")
+            expression = " ^ ".join(terms) or "false"
             statement = f"c[{operation.target}] = {expression};"
         elif instruction.name == "measure":
             bit = int(instruction.metadata["classical_bit"])

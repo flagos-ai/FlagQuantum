@@ -11,10 +11,11 @@ from .ir import Instruction
 
 @dataclass(frozen=True)
 class ClassicalXor:
-    """Assign XOR of old source bits to one explicitly owned classical slot."""
+    """Assign XOR of old source bits and an optional Boolean constant."""
 
     sources: tuple[int, ...]
     target: int
+    constant: bool = False
 
     def __post_init__(self) -> None:
         if not isinstance(self.sources, tuple) or any(
@@ -23,13 +24,18 @@ class ClassicalXor:
             raise ValidationError(
                 "Classical XOR requires nonnegative integer bit indices"
             )
+        if type(self.constant) is not bool:
+            raise ValidationError("Classical XOR constant must be boolean")
 
     def instruction(self) -> Instruction:
         """Encode through the existing dynamic IR fields without quantum operands."""
+        params: dict[str, object] = {"sources": self.sources}
+        if self.constant:
+            params["constant"] = True
         return Instruction(
             "classical_xor",
             (),
-            params={"sources": self.sources},
+            params=params,
             metadata={"is_dynamic": True, "classical_bit": self.target},
         )
 
@@ -45,7 +51,7 @@ class ClassicalXor:
         )
         if any(value not in (0, 1) for value in values):
             raise ValidationError("Classical XOR reads an undefined classical bit")
-        return reduce(xor, values, 0)
+        return reduce(xor, values, int(self.constant))
 
 
 def parse_classical_xor(instruction: Instruction) -> ClassicalXor:
@@ -54,11 +60,13 @@ def parse_classical_xor(instruction: Instruction) -> ClassicalXor:
         instruction.name != "classical_xor"
         or instruction.wires
         or instruction.matrix is not None
-        or set(instruction.params) != {"sources"}
+        or set(instruction.params) not in ({"sources"}, {"sources", "constant"})
         or set(instruction.metadata) != {"is_dynamic", "classical_bit"}
         or instruction.metadata["is_dynamic"] is not True
     ):
         raise ValidationError("Invalid classical XOR instruction")
     return ClassicalXor(
-        instruction.params["sources"], instruction.metadata["classical_bit"]
+        instruction.params["sources"],
+        instruction.metadata["classical_bit"],
+        instruction.params.get("constant", False),
     )

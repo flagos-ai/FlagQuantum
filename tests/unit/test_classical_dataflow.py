@@ -15,27 +15,28 @@ pytestmark = pytest.mark.unit
 
 
 def _reference_xor(
-    values: list[int], sources: tuple[int, ...], target: int
+    values: list[int], sources: tuple[int, ...], target: int, constant: bool
 ) -> list[int]:
     """Reference fake: count old set bits and assign modulo two."""
     result = values.copy()
-    result[target] = sum(values[bit] for bit in sources) % 2
+    result[target] = (sum(values[bit] for bit in sources) + int(constant)) % 2
     return result
 
 
+@pytest.mark.parametrize("constant", [False, True])
 @pytest.mark.parametrize(
     "sources,target",
     [((), 2), ((0,), 2), ((0, 1), 2), ((0, 0, 1), 2), ((0, 1), 0), ((0, 0, 1), 0)],
 )
 def test_xor_contract_against_independent_fake(
-    sources: tuple[int, ...], target: int
+    sources: tuple[int, ...], target: int, constant: bool
 ) -> None:
-    operation = ClassicalXor(sources, target)
+    operation = ClassicalXor(sources, target, constant)
     for bits in itertools.product((0, 1), repeat=3):
         values = list(bits)
         result = operation.evaluate(values)
         values[target] = result
-        assert values == _reference_xor(list(bits), sources, target)
+        assert values == _reference_xor(list(bits), sources, target, constant)
     instruction = operation.instruction()
     assert parse_classical_xor(instruction) == operation
     ir = CircuitIR(1, (instruction,))
@@ -66,7 +67,9 @@ def _dataflow_circuit() -> DynamicCircuit:
                 ClassicalXor((), 4).instruction(),
                 ClassicalXor((1, 1), 4).instruction(),
                 ClassicalXor((0, 3), 0).instruction(),
-                Instruction("x", (3,), metadata={"conditions": ((3, 1),)}),
+                ClassicalXor((3,), 3, constant=True).instruction(),
+                Instruction("x", (3,), metadata={"conditions": ((3, 0),)}),
+                ClassicalXor((3,), 3, constant=True).instruction(),
             ),
         )
     )
@@ -125,7 +128,8 @@ def test_xor_program_ssa_round_trip_and_type_checks() -> None:
     assert not verify_program_record(record)
     operations = record.functions[0].blocks[0].operations
     xor_results = [op.results[0] for op in operations if op.opcode == "bool_xor"]
-    assert operations[-1].condition_clauses[0][0].value == xor_results[3]
+    assert operations[-3].condition_clauses[0][0].value == xor_results[-2]
+    assert sum(op.opcode == "bool_one" for op in operations) == 2
     restored = program_to_circuit(record)
     assert restored.state == SUPPORTED_EXACT
     assert restored.canonical_payload == ir.to_dict()
@@ -189,6 +193,7 @@ def test_qasm3_emits_boolean_assignment() -> None:
     assert "c[3] = c[0] ^ c[1];" in text
     assert "c[3] = c[3] ^ c[2];" in text
     assert "c[4] = false;" in text
+    assert text.count("c[3] = c[3] ^ true;") == 2
 
 
 @pytest.mark.ftqc_reference
@@ -208,6 +213,7 @@ def test_kmx_classical_assignment_round_trip_and_native_execution(
         ClassicalXor((2, 0), 2),
         ClassicalXor((0, 0, 1), 0),
         ClassicalXor((0, 1), 0),
+        ClassicalXor((0,), 0, constant=True),
     )
     hmr = []
     for i in range(2):
@@ -222,6 +228,9 @@ def test_kmx_classical_assignment_round_trip_and_native_execution(
         )
     lowered = lower_reversible_phase(
         CircuitIR(2, (*hmr, *(op.instruction() for op in assignments)))
+    )
+    assert lowered.operations[-1] == ReversiblePhaseOperation(
+        "bit_invert", (), result_bit=0
     )
     # Replace the measurement source with an independent deterministic classical
     # producer. The compiled XOR consumer stream is unchanged for all truth rows.

@@ -253,7 +253,7 @@ def opcode_signature(opcode: str) -> OpcodeSignature | None:
     """
     if opcode == CONSTANT_OPCODE:
         return OpcodeSignature(opcode, result_kinds=("scalar",))
-    if opcode == "bool_zero":
+    if opcode in {"bool_zero", "bool_one"}:
         return OpcodeSignature(opcode, result_kinds=("bool",))
     if opcode == "bool_xor":
         return OpcodeSignature(

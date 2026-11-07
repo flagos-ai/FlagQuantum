@@ -234,6 +234,7 @@ def _verify_conditions(
         MEASURE_OPCODE,
         RESET_OPCODE,
         "bool_zero",
+        "bool_one",
         "bool_xor",
     }:
         diagnostics.append(

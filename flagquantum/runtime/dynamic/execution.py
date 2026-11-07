@@ -644,7 +644,9 @@ def _run_dynamic_batched(
             values = classical[:, list(operation.sources)]
             if bool(torch.any(values < 0)):
                 raise ValidationError("Classical XOR reads an undefined classical bit")
-            classical[:, operation.target] = values.sum(dim=1).remainder(2)
+            classical[:, operation.target] = (
+                values.sum(dim=1) + int(operation.constant)
+            ).remainder(2)
         elif instruction.name in {"measure", "reset"}:
             state, indices, recorded, count = _measure_or_reset_active_shots(
                 state,

@@ -213,7 +213,11 @@ def _lower_instructions(circuit: CircuitIR) -> BlockRecord:
             # overwritten slots and destination aliases have the same semantics.
             sources = tuple(classical_values[bit] for bit in operation.sources)
             value = builder.define("bool")
-            operations.append(Operation("bool_zero", results=(value,)))
+            operations.append(
+                Operation(
+                    "bool_one" if operation.constant else "bool_zero", results=(value,)
+                )
+            )
             for source in sources:
                 result = builder.define("bool")
                 operations.append(

@@ -112,6 +112,12 @@ def lower_reversible_phase(ir: CircuitIR) -> ReversiblePhaseProgram:
                 for source in assignment.sources
                 if source != assignment.target
             )
+            if assignment.constant:
+                operations.append(
+                    ReversiblePhaseOperation(
+                        "bit_invert", (), result_bit=assignment.target
+                    )
+                )
             index += 1
             continue
         if instruction.name == "h":
