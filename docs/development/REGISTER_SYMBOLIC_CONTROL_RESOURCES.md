@@ -76,7 +76,7 @@ registers and caller-owned clean work.
 
 ## Acceptance
 
-G2-CTRL02 adds 505 tests: 44 standalone predicate queries and 440 two-consumer
+G2-CTRL05 adds 505 tests: 44 standalone predicate queries and 440 two-consumer
 queries across forward/adjoint, both QEC profiles, concrete/symbolic data widths,
 symbolic constants, multidimensional shapes and symbolic integer control words.
 All seven categories and QubitCount compare against unmodified source. Two
