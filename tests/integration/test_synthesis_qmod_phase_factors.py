@@ -45,7 +45,9 @@ def test_signed_cube_on_a_wide_owner_all_basis_inputs_and_nonzero_xor_output() -
 
 
 def test_native_qfunc_qmod_and_circuit_user_example() -> None:
-    from examples.synthesis_boolean_factors import run_example
+    from examples.synthesis.tutorials.arithmetic.boolean_factors.comparisons.circuit import (
+        run_example,
+    )
 
     run_example()
 

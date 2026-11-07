@@ -291,10 +291,15 @@ def test_complete_public_boolean_example_runs_without_private_imports_or_gate_de
     None
 ):
     source = (
-        Path(__file__).resolve().parents[2] / "examples/synthesis_boolean_predicate.py"
+        Path(__file__).resolve().parents[2]
+        / "examples/synthesis/tutorials/arithmetic/boolean_predicate/main.py"
     )
     completed = subprocess.run(
-        [sys.executable, "-m", "examples.synthesis_boolean_predicate"],
+        [
+            sys.executable,
+            "-m",
+            "examples.synthesis.tutorials.arithmetic.boolean_predicate.main",
+        ],
         cwd=source.parents[1],
         capture_output=True,
         text=True,

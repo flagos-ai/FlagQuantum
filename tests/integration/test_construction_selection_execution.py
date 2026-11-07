@@ -11,7 +11,7 @@ import pytest
 import torch
 
 import flagquantum as fq
-from examples.synthesis_selection import polynomial, pressure
+from examples.synthesis.tutorials.workspace.selection.main import polynomial, pressure
 from flagquantum.compiler._construction.constraints import CircuitLimits
 from flagquantum.compiler._construction.frontend_python import capture
 from flagquantum.compiler._construction.selection import select_arithmetic
@@ -69,7 +69,7 @@ def _assert_prediction(plan, product):
 
 def test_selection_example_executes_both_constraint_driven_choices() -> None:
     run = subprocess.run(
-        [sys.executable, "-m", "examples.synthesis_selection"],
+        [sys.executable, "-m", "examples.synthesis.tutorials.workspace.selection.main"],
         cwd=Path(__file__).resolve().parents[2],
         capture_output=True,
         text=True,
@@ -212,7 +212,11 @@ def test_cost_example_reproduces_full_matrix_and_current_manual_comparison() -> 
     import json
 
     run = subprocess.run(
-        [sys.executable, "-m", "examples.synthesis_selection_costs"],
+        [
+            sys.executable,
+            "-m",
+            "examples.synthesis.tutorials.workspace.selection_costs.main",
+        ],
         cwd=Path(__file__).resolve().parents[2],
         capture_output=True,
         text=True,
@@ -245,7 +249,9 @@ def test_cost_example_reproduces_full_matrix_and_current_manual_comparison() -> 
 
 
 def test_manual_baseline_and_selected_polynomial_share_real_coherent_outputs() -> None:
-    from examples.synthesis_selection_costs import manual_polynomial
+    from examples.synthesis.tutorials.workspace.selection_costs.main import (
+        manual_polynomial,
+    )
 
     manual = manual_polynomial()
     prep = fq.Circuit(4, dtype=torch.complex128)

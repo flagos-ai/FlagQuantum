@@ -99,6 +99,8 @@ def test_original_large_pauli_is_deterministic() -> None:
 
 
 def test_three_form_user_example() -> None:
-    from examples.synthesis_large_pauli import run_example
+    from examples.synthesis.algorithms.hamiltonian_simulation.large_pauli.comparisons.circuit import (
+        run_example,
+    )
 
     run_example()

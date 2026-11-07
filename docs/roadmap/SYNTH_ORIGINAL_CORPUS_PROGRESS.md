@@ -130,7 +130,7 @@ phase/control concepts as the future native program design. RZ/decimal import
 remains; the unmerged float-return native phase prototype is withdrawn. General
 explicit native phase is a named gap, not a Circuit alias or a mandatory rewrite.
 
-Run `python -m examples.synthesis_native_and_qmod_rz` for current Python
+Run `python -m examples.synthesis.tutorials.qmod.native_and_qmod_rz.main` for current Python
 high-level arithmetic, its equivalent Qmod, and an independent RZ Circuit
 reference. These distinct tasks are labeled; the arithmetic example is not
 claimed to be a native implementation of arbitrary-angle phase. Corpus counts

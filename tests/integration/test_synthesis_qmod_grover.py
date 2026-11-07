@@ -187,7 +187,9 @@ def test_phase_borrow_does_not_erase_the_original_predicate_order() -> None:
 
 
 def test_native_qfunc_qmod_and_circuit_user_example() -> None:
-    from examples.synthesis_grover import run_example
+    from examples.synthesis.algorithms.grover.grover.comparisons.circuit import (
+        run_example,
+    )
 
     run_example()
 

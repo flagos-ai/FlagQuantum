@@ -19,7 +19,7 @@ print(dict(program.probabilities(result, registers=("x", "result"))))
 ```
 
 The named pairs (0,0), (1,1), (2,8) and (3,27) each have probability 1/4.
-Run `python -m examples.synthesis_qmod_powers`. Users need no multiplication
+Run `python -m examples.synthesis.tutorials.qmod.qmod_powers.main`. Users need no multiplication
 chain, intermediate register, gate sequence, scratch assignment or bit decoding.
 Classical powers fold; quantum-dependent constants retain their dependencies.
 

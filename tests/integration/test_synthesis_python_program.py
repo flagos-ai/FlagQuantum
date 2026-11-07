@@ -6,7 +6,11 @@ import pytest
 import torch
 
 import flagquantum as fq
-from examples.synthesis_python_program import QMOD, circuit_reference, main
+from examples.synthesis.tutorials.composition.python_program.comparisons.circuit import (
+    QMOD,
+    circuit_reference,
+)
+from examples.synthesis.tutorials.composition.python_program.main import main
 from flagquantum import synth
 from flagquantum.compiler._hybrid.verifier import HybridVerificationError
 from flagquantum.errors import PlanningError

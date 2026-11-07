@@ -9,7 +9,10 @@ import torch
 
 import flagquantum as fq
 from benchmarks.synthesis.verification import classical_apply, encode
-from examples.synthesis_arithmetic_implementations import QMOD, main
+from examples.synthesis.tutorials.arithmetic.arithmetic_implementations.comparisons.circuit import (
+    QMOD,
+)
+from examples.synthesis.tutorials.arithmetic.arithmetic_implementations.main import main
 from flagquantum import synth
 from flagquantum.compiler._construction.frontend_python import capture
 from flagquantum.compiler._construction.lowering import (

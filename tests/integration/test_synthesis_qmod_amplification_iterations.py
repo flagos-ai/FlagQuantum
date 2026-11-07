@@ -6,7 +6,9 @@ import pytest
 import torch
 
 import flagquantum as fq
-from examples.synthesis_amplification_iterations import run_example
+from examples.synthesis.algorithms.amplitude_amplification.amplification_iterations.comparisons.circuit import (
+    run_example,
+)
 from flagquantum import synth
 from tools.validate_qmod_iterations import CASES, validate
 

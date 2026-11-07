@@ -137,7 +137,9 @@ def test_resource_caps_are_preserved(limits: dict[str, int]) -> None:
 
 
 def test_native_scalar_qfunc_example() -> None:
-    from examples.synthesis_static_qpe import main
+    from examples.synthesis.algorithms.phase_estimation.static_qpe.comparisons.circuit import (
+        main,
+    )
 
     main()
 

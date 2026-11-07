@@ -9,8 +9,10 @@ import pytest
 import torch
 
 import flagquantum as fq
-from examples.synthesis_local_registers import local_composition
-from examples.synthesis_qmod_within import SOURCE
+from examples.synthesis.tutorials.composition.local_registers.main import (
+    local_composition,
+)
+from examples.synthesis.tutorials.qmod.qmod_within.main import SOURCE
 from flagquantum import _api, synth
 from flagquantum.compiler._construction.lowering import Schedule
 from flagquantum.compiler._construction.register_lowering import (

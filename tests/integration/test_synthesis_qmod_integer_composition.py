@@ -222,7 +222,9 @@ def test_static_expansion_cannot_escape_the_owned_operation_budget() -> None:
 
 
 def test_native_qfunc_qmod_and_circuit_user_example() -> None:
-    from examples.synthesis_integer_composition import run_example
+    from examples.synthesis.tutorials.composition.integer_composition.comparisons.circuit import (
+        run_example,
+    )
 
     run_example()
 

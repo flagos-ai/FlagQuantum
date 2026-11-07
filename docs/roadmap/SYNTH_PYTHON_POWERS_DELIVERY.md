@@ -26,7 +26,7 @@ result = fq.run(program)
 print(dict(program.probabilities(result, registers=("x", "result"))))
 ```
 
-Run `python -m examples.synthesis_python_powers`. The pairs (0,0), (1,1),
+Run `python -m examples.synthesis.tutorials.arithmetic.python_powers.main`. The pairs (0,0), (1,1),
 (2,8) and (3,27) each have probability 1/4. Users keep ordinary Python, declaring
 quantum domains, preparation and budgets without a decorator, native source,
 temporary registers, multiplication chains, gates or bit decoding.

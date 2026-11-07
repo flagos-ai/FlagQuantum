@@ -1,0 +1,4 @@
+qfunc main(output test:qbit,output first:qbit[1],output second:qbit[1]) {
+ allocate(first);allocate(second);RY(0.74,first[0]);RY(-0.39,second[0]);
+ swap_test(first,second,test);
+}

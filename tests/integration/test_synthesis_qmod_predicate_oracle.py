@@ -231,7 +231,9 @@ def test_constant_oracles_keep_their_global_phase(value: int) -> None:
 
 
 def test_native_qfunc_qmod_and_circuit_example() -> None:
-    from examples.synthesis_predicate_oracle import run_example
+    from examples.synthesis.algorithms.grover.predicate_oracle.comparisons.circuit import (
+        run_example,
+    )
 
     run_example()
 

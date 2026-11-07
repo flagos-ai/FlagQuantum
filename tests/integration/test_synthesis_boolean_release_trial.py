@@ -3,7 +3,7 @@
 import pytest
 
 from benchmarks.synthesis.performance_workloads import Prepared, Workload
-from examples.synthesis_arithmetic_implementations import main
+from examples.synthesis.tutorials.arithmetic.arithmetic_implementations.main import main
 from flagquantum import synth
 from flagquantum.errors import PlanningError
 

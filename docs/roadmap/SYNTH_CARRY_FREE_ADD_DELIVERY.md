@@ -27,7 +27,7 @@ print(program.report["resources"])
 print(program.execution.state_bytes)
 ```
 
-Run `python -m examples.synthesis_carry_free_add`. The pairs (0,256) and
+Run `python -m examples.synthesis.tutorials.arithmetic.carry_free_add.main`. The pairs (0,256) and
 (1,257) each have probability 1/2. Users supply the computation, quantum domain,
 preparation and memory budget; Compiler selects gates and cleans its work bits.
 No additional annotation, flag, line number, carry register or bit decoding is

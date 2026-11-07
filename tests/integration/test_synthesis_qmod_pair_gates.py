@@ -9,7 +9,11 @@ import pytest
 import torch
 
 import flagquantum as fq
-from examples.synthesis_qmod_pair_gates import QMOD_PAIR, native_pair, pair_circuit
+from examples.synthesis.tutorials.qmod.qmod_pair_gates.main import (
+    QMOD_PAIR,
+    native_pair,
+    pair_circuit,
+)
 from flagquantum import synth
 from flagquantum.compiler._hybrid.verifier import HybridVerificationError
 from flagquantum.ecosystem import InteropConversionError

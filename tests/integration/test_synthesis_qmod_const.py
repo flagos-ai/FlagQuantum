@@ -7,7 +7,7 @@ from typing import Literal
 import pytest
 
 import flagquantum as fq
-from examples.synthesis_qmod_const import SOURCE
+from examples.synthesis.tutorials.qmod.qmod_const.main import SOURCE
 from flagquantum import _api, synth
 from flagquantum.ecosystem import InteropConversionError
 from flagquantum.errors import PlanningError

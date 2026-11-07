@@ -387,7 +387,7 @@ bit order and clean workspace. Their numeric predicates reuse the local
 eight-input budget, including exact integer min/max; dynamic array widths are
 proven by literal allocation. Run tools/validate_qmod_quantum_callbacks.py with
 --case hidden_shift (or deutsch_jozsa) and --output /tmp/callback.json. Run
-python -m examples.synthesis_quantum_callbacks for the original Qmod, existing
+python -m examples.synthesis.algorithms.hidden_shift.quantum_callbacks.main for the original Qmod, existing
 native qfunc phase-composition and Circuit comparison. This adds no higher-order
 Python qfunc annotations or native phase_oracle export. Evidence is local CPU
 correctness, not a performance or full-corpus claim.
@@ -423,7 +423,7 @@ including x += -18, without increasing original coverage. No original parameter
 is silently changed. Run tools/validate_qmod_exact_amplification.py with --case
 exact_amplitude_amplification (or partial_exponential_state_preparation) and
 --output /tmp/amplification.json. The second choice validates the corrected copy
-and the original refusal. Run python -m examples.synthesis_exact_amplification
+and the original refusal. Run python -m examples.synthesis.algorithms.amplitude_amplification.exact_amplification.main
 for original Qmod, existing native R/phase composition and Circuit comparison.
 Native rounds and its auxiliary output are explicit; this adds no native exact
 amplification export or native for-loop support. Evidence is local CPU correctness.
@@ -444,7 +444,7 @@ argument metadata is preserved through bound helper calls.
 Finite classical angle expressions support +, -, *, /, pi and bound real inputs.
 Matrix, probability and state-preparation literal domains retain their previous
 scanner and checks. No quantum-dependent angle is admitted by this profile.
-Run python -m examples.synthesis_controlled_evolution for the unchanged BPDE
+Run python -m examples.synthesis.algorithms.hamiltonian_simulation.controlled_evolution.main for the unchanged BPDE
 Qmod, native phase-composition qfunc and independent Circuit full-state comparison
 at two nonzero delta values. Native steps are explicit; this adds no native
 Hamiltonian-array export or Python for-loop support. The original's dropped
@@ -467,7 +467,7 @@ remains refused; no automatic normalization or weakened verifier is introduced.
 A separately archived, normalized diagnostic copy checks the complete path
 against independent Circuit permutation and symmetric/antisymmetric algebra.
 It contributes zero original execution coverage. Run tools/validate_qmod_swap_test.py
---output /tmp/swap-test.json. Run python -m examples.synthesis_swap_test for valid
+--output /tmp/swap-test.json. Run python -m examples.synthesis.algorithms.state_preparation.swap_test.main for valid
 one-bit Qmod, existing native phase/CX qfunc composition and Circuit comparison.
 Dropped input states are retained semantic data, not clean workspace. This is
 local CPU correctness evidence only. Existing partial-exponential source-amplitude
@@ -492,7 +492,7 @@ source initialization, Const mutation, width, loop shadow and resource budgets
 remain checked. Run tools/validate_qmod_binding_scopes.py --case 0 --output
 /tmp/autoencoder.json (also case 1) for the unchanged quantum_autoencoder.qmod
 with two nonzero parameter bindings and independent Circuit full-state comparison.
-Run python -m examples.synthesis_autoencoder for the original Qmod, existing
+Run python -m examples.synthesis.applications.machine_learning.autoencoder.main for the original Qmod, existing
 scalar native qfunc composition and Circuit comparison. No native array/loop
 export or numerical kernel is added. Dropped coded data retains physical state;
 it is not zero workspace. Existing source-semantic refusals and baselines remain.
@@ -519,7 +519,7 @@ remain unchanged. Static loops and physical/effect/helper budgets remain bounded
 Run tools/validate_qmod_iterations.py with --case quantum_counting (also
 quantum_counting_iqae or qmci_pi_estimation), --repetitions 0/1/2 and --output
 /tmp/iterations.json for unchanged originals against independent Circuit and
-analytic full vectors. Run python -m examples.synthesis_amplification_iterations
+analytic full vectors. Run python -m examples.synthesis.algorithms.amplitude_amplification.amplification_iterations.main
 for native scalar phase/CX qfunc, Qmod and Circuit comparison. Native rounds are
 explicit; no native amplification, array or mutable helper export is added.
 Dropped problem data remains semantic, not clean workspace. Actual scratch is

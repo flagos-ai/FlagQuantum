@@ -284,7 +284,11 @@ def test_value_mask_remains_a_clean_xor_result() -> None:
 def test_public_controlled_example_executes_without_private_imports_or_gates() -> None:
     root = Path(__file__).resolve().parents[2]
     result = subprocess.run(
-        [sys.executable, "-m", "examples.synthesis_controlled_predicate"],
+        [
+            sys.executable,
+            "-m",
+            "examples.synthesis.tutorials.control.controlled_predicate.main",
+        ],
         cwd=root,
         capture_output=True,
         text=True,
@@ -300,7 +304,9 @@ def test_public_controlled_example_executes_without_private_imports_or_gates() -
     )
     assert lines["two-bit workspace"] == "0"
     assert "Uniform probabilities do not verify" in result.stdout
-    source = (root / "examples/synthesis_controlled_predicate.py").read_text()
+    source = (
+        root / "examples/synthesis/tutorials/control/controlled_predicate/main.py"
+    ).read_text()
     assert (
         "._" not in source
         and "fq.Circuit" not in source

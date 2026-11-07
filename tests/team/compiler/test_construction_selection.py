@@ -4,7 +4,12 @@ from dataclasses import replace
 
 import pytest
 
-from examples.synthesis_selection import addition, polynomial, pressure, product
+from examples.synthesis.tutorials.workspace.selection.main import (
+    addition,
+    polynomial,
+    pressure,
+    product,
+)
 from flagquantum.compiler import estimate_resources
 from flagquantum.compiler._construction.constraints import CircuitLimits
 from flagquantum.compiler._construction.frontend_python import capture

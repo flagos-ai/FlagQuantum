@@ -33,7 +33,7 @@ the single implementation behind the maintained `flagquantum.synth` facade,
 currently an unreleased candidate awaiting independent developer trial records.
 The private `_synthesis` module was moved, not wrapped; live callers use the
 public facade. Runtime and Compiler gain no reverse dependency on this workflow.
-Start with [the executable workflow](../../examples/algorithms/synthesis_trial.py)
+Start with [the executable workflow](../../examples/synthesis/tutorials/getting_started/trial/main.py)
 and `tests/integration/test_synthesis_python_trial.py`. Supported syntax,
 input/output semantics, preparation composition and limitations are in the
 [CS06-C delivery record](../../docs/roadmap/CS06_USER_WORKFLOW_DELIVERY.md)
@@ -52,7 +52,7 @@ with those ceilings.
 existing sealed-plan validation, Compiler resource limits, basis membership,
 topology and replayed layout evidence. It neither plans nor executes and contains
 no numerical kernel. Start with
-`python -m examples.synthesis_execution_contract` and
+`python -m examples.synthesis.tutorials.workspace.execution_contract.main` and
 `tests/team/services/test_synthesis_plan_checks.py`, then the real scenarios in
 `tests/integration/test_synthesis_execution_contract.py`. The
 [contract](../../docs/api-changes/FQ-SYNTH-CS06-A-20261029.md) and

@@ -9,7 +9,7 @@ Independent developer trials remain 0/2 and release authorization remains false.
 
 ## User experience
 
-Run python -m examples.synthesis_predicate. The ordinary function
+Run python -m examples.synthesis.tutorials.arithmetic.predicate.main. The ordinary function
 predicate(x, y) returns x*x+y<5 with optional bool annotation. The user supplies
 UInt widths and named basis/uniform preparation, then calls synth.synthesize,
 fq.run(program) and program.probabilities by logical name. There is no required
