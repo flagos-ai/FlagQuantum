@@ -6,34 +6,14 @@
 """Compose source scalar phases with existing native block operations."""
 
 from dataclasses import dataclass
-from typing import Protocol
 
 from ...circuit import Circuit, _CircuitOperation
 from ...compiler._component_trace.resource_model import ComponentCost, CostCall
 from ...compiler._component_trace.symbolic_math import SymbolicReal
 from ...compiler.registers.global_phase import global_phase_ir
 from ...core.ir import CircuitIR, Instruction
+from ._block_metadata import _BlockMetadata
 from .black_box_prepare import BlackBoxPrepare
-
-
-class _BlockMetadata(Protocol):
-    @property
-    def system_bitsize(self) -> int: ...
-
-    @property
-    def ancilla_bitsize(self) -> int: ...
-
-    @property
-    def resource_bitsize(self) -> int: ...
-
-    @property
-    def alpha(self) -> SymbolicReal: ...
-
-    @property
-    def epsilon(self) -> SymbolicReal: ...
-
-    @property
-    def signal_state(self) -> BlackBoxPrepare: ...
 
 
 @dataclass(frozen=True)
