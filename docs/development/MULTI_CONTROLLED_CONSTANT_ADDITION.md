@@ -81,8 +81,38 @@ Run `python -m examples.algorithms.grouped_controlled_constant_addition` to acti
 on a signed two-bit control of -1, subtract one from the target, verify clean work,
 and compare logical model counts with emitted primitive counts.
 
-The grouped concrete model explicitly requires a Python integer constant;
-source symbolic constants use a different graph-width fallback and are not
-accepted as if they had executable loaded/carry lifetimes. That symbolic
-resource path remains open. The preceding flat-control limitations describe
+G2-A49 initially restricted the grouped model to Python integer constants.
+G2-A50 supersedes that restriction after verifying the original graph: only the
+inner AddK falls back, while the outer predicate storage remains live. Concrete
+width models now retain symbolic constants without claiming executable gates. The preceding flat-control limitations describe
 G2-A48; G2-A49 adds the grouped concrete paths documented here.
+
+
+## Symbolic grouped resources (G2-A50)
+
+`source_grouped_constant_add_resource_formula` retains width and constant objects
+and concrete control descriptors. Fixed Python widths reuse the existing grouped
+component model, including symbolic constants. Symbolic widths compose the
+positive AddK and predicate category models through the existing QEC query.
+The existing register-connection width scheduler accounts for the logical target,
+original controls, prefix junk and final predicate through compute/use/erase.
+No second scheduler or width registry is introduced.
+
+The outer ControlledViaAnd composition remains constructible with symbolic target
+widths or constants. Only the inner positive AddK may use its fallback. Outer
+control/junk bystanders must therefore remain live: using one maximum of root
+and child widths for the entire wrapper would be incorrect. With two controls,
+Python 3/Python 5 has peak 11; Python 3/Sympy Integer(5) has peak 10; Sympy
+Integer(3)/Python 5 has peak 8. Rebuilding Python integers and substituting into
+a symbolic expression are separate source paths.
+
+This batch adds 327 tests. All seven categories and peaks match original grouped
+source queries across shaped and integer control words, both directions/profiles,
+positive/unconstrained symbols, mixed dimensions and symbolic literals. Model
+replacement verifies every category and private peaks through the connection
+scheduler. Existing full-state, work cleanup and primitive source comparisons
+remain unchanged. The concentrated regression passes 1,686 checks without skips;
+six warnings from the existing LCU tensor probe remain recorded.
+
+Use `python -m examples.algorithms.arithmetic_resource_graph` for concrete and
+symbolic grouped reports. These estimates do not emit symbolic instructions.

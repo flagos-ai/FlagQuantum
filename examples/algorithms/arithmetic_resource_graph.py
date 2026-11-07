@@ -18,6 +18,10 @@ from flagquantum.compiler.registers.constant_add_resource_model import (
     source_constant_add_resource_formula,
     source_controlled_constant_add_resource_formula,
 )
+from flagquantum.compiler.registers.control_predicate import ControlRegister
+from flagquantum.compiler.registers.grouped_constant_add_resource_model import (
+    source_grouped_constant_add_resource_formula,
+)
 from flagquantum.compiler.registers.out_of_place_add_resource_model import (
     source_out_of_place_add_resource_formula,
 )
@@ -68,6 +72,14 @@ def main() -> None:
             source_controlled_constant_add_resource_formula(
                 3, 5, control_value=control_value
             ),
+        )
+    registers = (ControlRegister(2, (1,)),)
+    for width, value in ((3, 5), (3, Integer(5)), (Integer(3), 5), (n, k)):
+        print(
+            "Grouped control model:",
+            type(width).__name__,
+            type(value).__name__,
+            source_grouped_constant_add_resource_formula(width, value, registers),
         )
     print("No circuit emitted; no measured primitive counts or work-qubit claim.")
 
