@@ -7,7 +7,13 @@
 from math import gcd
 
 from ...core.ir import Instruction
-from .field_multiplication import _field_plu, _product, _remainder, _validate_field
+from .field_multiplication import (
+    _field_plu,
+    _field_power,
+    _product,
+    _remainder,
+    _validate_field,
+)
 from .polynomial import _validate_registers
 
 
@@ -98,12 +104,7 @@ def kickmix_field_monomial_scale_ir(
     steps = abs(power)
     if steps > width * width // (len(terms) + 1):
         exponent = power % ((1 << width) - 1)
-        factor, root = 1, 2
-        while exponent:
-            if exponent & 1:
-                factor = _product(factor, root, modulus)
-            root = _product(root, root, modulus)
-            exponent >>= 1
+        factor = _field_power(2, exponent, modulus)
         return kickmix_field_constant_scale_ir(target, factor, modulus=modulus)
 
     wires = target[::-1]

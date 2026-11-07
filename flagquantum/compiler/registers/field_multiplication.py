@@ -30,6 +30,17 @@ def _product(left: int, right: int, modulus: int) -> int:
     return _remainder(result, modulus)
 
 
+def _field_power(base: int, exponent: int, modulus: int) -> int:
+    """Raise a field polynomial to a nonnegative exponent by repeated squaring."""
+    value = 1
+    while exponent:
+        if exponent & 1:
+            value = _product(value, base, modulus)
+        base = _product(base, base, modulus)
+        exponent >>= 1
+    return value
+
+
 def _validate_field(width: int, modulus: int) -> None:
     if type(modulus) is not int or width < 1 or modulus.bit_length() != width + 1:
         raise ValueError("Modulus must be a binary polynomial of the register degree")
