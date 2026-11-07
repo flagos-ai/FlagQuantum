@@ -180,3 +180,33 @@ def test_formula_uses_replaceable_declared_graph_without_changing_consumer(monke
     ]
     assert actual.cswap == 7 * n and actual.logical_qubits == 3 * n
     assert actual.and_bloq == actual.clifford == actual.measurement == 0
+
+
+@pytest.mark.parametrize(
+    "width,msb,adjoint", tuple(product((1, 3, 8), (False, True), (False, True)))
+)
+def test_shared_model_t_and_measurements_close_against_emitted_primitives(
+    width, msb, adjoint
+):
+    from collections import Counter
+
+    from flagquantum.compiler.registers.out_of_place_add_resource_model import (
+        source_out_of_place_add_resource_formula,
+    )
+    from flagquantum.compiler.registers.out_of_place_addition import out_of_place_add_ir
+
+    left, right = tuple(range(width)), tuple(range(width, 2 * width))
+    output = tuple(range(2 * width, 3 * width + int(msb)))
+    slots = tuple(range(len(output) - 1)) if adjoint else ()
+    counts = Counter(
+        g.name
+        for g in out_of_place_add_ir(
+            left, right, output, include_msb=msb, adjoint=adjoint, classical_bits=slots
+        )
+    )
+    model = source_out_of_place_add_resource_formula(
+        width, include_msb=msb, adjoint=adjoint
+    )
+    assert counts["t"] + counts["tdg"] == 4 * model.and_bloq
+    assert counts["measure"] == model.measurement
+    assert model.logical_qubits == 2 * width + len(output)

@@ -10,9 +10,11 @@ from itertools import combinations
 from ...compiler._component_trace.resource_model import (
     ComponentCost,
     CostCall,
-    GateCost,
 )
 from ...compiler.registers.arithmetic_resource_model import source_sum_of_squares_cost
+from ...compiler.registers.out_of_place_add_resource_model import (
+    source_out_of_place_add_cost,
+)
 from ...compiler.registers.qrom_resource_model import source_qrom_cost
 from .grid_inverse_sqrt import (
     grid_inverse_sqrt_qrom_data,
@@ -51,17 +53,9 @@ def source_grid_pair_potential_cost(
     )
     system = 6 * coordinate
     difference = coordinate + 1
-    addition = ComponentCost(
-        "OutOfPlaceAdder",
-        2 * coordinate + difference,
-        GateCost(and_bloq=coordinate, clifford=5 * coordinate),
-    )
-    erase = ComponentCost(
-        "OutOfPlaceAdder",
-        addition.qubits,
-        GateCost(
-            clifford=(8 if legacy_shims else 6) * coordinate, measurement=coordinate
-        ),
+    addition = source_out_of_place_add_cost(coordinate, legacy_shims=legacy_shims)
+    erase = source_out_of_place_add_cost(
+        coordinate, adjoint=True, legacy_shims=legacy_shims
     )
     # The source greedy schedule returns the system wires before the
     # inverse-distance stages and releases coefficients after the cubic.

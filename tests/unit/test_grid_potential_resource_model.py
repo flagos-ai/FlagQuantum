@@ -13,11 +13,11 @@ from flagquantum.compiler._component_trace.resource_model import (
 pytestmark = pytest.mark.unit
 
 
-def assert_locked_cost(native, source):
+def assert_locked_cost(native, source, legacy=False):
     from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
 
     actual = estimate_component_resources(native)
-    expected = get_cost_value(source, QECGatesCost())
+    expected = get_cost_value(source, QECGatesCost(legacy_shims=legacy))
     for category in (
         "t",
         "toffoli",
@@ -35,7 +35,8 @@ def assert_locked_cost(native, source):
 @pytest.mark.parametrize(
     "coordinate,poly,target", [(1, 8, 12), (2, 8, 12), (3, 10, 24), (6, 15, 24)]
 )
-def test_source_pair_potential_graph(coordinate, poly, target):
+@pytest.mark.parametrize("legacy", (False, True))
+def test_source_pair_potential_graph(coordinate, poly, target, legacy):
     pytest.importorskip("qualtran")
     from qualtran.bloqs.chemistry.trotter.grid_ham.inverse_sqrt import (
         build_qrom_data_for_poly_fit,
@@ -49,7 +50,9 @@ def test_source_pair_potential_graph(coordinate, poly, target):
     source = PairPotential(
         coordinate, tuple(tuple(map(int, row)) for row in data), poly, target
     )
-    native = source_grid_pair_potential_cost(coordinate, poly, target)
+    native = source_grid_pair_potential_cost(
+        coordinate, poly, target, legacy_shims=legacy
+    )
     leaves = [
         instance.bloq for instance, _, _ in source.decompose_bloq().iter_bloqsoqs()
     ]
@@ -61,8 +64,8 @@ def test_source_pair_potential_graph(coordinate, poly, target):
         leaves,
         strict=True,
     ):
-        assert_locked_cost(call.component, leaf)
-    assert_locked_cost(native, source)
+        assert_locked_cost(call.component, leaf, legacy)
+    assert_locked_cost(native, source, legacy)
 
 
 @pytest.mark.ftqc_reference
@@ -81,3 +84,28 @@ def test_source_potential_graph_and_pair_count(electrons, grid, poly):
         == electrons * (electrons - 1) // 2
     )
     assert_locked_cost(native, source)
+
+
+@pytest.mark.parametrize("legacy", (False, True))
+def test_pair_potential_consumes_replaceable_shared_addition_models(
+    monkeypatch, legacy
+):
+    import flagquantum.algorithms.primitives.grid_potential_resource_model as module
+    from flagquantum.compiler._component_trace.resource_model import (
+        ComponentCost,
+        GateCost,
+    )
+
+    forward = ComponentCost("OutOfPlaceAdder", 17, GateCost(t=13))
+    inverse = ComponentCost("OutOfPlaceAdder", 19, GateCost(measurement=7))
+    seen = []
+
+    def model(width, *, adjoint=False, legacy_shims=False):
+        seen.append((width, adjoint, legacy_shims))
+        return inverse if adjoint else forward
+
+    monkeypatch.setattr(module, "source_out_of_place_add_cost", model)
+    root = module.source_grid_pair_potential_cost(2, 8, 12, legacy_shims=legacy)
+    assert seen == [(2, False, legacy), (2, True, legacy)]
+    assert root.calls[0].component is forward and root.calls[0].repetitions == 3
+    assert root.calls[2].component is inverse and root.calls[2].repetitions == 3

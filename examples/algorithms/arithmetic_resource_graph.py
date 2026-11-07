@@ -14,6 +14,9 @@ from flagquantum.compiler._component_trace.terminal_t_cost import (
     estimate_terminal_t_cost,
 )
 from flagquantum.compiler.registers.arithmetic_declarations import arithmetic_call_graph
+from flagquantum.compiler.registers.out_of_place_add_resource_model import (
+    source_out_of_place_add_resource_formula,
+)
 
 
 def main() -> None:
@@ -34,6 +37,15 @@ def main() -> None:
             "terminal_T": sympify(terminal_t).subs(n, 3),
         },
     )
+    for msb in (False, True):
+        for adjoint in (False, True):
+            print(
+                "Out-of-place sum model:",
+                {"include_msb": msb, "adjoint": adjoint},
+                source_out_of_place_add_resource_formula(
+                    n, include_msb=msb, adjoint=adjoint
+                ),
+            )
     print("No circuit emitted; no measured primitive counts or work-qubit claim.")
 
 
