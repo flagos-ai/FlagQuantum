@@ -33,7 +33,7 @@ zero work for both polarities. Tests compare all seven source categories and
 widths for uint/Montgomery, directions and profiles, replace the shared child
 models, and retain the original gate/complex-measurement/cleanup regressions.
 
-## Modular placeholder declarations (G2-MOD15)
+## Modular placeholder declarations (G2-MOD21)
 
 `modular_declarations.py` ports the four direct call declarations in the original
 `arithmetic/_shims.py`. It uses existing flat register layouts, typed resource
