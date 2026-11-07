@@ -16,7 +16,6 @@ from flagquantum.compiler.registers.global_phase import ccz_ir, scalar_sign_ir
 from flagquantum.core.classical_dataflow import ClassicalXor
 from flagquantum.core.ir import CircuitIR, Instruction
 from flagquantum.dynamic import DynamicCircuit
-from flagquantum.errors import CapabilityError
 from flagquantum.runtime.dynamic.execution import run_dynamic
 from tests.unit.measurement_checks import expand_reset_branches, forced_branch
 
@@ -282,7 +281,7 @@ def test_scratch_reuse_and_enclosing_caller_holes() -> None:
     assert not any(op.qubits for op in program.operations if op.result_bit is not None)
 
 
-def test_disjunction_still_fails_explicitly() -> None:
+def test_disjunction_uses_an_owned_single_gate_mask() -> None:
     ir = CircuitIR(
         1,
         (
@@ -293,8 +292,10 @@ def test_disjunction_still_fails_explicitly() -> None:
             ),
         ),
     )
-    with pytest.raises(CapabilityError, match="one condition clause"):
-        lower_reversible_phase(ir)
+    program = lower_reversible_phase(ir)
+    assert program.n_bits == 5
+    assert program.operations[-1].opcode == "x"
+    assert program.operations[-1].condition_bit == 3
 
 
 def test_runnable_alias_and_negative_guard_example() -> None:

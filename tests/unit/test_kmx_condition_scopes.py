@@ -8,7 +8,6 @@ from flagquantum.compiler.formats.kmx import decode_kmx, encode_kmx
 from flagquantum.compiler.lowering.reversible_phase import lower_reversible_phase
 from flagquantum.compiler.registers.measurement import measure_x_clear_ir
 from flagquantum.core.ir import CircuitIR, Instruction
-from flagquantum.errors import CapabilityError
 
 pytestmark = pytest.mark.unit
 _HEADER = 'INFO_TAG "@flagquantum:reversible-phase-v1 wires=2 bits=3"\n'
@@ -45,7 +44,7 @@ def test_decoder_rejects_invalid_condition_scopes(payload: str, reason: str) -> 
         {"condition_clauses": (((0, 1),), ((1, 1),))},
     ],
 )
-def test_lowering_rejects_unrepresentable_predicates(metadata: dict) -> None:
+def test_disjunctive_quantum_predicates_lower_to_one_gate_mask(metadata: dict) -> None:
     ir = CircuitIR(
         2,
         (
@@ -54,8 +53,9 @@ def test_lowering_rejects_unrepresentable_predicates(metadata: dict) -> None:
             Instruction("x", (1,), metadata=metadata),
         ),
     )
-    with pytest.raises(CapabilityError, match="one condition clause"):
-        lower_reversible_phase(ir)
+    program = lower_reversible_phase(ir)
+    assert program.n_bits == 4
+    assert [op.opcode for op in program.operations if op.qubits] == ["hmr", "hmr", "x"]
 
 
 @pytest.mark.ftqc_reference

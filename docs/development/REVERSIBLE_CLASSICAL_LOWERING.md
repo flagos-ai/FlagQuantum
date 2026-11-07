@@ -80,3 +80,12 @@ now admits mixed zero/one conjunctions through explicit owned classical
 complements. Earlier negative-predicate refusals record the prior baseline.
 Disjunctions, typed conditional result merges and general float phase recovery
 remain explicit boundaries; positive encoding and public schemas are unchanged.
+
+## G2-KCFB04 quantum disjunction update
+
+The earlier quantum-disjunction refusal is superseded by
+[disjunctive predicate binding](REVERSIBLE_DISJUNCTIVE_PREDICATES.md).
+Canonical Core quantum OR predicates now lower to one accumulated native mask.
+Classical assignment and guarded measurement/reset still retain their
+conjunction-only Core grammar. Typed ProgramIR conditional result merges and
+general float-phase recovery remain open; this change does not alter them.

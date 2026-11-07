@@ -69,3 +69,12 @@ fixture is changed and no API snapshot is regenerated.
 Disjunctive reverse predicates, typed ProgramIR conditional result merges and
 float-to-exact source phases remain separate open items. Unmatched negative
 measurement sequences still fail closed. This is not a G2 completion claim.
+
+## G2-KCFB04 quantum disjunction update
+
+The earlier quantum-disjunction refusal is superseded by
+[disjunctive predicate binding](REVERSIBLE_DISJUNCTIVE_PREDICATES.md).
+Canonical Core quantum OR predicates now lower to one accumulated native mask.
+Classical assignment and guarded measurement/reset still retain their
+conjunction-only Core grammar. Typed ProgramIR conditional result merges and
+general float-phase recovery remain open; this change does not alter them.
