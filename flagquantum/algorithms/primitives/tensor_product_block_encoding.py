@@ -10,12 +10,13 @@ from dataclasses import dataclass
 from math import prod
 from typing import cast
 
-from ...circuit import Circuit, _CircuitOperation
+from ...circuit import _CircuitOperation
 from ...compiler._component_trace.resource_model import ComponentCost, CostCall
 from ...compiler._component_trace.symbolic_math import SymbolicReal
 from ...compiler.registers.bitwise import _validate_wires
 from ...compiler.registers.partition import partition_register
-from ...core.ir import CircuitIR, Instruction
+from ...core.ir import Instruction
+from ._block_binding import _BoundBlockOperation, _capture_block, _validate_block_work
 from ._block_metadata import _BlockMetadata
 from .black_box_prepare import BlackBoxPrepare, _identity_prepare
 
@@ -103,7 +104,7 @@ class TensorProductBlockEncoding:
         workspaces: tuple[tuple[int, ...], ...],
         classical_bits: tuple[tuple[int, ...], ...],
         adjoint: bool = False,
-    ) -> "_BoundTensorProduct":
+    ) -> _BoundBlockOperation:
         """Bind and capture children without a numerical execution path.
 
         Work/results are per child and may be reused between sequential calls.
@@ -133,14 +134,7 @@ class TensorProductBlockEncoding:
             for name, word in packed.items()
         }
         for work, bits in zip(workspaces, classical_bits, strict=True):
-            if through or work:
-                _validate_wires((*through, *work))
-            if len(set(bits)) != len(bits) or any(
-                type(bit) is not int or bit < 0 for bit in bits
-            ):
-                raise ValueError(
-                    "Tensor child result slots must be distinct nonnegative integers"
-                )
+            _validate_block_work(through, work, bits)
         all_wires = (*through, *(wire for work in workspaces for wire in work))
         if not all_wires:
             raise ValueError(
@@ -154,33 +148,8 @@ class TensorProductBlockEncoding:
             operation = bind_children[index](
                 ports, workspaces[index], classical_bits[index], adjoint
             )
-            # Circuit construction is lazy: append/to_ir never creates a state.
-            captured = Circuit(required).append(operation).to_ir().validate()
             allowed = {wire for word in ports.values() for wire in word} | set(
                 workspaces[index]
             )
-            if any(
-                wire not in allowed
-                for gate in captured.instructions
-                for wire in gate.wires
-            ):
-                raise ValueError("Tensor child used another child's quantum partition")
-            gates.extend(captured.instructions)
-        return _BoundTensorProduct(tuple(gates), required)
-
-
-@dataclass(frozen=True)
-class _BoundTensorProduct:
-    instructions: tuple[Instruction, ...]
-    required_qubits: int
-
-    def append_to(self, circuit: Circuit) -> Circuit:
-        if circuit.n_qubits < self.required_qubits:
-            raise ValueError("Tensor product binding exceeds circuit width")
-        return circuit.compose(
-            CircuitIR(
-                circuit.n_qubits,
-                self.instructions,
-                metadata={"batch_size": circuit.bsz},
-            ).validate()
-        )
+            gates.extend(_capture_block(operation, required, allowed))
+        return _BoundBlockOperation(tuple(gates), required)

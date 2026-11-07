@@ -128,3 +128,28 @@ def source_control_predicate_leaf(
         ),
         outputs,
     )
+
+
+def source_partition_leaf(
+    bloq: Any, inputs: SourcePorts, desired: SourcePorts
+) -> SourceResult | None:
+    """Read the original packed Partition mapping without flattening call scopes."""
+    from qualtran.bloqs.bookkeeping import Partition
+
+    if not isinstance(bloq, Partition):
+        return None
+    np = pytest.importorskip("numpy")
+    cirq = pytest.importorskip("cirq")
+    quregs = {
+        reg.name: np.array([cirq.LineQubit(wire) for wire in inputs[reg.name]]).reshape(
+            (*reg.shape, int(reg.bitsize))
+        )
+        for reg in bloq.signature.lefts()
+    }
+    operation, returned = bloq.as_cirq_op(qubit_manager=None, **quregs)
+    assert operation is None
+    outputs = {
+        name: tuple(wire.x for wire in word.flat) for name, word in returned.items()
+    }
+    assert all(outputs[name] == wires for name, wires in desired.items())
+    return (), outputs
