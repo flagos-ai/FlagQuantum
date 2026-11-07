@@ -22,7 +22,12 @@ def _linear_map(
 ) -> tuple[Instruction, ...]:
     width = len(wires)
     matrix = [[(column >> row) & 1 for column in columns] for row in range(width)]
-    upper, lower, permutation = _field_plu(matrix)
+    try:
+        upper, lower, permutation = _field_plu(matrix)
+    except StopIteration:
+        raise ValueError(
+            "A reversible binary linear map requires an invertible matrix"
+        ) from None
     gates = [
         Instruction("cx", (wires[j], wires[i]))
         for i in range(width)
@@ -43,6 +48,46 @@ def _linear_map(
                 current[i], current[j] = current[j], current[i]
                 break
     return tuple(gates)
+
+
+def _inverse_columns(columns: tuple[int, ...]) -> tuple[int, ...]:
+    width = len(columns)
+    augmented = [column | (1 << (width + i)) for i, column in enumerate(columns)]
+    for i in range(width):
+        bit = 1 << i
+        pivot = next((j for j in range(i, width) if augmented[j] & bit), None)
+        if pivot is None:
+            raise ValueError(
+                "A reversible binary linear map requires an invertible matrix"
+            )
+        augmented[i], augmented[pivot] = augmented[pivot], augmented[i]
+        for j, column in enumerate(augmented):
+            if i != j and column & bit:
+                augmented[j] ^= augmented[i]
+    return tuple(column >> width for column in augmented)
+
+
+def kickmix_binary_linear_map_ir(
+    target: tuple[int, ...],
+    columns: tuple[int, ...],
+    *,
+    adjoint: bool = False,
+) -> tuple[Instruction, ...]:
+    """Apply an invertible binary matrix in place, using fixed big-endian wires.
+
+    Column zero multiplies the least-significant input bit. Bit zero of
+    each column is the coefficient of the least-significant output bit.
+    The adjoint synthesizes the inverse matrix in the source's PLU order.
+    """
+    _validate_registers(target)
+    width = len(target)
+    if len(columns) != width or any(
+        type(column) is not int or not 0 <= column < 1 << width for column in columns
+    ):
+        raise ValueError("Binary matrix columns must fit a square register map")
+    if type(adjoint) is not bool:
+        raise ValueError("Binary linear map adjoint must be boolean")
+    return _linear_map(target[::-1], _inverse_columns(columns) if adjoint else columns)
 
 
 def kickmix_field_constant_scale_ir(
