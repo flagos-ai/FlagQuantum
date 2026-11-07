@@ -132,7 +132,7 @@ def test_double_phase_cancels_and_interference_reveals_sign():
 
 
 def test_gate_free_public_example_entangles_two_named_registers():
-    from examples.synthesis_qmod_phase import SOURCE
+    from examples.synthesis.tutorials.qmod.qmod_phase.main import SOURCE
 
     program = synth.synthesize(SOURCE, source_format="qmod", max_qubits=2)
     result = fq.run(program)

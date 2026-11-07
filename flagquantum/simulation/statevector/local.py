@@ -1199,6 +1199,18 @@ def run_local_statevector(
     if batch_size < 1:
         raise ValueError("batch_size must be positive")
 
+    if (
+        batch_size == 1
+        and device.type == "cpu"
+        and dtype == torch.complex128
+        and "construction_basis_workspace_prefix" in program.metadata
+    ):
+        from .basis_workspace import compact_workspace_state
+
+        compact = compact_workspace_state(program)
+        if compact is not None:
+            return compact
+
     from ...circuit import Circuit
 
     return Circuit.from_ir(

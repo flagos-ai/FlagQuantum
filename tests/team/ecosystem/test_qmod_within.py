@@ -4,7 +4,7 @@ import pytest
 
 from flagquantum.compiler._construction.register_profile import register_ports
 from flagquantum.compiler._hybrid.verifier import HybridVerificationError
-from flagquantum.ecosystem._qmod import adapter
+from flagquantum.ecosystem._qmod import context
 from flagquantum.ecosystem._qmod.adapter import (
     SUPPORTED_SOURCE_VERSION,
     QmodImport,
@@ -156,10 +156,14 @@ def test_lexical_scope_depth_has_an_independent_bounded_limit(depth: int) -> Non
         )
 
 
+def test_explicit_local_allocation_requires_drop_before_return() -> None:
+    with pytest.raises(HybridVerificationError, match="drop every hidden register"):
+        parse("allocate(flag);")
+
+
 @pytest.mark.parametrize(
     "body",
     [
-        "allocate(flag);",
         "flag=x<y;",
         "phase(flag,pi);",
         "X(flag);",
@@ -270,6 +274,6 @@ def test_generated_local_and_cleanup_operations_share_the_existing_budget(
     monkeypatch: pytest.MonkeyPatch,
     cap: int,
 ) -> None:
-    monkeypatch.setattr(adapter, "MAX_EFFECT_OPERATIONS", cap)
+    monkeypatch.setattr(context, "MAX_EFFECT_OPERATIONS", cap)
     with pytest.raises(HybridVerificationError, match="qmod.budget.expansion"):
         parse("within {flag=x<y;} apply {}")

@@ -41,7 +41,7 @@ design or decoding. Every input pair has probability 1/16; x<=y has negative
 amplitude. Probabilities alone do not prove phase. No manual local/release API
 is added to this user flow.
 
-Run `python -m examples.synthesis_local_registers` for the new **contributor-only
+Run `python -m examples.synthesis.tutorials.composition.local_registers.main` for the new **contributor-only
 owned-IR** flow. Const helpers compute less/equal conditions into private locals,
 phase them, use their exact selected inverses and release them. Only x/y/reference
 are returned; the temporary does not need a fake named zero output. With the
@@ -129,5 +129,5 @@ closed predicate. No global optimum, speed, hardware or release claim is made.
 
 ```bash
 python -m pytest tests/team/compiler/test_construction_local_registers.py tests/integration/test_synthesis_local_registers.py -q
-python -m examples.synthesis_local_registers
+python -m examples.synthesis.tutorials.composition.local_registers.main
 ```

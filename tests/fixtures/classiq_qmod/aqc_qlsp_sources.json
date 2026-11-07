@@ -1,0 +1,14 @@
+{
+  "repository": "https://github.com/Classiq/classiq-library",
+  "commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "license_file": "LICENSE.txt",
+  "license_sha256": "241f68c9f35357f97e8a2a195e447d4f80098c140f0b3b3c770a11eed96f58e0",
+  "fixtures": [
+    {
+      "file": "solving_qlsp_with_aqc.qmod",
+      "source_path": "algorithms/quantum_linear_solvers/adiabatic_linear_solvers/solving_qlsp_with_aqc.qmod",
+      "git_blob_sha1": "63e536947861bae5e9aed3fa0ab7d503710054c8",
+      "sha256": "b29fb53678bca0aa7bcf2c0baf392cac8b9c427ccf2a73be00bce36e86b200a1"
+    }
+  ]
+}

@@ -1,5 +1,9 @@
 # FlagQuantum Examples
 
+Choose [high-level quantum programming with synth](synthesis/README.md) for
+computation, quantum data and synthesis constraints. The examples below cover
+Circuit construction, training, simulation and deployment.
+
 ## Start with the integrated QEC workflow
 
 Follow the [Stim/PyMatching quickstart](../docs/guides/QEC_INTEGRATION_QUICKSTART.md)
@@ -20,38 +24,7 @@ These supported software workflows do not start hardware jobs or scientific
 performance studies. The historical migration/reference demonstrations are
 listed separately below.
 
-
-[Composable arithmetic synthesis](synthesis_arithmetic_implementations.py): run
-`python -m examples.synthesis_arithmetic_implementations` to allocate, prepare
-superpositions, compose a Python qfunc, compute `x*x+y`, and read named outcomes.
-The example also executes matching Qmod and prints actual resources.
-
-[Coherent predicate synthesis](synthesis_predicate.py): run
-`python -m examples.synthesis_predicate` for named basis and uniform results of
-`x*x+y<5`, using the maintained synth facade without gate design or bit decoding.
-
-Private constrained-synthesis contributor workflows:
-
-- [Candidate selection](synthesis_selection.py): run
-  `python -m examples.synthesis_selection` to compare both schedules under
-  different final constraints, then check and execute their real Runtime plans.
-- [Complete static costs](synthesis_selection_costs.py): run
-  `python -m examples.synthesis_selection_costs` for both candidates of four
-  computation families at two widths and two targets, plus the manual baseline.
-  Larger rows are Compiler costs, not dense-state or hardware measurements.
-
-[`synthesis_execution_contract.py`](synthesis_execution_contract.py) demonstrates
-the private CS06-A seam: `python -m examples.synthesis_execution_contract` rejects
-planning-induced basis drift, checks an actual routed plan and verifies its
-nonidentity output placement and complex phase. This expert plan example leaves
-the normal synthesis facade unchanged.
-
-[`synthesis_workspace.py`](synthesis_workspace.py) is the private CS-05 Compiler
-diagnostic: `python -m examples.synthesis_workspace` compares retained and
-cleanup/recompute workspace costs for one high-level source program and executes
-both small coherent blocks on the existing CPU path. This is an advanced explicit
-port example; the normal named CS-04 workflow is unchanged. It does not expose
-CS-06 constraint-based candidate selection.
+## Circuit, training and deployment workflows
 
 Runnable, copy-ready workflows for building and training quantum AI programs
 with the current FlagQuantum API.
@@ -68,6 +41,9 @@ These examples do not use that alias:
 - [`qec/dynamic_measurement_conversion.py`](qec/dynamic_measurement_conversion.py)
   converts repeated-slot dynamic records to reference-normalized detector and
   observable flips using explicit measurement ordinals.
+- [`synthesis/run_qmod.py`](synthesis/run_qmod.py) verifies catalog source hashes
+  and delegates execution to the existing Qmod corpus audit tool.
+
 - [`qec/compiled_measurement_sampler.py`](qec/compiled_measurement_sampler.py)
   reuses one Clifford sampler for dense records, packed records and a b8 file
   that Stim reads back independently.
@@ -970,65 +946,8 @@ are not a unitary-gate fidelity claim. Detached numeric plans replay exactly,
 but JSON does not preserve the training graph. All solvers, bindings, outputs
 and artifacts reuse the existing shared dynamics workflow.
 
-[Predicate phase synthesis](synthesis_phase_oracle.py):
-`python -m examples.synthesis_phase_oracle` uses the public synthesize entry with
-output_mode="phase", a two-bit x*x+y<5 predicate, named uniform inputs and a
-qubit ceiling. It executes the existing Program and prints named probabilities
-and actual costs, with no private imports, gates, wire indices or decoding.
-Each input pair has probability 1/16; phase/workspace correctness is verified
-separately by complete amplitude and interference tests. Logical CPU only;
-native Qmod phase and explicit basis/topology are refused.
-
-[Composite predicate synthesis](synthesis_boolean_predicate.py): run
-`python -m examples.synthesis_boolean_predicate` to compute
-(x<2 and y==1) or not(x==y) in value and phase modes through the public Program.
-Named probabilities and actual costs require no gates, physical wires or
-bitstring decoding. Uniform probabilities alone do not certify phase; complete
-complex-state and interference acceptance supplies that evidence. Boolean
-operands are one-bit values; source is fully validated without host execution.
-
-[Controlled predicate phase](synthesis_controlled_predicate.py): run
-`python -m examples.synthesis_controlled_predicate` to mark enable and (x<y)
-with the existing public synthesis/Program/run flow, then demonstrate a two-input
-mask under a two-qubit, zero-workspace ceiling. No gates, physical indices,
-private helpers or decoding are required. Complete amplitude and interference
-acceptance checks the control-zero branch and exact relative phase; uniform
-probabilities alone do not establish that effect.
-
-[Static loop synthesis](synthesis_static_loop.py): run
-`python -m examples.synthesis_static_loop` to compile a weighted sum and a
-loop-carried predicate through the existing value/phase Program flow. Declare
-quantum UInt widths and classical steps separately; result widths, gates,
-workspace cleanup and named reading are automatic. Only bounded classical
-range loops are admitted; there is no data-dependent quantum loop or native
-source grammar expansion. Full amplitudes, not uniform probabilities alone,
-verify the phase effect.
-
-[Coherent value selection](synthesis_conditional.py): run
-`python -m examples.synthesis_conditional` to compute an unsigned minimum from
-`x if x<y else y` and mark a selected one-bit predicate in phase mode. Both use
-the existing public synth/Program/run/named-reader workflow. The compiler handles
-branch widths, coherent choice and exact workspace cleanup; users specify the
-computation, quantum widths, preparation and constraints. Full amplitude tests,
-rather than uniform probabilities alone, certify phase.
-
-[Interval predicate synthesis](synthesis_interval.py): run
-`python -m examples.synthesis_interval` for `low <= x <= high and x != excluded`
-in the existing value/phase Program flow. All six unsigned relations and chains
-reuse the current comparator kernels and cleanup. The middle value captures
-once; unsupported source still fails after a false prefix. Quantum widths,
-classical constants, preparation and budgets are explicit; gates, workspace,
-physical maps and bit decoding are automatic.
-
-[Ordered phase borrows](synthesis_register_phase.py) is a **private Compiler
-contributor trial**. Run `python -m examples.synthesis_register_phase` to assemble
-owned IR, then use the existing Services bridge, checked Program/run and named
-reading. The source copies a reference, applies a predicate phase, mutates an
-input, computes a product, applies another phase and interferes the result.
-It demonstrates local scratch cleanup/reuse and quantum basis-constant borrowing.
-Its IR producer is not public Python/Qmod syntax; ordinary users keep the
-existing high-level predicate entry. Full complex-state tests verify the signs
-and external reference; probabilities alone cannot establish them.
+Further synthesis tutorials, including predicates, coherent control and workspace
+scheduling, are indexed in [the synthesis examples](synthesis/README.md).
 
 Run `PYTHONPATH=. python examples/qec/dem_model_and_chunks.py --round-trip`
 to partition and reassemble a fixed three-layer DEM on CPU.

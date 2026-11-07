@@ -5,7 +5,7 @@ from dataclasses import replace
 import pytest
 
 import flagquantum as fq
-from examples.synthesis_const_calls import const_composition
+from examples.synthesis.tutorials.composition.const_calls.main import const_composition
 from flagquantum import _api, synth
 from flagquantum.compiler._construction.frontend_python import capture
 from flagquantum.compiler._construction.register_profile import register_type

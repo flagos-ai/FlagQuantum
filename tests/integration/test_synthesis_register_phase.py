@@ -11,7 +11,7 @@ import pytest
 import torch
 
 import flagquantum as fq
-from examples.synthesis_register_phase import phase_composition
+from examples.synthesis.tutorials.control.register_phase.main import phase_composition
 from flagquantum import _api
 from flagquantum.compiler._construction.constraints import CircuitLimits
 from flagquantum.compiler._construction.frontend_python import Definition, capture
@@ -303,7 +303,11 @@ def test_private_contributor_example_runs_through_existing_program_and_named_rea
     None
 ):
     completed = subprocess.run(
-        [sys.executable, "-m", "examples.synthesis_register_phase"],
+        [
+            sys.executable,
+            "-m",
+            "examples.synthesis.tutorials.control.register_phase.main",
+        ],
         cwd=Path(__file__).resolve().parents[2],
         capture_output=True,
         text=True,

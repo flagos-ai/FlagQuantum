@@ -1,0 +1,20 @@
+{
+  "repository": "https://github.com/Classiq/classiq-library",
+  "commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "license_file": "LICENSE.txt",
+  "license_sha256": "241f68c9f35357f97e8a2a195e447d4f80098c140f0b3b3c770a11eed96f58e0",
+  "fixtures": [
+    {
+      "file": "checkerboard_BE_N8.qmod",
+      "source_path": "community/paper_implementation_project/block_encoding/checkerboard_BE_N8.qmod",
+      "git_blob_sha1": "0152906ff6404e7bdff03f42a0e49f8b03c86cdc",
+      "sha256": "91874079574963311cf224000906697430d4dd53bd9cfbfbe8346aac0a5f26dd"
+    },
+    {
+      "file": "tridiagonal_BE_size16.qmod",
+      "source_path": "community/paper_implementation_project/block_encoding/tridiagonal_BE_size16.qmod",
+      "git_blob_sha1": "b9020adb43b64e9b67b86300158c5447e21c6693",
+      "sha256": "0ba8f8e3d2d2bfdb356c8b2b9b53fb57101170b73b6c2a0717a57c1f62603a71"
+    }
+  ]
+}

@@ -11,7 +11,7 @@ import pytest
 import torch
 
 import flagquantum as fq
-from examples.synthesis_workspace import candidate, pressure
+from examples.synthesis.tutorials.workspace.workspace.main import candidate, pressure
 from flagquantum.compiler import compile as compile_program
 from flagquantum.compiler import estimate_resources
 from flagquantum.compiler._construction.constraints import CircuitLimits
@@ -34,7 +34,11 @@ TOPOLOGY = CouplingMap(3, ((0, 1), (1, 2)))
 
 def test_execution_contract_example_runs_as_documented() -> None:
     result = subprocess.run(
-        [sys.executable, "-m", "examples.synthesis_execution_contract"],
+        [
+            sys.executable,
+            "-m",
+            "examples.synthesis.tutorials.workspace.execution_contract.main",
+        ],
         cwd=Path(__file__).resolve().parents[2],
         capture_output=True,
         text=True,

@@ -6,8 +6,8 @@ It is a private local CPU trial, not a released `flagquantum.synth` namespace.
 
 ## Complete user path
 
-Run `PYTHONPATH=. python examples/algorithms/synthesis_trial.py` from the checkout.
-The [example](../../examples/algorithms/synthesis_trial.py) contains both basis and
+Run `PYTHONPATH=. python examples/synthesis/tutorials/getting_started/trial/main.py` from the checkout.
+The [example](../../examples/synthesis/tutorials/getting_started/trial/main.py) contains both basis and
 coherent cases. The shortest supported pattern is:
 
 ```python

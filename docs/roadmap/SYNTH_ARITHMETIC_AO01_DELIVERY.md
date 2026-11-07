@@ -8,7 +8,7 @@ release status or original-Qmod coverage is added or changed.
 
 ## Unified user workflow
 
-Run `python -m examples.synthesis_normalization`, or save this in a `.py` file:
+Run `python -m examples.synthesis.tutorials.arithmetic.normalization.main`, or save this in a `.py` file:
 
 ```python
 import flagquantum as fq

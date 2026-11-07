@@ -33,8 +33,8 @@ python -m examples.algorithms.pauli_lcu_block_encoding
 python -m examples.algorithms.sparse_select
 python -m examples.algorithms.logical_resources
 python -m examples.algorithms.arithmetic
-python -m examples.algorithms.synthesis_trial
-python -m examples.algorithms.synthesis_source_trial
+python -m examples.synthesis.tutorials.getting_started.trial.main
+python -m examples.synthesis.tutorials.getting_started.source_trial.main
 ```
 
 [`tests/test_algorithm_examples.py`](../../tests/test_algorithm_examples.py) runs
@@ -159,7 +159,7 @@ What they show:
   every input rather than described, the T-cost read from the compiler's own
   Toffoli rule, and the conversion bound shown to be a bound the caller can raise.
 
-- [`synthesis_trial.py`](synthesis_trial.py): the maintained synthesis candidate
+- [`synthesis_trial.py`](../synthesis/tutorials/getting_started/trial/main.py): the maintained synthesis candidate
   synthesizes `x*x+y` with named basis and uniform input preparation, executes
   its checked bound Program, and reads named UInt tuples without
   user-written gates, physical indices or bitstring decoding. It also executes
@@ -167,7 +167,7 @@ What they show:
   local CPU statevectors are supported. There is no optimality claim; independent
   developer trials and final release review remain pending.
 
-- [`synthesis_source_trial.py`](synthesis_source_trial.py): the unreleased pinned
+- [`synthesis_source_trial.py`](../synthesis/tutorials/getting_started/source_trial/main.py): the unreleased pinned
   Qmod subset uses the same checked Program, exact CPU execution and named reader.
   With no arguments, it runs coherent `x*x+1` source text. Append a local `.qmod`
   path to run a bounded regular UTF-8 file instead. Native synthesis defaults to

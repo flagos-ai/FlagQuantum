@@ -74,12 +74,9 @@ def test_output_helper_composition_and_lowercase_predicate_remain_distinct() -> 
     "statement",
     [
         "PHASE(q,q);",
-        "PHASE(pi,q);",
-        "PHASE(1+1,q);",
         "PHASE(9007199254740993,q);",
         "PHASE(1);",
         "PHASE(1,q,q);",
-        "PHASE(-1,q);",
     ],
 )
 def test_unreviewed_angle_forms_are_refused_before_execution(statement: str) -> None:
@@ -209,3 +206,16 @@ def test_basis_without_verified_phase_decomposition_refuses() -> None:
             source_format="qmod",
             basis=("x", "h"),
         )
+
+
+@pytest.mark.parametrize(
+    "text,angle", [("pi", 3.141592653589793), ("1+1", 2.0), ("-1", -1.0)]
+)
+def test_classical_angle_forms_now_preserve_coherent_phase(
+    text: str, angle: float
+) -> None:
+    p = synth.synthesize(
+        f"qfunc main(output q:qbit) {{allocate(q);H(q);PHASE({text},q);}}",
+        source_format="qmod",
+    )
+    check_state(p, fq.run(p), {(0,): 2**-0.5, (1,): cmath.exp(1j * angle) * 2**-0.5})

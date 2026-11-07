@@ -1,0 +1,14 @@
+{
+  "repository": "https://github.com/Classiq/classiq-library",
+  "commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "license_file": "LICENSE.txt",
+  "license_sha256": "241f68c9f35357f97e8a2a195e447d4f80098c140f0b3b3c770a11eed96f58e0",
+  "fixtures": [
+    {
+      "file": "tensor_hypercontraction.qmod",
+      "source_path": "applications/chemistry/tensor_hypercontraction/tensor_hypercontraction.qmod",
+      "git_blob_sha1": "ec90173c3669c622d38d09f17bcb67dc8b9cd735",
+      "sha256": "e10515cc546fd5898db4c369a273604f318506cb193b2a0128d2f951805c4b19"
+    }
+  ]
+}

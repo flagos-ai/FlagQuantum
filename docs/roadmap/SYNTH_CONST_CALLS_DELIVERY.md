@@ -38,7 +38,7 @@ roles are now available in Python or Qmod.
 
 ## New contributor flow
 
-Run `python -m examples.synthesis_const_calls`. Its owned-IR producer constructs
+Run `python -m examples.synthesis.tutorials.composition.const_calls.main`. Its owned-IR producer constructs
 a value callee with two Const references and a fresh energy output, a Const-only
 phase callee, and a combined callee invoking both. The root prepares two
 two-bit registers, with an S on x's least-significant bit, calls the combined

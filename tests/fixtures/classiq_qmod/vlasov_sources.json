@@ -1,0 +1,14 @@
+{
+  "repository": "https://github.com/Classiq/classiq-library",
+  "commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "license_file": "LICENSE.txt",
+  "license_sha256": "241f68c9f35357f97e8a2a195e447d4f80098c140f0b3b3c770a11eed96f58e0",
+  "fixtures": [
+    {
+      "file": "vlasov_ampere.qmod",
+      "source_path": "applications/plasma/vlasov_ampere/vlasov_ampere.qmod",
+      "git_blob_sha1": "058feaae75cf1f4fb760d1cbc38cf09b8585b61b",
+      "sha256": "260ce15bfe818903c34c7ae3a6010ceca9784ae8e41b893a50c695a7d28b9a8f"
+    }
+  ]
+}

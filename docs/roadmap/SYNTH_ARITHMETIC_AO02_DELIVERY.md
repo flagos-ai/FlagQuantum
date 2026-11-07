@@ -9,7 +9,7 @@ execution backend, selector budget or maturity promotion in this change.
 
 ## Unified user workflow
 
-Run `python -m examples.synthesis_arithmetic_implementations` or save this file:
+Run `python -m examples.synthesis.tutorials.arithmetic.arithmetic_implementations.main` or save this file:
 
 ```python
 import flagquantum as fq

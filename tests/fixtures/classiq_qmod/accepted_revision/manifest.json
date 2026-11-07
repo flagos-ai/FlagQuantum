@@ -1,0 +1,48 @@
+{
+  "pinned_classiq_commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "patch_sha256": "139d461e987b65e7c0ca94ace80f11a4c3b05f982409a9e1b24cff6bf304f510",
+  "files": [
+    {
+      "path": "algorithms/quantum_primitives/swap_test/swap_test.qmod",
+      "original_blob": "c686d373a0c2d12be1521b0e884e9413c48299af",
+      "original_sha256": "a5ac91c85f0868e14164385710af056a2c0e84b73b4eb1ccd5bc449d421b99f2",
+      "candidate_sha256": "86c639106f27dddecc0135ff36287c3fd1c1b96e98ec84cc7a1d5533e11fcc00",
+      "proposed_semantic_change": "Normalize both input states while preserving their relative amplitudes."
+    },
+    {
+      "path": "applications/CFD/qlbm/qlbm.qmod",
+      "original_blob": "0dcedc96dfb4489b6660cb803cb83d7a0566099d",
+      "original_sha256": "5a3ac4d0d71a5841a8d65eb4ff35f015bd9d605ff83d265c358b1023d403eebf",
+      "candidate_sha256": "8cb0e28d772910f81a5369f0a51a691be20a6b3b24eb3a9bcaee25f9bf6e0d36",
+      "proposed_semantic_change": "Use equal amplitudes 0.5 for the uniform four-state preparation."
+    },
+    {
+      "path": "applications/finance/autocallable_options/partial_exponential_state_preparation.qmod",
+      "original_blob": "fc5fd712a1853369318db7d14f3caac029de5209",
+      "original_sha256": "da0b25a150ed9bf74852d131b21f7324a28eac354b9e581b846a7a749d361cc2",
+      "candidate_sha256": "28850eafc1fb5267ddfd87e5ba7e93bb10e9977da73141c6829fa6269a709e6e",
+      "proposed_semantic_change": "Use the marked overlap of the existing exponential preparation."
+    },
+    {
+      "path": "community/paper_implementation_project/block_encoding/tridiagonal_BE_size16.qmod",
+      "original_blob": "b9020adb43b64e9b67b86300158c5447e21c6693",
+      "original_sha256": "0ba8f8e3d2d2bfdb356c8b2b9b53fb57101170b73b6c2a0717a57c1f62603a71",
+      "candidate_sha256": "d05c8686edab7492fd781244d856edcd1730e2bee705b2e54de957a322ca4802",
+      "proposed_semantic_change": "Normalize the three equal nonzero selector amplitudes."
+    },
+    {
+      "path": "community/paper_implementation_project/quantum_state_preparation_without_coherent_arithmetic/stateprep_guassian_using_qsvt.qmod",
+      "original_blob": "55557082fc4d254ee9ba37d8a4a5bb8d2a3c7a00",
+      "original_sha256": "3bee74cf6e620f933c033a51933fb7adb4cfc2e1ecdc74336e51cce857055d51",
+      "candidate_sha256": "28d5beca520401249ad439cf3ff3e67e62da26edad6cbd1ba8aeab97f73e82f2",
+      "proposed_semantic_change": "Use the marked overlap of the unchanged phase sequences."
+    },
+    {
+      "path": "tutorials/technology_demonstrations/hhl/hhl_example.qmod",
+      "original_blob": "81df2de9c3ed5d6f663238f737df01a8b396ad3a",
+      "original_sha256": "bb44c3d80ddb2a4c7e921c3628c9ad4f198a588c694362f42451951a9c96a5e6",
+      "candidate_sha256": "381ca35455cb6c372de6df15a4ea787c568e72fe767d8552caf7098fe83ced07",
+      "proposed_semantic_change": "Normalize the right-hand-side vector while preserving its direction."
+    }
+  ]
+}

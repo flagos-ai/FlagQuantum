@@ -6,31 +6,56 @@ inspected or certified by this structural verifier.
 """
 
 import math
-from collections.abc import Mapping, Sequence
+from collections.abc import Sequence
 from types import MappingProxyType
 
+import torch
+
 from .._hybrid.model import (
-    QUANTUM_EFFECT,
     HybridProgram,
     IRType,
     Operation,
     Value,
     ValueId,
 )
-from .profile import _fail, _positive_integer, _width, verify_construction
+from .profile import _fail, _positive_integer, verify_construction
 from .register_expansion import expand_register_calls, is_register_function
+
+MAX_PREPARED_AMPLITUDES = 256
+_MAX_INPLACE_AMPLITUDES = 4096
+MAX_TRANSFORM_WIDTH = 4
 
 _ATTRIBUTES = MappingProxyType(
     {
         "qreg.declare": frozenset({"name"}),
+        "qreg.hidden": frozenset({"name"}),
+        "qreg.drop": frozenset(),
+        "qreg.publish": frozenset({"destinations", "locations"}),
+        "qreg.modular_exp": frozenset({"modulus", "base"}),
+        "qreg.control_qft": frozenset(),
         "qreg.local": frozenset({"name"}),
         "qreg.release": frozenset(),
         "qreg.uniform_interval": frozenset({"start", "stop"}),
         "qreg.allocate": frozenset(),
         "qreg.initialize": frozenset({"value"}),
+        "qreg.prepare_ghz": frozenset(),
+        "qreg.prepare_amplitudes": frozenset({"amplitudes", "bound"}),
+        "qreg.inplace_prepare_amplitudes": frozenset({"amplitudes", "bound"}),
+        "qreg.unitary": frozenset({"matrix"}),
+        "qreg.qft": frozenset(),
+        "qreg.inverse_qft": frozenset(),
+        "qreg.type1_transform": frozenset(),
+        "qreg.type2_transform": frozenset({"kind"}),
+        "qreg.rzz": frozenset({"angle"}),
+        "qreg.pauli_rotation": frozenset({"support", "angle"}),
         "qreg.pair_gate": frozenset({"gate"}),
         "qreg.control_h": frozenset(),
+        "qreg.control_x": frozenset(),
+        "qreg.array_phase_flip": frozenset(),
         "qreg.control_phase": frozenset({"angle"}),
+        "qreg.replay": frozenset({"callee", "count"}),
+        "qreg.gate_tape": frozenset({"workspace", "templates", "schedule"}),
+        "qreg.reset": frozenset({"index"}),
         "qreg.gate": frozenset({"gate", "index"}),
         "qreg.compute": frozenset({"callee"}),
         "qreg.uncompute": frozenset(),
@@ -40,9 +65,66 @@ _ATTRIBUTES = MappingProxyType(
         "qreg.return": frozenset(),
     }
 )
-_PAIR_GATES = frozenset({"cx", "swap", "crx"})
-_ANGLE_GATES = frozenset({"phase", "rx", "rz"})
-_GATES = frozenset({"x", "h", "s", "z"}) | _ANGLE_GATES
+_ANGLED_PAIR_GATES = frozenset({"crx", "cry", "crz", "rzz"})
+_PAIR_GATES = frozenset({"cx", "cz", "swap"}) | _ANGLED_PAIR_GATES
+_ANGLE_GATES = frozenset({"phase", "rx", "ry", "rz"})
+_GATES = frozenset({"x", "h", "s", "z", "i", "sx"}) | _ANGLE_GATES
+MAX_MATRIX_QUBITS = 5
+
+
+def unitary_matrix(entries: object, width: int, op: Operation) -> torch.Tensor:
+    """Decode a bounded dense matrix from immutable real/imaginary pairs."""
+    if not 1 <= width <= MAX_MATRIX_QUBITS:
+        _fail("register.unitary", "matrix targets must have one to five qubits", op)
+    size = 1 << width
+    if (
+        not isinstance(entries, tuple)
+        or len(entries) != size
+        or any(not isinstance(row, tuple) or len(row) != size for row in entries)
+        or any(
+            not isinstance(entry, tuple)
+            or len(entry) != 2
+            or any(type(part) is not float or not math.isfinite(part) for part in entry)
+            for row in entries
+            for entry in row
+        )
+    ):
+        _fail(
+            "register.unitary",
+            "expected a finite square matrix matching the target width",
+            op,
+        )
+    return torch.view_as_complex(torch.tensor(entries, dtype=torch.float64))
+
+
+def _check_real_preparation(op: Operation, width: int) -> None:
+    amplitudes = op.attributes["amplitudes"]
+    bound = op.attributes["bound"]
+    limit = (
+        _MAX_INPLACE_AMPLITUDES
+        if op.name == "qreg.inplace_prepare_amplitudes"
+        and "indices" in op.attributes
+        and not op.attributes.get("control_count")
+        else MAX_PREPARED_AMPLITUDES
+    )
+    if (
+        not isinstance(amplitudes, tuple)
+        or not 2 <= len(amplitudes) <= limit
+        or len(amplitudes) & (len(amplitudes) - 1)
+        or len(amplitudes).bit_length() - 1 != width
+        or any(
+            type(value) is not float or not math.isfinite(value) for value in amplitudes
+        )
+        or not math.isclose(math.hypot(*amplitudes), 1.0, rel_tol=0, abs_tol=1e-12)
+        or type(bound) is not float
+        or not math.isfinite(bound)
+        or bound < 0
+    ):
+        _fail(
+            "register.amplitudes",
+            "preparation requires a normalized finite real vector matching the target and a nonnegative finite bound",
+            op,
+        )
 
 
 def equatorial_rotation(theta: float, phi: float) -> tuple[tuple[str, float], ...]:
@@ -82,6 +164,137 @@ def register_width(value: Value, operation: Operation | None = None) -> int:
     return width
 
 
+RecordField = tuple[str, str, int] | tuple[str, str, int, int]
+
+
+def record_fields(op: Operation) -> tuple[RecordField, ...]:
+    """Validate disjoint record leaves before projecting their readout names."""
+    if "fields" not in op.attributes and "record_type" not in op.attributes:
+        return ()
+    fields = op.attributes.get("fields")
+    record_type = op.attributes.get("record_type")
+    if (
+        not isinstance(record_type, str)
+        or not record_type.isidentifier()
+        or not isinstance(fields, tuple)
+        or not fields
+    ):
+        _fail("register.record", "record requires a type and nonempty field layout", op)
+    names: set[str] = set()
+    width = 0
+    for field in fields:
+        if not isinstance(field, tuple) or len(field) not in {3, 4}:
+            _fail("register.record", "record fields require name, kind and width", op)
+        name, kind, size = field[:3]
+        length = field[3] if len(field) == 4 else 1
+        if (
+            not isinstance(name, str)
+            or len(name.split(".")) > 32
+            or any(
+                not part.isidentifier() or part in {"size", "len"}
+                for part in name.split(".")
+            )
+            or any(
+                name == previous
+                or name.startswith(previous + ".")
+                or previous.startswith(name + ".")
+                for previous in names
+            )
+            or kind not in ("qbit", "qbit[]", "qnum", "qnum[]", "qbit[][]")
+            or type(size) is not int
+            or not 1 <= size <= 256
+            or (kind == "qbit" and size != 1)
+            or type(length) is not int
+            or not 1 <= length <= 256
+            or (kind in {"qnum[]", "qbit[][]"}) != (len(field) == 4)
+            or size * length > 256
+        ):
+            _fail(
+                "register.record",
+                "record fields must be unique bounded unsigned fields",
+                op,
+            )
+        names.add(name)
+        width += size * length
+    if (
+        width > 256
+        or len(op.results) != 1
+        or width != register_width(op.results[0], op)
+    ):
+        _fail("register.record", "record fields must cover the register exactly", op)
+    return fields
+
+
+def record_readouts(fields: tuple[RecordField, ...]) -> tuple[tuple[str, int], ...]:
+    """Project disjoint fields, numeric elements and bit-array rows for readout."""
+    return tuple(
+        (f"{field[0]}[{index}]" if len(field) == 4 else field[0], field[2])
+        for field in fields
+        for index in range(field[3] if len(field) == 4 else 1)
+    )
+
+
+def _publication(program: HybridProgram) -> Operation | None:
+    operations = program.body.blocks[0].operations
+    if len(operations) >= 2 and operations[-2].name == "qreg.publish":
+        return operations[-2]
+    return None
+
+
+def _publication_destinations(op: Operation) -> tuple[Value, ...]:
+    count = op.attributes.get("destinations")
+    if type(count) is not int or not 1 <= count < len(op.operands) - 1:
+        _fail("register.publish", "publication requires outputs and hidden storage", op)
+    return op.operands[1 : 1 + count]
+
+
+def _publication_sources(op: Operation) -> tuple[Value, ...]:
+    return op.operands[1 + len(_publication_destinations(op)) :]
+
+
+def _publication_layout(op: Operation) -> tuple[tuple[Value, int], ...]:
+    sources = _publication_sources(op)
+    locations = op.attributes.get("locations")
+    if (
+        not isinstance(locations, tuple)
+        or len(locations) != sum(register_width(source) for source in sources)
+        or len(locations)
+        != sum(register_width(out) for out in _publication_destinations(op))
+    ):
+        _fail(
+            "register.publish",
+            "publication must cover the source and output widths exactly",
+            op,
+        )
+    result: list[tuple[Value, int]] = []
+    for location in locations:
+        if (
+            not isinstance(location, tuple)
+            or len(location) != 2
+            or type(location[0]) is not int
+            or not 0 <= location[0] < len(sources)
+            or type(location[1]) is not int
+            or not 0 <= location[1] < register_width(sources[location[0]])
+        ):
+            _fail("register.publish", "publication locations must be in bounds", op)
+        result.append((sources[location[0]], location[1]))
+    if len(set(result)) != len(result):
+        _fail("register.publish", "publication locations must be distinct", op)
+    return tuple(result)
+
+
+def semantic_hidden_width(program: HybridProgram) -> int:
+    publication = _publication(program)
+    published = () if publication is None else _publication_sources(publication)
+    return sum(
+        register_width(op.results[0])
+        for op in program.body.blocks[0].operations
+        if op.name == "qreg.hidden"
+        and not op.attributes.get("workspace", False)
+        and op.results[0] not in published
+    )
+
+
 def register_ports(
     program: HybridProgram,
 ) -> tuple[dict[str, tuple[int, ...]], dict[ValueId, tuple[int, ...]], int]:
@@ -93,10 +306,39 @@ def register_ports(
         if op.name == "qreg.declare":
             value = op.results[0]
             ports = tuple(range(position, position + register_width(value)))
-            names[op.attributes["name"]] = ports
+            fields = record_fields(op)
+            if fields:
+                offset = 0
+                for name, size in record_readouts(fields):
+                    names[f"{op.attributes['name']}.{name}"] = ports[
+                        len(ports) - offset - size : len(ports) - offset
+                    ]
+                    offset += size
+            else:
+                names[op.attributes["name"]] = ports
             values[value.id] = ports
             position += len(ports)
+    publication = _publication(program)
+    if publication is not None:
+        owners = {
+            value: [-1] * register_width(value)
+            for value in _publication_sources(publication)
+        }
+        outputs = _publication_destinations(publication)
+        locations = _publication_layout(publication)
+        target_wires = (
+            wire for value in outputs for wire in reversed(values[value.id])
+        )
+        for (owner, bit), wire in zip(locations, target_wires, strict=True):
+            owners[owner][-1 - bit] = wire
+        values.update((owner.id, tuple(ports)) for owner, ports in owners.items())
     following = position
+    for op in program.body.blocks[0].operations:
+        if op.name == "qreg.hidden" and op.results[0].id not in values:
+            value = op.results[0]
+            end = following + register_width(value)
+            values[value.id] = tuple(range(following, end))
+            following = end
     free: set[int] = set()
     for op in program.body.blocks[0].operations:
         if op.name == "qreg.local":
@@ -129,6 +371,8 @@ def verify_register_program(
     Uncompute makes unchanged directly computed storage fresh, retaining ownership.
     Local storage must be released fresh before return and cannot escape as output.
     """
+    from .register_verifier import _verify_body
+
     _positive_integer(max_qubits, "max_qubits")
     _positive_integer(max_nodes, "max_nodes")
     if max_qubits > 256 or max_nodes > 4096:
@@ -167,7 +411,7 @@ def verify_register_program(
             active.add(name)
             depth = 1
             for op in helpers[name].body.blocks[0].operations:
-                if op.name in {"qreg.call", "qreg.control_call"}:
+                if op.name in {"qreg.call", "qreg.control_call", "qreg.replay"}:
                     callee = op.attributes.get("callee")
                     if not isinstance(callee, str) or callee not in helpers:
                         _fail(
@@ -188,453 +432,119 @@ def verify_register_program(
     _verify_body(program, arithmetic, helpers, max_qubits)
     expanded = expand_register_calls(program, functions, max_nodes=max_nodes)
     if expanded is not program:
-        _verify_body(expanded, arithmetic, {}, max_qubits)
+        _verify_body(expanded, arithmetic, helpers, max_qubits)
     return program
 
 
-def _verify_body(
-    program: HybridProgram,
-    arithmetic: Sequence[HybridProgram],
-    helpers: Mapping[str, HybridProgram],
-    max_qubits: int,
-    *,
-    const_entry: bool = False,
-) -> None:
-    if len(program.body.blocks) != 1:
-        _fail("register.blocks", "register construction requires one ordered block")
-    block = program.body.blocks[0]
+def verify_operation_attributes(op: Operation) -> None:
+    """Check operation attributes before inspecting stateful register use."""
+    attributes = _ATTRIBUTES.get(op.name)
     if (
-        not block.arguments
-        or block.arguments[0].type != QUANTUM_EFFECT
-        or (not const_entry and len(block.arguments) != 1)
+        op.name == "qreg.gate"
+        and isinstance(op.attributes.get("gate"), str)
+        and (op.attributes["gate"] in _ANGLE_GATES)
     ):
-        _fail(
-            "register.entry",
-            "fresh roots require one effect; callees may add Const references",
-        )
-    if not block.operations or block.operations[-1].name != "qreg.return":
-        _fail("register.return", "register construction requires a final qreg.return")
-    symbols = {f.name: f for f in arithmetic}
-    effect = block.arguments[0]
-    known: dict[ValueId, Value] = {effect.id: effect}
-    borrowed = block.arguments[1:]
-    for value in borrowed:
-        register_width(value)
-        if value.id in known:
-            _fail("register.ssa", "duplicate Const entry reference")
-        known[value.id] = value
-    registers: list[Value] = list(borrowed)
-    returned: list[Value] = list(borrowed)
-    local_storage: set[Value] = set()
-    initialized = {v.id for v in borrowed}
-    reversible: dict[ValueId, frozenset[ValueId]] = {}
-    labels: set[str] = set()
-    width = sum(register_width(v) for v in borrowed)
-    if width > max_qubits:
-        _fail("register.budget", "Const entry widths exceed construction capacity")
-
-    def check_call(
-        op: Operation, arguments: Sequence[Value], destination: Value | None = None
-    ) -> None:
-        callee = op.attributes["callee"]
-        if not isinstance(callee, str) or callee not in symbols:
-            _fail("register.callee", "call requires a verified expression function", op)
-        body = symbols[callee].body.blocks[0]
-        if len(arguments) != len(body.arguments) or any(
-            register_width(actual) != _width(formal.type, max_qubits)
-            for actual, formal in zip(arguments, body.arguments, strict=True)
-        ):
-            _fail(
-                "register.signature",
-                "register widths disagree with arithmetic inputs",
-                op,
-            )
-        if destination is not None and destination in arguments:
-            _fail("register.alias", "fresh destination cannot alias an input", op)
-        if any(v.id not in initialized for v in arguments):
-            _fail("register.uninitialized", "call reads uninitialized storage", op)
-        returned = body.operations[-1].operands[0]
-        result_width = _width(returned.type, max_qubits)
-        if destination is None:
-            if "angle" not in op.attributes and result_width != 1:
-                _fail(
-                    "register.phase",
-                    "phase call requires an exactly one-bit return",
-                    op,
-                )
-        elif register_width(destination) < result_width:
-            _fail("register.width", "fresh assignment cannot truncate its result", op)
-
-    for position, op in enumerate(block.operations):
-        attributes = _ATTRIBUTES.get(op.name)
+        assert attributes is not None
+        attributes = attributes | {"angle"}
+    if (
+        op.name in {"qreg.gate", "qreg.control_qft", "qreg.inplace_prepare_amplitudes"}
+        and "inverse" in op.attributes
+    ):
+        if op.attributes["inverse"] is not True:
+            _fail("register.adjoint", "inverse marker must be true", op)
+        assert attributes is not None
+        attributes = attributes | {"inverse"}
+    if op.name == "qreg.control_qft" and "control_value" in op.attributes:
+        assert attributes is not None
+        attributes = attributes | {"control_value"}
+    if op.name == "qreg.pauli_rotation" and "control_index" in op.attributes:
+        assert attributes is not None
+        attributes = attributes | {"control_index"}
+    if op.name == "qreg.pair_gate":
+        assert attributes is not None
         if (
-            op.name == "qreg.gate"
-            and isinstance(op.attributes.get("gate"), str)
-            and op.attributes["gate"] in _ANGLE_GATES
+            isinstance((gate := op.attributes.get("gate")), str)
+            and gate in _ANGLED_PAIR_GATES
         ):
-            assert attributes is not None
             attributes = attributes | {"angle"}
-        if op.name == "qreg.pair_gate" and op.attributes.get("gate") == "crx":
-            assert attributes is not None
-            attributes = attributes | {"angle"}
-        if op.name == "qreg.phase" and "angle" in op.attributes:
-            angle = op.attributes["angle"]
-            if type(angle) is not float or not math.isfinite(angle):
-                _fail("register.phase", "phase angle must be a finite float", op)
-            attributes = (
-                frozenset({"angle", "callee"})
-                if len(op.operands) > 1
-                else frozenset({"angle"})
+        if "indices" in op.attributes:
+            attributes = attributes | {"indices"}
+    if (
+        op.name
+        in {"qreg.control_x", "qreg.control_phase", "qreg.inplace_prepare_amplitudes"}
+        and "indices" in op.attributes
+    ):
+        assert attributes is not None
+        attributes = attributes | {"indices"}
+    if (
+        "control_state" in op.attributes
+        and "indices" in op.attributes
+        and (
+            op.name
+            in {
+                "qreg.control_x",
+                "qreg.control_phase",
+                "qreg.inplace_prepare_amplitudes",
+            }
+        )
+    ):
+        state = op.attributes["control_state"]
+        operand_count = len(op.operands) - 1
+        count = (
+            operand_count - 1
+            if op.name == "qreg.control_x"
+            else (
+                operand_count
+                if op.name == "qreg.control_phase"
+                else op.attributes.get("control_count")
             )
-        if op.name == "qreg.call" and "inverse" in op.attributes:
-            if op.attributes["inverse"] is not True:
-                _fail("register.adjoint", "inverse call marker must be true", op)
-            attributes = frozenset({"callee", "inverse"})
-        if attributes is None or set(op.attributes) != attributes or op.regions:
+        )
+        if (
+            type(count) is not int
+            or not 1 <= count <= 8
+            or type(state) is not int
+            or (not 0 <= state < 1 << count)
+        ):
+            _fail("register.control", "control state must fit its indexed controls", op)
+        assert attributes is not None
+        attributes = attributes | {"control_state"}
+    if (
+        op.name == "qreg.inplace_prepare_amplitudes"
+        and "control_count" in op.attributes
+    ):
+        assert attributes is not None
+        attributes = attributes | {"control_count"}
+    if op.name == "qreg.declare" and (
+        "fields" in op.attributes or "record_type" in op.attributes
+    ):
+        assert attributes is not None
+        attributes = attributes | {"fields", "record_type"}
+    if op.name == "qreg.hidden" and "workspace" in op.attributes:
+        if op.attributes["workspace"] is not True:
             _fail(
-                "register.operation", "unsupported register operation or attributes", op
+                "register.workspace", "hidden workspace marker must be exactly True", op
             )
-        if any(known.get(v.id) != v for v in op.operands):
-            _fail("register.use", "undefined or mistyped operand", op)
-        if op.name in {"qreg.declare", "qreg.local"}:
-            if op.operands or len(op.results) != 1:
-                _fail(
-                    "register.declare", "declaration requires one register result", op
-                )
-            value = op.results[0]
-            width += register_width(value, op)
-            label = op.attributes["name"]
-            if not isinstance(label, str) or not label.strip() or label in labels:
-                _fail("register.name", "register names must be nonempty and unique", op)
-            if width > max_qubits:
-                _fail(
-                    "register.budget",
-                    "live register widths exceed construction capacity",
-                    op,
-                )
-            registers.append(value)
-            if op.name == "qreg.declare":
-                returned.append(value)
-            else:
-                local_storage.add(value)
-            labels.add(label)
-        else:
-            if not op.operands or op.operands[0] != effect:
-                _fail("register.effect", "consume the current effect exactly once", op)
-            operands = op.operands[1:]
-            if any(v not in registers for v in operands):
-                _fail(
-                    "register.operand",
-                    "effects require declared register references",
-                    op,
-                )
-            if op.name == "qreg.return":
-                if local_storage:
-                    _fail("register.local", "release every local before return", op)
-                if (
-                    position != len(block.operations) - 1
-                    or op.results
-                    or not registers
-                    or operands != tuple(returned)
-                    or initialized != {v.id for v in registers}
-                ):
-                    _fail(
-                        "register.return",
-                        "return every initialized register once in order",
-                        op,
-                    )
-                continue
-            if len(op.results) != 1 or op.results[0].type != QUANTUM_EFFECT:
-                _fail(
-                    "register.effect", "operation must produce one quantum effect", op
-                )
-            if not operands and op.name == "qreg.phase" and "angle" in op.attributes:
-                effect = op.results[0]
-                if effect.id in known:
-                    _fail("register.ssa", "duplicate register/effect definition", op)
-                known[effect.id] = effect
-                continue
-            if not operands:
-                _fail(
-                    "register.signature",
-                    "operation requires at least one register operand",
-                    op,
-                )
-            destination, *arguments = operands
-            changed: tuple[Value, ...] = ()
-            if op.name in {"qreg.call", "qreg.control_call"}:
-                controlled = op.name == "qreg.control_call"
-                if controlled:
-                    if (
-                        register_width(destination) != 1
-                        or destination.id not in initialized
-                    ):
-                        _fail(
-                            "register.control",
-                            "controlled call requires an initialized bit",
-                            op,
-                        )
-                    if destination in arguments or len(set(arguments)) != len(
-                        arguments
-                    ):
-                        _fail(
-                            "register.alias",
-                            "controlled call arguments must be disjoint",
-                            op,
-                        )
-                    operands = tuple(arguments)
-                callee = op.attributes["callee"]
-                if not isinstance(callee, str) or callee not in helpers:
-                    _fail("register.callee", "call requires a register function", op)
-                body = helpers[callee].body.blocks[0]
-                const = body.arguments[1:]
-                outputs = tuple(
-                    q.results[0] for q in body.operations if q.name == "qreg.declare"
-                )
-                if controlled and outputs:
-                    _fail(
-                        "register.control",
-                        "controlled calls require a Const-only callee",
-                        op,
-                    )
-                if op.attributes.get("inverse") and outputs:
-                    _fail(
-                        "register.adjoint",
-                        "inverse call requires a Const-only callee",
-                        op,
-                    )
-                formal = (*const, *outputs)
-                if len(operands) != len(formal) or any(
-                    actual.type != expected.type
-                    for actual, expected in zip(operands, formal, strict=True)
-                ):
-                    _fail("register.signature", "call roles or widths disagree", op)
-                reads, writes = operands[: len(const)], operands[len(const) :]
-                if any(v.id not in initialized for v in reads):
-                    _fail(
-                        "register.uninitialized", "Const actual is not initialized", op
-                    )
-                if len(set(writes)) != len(writes) or set(writes).intersection(reads):
-                    _fail(
-                        "register.alias",
-                        "Output actuals must be disjoint from all arguments",
-                        op,
-                    )
-                if any(v in borrowed for v in writes):
-                    _fail("register.const", "Const cannot be passed as Output", op)
-                if any(v.id in initialized for v in writes):
-                    _fail(
-                        "register.initialized", "call requires fresh Output actuals", op
-                    )
-                initialized.update(v.id for v in writes)
-                changed = tuple(writes)
-            elif op.name in {"qreg.control_h", "qreg.control_phase"}:
-                if (
-                    len(arguments) > 1
-                    or register_width(destination) != 1
-                    or any(value.id not in initialized for value in operands)
-                ):
-                    _fail(
-                        "register.control",
-                        "control requires an initialized condition bit and an initialized target",
-                        op,
-                    )
-                if destination in arguments:
-                    _fail(
-                        "register.control", "condition and target must be disjoint", op
-                    )
-                if op.name == "qreg.control_h":
-                    if (
-                        len(arguments) != 1
-                        or arguments[0] in borrowed
-                        or register_width(arguments[0]) != 1
-                    ):
-                        _fail(
-                            "register.control",
-                            "controlled Hadamard requires a writable target",
-                            op,
-                        )
-                    changed = tuple(arguments)
-                else:
-                    angle = op.attributes["angle"]
-                    if type(angle) is not float or not math.isfinite(angle):
-                        _fail("register.control", "phase requires a finite angle", op)
-                    if arguments:
-                        width = register_width(arguments[0])
-                        if width > 8:
-                            _fail(
-                                "register.control",
-                                "phase target exceeds eight bits",
-                                op,
-                            )
-                        try:
-                            math.ldexp(angle, width - 1)
-                        except OverflowError:
-                            _fail(
-                                "register.control",
-                                "weighted phase angle exceeds finite range",
-                                op,
-                            )
-            elif op.name == "qreg.phase":
-                check_call(op, operands)
-            elif op.name == "qreg.release":
-                if destination in borrowed:
-                    _fail("register.const", "Const cannot be released", op)
-                if arguments or destination not in local_storage:
-                    _fail("register.release", "release requires one owned local", op)
-                if destination.id in initialized:
-                    _fail(
-                        "register.initialized",
-                        "release requires fresh zero storage",
-                        op,
-                    )
-                registers.remove(destination)
-                local_storage.remove(destination)
-                width -= register_width(destination)
-                changed = (destination,)
-            elif op.name == "qreg.uncompute":
-                if destination in borrowed:
-                    _fail("register.const", "Const cannot be uncomputed", op)
-                if arguments or destination.id not in reversible:
-                    _fail(
-                        "register.uncompute",
-                        "cleanup requires an unchanged direct compute and its inputs",
-                        op,
-                    )
-                initialized.remove(destination.id)
-                changed = (destination,)
-            elif op.name == "qreg.pair_gate":
-                gate = op.attributes["gate"]
-                if (
-                    not isinstance(gate, str)
-                    or gate not in _PAIR_GATES
-                    or len(operands) != 2
-                    or len(set(operands)) != 2
-                    or any(register_width(value) != 1 for value in operands)
-                ):
-                    _fail(
-                        "register.gate",
-                        "pair gates require two distinct scalar registers",
-                        op,
-                    )
-                if gate == "crx":
-                    angle = op.attributes["angle"]
-                    if type(angle) is not float or not math.isfinite(angle):
-                        _fail(
-                            "register.gate",
-                            "gate angle must be a finite float in radians",
-                            op,
-                        )
-                changed = tuple(operands if gate == "swap" else arguments)
-                if any(value in borrowed for value in changed):
-                    _fail("register.const", "Const cannot be a gate target", op)
-                if any(value.id not in initialized for value in operands):
-                    _fail(
-                        "register.uninitialized", "gate reads uninitialized storage", op
-                    )
-            elif op.name == "qreg.uniform_interval":
-                start, stop = op.attributes["start"], op.attributes["stop"]
-                size = register_width(destination)
-                previous = block.operations[position - 1]
-                if (
-                    arguments
-                    or destination in borrowed
-                    or previous.name != "qreg.allocate"
-                    or previous.operands[1:] != (destination,)
-                ):
-                    _fail(
-                        "register.prepare",
-                        "uniform preparation requires a fresh allocation",
-                        op,
-                    )
-                if (
-                    type(start) is not int
-                    or type(stop) is not int
-                    or size > 8
-                    or not 0 <= start < stop <= 1 << size
-                ):
-                    _fail(
-                        "register.prepare",
-                        "invalid uniform interval or width above eight",
-                        op,
-                    )
-                changed = (destination,)
-            elif op.name == "qreg.gate":
-                if destination in borrowed:
-                    _fail("register.const", "Const cannot be a gate target", op)
-                index = op.attributes["index"]
-                if (
-                    arguments
-                    or not isinstance(op.attributes["gate"], str)
-                    or op.attributes["gate"] not in _GATES
-                    or type(index) is not int
-                    or not 0 <= index < register_width(destination)
-                ):
-                    _fail(
-                        "register.gate",
-                        "use X/H/S/Z/phase/rx/rz and an in-range numeric bit index",
-                        op,
-                    )
-                if op.attributes["gate"] in _ANGLE_GATES:
-                    angle = op.attributes["angle"]
-                    if type(angle) is not float or not math.isfinite(angle):
-                        _fail(
-                            "register.gate",
-                            "gate angle must be a finite float in radians",
-                            op,
-                        )
-                if destination.id not in initialized:
-                    _fail(
-                        "register.uninitialized", "gate reads uninitialized storage", op
-                    )
-                changed = (destination,)
-            else:
-                if destination in borrowed:
-                    _fail(
-                        "register.const",
-                        "Const cannot be initialized or computed into",
-                        op,
-                    )
-                if destination.id in initialized:
-                    _fail(
-                        "register.initialized", "destination is already initialized", op
-                    )
-                if op.name in {"qreg.allocate", "qreg.initialize"}:
-                    if arguments:
-                        _fail(
-                            "register.signature",
-                            "initialization has no register inputs",
-                            op,
-                        )
-                    if op.name == "qreg.initialize":
-                        constant = op.attributes["value"]
-                        if (
-                            type(constant) is not int
-                            or constant < 0
-                            or constant.bit_length() > register_width(destination)
-                        ):
-                            _fail(
-                                "register.constant",
-                                "constant must fit its unsigned output",
-                                op,
-                            )
-                else:
-                    check_call(op, arguments, destination)
-                initialized.add(destination.id)
-                changed = (destination,)
-            for key, dependencies in tuple(reversible.items()):
-                if any(value.id in dependencies for value in changed):
-                    del reversible[key]
-            if op.name == "qreg.compute":
-                reversible[destination.id] = frozenset(v.id for v in operands)
-            effect = op.results[0]
-        for result in op.results:
-            if result.id in known:
-                _fail("register.ssa", "duplicate register/effect definition", op)
-            known[result.id] = result
-    _, bindings, output_width = register_ports(program)
-    reserved = sum(register_width(v) for v in borrowed) + max(
-        (max(ports) + 1 for ports in bindings.values()), default=output_width
-    )
-    if reserved > max_qubits:
-        _fail("register.budget", "reserved outputs and local pool exceed capacity")
+        assert attributes is not None
+        attributes = attributes | {"workspace"}
+    if op.name == "qreg.unitary":
+        assert attributes is not None
+        attributes = attributes | op.attributes.keys() & {
+            "indices",
+            "control_index",
+            "power",
+        }
+    if op.name == "qreg.phase" and "angle" in op.attributes:
+        angle = op.attributes["angle"]
+        if type(angle) is not float or not math.isfinite(angle):
+            _fail("register.phase", "phase angle must be a finite float", op)
+        attributes = (
+            frozenset({"angle", "callee"})
+            if len(op.operands) > 1
+            else frozenset({"angle"})
+        )
+    if op.name == "qreg.call" and "inverse" in op.attributes:
+        if op.attributes["inverse"] is not True:
+            _fail("register.adjoint", "inverse call marker must be true", op)
+        attributes = frozenset({"callee", "inverse"})
+    if attributes is None or set(op.attributes) != attributes or op.regions:
+        _fail("register.operation", "unsupported register operation or attributes", op)

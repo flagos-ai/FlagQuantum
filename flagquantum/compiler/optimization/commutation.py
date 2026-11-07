@@ -386,7 +386,9 @@ def analyze_commutation(ir: CircuitIR) -> CommutationAnalysis:
     open a new one with the candidate. The result is a valid partition rather than
     the coarsest one -- a candidate that fails is not retried against the block
     opened after it -- and a valid one is all a consumer needs, because the
-    guarantee it uses is that a block's members pairwise commute.
+    guarantee it uses is that a block's members pairwise commute. Structurally
+    equivalent members share one predicate evaluation; logical pair counters and
+    the first failing member remain identical to the ungrouped sweep.
     """
 
     positions_by_qubit: dict[int, list[int]] = {}
@@ -402,19 +404,33 @@ def analyze_commutation(ir: CircuitIR) -> CommutationAnalysis:
     for qubit, positions in positions_by_qubit.items():
         blocks: list[tuple[int, ...]] = []
         open_block: list[int] = []
+        representatives: dict[
+            tuple[str, tuple[int, ...], bool, bool], tuple[int, Instruction]
+        ] = {}
         for position in positions:
             candidate = instructions[position]
             accepted = True
-            for member in open_block:
-                queried += 1
-                if commute(instructions[member], candidate):
-                    commuting += 1
-                else:
+            compared = len(open_block)
+            # commute is parameter-value blind. These classes preserve every rule,
+            # including matrix overrides and the empty-parameter fixed-gate check.
+            for offset, member in representatives.values():
+                if not commute(member, candidate):
                     accepted = False
+                    compared = offset + 1
                     break
+            queried += compared
+            commuting += compared - (not accepted)
             if not accepted:
                 blocks.append(tuple(open_block))
                 open_block = []
+                representatives.clear()
+            key = (
+                canonical_opcode(candidate.name),
+                candidate.wires,
+                candidate.matrix is not None,
+                bool(candidate.params),
+            )
+            representatives.setdefault(key, (len(open_block), candidate))
             open_block.append(position)
             block_index[(position, qubit)] = len(blocks)
         blocks.append(tuple(open_block))

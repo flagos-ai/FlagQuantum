@@ -8,7 +8,7 @@ inverse or coherent-control stages.
 
 ## User workflow
 
-Run `python -m examples.synthesis_python_program`, or save this in a `.py` file:
+Run `python -m examples.synthesis.tutorials.composition.python_program.main`, or save this in a `.py` file:
 
 ```python
 import flagquantum as fq

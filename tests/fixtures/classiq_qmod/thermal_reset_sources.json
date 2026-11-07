@@ -1,0 +1,14 @@
+{
+  "repository": "https://github.com/Classiq/classiq-library",
+  "commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "license_file": "LICENSE.txt",
+  "license_sha256": "241f68c9f35357f97e8a2a195e447d4f80098c140f0b3b3c770a11eed96f58e0",
+  "fixtures": [
+    {
+      "file": "quantum_thermal_state_preparation.qmod",
+      "source_path": "algorithms/quantum_state_preparation/gibbs/quantum_thermal_state_preparation.qmod",
+      "git_blob_sha1": "a311f41d78c7a7fd384aa989b8745fedf9edda8b",
+      "sha256": "2a966c74216e513a8e492982791cdb0d85a8273fa89dd852ce908de88c68ccb9"
+    }
+  ]
+}

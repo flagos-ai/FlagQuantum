@@ -1,0 +1,134 @@
+"""Capture bounded native preparation calls into existing register effects."""
+
+from __future__ import annotations
+
+import ast
+import math
+from typing import TYPE_CHECKING
+
+from .frontend_python import _error
+from .program_types import prepare_amplitudes, prepare_bell_state, prepare_ghz_state
+from .register_profile import MAX_PREPARED_AMPLITUDES, register_width
+
+if TYPE_CHECKING:
+    from .frontend_program import _Body
+
+
+def _number(owner: _Body, node: ast.expr) -> float:
+    value = owner.phase_number(node)
+    if isinstance(node, ast.BinOp) and isinstance(node.op, ast.Div):
+        numerator = owner.phase_number(node.left)
+        denominator = node.right
+        if (
+            numerator is not None
+            and isinstance(denominator, ast.Constant)
+            and type(denominator.value) is int
+            and denominator.value > 0
+        ):
+            try:
+                value = numerator / denominator.value
+            except OverflowError:
+                value = None
+    if value is None or not math.isfinite(value):
+        _error(
+            owner.source,
+            node,
+            "program.prepare",
+            "preparation requires finite static reals; fractions need positive integer denominators",
+        )
+    return value
+
+
+def capture_preparation(owner: _Body, node: ast.Call, function: object) -> None:
+    """Translate familiar preparation calls without running host Python bodies."""
+    if function is prepare_bell_state or function is prepare_ghz_state:
+        if len(node.args) != 2:
+            _error(
+                owner.source,
+                node,
+                "program.signature",
+                "expected size/state and target",
+            )
+        size = node.args[0]
+        if not isinstance(size, ast.Constant) or type(size.value) is not int:
+            _error(
+                owner.source,
+                size,
+                "program.prepare",
+                "size/state must be a literal integer",
+            )
+        bell = function is prepare_bell_state
+        if bell and size.value not in {1, 2} or not bell and not 1 <= size.value <= 256:
+            _error(
+                owner.source,
+                size,
+                "program.prepare",
+                "Bell state must be 1 or 2; GHZ size must be in 1..256",
+            )
+        width = 2 if bell else size.value
+        target = owner.register(node.args[1], width)
+        if register_width(target) != width:
+            _error(
+                owner.source,
+                node,
+                "program.width",
+                "preparation size must match the target width",
+            )
+        owner.emit("qreg.prepare_ghz", node, (target,))
+        if bell:
+            owner.emit(
+                "qreg.gate",
+                node,
+                (target,),
+                gate="z" if size.value == 1 else "x",
+                index=0,
+            )
+        return
+    if len(node.args) != 3:
+        _error(
+            owner.source, node, "program.signature", "expected vector, bound and target"
+        )
+    vector, tolerance, output = node.args
+    if (
+        not isinstance(vector, (ast.List, ast.Tuple))
+        or not 2 <= len(vector.elts) <= MAX_PREPARED_AMPLITUDES
+        or len(vector.elts) & (len(vector.elts) - 1)
+    ):
+        _error(
+            owner.source,
+            vector,
+            "program.prepare",
+            "use a literal real vector of power-of-two length in 2..256",
+        )
+    values = tuple(_number(owner, item) for item in vector.elts)
+    bound = _number(owner, tolerance)
+    if bound < 0:
+        _error(
+            owner.source,
+            tolerance,
+            "program.prepare",
+            "preparation bound must be nonnegative",
+        )
+    if function is not prepare_amplitudes:
+        try:
+            normalized = math.isclose(math.fsum(values), 1.0, rel_tol=0, abs_tol=1e-12)
+        except OverflowError:
+            normalized = False
+        if any(value < 0 for value in values) or not normalized:
+            _error(
+                owner.source,
+                vector,
+                "program.prepare",
+                "probabilities must be nonnegative and sum to one",
+            )
+        values = tuple(math.sqrt(value) for value in values)
+        bound = 0.0
+    width = len(values).bit_length() - 1
+    target = owner.register(output, width)
+    if register_width(target) != width:
+        _error(
+            owner.source, output, "program.width", "vector width must match the target"
+        )
+    owner.emit(
+        "qreg.prepare_amplitudes", node, (target,), amplitudes=values, bound=bound
+    )
