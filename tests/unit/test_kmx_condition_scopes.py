@@ -42,7 +42,6 @@ def test_decoder_rejects_invalid_condition_scopes(payload: str, reason: str) -> 
 @pytest.mark.parametrize(
     "metadata",
     [
-        {"conditions": ((0, 0),)},
         {"condition_clauses": (((0, 1),), ((1, 1),))},
     ],
 )
@@ -55,7 +54,7 @@ def test_lowering_rejects_unrepresentable_predicates(metadata: dict) -> None:
             Instruction("x", (1,), metadata=metadata),
         ),
     )
-    with pytest.raises(CapabilityError, match="one positive condition clause"):
+    with pytest.raises(CapabilityError, match="one condition clause"):
         lower_reversible_phase(ir)
 
 

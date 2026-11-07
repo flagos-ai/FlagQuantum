@@ -11,7 +11,8 @@ from ..artifacts.reversible_phase import (
     ReversiblePhaseOperation,
     ReversiblePhaseProgram,
 )
-from .reversible_classical import lower_classical_assignment, positive_condition_slots
+from .reversible_classical import lower_classical_assignment
+from .reversible_predicates import bind_predicate, condition_pairs
 
 _REVERSIBLE_OPCODES = frozenset(REVERSIBLE_OPCODE_ARITIES) - {
     "hmr",
@@ -53,11 +54,11 @@ def _demolition_measurement(span: tuple[Instruction, ...]) -> int | None:
         or measure.metadata.get("is_dynamic") is not True
     ):
         return None
-    guards = positive_condition_slots(basis)
+    guards = condition_pairs(basis)
     if instruction_condition_clauses(measure) != instruction_condition_clauses(basis):
         return None
     bit = measure.metadata["classical_bit"]
-    expected = tuple(sorted({*((slot, 1) for slot in guards), (bit, 1)}))
+    expected = tuple(sorted({*guards, (bit, 1)}))
     if instruction_condition_clauses(clear) != (expected,):
         return None
     return int(bit)
@@ -120,7 +121,8 @@ def lower_reversible_phase(ir: CircuitIR) -> ReversiblePhaseProgram:
     """
     if ir.observables or ir.measurements:
         raise CapabilityError("reversible-phase lowering needs explicit instructions")
-    n_bits = validate_classical_control(ir.instructions, n_qubits=ir.n_wires)
+    base_bits = validate_classical_control(ir.instructions, n_qubits=ir.n_wires)
+    n_bits = base_bits
     operations: list[ReversiblePhaseOperation] = []
     index = 0
     while index < len(ir.instructions):
@@ -129,7 +131,12 @@ def lower_reversible_phase(ir: CircuitIR) -> ReversiblePhaseProgram:
         consumed = 1
         result_bit = None
         if instruction.name == "classical_xor":
-            operations.extend(lower_classical_assignment(instruction))
+            predicate = bind_predicate(instruction, first_scratch=base_bits)
+            n_bits = max(n_bits, base_bits + predicate.scratch_width)
+            operations.extend(predicate.prefix)
+            operations.extend(
+                lower_classical_assignment(instruction, scopes=predicate.slots)
+            )
             index += 1
             continue
         if instruction.name == "h":
@@ -164,7 +171,10 @@ def lower_reversible_phase(ir: CircuitIR) -> ReversiblePhaseProgram:
                 f"reversible-phase lowering cannot represent {instruction.name!r} "
                 f"at instruction {index}"
             )
-        slots = positive_condition_slots(instruction)
+        predicate = bind_predicate(instruction, first_scratch=base_bits)
+        n_bits = max(n_bits, base_bits + predicate.scratch_width)
+        operations.extend(predicate.prefix)
+        slots = predicate.slots
         scopes, bit = slots[:-1], slots[-1] if slots else None
         operations.extend(
             ReversiblePhaseOperation("push_condition", (), condition_bit=scope)
@@ -185,5 +195,5 @@ def lower_reversible_phase(ir: CircuitIR) -> ReversiblePhaseProgram:
         for instruction in ir.instructions
         if instruction.name in {"measure", "classical_xor"}
     }
-    holes = tuple(bit for bit in range(n_bits) if bit not in written)
+    holes = tuple(bit for bit in range(base_bits) if bit not in written)
     return ReversiblePhaseProgram(ir.n_wires, n_bits, tuple(operations), holes)

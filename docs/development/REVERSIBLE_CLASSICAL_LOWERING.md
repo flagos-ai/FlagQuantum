@@ -73,3 +73,10 @@ reference sources remain unchanged.
 Negative/disjunctive reverse predicates, parameterized float phases and typed
 ProgramIR conditional merges remain explicit boundaries. This is not a G2
 completion claim and does not alter protected ProgramIR vocabulary.
+
+
+G2-KCFB03 [negative predicate binding](REVERSIBLE_NEGATIVE_PREDICATES.md)
+now admits mixed zero/one conjunctions through explicit owned classical
+complements. Earlier negative-predicate refusals record the prior baseline.
+Disjunctions, typed conditional result merges and general float phase recovery
+remain explicit boundaries; positive encoding and public schemas are unchanged.

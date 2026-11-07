@@ -207,7 +207,7 @@ def test_mismatched_effect_guards_fail_closed(name: str) -> None:
         lower_reversible_phase(CircuitIR(1, (*setup, basis, *tail)))
 
 
-def test_negative_parity_predicate_is_explicitly_unsupported() -> None:
+def test_negative_parity_predicate_uses_owned_classical_scratch() -> None:
     assignment = ClassicalXor((0,), 0, True).instruction()
     guarded = Instruction(
         assignment.name,
@@ -215,10 +215,11 @@ def test_negative_parity_predicate_is_explicitly_unsupported() -> None:
         assignment.params,
         metadata={**assignment.metadata, "conditions": ((0, 0),)},
     )
-    with pytest.raises(CapabilityError, match="positive condition clause"):
-        lower_reversible_phase(
-            CircuitIR(1, (ClassicalXor((), 0).instruction(), guarded))
-        )
+    program = lower_reversible_phase(
+        CircuitIR(1, (ClassicalXor((), 0).instruction(), guarded))
+    )
+    assert program.n_bits == 2
+    assert not any(op.qubits for op in program.operations)
 
 
 def _unlookup_core(

@@ -96,3 +96,10 @@ admits Core-to-KMX conditional XOR for one positive conjunction, including
 destination/guard aliases. Negative predicates and typed ProgramIR result
 merges remain explicitly unsupported. The earlier broad reverse-route refusal
 above records the G2-KCFB01 baseline, not the current positive-predicate boundary.
+
+
+G2-KCFB03 [negative predicate binding](REVERSIBLE_NEGATIVE_PREDICATES.md)
+now admits mixed zero/one conjunctions through explicit owned classical
+complements. Earlier negative-predicate refusals record the prior baseline.
+Disjunctions, typed conditional result merges and general float phase recovery
+remain explicit boundaries; positive encoding and public schemas are unchanged.
