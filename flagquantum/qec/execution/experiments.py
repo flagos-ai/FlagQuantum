@@ -20,12 +20,17 @@ from ..adapters.stim import (
 )
 from ..circuits.memory import MemoryCircuit
 from ..decoders.batch import decode_batch
-from ..decoders.registry import decoder_names, get_decoder
+from ..decoders.registry import DetectorErrorModelDecoder, decoder_names, get_decoder
 from ..dem import DetectorErrorModel
 from ..noise import PhenomenologicalNoise
-from .sampling import _checked_seed, _checked_shots
+from .sampling import MemorySampler, _checked_seed, _checked_shots
 
-__all__ = ("MemoryExperimentResult", "run_memory_experiment")
+__all__ = (
+    "MemoryExperimentResult",
+    "run_memory_experiment",
+    "StimExperimentResult",
+    "run_stim_experiment",
+)
 
 
 @dataclass(frozen=True)
@@ -43,6 +48,19 @@ class MemoryExperimentResult:
     confidence_interval: tuple[float, float]
     seed: int | None
     sampling_source: Literal["memory_circuit"]
+
+
+@dataclass(frozen=True)
+class StimExperimentResult:
+    """Fixed-shot logical disagreements from an original Stim circuit source."""
+
+    shots: int
+    logical_failures: int
+    logical_error_rate: float
+    observable_failures: tuple[int, ...]
+    confidence_interval: tuple[float, float]
+    seed: int | None
+    sampling_source: Literal["stim_circuit"]
 
 
 def _wilson_interval(failures: int, shots: int) -> tuple[float, float]:
@@ -128,17 +146,7 @@ def run_memory_experiment(
         raise TypeError("memory must be a MemoryCircuit")
     if not isinstance(noise, (PhenomenologicalNoise, NoiseModel)):
         raise TypeError("noise must be a PhenomenologicalNoise or a NoiseModel")
-    if not isinstance(decoder, str):
-        raise TypeError("decoder must be a registered name")
-    shots = _checked_shots(shots)
-    if isinstance(batch_size, bool) or not isinstance(batch_size, Integral):
-        raise TypeError("batch_size must be a positive integer")
-    if batch_size <= 0:
-        raise ValueError("batch_size must be a positive integer")
-    batch_size = int(batch_size)
-    seed = _validate_seed(_checked_seed(seed))
-    if decoder not in decoder_names():
-        raise ValueError(f"unknown decoder name: {decoder!r}")
+    shots, batch_size, seed = _experiment_options(decoder, shots, batch_size, seed)
     detectors, observables = len(memory.detectors), len(memory.observables)
     if detectors == 0 or observables == 0:
         raise ValueError(
@@ -155,6 +163,130 @@ def run_memory_experiment(
     # Empty admission uses 005's single authority without executing a decode.
     decode_batch(selected, ())
     sampler = compile_stim_sampler(text, seed=seed)
+    failures, per_observable = _collect_fixed_shots(
+        sampler,
+        selected,
+        shots=shots,
+        batch_size=batch_size,
+        detectors=detectors,
+        observables=observables,
+    )
+    return MemoryExperimentResult(
+        shots=shots,
+        logical_failures=failures,
+        logical_error_rate=failures / shots,
+        observable_failures=tuple(per_observable),
+        confidence_interval=_wilson_interval(failures, shots),
+        seed=seed,
+        sampling_source="memory_circuit",
+    )
+
+
+def run_stim_experiment(
+    circuit_text: str,
+    *,
+    decoder: str,
+    shots: int,
+    batch_size: int,
+    seed: int | None = None,
+) -> StimExperimentResult:
+    """Sample and decode fixed shots from supported original Stim circuit text.
+
+    Uses strict DEM analysis and the selected registered decoder's defaults.
+    The sampler reads the original circuit, not its DEM. Unsupported source or
+    decoder combinations propagate their existing errors without approximation.
+    Requires the Stim extra; the pymatching decoder also requires its extra.
+
+    Args:
+        circuit_text: Text accepted by the existing annotated Stim bridge.
+        decoder: Registered certified independent-shot decoder name.
+        shots: Positive total number of original-circuit repetitions.
+        batch_size: Positive maximum draw size, including the final partial draw.
+        seed: Existing optional unsigned 64-bit sampler seed.
+
+    Returns:
+        Immutable counts, logical error rate and a two-sided 95% Wilson interval.
+
+    Raises:
+        TypeError: A carrier or scalar has an invalid type.
+        ValueError: A value or declared detector/observable count is invalid.
+        ValidationError: A backend returns invalid sample or prediction data.
+        CapabilityError: The source, model or decoder is unsupported.
+        StabilizerDependencyError: The optional Stim dependency is missing.
+        MatchingDependencyError: The selected decoder dependency is missing.
+
+    Examples:
+        >>> from importlib.util import find_spec
+        >>> text = "R 0\\nX_ERROR(0.125) 0\\nM 0\\nDETECTOR rec[-1]\\nOBSERVABLE_INCLUDE(0) rec[-1]"
+        >>> if find_spec("stim") is not None:
+        ...     result = run_stim_experiment(
+        ...         text, decoder="minimum_weight_matching",
+        ...         shots=35, batch_size=16, seed=53,
+        ...     )
+        ...     assert result.shots == 35 and result.logical_failures == 0
+    """
+    if not isinstance(circuit_text, str):
+        raise TypeError("circuit_text must be a string")
+    shots, batch_size, seed = _experiment_options(decoder, shots, batch_size, seed)
+    model = DetectorErrorModel.from_stim_text(
+        stim_circuit_to_dem_text(circuit_text, decompose_errors=False)
+    )
+    detectors, observables = model.num_detectors, model.num_observables
+    if detectors == 0 or observables == 0:
+        raise ValueError(
+            "Stim experiments require at least one detector and observable"
+        )
+    selected = get_decoder(decoder, model)
+    decode_batch(selected, ())
+    sampler = compile_stim_sampler(circuit_text, seed=seed)
+    failures, per_observable = _collect_fixed_shots(
+        sampler,
+        selected,
+        shots=shots,
+        batch_size=batch_size,
+        detectors=detectors,
+        observables=observables,
+    )
+    return StimExperimentResult(
+        shots=shots,
+        logical_failures=failures,
+        logical_error_rate=failures / shots,
+        observable_failures=per_observable,
+        confidence_interval=_wilson_interval(failures, shots),
+        seed=seed,
+        sampling_source="stim_circuit",
+    )
+
+
+def _experiment_options(
+    decoder: str,
+    shots: int,
+    batch_size: int,
+    seed: int | None,
+) -> tuple[int, int, int | None]:
+    if not isinstance(decoder, str):
+        raise TypeError("decoder must be a registered name")
+    shots = _checked_shots(shots)
+    if isinstance(batch_size, bool) or not isinstance(batch_size, Integral):
+        raise TypeError("batch_size must be a positive integer")
+    if batch_size <= 0:
+        raise ValueError("batch_size must be a positive integer")
+    batch_size = int(batch_size)
+    seed = _validate_seed(_checked_seed(seed))
+    if decoder not in decoder_names():
+        raise ValueError(f"unknown decoder name: {decoder!r}")
+    return shots, batch_size, seed
+
+
+def _collect_fixed_shots(
+    sampler: MemorySampler,
+    selected: DetectorErrorModelDecoder,
+    *,
+    shots: int,
+    batch_size: int,
+    detectors: int,
+    observables: int,
+) -> tuple[int, tuple[int, ...]]:
     completed = failures = 0
     per_observable = [0] * observables
     try:
@@ -202,12 +334,4 @@ def run_memory_experiment(
         raise
     else:
         sampler.close()
-    return MemoryExperimentResult(
-        shots=completed,
-        logical_failures=failures,
-        logical_error_rate=failures / completed,
-        observable_failures=tuple(per_observable),
-        confidence_interval=_wilson_interval(failures, completed),
-        seed=seed,
-        sampling_source="memory_circuit",
-    )
+    return failures, tuple(per_observable)

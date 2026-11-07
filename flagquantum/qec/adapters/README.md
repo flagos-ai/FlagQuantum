@@ -89,5 +89,13 @@ pinned SDK. Do not assume an empty syndrome has zero cost. Run
 `python examples/qec/check_matrix_matching.py` with the PyMatching extra, then
 `python -m pytest -q tests/qec/test_pymatching_graph.py
 tests/qec/test_adapters_pymatching.py` after a representative change.
+## Matched detection endpoints
+
+The approved `PyMatchingDecoder.decode_to_matched_detectors` reports immutable
+matched endpoint pairs; None denotes a boundary match. It is distinct from
+correction edges and from logical predictions. See the
+[API proposal](../../../docs/development/QEC_PYMATCHING_MATCHED_DETECTORS_API_PROPOSAL.md)
+for runnable code and tests. QEC owns normalization and validation; SDK objects
+remain private. Independent tied calls need not describe one identical solution.
 For external measurement records, use the
 [QEC measurement conversion entry](../execution/README.md).

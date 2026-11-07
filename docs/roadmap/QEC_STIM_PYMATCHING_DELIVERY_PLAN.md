@@ -729,6 +729,62 @@ Local validation and actual-main admission remain separate; no new candidate
 is accepted by reusing PR1087 evidence. Negative-cost and probability domains
 remain distinct. This is not full graph mutation, correlated decoding, all
 upstream input compatibility, native replacement or performance certification.
+## November 5 external Stim experiment integration
+
+C/007's original fixed-shot memory implementation was merged in
+[#932](https://github.com/flagos-ai/FlagQuantum/pull/932); its earlier candidate
+wording is historical. The noisy Surface X/Z composition and actual-main
+acceptance were delivered in [#1012](https://github.com/flagos-ai/FlagQuantum/pull/1012).
+The complete-result batch contract through #904 and existing four optional
+installed profiles are reused, not reimplemented.
+
+The owner approved the separate
+[Stim-text experiment contract](../development/QEC_STIM_TEXT_EXPERIMENT_CONTRACT.md)
+on 2026-11-05. `run_stim_experiment` and `StimExperimentResult` compose the existing
+strict bridge, original-circuit sampler, complete-result decoder and fixed-shot
+statistics without root re-exports. Final reviewed-head CI/GPU and actual-main
+admission are pending. The new user script and installed smoke check an
+asymmetric two-observable source; the original four installed sample cells stay
+unchanged and the report has its own field.
+
+This closes no scientific study or release-wide parity claim. FTS-02/09
+measurements, FTS-08 threshold analysis, general performance/capacity, arbitrary
+plugins/configuration, hardware feedback and other unapproved scope remain open.
+
+
+## Combined SI-01 through SI-06 delivery in PR 1087
+
+The owner requested completing the whole Stim/PyMatching integration tranche in
+[#1087](https://github.com/flagos-ai/FlagQuantum/pull/1087) before waiting for the
+final checks. Existing bridge and decoder implementations are reused with their
+bounded independent references. The software candidate includes the external
+report API, unified user guide, support/version table, example index and required
+installed-profile coverage of external reports, complete decoder records and
+native repetition/Surface X/Z reports. No additional public API is introduced.
+
+| Work package | Candidate state | Final acceptance |
+| --- | --- | --- |
+| SI-01 | Source/receipt inventory and stale progress reconciliation complete | No broader parity status is inferred |
+| SI-02 | Existing strict bridge/source semantics reused and regression-tested | Final-head checks remain required |
+| SI-03 | Existing logical/full-result decoder routes reused; real installed decoder-record checks added | Required profile results remain required |
+| SI-04 | Original-text report and unified native/external user workflows implemented | Final-head user code must run |
+| SI-05 | Existing four-wheel-profile/sdist gate now checks the integrated public workflows | Real final-candidate installations remain pending |
+| SI-06 | Quickstart, compatibility table, example index and delivery ledger connected | Actual-main receipt and separate release authorization remain pending |
+
+See the [quickstart](../guides/QEC_INTEGRATION_QUICKSTART.md). Original failure
+logs and older cancelled/superseded heads remain historical evidence. Final
+reviewed-head CI/GPU and normal actual-main acceptance still gate delivery; no
+force merge, check weakening, runner change or research execution is authorized
+by combining this tranche. No PyPI/tag publication is part of this PR.
+
+
+## Consolidated SDK delivery in PR1087
+
+The owner requested one coherent PR covering the approved external Stim report,
+packed predictions, SDK batch weights and matched detector pairs. PR1090 and
+PR1091 are superseded only after their contents are audited into this candidate.
+All prior evidence and approval scopes remain retained; no new upstream feature
+is inferred. Final-head integration and actual-main acceptance remain pending.
 ## External Stim measurement conversion candidate
 
 The backend-neutral `convert_measurement_records` entry selects the source
@@ -775,3 +831,53 @@ executable doctest registration, loader replacement and artifact-upload failures
 remain separately recorded. No old CI attempt is manually rerun. Final-head CI
 and real installed-profile/main admission remain separate gates. FTS-04/R08 and
 full Stim/PyMatching parity remain partial; FTS-02 and M2 are not closed here.
+## PR1087 integration after native conversion PR1106
+
+PR1106 was merged at `290d80ec3e2ffc958a3da5221e4a076e4e8a5900` with
+reviewed tree `c227466575d6a116ff66aafa27a78a562be71c1f`; actual-main source and
+all 36 changed blobs match its reviewed head, and main smoke passed. Its native
+installation evidence is reused. No exact-main full-CI/package receipt is
+inferred from that source audit or from the PR checks.
+
+PR1087 is now being reconciled with that main within its existing 24 paths.
+The combined installed verifier retains external experiments, complete decoder
+records, packed predictions, SDK weights, matched pairs, text conversion,
+terminal conversion and prepared measurement sampling. The historical API
+fixture is unchanged: the existing incremental contract now registers only the
+three additional methods covered by their separately approved proposals.
+The old Black and compatibility failures remain retained, alongside the separate
+artifact-upload timeout. No old CI attempt was rerun.
+
+Local core/SDK correctness and final-head user examples are distinct from final
+CI and installed-profile admission. SI-01 through SI-06 remain candidates pending
+those delivery gates. PR1092 remains a separate matrix/weighted-graph candidate
+with conflicts and unresolved historical failures; it is not counted as merged.
+R03/R08 and FTS-04 remain partial; FTS-02 and M2 are not closed by these changes.
+No research measurement, threshold or performance study is authorized here.
+
+
+## Current integration after PR1087 merge
+
+PR1087 is merged at `1004335d287c58952205829cef5a49636dbdfad2` with complete
+reviewed tree `1fe6e615b7c8f69ba67301a85e2a9a841f2a4336`. Its main smoke passed.
+A fresh standard-core sdist/wheel installation passed with 918 Python/typing
+members and all 96 vendor members equal. Its once-budgeted exact-main CI
+`42350953562` remains a separate admission gate; no completed full-main receipt
+or new GPU validation is inferred here.
+
+The earlier wording that PR1087 remains an unmerged branch describes the prior
+baseline. PR1092 now incorporates that actual main directly, preserving packed
+predictions, SDK weights, matched pairs, original-circuit reports and all existing
+sampling/conversion profile checks. Graph-specific helpers and tests are added
+without overwriting main's helpers/assertions or duplicating top-level test names.
+The original 15-path approval still bounds this PR's difference from main.
+
+At the previous PR1092 head, all three unsuccessful coverage partitions passed
+their test steps (183/185/185 tests); Action download failures occurred during
+artifact upload. Their raw logs remain. Main drift then required this new source
+head, so no recovery request was submitted for the superseded old head. Normal
+automatic checks must validate the reconciled source. The first local static
+check also caught an omitted test-only SimpleNamespace import during assembly;
+it was restored in the existing test path without removing an assertion, and
+its original log remains. No numerical threshold, fixture, dependency or runner
+configuration is changed. R03/R08/FTS-04 remain partial; FTS-02 and M2 remain open.
