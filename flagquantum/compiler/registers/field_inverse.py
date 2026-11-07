@@ -7,39 +7,13 @@
 """Itoh--Tsujii inversion and explicit compute-copy-uncompute cleanup."""
 
 from ...core.ir import Instruction
+from .field_linear import _square
 from .field_multiplication import (
     FieldDecomposition,
     _FieldEmitter,
-    _product,
     _validate_field,
 )
 from .polynomial import _validate_registers
-
-
-def _square(
-    emitter: _FieldEmitter,
-    qubits: tuple[int, ...],
-    count: int = 1,
-    *,
-    adjoint: bool = False,
-) -> tuple[int, ...]:
-    """Port GF2Square and its PLU network for powers used in Itoh--Tsujii."""
-    n = len(qubits)
-    columns = [1 << i for i in range(n)]
-    for _ in range(count):
-        columns = [_product(value, value, emitter.modulus) for value in columns]
-    matrix = [[(columns[j] >> i) & 1 for j in range(n)] for i in range(n)]
-    start = len(emitter.instructions)
-    result = emitter.linear(qubits[::-1], matrix)[::-1]
-    if not adjoint:
-        return result
-    gates = emitter.instructions[start:]
-    del emitter.instructions[start:]
-    binding = dict(zip(result, qubits, strict=True))
-    emitter.instructions.extend(
-        Instruction(g.name, tuple(binding[w] for w in g.wires)) for g in reversed(gates)
-    )
-    return tuple(binding[w] for w in qubits)
 
 
 def gf2_inverse_decomposition(
