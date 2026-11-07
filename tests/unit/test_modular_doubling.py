@@ -11,6 +11,9 @@ from flagquantum.compiler.registers.modular_doubling import (
     modular_double_outputs,
     modular_double_requirements,
 )
+from flagquantum.simulation.classical_modular_multiplication import (
+    modular_double_classical_value,
+)
 from tests.unit.measurement_checks import certified_and_channel_map, forced_branch
 from tests.unit.test_register_constant_addition import reference_arithmetic_gates
 from tests.unit.test_register_subtraction import assert_source
@@ -72,7 +75,12 @@ def basis(
     a = []
     b = []
     for x in range(p):
-        y = (x + p * (x & 1)) // 2 if half else (2 * x) % p
+        y = (
+            (x + p * (x & 1)) // 2
+            if half
+            else int(modular_double_classical_value(x, p))
+        )
+        assert y == ((x + p * (x & 1)) // 2 if half else (2 * x) % p)
         row = [0] * width
         result = [0] * width
         for i, wire in enumerate(t):

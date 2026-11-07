@@ -9,6 +9,9 @@ from flagquantum.compiler.registers.modular_multiplication import (
     controlled_modular_multiply_constant_ir,
     modular_multiplication_requirements,
 )
+from flagquantum.simulation.classical_modular_multiplication import (
+    controlled_modular_multiply_constant_classical_values,
+)
 from tests.unit.measurement_checks import certified_and_channel_map, forced_branch
 from tests.unit.test_modular_constant_addition import (
     reference_binding as constant_binding,
@@ -79,7 +82,10 @@ def basis_inputs(
     before, after = [], []
     for c in (0, 1):
         for x in range(p):
-            y = (x * k) % p if c else x
+            y = int(
+                controlled_modular_multiply_constant_classical_values(c, x, k, p)[1]
+            )
+            assert y == ((x * k) % p if c else x)
             a, b = ((c << n) | x) << q, ((c << n) | y) << q
             before.append(tuple((a >> (width - 1 - i)) & 1 for i in range(width)))
             after.append(tuple((b >> (width - 1 - i)) & 1 for i in range(width)))
