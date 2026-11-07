@@ -9,7 +9,10 @@ from examples.algorithms.binary_field_arithmetic import FieldOperation
 from flagquantum.compiler.formats.kmx import encode_kmx
 from flagquantum.compiler.lowering.reversible_phase import lower_reversible_phase
 from flagquantum.compiler.registers.finite_field import ClassicalFieldCoefficient
-from flagquantum.compiler.registers.kickmix_comparison import kickmix_quantum_compare_ir
+from flagquantum.compiler.registers.kickmix_comparison import (
+    kickmix_quantum_compare_ir,
+    kickmix_quantum_equal_ir,
+)
 from flagquantum.compiler.registers.measurement import measure_x_clear_ir
 from flagquantum.core.ir import CircuitIR
 from flagquantum.dynamic import DynamicCircuit
@@ -252,3 +255,78 @@ def test_empty_phase_compare_preserves_conditional_scalar_in_dynamic_execution()
     torch.testing.assert_close(
         result.final_states.reshape(32, -1), expected, rtol=0, atol=1e-12
     )
+
+
+def test_mixed_equality_matches_locked_cpp_gate_stream() -> None:
+    from flagquantum.core.classical_dataflow import ClassicalXor
+
+    ir = kickmix_quantum_equal_ir(
+        (1, 0), (ClassicalFieldCoefficient(1), 2), 4, (6, 7), measurement_bit=2
+    )
+    prefix = (ClassicalXor((), 1).instruction(),)
+    program = lower_reversible_phase(CircuitIR(8, (*prefix, *ir)))
+    assert encode_kmx(program).splitlines()[2:] == [
+        "CX q2 q0",
+        "X q1 if b1",
+        "X q0",
+        "X q1",
+        "CX q0 q6",
+        "CCX q6 q1 q7",
+        "CCX q7 q1 q4",
+        "HMR q7 b2",
+        "CZ q6 q1 if b2",
+        "HMR q6 b2",
+        "Z q0 if b2",
+        "X q0",
+        "X q1",
+        "CX q2 q0",
+        "X q1 if b1",
+    ]
+
+
+@pytest.mark.parametrize("phase_target", [False, True])
+def test_mixed_equality_restores_each_complex_measurement_branch(
+    phase_target: bool,
+) -> None:
+    total = 10
+    basis = torch.arange(64)
+    amplitudes = torch.complex((basis + 1).double(), (3 * basis - 5).double())
+    amplitudes /= amplitudes.norm()
+    state = torch.zeros(1 << total, dtype=torch.complex128)
+    state[::16] = amplitudes
+    circuit = DynamicCircuit(total, inputs=state, dtype=torch.complex128)
+    ir = kickmix_quantum_equal_ir(
+        (0, 1, 2),
+        (3, ClassicalFieldCoefficient(0), True),
+        None if phase_target else 5,
+        (6, 7, 8),
+        control=4,
+        measurement_bit=1,
+    )
+    circuit.append(FieldOperation(total, (*measure_x_clear_ir(9, 0), *ir)))
+    result = run_dynamic(circuit, shots=64, seed=41, strategy="trajectory")
+    history = result.classical_bits[:, :2]
+    assert set(map(tuple, history.tolist())) == {(0, 0), (0, 1), (1, 0), (1, 1)}
+    for coefficient in (0, 1):
+        right = (((basis >> 2) & 1) << 2) | (coefficient << 1) | 1
+        enabled = ((basis >> 3) == right) & (((basis >> 1) & 1) == 1)
+        expected = torch.zeros_like(state)
+        if phase_target:
+            expected[::16] = amplitudes * (1 - 2 * enabled.long())
+        else:
+            expected[::16] = amplitudes[basis ^ enabled.long()]
+        actual = result.final_states.reshape(64, -1)[history[:, 0] == coefficient]
+        torch.testing.assert_close(
+            actual, expected.expand_as(actual), rtol=0, atol=1e-12
+        )
+
+
+def test_equality_validates_result_slot_and_workspace() -> None:
+    assert kickmix_quantum_equal_ir((), (), 0)[0].name == "x"
+    assert not kickmix_quantum_equal_ir((), (), 0, control=False)
+    with pytest.raises(ValueError, match="one clean wire"):
+        kickmix_quantum_equal_ir((0, 1), (True, False), 2, (3,))
+    with pytest.raises(ValueError, match="separate"):
+        kickmix_quantum_equal_ir(
+            (0, 1), (True, ClassicalFieldCoefficient(0)), 2, (3, 4), measurement_bit=0
+        )

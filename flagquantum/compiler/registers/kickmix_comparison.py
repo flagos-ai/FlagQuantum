@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
-# Adapted from locked Kickmix gen_cmp_qq.cc and CircuitBuilder gate dispatch.
+# Adapted from locked Kickmix comparator generators and CircuitBuilder gate dispatch.
 # https://github.com/quantumlib/Qualtran/blob/9a0c11a4ee7697c082fbf8f2e1e8bf4a71fcb453/kickmix/src/kickmix/gen/comparators/gen_cmp_qq.cc
+# https://github.com/quantumlib/Qualtran/blob/9a0c11a4ee7697c082fbf8f2e1e8bf4a71fcb453/kickmix/src/kickmix/gen/comparators/gen_cmp.cc
 # https://github.com/quantumlib/Qualtran/blob/9a0c11a4ee7697c082fbf8f2e1e8bf4a71fcb453/kickmix/src/kickmix/build/circuit_builder.cc
 
 """Fixed-wire quantum comparison in the locked Kickmix carry schedule."""
@@ -228,3 +229,75 @@ def kickmix_quantum_compare_ir(
             )
     gates.extend((*initialize, *invert_rhs, *_flip(target, control), *load_equal))
     return tuple(gates)
+
+
+def kickmix_quantum_equal_ir(
+    left: tuple[int, ...],
+    right: tuple[int | bool | ClassicalFieldCoefficient, ...],
+    target: int | None,
+    workspace: tuple[int, ...] = (),
+    *,
+    control: int | bool = True,
+    measurement_bit: int | None = None,
+) -> tuple[Instruction, ...]:
+    """Apply the locked equality predicate to a target bit or its phase.
+
+    Words are big-endian. The right word may mix quantum wires, classical
+    coefficients, and constants. At width two and above, the source uses
+    one initially clean wire per input bit and reuses one result slot.
+    """
+    width = len(left)
+    if len(right) != width:
+        raise ValueError("Equality comparison requires equal word widths")
+    output = () if target is None else (target,)
+    quantum_control = (control,) if type(control) is int else ()
+    quantum_right = tuple(dict.fromkeys(q for q in right if type(q) is int))
+    _validate_registers(left, quantum_right, output, workspace, quantum_control)
+    if control is False:
+        return ()
+    if width == 0:
+        return _flip(target, control)
+
+    lhs, rhs = left[::-1], right[::-1]
+    difference = tuple(
+        gate
+        for wire, coefficient in zip(lhs, rhs, strict=True)
+        for gate in _flip(wire, coefficient)
+    )
+    invert = tuple(Instruction("x", (wire,)) for wire in lhs)
+    if width == 1:
+        return (
+            *difference,
+            *invert,
+            *_flip(target, control, lhs[0]),
+            *invert,
+            *difference,
+        )
+    if len(workspace) < width:
+        raise ValueError("Equality comparison requires one clean wire per input bit")
+    if (
+        type(measurement_bit) is not int
+        or measurement_bit < 0
+        or any(
+            isinstance(coefficient, ClassicalFieldCoefficient)
+            and coefficient.slot == measurement_bit
+            for coefficient in rhs
+        )
+    ):
+        raise ValueError(
+            "Measured equality requires a separate nonnegative result slot"
+        )
+
+    clean = workspace[:width]
+    gates = [*difference, *invert, *_flip(clean[0], control, lhs[0])]
+    for i in range(1, width):
+        gates.append(Instruction("ccx", (clean[i - 1], lhs[i], clean[i])))
+    gates.extend(_flip(target, clean[-1], lhs[-1]))
+
+    outcome = ClassicalFieldCoefficient(measurement_bit)
+    for i in reversed(range(1, width)):
+        gates.extend(measure_x_clear_ir(clean[i], measurement_bit))
+        gates.extend(_flip(None, clean[i - 1], lhs[i], outcome))
+    gates.extend(measure_x_clear_ir(clean[0], measurement_bit))
+    gates.extend(_flip(None, control, lhs[0], outcome))
+    return (*gates, *invert, *difference)
