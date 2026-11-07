@@ -823,3 +823,10 @@ for scalar stochastic outputs. It resolves once, then uses the existing integer
 validator; arrays and ordinary symbolic values preserve their earlier paths.
 The measurement example now binds and collects sampled values before resolving
 their phase. See [stochastic output binding](../../docs/development/CLASSICAL_OUTPUT_DISTRIBUTIONS.md).
+
+`classical_updates.py` commits output assignment before pure-mode phase rejection
+or phased accumulation. It reuses the numerical binder and measurement-phase
+helper through owner callbacks; partial writes remain visible on failure.
+Both action-dispatch and measurement examples consume this update boundary.
+See [ordered output updates](../../docs/development/CLASSICAL_OUTPUT_UPDATES.md)
+for original state-after-failure comparisons and separate graph responsibilities.

@@ -5,6 +5,7 @@ Expected: recursive numerical dispatch agrees with append-controlled X then Z;
 """
 
 from collections import Counter
+from collections.abc import Mapping
 from itertools import product
 
 import numpy as np
@@ -24,7 +25,11 @@ from flagquantum.simulation.classical_controlled_values import (
     controlled_basis_phase,
     controlled_classical_values,
 )
-from flagquantum.simulation.classical_measurement import apply_classical_phase
+from flagquantum.simulation.classical_registers import (
+    bind_integer_register_values,
+    collect_integer_register_value,
+)
+from flagquantum.simulation.classical_updates import commit_phased_classical_outputs
 
 
 def _no_phase(**values: object) -> complex | None:
@@ -44,8 +49,8 @@ def evaluate_word_paulis(
     patterns = normalize_control_patterns(2)
 
     def leaf(
-        inputs: dict[str, object], kind: str
-    ) -> tuple[dict[str, object], complex | None]:
+        inputs: dict[str, object], kind: str, phase: complex
+    ) -> tuple[dict[str, object], complex]:
         child = x_child if kind == "x" else z_child
         child_phase = _no_phase if kind == "x" else z_phase
 
@@ -59,19 +64,33 @@ def evaluate_word_paulis(
                 bound, ("ctrl",), ("q",), patterns, child_phase
             )
 
-        return evaluate_classical_action(
+        outputs, contribution = evaluate_classical_action(
             inputs,
             value_action,
             phase_action,
             _unavailable_decomposition,
             operation_name=f"Controlled{kind.upper()}",
         )
+        assigned: dict[str, object] = {}
+        outcomes: dict[tuple[str, tuple[int, ...]], object] = {}
+
+        def assign(values: Mapping[str, object]) -> None:
+            for name, width in (("ctrl", 2), ("q", 1)):
+                bound = bind_integer_register_values(name, values, width)
+                assigned[name] = collect_integer_register_value(bound, width)
+                outcomes.update(
+                    {(name, index): value for index, value in bound.items()}
+                )
+
+        phase = commit_phased_classical_outputs(
+            outputs, contribution, assign, phase=phase, outcomes=outcomes
+        )
+        return assigned, phase
 
     def compose(inputs: dict[str, object]) -> tuple[dict[str, object], complex | None]:
         phase: complex = 1.0
         for kind in (("z", "x") if inverse else ("x", "z")):
-            inputs, contribution = leaf(inputs, kind)
-            phase = apply_classical_phase(phase, contribution, {})
+            inputs, phase = leaf(inputs, kind, phase)
         return inputs, phase
 
     outputs, phase = evaluate_classical_action(
