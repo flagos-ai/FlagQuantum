@@ -7,12 +7,13 @@
 
 from ...core.ir import Instruction
 from .finite_field import ClassicalFieldCoefficient
+from .global_phase import ccz_ir, scalar_sign_ir
 from .measurement import measure_x_clear_ir
 from .polynomial import _validate_registers
 
 
 def _flip(
-    target: int,
+    target: int | None,
     *controls: int | bool | ClassicalFieldCoefficient,
     scratch: int | None = None,
     measurement_bit: int | None = None,
@@ -25,6 +26,18 @@ def _flip(
         for control in controls
         if isinstance(control, ClassicalFieldCoefficient)
     )
+    if target is None:
+        if not wires:
+            return scalar_sign_ir(0, conditions=bits)
+        if len(wires) == 3:
+            return ccz_ir((wires[0], wires[1], wires[2]))
+        return (
+            Instruction(
+                ("z", "cz")[len(wires) - 1],
+                wires,
+                metadata={"conditions": bits} if bits else {},
+            ),
+        )
     if len(wires) < 3:
         return (
             Instruction(
@@ -56,7 +69,7 @@ def _flip(
 def kickmix_quantum_compare_ir(
     left: tuple[int, ...],
     right: tuple[int, ...],
-    target: int,
+    target: int | None,
     workspace: tuple[int, ...] = (),
     *,
     or_equal: int | bool | ClassicalFieldCoefficient = False,
@@ -64,7 +77,7 @@ def kickmix_quantum_compare_ir(
     measurement_bit: int | None = None,
     minimize_qubits: bool = False,
 ) -> tuple[Instruction, ...]:
-    """XOR the controlled comparison predicate into a qubit.
+    """XOR the controlled comparison predicate into a qubit or negate its phase.
 
     The equal-width words are big-endian. Workspace order matches the
     source's carry allocation and begins clean. The equality operand is a
@@ -73,12 +86,15 @@ def kickmix_quantum_compare_ir(
     operation without clean scratch borrows the lowest wire ID outside its
     controls and target. Include that wire in the circuit width, even when
     its ID is above every operand. The borrowed wire is restored.
+    A None target selects the source's phase mode. Scalar negations use
+    wire zero as an arbitrary-state phase carrier in native IR.
     """
     width = len(left)
     if len(right) != width:
         raise ValueError("Quantum comparison requires equal word widths")
     quantum_inputs = tuple(q for q in (or_equal, control) if type(q) is int)
-    _validate_registers(left, right, (target,), workspace, quantum_inputs)
+    output = () if target is None else (target,)
+    _validate_registers(left, right, output, workspace, quantum_inputs)
     if measurement_bit is not None and (
         type(measurement_bit) is not int
         or measurement_bit < 0

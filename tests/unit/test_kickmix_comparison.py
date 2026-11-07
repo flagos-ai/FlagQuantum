@@ -170,3 +170,85 @@ def test_comparator_validates_workspace_and_preserves_empty_behavior() -> None:
         kickmix_quantum_compare_ir((0, 1), (2, 3), 4)
     with pytest.raises(ValueError, match="result slot"):
         kickmix_quantum_compare_ir((0,), (1,), 2, (4,), control=3)
+
+
+@pytest.mark.parametrize("equality", [True, ClassicalFieldCoefficient(0)])
+def test_empty_phase_compare_matches_locked_scalar_opcode(
+    equality: bool | ClassicalFieldCoefficient,
+) -> None:
+    from flagquantum.core.classical_dataflow import ClassicalXor
+
+    prefix = (
+        (ClassicalXor((), 0).instruction(),)
+        if isinstance(equality, ClassicalFieldCoefficient)
+        else ()
+    )
+    ir = (*prefix, *kickmix_quantum_compare_ir((), (), None, or_equal=equality))
+    encoded = encode_kmx(lower_reversible_phase(CircuitIR(1, ir)))
+    assert encoded.splitlines()[-1] == ("NEG" if equality is True else "NEG if b0")
+
+
+def test_single_bit_quantum_phase_matches_locked_cpp() -> None:
+    ir = kickmix_quantum_compare_ir((0,), (1,), None, (4,), control=3)
+    program = lower_reversible_phase(CircuitIR(5, ir))
+    assert encode_kmx(program).splitlines()[1:] == [
+        "CX q1 q0",
+        "CCZ q1 q3 q0",
+        "CX q1 q0",
+    ]
+
+
+@pytest.mark.parametrize("clean_width", [0, 2, 3])
+def test_phase_comparator_preserves_all_complex_measurement_branches(
+    clean_width: int,
+) -> None:
+    # Quantum equality, quantum enable, and an arbitrary spectator.
+    logical = 7
+    total = logical + clean_width
+    basis = torch.arange(1 << logical)
+    amplitudes = torch.complex((basis + 1).double(), (3 * basis - 5).double())
+    amplitudes /= amplitudes.norm()
+    state = torch.zeros(1 << total, dtype=torch.complex128)
+    stride = 1 << clean_width
+    state[::stride] = amplitudes
+    lhs, rhs = basis >> 5, (basis >> 3) & 3
+    equal, control = (basis >> 2) & 1, (basis >> 1) & 1
+    phase = (lhs < rhs + equal) & (control == 1)
+    expected = torch.zeros_like(state)
+    expected[::stride] = amplitudes * (1 - 2 * phase.long())
+    ir = kickmix_quantum_compare_ir(
+        (0, 1),
+        (2, 3),
+        None,
+        tuple(range(logical, total)),
+        or_equal=4,
+        control=5,
+        measurement_bit=0,
+    )
+    circuit = DynamicCircuit(total, inputs=state, dtype=torch.complex128)
+    circuit.append(FieldOperation(total, ir))
+    result = run_dynamic(circuit, shots=32, seed=41, strategy="trajectory")
+    if clean_width:
+        assert set(result.classical_bits[:, 0].tolist()) == {0, 1}
+    torch.testing.assert_close(
+        result.final_states.reshape(32, -1), expected.expand(32, -1), rtol=0, atol=1e-12
+    )
+
+
+def test_empty_phase_compare_preserves_conditional_scalar_in_dynamic_execution() -> (
+    None
+):
+    state = torch.tensor([1 + 2j, 0, 3 - 4j, 0], dtype=torch.complex128)
+    state /= state.norm()
+    circuit = DynamicCircuit(2, inputs=state, dtype=torch.complex128)
+    phase = kickmix_quantum_compare_ir(
+        (), (), None, or_equal=ClassicalFieldCoefficient(0)
+    )
+    circuit.append(FieldOperation(2, (*measure_x_clear_ir(1, 0), *phase)))
+    result = run_dynamic(circuit, shots=32, seed=41, strategy="trajectory")
+    outcomes = result.classical_bits[:, 0]
+    assert set(outcomes.tolist()) == {0, 1}
+    expected = (1 - 2 * outcomes.long())[:, None] * state[None, :]
+    torch.testing.assert_close(
+        result.final_states.reshape(32, -1), expected, rtol=0, atol=1e-12
+    )
