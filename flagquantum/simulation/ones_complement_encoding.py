@@ -20,7 +20,8 @@ if TYPE_CHECKING:
     from sympy import Expr
 
 
-def _check_width(width: int | Expr) -> None:
+def validate_ones_complement_width(width: int | Expr) -> None:
+    """Retain the shared original constructor guard without broadening it."""
     # Original constructors reject only a Python-int one, not all widths <=1.
     if isinstance(width, int) and width == 1:
         raise ValueError("bitsize must be > 1.")
@@ -28,14 +29,14 @@ def _check_width(width: int | Expr) -> None:
 
 def ones_complement_domain(width: int | Expr) -> range:
     """Retain the original domain, excluding both unsigned-magnitude endpoints."""
-    _check_width(width)
+    validate_ones_complement_width(width)
     maximum = 1 << (width - 1)
     return range(-maximum + 1, maximum)
 
 
 def validate_ones_complement_value(value: object, width: int | Expr) -> None:
     """Retain source inclusive bounds, even though encoding rejects the endpoints."""
-    _check_width(width)
+    validate_ones_complement_width(width)
     if not isinstance(value, (int, np.integer)):
         raise ValueError(f"val should be an integer, not {value!r}")
     maximum = 1 << (width - 1)
@@ -47,7 +48,7 @@ def validate_ones_complement_value(value: object, width: int | Expr) -> None:
 
 def validate_ones_complement_array(values: NDArray[Any], width: int | Expr) -> None:
     """Retain the source default's flattened scalar checks rather than range-only arrays."""
-    _check_width(width)
+    validate_ones_complement_width(width)
     for value in values.reshape(-1):
         validate_ones_complement_value(value, width)
 
@@ -63,7 +64,7 @@ def ones_complement_to_bits(value: object, width: int | Expr) -> list[int]:
 
 def ones_complement_from_bits(bits: Sequence[int], width: int | Expr) -> int | float:
     """Decode suffix XOR sign before applying its sign power, with no length repair."""
-    _check_width(width)
+    validate_ones_complement_width(width)
     magnitude = integer_from_bits([bit ^ bits[0] for bit in bits[1:]], width)
     return cast(int | float, (-1) ** int(bits[0]) * magnitude)
 
@@ -72,7 +73,7 @@ def ones_complement_array_to_bits(
     values: NDArray[Any], width: int | Expr
 ) -> NDArray[np.uint8]:
     """Use the original default vectorized scalar encoder and inference."""
-    _check_width(width)
+    validate_ones_complement_width(width)
     return encode_value_array(
         values, lambda value: ones_complement_to_bits(value, width)
     )
@@ -82,7 +83,7 @@ def ones_complement_array_from_bits(
     bits: NDArray[Any], width: int | Expr
 ) -> NDArray[Any]:
     """Keep scalar negative-zero interpretation and source vectorized result types."""
-    _check_width(width)
+    validate_ones_complement_width(width)
     return decode_value_array(
         bits, lambda row: ones_complement_from_bits(cast(Sequence[int], row), width)
     )
