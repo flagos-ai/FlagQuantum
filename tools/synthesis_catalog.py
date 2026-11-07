@@ -333,7 +333,10 @@ def render(catalog: Catalog) -> dict[Path, str]:
                     f"| {link} | {'Available' if case['native_example'] else 'Not provided'} | {len(case['circuit_validation_sources'])} | {case['recorded_original']['stage']} |"
                 )
             lines.append("")
-    output = {base / "CATALOG.md": "\n".join(lines)}
+    output = {
+        CATALOG: json.dumps(catalog, separators=(",", ":"), ensure_ascii=False) + "\n",
+        base / "CATALOG.md": "\n".join(lines),
+    }
     output.update(
         {
             example_path(case["directory"]) / "README.md": case_readme(case, catalog)

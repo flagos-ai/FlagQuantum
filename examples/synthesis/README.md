@@ -9,6 +9,11 @@ Qmod paths, each with source, bindings, resource records and native/Circuit
 availability. The tutorial, algorithm and application indexes below also retain
 the existing 48 teaching examples.
 
+`catalog.json` is a compact machine index. Run
+`python tools/synthesis_catalog.py --write` to normalize it and regenerate the
+readable Markdown navigation. Compact encoding keeps source retrieval within
+GitHub GraphQL text limits without changing case data, bindings or source digests.
+
 Run examples as Python modules from the repository root with FlagQuantum installed.
 
 ```sh
