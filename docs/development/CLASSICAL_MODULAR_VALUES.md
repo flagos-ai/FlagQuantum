@@ -73,3 +73,23 @@ retaining the independent mathematical negation assertion. Original primitive,
 feedback, QEC/QubitCount, forced-history and all-history clean-work assertions are
 unchanged. This module adds 217 source value tests covering types, symbolic
 relations, array truth behavior, exterior identities and both control polarities.
+
+## Two constant-add control policies (G2-VAL08)
+
+`simulation/classical_modular_constant_addition.py` preserves ModAddK and CModAddK
+as separate evaluation paths. ModAddK converts its control pattern using the
+source tuple convention, computes the candidate output using only `x < p`, then
+checks packed big-endian control equality and control-presence assertions.
+Candidate arithmetic may fail even on an inactive control. Values `x >= p`
+remain unchanged, including array/scalar identity on that path.
+
+CModAddK instead returns immediately on zero control, normalizing it to Python
+zero as in the source, then asserts control one and validates the strict active
+residue bounds before arithmetic. The test matrix explicitly distinguishes both
+orders. Neither method validates a constant load by silently reducing k modulo p.
+The previously recorded k>p value/decomposition discrepancy stays open.
+
+There are 966 new source value cases. Existing CModAddK gate/feedback, coherent
+branches, model and clean-work certificates now consume the classical evaluator.
+Standalone ModAddK has no source gate decomposition; this is a value-method port,
+not a claim of executable primitive parity for that separate source component.

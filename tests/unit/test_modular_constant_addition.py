@@ -10,6 +10,9 @@ from flagquantum.compiler.registers.modular_constant_addition import (
     controlled_modular_add_constant_ir,
     modular_constant_requirements,
 )
+from flagquantum.simulation.classical_modular_constant_addition import (
+    controlled_modular_add_constant_classical_values,
+)
 from tests.unit.measurement_checks import certified_and_channel_map, forced_branch
 from tests.unit.test_controlled_modular_addition import (
     layout as add_layout,
@@ -104,7 +107,8 @@ def states(n: int, p: int, k: int) -> tuple[torch.Tensor, torch.Tensor]:
     amplitudes = torch.complex(x + 1, 3 * x - 5)
     amplitudes /= amplitudes.norm()
     for (c, y, s), amp in zip(labels, amplitudes, strict=True):
-        out = (y + k) % p if c else y
+        out = int(controlled_modular_add_constant_classical_values(c, y, k, p)[1])
+        assert out == ((y + k) % p if c else y)
         inputs[(((c << n) | y) << (q + 1)) | s] = amp
         expected[(((c << n) | out) << (q + 1)) | s] = amp
     return inputs, expected
@@ -120,7 +124,10 @@ def test_every_valid_basis_input_all_measurement_branches(
     words, expected = [], []
     for ctrl in (0, 1):
         for value in range(p):
-            out = (value + k) % p if ctrl else value
+            out = int(
+                controlled_modular_add_constant_classical_values(ctrl, value, k, p)[1]
+            )
+            assert out == ((value + k) % p if ctrl else value)
             before = ((ctrl << n) | value) << len(work)
             after = ((ctrl << n) | out) << len(work)
             words.append(tuple((before >> (width - 1 - i)) & 1 for i in range(width)))
