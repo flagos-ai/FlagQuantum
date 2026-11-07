@@ -27,6 +27,7 @@ Runtime owns those decisions and calls the appropriate numerical primitives.
 | Classical modular multiplication and Montgomery history | [classical_modular_multiplication.py](classical_modular_multiplication.py), [classical_montgomery_multiplication.py](classical_montgomery_multiplication.py) |
 | Scalar/array integer value codecs and bit-array Montgomery windows | [integer_encoding.py](integer_encoding.py), [classical_montgomery_window.py](classical_montgomery_window.py) |
 | Shared scalar array vectorization, bit values and ones' complement codecs | [value_encoding.py](value_encoding.py), [bit_encoding.py](bit_encoding.py), [ones_complement_encoding.py](ones_complement_encoding.py) |
+| Fixed-point stored integer encoding and fractional scale | [fixed_point_encoding.py](fixed_point_encoding.py) |
 | Montgomery numerical representation, domain, product and inverse | [montgomery_values.py](montgomery_values.py) |
 | Reusable arithmetic and precision | [numerics/](numerics/README.md) |
 | Optional JAX kernels | [jax/](jax/README.md) |
@@ -54,6 +55,10 @@ For scalar encodings and their reversible conversion consumer, run
 [scalar encoding guide](../../docs/development/SCALAR_VALUE_ENCODINGS.md) explains
 bit order, value-versus-gate ownership, source diagnostic differences and the
 separate model and emitted resource columns.
+`python -m examples.algorithms.classical_fixed_point_values` demonstrates the
+[fixed-point stored integer slice](../../docs/development/FIXED_POINT_VALUE_ENCODING.md)
+and its existing coherent phase-gradient consumer without a real quantization
+dependency.
 
 ## One instruction, one dense operator
 
