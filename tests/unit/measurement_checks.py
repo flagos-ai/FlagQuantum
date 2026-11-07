@@ -4,6 +4,7 @@ import torch
 
 from examples.algorithms.binary_field_arithmetic import FieldOperation
 from flagquantum.circuit import Circuit
+from flagquantum.core.classical_dataflow import parse_classical_xor
 from flagquantum.core.ir import Instruction
 
 
@@ -29,7 +30,11 @@ def forced_branch(
             pending.clear()
 
     for gate in gates:
-        if gate.name == "measure":
+        if gate.name == "classical_xor":
+            flush()
+            assignment = parse_classical_xor(gate)
+            classical[assignment.target] = assignment.evaluate(classical)
+        elif gate.name == "measure":
             flush()
             outcome = next(measurements)
             classical[int(gate.metadata["classical_bit"])] = outcome
