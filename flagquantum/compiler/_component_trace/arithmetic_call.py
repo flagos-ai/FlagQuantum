@@ -20,6 +20,8 @@ ArithmeticOperation: TypeAlias = Literal[
     "out_of_place_add",
     "constant_add",
     "xor_constant",
+    "controlled_constant_add",
+    "controlled_xor_constant",
     "multi_controlled_x",
     "controlled_subtraction",
     "less_than",
@@ -34,7 +36,7 @@ class ArithmeticCall:
 
     Width objects remain unchanged, including Sympy integers. Word encodings
     distinguish identities even when cost categories agree. Default encodings
-    are unsigned. Only controlled_add uses control_value; only the less_than
+    are unsigned. Controlled arithmetic retains control_value; only the less_than
     placeholder uses signed. Constant operations retain their constant object;
     Add can retain the existing Always wrapper identity. Direction denotes a
     resource adjoint, not an IR.
@@ -60,6 +62,8 @@ class ArithmeticCall:
             "out_of_place_add",
             "constant_add",
             "xor_constant",
+            "controlled_constant_add",
+            "controlled_xor_constant",
             "multi_controlled_x",
             "controlled_subtraction",
             "less_than",
@@ -106,15 +110,25 @@ class ArithmeticCall:
             "bitwise_not",
             "constant_add",
             "xor_constant",
+            "controlled_constant_add",
+            "controlled_xor_constant",
         ) and any(encoding != "unsigned" for encoding in self.encodings):
             raise ValueError(
                 "Original placeholder signatures use unsigned word encodings"
             )
         if type(self.control_value) is not int or self.control_value not in (0, 1):
             raise ValueError("Arithmetic resource control value must be zero or one")
-        if self.operation != "controlled_add" and self.control_value != 1:
+        if (
+            self.operation
+            not in (
+                "controlled_add",
+                "controlled_constant_add",
+                "controlled_xor_constant",
+            )
+            and self.control_value != 1
+        ):
             raise ValueError(
-                "Only controlled-add resource identities accept a control value"
+                "Only controlled arithmetic identities accept a control value"
             )
         if type(self.signed) is not bool or (
             self.signed and self.operation != "less_than"
@@ -131,7 +145,12 @@ class ArithmeticCall:
         ):
             raise ValueError("Only out-of-place addition accepts a truncated sum")
 
-        has_constant = self.operation in ("constant_add", "xor_constant")
+        has_constant = self.operation in (
+            "constant_add",
+            "xor_constant",
+            "controlled_constant_add",
+            "controlled_xor_constant",
+        )
         if has_constant != (self.constant is not None):
             raise ValueError("Only constant arithmetic identities require a constant")
         if has_constant and type(self.constant) is not int:

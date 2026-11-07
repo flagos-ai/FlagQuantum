@@ -95,3 +95,13 @@ shared logical model separately from emitted primitive counts.
 This batch adds 327 tests and passes 1,408 concentrated checks without skips.
 The three source blobs match the locked inventory. Changed production modules
 and both runnable examples pass strict mypy, Black, Ruff and architecture checks.
+
+## Controlled source identities (G2-A47)
+
+The single-control native graph follows the source's actual wrapper classes:
+control zero delegates to positive controlled AddK once and declares two X gates
+at that outer level. Positive controlled AddK declares two positive controlled
+XorK loads and one Always(Add). Positive controlled XorK declares CNOT with the
+same concrete population-count or symbolic-width multiplicity. No And predicate
+is introduced for one control, and open-control X costs are not multiplied per
+loaded bit. Adjoint declarations retain the source wrapper and row order.

@@ -11,7 +11,7 @@
 
 from dataclasses import replace
 
-from .._component_trace.arithmetic_call import ArithmeticCall
+from .._component_trace.arithmetic_call import ArithmeticCall, ArithmeticOperation
 from .._component_trace.resource_generalization import (
     CliffordCall,
     ConjunctionCall,
@@ -36,6 +36,27 @@ def arithmetic_callees(call: ArithmeticCall) -> dict[ResourceCall, SymbolicInt]:
             result[inverse] = result.get(inverse, 0) + count
         return result
     width = call.widths[0]
+    if call.operation in ("controlled_constant_add", "controlled_xor_constant"):
+        if call.control_value == 0:
+            return {replace(call, control_value=1): 1, CliffordCall("x", 1): 2}
+        plain_operation: ArithmeticOperation = (
+            "constant_add"
+            if call.operation == "controlled_constant_add"
+            else "xor_constant"
+        )
+        plain = replace(call, operation=plain_operation)
+        children = arithmetic_callees(plain)
+        if plain_operation == "xor_constant":
+            return {CliffordCall("cx", 2): children[CliffordCall("x", 1)]}
+        return {
+            (
+                replace(child, operation="controlled_xor_constant")
+                if isinstance(child, ArithmeticCall)
+                and child.operation == "xor_constant"
+                else child
+            ): count
+            for child, count in children.items()
+        }
     if call.operation == "constant_add":
         constant = call.constant
         assert constant is not None
@@ -115,7 +136,8 @@ def _adjoint(call: ResourceCall) -> ResourceCall:
     if isinstance(call, ArithmeticCall):
         return (
             call
-            if call.operation in ("bitwise_not", "xor_constant")
+            if call.operation
+            in ("bitwise_not", "xor_constant", "controlled_xor_constant")
             else replace(call, adjoint=not call.adjoint)
         )
     if isinstance(call, ConjunctionCall):
