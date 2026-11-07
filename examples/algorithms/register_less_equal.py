@@ -11,12 +11,16 @@ from collections import Counter
 import torch
 
 import flagquantum as fq
+from flagquantum.compiler.registers.comparison_resource_model import (
+    source_less_equal_cost,
+)
 from flagquantum.compiler.registers.less_equal import (
     less_equal_ir,
     less_equal_requirements,
 )
 from flagquantum.core.ir import CircuitIR
 from flagquantum.dynamic import DynamicCircuit
+from flagquantum.qec.resources.estimation import estimate_ftqc_resources
 from flagquantum.runtime.dynamic.execution import run_dynamic
 
 
@@ -48,17 +52,19 @@ def main() -> None:
     expected = torch.zeros_like(state)
     expected[mapped << quantum] = amps
     operation = LessEqual()
-    circuit = DynamicCircuit(n_qubits, inputs=state, dtype=torch.complex128).append(
-        operation
-    )
+    circuit = DynamicCircuit(n_qubits, inputs=state, dtype=torch.complex128)
+    circuit.append(operation)
     result = run_dynamic(circuit, shots=32, seed=41, strategy="trajectory")
     torch.testing.assert_close(
         result.final_states.reshape(32, -1), expected.expand(32, -1), rtol=0, atol=1e-12
     )
-    counts = Counter(g.name for g in circuit.to_ir().instructions)
-    restored = run_dynamic(
-        circuit.append(operation), shots=8, seed=41, strategy="trajectory"
+    report = estimate_ftqc_resources(
+        source_less_equal_cost(2, 3), emitted_ir=circuit.to_ir()
     )
+    assert report.emitted is not None
+    counts = Counter(g.name for g in circuit.to_ir().instructions)
+    circuit.append(operation)
+    restored = run_dynamic(circuit, shots=8, seed=41, strategy="trajectory")
     torch.testing.assert_close(
         restored.final_states.reshape(8, -1), state.expand(8, -1), rtol=0, atol=1e-12
     )
@@ -67,6 +73,10 @@ def main() -> None:
     )
     print("Clean quantum work:", quantum, "Classical measurement slots:", classical)
     print("Measured gates for one comparison:", dict(counts))
+    print("Source model categories:", report.logical.gates)
+    print("Model peak logical qubits:", report.logical.peak_logical_qubits)
+    print("Model T equivalents:", report.logical.gates.total_t_count())
+    print("Emitted T/Tdag:", report.emitted.t_count)
 
 
 if __name__ == "__main__":

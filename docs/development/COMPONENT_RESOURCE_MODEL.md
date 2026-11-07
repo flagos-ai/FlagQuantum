@@ -3302,3 +3302,37 @@ selection widths, in both QEC profiles and after binding dimensions. All seven
 categories and peak widths agree. Ten new tests and 22 concentrated tests pass
 without skips, including concrete-use checks that do not import Sympy. This
 extends a table-free model, not an emitted-gate equivalence claim.
+
+
+### Shared comparison models (G2-CMP10)
+
+`compiler/registers/comparison_resource_model.py` owns
+`source_less_equal_cost(left_width, right_width, legacy_shims=...)` and the
+symbolic `source_less_equal_resource_formula` counterpart. Concrete equal widths
+reuse the existing cost authority. Unequal widths retain the shorter comparison
+tree, prefix-zero equality, final (1,0) And and the right-longer target flips.
+All conjunction costs come from the shared predicate classifier. Work and result
+slot requirements remain owned by the unchanged comparison emitter.
+
+A symbolic operand, including a Sympy integer expression, selects the original
+symbolic declaration: `2*left_width+1` Ands, irrespective of the right width.
+Its peak is the original `max(7,left_width+right_width+1)` signature fallback.
+Do not replace that declaration by the concrete shorter-word circuit, or coerce
+Sympy integers to Python ints and claim it is the same source query.
+
+Fourteen plus two concrete width pairs and six symbolic/partly bound forms in
+both QEC profiles match every source gate category and peak width, forward and
+adjoint. Width/profile validation, no-emission and runnable append tests bring
+this dependency batch to 54 new tests; 80 concentrated tests pass without skips.
+Strict typing, lint, formatting, ownership and architecture checks pass.
+
+```sh
+python -m examples.algorithms.register_less_equal
+```
+
+The existing unequal-width example still validates every complex input/target
+amplitude, clean work and two applications restoring the input. It now reports
+source model categories alongside emitted IR. The two-/three-bit example uses
+four Ands/measurements, 16 T equivalents and 13 peak logical qubits; actual IR
+also contains 16 T/T-dagger. Clifford categories and expanded Clifford gates
+remain distinct measures.
