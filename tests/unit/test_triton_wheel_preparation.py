@@ -12,10 +12,14 @@ from pathlib import Path
 import pytest
 import yaml
 
-if sys.version_info >= (3, 11):
+try:
     import tomllib
+except ModuleNotFoundError:
+    import tomli
+
+    load_toml = tomli.loads
 else:
-    import tomli as tomllib
+    load_toml = tomllib.loads
 
 pytestmark = pytest.mark.unit
 ROOT = Path(__file__).resolve().parents[2]
@@ -229,7 +233,7 @@ def test_workflow_prepares_wheels_before_installing_the_project() -> None:
 
 
 def test_triton_lane_installs_only_its_runtime_and_test_dependencies() -> None:
-    project = tomllib.loads((ROOT / "pyproject.toml").read_text())
+    project = load_toml((ROOT / "pyproject.toml").read_text())
     pytest_requirement = next(
         requirement
         for requirement in project["project"]["optional-dependencies"]["dev"]
