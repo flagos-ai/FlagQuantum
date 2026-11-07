@@ -16,6 +16,7 @@ from flagquantum.compiler._component_trace.terminal_t_cost import (
 from flagquantum.compiler.registers.arithmetic_declarations import arithmetic_call_graph
 from flagquantum.compiler.registers.constant_add_resource_model import (
     source_constant_add_resource_formula,
+    source_controlled_constant_add_resource_formula,
 )
 from flagquantum.compiler.registers.out_of_place_add_resource_model import (
     source_out_of_place_add_resource_formula,
@@ -59,6 +60,14 @@ def main() -> None:
             "Constant-add model:",
             label,
             source_constant_add_resource_formula(width, value),
+        )
+    for control_value in (0, 1):
+        print(
+            "Controlled constant-add model:",
+            control_value,
+            source_controlled_constant_add_resource_formula(
+                3, 5, control_value=control_value
+            ),
         )
     print("No circuit emitted; no measured primitive counts or work-qubit claim.")
 

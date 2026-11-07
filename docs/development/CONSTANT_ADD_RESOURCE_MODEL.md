@@ -105,3 +105,29 @@ XorK loads and one Always(Add). Positive controlled XorK declares CNOT with the
 same concrete population-count or symbolic-width multiplicity. No And predicate
 is introduced for one control, and open-control X costs are not multiplied per
 loaded bit. Adjoint declarations retain the source wrapper and row order.
+
+`source_controlled_constant_add_resource_formula` and
+`source_controlled_constant_add_cost` reuse the same model consumer with an
+explicit control polarity. All seven Add categories pass through the existing
+static-cost interface. With Python width and constant, the peak includes one
+live control alongside Add. If either object is symbolic, the original fallback
+is Max(n+1, 2, Add peak), without adding another fictitious lifetime.
+
+For width Python 3 and constant Python 5 the controlled peak is 9; replacing
+only the constant with Sympy Integer(5) gives peak 8; replacing the width with
+Sympy Integer(3) gives peak 6. The default-profile Clifford estimates for control
+one are respectively 15, 17, 17; control zero adds exactly two. The original
+one-bit diagnostics remain distinct from emitted primitive counts. Both
+zero-width combined queries still fail explicitly. These declarations preserve
+source behavior rather than normalizing symbolic literals into concrete inputs.
+
+Controlled graph tests compare every raw row, both profiles/directions, three
+encodings, and all small coherent control/target/spectator measurement histories.
+The existing controlled emitter is unchanged. Multi-control graph support and
+arbitrary Always resource children remain outside this implemented slice.
+
+G2-A47 adds 610 controlled-resource tests; the concentrated batch passes 2,018
+checks without skips. The restored persistent reference runner verifies source
+blob IDs and the locked Qualtran/Kickmix versions before launching pytest.
+The isolated restored dependencies affect reference tests only; project
+requirements and numerical execution code are unchanged.
