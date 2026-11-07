@@ -769,3 +769,11 @@ in row-major order, applies the existing XOR value model, and checks an ordinary
 [the register-value contract](../../docs/development/CLASSICAL_REGISTER_VALUES.md)
 for source parity and diagnostic boundaries. Reference tests require the pinned
 reference extras; they do not add runtime SDK dependencies.
+
+`value_dimensions.py` owns unknown numerical array shapes and sequence lengths.
+These native values reuse `value_parameters.py` symbolic classification and the
+classical control consumers; they are separate from Core register signatures.
+Run `python -m examples.algorithms.numerical_value_dimensions` for shape-only
+predicate estimates and known-value `circuit.append(op)` execution. See
+[numerical dimensions](../../docs/development/NUMERICAL_VALUE_DIMENSIONS.md)
+for source diagnostics, model scopes and exhaustive small measurement histories.

@@ -6,17 +6,16 @@
 """Evaluate bound classical control clauses without foreign dtype objects."""
 
 from collections.abc import Sequence
-from typing import Any
 
 import numpy as np
-from numpy.typing import NDArray
 
+from .value_dimensions import ArrayValue
 from .value_parameters import is_symbolic_value
 
 
 def classical_controls_active(
     values: Sequence[object],
-    patterns: Sequence[NDArray[Any]],
+    patterns: Sequence[ArrayValue],
     *,
     symbolic_parameters: Sequence[object] = (),
 ) -> bool:

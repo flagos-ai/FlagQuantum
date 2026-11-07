@@ -7,11 +7,10 @@
 
 from collections.abc import Mapping, Sequence
 from types import NotImplementedType
-from typing import Any, Protocol, TypeVar
-
-from numpy.typing import NDArray
+from typing import Protocol, TypeVar
 
 from .classical_control_activation import classical_controls_active
+from .value_dimensions import ArrayValue
 
 Result = TypeVar("Result", covariant=True)
 
@@ -34,7 +33,7 @@ def controlled_classical_values(
     values: Mapping[str, object],
     control_names: Sequence[str],
     child_names: Sequence[str],
-    patterns: Sequence[NDArray[Any]],
+    patterns: Sequence[ArrayValue],
     child: _NamedCallback[dict[str, object] | NotImplementedType],
     *,
     thru_only: bool = True,
@@ -64,7 +63,7 @@ def controlled_basis_phase(
     values: Mapping[str, object],
     control_names: Sequence[str],
     child_names: Sequence[str],
-    patterns: Sequence[NDArray[Any]],
+    patterns: Sequence[ArrayValue],
     child: _NamedCallback[Result],
     *,
     symbolic_parameters: Sequence[object] = (),
