@@ -155,3 +155,26 @@ for the related append, complex-state, cleanup and inverse example.
 G2-ALIAS11 adds three consumer/rejection cases. With the 110 new G2-PREP09
 cases, the final regression passes 1,480 tests without skips. Strict types,
 formatting, lint, ownership and architecture checks pass.
+
+## Shared QROM table consumer (G2-ALIAS12)
+
+Concrete dense and sparse alias PREPARE now construct one compiler-owned
+`QromTable` layout for their existing flat integer datasets. Requirements use
+its `workspace_size`; loading uses `bind_packed`; both QEC profiles use its
+`resource_model`. Dataset order remains alternate/keep for dense and
+index/alternate/keep for sparse. Words are not renormalized or converted through
+an array factory. Uniform preparation, comparison, swap order and caller-owned
+work/feedback lifetimes remain unchanged in both directions.
+
+Seventeen new tests replace QROM workspace, load body and model, verify the
+consumer uses the replacements, and compare the actual child metadata against
+the unmodified original QROM child. The existing source gate, full complex
+state, small measurement histories, zero work, inverse and LCU regressions run
+through this shared binding. The runnable append example remains
+`python -m examples.algorithms.linear_combination_preparation`, with separate
+logical/primitive counts and complete restoration.
+
+The native singleton-domain execution still omits the empty alternate target
+and loads only keep. Sparse singleton support still has a zero-bit address.
+Neither native behavior closes the original singleton source decomposition and
+resource failures. Symbolic alias declaration dispatch is unchanged.

@@ -19,8 +19,7 @@ from ...compiler.registers.less_equal import (
     less_equal_requirements,
     source_equal_width_less_equal_cost,
 )
-from ...compiler.registers.qrom_resource_model import source_qrom_cost
-from ...compiler.registers.source_qrom import source_qrom_ir, source_qrom_workspace_size
+from ...compiler.registers.qrom_table import QromTable
 from ...compiler.registers.uniform_preparation import (
     source_uniform_preparation_cost,
     uniform_preparation_ir,
@@ -31,19 +30,32 @@ from .alias_sampling import AliasSamplingTable
 from .black_box_prepare import BlackBoxPrepare
 
 
-def _datasets(table: AliasSamplingTable) -> tuple[tuple[int, ...], ...]:
+def _lookup_table(table: AliasSamplingTable) -> QromTable:
+    rows = len(table.keep)
+    width = (table.selection_size - 1).bit_length()
+    datasets: tuple[tuple[int, ...], ...]
+    targets: tuple[int, ...]
     if table.selection_size == 1:
-        return (table.keep,)
-    if table.indices is None:
-        return table.alternates, table.keep
-    return table.indices, table.alternates, table.keep
+        datasets, targets = (table.keep,), (table.mu,)
+    elif table.indices is None:
+        datasets, targets = (table.alternates, table.keep), (width, table.mu)
+    else:
+        datasets = (table.indices, table.alternates, table.keep)
+        targets = (width, width, table.mu)
+    return QromTable(
+        (rows,),
+        ((rows - 1).bit_length(),),
+        targets,
+        ((),) * len(targets),
+        datasets=datasets,
+    )
 
 
 def alias_preparation_requirements(table: AliasSamplingTable) -> tuple[int, int]:
     """Return the reusable clean work and slots, excluding logical junk."""
     rows = len(table.keep)
-    width, uniform_work, uniform_slots = uniform_preparation_requirements(rows)
-    lookup = source_qrom_workspace_size(0, (width,), _datasets(table))
+    _, uniform_work, uniform_slots = uniform_preparation_requirements(rows)
+    lookup = _lookup_table(table).workspace_size
     compare_work, compare_slots = less_equal_requirements(table.mu, table.mu)
     return max(uniform_work, lookup, compare_work), max(
         uniform_slots, lookup, compare_slots
@@ -104,17 +116,13 @@ def alias_preparation_ir(
         adjoint=adjoint,
     )
     hadamards = tuple(Instruction("h", (q,)) for q in sigma)
-    datasets = _datasets(table)
     words: tuple[tuple[int, ...], ...] = (keep,)
     if data_width:
         words = (selection, alternate, keep) if sparse else (alternate, keep)
-    lookup_size = source_qrom_workspace_size(0, (address_width,), datasets)
-    lookup = source_qrom_ir(
-        (),
-        (address,),
-        (rows,),
-        tuple((word,) for word in words),
-        datasets,
+    lookup_table = _lookup_table(table)
+    lookup_size = lookup_table.workspace_size
+    lookup = lookup_table.bind_packed(
+        (*address, *(wire for word in words for wire in word)),
         workspace[:lookup_size],
         classical_bits[:lookup_size],
     )
@@ -191,15 +199,7 @@ def _source_alias_preparation_cost(
     sparse_width = address if sparse else 0
     width = 2 * selection + sparse_width + 2 * mu + 1
     compare = source_equal_width_less_equal_cost(mu, legacy_shims=legacy_shims)
-    target_widths = (selection, selection, mu) if sparse else (selection, mu)
-    lookup = source_qrom_cost(
-        0,
-        (address,),
-        (rows,),
-        tuple((1, bits) for bits in target_widths),
-        _datasets(table),
-        legacy_shims=legacy_shims,
-    )
+    lookup = _lookup_table(table).resource_model(legacy_shims=legacy_shims)
     return ComponentCost(
         (
             "SparseStatePreparationAliasSampling"
