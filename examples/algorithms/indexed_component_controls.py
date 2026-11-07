@@ -1,8 +1,10 @@
 """Estimate and execute nested indexed controls with circuit.append(op).
 
 Run python -m examples.algorithms.indexed_component_controls.
+Add --stacked for the source repeated-single-control root.
 """
 
+import argparse
 from collections import Counter
 
 import torch
@@ -11,9 +13,11 @@ from examples.algorithms.binary_field_arithmetic import FieldOperation
 from flagquantum.compiler._component_trace.resource_model import ComponentCost, GateCost
 from flagquantum.compiler.registers.control_predicate import ControlRegister
 from flagquantum.compiler.registers.indexed_component_control import (
+    conjoined_indexed_component_ir,
     specialized_indexed_component_ir,
 )
 from flagquantum.compiler.registers.indexed_component_control_resource_model import (
+    conjoined_indexed_component_cost,
     specialized_indexed_component_cost,
 )
 from flagquantum.core.ir import Instruction
@@ -22,19 +26,33 @@ from flagquantum.qec.resources.estimation import estimate_ftqc_resources
 from flagquantum.runtime.dynamic.execution import run_dynamic
 
 
-def main() -> None:
+def main(*, stacked: bool = False) -> None:
     registers = (ControlRegister(2, (1,)),)
-    gates = specialized_indexed_component_ir(
-        ((3,),),
-        (2,),
-        lambda index, predicate: (
-            Instruction("cx" if index == 0 else "cz", (predicate, 4)),
-        ),
-        ((0, 1),),
-        registers,
-        current_control=(2, 0),
-        workspace=(5, 6, 7),
-        classical_bits=(0, 1, 2),
+
+    def child(index: int, predicate: int) -> tuple[Instruction, ...]:
+        return (Instruction("cx" if index == 0 else "cz", (predicate, 4)),)
+
+    gates = (
+        conjoined_indexed_component_ir(
+            ((3,),),
+            (2,),
+            child,
+            (0, 1, 2),
+            (0, 1, 0),
+            workspace=(5, 6, 7),
+            classical_bits=(0, 1, 2),
+        )
+        if stacked
+        else specialized_indexed_component_ir(
+            ((3,),),
+            (2,),
+            child,
+            ((0, 1),),
+            registers,
+            current_control=(2, 0),
+            workspace=(5, 6, 7),
+            classical_bits=(0, 1, 2),
+        )
     )
     initial = torch.zeros(256, dtype=torch.complex128)
     amplitudes = torch.complex(torch.arange(1, 33).double(), torch.arange(32).double())
@@ -60,22 +78,32 @@ def main() -> None:
         ComponentCost("CX", 2, GateCost(clifford=1)),
         ComponentCost("CZ", 2, GateCost(clifford=1)),
     )
-    model = specialized_indexed_component_cost(
-        (1,), (2,), children, registers, target_width=1, current_control_value=0
-    )
-    report = estimate_ftqc_resources(model, emitted_ir=circuit.to_ir())
-    assert report.emitted is not None
-    legacy = estimate_ftqc_resources(
-        specialized_indexed_component_cost(
-            (1,),
-            (2,),
-            children,
-            registers,
-            target_width=1,
-            current_control_value=0,
-            legacy_shims=True,
+    models = []
+    for legacy_shims in (False, True):
+        model = (
+            conjoined_indexed_component_cost(
+                (1,),
+                (2,),
+                children,
+                (0, 1, 0),
+                target_width=1,
+                legacy_shims=legacy_shims,
+            )
+            if stacked
+            else specialized_indexed_component_cost(
+                (1,),
+                (2,),
+                children,
+                registers,
+                target_width=1,
+                current_control_value=0,
+                legacy_shims=legacy_shims,
+            )
         )
-    )
+        models.append(model)
+    report = estimate_ftqc_resources(models[0], emitted_ir=circuit.to_ir())
+    legacy = estimate_ftqc_resources(models[1])
+    assert report.emitted is not None
     print("Modern model Clifford count", report.logical.gates.clifford)
     print("Legacy model Clifford count", legacy.logical.gates.clifford)
     print("Model T equivalents", report.logical.gates.total_t_count())
@@ -87,4 +115,6 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--stacked", action="store_true")
+    main(stacked=parser.parse_args().stacked)

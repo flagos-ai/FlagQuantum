@@ -14,6 +14,69 @@ from .controlled_component import controlled_component_ir
 from .indexed_component import indexed_component_ir, indexed_component_workspace
 
 
+def _validate_control_storage(
+    controls: tuple[int, ...],
+    axes: tuple[tuple[int, ...], ...],
+    workspace: tuple[int, ...],
+    classical_bits: tuple[int, ...],
+) -> None:
+    required = indexed_component_workspace(tuple(map(len, axes)), len(controls))
+    if len(workspace) != required:
+        raise ValueError(f"Indexed control system requires {required} clean work wires")
+    if (
+        len(classical_bits) != required
+        or len(set(classical_bits)) != required
+        or any(type(bit) is not int or bit < 0 for bit in classical_bits)
+    ):
+        raise ValueError("Indexed control system requires distinct work result slots")
+    _validate_wires((*controls, *(wire for axis in axes for wire in axis), *workspace))
+
+
+def conjoined_indexed_component_ir(
+    axes: tuple[tuple[int, ...], ...],
+    extents: tuple[int, ...],
+    emit_controlled: Callable[[int, int], tuple[Instruction, ...]],
+    controls: tuple[int, ...],
+    values: tuple[int, ...],
+    *,
+    workspace: tuple[int, ...],
+    classical_bits: tuple[int, ...],
+    adjoint: bool = False,
+) -> tuple[Instruction, ...]:
+    """Lower a source specialized root after repeated single-bit controls.
+
+    Newest controls precede older controls in both wire and activation order.
+    One And (two controls) or MultiAnd (more controls) surrounds the positive
+    indexed child. Predicate work precedes traversal work; both enter/leave zero.
+    For adjoint traversal the callback must supply each child adjoint.
+    """
+    if len(controls) < 2:
+        raise ValueError(
+            "Conjoined indexed specialization requires at least two controls"
+        )
+    _validate_control_storage(controls, axes, workspace, classical_bits)
+    prefix = len(controls) - 1
+
+    def traverse(predicate: int) -> tuple[Instruction, ...]:
+        return indexed_component_ir(
+            axes,
+            extents,
+            emit_controlled,
+            controls=(predicate,),
+            workspace=workspace[prefix:],
+            classical_bits=classical_bits[prefix:],
+            adjoint=adjoint,
+        )
+
+    return controlled_component_ir(
+        (controls,),
+        (ControlRegister(1, values),),
+        traverse,
+        workspace[:prefix],
+        classical_bits[:prefix],
+    )
+
+
 def specialized_indexed_component_ir(
     axes: tuple[tuple[int, ...], ...],
     extents: tuple[int, ...],
@@ -47,23 +110,11 @@ def specialized_indexed_component_ir(
         raise ValueError("Existing control requires a wire and a zero/one activation")
     outer = len(wires) - 1
     inner = int(current_control is not None)
-    traversal = indexed_component_workspace(tuple(map(len, axes)), 1)
-    required = outer + inner + traversal
-    if len(workspace) != required:
-        raise ValueError(f"Indexed control system requires {required} clean work wires")
-    if (
-        len(classical_bits) != required
-        or len(set(classical_bits)) != required
-        or any(type(bit) is not int or bit < 0 for bit in classical_bits)
-    ):
-        raise ValueError("Indexed control system requires distinct work result slots")
-    _validate_wires(
-        (
-            *wires,
-            *((current_control[0],) if current_control else ()),
-            *(wire for axis in axes for wire in axis),
-            *workspace,
-        )
+    _validate_control_storage(
+        (*wires, *((current_control[0],) if current_control else ())),
+        axes,
+        workspace,
+        classical_bits,
     )
 
     def traverse(predicate: int) -> tuple[Instruction, ...]:
@@ -93,12 +144,15 @@ def specialized_indexed_component_ir(
         if current_control is None:
             return traverse(wires[0])
         wire, value = current_control
-        return controlled_component_ir(
-            ((wires[0], wire),),
-            (ControlRegister(1, (values[0], value)),),
-            traverse,
-            workspace[:inner],
-            classical_bits[:inner],
+        return conjoined_indexed_component_ir(
+            axes,
+            extents,
+            emit_controlled,
+            (wires[0], wire),
+            (values[0], value),
+            workspace=workspace,
+            classical_bits=classical_bits,
+            adjoint=adjoint,
         )
     return controlled_component_ir(
         controls, registers, specialize, workspace[:outer], classical_bits[:outer]

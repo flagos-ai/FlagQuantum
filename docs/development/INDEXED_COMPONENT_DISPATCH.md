@@ -297,3 +297,53 @@ do not enter circuit construction, and the same emitter returns unchanged IR
 before and after both queries. Strict typing, format, lint, scope and architecture
 checks pass. This closes concrete indexed QEC-profile composition, not general
 symbolic indexed graphs or arbitrary legacy child annotations.
+
+## G2-IDX06 repeated single-bit control roots
+
+`conjoined_indexed_component_ir` binds the original specialized root produced
+when single-bit controls are repeatedly added. The newest control is prepended
+to both wires and activation values. Two controls use And; three or more use
+MultiAnd. One predicate surrounds the existing positive indexed child. Predicate
+storage precedes address storage, and both enter/leave zero. The first
+existing-control specialization now consumes this same emitter instead of its
+own two-control composition. Shared validation checks the full live layout.
+This does not collapse the separate nested predicates produced when multiple
+new controls are supplied in a single CtrlSpec.
+
+`conjoined_indexed_component_cost` composes the same owned predicate pair and
+existing indexed model in either QEC profile. Child binding and adjoint models
+remain caller-owned. No alternative decoder or inverse of measured primitive IR
+is introduced. Both the source root and its original CompositeBloq adjoint are
+read directly. Their phase leaves retain atomic controlled S/T; model rotation
+synthesis is not substituted for observed T instructions.
+
+There are56 original gate-dependency cases covering every two- and three-bit
+activation pattern, two alternating four-bit patterns, Pauli/phase children and
+both directions. Each root is compared in both cost profiles (112 source model
+comparisons).48 independent complex-state cases enumerate all measurement
+histories and restore every work bit. Five nonselfadjoint round trips enumerate
+all paired histories, including the three-control case. Six invalid layouts
+fail before the child callback.
+
+A source-only reproducer isolates a remaining upstream defect: the returned
+root from `_MultiControlledFromSinglyControlled.get_ctrl_system` decomposes,
+but invoking its returned builder adder fails at
+`np.concatenate(ctrl_soqs, in_soqs[self.ctrl_reg_name])` with TypeError. Both
+added control polarities reproduce the failure. Neither reference nor native
+emitter pretends that the failing builder path is certified. Root execution and
+its resource graph remain independently usable. Full upstream builder parity
+and whole-file acceptance remain open; no patched-source consistency claim is
+made.
+
+Run `python -m examples.algorithms.indexed_component_controls --stacked` for
+`circuit.append(op)` with the three-bit activation 010. Model and emitted T
+counts are12, measurements3 and peak/reserved wires8. The modern model has14
+Clifford categories versus22 in the historical model. This differs from the
+modern6 of the one-CtrlSpec nested source route despite the same unitary; retain
+actual source call identities and counting behavior. Primitive opcode counts
+are printed separately.
+
+118 new tests and583 concentrated tests pass without skips. Strict typing,
+Black/Ruff, compiler ownership and architecture checks pass. Locked source is
+unchanged. Repeated multi-bit additions, symbolic sizes and the upstream builder
+failure are not closed by this repeated-single-bit root slice.
