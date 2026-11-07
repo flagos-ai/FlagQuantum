@@ -28,6 +28,7 @@ Runtime owns those decisions and calls the appropriate numerical primitives.
 | Scalar/array integer value codecs and bit-array Montgomery windows | [integer_encoding.py](integer_encoding.py), [classical_montgomery_window.py](classical_montgomery_window.py) |
 | Shared scalar array vectorization, bit values and ones' complement codecs | [value_encoding.py](value_encoding.py), [bit_encoding.py](bit_encoding.py), [ones_complement_encoding.py](ones_complement_encoding.py) |
 | Fixed-point stored integer encoding and fractional scale | [fixed_point_encoding.py](fixed_point_encoding.py) |
+| Bounded unsigned domains, validation and scalar/array codecs | [bounded_integer_values.py](bounded_integer_values.py), [bounded_integer_encoding.py](bounded_integer_encoding.py) |
 | Montgomery numerical representation, domain, product and inverse | [montgomery_values.py](montgomery_values.py) |
 | Reusable arithmetic and precision | [numerics/](numerics/README.md) |
 | Optional JAX kernels | [jax/](jax/README.md) |
@@ -59,6 +60,10 @@ separate model and emitted resource columns.
 [fixed-point stored integer slice](../../docs/development/FIXED_POINT_VALUE_ENCODING.md)
 and its existing coherent phase-gradient consumer without a real quantization
 dependency.
+`python -m examples.algorithms.classical_bounded_integer_values` constructs valid
+bounded addresses and executes existing measured Pauli SELECT. The
+[bounded integer guide](../../docs/development/BOUNDED_INTEGER_VALUES.md) explains
+the separate numerical validation, quantum padding and work ownership rules.
 
 ## One instruction, one dense operator
 
