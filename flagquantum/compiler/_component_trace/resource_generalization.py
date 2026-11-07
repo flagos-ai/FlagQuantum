@@ -12,6 +12,7 @@ from collections.abc import Hashable, Iterable, Mapping
 from dataclasses import dataclass, replace
 from typing import Literal, TypeAlias
 
+from .arithmetic_call import ArithmeticCall as ArithmeticCall
 from .call_graph import Generalizer, _component_calls
 from .resource_model import ComponentCost
 from .symbolic_math import SymbolicInt, SymbolicReal
@@ -212,7 +213,8 @@ class OnEachCall:
 
 
 ResourceCall = (
-    ComponentCost
+    ArithmeticCall
+    | ComponentCost
     | RotationCall
     | PhaseCall
     | FixedTCall
@@ -249,6 +251,10 @@ def _resource_callees(
         yield node.child, node.repetitions
     elif isinstance(node, OnEachCall):
         yield node.child, node.width
+    elif isinstance(node, ArithmeticCall):
+        raise NotImplementedError(
+            "Arithmetic resource identity requires explicit declared callees"
+        )
 
 
 def _inside_partition(

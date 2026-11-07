@@ -11,6 +11,7 @@ from math import pi
 
 from .resource_classification import classify_resource_gate
 from .resource_generalization import (
+    ArithmeticCall,
     ConjunctionCall,
     ControlledRotationCall,
     FixedTCall,
@@ -37,6 +38,10 @@ def estimate_terminal_t_cost(sigma: Mapping[ResourceCall, SymbolicInt]) -> Symbo
 
 
 def _unit_t_cost(call: ResourceCall) -> SymbolicInt:
+    if isinstance(call, ArithmeticCall):
+        raise NotImplementedError(
+            "Expand arithmetic resource declarations before terminal T estimation"
+        )
     if isinstance(call, PhaseCall):
         return int(call.opcode == "t")
     if isinstance(call, FixedTCall):
