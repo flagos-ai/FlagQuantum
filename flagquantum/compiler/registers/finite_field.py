@@ -6,12 +6,14 @@
 # https://github.com/quantumlib/Qualtran/tree/v0.7.0/qualtran/bloqs/gf_arithmetic
 # https://github.com/quantumlib/Qualtran/blob/9a0c11a4ee7697c082fbf8f2e1e8bf4a71fcb453/kickmix/src/kickmix/gen/gf_arithmetic/gen_gf_iadd.cc
 # https://github.com/quantumlib/Qualtran/blob/9a0c11a4ee7697c082fbf8f2e1e8bf4a71fcb453/kickmix/src/kickmix/build/circuit_builder.cc
+# https://github.com/quantumlib/Qualtran/blob/9a0c11a4ee7697c082fbf8f2e1e8bf4a71fcb453/kickmix/src/kickmix/py/circuit/control_helper.pybind.cc
 # Changes: bind polynomial-basis registers and emit native instructions.
 
 """Register operations over binary extension fields."""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
+from ...core.classical_control import instruction_condition_clauses
 from ...core.ir import Instruction
 
 
@@ -30,23 +32,27 @@ def gf2_add_coefficients_ir(
     source: tuple[int | bool | ClassicalFieldCoefficient, ...],
     target: tuple[int, ...],
     *,
-    control: int | None = None,
+    control: int | bool | ClassicalFieldCoefficient | None = None,
 ) -> tuple[Instruction, ...]:
     """XOR aligned quantum wires, classical slots, and constants into target.
 
     Both words use big-endian coefficient order. Emit from the least
     significant coefficient in the locked generator's broadcast order.
-    Classical slots must have been defined by the caller.
+    Classical slots must have been defined by the caller. A classical
+    control guards the full addition, including classical coefficients.
     """
     if len(source) != len(target):
         raise ValueError("Binary-field addition requires equal register widths")
-    targets = target if control is None else (*target, control)
+    quantum_control = control if type(control) is int else None
+    targets = target if quantum_control is None else (*target, quantum_control)
     if len(set(targets)) != len(targets) or any(
         type(wire) is not int or wire < 0 for wire in targets
     ):
         raise ValueError(
             "Binary-field target and control require distinct quantum wires"
         )
+    if control is False:
+        return ()
     homogeneous_quantum = all(type(coefficient) is int for coefficient in source)
     gates: list[Instruction] = []
     for coefficient, wire in zip(source[::-1], target[::-1], strict=True):
@@ -56,14 +62,14 @@ def gf2_add_coefficients_ir(
             conditions = {"conditions": ((coefficient.slot, 1),)}
             gates.append(
                 Instruction("x", (wire,), metadata=conditions)
-                if control is None
-                else Instruction("cx", (control, wire), metadata=conditions)
+                if quantum_control is None
+                else Instruction("cx", (quantum_control, wire), metadata=conditions)
             )
         elif coefficient is True:
             gates.append(
                 Instruction("x", (wire,))
-                if control is None
-                else Instruction("cx", (control, wire))
+                if quantum_control is None
+                else Instruction("cx", (quantum_control, wire))
             )
         else:
             if (
@@ -74,13 +80,23 @@ def gf2_add_coefficients_ir(
                 raise ValueError(
                     "Binary-field source wires must be disjoint from target and control"
                 )
-            if control is None:
+            if quantum_control is None:
                 gates.append(Instruction("cx", (coefficient, wire)))
             elif homogeneous_quantum:
-                gates.append(Instruction("ccx", (coefficient, control, wire)))
+                gates.append(Instruction("ccx", (coefficient, quantum_control, wire)))
             else:
                 # Kickmix's mixed dispatch puts the common control first.
-                gates.append(Instruction("ccx", (control, coefficient, wire)))
+                gates.append(Instruction("ccx", (quantum_control, coefficient, wire)))
+    if isinstance(control, ClassicalFieldCoefficient):
+        guard = (control.slot, 1)
+        for i, gate in enumerate(gates):
+            (coefficient_conditions,) = instruction_condition_clauses(gate) or ((),)
+            gates[i] = replace(
+                gate,
+                metadata={
+                    "conditions": tuple(sorted({guard, *coefficient_conditions}))
+                },
+            )
     return tuple(gates)
 
 
