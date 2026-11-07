@@ -13,6 +13,32 @@ from .measurement import measure_x_clear_ir
 from .polynomial import _validate_registers
 
 
+def _modular_doubling_ports(
+    target: tuple[int, ...],
+    modulus: tuple[_Coefficient, ...],
+    clean: tuple[int, ...],
+    control: int | None,
+    inverse: bool,
+    dirty: tuple[int, ...] = (),
+) -> tuple[int, ...]:
+    n = len(target)
+    if not n or len(modulus) != n or modulus[0] is not True or modulus[-1] is not True:
+        raise ValueError(
+            "Modular doubling requires a matching odd full-capacity modulus"
+        )
+    if control is not None and type(control) is not int:
+        raise ValueError("Modular doubling control must be a quantum wire")
+    if type(inverse) is not bool:
+        raise ValueError("Modular doubling direction must be boolean")
+    if any(not isinstance(bit, (int, ClassicalFieldCoefficient)) for bit in modulus):
+        raise ValueError("Modulus coefficients must be bits or quantum wires")
+    quantum = tuple(dict.fromkeys(bit for bit in modulus if type(bit) is int))
+    _validate_registers(
+        target, quantum, clean, dirty, () if control is None else (control,)
+    )
+    return quantum
+
+
 def kickmix_exact_modular_doubling_ir(
     target: tuple[int, ...],
     modulus: tuple[_Coefficient, ...],
@@ -32,18 +58,7 @@ def kickmix_exact_modular_doubling_ir(
     work resets are omitted. Finite-tolerance schedules are separate.
     """
     n = len(target)
-    if not n or len(modulus) != n or modulus[0] is not True or modulus[-1] is not True:
-        raise ValueError(
-            "Modular doubling requires a matching odd full-capacity modulus"
-        )
-    if control is not None and type(control) is not int:
-        raise ValueError("Modular doubling control must be a quantum wire")
-    if type(inverse) is not bool:
-        raise ValueError("Modular doubling direction must be boolean")
-    if any(not isinstance(bit, (int, ClassicalFieldCoefficient)) for bit in modulus):
-        raise ValueError("Modulus coefficients must be bits or quantum wires")
-    quantum = tuple(dict.fromkeys(bit for bit in modulus if type(bit) is int))
-    _validate_registers(target, quantum, clean, () if control is None else (control,))
+    _modular_doubling_ports(target, modulus, clean, control, inverse)
     if n == 1:
         return ()
     low = tuple(reversed(target))
