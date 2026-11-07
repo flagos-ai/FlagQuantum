@@ -14,6 +14,7 @@ import numpy as np
 from numpy.typing import NDArray
 
 from .integer_values import validate_integer_word_value
+from .value_encoding import decode_value_array, encode_value_array
 
 if TYPE_CHECKING:
     from sympy import Expr
@@ -80,14 +81,8 @@ def vectorized_integer_array_to_bits(
     adds no unsigned-mask fast path or symbolic-width precheck before scalar
     evaluation. Empty input and output dtype/shape inference remain upstream.
     """
-    return cast(
-        "NDArray[np.uint8]",
-        np.vectorize(
-            lambda value: np.asarray(
-                integer_to_bits(value, width, signed=signed), dtype=np.uint8
-            ),
-            signature="()->(n)",
-        )(values),
+    return encode_value_array(
+        values, lambda value: integer_to_bits(value, width, signed=signed)
     )
 
 
@@ -95,12 +90,9 @@ def vectorized_integer_array_from_bits(
     bits: NDArray[Any], width: int | Expr, *, signed: bool = False
 ) -> NDArray[Any]:
     """Decode each bit row using the source's unchecked scalar decode contract."""
-    return cast(
-        "NDArray[Any]",
-        np.vectorize(
-            lambda row: integer_from_bits(row, width, signed=signed),
-            signature="(n)->()",
-        )(bits),
+    return decode_value_array(
+        bits,
+        lambda row: integer_from_bits(cast(Sequence[int], row), width, signed=signed),
     )
 
 
