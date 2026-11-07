@@ -1,14 +1,17 @@
 # Copyright 2023 Google LLC
+# Copyright 2024 Google LLC
 # SPDX-License-Identifier: Apache-2.0
-# Adapted from Qualtran v0.7.0 Add, AddIntoPhaseGrad, SumOfSquares, and Product.
+# Adapted from Qualtran v0.7.0 Add, CAdd, AddIntoPhaseGrad, SumOfSquares, and Product.
 # https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/bloqs/arithmetic/addition.py
+# https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/bloqs/arithmetic/controlled_addition.py
 # https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/bloqs/rotations/phase_gradient.py
 
 # https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/bloqs/arithmetic/multiplication.py
 
 """Declared arithmetic costs before selecting an IR implementation."""
 
-from .._component_trace.resource_model import ComponentCost, GateCost
+from .._component_trace.resource_model import ComponentCost, CostCall, GateCost
+from .control_predicate_resource_model import control_predicate_cost
 
 
 def source_add_cost(
@@ -29,6 +32,41 @@ def source_add_cost(
             and_bloq=carries,
             clifford=(right_width - 2) * 6 + 3 + carries * (3 if legacy_shims else 1),
             measurement=carries,
+        ),
+    )
+
+
+def source_controlled_add_cost(
+    left_width: int,
+    right_width: int,
+    *,
+    control_value: int = 1,
+    legacy_shims: bool = False,
+) -> ComponentCost:
+    """Compose the original CAdd declaration and loaded-word lifetimes.
+
+    Logical widths cover unsigned or Montgomery words. The shared Add and
+    predicate models retain their source profile rules, including the one-bit
+    Add Clifford anomaly. This query does not count emitted primitives.
+    """
+    if type(control_value) is not int or control_value not in (0, 1):
+        raise ValueError("Controlled addition model requires control value zero or one")
+    if type(legacy_shims) is not bool:
+        raise ValueError("Controlled addition cost profile must be a boolean")
+    addition = source_add_cost(left_width, right_width, legacy_shims=legacy_shims)
+    compute = control_predicate_cost((control_value, 1), legacy_shims=legacy_shims)
+    cleanup = control_predicate_cost(
+        (control_value, 1), uncompute=True, legacy_shims=legacy_shims
+    )
+    # At the last predicate call, all prior loaded bits remain live.
+    predicate_bystanders = 2 * left_width + right_width - 2
+    return ComponentCost(
+        "CAdd",
+        1 + left_width + right_width,
+        calls=(
+            CostCall(compute, left_width, predicate_bystanders),
+            CostCall(addition, bystander_qubits=left_width + 1),
+            CostCall(cleanup, left_width, predicate_bystanders),
         ),
     )
 
