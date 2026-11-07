@@ -34,6 +34,7 @@ pytestmark = pytest.mark.unit
         ("add", 2),
         ("controlled_add", 2),
         ("bitwise_not", 1),
+        ("out_of_place_add", 1),
         ("multi_controlled_x", 1),
         ("controlled_subtraction", 1),
         ("less_than", 1),
@@ -182,3 +183,15 @@ def test_identity_contract_rejects_ambiguous_or_mutable_fields(kwargs):
     args = dict(operation="controlled_add", widths=(2, 3)) | kwargs
     with pytest.raises(ValueError):
         ArithmeticCall(**args)
+
+
+def test_out_of_place_output_width_is_identity_and_only_valid_on_its_operation():
+    full = ArithmeticCall("out_of_place_add", (3,))
+    truncated = replace(full, include_most_significant_bit=False)
+    assert full != truncated
+    assert full.encodings == truncated.encodings == ("unsigned",)
+    assert replace(truncated, adjoint=True).include_most_significant_bit is False
+    with pytest.raises(ValueError, match="truncated sum"):
+        ArithmeticCall("add", (3, 3), include_most_significant_bit=False)
+    with pytest.raises(ValueError, match="truncated sum"):
+        ArithmeticCall("out_of_place_add", (3,), include_most_significant_bit=1)

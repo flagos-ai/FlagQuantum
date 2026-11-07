@@ -40,6 +40,12 @@ def arithmetic_callees(call: ArithmeticCall) -> dict[ResourceCall, SymbolicInt]:
             ConjunctionCall((1, 1), adjoint=True): n - 1,
             CliffordCall("cx", 2): (n - 2) * 6 + 3,
         }
+    if call.operation == "out_of_place_add":
+        extra = int(call.include_most_significant_bit)
+        return {
+            ConjunctionCall((1, 1)): width + extra - 1,
+            CliffordCall("cx", 2): 5 * (width - 1) + 2 + 3 * extra,
+        }
     if call.operation == "controlled_add":
         return {
             ConjunctionCall((call.control_value, 1)): width,

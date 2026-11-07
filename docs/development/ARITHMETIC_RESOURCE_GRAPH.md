@@ -88,3 +88,11 @@ failing recursive/aggregate resource query remains explicit.
 The consumer batch passes 683 concentrated tests without skips (48 net new
 cases), strict mypy and architecture checks. Both existing modular examples and
 the symbolic call-graph example remain runnable.
+
+## Out-of-place addition identity (G2-A44)
+
+The `out_of_place_add` key adds the source's output-MSB flag; this flag cannot
+truncate other arithmetic operations. Both inputs have width n, and the logical
+output has width n or n+1. The source-adjoint recipe changes And to measured
+And-adjoint and retains the CNOT declaration in its original order. This does
+not change the independently tested out-of-place IR emitter.

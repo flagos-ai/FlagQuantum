@@ -17,6 +17,7 @@ ArithmeticOperation: TypeAlias = Literal[
     "add",
     "controlled_add",
     "bitwise_not",
+    "out_of_place_add",
     "multi_controlled_x",
     "controlled_subtraction",
     "less_than",
@@ -41,6 +42,7 @@ class ArithmeticCall:
     control_value: int = 1
     signed: bool = False
     adjoint: bool = False
+    include_most_significant_bit: bool = True
     _python_widths: tuple[bool, ...] = field(init=False, repr=False)
 
     def __post_init__(self) -> None:
@@ -48,6 +50,7 @@ class ArithmeticCall:
             "add",
             "controlled_add",
             "bitwise_not",
+            "out_of_place_add",
             "multi_controlled_x",
             "controlled_subtraction",
             "less_than",
@@ -108,3 +111,9 @@ class ArithmeticCall:
             )
         if type(self.adjoint) is not bool:
             raise ValueError("Arithmetic resource direction must be boolean")
+
+        if type(self.include_most_significant_bit) is not bool or (
+            not self.include_most_significant_bit
+            and self.operation != "out_of_place_add"
+        ):
+            raise ValueError("Only out-of-place addition accepts a truncated sum")
