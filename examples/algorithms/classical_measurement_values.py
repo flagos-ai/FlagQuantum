@@ -25,6 +25,10 @@ from flagquantum.simulation.classical_measurement import (
     measure_x_basis_phase,
     measure_x_classical_values,
 )
+from flagquantum.simulation.classical_registers import (
+    bind_integer_register_values,
+    collect_integer_register_value,
+)
 
 
 @dataclass(frozen=True)
@@ -45,9 +49,15 @@ def main() -> None:
     for value in (0, 1):
         samples = []
         for _ in range(8):
-            outcome = draw_classical_value(
-                measure_x_classical_values(value)["c"], instance_id=0, rng=rng
+            assignments = bind_integer_register_values(
+                "c",
+                measure_x_classical_values(value),
+                1,
+                resolve_distribution=lambda distribution: draw_classical_value(
+                    distribution, instance_id=0, rng=rng
+                ),
             )
+            outcome = collect_integer_register_value(assignments, 1)
             phase = apply_classical_phase(
                 1.0, measure_x_basis_phase(value), {("c", ()): outcome}
             )

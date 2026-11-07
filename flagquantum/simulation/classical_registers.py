@@ -7,12 +7,13 @@
 
 from __future__ import annotations
 
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from itertools import product
 from typing import TYPE_CHECKING
 
 import numpy as np
 
+from .classical_distributions import ClassicalDistribution
 from .integer_values import validate_integer_word_array, validate_integer_word_value
 
 if TYPE_CHECKING:
@@ -26,13 +27,17 @@ def bind_integer_register_values(
     *,
     shape: tuple[int, ...] = (),
     signed: bool = False,
+    resolve_distribution: Callable[[ClassicalDistribution], object] | None = None,
 ) -> dict[tuple[int, ...], object]:
     """Bind one named register's row-major indices to original classical values.
 
     Shapes must be concrete. Scalar symbolic expressions bypass domain checks,
     as in the source. Arrays use asanyarray and source range-only validation,
     preserving subclasses and element types. Extra named values are ignored.
-    No graph traversal, stochastic-value sampling or quantum allocation occurs.
+    Scalar distributions are resolved exactly once before integer validation.
+    Their resolver owns the RNG or fixed instance identity. Without a resolver,
+    stochastic values are rejected. Shaped values never invoke the resolver.
+    No graph traversal or quantum allocation occurs.
     """
     try:
         value = values[name]
@@ -55,6 +60,13 @@ def bind_integer_register_values(
         else:
             if isinstance(value, Expr):
                 return {(): value}
+    if isinstance(value, ClassicalDistribution):
+        if resolve_distribution is None:
+            raise ValueError(
+                f"Classical register {name!r} has non-deterministic action."
+                "Cannot simulate with classical values."
+            )
+        value = resolve_distribution(value)
     validate_integer_word_value(value, width, signed=signed)
     return {(): value}
 

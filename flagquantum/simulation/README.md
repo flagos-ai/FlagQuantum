@@ -817,3 +817,9 @@ protocol is also used by controlled values/phases. It does not bind graph wires
 or apply returned phases. Run `python -m examples.algorithms.classical_action_dispatch`
 for a recursive numerical recipe and ordinary `circuit.append(op)` execution;
 see [action dispatch](../../docs/development/CLASSICAL_ACTION_DISPATCH.md).
+
+The existing integer-register binder accepts a graph-owned distribution resolver
+for scalar stochastic outputs. It resolves once, then uses the existing integer
+validator; arrays and ordinary symbolic values preserve their earlier paths.
+The measurement example now binds and collects sampled values before resolving
+their phase. See [stochastic output binding](../../docs/development/CLASSICAL_OUTPUT_DISTRIBUTIONS.md).
