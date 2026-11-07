@@ -10,6 +10,7 @@ from flagquantum.compiler.formats.kmx import encode_kmx
 from flagquantum.compiler.lowering.reversible_phase import lower_reversible_phase
 from flagquantum.compiler.registers.finite_field import ClassicalFieldCoefficient
 from flagquantum.compiler.registers.kickmix_comparison import (
+    kickmix_less_than_ir,
     kickmix_quantum_compare_ir,
     kickmix_quantum_equal_ir,
 )
@@ -329,4 +330,88 @@ def test_equality_validates_result_slot_and_workspace() -> None:
     with pytest.raises(ValueError, match="separate"):
         kickmix_quantum_equal_ir(
             (0, 1), (True, ClassicalFieldCoefficient(0)), 2, (3, 4), measurement_bit=0
+        )
+
+
+@pytest.mark.parametrize("phase_target", [False, True])
+def test_full_mixed_less_than_preserves_every_complex_branch(
+    phase_target: bool,
+) -> None:
+    total = 10
+    basis = torch.arange(64)
+    amplitudes = torch.complex((basis + 1).double(), (3 * basis - 5).double())
+    amplitudes /= amplitudes.norm()
+    state = torch.zeros(1 << total, dtype=torch.complex128)
+    state[::16] = amplitudes
+    circuit = DynamicCircuit(total, inputs=state, dtype=torch.complex128)
+    ir = kickmix_less_than_ir(
+        (0, 1, 2),
+        (3, ClassicalFieldCoefficient(0), True),
+        None if phase_target else 5,
+        (6, 7, 8),
+        or_equal=True,
+        control=4,
+        measurement_bit=1,
+    )
+    circuit.append(FieldOperation(total, (*measure_x_clear_ir(9, 0), *ir)))
+    result = run_dynamic(circuit, shots=64, seed=41, strategy="trajectory")
+    history = result.classical_bits[:, :2]
+    assert set(map(tuple, history.tolist())) == {(0, 0), (0, 1), (1, 0), (1, 1)}
+    for coefficient in (0, 1):
+        right = (((basis >> 2) & 1) << 2) | (coefficient << 1) | 1
+        enabled = ((basis >> 3) <= right) & (((basis >> 1) & 1) == 1)
+        expected = torch.zeros_like(state)
+        if phase_target:
+            expected[::16] = amplitudes * (1 - 2 * enabled.long())
+        else:
+            expected[::16] = amplitudes[basis ^ enabled.long()]
+        actual = result.final_states.reshape(64, -1)[history[:, 0] == coefficient]
+        torch.testing.assert_close(
+            actual, expected.expand_as(actual), rtol=0, atol=1e-12
+        )
+
+
+def test_full_quantum_ladder_preserves_every_independent_outcome_phase() -> None:
+    np = pytest.importorskip("numpy")
+    width = 4
+    left, right = tuple(range(width)), tuple(range(width, 2 * width))
+    target, equal, control = 8, 9, 10
+    workspace = (11, 12, 13, 14)
+    values = np.arange(1 << 11)
+    wires = [(values >> bit) & 1 for bit in reversed(range(11))]
+    wires.extend(np.zeros_like(values) for _ in workspace)
+    expected = np.array(wires)
+    lhs = values >> 7
+    rhs = (values >> 3) & 15
+    expected[target] ^= (values & 1) & (lhs < rhs + ((values >> 1) & 1))
+    ir = kickmix_less_than_ir(
+        left,
+        right,
+        target,
+        workspace,
+        or_equal=equal,
+        control=control,
+        measurement_bit=0,
+    )
+    _apply_phase_certified_block(np, wires, ir, None)
+    np.testing.assert_array_equal(wires, expected)
+    program = lower_reversible_phase(CircuitIR(len(wires), ir))
+    assert Counter(op.opcode for op in program.operations)["hmr"] == 4
+    assert program.n_bits == 1
+
+
+def test_exact_less_than_dispatch_and_missing_resources() -> None:
+    left, right = (0, 1), (2, 3)
+    assert kickmix_less_than_ir(left, right, 4, (5,)) == (
+        kickmix_quantum_compare_ir(left, right, 4, (5,))
+    )
+    with pytest.raises(ValueError, match="low-space classical"):
+        kickmix_less_than_ir(left, (True, False), 4)
+    with pytest.raises(ValueError, match="minus one"):
+        kickmix_less_than_ir(left, (True, 2), 4)
+    with pytest.raises(ValueError, match="result slot"):
+        kickmix_less_than_ir(left, (True, 2), 4, (5,))
+    with pytest.raises(ValueError, match="separate"):
+        kickmix_less_than_ir(
+            left, (ClassicalFieldCoefficient(1), 2), 4, (5,), measurement_bit=1
         )

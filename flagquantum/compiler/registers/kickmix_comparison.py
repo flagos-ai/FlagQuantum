@@ -23,9 +23,13 @@ def _flip(
         return ()
     wires = tuple(control for control in controls if type(control) is int)
     bits = tuple(
-        (control.slot, 1)
-        for control in controls
-        if isinstance(control, ClassicalFieldCoefficient)
+        sorted(
+            {
+                (control.slot, 1)
+                for control in controls
+                if isinstance(control, ClassicalFieldCoefficient)
+            }
+        )
     )
     if target is None:
         if not wires:
@@ -301,3 +305,173 @@ def kickmix_quantum_equal_ir(
     gates.extend(measure_x_clear_ir(clean[0], measurement_bit))
     gates.extend(_flip(None, control, lhs[0], outcome))
     return (*gates, *invert, *difference)
+
+
+def _parity_controlled_flip(
+    target: int,
+    first: int | bool | ClassicalFieldCoefficient,
+    second: int | bool | ClassicalFieldCoefficient,
+    control: int,
+) -> tuple[Instruction, ...]:
+    if type(first) is type(second) and first == second:
+        return ()
+    if type(first) is int:
+        parity = _flip(first, second)
+        return (*parity, *_flip(target, first, control), *parity)
+    if type(second) is int:
+        parity = _flip(second, first)
+        return (*parity, *_flip(target, second, control), *parity)
+    return (*_flip(target, first, control), *_flip(target, second, control))
+
+
+def kickmix_less_than_ir(
+    left: tuple[int, ...],
+    right: tuple[int | bool | ClassicalFieldCoefficient, ...],
+    target: int | None,
+    workspace: tuple[int, ...] = (),
+    *,
+    or_equal: int | bool | ClassicalFieldCoefficient = False,
+    control: int | bool = True,
+    measurement_bit: int | None = None,
+    minimize_qubits: bool = False,
+) -> tuple[Instruction, ...]:
+    """Emit the locked exact comparison for equal-width mixed words.
+
+    All words are big-endian. The full carry ladder requires width minus
+    one clean wires and one reusable result slot. Homogeneous quantum words
+    with fewer than width work wires use the dedicated quantum schedule.
+    A None target selects a phase output.
+    """
+    width = len(left)
+    if len(right) != width:
+        raise ValueError("Comparison requires equal word widths")
+    quantum_right = tuple(q for q in right if type(q) is int)
+    if width and len(quantum_right) == width and len(workspace) < width:
+        return kickmix_quantum_compare_ir(
+            left,
+            quantum_right,
+            target,
+            workspace,
+            or_equal=or_equal,
+            control=control,
+            measurement_bit=measurement_bit,
+            minimize_qubits=minimize_qubits,
+        )
+    output = () if target is None else (target,)
+    quantum_controls = tuple(q for q in (or_equal, control) if type(q) is int)
+    _validate_registers(
+        left, tuple(dict.fromkeys(quantum_right)), output, workspace, quantum_controls
+    )
+    classical_inputs = {
+        q.slot for q in (*right, or_equal) if isinstance(q, ClassicalFieldCoefficient)
+    }
+    if measurement_bit is not None and (
+        type(measurement_bit) is not int
+        or measurement_bit < 0
+        or measurement_bit in classical_inputs
+    ):
+        raise ValueError("Comparison requires a separate nonnegative result slot")
+    if type(minimize_qubits) is not bool:
+        raise ValueError("Comparison minimize_qubits must be boolean")
+    if control is False:
+        return ()
+    if width == 0:
+        return _flip(target, control, or_equal)
+
+    lhs, rhs = left[::-1], right[::-1]
+    difference = tuple(
+        gate
+        for wire, coefficient in zip(lhs, rhs, strict=True)
+        for gate in _flip(wire, coefficient)
+    )
+    invert = tuple(Instruction("x", (wire,)) for wire in lhs)
+    if width == 1:
+        scratch = workspace[0] if workspace and not minimize_qubits else None
+        return (
+            *difference,
+            *_flip(
+                target,
+                control,
+                lhs[0],
+                rhs[0],
+                scratch=scratch,
+                measurement_bit=measurement_bit,
+            ),
+            *invert,
+            *_flip(
+                target,
+                or_equal,
+                control,
+                lhs[0],
+                scratch=scratch,
+                measurement_bit=measurement_bit,
+            ),
+            *invert,
+            *difference,
+        )
+
+    if not quantum_right and (minimize_qubits or len(workspace) < width - 1):
+        raise ValueError(
+            "Comparison requires the low-space classical schedule for this workspace"
+        )
+    if len(workspace) < width - 1:
+        raise ValueError("Comparison requires at least width minus one clean wires")
+    if measurement_bit is None:
+        raise ValueError("Measured comparison requires a classical result slot")
+
+    clean = workspace[: width - 1]
+    scratch = (
+        workspace[width - 1]
+        if len(workspace) >= width and not minimize_qubits
+        else None
+    )
+    gates = [
+        *invert,
+        *difference,
+        *_parity_controlled_flip(clean[0], or_equal, rhs[0], lhs[0]),
+        *_flip(clean[0], rhs[0]),
+        *_flip(clean[0], rhs[1]),
+    ]
+    loop_dispatch = len(quantum_right) == width or all(
+        isinstance(coefficient, ClassicalFieldCoefficient) for coefficient in rhs
+    )
+    for i in range(1, width - 1):
+        controls = (clean[i - 1], lhs[i]) if loop_dispatch else (lhs[i], clean[i - 1])
+        gates.extend(
+            (
+                Instruction("ccx", (*controls, clean[i])),
+                *_flip(clean[i], rhs[i]),
+                *_flip(clean[i], rhs[i + 1]),
+            )
+        )
+    for carry, coefficient in zip(clean, rhs[1:], strict=True):
+        gates.extend(_flip(carry, coefficient))
+
+    restore = _flip(clean[-1], rhs[-1])
+    gates.extend(
+        (
+            *_flip(target, control, rhs[-1]),
+            *restore,
+            *_flip(
+                target,
+                control,
+                lhs[-1],
+                clean[-1],
+                scratch=scratch,
+                measurement_bit=measurement_bit,
+            ),
+            *restore,
+        )
+    )
+    outcome = ClassicalFieldCoefficient(measurement_bit)
+    for i in reversed(range(width - 1)):
+        incoming = clean[i - 1] if i else or_equal
+        gates.extend(
+            (
+                *measure_x_clear_ir(clean[i], measurement_bit),
+                *_flip(None, rhs[i], outcome),
+                *_flip(None, lhs[i], incoming, outcome),
+                *_flip(None, lhs[i], rhs[i], outcome),
+            )
+        )
+    return (*gates, *difference, *invert)
