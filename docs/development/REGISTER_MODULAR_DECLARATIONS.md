@@ -32,3 +32,43 @@ separately. It verifies coherent active/inactive branches, absolute phase and
 zero work for both polarities. Tests compare all seven source categories and
 widths for uint/Montgomery, directions and profiles, replace the shared child
 models, and retain the original gate/complex-measurement/cleanup regressions.
+
+## Modular placeholder declarations (G2-MOD15)
+
+`modular_declarations.py` ports the four direct call declarations in the original
+`arithmetic/_shims.py`. It uses existing flat register layouts, typed resource
+callees and `SymbolicResourceFormula`, without a new model registry or SDK type.
+This slice accepts concrete nonnegative widths. Symbolic dimensions remain a
+separate open path; negative widths are invalid native register dimensions.
+
+| Native declaration | Original source | Direct calls |
+| --- | --- | --- |
+| `multi_controlled_x` | MultiCToffoli | n-2 Toffoli |
+| `controlled_subtraction` | CSub | CAdd plus three BitwiseNot |
+| `less_than` | Lt | n Toffoli |
+| `controlled_half` | CHalf | n TwoBitCSwap |
+
+`modular_arithmetic_registers` preserves the source names and flat widths.
+`modular_arithmetic_calls` returns the literal direct multiplicities.
+`source_modular_arithmetic_resource_formula` consumes the existing typed QEC
+query and original signature/callee width fallback. CSub uses the shared CAdd
+composition in the chosen profile; it does not duplicate predicate/Add math.
+Lt's `signed` flag changes neither its original signature nor its declaration.
+
+Zero call weights remain visible. The original MultiCToffoli with zero/one
+controls declares -2/-1 Toffoli; those diagnostics remain declaration data and
+are not passed off as executable repetition counts. The original width fallback
+also includes the three-bit atomic callee at zero/negative multiplicity. Native
+executable `CostCall` validation is unchanged. Zero-width CSub has failing source
+QEC and width queries and is rejected explicitly; its register metadata can
+still be inspected.
+
+All four original placeholders lack gate and classical decompositions. There
+is therefore no source gate stream, complex-amplitude channel or measurement
+history to compare for them. The native output is a formula, not an appendable
+operation. The actual shared CAdd emitter continues to carry its independent
+gate/state/clean-work evidence. The runnable example
+`python -m examples.algorithms.modular_resource_declarations` prints declared categories,
+peak and T equivalents; it makes no physical-gate or quantum-execution claim.
+Tests compare original signatures, direct callees/multiplicities, every QEC
+category, both profiles/directions, the signed flag and source failure boundaries.
