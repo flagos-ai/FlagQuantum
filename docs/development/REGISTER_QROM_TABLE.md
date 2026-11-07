@@ -118,3 +118,26 @@ preservation. Three two-dataset channels with zero, one and two controls exhaust
 all measurement histories over coherent addresses, arbitrary target words and
 inactive controls, including absolute phase and clean work. Logical source
 counts and emitted primitive counts remain in their existing separate models.
+
+
+## Phase-gradient lookup consumer (G2-ROM13)
+
+`compiler/registers/phase_gradient_lookup.py` now builds one native QROM table
+layout for the original PRGAViaPhaseGradient call chain. Workspace queries use
+its `workspace_size` and emitted loads use `bind_packed`. The caller still owns
+the angle register, reusable scratch and classical slots; the stream remains
+QROM, shared fixed-point addition, QROM. Existing flat compiler words are not
+converted through a NumPy data factory. Complete-table checks and public/internal
+entry signatures remain unchanged.
+
+Replacement tests supply a different shared QROM workspace and load body and
+verify the consumer uses both. Existing original graph tests compare exact
+ports, gates and resource categories, with small full complex measurement
+histories and an eight-bit table. The source AddIntoPhaseGrad leaf still has no
+executable decomposition: shared Add is the retained implementation and its
+primitive costs stay separate from the source abstract addition model.
+
+Run `python -m examples.algorithms.register_phase_lookup` for the consumer's
+append workflow. It verifies coherent active/inactive controls, the exact
+complex phase, unchanged external gradient and clean angle/scratch. Output labels
+one QROM child's logical model separately from the full primitive stream.
