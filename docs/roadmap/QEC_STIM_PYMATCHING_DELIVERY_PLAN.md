@@ -775,3 +775,47 @@ packed predictions, SDK batch weights and matched detector pairs. PR1090 and
 PR1091 are superseded only after their contents are audited into this candidate.
 All prior evidence and approval scopes remain retained; no new upstream feature
 is inferred. Final-head integration and actual-main acceptance remain pending.
+## External Stim measurement conversion candidate
+
+The backend-neutral `convert_measurement_records` entry selects the source
+text dialect with `circuit_format`. The [conversion contract](../development/QEC_STIM_MEASUREMENT_CONVERSION_API_PROPOSAL.md)
+covers existing CPU records, reference normalization, and sweep controls.
+Installed-package and main acceptance are tracked separately.
+
+
+## Native terminal measurement conversion candidate
+
+The [native terminal readout contract](../development/QEC_TERMINAL_READOUT_CONVERSION_PROPOSAL.md)
+extends the same FlagQuantum circuit from ordinary local simulation to
+conversion of CPU terminal Z records into detector and logical flips. It uses
+explicit logical readout columns, shared parity maps, and one prepared
+reference per converter. The conformance suite compares all eight records
+across bound, compiled and placed variants against independent XOR and checks
+the emitted physical measurement order. This advances the terminal-measurement
+slice of FTS-04 after acceptance. Mid-circuit records, full upstream parity
+and broader QEC or FTQC milestone acceptance remain separate work.
+
+
+## PR1087 integration after native conversion PR1106
+
+PR1106 was merged at `290d80ec3e2ffc958a3da5221e4a076e4e8a5900` with
+reviewed tree `c227466575d6a116ff66aafa27a78a562be71c1f`; actual-main source and
+all 36 changed blobs match its reviewed head, and main smoke passed. Its native
+installation evidence is reused. No exact-main full-CI/package receipt is
+inferred from that source audit or from the PR checks.
+
+PR1087 is now being reconciled with that main within its existing 24 paths.
+The combined installed verifier retains external experiments, complete decoder
+records, packed predictions, SDK weights, matched pairs, text conversion,
+terminal conversion and prepared measurement sampling. The historical API
+fixture is unchanged: the existing incremental contract now registers only the
+three additional methods covered by their separately approved proposals.
+The old Black and compatibility failures remain retained, alongside the separate
+artifact-upload timeout. No old CI attempt was rerun.
+
+Local core/SDK correctness and final-head user examples are distinct from final
+CI and installed-profile admission. SI-01 through SI-06 remain candidates pending
+those delivery gates. PR1092 remains a separate matrix/weighted-graph candidate
+with conflicts and unresolved historical failures; it is not counted as merged.
+R03/R08 and FTS-04 remain partial; FTS-02 and M2 are not closed by these changes.
+No research measurement, threshold or performance study is authorized here.

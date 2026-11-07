@@ -86,3 +86,5 @@ correction edges and from logical predictions. See the
 [API proposal](../../../docs/development/QEC_PYMATCHING_MATCHED_DETECTORS_API_PROPOSAL.md)
 for runnable code and tests. QEC owns normalization and validation; SDK objects
 remain private. Independent tied calls need not describe one identical solution.
+For external measurement records, use the
+[QEC measurement conversion entry](../execution/README.md).

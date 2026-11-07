@@ -19,11 +19,14 @@ from tools.check_qec_installed_profiles import _run
 from tools.qec_installed_smoke import (
     PROFILES,
     _exercise,
+    _exercise_compiled_measurement_sampler,
     _exercise_decoder_records,
     _exercise_matched_detectors,
     _exercise_packed_predictions,
     _exercise_sdk_weights,
+    _exercise_stim_conversion,
     _exercise_stim_experiment,
+    _exercise_terminal_conversion,
 )
 
 pytestmark = pytest.mark.unit
@@ -43,6 +46,9 @@ def test_public_workflow_in_the_available_source_profile(profile: str) -> None:
     assert _exercise_matched_detectors(profile) == (
         [[0, None], [1, 2]] if available[1] else None
     )
+    assert (_exercise_stim_conversion(profile) is not None) == available[0]
+    assert (_exercise_terminal_conversion(profile) is not None) == available[0]
+    assert (_exercise_compiled_measurement_sampler(profile) is not None) == available[0]
     records = _exercise(profile)
     assert len(records) == (4 if available[0] else 0)
     for record in records:

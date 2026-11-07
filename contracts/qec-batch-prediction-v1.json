@@ -9,7 +9,10 @@
   },
   "additive_methods": {
     "PyMatchingDecoder": {
-      "decode_batch": "(self, detection_events: 'torch.Tensor') -> 'torch.Tensor'"
+      "decode_batch": "(self, detection_events: 'torch.Tensor') -> 'torch.Tensor'",
+      "decode_packed_batch": "(self, detection_events: 'torch.Tensor') -> 'torch.Tensor'",
+      "decode_batch_with_weights": "(self, detection_events: 'torch.Tensor', *, bit_packed_shots: 'bool' = False, bit_packed_predictions: 'bool' = False) -> 'tuple[torch.Tensor, torch.Tensor]'",
+      "decode_to_matched_detectors": "(self, detection_events: 'Iterable[int]') -> 'tuple[tuple[int, int | None], ...]'"
     }
   },
   "input": "CPU dense strided binary bool or integer Tensor[B,D]",
@@ -39,5 +42,22 @@
     "weights": "Owned finite nonnegative CPU float64[B] SDK-reported weights, distinct from full-record selected-edge sums",
     "proposal": "docs/development/QEC_PYMATCHING_BATCH_WEIGHTS_API_PROPOSAL.md",
     "status": "candidate_pending_acceptance"
+  },
+  "matched_detector_pairs_extension": {
+    "approval": {
+      "date": "2026-11-05",
+      "scope": "Explicit user approval of the seven-path matched detector pairs proposal; consolidated into PR1087"
+    },
+    "method": "PyMatchingDecoder.decode_to_matched_detectors(self, detection_events: Iterable[int]) -> tuple[tuple[int, int | None], ...]",
+    "proposal": "docs/development/QEC_PYMATCHING_MATCHED_DETECTORS_API_PROPOSAL.md",
+    "status": "candidate_pending_acceptance"
+  },
+  "incremental_contract_registration": {
+    "purpose": "The pre-migration fixture stays immutable. additive_methods enumerates the original batch addition and only the three separately approved incremental methods, so compatibility continues to assert every original export, method signature, field, pickle and registry.",
+    "proposals": [
+      "docs/development/QEC_PYMATCHING_PACKED_BATCH_API_PROPOSAL.md",
+      "docs/development/QEC_PYMATCHING_BATCH_WEIGHTS_API_PROPOSAL.md",
+      "docs/development/QEC_PYMATCHING_MATCHED_DETECTORS_API_PROPOSAL.md"
+    ]
   }
 }

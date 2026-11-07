@@ -377,6 +377,90 @@ def _exercise_matched_detectors(profile: str) -> list[list[int | None]] | None:
     return [[first, second] for first, second in pairs]
 
 
+def _exercise_stim_conversion(profile: str) -> dict[str, object] | None:
+    import torch
+
+    from flagquantum.qec.execution.measurement_conversion import (
+        convert_measurement_records,
+    )
+    from flagquantum.simulation.stabilizer import StabilizerDependencyError
+
+    text = "R 0\nX 0\nM 0\nDETECTOR rec[-1]\nOBSERVABLE_INCLUDE(0) rec[-1]"
+    raw = torch.tensor([[1], [0]], dtype=torch.uint8)
+    if not PROFILES[profile][0]:
+        try:
+            convert_measurement_records(
+                text, raw, circuit_format="stim", bit_packed_measurements=True
+            )
+        except StabilizerDependencyError:
+            return None
+        raise AssertionError("conversion ignored missing Stim")
+    batch = convert_measurement_records(
+        text, raw, circuit_format="stim", bit_packed_measurements=True
+    )
+    assert batch.detectors.tolist() == batch.observables.tolist() == [[False], [True]]
+    return {
+        "detectors": batch.detectors.tolist(),
+        "observables": batch.observables.tolist(),
+    }
+
+
+def _exercise_compiled_measurement_sampler(profile: str) -> dict[str, object] | None:
+    from pathlib import Path
+    from tempfile import TemporaryDirectory
+
+    from flagquantum.dynamic import DynamicCircuit
+    from flagquantum.simulation.stabilizer import StabilizerDependencyError
+
+    circuit = DynamicCircuit(1).x(0).measure(0).reset(0).measure(0)
+    try:
+        sampler = circuit.compile_sampler(seed=7)
+    except StabilizerDependencyError:
+        if PROFILES[profile][0]:
+            raise
+        return None
+    assert PROFILES[profile][0], "prepared sampler ignored missing Stim"
+    samples = sampler.sample(2, bit_packed=True)
+    assert samples.tolist() == [[1], [1]]
+    with TemporaryDirectory() as directory:
+        output = Path(directory) / "records.b8"
+        sampler.sample_write(2, filepath=output, format="b8")
+        packed = output.read_bytes()
+        assert packed == b"\x01\x01"
+    return {"packed_samples": samples.tolist(), "b8_hex": packed.hex()}
+
+
+def _exercise_terminal_conversion(profile: str) -> dict[str, object] | None:
+    import torch
+
+    import flagquantum as fq
+    from flagquantum.qec.execution.context import MeasurementMap
+    from flagquantum.qec.execution.measurement_conversion import compile_m2d_converter
+    from flagquantum.simulation.stabilizer import StabilizerDependencyError
+
+    try:
+        converter = compile_m2d_converter(
+            fq.Circuit(1).x(0),
+            measurement_qubits=(0,),
+            detector_map=MeasurementMap(1, ((0,),)),
+            observable_map=MeasurementMap(1, ()),
+        )
+    except StabilizerDependencyError:
+        if PROFILES[profile][0]:
+            raise
+        return None
+    assert PROFILES[profile][0], "terminal conversion ignored missing Stim"
+    results = []
+    for value in (True, False):
+        detectors, observables = converter.convert(
+            measurements=torch.tensor([[value]]), separate_observables=True
+        )
+        assert detectors.tolist() == [[not value]]
+        assert observables.shape == (1, 0)
+        results.extend(detectors.tolist())
+    return {"detectors": results, "observables": [[], []]}
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("profile", choices=PROFILES)
@@ -433,6 +517,11 @@ def main() -> int:
                 "matched_detectors": _exercise_matched_detectors(args.profile),
                 "stim_experiment": experiment,
                 "full_record_decoders": record_decoders,
+                "stim_conversion": _exercise_stim_conversion(args.profile),
+                "terminal_conversion": _exercise_terminal_conversion(args.profile),
+                "compiled_measurement_sampler": _exercise_compiled_measurement_sampler(
+                    args.profile
+                ),
             },
             sort_keys=True,
         )

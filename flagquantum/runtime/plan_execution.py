@@ -319,6 +319,10 @@ def execute_plan(execution_plan: ExecutionPlan) -> ExecutionResult:
                 str(decision["precision"]),
             )
         from ..dynamic import DynamicCircuit
+        from .dynamic._final_outputs import (
+            project_dynamic_final_outputs,
+            validate_dynamic_final_outputs,
+        )
         from .dynamic.execution import run_dynamic
 
         resolved = plan_resolved_options(execution_plan)
@@ -334,6 +338,9 @@ def execute_plan(execution_plan: ExecutionPlan) -> ExecutionResult:
                 "options_fingerprint_mismatch",
                 "dynamic ExecutionPlan seed must be null or a non-negative integer",
             )
+        requests = validate_dynamic_final_outputs(
+            source_ir, shots=shots, batch_size=batch_size
+        )
         program = cast(
             DynamicCircuit,
             DynamicCircuit.from_ir(
@@ -373,7 +380,9 @@ def execute_plan(execution_plan: ExecutionPlan) -> ExecutionResult:
                 provenance={},
             )
         return replace(
-            cast(ExecutionResult, native.to_execution_result()),
+            project_dynamic_final_outputs(
+                cast(ExecutionResult, native.to_execution_result()), requests
+            ),
             plan=execution_plan,
             provenance={},
         )

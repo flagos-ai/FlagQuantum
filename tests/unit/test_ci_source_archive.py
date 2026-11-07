@@ -232,3 +232,89 @@ def test_api_truncated_tree_requires_archive(tmp_path: Path, source: _Source) ->
         source.commit,
         lambda _: {"sha": source.commit.tree, "truncated": True},
     )
+
+
+@pytest.mark.parametrize("removal", ["success", "auto-removal", "persistent"])
+@pytest.mark.parametrize("imported_image", [False, True])
+def test_cleanup_only_removes_previous_container_for_this_runner_and_workspace(
+    tmp_path, monkeypatch, removal, imported_image
+):
+    import json
+
+    from tools import ci_source_archive as archive
+
+    monkeypatch.setenv("RUNNER_ENVIRONMENT", "self-hosted")
+    monkeypatch.setenv("RUNNER_NAME", "cpu01")
+    monkeypatch.setenv("GITHUB_WORKSPACE", str(tmp_path))
+    monkeypatch.setattr(archive.shutil, "which", lambda _: "/usr/bin/docker")
+    image = "sha256:" + "f" * 64
+    if not imported_image:
+        image = "ghcr.io/flagos-ai/flagquantum-ci@" + image
+    ids = [letter * 64 for letter in "abcd"]
+
+    def container(identifier, runner, workspace):
+        return {
+            "Id": identifier,
+            "Config": {
+                "Env": [
+                    f"RUNNER_NAME={runner}",
+                    "FQ_CI_PRIVATE=/tmp/fq-offline.fixture",
+                ]
+            },
+            "Mounts": [{"Type": "bind", "Source": str(workspace)}],
+        }
+
+    metadata = [
+        container(ids[0], "cpu01", tmp_path),
+        container(ids[1], "cpu02", tmp_path),
+        container(ids[2], "cpu01", tmp_path / "other"),
+    ]
+    calls = []
+
+    def command(arguments, **kwargs):
+        calls.append(arguments)
+        assert kwargs["timeout"] == 20
+        if arguments[1] == "inspect":
+            return subprocess.CompletedProcess(arguments, 0, json.dumps(metadata), "")
+        if arguments[1] == "rm":
+            assert arguments[2:] == ["--force", ids[0]]
+            return subprocess.CompletedProcess(
+                arguments, int(removal != "success"), "", "removal already in progress"
+            )
+        if "{{.ID}} {{.Image}}" in arguments:
+            return subprocess.CompletedProcess(
+                arguments,
+                0,
+                "\n".join(f"{i} {image}" for i in ids[:3]) + f"\n{ids[3]} redis:latest",
+                "",
+            )
+        return subprocess.CompletedProcess(
+            arguments, 0, ids[0] if removal == "persistent" else "", ""
+        )
+
+    monkeypatch.setattr(archive.subprocess, "run", command)
+    monkeypatch.setattr(archive.time, "sleep", lambda _: None)
+    if removal == "persistent":
+        with pytest.raises(
+            RuntimeError, match="Could not remove previous CI containers"
+        ):
+            archive.cleanup_runner_containers()
+    else:
+        archive.cleanup_runner_containers()
+    assert not any(ids[3] in command for command in calls)
+    assert sum(command[1] == "rm" for command in calls) == (
+        2 if removal == "persistent" else 1
+    )
+
+
+def test_cleanup_does_not_access_docker_on_hosted_or_non_docker_runners(monkeypatch):
+    from tools import ci_source_archive as archive
+
+    monkeypatch.setenv("RUNNER_ENVIRONMENT", "github-hosted")
+    monkeypatch.setattr(
+        archive.subprocess, "run", lambda *a, **k: pytest.fail("Docker accessed")
+    )
+    archive.cleanup_runner_containers()
+    monkeypatch.setenv("RUNNER_ENVIRONMENT", "self-hosted")
+    monkeypatch.setattr(archive.shutil, "which", lambda _: None)
+    archive.cleanup_runner_containers()

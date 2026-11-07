@@ -32,7 +32,7 @@ jobs:
   prepare-source:
     outputs:
       artifact-key: ${{ steps.pack-source.outputs.artifact-key }}
-    runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'flagquantum-a100-cpu-entry' || 'ubuntu-latest' }}
+    runs-on: ${{ fromJSON((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","linux","x64","flagquantum-cpu"]' || '["ubuntu-latest"]') }}
     timeout-minutes: 15
     env:
       GIT_CONFIG_COUNT: "1"
@@ -41,7 +41,7 @@ jobs:
     permissions:
       contents: read
     concurrency:
-      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('a100-cpu-{0}-prepare-source-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-5
+      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('self-hosted-{0}-prepare-source-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-5
       queue: max
     steps:
       - name: Restore verified source through the GitHub API
@@ -149,6 +149,10 @@ jobs:
             git init .
           fi
           git index-pack --stdin < "$RUNNER_TEMP/ci-source/source.pack"
+          if [ "$RUNNER_ENVIRONMENT" = self-hosted ]; then
+            git show "$sha:tools/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/cleanup-source.py"
+            python3 "$RUNNER_TEMP/ci-source/cleanup-source.py" --cleanup-containers
+          fi
           complete=false
           if objects="$(git rev-list --objects --missing=print --no-walk "$sha")"; then
             if ! printf '%s\n' "$objects" | grep -q '^?'; then
@@ -288,6 +292,10 @@ jobs:
             git init .
           fi
           git index-pack --stdin < "$RUNNER_TEMP/ci-source/source.pack"
+          if [ "$RUNNER_ENVIRONMENT" = self-hosted ]; then
+            git show "$sha:tools/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/cleanup-source.py"
+            python3 "$RUNNER_TEMP/ci-source/cleanup-source.py" --cleanup-containers
+          fi
           complete=false
           if objects="$(git rev-list --objects --missing=print --no-walk "$sha")"; then
             if ! printf '%s\n' "$objects" | grep -q '^?'; then
@@ -505,6 +513,10 @@ jobs:
             git init .
           fi
           git index-pack --stdin < "$RUNNER_TEMP/ci-source/source.pack"
+          if [ "$RUNNER_ENVIRONMENT" = self-hosted ]; then
+            git show "$sha:tools/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/cleanup-source.py"
+            python3 "$RUNNER_TEMP/ci-source/cleanup-source.py" --cleanup-containers
+          fi
           complete=false
           if objects="$(git rev-list --objects --missing=print --no-walk "$sha")"; then
             if ! printf '%s\n' "$objects" | grep -q '^?'; then
