@@ -229,3 +229,16 @@ def test_formula_parameters_are_explicit(kwargs):
 def test_shared_add_profile_requires_boolean(legacy):
     with pytest.raises(ValueError):
         source_add_resource_formula(2, 3, legacy_shims=legacy)
+
+
+@pytest.mark.parametrize("value", [None, "3"])
+def test_unknown_width_objects_do_not_silently_enter_symbolic_dispatch(value):
+    with pytest.raises(ValueError, match="Python integers or symbolic expressions"):
+        source_controlled_add_resource_formula(value, 3)
+
+
+def test_numpy_width_requires_explicit_native_integer_conversion():
+    import numpy as np
+
+    with pytest.raises(ValueError, match="Python integers or symbolic expressions"):
+        source_controlled_add_resource_formula(np.int64(3), 3)

@@ -38,8 +38,9 @@ models, and retain the original gate/complex-measurement/cleanup regressions.
 `modular_declarations.py` ports the four direct call declarations in the original
 `arithmetic/_shims.py`. It uses existing flat register layouts, typed resource
 callees and `SymbolicResourceFormula`, without a new model registry or SDK type.
-This slice accepts concrete nonnegative widths. Symbolic dimensions remain a
-separate open path; negative widths are invalid native register dimensions.
+G2-MOD21 covers concrete nonnegative widths. G2-MOD22 adds symbolic signatures
+and aggregate formulas below. Python-integer negative widths remain invalid;
+symbolic expressions describe source declarations without physical binding.
 
 | Native declaration | Original source | Direct calls |
 | --- | --- | --- |
@@ -93,3 +94,28 @@ that distinction without claiming physical execution. One-bit negative Clifford
 counts remain the original diagnostic. Tests compare uint/Montgomery, controls,
 profiles and both directions, replace all shared child categories, and verify
 both integer dispatch and the original symbolic width fallback.
+
+
+## Symbolic modular signatures and aggregate formulas (G2-MOD22)
+
+`modular_arithmetic_registers` and the aggregate formula now retain symbolic
+widths, including Sympy integer literals. Existing concrete direct-callee
+aggregation is unchanged. Symbolic CSub consumes the shared CAdd declaration
+and queries BitwiseNot through the existing typed `OnEachCall(X, n)` rule.
+The original signature/callee width fallback is preserved. Other declarations
+fold their original Toffoli/Fredkin multiplicities with the existing QEC query.
+
+The example accepts `--symbolic` and `--legacy-profile`. Tests compare every
+source gate category and peak width in both directions/profiles, positive,
+nonnegative and unconstrained integer symbols, expressions, literal zero/one/
+three and Python integers. Lt's signed flag still leaves its original unsigned
+signature and costs unchanged. Literal-zero CSub keeps its original query
+failure, and concrete/symbolic peaks are not conflated after substitution.
+
+The raw `modular_arithmetic_calls` interface still requires Python integers:
+its concrete ComponentCost keys cannot encode symbolic CAdd identities. That
+remaining graph capability is explicitly open; no symbolic literal is cast to
+fit that interface. The formula path is complete for the compared symbolic
+cases, not a claim of full symbolic call-graph or executable support. Width
+objects outside Python integers and Sympy expressions are refused by the new
+controlled-add query rather than silently entering symbolic dispatch.

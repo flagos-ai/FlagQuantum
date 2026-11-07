@@ -38,6 +38,13 @@ def source_controlled_add_resource_formula(
     for width in (left_width, right_width):
         if isinstance(width, (bool, float)) or isinstance(width, int) and width < 1:
             raise ValueError("Controlled-add formula requires positive integer widths")
+        if not isinstance(width, int):
+            from sympy import Expr
+
+            if not isinstance(width, Expr):
+                raise ValueError(
+                    "Controlled-add widths require Python integers or symbolic expressions"
+                )
     if isinstance(left_width, int) and isinstance(right_width, int):
         model = source_controlled_add_cost(
             left_width,
