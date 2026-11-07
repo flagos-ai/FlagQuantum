@@ -511,3 +511,42 @@ def test_the_cross_check_names_the_extra_when_it_is_missing(
         _pymatching()
     with pytest.raises(MatchingDependencyError, match=r"flagquantum\[pymatching\]"):
         PyMatchingDecoder(graph)
+
+
+def test_matched_detector_endpoints_are_not_path_edges() -> None:
+    model = DetectorErrorModel(
+        3, 1, (DemError(0.1, (0, 1), (0,)), DemError(0.1, (1, 2), ()))
+    )
+    decoder = PyMatchingDecoder.from_detector_error_model(model)
+    assert decoder.decode_to_matched_detectors((2, 0)) == ((0, 2),)
+    assert len(decoder.decode((0, 2)).error_edges) == 2
+
+
+def test_matched_detector_unique_boundary_reference() -> None:
+    model = DetectorErrorModel(
+        3, 1, (DemError(0.125, (0,), (0,)), DemError(0.1, (1, 2), ()))
+    )
+    decoder = PyMatchingDecoder.from_detector_error_model(model)
+    pairs = decoder.decode_to_matched_detectors((0, 1, 2))
+    assert pairs == ((0, None), (1, 2))
+    reference = pymatching.Matching()
+    reference.add_boundary_edge(0, weight=1.0)
+    reference.add_edge(1, 2, weight=1.0)
+    raw = reference.decode_to_matched_dets_array([1, 1, 1])
+    normalized = tuple(
+        sorted((int(a), None if int(b) == -1 else int(b)) for a, b in raw)
+    )
+    assert pairs == normalized
+    assert reference.decode_to_matched_dets_dict([1, 1, 1]) == {0: None, 1: 2, 2: 1}
+    with pytest.raises(CapabilityError):
+        decoder.decode_to_matched_detectors((1,))
+
+
+def test_matched_multiple_boundaries_with_no_logical_observables() -> None:
+    model = DetectorErrorModel(3, 0, tuple(DemError(0.125, (i,), ()) for i in range(3)))
+    decoder = PyMatchingDecoder.from_detector_error_model(model)
+    assert decoder.decode_to_matched_detectors((2, 0, 1)) == (
+        (0, None),
+        (1, None),
+        (2, None),
+    )

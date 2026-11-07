@@ -8,6 +8,7 @@ import importlib.util
 import json
 import sys
 from pathlib import Path
+from typing import Literal, TypedDict
 
 PROFILES = {
     "core": (False, False),
@@ -16,6 +17,23 @@ PROFILES = {
     "both": (True, True),
 }
 SOURCE = "R 0\nX_ERROR(0.1) 0\nM 0\nDETECTOR rec[-1]\nOBSERVABLE_INCLUDE(0) rec[-1]"
+
+
+class _MemoryExperimentAcceptance(TypedDict):
+    entrance: str
+    shots: int
+    logical_failures: int
+    sampling_source: Literal["memory_circuit"]
+
+
+class _StimExperimentAcceptance(TypedDict):
+    shots: int
+    logical_failures: int
+    observable_failures: list[int]
+    sampling_source: Literal["stim_circuit"]
+    decoder: str
+    reference_ones_verified: bool
+    memory_experiments: list[_MemoryExperimentAcceptance]
 
 
 def _sample_cell(text: str, *, matching: bool) -> dict[str, object]:
@@ -134,6 +152,231 @@ def _exercise(profile: str) -> list[dict[str, object]]:
     return records
 
 
+def _exercise_stim_experiment(profile: str) -> _StimExperimentAcceptance | None:
+    from flagquantum.qec.execution.experiments import run_stim_experiment
+    from flagquantum.simulation.stabilizer import StabilizerDependencyError
+
+    source = (
+        "R 0 1\nX_ERROR(0.125) 0\nX_ERROR(0.25) 1\nM 0 1\n"
+        "DETECTOR rec[-2]\nDETECTOR rec[-1]\n"
+        "OBSERVABLE_INCLUDE(0) rec[-1]\nOBSERVABLE_INCLUDE(1) rec[-2]\n"
+    )
+    stim_available, matching = PROFILES[profile]
+    decoder = "pymatching" if stim_available and matching else "minimum_weight_matching"
+    if not stim_available:
+        try:
+            run_stim_experiment(
+                source, decoder=decoder, shots=35, batch_size=16, seed=53
+            )
+        except StabilizerDependencyError:
+            return None
+        raise AssertionError("missing Stim did not refuse the experiment")
+
+    result = run_stim_experiment(
+        source, decoder=decoder, shots=35, batch_size=16, seed=53
+    )
+    assert result.shots == 35 and result.logical_failures == 0
+    assert result.observable_failures == (0, 0)
+    assert result.logical_error_rate == 0.0
+    assert result.sampling_source == "stim_circuit"
+    assert result.seed == 53
+    assert result.confidence_interval[0] == 0.0
+    assert 0.0 < result.confidence_interval[1] < 1.0
+
+    # Independent Stim buffers must carry the swapped logical columns. The
+    # report comparison is based on the analytic two-independent-fault law.
+    try:
+        import stim
+    except ModuleNotFoundError as exc:
+        raise StabilizerDependencyError(
+            "Stim is required for the independent reference"
+        ) from exc
+
+    reference = stim.Circuit(source).compile_detector_sampler(seed=53)
+    for size in (16, 16, 3):
+        detectors, observables = reference.sample(shots=size, separate_observables=True)
+        assert (detectors[:, ::-1] == observables).all()
+    # The second logical has ideal raw value one but no logical *flip*.
+    # Treating measurement bits as flips would create a false logical failure.
+    reference_ones = (
+        "R 0 1\nX 1\nX_ERROR(0.125) 0\nM 0 1\n"
+        "DETECTOR rec[-2]\nOBSERVABLE_INCLUDE(0) rec[-2]\n"
+        "OBSERVABLE_INCLUDE(1) rec[-1]\n"
+    )
+    ideal = stim.Circuit(reference_ones).compile_sampler(seed=53).sample(shots=1)
+    assert bool(ideal[0, 1])
+    normalized = run_stim_experiment(
+        reference_ones, decoder=decoder, shots=35, batch_size=16, seed=53
+    )
+    assert normalized.logical_failures == 0
+    assert normalized.observable_failures == (0, 0)
+    assert normalized.sampling_source == "stim_circuit"
+    memory_reports = _exercise_memory_experiments(decoder)
+    return {
+        "shots": result.shots,
+        "logical_failures": result.logical_failures,
+        "observable_failures": list(result.observable_failures),
+        "sampling_source": result.sampling_source,
+        "decoder": decoder,
+        "reference_ones_verified": True,
+        "memory_experiments": memory_reports,
+    }
+
+
+def _exercise_memory_experiments(decoder: str) -> list[_MemoryExperimentAcceptance]:
+    from flagquantum import qec
+    from flagquantum.qec.execution.experiments import run_memory_experiment
+
+    surface = qec.RotatedSurfaceCode(distance=3)
+    entrances = (
+        (
+            "repetition_z",
+            qec.build_memory_circuit(qec.RepetitionCode(distance=3), rounds=1),
+        ),
+        ("surface_z", qec.build_memory_circuit(surface, rounds=3)),
+        (
+            "surface_x",
+            qec.build_memory_circuit(
+                surface, rounds=3, product=qec.Pauli(x_qubits=surface.data_qubits)
+            ),
+        ),
+    )
+    records: list[_MemoryExperimentAcceptance] = []
+    for name, memory in entrances:
+        result = run_memory_experiment(
+            memory,
+            noise=qec.PhenomenologicalNoise(
+                data_flip=0.005, phase_flip=0.007, measurement_flip=0.009
+            ),
+            decoder=decoder,
+            shots=35,
+            batch_size=16,
+            seed=53,
+        )
+        assert result.shots == 35 and result.seed == 53
+        assert 0 <= result.logical_failures <= result.shots
+        assert result.observable_failures == (result.logical_failures,)
+        assert result.logical_error_rate == result.logical_failures / result.shots
+        assert (
+            result.confidence_interval[0]
+            <= result.logical_error_rate
+            <= result.confidence_interval[1]
+        )
+        assert result.sampling_source == "memory_circuit"
+        records.append(
+            {
+                "entrance": name,
+                "shots": result.shots,
+                "logical_failures": result.logical_failures,
+                "sampling_source": result.sampling_source,
+            }
+        )
+    return records
+
+
+def _exercise_decoder_records(profile: str) -> list[str]:
+    import torch
+
+    from flagquantum import qec
+    from flagquantum.qec.decoders.batch import decode_batch
+
+    model = qec.DetectorErrorModel.from_stim_text(
+        "error(0.125) D0 L1\nerror(0.25) D1 L0\ndetector D0\ndetector D1\n"
+        "logical_observable L0\nlogical_observable L1\n"
+    )
+    names = [
+        "minimum_weight_matching",
+        "sliding_window_matching",
+        "belief_propagation",
+        "belief_propagation_osd",
+    ]
+    if PROFILES[profile][1]:
+        names.append("pymatching")
+    rows = ((), (0,), (1,), (0, 1))
+    expected = ((), (1,), (0,), (0, 1))
+    for name in names:
+        decoder = qec.get_decoder(name, model)
+        records = decode_batch(decoder, rows)
+        assert records == tuple(decoder.decode(row) for row in rows)
+        assert tuple(record.observables for record in records) == expected
+    if PROFILES[profile][1]:
+        matching = qec.PyMatchingDecoder.from_detector_error_model(model)
+        dense = matching.decode_batch(torch.tensor([[0, 0], [1, 0], [0, 1], [1, 1]]))
+        assert dense.tolist() == [
+            [False, False],
+            [False, True],
+            [True, False],
+            [True, True],
+        ]
+    return names
+
+
+def _exercise_packed_predictions(profile: str) -> list[list[int]] | None:
+    if not PROFILES[profile][1]:
+        return None
+    import torch
+
+    from flagquantum.qec import DemError, DetectorErrorModel, PyMatchingDecoder
+
+    model = DetectorErrorModel(
+        3,
+        3,
+        (
+            DemError(0.1, (0,), (0,)),
+            DemError(0.2, (1,), (1,)),
+            DemError(0.3, (2,), (2,)),
+        ),
+    )
+    decoder = PyMatchingDecoder.from_detector_error_model(model)
+    result = decoder.decode_packed_batch(
+        torch.tensor([[0], [1], [2], [4], [7]], dtype=torch.uint8)
+    )
+    expected = [[0], [1], [2], [4], [7]]
+    assert result.tolist() == expected
+    return expected
+
+
+def _exercise_sdk_weights(profile: str) -> dict[str, object] | None:
+    if not PROFILES[profile][1]:
+        return None
+    import torch
+
+    from flagquantum.qec import DemError, DetectorErrorModel, PyMatchingDecoder
+
+    decoder = PyMatchingDecoder.from_detector_error_model(
+        DetectorErrorModel(3, 3, tuple(DemError(0.125, (i,), (i,)) for i in range(3)))
+    )
+    dense = torch.tensor([[0, 0, 0], [1, 0, 0], [1, 1, 1]], dtype=torch.uint8)
+    for packed_in in (False, True):
+        events = (
+            torch.tensor([[0], [1], [7]], dtype=torch.uint8) if packed_in else dense
+        )
+        for packed_out in (False, True):
+            bits, costs = decoder.decode_batch_with_weights(
+                events, bit_packed_shots=packed_in, bit_packed_predictions=packed_out
+            )
+            expected = [[0], [1], [7]] if packed_out else dense.bool().tolist()
+            assert bits.tolist() == expected
+            assert costs.dtype == torch.float64 and costs.shape == (3,)
+            assert bool(torch.isfinite(costs).all()) and costs[0] == 0 and costs[1] > 0
+    return {"shots": 3, "layouts": 4, "weight_source": "sdk_matching"}
+
+
+def _exercise_matched_detectors(profile: str) -> list[list[int | None]] | None:
+    if not PROFILES[profile][1]:
+        return None
+    from flagquantum.qec import DemError, DetectorErrorModel, PyMatchingDecoder
+
+    model = DetectorErrorModel(
+        3, 1, (DemError(0.125, (0,), (0,)), DemError(0.1, (1, 2), ()))
+    )
+    pairs = PyMatchingDecoder.from_detector_error_model(
+        model
+    ).decode_to_matched_detectors((0, 1, 2))
+    assert pairs == ((0, None), (1, 2))
+    return [[first, second] for first, second in pairs]
+
+
 def _exercise_stim_conversion(profile: str) -> dict[str, object] | None:
     import torch
 
@@ -249,6 +492,8 @@ def main() -> int:
     )
     assert adjoint.native_cpu_adjoint_available()
     records = _exercise(args.profile)
+    record_decoders = _exercise_decoder_records(args.profile)
+    experiment = _exercise_stim_experiment(args.profile)
     print(
         json.dumps(
             {
@@ -267,6 +512,11 @@ def main() -> int:
                     if present
                 },
                 "cells": records,
+                "packed_predictions": _exercise_packed_predictions(args.profile),
+                "sdk_weighted_batches": _exercise_sdk_weights(args.profile),
+                "matched_detectors": _exercise_matched_detectors(args.profile),
+                "stim_experiment": experiment,
+                "full_record_decoders": record_decoders,
                 "stim_conversion": _exercise_stim_conversion(args.profile),
                 "terminal_conversion": _exercise_terminal_conversion(args.profile),
                 "compiled_measurement_sampler": _exercise_compiled_measurement_sampler(
