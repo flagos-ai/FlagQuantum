@@ -12,6 +12,9 @@ from flagquantum.compiler.registers.single_window_mod_mul import (
 )
 from flagquantum.compiler.registers.windowed_mod_mul import windowed_mod_mul_ir
 from flagquantum.core.ir import CircuitIR, Instruction
+from flagquantum.simulation.classical_montgomery_multiplication import (
+    montgomery_multiply_classical_values,
+)
 from tests.unit.measurement_checks import certified_and_channel_map
 from tests.unit.register_source_graph import (
     SourcePorts,
@@ -199,6 +202,18 @@ def test_locked_windowed_source_and_complex_roundtrip(n: int, w: int, p: int) ->
     for a, b in product(range(p), repeat=2):
         inputs = dict(x=a, y=b)
         observed = forward_graph.on_classical_vals(**inputs)
+        # Compare the original high-level method separately. It is known to
+        # disagree with this unmodified decomposed graph on recorded domains.
+        try:
+            value_model = source.on_classical_vals(**inputs)
+        except Exception as error:
+            with pytest.raises(type(error)):
+                montgomery_multiply_classical_values(a, b, n, w, p)
+        else:
+            native_values = montgomery_multiply_classical_values(a, b, n, w, p)
+            assert native_values == value_model
+            for key in native_values:
+                assert type(native_values[key]) is type(value_model[key])
         assert reverse_graph.on_classical_vals(**observed) == inputs
         if (n, w, p, a, b) == (5, 5, 13, 5, 9):
             assert observed == {
