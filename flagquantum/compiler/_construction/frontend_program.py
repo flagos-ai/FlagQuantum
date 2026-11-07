@@ -6,9 +6,7 @@ import ast
 import math
 from collections.abc import Sequence
 from copy import deepcopy
-from dataclasses import dataclass, replace
-from types import FunctionType, ModuleType
-from typing import Literal
+from dataclasses import replace
 
 from .._hybrid.model import (
     QUANTUM_EFFECT,
@@ -19,13 +17,12 @@ from .._hybrid.model import (
     Value,
     ValueId,
 )
+from .frontend_ports import _annotation_node, _Port, _resolve, program_ports
 from .frontend_preparation import capture_preparation
 from .frontend_python import _error, _QuantumFunction, _Source, capture
+from .frontend_views import capture_loop, gate_target, inline_mutable, locations
 from .profile import _width
 from .program_types import (
-    Const,
-    Output,
-    QBit,
     QNum,
     _width_spec,
     adjoint,
@@ -34,6 +31,7 @@ from .program_types import (
     control,
     crx,
     cx,
+    h,
     hadamard_transform,
     phase,
     phase_gate,
@@ -45,6 +43,7 @@ from .program_types import (
     r,
     rz,
     rzz,
+    s,
     swap,
     u,
     within,
@@ -60,205 +59,6 @@ from .register_profile import (
 )
 
 
-@dataclass(frozen=True)
-class _Port:
-    name: str
-    role: Literal["output", "const"]
-    kind: Literal["qbit", "qnum"]
-    width: int | None
-
-
-def _resolve(
-    definition: _QuantumFunction,
-    node: ast.expr,
-    depth: int = 0,
-    *,
-    annotation: bool = False,
-) -> object:
-    source = definition.source
-    function = definition.function
-    if depth >= 32:
-        _error(source, node, "budget", "qualified symbol depth exceeds 32")
-    if not isinstance(function, FunctionType):
-        _error(
-            source,
-            node,
-            "annotation",
-            "program capture requires a retained Python namespace",
-        )
-    if isinstance(node, ast.Name):
-        if (
-            annotation
-            and definition.annotation_bindings is not None
-            and node.id in definition.annotation_bindings
-        ):
-            return definition.annotation_bindings[node.id]
-        for name, cell in zip(
-            function.__code__.co_freevars, function.__closure__ or (), strict=True
-        ):
-            if name == node.id:
-                try:
-                    return cell.cell_contents
-                except ValueError:
-                    _error(
-                        source, node, "name", "the referenced closure binding is empty"
-                    )
-        return function.__globals__.get(node.id)
-    if isinstance(node, ast.Attribute):
-        parent = _resolve(definition, node.value, depth + 1, annotation=annotation)
-        if type(parent) is ModuleType:
-            return vars(parent).get(node.attr)
-    _error(
-        source,
-        node,
-        "name",
-        "use a static imported symbol, not dynamic attribute access",
-    )
-
-
-def _annotation_node(source: _Source, node: ast.expr) -> ast.expr:
-    if isinstance(node, ast.Constant) and isinstance(node.value, str):
-        try:
-            parsed = ast.parse(node.value, mode="eval").body
-        except (SyntaxError, RecursionError):
-            _error(source, node, "annotation", "invalid quoted quantum annotation")
-        if sum(1 for _ in ast.walk(parsed)) > 4096:
-            _error(
-                source, node, "budget", "quantum annotation exceeds the source node cap"
-            )
-        ast.increment_lineno(parsed, node.lineno - 1)
-        return parsed
-    return node
-
-
-def program_annotation_names(source: _Source) -> set[str]:
-    return {
-        node.id
-        for arg in (*source.node.args.posonlyargs, *source.node.args.args)
-        if arg.annotation is not None
-        for node in ast.walk(_annotation_node(source, arg.annotation))
-        if isinstance(node, ast.Name)
-    }
-
-
-def program_ports(definition: _QuantumFunction) -> tuple[_Port, ...]:
-    source = definition.source
-    ports: list[_Port] = []
-    for argument in (*source.node.args.posonlyargs, *source.node.args.args):
-        annotation = argument.annotation
-        if annotation is None:
-            _error(
-                source,
-                source.node,
-                "annotation",
-                "program ports require Output or Const annotations",
-            )
-        node = _annotation_node(source, annotation)
-        if not isinstance(node, ast.Subscript):
-            _error(
-                source,
-                annotation,
-                "annotation",
-                "use Output[QNum], Const[QNum] or a sized QNum/QBit port",
-            )
-        role = _resolve(definition, node.value, annotation=True)
-        if role is not Output and role is not Const:
-            _error(
-                source,
-                annotation,
-                "annotation",
-                "only Output and Const program roles are admitted",
-            )
-        quantum = node.slice
-        width = None
-        if isinstance(quantum, ast.Subscript):
-            kind = _resolve(definition, quantum.value, annotation=True)
-            if kind is not QNum:
-                _error(
-                    source,
-                    annotation,
-                    "annotation",
-                    "only QNum accepts numeric type parameters",
-                )
-            sizes = (
-                quantum.slice.elts
-                if isinstance(quantum.slice, ast.Tuple)
-                else (quantum.slice,)
-            )
-            if any(not isinstance(size, ast.Constant) for size in sizes):
-                _error(
-                    source,
-                    annotation,
-                    "annotation",
-                    "numeric widths/sign/fraction must be literals",
-                )
-            spec = tuple(size.value for size in sizes if isinstance(size, ast.Constant))
-            try:
-                width = _width_spec(spec)
-            except (TypeError, ValueError) as error:
-                _error(source, annotation, "annotation", str(error))
-        else:
-            kind = _resolve(definition, quantum, annotation=True)
-        if kind is not QNum and kind is not QBit:
-            _error(
-                source, annotation, "annotation", "program ports require QNum or QBit"
-            )
-        ports.append(
-            _Port(
-                argument.arg,
-                "output" if role is Output else "const",
-                "qbit" if kind is QBit else "qnum",
-                1 if kind is QBit else width,
-            )
-        )
-    returned = source.node.returns
-    if returned is not None and not (
-        isinstance(returned, ast.Constant) and returned.value in (None, "None")
-    ):
-        _error(
-            source,
-            returned,
-            "annotation",
-            "program outputs use signature ports; return annotation is None",
-        )
-    statements = source.node.body
-    if (
-        statements
-        and isinstance(statements[0], ast.Expr)
-        and isinstance(statements[0].value, ast.Constant)
-        and isinstance(statements[0].value.value, str)
-    ):
-        statements = statements[1:]
-    for index, statement in enumerate(statements):
-        if (
-            isinstance(statement, ast.AugAssign)
-            and isinstance(statement.op, ast.BitOr)
-            and isinstance(statement.target, ast.Name)
-        ):
-            continue
-        if isinstance(statement, ast.With):
-            continue
-        if isinstance(statement, ast.Expr) and isinstance(statement.value, ast.Call):
-            continue
-        if (
-            isinstance(statement, ast.Return)
-            and index == len(statements) - 1
-            and (
-                statement.value is None
-                or isinstance(statement.value, ast.Constant)
-                and statement.value.value is None
-            )
-        ):
-            continue
-        _error(
-            source,
-            statement,
-            "program.statement",
-            "use allocate, hadamard_transform, fresh |= arithmetic and static qfunc calls",
-        )
-    return tuple(ports)
-
-
 class _Capture:
     def __init__(self, entry: _QuantumFunction) -> None:
         self.entry = entry.source.node.name
@@ -267,6 +67,8 @@ class _Capture:
         self.seen: set[int] = set()
         self.nodes = 0
         self.serial = 0
+        self.inline_calls = 0
+        self.loop_steps = 0
         self.cache: dict[
             tuple[int, tuple[int | None, ...]], tuple[HybridProgram, tuple[_Port, ...]]
         ] = {}
@@ -367,8 +169,18 @@ class _Body:
         self.counter = len(ports) + 1
         self.operations: list[Operation] = []
         self.expressions = 0
+        self.aliases: dict[str, tuple[tuple[Value, int], ...]] | None = None
+        self.array_names = {p.name for p in ports if p.kind == "qarray"}
+        self.loop_variables: dict[str, int] = {}
 
     def register(self, node: ast.expr, inferred: int | None = None) -> Value:
+        if self.aliases is not None:
+            _error(
+                self.source,
+                node,
+                "program.borrow",
+                "mutable helpers accept gate effects only",
+            )
         if not isinstance(node, ast.Name) or node.id not in self.ports:
             _error(self.source, node, "program.port", "use one declared quantum port")
         name = node.id
@@ -421,6 +233,17 @@ class _Body:
         self.effect = following
 
     def assign(self, node: ast.AugAssign) -> None:
+        if (
+            isinstance(node.target, ast.Name)
+            and node.target.id in self.ports
+            and self.ports[node.target.id].kind == "qarray"
+        ):
+            _error(
+                self.source,
+                node,
+                "program.expression",
+                "initialize arrays with allocate or a preparation, not numeric assignment",
+            )
         expr = node.value
         if (
             isinstance(expr, ast.Constant)
@@ -488,6 +311,13 @@ class _Body:
                 "program.expression",
                 "arithmetic reads declared quantum ports; basis initialization uses an unsigned literal",
             )
+        if any(self.ports[name].kind == "qarray" for name in used):
+            _error(
+                self.source,
+                expr,
+                "program.expression",
+                "array arithmetic is outside the numeric profile",
+            )
         names = tuple(name for name in self.ports if name in used)
         actuals = tuple(
             self.register(ast.copy_location(ast.Name(id=name, ctx=ast.Load()), expr))
@@ -528,10 +358,14 @@ class _Body:
             sign = -1 if isinstance(node.op, ast.USub) else 1
             node = node.operand
         value: object
-        if isinstance(node, ast.Constant):
+        if isinstance(node, ast.Name) and node.id in self.loop_variables:
+            value = self.loop_variables[node.id]
+        elif isinstance(node, ast.Constant):
             value = node.value
         elif isinstance(node, (ast.Name, ast.Attribute)):
-            if isinstance(node, ast.Name) and node.id in self.ports:
+            if isinstance(node, ast.Name) and node.id in (
+                self.aliases if self.aliases is not None else self.ports
+            ):
                 return None
             value = _resolve(self.definition, node)
         else:
@@ -559,7 +393,9 @@ class _Body:
                 "program.signature",
                 "use positional arguments without unpacking",
             )
-        if isinstance(node.func, ast.Name) and node.func.id in self.ports:
+        if isinstance(node.func, ast.Name) and node.func.id in (
+            self.aliases if self.aliases is not None else self.ports
+        ):
             _error(
                 self.source,
                 node.func,
@@ -567,6 +403,33 @@ class _Body:
                 "a quantum port cannot shadow a callable",
             )
         function = _resolve(self.definition, node.func)
+        if self.aliases is not None and not (
+            any(
+                function is marker
+                for marker in (
+                    h,
+                    s,
+                    x,
+                    rz,
+                    phase_gate,
+                    rzz,
+                    cx,
+                    swap,
+                    crx,
+                    r,
+                    u,
+                    hadamard_transform,
+                )
+            )
+            or isinstance(function, _QuantumFunction)
+            and function.source.program
+        ):
+            _error(
+                self.source,
+                node,
+                "program.borrow",
+                "mutable helpers allow gates and mutable helper calls only",
+            )
         if inverse and (
             not isinstance(function, _QuantumFunction)
             or not function.source.program
@@ -623,19 +486,13 @@ class _Body:
                     "program.signature",
                     "hadamard_transform takes one quantum port",
                 )
-            destination = self.register(node.args[0])
-            for bit in range(register_width(destination)):
+            for destination, bit in locations(self, node.args[0]):
                 self.emit("qreg.gate", node, (destination,), gate="h", index=bit)
-        elif any(function is gate for gate in (x, rz, phase_gate, rzz)):
-            angled = function is not x
+        elif any(function is gate for gate in (x, h, s, rz, phase_gate, rzz)):
+            angled = not any(function is gate for gate in (x, h, s))
             if len(node.args) != 1 + angled:
                 _error(self.source, node, "program.signature", "invalid gate arity")
-            destination = self.register(node.args[-1])
-            if register_width(destination) != (2 if function is rzz else 1):
-                _error(
-                    self.source, node, "program.width", "gate target width disagrees"
-                )
-            attributes: dict[str, str | float | int] = {}
+            attributes: dict[str, object] = {}
             if angled:
                 angle = self.phase_number(node.args[0])
                 if angle is None:
@@ -647,18 +504,43 @@ class _Body:
                     )
                 attributes["angle"] = angle
             if function is rzz:
-                self.emit("qreg.rzz", node, (destination,), **attributes)
+                targets = locations(self, node.args[-1])
+                if len(targets) != 2:
+                    _error(
+                        self.source,
+                        node,
+                        "program.width",
+                        "RZZ requires exactly two bits",
+                    )
+                values = tuple(value for value, _ in targets)
+                indices = tuple(index for _, index in targets)
+                self.emit(
+                    "qreg.pair_gate",
+                    node,
+                    values,
+                    gate="rzz",
+                    indices=indices,
+                    **attributes,
+                )
             else:
+                destination, index = gate_target(self, node.args[-1])
+                gate = next(
+                    name
+                    for marker, name in (
+                        (x, "x"),
+                        (h, "h"),
+                        (s, "s"),
+                        (rz, "rz"),
+                        (phase_gate, "phase"),
+                    )
+                    if function is marker
+                )
                 self.emit(
                     "qreg.gate",
                     node,
                     (destination,),
-                    gate=(
-                        "phase"
-                        if function is phase_gate
-                        else "rz" if function is rz else "x"
-                    ),
-                    index=0,
+                    gate=gate,
+                    index=index,
                     **attributes,
                 )
         elif any(
@@ -688,7 +570,11 @@ class _Body:
                         "CRX requires a finite static real angle",
                     )
                 attributes["angle"] = angle
-            operands = tuple(self.register(arg) for arg in node.args[int(angled) :])
+            targets = tuple(gate_target(self, arg) for arg in node.args[int(angled) :])
+            operands = tuple(value for value, _ in targets)
+            indices = tuple(index for _, index in targets)
+            if any(register_width(value) != 1 for value in operands):
+                attributes["indices"] = indices
             self.emit("qreg.pair_gate", node, operands, **attributes)
         elif function is prepare_uniform_interval_state:
             if len(node.args) != 3:
@@ -736,14 +622,15 @@ class _Body:
                     "program.angle",
                     "R requires finite static real angles",
                 )
-            destination = self.register(node.args[2])
-            if register_width(destination) != 1:
-                _error(
-                    self.source, node, "program.width", "R requires a one-bit target"
-                )
+            destination, index = gate_target(self, node.args[2])
             for gate, angle in equatorial_rotation(theta, phi):
                 self.emit(
-                    "qreg.gate", node, (destination,), gate=gate, index=0, angle=angle
+                    "qreg.gate",
+                    node,
+                    (destination,),
+                    gate=gate,
+                    index=index,
+                    angle=angle,
                 )
         elif function is u:
             if len(node.args) != 5:
@@ -761,14 +648,15 @@ class _Body:
                     "program.angle",
                     "U requires finite static real angles",
                 )
-            destination = self.register(node.args[4])
-            if register_width(destination) != 1:
-                _error(
-                    self.source, node, "program.width", "U requires a one-bit target"
-                )
+            destination, index = gate_target(self, node.args[4])
             for gate, angle in euler_rotation(theta, phi, lam):
                 self.emit(
-                    "qreg.gate", node, (destination,), gate=gate, index=0, angle=angle
+                    "qreg.gate",
+                    node,
+                    (destination,),
+                    gate=gate,
+                    index=index,
+                    angle=angle,
                 )
             self.emit("qreg.phase", node, (), angle=gamma)
         elif function is phase:
@@ -808,6 +696,23 @@ class _Body:
                 self.emit("qreg.phase", node, actuals, callee=graph.name, **attributes)
         elif isinstance(function, _QuantumFunction) and function.source.program:
             formal = program_ports(function)
+            if any(port.role == "inout" for port in formal):
+                if inverse or control_bit is not None:
+                    _error(
+                        self.source,
+                        node,
+                        "program.borrow",
+                        "mutable helpers are not admitted under adjoint/control",
+                    )
+                inline_mutable(self, node, function, formal)
+                return
+            if self.aliases is not None:
+                _error(
+                    self.source,
+                    node,
+                    "program.borrow",
+                    "mutable helper calls cannot initialize or publish Outputs",
+                )
             if control_bit is not None and any(port.role != "const" for port in formal):
                 _error(
                     self.source,
@@ -1132,12 +1037,28 @@ class _Body:
                 )
             self.call(statement.value, inverse=True)
 
-    def finish(self) -> HybridProgram:
-        statements = iter(self.source.node.body)
+    def statements(self, body: Sequence[ast.stmt], *, nested: bool = False) -> None:
+        statements = iter(body)
         for statement in statements:
-            if isinstance(statement, ast.AugAssign):
+            if isinstance(statement, ast.For):
+                capture_loop(self, statement)
+            elif isinstance(statement, ast.AugAssign):
+                if self.aliases is not None:
+                    _error(
+                        self.source,
+                        statement,
+                        "program.borrow",
+                        "mutable helpers cannot initialize or compute Outputs",
+                    )
                 self.assign(statement)
             elif isinstance(statement, ast.With):
+                if self.aliases is not None:
+                    _error(
+                        self.source,
+                        statement,
+                        "program.borrow",
+                        "mutable helpers accept gate effects only",
+                    )
                 if self.region_marker(statement) is adjoint:
                     self.adjoint_scope(statement)
                 else:
@@ -1146,6 +1067,35 @@ class _Body:
                 statement.value, ast.Call
             ):
                 self.call(statement.value)
+            elif isinstance(statement, ast.Return) and (
+                statement.value is None
+                or isinstance(statement.value, ast.Constant)
+                and statement.value.value is None
+            ):
+                if nested:
+                    _error(
+                        self.source,
+                        statement,
+                        "program.loop",
+                        "return inside a static loop is not admitted",
+                    )
+                continue
+            elif (
+                isinstance(statement, ast.Expr)
+                and isinstance(statement.value, ast.Constant)
+                and isinstance(statement.value.value, str)
+            ):
+                continue
+            else:
+                _error(
+                    self.source,
+                    statement,
+                    "program.statement",
+                    "use captured operations and bounded static for loops",
+                )
+
+    def finish(self) -> HybridProgram:
+        self.statements(self.source.node.body)
         values = {
             name: self.register(
                 ast.copy_location(ast.Name(id=name, ctx=ast.Load()), self.source.node)

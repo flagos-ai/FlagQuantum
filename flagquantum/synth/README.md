@@ -14,7 +14,11 @@ adds direct `X`, `RZ`, `PHASE`, `RZZ`, Bell/GHZ and real amplitude/probability
 preparation calls to the existing Python profile. They share Compiler-owned
 verification and lowering with Qmod. `synth.X` is a captured gate; the existing
 `fq.X` observable constructor is unchanged. See each case for its supported
-bindings and the remaining native array/helper limitations.
+bindings and the remaining native limitations. The
+[native views admission](../../docs/api-changes/FQ-SYNTH-NATIVE-VIEWS-20261107.md)
+adds `QArray[QBit]`, checked indexing/slices, bounded builtin `range`/`len`, H/S
+and plain writable helper ports. Mutable helpers currently contain only gates,
+bounded loops and other mutable helpers, with disjoint actual bit locations.
 
 
 ## Python quantum programs
@@ -56,19 +60,21 @@ All helper calls resolve to captured qfunc definitions, without a public registr
 or executing Python bodies. Names/types/operation aliases are checked by identity.
 
 Run `python -m examples.synthesis.tutorials.composition.python_program.main` for nested preparation,
-computation, equivalent Qmod and an independent Circuit reference. The generic
-program uses 18 qubits, 10 workspace, 166 operations and depth 124. The specialized
+computation, equivalent Qmod and an independent Circuit reference. The UP-01
+measurement recorded 18 qubits, 10 workspace, 166 operations and depth 124. The specialized
 two-bit Boolean reference uses 9 qubits, one workspace and 15 operations. That
 reference requires a hand-derived algorithm; no optimum or equal-cost claim.
 See the [UP-01 delivery](../../docs/roadmap/SYNTH_PYTHON_PROGRAM_UP01_DELIVERY.md).
 
-The first typed profile supports QBit and unsigned integer QNum, Output/Const,
+The typed profile supports QBit, unsigned integer QNum and QArray[QBit], Output/Const,
 literal basis initialization, allocation, Hadamard preparation, fresh `|=`
 expressions using +, *, literal powers 1..8, and acyclic positional qfunc calls.
-Root ports are Output-only. Signed/fractional types, Input/free/drop, local quantum
-variables, arrays/views, host callbacks, loops/branches, explicit phase/control/
-inverse and runtime classical parameters remain outside this Python profile.
-Existing scalar/Qmod capabilities retain their own documented scopes.
+Root ports are Output-only. The phase, within/apply, adjoint and scalar-control
+extensions retain their checked individual scopes. Array views and static loops
+follow the native views admission above. Signed/fractional types, Input/free/drop,
+nested arrays, host callbacks, dynamic loops/branches and runtime classical
+parameters remain outside this Python profile. Existing scalar/Qmod capabilities
+retain their own documented scopes.
 
 Do not combine typed roots with scalar inputs/InputState/constants/functions/
 custom preparation or predicate output_mode=phase. A root owns its preparation.

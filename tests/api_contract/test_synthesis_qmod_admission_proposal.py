@@ -60,6 +60,9 @@ def test_proposal_does_not_activate_or_change_the_existing_public_api():
         "prepare_ghz_state",
         "prepare_amplitudes",
         "prepare_state",
+        "QArray",
+        "H",
+        "S",
     )
     assert str(inspect.signature(synth.synthesize)) == active["synthesize_signature"]
     assert str(inspect.signature(fq.run)) == active["run_signature"]

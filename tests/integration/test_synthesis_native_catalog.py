@@ -192,7 +192,11 @@ def test_additive_exports_follow_the_separate_unreleased_contract() -> None:
     )
     assert contract["implementation_authorized"] is True
     assert contract["release_authorized"] is False
+    expanded = json.loads(
+        (ROOT / "contracts/synthesis-native-views-candidate.json").read_text()
+    )["expanded_signatures"]
     for name, signature in contract["signatures"].items():
+        signature = expanded.get(name, signature)
         assert name in synth.__all__
         if name == "X":
             from flagquantum.observables import X as OBSERVABLE_X

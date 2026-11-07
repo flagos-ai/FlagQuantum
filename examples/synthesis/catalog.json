@@ -1054,12 +1054,14 @@
       "companion_files": [],
       "classical_inputs": null,
       "basis_mps": false,
-      "native_example": null,
-      "native_comparison": null,
+      "native_example": "examples/synthesis/algorithms/metrology/classiq/classical_shadow_tomography/main.py",
+      "native_comparison": "examples/synthesis/algorithms/metrology/classiq/classical_shadow_tomography/comparisons/circuit.py",
       "validation_sources": [
+        "tests/integration/test_synthesis_native_catalog.py",
         "tests/integration/test_synthesis_qmod_bell.py"
       ],
       "circuit_validation_sources": [
+        "tests/integration/test_synthesis_native_catalog.py",
         "tests/integration/test_synthesis_qmod_bell.py"
       ],
       "fixture_sources": [
@@ -7242,12 +7244,14 @@
       "companion_files": [],
       "classical_inputs": null,
       "basis_mps": false,
-      "native_example": null,
-      "native_comparison": null,
+      "native_example": "examples/synthesis/algorithms/metrology/classiq/paper_implementation_project/classical_shadows/classical_shadows/main.py",
+      "native_comparison": "examples/synthesis/algorithms/metrology/classiq/paper_implementation_project/classical_shadows/classical_shadows/comparisons/circuit.py",
       "validation_sources": [
+        "tests/integration/test_synthesis_native_catalog.py",
         "tests/integration/test_synthesis_qmod_bell.py"
       ],
       "circuit_validation_sources": [
+        "tests/integration/test_synthesis_native_catalog.py",
         "tests/integration/test_synthesis_qmod_bell.py"
       ],
       "fixture_sources": [
@@ -8586,12 +8590,14 @@
       "companion_files": [],
       "classical_inputs": null,
       "basis_mps": false,
-      "native_example": null,
-      "native_comparison": null,
+      "native_example": "examples/synthesis/tutorials/library/classiq/qmod_library_reference/classiq_open_library/hadamard_transform/hadamard_transform/main.py",
+      "native_comparison": "examples/synthesis/tutorials/library/classiq/qmod_library_reference/classiq_open_library/hadamard_transform/hadamard_transform/comparisons/circuit.py",
       "validation_sources": [
+        "tests/integration/test_synthesis_native_catalog.py",
         "tests/integration/test_synthesis_qmod_array_hadamard.py"
       ],
       "circuit_validation_sources": [
+        "tests/integration/test_synthesis_native_catalog.py",
         "tests/integration/test_synthesis_qmod_array_hadamard.py"
       ],
       "fixture_sources": [
@@ -10530,12 +10536,14 @@
       "companion_files": [],
       "classical_inputs": null,
       "basis_mps": false,
-      "native_example": null,
-      "native_comparison": null,
+      "native_example": "examples/synthesis/tutorials/basics/classiq/entanglement/entanglement/main.py",
+      "native_comparison": "examples/synthesis/tutorials/basics/classiq/entanglement/entanglement/comparisons/circuit.py",
       "validation_sources": [
+        "tests/integration/test_synthesis_native_catalog.py",
         "tests/integration/test_synthesis_qmod_static_repeat.py"
       ],
       "circuit_validation_sources": [
+        "tests/integration/test_synthesis_native_catalog.py",
         "tests/integration/test_synthesis_qmod_static_repeat.py"
       ],
       "fixture_sources": [

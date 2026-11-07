@@ -26,6 +26,9 @@ from ..compiler._construction.program_types import (
     Output as Output,
 )
 from ..compiler._construction.program_types import (
+    QArray as QArray,
+)
+from ..compiler._construction.program_types import (
     QBit as QBit,
 )
 from ..compiler._construction.program_types import (
@@ -72,6 +75,8 @@ from ._synthesis_readout import Distribution
 from ._synthesis_readout import probabilities as _probabilities
 
 # Preserve the Qmod spelling for the captured Python operations.
+H = program_types.h
+S = program_types.s
 CX = program_types.cx
 SWAP = program_types.swap
 CRX = program_types.crx
@@ -121,6 +126,9 @@ __all__ = (
     "prepare_ghz_state",
     "prepare_amplitudes",
     "prepare_state",
+    "QArray",
+    "H",
+    "S",
 )
 
 

@@ -5,9 +5,14 @@ from __future__ import annotations
 from collections.abc import Callable, Sequence
 from contextlib import AbstractContextManager
 from types import GenericAlias
-from typing import Annotated, TypeAlias, TypeVar
+from typing import Annotated, Generic, TypeAlias, TypeVar, overload
 
-_Num = TypeVar("_Num", bound="QNum")
+_Num = TypeVar("_Num", bound="_QuantumRegister")
+_Element = TypeVar("_Element", bound="QNum")
+
+
+class _QuantumRegister:
+    """Shared annotation base for owned or borrowed quantum storage."""
 
 
 def _width_spec(spec: object) -> int:
@@ -24,7 +29,7 @@ def _width_spec(spec: object) -> int:
     return width
 
 
-class QNum:
+class QNum(_QuantumRegister):
     """Quantum unsigned-number annotation, not a host numeric value.
 
     Use Output[QNum] with allocate(size, out), or QNum[width, False, 0]
@@ -61,11 +66,34 @@ class QBit(QNum):
     """One-bit quantum annotation, with the same captured-port ownership rules."""
 
 
+class QArray(_QuantumRegister, Generic[_Element]):
+    """Captured quantum array; the current profile admits QArray[QBit]."""
+
+    def __new__(cls) -> QArray[_Element]:
+        raise TypeError("quantum arrays are declared as qfunc ports, not host objects")
+
+    @overload
+    def __getitem__(self, index: int) -> _Element: ...
+
+    @overload
+    def __getitem__(self, index: slice) -> QArray[_Element]: ...
+
+    def __getitem__(self, index: int | slice) -> _Element | QArray[_Element]:
+        raise TypeError("quantum array views are captured inside qfunc")
+
+    def __len__(self) -> int:
+        raise TypeError("quantum array length is captured inside qfunc")
+
+
 Output: TypeAlias = Annotated[_Num, "flagquantum.synth.output"]
 Const: TypeAlias = Annotated[_Num, "flagquantum.synth.const"]
 
 
-def allocate(size_or_out: int | QNum, out: QNum | None = None, /) -> None:
+def allocate(
+    size_or_out: int | QNum | QArray[QBit],
+    out: QNum | QArray[QBit] | None = None,
+    /,
+) -> None:
     """Declare fresh zero storage inside a captured qfunc.
 
     Pass a sized output, or a literal width and an unsigned output. This
@@ -74,7 +102,7 @@ def allocate(size_or_out: int | QNum, out: QNum | None = None, /) -> None:
     raise TypeError("allocate is captured inside qfunc; synthesize the program")
 
 
-def hadamard_transform(out: QNum, /) -> None:
+def hadamard_transform(out: QNum | QArray[QBit], /) -> None:
     """Prepare uniform amplitudes on an initialized captured quantum port.
 
     The compiler applies Hadamard to each logical bit. This operation cannot
@@ -118,6 +146,16 @@ def x(target: QBit, /) -> None:
     raise TypeError("X is captured inside qfunc")
 
 
+def h(target: QBit, /) -> None:
+    """Apply Hadamard to an initialized scalar qubit or array element."""
+    raise TypeError("H is captured inside qfunc")
+
+
+def s(target: QBit, /) -> None:
+    """Apply diag(1, i) to an initialized scalar qubit or array element."""
+    raise TypeError("S is captured inside qfunc")
+
+
 def rz(angle: float, target: QBit, /) -> None:
     """Apply diag(exp(-i*angle/2), exp(i*angle/2)) in radians."""
     raise TypeError("RZ is captured inside qfunc")
@@ -128,36 +166,38 @@ def phase_gate(angle: float, target: QBit, /) -> None:
     raise TypeError("PHASE is captured inside qfunc")
 
 
-def rzz(angle: float, target: QNum, /) -> None:
+def rzz(angle: float, target: QNum | QArray[QBit], /) -> None:
     """Apply exp(-i*angle*Z*Z/2) to an initialized two-bit register."""
     raise TypeError("RZZ is captured inside qfunc")
 
 
-def prepare_bell_state(state: int, target: QNum, /) -> None:
+def prepare_bell_state(state: int, target: QNum | QArray[QBit], /) -> None:
     """Initialize a fresh two-bit register as Bell state 1 (Phi-) or 2 (Psi+)."""
     raise TypeError("Bell preparation is captured inside qfunc")
 
 
-def prepare_ghz_state(size: int, target: QNum, /) -> None:
+def prepare_ghz_state(size: int, target: QNum | QArray[QBit], /) -> None:
     """Initialize a fresh register as (|0...0> + |1...1>)/sqrt(2)."""
     raise TypeError("GHZ preparation is captured inside qfunc")
 
 
 def prepare_amplitudes(
-    amplitudes: Sequence[float], bound: float, target: QNum, /
+    amplitudes: Sequence[float], bound: float, target: QNum | QArray[QBit], /
 ) -> None:
     """Initialize fresh storage from a normalized real literal amplitude vector."""
     raise TypeError("amplitude preparation is captured inside qfunc")
 
 
 def prepare_state(
-    probabilities: Sequence[float], bound: float, target: QNum, /
+    probabilities: Sequence[float], bound: float, target: QNum | QArray[QBit], /
 ) -> None:
     """Initialize fresh storage with nonnegative square-root amplitudes."""
     raise TypeError("probability preparation is captured inside qfunc")
 
 
-def prepare_uniform_interval_state(start: int, stop: int, target: QNum, /) -> None:
+def prepare_uniform_interval_state(
+    start: int, stop: int, target: QNum | QArray[QBit], /
+) -> None:
     """Prepare a uniform superposition over a half-open integer interval."""
     raise TypeError("uniform preparation is captured inside qfunc")
 

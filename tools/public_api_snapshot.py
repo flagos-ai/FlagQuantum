@@ -668,7 +668,22 @@ _SYNTH_ACTIVE_EXPORTS = (
     "prepare_ghz_state",
     "prepare_amplitudes",
     "prepare_state",
+    "QArray",
+    "H",
+    "S",
 )
+
+
+_SYNTH_ARRAY_SIGNATURES = {
+    "allocate": "(size_or_out: 'int | QNum | QArray[QBit]', out: 'QNum | QArray[QBit] | None' = None, /) -> 'None'",
+    "hadamard_transform": "(out: 'QNum | QArray[QBit]', /) -> 'None'",
+    "prepare_uniform_interval_state": "(start: 'int', stop: 'int', target: 'QNum | QArray[QBit]', /) -> 'None'",
+    "RZZ": "(angle: 'float', target: 'QNum | QArray[QBit]', /) -> 'None'",
+    "prepare_bell_state": "(state: 'int', target: 'QNum | QArray[QBit]', /) -> 'None'",
+    "prepare_ghz_state": "(size: 'int', target: 'QNum | QArray[QBit]', /) -> 'None'",
+    "prepare_amplitudes": "(amplitudes: 'Sequence[float]', bound: 'float', target: 'QNum | QArray[QBit]', /) -> 'None'",
+    "prepare_state": "(probabilities: 'Sequence[float]', bound: 'float', target: 'QNum | QArray[QBit]', /) -> 'None'",
+}
 
 
 def _validate_authorized_synthesis_run(contract: dict[str, Any]) -> list[str]:
@@ -1047,7 +1062,7 @@ def _validate_authorized_synthesis_python_program(contract: Any) -> list[str]:
         errors.append("native R differs from its authorization")
     if (
         str(inspect.signature(synth.prepare_uniform_interval_state))
-        != "(start: 'int', stop: 'int', target: 'QNum', /) -> 'None'"
+        != _SYNTH_ARRAY_SIGNATURES["prepare_uniform_interval_state"]
         or not (ROOT / "docs/api-changes/FQ-SYNTH-UNIFORM-INTERVAL.md").is_file()
     ):
         errors.append("native uniform interval differs from its authorization")
@@ -1099,11 +1114,35 @@ def _validate_authorized_synthesis_python_program(contract: Any) -> list[str]:
         != "docs/api-changes/FQ-SYNTH-NATIVE-CATALOG-20261107.md"
         or not (ROOT / "docs/api-changes/FQ-SYNTH-NATIVE-CATALOG-20261107.md").is_file()
         or any(
-            str(inspect.signature(getattr(synth, name))) != signature
+            str(inspect.signature(getattr(synth, name)))
+            != _SYNTH_ARRAY_SIGNATURES.get(name, signature)
             for name, signature in catalog_signatures.items()
         )
     ):
         errors.append("native catalog operations differ from their authorized scope")
+    views = json.loads(
+        (ROOT / "contracts/synthesis-native-views-candidate.json").read_text()
+    )
+    if (
+        views.get("namespace") != "flagquantum.synth"
+        or views.get("added_exports") != ["QArray", "H", "S"]
+        or views.get("expanded_signatures") != _SYNTH_ARRAY_SIGNATURES
+        or views.get("signatures")
+        != {"H": "(target: 'QBit', /) -> 'None'", "S": "(target: 'QBit', /) -> 'None'"}
+        or views.get("implementation_authorized") is not True
+        or views.get("release_authorized") is not False
+        or views.get("authorization_record")
+        != "docs/api-changes/FQ-SYNTH-NATIVE-VIEWS-20261107.md"
+        or not (ROOT / "docs/api-changes/FQ-SYNTH-NATIVE-VIEWS-20261107.md").is_file()
+        or any(
+            str(inspect.signature(getattr(synth, name))) != signature
+            for name, signature in {
+                **_SYNTH_ARRAY_SIGNATURES,
+                **views.get("signatures", {}),
+            }.items()
+        )
+    ):
+        errors.append("native bit-array operations differ from their authorized scope")
     for field, value in (
         ("synthesize_signature", synth.synthesize),
         ("run_signature", fq.run),
@@ -1112,7 +1151,9 @@ def _validate_authorized_synthesis_python_program(contract: Any) -> list[str]:
         if str(inspect.signature(value)) != contract[field]:
             errors.append("Python program must preserve run/read/synthesize signatures")
     for name, signature in contract["new_operation_signatures"].items():
-        if str(inspect.signature(getattr(synth, name))) != signature:
+        if str(inspect.signature(getattr(synth, name))) != _SYNTH_ARRAY_SIGNATURES.get(
+            name, signature
+        ):
             errors.append("Python program operation signature differs from approval")
     from flagquantum.observables import X as OBSERVABLE_X
 

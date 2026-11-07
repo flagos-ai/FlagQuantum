@@ -72,14 +72,19 @@ catalog metadata with `python -m tools.synthesis_catalog --write`.
 The first native completion batch adds 17 exact-original counterparts: nine
 standard gates, Bell/GHZ and real amplitude/probability preparation, unsigned
 multiplication and three quadratic-computation tutorials. Together with the six
-previous entries, 23/216 cases have runnable native/Circuit comparisons.
+previous entries, that batch covered 23/216 runnable native/Circuit comparisons.
+The native array batch adds Hadamard transformation, Bell-state classical
+shadows, entanglement and classical-shadow tomography, bringing the total to
+27/216. Array indexing/slices, static loops and writable gate helpers reuse the
+existing checked register effects. See the
+[native views contract](../../docs/api-changes/FQ-SYNTH-NATIVE-VIEWS-20261107.md).
 Run `python -m pytest tests/integration/test_synthesis_native_catalog.py -q`
 to execute those comparisons and the preparation, phase and refusal checks.
 The shared comparison helper uses `Program.registers` in its declared bit order
 and checks every complex amplitude, including zero hidden workspace, without
 aligning away global phase. The 216-case execution smoke suite remains a
-separate scope. General native quantum arrays/views, mutable helper borrows and
-runtime classical binding are not implied by this example count.
+separate scope. Nested quantum arrays, unrestricted mutable helpers and runtime
+classical binding remain outside the native profile.
 
 ## Module migration
 

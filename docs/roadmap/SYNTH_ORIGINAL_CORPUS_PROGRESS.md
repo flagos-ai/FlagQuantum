@@ -9,15 +9,18 @@ separately approved six-source numerical overlay has 216 execution smoke passes;
 it does not replace the original files. Recorded physical resources remain tied
 to their implementation revision.
 
-Runnable corresponding native qfunc/Circuit examples cover 23/216 original
+Runnable corresponding native qfunc/Circuit examples cover 27/216 original
 paths. The first completion batch adds 17 cases, with nine standard gates,
-four preparations, unsigned multiplication and three quadratic tutorials.
-`tests/integration/test_synthesis_native_catalog.py` compares all 23 native
+four preparations, unsigned multiplication and three quadratic tutorials. The
+array batch adds Hadamard transformation, Bell-state classical shadows,
+entanglement and classical-shadow tomography.
+`tests/integration/test_synthesis_native_catalog.py` compares all 27 native
 counterparts against Qmod and independent Circuit references, and checks
 preparation, phase, initialization, Const and resource boundaries. These native
 counts are independent of the complete Qmod execution smoke inventory.
-General native arrays/views, mutable helper borrows and runtime classical
-parameters remain separate gaps. The integration candidate is not a merge,
+Native bit arrays, bounded views/static loops and gate-only writable helpers
+now have a separate checked admission. Nested arrays, unrestricted writable
+helpers and runtime classical parameters remain gaps. The integration candidate is not a merge,
 release authorization or independent-user-trial result.
 
 ## Retained 2026-11-02 measurement

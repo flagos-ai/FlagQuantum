@@ -1,6 +1,6 @@
 # Classified Classiq Qmod cases
 
-All **216** pinned original paths are classified here. **23** have a byte-matched corresponding native example; the other native entries are explicitly marked missing.
+All **216** pinned original paths are classified here. **27** have a byte-matched corresponding native example; the other native entries are explicitly marked missing.
 
 **211** cases link existing Circuit validation sources. A link locates a validation implementation; its own bindings and scope determine what it proves.
 
@@ -57,7 +57,7 @@ Use each case README for exact bindings, resource records, sources and validatio
 | Original case | Native qfunc | Circuit validation links | Original status |
 | --- | --- | --- | --- |
 | [tutorials/basic_tutorials/add_bell_states/add_bell_states.qmod](tutorials/basics/classiq/add_bell_states/add_bell_states/README.md) | Not provided | 1 | execution_smoke_passed |
-| [tutorials/basic_tutorials/entanglement/entanglement.qmod](tutorials/basics/classiq/entanglement/entanglement/README.md) | Not provided | 1 | execution_smoke_passed |
+| [tutorials/basic_tutorials/entanglement/entanglement.qmod](tutorials/basics/classiq/entanglement/entanglement/README.md) | Available | 2 | execution_smoke_passed |
 | [tutorials/basic_tutorials/exponentiation/example_exponentiation.qmod](tutorials/basics/classiq/exponentiation/example_exponentiation/README.md) | Not provided | 2 | execution_smoke_passed |
 | [tutorials/basic_tutorials/grover_graph_coloring/grover_graph_coloring.qmod](tutorials/basics/classiq/grover_graph_coloring/grover_graph_coloring/README.md) | Not provided | 1 | execution_smoke_passed |
 | [tutorials/basic_tutorials/mcx/mcx.qmod](tutorials/basics/classiq/mcx/mcx/README.md) | Not provided | 1 | execution_smoke_passed |
@@ -103,7 +103,7 @@ Use each case README for exact bindings, resource records, sources and validatio
 | --- | --- | --- | --- |
 | [functions/qmod_library_reference/classiq_open_library/amplitude_amplification/exact_amplitude_amplification.qmod](tutorials/library/classiq/qmod_library_reference/classiq_open_library/amplitude_amplification/exact_amplitude_amplification/README.md) | Available | 1 | execution_smoke_passed |
 | [functions/qmod_library_reference/classiq_open_library/grover_operator/grover_operator.qmod](tutorials/library/classiq/qmod_library_reference/classiq_open_library/grover_operator/grover_operator/README.md) | Not provided | 1 | execution_smoke_passed |
-| [functions/qmod_library_reference/classiq_open_library/hadamard_transform/hadamard_transform.qmod](tutorials/library/classiq/qmod_library_reference/classiq_open_library/hadamard_transform/hadamard_transform/README.md) | Not provided | 1 | execution_smoke_passed |
+| [functions/qmod_library_reference/classiq_open_library/hadamard_transform/hadamard_transform.qmod](tutorials/library/classiq/qmod_library_reference/classiq_open_library/hadamard_transform/hadamard_transform/README.md) | Available | 2 | execution_smoke_passed |
 | [functions/qmod_library_reference/classiq_open_library/linear_pauli_rotations/linear_pauli_rotations.qmod](tutorials/library/classiq/qmod_library_reference/classiq_open_library/linear_pauli_rotations/linear_pauli_rotations/README.md) | Not provided | 1 | execution_smoke_passed |
 | [functions/qmod_library_reference/classiq_open_library/qct_qst/qct_qst_type1.qmod](tutorials/library/classiq/qmod_library_reference/classiq_open_library/qct_qst/qct_qst_type1/README.md) | Not provided | 1 | execution_smoke_passed |
 | [functions/qmod_library_reference/classiq_open_library/qct_qst/qct_qst_type2.qmod](tutorials/library/classiq/qmod_library_reference/classiq_open_library/qct_qst/qct_qst_type2/README.md) | Not provided | 1 | execution_smoke_passed |
@@ -235,8 +235,8 @@ Use each case README for exact bindings, resource records, sources and validatio
 
 | Original case | Native qfunc | Circuit validation links | Original status |
 | --- | --- | --- | --- |
-| [algorithms/metrology/classical_shadow_tomography.qmod](algorithms/metrology/classiq/classical_shadow_tomography/README.md) | Not provided | 1 | execution_smoke_passed |
-| [community/paper_implementation_project/classical_shadows/classical_shadows.qmod](algorithms/metrology/classiq/paper_implementation_project/classical_shadows/classical_shadows/README.md) | Not provided | 1 | execution_smoke_passed |
+| [algorithms/metrology/classical_shadow_tomography.qmod](algorithms/metrology/classiq/classical_shadow_tomography/README.md) | Available | 2 | execution_smoke_passed |
+| [community/paper_implementation_project/classical_shadows/classical_shadows.qmod](algorithms/metrology/classiq/paper_implementation_project/classical_shadows/classical_shadows/README.md) | Available | 2 | execution_smoke_passed |
 
 ### phase estimation
 
