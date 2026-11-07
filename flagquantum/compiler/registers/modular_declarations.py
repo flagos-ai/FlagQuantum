@@ -7,11 +7,17 @@
 
 from typing import Literal, TypeAlias, cast
 
+from .._component_trace.arithmetic_call import ArithmeticCall
+from .._component_trace.gate_budget import GateCategories
 from .._component_trace.qec_gate_cost import QECGateCost, query_qec_gate_cost
+from .._component_trace.qec_gate_cost import (
+    query_qec_gate_cost as query_declared_qec_cost,
+)
 from .._component_trace.resource_generalization import (
     CliffordCall,
     FixedTCall,
     OnEachCall,
+    ResourceCall,
 )
 from .._component_trace.resource_model import (
     ComponentCost,
@@ -19,6 +25,7 @@ from .._component_trace.resource_model import (
     estimate_component_resources,
 )
 from .._component_trace.symbolic_math import SymbolicInt, smax
+from .arithmetic_declarations import arithmetic_callees
 from .arithmetic_resource_model import source_controlled_add_cost
 from .controlled_add_resource_model import source_controlled_add_resource_formula
 from .partition import partition_width
@@ -108,59 +115,47 @@ def source_modular_arithmetic_resource_formula(
     The source placeholders have no decomposition. Peak width includes callee
     widths even at zero or negative multiplicity, exactly as its fallback does.
     """
-    if not isinstance(width, int):
-        return _symbolic_resource_formula(kind, width, signed, legacy_shims)
-    calls = modular_arithmetic_calls(
-        kind, width, signed=signed, legacy_shims=legacy_shims
-    )
-    gates = QECGateCost()
-    peak = cast(int, partition_width(modular_arithmetic_registers(kind, width)))
-    for child, count in calls.items():
-        gates = gates.plus(query_qec_gate_cost(child, legacy_shims=legacy_shims), count)
-        child_width = (
-            3
-            if isinstance(child, FixedTCall)
-            else estimate_component_resources(child).peak_logical_qubits
-        )
-        peak = max(peak, child_width)
-    return SymbolicResourceFormula(
-        gates.and_bloq,
-        gates.clifford,
-        gates.measurement,
-        peak,
-        t=gates.t,
-        toffoli=gates.toffoli,
-        cswap=gates.cswap,
-        rotation=gates.rotation,
-    )
-
-
-def _symbolic_resource_formula(
-    kind: ModularDeclaration, width: SymbolicInt, signed: bool, legacy_shims: bool
-) -> SymbolicResourceFormula:
     layout = modular_arithmetic_registers(kind, width)
     _validate_options(kind, signed, legacy_shims)
     ports = partition_width(layout)
+    static_costs: dict[ResourceCall, QECGateCost]
+    addition: GateCategories
     if kind == "controlled_subtraction":
         if width == 0:
             raise ValueError(
                 "Original zero-width CSub has no successful paired resource query"
             )
-        addition = source_controlled_add_resource_formula(
-            width, width, legacy_shims=legacy_shims
-        )
+        if isinstance(width, int):
+            model = source_controlled_add_cost(width, width, legacy_shims=legacy_shims)
+            report = estimate_component_resources(model)
+            addition = report.gates
+            addition_width: SymbolicInt = report.peak_logical_qubits
+        else:
+            formula = source_controlled_add_resource_formula(
+                width, width, legacy_shims=legacy_shims
+            )
+            addition = formula
+            addition_width = formula.logical_qubits
         invert = query_qec_gate_cost(
             OnEachCall(CliffordCall("x", 1), width), legacy_shims=legacy_shims
         )
-        gates = QECGateCost().plus(addition, 1).plus(invert, 3)
-        peak = cast(SymbolicInt, smax(ports, addition.logical_qubits, smax(1, width)))
+        static_costs = {
+            ArithmeticCall(
+                "controlled_add", (width, width), ("montgomery", "montgomery")
+            ): QECGateCost().plus(addition, 1),
+            ArithmeticCall("bitwise_not", (width,), ("montgomery",)): invert,
+        }
+        peak = cast(SymbolicInt, smax(ports, addition_width, smax(1, width)))
     else:
-        atom = FixedTCall("fredkin" if kind == "controlled_half" else "toffoli")
-        count = width - 2 if kind == "multi_controlled_x" else width
-        gates = QECGateCost().plus(
-            query_qec_gate_cost(atom, legacy_shims=legacy_shims), count
-        )
+        static_costs = {}
         peak = cast(SymbolicInt, smax(ports, 3))
+    root = ArithmeticCall(kind, (width,), signed=signed)
+    gates = query_declared_qec_cost(
+        root,
+        declared_calls={root: arithmetic_callees(root)},
+        legacy_shims=legacy_shims,
+        static_costs=static_costs,
+    )
     return SymbolicResourceFormula(
         gates.and_bloq,
         gates.clifford,

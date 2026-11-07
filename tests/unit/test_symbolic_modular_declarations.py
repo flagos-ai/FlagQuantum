@@ -219,3 +219,46 @@ def test_symbolic_options_keep_explicit_validation(kwargs):
     options = dict(kind="less_than", width=dimension("positive")) | kwargs
     with pytest.raises(ValueError):
         source_modular_arithmetic_resource_formula(**options)
+
+
+@pytest.mark.parametrize(
+    "kind,width,legacy",
+    tuple(
+        product(
+            (
+                "multi_controlled_x",
+                "controlled_subtraction",
+                "less_than",
+                "controlled_half",
+            ),
+            (3, sympy.Symbol("n", integer=True, positive=True)),
+            (False, True),
+        )
+    ),
+)
+def test_all_modular_formula_consumers_use_replaceable_native_edges(
+    monkeypatch, kind, width, legacy
+):
+    import flagquantum.compiler.registers.modular_declarations as module
+    from flagquantum.compiler._component_trace.arithmetic_call import ArithmeticCall
+    from flagquantum.compiler._component_trace.resource_generalization import FixedTCall
+
+    original = module.source_modular_arithmetic_resource_formula(
+        kind, width, legacy_shims=legacy
+    )
+    seen = []
+
+    def recipe(root):
+        seen.append(root)
+        return {FixedTCall("fredkin"): 5 * width}
+
+    monkeypatch.setattr(module, "arithmetic_callees", recipe)
+    actual = module.source_modular_arithmetic_resource_formula(
+        kind, width, legacy_shims=legacy
+    )
+    assert seen == [ArithmeticCall(kind, (width,))]
+    assert actual.cswap == 5 * width
+    assert (
+        actual.and_bloq == actual.toffoli == actual.clifford == actual.measurement == 0
+    )
+    assert actual.logical_qubits == original.logical_qubits
