@@ -63,7 +63,9 @@ def scalar_sign_ir(
 ) -> tuple[Instruction, ...]:
     """Apply the exact scalar -1, optionally under a classical condition."""
     _validate_wires((anchor,))
-    metadata = {"conditions": conditions} if conditions else {}
+    metadata: dict[str, object] = {"exact_scalar_sign": True}
+    if conditions:
+        metadata["conditions"] = conditions
     flip = Instruction("x", (anchor,), metadata=metadata)
     sign = Instruction("z", (anchor,), metadata=metadata)
     return (flip, sign, flip, sign)

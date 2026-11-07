@@ -66,10 +66,13 @@ def test_scalar_pattern_requires_identical_wires_and_predicates() -> None:
         Instruction("z", (0,), metadata={"conditions": ((0, 1),)}),
     )
     for gates in (different_wire, different_condition):
-        assert all(
-            op.opcode != "neg"
-            for op in lower_reversible_phase(CircuitIR(2, gates)).operations
-        )
+        with pytest.raises(CapabilityError, match="cannot represent"):
+            lower_reversible_phase(CircuitIR(2, gates))
+    ordinary_gates = tuple(Instruction(gate.name, gate.wires) for gate in sign)
+    assert [
+        op.opcode
+        for op in lower_reversible_phase(CircuitIR(2, ordinary_gates)).operations
+    ] == ["x", "z", "x", "z"]
 
 
 def test_mismatched_ccz_conjugation_does_not_accept_standalone_h() -> None:

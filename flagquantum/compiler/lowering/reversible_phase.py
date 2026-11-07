@@ -55,11 +55,15 @@ def _is_scalar_sign(span: tuple[Instruction, ...]) -> bool:
     if tuple(instruction.name for instruction in span) != ("x", "z", "x", "z"):
         return False
     anchor = span[0]
-    return len(anchor.wires) == 1 and all(
-        _plain(instruction)
-        and instruction.wires == anchor.wires
-        and instruction.metadata == anchor.metadata
-        for instruction in span
+    return (
+        anchor.metadata.get("exact_scalar_sign") is True
+        and len(anchor.wires) == 1
+        and all(
+            _plain(instruction)
+            and instruction.wires == anchor.wires
+            and instruction.metadata == anchor.metadata
+            for instruction in span
+        )
     )
 
 
@@ -127,10 +131,13 @@ def lower_reversible_phase(ir: CircuitIR) -> ReversiblePhaseProgram:
         ):
             opcode = "neg"
             consumed = 4
+        supported_metadata = {"conditions", "condition_clauses"}
+        if opcode == "neg" and consumed == 4:
+            supported_metadata.add("exact_scalar_sign")
         if (
             (consumed == 1 and opcode not in _REVERSIBLE_OPCODES)
             or not _plain(instruction)
-            or set(instruction.metadata) - {"conditions", "condition_clauses"}
+            or set(instruction.metadata) - supported_metadata
         ):
             raise CapabilityError(
                 f"reversible-phase lowering cannot represent {instruction.name!r} "
