@@ -69,7 +69,7 @@ def reference_arithmetic_gates(
     cirq = pytest.importorskip("cirq")
     np = pytest.importorskip("numpy")
     from qualtran import CompositeBloq
-    from qualtran.bloqs.basic_gates import CNOT, XGate
+    from qualtran.bloqs.basic_gates import CNOT, CZ, CHadamard, CYGate, Identity, XGate
     from qualtran.cirq_interop import BloqAsCirqGate
 
     class Manager(cirq.QubitManager):
@@ -145,7 +145,16 @@ def reference_arithmetic_gates(
     }
 
     if keep_pauli_leaves:
-        names.update({cirq.Y: "y", cirq.Z: "z", cirq.CY: "cy"})
+        names.update(
+            {
+                cirq.Y: "y",
+                cirq.Z: "z",
+                cirq.CY: "cy",
+                BloqAsCirqGate(CZ()): "cz",
+                BloqAsCirqGate(CYGate()): "cy",
+                BloqAsCirqGate(CHadamard()): "ch",
+            }
+        )
 
     phase_angles = {}
     if keep_exchange_leaves:
@@ -162,6 +171,15 @@ def reference_arithmetic_gates(
 
         gate = getattr(op, "gate", None)
         bloq = gate.bloq if isinstance(gate, BloqAsCirqGate) else gate
+        if keep_pauli_leaves and (
+            isinstance(bloq, Identity)
+            or isinstance(gate, cirq.IdentityGate)
+            or (
+                isinstance(gate, cirq.ControlledGate)
+                and isinstance(gate.sub_gate, cirq.IdentityGate)
+            )
+        ):
+            return ()
         if (
             preserve_components
             and isinstance(gate, cirq.ControlledGate)
