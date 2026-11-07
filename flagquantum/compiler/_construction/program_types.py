@@ -156,6 +156,11 @@ def s(target: QBit, /) -> None:
     raise TypeError("S is captured inside qfunc")
 
 
+def rx(angle: float, target: QBit, /) -> None:
+    """Apply exp(-i*angle*X/2) in radians inside qfunc."""
+    raise TypeError("RX is captured inside qfunc")
+
+
 def rz(angle: float, target: QBit, /) -> None:
     """Apply diag(exp(-i*angle/2), exp(i*angle/2)) in radians."""
     raise TypeError("RZ is captured inside qfunc")

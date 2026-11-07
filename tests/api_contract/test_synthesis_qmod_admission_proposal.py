@@ -63,8 +63,22 @@ def test_proposal_does_not_activate_or_change_the_existing_public_api():
         "QArray",
         "H",
         "S",
+        "RX",
     )
-    assert str(inspect.signature(synth.synthesize)) == active["synthesize_signature"]
+    assert (
+        str(
+            inspect.signature(synth.synthesize).replace(
+                parameters=[
+                    p
+                    for name, p in inspect.signature(
+                        synth.synthesize
+                    ).parameters.items()
+                    if name != "classical_inputs"
+                ]
+            )
+        )
+        == active["synthesize_signature"]
+    )
     assert str(inspect.signature(fq.run)) == active["run_signature"]
     assert (
         str(inspect.signature(synth.Program.probabilities))

@@ -85,6 +85,7 @@ U = program_types.u
 control = program_types.control
 prepare_uniform_interval_state = program_types.prepare_uniform_interval_state
 X = program_types.x
+RX = program_types.rx
 RZ = program_types.rz
 PHASE = program_types.phase_gate
 RZZ = program_types.rzz
@@ -129,6 +130,7 @@ __all__ = (
     "QArray",
     "H",
     "S",
+    "RX",
 )
 
 
@@ -348,6 +350,7 @@ def synthesize(
     source_format: None = None,
     source_name: None = None,
     source_version: None = None,
+    classical_inputs: Mapping[str, float | Sequence[float]] | None = None,
     memory_limit_bytes: int | None = None,
     output_mode: Literal["value"] = "value",
 ) -> Program: ...
@@ -374,6 +377,7 @@ def synthesize(
     source_format: None = None,
     source_name: None = None,
     source_version: None = None,
+    classical_inputs: Mapping[str, float | Sequence[float]] | None = None,
     memory_limit_bytes: int | None = None,
     output_mode: Literal["phase"],
 ) -> Program: ...
@@ -400,6 +404,7 @@ def synthesize(
     source_format: Literal["qmod"],
     source_name: str | None = None,
     source_version: str | None = None,
+    classical_inputs: Mapping[str, float | Sequence[float]] | None = None,
     memory_limit_bytes: int | None = None,
     output_mode: Literal["value"] = "value",
 ) -> Program: ...
@@ -426,6 +431,7 @@ def synthesize(
     source_format: Literal["qmod"] | None = None,
     source_name: None = None,
     source_version: str | None = None,
+    classical_inputs: Mapping[str, float | Sequence[float]] | None = None,
     memory_limit_bytes: int | None = None,
     output_mode: Literal["value"] = "value",
 ) -> Program: ...
@@ -452,6 +458,7 @@ def synthesize(
     source_format: None = None,
     source_name: None = None,
     source_version: None = None,
+    classical_inputs: Mapping[str, float | Sequence[float]] | None = None,
     memory_limit_bytes: int | None = None,
     output_mode: Literal["value"] = "value",
 ) -> Program: ...
@@ -477,6 +484,7 @@ def synthesize(
     source_format: Literal["qmod"] | None = None,
     source_name: str | None = None,
     source_version: str | None = None,
+    classical_inputs: Mapping[str, float | Sequence[float]] | None = None,
     memory_limit_bytes: int | None = None,
     output_mode: Literal["value", "phase"] = "value",
 ) -> Program:
@@ -494,7 +502,9 @@ def synthesize(
     peak-memory limit. Scalar Python retains its existing memory behavior.
     A typed qfunc root owns Output ports and in-program preparation, reusing the
     same register workflow and 512 MiB default state-buffer ceiling. Omit scalar
-    inputs/state/constants/functions/preparation for that profile.
+    inputs/state/constants/functions/preparation for that profile. classical_inputs
+    binds finite scalar and one-dimensional real-array parameters at synthesis
+    time for typed qfunc and Qmod sources; it is not a runtime tensor input.
 
     output_mode="value" preserves the reversible XOR result. "phase" accepts
     only a one-bit Python return on logical CPU targets (basis/topology=None):
@@ -551,6 +561,7 @@ def synthesize(
         source_format=source_format,
         source_name=source_name,
         source_version=source_version,
+        classical_inputs=classical_inputs,
         memory_limit_bytes=memory_limit_bytes,
         output_mode=output_mode,
     )
@@ -620,8 +631,6 @@ def _synthesize(
     is_native_source = isinstance(function, (PathLike, str))
     if not is_native_source and qmod_machine_precision is not None:
         raise ValueError("qmod_machine_precision applies only to native Qmod source")
-    if not is_native_source and classical_inputs is not None:
-        raise ValueError("classical_inputs apply only to native Qmod source")
     if not is_native_source and any(
         value is not None for value in (source_format, source_name, source_version)
     ):
@@ -689,9 +698,13 @@ def _synthesize(
             )
         from ..compiler._construction.frontend_program import capture_program
 
-        owned_program, owned_functions = capture_program(function)
+        owned_program, owned_functions = capture_program(function, classical_inputs)
         owned_source = "python"
     else:
+        if classical_inputs is not None:
+            raise ValueError(
+                "classical_inputs require Qmod source or a typed qfunc program"
+            )
         owned_program = None
     if owned_program is not None:
         from ._synthesis_registers import synthesize_registers

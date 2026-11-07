@@ -69,7 +69,7 @@ See the [UP-01 delivery](../../docs/roadmap/SYNTH_PYTHON_PROGRAM_UP01_DELIVERY.m
 The typed profile supports QBit, unsigned integer QNum and QArray[QBit], Output/Const,
 literal basis initialization, allocation, Hadamard preparation, fresh `|=`
 expressions using +, *, literal powers 1..8, and acyclic positional qfunc calls.
-Root ports are Output-only. The phase, within/apply, adjoint and scalar-control
+Quantum root ports are Output-only; finite classical parameters follow the binding profile below. The phase, within/apply, adjoint and scalar-control
 extensions retain their checked individual scopes. Array views and static loops
 follow the native views admission above. Signed/fractional types, Input/free/drop,
 nested arrays, host callbacks, dynamic loops/branches and runtime classical
@@ -80,6 +80,43 @@ Do not combine typed roots with scalar inputs/InputState/constants/functions/
 custom preparation or predicate output_mode=phase. A root owns its preparation.
 Its default state-buffer ceiling is 512 MiB; explicit limits apply to the actual
 checked plan. No new executor, root export or execution unwrap is introduced.
+
+## Static classical parameters
+
+Use the same `synthesize(..., classical_inputs=...)` for native typed qfunc and
+Qmod parameters. `float` denotes a scalar and `list[float]` a one-dimensional
+real array, bound at synthesis time. Quantum storage still uses Output/QArray.
+
+```python
+import flagquantum as fq
+from flagquantum.synth import RX, Output, QArray, QBit, allocate, qfunc, synthesize
+
+@qfunc
+def encoding(theta: float, q: QArray[QBit]) -> None:
+    RX(theta, q[0])
+
+@qfunc
+def main(input_0: float, weight_0: float, res: Output[QArray[QBit]]) -> None:
+    allocate(1, res)
+    encoding(input_0, res)
+    encoding(weight_0, res)
+
+program = synthesize(main, classical_inputs={"input_0": 0.37, "weight_0": -0.81})
+result = fq.run(program)
+print(dict(program.probabilities(result, registers=("res",))))
+```
+
+Arrays are snapshotted from built-in lists/tuples; their elements and scalar
+bindings must be finite built-in int/float values in ±2**53, excluding bool.
+Each array is nonempty and total bindings are limited to 4096 elements. Helpers
+can take classical parameters alongside disjoint writable quantum views and use
+`len(angles)` in existing bounded static loops. Angle expressions admit +, -, *,
+/, unary signs and bounded element access. Real parameters cannot supply indices
+or allocation widths. Parameterized mutable helpers retain the gate/loop-only
+scope: no allocation, Output escape, adjoint or coherent control. Bindings do not
+become runtime tensors or differentiable parameters; synthesize again to rebind.
+See the [semantic contract](../../docs/api-changes/FQ-SYNTH-NATIVE-CLASSICAL-20261107.md)
+and [runnable three-form QML comparison](../../examples/synthesis/tutorials/basics/classiq/qml_with_classiq_guide/qml_with_classiq_guide/comparisons/circuit.py).
 
 ## Pure-function convenience
 

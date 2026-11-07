@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import ast
 import math
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from copy import deepcopy
 from dataclasses import replace
 
@@ -17,7 +17,14 @@ from .._hybrid.model import (
     Value,
     ValueId,
 )
-from .frontend_ports import _annotation_node, _Port, _resolve, program_ports
+from .frontend_classical import ClassicalValue, bind_inputs, real_number
+from .frontend_ports import (
+    _annotation_node,
+    _Port,
+    _resolve,
+    classical_parameters,
+    program_ports,
+)
 from .frontend_preparation import capture_preparation
 from .frontend_python import _error, _QuantumFunction, _Source, capture
 from .frontend_views import capture_loop, gate_target, inline_mutable, locations
@@ -41,6 +48,7 @@ from .program_types import (
     prepare_state,
     prepare_uniform_interval_state,
     r,
+    rx,
     rz,
     rzz,
     s,
@@ -60,7 +68,10 @@ from .register_profile import (
 
 
 class _Capture:
-    def __init__(self, entry: _QuantumFunction) -> None:
+    def __init__(
+        self, entry: _QuantumFunction, classical: Mapping[str, ClassicalValue]
+    ) -> None:
+        self.classical = classical
         self.entry = entry.source.node.name
         self.functions: list[HybridProgram] = []
         self.active: set[int] = set()
@@ -140,7 +151,9 @@ class _Capture:
         self.serial += 1
         self.active.add(id(definition))
         try:
-            builder = _Body(self, definition, name, ports)
+            builder = _Body(
+                self, definition, name, ports, self.classical if root else None
+            )
             program = builder.finish()
             resolved = tuple(replace(p, width=builder.widths[p.name]) for p in ports)
         finally:
@@ -158,6 +171,7 @@ class _Body:
         definition: _QuantumFunction,
         name: str,
         ports: tuple[_Port, ...],
+        classical: Mapping[str, ClassicalValue] | None = None,
     ) -> None:
         self.owner, self.definition, self.name = owner, definition, name
         self.source = definition.source
@@ -172,6 +186,7 @@ class _Body:
         self.aliases: dict[str, tuple[tuple[Value, int], ...]] | None = None
         self.array_names = {p.name for p in ports if p.kind == "qarray"}
         self.loop_variables: dict[str, int] = {}
+        self.classical = dict(classical or {})
 
     def register(self, node: ast.expr, inferred: int | None = None) -> Value:
         if self.aliases is not None:
@@ -353,30 +368,7 @@ class _Body:
         return graph, actuals
 
     def phase_number(self, node: ast.expr) -> float | None:
-        sign = 1
-        if isinstance(node, ast.UnaryOp) and isinstance(node.op, (ast.UAdd, ast.USub)):
-            sign = -1 if isinstance(node.op, ast.USub) else 1
-            node = node.operand
-        value: object
-        if isinstance(node, ast.Name) and node.id in self.loop_variables:
-            value = self.loop_variables[node.id]
-        elif isinstance(node, ast.Constant):
-            value = node.value
-        elif isinstance(node, (ast.Name, ast.Attribute)):
-            if isinstance(node, ast.Name) and node.id in (
-                self.aliases if self.aliases is not None else self.ports
-            ):
-                return None
-            value = _resolve(self.definition, node)
-        else:
-            return None
-        if type(value) is not int and type(value) is not float:
-            return None
-        try:
-            converted = sign * float(value)
-        except OverflowError:
-            return None
-        return converted if math.isfinite(converted) else None
+        return real_number(self, node)
 
     def call(
         self,
@@ -393,8 +385,14 @@ class _Body:
                 "program.signature",
                 "use positional arguments without unpacking",
             )
-        if isinstance(node.func, ast.Name) and node.func.id in (
-            self.aliases if self.aliases is not None else self.ports
+        callable_root = node.func
+        while isinstance(callable_root, ast.Attribute):
+            callable_root = callable_root.value
+        if isinstance(callable_root, ast.Name) and (
+            callable_root.id
+            in (self.aliases if self.aliases is not None else self.ports)
+            or callable_root.id in self.classical
+            or callable_root.id in self.loop_variables
         ):
             _error(
                 self.source,
@@ -410,6 +408,7 @@ class _Body:
                     h,
                     s,
                     x,
+                    rx,
                     rz,
                     phase_gate,
                     rzz,
@@ -488,7 +487,7 @@ class _Body:
                 )
             for destination, bit in locations(self, node.args[0]):
                 self.emit("qreg.gate", node, (destination,), gate="h", index=bit)
-        elif any(function is gate for gate in (x, h, s, rz, phase_gate, rzz)):
+        elif any(function is gate for gate in (x, h, s, rx, rz, phase_gate, rzz)):
             angled = not any(function is gate for gate in (x, h, s))
             if len(node.args) != 1 + angled:
                 _error(self.source, node, "program.signature", "invalid gate arity")
@@ -530,6 +529,7 @@ class _Body:
                         (x, "x"),
                         (h, "h"),
                         (s, "s"),
+                        (rx, "rx"),
                         (rz, "rz"),
                         (phase_gate, "phase"),
                     )
@@ -706,6 +706,13 @@ class _Body:
                     )
                 inline_mutable(self, node, function, formal)
                 return
+            if classical_parameters(function):
+                _error(
+                    self.source,
+                    node,
+                    "program.binding",
+                    "parameterized helpers require plain writable quantum ports",
+                )
             if self.aliases is not None:
                 _error(
                     self.source,
@@ -1142,9 +1149,10 @@ class _Body:
 
 def capture_program(
     definition: _QuantumFunction,
+    classical_inputs: Mapping[str, float | Sequence[float]] | None = None,
 ) -> tuple[HybridProgram, tuple[HybridProgram, ...]]:
     """Capture the reachable typed graph; existing Compiler verifies all effects."""
-    owner = _Capture(definition)
+    owner = _Capture(definition, bind_inputs(definition, classical_inputs))
     program, _ = owner.build(definition, root=True)
     functions = tuple(owner.functions)
     verify_register_program(program, functions)

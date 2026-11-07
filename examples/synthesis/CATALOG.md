@@ -1,6 +1,6 @@
 # Classified Classiq Qmod cases
 
-All **216** pinned original paths are classified here. **27** have a byte-matched corresponding native example; the other native entries are explicitly marked missing.
+All **216** pinned original paths are classified here. **28** have a byte-matched corresponding native example; the other native entries are explicitly marked missing.
 
 **211** cases link existing Circuit validation sources. A link locates a validation implementation; its own bindings and scope determine what it proves.
 
@@ -64,7 +64,7 @@ Use each case README for exact bindings, resource records, sources and validatio
 | [tutorials/basic_tutorials/optimization/learning_optimization.qmod](tutorials/basics/classiq/optimization/learning_optimization/README.md) | Not provided | 1 | execution_smoke_passed |
 | [tutorials/basic_tutorials/prepare_state/prepare_state.qmod](tutorials/basics/classiq/prepare_state/prepare_state/README.md) | Not provided | 1 | execution_smoke_passed |
 | [tutorials/basic_tutorials/qmci_pi_estimation/qmci_pi_estimation.qmod](tutorials/basics/classiq/qmci_pi_estimation/qmci_pi_estimation/README.md) | Not provided | 2 | execution_smoke_passed |
-| [tutorials/basic_tutorials/qml_with_classiq_guide/qml_with_classiq_guide.qmod](tutorials/basics/classiq/qml_with_classiq_guide/qml_with_classiq_guide/README.md) | Not provided | 1 | execution_smoke_passed |
+| [tutorials/basic_tutorials/qml_with_classiq_guide/qml_with_classiq_guide.qmod](tutorials/basics/classiq/qml_with_classiq_guide/qml_with_classiq_guide/README.md) | Available | 2 | execution_smoke_passed |
 | [tutorials/basic_tutorials/quantum_primitives/hadamard_test_tutorial/hadamard_test_tutorial.qmod](tutorials/basics/classiq/quantum_primitives/hadamard_test_tutorial/hadamard_test_tutorial/README.md) | Not provided | 1 | execution_smoke_passed |
 | [tutorials/basic_tutorials/quantum_primitives/linear_combination_of_unitaries/linear_combination_of_unitaries.qmod](tutorials/basics/classiq/quantum_primitives/linear_combination_of_unitaries/linear_combination_of_unitaries/README.md) | Not provided | 1 | execution_smoke_passed |
 | [tutorials/basic_tutorials/quantumwalk_complex_network/quantumwalk_complex_network.qmod](tutorials/basics/classiq/quantumwalk_complex_network/quantumwalk_complex_network/README.md) | Not provided | 1 | execution_smoke_passed |

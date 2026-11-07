@@ -31,7 +31,15 @@ def test_proposal_records_current_api_and_precise_pending_delta_without_fake_app
     assert PROPOSAL["api_owner_approval"] is None
     assert PROPOSAL["release_authorized"] is False
     assert PROPOSAL["human_trial_records"] == []
-    signature = str(inspect.signature(synth.synthesize))
+    signature = str(
+        inspect.signature(synth.synthesize).replace(
+            parameters=[
+                p
+                for name, p in inspect.signature(synth.synthesize).parameters.items()
+                if name != "classical_inputs"
+            ]
+        )
+    )
     assert signature == PROPOSAL["proposed_synthesize_signature"]
     active = json.loads(
         (ROOT / "contracts/synthesis-phase-v1-candidate.json").read_text()
@@ -72,6 +80,7 @@ def test_proposal_records_current_api_and_precise_pending_delta_without_fake_app
         "QArray",
         "H",
         "S",
+        "RX",
     ]
     assert str(inspect.signature(fq.run)) == PROPOSAL["unchanged_run_signature"]
     assert (

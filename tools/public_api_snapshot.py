@@ -671,6 +671,7 @@ _SYNTH_ACTIVE_EXPORTS = (
     "QArray",
     "H",
     "S",
+    "RX",
 )
 
 
@@ -809,7 +810,11 @@ def _validate_authorized_synthesis_run(contract: dict[str, Any]) -> list[str]:
         ("probabilities_signature", synth.Program.probabilities),
         ("synthesize_signature", synth.synthesize),
     ):
-        if contract.get(key) != str(inspect.signature(value, eval_str=False)):
+        if contract.get(key) != (
+            _synthesis_pre_classical_signature(value)
+            if key == "synthesize_signature"
+            else str(inspect.signature(value, eval_str=False))
+        ):
             errors.append(f"synthesis {key} differs from its candidate contract")
     source_contract = json.loads(
         (ROOT / "contracts/synthesis-qmod-v1-candidate.json").read_text()
@@ -957,7 +962,10 @@ def _validate_authorized_synthesis_phase(contract: Any) -> list[str]:
         errors.append("phase scope requires a Boolean flag and integer return width")
     if not (ROOT / expected["authorization_record"]).is_file():
         errors.append("predicate phase implementation authorization is missing")
-    if str(inspect.signature(synth.synthesize)) != expected["synthesize_signature"]:
+    if (
+        _synthesis_pre_classical_signature(synth.synthesize)
+        != expected["synthesize_signature"]
+    ):
         errors.append("predicate phase signature exceeds approved admission")
     if tuple(synth.__all__) != _SYNTH_ACTIVE_EXPORTS:
         errors.append("phase namespace differs from the authorized program successor")
@@ -971,6 +979,63 @@ def _validate_authorized_synthesis_phase(contract: Any) -> list[str]:
         != proposal["unchanged_probabilities_signature"]
     ):
         errors.append("predicate phase must preserve run/read signatures")
+    return errors
+
+
+def _synthesis_pre_classical_signature(function: Any) -> str:
+    """Protect historical parameters independently of the classical successor."""
+    signature = inspect.signature(function, eval_str=False)
+    return str(
+        signature.replace(
+            parameters=[
+                p
+                for name, p in signature.parameters.items()
+                if name != "classical_inputs"
+            ]
+        )
+    )
+
+
+def _validate_authorized_synthesis_classical(contract: Any) -> list[str]:
+    from flagquantum import synth
+
+    previous = json.loads(
+        (ROOT / "contracts/synthesis-python-program-v1-candidate.json").read_text()
+    )["synthesize_signature"]
+    expected_signature = previous.replace(
+        "memory_limit_bytes: 'int | None' = None",
+        "classical_inputs: 'Mapping[str, float | Sequence[float]] | None' = None, memory_limit_bytes: 'int | None' = None",
+    )
+    expected = {
+        "schema": "flagquantum.synthesis_native_classical_admission",
+        "version": "1.0",
+        "namespace": "flagquantum.synth",
+        "added_exports": ["RX"],
+        "signatures": {"RX": "(angle: 'float', target: 'QBit', /) -> 'None'"},
+        "synthesize_signature": expected_signature,
+        "previous_synthesize_signature": previous,
+        "annotations": ["float", "list[float]"],
+        "binding": "synthesis_time",
+        "real_input_bound": 2**53,
+        "max_classical_elements": 4096,
+        "helper_roles": ["classical", "inout"],
+        "new_ir": False,
+        "new_executor": False,
+        "authorization_record": "docs/api-changes/FQ-SYNTH-NATIVE-CLASSICAL-20261107.md",
+        "implementation_authorized": True,
+        "release_authorized": False,
+    }
+    errors = []
+    if contract != expected or any(
+        type(contract.get(name)) is not type(value) for name, value in expected.items()
+    ):
+        errors.append("native classical admission differs from its authorized scope")
+    if str(inspect.signature(synth.synthesize)) != expected_signature:
+        errors.append("native classical synthesis signature differs from approval")
+    if str(inspect.signature(synth.RX)) != expected["signatures"]["RX"]:
+        errors.append("native RX signature differs from approval")
+    if not (ROOT / str(expected["authorization_record"])).is_file():
+        errors.append("native classical authorization is missing")
     return errors
 
 
@@ -1148,7 +1213,11 @@ def _validate_authorized_synthesis_python_program(contract: Any) -> list[str]:
         ("run_signature", fq.run),
         ("probabilities_signature", synth.Program.probabilities),
     ):
-        if str(inspect.signature(value)) != contract[field]:
+        if (
+            _synthesis_pre_classical_signature(value)
+            if field == "synthesize_signature"
+            else str(inspect.signature(value))
+        ) != contract[field]:
             errors.append("Python program must preserve run/read/synthesize signatures")
     for name, signature in contract["new_operation_signatures"].items():
         if str(inspect.signature(getattr(synth, name))) != _SYNTH_ARRAY_SIGNATURES.get(
@@ -1159,6 +1228,15 @@ def _validate_authorized_synthesis_python_program(contract: Any) -> list[str]:
 
     if set(exports).intersection(fq.__all__) != {"X"} or fq.X is not OBSERVABLE_X:
         errors.append("Python program symbols must not enter Stable Core exports")
+    errors.extend(
+        _validate_authorized_synthesis_classical(
+            json.loads(
+                (
+                    ROOT / "contracts/synthesis-native-classical-candidate.json"
+                ).read_text()
+            )
+        )
+    )
     return errors
 
 

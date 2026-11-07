@@ -54,7 +54,15 @@ def _resolve(
                     _error(
                         source, node, "name", "the referenced closure binding is empty"
                     )
-        return function.__globals__.get(node.id)
+        if node.id in function.__globals__:
+            return function.__globals__[node.id]
+        if annotation and node.id in {"float", "list"}:
+            import builtins
+
+            namespace = function.__globals__.get("__builtins__", builtins)
+            values = vars(namespace) if type(namespace) is ModuleType else namespace
+            return values.get(node.id) if isinstance(values, dict) else None
+        return None
     if isinstance(node, ast.Attribute):
         parent = _resolve(definition, node.value, depth + 1, annotation=annotation)
         if type(parent) is ModuleType:
@@ -92,10 +100,36 @@ def program_annotation_names(source: _Source) -> set[str]:
     }
 
 
+def classical_parameters(definition: _QuantumFunction) -> dict[str, bool]:
+    """Identify finite real scalars and one-dimensional real array annotations."""
+    parameters: dict[str, bool] = {}
+    for argument in (
+        *definition.source.node.args.posonlyargs,
+        *definition.source.node.args.args,
+    ):
+        if argument.annotation is None:
+            continue
+        node = _annotation_node(definition.source, argument.annotation)
+        if isinstance(node, (ast.Name, ast.Attribute)):
+            if _resolve(definition, node, annotation=True) is float:
+                parameters[argument.arg] = False
+        elif isinstance(node, ast.Subscript):
+            if (
+                _resolve(definition, node.value, annotation=True) is list
+                and isinstance(node.slice, (ast.Name, ast.Attribute))
+                and _resolve(definition, node.slice, annotation=True) is float
+            ):
+                parameters[argument.arg] = True
+    return parameters
+
+
 def program_ports(definition: _QuantumFunction) -> tuple[_Port, ...]:
     source = definition.source
     ports: list[_Port] = []
+    classical = classical_parameters(definition)
     for argument in (*source.node.args.posonlyargs, *source.node.args.args):
+        if argument.arg in classical:
+            continue
         annotation = argument.annotation
         if annotation is None:
             _error(

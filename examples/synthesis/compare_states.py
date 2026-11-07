@@ -1,5 +1,6 @@
 """Compare declared register amplitudes and clean workspace across producers."""
 
+from collections.abc import Mapping, Sequence
 from pathlib import Path
 
 import torch
@@ -13,6 +14,8 @@ def compare_states(
     source: Path,
     reference: fq.Circuit,
     registers: tuple[str, ...],
+    *,
+    classical_inputs: Mapping[str, float | Sequence[float]] | None = None,
 ) -> None:
     """Check absolute amplitudes in named register order, including hidden zeros."""
     expected = fq.run(reference).statevector().flatten()
@@ -21,7 +24,10 @@ def compare_states(
         (
             "Qmod",
             synth.synthesize(
-                source, source_format="qmod", memory_limit_bytes=512 * 1024**2
+                source,
+                source_format="qmod",
+                memory_limit_bytes=512 * 1024**2,
+                classical_inputs=classical_inputs,
             ),
         ),
     ):

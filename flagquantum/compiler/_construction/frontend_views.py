@@ -8,6 +8,7 @@ from types import FunctionType, ModuleType
 from typing import TYPE_CHECKING
 
 from .._hybrid.model import Value
+from .frontend_classical import bind_helper
 from .frontend_ports import _Port, _resolve
 from .frontend_python import _error, _QuantumFunction
 from .register_profile import register_width
@@ -39,6 +40,7 @@ def _require_builtin(owner: _Body, node: ast.Name, expected: object) -> None:
     if (
         node.id in visible
         or node.id in owner.loop_variables
+        or node.id in owner.classical
         or resolved is not expected
     ):
         _error(
@@ -56,6 +58,13 @@ def static_integer(owner: _Body, node: ast.expr, depth: int = 0) -> int:
     if isinstance(node, ast.Constant):
         value = node.value
     elif isinstance(node, ast.Name):
+        if node.id in owner.classical:
+            _error(
+                owner.source,
+                node,
+                "program.loop",
+                "real parameters cannot be static integers",
+            )
         value = owner.loop_variables.get(node.id)
         if value is None and node.id not in (
             owner.aliases if owner.aliases is not None else owner.ports
@@ -83,7 +92,14 @@ def static_integer(owner: _Body, node: ast.expr, depth: int = 0) -> int:
         and not node.keywords
     ):
         _require_builtin(owner, node.func, len)
-        value = len(locations(owner, node.args[0], depth + 1))
+        argument = node.args[0]
+        if isinstance(argument, ast.Name) and argument.id in owner.classical:
+            array = owner.classical[argument.id]
+            if not isinstance(array, tuple):
+                _error(owner.source, node, "program.binding", "len requires an array")
+            value = len(array)
+        else:
+            value = len(locations(owner, argument, depth + 1))
     if type(value) is not int or abs(value) > 4096:
         _error(
             owner.source,
@@ -195,6 +211,7 @@ def capture_loop(owner: _Body, node: ast.For) -> None:
         not isinstance(node.target, ast.Name)
         or node.target.id in visible
         or node.target.id in owner.loop_variables
+        or node.target.id in owner.classical
         or node.target.id in {"range", "len"}
         or not isinstance(node.iter, ast.Call)
         or not isinstance(node.iter.func, ast.Name)
@@ -238,7 +255,7 @@ def inline_mutable(
     owner: _Body, node: ast.Call, definition: _QuantumFunction, ports: Sequence[_Port]
 ) -> None:
     """Expand gate-only borrowed helpers into the caller's checked owned effects."""
-    if any(port.role != "inout" for port in ports) or len(node.args) != len(ports):
+    if any(port.role != "inout" for port in ports):
         _error(
             owner.source,
             node,
@@ -267,9 +284,10 @@ def inline_mutable(
                 "budget",
                 "program definitions exceed 4096 AST nodes",
             )
+    classical, arguments = bind_helper(owner, node, definition)
     bindings = {
         port.name: locations(owner, argument)
-        for port, argument in zip(ports, node.args, strict=True)
+        for port, argument in zip(ports, arguments, strict=True)
     }
     occupied: set[tuple[Value, int]] = set()
     readonly = {
@@ -302,11 +320,13 @@ def inline_mutable(
         owner.aliases,
         owner.array_names,
         owner.loop_variables,
+        owner.classical,
     )
     owner.definition, owner.source = definition, definition.source
     owner.aliases = bindings
     owner.array_names = {port.name for port in ports if port.kind == "qarray"}
     owner.loop_variables = {}
+    owner.classical = classical
     owner.owner.active.add(id(definition))
     try:
         owner.statements(definition.source.node.body)
@@ -318,4 +338,5 @@ def inline_mutable(
             owner.aliases,
             owner.array_names,
             owner.loop_variables,
+            owner.classical,
         ) = saved

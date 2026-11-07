@@ -80,7 +80,12 @@ multiplication and three quadratic-computation tutorials. Together with the six
 previous entries, that batch covered 23/216 runnable native/Circuit comparisons.
 The native array batch adds Hadamard transformation, Bell-state classical
 shadows, entanglement and classical-shadow tomography, bringing the total to
-27/216. Array indexing/slices, static loops and writable gate helpers reuse the
+27/216. The static classical binding batch adds the original QML guide, bringing
+the total to 28/216 (13.0%). It binds real scalar/array values through
+`classical_inputs` and parameterized gate helpers; runtime tensors and gradients
+remain outside this profile. See the
+[classical binding contract](../../docs/api-changes/FQ-SYNTH-NATIVE-CLASSICAL-20261107.md).
+Array indexing/slices, static loops and writable gate helpers reuse the
 existing checked register effects. See the
 [native views contract](../../docs/api-changes/FQ-SYNTH-NATIVE-VIEWS-20261107.md).
 Run `python -m pytest tests/integration/test_synthesis_native_catalog.py -q`

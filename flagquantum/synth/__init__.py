@@ -8,6 +8,7 @@ from ..services.synthesis import (
     CRX,
     CX,
     PHASE,
+    RX,
     RZ,
     RZZ,
     SWAP,
@@ -78,4 +79,5 @@ __all__ = (
     "QArray",
     "H",
     "S",
+    "RX",
 )
