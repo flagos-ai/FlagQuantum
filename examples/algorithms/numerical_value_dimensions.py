@@ -20,6 +20,7 @@ from flagquantum.runtime.dynamic.execution import run_dynamic
 from flagquantum.simulation.classical_control_activation import (
     classical_controls_active,
 )
+from flagquantum.simulation.classical_control_patterns import normalize_control_patterns
 from flagquantum.simulation.value_dimensions import (
     SymbolicArrayShape,
     SymbolicSequenceLength,
@@ -33,11 +34,13 @@ class ShapedControlledX:
     """Use known row-major 2x2 activation values with the existing predicate emitter."""
 
     def append_to(self, circuit: fq.Circuit) -> fq.Circuit:
+        patterns = normalize_control_patterns(np.array([[0, 1], [1, 0]]))
+        values = tuple(int(bit) for bit in np.asarray(patterns[0]).flat)
         gates = pauli_gate_ir(
             "x",
             4,
             controls=(0, 1, 2, 3),
-            values=(0, 1, 1, 0),
+            values=values,
             workspace=(5, 6, 7),
             classical_bits=(0, 1, 2),
         )
@@ -60,7 +63,7 @@ def main() -> None:
     )
     assert model["t_equivalents"] == 12 and model["peak_logical_qubits"] == 7
     print("Shape-only predicate compute model:", model["logical_gates"])
-    pattern = np.array([[0, 1], [1, 0]])
+    patterns = normalize_control_patterns(np.array([[0, 1], [1, 0]]))
     grid = torch.arange(1, 65, dtype=torch.float64)
     weights = torch.complex(grid, 3 * grid - 5)
     weights /= weights.norm()
@@ -68,7 +71,7 @@ def main() -> None:
     expected = torch.zeros_like(initial)
     for word, target, spectator in product(range(16), (0, 1), (0, 1)):
         controls = np.array([(word >> i) & 1 for i in (3, 2, 1, 0)]).reshape(2, 2)
-        active = classical_controls_active((controls,), (pattern,))
+        active = classical_controls_active((controls,), patterns)
         before = (word << 5) | (target << 4) | spectator
         after = (word << 5) | ((target ^ active) << 4) | spectator
         initial[before] = weights[(word << 2) | (target << 1) | spectator]

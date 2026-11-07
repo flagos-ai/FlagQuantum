@@ -777,3 +777,10 @@ Run `python -m examples.algorithms.numerical_value_dimensions` for shape-only
 predicate estimates and known-value `circuit.append(op)` execution. See
 [numerical dimensions](../../docs/development/NUMERICAL_VALUE_DIMENSIONS.md)
 for source diagnostics, model scopes and exhaustive small measurement histories.
+
+`classical_control_patterns.py` groups scalar, array and nested activation inputs
+before the existing control consumers. It preserves ndarray/unknown-shape object
+identity and original grouping errors; it owns no dtype hierarchy or gate emission.
+The same numerical-dimensions example consumes this converter in both its oracle
+and append path. See [control grouping](../../docs/development/CLASSICAL_CONTROL_PATTERNS.md)
+and run `pytest -q tests/unit/test_classical_control_patterns.py` with pinned extras.
