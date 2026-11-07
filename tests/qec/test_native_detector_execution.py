@@ -5,7 +5,9 @@ from __future__ import annotations
 import copy
 import os
 import pickle
+import sys
 from pathlib import Path
+from types import ModuleType
 
 import pytest
 import torch
@@ -447,3 +449,195 @@ def test_gauge_analysis_budget_precedes_sampler_preparation(
         program().compile_detector_sampler(
             detector_map=DETECTORS, observable_map=OBSERVABLES
         )
+
+
+class NativeBackend:
+    def __init__(self) -> None:
+        self.result: object = (bytearray([0, 1]), bytearray())
+        self.model: object = "error(0.25) D0 L0"
+        self.failure: Exception | None = None
+        self.prepared: list[tuple[str, int | None]] = []
+
+    def prepare_detector(self, text: str, seed: int | None) -> object:
+        self.prepared.append((text, seed))
+        if self.failure is not None:
+            raise self.failure
+        return object()
+
+    def sample_detectors(self, handle: object, shots: int) -> object:
+        return self.result
+
+    def detector_error_model(self, text: str) -> object:
+        if self.failure is not None:
+            raise self.failure
+        return self.model
+
+
+@pytest.fixture
+def native_backend(monkeypatch: pytest.MonkeyPatch) -> NativeBackend:
+    backend = NativeBackend()
+    module = ModuleType("flagquantum.simulation.stabilizer._embedded_stim")
+    for name in ("prepare_detector", "sample_detectors", "detector_error_model"):
+        setattr(module, name, getattr(backend, name))
+    monkeypatch.setitem(sys.modules, module.__name__, module)
+    original = Path.is_file
+    monkeypatch.setattr(
+        Path,
+        "is_file",
+        lambda path: path.name == "_embedded_stim_profile.txt" or original(path),
+    )
+    return backend
+
+
+def test_embedded_producer_replacement_and_dimension_declarations(
+    native_backend: NativeBackend,
+) -> None:
+    c = DynamicCircuit(1).bit_flip(0, 0.25).measure(0)
+    d, o = MeasurementMap(1, ((0,),)), MeasurementMap(1, ())
+    sampler = c.compile_detector_sampler(detector_map=d, observable_map=o, seed=7)
+    pair = sampler.sample(2, separate_observables=True)
+    assert isinstance(pair, tuple)
+    assert pair[0].tolist() == [[False], [True]] and pair[1].shape == (2, 0)
+    assert native_backend.prepared[0][1] == 7
+    assert "PAULI_CHANNEL_1(" in native_backend.prepared[0][0]
+    assert "DETECTOR rec[-1]" in native_backend.prepared[0][0]
+    # The numerical producer may omit explicit declarations; QEC retains both dimensions.
+    model = c.detector_error_model(detector_map=d, observable_map=d)
+    assert model.num_detectors == model.num_observables == 1
+    assert model.errors[0].probability == 0.25
+
+
+@pytest.mark.parametrize(
+    "result",
+    [None, (bytearray([0, 1]),), ([0, 1], bytearray()), (bytearray([1]), bytearray())],
+)
+def test_embedded_bad_buffers_poison_public_handle(
+    native_backend: NativeBackend, result: object
+) -> None:
+    native_backend.result = result
+    c = DynamicCircuit(1).measure(0)
+    sampler = c.compile_detector_sampler(
+        detector_map=MeasurementMap(1, ((0,),)), observable_map=MeasurementMap(1, ())
+    )
+    with pytest.raises(ValueError, match="invalid"):
+        sampler.sample(2)
+    with pytest.raises(RuntimeError, match="invalidated"):
+        sampler.sample(2)
+
+
+@pytest.mark.parametrize(
+    "error", [ValueError("gauge evidence"), RuntimeError("backend evidence")]
+)
+def test_embedded_preparation_and_analysis_keep_failure_cause(
+    native_backend: NativeBackend, error: Exception
+) -> None:
+    native_backend.failure = error
+    c = DynamicCircuit(1).measure(0)
+    maps = MeasurementMap(1, ((0,),))
+    with pytest.raises(CapabilityError) as prepare:
+        c.compile_detector_sampler(detector_map=maps, observable_map=maps)
+    assert prepare.value.__cause__ is error
+    with pytest.raises(CapabilityError, match="exact DEM") as analyze:
+        c.detector_error_model(detector_map=maps, observable_map=maps)
+    assert analyze.value.__cause__ is error
+
+
+def test_embedded_invalid_dem_and_output_bound(
+    native_backend: NativeBackend, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    c = DynamicCircuit(1).measure(0)
+    maps = MeasurementMap(1, ((0,),))
+    native_backend.model = 123
+    with pytest.raises(CapabilityError, match="invalid text"):
+        c.detector_error_model(detector_map=maps, observable_map=MeasurementMap(1, ()))
+    native_backend.model = "detector D0\n" + "# retained oversized response\n" * 10
+    monkeypatch.setattr(numerical, "_MAX_DEM_BYTES", 128)
+    with pytest.raises(CapabilityError, match="DEM text bytes"):
+        c.detector_error_model(detector_map=maps, observable_map=MeasurementMap(1, ()))
+
+
+class SdkStream:
+    def __init__(self) -> None:
+        self.result: object = (
+            torch.tensor([[True], [False]]),
+            torch.empty((2, 0), dtype=torch.bool),
+        )
+
+    def sample(self, shots: int, *, separate_observables: bool) -> object:
+        assert shots == 2 and separate_observables
+        return self.result
+
+
+@pytest.mark.parametrize("version", ["1.16.0", "1.15.0"])
+def test_sdk_contract_without_optional_installation(
+    monkeypatch: pytest.MonkeyPatch, version: str
+) -> None:
+    stream = SdkStream()
+
+    class SdkCircuit:
+        def __init__(self, text: str) -> None:
+            assert "DETECTOR rec[-1]" in text
+
+        def without_noise(self) -> SdkCircuit:
+            return self
+
+        def detector_error_model(self, *, allow_gauge_detectors: bool) -> None:
+            assert allow_gauge_detectors is False
+
+        def compile_detector_sampler(self, *, seed: int | None) -> SdkStream:
+            assert seed == 7
+            return stream
+
+    module = ModuleType("stim")
+    setattr(module, "__version__", version)
+    setattr(module, "Circuit", SdkCircuit)
+    monkeypatch.setattr(numerical, "_stim", lambda: module)
+    c = DynamicCircuit(1).measure(0)
+    if version != "1.16.0":
+        with pytest.raises(CapabilityError, match="1.16.0"):
+            numerical._SdkDetectorSampler("M 0\nDETECTOR rec[-1]", 7)
+        with pytest.raises(CapabilityError, match="1.16.0"):
+            numerical._exact_detector_error_model_text(
+                c.to_ir(), detector_columns=((0,),), observable_columns=()
+            )
+        return
+    sampler = numerical._SdkDetectorSampler("M 0\nDETECTOR rec[-1]", 7)
+    output = sampler.sample(2)
+    output[0].zero_()
+    assert isinstance(stream.result, tuple) and stream.result[0].tolist() == [
+        [True],
+        [False],
+    ]
+    stream.result = {"invalid": "pair"}
+    with pytest.raises(CapabilityError, match="invalid pair"):
+        sampler.sample(2)
+    calls = []
+
+    def exact(text: str, *, decompose_errors: bool) -> str:
+        calls.append((text, decompose_errors))
+        return "detector D0"
+
+    monkeypatch.setattr(numerical, "_stim_experiment_dem_text", exact)
+    assert (
+        numerical._exact_detector_error_model_text(
+            c.to_ir(), detector_columns=((0,),), observable_columns=()
+        )
+        == "detector D0"
+    )
+    assert calls == [("M 0\nDETECTOR rec[-1]", False)]
+
+
+def test_fault_and_encoded_dem_budgets_precede_backend(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    c = DynamicCircuit(1)
+    for _ in range(4):
+        c.bit_flip(0, 0.1)
+    c.measure(0)
+    monkeypatch.setattr(numerical, "_MAX_ANALYSIS_CELLS", 3)
+    with pytest.raises(CapabilityError, match="fault support"):
+        numerical._source_text(c.to_ir(), ((0,),), (), analysis=True)
+    monkeypatch.setattr(numerical, "_MAX_ANALYSIS_CELLS", 1000000)
+    monkeypatch.setattr(numerical, "_MAX_DEM_BYTES", 128)
+    with pytest.raises(CapabilityError, match="text estimate"):
+        numerical._source_text(c.to_ir(), ((0,),), (), analysis=True)
