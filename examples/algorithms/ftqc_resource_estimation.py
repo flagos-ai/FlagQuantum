@@ -4,9 +4,12 @@ Run from the repository root with python -m examples.algorithms.ftqc_resource_es
 Add --thc 2 4 8 1 for a dimension-only THC SELECT estimate.
 Add --single-factorization 10 50 12 for the single-factorization block encoding.
 Add --add 8 8 or --qrom 17 8 --qrom-controls 1 for register-level models.
+Add --json to any dimension-only model to export a structured analytical report.
 """
 
 import argparse
+import json
+from dataclasses import asdict
 
 from flagquantum.algorithms.primitives.multiplexers import SelectTHC
 from flagquantum.algorithms.primitives.multiplexers.thc_resource_model import (
@@ -15,7 +18,11 @@ from flagquantum.algorithms.primitives.multiplexers.thc_resource_model import (
 from flagquantum.algorithms.primitives.single_factorization_encoding_model import (
     source_single_factorization_block_encoding_cost,
 )
-from flagquantum.compiler._component_trace.gate_budget import t_and_ccz_budget
+from flagquantum.compiler._component_trace.gate_budget import (
+    GateCategories,
+    t_and_ccz_budget,
+)
+from flagquantum.compiler._component_trace.resource_model import ComponentCost
 from flagquantum.compiler.registers.symbolic_resource_model import (
     SymbolicResourceFormula,
     source_add_resource_formula,
@@ -109,6 +116,46 @@ def _print_register_estimate(formula: SymbolicResourceFormula) -> None:
     print("Model peak logical qubits", formula.logical_qubits)
 
 
+def _print_json_estimate(model: ComponentCost | SymbolicResourceFormula) -> None:
+    """Serialize dimension-only estimates without requesting emitted instructions."""
+    categories: GateCategories
+    if isinstance(model, ComponentCost):
+        logical = estimate_ftqc_resources(model).logical
+        categories = logical.gates
+        gates = asdict(categories)
+        width = logical.peak_logical_qubits
+        component = model.name
+    else:
+        categories = model
+        gates = asdict(model)
+        width = gates.pop("logical_qubits")
+        component = "register_shape_formula"
+    budget = t_and_ccz_budget(categories)
+    print(
+        json.dumps(
+            {
+                "basis": "declared_component_model",
+                "reference": "Qualtran v0.7.0 (bcb17bb25360ed68ce3bc084645db3e929799389)",
+                "scope": "No circuit construction or execution; shape-only models omit data-dependent optimizations",
+                "component": component,
+                "logical_gates": gates,
+                "peak_logical_qubits": width,
+                "magic_states": budget,
+                "t_equivalents": budget["n_t"] + 4 * budget["n_ccz"],
+                "conversion": {
+                    "t_per_rotation": 11,
+                    "t_per_ccz_equivalent": 4,
+                    "ccz_categories": ["toffoli", "cswap", "and_bloq"],
+                },
+                "emitted_ir": None,
+                "execution_measurements": None,
+            },
+            indent=2,
+            sort_keys=True,
+        )
+    )
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     model_options = parser.add_mutually_exclusive_group()
@@ -152,7 +199,17 @@ def main() -> None:
         metavar=("KR1", "KR2"),
         help="set the THC SELECT model's erasure block sizes (default: 1 1)",
     )
+    parser.add_argument(
+        "--json",
+        action="store_true",
+        help="print a dimension-only model report; requires a model option",
+    )
     args = parser.parse_args()
+    if args.json and all(
+        value is None
+        for value in (args.add, args.qrom, args.thc, args.single_factorization)
+    ):
+        parser.error("--json requires --add, --qrom, --thc or --single-factorization")
     if args.thc_erasure_blocks is not None and args.thc is None:
         parser.error("--thc-erasure-blocks requires --thc")
     if args.qrom_controls is not None and args.qrom is None:
@@ -162,7 +219,10 @@ def main() -> None:
             formula = source_add_resource_formula(*args.add)
         except ValueError as exc:
             parser.error(str(exc))
-        _print_register_estimate(formula)
+        if args.json:
+            _print_json_estimate(formula)
+        else:
+            _print_register_estimate(formula)
         return
     if args.qrom is not None:
         rows, target_bits = args.qrom
@@ -174,10 +234,13 @@ def main() -> None:
         formula = source_qrom_resource_formula(
             (rows,), (target_bits,), control_count=controls
         )
-        print(
-            "QROM shape model: table contents and uniform-region optimizations are unspecified"
-        )
-        _print_register_estimate(formula)
+        if args.json:
+            _print_json_estimate(formula)
+        else:
+            print(
+                "QROM shape model: table contents and uniform-region optimizations are unspecified"
+            )
+            _print_register_estimate(formula)
         return
     if args.thc is not None:
         kr1, kr2 = args.thc_erasure_blocks or (1, 1)
@@ -185,10 +248,21 @@ def main() -> None:
             model = select_thc_cost(*args.thc, kr1=kr1, kr2=kr2)
         except ValueError as exc:
             parser.error(str(exc))
-        _print_thc_estimate(estimate_ftqc_resources(model))
+        if args.json:
+            _print_json_estimate(model)
+        else:
+            _print_thc_estimate(estimate_ftqc_resources(model))
         return
     if args.single_factorization is not None:
-        _report_single_factorization(*args.single_factorization)
+        if args.json:
+            spin_orbitals, auxiliaries, alias_bits = args.single_factorization
+            _print_json_estimate(
+                source_single_factorization_block_encoding_cost(
+                    auxiliaries, spin_orbitals, alias_bits
+                )
+            )
+        else:
+            _report_single_factorization(*args.single_factorization)
         return
 
     op = make_select()

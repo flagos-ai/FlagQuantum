@@ -1,5 +1,6 @@
 """Exercise the same resource estimate before and after circuit construction."""
 
+import json
 import sys
 from dataclasses import replace
 
@@ -251,3 +252,81 @@ def test_register_cli_rejects_invalid_dimensions(
         _run_cli(monkeypatch, arguments)
     assert error.value.code == 2
     assert message in capsys.readouterr().err
+
+
+@pytest.mark.ftqc_reference
+@pytest.mark.parametrize(
+    "arguments",
+    [
+        ["--add", "8", "8"],
+        ["--qrom", "17", "8", "--qrom-controls", "1"],
+        ["--qrom", "1048576", "8"],
+        ["--thc", "2", "4", "8", "1"],
+        ["--thc", "10", "8", "8", "10", "--thc-erasure-blocks", "4", "2"],
+    ],
+)
+def test_json_model_report_matches_unmodified_source(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    arguments: list[str],
+) -> None:
+    pytest.importorskip("qualtran")
+    from qualtran import QUInt
+    from qualtran.bloqs.arithmetic import Add
+    from qualtran.bloqs.chemistry.thc.select_bloq import SelectTHC as SourceTHC
+    from qualtran.bloqs.data_loading.qrom import QROM
+    from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
+
+    if arguments[0] == "--add":
+        source = Add(QUInt(int(arguments[1])), QUInt(int(arguments[2])))
+    elif arguments[0] == "--qrom":
+        controls = int(arguments[4]) if len(arguments) > 3 else 0
+        source = QROM.build_from_bitsize(
+            (int(arguments[1]),), (int(arguments[2]),), num_controls=controls
+        )
+    else:
+        dims = [int(value) for value in arguments[1:5]]
+        blocks = (
+            [int(value) for value in arguments[6:8]] if len(arguments) > 5 else [1, 1]
+        )
+        source = SourceTHC(*dims, *blocks)
+    costs = get_cost_value(source, QECGatesCost())
+    _run_cli(monkeypatch, [*arguments, "--json"])
+    report = json.loads(capsys.readouterr().out)
+    assert report["basis"] == "declared_component_model"
+    assert report["emitted_ir"] is None
+    assert report["execution_measurements"] is None
+    assert {
+        key: value for key, value in report["logical_gates"].items() if value
+    } == costs.asdict()
+    assert report["peak_logical_qubits"] == get_cost_value(source, QubitCount())
+    assert report["magic_states"] == costs.total_t_and_ccz_count()
+    assert report["t_equivalents"] == costs.total_t_count()
+
+
+def test_json_requires_explicit_model_without_constructing_circuit(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    with pytest.raises(SystemExit) as error:
+        _run_cli(monkeypatch, ["--json"])
+    assert error.value.code == 2
+    assert "requires --add" in capsys.readouterr().err
+
+
+def test_single_factorization_json_is_model_only(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    from flagquantum.algorithms.primitives.single_factorization_encoding_model import (
+        source_single_factorization_block_encoding_cost,
+    )
+
+    model = source_single_factorization_block_encoding_cost(50, 10, 12)
+    expected = estimate_ftqc_resources(model).logical
+    _run_cli(monkeypatch, ["--single-factorization", "10", "50", "12", "--json"])
+    report = json.loads(capsys.readouterr().out)
+    assert report["logical_gates"] == {
+        name: getattr(expected.gates, name) for name in report["logical_gates"]
+    }
+    assert report["peak_logical_qubits"] == expected.peak_logical_qubits
+    assert report["emitted_ir"] is None
+    assert report["execution_measurements"] is None
