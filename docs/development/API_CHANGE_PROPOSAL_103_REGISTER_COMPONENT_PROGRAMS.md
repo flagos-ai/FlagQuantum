@@ -164,6 +164,52 @@ proposal and its audit do not check off any source module as migrated. G3,
 automatic merge, CI waiting, public root exports, public CircuitIR serialization,
 `IR_VERSION`, Runtime result schemas and execution defaults are outside scope.
 
+## Metadata prerequisite 0.1
+
+This separately implementable prerequisite belongs to the user-authorized G2
+shared-register work. It adds no Program IR opcode, value kind, model field,
+public API, serialized schema or executable profile. The version 0.5 Program
+contract remains authoritative and unchanged. The broader call/return proposal
+above remains draft.
+
+The shared symbolic-object predicate moves from Simulation to
+`core/value_parameters.py` unchanged. Its current internal consumers move with
+it; the old private module is removed rather than retained as a duplicate owner.
+Core metadata and numerical consumers must use this one predicate. Optional
+Sympy handling, raw checker-result propagation and import-failure behavior stay
+unchanged. Concrete native operation must not acquire a Sympy dependency.
+
+`core/ir/program/registers.py` admits immutable, data-only register metadata:
+
+- `RegisterType(encoding, quantum_bits, classical_bits=0, parameters=())`
+  identifies a prevalidated encoding with exact quantum/classical element
+  widths and ordered immutable type parameters. Different encodings are not
+  interchangeable merely because their widths agree. This descriptor does not
+  implement upstream dtype constructors or numerical bit encoding. Construction
+  of a valid descriptor is not certification that a type can be executed.
+- `RegisterSide` retains input, output and through flag semantics.
+- `Register(name, dtype, shape=(), side=THRU)` retains the source's shape
+  conversion, scalar/array distinction, symbolic shape refusal, row-major
+  indices, total quantum/classical widths and exact adjoint-side behavior.
+  It validates a native nominal `RegisterType`; foreign SDK type objects do not
+  enter Core. Width validity and encoding-specific constraints belong to the
+  later type admission/binding boundary, not a repaired source Register check.
+
+The first contract fake supplies Add and XOR QROM signatures as ordered tuples
+of these same immutable register records. It is test-only; it must not invent a
+second executable graph or pretend a Signature class, graph builder, function
+return or numerical traversal is complete. Production register metadata must
+replace its metadata behavior while the same source-differential scenarios
+remain unchanged. The source Register/Signature distinction and pending broader
+metadata methods remain explicit checklist boundaries.
+
+Acceptance requires unchanged source Register comparisons for opaque, bit,
+unsigned, classical and shaped metadata; all side/zero-width/symbolic edges;
+two real Add/QROM signatures; unchanged numerical predicate consumers; and
+existing Program IR/public-contract regressions. The result makes the typed
+graph possible but does not itself enable it. Tests report metadata agreement
+separately from already accepted quantum amplitude and cost evidence.
+
 ## Audit validation
 
 The initial audit has five tests, including three pinned-source witnesses. With
