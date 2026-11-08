@@ -23,6 +23,7 @@ from flagquantum.core.ir.program import (
     program_to_circuit,
     verify_program_record,
 )
+from flagquantum.core.ir.program.registers import Register, RegisterType
 from flagquantum.dynamic import DynamicCircuit
 
 
@@ -96,6 +97,10 @@ def audit_program_scope(root: Path) -> dict[str, object]:
                 ProgramRecord,
             )
         },
+        "standalone_metadata_fields": {
+            record.__name__: [field.name for field in fields(record)]
+            for record in (RegisterType, Register)
+        },
         "gate_signature": {
             "opcode": signature.opcode,
             "operand_kinds": list(signature.operand_kinds),
@@ -115,7 +120,8 @@ def audit_program_scope(root: Path) -> dict[str, object]:
         },
         "claims": {
             "register_component_execution": False,
-            "source_register_metadata_ported": False,
+            "standalone_register_metadata": True,
+            "complete_source_register_metadata_ported": False,
             "resource_dag_is_execution_graph": False,
             "protected_contract_changed": False,
         },

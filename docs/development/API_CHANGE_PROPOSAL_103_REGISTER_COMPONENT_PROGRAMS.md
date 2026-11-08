@@ -2,9 +2,10 @@
 
 ## Status and scope
 
-Draft integration proposal for G2 of PR #1084. This document records the next
-internal boundary change; it does **not** declare owner approval, change the
-existing contract, or claim register graph execution is implemented.
+Draft integration proposal for G2 of PR #1084. The metadata prerequisite 0.1
+below is implemented independently of the proposed Program IR extension. This
+document does **not** declare owner approval, change the existing Program
+contract, or claim register graph execution is implemented.
 
 The repository's Core instructions require an integration contract/ADR change
 before changing IR. The existing Program contract is version 0.5 and admits
@@ -127,10 +128,12 @@ and differential tests pass. The final G2 checklist remains authoritative.
 | `bloqs/arithmetic/addition.py` Add | Same primitive stream, carries, feedback, all complex amplitudes and work cleanup |
 | `bloqs/data_loading/qrom_base.py` and `qrom.py` | Same XOR table semantics, selection/index order, target shape and emitted source decomposition |
 
-Source witnesses in `test_register_component_scope_audit.py` currently cover
+Source witnesses in `test_register_component_scope_audit.py` cover
 zero-width ports, opposite-side same-name registers, row-major shapes and
 symbolic shape/width separation. They are requirements evidence, **not** proof
-of a native metadata implementation or graph interpreter.
+of a graph interpreter. The later `test_register_metadata.py` suite compares
+the independently implemented standalone Register methods; source Signature
+and executable graph behavior remain outside that prerequisite's acceptance.
 
 ## Contract-first delivery and acceptance
 

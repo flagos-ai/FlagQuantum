@@ -42,6 +42,20 @@
       "physical_context"
     ]
   },
+  "standalone_metadata_fields": {
+    "RegisterType": [
+      "encoding",
+      "quantum_bits",
+      "classical_bits",
+      "parameters"
+    ],
+    "Register": [
+      "name",
+      "dtype",
+      "_shape",
+      "side"
+    ]
+  },
   "gate_signature": {
     "opcode": "x",
     "operand_kinds": [
@@ -84,7 +98,8 @@
   },
   "claims": {
     "register_component_execution": false,
-    "source_register_metadata_ported": false,
+    "standalone_register_metadata": true,
+    "complete_source_register_metadata_ported": false,
     "resource_dag_is_execution_graph": false,
     "protected_contract_changed": false
   }

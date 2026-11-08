@@ -24,6 +24,10 @@ Compute, Remote, ecosystem frameworks, gateways, and infrastructure libraries.
 - `value_parameters.py`: the internal symbolic-object predicate shared by register
   metadata and numerical consumers. It has no numerical kernels or mandatory
   Sympy import; the original single-checker return and error behavior is retained.
+- `ir/program/registers.py`: internal, immutable register type/direction/shape
+  metadata. Proposal 103 prerequisite 0.1 admits these standalone descriptions,
+  not new Program IR value kinds or executable component calls. Numerical codecs
+  remain in Simulation; bound construction and lowering remain in Compiler.
 - `rydberg.py`: the approved experimental Rydberg frontend over ProgramRecord.
   `ir/program/physical.py` owns its typed control profile and semantic checks;
   `ir/program/physical_codec.py` owns native source encoding using the existing
