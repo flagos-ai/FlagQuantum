@@ -213,6 +213,37 @@ existing Program IR/public-contract regressions. The result makes the typed
 graph possible but does not itself enable it. Tests report metadata agreement
 separately from already accepted quantum amplitude and cost evidence.
 
+## Signature prerequisite 0.2
+
+This next standalone G2 metadata slice adds `Signature` in
+`core/ir/program/signatures.py`, using the existing native Register records.
+It leaves the version 0.5 Program contract and public API unchanged; it does not
+authorize or implement new component-call opcodes or a graph interpreter.
+
+The exact ordered product, sum and minimum/maximum helpers from pinned
+`symbolics/math_funcs.py` belong in `core/value_math.py`. Register metadata and
+Compiler cost arithmetic consume that same implementation. The existing Compiler
+resource-math module keeps its rounding/logarithm responsibility and exposes the
+shared extrema through its existing imports, without a second implementation.
+Plain built-in numbers retain the native no-Sympy fast path; integer subclasses
+and other symbolic-object protocols must not bypass source classification.
+Empty-pack and empty-iterable diagnostics follow the source separately.
+
+`Signature` retains per-side name uniqueness, LEFT/RIGHT namespace separation,
+ordered grouping, cached through-only classification, positional/slice access,
+hashing, adjoint and independently computed quantum/classical/combined widths.
+Its width convenience builder follows source filter, one-bit selection and
+opaque-width validation order. The dtype convenience builder intentionally
+filters on quantum width, including the source's omission of classical-only
+ports. Explicit construction can retain those ports and zero-width registers.
+This is metadata behavior, not execution admission for arbitrary encodings.
+
+Acceptance compares these methods and failure order with the unchanged source,
+replaces source-backed Add/QROM signature consumers with the native Signature,
+and reruns existing primitive/amplitude/branch/work/resource regressions. A
+separate contract-first change is still required for typed connections, explicit
+function results and executable component calls.
+
 ## Audit validation
 
 The initial audit has five tests, including three pinned-source witnesses. With
