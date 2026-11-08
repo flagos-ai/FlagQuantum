@@ -830,3 +830,10 @@ helper through owner callbacks; partial writes remain visible on failure.
 Both action-dispatch and measurement examples consume this update boundary.
 See [ordered output updates](../../docs/development/CLASSICAL_OUTPUT_UPDATES.md)
 for original state-after-failure comparisons and separate graph responsibilities.
+
+`classical_power.py` repeats a complete bound child numerical evaluator in source
+order, preserving constructor versus build count guards. It reuses phased output
+commit rather than implementing another phase accumulator. Run
+`python -m examples.algorithms.classical_power_values` for ordinary append,
+measured inverse and reused work. See [numerical repetition](../../docs/development/CLASSICAL_POWER_VALUES.md)
+for original count diagnostics and separate compiler/model support boundaries.
