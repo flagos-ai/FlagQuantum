@@ -9,8 +9,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, cast
 
+from ..core.value_parameters import is_symbolic_value
 from .classical_bitwise import IntegerValue
-from .value_parameters import is_symbolic_value
 
 if TYPE_CHECKING:
     from sympy import Expr

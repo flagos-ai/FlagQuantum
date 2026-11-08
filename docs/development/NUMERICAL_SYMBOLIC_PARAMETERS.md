@@ -1,7 +1,7 @@
 # Numerical symbolic parameter classification
 
 Simulation needs a numerical parameter predicate independent of Compiler's graph
-identities and Core's protected contracts. `value_parameters.py` owns the exact
+identities and Core's protected contracts. `core/value_parameters.py` owns the exact
 `is_symbolic` dispatch from unchanged Qualtran v0.7.0 `symbolics/types.py` at
 `bcb17bb25360ed68ce3bc084645db3e929799389`.
 
@@ -11,10 +11,17 @@ it if present. Otherwise the result is false. A single checker result is returne
 without a boolean cast; its type, identity and errors remain visible as upstream.
 There is no integer fast path: an integer subclass can implement this protocol.
 
-The owner is shared by numerical integer, bounded integer, fixed-point and
-Montgomery codecs/value models. It has no gate or register semantics, imports no
+The Core-owned predicate is shared by register metadata and numerical integer,
+bounded integer, fixed-point and Montgomery codecs/value models. It has no gate
+or register semantics, imports no
 Compiler/Runtime implementation and emits no quantum instructions. No symbolic
 execution, dtype hierarchy or public Core API is introduced.
+
+Proposal 103 moves this unchanged function from the former private Simulation
+module into Core so that neutral register metadata can reuse it without a
+Core-to-Simulation import. All existing numerical consumers now import that same
+Core function; the old module is removed. The original forty-two direct cases
+and affected numerical consumers remain the acceptance suite for the move.
 
 Sympy remains optional for native numerical execution. If the Sympy package itself
 is absent, classification still uses the object protocol; no Sympy objects can be

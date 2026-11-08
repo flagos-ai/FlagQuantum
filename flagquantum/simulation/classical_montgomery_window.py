@@ -11,10 +11,10 @@ from collections.abc import Sequence
 from math import log2
 from typing import TYPE_CHECKING, cast
 
+from ..core.value_parameters import is_symbolic_value
 from .classical_bitwise import IntegerValue
 from .classical_montgomery_multiplication import _inversion_data
 from .integer_encoding import integer_from_bits, integer_to_bits
-from .value_parameters import is_symbolic_value
 
 if TYPE_CHECKING:
     from sympy import Expr

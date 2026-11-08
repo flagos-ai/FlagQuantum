@@ -9,8 +9,8 @@ from collections.abc import Sequence
 
 import numpy as np
 
+from ..core.value_parameters import is_symbolic_value
 from .value_dimensions import ArrayValue
-from .value_parameters import is_symbolic_value
 
 
 def classical_controls_active(

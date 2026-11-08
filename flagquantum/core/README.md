@@ -21,6 +21,9 @@ Compute, Remote, ecosystem frameworks, gateways, and infrastructure libraries.
   basis labels shared by dynamics. Explicit labels do not infer tensor factors
   or certify physical sectors; no circuit or root export is added.
 - `parameters.py`: symbolic parameters and binding semantics.
+- `value_parameters.py`: the internal symbolic-object predicate shared by register
+  metadata and numerical consumers. It has no numerical kernels or mandatory
+  Sympy import; the original single-checker return and error behavior is retained.
 - `rydberg.py`: the approved experimental Rydberg frontend over ProgramRecord.
   `ir/program/physical.py` owns its typed control profile and semantic checks;
   `ir/program/physical_codec.py` owns native source encoding using the existing

@@ -29,7 +29,7 @@ Runtime owns those decisions and calls the appropriate numerical primitives.
 | Classical modular multiplication and Montgomery history | [classical_modular_multiplication.py](classical_modular_multiplication.py), [classical_montgomery_multiplication.py](classical_montgomery_multiplication.py) |
 | Scalar/array integer value codecs and bit-array Montgomery windows | [integer_encoding.py](integer_encoding.py), [classical_montgomery_window.py](classical_montgomery_window.py) |
 | Shared scalar array vectorization, bit values and ones' complement codecs | [value_encoding.py](value_encoding.py), [bit_encoding.py](bit_encoding.py), [ones_complement_encoding.py](ones_complement_encoding.py) |
-| Numerical symbolic parameter dispatch and object protocol | [value_parameters.py](value_parameters.py) |
+| Numerical symbolic parameter dispatch and object protocol | [Core value_parameters.py](../core/value_parameters.py) |
 | Fixed-point stored integer encoding and fractional scale | [fixed_point_encoding.py](fixed_point_encoding.py) |
 | Bounded unsigned domains, validation and scalar/array codecs | [bounded_integer_values.py](bounded_integer_values.py), [bounded_integer_encoding.py](bounded_integer_encoding.py) |
 | Montgomery numerical representation, domain, product and inverse | [montgomery_values.py](montgomery_values.py) |
@@ -684,7 +684,7 @@ X/Z, complete phases and measured clean inverse. See
 
 `classical_control_activation.py` evaluates bound control patterns with original
 symbolic-first guards, exact shape checks and first-mismatch short circuits.
-It reuses `value_parameters.py`; Compiler keeps register binding and predicate
+It reuses Core `value_parameters.py`; Compiler keeps register binding and predicate
 emission. Run `python -m examples.algorithms.classical_control_activation` for
 measured word-controlled X, complex amplitudes and clean inverse. See
 [activation semantics](../../docs/development/CLASSICAL_CONTROL_ACTIVATION.md).
@@ -771,7 +771,7 @@ for source parity and diagnostic boundaries. Reference tests require the pinned
 reference extras; they do not add runtime SDK dependencies.
 
 `value_dimensions.py` owns unknown numerical array shapes and sequence lengths.
-These native values reuse `value_parameters.py` symbolic classification and the
+These native values reuse Core `value_parameters.py` symbolic classification and the
 classical control consumers; they are separate from Core register signatures.
 Run `python -m examples.algorithms.numerical_value_dimensions` for shape-only
 predicate estimates and known-value `circuit.append(op)` execution. See

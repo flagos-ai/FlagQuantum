@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, cast
 
+from ..core.value_parameters import is_symbolic_value
 from .classical_bitwise import IntegerValue
 from .integer_encoding import integer_from_bits, integer_to_bits
 from .ones_complement_encoding import (
@@ -16,7 +17,6 @@ from .ones_complement_encoding import (
     ones_complement_to_bits,
     validate_ones_complement_width,
 )
-from .value_parameters import is_symbolic_value
 
 if TYPE_CHECKING:
     from sympy import Expr

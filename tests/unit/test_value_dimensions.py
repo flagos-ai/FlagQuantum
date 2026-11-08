@@ -4,13 +4,13 @@ import numpy as np
 import pytest
 import sympy
 
+from flagquantum.core.value_parameters import is_symbolic_value
 from flagquantum.simulation.value_dimensions import (
     SymbolicArrayShape,
     SymbolicSequenceLength,
     value_length,
     value_shape,
 )
-from flagquantum.simulation.value_parameters import is_symbolic_value
 from tests.unit.test_classical_comparison import compare_calls, same_value
 
 pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]

@@ -13,10 +13,10 @@ from typing import TYPE_CHECKING, Any, cast
 import numpy as np
 from numpy.typing import NDArray
 
+from ..core.value_parameters import is_symbolic_value
 from .integer_encoding import integer_from_bits, integer_to_bits
 from .integer_values import validate_integer_word_value
 from .value_encoding import decode_value_array, encode_value_array
-from .value_parameters import is_symbolic_value
 
 if TYPE_CHECKING:
     from sympy import Expr

@@ -12,7 +12,7 @@ from typing import TYPE_CHECKING, Any
 import numpy as np
 from numpy.typing import NDArray
 
-from .value_parameters import is_symbolic_value
+from ..core.value_parameters import is_symbolic_value
 
 if TYPE_CHECKING:
     from sympy import Expr

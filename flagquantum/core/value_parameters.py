@@ -3,7 +3,7 @@
 # Adapted from Qualtran v0.7.0 is_symbolic.
 # https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/symbolics/types.py
 
-"""Classify numerical parameters through the source symbolic-object protocol."""
+"""Classify neutral metadata and numerical parameters through one object protocol."""
 
 from collections.abc import Callable
 from typing import cast

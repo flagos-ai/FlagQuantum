@@ -14,11 +14,11 @@ from typing import TYPE_CHECKING, Any, TypeVar
 import numpy as np
 from numpy.typing import NDArray
 
+from ..core.value_parameters import is_symbolic_value
 from .bit_encoding import validate_bit_array, validate_bit_value
 from .classical_bit_binding import join_classical_value, split_classical_value
 from .classical_registers import collect_integer_register_value
 from .classical_updates import commit_phased_classical_outputs
-from .value_parameters import is_symbolic_value
 
 if TYPE_CHECKING:
     from sympy import Expr

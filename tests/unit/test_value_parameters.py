@@ -6,7 +6,7 @@ import numpy as np
 import pytest
 import sympy
 
-from flagquantum.simulation.value_parameters import is_symbolic_value
+from flagquantum.core.value_parameters import is_symbolic_value
 from tests.unit.test_integer_encoding import compare_call
 
 pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]

@@ -12,8 +12,8 @@ from typing import TYPE_CHECKING, Any
 
 import numpy as np
 
+from ..core.value_parameters import is_symbolic_value
 from .classical_updates import commit_phased_classical_outputs
-from .value_parameters import is_symbolic_value
 
 if TYPE_CHECKING:
     from sympy import Expr
