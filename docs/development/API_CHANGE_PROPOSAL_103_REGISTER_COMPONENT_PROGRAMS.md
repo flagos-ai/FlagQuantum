@@ -1,0 +1,174 @@
+# Proposal 103: Register component programs
+
+## Status and scope
+
+Draft integration proposal for G2 of PR #1084. This document records the next
+internal boundary change; it does **not** declare owner approval, change the
+existing contract, or claim register graph execution is implemented.
+
+The repository's Core instructions require an integration contract/ADR change
+before changing IR. The existing Program contract is version 0.5 and admits
+gate-level SSA, canonical dynamic conditions and a finite physical profile.
+Its approval of dynamic lowering does not establish register call semantics.
+
+The user-authorized migration requires shared components to retain the logic of
+Qualtran v0.7.0, revision
+`bcb17bb25360ed68ce3bc084645db3e929799389`, in FlagQuantum's domain boundaries.
+Resource estimates alone cannot implement the required execution graph.
+
+## Existing authority and reproducible gap
+
+Run:
+
+```sh
+python -m tools.audit_register_component_scope
+```
+
+The checked-in [audit evidence](evidence/register_component_scope_audit.json)
+records source fingerprints, dataclass fields, actual verifier diagnostics and
+exact static/dynamic round trips. It is a dated capability observation, not a
+permanent restriction on future support. Regenerate it after an authorized
+boundary change; do not preserve a missing capability to satisfy the audit.
+
+| Existing authority | Reuse | Missing semantics |
+| --- | --- | --- |
+| `core/ir/program/model.py` | Value identity, blocks, operations, functions | Register type/shape, callee signature and explicit return binding |
+| `core/ir/program/verifier.py` | Def-use, linear resources, conditions, diagnostics | Register aliases, per-call ports, type compatibility and call cycles |
+| `core/operator_schema.py` | Canonical primitive vocabulary | Variable-width component signatures; a primitive matrix is not a component body |
+| `compiler/_component_trace/trace.py` | Issued instruction intervals and child attribution | Executable typed values and connections |
+| `compiler/_component_trace/call_graph.py` | Aggregated multiplicity | Instances, output ownership and def-use |
+| `compiler/_component_trace/resource_model.py` | Declared costs and sequential peak width | Execution and measurement-branch amplitudes |
+| `compiler/_component_trace/width_schedule.py` | Source-derived stable greedy order over declared width connections | Register identity and executable component binding |
+| `simulation/classical_*` | Already validated value, codec and phase kernels | A shared traversal that binds graph ports and invokes those kernels |
+
+The audit currently observes `program.opcode_unknown` for a hypothetical call,
+kind errors for applying a primitive to an index, and `value.identity` for an
+undeclared quantum register kind. None is repaired by registering a matrix gate.
+Successful existing static and dynamic round trips remain required regressions.
+
+## Ownership and code placement
+
+| Responsibility | Proposed owning path | Excluded responsibilities |
+| --- | --- | --- |
+| Immutable register type, port direction, shape and signature | `core/ir/program/registers.py` | SDK types, numerical codecs, graph construction |
+| Component instance/callee, typed binding and explicit returns | Existing `core/ir/program/model.py` with narrowly split data records as needed | Callbacks, compilation, execution |
+| Register def-use and signature verification | `core/ir/program/register_verifier.py`, invoked by existing verifier | Inferring clean quantum work from SSA alone |
+| Bound construction, split/join and finite component expansion | `compiler/registers/component_builder.py` | Numerical simulation, backend selection |
+| Gate-stream lowering and instruction interval tracking | Existing Compiler register emitters and `_component_trace` | An additional pass registry or cost engine |
+| Numerical graph traversal and value-state updates | `simulation/classical_program.py` | Importing Compiler, upstream libraries or a private graph clone |
+| Foreign source differential adapters | `tests/unit/` and reference tooling | Production dependence on Qualtran or Cirq |
+
+These are responsibility assignments, not permission to create all files at
+once. A file must have a real accepted consumer when implemented. Core remains
+the sole graph authority; Simulator and Compiler consume that same data. There
+is no FlagQuantum copy of a foreign package hierarchy or public Bloq/Soquet API.
+
+## Required data contract
+
+The contract-first implementation must specify these details before widening
+the production verifier or the current contract checker:
+
+1. **Register type identity:** distinguish opaque bits, unsigned/signed and
+   other admitted encodings. Width equality alone is insufficient. Existing
+   numerical codec behavior remains in Simulation; Core holds neutral type
+   parameters. Concrete and symbolic metadata are distinct from executable
+   admission. Do not convert unresolved symbolic widths to integers.
+2. **Direction:** inputs, outputs and through ports correspond to the pinned
+   source's LEFT, RIGHT and THRU semantics. Names are unique per side, not
+   globally. A LEFT word and a RIGHT word with one name may have different types
+   and widths. Positional flattening cannot erase this distinction.
+3. **Shape:** indices use row-major order; an element's width is separate from
+   its array dimensions. Concrete shape with symbolic element width can be
+   indexable even though it cannot be physically lowered. Preserve source shape
+   and bounds failures at their owning layer.
+4. **Zero width:** explicitly declared scalar zero-width registers retain a
+   logical port. A shape containing zero has no indexed elements. The source
+   `Signature.build` convenience constructor filters zero widths, whereas an
+   explicit `Register` does not. Neither physical wire count nor an empty tuple
+   is sufficient logical identity.
+5. **Connections:** every quantum resource version has one consumer; a call
+   consumes current inputs and defines output successors. Classical values may
+   fan out. Split/join are typed rebindings, not automatically physical SWAPs.
+   Aliases must not let the same resource enter two live call inputs.
+6. **Functions:** declare ordered input and output ports and explicit returned
+   bindings. Empty returns, missing returns and LEFT-only effects must be
+   distinguishable. Calls name finite immutable component definitions; undefined
+   callees, inconsistent signatures and cycles are refused. This does not add
+   general recursion, closures, dynamic allocation or a classical language.
+7. **Work ownership:** allocations, clean/dirty requirements and release are
+   explicit. Def-use proves ownership, not quantum zero. Numerical branch tests
+   and existing clean-work checks prove actual cleanup. A destructive
+   measurement cannot preserve a usable quantum value merely by retaining an
+   old reference. Existing nondestructive measure/reset semantics stay intact.
+8. **Constants and parameters:** lossless integral table and type parameters
+   cannot be squeezed into `Operation.literal`'s floating-point gate constant.
+   Their exact immutable representation and symbolic validation must be declared
+   before a QROM body is encoded. Parameters are not arbitrary Python callbacks.
+9. **Compatibility:** old gate-level records keep their existing identity,
+   hashes, verification and canonical-payload round trips. Register bodies need
+   real lowering; attaching a payload must not bypass their verification or
+   claim a reversible round trip without an exact graph match.
+
+The first executable admission is finite concrete bit/unsigned-register Add and
+XOR QROM, using already accepted emitters, numerical kernels and cost models.
+This admission is a dependency slice of G2, not a reduction of its final scope.
+Other source types remain explicitly unsupported until their matching contracts
+and differential tests pass. The final G2 checklist remains authoritative.
+
+## Source call chains and proof obligations
+
+| Pinned source | Native responsibility and evidence |
+| --- | --- |
+| `_infra/registers.py` Register/Signature | Type/direction/shape identity, per-side lookup, ordering, adjoint and width semantics |
+| `_infra/composite_bloq.py` builder and connections | Bound instance identity, consumption, explicit output bindings and split/join |
+| `_infra/binst_graph_iterators.py` | Dependency-respecting traversal and deterministic connection grouping |
+| `simulation/classical_sim.py` | Input binding, output collection and classical action dispatch; reuse accepted numerical kernels |
+| `simulation/classical_sim.py` PhasedClassicalSimState | Preserve original phase, recursive failure and measurement-outcome semantics |
+| `bloqs/arithmetic/addition.py` Add | Same primitive stream, carries, feedback, all complex amplitudes and work cleanup |
+| `bloqs/data_loading/qrom_base.py` and `qrom.py` | Same XOR table semantics, selection/index order, target shape and emitted source decomposition |
+
+Source witnesses in `test_register_component_scope_audit.py` currently cover
+zero-width ports, opposite-side same-name registers, row-major shapes and
+symbolic shape/width separation. They are requirements evidence, **not** proof
+of a native metadata implementation or graph interpreter.
+
+## Contract-first delivery and acceptance
+
+1. Land the reviewed internal contract delta and one replaceable contract fake
+   before domain implementation. Reuse existing Program records instead of a
+   parallel graph. Keep fake code test-only, with the same data contract and
+   conformance scenarios later consumed by the implementation.
+2. Implement Core metadata and verifier in an independent module commit. Compare
+   to the unchanged source, including port order, zero-width, side collisions,
+   invalid symbolic execution, stale references, missing/extra returns and type
+   mismatches. No snapshot regeneration as a repair.
+3. Implement Compiler construction and gate lowering, then replace the fake
+   without changing its consumer scenarios. Add and XOR QROM must share that
+   builder. Reuse the already ported greedy priority and insertion-order policy
+   in `width_schedule.py`; do not port another sorter for the same semantics.
+   Extending its consumer to executable typed bindings needs separate fidelity
+   tests. Enabling instruction attribution must not change emitted IR.
+4. Implement Simulation traversal against Core records and existing kernels.
+   Compare original graph evaluation, full complex amplitudes, complete small
+   measurement histories, side effects on failure and all work outputs. Replace
+   a numerical leaf implementation without changing graph consumers.
+5. Compare primitive streams, operands and feedback to unchanged source
+   decompositions. Report observed primitive counts separately from original
+   QEC/resource-model estimates and record source exceptions explicitly.
+6. Run existing Program/physical/dynamic, register, architecture, strict typing,
+   formatting, scope and public-contract regressions. Run a shortest user
+   example through `circuit.append(op)` for both concrete consumers.
+
+Each accepted implementation updates the item checklist and overview. This
+proposal and its audit do not check off any source module as migrated. G3,
+automatic merge, CI waiting, public root exports, public CircuitIR serialization,
+`IR_VERSION`, Runtime result schemas and execution defaults are outside scope.
+
+## Audit validation
+
+The initial audit has five tests, including three pinned-source witnesses. With
+the existing internal-level conformance suite, 36 tests pass without skips or
+warnings. The audit tool passes strict typing, Black and Ruff; architecture and
+the existing multi-level contract gate pass. Protected source and contract files
+are fingerprinted but unchanged. This evidence closes the scope investigation,
+not the contract fake, graph implementation, native metadata port or G2.

@@ -1,0 +1,91 @@
+{
+  "basis": "observed_internal_program_scope",
+  "contract_version": "0.5",
+  "contract_status": "implementation_authorized",
+  "sha256": {
+    "contracts/multi-level-ir-internal-v1-candidate.json": "462e133c100c846bfc639e337eb2de977d0254d8a966d4ea858b29bed546e726",
+    "docs/public_api_v1.json": "e85c03a07c45554d87660a3ed9806be6bb1532325554e1aa21fdfe22ea4d9add",
+    "flagquantum/core/ir/program/model.py": "778db2b110646c5ef3632603b017ab21eead0928fd63561be6744a3237f0c7e6",
+    "flagquantum/core/ir/program/verifier.py": "65fa1cc17540f26946079c2367f8ed8fbdd7dded2a625c6c11836e3a95cf777d",
+    "flagquantum/core/operator_schema.py": "13edca5093d311a5315eda54795e7c3a730178d6aa6972f4987e388ce4ce4b13"
+  },
+  "record_fields": {
+    "ValueRef": [
+      "scope",
+      "index",
+      "kind"
+    ],
+    "Operation": [
+      "opcode",
+      "operands",
+      "results",
+      "parameters",
+      "literal",
+      "condition_clauses",
+      "physical_data"
+    ],
+    "BlockRecord": [
+      "name",
+      "arguments",
+      "terminator",
+      "edges",
+      "operations"
+    ],
+    "FunctionRecord": [
+      "name",
+      "blocks",
+      "entry"
+    ],
+    "ProgramRecord": [
+      "functions",
+      "canonical_payload",
+      "physical_context"
+    ]
+  },
+  "gate_signature": {
+    "opcode": "x",
+    "operand_kinds": [
+      "qubit"
+    ],
+    "result_kinds": [
+      "qubit"
+    ]
+  },
+  "probes": {
+    "gate_on_qubit": [],
+    "gate_on_index": [
+      "program.operand_kind",
+      "program.result_kind"
+    ],
+    "component_call": [
+      "program.opcode_unknown"
+    ],
+    "quantum_register_kind": [
+      "program.operand_kind",
+      "program.result_kind",
+      "value.identity"
+    ]
+  },
+  "round_trips": {
+    "static": {
+      "lowering_state": "supported_exact",
+      "restoration_state": "supported_exact",
+      "diagnostics": [],
+      "verified": true,
+      "canonical_payload_equal": true
+    },
+    "dynamic": {
+      "lowering_state": "supported_exact",
+      "restoration_state": "supported_exact",
+      "diagnostics": [],
+      "verified": true,
+      "canonical_payload_equal": true
+    }
+  },
+  "claims": {
+    "register_component_execution": false,
+    "source_register_metadata_ported": false,
+    "resource_dag_is_execution_graph": false,
+    "protected_contract_changed": false
+  }
+}
