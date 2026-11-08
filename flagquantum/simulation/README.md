@@ -837,3 +837,11 @@ commit rather than implementing another phase accumulator. Run
 `python -m examples.algorithms.classical_power_values` for ordinary append,
 measured inverse and reused work. See [numerical repetition](../../docs/development/CLASSICAL_POWER_VALUES.md)
 for original count diagnostics and separate compiler/model support boundaries.
+
+`classical_on_each.py` composes bound word Split, single-bit child evaluation and
+Join through the existing codecs, bit validation and phased-output commit. It
+keeps loop count separate from bound register width and delays result conversion
+until Join collection. Run `python -m examples.algorithms.classical_on_each_values`
+for noncontiguous append and complete complex inverse checks. See
+[numerical OnEach](../../docs/development/CLASSICAL_ON_EACH_VALUES.md) for zero-width
+source topology, dtype diagnostics and metadata-owner responsibilities.
