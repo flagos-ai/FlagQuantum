@@ -101,8 +101,9 @@ Run `pytest tests/unit/test_register_program_lowering.py` for the shortest
 contributor path. The existing Add/QROM append consumer runs unchanged with
 three-level packed hierarchy replacement, primitive equality, all measurement
 histories and independent resource checks. Finite mutable construction and
-rebindings are implemented below. Automatic clean/dirty allocation and direct
-numerical graph traversal retain separate acceptance work.
+rebindings are implemented below. Physical clean/dirty wire binding is
+implemented in the balanced profile below. Direct numerical graph traversal
+retains separate acceptance work.
 
 ## Finite register construction
 
@@ -119,8 +120,9 @@ Run `pytest tests/unit/test_component_program_builder.py` for identity, arrays,
 zero-width ownership, failed calls/returns and the unchanged real Add/QROM append
 consumer. These retain exact primitive instructions, all measurement histories,
 workspace cleanup and separately reported models. Only the concrete quantum
-bit/opaque/unsigned profile is admitted. Automatic clean or dirty workspace,
-additional descriptors and numerical traversal remain separate.
+bit/opaque/unsigned profile is admitted. Balanced clean/dirty physical workspace
+is supported below. Additional descriptors and numerical traversal remain
+separate.
 
 
 ## Builder word and bit rebindings
@@ -153,10 +155,10 @@ Sixteen unchanged source builder scenarios accept the native observation adapter
 The tests also verify real helper bodies, dtype changes after split/join, call
 forwarding, source resource models and independent Core rejection.
 
-`lower_register_program` rejects allocation/release anywhere in the module until
-physical scheduling is admitted. The existing `layout/workspace.py` pool remains
-the physical lease authority for that next slice. Graph acceptance establishes
-typed consumption. Clean zero-state and dirty original-joint-state restoration
+`lower_register_program` retains its gate-only contract and rejects lifetimes.
+The physical entry below consumes lifetime graphs using the existing
+`layout/workspace.py` pool as its physical lease authority. Graph acceptance
+establishes typed consumption. Clean zero-state and dirty original-joint-state restoration
 need separate numerical evidence. Source tensor/classical allocation uses zero
 even for dirty allocation, while its Cirq path borrows unknown state. Keep those
 entry points distinct when extending execution.
@@ -170,8 +172,8 @@ physical wire ownership only. Program SSA remains responsible for stale logical
 handles, and numerical restoration remains an emitter obligation.
 
 Run `pytest tests/unit/test_workspace_partial_release.py tests/unit/test_register_workspace.py`.
-This is the pool prerequisite for graph scheduling. `lower_register_program`
-continues to reject lifetime graphs until their physical schedule is admitted.
+The physical entry below consumes these pool operations.
+`lower_register_program` remains the separate gate-only entry.
 
 For the physical scheduling prerequisite, the shared
 `_component_trace.width_schedule.schedule_width_steps` accepts
@@ -180,4 +182,31 @@ node insertion order. Existing peak estimates retain default weak-component
 grouping. The source graph adapter must supply actual graph insertion order,
 including isolated nodes, instead of assuming builder call positions. Run
 `pytest tests/unit/test_component_physical_schedule.py` for original-source
-physical visitation comparisons. Program physical binding is still pending.
+physical visitation comparisons. Program physical binding is implemented below.
+
+
+## Physical register binding
+
+`register_binding.bind_register_program` accepts actual verified Program
+functions, input-element wire tuples and explicit clean/borrowed pools.
+`component_schedule.local_operation_order` derives source connection-created
+node order for each definition, schedules locally through the existing greedy
+kernel and then reuses finite call expansion. The existing workspace pool binds
+allocation, partial release and cross-allocation joins. Primitive operands,
+parameters, fresh measurement slots and boolean feedback become existing IR.
+The result also retains ordered output words and immutable lifetime events.
+
+Run `pytest tests/unit/test_register_physical_binding.py`. The unchanged Add/QROM
+append consumer uses real private-work lifetimes and explicitly maps local
+classical slots to its original slot bindings. It checks source primitive
+counts, per-wire dependencies, every small measurement history, complex
+amplitudes and clean-zero work. Borrowed work is verified with entangled external
+spectators. Pool events and complete local operation order match six original
+source graphs. Repeated calls keep local lifetime order before expansion.
+
+The admitted profile has quantum boundary ports and balanced nonempty work.
+Caller-input free and live-workspace output transfer, general classical boundary
+ports and isolated source frozenset tie parity remain open. Binding ignores the
+optional restoration payload and executes the actual graph. See
+[the interface and evidence](../../../docs/development/PHYSICAL_REGISTER_BINDING.md)
+for bit order, output semantics, slot alpha-renaming and separate resource counts.
