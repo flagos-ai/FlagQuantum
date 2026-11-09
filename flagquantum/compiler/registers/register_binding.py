@@ -46,6 +46,7 @@ def bind_register_program(
     borrowed: tuple[int, ...] = (),
     entry: str = "main",
     allow_workspace_outputs: bool = False,
+    input_ownership: tuple[tuple[int, bool], ...] = (),
 ) -> BoundRegisterProgram:
     """Bind quantum ports and work lifetimes to caller-supplied physical wires.
 
@@ -53,7 +54,8 @@ def bind_register_program(
     entry ports and disjoint concrete input/clean/borrowed wires are required.
     Explicitly allowing workspace outputs transfers their live physical wires
     to the caller through ordered outputs. The caller owns subsequent cleanup
-    and borrowed-state restoration. Input release requires caller pool ownership.
+    and borrowed-state restoration. Input release requires explicit caller pool
+    ownership through ``input_ownership``.
     """
     if type(allow_workspace_outputs) is not bool:
         raise ValueError("workspace output policy requires a built-in boolean")
@@ -102,6 +104,22 @@ def bind_register_program(
         raise ValueError(
             "input and workspace bindings require disjoint nonnegative integer wires"
         )
+    input_wires = {wire for word in inputs for wire in word}
+    if (
+        not isinstance(input_ownership, tuple)
+        or any(
+            not isinstance(pair, tuple)
+            or len(pair) != 2
+            or type(pair[0]) is not int
+            or pair[0] not in input_wires
+            or type(pair[1]) is not bool
+            for pair in input_ownership
+        )
+        or len({pair[0] for pair in input_ownership}) != len(input_ownership)
+    ):
+        raise ValueError(
+            "input ownership requires distinct (input wire, boolean dirty) pairs"
+        )
     if not all_wires:
         raise ValueError("physical circuit binding requires at least one physical wire")
     scheduled = {}
@@ -118,6 +136,9 @@ def bind_register_program(
         )
     operations, returned = _expand(scheduled[entry].blocks[0], scheduled)
     binder = _PhysicalBinding(RegisterWorkspace(clean, borrowed=borrowed))
+    for wire, dirty in input_ownership:
+        binder.pool.adopt((wire,), dirty=dirty)
+        binder.adopted.add(wire)
     binder.wires.update(zip(block.arguments, inputs, strict=True))
     for position, operation in enumerate(operations):
         binder.emit(position, operation)
@@ -144,6 +165,7 @@ class _PhysicalBinding:
         self.instructions: list[Instruction] = []
         self.events: list[WorkspaceEvent] = []
         self.live: set[int] = set()
+        self.adopted: set[int] = set()
         self.empty_leases: list[WorkspaceLease] = []
         self.next_bit = 0
 
@@ -169,12 +191,13 @@ class _PhysicalBinding:
             )
         elif opcode == "free_register":
             wires = self.wires[operation.operands[0]]
-            if not set(wires) <= self.live:
+            if not set(wires) <= self.live | self.adopted:
                 raise ValueError(
                     "freeing caller input wires requires explicit ownership transfer"
                 )
             self.pool.free_wires(wires)
             self.live.difference_update(wires)
+            self.adopted.difference_update(wires)
             assert operation.workspace_dirty is not None
             self.events.append(
                 WorkspaceEvent(position, "free", wires, operation.workspace_dirty)
