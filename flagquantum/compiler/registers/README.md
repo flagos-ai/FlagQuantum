@@ -71,3 +71,21 @@ Internal emitters use functional names. The callable map in the module guide
 records 40 renamed functions and their owners. Source schedules, register
 contracts and cost formulas retain their existing behavior.
 General typed component graph execution remains separate integration work.
+
+
+## Finite gate-call expansion
+
+`program_calls.inline_program_calls` expands verified single-block calls in
+the existing Core ProgramRecord. Each invocation has its own SSA mapping. An
+explicit stack handles deep finite call chains, and parameter/measurement
+feedback bindings follow that same mapping. DNF conditions are canonicalized
+after substitution, including classical aliases. Core independently validates
+the result and attests any retained public-circuit payload.
+
+The focused path is `tests/unit/test_program_call_lowering.py`. Its existing
+Add/QROM append consumer is reused with hierarchical emitter replacement,
+checking unchanged source gate dependencies, all four measurement histories,
+complex amplitudes, workspace cleanup and separate primitive/model resources.
+Workspace remains explicit in the gate function's inputs and outputs. Packed
+register construction, split/join and numerical graph traversal remain in the
+next register-valued contract slice.
