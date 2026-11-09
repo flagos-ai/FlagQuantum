@@ -6,7 +6,7 @@
 
 """Construct native register metadata using the pinned type-specific rules.
 
-Proposal 103 prerequisites 0.3 through 0.5 separate constructor validation from numerical
+Proposal 103 prerequisites 0.3 through 0.6 separate constructor validation from numerical
 codecs, physical wire binding and executable component graph admission.
 """
 
@@ -149,3 +149,64 @@ def classical_montgomery_register_type(
     if modulus is not None:
         parameters += (("modulus", modulus),)
     return RegisterType("montgomery", 0, width, parameters=parameters)
+
+
+def validate_fixed_point_parameters(
+    width: RegisterWidth,
+    fractional_width: RegisterWidth,
+    *,
+    signed: bool = False,
+    width_label: str = "bitsize",
+    encoding_label: str = "Fxp",
+) -> None:
+    """Preserve source shape checks with the constructor's diagnostic context."""
+    if not is_symbolic_value(width) and width == 1 and signed:
+        raise ValueError(f"{width_label} must be > 1.")
+    if not is_symbolic_value(width) and not is_symbolic_value(fractional_width):
+        if signed and width == fractional_width:
+            raise ValueError(
+                f"num_frac must be less than bitsize if the {encoding_label} is signed."
+            )
+        if width < fractional_width:
+            raise ValueError("bitsize must be >= num_frac.")
+
+
+def fixed_point_register_type(
+    width: RegisterWidth, fractional_width: RegisterWidth, signed: bool = False
+) -> RegisterType:
+    """Construct quantum fixed-point metadata with the source eager shape checks."""
+    validate_fixed_point_parameters(
+        width,
+        fractional_width,
+        signed=signed,
+        width_label="num_qubits",
+        encoding_label="fixed-point register",
+    )
+    return RegisterType(
+        "fixed_point",
+        width,
+        parameters=(("fractional_width", fractional_width), ("signed", signed)),
+    )
+
+
+def classical_fixed_point_register_type(
+    width: RegisterWidth, fractional_width: RegisterWidth, signed: bool = False
+) -> RegisterType:
+    """Preserve classical storage identity and the source fixed-point checks."""
+    validate_fixed_point_parameters(
+        width,
+        fractional_width,
+        signed=signed,
+        width_label="num_qubits",
+        encoding_label="fixed-point register",
+    )
+    return RegisterType(
+        "fixed_point",
+        0,
+        width,
+        parameters=(
+            ("storage", "classical"),
+            ("fractional_width", fractional_width),
+            ("signed", signed),
+        ),
+    )

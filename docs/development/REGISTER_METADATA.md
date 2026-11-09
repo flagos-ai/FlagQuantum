@@ -332,3 +332,28 @@ The default tier reports 14,149 passed, 51 skipped, 398 warnings and the same
 previously reproduced rotation-layer failure in 50.21 seconds. The existing
 Python 3.10 unused-ignore limitation remains open. Fixed-point/finite-field
 constructors, graph compatibility and typed component execution remain pending.
+
+## Fixed-point constructors and shared shape validation
+
+Prerequisite 0.6 adds quantum and classical fixed-point metadata constructors.
+They retain the original declared width, fractional width and signed value,
+including scalar types. Ordered parameters are fractional_width then signed.
+Classical words retain their first storage marker. Shape validation follows the
+source eager decision tree and protocol evaluation order. Native diagnostics
+replace only the QFxp name with fixed-point register. The source num_qubits
+wording is retained for both quantum and classical metadata construction.
+
+The shared `validate_fixed_point_parameters` guard belongs in Core. Its default
+context preserves _Fxp codec diagnostics. Register constructors select their
+source-specific context. Fixed-point RegisterType symbolic classification checks
+width and fractional width and ignores signed/storage, including custom signed
+objects and symbolic signed flags. The Montgomery rule remains width-only.
+
+The source-backed prerequisite passes 430 cases before implementation. The same
+constructor, Signature and protocol scenarios run with native constructors.
+Additional classifier, complete small integer-domain/array codec replacement
+and optional-Sympy cases bring this module to 910 tests. With existing metadata
+and type constructor regression, 2,613 cases pass without warnings or skips.
+Existing numerical codecs accept the same source-backed or native descriptors.
+Metadata constructors emit no gates and allocate no work qubits. Real-to-word
+quantization and finite-field constructors remain pending work.

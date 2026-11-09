@@ -58,6 +58,16 @@ class RegisterType:
         # Source Montgomery classification examines width, ignoring modulus.
         if self.encoding == "montgomery":
             return is_symbolic_value(self.quantum_bits, self.classical_bits)
+        if self.encoding == "fixed_point":
+            return is_symbolic_value(
+                self.quantum_bits,
+                self.classical_bits,
+                *(
+                    value
+                    for name, value in self.parameters
+                    if name == "fractional_width"
+                ),
+            )
         return is_symbolic_value(
             self.quantum_bits,
             self.classical_bits,
