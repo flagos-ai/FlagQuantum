@@ -292,3 +292,49 @@ The prerequisite contract stand-in passes 124 source-backed scenarios before
 native implementation. It reads declared width directly, avoiding the separate
 lazy `_bit_encoding` construction and its additional numeric validation. This
 records constructor behavior independently from later codec/property behavior.
+
+## Integer and classical type prerequisite 0.4
+
+Extend the existing internal constructor module with signed two's-complement and
+ones'-complement quantum words and classical bit, unsigned, signed,
+ones'-complement and bounded unsigned words. The source is the unchanged QInt,
+QIntOnesComp, CBit, CUInt, CInt, CIntOnesComp and BCUInt constructor call chains.
+Two's-complement and classical unsigned constructors retain their lack of eager
+width validation. Ones'-complement constructors reject only a Python integer
+one, including True. NumPy/Sympy integer one follows the source's separate path.
+
+Native signed encoding remains `signed`; ones' complement uses
+`ones_complement`. Classical integer factories store zero quantum width, the
+original classical width and `("storage", "classical")` as their first type
+parameter. Bounded classical words append `("bound", bound)`. The marker keeps
+zero-width classical and quantum integers nominally distinct even when both
+physical width counts are zero. CBit uses the existing `RegisterType("bit", 0,
+1)` identity. Existing directly constructed descriptors retain their values.
+Source-backed tests map these identities explicitly, including empty scalar
+ports and Signature's deliberate classical-only convenience-filter omission.
+
+BCUInt computes its omitted bound before classification and retains its `bound`
+diagnostic wording. The shared bounded resolver preserves the existing BQUInt
+construction order and diagnostic wording. The existing ones'-complement width
+guard moves unchanged from Simulation to Core. Numerical codecs and signed
+truncation consume that same guard at their existing call sites, with no second
+validation authority and no changed validation timing.
+
+The source-backed constructor fake and native factories must run the same new
+scenarios. Compare declared widths without invoking lazy codecs, preserve raw
+parameter types and constructor failures, test quantum/classical zero-width
+identity and Signature counts, and feed constructed widths into the existing
+numerical codecs. Rerun gate-stream, complex-amplitude, all small measurement
+branches, zero-workspace and resource regressions for the existing signed
+conversion and Add/QROM paths. Add's existing symbolic cost consumer switches
+its direct unsigned descriptors to the shared unsigned factory.
+
+This standalone metadata slice retains Program IR 0.5 and current public API
+and serialized schema contracts. Montgomery, fixed-point and finite-field
+constructors, graph-port type compatibility and executable typed connections
+remain later G2 dependencies.
+
+The source-backed prerequisite adds 182 constructor and consumer scenarios.
+Together with the prior constructor slice, 438 tests pass before new native
+implementation. Source width fields are read directly to keep lazy numerical
+codec validation outside constructor evidence.

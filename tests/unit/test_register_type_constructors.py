@@ -13,23 +13,52 @@ N = sympy.Symbol("n", integer=True, positive=True)
 
 
 def source_factory(kind, width=OMITTED, bound=OMITTED):
-    from qualtran import BQUInt, QAny, QBit, QUInt
+    from qualtran import (
+        BCUInt,
+        BQUInt,
+        CBit,
+        CInt,
+        CIntOnesComp,
+        CUInt,
+        QAny,
+        QBit,
+        QInt,
+        QIntOnesComp,
+        QUInt,
+    )
 
-    if kind == "bit":
-        dtype = QBit()
-    elif kind == "bounded":
-        dtype = BQUInt(width) if bound is OMITTED else BQUInt(width, bound)
-    else:
-        dtype = {"opaque": QAny, "uint": QUInt}[kind](width)
-    return dtype
+    if kind in ("bit", "classical_bit"):
+        return {"bit": QBit, "classical_bit": CBit}[kind]()
+    if kind in ("bounded", "classical_bounded"):
+        factory = BQUInt if kind == "bounded" else BCUInt
+        return factory(width) if bound is OMITTED else factory(width, bound)
+    return {
+        "opaque": QAny,
+        "uint": QUInt,
+        "signed": QInt,
+        "ones_complement": QIntOnesComp,
+        "classical_uint": CUInt,
+        "classical_signed": CInt,
+        "classical_ones_complement": CIntOnesComp,
+    }[kind](width)
 
 
 def source_contract(kind, width=OMITTED, bound=OMITTED):
     dtype = source_factory(kind, width, bound)
+    classical = kind.startswith("classical_")
+    encoding = kind.removeprefix("classical_")
+    encoding = "uint" if encoding == "bounded" else encoding
+    declared_width = 1 if encoding == "bit" else dtype.bitsize
+    parameters = (("storage", "classical"),) if classical and encoding != "bit" else ()
+    if kind == "bounded":
+        parameters += (("bound", dtype.iteration_length),)
+    elif kind == "classical_bounded":
+        parameters += (("bound", dtype.bound),)
     return RegisterType(
-        {"bit": "bit", "bounded": "uint", "opaque": "opaque", "uint": "uint"}[kind],
-        1 if kind == "bit" else dtype.bitsize,
-        parameters=(("bound", dtype.iteration_length),) if kind == "bounded" else (),
+        encoding,
+        0 if classical else declared_width,
+        declared_width if classical else 0,
+        parameters=parameters,
     )
 
 
@@ -63,6 +92,7 @@ def outcome(factory, kind, width, bound=OMITTED):
             str(error)
             .replace("QAny", "opaque register")
             .replace("BQUInt", "Bounded unsigned register")
+            .replace("BCUInt", "Bounded classical unsigned register")
         )
         return type(error), message
     return (
@@ -70,6 +100,7 @@ def outcome(factory, kind, width, bound=OMITTED):
         value.quantum_bits,
         type(value.quantum_bits),
         value.classical_bits,
+        type(value.classical_bits),
         tuple(
             (name, parameter, type(parameter)) for name, parameter in value.parameters
         ),
@@ -208,3 +239,105 @@ def test_native_concrete_factories_work_without_optional_sympy(kind, monkeypatch
     monkeypatch.setattr(builtins, "__import__", guarded_import)
     dtype = native_factory(kind, 3)
     assert dtype.quantum_bits == (1 if kind == "bit" else 3)
+
+
+INTEGER_KINDS = (
+    "signed",
+    "ones_complement",
+    "classical_bit",
+    "classical_uint",
+    "classical_signed",
+    "classical_ones_complement",
+    "classical_bounded",
+)
+
+
+@pytest.fixture(params=["source_contract"])
+def construct_integer_type(request):
+    return source_contract
+
+
+@pytest.mark.parametrize("kind", INTEGER_KINDS)
+@pytest.mark.parametrize(
+    "width",
+    [-2, -1, 0, 1, 2, True, False, np.int64(1), sympy.Integer(1), N, 1.5, None, "3"],
+)
+def test_integer_constructor_outcomes(construct_integer_type, kind, width):
+    assert outcome(construct_integer_type, kind, width) == outcome(
+        source_contract, kind, width
+    )
+
+
+@pytest.mark.parametrize("width", [-1, 0, 1, 3, np.int64(3), sympy.Integer(3), N])
+@pytest.mark.parametrize(
+    "bound", [-1, 0, 1, 3, 8, 9, True, None, 1.5, sympy.Integer(8), N]
+)
+def test_classical_bounded_constructor_outcomes(construct_integer_type, width, bound):
+    assert outcome(
+        construct_integer_type, "classical_bounded", width, bound
+    ) == outcome(source_contract, "classical_bounded", width, bound)
+
+
+@pytest.mark.parametrize("kind", ["uint", "signed", "ones_complement", "bounded"])
+def test_zero_width_preserves_quantum_classical_identity(construct_integer_type, kind):
+    quantum = source_contract(kind, 0)
+    classical = construct_integer_type("classical_" + kind, 0)
+    assert quantum.num_bits == classical.num_bits == 0
+    assert quantum != classical
+    assert classical.parameters[0] == ("storage", "classical")
+    assert classical == source_contract("classical_" + kind, 0)
+    word = Register("empty", classical)
+    assert list(word.all_idxs()) == [()]
+    assert list(Signature.build_from_dtypes(empty=classical)) == []
+
+
+@pytest.mark.parametrize("kind", INTEGER_KINDS)
+def test_integer_factories_feed_signature(construct_integer_type, kind):
+    from qualtran import Register as SourceRegister
+    from qualtran import Signature as SourceSignature
+
+    dtype = construct_integer_type(kind, 3)
+    native = Signature([Register("word", dtype, shape=(2, 3))])
+    source = SourceSignature(
+        [SourceRegister("word", source_factory(kind, 3), shape=(2, 3))]
+    )
+    for method in ("n_bits", "n_qubits", "n_cbits"):
+        assert getattr(native, method)() == getattr(source, method)()
+    assert native.get_left("word").dtype is dtype
+    assert native.get_right("word").dtype is dtype
+    assert len(Signature.build_from_dtypes(word=dtype)) == len(
+        SourceSignature.build_from_dtypes(word=source_factory(kind, 3))
+    )
+
+
+@pytest.mark.parametrize("kind", ["ones_complement", "classical_ones_complement"])
+def test_ones_complement_rejects_only_python_int_one(construct_integer_type, kind):
+    for width in (1, True):
+        with pytest.raises(ValueError, match="bitsize must be > 1"):
+            construct_integer_type(kind, width)
+    for width in (np.int64(1), sympy.Integer(1), 1.0):
+        dtype = construct_integer_type(kind, width)
+        assert (
+            dtype.classical_bits
+            if kind.startswith("classical_")
+            else dtype.quantum_bits
+        ) is width
+
+
+def test_classical_bound_default_precedes_symbolic_guard(construct_integer_type):
+    events = []
+
+    class Width:
+        def __rpow__(self, base):
+            events.append(("power", base))
+            return 7
+
+        def is_symbolic(self):
+            events.append("symbolic")
+            return True
+
+    width = Width()
+    dtype = construct_integer_type("classical_bounded", width)
+    assert dtype.classical_bits is width
+    assert dtype.parameters == (("storage", "classical"), ("bound", 7))
+    assert events == [("power", 2), "symbolic"]
