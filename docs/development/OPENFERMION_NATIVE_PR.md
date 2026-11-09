@@ -5,9 +5,11 @@ to encoded measurement, state preparation and low-rank evolution. Production
 execution uses FlagQuantum and PyTorch. OpenFermion and Cirq are not required.
 The existing FermionOperator, stable root exports and API snapshots are unchanged.
 
-This PR delivers the selected native fermionic workflow. **Merge is pending
-Linux CI execution and rebuilding the four locked CI images for the changed
-dependency manifests.** No merge or image publication has been performed.
+This PR delivers the selected native fermionic workflow. Both Linux scientific
+matrix endpoints passed in CI run `42584600022`. All four fixed images were
+rebuilt in run `42582666522`, with registry and verified offline OCI identities
+recorded in the lock. Merging requires cache qualification and every required CI
+check to pass on the final revision. No merge has been performed.
 
 ## User workflow
 
@@ -99,15 +101,20 @@ suite from silently losing every installed-dependency consumer.
 The matrix waits for source preparation and is included in `ci-complete`, so
 either endpoint failing, being cancelled or being skipped blocks the merge gate.
 
-Linux verification is assigned to the new Ubuntu CI matrix. No successful
-Linux run is claimed in the local validation results above.
+The Linux matrix passed both Python 3.10 / PySCF 2.8 and Python 3.12 / PySCF 2.15
+in CI run `42584600022`, separately from the local validation results above.
 
-Both `pyproject.toml` and `docker/ci/profiles.json` changed while
-`docker/ci/images.lock` retains the base digests. The offline wrapper compares
-both manifests byte for byte, so the existing image publication and qualification
-process must rebuild all four profiles and update their actual immutable digests
-before merge. No digest is fabricated or replaced with a mutable tag. Run the
-new Ubuntu matrix and required CI checks after the approved publication step.
+Both dependency manifests changed, so `docker/ci/images.lock` records four
+rebuilt images from publisher run `42582666522`. Each row includes the actual
+registry digest and the hash-verified OCI manifest digest from an offline export.
+The wrapper continues to compare both manifests byte for byte. Cache provisioning,
+qualification and the final CI checks use these immutable identities; no mutable
+tag or relaxed manifest comparison is used.
+
+The publisher now emits complete lock-row artifacts. Source restoration retries
+truncated HTTP responses within its existing two-retry bound while retaining Git
+object and commit verification. The focused CI infrastructure suite passed 135
+tests; the API transport tests also passed all 18 cases on Python 3.10.
 
 ## Supported scope
 
