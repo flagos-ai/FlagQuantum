@@ -13,6 +13,10 @@ from flagquantum.ecosystem.chemistry.fcidump import read_fcidump
 
 
 def main() -> None:
+    print(
+        "premise: real closed-shell FCIDUMP integrals and exact statevector "
+        "simulation; the reference energy is not the correlated ground energy.\n"
+    )
     with TemporaryDirectory() as directory:
         path = Path(directory) / "FCIDUMP"
         path.write_text(

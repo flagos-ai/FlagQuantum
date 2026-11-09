@@ -35,6 +35,7 @@ python -m examples.algorithms.logical_resources
 python -m examples.algorithms.arithmetic
 python -m examples.algorithms.fermion_energy
 python -m examples.algorithms.fermion_chemistry
+python -m examples.algorithms.fermion_fcidump
 python -m examples.synthesis.tutorials.getting_started.trial.main
 python -m examples.synthesis.tutorials.getting_started.source_trial.main
 ```
@@ -45,6 +46,8 @@ a script that stops working fails the test lane instead of going stale.
 
 What they show:
 
+- [`fermion_fcidump.py`](fermion_fcidump.py): real closed-shell FCIDUMP input
+  mapped to three native encodings and measured on its reference determinant.
 - [`fermion_energy.py`](fermion_energy.py): the same occupation-state energy
   through Jordan-Wigner, parity and Bravyi-Kitaev encodings using exact simulation.
 - [`fermion_chemistry.py`](fermion_chemistry.py): fixed STO-3G hydrogen reference
