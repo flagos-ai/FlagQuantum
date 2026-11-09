@@ -13,6 +13,7 @@ from tools.run_qmod_catalog import run_case
 from tools.synthesis_catalog import (
     CATALOG,
     ROOT,
+    case_readme,
     example_path,
     load_catalog,
     render,
@@ -181,3 +182,40 @@ def test_autocallable_companion_precision_is_consumed_after_relocation() -> None
     assert observed["stage"] == "execution_smoke_passed"
     for field in ("qubits", "operations", "depth"):
         assert observed[field] == case["recorded_original"][field]
+
+
+@pytest.mark.parametrize("validated", [False, True])
+def test_workflow_guide_does_not_determine_notebook_acceptance(validated: bool) -> None:
+    catalog = load_catalog()
+    case = next(
+        case
+        for case in catalog["cases"]
+        if case["id"].endswith("/facility_location.qmod")
+    )
+    assert (example_path(case["directory"]) / "WORKFLOW.md").is_file()
+    text = case_readme(case, catalog, notebook_validated=validated)
+    assert ("complete local Notebook workflow are validated" in text) == validated
+    assert ("quantum-program guide" in text) == (not validated)
+
+
+def test_rendered_workflow_claims_follow_inventory_acceptance() -> None:
+    catalog = load_catalog()
+    inventory = json.loads(
+        (CATALOG.parent / "native_library_inventory.json").read_text()
+    )
+    validated = {
+        (group["id"], group["native_program"]["path"])
+        for group in inventory["groups"]
+        if group["kind"] == "notebook_workflow"
+        and group["workflow_status"] == "validated"
+        and group["native_program"]
+    }
+    assert len(validated) == 24
+    rendered = render(catalog)
+    assert "**24/213**" in rendered[ROOT / "examples/synthesis/CATALOG.md"]
+    for case in catalog["cases"]:
+        if case["native_example"]:
+            text = rendered[example_path(case["directory"]) / "README.md"]
+            assert ("complete local Notebook workflow are validated" in text) == (
+                (case["id"][:-5], case["native_example"]) in validated
+            ), case["id"]

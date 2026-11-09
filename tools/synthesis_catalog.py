@@ -198,7 +198,7 @@ def _link(path: str, parent: Path, label: str) -> str:
     return f"[{label}]({os.path.relpath(ROOT / path, parent)})"
 
 
-def case_readme(case: Case, catalog: Catalog) -> str:
+def case_readme(case: Case, catalog: Catalog, *, notebook_validated: bool) -> str:
     """Document the runnable native implementation, without an importer launcher."""
     parent = example_path(case["directory"])
     assert case["native_example"] and case["native_comparison"]
@@ -222,13 +222,22 @@ def case_readme(case: Case, catalog: Catalog) -> str:
                 [
                     "The quantum program and complete local Notebook workflow are validated.",
                     "The workflow scope and replacements for external services",
-                    "are documented in [the workflow guide](WORKFLOW.md).",
+                    (
+                        "are documented in [the workflow guide](WORKFLOW.md)."
+                        if (parent / "WORKFLOW.md").is_file()
+                        else "are recorded in `provenance.json`."
+                    ),
                     "",
                 ]
-                if (parent / "WORKFLOW.md").is_file()
+                if notebook_validated
                 else [
                     "The validated scope is the quantum program. A related notebook may also include",
                     "training, data preparation or external execution that requires separate migration.",
+                    *(
+                        ["See the [quantum-program guide](WORKFLOW.md)."]
+                        if (parent / "WORKFLOW.md").is_file()
+                        else []
+                    ),
                     "",
                 ]
             ),
@@ -256,6 +265,11 @@ def render(catalog: Catalog) -> dict[Path, str]:
     validated_workflows = sum(
         group["workflow_status"] == "validated" for group in notebooks
     )
+    validated_programs = {
+        (group["id"], group["native_program"]["path"])
+        for group in notebooks
+        if group["workflow_status"] == "validated" and group["native_program"]
+    }
     lines = [
         "# Native FlagQuantum example library",
         "",
@@ -295,7 +309,10 @@ def render(catalog: Catalog) -> dict[Path, str]:
                 )
             )
             output[example_path(case["directory"]) / "README.md"] = case_readme(
-                case, catalog
+                case,
+                catalog,
+                notebook_validated=(case["id"][:-5], case["native_example"])
+                in validated_programs,
             )
         if not entries:
             category_lines += [
