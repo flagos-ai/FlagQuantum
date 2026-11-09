@@ -1026,3 +1026,11 @@ Source fake cases outside this executable profile retain their source-only
 classification. Real Add/QROM emitters remain the replacement consumers, with
 all primitive instructions, complete complex branches, workspace cleanup and
 independent resource models retained.
+
+Prerequisite 1.3 is implemented by allocator `88abf860` and builder `9da66a0e`.
+Core records and machine contract remain at the existing 0.7 boundary. Forty
+builder cases, four allocator regressions and 4654 concentrated checks pass.
+The two Compiler construction modules have 100% statement and branch coverage.
+Existing real Add/QROM consumer instructions, complete measurement histories,
+zero work and independent resource models are preserved. Detailed evidence and
+remaining admission boundaries are recorded in `REGISTER_METADATA.md`.

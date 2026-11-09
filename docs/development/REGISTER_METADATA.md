@@ -781,3 +781,38 @@ failures. All four reproduce independently from the pre-batch `57081cec`
 snapshot. Default-suite acceptance remains open. Logs are
 `ftqc-reference-env/g2-packed-register-coverage.log`,
 `g2-packed-register-default.log` and `g2-packed-register-baseline-failures.log`.
+
+## Finite register call construction
+
+GRAPH18 adds Compiler construction contract `5195befe`, allocator `88abf860`
+and builder `9da66a0e`. One existing RegisterBinding associates each fresh
+Program SSA value with its declared element. Scalar zero-width ports retain
+identity, empty arrays allocate no values and all collections use declaration
+and row-major order. Both fixed-value metadata callers and allocator callers
+use the existing shared collection traversal.
+
+The builder resolves real immutable typed functions, records input consumption
+before dtype checks and reserves failed call positions. Return failures preserve
+their prefixes. Finalization verifies the complete module independently. A failed
+zero-port call can leave a valid empty source instance. Incomplete retained calls
+are refused through the existing Core verifier. The executable profile remains
+concrete quantum bit/opaque/unsigned. The original 39 source fake scenarios keep
+their source-only classification outside demonstrated native replacements.
+
+Forty builder scenarios and four allocator regressions pass. The concentrated
+suite passes 4654 cases in 29.66 seconds, without warnings or skips. Focused
+coverage passes 374 cases in 4.99 seconds, with 100% statement and branch coverage
+for both Compiler construction modules. Eight pinned source blobs are unchanged.
+Strict Python 3.12, Black/Ruff, architecture, both scopes, Program/public API
+checks and four existing append/resource examples pass. Evidence is
+`ftqc-reference-env/g2-component-builder-{native,coverage,regression,checks,examples}.log`
+and `g2-component-builder-source.txt`.
+
+The unchanged Add/QROM consumer accepts a builder-generated call around real
+packed/gate leaves and restores every original instruction. Its four complete
+unnormalized complex histories, zero workspace and separate primitive/model
+resources remain the GRAPH17 rows above. This batch adds zero emitted primitives
+and zero physical workspace. Default-suite status remains the GRAPH17 run and
+its four independently reproduced QFT/rotation fusion failures. Builder
+split/join, classical handles, automatic work and direct numerical traversal
+retain separate acceptance work.
