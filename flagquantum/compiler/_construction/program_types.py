@@ -58,6 +58,36 @@ class QNum(_QuantumRegister):
     def __pow__(self, exponent: int) -> QNum:
         raise TypeError("quantum expressions are captured inside qfunc, not executed")
 
+    def __and__(self, other: QNum | int) -> QNum:
+        raise TypeError("quantum expressions are captured inside qfunc, not executed")
+
+    __rand__ = __and__
+
+    def __or__(self, other: QNum | int) -> QNum:
+        raise TypeError("quantum expressions are captured inside qfunc, not executed")
+
+    __ror__ = __or__
+
+    def __xor__(self, other: QNum | int) -> QNum:
+        raise TypeError("quantum expressions are captured inside qfunc, not executed")
+
+    __rxor__ = __xor__
+
+    def __invert__(self) -> QNum:
+        raise TypeError("quantum expressions are captured inside qfunc, not executed")
+
+    def __lt__(self, other: QNum | int) -> QBit:
+        raise TypeError("quantum comparisons are captured inside qfunc, not executed")
+
+    def __le__(self, other: QNum | int) -> QBit:
+        raise TypeError("quantum comparisons are captured inside qfunc, not executed")
+
+    def __gt__(self, other: QNum | int) -> QBit:
+        raise TypeError("quantum comparisons are captured inside qfunc, not executed")
+
+    def __ge__(self, other: QNum | int) -> QBit:
+        raise TypeError("quantum comparisons are captured inside qfunc, not executed")
+
     def __ior__(self: _Num, expression: QNum | int) -> _Num:
         raise TypeError("fresh quantum assignment is captured inside qfunc")
 

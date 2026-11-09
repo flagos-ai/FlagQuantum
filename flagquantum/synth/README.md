@@ -68,13 +68,23 @@ See the [UP-01 delivery](../../docs/roadmap/SYNTH_PYTHON_PROGRAM_UP01_DELIVERY.m
 
 The typed profile supports QBit, unsigned integer QNum and QArray[QBit], Output/Const,
 literal basis initialization, allocation, Hadamard preparation, fresh `|=`
-expressions using +, *, literal powers 1..8, and acyclic positional qfunc calls.
+expressions using +, *, literal powers 1..8, comparisons, unsigned word bitwise
+operations and acyclic positional qfunc calls.
 Quantum root ports are Output-only; finite classical parameters follow the binding profile below. The phase, within/apply, adjoint and scalar-control
 extensions retain their checked individual scopes. Array views and static loops
 follow the native views admission above. Signed/fractional types, Input/free/drop,
 nested arrays, host callbacks, dynamic loops/branches and runtime classical
 parameters remain outside this Python profile. Existing scalar/Qmod capabilities
 retain their own documented scopes.
+
+For example, `res |= a <= 2` coherently computes a one-bit comparison into a
+fresh output. `res |= 3 & a`, `res |= a | b` and `res |= a ^ b` compute unsigned
+word values with zero extension. `res |= ~a` complements the inferred width of
+the quantum encoding: three-bit 6 becomes 1. It does not produce Python's negative
+integer `~6`. Outputs must be fresh; `|=` is the capture marker for assignment,
+not an in-place OR update. See the
+[native expression contract](../../docs/api-changes/FQ-SYNTH-NATIVE-EXPRESSION-VALUES-20261109.md)
+and [runnable inversion workflow](../../examples/synthesis/functions/arithmetic/bitwise_invert/bitwise_invert_example/README.md).
 
 Do not combine typed roots with scalar inputs/InputState/constants/functions/
 custom preparation or predicate output_mode=phase. A root owns its preparation.

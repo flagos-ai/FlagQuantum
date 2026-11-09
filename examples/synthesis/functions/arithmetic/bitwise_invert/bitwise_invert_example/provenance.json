@@ -1,0 +1,9 @@
+{
+  "upstream_path": "functions/function_usage_examples/arithmetic/bitwise_invert/bitwise_invert_example.qmod",
+  "upstream_commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "original_sha256": "7ec7ce1ccc51f567147112a7b7e6f5490a4e13fb6cd2f97a44c876895cf3d139",
+  "scope": "Quantum program only; the complete Notebook workflow is validated in the adjacent local workflow.",
+  "native_semantic_adaptations": "Fresh unsigned expression assignment uses a finite-width inversion based on the inferred quantum encoding.",
+  "native_entrypoint": "examples.synthesis.functions.arithmetic.bitwise_invert.bitwise_invert_example.main",
+  "acceptance_test": "tests/integration/test_synthesis_native_expression_values.py"
+}

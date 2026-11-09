@@ -217,7 +217,8 @@ and numeric 0/1 constants. It validates all operands, including source that a
 host Python expression could short-circuit; source bodies are never executed.
 Multi-bit truthiness is rejected at the offending operand's source location.
 Boolean expressions compute coherent values; classical if/loops, side effects,
-bool parameters/literals and bitwise operators keep their existing refusals.
+bool parameters/literals keep their existing refusals. Unsigned word bitwise
+values use the existing qint.bitwise kernel; see the native value contract below.
 
 Reuse the existing graph: AND is qint.multiply, NOT is qint.equal with zero,
 and OR is their De Morgan composition. No Boolean opcode, type, kernel or
@@ -630,3 +631,14 @@ native qfunc/Qmod workflow. Kernel tests are in
 acceptance covers coherent targets, controls, adjoints and both schedules.
 See [the AO-02 delivery record](../../../docs/roadmap/SYNTH_ARITHMETIC_AO02_DELIVERY.md)
 for proofs, scope, fixed receipts and the remaining AO-03/04 gap.
+
+## Native comparison and bitwise values
+
+Typed qfunc fresh assignment also captures comparison results and unsigned
+`&`, `|`, `^`, `~` values. The shared Python expression capture emits the existing
+comparison/word operations; it does not execute Python or translate via Qmod.
+Zero extension, result widths, ownership, lifetimes and resource ceilings remain
+checked by the existing pipeline. Quantum `~x` is finite-width complement; a
+classical-only inversion has no quantum width and is refused. Signed and
+fractional native annotations and in-place XOR are outside this extension.
+See the [native value contract](../../../docs/api-changes/FQ-SYNTH-NATIVE-EXPRESSION-VALUES-20261109.md).
