@@ -114,8 +114,8 @@ def test_classical_ports_keep_owned_consumption_and_do_not_alias_feedback(
 @pytest.mark.parametrize("reverse", [False, True])
 @pytest.mark.parametrize("boundary", ["call", "return"])
 def test_loose_metadata_never_converts_cbit_to_zero_width_quantum_word(
-    reverse, boundary
-):
+    reverse: bool, boundary: str
+) -> None:
     classical, quantum = classical_bit_type(), RegisterType("opaque", 0)
     assert check_register_types_consistent(classical, quantum)
     actual, expected = (quantum, classical) if reverse else (classical, quantum)
