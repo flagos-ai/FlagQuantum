@@ -12,6 +12,7 @@ Native FlagQuantum programs currently available:
 - [integer_linear_programming](optimization/integer_linear_programming/README.md)
 - [max_clique](optimization/max_clique/README.md)
 - [max_independent_set](optimization/max_independent_set/README.md)
+- [max_induced_k_color_subgraph](optimization/max_induced_k_color_subgraph/README.md)
 - [max_k_vertex_cover](optimization/max_k_vertex_cover/README.md)
 - [robust_posture_optimization](optimization/robust_posture_optimization/README.md)
 - [set_partition](optimization/set_partition/README.md)

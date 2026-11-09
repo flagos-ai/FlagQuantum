@@ -259,7 +259,7 @@ Validated local Notebook workflows: **24/213**.
 | `applications/optimization/low_autocorrelation_binary_sequences_problem/evidence_scaling_labs` | notebook_workflow | Pending | pending |
 | `applications/optimization/max_clique/max_clique` | notebook_workflow | [Native program](applications/optimization/max_clique/main.py) | pending |
 | `applications/optimization/max_independent_set/max_independent_set` | notebook_workflow | [Native program](applications/optimization/max_independent_set/main.py) | pending |
-| `applications/optimization/max_induced_k_color_subgraph/max_induced_k_color_subgraph` | notebook_workflow | Pending | pending |
+| `applications/optimization/max_induced_k_color_subgraph/max_induced_k_color_subgraph` | notebook_workflow | [Native program](applications/optimization/max_induced_k_color_subgraph/main.py) | pending |
 | `applications/optimization/max_k_vertex_cover/max_k_vertex_cover` | notebook_workflow | [Native program](applications/optimization/max_k_vertex_cover/main.py) | pending |
 | `applications/optimization/min_graph_coloring/min_graph_coloring` | notebook_workflow | Pending | pending |
 | `applications/optimization/minimum_dominating_set/minimum_dominating_set` | notebook_workflow | Pending | pending |
