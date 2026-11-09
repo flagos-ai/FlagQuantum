@@ -221,6 +221,15 @@ def case_readme(case: Case, catalog: Catalog) -> str:
             "The validated scope is the quantum program. A related notebook may also include",
             "training, data preparation or external execution that requires separate migration.",
             "",
+            *(
+                [
+                    "The separately validated local Notebook workflow and its replacements",
+                    "are documented in [the workflow guide](WORKFLOW.md).",
+                    "",
+                ]
+                if (parent / "WORKFLOW.md").is_file()
+                else []
+            ),
             f"Reference identity: `{case['id']}` at `{catalog['upstream_commit']}`.",
             "",
             "Provenance is recorded in `provenance.json`; original sources and importer",

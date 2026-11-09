@@ -7,7 +7,7 @@ quantum sources share one row. Python-only groups remain unclassified until
 main cases, helpers, data dependencies and verification criteria are reviewed.
 
 No notebook workflow is certified by a quantum-only counterpart.
-Validated local Notebook workflows: **1/213**.
+Validated local Notebook workflows: **3/213**.
 
 | Upstream group | Kind | Native quantum program | Full workflow |
 | --- | --- | --- | --- |
@@ -162,8 +162,8 @@ Validated local Notebook workflows: **1/213**.
 | `algorithms/error_correction/syndrome_extraction_optimization/gidney_circuits/src/gen/_viz_patch_svg` | python_unclassified | Pending | pending |
 | `algorithms/error_correction/syndrome_extraction_optimization/gidney_circuits/src/gen/_viz_patch_svg_test` | python_unclassified | Pending | pending |
 | `algorithms/error_correction/syndrome_extraction_optimization/ilp_circuit_distance` | python_unclassified | Pending | pending |
-| `algorithms/foundational/bernstein_vazirani/bernstein_vazirani` | notebook_workflow | Pending | pending |
-| `algorithms/foundational/deutsch_jozsa/deutsch_jozsa` | notebook_workflow | Pending | pending |
+| `algorithms/foundational/bernstein_vazirani/bernstein_vazirani` | notebook_workflow | [Native program](algorithms/foundational/bernstein_vazirani/main.py) | validated |
+| `algorithms/foundational/deutsch_jozsa/deutsch_jozsa` | notebook_workflow | [Native program](algorithms/foundational/deutsch_jozsa/main.py) | validated |
 | `algorithms/foundational/quantum_teleportation/quantum_teleportation` | notebook_workflow | Pending | pending |
 | `algorithms/foundational/simon/simon` | notebook_workflow | Pending | pending |
 | `algorithms/hamiltonian_simulation/hamiltonian_simulation_guide/hamiltonian_simulation_guide` | notebook_workflow | Pending | pending |

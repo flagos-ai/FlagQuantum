@@ -3,8 +3,15 @@
 Native FlagQuantum programs currently available:
 
 - [quantum_autoencoder](machine_learning/quantum_autoencoder/README.md)
+- [bernstein_vazirani](foundational/bernstein_vazirani/README.md)
+- [deutsch_jozsa](foundational/deutsch_jozsa/README.md)
 - [classical_shadow_tomography](metrology/classical_shadow_tomography/README.md)
 - [hidden_shift](number_theory_and_cryptography/hidden_shift/README.md)
+
+## Validated local Notebook workflows
+
+- [bernstein_vazirani](foundational/bernstein_vazirani/README.md)
+- [deutsch_jozsa](foundational/deutsch_jozsa/README.md)
 
 ## Additional FlagQuantum teaching examples
 

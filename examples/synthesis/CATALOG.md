@@ -3,19 +3,27 @@
 User examples contain native Python programs and independent Circuit comparisons.
 Original source files and importer launchers are test/development evidence, not examples.
 
-Validated quantum-program counterparts: **30/216**.
-Validated local Notebook workflows: **1/213**.
+Validated quantum-program counterparts: **32/216**.
+Validated local Notebook workflows: **3/213**.
 Expanded inventory: **577** source artifacts in **417** provisional path groups.
 Python groups still require main-case/helper review. A quantum-program counterpart
 does not certify its notebook workflow. Pending entries have no runnable placeholder.
 
 See [migration status](MIGRATION_STATUS.md) for the complete five-category inventory.
 
-## Algorithms (3 native programs)
+## Algorithms (5 native programs)
 
 - [quantum_autoencoder](algorithms/machine_learning/quantum_autoencoder/README.md)
+- [bernstein_vazirani](algorithms/foundational/bernstein_vazirani/README.md)
+- [deutsch_jozsa](algorithms/foundational/deutsch_jozsa/README.md)
 - [classical_shadow_tomography](algorithms/metrology/classical_shadow_tomography/README.md)
 - [hidden_shift](algorithms/number_theory_and_cryptography/hidden_shift/README.md)
+
+Validated local Notebook workflows:
+
+- [bernstein_vazirani](algorithms/foundational/bernstein_vazirani/README.md)
+- [deutsch_jozsa](algorithms/foundational/deutsch_jozsa/README.md)
+
 
 ## Applications (1 native programs)
 
