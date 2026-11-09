@@ -32,7 +32,7 @@ class RegisterWorkspace:
         ) != len(wires):
             raise ValueError("Workspace requires distinct nonnegative integer wires")
         self._available = {False: list(reversed(clean)), True: list(reversed(borrowed))}
-        self._live: set[WorkspaceLease] = set()
+        self._live: dict[WorkspaceLease, tuple[int, ...]] = {}
         self._used: set[int] = set()
 
     def allocate(self, count: int, *, dirty: bool = False) -> WorkspaceLease:
@@ -46,25 +46,61 @@ class RegisterWorkspace:
             kind = "borrowed" if dirty else "clean"
             raise ValueError(f"Insufficient {kind} workspace for {count} wires")
         lease = WorkspaceLease(tuple(available.pop() for _ in range(count)), dirty)
-        self._live.add(lease)
+        self._live[lease] = lease.wires
         self._used.update(lease.wires)
         return lease
 
     def free(
         self, lease: WorkspaceLease, *, order: tuple[int, ...] | None = None
     ) -> None:
-        """Release one live binding, optionally in its current virtual wire order."""
+        """Release the live remainder, optionally in its current virtual wire order."""
         if lease not in self._live:
             raise ValueError("Workspace release requires a live lease from this pool")
-        wires = lease.wires if order is None else order
+        remaining = self._live[lease]
+        wires = remaining if order is None else order
         if (
-            len(wires) != len(lease.wires)
+            len(wires) != len(remaining)
             or any(type(wire) is not int for wire in wires)
-            or set(wires) != set(lease.wires)
+            or set(wires) != set(remaining)
         ):
-            raise ValueError("Workspace release order must permute the leased wires")
-        self._live.remove(lease)
+            raise ValueError(
+                "Workspace release order must permute the leased wires still live"
+            )
+        del self._live[lease]
         self._available[lease.dirty].extend(reversed(wires))
+
+    def free_wires(self, wires: tuple[int, ...]) -> None:
+        """Release ordered live wires, including parts of distinct leases.
+
+        Every wire returns to its allocation pool. Validate the complete request
+        before releasing any prefix. Empty words retain their separate lease
+        identity and must be released with ``free(lease)``.
+        """
+        if any(type(wire) is not int for wire in wires) or len(set(wires)) != len(
+            wires
+        ):
+            raise ValueError(
+                "Partial workspace release requires distinct integer wires"
+            )
+        owners = {
+            wire: lease for lease, remaining in self._live.items() for wire in remaining
+        }
+        if any(wire not in owners for wire in wires):
+            raise ValueError(
+                "Partial workspace release requires live wires from this pool"
+            )
+        released = set(wires)
+        for lease in {owners[wire] for wire in wires}:
+            remaining = tuple(
+                wire for wire in self._live[lease] if wire not in released
+            )
+            if remaining:
+                self._live[lease] = remaining
+            else:
+                del self._live[lease]
+        for dirty in (False, True):
+            ordered = tuple(wire for wire in wires if owners[wire].dirty is dirty)
+            self._available[dirty].extend(reversed(ordered))
 
     @property
     def used_wires(self) -> tuple[int, ...]:

@@ -160,3 +160,15 @@ typed consumption. Clean zero-state and dirty original-joint-state restoration
 need separate numerical evidence. Source tensor/classical allocation uses zero
 even for dirty allocation, while its Cirq path borrows unknown state. Keep those
 entry points distinct when extending execution.
+
+The existing physical pool also supports `free_wires` for ordered partial
+release and cross-allocation joins. It validates all requested wires before
+mutation, retains each wire's allocation pool, and preserves release order for
+subsequent allocation. Whole-lease `free` releases the still-live remainder.
+Zero-width leases retain identity and use whole-lease release. The method accepts
+physical wire ownership only. Program SSA remains responsible for stale logical
+handles, and numerical restoration remains an emitter obligation.
+
+Run `pytest tests/unit/test_workspace_partial_release.py tests/unit/test_register_workspace.py`.
+This is the pool prerequisite for graph scheduling. `lower_register_program`
+continues to reject lifetime graphs until their physical schedule is admitted.
