@@ -22,9 +22,17 @@ def has_call_profile(record: ProgramRecord) -> bool:
             block.return_values is not None
             or any(value.kind == "register" for value in block.arguments)
             or any(
-                op.opcode in {"call", "split_register", "join_register"}
+                op.opcode
+                in {
+                    "call",
+                    "split_register",
+                    "join_register",
+                    "allocate_register",
+                    "free_register",
+                }
                 or op.callee is not None
                 or op.register_type is not None
+                or op.workspace_dirty is not None
                 or any(value.kind == "register" for value in op.results)
                 for op in block.operations
             )

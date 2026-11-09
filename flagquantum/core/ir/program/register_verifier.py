@@ -1,7 +1,7 @@
 """Infer owned word types at the finite Program register boundary.
 
 Proposal 103 prerequisite 1.2 uses the existing SSA and linearity verifier.
-This module supplies only register port compatibility and rebinding signatures.
+This module supplies register port compatibility and typed lifetime signatures.
 """
 
 from __future__ import annotations
@@ -78,7 +78,10 @@ def verify_register_block(
         if value.kind == "register"
     )
     rebindings = any(
-        op.opcode in {"split_register", "join_register"} or op.register_type is not None
+        op.opcode
+        in {"split_register", "join_register", "allocate_register", "free_register"}
+        or op.register_type is not None
+        or op.workspace_dirty is not None
         for op in block.operations
     )
     if function.registers is None:
@@ -125,22 +128,60 @@ def verify_register_block(
                     operand_kinds=("register",),
                     result_kinds=("qubit",) * executable_register_width(dtype),
                 )
-        elif operation.opcode == "join_register":
+        elif operation.opcode in {"join_register", "allocate_register"}:
             dtype = operation.register_type
             try:
                 if dtype is None:
-                    raise ValueError("join requires an explicit destination descriptor")
+                    raise ValueError(
+                        "join/allocation requires an explicit destination descriptor"
+                    )
                 width = executable_register_width(dtype)
             except ValueError as exc:
                 diagnostics.append(_diagnostic("program.register_type", str(exc)))
             else:
                 signatures[position] = OpcodeSignature(
-                    "join_register",
-                    operand_kinds=("qubit",) * width,
+                    operation.opcode,
+                    operand_kinds=(
+                        ("qubit",) * width
+                        if operation.opcode == "join_register"
+                        else ()
+                    ),
                     result_kinds=("register",),
                 )
                 types.update((value, dtype) for value in operation.results)
-        if operation.opcode in {"split_register", "join_register"}:
+        elif operation.opcode == "free_register":
+            signatures[position] = OpcodeSignature(
+                "free_register", operand_kinds=("register",)
+            )
+            if not operation.operands or types.get(operation.operands[0]) is None:
+                diagnostics.append(
+                    _diagnostic(
+                        "program.register_type",
+                        "free needs a producer-defined word type",
+                    )
+                )
+        workspace = operation.opcode in {"allocate_register", "free_register"}
+        if workspace:
+            if type(operation.workspace_dirty) is not bool:
+                diagnostics.append(
+                    _diagnostic(
+                        "program.register_structure",
+                        "workspace operations require an explicit boolean dirty flag",
+                    )
+                )
+        elif operation.workspace_dirty is not None:
+            diagnostics.append(
+                _diagnostic(
+                    "program.register_structure",
+                    "only workspace operations can state a dirty flag",
+                )
+            )
+        if operation.opcode in {
+            "split_register",
+            "join_register",
+            "allocate_register",
+            "free_register",
+        }:
             if (
                 operation.parameters
                 or operation.literal is not None
@@ -151,13 +192,17 @@ def verify_register_block(
                 diagnostics.append(
                     _diagnostic(
                         "program.register_structure",
-                        "rebindings cannot carry gate, call or physical metadata",
+                        "word structure operations cannot carry gate, call or physical metadata",
                     )
                 )
-        if operation.opcode != "join_register" and operation.register_type is not None:
+        if (
+            operation.opcode not in {"join_register", "allocate_register"}
+            and operation.register_type is not None
+        ):
             diagnostics.append(
                 _diagnostic(
-                    "program.register_structure", "only join can state a register type"
+                    "program.register_structure",
+                    "only join/allocation can state a register type",
                 )
             )
     returned = block.return_values or ()

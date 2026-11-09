@@ -110,7 +110,8 @@ class Operation:
         literal: The compile constant, present only on `CONSTANT_OPCODE`.
         condition_clauses: Disjunction of conjunctions over boolean SSA values.
         callee: Same-module function name, present only for a finite call.
-        register_type: Destination word descriptor, present only for a join.
+        register_type: Destination descriptor for a join or allocation.
+        workspace_dirty: Explicit borrowing flag for allocation or release.
     """
 
     opcode: str
@@ -125,6 +126,7 @@ class Operation:
 
     callee: str | None = None
     register_type: RegisterType | None = None
+    workspace_dirty: bool | None = None
 
     def __hash__(self) -> int:
         previous: tuple[object, ...] = (
@@ -139,8 +141,12 @@ class Operation:
             previous = (*previous, self.physical_data)
         if self.callee is not None:
             previous = (*previous, self.callee)
+        if self.register_type is not None:
+            previous = (*previous, self.register_type)
         return hash(
-            previous if self.register_type is None else (*previous, self.register_type)
+            previous
+            if self.workspace_dirty is None
+            else (*previous, self.workspace_dirty)
         )
 
 
