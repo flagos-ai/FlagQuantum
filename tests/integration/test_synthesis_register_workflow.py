@@ -1,7 +1,10 @@
 """Fresh-register sources share the existing checked Program and named reader."""
 
 import math
+from collections.abc import Mapping
 from dataclasses import replace
+from typing import Any, Literal, Never, TypeVar
+from unittest.mock import Mock
 
 import pytest
 import torch
@@ -13,6 +16,8 @@ from flagquantum.compiler._construction.selection import Constraints, Constructi
 from flagquantum.compiler._construction.target import Target
 from flagquantum.compiler.topology.coupling import CouplingMap
 from flagquantum.ecosystem._qmod.adapter import SUPPORTED_SOURCE_VERSION, parse_qmod
+from flagquantum.runtime.execution_plan import ExecutionPlan
+from flagquantum.runtime.result import ExecutionResult
 from flagquantum.services._synthesis_registers import synthesize_registers
 from flagquantum.services.synthesis import Program, SynthesisError
 from tests.integration.test_construction_register_execution import BASIS
@@ -20,23 +25,41 @@ from tests.register_program_cases import tutorial_program
 
 pytestmark = pytest.mark.integration
 MEMORY = 512 * 1024**2
+Values = TypeVar("Values", bound=tuple[int, ...])
 
 
-def native(source, **kwargs):
+def native(
+    source: str,
+    *,
+    constraints: Constraints | None = None,
+    budget: ConstructionBudget | None = None,
+) -> Program:
     imported = parse_qmod(
         source, filename="workflow.qmod", source_version=SUPPORTED_SOURCE_VERSION
     )
     return synthesize_registers(
-        imported.program, imported.functions, memory_limit_bytes=MEMORY, **kwargs
+        imported.program,
+        imported.functions,
+        memory_limit_bytes=MEMORY,
+        constraints=(
+            constraints if constraints is not None else Constraints(CircuitLimits())
+        ),
+        budget=budget if budget is not None else ConstructionBudget(),
     )
 
 
-def check_state(program, result, expected):
+def check_state(
+    program: Program,
+    result: ExecutionResult,
+    expected: Mapping[Values, complex],
+) -> None:
     """Compare every complex amplitude, including all mapped clean workspace."""
+    assert isinstance(result.plan, ExecutionPlan)
     assert result.plan.identity == program.execution.identity
     state = result.statevector().reshape(-1)
     residual = state.clone()
     row = program.selection.selected
+    assert row is not None and row.target is not None
     for values, amplitude in expected.items():
         index = 0
         for value, ports in zip(values, program.registers.values(), strict=True):
@@ -68,8 +91,10 @@ def check_state(program, result, expected):
 @pytest.mark.parametrize("routed", [False, True])
 @pytest.mark.parametrize("objective", ["width", "depth"])
 def test_both_producers_share_program_execution_and_named_reading(
-    producer, routed, objective
-):
+    producer: Literal["native", "recorded"],
+    routed: bool,
+    objective: Literal["width", "depth"],
+) -> None:
     if producer == "native":
         imported = parse_qmod(
             "qfunc main(output x:qnum<2>, output y:qnum) { allocate(x); hadamard_transform(x); y=x**2+1; }",
@@ -88,10 +113,9 @@ def test_both_producers_share_program_execution_and_named_reading(
         model, functions, target=target, objective=objective, memory_limit_bytes=MEMORY
     )
     assert type(program) is Program
-    assert (
-        program.report["source_identities"]
-        == program.selection.selected.source_identities
-    )
+    selected = program.selection.selected
+    assert selected is not None and selected.target is not None
+    assert program.report["source_identities"] == selected.source_identities
     result = fq.run(program)
     check_state(program, result, {(x, x * x + 1): 0.5 for x in range(4)})
     observed = program.probabilities(result, registers=("y", "x"))
@@ -100,13 +124,10 @@ def test_both_producers_share_program_execution_and_named_reading(
     )
     assert program.report["resources"] == program._checked.verify_result(result)
     if routed:
-        assert any(
-            op.name == "swap"
-            for op in program.selection.selected.target.executable.instructions
-        )
+        assert any(op.name == "swap" for op in selected.target.executable.instructions)
 
 
-def test_native_phase_and_later_mutation_survive_services_admission():
+def test_native_phase_and_later_mutation_survive_services_admission() -> None:
     program = native(
         "qfunc main(output flag:qbit, output n:qnum, output res:qnum) { allocate(flag); H(flag); S(flag); allocate(2,n); hadamard_transform(n); res=flag*n; X(flag); }"
     )
@@ -125,26 +146,23 @@ def test_native_phase_and_later_mutation_survive_services_admission():
     )
 
 
-def test_synthesis_plans_once_and_never_executes(monkeypatch):
-    original = _api.plan
-    calls = []
-
-    def plan(*args, **kwargs):
-        calls.append(1)
-        return original(*args, **kwargs)
-
-    def no_execution(*args, **kwargs):
-        pytest.fail("synthesis must not execute")
-
+def test_synthesis_plans_once_and_never_executes(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    plan = Mock(wraps=_api.plan)
     monkeypatch.setattr(_api, "plan", plan)
-    monkeypatch.setattr(_api, "run", no_execution)
+    monkeypatch.setattr(
+        _api, "run", Mock(side_effect=AssertionError("synthesis must not execute"))
+    )
     program = native("qfunc main(output q:qbit) { allocate(q); X(q); }")
     assert program.execution is program.execution
-    assert calls == [1]
+    assert plan.call_count == 1
 
 
-def test_constraints_and_incomplete_search_refuse_before_planning(monkeypatch):
-    def no_plan(*args, **kwargs):
+def test_constraints_and_incomplete_search_refuse_before_planning(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def no_plan(*args: object, **kwargs: object) -> Never:
         pytest.fail("infeasible or incomplete synthesis must not plan")
 
     monkeypatch.setattr(_api, "plan", no_plan)
@@ -158,7 +176,7 @@ def test_constraints_and_incomplete_search_refuse_before_planning(monkeypatch):
 
 
 @pytest.mark.parametrize("limit", [None, True, 0, -1, 1.5])
-def test_native_admission_requires_valid_explicit_memory_ceiling(limit):
+def test_native_admission_requires_valid_explicit_memory_ceiling(limit: Any) -> None:
     imported = parse_qmod(
         "qfunc main(output q:qbit) { allocate(q); }",
         source_version=SUPPORTED_SOURCE_VERSION,
@@ -167,7 +185,7 @@ def test_native_admission_requires_valid_explicit_memory_ceiling(limit):
         synthesize_registers(imported.program, memory_limit_bytes=limit)
 
 
-def test_runtime_capacity_refuses_before_allocation():
+def test_runtime_capacity_refuses_before_allocation() -> None:
     imported = parse_qmod(
         "qfunc main(output x:qnum<3>, output y:qnum) { allocate(x); y=x*x+1; }",
         source_version=SUPPORTED_SOURCE_VERSION,
@@ -176,7 +194,7 @@ def test_runtime_capacity_refuses_before_allocation():
         synthesize_registers(imported.program, imported.functions, memory_limit_bytes=1)
 
 
-def test_named_budget_reaches_existing_marginal_reader_above_eight_bits():
+def test_named_budget_reaches_existing_marginal_reader_above_eight_bits() -> None:
     program = native("qfunc main(output number:qnum<9>) { number=7; }")
     result = fq.run(program)
     with pytest.raises(ValueError, match="budget"):
@@ -186,7 +204,7 @@ def test_named_budget_reaches_existing_marginal_reader_above_eight_bits():
     assert observed.diagnostics["possible_keys"] == 512
 
 
-def test_named_reader_keeps_identity_budgets_normalization_and_layout_checks():
+def test_named_reader_keeps_identity_budgets_normalization_and_layout_checks() -> None:
     program = native(
         "qfunc main(output a:qnum, output b:qnum, output res:qnum) { a=2; b=3; res=a*b; }"
     )
@@ -200,6 +218,7 @@ def test_named_reader_keeps_identity_budgets_normalization_and_layout_checks():
         program.probabilities(fq.run(fq.Circuit(1)), registers=("res",))
     with pytest.raises(ValueError, match="registers changed"):
         replace(program, registers={"res": (0,)}).execution
+    assert result.state is not None
     result.state.mul_(2)
     with pytest.raises(ValueError, match="normalized"):
         program.probabilities(result, registers=("res",))
