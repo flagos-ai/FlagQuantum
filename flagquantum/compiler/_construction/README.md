@@ -655,3 +655,10 @@ Native unsigned `%` by a literal positive power of two lowers to the same
 encoding. General/nonliteral/quantum divisors remain rejected. Run
 `python -m pytest tests/integration/test_synthesis_native_modulo.py -q` for
 independent XOR-permutation full states, input domains and ownership refusals.
+
+`frontend_matrix.py` reads bounded static built-in matrix data and translates
+native unitary calls to existing indexed `qreg.unitary` effects. Shared profile
+validation owns matrix shape/unitarity and storage legality; shared lowering owns
+the gate decomposition and absolute phase. No numerical matrix code is duplicated
+in capture. Run `tests/integration/test_synthesis_native_unitary.py` for independent
+matrix application, array/list bit order, helper views and fail-closed inputs.

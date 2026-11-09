@@ -3479,7 +3479,10 @@
         }
       ],
       "workflow_status": "pending",
-      "native_program": null,
+      "native_program": {
+        "path": "examples/synthesis/applications/benchmarking/quantum_volume/main.py",
+        "scope": "Quantum program only; complete Notebook workflow remains pending."
+      },
       "kind": "notebook_workflow"
     },
     {
@@ -6660,9 +6663,33 @@
           "kind": "quantum_program"
         }
       ],
-      "workflow_status": "pending",
-      "native_program": null,
-      "kind": "notebook_workflow"
+      "workflow_status": "validated",
+      "native_program": {
+        "path": "examples/synthesis/functions/unitary/main.py",
+        "scope": "Complete local computational Notebook workflow: define the retained diagonal complex matrix, allocate two qubits, apply the matrix and synthesize. Local execution and independent matrix-Circuit comparison additionally validate the result."
+      },
+      "kind": "notebook_workflow",
+      "workflow_validation": {
+        "upstream_path": "functions/qmod_library_reference/qmod_core_library/unitary/unitary.qmod",
+        "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+        "original_sha256": "c9b50c054efea25b572133b2d9a9c7966df7d5d84adf6c111ad73221ad2b101b",
+        "native_entrypoint": "examples.synthesis.functions.unitary.main",
+        "acceptance_test": "tests/integration/test_synthesis_native_unitary.py",
+        "scope": "Complete local computational Notebook workflow: define the retained diagonal complex matrix, allocate two qubits, apply the matrix and synthesize. Local execution and independent matrix-Circuit comparison additionally validate the result.",
+        "native_semantic_adaptations": "Freeze the source global numeric list as an immutable tuple; preserve every complex entry and least-significant-first quantum-array semantics. Reuse shared checked unitary lowering. No cloud execution or hardware claim.",
+        "git_blob_sha1": "a8ab32cb0046eea1af233429d30519166bd58716",
+        "notebook_path": "functions/qmod_library_reference/qmod_core_library/unitary/unitary.ipynb",
+        "reviewed_code_cells": [
+          {
+            "index": 2,
+            "sha256": "e7bb644979200e8ecc8f26d156ac2d114f48d321ee9578fc6c3cba706a37f786"
+          },
+          {
+            "index": 3,
+            "sha256": "6608b6628705adf4ba4e837b01a64a6b4b2078463c1d1b7b802b5e4c8499a376"
+          }
+        ]
+      }
     },
     {
       "id": "tutorials/advanced_tutorials/discrete_quantum_walk/discrete_quantum_walk",

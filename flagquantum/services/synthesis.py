@@ -76,6 +76,7 @@ from ._synthesis_readout import probabilities as _probabilities
 
 # Preserve the Qmod spelling for the captured Python operations.
 qft = program_types.qft
+unitary = program_types.unitary
 H = program_types.h
 S = program_types.s
 CX = program_types.cx
@@ -133,6 +134,7 @@ __all__ = (
     "S",
     "RX",
     "qft",
+    "unitary",
 )
 
 

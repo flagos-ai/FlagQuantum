@@ -41,6 +41,7 @@ from ..services.synthesis import (
     qft,
     qfunc,
     synthesize,
+    unitary,
     within,
 )
 
@@ -82,4 +83,5 @@ __all__ = (
     "S",
     "RX",
     "qft",
+    "unitary",
 )

@@ -18,6 +18,7 @@ from .._hybrid.model import (
     ValueId,
 )
 from .frontend_classical import ClassicalValue, bind_inputs, real_number
+from .frontend_matrix import capture_unitary
 from .frontend_ports import (
     _annotation_node,
     _Port,
@@ -55,6 +56,7 @@ from .program_types import (
     s,
     swap,
     u,
+    unitary,
     within,
     x,
 )
@@ -427,6 +429,7 @@ class _Body:
                     u,
                     hadamard_transform,
                     qft,
+                    unitary,
                 )
             )
             or isinstance(function, _QuantumFunction)
@@ -486,6 +489,8 @@ class _Body:
                     "allocation and declared width must agree",
                 )
             self.emit("qreg.allocate", node, (destination,))
+        elif function is unitary:
+            capture_unitary(self, node)
         elif function is qft:
             if len(node.args) != 1:
                 _error(self.source, node, "program.signature", "qft takes one register")

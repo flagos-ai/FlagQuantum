@@ -3,8 +3,8 @@
 User examples contain native Python programs and independent Circuit comparisons.
 Original source files and importer launchers are test/development evidence, not examples.
 
-Validated quantum-program counterparts: **50/216**.
-Validated local Notebook workflows: **18/213**.
+Validated quantum-program counterparts: **52/216**.
+Validated local Notebook workflows: **19/213**.
 Expanded inventory: **577** source artifacts in **417** provisional path groups.
 Python groups still require main-case/helper review. A quantum-program counterpart
 does not certify its notebook workflow. Pending entries have no runnable placeholder.
@@ -27,8 +27,9 @@ Validated local Notebook workflows:
 - [deutsch_jozsa](algorithms/foundational/deutsch_jozsa/README.md)
 
 
-## Applications (2 native programs)
+## Applications (3 native programs)
 
+- [quantum_volume](applications/benchmarking/quantum_volume/README.md)
 - [quantum_drude_oscillator](applications/chemistry/quantum_drude_oscillator/README.md)
 - [robust_posture_optimization](applications/optimization/robust_posture_optimization/README.md)
 
@@ -42,7 +43,7 @@ Validated local Notebook workflows:
 - [superposition](community/basic_examples/superposition/README.md)
 
 
-## Functions (30 native programs)
+## Functions (31 native programs)
 
 - [arithmetic_expression](functions/arithmetic/arithmetic_expression/README.md)
 - [arithmetic_expression_example](functions/arithmetic/arithmetic_expression/arithmetic_expression_example/README.md)
@@ -74,6 +75,7 @@ Validated local Notebook workflows:
 - [swap](functions/standard_gates/swap/README.md)
 - [u](functions/standard_gates/u/README.md)
 - [x](functions/standard_gates/x/README.md)
+- [unitary](functions/unitary/README.md)
 
 Validated local Notebook workflows:
 
@@ -88,6 +90,7 @@ Validated local Notebook workflows:
 - [prepare_ghz_state](functions/state_preparation/prepare_ghz_state/README.md)
 - [prepare_state_and_amplitudes](functions/state_preparation/prepare_state_and_amplitudes/README.md)
 - [overview](functions/standard_gates/overview/README.md)
+- [unitary](functions/unitary/README.md)
 
 
 ## Tutorials (9 native programs)

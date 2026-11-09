@@ -673,6 +673,7 @@ _SYNTH_ACTIVE_EXPORTS = (
     "S",
     "RX",
     "qft",
+    "unitary",
 )
 
 
@@ -1229,6 +1230,26 @@ def _validate_authorized_synthesis_python_program(contract: Any) -> list[str]:
         or str(inspect.signature(synth.qft)) != fourier_signature
     ):
         errors.append("native Fourier operation differs from its authorized scope")
+    matrix_admission = json.loads(
+        (ROOT / "contracts/synthesis-native-unitary-candidate.json").read_text()
+    )
+    matrix_signature = "(matrix: 'Sequence[Sequence[complex | float | int]]', target: 'QNum | QArray[QBit] | Sequence[QBit]', /) -> 'None'"
+    if matrix_admission != {
+        "schema": "flagquantum.synthesis_native_unitary_admission",
+        "version": "1.0",
+        "namespace": "flagquantum.synth",
+        "added_exports": ["unitary"],
+        "signatures": {"unitary": matrix_signature},
+        "authorization_record": "docs/api-changes/FQ-SYNTH-NATIVE-UNITARY-20261109.md",
+        "implementation_authorized": True,
+        "release_authorized": False,
+    } or (
+        type(matrix_admission.get("implementation_authorized")) is not bool
+        or type(matrix_admission.get("release_authorized")) is not bool
+        or not (ROOT / matrix_admission["authorization_record"]).is_file()
+        or str(inspect.signature(synth.unitary)) != matrix_signature
+    ):
+        errors.append("native unitary operation differs from its authorized scope")
     for field, value in (
         ("synthesize_signature", synth.synthesize),
         ("run_signature", fq.run),

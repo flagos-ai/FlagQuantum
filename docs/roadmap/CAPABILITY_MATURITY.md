@@ -567,3 +567,15 @@ validated independently. The native examples preserve both retained arithmetic
 expression paths and the five-bit input domains of the modulo example. General
 or quantum divisors remain outside this local CPU profile. See the
 [contract](../api-changes/FQ-SYNTH-NATIVE-POWER-TWO-MODULO-20261109.md).
+
+## Native bounded unitary slice
+
+Unreleased Python `unitary(matrix,target)` reuses existing matrix verification,
+indexed `qreg.unitary` effects and absolute-phase-preserving gate synthesis.
+Original unitary and three-layer quantum-volume programs have native counterparts.
+Independent direct matrix Circuits verify retained complex data, complete small
+matrix columns, complex coherence, helper composition, offset/sliced wires and
+consistent least-significant-first array/list views. Host constructors, mutable
+global matrices and unsupported ownership fail closed. The maturity is local CPU
+semantic validation; complete application Notebooks require separate acceptance.
+See the [contract](../api-changes/FQ-SYNTH-NATIVE-UNITARY-20261109.md).

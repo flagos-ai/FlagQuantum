@@ -7,7 +7,7 @@ quantum sources share one row. Python-only groups remain unclassified until
 main cases, helpers, data dependencies and verification criteria are reviewed.
 
 No notebook workflow is certified by a quantum-only counterpart.
-Validated local Notebook workflows: **18/213**.
+Validated local Notebook workflows: **19/213**.
 
 | Upstream group | Kind | Native quantum program | Full workflow |
 | --- | --- | --- | --- |
@@ -219,7 +219,7 @@ Validated local Notebook workflows: **18/213**.
 | `applications/CFD/heat_eq_qsvt/heat_eq_qsvt` | notebook_workflow | Pending | pending |
 | `applications/CFD/qlbm/qlbm` | notebook_workflow | Pending | pending |
 | `applications/automotive/cooling_systems_optimization/cooling_systems_optimization` | notebook_workflow | Pending | pending |
-| `applications/benchmarking/quantum_volume/quantum_volume` | notebook_workflow | Pending | pending |
+| `applications/benchmarking/quantum_volume/quantum_volume` | notebook_workflow | [Native program](applications/benchmarking/quantum_volume/main.py) | pending |
 | `applications/benchmarking/randomized_benchmarking/randomized_benchmarking` | notebook_workflow | Pending | pending |
 | `applications/chemistry/classiq_chemistry_application/classiq_chemistry_application` | notebook_workflow | Pending | pending |
 | `applications/chemistry/molecular_energy_curve/molecular_energy_curve` | notebook_workflow | Pending | pending |
@@ -372,7 +372,7 @@ Validated local Notebook workflows: **18/213**.
 | `functions/qmod_library_reference/qmod_core_library/standard_gates/U` | quantum_program | [Native program](functions/standard_gates/u/main.py) | pending |
 | `functions/qmod_library_reference/qmod_core_library/standard_gates/X` | quantum_program | [Native program](functions/standard_gates/x/main.py) | pending |
 | `functions/qmod_library_reference/qmod_core_library/standard_gates/standard_gates` | notebook_workflow | [Native program](functions/standard_gates/overview/main.py) | validated |
-| `functions/qmod_library_reference/qmod_core_library/unitary/unitary` | notebook_workflow | Pending | pending |
+| `functions/qmod_library_reference/qmod_core_library/unitary/unitary` | notebook_workflow | [Native program](functions/unitary/main.py) | validated |
 | `tutorials/advanced_tutorials/discrete_quantum_walk/discrete_quantum_walk` | notebook_workflow | Pending | pending |
 | `tutorials/advanced_tutorials/discrete_quantum_walk/quantum_walk_circle` | quantum_program | Pending | pending |
 | `tutorials/advanced_tutorials/discrete_quantum_walk/quantum_walk_circle_balanced_coin` | quantum_program | Pending | pending |

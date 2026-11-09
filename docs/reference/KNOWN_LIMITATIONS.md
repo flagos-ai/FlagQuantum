@@ -1007,3 +1007,10 @@ Native unsigned integer `%` accepts only literal positive powers of two up to
 2**256, using existing bitwise AND lowering. General/nonliteral/quantum divisors
 and signed/fractional modulo remain refused. This is exact local CPU semantic
 support, not a new approximate arithmetic kernel or hardware capability.
+
+Native `unitary` accepts static 1..5-bit matrices from numeric literals or
+immutable tuple globals. Arrays, contiguous slices and explicit scalar lists
+use local position zero as the least significant matrix bit. Mutable matrix
+globals, arbitrary constructors, classical parameter matrices and new native
+controlled/inverse helper forms are not admitted. Existing matrix decomposition
+is locally CPU verified with absolute phase; this is not a hardware claim.

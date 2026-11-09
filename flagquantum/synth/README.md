@@ -1024,3 +1024,11 @@ For strict static typing, a fixed unsigned port may use standard metadata:
 `Output[Annotated[QNum, 5]]` with `from typing import Annotated`. This is the same
 five-bit domain as the existing capture spelling `Output[QNum[5]]`. Metadata is
 one literal width; signed/fractional annotations remain unsupported.
+
+`unitary(matrix, target)` accepts bounded static complex matrices, using the
+existing matrix validator and decomposition into registered gates. Complete
+registers, static QArray slices and scalar-bit lists use the same local order:
+position zero is the least significant matrix bit. Matrices are literal nested
+numeric lists/tuples or immutable global tuples; arbitrary host constructors and
+parameterized matrices remain refused. See the
+[unitary contract](../../docs/api-changes/FQ-SYNTH-NATIVE-UNITARY-20261109.md).

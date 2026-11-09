@@ -150,6 +150,19 @@ def hadamard_transform(out: QNum | QArray[QBit], /) -> None:
     raise TypeError("hadamard_transform is captured inside qfunc")
 
 
+def unitary(
+    matrix: Sequence[Sequence[complex | float | int]],
+    target: QNum | QArray[QBit] | Sequence[QBit],
+    /,
+) -> None:
+    """Apply a bounded static matrix to writable quantum storage inside qfunc.
+
+    Arrays and explicit scalar lists use logical register order: position zero
+    is the least significant matrix bit. Matrices must be unitary.
+    """
+    raise TypeError("unitary is captured inside qfunc")
+
+
 def qft(target: QNum | QArray[QBit], /) -> None:
     """Apply the positive-sign Fourier transform to a complete writable register.
 
