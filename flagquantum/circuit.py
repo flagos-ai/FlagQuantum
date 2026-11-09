@@ -41,7 +41,9 @@ if TYPE_CHECKING:
     from .core._gate_typing import _BuiltinGateMethods
     from .noise import NoiseModel
     from .observables import OutputRequest
+    from .qec.dem import DetectorErrorModel
     from .qec.execution.context import MeasurementMap
+    from .qec.execution.detector_sampling import CompiledDetectorSampler
     from .qec.execution.measurement_conversion import (
         CompiledMeasurementsToDetectionEventsConverter,
     )
@@ -66,23 +68,11 @@ def _count_argument(
     minimum: int | None = 1,
     message: str | None = None,
 ) -> int:
-    """Read an integer count without quietly rewriting the caller's value.
+    """Read __index__ counts without coercing floats, strings, or bool.
 
-    ``int(value)`` accepted ``2.7`` as ``2`` and ``"3"`` as ``3``, so a mistyped
-    count changed the program instead of failing. Only values that already denote an
-    integer are accepted, through the interpreter's own ``__index__`` protocol, which
-    admits NumPy integers and zero-dimensional torch integer tensors while refusing
-    floats and strings. ``bool`` is refused because ``True`` is a flag rather than a
-    count, which is the rule ``ExecutionOptions`` already applies to ``batch_size``.
-
-    ``minimum=None`` accepts a negative count as well, for the arguments where a
-    negative value is a defined request rather than a mistyped size: an exponent of
-    ``-k`` asks for the inverse applied ``k`` times.
-
-    ``message`` replaces the assembled opening of the refusal for an argument whose
-    refusal the composition contract freezes as a phrase of its own. A frozen phrase
-    is checked against this file, so it is written out at the call site instead of
-    being assembled from ``name`` where it is raised.
+    NumPy integers and scalar integer tensors are accepted. ``minimum=None``
+    permits negative composition powers; ``message`` preserves contract-specific
+    refusal text.
     """
 
     opening = message or f"Circuit {name} must be an integer, got"
@@ -104,14 +94,7 @@ def _embedded_input_state(
     dtype: torch.dtype,
     device: torch.device | str,
 ) -> torch.Tensor | None:
-    """Place a receiver's explicit input state in the wider controlled register.
-
-    Every qubit the receiver did not have starts in ``|0>``, and qubit ``0`` is the most
-    significant amplitude bit, so the added qubits become zero low-order bits:
-    ``(state_1, ..., state_n)`` maps to ``sum_i state_i * 2 ** i * 2 ** (width - n)``.
-    Dropping the receiver's input instead would silently execute a different program from
-    the one the receiver describes.
-    """
+    """Embed existing inputs with qubit zero most significant and added low bits zero."""
 
     if inputs is None:
         return None
@@ -129,14 +112,7 @@ def _embedded_input_state(
 
 
 def _composition_source(other: Any) -> tuple[int, Any, tuple[Instruction, ...]]:
-    """Read the width, batch size, and instructions of a program being composed.
-
-    The instructions are read into a tuple, so composing a circuit onto itself
-    appends a snapshot rather than iterating the list that is growing under it. A
-    hand-built :class:`CircuitIR` that declares no batch size is read as ``bsz=1``,
-    which is what a program with no batch dimension means; a mismatch against the
-    target circuit is refused by the caller rather than resolved.
-    """
+    """Snapshot self-composition; undeclared IR batches mean batch size one."""
 
     if isinstance(other, Circuit):
         return other.n_qubits, other.bsz, tuple(other._instructions)
@@ -241,9 +217,7 @@ class Circuit(_BuiltinGateMethods):
             raise ValidationError(
                 f"Circuit received conflicting qubit counts: {rendered}."
             )
-        # The backing fields are written directly here: the setters below refresh
-        # derived state that does not exist yet, and both values were already read
-        # through ``_count_argument`` when the aliases were resolved.
+        # Counts are validated; setters need caches that do not exist yet.
         self._n_qubits = next(iter(counts.values()))
         self._bsz = _count_argument("bsz", bsz)
         self.runtime_config = config or get_runtime_config()
@@ -296,15 +270,7 @@ class Circuit(_BuiltinGateMethods):
         self._statevector_fused_matrices.clear()
 
     def _set_declared_count(self, name: str, value: Any) -> None:
-        """Apply one declared count under the rule the constructor already applies.
-
-        ``bsz`` and ``n_qubits`` are read by the program builder and by every
-        executor, so the rule that reads them from ``Circuit(...)`` has to be the
-        rule that reads them from an assignment. Without this, ``circuit.bsz = 2.7``
-        was stored as ``2.7``, reported back as ``2.7``, and executed as a
-        two-entry batch; ``circuit.bsz = 0`` was accepted and failed later inside a
-        run with an error naming neither the circuit nor ``bsz``.
-        """
+        """Apply constructor count validation to assignment before invalidating caches."""
 
         count = _count_argument(name, value)
         if name == "n_qubits":
@@ -315,12 +281,7 @@ class Circuit(_BuiltinGateMethods):
         self._after_declared_count_change()
 
     def _require_width_covers_recorded_qubits(self, n_wires: int) -> None:
-        """Refuse a width that would strand an instruction already recorded.
-
-        The parameter keeps its ``wire`` spelling: private parameters are outside
-        the migration boundary, and the contract records their count so the
-        exclusion stays honest.
-        """
+        """Refuse widths that strand recorded qubits; keep the private wire spelling."""
 
         for index, instruction in enumerate(self._instructions):
             stranded = tuple(qubit for qubit in instruction.wires if qubit >= n_wires)
@@ -332,13 +293,9 @@ class Circuit(_BuiltinGateMethods):
                 )
 
     def _after_declared_count_change(self) -> None:
-        """Discard everything derived from ``n_qubits`` and ``bsz``.
+        """Clear IR, backend and workspaces derived from width or batch size.
 
-        A count change reaches further than a gate edit. The cached IR carries both
-        counts, the cached backend programs are built from them, and the statevector
-        workspaces are shaped ``(bsz, 2**n_qubits)`` — including
-        :attr:`_initial_state_workspace` and the Z-sign table, which a gate edit may
-        keep but a width or batch change cannot.
+        Gate edits may keep statevector workspaces; count changes cannot.
         """
 
         self._invalidate_execution_cache(instructions_changed=True)
@@ -437,9 +394,7 @@ class Circuit(_BuiltinGateMethods):
 
             channel = channel_from_parameters(opcode, merged_params)
             matrix = channel.kraus
-            # Keep the declared parameters on the instruction at their stored
-            # value, so an inline channel and a channel the noise model lowered
-            # are the same instruction and the plan identity covers both alike.
+            # Preserve stored channel parameters in both inline/noise-model IR identities.
             merged_params = dict(channel.parameters)
             metadata["is_channel"] = True
         instruction = Instruction(
@@ -494,8 +449,7 @@ class Circuit(_BuiltinGateMethods):
 
         from .core._qubit_aliases import warn_qubit_alias
 
-        # Both refusals spell the method as CPython's missing-argument message did
-        # while the keyword was required, so a caller matching it keeps matching.
+        # Preserve the former required-keyword exception text.
         called = f"{type(self).__name__}.any()"
         if matrix is not None and unitary is not None:
             raise TypeError(
@@ -655,12 +609,7 @@ class Circuit(_BuiltinGateMethods):
         if len(self._instructions) == 1 and requested != 1:
             body = powered_instructions(self._instructions[0], count=requested)
         else:
-            # ``requested == 1`` is handled here rather than by the rewrite, because a
-            # power of one is the same program: the rewrite would multiply every angle
-            # by one, which is numerically the same circuit but a different expression
-            # -- a symbolic parameter would come back as ``t * 1``, and a trainable
-            # angle as a new tensor behind a multiplication. The identity power should
-            # not rewrite what it was given.
+            # Identity power preserves symbolic expressions and trainable tensor identity.
             body = [
                 copy_instruction(instruction)
                 for _ in range(requested)
@@ -856,10 +805,7 @@ class Circuit(_BuiltinGateMethods):
 
     def to_ir(self) -> CircuitIR:
         if self._ir_cache is None:
-            # A decimal JSON encoding of ``2**n_qubits`` is irrelevant to
-            # MPS/TN execution and eventually hits Python's large-integer
-            # string guard. Keep dense shapes for statevector-sized circuits
-            # and describe larger logical amplitude spaces symbolically.
+            # Symbolic large shapes avoid Python's integer-string guard for MPS/TN.
             dense_shape_available = self.n_qubits <= 4096
             self._ir_cache = CircuitIR(
                 self.n_qubits,
@@ -972,9 +918,7 @@ class Circuit(_BuiltinGateMethods):
     def initial_state(self) -> torch.Tensor:
         from .simulation.statevector.batching import _initial_state
 
-        # Statevector/TN kernels are functional: they never mutate this leaf.
-        # It is therefore safe to share it across autograd graphs and avoid a
-        # zero-fill allocation on every training step.
+        # Functional kernels may share this immutable leaf across autograd graphs.
         return _initial_state(self)
 
     def _statevector_instructions(self) -> tuple[Instruction, ...]:
@@ -1025,6 +969,63 @@ class Circuit(_BuiltinGateMethods):
         )
 
         return _compile_measurement_sampler(self, seed=seed)
+
+    def compile_detector_sampler(
+        self,
+        *,
+        detector_map: MeasurementMap,
+        observable_map: MeasurementMap,
+        seed: int | None = None,
+    ) -> CompiledDetectorSampler:
+        """Prepare reference-normalized detector flips from explicit Z records.
+
+        Map columns include overwritten slots. Unsupported source capabilities
+        refuse before preparation; see CompiledDetectorSampler for bounds.
+
+        Examples:
+            >>> from importlib.util import find_spec
+            >>> from flagquantum.dynamic import DynamicCircuit
+            >>> from flagquantum.qec.execution.context import MeasurementMap
+            >>> if find_spec("stim") is not None:
+            ...     sampler = DynamicCircuit(1).measure(0).compile_detector_sampler(
+            ...         detector_map=MeasurementMap(1, ((0,),)),
+            ...         observable_map=MeasurementMap(1, ()), seed=7,
+            ...     )
+            ...     assert sampler.sample(1).tolist() == [[False]]
+        """
+        from .qec.execution.detector_sampling import _compile_detector_sampler
+
+        return _compile_detector_sampler(
+            self, detector_map=detector_map, observable_map=observable_map, seed=seed
+        )
+
+    def detector_error_model(
+        self,
+        *,
+        detector_map: MeasurementMap,
+        observable_map: MeasurementMap,
+    ) -> DetectorErrorModel:
+        """Derive an exact DEM from this circuit and explicit record maps.
+
+        Gauge parities and unsupported exact noise analysis refuse. No
+        decomposition, disjoint approximation or sampling-based inference occurs.
+
+        Examples:
+            >>> from importlib.util import find_spec
+            >>> from flagquantum.dynamic import DynamicCircuit
+            >>> from flagquantum.qec.execution.context import MeasurementMap
+            >>> if find_spec("stim") is not None:
+            ...     model = DynamicCircuit(1).measure(0).detector_error_model(
+            ...         detector_map=MeasurementMap(1, ((0,),)),
+            ...         observable_map=MeasurementMap(1, ()),
+            ...     )
+            ...     assert model.num_detectors == 1
+        """
+        from .qec.execution.detector_sampling import _detector_error_model
+
+        return _detector_error_model(
+            self, detector_map=detector_map, observable_map=observable_map
+        )
 
     def compile_m2d_converter(
         self,
@@ -1145,12 +1146,7 @@ class Circuit(_BuiltinGateMethods):
     ) -> list[dict[str | int, int]]:
         """Return batched sample counts."""
 
-        # Validate the format before sampling. The loop below only sees a
-        # sampled row, so a request that sampled no rows — or one whose budget
-        # is spent before the first row is formatted — spent the whole shot
-        # budget and then refused the request it was always going to refuse.
-        # The MPS and tensor-network states check this first for the same
-        # reason; see tests/unit/test_counts_histogram_format.py.
+        # Refuse invalid formats before spending shots, as MPS/TN do.
         if format not in ("bin", "int"):
             raise ValidationError("counts format must be 'bin' or 'int'.")
 

@@ -63,7 +63,9 @@ def _check_sample_budget(shots: int, columns: int, qubits: int, packed: bool) ->
     return width
 
 
-def _lower_program(ir: CircuitIR) -> tuple[tuple[_EngineOperation, ...], int]:
+def _lower_program(
+    ir: CircuitIR, *, allow_pauli_noise: bool = False
+) -> tuple[tuple[_EngineOperation, ...], int]:
     _require_within_limit("source qubits", ir.n_wires, _MAX_QUBITS)
     if ir.measurements or {"layout", "routing"} & ir.metadata.keys():
         raise CapabilityError(
@@ -80,6 +82,24 @@ def _lower_program(ir: CircuitIR) -> tuple[tuple[_EngineOperation, ...], int]:
     for index, instruction in enumerate(ir.instructions):
         opcode = instruction.name
         metadata = instruction.metadata
+        if allow_pauli_noise and metadata.get("is_channel"):
+            operators = getattr(instruction.matrix, "kraus", instruction.matrix)
+            if any(
+                isinstance(op, torch.Tensor) and op.requires_grad
+                for op in operators or ()
+            ):
+                raise CapabilityError("detector execution refuses trainable noise")
+            if len(instruction.wires) not in (1, 2):
+                raise CapabilityError(
+                    "detector execution accepts one-/two-qubit Pauli channels"
+                )
+            if instruction_condition_clauses(instruction):
+                raise CapabilityError("detector execution refuses conditional noise")
+            operations.extend(_instruction_operations(instruction, index))
+            _require_within_limit(
+                "lowered operations", len(operations), _MAX_LOWERED_OPERATIONS
+            )
+            continue
         if (
             instruction.matrix is not None
             or instruction.params

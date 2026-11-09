@@ -344,3 +344,16 @@ def test_embedded_converter_invalid_buffers_refused(
     converter = _EmbeddedRecordConverter("M 0\nDETECTOR rec[-1]", 1, 0)
     with pytest.raises(ValueError, match="invalid output"):
         converter.convert(torch.tensor([[False]]))
+
+
+def test_new_detector_noise_admission_keeps_old_sampler_refusal() -> None:
+    program = DynamicCircuit(1).bit_flip(0, 0.1).measure(0)
+    with pytest.raises(CapabilityError, match="exact Clifford slice"):
+        program.compile_sampler(seed=7)
+    from flagquantum.qec.execution.context import MeasurementMap
+
+    with pytest.raises(CapabilityError, match="exact Clifford slice"):
+        program.compile_m2d_converter(
+            detector_map=MeasurementMap(1, ((0,),)),
+            observable_map=MeasurementMap(1, ()),
+        )

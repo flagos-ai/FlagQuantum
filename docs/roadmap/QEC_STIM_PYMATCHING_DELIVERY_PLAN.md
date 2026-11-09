@@ -819,3 +819,16 @@ those delivery gates. PR1092 remains a separate matrix/weighted-graph candidate
 with conflicts and unresolved historical failures; it is not counted as merged.
 R03/R08 and FTS-04 remain partial; FTS-02 and M2 are not closed by these changes.
 No research measurement, threshold or performance study is authorized here.
+
+## Native circuit detector execution candidate
+
+The approved bounded native detector sampling/DEM contract is implemented as a
+direct-main candidate. `Circuit.compile_detector_sampler` and
+`Circuit.detector_error_model` consume the same explicit-record maps;
+`examples/qec/native_detector_sampling.py` demonstrates decoding all 35 records
+without requiring equal tied decoder solutions. No new upstream source files are
+needed. This extends FTS-04 / R03 / R08; those requirements remain partial.
+FTS-02, mixed-route M2, full Stim/PyMatching parity, natural monitoring reliability
+and performance/capacity/scalability evidence remain open. Main admission and
+final-head evidence are recorded separately; implementation is not an admission
+receipt. Historical raw evidence and prior failed CI records remain unchanged.

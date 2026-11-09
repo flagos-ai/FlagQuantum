@@ -1225,3 +1225,30 @@ The embedded macOS arm64 profile requires no Stim Python package. Standard
 builds use the optional Stim 1.16.0 SDK. The existing free
 `qec.execution.measurement_conversion.compile_m2d_converter` remains the
 terminal-readout entry point with its existing signature and support boundary.
+
+## Native detector sampling and exact DEM
+
+`Circuit.compile_detector_sampler(detector_map=..., observable_map=..., seed=...)`
+uses explicit measurement instruction order, including repeated classical slots.
+`sample(shots)` returns reference-normalized CPU bool detector flips; use
+`separate_observables=True` for a pair, `append_observables=True` for one array,
+and `bit_packed=True` for LSB-first uint8. Appended packing crosses the parity
+boundary without intermediate byte padding. Zero shots do not advance RNG.
+`Circuit.detector_error_model` returns the existing FlagQuantum DEM record.
+
+Run `python -m examples.qec.native_detector_sampling` with PyMatching and either
+the embedded wheel or the Stim 1.16.0 extra. This bounded three-data-qubit
+code-capacity example is not a threshold study. The default source must have
+explicit Z records and a default CPU PyTorch initial state. Fixed Clifford
+gates, resets, single-slot X feedback and one-/two-qubit Pauli channels are
+supported. T, conditional H, general noise and unsupported exact DEM analysis
+refuse; there is no approximation or SV fallback. A channel may be sampleable
+but not convertible to an exact independent-mechanism DEM.
+
+The approved contract is [QEC native detector execution](../development/QEC_NATIVE_DETECTOR_EXECUTION_PROPOSAL.md).
+Output copies and conservatively padded tables are individually bounded at
+64 MiB, exact-analysis support at one million cells and DEM text at 16 MiB.
+These are allocation/work guards, not an RSS or performance claim. Compiled
+sampling reuses lowered source and RNG, not frame scratch. No detector file
+writer, MemoryCircuit backend replacement, new builder, SDK source integration
+for PyMatching, or broad parity certification is implied.

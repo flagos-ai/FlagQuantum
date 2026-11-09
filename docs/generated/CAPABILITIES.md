@@ -396,6 +396,9 @@ This catalog is generated from the machine-validated
 | Validate sharded training on Ascend 910C | Huawei Ascend 910C sharded quantum training | Development evidence | [Read guide](../../docs/guides/ASCEND_910C.md) |
 | Resume Ascend training across two hosts | Huawei Ascend 910C sharded quantum training | Development evidence | [Read guide](../../docs/guides/ASCEND_910C.md) |
 | Audit communication and device memory statistics | Huawei Ascend 910C sharded quantum training | Development evidence | [Read guide](../../docs/guides/ASCEND_910C.md) |
+| Sample detector and logical flips from a noisy native circuit | Native circuit detector sampling and exact DEM | Development evidence | [Run example](../../examples/qec/native_detector_sampling.py) |
+| Decode a model from the same source | Native circuit detector sampling and exact DEM | Development evidence | [Run example](../../examples/qec/native_detector_sampling.py) |
+| Pack detector rows without losing parity boundaries | Native circuit detector sampling and exact DEM | Development evidence | [Run example](../../examples/qec/native_detector_sampling.py) |
 
 ## Build and compile
 
@@ -1465,6 +1468,20 @@ Run native complex PyTorch simulation, gradients, hybrid training, noise, TEBD, 
 - **Start:** [quick-start guide](../../docs/guides/ASCEND_910C.md)
 - **Documentation:** [guide](../../docs/guides/ASCEND_910C.md)
 - **Known boundary:** Requires the exact source fixes and dependencies in the Ascend guide; published wheels alone are insufficient. The hardware record covers complex64/complex128 circuit workflows and the stated dynamics/QEC cases, with explicit CPU references, I/O and global QEC decoding boundaries. Optional JAX, CUDA-specific external simulators and quantum-cloud backends retain their own requirements. This is bounded hardware development evidence, not production, performance, capacity or hardware certification.
+
+### Native circuit detector sampling and exact DEM
+
+Sample reference-normalized detector flips and derive an exact DEM from one bounded native Clifford source and explicit measurement maps.
+
+- **Maturity:** Development evidence
+- **Public API:** `flagquantum.Circuit.compile_detector_sampler`, `flagquantum.Circuit.detector_error_model`, `flagquantum.qec.execution.detector_sampling.CompiledDetectorSampler`
+- **Runtime modes:** `stabilizer`
+- **Hardware:** `cpu`
+- **Gradient support:** `unsupported`
+- **Distribution semantics:** `single_process`
+- **Start:** [quick example](../../examples/qec/native_detector_sampling.py)
+- **Documentation:** [guide](../../docs/development/QEC_NATIVE_DETECTOR_EXECUTION_PROPOSAL.md)
+- **Known boundary:** Explicit Z records, default-state CPU PyTorch batch1, fixed Clifford/reset/single-slot X feedback and one-/two-qubit Pauli channels only. Exact DEM refusal is separate from sampling admission. No approximation, general feedback, mixed non-Clifford routing, detector file writer, performance, threshold or full parity claim.
 
 
 ## Distributed execution
