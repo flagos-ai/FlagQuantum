@@ -1015,3 +1015,12 @@ shares the checked Qmod lowering and adds no workspace. Whole-register mutable
 helpers are supported; partial views and Const targets are refused. See the
 [Fourier contract](../../docs/api-changes/FQ-SYNTH-NATIVE-FOURIER-20261109.md)
 and [runnable native example](../../examples/synthesis/functions/qft/README.md).
+
+Unsigned `expression % d` supports literal positive power-of-two divisors up to
+2**256, using the existing bitwise kernel. General, quantum and nonliteral
+divisors remain refused. See the [modulo contract](../../docs/api-changes/FQ-SYNTH-NATIVE-POWER-TWO-MODULO-20261109.md).
+
+For strict static typing, a fixed unsigned port may use standard metadata:
+`Output[Annotated[QNum, 5]]` with `from typing import Annotated`. This is the same
+five-bit domain as the existing capture spelling `Output[QNum[5]]`. Metadata is
+one literal width; signed/fractional annotations remain unsupported.

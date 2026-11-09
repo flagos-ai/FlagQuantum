@@ -557,3 +557,13 @@ offset wires and zero workspace. Original/native resources remain 4 qubits,
 12 operations and depth 8. The maturity is local CPU semantic verification;
 partial views, Const targets and new controlled/inverse helper forms are outside
 this admission. See the [contract](../api-changes/FQ-SYNTH-NATIVE-FOURIER-20261109.md).
+
+## Native power-of-two modulo slice
+
+Unreleased Python expression and qfunc capture rewrite unsigned `%` by literal
+positive powers of two to checked bitwise AND. All small input pairs, complex
+coherent inputs under both schedules, divisor-one encoding and wider masks are
+validated independently. The native examples preserve both retained arithmetic
+expression paths and the five-bit input domains of the modulo example. General
+or quantum divisors remain outside this local CPU profile. See the
+[contract](../api-changes/FQ-SYNTH-NATIVE-POWER-TWO-MODULO-20261109.md).

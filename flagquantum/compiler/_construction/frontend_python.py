@@ -631,6 +631,22 @@ def capture_named(
             return left
         if isinstance(node, ast.BinOp):
             left = expression(node.left, env, source, depth + 1)
+            if isinstance(node.op, ast.Mod):
+                divisor = node.right
+                if (
+                    not isinstance(divisor, ast.Constant)
+                    or type(divisor.value) is not int
+                    or not 1 <= divisor.value <= 1 << 256
+                    or divisor.value & (divisor.value - 1)
+                ):
+                    _error(
+                        source,
+                        divisor,
+                        "operator",
+                        "unsigned modulo requires a literal positive power of two at most 2**256",
+                    )
+                mask = constant(divisor.value - 1, source, divisor)
+                return bitwise("&", (left, mask), source, node)
             if isinstance(node.op, (ast.BitAnd, ast.BitOr, ast.BitXor)):
                 right = expression(node.right, env, source, depth + 1)
                 operator = {ast.BitAnd: "&", ast.BitOr: "|", ast.BitXor: "^"}[
@@ -661,7 +677,7 @@ def capture_named(
                     source,
                     node,
                     "operator",
-                    "only +, * and literal powers 1..8 are supported; unsigned subtraction/division/modulo need a separate contract",
+                    "only +, * and literal powers 1..8 are supported; unsigned subtraction/division and general modulo need a separate contract",
                 )
             return arithmetic(opcode, left, right, source, node)
         if isinstance(node, ast.Call) and isinstance(node.func, ast.Name):

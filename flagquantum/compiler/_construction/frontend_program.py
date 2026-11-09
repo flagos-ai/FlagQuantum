@@ -301,6 +301,7 @@ class _Body:
             ast.Add,
             ast.Mult,
             ast.Pow,
+            ast.Mod,
             ast.BitAnd,
             ast.BitOr,
             ast.BitXor,

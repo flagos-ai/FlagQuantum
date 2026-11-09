@@ -58,6 +58,9 @@ class QNum(_QuantumRegister):
     def __pow__(self, exponent: int) -> QNum:
         raise TypeError("quantum expressions are captured inside qfunc, not executed")
 
+    def __mod__(self, divisor: int) -> QNum:
+        raise TypeError("quantum expressions are captured inside qfunc, not executed")
+
     def __and__(self, other: QNum | int) -> QNum:
         raise TypeError("quantum expressions are captured inside qfunc, not executed")
 
@@ -75,6 +78,12 @@ class QNum(_QuantumRegister):
 
     def __invert__(self) -> QNum:
         raise TypeError("quantum expressions are captured inside qfunc, not executed")
+
+    def __eq__(self, other: object) -> bool:
+        raise TypeError("quantum comparisons are captured inside qfunc, not executed")
+
+    def __ne__(self, other: object) -> bool:
+        raise TypeError("quantum comparisons are captured inside qfunc, not executed")
 
     def __lt__(self, other: QNum | int) -> QBit:
         raise TypeError("quantum comparisons are captured inside qfunc, not executed")

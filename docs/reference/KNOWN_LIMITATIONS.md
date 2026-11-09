@@ -1002,3 +1002,8 @@ Partial views, Const targets and uninitialized storage are refused. This
 admission does not add controlled/inverse Python helper forms. The positive-sign
 transform includes final bit reversal and uses no workspace; exact local CPU
 statevector tests establish semantics, not hardware or scalability performance.
+
+Native unsigned integer `%` accepts only literal positive powers of two up to
+2**256, using existing bitwise AND lowering. General/nonliteral/quantum divisors
+and signed/fractional modulo remain refused. This is exact local CPU semantic
+support, not a new approximate arithmetic kernel or hardware capability.

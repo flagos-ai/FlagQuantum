@@ -649,3 +649,9 @@ alias; partial views are rejected without changing the register schema. Run
 `python -m pytest tests/integration/test_synthesis_native_fourier.py -q` for the
 independent Fourier matrix, bit ordering, coherence and ownership checks. See the
 [Fourier admission](../../../docs/api-changes/FQ-SYNTH-NATIVE-FOURIER-20261109.md).
+
+Native unsigned `%` by a literal positive power of two lowers to the same
+`qint.bitwise` AND used by word expressions. Divisor one has a one-bit zero
+encoding. General/nonliteral/quantum divisors remain rejected. Run
+`python -m pytest tests/integration/test_synthesis_native_modulo.py -q` for
+independent XOR-permutation full states, input domains and ownership refusals.

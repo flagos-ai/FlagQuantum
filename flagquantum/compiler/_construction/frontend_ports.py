@@ -5,7 +5,7 @@ from __future__ import annotations
 import ast
 from dataclasses import dataclass
 from types import FunctionType, ModuleType
-from typing import Literal
+from typing import Annotated, Literal
 
 from .frontend_python import _error, _QuantumFunction, _Source
 from .program_types import Const, Output, QArray, QBit, QNum, _width_spec
@@ -154,7 +154,29 @@ def program_ports(definition: _QuantumFunction) -> tuple[_Port, ...]:
         width = None
         if isinstance(quantum, ast.Subscript):
             kind = _resolve(definition, quantum.value, annotation=True)
-            if kind is QArray:
+            if kind is Annotated:
+                if (
+                    not isinstance(quantum.slice, ast.Tuple)
+                    or len(quantum.slice.elts) != 2
+                    or not isinstance(quantum.slice.elts[0], (ast.Name, ast.Attribute))
+                    or _resolve(definition, quantum.slice.elts[0], annotation=True)
+                    is not QNum
+                    or not isinstance(quantum.slice.elts[1], ast.Constant)
+                ):
+                    _error(
+                        source,
+                        annotation,
+                        "annotation",
+                        "use Annotated[QNum, literal_width]",
+                    )
+                size = quantum.slice.elts[1]
+                assert isinstance(size, ast.Constant)
+                try:
+                    width = _width_spec(size.value)
+                except (TypeError, ValueError) as error:
+                    _error(source, annotation, "annotation", str(error))
+                kind = QNum
+            elif kind is QArray:
                 if (
                     not isinstance(quantum.slice, (ast.Name, ast.Attribute))
                     or _resolve(definition, quantum.slice, annotation=True) is not QBit
@@ -172,7 +194,7 @@ def program_ports(definition: _QuantumFunction) -> tuple[_Port, ...]:
                     "annotation",
                     "only QNum accepts numeric type parameters",
                 )
-            if kind is QNum:
+            if kind is QNum and width is None:
                 sizes = (
                     quantum.slice.elts
                     if isinstance(quantum.slice, ast.Tuple)

@@ -2,12 +2,15 @@
 
 Native FlagQuantum programs currently available:
 
+- [arithmetic_expression](arithmetic/arithmetic_expression/README.md)
+- [arithmetic_expression_example](arithmetic/arithmetic_expression/arithmetic_expression_example/README.md)
 - [bitwise_and_2vars_example](arithmetic/bitwise_and/bitwise_and_2vars_example/README.md)
 - [bitwise_and_integer_example](arithmetic/bitwise_and/bitwise_and_integer_example/README.md)
 - [bitwise_invert_example](arithmetic/bitwise_invert/bitwise_invert_example/README.md)
 - [bitwise_or_integer_example](arithmetic/bitwise_or/bitwise_or_integer_example/README.md)
 - [bitwise_xor_integer_example](arithmetic/bitwise_xor/bitwise_xor_integer_example/README.md)
 - [comparator_integer_example](arithmetic/comparator/comparator_integer_example/README.md)
+- [modulo_example](arithmetic/modulo/modulo_example/README.md)
 - [multiplication_2vars_example](arithmetic/multiplication/multiplication_2vars_example/README.md)
 - [exact_amplitude_amplification](amplitude_amplification/exact_amplitude_amplification/README.md)
 - [hadamard_transform](hadamard_transform/README.md)
@@ -32,8 +35,10 @@ Native FlagQuantum programs currently available:
 
 ## Validated local Notebook workflows
 
+- [arithmetic_expression_example](arithmetic/arithmetic_expression/arithmetic_expression_example/README.md)
 - [overview](arithmetic/bitwise_and/overview/README.md)
 - [bitwise_invert_example](arithmetic/bitwise_invert/bitwise_invert_example/README.md)
+- [modulo_example](arithmetic/modulo/modulo_example/README.md)
 - [exact_amplitude_amplification](amplitude_amplification/exact_amplitude_amplification/README.md)
 - [hadamard_transform](hadamard_transform/README.md)
 - [qft](qft/README.md)

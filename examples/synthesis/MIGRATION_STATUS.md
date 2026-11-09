@@ -7,7 +7,7 @@ quantum sources share one row. Python-only groups remain unclassified until
 main cases, helpers, data dependencies and verification criteria are reviewed.
 
 No notebook workflow is certified by a quantum-only counterpart.
-Validated local Notebook workflows: **16/213**.
+Validated local Notebook workflows: **18/213**.
 
 | Upstream group | Kind | Native quantum program | Full workflow |
 | --- | --- | --- | --- |
@@ -306,8 +306,8 @@ Validated local Notebook workflows: **16/213**.
 | `community/paper_implementation_project/quantum_algo_for_solving_linear_differential_equations/harmonic_oscillator` | notebook_workflow | Pending | pending |
 | `community/paper_implementation_project/quantum_compression_algorithm_for_symmetric_states/quantum_compression_algorithm_for_symmetric_states` | notebook_workflow | Pending | pending |
 | `community/paper_implementation_project/quantum_state_preparation_without_coherent_arithmetic/stateprep_guassian_using_qsvt` | notebook_workflow | Pending | pending |
-| `functions/function_usage_examples/arithmetic/arithmetic_expression/arithmetic_expression` | quantum_program | Pending | pending |
-| `functions/function_usage_examples/arithmetic/arithmetic_expression/arithmetic_expression_example` | notebook_workflow | Pending | pending |
+| `functions/function_usage_examples/arithmetic/arithmetic_expression/arithmetic_expression` | quantum_program | [Native program](functions/arithmetic/arithmetic_expression/main.py) | pending |
+| `functions/function_usage_examples/arithmetic/arithmetic_expression/arithmetic_expression_example` | notebook_workflow | [Native program](functions/arithmetic/arithmetic_expression/arithmetic_expression_example/main.py) | validated |
 | `functions/function_usage_examples/arithmetic/bitwise_and/bitwise_and_2vars_example` | quantum_program | [Native program](functions/arithmetic/bitwise_and/bitwise_and_2vars_example/main.py) | pending |
 | `functions/function_usage_examples/arithmetic/bitwise_and/bitwise_and_example` | notebook_workflow | [Native program](functions/arithmetic/bitwise_and/overview/main.py) | validated |
 | `functions/function_usage_examples/arithmetic/bitwise_and/bitwise_and_integer_example` | quantum_program | [Native program](functions/arithmetic/bitwise_and/bitwise_and_integer_example/main.py) | pending |
@@ -326,7 +326,7 @@ Validated local Notebook workflows: **16/213**.
 | `functions/function_usage_examples/arithmetic/extremum/maximum_integer_example` | quantum_program | Pending | pending |
 | `functions/function_usage_examples/arithmetic/extremum/minimum_2vars_example` | quantum_program | Pending | pending |
 | `functions/function_usage_examples/arithmetic/modular_exp/modular_exp_example` | notebook_workflow | Pending | pending |
-| `functions/function_usage_examples/arithmetic/modulo/modulo_example` | notebook_workflow | Pending | pending |
+| `functions/function_usage_examples/arithmetic/modulo/modulo_example` | notebook_workflow | [Native program](functions/arithmetic/modulo/modulo_example/main.py) | validated |
 | `functions/function_usage_examples/arithmetic/multiplication/multiplication` | notebook_workflow | Pending | pending |
 | `functions/function_usage_examples/arithmetic/multiplication/multiplication_2vars_example` | quantum_program | [Native program](functions/arithmetic/multiplication/multiplication_2vars_example/main.py) | pending |
 | `functions/function_usage_examples/arithmetic/multiplication/multiplication_float_example` | quantum_program | Pending | pending |
