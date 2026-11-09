@@ -1,4 +1,5 @@
 # Copyright 2023 Google LLC
+# Copyright 2024 Google LLC
 # SPDX-License-Identifier: Apache-2.0
 # Adapted from Qualtran v0.7.0 QBit, QAny, QUInt and BQUInt constructors.
 # https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/_infra/data_types.py
@@ -57,3 +58,10 @@ def bounded_unsigned_register_type(
                 f"is too large for given bitsize. {bound} vs {2**width}"
             )
     return RegisterType("uint", width, parameters=(("bound", bound),))
+
+
+def validate_ones_complement_width(width: RegisterWidth) -> None:
+    """Retain the shared original constructor guard without broadening it."""
+    # Original constructors reject only a Python-int one, not all widths <=1.
+    if isinstance(width, int) and width == 1:
+        raise ValueError("bitsize must be > 1.")

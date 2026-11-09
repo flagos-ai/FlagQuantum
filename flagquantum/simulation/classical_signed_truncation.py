@@ -9,13 +9,13 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, cast
 
+from ..core.ir.program.register_types import validate_ones_complement_width
 from ..core.value_parameters import is_symbolic_value
 from .classical_bitwise import IntegerValue
 from .integer_encoding import integer_from_bits, integer_to_bits
 from .ones_complement_encoding import (
     ones_complement_from_bits,
     ones_complement_to_bits,
-    validate_ones_complement_width,
 )
 
 if TYPE_CHECKING:

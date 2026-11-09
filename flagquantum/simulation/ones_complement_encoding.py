@@ -13,18 +13,12 @@ from typing import TYPE_CHECKING, Any, cast
 import numpy as np
 from numpy.typing import NDArray
 
+from ..core.ir.program.register_types import validate_ones_complement_width
 from .integer_encoding import integer_from_bits, integer_to_bits
 from .value_encoding import decode_value_array, encode_value_array
 
 if TYPE_CHECKING:
     from sympy import Expr
-
-
-def validate_ones_complement_width(width: int | Expr) -> None:
-    """Retain the shared original constructor guard without broadening it."""
-    # Original constructors reject only a Python-int one, not all widths <=1.
-    if isinstance(width, int) and width == 1:
-        raise ValueError("bitsize must be > 1.")
 
 
 def ones_complement_domain(width: int | Expr) -> range:
