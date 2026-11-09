@@ -5,7 +5,7 @@ from __future__ import annotations
 import gzip
 import io
 from email.message import Message
-from http.client import RemoteDisconnected
+from http.client import IncompleteRead, RemoteDisconnected
 from urllib.error import HTTPError, URLError
 
 import pytest
@@ -109,3 +109,46 @@ def test_graphql_post_serializes_payload_without_mutating_headers(
         "data": {}
     }
     assert headers == {"Authorization": "Bearer fixture"}
+
+
+@pytest.mark.parametrize("failures", [1, 3])
+@pytest.mark.parametrize("compressed", [False, True])
+def test_incomplete_response_reads_retry_without_accepting_partial_bytes(
+    monkeypatch: pytest.MonkeyPatch, failures: int, compressed: bool
+) -> None:
+    responses: list[io.BytesIO] = []
+    delays: list[float] = []
+    content = b'{"sha": "verified-by-caller"}'
+
+    class Response(io.BytesIO):
+        def __init__(self, fail: bool) -> None:
+            super().__init__(gzip.compress(content) if compressed else content)
+            self.fail = fail
+            self.headers = Message()
+            if compressed:
+                self.headers["Content-Encoding"] = "gzip"
+
+        def read(self, size: int = -1) -> bytes:
+            if self.fail:
+                raise IncompleteRead(b'{"sha": "untrusted', 12)
+            return super().read(size)
+
+    class Opener:
+        def open(self, request: source.Request, timeout: int) -> Response:
+            assert timeout == 30
+            response = Response(len(responses) < failures)
+            responses.append(response)
+            return response
+
+    monkeypatch.setattr(source, "build_opener", lambda *handlers: Opener())
+    monkeypatch.setattr(source.time, "sleep", delays.append)
+    if failures == 3:
+        with pytest.raises(IncompleteRead):
+            source._get_json("https://api.github.com/source", {})
+    else:
+        assert source._get_json("https://api.github.com/source", {}) == {
+            "sha": "verified-by-caller"
+        }
+    assert len(responses) == (2 if failures == 1 else 3)
+    assert all(response.closed for response in responses)
+    assert delays == ([1] if failures == 1 else [1, 2])

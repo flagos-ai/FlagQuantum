@@ -19,7 +19,7 @@ from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from http.client import HTTPMessage, RemoteDisconnected
+from http.client import HTTPMessage, IncompleteRead, RemoteDisconnected
 from pathlib import Path, PurePosixPath
 from typing import IO
 from urllib.error import HTTPError, URLError
@@ -368,7 +368,7 @@ def _get_json(
         except HTTPError as error:
             if error.code not in (408, 429, 500, 502, 503, 504) or attempt == 2:
                 raise
-        except (URLError, RemoteDisconnected, TimeoutError):
+        except (URLError, RemoteDisconnected, IncompleteRead, TimeoutError):
             if attempt == 2:
                 raise
         print(f"Retrying transient GitHub API request ({attempt + 1}/2)", flush=True)
