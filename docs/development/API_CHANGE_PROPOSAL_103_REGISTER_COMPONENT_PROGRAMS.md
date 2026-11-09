@@ -338,3 +338,41 @@ The source-backed prerequisite adds 182 constructor and consumer scenarios.
 Together with the prior constructor slice, 438 tests pass before new native
 implementation. Source width fields are read directly to keep lazy numerical
 codec validation outside constructor evidence.
+
+## Montgomery type prerequisite 0.5
+
+The existing Core factory module gains `montgomery_register_type(width,
+modulus=None)` and `classical_montgomery_register_type(width, modulus=None)`.
+They adapt the unchanged QMontgomeryUInt and CMontgomeryUInt constructors to
+existing RegisterType records. Encoding is `montgomery`. Classical storage keeps
+its existing first `storage` parameter. A supplied non-None modulus follows as
+`("modulus", modulus)`. An absent or explicit None modulus adds no parameter,
+preserving their source equality. Width and modulus retain their declared
+values and scalar types. Construction performs no arithmetic, coercion,
+truth-value check, primality check or lazy numerical codec validation.
+
+Montgomery RegisterType symbolic classification follows the original inherited
+QCDType method, which examines width and ignores modulus. This encoding-specific
+rule belongs in the existing RegisterType method. The generic parameter-aware
+rule remains authoritative for other encodings. This distinction includes a
+concrete width paired with a symbolic modulus. It must have a pinned-source
+witness before use in graph compatibility.
+
+The source-backed constructor stand-in and native factories share raw field,
+zero-width identity, default/None and declared scalar-type scenarios. After
+implementation, compare source symbolic classification and shaped Signature
+widths, replace source-backed descriptors in existing numerical Montgomery
+consumers, and exhaust small conversion/product/inverse domains. Keep source
+numeric cast asymmetry and source composite-modulus algorithm limitations.
+Run the existing Montgomery primitive-stream, exact-adjoint, complex-amplitude,
+measurement-branch, workspace and resource regressions separately. Extend the
+existing executable Montgomery example to consume the metadata widths while
+retaining its `circuit.append(operation)` path and distinct model/emitted counts.
+
+This prerequisite preserves the Program IR 0.5 and public serialization/API
+contracts. Constructor metadata adds no quantum gates or allocated workspace.
+Numerical arithmetic remains Simulation-owned. Fixed-point/finite-field types,
+full graph-port compatibility and typed component execution remain later slices.
+
+Before native implementation, all 326 source-backed constructor, identity and
+Signature consumer scenarios pass. They read declared source fields directly.
