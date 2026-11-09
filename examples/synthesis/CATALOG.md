@@ -3,8 +3,8 @@
 User examples contain native Python programs and independent Circuit comparisons.
 Original source files and importer launchers are test/development evidence, not examples.
 
-Validated quantum-program counterparts: **62/216**.
-Validated local Notebook workflows: **23/213**.
+Validated quantum-program counterparts: **63/216**.
+Validated local Notebook workflows: **24/213**.
 Expanded inventory: **577** source artifacts in **417** provisional path groups.
 Python groups still require main-case/helper review. A quantum-program counterpart
 does not certify its notebook workflow. Pending entries have no runnable placeholder.
@@ -110,7 +110,7 @@ Validated local Notebook workflows:
 - [unitary](functions/unitary/README.md)
 
 
-## Tutorials (9 native programs)
+## Tutorials (10 native programs)
 
 - [add_bell_states](tutorials/basics/add_bell_states/README.md)
 - [entanglement](tutorials/basics/entanglement/README.md)
@@ -121,6 +121,7 @@ Validated local Notebook workflows:
 - [execution_tutorial_part2](tutorials/basics/quantum_programming/execution_tutorial_part2/README.md)
 - [synthesis_tutorial](tutorials/basics/quantum_programming/synthesis_tutorial/README.md)
 - [approximated_state_preparation](tutorials/technology_demonstrations/approximated_state_preparation/README.md)
+- [auxiliary_management](tutorials/technology_demonstrations/auxiliary_managment/auxiliary_management/README.md)
 
 Validated local Notebook workflows:
 
@@ -129,3 +130,4 @@ Validated local Notebook workflows:
 - [classiq_overview_tutorial](tutorials/basics/quantum_programming/classiq_overview_tutorial/README.md)
 - [synthesis_tutorial](tutorials/basics/quantum_programming/synthesis_tutorial/README.md)
 - [approximated_state_preparation](tutorials/technology_demonstrations/approximated_state_preparation/README.md)
+- [auxiliary_management](tutorials/technology_demonstrations/auxiliary_managment/auxiliary_management/README.md)

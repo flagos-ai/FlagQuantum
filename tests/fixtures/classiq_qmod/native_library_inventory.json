@@ -7593,9 +7593,30 @@
           "kind": "quantum_program"
         }
       ],
-      "workflow_status": "pending",
-      "native_program": null,
-      "kind": "notebook_workflow"
+      "workflow_status": "validated",
+      "native_program": {
+        "path": "examples/synthesis/tutorials/technology_demonstrations/auxiliary_managment/auxiliary_management/main.py",
+        "scope": "Complete adapted local Notebook computation: reproduce seed12 and all16 signed amplitudes, synthesize with depth objective and eight-bit ceiling, draw the native circuit and report executed resources. Retained four-bit quantum source counterpart remains separately verified."
+      },
+      "kind": "notebook_workflow",
+      "workflow_validation": {
+        "upstream_path": "tutorials/technology_demonstrations/auxiliary_managment/auxiliary_management.qmod",
+        "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+        "original_sha256": "0d1d2947227990a49b9fa5956ad6abf3cf8ab36d7f1ed3ef6631d579ad358b1f",
+        "native_entrypoint": "examples.synthesis.tutorials.technology_demonstrations.auxiliary_managment.auxiliary_management.main",
+        "acceptance_test": "tests/integration/test_synthesis_native_retained_composition.py",
+        "scope": "Complete adapted local Notebook computation: reproduce seed12 and all16 signed amplitudes, synthesize with depth objective and eight-bit ceiling, draw the native circuit and report executed resources. Retained four-bit quantum source counterpart remains separately verified.",
+        "native_semantic_adaptations": "All signed amplitudes and the 0.2 error bound retained. Existing exact preparation satisfies this bound; no workspace optimization or approximation compression claim. Native instruction-basis text drawing replaces cloud viewing. No custom CX/U basis, randomized search-seed or cloud optimizer-timeout equivalence; no automatic workspace/depth tradeoff claim.",
+        "notebook_path": "tutorials/technology_demonstrations/auxiliary_managment/auxiliary_management.ipynb",
+        "git_blob_sha1": "00f7512d42da91559fcc8f8000479aa1036a45d8",
+        "reviewed_code_cells": [
+          {
+            "index": 2,
+            "sha256": "b9f320b6728e522bc83f20cb7a56ee31732efd1df4cc7fcc7fa5b8cc9f186766"
+          }
+        ],
+        "workflow_entrypoint": "examples.synthesis.tutorials.technology_demonstrations.auxiliary_managment.auxiliary_management.workflow"
+      }
     },
     {
       "id": "tutorials/technology_demonstrations/classiq_paper/qsvt/classiq_qsvt",
