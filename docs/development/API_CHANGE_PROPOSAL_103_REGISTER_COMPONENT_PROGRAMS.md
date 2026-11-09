@@ -493,3 +493,56 @@ Typed graph ports and neutral finite-field descriptor projection remain open.
 The source-backed prerequisite passes 157 cases before native implementation.
 Composite-characteristic cases can raise RuntimeError in the locked galois
 lookup-table builder. Preserve the observed exception at its original stage.
+
+## Finite-field neutral projection prerequisite 0.9
+
+Simulation's existing FiniteFieldEncoding gains an explicit
+`register_type(*, classical=False)` projection into Core's existing RegisterType.
+This is the explicit width-resolution boundary. The numerical constructor and
+its cached properties keep their current timing. Projection reads bitsize,
+retains characteristic, degree and cached order as named scalar parameters and
+uses encoding `finite_field`. Classical storage retains its first storage
+marker and puts width in classical_bits. Quantum width uses quantum_bits.
+No new public type, serialization schema, Core numerical dependency or parallel
+register hierarchy is introduced.
+
+An explicit None polynomial contributes no polynomial parameters. A present
+polynomial contributes its exact integer representation plus its coefficient
+field's characteristic, degree, primitive element and irreducible polynomial,
+all converted to Python integers inside Simulation. These values distinguish
+the canonical field classes created by the locked galois factory. In particular,
+polynomials with identical integer representation over different coefficient
+fields remain distinct. Prime-field degree one retains a supplied polynomial
+in nominal metadata even though numerical gf_type ignores it. The projection
+must not resolve the target gf_type or normalize None to a default polynomial.
+Manual galois FieldArray subclasses bypassing its canonical field factories
+remain outside this projection's nominal-identity acceptance.
+
+Core's existing RegisterType symbolic method recognizes `finite_field` and
+examines the characteristic and cached order parameters, in source order.
+It ignores physical widths, degree and polynomial parameters, preserving QGF
+and CGF classification after explicit width resolution. Projection failures are
+explicit projection failures. They must not be described as eager source
+constructor validation. Consumers of unresolved raw finite-field declarations
+still use the existing numerical constructor until they require a descriptor.
+
+A source-backed projection stand-in must run before implementation. Compare
+QGF/CGF widths, symbolic classification, shaped Signature totals and pairwise
+nominal equality for canonical fields. Include omitted versus None, symbolic
+and NumPy inputs, raw-field errors at projection, different polynomials,
+coefficient fields and primitive elements. Verify that only neutral scalars
+cross the boundary and target field construction is not invoked. Feed both
+source/native descriptors into the actual append multiplier consumer, compare
+the unmodified quadratic decomposition, full complex amplitudes and independent
+resource categories. Rerun existing measured erasure and clean-workspace tests.
+
+The source equality audit found that comparing a None polynomial with a present
+Poly raises TypeError inside galois Poly.Like. Neutral RegisterType record
+equality distinguishes those snapshots without replaying numerical-library
+operators. Both-None and both-present canonical polynomial comparisons retain
+source nominal equality. The cross-None source exception is recorded separately
+and must remain visible when implementing the later source dtype-consistency
+operation. This prerequisite does not claim full source equality semantics.
+
+Before native implementation, 132 source-backed projection and Signature cases
+pass, including the separately recorded cross-None equality exception.
