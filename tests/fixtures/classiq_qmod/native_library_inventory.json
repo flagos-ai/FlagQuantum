@@ -3053,7 +3053,10 @@
         }
       ],
       "workflow_status": "pending",
-      "native_program": null,
+      "native_program": {
+        "path": "examples/synthesis/algorithms/quantum_state_preparation/adapt_vqe/main.py",
+        "scope": "Complete original four-bit single-layer ansatz, including real-array parameter binding and nested mutable helpers. The full ADAPT-VQE optimization/selection Notebook remains pending."
+      },
       "kind": "notebook_workflow"
     },
     {
@@ -3685,9 +3688,57 @@
           "kind": "quantum_program"
         }
       ],
-      "workflow_status": "pending",
-      "native_program": null,
-      "kind": "notebook_workflow"
+      "workflow_status": "validated",
+      "native_program": {
+        "path": "examples/synthesis/applications/chemistry/quantum_walk_fmo/main.py",
+        "scope": "Complete local FMO Notebook: seven-site physical matrix, declared 35-term Pauli product formula, 20 quantum time points, 100 exact matrix-exponential time points, named populations, timings and comparison plot."
+      },
+      "kind": "notebook_workflow",
+      "workflow_validation": {
+        "upstream_path": "applications/chemistry/quantum_walk_fmo/quantum_walk_fmo.qmod",
+        "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+        "original_sha256": "3d2f9f80a371432019734c260035b02120560e18a4c5d4a1fe724d938b2721d3",
+        "native_entrypoint": "examples.synthesis.applications.chemistry.quantum_walk_fmo.main",
+        "acceptance_test": "tests/integration/test_synthesis_native_pauli_applications.py",
+        "scope": "Complete local FMO Notebook: seven-site physical matrix, declared 35-term Pauli product formula, 20 quantum time points, 100 exact matrix-exponential time points, named populations, timings and comparison plot.",
+        "native_semantic_adaptations": "Reuse existing Observable and bounded Suzuki-Trotter capture. Preserve all coefficients, term order, time/repetitions, LSB target indexing and absolute phase. Classical parameters specialize at synthesis. Source bytes and licenses stay test-side; no cloud execution claim. Native real Observable replaces complex projector summation after exact cancellation; independent trace projections reconstruct the same padded physical matrix. torch.linalg.matrix_exp replaces scipy.linalg.expm for the exact classical reference; saved Matplotlib output replaces interactive display. Each of 20 finite-real specializations is synthesized locally; timing explicitly includes synthesis, execution and readout. Padding-state leakage is reported as approximation error, distinct from clean workspace.",
+        "git_blob_sha1": "8b15af5d8a1b49197c7f7cc9c5ccfc99e3905eab",
+        "notebook_path": "applications/chemistry/quantum_walk_fmo/quantum_walk_fmo.ipynb",
+        "reviewed_code_cells": [
+          {
+            "index": 1,
+            "sha256": "b0b645ed774a69a8f2ce9aa98133dbcf8ae08ec9ee9709b0b235ab511c11768e"
+          },
+          {
+            "index": 2,
+            "sha256": "3a3173241a8b72fd611d0060ae207a4312e8f302741d9950a5ceeffa351066fd"
+          },
+          {
+            "index": 6,
+            "sha256": "d9a061df4c6e7f78be377688cf9930a0eaaa2acf029a8a6bb0136df221b64a50"
+          },
+          {
+            "index": 8,
+            "sha256": "3deb13e37779995b0cbe4cc32650b6b66ea7bd5648891dd09fa7637b8bdde2e5"
+          },
+          {
+            "index": 9,
+            "sha256": "ea07c0825b05f815c5825afc0925aa245199f911f3d95f8981d390edc8fdba8d"
+          },
+          {
+            "index": 11,
+            "sha256": "7f8cec740d7f22482d96b4a59ae40e19f9d7cce4da1118737e1b3a26451cfdb8"
+          },
+          {
+            "index": 12,
+            "sha256": "aa1a416054a43dd82e2318c9ab1bad585c2238ed10bd7566e31f43da178cf1ac"
+          },
+          {
+            "index": 14,
+            "sha256": "36fa4299e6e42cd060ab8a67a1a7db92d37ee70238056067e94ee8debcca1068"
+          }
+        ]
+      }
     },
     {
       "id": "applications/chemistry/second_quantized_hamiltonian/second_quantized_hamiltonian",

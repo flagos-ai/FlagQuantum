@@ -10,6 +10,7 @@ Native FlagQuantum programs currently available:
 - [hamiltonian_simulation_guide_trotter](hamiltonian_simulation/hamiltonian_simulation_guide/hamiltonian_simulation_guide_trotter/README.md)
 - [classical_shadow_tomography](metrology/classical_shadow_tomography/README.md)
 - [hidden_shift](number_theory_and_cryptography/hidden_shift/README.md)
+- [adapt_vqe](quantum_state_preparation/adapt_vqe/README.md)
 
 ## Validated local Notebook workflows
 

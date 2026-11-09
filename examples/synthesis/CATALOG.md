@@ -3,15 +3,15 @@
 User examples contain native Python programs and independent Circuit comparisons.
 Original source files and importer launchers are test/development evidence, not examples.
 
-Validated quantum-program counterparts: **56/216**.
-Validated local Notebook workflows: **22/213**.
+Validated quantum-program counterparts: **58/216**.
+Validated local Notebook workflows: **23/213**.
 Expanded inventory: **577** source artifacts in **417** provisional path groups.
 Python groups still require main-case/helper review. A quantum-program counterpart
 does not certify its notebook workflow. Pending entries have no runnable placeholder.
 
 See [migration status](MIGRATION_STATUS.md) for the complete five-category inventory.
 
-## Algorithms (8 native programs)
+## Algorithms (9 native programs)
 
 - [hybrid_qnn_for_subset_majority](algorithms/machine_learning/hybrid_qnn/hybrid_qnn_for_subset_majority/README.md)
 - [qgan_bars_and_strips](algorithms/machine_learning/qgan/qgan_bars_and_strips/README.md)
@@ -21,6 +21,7 @@ See [migration status](MIGRATION_STATUS.md) for the complete five-category inven
 - [hamiltonian_simulation_guide_trotter](algorithms/hamiltonian_simulation/hamiltonian_simulation_guide/hamiltonian_simulation_guide_trotter/README.md)
 - [classical_shadow_tomography](algorithms/metrology/classical_shadow_tomography/README.md)
 - [hidden_shift](algorithms/number_theory_and_cryptography/hidden_shift/README.md)
+- [adapt_vqe](algorithms/quantum_state_preparation/adapt_vqe/README.md)
 
 Validated local Notebook workflows:
 
@@ -28,11 +29,17 @@ Validated local Notebook workflows:
 - [deutsch_jozsa](algorithms/foundational/deutsch_jozsa/README.md)
 
 
-## Applications (3 native programs)
+## Applications (4 native programs)
 
 - [quantum_volume](applications/benchmarking/quantum_volume/README.md)
 - [quantum_drude_oscillator](applications/chemistry/quantum_drude_oscillator/README.md)
+- [quantum_walk_fmo](applications/chemistry/quantum_walk_fmo/README.md)
 - [robust_posture_optimization](applications/optimization/robust_posture_optimization/README.md)
+
+Validated local Notebook workflows:
+
+- [quantum_walk_fmo](applications/chemistry/quantum_walk_fmo/README.md)
+
 
 ## Community (2 native programs)
 

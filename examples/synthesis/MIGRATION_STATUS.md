@@ -7,7 +7,7 @@ quantum sources share one row. Python-only groups remain unclassified until
 main cases, helpers, data dependencies and verification criteria are reviewed.
 
 No notebook workflow is certified by a quantum-only counterpart.
-Validated local Notebook workflows: **22/213**.
+Validated local Notebook workflows: **23/213**.
 
 | Upstream group | Kind | Native quantum program | Full workflow |
 | --- | --- | --- | --- |
@@ -194,7 +194,7 @@ Validated local Notebook workflows: **22/213**.
 | `algorithms/quantum_primitives/hadamard_test/hadamard_test` | notebook_workflow | Pending | pending |
 | `algorithms/quantum_primitives/quantum_oracle_sketching_boolean/quantum_oracle_sketching_boolean` | notebook_workflow | Pending | pending |
 | `algorithms/quantum_primitives/swap_test/swap_test` | notebook_workflow | Pending | pending |
-| `algorithms/quantum_state_preparation/adapt_vqe/adapt_vqe` | notebook_workflow | Pending | pending |
+| `algorithms/quantum_state_preparation/adapt_vqe/adapt_vqe` | notebook_workflow | [Native program](algorithms/quantum_state_preparation/adapt_vqe/main.py) | pending |
 | `algorithms/quantum_state_preparation/fermionic_gaussian/fermionic_gaussian` | notebook_workflow | Pending | pending |
 | `algorithms/quantum_state_preparation/gibbs/quantum_thermal_state_preparation` | notebook_workflow | Pending | pending |
 | `algorithms/quantum_walks/glued_trees/glued_trees` | notebook_workflow | Pending | pending |
@@ -229,7 +229,7 @@ Validated local Notebook workflows: **22/213**.
 | `applications/chemistry/protein_folding/protein_folding_with_quantum_walk/qfold` | notebook_workflow | Pending | pending |
 | `applications/chemistry/qpe_for_molecules/qpe_for_molecules` | notebook_workflow | Pending | pending |
 | `applications/chemistry/quantum_drude_oscillator/quantum_drude_oscillator` | notebook_workflow | [Native program](applications/chemistry/quantum_drude_oscillator/main.py) | pending |
-| `applications/chemistry/quantum_walk_fmo/quantum_walk_fmo` | notebook_workflow | Pending | pending |
+| `applications/chemistry/quantum_walk_fmo/quantum_walk_fmo` | notebook_workflow | [Native program](applications/chemistry/quantum_walk_fmo/main.py) | validated |
 | `applications/chemistry/second_quantized_hamiltonian/second_quantized_hamiltonian` | notebook_workflow | Pending | pending |
 | `applications/chemistry/tensor_hypercontraction/tensor_hypercontraction` | notebook_workflow | Pending | pending |
 | `applications/cybersecurity/link_monitoring/link_monitoring` | notebook_workflow | Pending | pending |
