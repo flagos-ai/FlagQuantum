@@ -1374,3 +1374,16 @@ architecture, Program/API, scope and four existing append/resource examples.
 This slice adds structural verification. Measurement-produced handles, native
 classical evaluation, physical-slot outputs, branch amplitudes and emitted
 classical resources still require the next implementation and acceptance.
+
+The final annotation-only follow-up is `073f4f44`. All 4,977 concentrated tests
+pass again at that head in 76.14 seconds. Strict typing also passes for the new
+conformance file. The default smoke/unit tier was restarted with four workers
+after 4,991 serial passes. Its bounded fail-fast run stops with 22,286 passes,
+300 skips, 1,065 warnings and seven failures in 391.44 seconds. All seven
+failures reproduce in an independent complete `45fe5f67` snapshot with tracked
+tree `6198e732324634286d01ef3a3da4665a2f0b9663` in 52.20 seconds. They cover
+terminal rotation fusion, the local compact-CX threshold, QFT composition and
+four qubit-vocabulary ledger assertions. The full default tier remains open.
+Logs are `ftqc-reference-env/g2-classical-port-default-parallel.log` and
+`g2-classical-port-baseline-failures.log` in the external evidence directory.
+The scope audit refresh changes only this implementation's fingerprint.
