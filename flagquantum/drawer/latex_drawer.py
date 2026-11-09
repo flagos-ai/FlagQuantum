@@ -112,10 +112,15 @@ def _gate(instruction: Instruction) -> str:
         targets = qubits if name == "swap" else qubits[1:]
         control = "" if name == "swap" else f" | {qubits[0]}"
         return f"swap ({', '.join(targets)}){control};"
-    controlled = name in ("crx", "cry", "crz", "cphase")
+    controlled = name in ("ch", "csx", "csxdg", "crx", "cry", "crz", "cphase")
     base = name[1:] if controlled else name
     names = {
         "i": "I",
+        "h": "H",
+        "iswap": r"\mathrm{iSWAP}",
+        "iswapdg": r"\mathrm{iSWAP}^{\dagger}",
+        "dcx": r"\mathrm{DCX}",
+        "ecr": r"\mathrm{ECR}",
         "s": "S",
         "t": "T",
         "sdg": r"S^{\dagger}",
