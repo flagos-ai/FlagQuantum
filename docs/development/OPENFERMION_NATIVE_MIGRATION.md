@@ -107,7 +107,7 @@ python -m pytest tests/integration/test_native_chemistry_driver.py -q
 ```
 
 The isolation test runs in a fresh interpreter that refuses imports of
-OpenFermion, openfermionpyscf, Cirq, PySCF, SciPy and h5py. It covers chemistry
+OpenFermion, openfermionpyscf, Cirq, PySCF, NumPy, SciPy and h5py. It covers chemistry
 data, all encodings, measurement, Slater/Gaussian preparation and differentiable
 evolution. The optional PySCF entry raises an actionable missing-extra error in
 that environment. Independent references use Fock-space ladder action, complex

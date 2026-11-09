@@ -14,7 +14,7 @@ def test_native_workflow_without_external_science_packages() -> None:
     script = textwrap.dedent("""
         import importlib.abc
         import sys
-        blocked = {"openfermion", "openfermionpyscf", "cirq", "pyscf", "scipy", "h5py"}
+        blocked = {"openfermion", "openfermionpyscf", "cirq", "pyscf", "scipy", "h5py", "numpy"}
         class NoExternalScience(importlib.abc.MetaPathFinder):
             def find_spec(self, fullname, path=None, target=None):
                 if fullname.split(".")[0] in blocked:
