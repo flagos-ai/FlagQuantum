@@ -5,9 +5,9 @@ to encoded measurement, state preparation and low-rank evolution. Production
 execution uses FlagQuantum and PyTorch. OpenFermion and Cirq are not required.
 The existing FermionOperator, stable root exports and API snapshots are unchanged.
 
-This is one local PR draft against `2a073ab9d`. No push, remote PR, image
-publication or merge has been performed. **Merge is pending Linux execution and
-rebuilding the four locked CI images for the changed dependency manifests.**
+This PR delivers the selected native fermionic workflow. **Merge is pending
+Linux CI execution and rebuilding the four locked CI images for the changed
+dependency manifests.** No merge or image publication has been performed.
 
 ## User workflow
 
@@ -99,9 +99,8 @@ suite from silently losing every installed-dependency consumer.
 The matrix waits for source preparation and is included in `ci-complete`, so
 either endpoint failing, being cancelled or being skipped blocks the merge gate.
 
-These are locally checked workflow changes, not completed Linux runs. The local
-Docker daemon did not become available and Docker Desktop launch failed with
-`kLSNoExecutableErr`. Linux verification remains pending.
+Linux verification is assigned to the new Ubuntu CI matrix. No successful
+Linux run is claimed in the local validation results above.
 
 Both `pyproject.toml` and `docker/ci/profiles.json` changed while
 `docker/ci/images.lock` retains the base digests. The offline wrapper compares
