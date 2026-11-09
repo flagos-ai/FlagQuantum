@@ -18,12 +18,13 @@ from dataclasses import dataclass
 from enum import Flag, auto
 from typing import TYPE_CHECKING, TypeAlias, cast
 
+from ...value_math import SymbolicInt as RegisterWidth
+from ...value_math import prod
 from ...value_parameters import is_symbolic_value
 
 if TYPE_CHECKING:
     from sympy import Expr
 
-RegisterWidth: TypeAlias = "int | Expr"
 TypeParameter: TypeAlias = "int | str | float | Expr"
 
 
@@ -120,20 +121,14 @@ class Register:
         """Yield element indices in the locked source's Cartesian-product order."""
         yield from itertools.product(*(range(size) for size in self.shape))
 
-    def _shape_product(self) -> RegisterWidth:
-        product: RegisterWidth = 1
-        for dimension in self.shape_symbolic:
-            product = product * dimension
-        return product
-
     def total_bits(self) -> RegisterWidth:
-        return self.bitsize * self._shape_product()
+        return self.bitsize * prod(self.shape_symbolic)
 
     def total_qubits(self) -> RegisterWidth:
-        return self.dtype.num_qubits * self._shape_product()
+        return self.dtype.num_qubits * prod(self.shape_symbolic)
 
     def total_cbits(self) -> RegisterWidth:
-        return self.dtype.num_cbits * self._shape_product()
+        return self.dtype.num_cbits * prod(self.shape_symbolic)
 
     def adjoint(self) -> Register:
         """Exchange input/output direction; a through register retains identity."""

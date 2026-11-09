@@ -46,7 +46,7 @@ def test_concrete_math_and_empty_extrema() -> None:
     assert log2(2**10000) == 10000
     assert smax((1, 2)) == 2
     assert smin(3) == 3
-    with pytest.raises(ValueError, match="at least one"):
+    with pytest.raises(ValueError, match="at least 1 argument"):
         smax()
-    with pytest.raises(ValueError, match="at least one"):
+    with pytest.raises(ValueError, match="empty sequence"):
         smin(iter(()))

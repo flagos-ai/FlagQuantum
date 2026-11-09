@@ -8,14 +8,15 @@
 from __future__ import annotations
 
 import math
-from collections.abc import Iterable
-from typing import TYPE_CHECKING, TypeAlias, cast
+from typing import TYPE_CHECKING, cast
+
+from ...core.value_math import SymbolicInt as SymbolicInt
+from ...core.value_math import SymbolicReal as SymbolicReal
+from ...core.value_math import smax as smax
+from ...core.value_math import smin as smin
 
 if TYPE_CHECKING:
     from sympy import Expr
-
-SymbolicInt: TypeAlias = "int | Expr"
-SymbolicReal: TypeAlias = "int | float | Expr"
 
 
 def ceil(value: SymbolicReal) -> SymbolicInt:
@@ -47,34 +48,3 @@ def bit_length(value: SymbolicReal) -> SymbolicInt:
     if isinstance(value, (int, float)) and 0 <= value < 1:
         return 0
     return ceil(log2(floor(value) + 1))
-
-
-def _extreme(
-    values: tuple[SymbolicReal | Iterable[SymbolicReal], ...], *, maximum: bool
-) -> SymbolicReal:
-    items = (
-        tuple(values[0])
-        if len(values) == 1 and isinstance(values[0], Iterable)
-        else values
-    )
-    if not items:
-        raise ValueError("Symbolic extrema require at least one value")
-    scalars = cast("tuple[SymbolicReal, ...]", items)
-    if len(scalars) == 1:
-        return scalars[0]
-    if all(isinstance(value, (int, float)) for value in scalars):
-        numbers = cast(tuple[int | float, ...], scalars)
-        return max(numbers) if maximum else min(numbers)
-    from sympy import Max, Min
-
-    return cast("Expr", (Max if maximum else Min)(*scalars))
-
-
-def smax(*values: SymbolicReal | Iterable[SymbolicReal]) -> SymbolicReal:
-    """Return the concrete or symbolic maximum of a pack or one iterable."""
-    return _extreme(values, maximum=True)
-
-
-def smin(*values: SymbolicReal | Iterable[SymbolicReal]) -> SymbolicReal:
-    """Return the concrete or symbolic minimum of a pack or one iterable."""
-    return _extreme(values, maximum=False)
