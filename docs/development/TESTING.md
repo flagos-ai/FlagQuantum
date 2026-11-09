@@ -1069,7 +1069,7 @@ from replacing another job artifact.
 
 The `coverage-plan` job collects the original marker selection once, then assigns
 file batches of at most 16 tests by estimated duration to at most 192 nonempty shards for trusted
-PRs (16 on hosted/manual runs). Each selected node appears exactly once in the
+PRs and trusted manual runs (16 on hosted fork runs). Each selected node appears exactly once in the
 plan. Coverage data stays under the runner temporary directory, outside the
 source tree copied by mutation tests. Shards verify the source SHA and content digest before running their explicit
 node list. Keeping bounded file batches together avoids full-repository collection on every
