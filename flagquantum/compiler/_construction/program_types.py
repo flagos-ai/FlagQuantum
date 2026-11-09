@@ -363,7 +363,7 @@ def control(condition: QNum | QArray[QBit], body: Callable[[], None], /) -> None
 
 
 def within() -> AbstractContextManager[None]:
-    """Capture local arithmetic preparation for the following apply block."""
+    """Capture arithmetic locals or unitary preparation before the apply block."""
     raise TypeError("within is captured inside qfunc")
 
 
@@ -373,5 +373,5 @@ def apply() -> AbstractContextManager[None]:
 
 
 def adjoint() -> AbstractContextManager[None]:
-    """Capture the checked inverse of static Const-only qfunc calls."""
+    """Capture the checked inverse of static gates and reversible qfunc calls."""
     raise TypeError("adjoint is captured inside qfunc")

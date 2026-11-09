@@ -3,7 +3,7 @@
 User examples contain native Python programs and independent Circuit comparisons.
 Original source files and importer launchers are test/development evidence, not examples.
 
-Validated quantum-program counterparts: **112/216**.
+Validated quantum-program counterparts: **115/216**.
 Validated local Notebook workflows: **24/213**.
 Expanded inventory: **577** source artifacts in **417** provisional path groups.
 Python groups still require main-case/helper review. A quantum-program counterpart
@@ -37,9 +37,10 @@ Validated local Notebook workflows:
 - [deutsch_jozsa](algorithms/foundational/deutsch_jozsa/README.md)
 
 
-## Applications (31 native programs)
+## Applications (33 native programs)
 
 - [quantum_volume](applications/benchmarking/quantum_volume/README.md)
+- [randomized_benchmarking](applications/benchmarking/randomized_benchmarking/README.md)
 - [molecular_energy_curve](applications/chemistry/molecular_energy_curve/README.md)
 - [molecule_eigensolver](applications/chemistry/molecule_eigensolver/README.md)
 - [quantum_drude_oscillator](applications/chemistry/quantum_drude_oscillator/README.md)
@@ -47,6 +48,7 @@ Validated local Notebook workflows:
 - [second_quantized_hamiltonian](applications/chemistry/second_quantized_hamiltonian/README.md)
 - [link_monitoring](applications/cybersecurity/link_monitoring/README.md)
 - [patch_min_vertex_cover](applications/cybersecurity/patching_management/patch_min_vertex_cover/README.md)
+- [credit_card_fraud](applications/finance/credit_card_fraud/README.md)
 - [portfolio_optimization](applications/finance/portfolio_optimization/README.md)
 - [task_scheduling_problem](applications/logistics/task_scheduling_problem/README.md)
 - [vehicle_routing_problem](applications/logistics/vehicle_routing_problem/README.md)
@@ -148,7 +150,7 @@ Validated local Notebook workflows:
 - [unitary](functions/unitary/README.md)
 
 
-## Tutorials (21 native programs)
+## Tutorials (22 native programs)
 
 - [add_bell_states](tutorials/basics/add_bell_states/README.md)
 - [entanglement](tutorials/basics/entanglement/README.md)
@@ -168,6 +170,7 @@ Validated local Notebook workflows:
 - [hamiltonian_evolution](tutorials/technology_demonstrations/hamiltonian_evolution/README.md)
 - [hardware_aware_mcx](tutorials/technology_demonstrations/hardware_aware_mcx/README.md)
 - [qaoa_demonstration](tutorials/technology_demonstrations/qaoa/qaoa_demonstration/README.md)
+- [algo_design_qce_tutorial_part_i](tutorials/workshops/algo_design_qce_tutorial/algo_design_qce_tutorial_part_i/README.md)
 - [combinatorial_qmod_workshop_for_maxcut](tutorials/workshops/combinatorial_workshop/combinatorial_qmod_workshop_for_maxcut/README.md)
 - [combi_workshop_inequality_constriants_po](tutorials/workshops/finance_workshops/combi_workshop_inequality_constriants_po/README.md)
 - [combi_workshop_equality_constriants_po](tutorials/workshops/finance_workshops/combi_workshop_equality_constriants_po/README.md)

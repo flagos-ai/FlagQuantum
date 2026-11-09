@@ -220,7 +220,7 @@ Validated local Notebook workflows: **24/213**.
 | `applications/CFD/qlbm/qlbm` | notebook_workflow | Pending | pending |
 | `applications/automotive/cooling_systems_optimization/cooling_systems_optimization` | notebook_workflow | Pending | pending |
 | `applications/benchmarking/quantum_volume/quantum_volume` | notebook_workflow | [Native program](applications/benchmarking/quantum_volume/main.py) | pending |
-| `applications/benchmarking/randomized_benchmarking/randomized_benchmarking` | notebook_workflow | Pending | pending |
+| `applications/benchmarking/randomized_benchmarking/randomized_benchmarking` | notebook_workflow | [Native program](applications/benchmarking/randomized_benchmarking/main.py) | pending |
 | `applications/chemistry/classiq_chemistry_application/classiq_chemistry_application` | notebook_workflow | Pending | pending |
 | `applications/chemistry/molecular_energy_curve/molecular_energy_curve` | notebook_workflow | [Native program](applications/chemistry/molecular_energy_curve/main.py) | pending |
 | `applications/chemistry/molecule_eigensolver/molecule_eigensolver` | notebook_workflow | [Native program](applications/chemistry/molecule_eigensolver/main.py) | pending |
@@ -238,7 +238,7 @@ Validated local Notebook workflows: **24/213**.
 | `applications/finance/autocallable_options/partial_exponential_state_preparation` | notebook_workflow | Pending | pending |
 | `applications/finance/autocallable_options/quantum_autocallable_option_pricing` | notebook_workflow | Pending | pending |
 | `applications/finance/brownian_chebyshev_polynomials/brownian_chebyshev_polynomials` | notebook_workflow | Pending | pending |
-| `applications/finance/credit_card_fraud/credit_card_fraud` | notebook_workflow | Pending | pending |
+| `applications/finance/credit_card_fraud/credit_card_fraud` | notebook_workflow | [Native program](applications/finance/credit_card_fraud/main.py) | pending |
 | `applications/finance/hybrid_hhl_for_portfolio_optimization/portfolio_optimization_with_hhl` | notebook_workflow | Pending | pending |
 | `applications/finance/option_pricing/option_pricing` | notebook_workflow | Pending | pending |
 | `applications/finance/portfolio_optimization/portfolio_optimization` | notebook_workflow | [Native program](applications/finance/portfolio_optimization/main.py) | pending |
@@ -418,7 +418,7 @@ Validated local Notebook workflows: **24/213**.
 | `tutorials/technology_demonstrations/hhl/hhl_example` | notebook_workflow | Pending | pending |
 | `tutorials/technology_demonstrations/oracle_generation/3sat_oracles` | notebook_workflow | Pending | pending |
 | `tutorials/technology_demonstrations/qaoa/qaoa_demonstration` | notebook_workflow | [Native program](tutorials/technology_demonstrations/qaoa/qaoa_demonstration/main.py) | pending |
-| `tutorials/workshops/algo_design_QCE_tutorial/algo_design_QCE_tutorial_part_I` | notebook_workflow | Pending | pending |
+| `tutorials/workshops/algo_design_QCE_tutorial/algo_design_QCE_tutorial_part_I` | notebook_workflow | [Native program](tutorials/workshops/algo_design_qce_tutorial/algo_design_qce_tutorial_part_i/main.py) | pending |
 | `tutorials/workshops/algo_design_QCE_tutorial/algo_design_QCE_tutorial_part_II` | notebook_workflow | Pending | pending |
 | `tutorials/workshops/combinatorial_workshop/combinatorial_qmod_workshop_for_maxcut` | notebook_workflow | [Native program](tutorials/workshops/combinatorial_workshop/combinatorial_qmod_workshop_for_maxcut/main.py) | pending |
 | `tutorials/workshops/finance_workshops/Option_Pricing_Workshop` | notebook_workflow | Pending | pending |

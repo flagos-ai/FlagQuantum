@@ -71,6 +71,10 @@ The following table locates the existing implementations and detailed profiles.
 | Block encodings, QSVT and checked fixed-point regions | `qsvt.py`, `fixed_regions.py`, `scoped_amplification.py` | [QSVT profiles](PROFILE_HISTORY.md#coherent-even-and-odd-qsvt) |
 | Private measurement/reset and bounded classical optimization | `deferred_measurement.py`, `cscope.py` | [Execution profiles](PROFILE_HISTORY.md) |
 
+`unitary_effects.py` retains source diagnostics and storage checks; inverse-effect
+rules are owned by `compiler/_hybrid/unitary_effects.py` and shared with native
+Python capture.
+
 `syntax_model.py` is the authority for lexical and parsing budgets.
 `adapter_model.py` owns adapter constants and the private handoff. Compiler
 construction budgets and Runtime memory ceilings are checked at their existing

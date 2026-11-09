@@ -245,8 +245,8 @@ def test_preexisting_constant_controls_preserve_resources_and_absolute_phase(
         (
             "allocate(a)\nwith adjoint():\n    helper(a)",
             "a:Output[QBit]",
-            "@qfunc\ndef helper(a:QBit):\n    control(a==0,lambda:phase(a-0.5,0.2))\n",
-            "Const-only",
+            "@qfunc\ndef helper(a:QBit):\n    allocate(a)\n",
+            "mutable helpers allow gates",
         ),
         (
             "allocate(a)\nhelper(a)",
@@ -301,3 +301,15 @@ def test_guard_expression_depth_is_checked_before_recursive_expansion() -> None:
     )
     with pytest.raises(ERRORS, match="expression depth"):
         synth.synthesize(entry)
+
+
+def test_inverse_guarded_mutable_phase_keeps_conditional_constant_phase() -> None:
+    entry = definition(
+        "allocate(a)\nH(a)\nS(a)\nwith adjoint():\n    helper(a)",
+        "a:Output[QBit]",
+        "@qfunc\ndef helper(a:QBit):\n    control(a==0,lambda:phase(a-0.5,0.2))\n",
+    )
+    reference = fq.Circuit(1, dtype=torch.complex128).h(0).s(0)
+    diagonal = torch.exp(torch.tensor([0.1j, 0j], dtype=torch.complex128))
+    reference.any(0, matrix=torch.diag(diagonal))
+    compare_states(synth.synthesize(entry, max_workspace=0), reference, ("a",))

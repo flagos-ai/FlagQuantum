@@ -12,6 +12,7 @@ selection and lowering to CircuitIR.
 | `frontend_classical.py` | Snapshot typed classical integer/real bindings and interpret closed numeric expressions |
 | `frontend_statements.py` | Dispatch captured statements and specialize bounded classical branches |
 | `frontend_ports.py` | Resolve annotation identities, quantum roles and bounded port types |
+| `frontend_regions.py` | Capture pure unitary regions and retain arithmetic/Const-only inverse boundaries |
 | `frontend_phase.py` | Read native real phase arithmetic and checked views for shared sparse expansion |
 | `frontend_preparation.py` | Capture bounded literal native preparation calls into existing register effects |
 | `frontend_views.py` | Resolve native bit-array locations, bounded loops and disjoint writable helper expansion |
@@ -25,7 +26,10 @@ selection and lowering to CircuitIR.
 
 `verify_operation_attributes` checks the operation's exact permitted attributes
 before the body verifier inspects operands or modifies its local storage state.
-The body verifier remains the single authority for effects and lifecycle. This
+The body verifier remains the single authority for effects and lifecycle.
+Pure unitary inverses use `../_hybrid/unitary_effects.py`, shared with the Qmod
+source boundary. `tests/integration/test_synthesis_native_unitary_regions.py`
+contains native, retained-source and independent Circuit scenarios. This
 ordering preserves the first rejection when malformed attributes and invalid
 storage use occur together.
 

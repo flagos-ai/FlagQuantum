@@ -3533,7 +3533,10 @@
         }
       ],
       "workflow_status": "pending",
-      "native_program": null,
+      "native_program": {
+        "path": "examples/synthesis/applications/benchmarking/randomized_benchmarking/main.py",
+        "scope": "Complete retained quantum program; companion workflows pending."
+      },
       "kind": "notebook_workflow"
     },
     {
@@ -3965,7 +3968,10 @@
         }
       ],
       "workflow_status": "pending",
-      "native_program": null,
+      "native_program": {
+        "path": "examples/synthesis/applications/finance/credit_card_fraud/main.py",
+        "scope": "Complete retained quantum program; companion workflows pending."
+      },
       "kind": "notebook_workflow"
     },
     {
@@ -8047,7 +8053,10 @@
         }
       ],
       "workflow_status": "pending",
-      "native_program": null,
+      "native_program": {
+        "path": "examples/synthesis/tutorials/workshops/algo_design_qce_tutorial/algo_design_qce_tutorial_part_i/main.py",
+        "scope": "Complete retained quantum program; companion workflows pending."
+      },
       "kind": "notebook_workflow"
     },
     {

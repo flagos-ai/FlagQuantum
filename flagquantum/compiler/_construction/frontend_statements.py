@@ -101,13 +101,6 @@ def capture_statements(
             owner.assign(statement)
         elif isinstance(statement, ast.With):
             flush_evolutions(owner)
-            if owner.aliases is not None:
-                _error(
-                    owner.source,
-                    statement,
-                    "program.borrow",
-                    "mutable helpers accept gate effects only",
-                )
             if owner.region_marker(statement) is adjoint:
                 owner.adjoint_scope(statement)
             else:

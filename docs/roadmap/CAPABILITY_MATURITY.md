@@ -615,3 +615,15 @@ cover complete ADAPT-QAOA, MaxCut and constrained Knapsack programs; full Notebo
 optimizer workflows require separate acceptance. See the
 [phase contract](../api-changes/FQ-SYNTH-NATIVE-POLYNOMIAL-PHASE-20261109.md) and
 [guarded phase contract](../api-changes/FQ-SYNTH-NATIVE-GUARDED-PHASE-20261109.md).
+
+## Native checked unitary region slice
+
+Maturity: `development_evidence`. Native adjoint and pure-gate within/apply reuse
+shared Compiler inverse rules on initialized storage, including static writable
+helpers, QFT, explicit matrices, Pauli rotations and constant global phases.
+Retained QCE, credit-card and randomized-benchmarking programs have independent
+absolute-amplitude Circuit checks in
+`tests/integration/test_synthesis_native_unitary_regions.py`. Existing arithmetic
+cleanup and Const-only inverse regressions remain required. Allocation, Output
+publication, general callbacks and ownership changes refuse. This does not
+promote runtime gradients, hardware, scalability or complete Notebook coverage.

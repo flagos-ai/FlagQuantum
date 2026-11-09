@@ -293,14 +293,23 @@ def test_real_phase_extension_does_not_enable_real_fresh_quantum_assignment(
         synth.synthesize(entry)
 
 
-def test_mutable_phase_helper_does_not_escape_existing_adjoint_boundary() -> None:
+def test_mutable_phase_helper_adjoint_preserves_absolute_polynomial_phase() -> None:
     entry = definition(
         "allocate(2,q)\nhadamard_transform(q)\nwith adjoint():\n    cost(g,q)",
         "g:float,q:Output[QArray[QBit]]",
         "@qfunc\ndef cost(g:float,q:QArray[QBit]):\n    phase(-0.3+q[0]/2-q[0]*q[1],g)\n",
     )
-    with pytest.raises(ERRORS, match="Const-only"):
-        synth.synthesize(entry, classical_inputs={"g": -0.37})
+    program = synth.synthesize(entry, classical_inputs={"g": -0.37}, max_workspace=0)
+    angles = torch.tensor(
+        [
+            0.37 * (-0.3 + (word & 1) / 2 - (word & 1) * (word >> 1))
+            for word in range(4)
+        ],
+        dtype=torch.complex128,
+    )
+    reference = fq.Circuit(2, dtype=torch.complex128).h(0).h(1)
+    reference.any(0, 1, matrix=torch.diag(torch.exp(1j * angles)))
+    compare_states(program, reference, ("q",))
 
 
 @pytest.mark.parametrize("coefficient", [float("nan"), float("inf"), -float("inf")])

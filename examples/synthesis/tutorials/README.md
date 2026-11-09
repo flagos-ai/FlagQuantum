@@ -20,6 +20,7 @@ Native FlagQuantum programs currently available:
 - [hamiltonian_evolution](technology_demonstrations/hamiltonian_evolution/README.md)
 - [hardware_aware_mcx](technology_demonstrations/hardware_aware_mcx/README.md)
 - [qaoa_demonstration](technology_demonstrations/qaoa/qaoa_demonstration/README.md)
+- [algo_design_qce_tutorial_part_i](workshops/algo_design_qce_tutorial/algo_design_qce_tutorial_part_i/README.md)
 - [combinatorial_qmod_workshop_for_maxcut](workshops/combinatorial_workshop/combinatorial_qmod_workshop_for_maxcut/README.md)
 - [combi_workshop_inequality_constriants_po](workshops/finance_workshops/combi_workshop_inequality_constriants_po/README.md)
 - [combi_workshop_equality_constriants_po](workshops/finance_workshops/combi_workshop_equality_constriants_po/README.md)

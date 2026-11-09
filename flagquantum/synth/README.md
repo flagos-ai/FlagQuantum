@@ -1082,3 +1082,47 @@ The result is the specified product formula; no general exact-exponential or
 approximation-error guarantee is implied. See the
 [native evolution contract](../../docs/api-changes/FQ-SYNTH-NATIVE-EVOLUTION-20261109.md)
 and [native example](../../examples/synthesis/functions/hamiltonian_evolution/suzuki_trotter/WORKFLOW.md).
+
+## Checked native unitary regions
+
+The [unitary-region admission](../../docs/api-changes/FQ-SYNTH-NATIVE-UNITARY-REGIONS-20261110.md)
+extends the existing markers to pure gates and static writable helpers on
+initialized storage. Both Python and the test-only source adapter use the same
+Compiler inverse rules. Existing arithmetic-local scopes and Const-only inverse
+calls retain their contracts.
+
+```python
+import math
+import flagquantum as fq
+from flagquantum import synth
+from flagquantum.synth import Output, QNum, allocate, apply, hadamard_transform, phase, qft, qfunc, within
+
+@qfunc
+def main(x: Output[QNum[3]], y: Output[QNum[4]]) -> None:
+    allocate(x)
+    hadamard_transform(x)
+    allocate(y)
+    with within():
+        qft(y)
+    with apply():
+        phase(y * x**2, 2 * math.pi / 16)
+
+program = synth.synthesize(main, max_workspace=0)
+print(dict(program.probabilities(fq.run(program), registers=("x", "y"))))
+```
+
+Each pair `(x, x*x %16)` has probability1/8. No gate decomposition, physical
+wire numbers, manual inverse or bit-string decoding is needed. The retained
+[QCE example](../../examples/synthesis/tutorials/workshops/algo_design_qce_tutorial/algo_design_qce_tutorial_part_i/main.py)
+has an independent modular-permutation Circuit reference. Integer literal
+powers in phases reuse sparse polynomial lowering without arithmetic scratch.
+
+`with adjoint():` also accepts direct gates and bounded static writable helper
+calls. Gate order, constant global phase and matrix conjugate transpose are
+preserved. Allocation, Output publication, fresh locals mixed into a unitary
+preparation, general host callbacks and ownership changes are refused. Arbitrary
+mutable-helper coherent control is a separate boundary. The
+[credit-card kernel](../../examples/synthesis/applications/finance/credit_card_fraud/main.py)
+checks two nonzero parameter pairs; [randomized benchmarking](../../examples/synthesis/applications/benchmarking/randomized_benchmarking/main.py)
+keeps the original sequence and explicitly retains the global phase of SX.
+These are local quantum-program checks; full Notebook workflows remain separate.

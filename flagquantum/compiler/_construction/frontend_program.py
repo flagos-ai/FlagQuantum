@@ -36,6 +36,7 @@ from .frontend_ports import (
 )
 from .frontend_preparation import capture_preparation
 from .frontend_python import _error, _QuantumFunction, _Source, capture
+from .frontend_regions import capture_adjoint, capture_unitary_within
 from .frontend_statements import capture_statements
 from .frontend_transforms import capture_modular_exp, capture_transform
 from .frontend_views import gate_target, inline_mutable, locations
@@ -204,6 +205,7 @@ class _Body:
         self.operations: list[Operation] = []
         self.evolutions: list[_Evolution] = []
         self.branch_depth = 0
+        self.region_depth = 0
         self.expressions = 0
         self.aliases: dict[str, tuple[tuple[Value, int], ...]] | None = None
         self.array_names = {p.name for p in ports if p.kind == "qarray"}
@@ -752,7 +754,7 @@ class _Body:
                     )
                 self.emit("qreg.phase", node, (), angle=radians)
             elif self.aliases is not None or any(
-                isinstance(child, (ast.Subscript, ast.Sub, ast.USub, ast.Div))
+                isinstance(child, (ast.Subscript, ast.Sub, ast.USub, ast.Div, ast.Pow))
                 or isinstance(child, ast.Name)
                 and child.id in self.classical
                 or isinstance(child, ast.Constant)
@@ -933,6 +935,16 @@ class _Body:
                 "program.region",
                 "pair with within() with a following with apply()",
             )
+        if not any(isinstance(statement, ast.AnnAssign) for statement in prepare.body):
+            capture_unitary_within(self, prepare, action)
+            return
+        if self.aliases is not None:
+            _error(
+                self.source,
+                prepare,
+                "program.borrow",
+                "mutable helpers accept gate effects only",
+            )
         locals_in_order: list[str] = []
         for statement in prepare.body:
             if isinstance(statement, ast.AnnAssign):
@@ -991,17 +1003,7 @@ class _Body:
         capture_control(self, node)
 
     def adjoint_scope(self, block: ast.With) -> None:
-        for statement in reversed(block.body):
-            if not isinstance(statement, ast.Expr) or not isinstance(
-                statement.value, ast.Call
-            ):
-                _error(
-                    self.source,
-                    statement,
-                    "program.adjoint",
-                    "adjoint requires static qfunc calls",
-                )
-            self.call(statement.value, inverse=True)
+        capture_adjoint(self, block)
 
     def statements(self, body: Sequence[ast.stmt], *, nested: bool = False) -> None:
         capture_statements(self, body, nested=nested)
