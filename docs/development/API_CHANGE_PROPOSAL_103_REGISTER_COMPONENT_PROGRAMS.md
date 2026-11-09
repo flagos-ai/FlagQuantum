@@ -419,3 +419,34 @@ G2 work.
 
 The source-backed prerequisite passes 430 constructor/Signature/protocol cases
 before native implementation, including the eager failure contexts.
+
+## Shared width arithmetic prerequisite 0.7
+
+Finite-field metadata requires the source scalar width calculation. The existing
+Compiler `ceil`, `floor`, `log2` and `bit_length` helpers move to Core's existing
+`value_math.py` owner and remain available through their former Compiler imports.
+The original symbolics.math_funcs decision tree determines their outcomes.
+Concrete ceil/floor use int(np.ceil/floor(value)), retaining scalar conversion
+and diagnostics. Symbolic cases retain the original Sympy functions. Bit length
+retains its original symbolic-first zero interval and floor/log2/ceil chain.
+NumPy is already a required production dependency. Scalar NumPy results stop at
+the int conversion and do not become Core contract types or execution kernels.
+No new dependency, dispatcher, width IR or numerical callback interface is added.
+
+The original native no-Sympy behavior for concrete built-in values remains
+supported. Existing single-object symbolic protocols, integer subclasses and
+NumPy scalars must follow the source classification, including return types.
+Source and native cases compare values, result classes, warnings and exact
+exceptions. Protocol traces check short circuits and evaluation order.
+
+A source-backed stand-in must pass before Core implementation. Compiler's
+existing import bindings then reuse the same authoritative functions. Replace
+the width dependency in its actual Hamming/QROM/resource consumers and rerun
+source primitive streams, complex amplitudes, measured branches, zero work and
+separate model/emitted resource accounting. This slice supplies the next
+finite-field metadata dependency and leaves typed graph admission unchanged.
+
+The prerequisite stand-in passes 109 source-backed cases before implementation.
+The retained audit records NumPy scalar return-type differences in the former
+Compiler helpers. These differences motivate preserving source classification
+and concrete scalar rounding at the shared owner.
