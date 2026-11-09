@@ -108,6 +108,8 @@ SCRIPTS = (
     "sparse_select",
     "logical_resources",
     "arithmetic",
+    "fermion_energy",
+    "fermion_chemistry",
 )
 
 # One or more phrases per script, each the load-bearing half of that unit's
@@ -128,6 +130,11 @@ SCRIPTS = (
 #   from that script's premise paragraph left the suite green with only the
 #   block-encoding phrase pinned.
 PREMISE_PHRASES: dict[str, tuple[str, ...]] = {
+    "fermion_energy": ("exact statevector simulation", "no sampling or hardware noise"),
+    "fermion_chemistry": (
+        "fixed STO-3G hydrogen integrals",
+        "not an evolution error bound",
+    ),
     # "The density matrix is materialized classically and its exponential is
     # built with a dense matrix exponential" -- the input model is not met.
     "pca": ("built classically",),
@@ -1692,6 +1699,33 @@ def test_arithmetic_example_sums_and_hands_the_cost_to_the_compiler() -> None:
             assert "TypeError" in _labelled(output, f"{label}, {entry}"), label
     _assert_premise("arithmetic", output)
     assert "take away" in output
+
+
+def test_fermion_energy_example_preserves_energy_across_encodings() -> None:
+    output = _run("fermion_energy")
+    for encoding in ("jordan_wigner", "parity", "bravyi_kitaev"):
+        assert _number(output, encoding) == pytest.approx(1.3, abs=1e-6)
+    _assert_premise("fermion_energy", output)
+
+
+def test_fermion_chemistry_example_reports_energy_and_differentiable_evolution() -> (
+    None
+):
+    output = _run("fermion_chemistry")
+    for encoding in ("jordan_wigner", "parity", "bravyi_kitaev"):
+        value = _labelled(output, encoding)
+        assert value.startswith("HF energy ") and value.endswith(" Ha")
+        assert float(value.split()[2]) == pytest.approx(-1.1166843871, abs=1e-9)
+    match = re.search(
+        r"Real reference amplitude ([\d.e+-]+); time derivative ([\d.e+-]+)", output
+    )
+    assert match is not None, output
+    assert float(match[1]) == pytest.approx(0.9745154458, abs=1e-8)
+    assert float(match[2]) == pytest.approx(-0.2537232266, abs=1e-8)
+    residual = re.search(r"Integral reconstruction residual ([\d.e+-]+)", output)
+    assert residual is not None, output
+    assert 0 <= float(residual[1]) < 1e-12
+    _assert_premise("fermion_chemistry", output)
 
 
 def test_the_example_directory_is_covered_and_indexed() -> None:
