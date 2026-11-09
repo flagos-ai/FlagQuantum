@@ -12,7 +12,7 @@ from .field_multiplication import _validate_field
 from .polynomial import _validate_registers
 
 
-def kickmix_field_product_phase_ir(
+def field_product_phase_ir(
     left: tuple[int, ...],
     right: tuple[int, ...],
     mask_bits: tuple[int, ...],
@@ -61,7 +61,7 @@ def kickmix_field_product_phase_ir(
     return tuple(gates)
 
 
-def kickmix_field_product_erase_ir(
+def field_product_erase_ir(
     left: tuple[int, ...],
     right: tuple[int, ...],
     product: tuple[int, ...],
@@ -79,7 +79,7 @@ def kickmix_field_product_erase_ir(
     _validate_registers(left, right, product)
     if len(product) != len(left):
         raise ValueError("Product erasure requires equal register widths")
-    feedback = kickmix_field_product_phase_ir(
+    feedback = field_product_phase_ir(
         left, right, measurement_bits, modulus=modulus, parity_bit=parity_bit
     )
     return (

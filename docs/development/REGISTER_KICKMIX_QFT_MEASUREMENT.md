@@ -1,6 +1,6 @@
 # Locked demolition Fourier measurement
 
-`kickmix_qft_measurement_operations` ports `gen_qft_demolition_measure.cc`
+`qft_measurement_operations` ports `gen_qft_demolition_measure.cc`
 from Kickmix commit `9a0c11a4ee7697c082fbf8f2e1e8bf4a71fcb453`.
 The unchanged source blob is `59c942ad6d1a4e40e3776166afb99220bbf93f6b`.
 
@@ -17,7 +17,7 @@ basis, not an inverse of an already destructive channel.
 
 Every measured target qubit ends in zero. The operation allocates no extra
 quantum work and no extra classical feedback slots. Logical output slots are
-also the feedback slots. `kickmix_qft_measurement_program` embeds the sequence
+also the feedback slots. `qft_measurement_program` embeds the sequence
 in a caller-supplied positive ambient width and marks holes between output
 slots as unowned classical inputs. Binding preserves those holes and
 initializes only the selected outputs. The caller may also apply the existing

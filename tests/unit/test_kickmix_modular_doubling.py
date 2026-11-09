@@ -13,7 +13,7 @@ from flagquantum.compiler.registers.finite_field.coefficients import (
     ClassicalFieldCoefficient as Bit,
 )
 from flagquantum.compiler.registers.modular.exact_modular_doubling import (
-    kickmix_exact_modular_doubling_ir,
+    exact_modular_doubling_ir,
 )
 from flagquantum.core.classical_dataflow import ClassicalXor
 from flagquantum.core.ir import CircuitIR
@@ -50,7 +50,7 @@ def test_modular_doubling_all_histories_and_complex_state(
         ClassicalXor((), i, constant=constants[i + 1]).instruction()
         for i in range(slots)
     )
-    gates = kickmix_exact_modular_doubling_ir(
+    gates = exact_modular_doubling_ir(
         tuple(range(width)),
         coefficients,
         clean=clean,
@@ -92,7 +92,7 @@ def test_modular_doubling_all_histories_and_complex_state(
     )
     for bit in range(slots):
         assert torch.all(result.classical_bits[:, bit] == constants[bit + 1])
-    reverse = kickmix_exact_modular_doubling_ir(
+    reverse = exact_modular_doubling_ir(
         tuple(range(width)),
         coefficients,
         clean=clean,
@@ -125,7 +125,7 @@ def test_coherent_quantum_modulus_and_control_are_preserved(
     data = control + 2
     clean = tuple(range(data, data + width - 1 + extra))
     coefficients = (True, *quantum, True)
-    gates = kickmix_exact_modular_doubling_ir(
+    gates = exact_modular_doubling_ir(
         tuple(range(width)), coefficients, clean=clean, control=control, inverse=inverse
     )
     inputs, outputs = [], []
@@ -158,24 +158,22 @@ def test_coherent_quantum_modulus_and_control_are_preserved(
 
 
 def test_source_two_bit_reduction_and_workspace_boundary() -> None:
-    assert kickmix_exact_modular_doubling_ir((0,), (True,)) == ()
-    gates = kickmix_exact_modular_doubling_ir((0, 1), (True, True), control=2)
+    assert exact_modular_doubling_ir((0,), (True,)) == ()
+    gates = exact_modular_doubling_ir((0, 1), (True, True), control=2)
     assert [(gate.name, gate.wires) for gate in gates] == [("cswap", (2, 1, 0))]
     with pytest.raises(ValueError, match="odd full-capacity"):
-        kickmix_exact_modular_doubling_ir((0, 1), (True, False))
+        exact_modular_doubling_ir((0, 1), (True, False))
     with pytest.raises(ValueError, match="control flag"):
-        kickmix_exact_modular_doubling_ir(
-            (0, 1, 2), (True, False, True), clean=(4,), control=3
-        )
+        exact_modular_doubling_ir((0, 1, 2), (True, False, True), clean=(4,), control=3)
     with pytest.raises(ValueError, match="fresh nonnegative"):
-        kickmix_exact_modular_doubling_ir(
+        exact_modular_doubling_ir(
             (0, 1, 2), (True, Bit(0), True), clean=(3,), measurement_bit=0
         )
 
 
 def test_native_counts_distinguish_dirty_and_measured_triple_control() -> None:
     for extra in (0, 1):
-        gates = kickmix_exact_modular_doubling_ir(
+        gates = exact_modular_doubling_ir(
             (0, 1, 2),
             (True, False, True),
             control=3,
@@ -194,7 +192,7 @@ def test_implicit_dirty_helper_is_restored_with_a_noncontiguous_layout(
     inverse: bool,
 ) -> None:
     # The native no-clean triple control borrows the lowest free ID (wire 0).
-    gates = kickmix_exact_modular_doubling_ir(
+    gates = exact_modular_doubling_ir(
         (3, 4, 5), (True, False, True), control=6, clean=(7, 8), inverse=inverse
     )
     program = lower_reversible_phase(CircuitIR(9, gates))

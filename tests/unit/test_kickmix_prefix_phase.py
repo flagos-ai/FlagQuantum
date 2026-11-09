@@ -12,7 +12,7 @@ from flagquantum.compiler.registers.finite_field.coefficients import (
     ClassicalFieldCoefficient,
 )
 from flagquantum.compiler.registers.phase.masked_prefix_phase import (
-    kickmix_masked_prefix_phase_ir,
+    masked_prefix_phase_ir,
 )
 from flagquantum.compiler.registers.primitives.measurement import measure_x_clear_ir
 from flagquantum.core.ir import CircuitIR
@@ -24,7 +24,7 @@ pytestmark = pytest.mark.unit
 
 @pytest.mark.parametrize("minimize", [False, True])
 def test_four_quantum_phase_matches_locked_gate_order(minimize: bool) -> None:
-    gates = kickmix_masked_prefix_phase_ir(
+    gates = masked_prefix_phase_ir(
         (0, 1, 2), (3, 4, 5), clean=(6,), minimize_qubits=minimize, measurement_bit=3
     )
     code = encode_kmx(lower_reversible_phase(CircuitIR(7, gates))).splitlines()[1:]
@@ -48,7 +48,7 @@ def test_four_quantum_phase_preserves_coherence_and_cleans_work(measured: bool) 
     amplitudes = torch.complex((basis + 1).double(), (2 * basis - 5).double())
     state = torch.zeros(1 << total, dtype=torch.complex128)
     state[::2] = amplitudes / amplitudes.norm()
-    gates = kickmix_masked_prefix_phase_ir(
+    gates = masked_prefix_phase_ir(
         (0, 1, 2),
         (3, 4, 5),
         clean=(6,) if measured else (),
@@ -86,7 +86,7 @@ def test_mixed_mask_prefix_restores_dirty_data_on_every_branch(
     stride = 1 << (clean_count + 1)
     state[::stride] = amplitudes / amplitudes.norm()
     prefix = measure_x_clear_ir(12, 0)
-    gates = kickmix_masked_prefix_phase_ir(
+    gates = masked_prefix_phase_ir(
         targets,
         masks,
         clean=clean,
@@ -125,17 +125,17 @@ def test_mixed_mask_prefix_restores_dirty_data_on_every_branch(
 
 
 def test_masked_prefix_uses_common_length_and_validates_carry_ownership() -> None:
-    assert kickmix_masked_prefix_phase_ir((), (True,)) == ()
-    assert kickmix_masked_prefix_phase_ir((0,), ()) == ()
-    assert kickmix_masked_prefix_phase_ir((0, 1, 2, 3), (True,)) == (
-        kickmix_masked_prefix_phase_ir((0,), (True,))
+    assert masked_prefix_phase_ir((), (True,)) == ()
+    assert masked_prefix_phase_ir((0,), ()) == ()
+    assert masked_prefix_phase_ir((0, 1, 2, 3), (True,)) == (
+        masked_prefix_phase_ir((0,), (True,))
     )
     with pytest.raises(ValueError, match="at least n - 3"):
-        kickmix_masked_prefix_phase_ir((0, 1, 2, 3), (True,) * 4)
+        masked_prefix_phase_ir((0, 1, 2, 3), (True,) * 4)
     with pytest.raises(ValueError, match="classical result slot"):
-        kickmix_masked_prefix_phase_ir((0, 1, 2, 3), (True,) * 4, clean=(4,))
+        masked_prefix_phase_ir((0, 1, 2, 3), (True,) * 4, clean=(4,))
     with pytest.raises(ValueError, match="separate classical result slot"):
-        kickmix_masked_prefix_phase_ir(
+        masked_prefix_phase_ir(
             (0, 1, 2, 3),
             (ClassicalFieldCoefficient(0),) * 4,
             clean=(4,),

@@ -15,10 +15,10 @@ from ..finite_field.coefficients import ClassicalFieldCoefficient
 from ..finite_field.polynomial import _validate_registers
 from ..primitives._mixed_gates import _flip, _parity_controlled_flip
 from ..primitives.measurement import measure_x_clear_ir
-from .low_space_comparison import kickmix_low_space_less_than_ir
+from .low_space_comparison import low_space_less_than_ir
 
 
-def kickmix_quantum_compare_ir(
+def quantum_compare_ir(
     left: tuple[int, ...],
     right: tuple[int, ...],
     target: int | None,
@@ -182,7 +182,7 @@ def kickmix_quantum_compare_ir(
     return tuple(gates)
 
 
-def kickmix_quantum_equal_ir(
+def quantum_equal_ir(
     left: tuple[int, ...],
     right: tuple[int | bool | ClassicalFieldCoefficient, ...],
     target: int | None,
@@ -254,7 +254,7 @@ def kickmix_quantum_equal_ir(
     return (*gates, *invert, *difference)
 
 
-def kickmix_less_than_ir(
+def mixed_less_than_ir(
     left: tuple[int, ...],
     right: tuple[int | bool | ClassicalFieldCoefficient, ...],
     target: int | None,
@@ -297,7 +297,7 @@ def kickmix_less_than_ir(
         # The source's subspan retains the original RHS dispatch tag.
     quantum_right = tuple(q for q in right if type(q) is int)
     if width and quantum_rhs and btol == inf and len(workspace) < width:
-        return kickmix_quantum_compare_ir(
+        return quantum_compare_ir(
             left,
             quantum_right,
             target,
@@ -361,7 +361,7 @@ def kickmix_less_than_ir(
         )
 
     if not quantum_right and (minimize_qubits or len(workspace) < width - 1):
-        return kickmix_low_space_less_than_ir(
+        return low_space_less_than_ir(
             left,
             cast(tuple[bool | ClassicalFieldCoefficient, ...], right),
             target,
@@ -431,7 +431,7 @@ def kickmix_less_than_ir(
     return (*gates, *difference, *invert)
 
 
-def kickmix_greater_than_ir(
+def mixed_greater_than_ir(
     left: tuple[int, ...],
     right: tuple[int | bool | ClassicalFieldCoefficient, ...],
     target: int | None,
@@ -478,7 +478,7 @@ def kickmix_greater_than_ir(
         ):
             raise ValueError("Comparison equality must use a separate quantum wire")
         invert = _flip(or_equal)
-    compare = kickmix_less_than_ir(
+    compare = mixed_less_than_ir(
         left,
         right,
         target,

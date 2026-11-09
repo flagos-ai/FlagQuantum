@@ -1,6 +1,6 @@
 # Locked exact modular doubling
 
-`kickmix_exact_modular_doubling_ir` ports the exact forward path and
+`exact_modular_doubling_ir` ports the exact forward path and
 `gen_imul2_inv_mod_with_subcmp_merged_by_inlining` from Kickmix
 `gen_imul2_mod.cc` at commit `9a0c11a4ee7697c082fbf8f2e1e8bf4a71fcb453`.
 The unmodified source blob is `f2c07c7825e05cd44bd2f793c0c8a826cf426cb5`.
@@ -75,14 +75,14 @@ bases and are not substituted for one another in this table.
 ```python
 from examples.algorithms.binary_field_arithmetic import FieldOperation
 from flagquantum.compiler.registers.modular.exact_modular_doubling import (
-    kickmix_exact_modular_doubling_ir,
+    exact_modular_doubling_ir,
 )
 from flagquantum.dynamic import DynamicCircuit
 
 ports = (0, 1, 2)
 modulus = (True, False, True)  # Modulus five.
 circuit = DynamicCircuit(6)
-circuit.append(FieldOperation(6, kickmix_exact_modular_doubling_ir(
+circuit.append(FieldOperation(6, exact_modular_doubling_ir(
     ports, modulus, control=3, clean=(4, 5)
 )))
 ```

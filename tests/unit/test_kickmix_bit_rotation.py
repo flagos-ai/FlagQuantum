@@ -9,7 +9,7 @@ from examples.algorithms.binary_field_arithmetic import FieldOperation
 from flagquantum.compiler.artifacts.reversible_phase import ReversiblePhaseProgram
 from flagquantum.compiler.formats.kmx import decode_kmx, encode_kmx
 from flagquantum.compiler.lowering.reversible_phase import lower_reversible_phase
-from flagquantum.compiler.registers.bits.bit_rotation import kickmix_bit_rotation_ir
+from flagquantum.compiler.registers.bits.bit_rotation import bit_rotation_ir
 from flagquantum.compiler.registers.finite_field.coefficients import (
     ClassicalFieldCoefficient as Bit,
 )
@@ -94,7 +94,7 @@ def _run_and_certify(
     data = width + quantum_shift + controlled
     control = data - 1 if controlled else None
     # A supplied work wire also tests that unused clean work remains zero.
-    gates = kickmix_bit_rotation_ir(
+    gates = bit_rotation_ir(
         tuple(range(width)),
         shift,
         control=control,
@@ -190,13 +190,13 @@ def test_variable_rotation(mode: str, controlled: bool, right: bool) -> None:
 
 
 def test_source_operand_order_and_merged_control_cost() -> None:
-    gates = kickmix_bit_rotation_ir((3, 2, 1, 0), 1)
+    gates = bit_rotation_ir((3, 2, 1, 0), 1)
     assert [(gate.name, gate.wires) for gate in gates] == [
         ("swap", (3, 0)),
         ("swap", (2, 1)),
         ("swap", (3, 1)),
     ]
-    gates = kickmix_bit_rotation_ir(
+    gates = bit_rotation_ir(
         (3, 2, 1, 0), (5, 4), control=6, clean=(7,), measurement_bit=0
     )
     program = lower_reversible_phase(CircuitIR(8, gates))
@@ -211,16 +211,14 @@ def test_source_operand_order_and_merged_control_cost() -> None:
 
 def test_rotation_rejects_invalid_ports_and_workspace() -> None:
     with pytest.raises(ValueError, match="fresh result slot"):
-        kickmix_bit_rotation_ir((0, 1), (2,), control=3)
+        bit_rotation_ir((0, 1), (2,), control=3)
     with pytest.raises(ValueError, match="fresh result slot"):
-        kickmix_bit_rotation_ir(
-            (0, 1), (Bit(0), 2), control=3, clean=(4,), measurement_bit=0
-        )
+        bit_rotation_ir((0, 1), (Bit(0), 2), control=3, clean=(4,), measurement_bit=0)
     with pytest.raises(ValueError, match="60 bits"):
-        kickmix_bit_rotation_ir((0,), (False,) * 61)
+        bit_rotation_ir((0,), (False,) * 61)
     with pytest.raises(ValueError, match="64-bit"):
-        kickmix_bit_rotation_ir((0,), 1 << 63)
+        bit_rotation_ir((0,), 1 << 63)
     with pytest.raises(ValueError, match="minimum signed"):
-        kickmix_bit_rotation_ir((0, 1, 2), -(1 << 63), right=True)
-    assert kickmix_bit_rotation_ir((), 2) == ()
-    assert kickmix_bit_rotation_ir((0, 1), ()) == ()
+        bit_rotation_ir((0, 1, 2), -(1 << 63), right=True)
+    assert bit_rotation_ir((), 2) == ()
+    assert bit_rotation_ir((0, 1), ()) == ()

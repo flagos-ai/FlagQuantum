@@ -9,16 +9,14 @@ import torch
 
 from examples.algorithms.binary_field_arithmetic import FieldOperation
 from flagquantum.compiler.lowering.reversible_phase import lower_reversible_phase
-from flagquantum.compiler.registers.arithmetic.increment import kickmix_increment_ir
+from flagquantum.compiler.registers.arithmetic.increment import increment_ir
 from flagquantum.core.ir import CircuitIR
 from flagquantum.dynamic import DynamicCircuit
 from flagquantum.runtime.dynamic.execution import run_dynamic
 
 
 def main() -> None:
-    gates = kickmix_increment_ir(
-        (0, 1, 2, 3), control=4, clean=(5, 6), measurement_bit=0
-    )
+    gates = increment_ir((0, 1, 2, 3), control=4, clean=(5, 6), measurement_bit=0)
     amplitudes = torch.complex(torch.arange(1, 33).double(), torch.arange(32).double())
     amplitudes /= amplitudes.norm()
     initial = torch.zeros(128, dtype=torch.complex128)

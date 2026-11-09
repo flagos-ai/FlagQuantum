@@ -14,14 +14,14 @@ from ...artifacts.reversible_phase import (
 )
 from ...lowering.reversible_phase import lower_reversible_phase
 from ..arithmetic.carry_parity import _Coefficient
-from ..arithmetic.inplace_addition import kickmix_inplace_addition_ir
-from ..arithmetic.mixed_addition import kickmix_mixed_addition_ir
-from ..comparison.mixed_comparison import kickmix_greater_than_ir, kickmix_less_than_ir
+from ..arithmetic.inplace_addition import inplace_addition_ir
+from ..arithmetic.mixed_addition import mixed_addition_ir
+from ..comparison.mixed_comparison import mixed_greater_than_ir, mixed_less_than_ir
 from ..finite_field.coefficients import ClassicalFieldCoefficient
 from ..finite_field.polynomial import _validate_registers
 
 
-def kickmix_modular_addition_program(
+def mixed_modular_addition_program(
     target: tuple[int, ...],
     offset: tuple[int, ...],
     modulus: tuple[_Coefficient, ...],
@@ -84,7 +84,7 @@ def kickmix_modular_addition_program(
         carry_work = clean[2:]
         operations.append(ReversiblePhaseOperation("r", (sign,)))
         emit(
-            kickmix_inplace_addition_ir(
+            inplace_addition_ir(
                 extended,
                 offset,
                 clean=carry_work,
@@ -95,7 +95,7 @@ def kickmix_modular_addition_program(
             )
         )
         emit(
-            kickmix_mixed_addition_ir(
+            mixed_addition_ir(
                 target,
                 modulus,
                 clean=carry_work,
@@ -112,7 +112,7 @@ def kickmix_modular_addition_program(
         operations.append(ReversiblePhaseOperation("r", (sign,)))
         extended_offset = (auxiliary, *offset)
         emit(
-            kickmix_inplace_addition_ir(
+            inplace_addition_ir(
                 extended,
                 extended_offset,
                 clean=carry_work,
@@ -121,7 +121,7 @@ def kickmix_modular_addition_program(
             )
         )
         emit(
-            kickmix_greater_than_ir(
+            mixed_greater_than_ir(
                 extended,
                 modulus_extended,
                 None,
@@ -134,7 +134,7 @@ def kickmix_modular_addition_program(
             )
         )
         emit(
-            kickmix_inplace_addition_ir(
+            inplace_addition_ir(
                 extended,
                 extended_offset,
                 clean=carry_work,
@@ -148,7 +148,7 @@ def kickmix_modular_addition_program(
         hmr(auxiliary)
     else:
         emit(
-            kickmix_inplace_addition_ir(
+            inplace_addition_ir(
                 extended,
                 offset,
                 clean=clean[1:],
@@ -159,7 +159,7 @@ def kickmix_modular_addition_program(
         )
         operations.append(ReversiblePhaseOperation("r", (auxiliary,)))
         emit(
-            kickmix_greater_than_ir(
+            mixed_greater_than_ir(
                 extended,
                 modulus_extended,
                 auxiliary,
@@ -171,7 +171,7 @@ def kickmix_modular_addition_program(
             )
         )
         emit(
-            kickmix_mixed_addition_ir(
+            mixed_addition_ir(
                 extended,
                 modulus_extended,
                 clean=clean[2:],
@@ -188,7 +188,7 @@ def kickmix_modular_addition_program(
             ReversiblePhaseOperation("push_condition", (), condition_bit=result)
         )
         emit(
-            kickmix_less_than_ir(
+            mixed_less_than_ir(
                 target,
                 offset,
                 None,

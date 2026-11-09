@@ -12,7 +12,7 @@ import torch
 from examples.algorithms.binary_field_arithmetic import FieldOperation
 from flagquantum.compiler.formats.kmx import encode_kmx
 from flagquantum.compiler.lowering.reversible_phase import lower_reversible_phase
-from flagquantum.compiler.registers.arithmetic.increment import kickmix_increment_ir
+from flagquantum.compiler.registers.arithmetic.increment import increment_ir
 from flagquantum.core.ir import CircuitIR
 from flagquantum.dynamic import DynamicCircuit
 from flagquantum.runtime.dynamic.execution import run_dynamic
@@ -30,7 +30,7 @@ def test_emitted_streams_match_locked_source_fixtures() -> None:
     for case in fixture["cases"]:
         n, controlled, extra = case["width"], case["controlled"], case["extra_clean"]
         needed = max(0, n - (2 if controlled else 3))
-        gates = kickmix_increment_ir(
+        gates = increment_ir(
             tuple(reversed(range(n))),
             control=n if controlled else True,
             clean=tuple(range(n + 1, n + 1 + needed + extra)),
@@ -56,7 +56,7 @@ def test_all_complex_branches_restore_clean_work(n: int, controlled: bool) -> No
     amplitudes /= amplitudes.norm()
     initial = torch.zeros(1 << total, dtype=torch.complex128)
     initial[:: 1 << (needed + 1)] = amplitudes
-    gates = kickmix_increment_ir(
+    gates = increment_ir(
         tuple(range(n)),
         control=n if controlled else True,
         clean=tuple(range(n + 1, total)),
@@ -105,11 +105,11 @@ def test_invalid_increment_bindings_refuse_before_emission(
     kwargs: dict[str, object],
 ) -> None:
     with pytest.raises(ValueError):
-        kickmix_increment_ir((0, 1, 2, 3), **kwargs)
+        increment_ir((0, 1, 2, 3), **kwargs)
 
 
 def test_empty_increment_has_no_work_or_measurement() -> None:
-    assert kickmix_increment_ir(()) == ()
+    assert increment_ir(()) == ()
 
 
 @pytest.mark.ftqc_reference
@@ -124,7 +124,7 @@ def test_native_all_basis_words_keep_absolute_phase_and_clean_work(
     assert hasattr(km, "Simulator")
     needed = max(0, n - (2 if controlled else 3))
     total = n + 1 + needed
-    gates = kickmix_increment_ir(
+    gates = increment_ir(
         tuple(range(n)),
         control=n if controlled else True,
         clean=tuple(range(n + 1, total)),

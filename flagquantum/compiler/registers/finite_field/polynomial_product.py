@@ -8,13 +8,13 @@ from collections.abc import Iterator
 
 from ....core.ir import Instruction
 from .binary_linear_map import (
-    kickmix_field_constant_scale_ir,
-    kickmix_field_monomial_scale_ir,
+    field_constant_scale_ir,
+    field_monomial_scale_ir,
 )
 from .coefficients import gf2_add_coefficients_ir, gf2_add_ir
 from .field_multiplication import _field_power, _validate_field
 from .polynomial import _validate_registers
-from .product_erasure import kickmix_field_product_erase_ir
+from .product_erasure import field_product_erase_ir
 
 
 def _scaled_polynomial_product(
@@ -77,7 +77,7 @@ def _middle_product(
     yield from add_left
 
 
-def kickmix_field_product_xor_ir(
+def field_product_xor_ir(
     left: tuple[int, ...],
     right: tuple[int, ...],
     target: tuple[int, ...],
@@ -103,17 +103,17 @@ def kickmix_field_product_xor_ir(
     inverse = _field_power(factor, (1 << width) - 2, modulus)
     x, y, result = left[::-1], right[::-1], target[::-1]
     return (
-        *kickmix_field_monomial_scale_ir(target, -half, modulus=modulus),
+        *field_monomial_scale_ir(target, -half, modulus=modulus),
         *_middle_product(result[: 2 * half - 1], x, y, half),
-        *kickmix_field_constant_scale_ir(target, inverse, modulus=modulus),
+        *field_constant_scale_ir(target, inverse, modulus=modulus),
         *_polynomial_product(result[: 2 * high_width - 1], x[half:], y[half:]),
-        *kickmix_field_monomial_scale_ir(target, half, modulus=modulus),
+        *field_monomial_scale_ir(target, half, modulus=modulus),
         *_polynomial_product(result[: 2 * half - 1], x[:half], y[:half]),
-        *kickmix_field_constant_scale_ir(target, factor, modulus=modulus),
+        *field_constant_scale_ir(target, factor, modulus=modulus),
     )
 
 
-def kickmix_controlled_field_product_xor_ir(
+def controlled_field_product_xor_ir(
     control: int,
     left: tuple[int, ...],
     right: tuple[int, ...],
@@ -133,9 +133,9 @@ def kickmix_controlled_field_product_xor_ir(
     _validate_registers((control,), left, right, target, workspace)
     add = gf2_add_coefficients_ir(workspace, target, control=control)
     return (
-        *kickmix_field_product_xor_ir(left, right, workspace, modulus=modulus),
+        *field_product_xor_ir(left, right, workspace, modulus=modulus),
         *add,
-        *kickmix_field_product_erase_ir(
+        *field_product_erase_ir(
             left,
             right,
             workspace,

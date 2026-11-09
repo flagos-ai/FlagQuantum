@@ -103,7 +103,7 @@ def _vented_carries(
     return tuple(gates)
 
 
-def kickmix_vented_addition_ir(
+def vented_addition_ir(
     target: tuple[int, ...],
     offset: tuple[_Coefficient, ...],
     *,

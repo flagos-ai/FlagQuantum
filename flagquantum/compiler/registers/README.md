@@ -60,7 +60,7 @@ records all 191 moves. The internal flat module paths have been replaced at all
 checked-in executable consumers. Test filenames retain their existing scenario
 and upstream-reference identities.
 
-Function and class names, signatures, source schedules and cost formulas retain
-existing behavior. Some internal callable identifiers still carry `kickmix_`.
-The relocation removes the upstream prefix from implementation filenames.
+Internal emitters use functional names. The callable map in the module guide
+records 40 renamed functions and their owners. Source schedules, register
+contracts and cost formulas retain their existing behavior.
 General typed component graph execution remains separate integration work.

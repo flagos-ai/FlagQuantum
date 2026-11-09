@@ -9,7 +9,7 @@ from examples.algorithms.binary_field_arithmetic import FieldOperation
 from flagquantum.compiler.formats.kmx import encode_kmx
 from flagquantum.compiler.lowering.reversible_phase import lower_reversible_phase
 from flagquantum.compiler.registers.arithmetic.measured_carry_addition import (
-    kickmix_simple_addition_ir,
+    measured_carry_addition_ir,
 )
 from flagquantum.compiler.registers.finite_field.coefficients import (
     ClassicalFieldCoefficient,
@@ -33,7 +33,7 @@ def test_simple_addition_restores_each_complex_branch(
     offset = (ClassicalFieldCoefficient(0), low)
     clean = tuple(range(data, total))
     setup = ClassicalXor((), 0, constant=True).instruction()
-    gates = kickmix_simple_addition_ir(
+    gates = measured_carry_addition_ir(
         tuple(range(width)),
         offset,
         clean=clean,
@@ -75,7 +75,7 @@ def test_simple_addition_restores_each_complex_branch(
 
 def test_simple_addition_uses_the_locked_carry_order_and_gate_budget() -> None:
     setup = tuple(ClassicalXor((), bit).instruction() for bit in range(3))
-    gates = kickmix_simple_addition_ir(
+    gates = measured_carry_addition_ir(
         (4, 3, 2, 1, 0),
         tuple(ClassicalFieldCoefficient(bit) for bit in (2, 1, 0)),
         clean=(10, 11, 12, 13, 14),
@@ -94,8 +94,8 @@ def test_simple_addition_uses_the_locked_carry_order_and_gate_budget() -> None:
 
 def test_simple_addition_rejects_the_source_out_of_bounds_offsets() -> None:
     with pytest.raises(ValueError, match="explicit low offset bits"):
-        kickmix_simple_addition_ir((0,), (), clean=(1,))
+        measured_carry_addition_ir((0,), (), clean=(1,))
     with pytest.raises(ValueError, match="explicit low offset bits"):
-        kickmix_simple_addition_ir((0, 1), (True,), clean=(2, 3))
+        measured_carry_addition_ir((0, 1), (True,), clean=(2, 3))
     with pytest.raises(ValueError, match="clean wire per target"):
-        kickmix_simple_addition_ir((0,), (True,), clean=())
+        measured_carry_addition_ir((0,), (True,), clean=())

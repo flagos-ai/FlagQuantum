@@ -10,10 +10,10 @@ from examples.algorithms.binary_field_arithmetic import FieldOperation
 from flagquantum.compiler.formats.kmx import encode_kmx
 from flagquantum.compiler.lowering.reversible_phase import lower_reversible_phase
 from flagquantum.compiler.registers.comparison.low_space_comparison import (
-    kickmix_low_space_less_than_ir,
+    low_space_less_than_ir,
 )
 from flagquantum.compiler.registers.comparison.mixed_comparison import (
-    kickmix_less_than_ir,
+    mixed_less_than_ir,
 )
 from flagquantum.compiler.registers.finite_field.coefficients import (
     ClassicalFieldCoefficient,
@@ -43,7 +43,7 @@ def test_comparison_restores_every_complex_measurement_history(
     amplitudes /= amplitudes.norm()
     state = torch.zeros(1 << total, dtype=torch.complex128)
     state[::16] = amplitudes
-    ir = kickmix_low_space_less_than_ir(
+    ir = low_space_less_than_ir(
         tuple(range(width)),
         (ClassicalFieldCoefficient(0), True),
         None if phase_target else target,
@@ -87,10 +87,10 @@ def test_dispatch_matches_native_eight_bit_resource_counts() -> None:
     clean = (9, 10, 11)
     slots = (9, 10, 11)
     equal = ClassicalFieldCoefficient(8)
-    direct = kickmix_low_space_less_than_ir(
+    direct = low_space_less_than_ir(
         left, right, 8, clean, measurement_bits=slots, or_equal=equal
     )
-    dispatched = kickmix_less_than_ir(
+    dispatched = mixed_less_than_ir(
         left, right, 8, clean, low_space_bits=slots, or_equal=equal
     )
     assert direct == dispatched
@@ -108,10 +108,10 @@ def test_deep_prefix_keeps_conditional_ccz_and_checks_slot_count() -> None:
     left = tuple(range(20))
     right = (False,) * 20
     with pytest.raises(ValueError, match="6 result slots"):
-        kickmix_low_space_less_than_ir(
+        low_space_less_than_ir(
             left, right, 20, (21, 22, 23), measurement_bits=tuple(range(5))
         )
-    ir = kickmix_low_space_less_than_ir(
+    ir = low_space_less_than_ir(
         left, right, 20, (21, 22, 23), measurement_bits=tuple(range(6))
     )
     program = lower_reversible_phase(CircuitIR(24, ir))
@@ -133,7 +133,7 @@ def test_deep_classical_compare_runs_with_native_phase_and_clean_workspace() -> 
     source = tuple(range(width))
     rhs = tuple(ClassicalFieldCoefficient(i) for i in range(width))
     control, workspace = width, (width + 1, width + 2, width + 3)
-    ir = kickmix_low_space_less_than_ir(
+    ir = low_space_less_than_ir(
         source,
         rhs,
         None,

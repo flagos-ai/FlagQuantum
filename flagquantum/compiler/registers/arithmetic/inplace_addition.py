@@ -141,7 +141,7 @@ def _addition(
     )
 
 
-def kickmix_inplace_addition_ir(
+def inplace_addition_ir(
     target: tuple[int, ...],
     offset: tuple[int, ...],
     *,

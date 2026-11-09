@@ -16,7 +16,7 @@ from flagquantum.compiler.registers.finite_field.coefficients import (
     ClassicalFieldCoefficient,
 )
 from flagquantum.compiler.registers.modular.mixed_modular_addition import (
-    kickmix_modular_addition_program,
+    mixed_modular_addition_program,
 )
 from flagquantum.core.classical_dataflow import ClassicalXor
 from flagquantum.dynamic import DynamicCircuit
@@ -37,7 +37,7 @@ def test_bound_modular_operation_matches_complex_amplitudes(
 ) -> None:
     control = 2 * width
     work = tuple(range(control + 1, control + width + 4))
-    program = kickmix_modular_addition_program(
+    program = mixed_modular_addition_program(
         tuple(range(width)),
         tuple(range(width, control)),
         (
@@ -150,7 +150,7 @@ def _certify_all_histories(
 @pytest.mark.parametrize("subtract", [False, True])
 def test_two_bit_modular_signed_basis_map_in_every_history(subtract: bool) -> None:
     np = pytest.importorskip("numpy")
-    program = kickmix_modular_addition_program(
+    program = mixed_modular_addition_program(
         (1, 0),
         (3, 2),
         (True, True),
@@ -174,7 +174,7 @@ def test_two_bit_modular_signed_basis_map_in_every_history(subtract: bool) -> No
 
 @pytest.mark.parametrize("subtract", [False, True])
 def test_quantum_modulus_is_restored_in_superposition(subtract: bool) -> None:
-    program = kickmix_modular_addition_program(
+    program = mixed_modular_addition_program(
         (0, 1), (2, 3), (4, 5), clean=(7, 8, 9, 10, 11), control=6, subtract=subtract
     )
     state = torch.zeros(1 << program.n_qubits, dtype=torch.complex128)
@@ -203,7 +203,7 @@ def test_quantum_modulus_is_restored_in_superposition(subtract: bool) -> None:
 def test_quantum_modulus_requires_actual_clean_comparison_workspace() -> None:
     # The native insufficient-work mixed comparison reads past its clean span.
     with pytest.raises(ValueError, match="width minus one clean"):
-        kickmix_modular_addition_program(
+        mixed_modular_addition_program(
             (2, 1, 0),
             (5, 4, 3),
             (8, 7, 6),

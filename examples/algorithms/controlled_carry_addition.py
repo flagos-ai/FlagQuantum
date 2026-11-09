@@ -10,7 +10,7 @@ import torch
 from examples.algorithms.binary_field_arithmetic import FieldOperation
 from flagquantum.compiler.lowering.reversible_phase import lower_reversible_phase
 from flagquantum.compiler.registers.arithmetic.carry_controlled_addition import (
-    kickmix_controlled_addition_ir,
+    carry_controlled_addition_ir,
 )
 from flagquantum.core.ir import CircuitIR
 from flagquantum.dynamic import DynamicCircuit
@@ -18,7 +18,7 @@ from flagquantum.runtime.dynamic.execution import run_dynamic
 
 
 def main() -> None:
-    gates = kickmix_controlled_addition_ir(
+    gates = carry_controlled_addition_ir(
         (0, 1, 2),
         (3, 4, 5),
         control=6,

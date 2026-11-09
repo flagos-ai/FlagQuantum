@@ -9,11 +9,11 @@ from examples.algorithms.binary_field_arithmetic import FieldOperation
 from flagquantum.compiler.formats.kmx import decode_kmx, encode_kmx
 from flagquantum.compiler.lowering.reversible_phase import lower_reversible_phase
 from flagquantum.compiler.registers.finite_field.polynomial_product import (
-    kickmix_field_product_xor_ir,
+    field_product_xor_ir,
 )
 from flagquantum.compiler.registers.finite_field.product_erasure import (
-    kickmix_field_product_erase_ir,
-    kickmix_field_product_phase_ir,
+    field_product_erase_ir,
+    field_product_phase_ir,
 )
 from flagquantum.core.ir import CircuitIR
 from flagquantum.dynamic import DynamicCircuit
@@ -65,7 +65,7 @@ def test_erase_matches_pinned_hmr_phase_and_bit_lifetime(
     ]
     a, b, result = (word[::-1] for word in _registers(width))
     slots = tuple(reversed(range(width)))
-    ir = kickmix_field_product_erase_ir(
+    ir = field_product_erase_ir(
         a, b, result, slots, modulus=field.modulus, parity_bit=width
     )
     program = lower_reversible_phase(CircuitIR(3 * width, ir))
@@ -102,7 +102,7 @@ def test_erase_cancels_every_branch_for_all_field_inputs(
         for shift in reversed(range(width))
     ]
     original = [values.copy() for values in wires[: 2 * width]]
-    ir = kickmix_field_product_erase_ir(
+    ir = field_product_erase_ir(
         left, right, target, tuple(range(width)), modulus=modulus, parity_bit=width
     )
     operations = lower_reversible_phase(CircuitIR(3 * width, ir)).operations
@@ -139,8 +139,8 @@ def test_dynamic_roundtrip_restores_complex_input_in_each_branch(
     left, right, target = _registers(width)
     bits = tuple(range(width))
     gates = (
-        *kickmix_field_product_xor_ir(left, right, target, modulus=modulus),
-        *kickmix_field_product_erase_ir(
+        *field_product_xor_ir(left, right, target, modulus=modulus),
+        *field_product_erase_ir(
             left, right, target, bits, modulus=modulus, parity_bit=width
         ),
     )
@@ -159,8 +159,8 @@ def test_dynamic_roundtrip_restores_complex_input_in_each_branch(
 
 
 def test_parity_slot_is_only_required_for_multi_bit_columns() -> None:
-    assert len(kickmix_field_product_phase_ir((0,), (1,), (0,), modulus=3)) == 1
+    assert len(field_product_phase_ir((0,), (1,), (0,), modulus=3)) == 1
     with pytest.raises(ValueError, match="needs a classical parity slot"):
-        kickmix_field_product_phase_ir((0, 1), (2, 3), (0, 1), modulus=7)
+        field_product_phase_ir((0, 1), (2, 3), (0, 1), modulus=7)
     with pytest.raises(ValueError, match="distinct"):
-        kickmix_field_product_phase_ir((0, 1), (2, 3), (0, 1), modulus=7, parity_bit=0)
+        field_product_phase_ir((0, 1), (2, 3), (0, 1), modulus=7, parity_bit=0)

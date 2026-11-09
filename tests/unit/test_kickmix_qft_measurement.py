@@ -14,8 +14,8 @@ from flagquantum.compiler.lowering.reversible_phase_execution import (
     bind_reversible_phase_execution,
 )
 from flagquantum.compiler.registers.phase.qft_measurement import (
-    kickmix_qft_measurement_operations,
-    kickmix_qft_measurement_program,
+    qft_measurement_operations,
+    qft_measurement_program,
 )
 from flagquantum.core.classical_dataflow import ClassicalXor
 from flagquantum.dynamic import DynamicCircuit
@@ -76,7 +76,7 @@ def test_every_unnormalized_complex_branch_matches_the_dense_fourier_projection(
         width = size + 1
         target = tuple(range(size))
     outputs = tuple(3 + 2 * k for k in range(size))
-    program = kickmix_qft_measurement_program(
+    program = qft_measurement_program(
         target, outputs, n_qubits=width, inverse_qft=inverse
     )
     assert decode_kmx(encode_kmx(program)) == program
@@ -103,7 +103,7 @@ def test_local_execution_preserves_classical_holes_and_conditional_spectator_sta
     strategy: str, inverse: bool
 ) -> None:
     outputs = (2, 4, 6)
-    program = kickmix_qft_measurement_program(
+    program = qft_measurement_program(
         (0, 1, 2), outputs, n_qubits=4, inverse_qft=inverse
     )
     assert program.input_bits == (0, 1, 3, 5)
@@ -143,7 +143,7 @@ def test_native_basis_phase_is_the_exact_fourier_scalar(
 ) -> None:
     km = pytest.importorskip("kickmix")
     assert hasattr(km, "Simulator")
-    program = kickmix_qft_measurement_program(
+    program = qft_measurement_program(
         tuple(reversed(range(size))),
         tuple(reversed(range(size))),
         n_qubits=size,
@@ -172,7 +172,7 @@ def test_native_basis_phase_is_the_exact_fourier_scalar(
 def test_native_opcode_counts_and_fixed_precision_zero_nodes(
     size: int, inverse: bool
 ) -> None:
-    operations = kickmix_qft_measurement_operations(
+    operations = qft_measurement_operations(
         tuple(range(size)), tuple(range(size)), inverse_qft=inverse
     )
     counts = Counter(op.opcode for op in operations)
@@ -185,14 +185,14 @@ def test_native_opcode_counts_and_fixed_precision_zero_nodes(
 
 def test_invalid_fourier_ports_fail_before_emission() -> None:
     with pytest.raises(ValueError, match="matching"):
-        kickmix_qft_measurement_operations((0,), ())
+        qft_measurement_operations((0,), ())
     with pytest.raises(ValueError, match="distinct nonnegative"):
-        kickmix_qft_measurement_operations((0, 1), (2, 2))
+        qft_measurement_operations((0, 1), (2, 2))
     with pytest.raises(ValueError, match="distinct nonnegative"):
-        kickmix_qft_measurement_operations((0,), (-1,))
+        qft_measurement_operations((0,), (-1,))
     with pytest.raises(ValueError, match="boolean"):
-        kickmix_qft_measurement_operations((0,), (0,), inverse_qft=1)  # type: ignore[arg-type]
-    assert kickmix_qft_measurement_operations((), ()) == ()
+        qft_measurement_operations((0,), (0,), inverse_qft=1)  # type: ignore[arg-type]
+    assert qft_measurement_operations((), ()) == ()
 
 
 def test_source_and_bound_resource_bases_are_separate() -> None:
@@ -201,7 +201,7 @@ def test_source_and_bound_resource_bases_are_separate() -> None:
     )
     from flagquantum.core.ir import CircuitIR
 
-    program = kickmix_qft_measurement_program((0, 1, 2, 3), (0, 1, 2, 3), n_qubits=5)
+    program = qft_measurement_program((0, 1, 2, 3), (0, 1, 2, 3), n_qubits=5)
     source = Counter(op.opcode for op in program.operations)
     assert source == {"swap": 2, "z_pow": 6, "hmr": 4}
     report = count_emitted_instructions(

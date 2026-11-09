@@ -14,7 +14,7 @@ from flagquantum.compiler.lowering.reversible_phase_execution import (
     bind_reversible_phase_execution,
 )
 from flagquantum.compiler.registers.phase.qft_measurement import (
-    kickmix_qft_measurement_program,
+    qft_measurement_program,
 )
 from flagquantum.dynamic import DynamicCircuit
 from flagquantum.runtime.dynamic.execution import run_dynamic
@@ -27,7 +27,7 @@ def make_circuit(*, inverse_qft: bool = False) -> DynamicCircuit:
     amplitudes = torch.exp(-sign * 2j * pi * value * x / dimension) / dimension**0.5
     initial = torch.zeros(16, dtype=torch.complex128)
     initial[::2] = amplitudes  # The last qubit is an untouched spectator.
-    program = kickmix_qft_measurement_program(
+    program = qft_measurement_program(
         (0, 1, 2), (0, 1, 2), n_qubits=4, inverse_qft=inverse_qft
     )
     operation = FieldOperation(4, bind_reversible_phase_execution(program))

@@ -12,7 +12,7 @@ from ...artifacts.reversible_phase import (
 from ..finite_field.polynomial import _validate_registers
 
 
-def kickmix_qft_measurement_operations(
+def qft_measurement_operations(
     target: tuple[int, ...], output: tuple[int, ...], *, inverse_qft: bool = False
 ) -> tuple[ReversiblePhaseOperation, ...]:
     """Measure a big-endian word in the source Fourier basis and clear it.
@@ -55,7 +55,7 @@ def kickmix_qft_measurement_operations(
     return tuple(ops)
 
 
-def kickmix_qft_measurement_program(
+def qft_measurement_program(
     target: tuple[int, ...],
     output: tuple[int, ...],
     *,
@@ -63,9 +63,7 @@ def kickmix_qft_measurement_program(
     inverse_qft: bool = False,
 ) -> ReversiblePhaseProgram:
     """Embed the logical operation while preserving unowned classical holes."""
-    operations = kickmix_qft_measurement_operations(
-        target, output, inverse_qft=inverse_qft
-    )
+    operations = qft_measurement_operations(target, output, inverse_qft=inverse_qft)
     bits = max(output, default=-1) + 1
     inputs = tuple(bit for bit in range(bits) if bit not in output)
     return ReversiblePhaseProgram(n_qubits, bits, operations, inputs)

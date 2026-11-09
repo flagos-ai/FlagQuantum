@@ -9,12 +9,12 @@ from examples.algorithms.binary_field_arithmetic import FieldOperation
 from flagquantum.compiler.formats.kmx import encode_kmx
 from flagquantum.compiler.lowering.reversible_phase import lower_reversible_phase
 from flagquantum.compiler.registers.finite_field.inverse_chain import (
-    kickmix_field_inverse_chain_erase_ir,
-    kickmix_field_inverse_chain_ir,
-    kickmix_field_inverse_chain_size,
-    kickmix_field_inverse_erase_ir,
-    kickmix_field_inverse_ir,
-    kickmix_field_inverse_workspace_size,
+    field_inverse_chain_erase_ir,
+    field_inverse_chain_ir,
+    field_inverse_chain_size,
+    field_inverse_erase_ir,
+    field_inverse_ir,
+    field_inverse_workspace_size,
 )
 from flagquantum.core.ir import CircuitIR
 from flagquantum.dynamic import DynamicCircuit
@@ -29,9 +29,9 @@ def _words(
     width: int, *, reversed_wires: bool = False, retain: bool = True
 ) -> tuple[tuple[int, ...], ...]:
     workspace = (
-        kickmix_field_inverse_chain_size(width)
+        field_inverse_chain_size(width)
         if retain
-        else kickmix_field_inverse_workspace_size(width)
+        else field_inverse_workspace_size(width)
     )
     total = 2 * width + workspace
     words = [tuple(range(start, start + width)) for start in range(0, total, width)]
@@ -41,9 +41,7 @@ def _words(
 
 
 def _bits(width: int) -> tuple[int, ...]:
-    return tuple(
-        reversed(range(width if kickmix_field_inverse_chain_size(width) else 1))
-    )
+    return tuple(reversed(range(width if field_inverse_chain_size(width) else 1)))
 
 
 def _self_clean_bits(width: int) -> tuple[int, ...]:
@@ -64,16 +62,16 @@ def test_explicit_chain_matches_pinned_gate_stream(width: int) -> None:
     target, scaffold = builder.init_gf2_inverse_with_scaffold(
         source, target=target, field=field
     )
-    assert len(scaffold) == kickmix_field_inverse_chain_size(width)
+    assert len(scaffold) == field_inverse_chain_size(width)
     builder.del_gf2_inverse_with_scaffold(
         source, target=target, scaffold=scaffold, field=field
     )
     circuit = str(builder.finish_circuit())
     source_wires, target_wires, chain = _words(width, reversed_wires=True)
-    forward = kickmix_field_inverse_chain_ir(
+    forward = field_inverse_chain_ir(
         source_wires, target_wires, chain, modulus=field.modulus
     )
-    erase = kickmix_field_inverse_chain_erase_ir(
+    erase = field_inverse_chain_erase_ir(
         source_wires,
         target_wires,
         chain,
@@ -121,10 +119,10 @@ def test_self_cleaning_inverse_matches_pinned_stream(width: int) -> None:
     reference_circuit = str(builder.finish_circuit())
     registers = _words(width, reversed_wires=True, retain=False)
     workspace = registers[2]
-    forward = kickmix_field_inverse_ir(
+    forward = field_inverse_ir(
         *registers, _self_clean_bits(width), modulus=field.modulus, parity_bit=width
     )
-    erase = kickmix_field_inverse_erase_ir(
+    erase = field_inverse_erase_ir(
         *registers, _bits(width), modulus=field.modulus, parity_bit=width
     )
     parity_initialized = False
@@ -183,10 +181,10 @@ def test_every_branch_preserves_all_field_inputs(
     inverses[1:] = field(values[1:]) ** -1
     source, target, chain = _words(width, retain=retain)
     if retain:
-        forward = kickmix_field_inverse_chain_ir(source, target, chain, modulus=modulus)
-        erase_inverse = kickmix_field_inverse_chain_erase_ir
+        forward = field_inverse_chain_ir(source, target, chain, modulus=modulus)
+        erase_inverse = field_inverse_chain_erase_ir
     else:
-        forward = kickmix_field_inverse_ir(
+        forward = field_inverse_ir(
             source,
             target,
             chain,
@@ -194,7 +192,7 @@ def test_every_branch_preserves_all_field_inputs(
             modulus=modulus,
             parity_bit=width,
         )
-        erase_inverse = kickmix_field_inverse_erase_ir
+        erase_inverse = field_inverse_erase_ir
     erase = erase_inverse(
         source, target, chain, _bits(width), modulus=modulus, parity_bit=width
     )
@@ -263,10 +261,10 @@ def test_append_roundtrip_restores_complex_amplitudes(
     source, target, chain = _words(width, retain=retain)
     total = 2 * width + len(chain)
     if retain:
-        forward = kickmix_field_inverse_chain_ir(source, target, chain, modulus=modulus)
-        erase_inverse = kickmix_field_inverse_chain_erase_ir
+        forward = field_inverse_chain_ir(source, target, chain, modulus=modulus)
+        erase_inverse = field_inverse_chain_erase_ir
     else:
-        forward = kickmix_field_inverse_ir(
+        forward = field_inverse_ir(
             source,
             target,
             chain,
@@ -274,7 +272,7 @@ def test_append_roundtrip_restores_complex_amplitudes(
             modulus=modulus,
             parity_bit=width,
         )
-        erase_inverse = kickmix_field_inverse_erase_ir
+        erase_inverse = field_inverse_erase_ir
     erase = erase_inverse(
         source, target, chain, _bits(width), modulus=modulus, parity_bit=width
     )

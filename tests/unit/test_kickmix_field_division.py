@@ -9,11 +9,11 @@ from examples.algorithms.binary_field_arithmetic import FieldOperation
 from flagquantum.compiler.formats.kmx import encode_kmx
 from flagquantum.compiler.lowering.reversible_phase import lower_reversible_phase
 from flagquantum.compiler.registers.finite_field.division_chain import (
-    kickmix_field_division_chain_erase_ir,
-    kickmix_field_division_chain_ir,
-    kickmix_field_division_erase_ir,
-    kickmix_field_division_workspace_size,
-    kickmix_field_division_xor_ir,
+    field_division_chain_erase_ir,
+    field_division_chain_ir,
+    field_division_erase_ir,
+    field_division_workspace_size,
+    field_division_xor_ir,
 )
 from flagquantum.core.ir import CircuitIR
 from flagquantum.dynamic import DynamicCircuit
@@ -28,7 +28,7 @@ pytestmark = pytest.mark.unit
 def _registers(
     width: int, *, little_endian_ids: bool = False
 ) -> tuple[tuple[int, ...], tuple[int, ...], tuple[int, ...], tuple[int, ...]]:
-    total = 3 * width + kickmix_field_division_workspace_size(width)
+    total = 3 * width + field_division_workspace_size(width)
     words = [tuple(range(start, start + width)) for start in range(0, total, width)]
     if little_endian_ids:
         words = [word[::-1] for word in words]
@@ -59,17 +59,17 @@ def test_division_matches_locked_stream(width: int, retain: bool) -> None:
         builder.del_gf2_div_with_scaffold(
             left, right, target=target, scaffold=scaffold, field=field
         )
-        forward = kickmix_field_division_chain_ir(*registers, modulus=field.modulus)
-        erase = kickmix_field_division_chain_erase_ir(
+        forward = field_division_chain_ir(*registers, modulus=field.modulus)
+        erase = field_division_chain_erase_ir(
             *registers, bits, modulus=field.modulus, parity_bit=width
         )
     else:
         builder.ixor_gf2_div(left, right, target=target, field=field)
         builder.del_gf2_div(left, right, target=target, field=field)
-        forward = kickmix_field_division_xor_ir(
+        forward = field_division_xor_ir(
             *registers, inverse_bits, modulus=field.modulus, parity_bit=width
         )
-        erase = kickmix_field_division_erase_ir(
+        erase = field_division_erase_ir(
             *registers, bits, modulus=field.modulus, parity_bit=width
         )
 
@@ -129,16 +129,16 @@ def test_quotient_and_every_measurement_phase(
     target, workspace = registers[2:]
     bits = tuple(reversed(range(width)))
     if retain:
-        forward = kickmix_field_division_chain_ir(*registers, modulus=modulus)
-        erase = kickmix_field_division_chain_erase_ir(
+        forward = field_division_chain_ir(*registers, modulus=modulus)
+        erase = field_division_chain_erase_ir(
             *registers, bits, modulus=modulus, parity_bit=width
         )
     else:
         inverse_bits = bits if len(workspace) > width else bits[-1:]
-        forward = kickmix_field_division_xor_ir(
+        forward = field_division_xor_ir(
             *registers, inverse_bits, modulus=modulus, parity_bit=width
         )
-        erase = kickmix_field_division_erase_ir(
+        erase = field_division_erase_ir(
             *registers, bits, modulus=modulus, parity_bit=width
         )
     wires = [
@@ -168,8 +168,8 @@ def test_append_preserves_complex_amplitudes(shared_inputs: bool) -> None:
     if shared_inputs:
         right = left
     registers = left, right, target, workspace
-    forward = kickmix_field_division_chain_ir(*registers, modulus=modulus)
-    erase = kickmix_field_division_chain_erase_ir(
+    forward = field_division_chain_ir(*registers, modulus=modulus)
+    erase = field_division_chain_erase_ir(
         *registers, (1, 0), modulus=modulus, parity_bit=2
     )
     state = torch.zeros(1 << total, dtype=torch.complex128)
@@ -186,6 +186,6 @@ def test_append_preserves_complex_amplitudes(shared_inputs: bool) -> None:
 
 def test_division_validates_workspace_ownership() -> None:
     with pytest.raises(ValueError, match="workspace"):
-        kickmix_field_division_chain_ir((0, 1), (2, 3), (4, 5), (6,), modulus=7)
+        field_division_chain_ir((0, 1), (2, 3), (4, 5), (6,), modulus=7)
     with pytest.raises(ValueError, match="distinct"):
-        kickmix_field_division_chain_ir((0, 1), (2, 3), (4, 5), (3, 6), modulus=7)
+        field_division_chain_ir((0, 1), (2, 3), (4, 5), (3, 6), modulus=7)

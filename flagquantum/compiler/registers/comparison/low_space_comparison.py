@@ -7,7 +7,7 @@
 from ....core.ir import Instruction
 from ..finite_field.coefficients import ClassicalFieldCoefficient
 from ..finite_field.polynomial import _validate_registers
-from ..phase.masked_prefix_phase import kickmix_masked_prefix_phase_ir
+from ..phase.masked_prefix_phase import masked_prefix_phase_ir
 from ..primitives._mixed_gates import _flip, _parity_controlled_flip
 from ..primitives.measurement import measure_x_clear_ir
 
@@ -114,7 +114,7 @@ def _low_space_core(
     gates.extend(measure_x_clear_ir(b if depth % 2 == 0 else a, bits[depth - 1]))
     masks = tuple(ClassicalFieldCoefficient(bit) for bit in bits[:depth])
     gates.extend(
-        kickmix_masked_prefix_phase_ir(
+        masked_prefix_phase_ir(
             (c, *reversed(lhs[n - depth + 1 :])),
             masks,
             clean=(a, b),
@@ -133,7 +133,7 @@ def _low_space_core(
     return (*gates, *invert, *difference)
 
 
-def kickmix_low_space_less_than_ir(
+def low_space_less_than_ir(
     left: tuple[int, ...],
     right: tuple[bool | ClassicalFieldCoefficient, ...],
     target: int | None,

@@ -65,7 +65,7 @@ def _broadcast_offset(
     )
 
 
-def kickmix_carry_xor_ir(
+def carry_parity_ir(
     source: tuple[int, ...],
     offset: tuple[_Coefficient, ...],
     target: tuple[int, ...],

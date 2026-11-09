@@ -1,6 +1,6 @@
 # Locked modular negation
 
-The compiler-owned `kickmix_modular_negation_program` follows
+The compiler-owned `mixed_modular_negation_program` follows
 `gen_ineg_mod.cc` at Kickmix commit
 `9a0c11a4ee7697c082fbf8f2e1e8bf4a71fcb453` in the Qualtran repository.
 The unmodified source Git blob is
@@ -75,11 +75,11 @@ from flagquantum.compiler.lowering.reversible_phase_execution import (
     bind_reversible_phase_execution,
 )
 from flagquantum.compiler.registers.modular.mixed_modular_negation import (
-    kickmix_modular_negation_program,
+    mixed_modular_negation_program,
 )
 from flagquantum.dynamic import DynamicCircuit
 
-program = kickmix_modular_negation_program(
+program = mixed_modular_negation_program(
     (0, 1), (True, True), clean=(2, 3, 4)
 )
 circuit = DynamicCircuit(5)

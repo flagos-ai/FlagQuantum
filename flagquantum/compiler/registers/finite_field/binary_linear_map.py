@@ -67,7 +67,7 @@ def _inverse_columns(columns: tuple[int, ...]) -> tuple[int, ...]:
     return tuple(column >> width for column in augmented)
 
 
-def kickmix_binary_linear_map_ir(
+def binary_linear_map_ir(
     target: tuple[int, ...],
     columns: tuple[int, ...],
     *,
@@ -90,7 +90,7 @@ def kickmix_binary_linear_map_ir(
     return _linear_map(target[::-1], _inverse_columns(columns) if adjoint else columns)
 
 
-def kickmix_field_constant_scale_ir(
+def field_constant_scale_ir(
     target: tuple[int, ...], constant: int, *, modulus: int
 ) -> tuple[Instruction, ...]:
     """Multiply a big-endian word by a nonzero polynomial on fixed wires."""
@@ -107,7 +107,7 @@ def kickmix_field_constant_scale_ir(
     )
 
 
-def kickmix_field_frobenius_ir(
+def field_frobenius_ir(
     target: tuple[int, ...],
     count: int = 1,
     *,
@@ -134,7 +134,7 @@ def kickmix_field_frobenius_ir(
     return _linear_map(target[::-1], tuple(columns))
 
 
-def kickmix_field_monomial_scale_ir(
+def field_monomial_scale_ir(
     target: tuple[int, ...], power: int, *, modulus: int
 ) -> tuple[Instruction, ...]:
     """Multiply by x**power using Kickmix's deferred cyclic rotation."""
@@ -150,7 +150,7 @@ def kickmix_field_monomial_scale_ir(
     if steps > width * width // (len(terms) + 1):
         exponent = power % ((1 << width) - 1)
         factor = _field_power(2, exponent, modulus)
-        return kickmix_field_constant_scale_ir(target, factor, modulus=modulus)
+        return field_constant_scale_ir(target, factor, modulus=modulus)
 
     wires = target[::-1]
     positions = range(-1, -steps - 1, -1) if power > 0 else range(steps)

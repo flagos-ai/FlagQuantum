@@ -14,19 +14,19 @@ from ...artifacts.reversible_phase import (
 )
 from ...lowering.reversible_phase import lower_reversible_phase
 from ..arithmetic.carry_parity import _Coefficient
-from ..arithmetic.mixed_addition import _complement, kickmix_mixed_addition_ir
-from ..bits.bit_rotation import kickmix_bit_rotation_ir
-from ..comparison.mixed_comparison import kickmix_greater_than_ir
+from ..arithmetic.mixed_addition import _complement, mixed_addition_ir
+from ..bits.bit_rotation import bit_rotation_ir
+from ..comparison.mixed_comparison import mixed_greater_than_ir
 from ..finite_field.coefficients import ClassicalFieldCoefficient
 from ..primitives._mixed_gates import _flip
 from ..primitives.measurement import measure_x_clear_ir
 from .exact_modular_doubling import (
     _modular_doubling_ports,
-    kickmix_exact_modular_doubling_ir,
+    exact_modular_doubling_ir,
 )
 
 
-def kickmix_modular_doubling_program(
+def modular_doubling_program(
     target: tuple[int, ...],
     modulus: tuple[_Coefficient, ...],
     *,
@@ -75,7 +75,7 @@ def kickmix_modular_doubling_program(
     tolerance = max(btol, 0.0) if inverse else btol + 1
     if n <= 2 or tolerance >= n and len(clean) + 2 >= n and not minimize_qubits:
         emit(
-            kickmix_exact_modular_doubling_ir(
+            exact_modular_doubling_ir(
                 target,
                 modulus,
                 clean=clean,
@@ -114,7 +114,7 @@ def kickmix_modular_doubling_program(
 
     def add(word: tuple[_Coefficient, ...], flag: int, work: tuple[int, ...]) -> None:
         emit(
-            kickmix_mixed_addition_ir(
+            mixed_addition_ir(
                 target,
                 word,
                 control=flag,
@@ -134,7 +134,7 @@ def kickmix_modular_doubling_program(
         bit: int = result,
     ) -> None:
         emit(
-            kickmix_greater_than_ir(
+            mixed_greater_than_ir(
                 target,
                 word,
                 flag,
@@ -163,7 +163,7 @@ def kickmix_modular_doubling_program(
         add(trim(inverted_half[1:]), flag, work)
         invert(inverted_half)
         emit(_flip(target[0], flag))
-        emit(kickmix_bit_rotation_ir(target, 1, control=control))
+        emit(bit_rotation_ir(target, 1, control=control))
         emit(_flip(target[-1], flag))
         emit(
             (
@@ -179,7 +179,7 @@ def kickmix_modular_doubling_program(
     work = clean[2:]
     emit(_flip(first, target[-1]))
     emit(_flip(flag, first, enabled))
-    emit(kickmix_bit_rotation_ir(target, 1, control=control, right=True))
+    emit(bit_rotation_ir(target, 1, control=control, right=True))
     half = trim(invert(modulus[:-1]))
     if ease <= tolerance + 20:
         tolerance += 1

@@ -9,10 +9,10 @@ from examples.algorithms.binary_field_arithmetic import FieldOperation
 from flagquantum.compiler.formats.kmx import encode_kmx
 from flagquantum.compiler.lowering.reversible_phase import lower_reversible_phase
 from flagquantum.compiler.registers.comparison.mixed_comparison import (
-    kickmix_greater_than_ir,
-    kickmix_less_than_ir,
-    kickmix_quantum_compare_ir,
-    kickmix_quantum_equal_ir,
+    mixed_greater_than_ir,
+    mixed_less_than_ir,
+    quantum_compare_ir,
+    quantum_equal_ir,
 )
 from flagquantum.compiler.registers.finite_field.coefficients import (
     ClassicalFieldCoefficient,
@@ -29,7 +29,7 @@ pytestmark = pytest.mark.unit
 def test_single_bit_clean_carry_matches_pinned_cpp() -> None:
     # Locked gen_flip_if_lt_qq with width one, a quantum control, and one
     # initially clean scratch wire. The source's R q4 is the clean contract.
-    ir = kickmix_quantum_compare_ir((0,), (1,), 2, (4,), control=3, measurement_bit=0)
+    ir = quantum_compare_ir((0,), (1,), 2, (4,), control=3, measurement_bit=0)
     program = lower_reversible_phase(CircuitIR(5, ir))
     assert encode_kmx(program).splitlines()[1:] == [
         "CX q1 q0",
@@ -42,7 +42,7 @@ def test_single_bit_clean_carry_matches_pinned_cpp() -> None:
 
 
 def test_mixed_carry_schedule_matches_pinned_cpp() -> None:
-    ir = kickmix_quantum_compare_ir((2, 1, 0), (5, 4, 3), 6, or_equal=7)
+    ir = quantum_compare_ir((2, 1, 0), (5, 4, 3), 6, or_equal=7)
     program = lower_reversible_phase(CircuitIR(8, ir))
     assert encode_kmx(program).splitlines()[1:] == [
         "X q3",
@@ -95,7 +95,7 @@ def test_all_basis_inputs_and_measurement_phases(
     expected[target] ^= (inputs & 1) & (
         (lhs < rhs) | ((lhs == rhs) & ((inputs >> 1) & 1))
     )
-    ir = kickmix_quantum_compare_ir(
+    ir = quantum_compare_ir(
         left,
         right,
         target,
@@ -126,7 +126,7 @@ def test_narrow_comparison_preserves_complex_amplitudes(clean_width: int) -> Non
     state /= state.norm()
     delta = (((basis >> 4) & 1) < ((basis >> 3) & 1)) & (((basis >> 1) & 1) == 1)
     expected = state[basis ^ (delta.long() << 2)]
-    ir = kickmix_quantum_compare_ir(
+    ir = quantum_compare_ir(
         (0,), (1,), 2, (4,) if clean_width else (), control=3, measurement_bit=0
     )
     circuit = DynamicCircuit(total, inputs=state, dtype=torch.complex128)
@@ -145,7 +145,7 @@ def test_classical_equality_and_feedback_preserve_each_complex_branch() -> None:
     state = torch.zeros(1 << total, dtype=torch.complex128)
     state[::16] = amplitudes
     circuit = DynamicCircuit(total, inputs=state, dtype=torch.complex128)
-    ir = kickmix_quantum_compare_ir(
+    ir = quantum_compare_ir(
         (0, 1),
         (2, 3),
         4,
@@ -169,14 +169,14 @@ def test_classical_equality_and_feedback_preserve_each_complex_branch() -> None:
 
 
 def test_comparator_validates_workspace_and_preserves_empty_behavior() -> None:
-    assert not kickmix_quantum_compare_ir((), (), 0)
-    assert kickmix_quantum_compare_ir((), (), 0, or_equal=True)[0].name == "x"
+    assert not quantum_compare_ir((), (), 0)
+    assert quantum_compare_ir((), (), 0, or_equal=True)[0].name == "x"
     with pytest.raises(ValueError, match="equal word"):
-        kickmix_quantum_compare_ir((), (0,), 1)
+        quantum_compare_ir((), (0,), 1)
     with pytest.raises(ValueError, match="clean carry"):
-        kickmix_quantum_compare_ir((0, 1), (2, 3), 4)
+        quantum_compare_ir((0, 1), (2, 3), 4)
     with pytest.raises(ValueError, match="result slot"):
-        kickmix_quantum_compare_ir((0,), (1,), 2, (4,), control=3)
+        quantum_compare_ir((0,), (1,), 2, (4,), control=3)
 
 
 @pytest.mark.parametrize("equality", [True, ClassicalFieldCoefficient(0)])
@@ -190,13 +190,13 @@ def test_empty_phase_compare_matches_locked_scalar_opcode(
         if isinstance(equality, ClassicalFieldCoefficient)
         else ()
     )
-    ir = (*prefix, *kickmix_quantum_compare_ir((), (), None, or_equal=equality))
+    ir = (*prefix, *quantum_compare_ir((), (), None, or_equal=equality))
     encoded = encode_kmx(lower_reversible_phase(CircuitIR(1, ir)))
     assert encoded.splitlines()[-1] == ("NEG" if equality is True else "NEG if b0")
 
 
 def test_single_bit_quantum_phase_matches_locked_cpp() -> None:
-    ir = kickmix_quantum_compare_ir((0,), (1,), None, (4,), control=3)
+    ir = quantum_compare_ir((0,), (1,), None, (4,), control=3)
     program = lower_reversible_phase(CircuitIR(5, ir))
     assert encode_kmx(program).splitlines()[1:] == [
         "CX q1 q0",
@@ -223,7 +223,7 @@ def test_phase_comparator_preserves_all_complex_measurement_branches(
     phase = (lhs < rhs + equal) & (control == 1)
     expected = torch.zeros_like(state)
     expected[::stride] = amplitudes * (1 - 2 * phase.long())
-    ir = kickmix_quantum_compare_ir(
+    ir = quantum_compare_ir(
         (0, 1),
         (2, 3),
         None,
@@ -248,9 +248,7 @@ def test_empty_phase_compare_preserves_conditional_scalar_in_dynamic_execution()
     state = torch.tensor([1 + 2j, 0, 3 - 4j, 0], dtype=torch.complex128)
     state /= state.norm()
     circuit = DynamicCircuit(2, inputs=state, dtype=torch.complex128)
-    phase = kickmix_quantum_compare_ir(
-        (), (), None, or_equal=ClassicalFieldCoefficient(0)
-    )
+    phase = quantum_compare_ir((), (), None, or_equal=ClassicalFieldCoefficient(0))
     circuit.append(FieldOperation(2, (*measure_x_clear_ir(1, 0), *phase)))
     result = run_dynamic(circuit, shots=32, seed=41, strategy="trajectory")
     outcomes = result.classical_bits[:, 0]
@@ -264,7 +262,7 @@ def test_empty_phase_compare_preserves_conditional_scalar_in_dynamic_execution()
 def test_mixed_equality_matches_locked_cpp_gate_stream() -> None:
     from flagquantum.core.classical_dataflow import ClassicalXor
 
-    ir = kickmix_quantum_equal_ir(
+    ir = quantum_equal_ir(
         (1, 0), (ClassicalFieldCoefficient(1), 2), 4, (6, 7), measurement_bit=2
     )
     prefix = (ClassicalXor((), 1).instruction(),)
@@ -299,7 +297,7 @@ def test_mixed_equality_restores_each_complex_measurement_branch(
     state = torch.zeros(1 << total, dtype=torch.complex128)
     state[::16] = amplitudes
     circuit = DynamicCircuit(total, inputs=state, dtype=torch.complex128)
-    ir = kickmix_quantum_equal_ir(
+    ir = quantum_equal_ir(
         (0, 1, 2),
         (3, ClassicalFieldCoefficient(0), True),
         None if phase_target else 5,
@@ -326,12 +324,12 @@ def test_mixed_equality_restores_each_complex_measurement_branch(
 
 
 def test_equality_validates_result_slot_and_workspace() -> None:
-    assert kickmix_quantum_equal_ir((), (), 0)[0].name == "x"
-    assert not kickmix_quantum_equal_ir((), (), 0, control=False)
+    assert quantum_equal_ir((), (), 0)[0].name == "x"
+    assert not quantum_equal_ir((), (), 0, control=False)
     with pytest.raises(ValueError, match="one clean wire"):
-        kickmix_quantum_equal_ir((0, 1), (True, False), 2, (3,))
+        quantum_equal_ir((0, 1), (True, False), 2, (3,))
     with pytest.raises(ValueError, match="separate"):
-        kickmix_quantum_equal_ir(
+        quantum_equal_ir(
             (0, 1), (True, ClassicalFieldCoefficient(0)), 2, (3, 4), measurement_bit=0
         )
 
@@ -347,7 +345,7 @@ def test_full_mixed_less_than_preserves_every_complex_branch(
     state = torch.zeros(1 << total, dtype=torch.complex128)
     state[::16] = amplitudes
     circuit = DynamicCircuit(total, inputs=state, dtype=torch.complex128)
-    ir = kickmix_less_than_ir(
+    ir = mixed_less_than_ir(
         (0, 1, 2),
         (3, ClassicalFieldCoefficient(0), True),
         None if phase_target else 5,
@@ -387,7 +385,7 @@ def test_full_quantum_ladder_preserves_every_independent_outcome_phase() -> None
     lhs = values >> 7
     rhs = (values >> 3) & 15
     expected[target] ^= (values & 1) & (lhs < rhs + ((values >> 1) & 1))
-    ir = kickmix_less_than_ir(
+    ir = mixed_less_than_ir(
         left,
         right,
         target,
@@ -405,25 +403,23 @@ def test_full_quantum_ladder_preserves_every_independent_outcome_phase() -> None
 
 def test_exact_less_than_dispatch_and_missing_resources() -> None:
     left, right = (0, 1), (2, 3)
-    assert kickmix_less_than_ir(left, right, 4, (5,)) == (
-        kickmix_quantum_compare_ir(left, right, 4, (5,))
+    assert mixed_less_than_ir(left, right, 4, (5,)) == (
+        quantum_compare_ir(left, right, 4, (5,))
     )
     with pytest.raises(ValueError, match="Low-space classical"):
-        kickmix_less_than_ir(left, (True, False), 4)
+        mixed_less_than_ir(left, (True, False), 4)
     with pytest.raises(ValueError, match="minus one"):
-        kickmix_less_than_ir(left, (True, 2), 4)
+        mixed_less_than_ir(left, (True, 2), 4)
     with pytest.raises(ValueError, match="result slot"):
-        kickmix_less_than_ir(left, (True, 2), 4, (5,))
+        mixed_less_than_ir(left, (True, 2), 4, (5,))
     with pytest.raises(ValueError, match="separate"):
-        kickmix_less_than_ir(
+        mixed_less_than_ir(
             left, (ClassicalFieldCoefficient(1), 2), 4, (5,), measurement_bit=1
         )
 
 
 def test_fractional_budget_preserves_locked_unmarked_xzxz_stream() -> None:
-    ir = kickmix_less_than_ir(
-        (1, 0), (True, False), None, (6,), or_equal=True, btol=1.01
-    )
+    ir = mixed_less_than_ir((1, 0), (True, False), None, (6,), or_equal=True, btol=1.01)
     program = lower_reversible_phase(CircuitIR(7, ir))
     assert encode_kmx(program).splitlines()[1:] == [
         "X q1",
@@ -437,15 +433,15 @@ def test_fractional_budget_preserves_locked_unmarked_xzxz_stream() -> None:
 
 def test_bit_tolerance_retains_source_exact_dispatch_threshold() -> None:
     args = ((0, 1), (2, 3), 4, (5,))
-    dedicated = kickmix_less_than_ir(*args, measurement_bit=0)
-    full = kickmix_less_than_ir(*args, measurement_bit=0, btol=2.0)
+    dedicated = mixed_less_than_ir(*args, measurement_bit=0)
+    full = mixed_less_than_ir(*args, measurement_bit=0, btol=2.0)
     assert "measure" not in {gate.name for gate in dedicated}
     assert "measure" in {gate.name for gate in full}
-    assert not kickmix_less_than_ir(*args, btol=1)
-    assert not kickmix_less_than_ir((), (), 0, btol=-1)
-    assert kickmix_less_than_ir((), (), 0, or_equal=True, btol=0)[0].name == "x"
+    assert not mixed_less_than_ir(*args, btol=1)
+    assert not mixed_less_than_ir((), (), 0, btol=-1)
+    assert mixed_less_than_ir((), (), 0, or_equal=True, btol=0)[0].name == "x"
     with pytest.raises(ValueError, match="ordered"):
-        kickmix_less_than_ir(*args, btol=float("nan"))
+        mixed_less_than_ir(*args, btol=float("nan"))
 
 
 @pytest.mark.parametrize("budget,retained", [(1.01, 1), (2.0, 1), (2.01, 2)])
@@ -462,7 +458,7 @@ def test_fractional_tolerance_preserves_complex_prefix_comparison(
     state = torch.zeros(1 << total, dtype=torch.complex128)
     state[::2] = amplitudes
     left, right, target = tuple(range(width)), tuple(range(width, 2 * width)), 8
-    ir = kickmix_less_than_ir(left, right, target, (9,), btol=budget, measurement_bit=0)
+    ir = mixed_less_than_ir(left, right, target, (9,), btol=budget, measurement_bit=0)
     assert not {wire for op in ir for wire in op.wires} & set(
         (*left[retained:], *right[retained:])
     )
@@ -481,7 +477,7 @@ def test_fractional_tolerance_preserves_complex_prefix_comparison(
 def test_greater_than_classical_equality_matches_pinned_cpp() -> None:
     from flagquantum.core.classical_dataflow import ClassicalXor
 
-    gates = kickmix_greater_than_ir(
+    gates = mixed_greater_than_ir(
         (0,),
         (ClassicalFieldCoefficient(0),),
         None,
@@ -515,7 +511,7 @@ def test_greater_than_restores_classical_equality_and_all_complex_branches(
     amplitudes /= amplitudes.norm()
     state = torch.zeros(1 << total, dtype=torch.complex128)
     state[::8] = amplitudes
-    gates = kickmix_greater_than_ir(
+    gates = mixed_greater_than_ir(
         (0, 1),
         (2, True),
         None if phase_target else 4,
@@ -557,11 +553,11 @@ def test_greater_than_restores_classical_equality_and_all_complex_branches(
 def test_greater_than_rejects_mutated_equality_aliases_and_keeps_tolerance() -> None:
     coefficient = ClassicalFieldCoefficient(0)
     with pytest.raises(ValueError, match="separate classical slot"):
-        kickmix_greater_than_ir((0,), (coefficient,), 1, or_equal=coefficient)
+        mixed_greater_than_ir((0,), (coefficient,), 1, or_equal=coefficient)
     with pytest.raises(ValueError, match="separate quantum wire"):
-        kickmix_greater_than_ir((0,), (1,), 2, or_equal=1)
-    assert not kickmix_greater_than_ir((0, 1), (2, 3), 4, control=False)
-    gates = kickmix_greater_than_ir((0, 1), (2, 3), 4, or_equal=5, btol=1)
+        mixed_greater_than_ir((0,), (1,), 2, or_equal=1)
+    assert not mixed_greater_than_ir((0, 1), (2, 3), 4, control=False)
+    gates = mixed_greater_than_ir((0, 1), (2, 3), 4, or_equal=5, btol=1)
     assert [(op.name, op.wires) for op in gates] == [
         ("x", (5,)),
         ("x", (4,)),

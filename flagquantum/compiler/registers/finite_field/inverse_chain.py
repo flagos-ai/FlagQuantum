@@ -6,14 +6,14 @@
 
 from ....core.ir import Instruction
 from ..primitives.measurement import measure_x_clear_ir
-from .binary_linear_map import kickmix_field_frobenius_ir
+from .binary_linear_map import field_frobenius_ir
 from .field_multiplication import _validate_field
 from .polynomial import _validate_registers
-from .polynomial_product import kickmix_field_product_xor_ir
-from .product_erasure import kickmix_field_product_erase_ir
+from .polynomial_product import field_product_xor_ir
+from .product_erasure import field_product_erase_ir
 
 
-def kickmix_field_inverse_chain_size(width: int) -> int:
+def field_inverse_chain_size(width: int) -> int:
     """Return the number of caller-owned clean wires for the explicit chain."""
     if type(width) is not int or width < 1:
         raise ValueError("Field inverse width must be a positive integer")
@@ -23,9 +23,9 @@ def kickmix_field_inverse_chain_size(width: int) -> int:
     return width * (exponent.bit_length() + max(0, exponent.bit_count() - 2) - 1)
 
 
-def kickmix_field_inverse_workspace_size(width: int) -> int:
+def field_inverse_workspace_size(width: int) -> int:
     """Return the clean width for a self-cleaning inverse."""
-    chain_size = kickmix_field_inverse_chain_size(width)
+    chain_size = field_inverse_chain_size(width)
     return chain_size + (width if (width - 1).bit_count() > 1 else 0)
 
 
@@ -82,9 +82,9 @@ def _double_word(
     count = 1 << (i - 1)
     return (
         *_word_xor(previous, scratch),
-        *kickmix_field_frobenius_ir(scratch, count, modulus=modulus),
-        *kickmix_field_product_xor_ir(previous, scratch, words[i], modulus=modulus),
-        *kickmix_field_frobenius_ir(scratch, count, modulus=modulus, adjoint=True),
+        *field_frobenius_ir(scratch, count, modulus=modulus),
+        *field_product_xor_ir(previous, scratch, words[i], modulus=modulus),
+        *field_frobenius_ir(scratch, count, modulus=modulus, adjoint=True),
         *_word_xor(previous, scratch),
     )
 
@@ -101,11 +101,11 @@ def _erase_double_word(
     count = 1 << (i - 1)
     return (
         *_word_xor(previous, scratch),
-        *kickmix_field_frobenius_ir(scratch, count, modulus=modulus),
-        *kickmix_field_product_erase_ir(
+        *field_frobenius_ir(scratch, count, modulus=modulus),
+        *field_product_erase_ir(
             previous, scratch, words[i], bits, modulus=modulus, parity_bit=parity_bit
         ),
-        *kickmix_field_frobenius_ir(scratch, count, modulus=modulus, adjoint=True),
+        *field_frobenius_ir(scratch, count, modulus=modulus, adjoint=True),
         *_word_xor(previous, scratch),
     )
 
@@ -119,11 +119,9 @@ def _build_folds(
 ) -> None:
     for i, power in enumerate(folds, start=start):
         left = words[i]
-        gates.extend(kickmix_field_frobenius_ir(left, 1 << power, modulus=modulus))
+        gates.extend(field_frobenius_ir(left, 1 << power, modulus=modulus))
         gates.extend(
-            kickmix_field_product_xor_ir(
-                left, words[power], words[i + 1], modulus=modulus
-            )
+            field_product_xor_ir(left, words[power], words[i + 1], modulus=modulus)
         )
 
 
@@ -139,7 +137,7 @@ def _erase_folds(
     for i, power in reversed(tuple(enumerate(folds, start=start))):
         left = words[i]
         gates.extend(
-            kickmix_field_product_erase_ir(
+            field_product_erase_ir(
                 left,
                 words[power],
                 words[i + 1],
@@ -149,7 +147,7 @@ def _erase_folds(
             )
         )
         gates.extend(
-            kickmix_field_frobenius_ir(left, 1 << power, modulus=modulus, adjoint=True)
+            field_frobenius_ir(left, 1 << power, modulus=modulus, adjoint=True)
         )
 
 
@@ -171,7 +169,7 @@ def _validate_inverse_slots(
         )
 
 
-def kickmix_field_inverse_chain_ir(
+def field_inverse_chain_ir(
     source: tuple[int, ...],
     target: tuple[int, ...],
     chain: tuple[int, ...],
@@ -188,7 +186,7 @@ def kickmix_field_inverse_chain_ir(
         target,
         chain,
         modulus,
-        workspace_size=kickmix_field_inverse_chain_size(len(source)),
+        workspace_size=field_inverse_chain_size(len(source)),
     )
     if len(source) == 1:
         return _word_xor(source, target)
@@ -203,11 +201,11 @@ def kickmix_field_inverse_chain_ir(
             if doubles
             else _word_xor(source, target)
         )
-    gates.extend(kickmix_field_frobenius_ir(target, modulus=modulus))
+    gates.extend(field_frobenius_ir(target, modulus=modulus))
     return tuple(gates)
 
 
-def kickmix_field_inverse_chain_erase_ir(
+def field_inverse_chain_erase_ir(
     source: tuple[int, ...],
     target: tuple[int, ...],
     chain: tuple[int, ...],
@@ -226,12 +224,12 @@ def kickmix_field_inverse_chain_erase_ir(
         target,
         chain,
         modulus,
-        workspace_size=kickmix_field_inverse_chain_size(len(source)),
+        workspace_size=field_inverse_chain_size(len(source)),
     )
     doubles, folds = _chain_steps(len(source))
     expected = len(source) if doubles or folds else 1
     _validate_inverse_slots(measurement_bits, expected, parity_bit)
-    gates = list(kickmix_field_frobenius_ir(target, modulus=modulus, adjoint=True))
+    gates = list(field_frobenius_ir(target, modulus=modulus, adjoint=True))
     if folds:
         _erase_folds(
             gates, words, len(doubles), folds, measurement_bits, modulus, parity_bit
@@ -252,7 +250,7 @@ def kickmix_field_inverse_chain_erase_ir(
     return tuple(gates)
 
 
-def kickmix_field_inverse_ir(
+def field_inverse_ir(
     source: tuple[int, ...],
     target: tuple[int, ...],
     workspace: tuple[int, ...],
@@ -272,7 +270,7 @@ def kickmix_field_inverse_ir(
         target,
         workspace,
         modulus,
-        workspace_size=kickmix_field_inverse_workspace_size(width),
+        workspace_size=field_inverse_workspace_size(width),
     )
     doubles, folds = _chain_steps(width)
     expected = width if folds or len(doubles) > 1 else len(doubles)
@@ -305,11 +303,11 @@ def kickmix_field_inverse_ir(
         )
     if scratch:
         gates.extend(_delete_zero_word(scratch, measurement_bits[-1]))
-    gates.extend(kickmix_field_frobenius_ir(target, modulus=modulus))
+    gates.extend(field_frobenius_ir(target, modulus=modulus))
     return tuple(gates)
 
 
-def kickmix_field_inverse_erase_ir(
+def field_inverse_erase_ir(
     source: tuple[int, ...],
     target: tuple[int, ...],
     workspace: tuple[int, ...],
@@ -329,11 +327,11 @@ def kickmix_field_inverse_erase_ir(
         target,
         workspace,
         modulus,
-        workspace_size=kickmix_field_inverse_workspace_size(width),
+        workspace_size=field_inverse_workspace_size(width),
     )
     doubles, folds = _chain_steps(width)
     _validate_inverse_slots(measurement_bits, width if doubles else 1, parity_bit)
-    gates = list(kickmix_field_frobenius_ir(target, modulus=modulus, adjoint=True))
+    gates = list(field_frobenius_ir(target, modulus=modulus, adjoint=True))
     for i in doubles if folds else doubles[:-1]:
         gates.extend(_double_word(words, i, words[i + 1], modulus))
     if folds:

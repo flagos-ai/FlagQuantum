@@ -9,7 +9,7 @@ from examples.algorithms.binary_field_arithmetic import FieldOperation
 from flagquantum.compiler.formats.kmx import encode_kmx
 from flagquantum.compiler.lowering.reversible_phase import lower_reversible_phase
 from flagquantum.compiler.registers.arithmetic.mixed_addition import (
-    kickmix_mixed_addition_ir,
+    mixed_addition_ir,
 )
 from flagquantum.compiler.registers.finite_field.coefficients import (
     ClassicalFieldCoefficient,
@@ -38,7 +38,7 @@ def test_mixed_addition_cleans_workspace_on_every_complex_branch(
     total = data + clean_count
     rhs = (ClassicalFieldCoefficient(0), offset_qubit)
     setup = ClassicalXor((), 0, constant=True).instruction()
-    gates = kickmix_mixed_addition_ir(
+    gates = mixed_addition_ir(
         tuple(range(width)),
         rhs,
         control=control,
@@ -88,7 +88,7 @@ def test_complemented_tolerance_restores_mutable_classical_inputs() -> None:
     setup = tuple(
         ClassicalXor((), slot, constant=True).instruction() for slot in (0, 1)
     )
-    gates = kickmix_mixed_addition_ir(
+    gates = mixed_addition_ir(
         (0, 1, 2, 3, 4),
         (True, True, True, True, ClassicalFieldCoefficient(0)),
         carry_in=ClassicalFieldCoefficient(1),
@@ -117,7 +117,7 @@ def test_complemented_tolerance_restores_mutable_classical_inputs() -> None:
 
 def test_unconditional_vented_cleanup_preserves_locked_failure() -> None:
     with pytest.raises(ValueError, match="quantum enable"):
-        kickmix_mixed_addition_ir(
+        mixed_addition_ir(
             (0, 1, 2, 3),
             (True,),
             clean=(4, 5),
@@ -128,7 +128,7 @@ def test_unconditional_vented_cleanup_preserves_locked_failure() -> None:
 
 def test_locked_extra_clean_prefix_preserves_the_source_witness() -> None:
     setup = ClassicalXor((), 1, constant=True).instruction()
-    gates = kickmix_mixed_addition_ir(
+    gates = mixed_addition_ir(
         (4, 3, 2, 1, 0),
         (ClassicalFieldCoefficient(1), 5),
         carry_in=8,

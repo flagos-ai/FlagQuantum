@@ -14,7 +14,7 @@ from examples.algorithms.binary_field_arithmetic import FieldOperation
 from flagquantum.compiler.formats.kmx import encode_kmx
 from flagquantum.compiler.lowering.reversible_phase import lower_reversible_phase
 from flagquantum.compiler.registers.arithmetic.carry_controlled_addition import (
-    kickmix_controlled_addition_ir,
+    carry_controlled_addition_ir,
 )
 from flagquantum.compiler.registers.finite_field.coefficients import (
     ClassicalFieldCoefficient,
@@ -57,7 +57,7 @@ def _instructions(
         carry = ClassicalFieldCoefficient(0)
     return (
         ClassicalXor((), 0, bool(bit_value)).instruction(),
-        *kickmix_controlled_addition_ir(
+        *carry_controlled_addition_ir(
             tuple(reversed(range(n))) if source_order else tuple(range(n)),
             (
                 tuple(reversed(range(n, n + m)))
@@ -224,12 +224,12 @@ def test_native_full_basis_and_absolute_phase(
 )
 def test_invalid_bindings_refuse(kwargs: dict[str, object]) -> None:
     with pytest.raises(ValueError):
-        kickmix_controlled_addition_ir((0, 1), (2, 3), **kwargs)
+        carry_controlled_addition_ir((0, 1), (2, 3), **kwargs)
 
 
 def test_short_offset_refuses_like_source() -> None:
     with pytest.raises(ValueError, match="at least as wide"):
-        kickmix_controlled_addition_ir((0, 1), (2,), control=3)
+        carry_controlled_addition_ir((0, 1), (2,), control=3)
 
 
 def test_append_example() -> None:
@@ -241,7 +241,7 @@ def test_append_example() -> None:
 @pytest.mark.parametrize("carry", [2.0, None])
 def test_nonintegral_carry_is_not_silently_dropped(carry: object) -> None:
     with pytest.raises(ValueError, match="Carry must"):
-        kickmix_controlled_addition_ir((0,), (1,), control=2, carry_in=carry)
+        carry_controlled_addition_ir((0,), (1,), control=2, carry_in=carry)
 
 
 def test_integer_subclass_is_not_silently_dropped() -> None:
@@ -249,4 +249,4 @@ def test_integer_subclass_is_not_silently_dropped() -> None:
         pass
 
     with pytest.raises(ValueError, match="Carry must"):
-        kickmix_controlled_addition_ir((0,), (1,), control=2, carry_in=WireSubclass(3))
+        carry_controlled_addition_ir((0,), (1,), control=2, carry_in=WireSubclass(3))

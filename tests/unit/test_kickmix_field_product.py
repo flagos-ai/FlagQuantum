@@ -6,7 +6,7 @@ import torch
 from examples.algorithms.binary_field_arithmetic import FieldOperation
 from flagquantum.circuit import Circuit
 from flagquantum.compiler.registers.finite_field.polynomial_product import (
-    kickmix_field_product_xor_ir,
+    field_product_xor_ir,
 )
 from tests.unit.test_field_linear import _source_type
 from tests.unit.test_kickmix_field_linear import _block
@@ -37,7 +37,7 @@ def test_product_xor_matches_locked_full_gate_stream(width: int) -> None:
     left_wires, right_wires, target_wires = (
         tuple(reversed(range(i * width, (i + 1) * width))) for i in range(3)
     )
-    gates = kickmix_field_product_xor_ir(
+    gates = field_product_xor_ir(
         left_wires, right_wires, target_wires, modulus=field.modulus
     )
     assert [(gate.name, gate.wires) for gate in gates] == reference
@@ -64,7 +64,7 @@ def test_product_xor_into_arbitrary_target_preserves_complex_amplitudes(
     expected = state[basis ^ delta]
     circuit = Circuit(n_qubits, inputs=state, dtype=torch.complex128)
     operation = FieldOperation(
-        n_qubits, kickmix_field_product_xor_ir(left, right, target, modulus=modulus)
+        n_qubits, field_product_xor_ir(left, right, target, modulus=modulus)
     )
     result = circuit.append(operation)
     torch.testing.assert_close(result.state().flatten(), expected, rtol=0, atol=1e-12)
@@ -75,6 +75,6 @@ def test_product_xor_into_arbitrary_target_preserves_complex_amplitudes(
 
 def test_product_xor_rejects_aliasing_and_mismatched_width() -> None:
     with pytest.raises(ValueError, match="distinct"):
-        kickmix_field_product_xor_ir((0, 1), (0, 2), (3, 4), modulus=7)
+        field_product_xor_ir((0, 1), (0, 2), (3, 4), modulus=7)
     with pytest.raises(ValueError, match="equal"):
-        kickmix_field_product_xor_ir((0,), (1, 2), (3, 4), modulus=7)
+        field_product_xor_ir((0,), (1, 2), (3, 4), modulus=7)

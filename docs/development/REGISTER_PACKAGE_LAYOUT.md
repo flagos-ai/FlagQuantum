@@ -267,3 +267,84 @@ Torch/Gloo execution test passes with loopback access enabled. Its initial
 sandbox run failed to resolve `127.0.0.1`. These supplementary outcomes are
 recorded in `g2-register-organization-postformat-components.log` and
 `g2-register-organization-loopback.log`.
+
+## Functional callable names
+
+G2-ORG02 uses base revision `1d5a956d`. Forty internal emitter and workspace
+functions now use domain names. Measured-carry and controlled-carry addition
+retain distinct identifiers. Mixed-operand comparison and modular arithmetic
+retain their operand semantics in the name.
+
+The map covers definitions, imports, recursive calls, tests, examples and
+current documentation. Source headers and upstream reference identities remain
+recorded beside each implementation. The scope is `single_device_fast_path`.
+
+| Previous internal function | Functional name | Owning module |
+| --- | --- | --- |
+| `kickmix_binary_linear_map_ir` | `binary_linear_map_ir` | [finite_field/binary_linear_map.py](../../flagquantum/compiler/registers/finite_field/binary_linear_map.py) |
+| `kickmix_bit_rotation_ir` | `bit_rotation_ir` | [bits/bit_rotation.py](../../flagquantum/compiler/registers/bits/bit_rotation.py) |
+| `kickmix_carry_xor_ir` | `carry_parity_ir` | [arithmetic/carry_parity.py](../../flagquantum/compiler/registers/arithmetic/carry_parity.py) |
+| `kickmix_controlled_addition_ir` | `carry_controlled_addition_ir` | [arithmetic/carry_controlled_addition.py](../../flagquantum/compiler/registers/arithmetic/carry_controlled_addition.py) |
+| `kickmix_controlled_field_product_xor_ir` | `controlled_field_product_xor_ir` | [finite_field/polynomial_product.py](../../flagquantum/compiler/registers/finite_field/polynomial_product.py) |
+| `kickmix_exact_modular_doubling_ir` | `exact_modular_doubling_ir` | [modular/exact_modular_doubling.py](../../flagquantum/compiler/registers/modular/exact_modular_doubling.py) |
+| `kickmix_field_constant_scale_ir` | `field_constant_scale_ir` | [finite_field/binary_linear_map.py](../../flagquantum/compiler/registers/finite_field/binary_linear_map.py) |
+| `kickmix_field_division_chain_erase_ir` | `field_division_chain_erase_ir` | [finite_field/division_chain.py](../../flagquantum/compiler/registers/finite_field/division_chain.py) |
+| `kickmix_field_division_chain_ir` | `field_division_chain_ir` | [finite_field/division_chain.py](../../flagquantum/compiler/registers/finite_field/division_chain.py) |
+| `kickmix_field_division_erase_ir` | `field_division_erase_ir` | [finite_field/division_chain.py](../../flagquantum/compiler/registers/finite_field/division_chain.py) |
+| `kickmix_field_division_workspace_size` | `field_division_workspace_size` | [finite_field/division_chain.py](../../flagquantum/compiler/registers/finite_field/division_chain.py) |
+| `kickmix_field_division_xor_ir` | `field_division_xor_ir` | [finite_field/division_chain.py](../../flagquantum/compiler/registers/finite_field/division_chain.py) |
+| `kickmix_field_frobenius_ir` | `field_frobenius_ir` | [finite_field/binary_linear_map.py](../../flagquantum/compiler/registers/finite_field/binary_linear_map.py) |
+| `kickmix_field_inverse_chain_erase_ir` | `field_inverse_chain_erase_ir` | [finite_field/inverse_chain.py](../../flagquantum/compiler/registers/finite_field/inverse_chain.py) |
+| `kickmix_field_inverse_chain_ir` | `field_inverse_chain_ir` | [finite_field/inverse_chain.py](../../flagquantum/compiler/registers/finite_field/inverse_chain.py) |
+| `kickmix_field_inverse_chain_size` | `field_inverse_chain_size` | [finite_field/inverse_chain.py](../../flagquantum/compiler/registers/finite_field/inverse_chain.py) |
+| `kickmix_field_inverse_erase_ir` | `field_inverse_erase_ir` | [finite_field/inverse_chain.py](../../flagquantum/compiler/registers/finite_field/inverse_chain.py) |
+| `kickmix_field_inverse_ir` | `field_inverse_ir` | [finite_field/inverse_chain.py](../../flagquantum/compiler/registers/finite_field/inverse_chain.py) |
+| `kickmix_field_inverse_workspace_size` | `field_inverse_workspace_size` | [finite_field/inverse_chain.py](../../flagquantum/compiler/registers/finite_field/inverse_chain.py) |
+| `kickmix_field_monomial_scale_ir` | `field_monomial_scale_ir` | [finite_field/binary_linear_map.py](../../flagquantum/compiler/registers/finite_field/binary_linear_map.py) |
+| `kickmix_field_product_erase_ir` | `field_product_erase_ir` | [finite_field/product_erasure.py](../../flagquantum/compiler/registers/finite_field/product_erasure.py) |
+| `kickmix_field_product_phase_ir` | `field_product_phase_ir` | [finite_field/product_erasure.py](../../flagquantum/compiler/registers/finite_field/product_erasure.py) |
+| `kickmix_field_product_xor_ir` | `field_product_xor_ir` | [finite_field/polynomial_product.py](../../flagquantum/compiler/registers/finite_field/polynomial_product.py) |
+| `kickmix_greater_than_ir` | `mixed_greater_than_ir` | [comparison/mixed_comparison.py](../../flagquantum/compiler/registers/comparison/mixed_comparison.py) |
+| `kickmix_increment_ir` | `increment_ir` | [arithmetic/increment.py](../../flagquantum/compiler/registers/arithmetic/increment.py) |
+| `kickmix_inplace_addition_ir` | `inplace_addition_ir` | [arithmetic/inplace_addition.py](../../flagquantum/compiler/registers/arithmetic/inplace_addition.py) |
+| `kickmix_less_than_ir` | `mixed_less_than_ir` | [comparison/mixed_comparison.py](../../flagquantum/compiler/registers/comparison/mixed_comparison.py) |
+| `kickmix_low_space_less_than_ir` | `low_space_less_than_ir` | [comparison/low_space_comparison.py](../../flagquantum/compiler/registers/comparison/low_space_comparison.py) |
+| `kickmix_masked_prefix_phase_ir` | `masked_prefix_phase_ir` | [phase/masked_prefix_phase.py](../../flagquantum/compiler/registers/phase/masked_prefix_phase.py) |
+| `kickmix_mixed_addition_ir` | `mixed_addition_ir` | [arithmetic/mixed_addition.py](../../flagquantum/compiler/registers/arithmetic/mixed_addition.py) |
+| `kickmix_modular_addition_program` | `mixed_modular_addition_program` | [modular/mixed_modular_addition.py](../../flagquantum/compiler/registers/modular/mixed_modular_addition.py) |
+| `kickmix_modular_doubling_program` | `modular_doubling_program` | [modular/modular_doubling_dispatch.py](../../flagquantum/compiler/registers/modular/modular_doubling_dispatch.py) |
+| `kickmix_modular_negation_program` | `mixed_modular_negation_program` | [modular/mixed_modular_negation.py](../../flagquantum/compiler/registers/modular/mixed_modular_negation.py) |
+| `kickmix_near_power_doubling_ir` | `near_power_doubling_ir` | [modular/near_power_doubling.py](../../flagquantum/compiler/registers/modular/near_power_doubling.py) |
+| `kickmix_qft_measurement_operations` | `qft_measurement_operations` | [phase/qft_measurement.py](../../flagquantum/compiler/registers/phase/qft_measurement.py) |
+| `kickmix_qft_measurement_program` | `qft_measurement_program` | [phase/qft_measurement.py](../../flagquantum/compiler/registers/phase/qft_measurement.py) |
+| `kickmix_quantum_compare_ir` | `quantum_compare_ir` | [comparison/mixed_comparison.py](../../flagquantum/compiler/registers/comparison/mixed_comparison.py) |
+| `kickmix_quantum_equal_ir` | `quantum_equal_ir` | [comparison/mixed_comparison.py](../../flagquantum/compiler/registers/comparison/mixed_comparison.py) |
+| `kickmix_simple_addition_ir` | `measured_carry_addition_ir` | [arithmetic/measured_carry_addition.py](../../flagquantum/compiler/registers/arithmetic/measured_carry_addition.py) |
+| `kickmix_vented_addition_ir` | `vented_addition_ir` | [arithmetic/vented_addition.py](../../flagquantum/compiler/registers/arithmetic/vented_addition.py) |
+
+### Callable acceptance
+
+- Exact identifier-substitution AST comparison passes for all 48 changed
+  Python files against `1d5a956d`, including imports and string literals.
+- All 807 tests in 30 focused files pass in 27.57 seconds with no warnings
+  or skips. The process verifies Qualtran 0.7.0, Cirq 1.7.0 and the locked
+  Kickmix native extension with `Simulator` before collection. Existing
+  source-stream, complex-amplitude, measurement-branch, workspace and resource
+  checks consume the renamed functions.
+- The controlled-carry addition, measured increment, Fourier measurement and
+  resource-model comparison examples execute successfully. The carry example
+  emits 12 CX, 5 CCX, 2 HMR, 2 CZ and 2 Z primitives. Add model and emitted
+  counts remain separately labeled. Nine pinned source blobs rehash unchanged.
+- Strict Python 3.12 mypy passes for all 22 changed Compiler modules. Ruff and
+  Black pass for all 48 changed Python files. Architecture, public API baseline
+  and internal multi-level IR contract checks pass.
+
+The default smoke/unit tier was rerun with four workers. It stopped after
+12,801 passes, 51 skips and 398 warnings at the same rotation-layer assertion
+previously reproduced on `0bc67ecc`. The run took 78.22 seconds and is recorded
+in `g2-native-callable-names-default.log`.
+
+The naming change adds no capability acceptance records. The default-tier and
+Python 3.10 baseline limitations recorded above remain open. Local evidence is
+retained in `g2-native-callable-names-tests.log` and
+`g2-native-callable-names-examples.log` in the reference environment.

@@ -1,6 +1,6 @@
 # Locked modular doubling dispatch
 
-`kickmix_modular_doubling_program` ports the space/tolerance dispatch and
+`modular_doubling_program` ports the space/tolerance dispatch and
 fallback bodies from Kickmix `gen_imul2_mod.cc` at commit
 `9a0c11a4ee7697c082fbf8f2e1e8bf4a71fcb453`. The source blob remains
 `f2c07c7825e05cd44bd2f793c0c8a826cf426cb5`.
@@ -90,11 +90,11 @@ from flagquantum.compiler.lowering.reversible_phase_execution import (
     bind_reversible_phase_execution,
 )
 from flagquantum.compiler.registers.modular.modular_doubling_dispatch import (
-    kickmix_modular_doubling_program,
+    modular_doubling_program,
 )
 from flagquantum.dynamic import DynamicCircuit
 
-program = kickmix_modular_doubling_program(
+program = modular_doubling_program(
     (0, 1, 2), (True, False, True), control=3,
     clean=(4, 5, 6, 7, 8), minimize_qubits=True,
 )

@@ -12,14 +12,14 @@ from ...artifacts.reversible_phase import (
 )
 from ...lowering.reversible_phase import lower_reversible_phase
 from ..arithmetic.carry_parity import _Coefficient
-from ..arithmetic.mixed_addition import kickmix_mixed_addition_ir
-from ..comparison.mixed_comparison import kickmix_quantum_equal_ir
+from ..arithmetic.mixed_addition import mixed_addition_ir
+from ..comparison.mixed_comparison import quantum_equal_ir
 from ..finite_field.coefficients import ClassicalFieldCoefficient
 from ..finite_field.polynomial import _validate_registers
 from ..primitives._mixed_gates import _flip
 
 
-def kickmix_modular_negation_program(
+def mixed_modular_negation_program(
     target: tuple[int, ...],
     modulus: tuple[_Coefficient, ...],
     *,
@@ -64,7 +64,7 @@ def kickmix_modular_negation_program(
         bits = max(bits, fragment.n_bits)
 
     emit(
-        kickmix_mixed_addition_ir(
+        mixed_addition_ir(
             target,
             modulus,
             clean=clean,
@@ -76,7 +76,7 @@ def kickmix_modular_negation_program(
     flag = clean[0]
     ops.append(ReversiblePhaseOperation("r", (flag,)))
     emit(
-        kickmix_quantum_equal_ir(
+        quantum_equal_ir(
             target,
             modulus,
             flag,
@@ -96,7 +96,7 @@ def kickmix_modular_negation_program(
     ops.append(ReversiblePhaseOperation("hmr", (flag,), result_bit=result))
     ops.append(ReversiblePhaseOperation("push_condition", (), condition_bit=result))
     emit(
-        kickmix_quantum_equal_ir(
+        quantum_equal_ir(
             target,
             (False,) * len(target),
             None,

@@ -8,12 +8,12 @@ from math import ceil, isfinite
 
 from ....core.ir import Instruction
 from ..arithmetic.carry_parity import _Coefficient
-from ..arithmetic.mixed_addition import kickmix_mixed_addition_ir
+from ..arithmetic.mixed_addition import mixed_addition_ir
 from ..finite_field.coefficients import ClassicalFieldCoefficient
 from ..finite_field.polynomial import _validate_registers
 
 
-def kickmix_near_power_doubling_ir(
+def near_power_doubling_ir(
     target: tuple[int, ...],
     modulus: tuple[_Coefficient, ...],
     *,
@@ -67,7 +67,7 @@ def kickmix_near_power_doubling_ir(
     low = tuple(reversed(target))
     order = range(1, len(target)) if inverse else range(len(target) - 1, 0, -1)
     swaps = tuple(Instruction("swap", (low[k], low[k - 1])) for k in order)
-    arithmetic = kickmix_mixed_addition_ir(
+    arithmetic = mixed_addition_ir(
         target[len(target) - bottom_span : -1],
         modulus[:-1],
         carry_in=True,

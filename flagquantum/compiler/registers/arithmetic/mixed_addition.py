@@ -17,9 +17,9 @@ from .carry_parity import (
     _broadcast_offset,
     _carry_parity_gate,
     _Coefficient,
-    kickmix_carry_xor_ir,
+    carry_parity_ir,
 )
-from .vented_addition import kickmix_vented_addition_ir
+from .vented_addition import vented_addition_ir
 
 
 def _xor_parity(
@@ -248,7 +248,7 @@ def _add(
     vents, slot = bits[1 : n - 1], bits[n - 1]
     # Native clean slots start at zero. Only the used vent slots need a store.
     initialize = tuple(ClassicalXor((), bit).instruction() for bit in vents[1:])
-    body = kickmix_vented_addition_ir(
+    body = vented_addition_ir(
         target[::-1],
         offset[::-1],
         clean=clean,
@@ -264,7 +264,7 @@ def _add(
         for wire, bit in zip(dirty, vents[1:], strict=False)
         for gate in _flip(None, wire, ClassicalFieldCoefficient(bit))
     )
-    erase = kickmix_carry_xor_ir(
+    erase = carry_parity_ir(
         target[:-1][::-1],
         offset[::-1],
         dirty[::-1],
@@ -276,7 +276,7 @@ def _add(
     return (*initialize, *body, *invert, *correction, *erase, *correction, *invert)
 
 
-def kickmix_mixed_addition_ir(
+def mixed_addition_ir(
     target: tuple[int, ...],
     offset: tuple[_Coefficient, ...],
     *,

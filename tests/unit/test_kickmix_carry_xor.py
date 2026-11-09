@@ -8,7 +8,7 @@ import torch
 from examples.algorithms.binary_field_arithmetic import FieldOperation
 from flagquantum.compiler.formats.kmx import encode_kmx
 from flagquantum.compiler.lowering.reversible_phase import lower_reversible_phase
-from flagquantum.compiler.registers.arithmetic.carry_parity import kickmix_carry_xor_ir
+from flagquantum.compiler.registers.arithmetic.carry_parity import carry_parity_ir
 from flagquantum.compiler.registers.finite_field.coefficients import (
     ClassicalFieldCoefficient,
 )
@@ -22,7 +22,7 @@ pytestmark = pytest.mark.unit
 
 def test_single_carry_prefers_the_offset_as_the_parity_carrier() -> None:
     # Native gen_ixor_carries_from_addition for one bit, with a clean wire.
-    gates = kickmix_carry_xor_ir(
+    gates = carry_parity_ir(
         (0,), (2,), (1,), carry_in=4, control=3, clean=(5,), measurement_bit=2
     )
     assert encode_kmx(lower_reversible_phase(CircuitIR(6, gates))).splitlines()[1:] == [
@@ -64,7 +64,7 @@ def test_carry_xor_preserves_every_complex_branch(n: int, quantum_carry: bool) -
         *measure_x_clear_ir(measured_offset, 0),
         *measure_x_clear_ir(measured_carry, 1),
     )
-    gates = kickmix_carry_xor_ir(
+    gates = carry_parity_ir(
         tuple(range(n + 1)),
         offset,
         target,
@@ -108,9 +108,9 @@ def test_carry_xor_preserves_every_complex_branch(n: int, quantum_carry: bool) -
 
 
 def test_carry_xor_preserves_locked_unconditional_dispatch_boundary() -> None:
-    assert kickmix_carry_xor_ir((0,), (True,), (1,))[0].wires == (0, 1)
-    assert not kickmix_carry_xor_ir((0,), (), ())
+    assert carry_parity_ir((0,), (True,), (1,))[0].wires == (0, 1)
+    assert not carry_parity_ir((0,), (), ())
     with pytest.raises(ValueError, match="source must cover"):
-        kickmix_carry_xor_ir((0,), (True,), (1, 2), control=3)
+        carry_parity_ir((0,), (True,), (1, 2), control=3)
     with pytest.raises(ValueError, match="quantum enable"):
-        kickmix_carry_xor_ir((0, 1), (True, True), (2, 3))
+        carry_parity_ir((0, 1), (True, True), (2, 3))

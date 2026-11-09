@@ -9,7 +9,7 @@ from examples.algorithms.binary_field_arithmetic import FieldOperation
 from flagquantum.compiler.formats.kmx import encode_kmx
 from flagquantum.compiler.lowering.reversible_phase import lower_reversible_phase
 from flagquantum.compiler.registers.arithmetic.inplace_addition import (
-    kickmix_inplace_addition_ir,
+    inplace_addition_ir,
 )
 from flagquantum.core.ir import CircuitIR
 from flagquantum.dynamic import DynamicCircuit
@@ -19,7 +19,7 @@ pytestmark = pytest.mark.unit
 
 
 def test_two_bit_controlled_add_matches_locked_measured_schedule() -> None:
-    gates = kickmix_inplace_addition_ir(
+    gates = inplace_addition_ir(
         (1, 0), (3, 2), clean=(5,), control=4, measurement_bit=0
     )
     assert encode_kmx(lower_reversible_phase(CircuitIR(6, gates))).splitlines()[1:] == [
@@ -63,7 +63,7 @@ def test_addition_restores_inputs_and_work_on_every_complex_branch(
     amplitudes /= amplitudes.norm()
     state = torch.zeros(1 << total, dtype=torch.complex128)
     state[:: 1 << clean_count] = amplitudes
-    gates = kickmix_inplace_addition_ir(
+    gates = inplace_addition_ir(
         tuple(range(n)),
         tuple(range(n, n + m)),
         clean=tuple(range(inputs, total)),
@@ -99,10 +99,10 @@ def test_addition_restores_inputs_and_work_on_every_complex_branch(
 
 def test_addition_rejects_missing_padding_carry_or_result_slot() -> None:
     with pytest.raises(ValueError, match="zero-extend"):
-        kickmix_inplace_addition_ir((0, 1, 2), (3,))
+        inplace_addition_ir((0, 1, 2), (3,))
     with pytest.raises(ValueError, match="carry wire"):
-        kickmix_inplace_addition_ir((0, 1, 2), (3,), clean=(4,))
+        inplace_addition_ir((0, 1, 2), (3,), clean=(4,))
     with pytest.raises(ValueError, match="measurement slot"):
-        kickmix_inplace_addition_ir((0, 1, 2), (3, 4), clean=(5,))
-    assert not kickmix_inplace_addition_ir((), (0,), subtract=True)
-    assert not kickmix_inplace_addition_ir((0,), (1,), control=False)
+        inplace_addition_ir((0, 1, 2), (3, 4), clean=(5,))
+    assert not inplace_addition_ir((), (0,), subtract=True)
+    assert not inplace_addition_ir((0,), (1,), control=False)

@@ -14,7 +14,7 @@ from flagquantum.compiler.registers.finite_field.coefficients import (
     ClassicalFieldCoefficient as Bit,
 )
 from flagquantum.compiler.registers.modular.modular_doubling_dispatch import (
-    kickmix_modular_doubling_program,
+    modular_doubling_program,
 )
 from flagquantum.core.classical_dataflow import ClassicalXor
 from flagquantum.dynamic import DynamicCircuit
@@ -39,7 +39,7 @@ def test_full_precision_space_fallback_matches_every_valid_signed_history(
     coefficients = (
         (True, *(Bit(i) for i in range(width - 2)), True) if classical else constants
     )
-    program = kickmix_modular_doubling_program(
+    program = modular_doubling_program(
         tuple(range(width)),
         coefficients,
         control=control,
@@ -101,20 +101,20 @@ def test_full_precision_space_fallback_matches_every_valid_signed_history(
 def test_dispatch_and_known_empty_offset_boundary() -> None:
     from flagquantum.compiler.lowering.reversible_phase import lower_reversible_phase
     from flagquantum.compiler.registers.modular.exact_modular_doubling import (
-        kickmix_exact_modular_doubling_ir,
+        exact_modular_doubling_ir,
     )
     from flagquantum.core.ir import CircuitIR
 
     for inverse in (False, True):
-        program = kickmix_modular_doubling_program(
+        program = modular_doubling_program(
             (0, 1, 2), (True, False, True), clean=(4, 5, 6), control=3, inverse=inverse
         )
-        exact = kickmix_exact_modular_doubling_ir(
+        exact = exact_modular_doubling_ir(
             (0, 1, 2), (True, False, True), clean=(4, 5, 6), control=3, inverse=inverse
         )
         assert program == lower_reversible_phase(CircuitIR(7, exact))
         with pytest.raises(ValueError, match="empty complemented"):
-            kickmix_modular_doubling_program(
+            modular_doubling_program(
                 (0, 1, 2),
                 (True, True, True),
                 clean=(4, 5, 6, 7, 8),
@@ -123,7 +123,7 @@ def test_dispatch_and_known_empty_offset_boundary() -> None:
                 minimize_qubits=True,
             )
     with pytest.raises(ValueError, match="ordered tolerance"):
-        kickmix_modular_doubling_program((0,), (True,), btol=float("nan"))
+        modular_doubling_program((0,), (True,), btol=float("nan"))
 
 
 @pytest.mark.ftqc_reference
@@ -162,7 +162,7 @@ CZ q4 q0 if b0"""
     ]
     assert all(sim.read_shot_phase(shot) == 0 for shot in range(32))
     assert all(sim.read_across_shots(km.q(q), out=int) == 0 for q in range(5, 10))
-    program = kickmix_modular_doubling_program(
+    program = modular_doubling_program(
         (3, 2, 1, 0),
         (True, True, False, True),
         control=4,
@@ -209,7 +209,7 @@ CZ q4 q0 if b0"""
 def test_full_precision_fallback_preserves_a_coherent_quantum_modulus(
     inverse: bool,
 ) -> None:
-    program = kickmix_modular_doubling_program(
+    program = modular_doubling_program(
         (0, 1, 2),
         (True, 3, True),
         control=4,

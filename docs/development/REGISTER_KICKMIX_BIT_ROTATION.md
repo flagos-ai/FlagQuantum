@@ -1,6 +1,6 @@
 # Locked register bit rotation
 
-`kickmix_bit_rotation_ir` ports `gen_bit_rotate.cc` at Kickmix commit
+`bit_rotation_ir` ports `gen_bit_rotate.cc` at Kickmix commit
 `9a0c11a4ee7697c082fbf8f2e1e8bf4a71fcb453` in the Qualtran repository.
 Its unchanged source blob is `a01c261ed496876753769feaa93ec36e13fc12b4`.
 This shared register primitive supplies the source rotation sequence needed
@@ -66,10 +66,10 @@ The existing example wrapper retains `circuit.append(op)`:
 
 ```python
 from examples.algorithms.binary_field_arithmetic import FieldOperation
-from flagquantum.compiler.registers.bits.bit_rotation import kickmix_bit_rotation_ir
+from flagquantum.compiler.registers.bits.bit_rotation import bit_rotation_ir
 from flagquantum.dynamic import DynamicCircuit
 
-operation = FieldOperation(4, kickmix_bit_rotation_ir((0, 1, 2, 3), 1))
+operation = FieldOperation(4, bit_rotation_ir((0, 1, 2, 3), 1))
 circuit = DynamicCircuit(4)
 circuit.append(operation)
 ```

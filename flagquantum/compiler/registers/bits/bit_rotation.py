@@ -62,7 +62,7 @@ def _shifted_reverse(
     return tuple(gates)
 
 
-def kickmix_bit_rotation_ir(
+def bit_rotation_ir(
     target: tuple[int, ...],
     shift: int | tuple[_Coefficient, ...],
     *,

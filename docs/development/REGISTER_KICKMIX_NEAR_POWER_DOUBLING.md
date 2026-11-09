@@ -1,6 +1,6 @@
 # Locked near-power-of-two doubling and halving
 
-`kickmix_near_power_doubling_ir` ports both routines in
+`near_power_doubling_ir` ports both routines in
 `gen_idouble_mod_approx.cc` at Kickmix commit
 `9a0c11a4ee7697c082fbf8f2e1e8bf4a71fcb453`. The unmodified source blob is
 `dd0c9047465a74b422aae35957dadde24317b33c`.
@@ -92,11 +92,11 @@ undecomposed CCX/SWAP counts.
 ```python
 from examples.algorithms.binary_field_arithmetic import FieldOperation
 from flagquantum.compiler.registers.modular.near_power_doubling import (
-    kickmix_near_power_doubling_ir,
+    near_power_doubling_ir,
 )
 from flagquantum.dynamic import DynamicCircuit
 
-operation = FieldOperation(8, kickmix_near_power_doubling_ir(
+operation = FieldOperation(8, near_power_doubling_ir(
     (0, 1, 2, 3), (True, True, False, True),
     btol=2, clean=(4, 5, 6, 7), classical_bits=(0, 1, 2, 3),
 ))

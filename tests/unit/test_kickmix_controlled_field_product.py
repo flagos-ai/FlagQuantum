@@ -9,7 +9,7 @@ from examples.algorithms.binary_field_arithmetic import FieldOperation
 from flagquantum.compiler.formats.kmx import encode_kmx
 from flagquantum.compiler.lowering.reversible_phase import lower_reversible_phase
 from flagquantum.compiler.registers.finite_field.polynomial_product import (
-    kickmix_controlled_field_product_xor_ir,
+    controlled_field_product_xor_ir,
 )
 from flagquantum.core.ir import CircuitIR
 from flagquantum.dynamic import DynamicCircuit
@@ -45,7 +45,7 @@ def test_controlled_product_and_unproduct_match_locked_stream(width: int) -> Non
     source = str(builder.finish_circuit())
     remaining = source.split('INFO_TAG "@exit:c_gf_mul"', 1)[1]
     words = _words(width)
-    ir = kickmix_controlled_field_product_xor_ir(
+    ir = controlled_field_product_xor_ir(
         3 * width,
         *(word[::-1] for word in words),
         tuple(reversed(range(width))),
@@ -96,7 +96,7 @@ def test_both_control_values_and_every_branch_phase(width: int, modulus: int) ->
     wires.append(control.copy())
     wires.extend(np.zeros_like(control) for _ in range(width))
     original = np.array(wires)
-    ir = kickmix_controlled_field_product_xor_ir(
+    ir = controlled_field_product_xor_ir(
         3 * width,
         *_words(width),
         tuple(reversed(range(width))),
@@ -123,7 +123,7 @@ def test_append_preserves_control_coherence(repetitions: int) -> None:
     state = torch.zeros(1 << total, dtype=torch.complex128)
     state[:: 1 << width] = amplitudes
     circuit = DynamicCircuit(total, inputs=state, dtype=torch.complex128)
-    ir = kickmix_controlled_field_product_xor_ir(
+    ir = controlled_field_product_xor_ir(
         3 * width, *_words(width), (1, 0), modulus=modulus, parity_bit=width
     )
     circuit.append(FieldOperation(total, ir * repetitions))

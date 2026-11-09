@@ -6,18 +6,18 @@
 
 from ....core.ir import Instruction
 from .inverse_chain import (
-    kickmix_field_inverse_chain_erase_ir,
-    kickmix_field_inverse_chain_ir,
-    kickmix_field_inverse_chain_size,
+    field_inverse_chain_erase_ir,
+    field_inverse_chain_ir,
+    field_inverse_chain_size,
 )
 from .polynomial import _validate_registers
-from .polynomial_product import kickmix_field_product_xor_ir
-from .product_erasure import kickmix_field_product_erase_ir
+from .polynomial_product import field_product_xor_ir
+from .product_erasure import field_product_erase_ir
 
 
-def kickmix_field_division_workspace_size(width: int) -> int:
+def field_division_workspace_size(width: int) -> int:
     """Return the clean width for the inverse word and its chain."""
-    return width + kickmix_field_inverse_chain_size(width)
+    return width + field_inverse_chain_size(width)
 
 
 def _division_workspace(
@@ -29,7 +29,7 @@ def _division_workspace(
     width = len(divisor)
     if len(dividend) != width or len(target) != width:
         raise ValueError("Division requires equal dividend, divisor, and target widths")
-    if len(workspace) != kickmix_field_division_workspace_size(width):
+    if len(workspace) != field_division_workspace_size(width):
         raise ValueError("Division workspace must fit the inverse word and chain")
     # The two inputs are read in separate stages and may share wires.
     _validate_registers(dividend, target, workspace)
@@ -37,7 +37,7 @@ def _division_workspace(
     return workspace[:width], workspace[width:]
 
 
-def kickmix_field_division_chain_ir(
+def field_division_chain_ir(
     dividend: tuple[int, ...],
     divisor: tuple[int, ...],
     target: tuple[int, ...],
@@ -52,12 +52,12 @@ def kickmix_field_division_chain_ir(
     """
     inverse, chain = _division_workspace(dividend, divisor, target, workspace)
     return (
-        *kickmix_field_inverse_chain_ir(divisor, inverse, chain, modulus=modulus),
-        *kickmix_field_product_xor_ir(dividend, inverse, target, modulus=modulus),
+        *field_inverse_chain_ir(divisor, inverse, chain, modulus=modulus),
+        *field_product_xor_ir(dividend, inverse, target, modulus=modulus),
     )
 
 
-def kickmix_field_division_chain_erase_ir(
+def field_division_chain_erase_ir(
     dividend: tuple[int, ...],
     divisor: tuple[int, ...],
     quotient: tuple[int, ...],
@@ -74,7 +74,7 @@ def kickmix_field_division_chain_erase_ir(
     """
     inverse, chain = _division_workspace(dividend, divisor, quotient, workspace)
     return (
-        *kickmix_field_product_erase_ir(
+        *field_product_erase_ir(
             dividend,
             inverse,
             quotient,
@@ -82,7 +82,7 @@ def kickmix_field_division_chain_erase_ir(
             modulus=modulus,
             parity_bit=parity_bit,
         ),
-        *kickmix_field_inverse_chain_erase_ir(
+        *field_inverse_chain_erase_ir(
             divisor,
             inverse,
             chain,
@@ -93,7 +93,7 @@ def kickmix_field_division_chain_erase_ir(
     )
 
 
-def kickmix_field_division_xor_ir(
+def field_division_xor_ir(
     dividend: tuple[int, ...],
     divisor: tuple[int, ...],
     target: tuple[int, ...],
@@ -108,13 +108,13 @@ def kickmix_field_division_xor_ir(
     Supply one outcome slot for fields of degree one or two, and one per
     field bit otherwise, most significant first.
     """
-    forward = kickmix_field_division_chain_ir(
+    forward = field_division_chain_ir(
         dividend, divisor, target, workspace, modulus=modulus
     )
     width = len(divisor)
     return (
         *forward,
-        *kickmix_field_inverse_chain_erase_ir(
+        *field_inverse_chain_erase_ir(
             divisor,
             workspace[:width],
             workspace[width:],
@@ -125,7 +125,7 @@ def kickmix_field_division_xor_ir(
     )
 
 
-def kickmix_field_division_erase_ir(
+def field_division_erase_ir(
     dividend: tuple[int, ...],
     divisor: tuple[int, ...],
     quotient: tuple[int, ...],
@@ -141,8 +141,8 @@ def kickmix_field_division_erase_ir(
     """
     inverse, chain = _division_workspace(dividend, divisor, quotient, workspace)
     return (
-        *kickmix_field_inverse_chain_ir(divisor, inverse, chain, modulus=modulus),
-        *kickmix_field_division_chain_erase_ir(
+        *field_inverse_chain_ir(divisor, inverse, chain, modulus=modulus),
+        *field_division_chain_erase_ir(
             dividend,
             divisor,
             quotient,

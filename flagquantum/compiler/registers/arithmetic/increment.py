@@ -43,7 +43,7 @@ def _controlled_increment(
     return tuple(gates)
 
 
-def kickmix_increment_ir(
+def increment_ir(
     target: tuple[int, ...],
     *,
     clean: tuple[int, ...] = (),

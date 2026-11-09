@@ -13,7 +13,7 @@ from flagquantum.compiler.registers.finite_field.coefficients import (
     ClassicalFieldCoefficient as Bit,
 )
 from flagquantum.compiler.registers.modular.near_power_doubling import (
-    kickmix_near_power_doubling_ir,
+    near_power_doubling_ir,
 )
 from flagquantum.core.classical_dataflow import ClassicalXor
 from flagquantum.core.ir import CircuitIR
@@ -56,7 +56,7 @@ def _check_case(
     dirty = tuple(range(width + quantum_count, data))
     clean = tuple(range(data, data + span + extra))
     slots = 1 if any(isinstance(v, Bit) for v in coefficients) else 0
-    gates = kickmix_near_power_doubling_ir(
+    gates = near_power_doubling_ir(
         tuple(range(width)),
         coefficients,
         btol=tolerance,
@@ -107,7 +107,7 @@ def _check_case(
     )
     if slots:
         assert torch.all(result.classical_bits[:, 0] == classical_value)
-    backward = kickmix_near_power_doubling_ir(
+    backward = near_power_doubling_ir(
         tuple(range(width)),
         coefficients,
         btol=tolerance,
@@ -173,7 +173,7 @@ def test_clipped_window_with_a_wider_offset_and_entangled_vented_work(
 
 
 def test_source_adjacent_swap_order_and_span_checks() -> None:
-    forward = kickmix_near_power_doubling_ir(
+    forward = near_power_doubling_ir(
         (0, 1, 2, 3), (True,) * 4, btol=1, clean=(4,), classical_bits=(0,)
     )
     assert [(op.name, op.wires) for op in forward] == [
@@ -181,23 +181,23 @@ def test_source_adjacent_swap_order_and_span_checks() -> None:
         ("swap", (1, 2)),
         ("swap", (2, 3)),
     ]
-    reverse = kickmix_near_power_doubling_ir(
+    reverse = near_power_doubling_ir(
         (0, 1, 2, 3), (True,) * 4, btol=1, clean=(4,), classical_bits=(0,), inverse=True
     )
     assert [op.wires for op in reverse] == [(2, 3), (1, 2), (0, 1)]
     for tolerance in (float("nan"), float("inf")):
         with pytest.raises(ValueError, match="finite tolerance"):
-            kickmix_near_power_doubling_ir((0,), (True,), btol=tolerance, clean=(1,))
+            near_power_doubling_ir((0,), (True,), btol=tolerance, clean=(1,))
     with pytest.raises(ValueError, match="nonempty clipped span"):
-        kickmix_near_power_doubling_ir((0,), (True,), btol=0, clean=(1,))
+        near_power_doubling_ir((0,), (True,), btol=0, clean=(1,))
     with pytest.raises(ValueError, match="cutoff plus tolerance"):
-        kickmix_near_power_doubling_ir((0, 1), (False, True), btol=1, clean=(2, 3))
+        near_power_doubling_ir((0, 1), (False, True), btol=1, clean=(2, 3))
     with pytest.raises(ValueError, match="bottom_span clean"):
-        kickmix_near_power_doubling_ir((0, 1, 2), (True,) * 3, btol=2, clean=(3,))
+        near_power_doubling_ir((0, 1, 2), (True,) * 3, btol=2, clean=(3,))
 
 
 def test_near_power_resource_counts_remain_primitive() -> None:
-    gates = kickmix_near_power_doubling_ir(
+    gates = near_power_doubling_ir(
         (0, 1, 2, 3), (True,) * 4, btol=2.5, clean=(4, 5, 6), classical_bits=(0,)
     )
     counts = Counter(
@@ -218,7 +218,7 @@ def test_low_precision_matches_the_unmodified_native_fixture_and_error() -> None
     sim.do(km.Circuit(native))
     assert sum(sim.read_across_shots(km.q(q), out=int) << q for q in range(4)) == 14
     assert sim.read_shot_phase(0) == 0
-    gates = kickmix_near_power_doubling_ir(
+    gates = near_power_doubling_ir(
         (3, 2, 1, 0),
         (True, True, False, True),
         btol=0,
@@ -244,7 +244,7 @@ def test_low_precision_matches_the_unmodified_native_fixture_and_error() -> None
 
 @pytest.mark.parametrize("inverse", [False, True])
 def test_native_vented_primitive_counts(inverse: bool) -> None:
-    gates = kickmix_near_power_doubling_ir(
+    gates = near_power_doubling_ir(
         tuple(reversed(range(8))),
         (True, True, True, True, True, False, True, True),
         btol=2,

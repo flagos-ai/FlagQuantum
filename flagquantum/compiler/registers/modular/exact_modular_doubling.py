@@ -6,7 +6,7 @@
 
 from ....core.ir import Instruction
 from ..arithmetic.carry_parity import _Coefficient
-from ..bits.bit_rotation import kickmix_bit_rotation_ir
+from ..bits.bit_rotation import bit_rotation_ir
 from ..finite_field.coefficients import ClassicalFieldCoefficient
 from ..finite_field.polynomial import _validate_registers
 from ..primitives._mixed_gates import _flip
@@ -39,7 +39,7 @@ def _modular_doubling_ports(
     return quantum
 
 
-def kickmix_exact_modular_doubling_ir(
+def exact_modular_doubling_ir(
     target: tuple[int, ...],
     modulus: tuple[_Coefficient, ...],
     *,
@@ -147,10 +147,10 @@ def kickmix_exact_modular_doubling_ir(
         flip(None, low[1], coefficients[1], outcome)
         flip(None, low[1], outcome)
         flip(None, outcome)
-        gates.extend(kickmix_bit_rotation_ir(target, 1, control=control, right=True))
+        gates.extend(bit_rotation_ir(target, 1, control=control, right=True))
         return tuple(gates)
 
-    gates.extend(kickmix_bit_rotation_ir(target, 1, control=control))
+    gates.extend(bit_rotation_ir(target, 1, control=control))
     flip(work[0])
     flip(work[0], low[1])
     flip(work[0], low[1], coefficients[1])

@@ -36,7 +36,7 @@ def _four_operand_phase(
     )
 
 
-def kickmix_masked_prefix_phase_ir(
+def masked_prefix_phase_ir(
     targets: tuple[int, ...],
     masks: tuple[int | bool | ClassicalFieldCoefficient, ...],
     *,

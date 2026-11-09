@@ -76,7 +76,7 @@ def _add_with_carry(
     return tuple(gates)
 
 
-def kickmix_controlled_addition_ir(
+def carry_controlled_addition_ir(
     target: tuple[int, ...],
     offset: tuple[int, ...],
     *,

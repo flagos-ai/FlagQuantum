@@ -15,7 +15,7 @@ from flagquantum.compiler.registers.finite_field.coefficients import (
     ClassicalFieldCoefficient,
 )
 from flagquantum.compiler.registers.modular.mixed_modular_negation import (
-    kickmix_modular_negation_program,
+    mixed_modular_negation_program,
 )
 from flagquantum.core.classical_dataflow import ClassicalXor
 from flagquantum.dynamic import DynamicCircuit
@@ -40,7 +40,7 @@ def test_modular_negation_preserves_complex_amplitudes(
         ),
     )
     clean = tuple(range(width, 2 * width + 2))
-    program = kickmix_modular_negation_program(
+    program = mixed_modular_negation_program(
         tuple(range(width)), coefficients, clean=clean
     )
     assert decode_kmx(encode_kmx(program)) == program
@@ -80,7 +80,7 @@ def test_modular_negation_all_measurement_and_reset_histories(
 ) -> None:
     np = pytest.importorskip("numpy")
     idle = 2 * width + 1
-    program = kickmix_modular_negation_program(
+    program = mixed_modular_negation_program(
         tuple(reversed(range(width))),
         tuple(bool((modulus >> i) & 1) for i in reversed(range(width))),
         clean=tuple(range(idle, idle + width + 1)),
@@ -97,11 +97,11 @@ def test_modular_negation_all_measurement_and_reset_histories(
 
 def test_modular_negation_checks_full_capacity_and_zero_repair_work() -> None:
     with pytest.raises(ValueError, match="full-capacity"):
-        kickmix_modular_negation_program((0, 1), (False, True), clean=(2, 3, 4))
+        mixed_modular_negation_program((0, 1), (False, True), clean=(2, 3, 4))
     with pytest.raises(ValueError, match="clean zero-repair"):
-        kickmix_modular_negation_program((0,), (True,), clean=())
+        mixed_modular_negation_program((0,), (True,), clean=())
     with pytest.raises(ValueError, match="one clean wire per input"):
-        kickmix_modular_negation_program((0, 1), (True, True), clean=(2, 3))
+        mixed_modular_negation_program((0, 1), (True, True), clean=(2, 3))
 
 
 @pytest.mark.parametrize("width", [2, 3])
@@ -109,7 +109,7 @@ def test_quantum_modulus_and_entangled_dirty_work_are_preserved(width: int) -> N
     low_modulus = tuple(range(width, 2 * width - 1))
     clean = tuple(range(2 * width - 1, 3 * width))
     dirty = (3 * width, 3 * width + 1)
-    program = kickmix_modular_negation_program(
+    program = mixed_modular_negation_program(
         tuple(range(width)), (True, *low_modulus), clean=clean, dirty=dirty
     )
     initial = torch.zeros(1 << program.n_qubits, dtype=torch.complex128)
@@ -155,7 +155,7 @@ def test_quantum_modulus_and_entangled_dirty_work_are_preserved(width: int) -> N
 def test_resources_match_locked_native_primitive_counts(
     width: int, modulus: int, work: int, source_counts: dict[str, int]
 ) -> None:
-    program = kickmix_modular_negation_program(
+    program = mixed_modular_negation_program(
         tuple(reversed(range(width))),
         tuple(bool(modulus >> i & 1) for i in reversed(range(width))),
         clean=tuple(range(width, width + work)),

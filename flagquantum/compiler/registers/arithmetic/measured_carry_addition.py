@@ -12,7 +12,7 @@ from ..primitives.measurement import measure_x_clear_ir
 from .carry_parity import _carry_parity_gate, _Coefficient
 
 
-def kickmix_simple_addition_ir(
+def measured_carry_addition_ir(
     target: tuple[int, ...],
     offset: tuple[_Coefficient, ...],
     *,

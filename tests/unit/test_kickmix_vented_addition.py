@@ -7,7 +7,7 @@ from examples.algorithms.binary_field_arithmetic import FieldOperation
 from flagquantum.compiler.formats.kmx import encode_kmx
 from flagquantum.compiler.lowering.reversible_phase import lower_reversible_phase
 from flagquantum.compiler.registers.arithmetic.vented_addition import (
-    kickmix_vented_addition_ir,
+    vented_addition_ir,
 )
 from flagquantum.compiler.registers.finite_field.coefficients import (
     ClassicalFieldCoefficient,
@@ -54,7 +54,7 @@ def test_vented_addition_matches_every_full_complex_branch(
     setup = tuple(
         ClassicalXor((), bit, constant=True).instruction() for bit in (0, *vents)
     )
-    gates = kickmix_vented_addition_ir(
+    gates = vented_addition_ir(
         tuple(range(width)),
         rhs,
         carry_copy=copy_ports,
@@ -110,7 +110,7 @@ def test_vented_addition_matches_every_full_complex_branch(
 
 def test_vent_slots_lower_to_native_conditional_inversions() -> None:
     setup = tuple(ClassicalXor((), bit).instruction() for bit in (0, 1, 2))
-    gates = kickmix_vented_addition_ir(
+    gates = vented_addition_ir(
         (4, 3, 2, 1, 0),
         (False, True, False, True, False),
         clean=(5, 6),
@@ -129,10 +129,10 @@ def test_vent_slots_lower_to_native_conditional_inversions() -> None:
 
 def test_vented_addition_checks_port_ownership() -> None:
     with pytest.raises(ValueError, match="low carry-copy"):
-        kickmix_vented_addition_ir((0, 1), (True,), clean=(2, 3), carry_copy=(None, 4))
+        vented_addition_ir((0, 1), (True,), clean=(2, 3), carry_copy=(None, 4))
     with pytest.raises(ValueError, match="vent slots"):
-        kickmix_vented_addition_ir((0, 1, 2), (True,), clean=(3, 4))
+        vented_addition_ir((0, 1, 2), (True,), clean=(3, 4))
     with pytest.raises(ValueError, match="distinct nonnegative"):
-        kickmix_vented_addition_ir(
+        vented_addition_ir(
             (0, 1, 2), (True,), clean=(3, 4), vent_bits=(0,), measurement_bit=0
         )

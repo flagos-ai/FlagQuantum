@@ -6,10 +6,10 @@ import torch
 from examples.algorithms.binary_field_arithmetic import FieldOperation
 from flagquantum.circuit import Circuit
 from flagquantum.compiler.registers.finite_field.binary_linear_map import (
-    kickmix_binary_linear_map_ir,
-    kickmix_field_constant_scale_ir,
-    kickmix_field_frobenius_ir,
-    kickmix_field_monomial_scale_ir,
+    binary_linear_map_ir,
+    field_constant_scale_ir,
+    field_frobenius_ir,
+    field_monomial_scale_ir,
 )
 from tests.unit.test_field_linear import _source_type
 
@@ -44,7 +44,7 @@ def test_constant_scale_matches_pinned_kickmix(
     builder.gf2_imul(constant, target=target, field=km.GF2Field(width, modulus))
     wires = tuple(reversed(range(width)))
     expected = _gate_stream(str(builder.finish_circuit()).strip())
-    actual = kickmix_field_constant_scale_ir(wires, constant, modulus=modulus)
+    actual = field_constant_scale_ir(wires, constant, modulus=modulus)
     assert [(gate.name, gate.wires) for gate in actual] == expected
 
 
@@ -69,18 +69,18 @@ def test_linear_leaves_match_the_pinned_division_stream(
     )
     step = (width + 1) // 2
     for name, actual in (
-        ("gf_ifrobenius", kickmix_field_frobenius_ir(work_wires, modulus=modulus)),
+        ("gf_ifrobenius", field_frobenius_ir(work_wires, modulus=modulus)),
         (
             "gf_ifrobenius_adjoint",
-            kickmix_field_frobenius_ir(work_wires, modulus=modulus, adjoint=True),
+            field_frobenius_ir(work_wires, modulus=modulus, adjoint=True),
         ),
         (
             "gf_imul_x",
-            kickmix_field_monomial_scale_ir(target_wires, step, modulus=modulus),
+            field_monomial_scale_ir(target_wires, step, modulus=modulus),
         ),
         (
             "gf_idiv_x",
-            kickmix_field_monomial_scale_ir(target_wires, -step, modulus=modulus),
+            field_monomial_scale_ir(target_wires, -step, modulus=modulus),
         ),
     ):
         source = _block(
@@ -102,7 +102,7 @@ def test_fixed_wire_transforms_preserve_complex_amplitudes(
     state = torch.complex(indices + 1, 3 * indices - 2)
     state /= state.norm()
     for power in (-100, -2, 0, 1, 100):
-        gates = kickmix_field_monomial_scale_ir(target, power, modulus=modulus)
+        gates = field_monomial_scale_ir(target, power, modulus=modulus)
         expected = torch.empty_like(state)
         factor = field(2) ** power
         for value in range(1 << width):
@@ -110,8 +110,8 @@ def test_fixed_wire_transforms_preserve_complex_amplitudes(
         circuit = Circuit(width, inputs=state, dtype=torch.complex128)
         actual = circuit.append(FieldOperation(width, gates)).state().flatten()
         torch.testing.assert_close(actual, expected, rtol=0, atol=1e-12)
-    forward = kickmix_field_frobenius_ir(target, 3, modulus=modulus)
-    adjoint = kickmix_field_frobenius_ir(target, 3, modulus=modulus, adjoint=True)
+    forward = field_frobenius_ir(target, 3, modulus=modulus)
+    adjoint = field_frobenius_ir(target, 3, modulus=modulus, adjoint=True)
     expected = torch.empty_like(state)
     for value in range(1 << width):
         expected[int(field(value) ** 8)] = state[value]
@@ -146,7 +146,7 @@ def test_arbitrary_linear_map_matches_pinned_cpp_fixtures(
     # entry points with the target registered in increasing wire order.
     target = tuple(reversed(range(len(columns))))
     for inverse, expected in ((False, forward), (True, adjoint)):
-        gates = kickmix_binary_linear_map_ir(target, columns, adjoint=inverse)
+        gates = binary_linear_map_ir(target, columns, adjoint=inverse)
         assert [(gate.name, gate.wires) for gate in gates] == _gate_stream(expected)
 
 
@@ -166,8 +166,8 @@ def test_arbitrary_binary_map_and_adjoint_preserve_complex_amplitudes(
             if value >> i & 1:
                 mapped ^= column
         expected[2 * mapped : 2 * mapped + 2] = state[2 * value : 2 * value + 2]
-    forward = kickmix_binary_linear_map_ir(target, columns)
-    adjoint = kickmix_binary_linear_map_ir(target, columns, adjoint=True)
+    forward = binary_linear_map_ir(target, columns)
+    adjoint = binary_linear_map_ir(target, columns, adjoint=True)
     circuit = Circuit(width + 1, inputs=state, dtype=torch.complex128)
     transformed = circuit.append(FieldOperation(width + 1, forward))
     torch.testing.assert_close(
@@ -178,15 +178,12 @@ def test_arbitrary_binary_map_and_adjoint_preserve_complex_amplitudes(
 
 
 def test_arbitrary_binary_map_validates_shape_and_invertibility() -> None:
-    assert kickmix_binary_linear_map_ir((), (), adjoint=True) == ()
-    assert (
-        kickmix_binary_linear_map_ir(tuple(range(8)), tuple(1 << i for i in range(8)))
-        == ()
-    )
+    assert binary_linear_map_ir((), (), adjoint=True) == ()
+    assert binary_linear_map_ir(tuple(range(8)), tuple(1 << i for i in range(8))) == ()
     with pytest.raises(ValueError, match="square"):
-        kickmix_binary_linear_map_ir((0, 1), (1,))
+        binary_linear_map_ir((0, 1), (1,))
     with pytest.raises(ValueError, match="square"):
-        kickmix_binary_linear_map_ir((0, 1), (1, 4))
+        binary_linear_map_ir((0, 1), (1, 4))
     for adjoint in (False, True):
         with pytest.raises(ValueError, match="invertible"):
-            kickmix_binary_linear_map_ir((0, 1), (1, 1), adjoint=adjoint)
+            binary_linear_map_ir((0, 1), (1, 1), adjoint=adjoint)
