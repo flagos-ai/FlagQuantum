@@ -1,0 +1,9 @@
+{
+  "upstream_path": "algorithms/search_and_optimization/QAOA/qaoa.qmod",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "583f2319069ff7687248c631c1c26dcc7b63550dbcc74ba0363dd0b0da0bb29b",
+  "native_entrypoint": "examples.synthesis.algorithms.search_and_optimization.qaoa.main",
+  "acceptance_test": "tests/integration/test_synthesis_native_guarded_phase.py",
+  "scope": "Complete retained five-bit three-layer constrained Knapsack quantum program. Full classical optimization Notebook workflow remains pending.",
+  "native_semantic_adaptations": "Source v.a and v.b are explicit native Output[QNum] ports a:3bits and b:2bits, preserving joint logical numeric values and source gamma-first/beta-last order. Shared native ansatz retains all three layers and integer <=12 guard. Commuting sum-X evolution at beta/2 implements every RX(beta) exactly; existing local evolution fusion may change operation widths/counts, with no hardware resource-equivalence claim. No general qstruct/Const-parameter helper or mutable-helper adjoint support is claimed."
+}

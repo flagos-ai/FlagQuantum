@@ -706,3 +706,12 @@ This is phase arithmetic, not signed/real quantum output assignment. Run
 `tests/integration/test_synthesis_native_polynomial_phase.py` and the native
 ADAPT-QAOA/MaxCut comparisons for the contributor golden path. See the
 [phase contract](../../../docs/api-changes/FQ-SYNTH-NATIVE-POLYNOMIAL-PHASE-20261109.md).
+
+Native predicate-gated real phases reuse the same expansion with a checked
+`condition`. Conditions are scalar bits or one integer comparison. Read-only
+predicate and phase inputs may overlap; each encountered read retains an
+initialization witness. Writable helpers admit phase-only control, preserving
+disjoint arguments, Output-escape rejection and the existing adjoint boundary.
+Run `python -m examples.synthesis.algorithms.search_and_optimization.qaoa.main`
+and `tests/integration/test_synthesis_native_guarded_phase.py` for the contributor
+golden path. See the [guarded phase contract](../../../docs/api-changes/FQ-SYNTH-NATIVE-GUARDED-PHASE-20261109.md).

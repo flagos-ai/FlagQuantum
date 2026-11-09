@@ -31,12 +31,7 @@ from .frontend_ports import (
 from .frontend_preparation import capture_preparation
 from .frontend_python import _error, _QuantumFunction, _Source, capture
 from .frontend_statements import capture_statements
-from .frontend_views import (
-    gate_target,
-    inline_mutable,
-    locations,
-    static_integer,
-)
+from .frontend_views import gate_target, inline_mutable, locations, static_integer
 from .profile import _width
 from .program_types import (
     QNum,
@@ -445,6 +440,7 @@ class _Body:
                     rz,
                     phase_gate,
                     phase,
+                    control,
                     rzz,
                     cx,
                     swap,
@@ -1058,6 +1054,44 @@ class _Body:
                 "a quantum port cannot shadow a callable",
             )
         operation = self.resolve_callable(body.func)
+        if self.aliases is not None and operation is not phase:
+            _error(
+                self.source,
+                body,
+                "program.borrow",
+                "mutable helpers allow phase-only control",
+            )
+        phase_constant = None
+        if operation is phase and len(body.args) == 2:
+            phase_constant = self.phase_number(body.args[0])
+        if (
+            operation is phase
+            and len(body.args) == 2
+            and (
+                self.aliases is not None
+                or isinstance(condition, ast.Subscript)
+                or phase_constant is None
+                and (
+                    not isinstance(body.args[0], ast.Name)
+                    or any(
+                        child.id == body.args[0].id
+                        for child in ast.walk(condition)
+                        if isinstance(child, ast.Name)
+                    )
+                )
+            )
+        ):
+            expression, coefficient = body.args
+            angle = self.phase_number(coefficient)
+            if angle is None:
+                _error(
+                    self.source,
+                    coefficient,
+                    "program.control",
+                    "expected a finite static phase coefficient",
+                )
+            capture_polynomial_phase(self, expression, angle, body, condition=condition)
+            return
         if isinstance(condition, ast.Compare):
             graph, inputs = self.capture_expression(condition, node)
             if sum(register_width(value) for value in inputs) > 8:
@@ -1101,7 +1135,7 @@ class _Body:
                     "program.control",
                     "expected a finite static phase coefficient",
                 )
-            constant = self.phase_number(expression)
+            constant = phase_constant
             operands: tuple[Value, ...]
             if constant is None:
                 target = self.register(expression)

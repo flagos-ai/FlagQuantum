@@ -13,6 +13,8 @@ Native FlagQuantum programs currently available:
 - [hidden_shift](number_theory_and_cryptography/hidden_shift/README.md)
 - [solving_qlsp_with_aqc](quantum_linear_solvers/adiabatic_linear_solvers/solving_qlsp_with_aqc/README.md)
 - [adapt_vqe](quantum_state_preparation/adapt_vqe/README.md)
+- [qaoa](search_and_optimization/qaoa/README.md)
+- [qaoa_knapsack](search_and_optimization/qaoa/qaoa_knapsack/README.md)
 
 ## Validated local Notebook workflows
 

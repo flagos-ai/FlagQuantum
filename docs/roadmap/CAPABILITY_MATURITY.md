@@ -599,3 +599,19 @@ padding states, nontrivial coherent phases, helper composition and width bounds.
 Maturity is local CPU semantic validation with resource refusal checks; this does
 not establish scalable Shor performance or hardware execution. See the
 [contract](../api-changes/FQ-SYNTH-NATIVE-MODULAR-EXP-20261109.md).
+
+
+## Native bounded real and predicate-gated phases
+
+Unreleased native Python phase arithmetic and phase-only control reuse the
+Compiler-owned Boolean-polynomial expansion also used by the Qmod adapter.
+Sparse unsigned-word and scalar-array reads may share physical bits; constant
+and conditional constant phases remain absolute. Writable helpers preserve
+borrowing rules and their existing adjoint/control limits. Bounds are 24 total
+input bits, 8 predicate bits, degree 8, 256 monomials, 20,000 products and 128 native
+expression depth. These are local CPU semantic checks, not hardware performance
+or general native qstruct/signed/fractional support. Independent Circuit states
+cover complete ADAPT-QAOA, MaxCut and constrained Knapsack programs; full Notebook
+optimizer workflows require separate acceptance. See the
+[phase contract](../api-changes/FQ-SYNTH-NATIVE-POLYNOMIAL-PHASE-20261109.md) and
+[guarded phase contract](../api-changes/FQ-SYNTH-NATIVE-GUARDED-PHASE-20261109.md).

@@ -15,7 +15,12 @@ if TYPE_CHECKING:
 
 
 def capture_polynomial_phase(
-    owner: _Body, expression: ast.expr, coefficient: float, statement: ast.Call
+    owner: _Body,
+    expression: ast.expr,
+    coefficient: float,
+    statement: ast.Call,
+    *,
+    condition: ast.expr | None = None,
 ) -> None:
     """Read checked physical views, expand sparsely and emit existing phase effects."""
 
@@ -27,9 +32,21 @@ def capture_polynomial_phase(
             return node.left, node.right
         if isinstance(node, ast.UnaryOp) and isinstance(node.op, ast.USub):
             return (node.operand,)
+        if isinstance(node, ast.Compare):
+            return node.left, *node.comparators
         return ()
 
     def operator(node: ast.expr) -> str:
+        if isinstance(node, ast.Compare):
+            comparisons = {
+                ast.Eq: "==",
+                ast.NotEq: "!=",
+                ast.Lt: "<",
+                ast.LtE: "<=",
+                ast.Gt: ">",
+                ast.GtE: ">=",
+            }
+            return comparisons.get(type(node.ops[0]), "")
         if isinstance(node, ast.Constant) and type(node.value) is int:
             return str(node.value)
         operation = node.op if isinstance(node, (ast.BinOp, ast.UnaryOp)) else None
@@ -73,10 +90,21 @@ def capture_polynomial_phase(
 
     # Source limits bound total nodes; this guard also bounds recursive expansion.
     pending = [(expression, 0)]
+    if condition is not None:
+        pending.append((condition, 0))
     while pending:
         node, depth = pending.pop()
         if depth >= 128:
             fail(node, "budget.phase", "native phase expression depth exceeds 128")
+        if isinstance(node, ast.Compare) and (
+            len(node.ops) != 1
+            or not isinstance(
+                node.ops[0], (ast.Eq, ast.NotEq, ast.Lt, ast.LtE, ast.Gt, ast.GtE)
+            )
+        ):
+            fail(
+                node, "program.control", "phase control requires one integer comparison"
+            )
         if isinstance(node, ast.BinOp) and not isinstance(
             node.op, (ast.Add, ast.Sub, ast.Mult, ast.Div, ast.Pow)
         ):
@@ -89,6 +117,7 @@ def capture_polynomial_phase(
         operator_of=operator,
         operands_of=children,
         fail=fail,
+        condition=condition,
     )
     # Algebraic cancellation must not hide uninitialized or illegal reads.
     for value, bit in reads:

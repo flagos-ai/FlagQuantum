@@ -198,8 +198,8 @@ Validated local Notebook workflows: **24/213**.
 | `algorithms/quantum_state_preparation/fermionic_gaussian/fermionic_gaussian` | notebook_workflow | Pending | pending |
 | `algorithms/quantum_state_preparation/gibbs/quantum_thermal_state_preparation` | notebook_workflow | Pending | pending |
 | `algorithms/quantum_walks/glued_trees/glued_trees` | notebook_workflow | Pending | pending |
-| `algorithms/search_and_optimization/QAOA/qaoa` | notebook_workflow | Pending | pending |
-| `algorithms/search_and_optimization/QAOA/qaoa_knapsack` | quantum_program | Pending | pending |
+| `algorithms/search_and_optimization/QAOA/qaoa` | notebook_workflow | [Native program](algorithms/search_and_optimization/qaoa/main.py) | pending |
+| `algorithms/search_and_optimization/QAOA/qaoa_knapsack` | quantum_program | [Native program](algorithms/search_and_optimization/qaoa/qaoa_knapsack/main.py) | pending |
 | `algorithms/search_and_optimization/QAOA/qaoa_max_cut` | quantum_program | Pending | pending |
 | `algorithms/search_and_optimization/dqi/dqi_max_xorsat` | notebook_workflow | Pending | pending |
 | `algorithms/search_and_optimization/grover/3_sat_grover` | quantum_program | Pending | pending |
@@ -233,7 +233,7 @@ Validated local Notebook workflows: **24/213**.
 | `applications/chemistry/second_quantized_hamiltonian/second_quantized_hamiltonian` | notebook_workflow | Pending | pending |
 | `applications/chemistry/tensor_hypercontraction/tensor_hypercontraction` | notebook_workflow | Pending | pending |
 | `applications/cybersecurity/link_monitoring/link_monitoring` | notebook_workflow | Pending | pending |
-| `applications/cybersecurity/patching_management/patch_min_vertex_cover` | notebook_workflow | Pending | pending |
+| `applications/cybersecurity/patching_management/patch_min_vertex_cover` | notebook_workflow | [Native program](applications/cybersecurity/patching_management/patch_min_vertex_cover/main.py) | pending |
 | `applications/cybersecurity/whitebox_fuzzing/whitebox_fuzzing` | notebook_workflow | Pending | pending |
 | `applications/finance/autocallable_options/partial_exponential_state_preparation` | notebook_workflow | Pending | pending |
 | `applications/finance/autocallable_options/quantum_autocallable_option_pricing` | notebook_workflow | Pending | pending |
@@ -385,14 +385,14 @@ Validated local Notebook workflows: **24/213**.
 | `tutorials/basic_tutorials/exponentiation/example_exponentiation` | notebook_workflow | Pending | pending |
 | `tutorials/basic_tutorials/grover_graph_coloring/grover_graph_coloring` | notebook_workflow | Pending | pending |
 | `tutorials/basic_tutorials/mcx/mcx` | notebook_workflow | Pending | pending |
-| `tutorials/basic_tutorials/optimization/learning_optimization` | notebook_workflow | Pending | pending |
+| `tutorials/basic_tutorials/optimization/learning_optimization` | notebook_workflow | [Native program](tutorials/basics/optimization/learning_optimization/main.py) | pending |
 | `tutorials/basic_tutorials/prepare_state/prepare_state` | notebook_workflow | [Native program](tutorials/basics/prepare_state/main.py) | validated |
 | `tutorials/basic_tutorials/qmci_pi_estimation/qmci_pi_estimation` | notebook_workflow | Pending | pending |
 | `tutorials/basic_tutorials/qml_with_classiq_guide/qml_with_classiq_guide` | notebook_workflow | [Native program](tutorials/basics/qml/main.py) | pending |
 | `tutorials/basic_tutorials/quantum_primitives/hadamard_test_tutorial/hadamard_test_tutorial` | notebook_workflow | Pending | pending |
 | `tutorials/basic_tutorials/quantum_primitives/linear_combination_of_unitaries/linear_combination_of_unitaries` | notebook_workflow | Pending | pending |
 | `tutorials/basic_tutorials/quantumwalk_complex_network/quantumwalk_complex_network` | notebook_workflow | Pending | pending |
-| `tutorials/basic_tutorials/the_classiq_tutorial/Qmod_tutorial_part1` | notebook_workflow | Pending | pending |
+| `tutorials/basic_tutorials/the_classiq_tutorial/Qmod_tutorial_part1` | notebook_workflow | [Native program](tutorials/basics/quantum_programming/qmod_tutorial_part1/main.py) | pending |
 | `tutorials/basic_tutorials/the_classiq_tutorial/Qmod_tutorial_part2` | notebook_workflow | Pending | pending |
 | `tutorials/basic_tutorials/the_classiq_tutorial/classiq_overview_tutorial` | notebook_workflow | [Native program](tutorials/basics/quantum_programming/classiq_overview_tutorial/main.py) | validated |
 | `tutorials/basic_tutorials/the_classiq_tutorial/execution_tutorial` | notebook_workflow | [Native program](tutorials/basics/quantum_programming/execution_tutorial/main.py) | pending |

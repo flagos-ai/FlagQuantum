@@ -3134,7 +3134,10 @@
         }
       ],
       "workflow_status": "pending",
-      "native_program": null,
+      "native_program": {
+        "path": "examples/synthesis/algorithms/search_and_optimization/qaoa/main.py",
+        "scope": "Complete retained five-bit three-layer constrained Knapsack quantum program. Full classical optimization Notebook workflow remains pending."
+      },
       "kind": "notebook_workflow"
     },
     {
@@ -3149,7 +3152,10 @@
         }
       ],
       "workflow_status": "pending",
-      "native_program": null,
+      "native_program": {
+        "path": "examples/synthesis/algorithms/search_and_optimization/qaoa/qaoa_knapsack/main.py",
+        "scope": "Complete retained five-bit three-layer constrained Knapsack quantum program. Full classical optimization Notebook workflow remains pending."
+      },
       "kind": "quantum_program"
     },
     {
@@ -3827,7 +3833,10 @@
         }
       ],
       "workflow_status": "pending",
-      "native_program": null,
+      "native_program": {
+        "path": "examples/synthesis/applications/cybersecurity/patching_management/patch_min_vertex_cover/main.py",
+        "scope": "Complete eight-bit three-layer patching quantum program. Simplify each squared binary complement using (1-b)**2=1-b; retain all eighteen edges and penalty10. The sole struct field v.x is explicit native array v with unchanged logical order. Full Notebook optimizer remains pending."
+      },
       "kind": "notebook_workflow"
     },
     {
@@ -7090,7 +7099,10 @@
         }
       ],
       "workflow_status": "pending",
-      "native_program": null,
+      "native_program": {
+        "path": "examples/synthesis/tutorials/basics/optimization/learning_optimization/main.py",
+        "scope": "Complete retained eight-bit one-layer constraint optimization quantum program. Source two2bit numbers become native numeric ports x0,x1 and four slack bits become native slack array. Preserve the source last slack weight3 (not8), residual offset2 and penalty20. Exact sum-X at beta/2 implements RX(beta), possibly changing local fused operation widths/counts; no hardware resource equivalence claim. Full Notebook optimizer remains pending."
+      },
       "kind": "notebook_workflow"
     },
     {
@@ -7276,7 +7288,10 @@
         }
       ],
       "workflow_status": "pending",
-      "native_program": null,
+      "native_program": {
+        "path": "examples/synthesis/tutorials/basics/quantum_programming/qmod_tutorial_part1/main.py",
+        "scope": "Complete retained fixed four-bit phase/interference program. Polynomial pi*(product of all four bits + bit3) represents both source controlled constants exactly, including their cancellation on1111. This algebraic native expression does not claim general array control syntax. The original has no configurable classical parameters. Full teaching Notebook remains pending."
+      },
       "kind": "notebook_workflow"
     },
     {

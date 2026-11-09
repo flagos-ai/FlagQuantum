@@ -26,6 +26,7 @@ def truth_table_expansion(
     operator_of: Callable[[Node], str],
     operands_of: Callable[[Node], tuple[Node, ...]],
     fail: Callable[[Node, str, str], NoReturn],
+    condition: Node | None = None,
     **options: object,
 ) -> tuple[Polynomial, tuple[Location, ...]]:
     """Independent two-bit test implementation; never used in production."""
@@ -52,6 +53,16 @@ def truth_table_expansion(
         if len(values) == 1 and symbol == "-":
             return -values[0]
         first, second = values
+        comparisons = {
+            "==": first == second,
+            "!=": first != second,
+            "<": first < second,
+            "<=": first <= second,
+            ">": first > second,
+            ">=": first >= second,
+        }
+        if symbol in comparisons:
+            return float(comparisons[symbol])
         if symbol == "+":
             return first + second
         if symbol == "-":
@@ -62,8 +73,14 @@ def truth_table_expansion(
             return first / second
         fail(node, "test", "unsupported replacement-test operation")
 
+    if condition is not None:
+        evaluate(condition, 0)
     evaluate(expression, 0)
-    values = [evaluate(expression, basis) for basis in range(1 << len(reads))]
+    values = [
+        evaluate(expression, basis)
+        * (evaluate(condition, basis) if condition is not None else 1.0)
+        for basis in range(1 << len(reads))
+    ]
     for bit in range(len(reads)):
         for basis in range(len(values)):
             if basis & (1 << bit):
@@ -71,16 +88,30 @@ def truth_table_expansion(
     return {mask: weight for mask, weight in enumerate(values) if weight}, tuple(reads)
 
 
+@pytest.mark.parametrize("guarded", [False, True])
 def test_qmod_and_python_consumers_accept_an_independent_expansion_replacement(
     monkeypatch: pytest.MonkeyPatch,
+    guarded: bool,
 ) -> None:
+    native_effect = "phase(0.3+q[0]/2-q[0]*q[1],0.37)"
+    source_effect = native_effect + ";"
+    if guarded:
+        native_effect = "control(q[0]==1,lambda:" + native_effect + ")"
+        source_effect = "control(q[0]==1) {" + source_effect + "}"
     native = program_definition(
         "from flagquantum.synth import *\n@qfunc\ndef main(q:Output[QArray[QBit]]):\n"
         "    allocate(2,q)\n    hadamard_transform(q)\n"
-        "    phase(0.3+q[0]/2-q[0]*q[1],0.37)\n"
+        "    " + native_effect + "\n"
     )
-    source = "qfunc main(output q:qbit[2]) {allocate(q);hadamard_transform(q);phase(0.3+q[0]/2-q[0]*q[1],0.37);}"
-    values = torch.tensor([0.3, 0.8, 0.3, -0.2], dtype=torch.float64)
+    source = (
+        "qfunc main(output q:qbit[2]) {allocate(q);hadamard_transform(q);"
+        + source_effect
+        + "}"
+    )
+    values = torch.tensor(
+        [0.0 if guarded else 0.3, 0.8, 0.0 if guarded else 0.3, -0.2],
+        dtype=torch.float64,
+    )
     reference = (
         fq.Circuit(2, dtype=torch.complex128)
         .h(0)
