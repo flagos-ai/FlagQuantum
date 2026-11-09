@@ -899,3 +899,23 @@ four QFT/rotation fusion failures after 297.91 seconds. It is recorded in
 `g2-workspace-construction-default.log`. All four failures reproduce on an
 independent pre-batch `4d57e638` archive with its import location asserted, in
 0.87 seconds. See `g2-workspace-construction-baseline-failures.log`.
+
+
+## Physical workspace scheduling source prerequisites
+
+The next slice has eight pinned source witnesses in
+`tests/unit/test_register_workspace_schedule_contract.py`, passing in 1.95 seconds.
+They cover clean and dirty allocation split into individual frees, a single free
+of joined distinct allocations, and double-CNOT lifetimes with complete complex
+state restoration. Dirty work is initially entangled with data and an external
+spectator. Clean work begins at zero and returns to zero. Physical source emission
+is exactly two CNOTs, while allocation, split/join and release emit zero gates.
+The independent source allocation/free model categories remain as documented
+above. These tests are source prerequisites, with no claim of native scheduling.
+
+Source physical conversion schedules the whole local graph greedily. The existing
+width estimator instead groups weak components for its peak query. Their
+visitation domains must remain distinct. Source split and cross-allocation join
+also demonstrate that whole-register lease release needs a per-wire extension.
+Prerequisite 1.6 records those requirements before the next Compiler change.
+The source-only evidence is `ftqc-reference-env/g2-workspace-scheduling-contract.log`.

@@ -1124,3 +1124,53 @@ Prerequisite 1.5 construction is implemented by Core `1b77d7df` and Compiler
 verifier with 100% statement and branch coverage. Ten pinned source blobs remain
 unchanged. Physical pool scheduling and clean/dirty numerical restoration remain
 separate acceptance work. Evidence is recorded in `REGISTER_METADATA.md`.
+
+## Physical workspace scheduling prerequisite 1.6
+
+The source physical conversion calls `greedy_topological_sort` on each actual
+component graph, giving allocation priority +10**16, free priority -10**16,
+other concrete components the right-minus-left port width, and stable graph
+insertion order as tie breaker. Existing model scheduling groups weak components
+for peak estimation. Physical source conversion uses the whole graph. Preserve
+that distinction when reusing the scheduling kernel. Do not assume source
+builder insertion order equals physical emission order or flatten hierarchy
+before preserving each invocation's local schedule.
+
+Eight original-source physical witnesses establish the next execution boundary.
+An allocated word may split and free each bit separately. Distinct allocations
+may join and release as one word. Source qfree sees the current ordered physical
+wires and carries no dirty argument. A clean or dirty double-CNOT lifetime emits
+exactly two CNOTs and no allocation/release gates. Complete complex states with
+an entangled spectator prove clean work zero and restoration of the original
+borrowed joint state. Dirty tensor zero-state callbacks are not the physical
+borrowing reference for this evidence.
+
+`layout/workspace.py` remains the physical wire-pool authority. Its existing
+whole-register leases are insufficient for source split/merge lifetimes. Extend
+that authority with explicit per-wire ownership under partial release, retaining
+old whole-lease behavior and foreign/stale/double-release rejection. Release
+returns wires to their allocation pool even when the Free metadata differs,
+as the source manager has no dirty release flag. Reordering release must remain
+observable in later pool allocation. Allocation outputs and freed input words
+are valid Core graphs but need explicit caller ownership transfer in a physical
+schedule. Until admitted, reject those profiles with a precise diagnostic.
+
+Compiler must consume the verified Program and supplied physical input, clean
+and borrowed wire bindings, maintaining SSA values in invocation-local maps.
+The output must include the actual primitive order, declared wires, returned
+port bindings and explicit allocation/release events. Reuse existing Core
+records and finite call traversal. State simulation remains Simulation-owned,
+and models remain independent queries. The existing gate-only lowering remains
+valid for programs without lifetimes.
+
+Acceptance must independently compare original source graph traversal and
+manager events, physical operands, feedback, output order and all small
+measurement branches. Test interleaved allocations, partial releases, cross-
+allocation joins, zero-width lifetime identities, failures, dirty restoration
+with external entanglement and clean-work zero. Resource evidence must list
+primitive emissions, declared versus live workspace and source model categories
+separately. A schedule is ownership evidence, not a numerical cleanup proof.
+
+The eight source-only witnesses pass in 1.95 seconds in
+`tests/unit/test_register_workspace_schedule_contract.py`. They are prerequisites,
+not completed native scheduling or additional accepted capability counts.
