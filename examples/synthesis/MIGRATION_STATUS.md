@@ -166,8 +166,8 @@ Validated local Notebook workflows: **24/213**.
 | `algorithms/foundational/deutsch_jozsa/deutsch_jozsa` | notebook_workflow | [Native program](algorithms/foundational/deutsch_jozsa/main.py) | validated |
 | `algorithms/foundational/quantum_teleportation/quantum_teleportation` | notebook_workflow | Pending | pending |
 | `algorithms/foundational/simon/simon` | notebook_workflow | Pending | pending |
-| `algorithms/hamiltonian_simulation/hamiltonian_simulation_guide/hamiltonian_simulation_guide` | notebook_workflow | Pending | pending |
-| `algorithms/hamiltonian_simulation/hamiltonian_simulation_guide/hamiltonian_simulation_guide_qdrift` | quantum_program | Pending | pending |
+| `algorithms/hamiltonian_simulation/hamiltonian_simulation_guide/hamiltonian_simulation_guide` | notebook_workflow | [Native program](algorithms/hamiltonian_simulation/hamiltonian_simulation_guide/main.py) | pending |
+| `algorithms/hamiltonian_simulation/hamiltonian_simulation_guide/hamiltonian_simulation_guide_qdrift` | quantum_program | [Native program](algorithms/hamiltonian_simulation/hamiltonian_simulation_guide/hamiltonian_simulation_guide_qdrift/main.py) | pending |
 | `algorithms/hamiltonian_simulation/hamiltonian_simulation_guide/hamiltonian_simulation_guide_trotter` | quantum_program | [Native program](algorithms/hamiltonian_simulation/hamiltonian_simulation_guide/hamiltonian_simulation_guide_trotter/main.py) | pending |
 | `algorithms/hamiltonian_simulation/hamiltonian_simulation_with_block_encoding/hamiltonian_simulation_gqsp` | notebook_workflow | Pending | pending |
 | `algorithms/hamiltonian_simulation/hamiltonian_simulation_with_block_encoding/hamiltonian_simulation_qsvt` | notebook_workflow | Pending | pending |
@@ -357,7 +357,7 @@ Validated local Notebook workflows: **24/213**.
 | `functions/qmod_library_reference/classiq_open_library/variational_data_encoding/encode_in_angle` | quantum_program | [Native program](functions/data_encoding/encode_in_angle/main.py) | pending |
 | `functions/qmod_library_reference/classiq_open_library/variational_data_encoding/encode_on_bloch` | quantum_program | [Native program](functions/data_encoding/encode_on_bloch/main.py) | pending |
 | `functions/qmod_library_reference/classiq_open_library/variational_data_encoding/variational_data_encoding` | notebook_workflow | Pending | pending |
-| `functions/qmod_library_reference/qmod_core_library/hamiltonian_evolution/qdrift/qdrift` | notebook_workflow | Pending | pending |
+| `functions/qmod_library_reference/qmod_core_library/hamiltonian_evolution/qdrift/qdrift` | notebook_workflow | [Native program](functions/hamiltonian_evolution/qdrift/main.py) | pending |
 | `functions/qmod_library_reference/qmod_core_library/hamiltonian_evolution/suzuki_trotter/suzuki_trotter` | notebook_workflow | [Native program](functions/hamiltonian_evolution/suzuki_trotter/main.py) | validated |
 | `functions/qmod_library_reference/qmod_core_library/prepare_state_and_amplitudes/example_prepare_amplitudes` | quantum_program | [Native program](functions/state_preparation/example_prepare_amplitudes/main.py) | pending |
 | `functions/qmod_library_reference/qmod_core_library/prepare_state_and_amplitudes/example_prepare_state` | quantum_program | [Native program](functions/state_preparation/example_prepare_state/main.py) | pending |
@@ -382,7 +382,7 @@ Validated local Notebook workflows: **24/213**.
 | `tutorials/advanced_tutorials/linear_approximation_of_tanh/tanh` | quantum_program | Pending | pending |
 | `tutorials/basic_tutorials/add_bell_states/add_bell_states` | quantum_program | [Native program](tutorials/basics/add_bell_states/main.py) | pending |
 | `tutorials/basic_tutorials/entanglement/entanglement` | notebook_workflow | [Native program](tutorials/basics/entanglement/main.py) | validated |
-| `tutorials/basic_tutorials/exponentiation/example_exponentiation` | notebook_workflow | Pending | pending |
+| `tutorials/basic_tutorials/exponentiation/example_exponentiation` | notebook_workflow | [Native program](tutorials/basics/exponentiation/example_exponentiation/main.py) | pending |
 | `tutorials/basic_tutorials/grover_graph_coloring/grover_graph_coloring` | notebook_workflow | Pending | pending |
 | `tutorials/basic_tutorials/mcx/mcx` | notebook_workflow | Pending | pending |
 | `tutorials/basic_tutorials/optimization/learning_optimization` | notebook_workflow | [Native program](tutorials/basics/optimization/learning_optimization/main.py) | pending |
@@ -413,7 +413,7 @@ Validated local Notebook workflows: **24/213**.
 | `tutorials/technology_demonstrations/classiq_paper/quantum_walk/tket_discrete_quantum_walk` | notebook_workflow | Pending | pending |
 | `tutorials/technology_demonstrations/discrete_quantum_walk_circle/discrete_quantum_walk_circle` | notebook_workflow | Pending | pending |
 | `tutorials/technology_demonstrations/fault_tolerance_engine_end_to_end/fault_tolerance_engine_end_to_end` | notebook_workflow | Pending | pending |
-| `tutorials/technology_demonstrations/hamiltonian_evolution/hamiltonian_evolution` | notebook_workflow | Pending | pending |
+| `tutorials/technology_demonstrations/hamiltonian_evolution/hamiltonian_evolution` | notebook_workflow | [Native program](tutorials/technology_demonstrations/hamiltonian_evolution/main.py) | pending |
 | `tutorials/technology_demonstrations/hardware_aware_mcx/hardware_aware_mcx` | notebook_workflow | Pending | pending |
 | `tutorials/technology_demonstrations/hhl/hhl_example` | notebook_workflow | Pending | pending |
 | `tutorials/technology_demonstrations/oracle_generation/3sat_oracles` | notebook_workflow | Pending | pending |

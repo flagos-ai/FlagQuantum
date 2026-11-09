@@ -223,6 +223,34 @@ def suzuki_trotter(
     raise TypeError("suzuki_trotter is captured inside qfunc")
 
 
+def qdrift(
+    operator: Observable,
+    time: float,
+    samples: int,
+    target: QNum | QArray[QBit],
+    seed: int = 0,
+    /,
+) -> None:
+    """Capture a reproducible sampled Pauli product, including identity phase.
+
+    Use 1..2048 samples and an optional classical seed in 0..2**32-1.
+    Observable indices address logical target elements, with index zero least
+    significant. The sampled circuit approximates Hamiltonian evolution.
+
+    Examples:
+        >>> import flagquantum as fq
+        >>> from flagquantum import synth
+        >>> operator = 0.7 * fq.X(0) + 0.3 * fq.Z(0)
+        >>> @synth.qfunc
+        ... def main(q: synth.Output[synth.QBit]) -> None:
+        ...     synth.allocate(q)
+        ...     synth.qdrift(operator, 0.37, 32, q)
+        >>> program = synth.synthesize(main)
+        >>> result = fq.run(program)
+    """
+    raise TypeError("qdrift is captured inside qfunc")
+
+
 def modular_exp(n: int, a: int, x: QNum, power: QNum, /) -> None:
     """Apply x <- a**power * x mod n on the valid residue subspace.
 

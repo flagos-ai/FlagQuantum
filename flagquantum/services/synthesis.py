@@ -83,6 +83,7 @@ qct_qst_type1 = program_types.qct_qst_type1
 unitary = program_types.unitary
 modular_exp = program_types.modular_exp
 suzuki_trotter = program_types.suzuki_trotter
+qdrift = program_types.qdrift
 H = program_types.h
 S = program_types.s
 CX = program_types.cx
@@ -147,6 +148,7 @@ __all__ = (
     "unitary",
     "modular_exp",
     "suzuki_trotter",
+    "qdrift",
 )
 
 

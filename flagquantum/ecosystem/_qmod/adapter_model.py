@@ -9,6 +9,7 @@ from decimal import Decimal
 from operator import and_, eq, ge, gt, le, lt, ne, or_, xor
 from types import MappingProxyType
 
+from ...compiler import _pauli_schedule
 from ...compiler._construction.profile import uint_type
 from ...compiler._construction.ranges import bitwise_width, unsigned_width
 from ...compiler._hybrid.model import (
@@ -41,9 +42,9 @@ MAX_HELPER_EXPANSIONS = 4096
 
 MAX_LOOP_ITERATIONS = 4096
 
-MAX_QDRIFT_SAMPLES = 2048
+MAX_QDRIFT_SAMPLES = _pauli_schedule.MAX_QDRIFT_SAMPLES
 
-QDRIFT_SEED = 0
+QDRIFT_SEED = _pauli_schedule.DEFAULT_QDRIFT_SEED
 
 _GATE_CALLS = frozenset({"X", "Y", "H", "S", "Z", "I", "SX", "hadamard_transform"})
 

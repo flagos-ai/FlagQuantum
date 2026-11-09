@@ -2525,7 +2525,10 @@
         }
       ],
       "workflow_status": "pending",
-      "native_program": null,
+      "native_program": {
+        "path": "examples/synthesis/algorithms/hamiltonian_simulation/hamiltonian_simulation_guide/main.py",
+        "scope": "Complete retained ordered Pauli quantum program, absolute complex128 source/native/independent Circuit states, zero workspace and original problem sizes. Sampled schedules use independent inverse CDF and fixed seed zero; both large original 551-term data sets and all 2000 samples are checked without substitution. Full Notebook workflow remains pending."
+      },
       "kind": "notebook_workflow"
     },
     {
@@ -2540,7 +2543,10 @@
         }
       ],
       "workflow_status": "pending",
-      "native_program": null,
+      "native_program": {
+        "path": "examples/synthesis/algorithms/hamiltonian_simulation/hamiltonian_simulation_guide/hamiltonian_simulation_guide_qdrift/main.py",
+        "scope": "Complete retained ordered Pauli quantum program, absolute complex128 source/native/independent Circuit states, zero workspace and original problem sizes. Sampled schedules use independent inverse CDF and fixed seed zero; both large original 551-term data sets and all 2000 samples are checked without substitution. Full Notebook workflow remains pending."
+      },
       "kind": "quantum_program"
     },
     {
@@ -6501,7 +6507,10 @@
         }
       ],
       "workflow_status": "pending",
-      "native_program": null,
+      "native_program": {
+        "path": "examples/synthesis/functions/hamiltonian_evolution/qdrift/main.py",
+        "scope": "Complete retained ordered Pauli quantum program, absolute complex128 source/native/independent Circuit states, zero workspace and original problem sizes. Sampled schedules use independent inverse CDF and fixed seed zero; both large original 551-term data sets and all 2000 samples are checked without substitution. Full Notebook workflow remains pending."
+      },
       "kind": "notebook_workflow"
     },
     {
@@ -7111,7 +7120,10 @@
         }
       ],
       "workflow_status": "pending",
-      "native_program": null,
+      "native_program": {
+        "path": "examples/synthesis/tutorials/basics/exponentiation/example_exponentiation/main.py",
+        "scope": "Complete retained ordered Pauli quantum program, absolute complex128 source/native/independent Circuit states, zero workspace and original problem sizes. Sampled schedules use independent inverse CDF and fixed seed zero; both large original 551-term data sets and all 2000 samples are checked without substitution. Full Notebook workflow remains pending."
+      },
       "kind": "notebook_workflow"
     },
     {
@@ -7915,7 +7927,10 @@
         }
       ],
       "workflow_status": "pending",
-      "native_program": null,
+      "native_program": {
+        "path": "examples/synthesis/tutorials/technology_demonstrations/hamiltonian_evolution/main.py",
+        "scope": "Complete retained ordered Pauli quantum program, absolute complex128 source/native/independent Circuit states, zero workspace and original problem sizes. Sampled schedules use independent inverse CDF and fixed seed zero; both large original 551-term data sets and all 2000 samples are checked without substitution. Full Notebook workflow remains pending."
+      },
       "kind": "notebook_workflow"
     },
     {

@@ -18,7 +18,12 @@ from .._hybrid.model import (
     ValueId,
 )
 from .frontend_classical import ClassicalValue, bind_inputs, real_number
-from .frontend_evolution import _Evolution, capture_suzuki_trotter, flush_evolutions
+from .frontend_evolution import (
+    _Evolution,
+    capture_qdrift,
+    capture_suzuki_trotter,
+    flush_evolutions,
+)
 from .frontend_matrix import capture_unitary
 from .frontend_phase import capture_polynomial_phase
 from .frontend_ports import (
@@ -31,8 +36,8 @@ from .frontend_ports import (
 from .frontend_preparation import capture_preparation
 from .frontend_python import _error, _QuantumFunction, _Source, capture
 from .frontend_statements import capture_statements
-from .frontend_transforms import capture_transform
-from .frontend_views import gate_target, inline_mutable, locations, static_integer
+from .frontend_transforms import capture_modular_exp, capture_transform
+from .frontend_views import gate_target, inline_mutable, locations
 from .profile import _width
 from .program_types import (
     QNum,
@@ -56,6 +61,7 @@ from .program_types import (
     qct_qst_type1,
     qct_qst_type2,
     qct_type2,
+    qdrift,
     qft,
     qst_type2,
     r,
@@ -461,6 +467,7 @@ class _Body:
                     unitary,
                     modular_exp,
                     suzuki_trotter,
+                    qdrift,
                 )
             )
             or isinstance(function, _QuantumFunction)
@@ -524,47 +531,10 @@ class _Body:
             capture_unitary(self, node)
         elif function is suzuki_trotter:
             capture_suzuki_trotter(self, node)
+        elif function is qdrift:
+            capture_qdrift(self, node)
         elif function is modular_exp:
-            if len(node.args) != 4:
-                _error(
-                    self.source,
-                    node,
-                    "program.signature",
-                    "modular_exp takes modulus, base, target and exponent",
-                )
-            modulus, base = (static_integer(self, arg) for arg in node.args[:2])
-            modular_operands = []
-            for argument in node.args[2:]:
-                if (
-                    not isinstance(argument, ast.Name)
-                    or argument.id not in self.ports
-                    or self.ports[argument.id].kind not in {"qnum", "qbit"}
-                ):
-                    _error(
-                        self.source,
-                        argument,
-                        "program.modular_exp",
-                        "modular_exp requires complete numeric registers",
-                    )
-                targets = locations(self, argument)
-                destination = targets[0][0]
-                if targets != tuple(
-                    (destination, bit) for bit in range(register_width(destination))
-                ):
-                    _error(
-                        self.source,
-                        argument,
-                        "program.view",
-                        "modular_exp requires complete registers in logical bit order",
-                    )
-                modular_operands.append(destination)
-            self.emit(
-                "qreg.modular_exp",
-                node,
-                tuple(modular_operands),
-                modulus=modulus,
-                base=base,
-            )
+            capture_modular_exp(self, node)
         elif any(
             function is transform
             for transform in (qft, qct_type2, qst_type2, qct_qst_type2, qct_qst_type1)

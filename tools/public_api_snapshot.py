@@ -680,6 +680,7 @@ _SYNTH_ACTIVE_EXPORTS = (
     "unitary",
     "modular_exp",
     "suzuki_trotter",
+    "qdrift",
 )
 
 
@@ -1339,6 +1340,28 @@ def _validate_authorized_synthesis_python_program(contract: Any) -> list[str]:
         or str(inspect.signature(synth.suzuki_trotter)) != evolution_signature
     ):
         errors.append("native Pauli evolution differs from its authorized scope")
+    sampled_admission = json.loads(
+        (ROOT / "contracts/synthesis-native-qdrift-candidate.json").read_text()
+    )
+    sampled_signature = "(operator: 'Observable', time: 'float', samples: 'int', target: 'QNum | QArray[QBit]', seed: 'int' = 0, /) -> 'None'"
+    if sampled_admission != {
+        "schema": "flagquantum.synthesis_native_qdrift_admission",
+        "version": "1.0",
+        "namespace": "flagquantum.synth",
+        "added_exports": ["qdrift"],
+        "signatures": {"qdrift": sampled_signature},
+        "authorization_record": "docs/api-changes/FQ-SYNTH-NATIVE-QDRIFT-20261110.md",
+        "implementation_authorized": True,
+        "release_authorized": False,
+    } or (
+        type(sampled_admission.get("implementation_authorized")) is not bool
+        or type(sampled_admission.get("release_authorized")) is not bool
+        or str(inspect.signature(synth.qdrift)) != sampled_signature
+        or not (ROOT / sampled_admission["authorization_record"]).is_file()
+    ):
+        errors.append(
+            "native sampled Pauli evolution differs from its authorized scope"
+        )
     for field, value in (
         ("synthesize_signature", synth.synthesize),
         ("run_signature", fq.run),

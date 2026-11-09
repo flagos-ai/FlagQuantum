@@ -42,6 +42,7 @@ from ..services.synthesis import (
     qct_qst_type1,
     qct_qst_type2,
     qct_type2,
+    qdrift,
     qft,
     qfunc,
     qst_type2,
@@ -96,4 +97,5 @@ __all__ = (
     "unitary",
     "modular_exp",
     "suzuki_trotter",
+    "qdrift",
 )

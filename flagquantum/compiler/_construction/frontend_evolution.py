@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING
 from ...observables import Observable, _PauliTerm
 from .. import _pauli_products, _pauli_schedule
 from .._hybrid.model import Value
+from .frontend_classical import classical_number
 from .frontend_ports import _resolve
 from .frontend_python import _error
 from .frontend_views import locations, static_integer
@@ -30,6 +31,83 @@ def capture_suzuki_trotter(owner: _Body, node: ast.Call) -> None:
             "suzuki_trotter takes operator, time, order, repetitions and target",
         )
     operator, duration, order_node, repetitions_node, target = node.args
+    destination, terms, time = _pauli_inputs(owner, operator, duration, target)
+    order = static_integer(owner, order_node)
+    repetitions = static_integer(owner, repetitions_node)
+    if order not in {1, 2} or not 1 <= repetitions <= 256:
+        _error(
+            owner.source,
+            node,
+            "program.pauli",
+            "use order 1 or 2 and 1..256 repetitions",
+        )
+    pending = _Evolution(node, destination, terms, time, order, repetitions)
+    # Wider products keep the established streamed rotation path.
+    if register_width(destination) > 3:
+        flush_evolutions(owner)
+        _emit_rotations(owner, pending)
+        return
+    if owner.evolutions and (
+        owner.evolutions[-1].destination != destination or len(owner.evolutions) == 256
+    ):
+        flush_evolutions(owner)
+    owner.evolutions.append(pending)
+
+
+def capture_qdrift(owner: _Body, node: ast.Call) -> None:
+    """Specialize deterministic sampling into the existing checked Pauli effects."""
+    if len(node.args) not in {4, 5}:
+        _error(
+            owner.source,
+            node,
+            "program.signature",
+            "qdrift takes operator, time, samples, target and optional seed",
+        )
+    operator, duration, sample_node, target = node.args[:4]
+    samples = static_integer(owner, sample_node)
+    seed = (
+        classical_number(owner, node.args[4])
+        if len(node.args) == 5
+        else _pauli_schedule.DEFAULT_QDRIFT_SEED
+    )
+    if not 1 <= samples <= _pauli_schedule.MAX_QDRIFT_SAMPLES:
+        _error(owner.source, sample_node, "program.pauli", "use 1..2048 samples")
+    if type(seed) is not int or not isinstance(seed, int) or not 0 <= seed < 2**32:
+        _error(
+            owner.source,
+            node,
+            "program.pauli",
+            "seed must be a static integer in 0..2**32-1",
+        )
+    destination, terms, time = _pauli_inputs(owner, operator, duration, target)
+    if len(owner.operations) + samples > 4096:
+        _error(
+            owner.source,
+            node,
+            "budget",
+            "sampled formula exceeds 4096 effect operations",
+        )
+    if not time or not any(coefficient for _, coefficient in terms):
+        owner.emit("qreg.gate", node, (destination,), gate="rz", index=0, angle=0.0)
+        return
+    try:
+        for index, angle in _pauli_schedule.sampled_pauli_steps(
+            [coefficient for _, coefficient in terms], time, samples, seed
+        ):
+            owner.emit(
+                "qreg.pauli_rotation",
+                node,
+                (destination,),
+                support=terms[index][0],
+                angle=angle,
+            )
+    except ValueError as error:
+        _error(owner.source, node, "program.pauli", str(error))
+
+
+def _pauli_inputs(
+    owner: _Body, operator: ast.expr, duration: ast.expr, target: ast.expr
+) -> tuple[Value, list[tuple[Support, float]], float]:
     targets = locations(owner, target)
     destination = targets[0][0]
     if targets != tuple(
@@ -50,26 +128,7 @@ def capture_suzuki_trotter(owner: _Body, node: ast.Call) -> None:
             "program.pauli",
             "evolution time must be a finite classical real",
         )
-    order = static_integer(owner, order_node)
-    repetitions = static_integer(owner, repetitions_node)
-    if order not in {1, 2} or not 1 <= repetitions <= 256:
-        _error(
-            owner.source,
-            node,
-            "program.pauli",
-            "use order 1 or 2 and 1..256 repetitions",
-        )
-    pending = _Evolution(node, destination, terms, time, order, repetitions)
-    # Wider products keep the established streamed rotation path.
-    if len(targets) > 3:
-        flush_evolutions(owner)
-        _emit_rotations(owner, pending)
-        return
-    if owner.evolutions and (
-        owner.evolutions[-1].destination != destination or len(owner.evolutions) == 256
-    ):
-        flush_evolutions(owner)
-    owner.evolutions.append(pending)
+    return destination, terms, time
 
 
 @dataclass(frozen=True)
@@ -182,13 +241,13 @@ def _observable_terms(
         type(raw) is not Observable
         or not isinstance(raw, Observable)
         or type(raw.terms) is not tuple
-        or not 1 <= len(raw.terms) <= 256
+        or not 1 <= len(raw.terms) <= 1024
     ):
         _error(
             owner.source,
             operator,
             "program.pauli",
-            "use an immutable Observable with 1..256 terms",
+            "use an immutable Observable with 1..1024 terms",
         )
     terms: list[tuple[Support, float]] = []
     for term in raw.terms:

@@ -1,0 +1,27 @@
+{
+  "qubits": 2,
+  "terms": [
+    {
+      "coefficient": 1.0,
+      "support": [
+        [
+          0,
+          "X"
+        ],
+        [
+          1,
+          "Y"
+        ]
+      ]
+    },
+    {
+      "coefficient": 0.5,
+      "support": [
+        [
+          0,
+          "Z"
+        ]
+      ]
+    }
+  ]
+}

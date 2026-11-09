@@ -27,6 +27,7 @@ Native FlagQuantum programs currently available:
 - [prepare_uniform_trimmed_state](state_preparation/prepare_uniform_trimmed_state/README.md)
 - [encode_in_angle](data_encoding/encode_in_angle/README.md)
 - [encode_on_bloch](data_encoding/encode_on_bloch/README.md)
+- [qdrift](hamiltonian_evolution/qdrift/README.md)
 - [suzuki_trotter](hamiltonian_evolution/suzuki_trotter/README.md)
 - [example_prepare_amplitudes](state_preparation/example_prepare_amplitudes/README.md)
 - [example_prepare_state](state_preparation/example_prepare_state/README.md)

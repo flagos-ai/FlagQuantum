@@ -695,6 +695,18 @@ registers and mutable helpers are supported; Const, partial views and oversized
 formulas fail closed. Run `tests/integration/test_synthesis_native_evolution.py`
 for independent dense products, absolute phase, coherence and refusal checks.
 
+Native `qdrift` uses the same immutable Observable snapshot and Pauli effects.
+Compiler-owned `sampled_pauli_steps` also supplies the Qmod boundary, preserving
+ordered weighted draws, coefficient signs and identity phase. Complete writable
+targets admit 1..2048 samples; seed zero is reproducible, with an optional
+explicit static seed. Static operators admit up to 1024 terms, while the 4096
+effect ceiling and final resource budgets remain enforced. No new IR operation
+or executor is introduced. Run `tests/integration/test_synthesis_native_qdrift.py`
+and `tests/integration/test_synthesis_native_sampled_examples.py` for independent
+CDF/full-state references, the retained 551-term/2000-sample workloads and
+ownership/budget rejection. See the
+[local admission](../../../docs/api-changes/FQ-SYNTH-NATIVE-QDRIFT-20261110.md).
+
 Native classical specialization also admits `int` and `list[int]`, with exact
 built-in integer binding distinct from real binding and quantum numeric ports.
 Static `if` selects a branch from finite comparisons and boolean combinations;

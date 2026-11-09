@@ -3,7 +3,7 @@
 User examples contain native Python programs and independent Circuit comparisons.
 Original source files and importer launchers are test/development evidence, not examples.
 
-Validated quantum-program counterparts: **104/216**.
+Validated quantum-program counterparts: **109/216**.
 Validated local Notebook workflows: **24/213**.
 Expanded inventory: **577** source artifacts in **417** provisional path groups.
 Python groups still require main-case/helper review. A quantum-program counterpart
@@ -11,7 +11,7 @@ does not certify its notebook workflow. Pending entries have no runnable placeho
 
 See [migration status](MIGRATION_STATUS.md) for the complete five-category inventory.
 
-## Algorithms (15 native programs)
+## Algorithms (17 native programs)
 
 - [hybrid_qnn_for_subset_majority](algorithms/machine_learning/hybrid_qnn/hybrid_qnn_for_subset_majority/README.md)
 - [qgan_bars_and_strips](algorithms/machine_learning/qgan/qgan_bars_and_strips/README.md)
@@ -19,6 +19,8 @@ See [migration status](MIGRATION_STATUS.md) for the complete five-category inven
 - [quantum_autoencoder](algorithms/machine_learning/quantum_autoencoder/README.md)
 - [bernstein_vazirani](algorithms/foundational/bernstein_vazirani/README.md)
 - [deutsch_jozsa](algorithms/foundational/deutsch_jozsa/README.md)
+- [hamiltonian_simulation_guide](algorithms/hamiltonian_simulation/hamiltonian_simulation_guide/README.md)
+- [hamiltonian_simulation_guide_qdrift](algorithms/hamiltonian_simulation/hamiltonian_simulation_guide/hamiltonian_simulation_guide_qdrift/README.md)
 - [hamiltonian_simulation_guide_trotter](algorithms/hamiltonian_simulation/hamiltonian_simulation_guide/hamiltonian_simulation_guide_trotter/README.md)
 - [classical_shadow_tomography](algorithms/metrology/classical_shadow_tomography/README.md)
 - [hidden_shift](algorithms/number_theory_and_cryptography/hidden_shift/README.md)
@@ -85,7 +87,7 @@ Validated local Notebook workflows:
 - [superposition](community/basic_examples/superposition/README.md)
 
 
-## Functions (38 native programs)
+## Functions (39 native programs)
 
 - [arithmetic_expression](functions/arithmetic/arithmetic_expression/README.md)
 - [arithmetic_expression_example](functions/arithmetic/arithmetic_expression/arithmetic_expression_example/README.md)
@@ -112,6 +114,7 @@ Validated local Notebook workflows:
 - [prepare_uniform_trimmed_state](functions/state_preparation/prepare_uniform_trimmed_state/README.md)
 - [encode_in_angle](functions/data_encoding/encode_in_angle/README.md)
 - [encode_on_bloch](functions/data_encoding/encode_on_bloch/README.md)
+- [qdrift](functions/hamiltonian_evolution/qdrift/README.md)
 - [suzuki_trotter](functions/hamiltonian_evolution/suzuki_trotter/README.md)
 - [example_prepare_amplitudes](functions/state_preparation/example_prepare_amplitudes/README.md)
 - [example_prepare_state](functions/state_preparation/example_prepare_state/README.md)
@@ -144,10 +147,11 @@ Validated local Notebook workflows:
 - [unitary](functions/unitary/README.md)
 
 
-## Tutorials (17 native programs)
+## Tutorials (19 native programs)
 
 - [add_bell_states](tutorials/basics/add_bell_states/README.md)
 - [entanglement](tutorials/basics/entanglement/README.md)
+- [example_exponentiation](tutorials/basics/exponentiation/example_exponentiation/README.md)
 - [learning_optimization](tutorials/basics/optimization/learning_optimization/README.md)
 - [prepare_state](tutorials/basics/prepare_state/README.md)
 - [qml](tutorials/basics/qml/README.md)
@@ -159,6 +163,7 @@ Validated local Notebook workflows:
 - [synthesis_tutorial](tutorials/basics/quantum_programming/synthesis_tutorial/README.md)
 - [approximated_state_preparation](tutorials/technology_demonstrations/approximated_state_preparation/README.md)
 - [auxiliary_management](tutorials/technology_demonstrations/auxiliary_managment/auxiliary_management/README.md)
+- [hamiltonian_evolution](tutorials/technology_demonstrations/hamiltonian_evolution/README.md)
 - [qaoa_demonstration](tutorials/technology_demonstrations/qaoa/qaoa_demonstration/README.md)
 - [combinatorial_qmod_workshop_for_maxcut](tutorials/workshops/combinatorial_workshop/combinatorial_qmod_workshop_for_maxcut/README.md)
 - [combi_workshop_inequality_constriants_po](tutorials/workshops/finance_workshops/combi_workshop_inequality_constriants_po/README.md)

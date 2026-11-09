@@ -1,6 +1,33 @@
 """Stream ordered product-formula steps for validated Pauli decompositions."""
 
-from collections.abc import Iterator
+import math
+import random
+from collections.abc import Iterator, Sequence
+
+MAX_QDRIFT_SAMPLES = 2048
+DEFAULT_QDRIFT_SEED = 0
+
+
+def sampled_pauli_steps(
+    coefficients: Sequence[float], time: float, samples: int, seed: int
+) -> Iterator[tuple[int, float]]:
+    """Sample ordered term indices and signed angles for a validated qDRIFT call.
+
+    Frontends own finite coefficients, positive bounded sample counts and seed
+    validation. Sampling keeps duplicate and identity terms in their declared
+    positions, so equivalent sums need not have identical sampled sequences.
+    """
+    weights = [abs(value) for value in coefficients]
+    total = math.fsum(weights)
+    if not total or not time:
+        return
+    angle = time * total / samples
+    if not math.isfinite(2 * angle):
+        raise ValueError("sampled Pauli angle and doubled angle must be finite")
+    for index in random.Random(seed).choices(
+        range(len(weights)), weights=weights, k=samples
+    ):
+        yield index, angle if coefficients[index] > 0 else -angle
 
 
 def ordered_pauli_steps(

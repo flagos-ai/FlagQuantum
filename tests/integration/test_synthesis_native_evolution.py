@@ -127,7 +127,7 @@ def test_identity_phase_coherent_input_offset_target_and_mutable_helper(
         "fq.Observable((_PauliTerm(1.0,((0,'x'),(0,'z'))),))",
         "fq.Observable((_PauliTerm(1.0,((0,'a'),)),))",
         "fq.Observable((_PauliTerm(1.0,([0,'x'],)),))",
-        "fq.Observable(tuple(_PauliTerm(1.0,((0,'x'),)) for _ in range(257)))",
+        "fq.Observable(tuple(_PauliTerm(1.0,((0,'x'),)) for _ in range(1025)))",
     ],
 )
 def test_malformed_observables_fail_closed(operator: str) -> None:

@@ -4,6 +4,7 @@ Native FlagQuantum programs currently available:
 
 - [add_bell_states](basics/add_bell_states/README.md)
 - [entanglement](basics/entanglement/README.md)
+- [example_exponentiation](basics/exponentiation/example_exponentiation/README.md)
 - [learning_optimization](basics/optimization/learning_optimization/README.md)
 - [prepare_state](basics/prepare_state/README.md)
 - [qml](basics/qml/README.md)
@@ -15,6 +16,7 @@ Native FlagQuantum programs currently available:
 - [synthesis_tutorial](basics/quantum_programming/synthesis_tutorial/README.md)
 - [approximated_state_preparation](technology_demonstrations/approximated_state_preparation/README.md)
 - [auxiliary_management](technology_demonstrations/auxiliary_managment/auxiliary_management/README.md)
+- [hamiltonian_evolution](technology_demonstrations/hamiltonian_evolution/README.md)
 - [qaoa_demonstration](technology_demonstrations/qaoa/qaoa_demonstration/README.md)
 - [combinatorial_qmod_workshop_for_maxcut](workshops/combinatorial_workshop/combinatorial_qmod_workshop_for_maxcut/README.md)
 - [combi_workshop_inequality_constriants_po](workshops/finance_workshops/combi_workshop_inequality_constriants_po/README.md)

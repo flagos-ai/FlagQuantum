@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import math
-import random
 from collections.abc import Callable
 from typing import TYPE_CHECKING
 
@@ -258,13 +257,13 @@ def qdrift(self: _Adapt, token: Token, args: tuple[Expression, ...]) -> None:
     if not total or not time:
         self.effect_op("qreg.gate", token, (register,), gate="rz", index=0, angle=0.0)
         return
-    angle = time * total / count
-    for support, coefficient in random.Random(QDRIFT_SEED).choices(
-        terms, weights=weights, k=count
-    ):
-        self.pauli_exponential(
-            token, register, support, angle if coefficient > 0 else -angle
-        )
+    try:
+        for index, angle in _pauli_schedule.sampled_pauli_steps(
+            [coefficient for _, coefficient in terms], time, count, QDRIFT_SEED
+        ):
+            self.pauli_exponential(token, register, terms[index][0], angle)
+    except ValueError as error:
+        reject(token, "angle", str(error))
 
 
 def pauli_terms(

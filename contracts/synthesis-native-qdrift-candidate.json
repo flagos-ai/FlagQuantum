@@ -1,0 +1,14 @@
+{
+  "schema": "flagquantum.synthesis_native_qdrift_admission",
+  "version": "1.0",
+  "namespace": "flagquantum.synth",
+  "added_exports": [
+    "qdrift"
+  ],
+  "signatures": {
+    "qdrift": "(operator: 'Observable', time: 'float', samples: 'int', target: 'QNum | QArray[QBit]', seed: 'int' = 0, /) -> 'None'"
+  },
+  "authorization_record": "docs/api-changes/FQ-SYNTH-NATIVE-QDRIFT-20261110.md",
+  "implementation_authorized": true,
+  "release_authorized": false
+}

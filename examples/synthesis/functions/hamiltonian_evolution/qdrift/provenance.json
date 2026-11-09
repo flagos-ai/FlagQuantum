@@ -1,0 +1,8 @@
+{
+  "upstream_path": "functions/qmod_library_reference/qmod_core_library/hamiltonian_evolution/qdrift/qdrift.qmod",
+  "upstream_commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "original_sha256": "9decab980923df21b25ca7210758fba218e165a72351481023c0370a36361e00",
+  "hamiltonian_data_sha256": "08848411d327f73a1bc5f1d1b04d3648c647e3028c7e4a9c015b0ad7da8b4573",
+  "scope": "Retained 2-qubit, 2-term quantum program with 5 qDRIFT samples at fixed seed zero. Complete companion Notebook workflow remains pending.",
+  "native_semantic_adaptations": "Ordered coefficients, term identities and logical indices are retained in plain numeric JSON. Native Observable and Pauli evolution replace source-language structs. No source importer is used by this example."
+}
