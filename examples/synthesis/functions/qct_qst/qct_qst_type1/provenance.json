@@ -1,0 +1,8 @@
+{
+  "upstream_path": "functions/qmod_library_reference/classiq_open_library/qct_qst/qct_qst_type1.qmod",
+  "upstream_commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "original_sha256": "ea8a9cb4eac7e73c897443eb0fc55fee33ea7b91c0f5b458194f0aaa02fc7958",
+  "native_entrypoint": "examples.synthesis.functions.qct_qst.qct_qst_type1.main",
+  "acceptance_test": "tests/integration/test_synthesis_native_transforms.py",
+  "scope": "Complete retained quantum program; companion Notebook workflow remains pending."
+}

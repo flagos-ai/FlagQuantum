@@ -6102,7 +6102,10 @@
         }
       ],
       "workflow_status": "pending",
-      "native_program": null,
+      "native_program": {
+        "path": "examples/synthesis/functions/qct_qst/qct_qst_type1/main.py",
+        "scope": "Complete retained transform quantum program. Independent Fourier Circuit, all basis columns at widths 1..4, asymmetric complex inputs, selector interference, ownership and resource refusal checks passed. Full companion Notebook workflow remains pending."
+      },
       "kind": "quantum_program"
     },
     {
@@ -6117,7 +6120,10 @@
         }
       ],
       "workflow_status": "pending",
-      "native_program": null,
+      "native_program": {
+        "path": "examples/synthesis/functions/qct_qst/qct_qst_type2/main.py",
+        "scope": "Complete retained transform quantum program. Independent Fourier Circuit, all basis columns at widths 1..4, asymmetric complex inputs, selector interference, ownership and resource refusal checks passed. Full companion Notebook workflow remains pending."
+      },
       "kind": "quantum_program"
     },
     {
@@ -6132,7 +6138,10 @@
         }
       ],
       "workflow_status": "pending",
-      "native_program": null,
+      "native_program": {
+        "path": "examples/synthesis/functions/qct_qst/qct_type2/main.py",
+        "scope": "Complete retained transform quantum program. Independent Fourier Circuit, all basis columns at widths 1..4, asymmetric complex inputs, selector interference, ownership and resource refusal checks passed. Full companion Notebook workflow remains pending."
+      },
       "kind": "quantum_program"
     },
     {
@@ -6147,7 +6156,10 @@
         }
       ],
       "workflow_status": "pending",
-      "native_program": null,
+      "native_program": {
+        "path": "examples/synthesis/functions/qct_qst/qst_type2/main.py",
+        "scope": "Complete retained transform quantum program. Independent Fourier Circuit, all basis columns at widths 1..4, asymmetric complex inputs, selector interference, ownership and resource refusal checks passed. Full companion Notebook workflow remains pending."
+      },
       "kind": "quantum_program"
     },
     {

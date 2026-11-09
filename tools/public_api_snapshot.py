@@ -673,6 +673,10 @@ _SYNTH_ACTIVE_EXPORTS = (
     "S",
     "RX",
     "qft",
+    "qct_type2",
+    "qst_type2",
+    "qct_qst_type2",
+    "qct_qst_type1",
     "unitary",
     "modular_exp",
     "suzuki_trotter",
@@ -1178,6 +1182,32 @@ def _validate_authorized_synthesis_python_program(contract: Any) -> list[str]:
         )
     ):
         errors.append("native pair gates differ from their authorization")
+    transform_contract = json.loads(
+        (ROOT / "contracts/synthesis-python-transforms-up06-candidate.json").read_text()
+    )
+    transform_signatures = {
+        "qct_type2": "(target: 'QNum | QArray[QBit]', /) -> 'None'",
+        "qst_type2": "(target: 'QNum | QArray[QBit]', /) -> 'None'",
+        "qct_qst_type2": "(target: 'QNum | QArray[QBit]', selector: 'QBit', /) -> 'None'",
+        "qct_qst_type1": "(target: 'QNum | QArray[QBit]', /) -> 'None'",
+    }
+    if (
+        transform_contract.get("schema")
+        != "flagquantum.synthesis_python_transform_admission"
+        or transform_contract.get("version") != "1.0"
+        or transform_contract.get("namespace") != "flagquantum.synth"
+        or transform_contract.get("signatures") != transform_signatures
+        or transform_contract.get("implementation_authorized") is not True
+        or transform_contract.get("release_authorized") is not False
+        or transform_contract.get("authorization_record")
+        != "docs/api-changes/FQ-SYNTH-PYTHON-TRANSFORMS-UP06.md"
+        or not (ROOT / transform_contract["authorization_record"]).is_file()
+        or any(
+            str(inspect.signature(getattr(synth, name))) != signature
+            for name, signature in transform_signatures.items()
+        )
+    ):
+        errors.append("native trigonometric transforms differ from their authorization")
     catalog_contract = json.loads(
         (ROOT / "contracts/synthesis-native-catalog-candidate.json").read_text()
     )

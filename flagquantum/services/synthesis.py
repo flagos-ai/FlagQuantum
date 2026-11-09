@@ -76,6 +76,10 @@ from ._synthesis_readout import probabilities as _probabilities
 
 # Preserve the Qmod spelling for the captured Python operations.
 qft = program_types.qft
+qct_type2 = program_types.qct_type2
+qst_type2 = program_types.qst_type2
+qct_qst_type2 = program_types.qct_qst_type2
+qct_qst_type1 = program_types.qct_qst_type1
 unitary = program_types.unitary
 modular_exp = program_types.modular_exp
 suzuki_trotter = program_types.suzuki_trotter
@@ -136,6 +140,10 @@ __all__ = (
     "S",
     "RX",
     "qft",
+    "qct_type2",
+    "qst_type2",
+    "qct_qst_type2",
+    "qct_qst_type1",
     "unitary",
     "modular_exp",
     "suzuki_trotter",

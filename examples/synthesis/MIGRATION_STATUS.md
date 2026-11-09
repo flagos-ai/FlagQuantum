@@ -340,10 +340,10 @@ Validated local Notebook workflows: **24/213**.
 | `functions/qmod_library_reference/classiq_open_library/hadamard_transform/hadamard_transform` | notebook_workflow | [Native program](functions/hadamard_transform/main.py) | validated |
 | `functions/qmod_library_reference/classiq_open_library/linear_pauli_rotations/linear_pauli_rotations` | notebook_workflow | Pending | pending |
 | `functions/qmod_library_reference/classiq_open_library/qct_qst/qct_qst` | notebook_workflow | Pending | pending |
-| `functions/qmod_library_reference/classiq_open_library/qct_qst/qct_qst_type1` | quantum_program | Pending | pending |
-| `functions/qmod_library_reference/classiq_open_library/qct_qst/qct_qst_type2` | quantum_program | Pending | pending |
-| `functions/qmod_library_reference/classiq_open_library/qct_qst/qct_type2` | quantum_program | Pending | pending |
-| `functions/qmod_library_reference/classiq_open_library/qct_qst/qst_type2` | quantum_program | Pending | pending |
+| `functions/qmod_library_reference/classiq_open_library/qct_qst/qct_qst_type1` | quantum_program | [Native program](functions/qct_qst/qct_qst_type1/main.py) | pending |
+| `functions/qmod_library_reference/classiq_open_library/qct_qst/qct_qst_type2` | quantum_program | [Native program](functions/qct_qst/qct_qst_type2/main.py) | pending |
+| `functions/qmod_library_reference/classiq_open_library/qct_qst/qct_type2` | quantum_program | [Native program](functions/qct_qst/qct_type2/main.py) | pending |
+| `functions/qmod_library_reference/classiq_open_library/qct_qst/qst_type2` | quantum_program | [Native program](functions/qct_qst/qst_type2/main.py) | pending |
 | `functions/qmod_library_reference/classiq_open_library/qft/qft` | notebook_workflow | [Native program](functions/qft/main.py) | validated |
 | `functions/qmod_library_reference/classiq_open_library/qpe/qpe` | notebook_workflow | Pending | pending |
 | `functions/qmod_library_reference/classiq_open_library/qpe/qpe_flexible` | quantum_program | Pending | pending |

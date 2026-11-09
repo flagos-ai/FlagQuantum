@@ -31,6 +31,7 @@ from .frontend_ports import (
 from .frontend_preparation import capture_preparation
 from .frontend_python import _error, _QuantumFunction, _Source, capture
 from .frontend_statements import capture_statements
+from .frontend_transforms import capture_transform
 from .frontend_views import gate_target, inline_mutable, locations, static_integer
 from .profile import _width
 from .program_types import (
@@ -52,7 +53,11 @@ from .program_types import (
     prepare_ghz_state,
     prepare_state,
     prepare_uniform_interval_state,
+    qct_qst_type1,
+    qct_qst_type2,
+    qct_type2,
     qft,
+    qst_type2,
     r,
     rx,
     rz,
@@ -449,6 +454,10 @@ class _Body:
                     u,
                     hadamard_transform,
                     qft,
+                    qct_type2,
+                    qst_type2,
+                    qct_qst_type2,
+                    qct_qst_type1,
                     unitary,
                     modular_exp,
                     suzuki_trotter,
@@ -556,21 +565,11 @@ class _Body:
                 modulus=modulus,
                 base=base,
             )
-        elif function is qft:
-            if len(node.args) != 1:
-                _error(self.source, node, "program.signature", "qft takes one register")
-            targets = locations(self, node.args[0])
-            destination = targets[0][0]
-            if targets != tuple(
-                (destination, bit) for bit in range(register_width(destination))
-            ):
-                _error(
-                    self.source,
-                    node,
-                    "program.view",
-                    "qft requires a complete register in logical bit order",
-                )
-            self.emit("qreg.qft", node, (destination,))
+        elif any(
+            function is transform
+            for transform in (qft, qct_type2, qst_type2, qct_qst_type2, qct_qst_type1)
+        ):
+            capture_transform(self, node, function)
         elif function is hadamard_transform:
             if len(node.args) != 1:
                 _error(

@@ -653,6 +653,13 @@ alias; partial views are rejected without changing the register schema. Run
 independent Fourier matrix, bit ordering, coherence and ownership checks. See the
 [Fourier admission](../../../docs/api-changes/FQ-SYNTH-NATIVE-FOURIER-20261109.md).
 
+Native `qct_type2`, `qst_type2`, `qct_qst_type2` and `qct_qst_type1` reuse the
+existing bounded Type-I/Type-II register effects and gate factorization. Targets
+must be complete initialized writable registers of one through four qubits.
+The combined Type-II selector is one initialized, disjoint qubit. Its sine block
+retains the negative sign; Type I retains the positive imaginary sine-sector
+phase. See the [transform admission](../../../docs/api-changes/FQ-SYNTH-PYTHON-TRANSFORMS-UP06.md).
+
 Native unsigned `%` by a literal positive power of two lowers to the same
 `qint.bitwise` AND used by word expressions. Divisor one has a one-bit zero
 encoding. General/nonliteral/quantum divisors remain rejected. Run

@@ -186,6 +186,26 @@ def qft(target: QNum | QArray[QBit], /) -> None:
     raise TypeError("qft is captured inside qfunc")
 
 
+def qct_type2(target: QNum | QArray[QBit], /) -> None:
+    """Apply the normalized cosine Type-II transform to a complete register."""
+    raise TypeError("qct_type2 is captured inside qfunc")
+
+
+def qst_type2(target: QNum | QArray[QBit], /) -> None:
+    """Apply the normalized sine Type-II transform to a complete register."""
+    raise TypeError("qst_type2 is captured inside qfunc")
+
+
+def qct_qst_type2(target: QNum | QArray[QBit], selector: QBit, /) -> None:
+    """Apply cosine Type II for selector zero and negative sine Type II for one."""
+    raise TypeError("qct_qst_type2 is captured inside qfunc")
+
+
+def qct_qst_type1(target: QNum | QArray[QBit], /) -> None:
+    """Apply the Type-I transform, including its positive-i sine-sector phase."""
+    raise TypeError("qct_qst_type1 is captured inside qfunc")
+
+
 def suzuki_trotter(
     operator: Observable,
     time: float,
