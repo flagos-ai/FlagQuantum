@@ -1060,3 +1060,13 @@ programs derive zero rebinding primitives through actual gate lowering, with
 complex output permutations and existing Add/QROM measurement histories checked
 independently. This slice does not admit additional descriptor families or
 implicit clean/dirty work allocation.
+
+Prerequisite 1.4 is implemented by `488734e1`. Thirty new cases, all nineteen
+original rebinding behaviors, two complex spectator/permutation comparisons and
+unchanged Add/QROM consumers pass. The fifteen unchanged source scenarios use a
+native observation adapter, while four source cost scenarios compare normalized
+connections and native lowered zero-primitive cost. The concentrated suite passes
+4684 cases. Builder/helper statement and branch coverage are 100%. Source-like
+word handle identity uses real helper bodies with extra logical rebindings that
+erase to zero physical operations. Numerical graph traversal and automatic work
+ownership remain separate. Evidence is recorded in `REGISTER_METADATA.md`.

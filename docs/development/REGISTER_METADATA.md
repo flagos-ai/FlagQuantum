@@ -816,3 +816,39 @@ and zero physical workspace. Default-suite status remains the GRAPH17 run and
 its four independently reproduced QFT/rotation fusion failures. Builder
 split/join, classical handles, automatic work and direct numerical traversal
 retain separate acceptance work.
+
+## Builder split and join over real helpers
+
+GRAPH19 contract `b50b48f8` and implementation `488734e1` add builder split/join.
+Compiler `component_rebindings.py` supplies actual immutable typed bodies.
+Each helper converts between owned bit words and existing gate SSA. The extra
+logical rebindings emit zero physical primitives and require zero workspace.
+They preserve declaration order, source call positions and failed consumption
+prefixes. Default joins produce the original opaque word descriptor, helper
+names avoid entry/definition collisions and zero-width scalar ownership remains
+explicit until Core verification.
+
+Thirty new cases pass. Fifteen original ownership/failure scenarios run unchanged
+through a native observation adapter. Four remaining original scenarios compare
+connection order and source model cost against actual native zero-primitive
+lowering. Two complex-state comparisons include an X call and a spectator with
+both original and permuted outputs. Measured primitives are exactly one X and
+zero rebinding/work gates. The independently queried source model is exactly one
+Clifford. Source model categories remain separate from primitive names.
+
+All 4684 concentrated cases pass in 34.19 seconds without warnings or skips.
+Seventy focused cases pass in 8.60 seconds. Both builder and helper modules have
+100% statement and branch coverage. Eight source blobs remain unchanged. Strict
+Python 3.12 passes on twelve production files. Format, architecture, both scopes,
+Program/public API checks and four existing append/resource examples pass.
+Evidence is `ftqc-reference-env/g2-builder-rebindings-{native,coverage,regression,checks,examples}.log`
+and `g2-builder-rebindings-source.txt`.
+
+The unchanged Add/QROM append consumers additionally split and rejoin every
+returned word, including width zero. Their instructions remain identical and
+all four complete unnormalized measurement histories, workspace cleanup and the
+GRAPH17 separate primitive/model counts remain valid. Default-suite evidence
+remains the GRAPH17 run and its four independently reproduced baseline failures.
+The broader 39 call-builder source scenarios still include unadmitted classical
+handles and allocation-dependent signature changes. Automatic clean/dirty work
+and direct numerical traversal remain separate acceptance tasks.
