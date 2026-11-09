@@ -228,7 +228,7 @@ Validated local Notebook workflows: **18/213**.
 | `applications/chemistry/protein_folding/protein_folding_with_qaoa/protein_folding` | notebook_workflow | Pending | pending |
 | `applications/chemistry/protein_folding/protein_folding_with_quantum_walk/qfold` | notebook_workflow | Pending | pending |
 | `applications/chemistry/qpe_for_molecules/qpe_for_molecules` | notebook_workflow | Pending | pending |
-| `applications/chemistry/quantum_drude_oscillator/quantum_drude_oscillator` | notebook_workflow | Pending | pending |
+| `applications/chemistry/quantum_drude_oscillator/quantum_drude_oscillator` | notebook_workflow | [Native program](applications/chemistry/quantum_drude_oscillator/main.py) | pending |
 | `applications/chemistry/quantum_walk_fmo/quantum_walk_fmo` | notebook_workflow | Pending | pending |
 | `applications/chemistry/second_quantized_hamiltonian/second_quantized_hamiltonian` | notebook_workflow | Pending | pending |
 | `applications/chemistry/tensor_hypercontraction/tensor_hypercontraction` | notebook_workflow | Pending | pending |

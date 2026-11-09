@@ -3656,7 +3656,10 @@
         }
       ],
       "workflow_status": "pending",
-      "native_program": null,
+      "native_program": {
+        "path": "examples/synthesis/applications/chemistry/quantum_drude_oscillator/main.py",
+        "scope": "Quantum program only; complete energy/optimization Notebook workflow remains pending."
+      },
       "kind": "notebook_workflow"
     },
     {
