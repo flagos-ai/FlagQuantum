@@ -113,3 +113,22 @@ evolution. The optional PySCF entry raises an actionable missing-extra error in
 that environment. Independent references use Fock-space ladder action, complex
 Slater minors, annihilator-vacuum residuals and exact quadratic/full Hamiltonian
 matrix exponentials. They do not require OpenFermion or Cirq as test oracles.
+
+
+## Local acceptance evidence
+
+On November 9, 2026, the complete default smoke/unit tier passed with 18,548
+passes and 494 skips using four pytest workers, Python 3.12.14 and PyTorch
+2.14.1 on local CPU. Focused science, existing fermion, vocabulary and import
+isolation checks passed 161 tests; chemistry, molecular and Trotter regressions
+including the direct PySCF integrations passed 356 tests. Release configuration
+checks passed 62 tests. These are separate runs with overlapping selections;
+their counts are not additive.
+
+Ruff and Black pass on the changed Python scope; strict mypy passes on all 18
+Python files in the added domains. Architecture, dependency policy, stable API,
+capability maturity, team scope and qubit vocabulary gates pass without changes
+to the stable API snapshots. The source archive and arm64 wheel build with the
+existing isolated PyTorch 2.10 build configuration; all added domain sources and
+distributed attribution were checked in the wheel. The local PR description is
+in docs/development/OPENFERMION_NATIVE_PR.md. No remote change was performed.

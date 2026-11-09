@@ -1,6 +1,6 @@
 # Native fermionic science boundaries
 
-Status: local implementation proposal under the user-authorized migration plan.
+Status: implemented on the local feature branch under the user-authorized migration plan.
 
 ## Decision
 

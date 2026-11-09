@@ -838,6 +838,7 @@ def test_the_lane_audit_reads_the_workflows_it_claims_to() -> None:
             "stim",
             "pymatching",
             "kaiwu",
+            "chemistry-pyscf",
         }
     )
     assert coverage.expressions == (
