@@ -946,9 +946,11 @@ source and result artifacts with GitHub.
 For a dependency change, dispatch `publish-dev-container.yml` on the proposed
 branch with `ci-cpu=true`. The publisher resolves the core and coverage profiles,
 records their exact installed distributions, and checks them with networking
-disabled. Copy the four resulting image digests into the lock file and validate
-the PR. An outdated image is rejected when its dependency manifest differs from
-the checkout.
+disabled. Each `ci-image-lock-<profile>-py<version>` artifact contains a lock row
+with the published registry digest and the hash-verified OCI manifest digest
+from an actual offline export. Copy those four rows into the lock file, provision
+and qualify the caches, and validate the PR. An outdated image is rejected when
+its dependency manifest differs from the checkout.
 
 The native fermionic migration changes both `pyproject.toml` and the coverage
 profile. All four locked images must therefore be rebuilt and qualified before
@@ -959,8 +961,9 @@ optional science packages and then with PySCF 2.8 and 2.15 respectively. It runs
 on each PR and checks driver import before the real RHF tests. Coverage planning
 and execution also require a working PySCF import, so missing optional chemistry
 cannot turn those cases into a green run with only skips. These workflow changes
-are configured locally; a successful remote run and refreshed image locks remain
-merge prerequisites until their evidence is recorded.
+use images rebuilt by workflow run `42582666522`; their complete lock rows are
+recorded in `docker/ci/images.lock`. Successful cache qualification and CI on the
+updated revision remain merge prerequisites until their evidence is recorded.
 
 
 ## CPU runner routing and reliability
