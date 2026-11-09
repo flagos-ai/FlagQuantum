@@ -132,3 +132,47 @@ to the stable API snapshots. The source archive and arm64 wheel build with the
 existing isolated PyTorch 2.10 build configuration; all added domain sources and
 distributed attribution were checked in the wheel. The local PR description is
 in docs/development/OPENFERMION_NATIVE_PR.md. No remote change was performed.
+
+## Follow-up scientific and compatibility audit
+
+On November 9, 2026, an independent environment installed OpenFermion from the
+fixed source revision `34adf3196cd566f4ca53893f868753786797ae2a`.
+A reference-only process generated numeric fixtures; native comparison processes
+loaded only the arrays and did not import OpenFermion or Cirq. With seed 20261109,
+both Python 3.12.14 / PyTorch 2.14.1 and the installed wheel on Python 3.10.22 /
+PyTorch 2.10.0 passed the same 347 cases:
+
+| Scope | Cases | Maximum absolute error |
+| --- | ---: | ---: |
+| Complex operator JW/parity/BK coefficients, widths 1 through 8 | 230 | 4.58e-16 |
+| Complex Slater states, all particle counts through 7 modes | 35 | 3.45e-15 |
+| Paired Gaussian vacua, including explicit parity flips, 2 through 7 modes | 30 | 6.38e-15 |
+| Signed low-rank reconstruction, full contraction and discarded bounds | 40 | 1.71e-13 |
+| Frozen-core shifts and reordered active-space integrals | 12 | 1.78e-15 |
+
+Upstream state vectors are compared after aligning their unspecified overall
+phase; native determinant-minor and evolution tests continue to check exact
+phase separately. Upstream `parity_code(1)` raises a decoder reshape error, so
+its ten width-one comparisons are excluded. Native width-one parity remains
+covered by the independent Fock-space tests. This audit covers selected native
+functions, not all upstream APIs or production-sized systems.
+
+The core wheel was installed outside the source checkout on Python 3.10.22 /
+PyTorch 2.10.0. Its native CPU extension loaded and 454 focused science and
+existing fermion/chemistry/Trotter tests passed, with no NumPy, SciPy, h5py,
+PySCF, OpenFermion or Cirq installed. After adding PySCF 2.8.0, all three direct
+RHF tests passed with SciPy 1.14.1 and NumPy 2.2.6. A resolved SciPy 1.15.3 wheel
+initially failed dynamic loading on this local macOS host; the successful driver
+result applies to the explicitly tested SciPy 1.14.1 combination, not every
+transitive dependency combination. No global dependency pin was added for that
+local wheel issue.
+
+The direct-driver tests now skip only when PySCF is absent. An installed driver
+that fails import raises a test error. Isolated fault-injection probes verify
+both behaviors. Final chemistry and native-import integration checks pass four
+tests on each tested Python/PyTorch environment. Architecture, dependency,
+stable API, ownership and capability gates pass. Review confirmed that Core
+contains no execution imports, mathematical decomposition remains independent
+of circuits, optional SDK objects stop at the chemistry adapter, existing
+chemistry formulas are reused, and routing remains independent of evolution.
+The audit made no production source or stable API changes.

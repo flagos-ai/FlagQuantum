@@ -1,5 +1,8 @@
 """The direct chemistry boundary produces native, interchangeable problem data."""
 
+import importlib
+import importlib.util
+
 import pytest
 import torch
 
@@ -15,9 +18,16 @@ from flagquantum.ecosystem.chemistry.pyscf import build_molecular_problem
 pytestmark = pytest.mark.integration
 
 
+@pytest.fixture(autouse=True)
+def require_pyscf() -> None:
+    if importlib.util.find_spec("pyscf") is None:
+        pytest.skip("install flagquantum[chemistry-pyscf] for direct RHF tests")
+    # An installed but broken driver must fail instead of hiding behind a skip.
+    importlib.import_module("pyscf")
+
+
 @pytest.mark.parametrize("basis", ["sto-3g", "6-31g"])
 def test_direct_pyscf_reference_energy(basis: str) -> None:
-    pytest.importorskip("pyscf")
     geometry = [("H", (0.0, 0.0, 0.0)), ("H", (0.0, 0.0, 0.7414))]
     problem = build_molecular_problem(geometry, basis=basis)
     encoded = encode_fermion(fermion_hamiltonian(problem), n_modes=problem.n_modes)
@@ -41,7 +51,6 @@ def test_direct_pyscf_reference_energy(basis: str) -> None:
 
 
 def test_lithium_hydride_hf_expectation() -> None:
-    pytest.importorskip("pyscf")
     problem = build_molecular_problem([("Li", (0.0, 0.0, 0.0)), ("H", (0.0, 0.0, 1.6))])
     encoded = encode_fermion(
         fermion_hamiltonian(problem), n_modes=problem.n_modes, encoding="bravyi_kitaev"
