@@ -11,7 +11,7 @@ pytestmark = pytest.mark.integration
 
 
 def test_fcidump_measurement_with_external_science_imports_blocked() -> None:
-    script = textwrap.dedent("""
+    script = """
         import importlib.abc
         import runpy
         import sys
@@ -24,7 +24,8 @@ def test_fcidump_measurement_with_external_science_imports_blocked() -> None:
         sys.meta_path.insert(0, NoExternalScience())
         runpy.run_module("examples.algorithms.fermion_fcidump", run_name="__main__")
         assert not (blocked & {name.split(".")[0] for name in sys.modules})
-    """)
+    """
+    script = textwrap.dedent(script)
     result = subprocess.run(
         [sys.executable, "-c", script],
         cwd=Path(__file__).resolve().parents[2],

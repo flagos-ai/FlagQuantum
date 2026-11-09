@@ -60,6 +60,8 @@ Executed locally on macOS arm64 CPU:
 
 - Python 3.12.14 / PyTorch 2.14.1 / PySCF 2.15: 110 science and integration tests passed.
 - Python 3.10.22 / PyTorch 2.10 / PySCF 2.8: 41 FCIDUMP and isolation tests passed.
+- Installed wheel outside the repository: 40 FCIDUMP tests passed; parser source
+  matches the wheel and the native extension loads.
 - Installation and CI dependency-audit contracts: 29 passed.
 - Parser coverage: 119 statements and 68 branches, 100%, using a pure-Python
   tracer started after preloading PyTorch. Two attempts to trace PyTorch import
@@ -69,8 +71,10 @@ Executed locally on macOS arm64 CPU:
 
 The first complete default-suite attempt lacked the new worktree's native CPU
 extension: 18,443 passed, 628 skipped and nine execution-path tests failed. After
-building the unchanged extension, all nine passed. The final full rerun is in
-progress; its result will be recorded before promoting this draft. CI capacity,
+building the unchanged extension, all nine passed. The final full rerun reported
+18,585 passed, 494 skipped and one watchdog failure: the local sandbox denied
+process-group signalling and `ps` during child cleanup. No watchdog code or
+assertion was changed. This is not a clean full-suite result. CI capacity,
 merge-gate, testing-manual and dependency-audit contracts passed 82 tests after
 the Ubuntu test selections were extended.
 The existing independent Ubuntu matrix now explicitly runs FCIDUMP import
