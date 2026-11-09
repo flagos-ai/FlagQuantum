@@ -89,18 +89,34 @@ def capture_preparation(owner: _Body, node: ast.Call, function: object) -> None:
             owner.source, node, "program.signature", "expected vector, bound and target"
         )
     vector, tolerance, output = node.args
-    if (
-        not isinstance(vector, (ast.List, ast.Tuple))
-        or not 2 <= len(vector.elts) <= MAX_PREPARED_AMPLITUDES
-        or len(vector.elts) & (len(vector.elts) - 1)
+    bound_vector = (
+        owner.classical.get(vector.id) if isinstance(vector, ast.Name) else None
+    )
+    if isinstance(vector, (ast.List, ast.Tuple)):
+        vector_size = len(vector.elts)
+    elif isinstance(bound_vector, tuple):
+        vector_size = len(bound_vector)
+    else:
+        _error(
+            owner.source,
+            vector,
+            "program.prepare",
+            "use a literal real vector or a bound classical real array",
+        )
+    if not 2 <= vector_size <= MAX_PREPARED_AMPLITUDES or vector_size & (
+        vector_size - 1
     ):
         _error(
             owner.source,
             vector,
             "program.prepare",
-            "use a literal real vector of power-of-two length in 2..256",
+            "use a real vector of power-of-two length in 2..256",
         )
-    values = tuple(_number(owner, item) for item in vector.elts)
+    if isinstance(vector, (ast.List, ast.Tuple)):
+        values = tuple(_number(owner, item) for item in vector.elts)
+    else:
+        assert isinstance(bound_vector, tuple)
+        values = bound_vector
     bound = _number(owner, tolerance)
     if bound < 0:
         _error(

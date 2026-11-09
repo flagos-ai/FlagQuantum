@@ -9,6 +9,8 @@ Native FlagQuantum programs currently available:
 - [prepare_ghz_state](state_preparation/prepare_ghz_state/README.md)
 - [prepare_uniform_interval_state](state_preparation/prepare_uniform_interval_state/README.md)
 - [prepare_uniform_trimmed_state](state_preparation/prepare_uniform_trimmed_state/README.md)
+- [encode_in_angle](data_encoding/encode_in_angle/README.md)
+- [encode_on_bloch](data_encoding/encode_on_bloch/README.md)
 - [example_prepare_amplitudes](state_preparation/example_prepare_amplitudes/README.md)
 - [example_prepare_state](state_preparation/example_prepare_state/README.md)
 - [crx](standard_gates/crx/README.md)
@@ -26,6 +28,7 @@ Native FlagQuantum programs currently available:
 - [hadamard_transform](hadamard_transform/README.md)
 - [prepare_bell_state](state_preparation/prepare_bell_state/README.md)
 - [prepare_ghz_state](state_preparation/prepare_ghz_state/README.md)
+- [prepare_state_and_amplitudes](state_preparation/prepare_state_and_amplitudes/README.md)
 - [overview](standard_gates/overview/README.md)
 
 See the [full migration inventory](../MIGRATION_STATUS.md).

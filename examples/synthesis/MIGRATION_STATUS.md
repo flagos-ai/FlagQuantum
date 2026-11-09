@@ -7,7 +7,7 @@ quantum sources share one row. Python-only groups remain unclassified until
 main cases, helpers, data dependencies and verification criteria are reviewed.
 
 No notebook workflow is certified by a quantum-only counterpart.
-Validated local Notebook workflows: **11/213**.
+Validated local Notebook workflows: **12/213**.
 
 | Upstream group | Kind | Native quantum program | Full workflow |
 | --- | --- | --- | --- |
@@ -354,14 +354,14 @@ Validated local Notebook workflows: **11/213**.
 | `functions/qmod_library_reference/classiq_open_library/special_state_preparations/prepare_partial_uniform_state` | notebook_workflow | Pending | pending |
 | `functions/qmod_library_reference/classiq_open_library/special_state_preparations/prepare_uniform_interval_state` | quantum_program | [Native program](functions/state_preparation/prepare_uniform_interval_state/main.py) | pending |
 | `functions/qmod_library_reference/classiq_open_library/special_state_preparations/prepare_uniform_trimmed_state` | quantum_program | [Native program](functions/state_preparation/prepare_uniform_trimmed_state/main.py) | pending |
-| `functions/qmod_library_reference/classiq_open_library/variational_data_encoding/encode_in_angle` | quantum_program | Pending | pending |
-| `functions/qmod_library_reference/classiq_open_library/variational_data_encoding/encode_on_bloch` | quantum_program | Pending | pending |
+| `functions/qmod_library_reference/classiq_open_library/variational_data_encoding/encode_in_angle` | quantum_program | [Native program](functions/data_encoding/encode_in_angle/main.py) | pending |
+| `functions/qmod_library_reference/classiq_open_library/variational_data_encoding/encode_on_bloch` | quantum_program | [Native program](functions/data_encoding/encode_on_bloch/main.py) | pending |
 | `functions/qmod_library_reference/classiq_open_library/variational_data_encoding/variational_data_encoding` | notebook_workflow | Pending | pending |
 | `functions/qmod_library_reference/qmod_core_library/hamiltonian_evolution/qdrift/qdrift` | notebook_workflow | Pending | pending |
 | `functions/qmod_library_reference/qmod_core_library/hamiltonian_evolution/suzuki_trotter/suzuki_trotter` | notebook_workflow | Pending | pending |
 | `functions/qmod_library_reference/qmod_core_library/prepare_state_and_amplitudes/example_prepare_amplitudes` | quantum_program | [Native program](functions/state_preparation/example_prepare_amplitudes/main.py) | pending |
 | `functions/qmod_library_reference/qmod_core_library/prepare_state_and_amplitudes/example_prepare_state` | quantum_program | [Native program](functions/state_preparation/example_prepare_state/main.py) | pending |
-| `functions/qmod_library_reference/qmod_core_library/prepare_state_and_amplitudes/prepare_state_and_amplitudes` | notebook_workflow | Pending | pending |
+| `functions/qmod_library_reference/qmod_core_library/prepare_state_and_amplitudes/prepare_state_and_amplitudes` | notebook_workflow | [Native program](functions/state_preparation/prepare_state_and_amplitudes/main.py) | validated |
 | `functions/qmod_library_reference/qmod_core_library/standard_gates/CRX` | quantum_program | [Native program](functions/standard_gates/crx/main.py) | pending |
 | `functions/qmod_library_reference/qmod_core_library/standard_gates/CX` | quantum_program | [Native program](functions/standard_gates/cx/main.py) | pending |
 | `functions/qmod_library_reference/qmod_core_library/standard_gates/PHASE` | quantum_program | [Native program](functions/standard_gates/phase/main.py) | pending |

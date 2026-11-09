@@ -3,8 +3,8 @@
 User examples contain native Python programs and independent Circuit comparisons.
 Original source files and importer launchers are test/development evidence, not examples.
 
-Validated quantum-program counterparts: **34/216**.
-Validated local Notebook workflows: **11/213**.
+Validated quantum-program counterparts: **36/216**.
+Validated local Notebook workflows: **12/213**.
 Expanded inventory: **577** source artifacts in **417** provisional path groups.
 Python groups still require main-case/helper review. A quantum-program counterpart
 does not certify its notebook workflow. Pending entries have no runnable placeholder.
@@ -39,7 +39,7 @@ Validated local Notebook workflows:
 - [superposition](community/basic_examples/superposition/README.md)
 
 
-## Functions (18 native programs)
+## Functions (20 native programs)
 
 - [multiplication_2vars_example](functions/arithmetic/multiplication/multiplication_2vars_example/README.md)
 - [exact_amplitude_amplification](functions/amplitude_amplification/exact_amplitude_amplification/README.md)
@@ -48,6 +48,8 @@ Validated local Notebook workflows:
 - [prepare_ghz_state](functions/state_preparation/prepare_ghz_state/README.md)
 - [prepare_uniform_interval_state](functions/state_preparation/prepare_uniform_interval_state/README.md)
 - [prepare_uniform_trimmed_state](functions/state_preparation/prepare_uniform_trimmed_state/README.md)
+- [encode_in_angle](functions/data_encoding/encode_in_angle/README.md)
+- [encode_on_bloch](functions/data_encoding/encode_on_bloch/README.md)
 - [example_prepare_amplitudes](functions/state_preparation/example_prepare_amplitudes/README.md)
 - [example_prepare_state](functions/state_preparation/example_prepare_state/README.md)
 - [crx](functions/standard_gates/crx/README.md)
@@ -65,6 +67,7 @@ Validated local Notebook workflows:
 - [hadamard_transform](functions/hadamard_transform/README.md)
 - [prepare_bell_state](functions/state_preparation/prepare_bell_state/README.md)
 - [prepare_ghz_state](functions/state_preparation/prepare_ghz_state/README.md)
+- [prepare_state_and_amplitudes](functions/state_preparation/prepare_state_and_amplitudes/README.md)
 - [overview](functions/standard_gates/overview/README.md)
 
 

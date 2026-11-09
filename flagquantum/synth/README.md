@@ -118,6 +118,15 @@ become runtime tensors or differentiable parameters; synthesize again to rebind.
 See the [semantic contract](../../docs/api-changes/FQ-SYNTH-NATIVE-CLASSICAL-20261107.md)
 and [native/Circuit QML comparison](../../examples/synthesis/tutorials/basics/qml/comparisons/circuit.py).
 
+Root `prepare_state(probabilities, bound, output)` and
+`prepare_amplitudes(amplitudes, bound, output)` also accept named bound real arrays.
+Their preparation limit remains 2..256 elements with power-of-two length;
+probabilities must sum to one and real amplitudes must have unit norm.
+Synthesis validates normalization without repairing it and infers the output
+width. Unbound global lists and parameterized Output helpers remain refused.
+Run the [complete native vector workflow](../../examples/synthesis/functions/state_preparation/prepare_state_and_amplitudes/main.py)
+for host-generated vectors, named sampling and raw signed amplitudes.
+
 ## Pure-function convenience
 
 ```python

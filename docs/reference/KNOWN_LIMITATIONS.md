@@ -983,5 +983,13 @@ indices, quantum aliasing and existing resource budgets are checked. This is not
 runtime parameter binding or gradient support. Parameterized Const/Output
 helpers, mutable helper adjoint/control, nested classical arrays and arbitrary
 Python execution remain refused. The QML original has a runnable native/Circuit
-counterpart verified at two nonzero bindings with absolute phase; native catalog
-coverage is 28/216, separately from the approved Qmod execution-smoke count.
+counterpart verified at two nonzero bindings with absolute phase. Current native
+program and complete Notebook coverage are separately tracked in the
+[generated migration inventory](../../examples/synthesis/MIGRATION_STATUS.md).
+
+Root native probability/amplitude preparation also accepts explicitly bound real
+vectors, reusing the same immutable binding and register lowering. Preparation
+requires power-of-two length 2..256 and valid normalization; no normalization is
+repaired. Unbound global vectors, nested arrays and parameterized Output helpers
+remain refused. The [native vector workflow](../../examples/synthesis/functions/state_preparation/prepare_state_and_amplitudes/main.py)
+uses local sampling/state access; it does not claim cloud or hardware execution.

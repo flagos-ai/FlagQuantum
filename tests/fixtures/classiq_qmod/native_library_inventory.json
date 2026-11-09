@@ -6064,7 +6064,10 @@
         }
       ],
       "workflow_status": "pending",
-      "native_program": null,
+      "native_program": {
+        "path": "examples/synthesis/functions/data_encoding/encode_in_angle/main.py",
+        "scope": "Quantum program only; the combined variational-data-encoding Notebook is a separate pending workflow."
+      },
       "kind": "quantum_program"
     },
     {
@@ -6079,7 +6082,10 @@
         }
       ],
       "workflow_status": "pending",
-      "native_program": null,
+      "native_program": {
+        "path": "examples/synthesis/functions/data_encoding/encode_on_bloch/main.py",
+        "scope": "Quantum program only; the combined variational-data-encoding Notebook is a separate pending workflow."
+      },
       "kind": "quantum_program"
     },
     {
@@ -6186,9 +6192,47 @@
           "kind": "notebook"
         }
       ],
-      "workflow_status": "pending",
-      "native_program": null,
-      "kind": "notebook_workflow"
+      "workflow_status": "validated",
+      "native_program": {
+        "path": "examples/synthesis/functions/state_preparation/prepare_state_and_amplitudes/main.py",
+        "scope": "Complete local computational Notebook workflow: original nonuniform probability vector, seeded sampling and probability reconstruction; host-generated signed linear amplitudes, normalization, native synthesis, raw complex state reconstruction and phase-aligned presentation. Local execution replaces cloud calls and plain Python arrays replace dataframes; no hardware result is claimed."
+      },
+      "kind": "notebook_workflow",
+      "workflow_validation": {
+        "upstream_path": "functions/qmod_library_reference/qmod_core_library/prepare_state_and_amplitudes/prepare_state_and_amplitudes.ipynb",
+        "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+        "git_blob_sha1": "e0bbe290fdb253ed0ff0cbe783ce783fda0342ac",
+        "reviewed_code_cells": [
+          {
+            "index": 4,
+            "sha256": "7fa6550b31ce6ea5623ca8400c6e23e4897cdc9d492110e119d8fc9471d364a3"
+          },
+          {
+            "index": 5,
+            "sha256": "6608b6628705adf4ba4e837b01a64a6b4b2078463c1d1b7b802b5e4c8499a376"
+          },
+          {
+            "index": 7,
+            "sha256": "df5a732fe1f8d3295c88e089d6e4ef72daf8a7d8e44d06e269ce8f3d2184e40e"
+          },
+          {
+            "index": 9,
+            "sha256": "7b12ea7b166c909d9e3c4264a5f747b340d5e65c97ae3574a4ca803c6ff24236"
+          },
+          {
+            "index": 10,
+            "sha256": "6608b6628705adf4ba4e837b01a64a6b4b2078463c1d1b7b802b5e4c8499a376"
+          },
+          {
+            "index": 12,
+            "sha256": "21c1bc1f4c285b80edab19f740757058f10ad10d7be5b8a1955ed9219e2fc5c6"
+          }
+        ],
+        "native_entrypoint": "examples.synthesis.functions.state_preparation.prepare_state_and_amplitudes.main",
+        "acceptance_test": "tests/integration/test_synthesis_native_preparation_bindings.py",
+        "scope": "Complete local computational Notebook workflow: original nonuniform probability vector, seeded sampling and probability reconstruction; host-generated signed linear amplitudes, normalization, native synthesis, raw complex state reconstruction and phase-aligned presentation. Local execution replaces cloud calls and plain Python arrays replace dataframes; no hardware result is claimed.",
+        "native_semantic_adaptations": "Ordinary host Python generates and normalizes the evenly spaced amplitude vector, then supplies immutable classical_inputs. Root preparation consumes bound vectors through existing register lowering. Independent acceptance compares raw absolute amplitudes and separately checks phase-aligned display."
+      }
     },
     {
       "id": "functions/qmod_library_reference/qmod_core_library/standard_gates/CRX",
