@@ -546,3 +546,44 @@ operation. This prerequisite does not claim full source equality semantics.
 
 Before native implementation, 132 source-backed projection and Signature cases
 pass, including the separately recorded cross-None equality exception.
+
+## Register type consistency prerequisite 0.10
+
+Core's internal `register_compatibility.py` adapts the unchanged
+check_dtypes_consistent decision tree over existing RegisterType descriptors.
+RegisterTypeCheckingSeverity retains the source Enum names and values LOOSE=0,
+ANY=1 and STRICT=2. The default remains LOOSE. This standalone consistency
+predicate does not authorize executable type conversion or alter Program IR.
+
+Evaluate nominal equality and quantum-width equality before severity decisions.
+Equal declared types and equal one-qubit types are admitted first. STRICT then
+refuses remaining cases. Quantum opaque registers admit matching quantum widths
+before the ANY refusal. LOOSE permits quantum signed/unsigned/bounded/Montgomery
+integer interchange, and unsigned/bounded/Montgomery/finite-field compatibility
+with wholly integral or wholly fractional unsigned fixed point. Preserve the
+source exclusion of finite fields from the integer interchange group and of
+ones' complement and classical encodings from numeric conversion groups. Source
+quantum-width-only opaque comparisons, including classical operands, remain
+observable. Classical bit counts are not an added admission criterion.
+
+Finite-field nominal comparison replays the source None/Poly TypeError when
+storage, characteristic and degree coincide and exactly one polynomial is
+present. Other canonical descriptor equality remains Core record equality.
+The replay precedes dimensional and severity checks, as the source equality
+does. It introduces no galois import or external object in Core. The source
+exception text is retained as diagnostic data. Fixed-point num_int evaluation
+reuses the existing shared shape guard at the original lazy access point.
+
+A source-backed stand-in runs the complete supported descriptor cross-product
+under all three severities before implementation. Then the same cases run
+through native consistency. Compare values, scalar result classes and errors,
+including symbolic widths, quantum/classical mix, one-bit precedence, opaque
+precedence over ANY, signed fractional exclusion, field/integer asymmetry and
+cross-None exceptions. Demonstrate consumers substituting source/native checks
+while retaining existing Signature and appended gate bindings. Existing exact
+primitive-stream, complex-state, measured-branch, zero-work and independent
+resource regressions remain required. Typed graph binding and execution remain
+the next dependency after this predicate.
+
+Before implementation, all 35,643 source-backed decisions pass across 109
+supported descriptor declarations and the three severity settings.
