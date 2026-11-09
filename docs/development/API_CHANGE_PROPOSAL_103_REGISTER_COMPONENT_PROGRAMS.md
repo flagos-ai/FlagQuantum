@@ -656,3 +656,112 @@ round trips. Reuse the Add and XOR QROM append/branch/resource acceptance from
 0.11 with both manually supplied and factory-created binding collections.
 Finite component calls, explicit returns and general graph traversal remain the
 next contract slice.
+
+## Call and explicit-return contract slice 1.0
+
+This is the proposed structural delta for the existing Program authority. The
+source-backed fake in `tests/unit/test_register_component_calls.py` executes the
+unchanged pinned `BloqBuilder` through `from_signature`, `add_d`/`add_t`/`add`,
+`_add_binst`, `_add_cxn` and strict finalization. The scenarios establish builder
+requirements before native implementation. They currently run against that
+fake alone. Contract 0.5 remains the executable authority until the separate
+Core implementation and its checked contract delta land. No owner approval is
+asserted by this proposal or by passing source witnesses.
+
+### Proposed storage in existing records
+
+| Existing record | Additive field or vocabulary | Default and meaning |
+| --- | --- | --- |
+| `ValueRef` | Add `register` to the internal kind vocabulary and linear kinds | One owned element token, including a zero-width scalar. Its type comes from its defining function input or call output port. Existing kinds keep their semantics. |
+| `Operation` | `callee: str \| None = None` | Present only for opcode `call`. The name resolves to one finite definition in the enclosing `ProgramRecord`. Operands and results are the sole input/output value lists. |
+| `BlockRecord` | `return_values: tuple[ValueRef, ...] \| None = None` | `None` retains the existing gate-only implicit return. `()` is an explicit empty return. Register functions require an explicit return. |
+| `FunctionRecord` | `registers: tuple[Register, ...] \| None = None` | `None` selects the existing gate-level function rules. A tuple declares ordered register ports, including an explicitly empty signature. Reconstruct existing `Signature` for per-side validation. |
+| `ProgramRecord` | No additional graph or payload field | Existing functions contain definitions and existing operations contain calls. |
+
+Use an immutable tuple of existing Register descriptors in the function record.
+The cached, mutable Signature object is a validation/view helper. Adding a second
+signature class or serializing a foreign graph is unnecessary. Calls refer to
+callee names without copying signatures. A verifier resolves the callee and
+checks both positional sequences against the resolved signature.
+
+For each side, flatten `Signature.lefts()` or `rights()` in declaration order,
+then each port's `all_idxs()` in row-major order. One element contributes one
+ValueRef even at width zero. A dimension of zero contributes no ValueRefs but
+its port declaration stays in the signature. Two array elements always receive
+different `(scope, index)` identities. The existing metadata collection factory
+can group indices around one ValueRef, so its output cannot be used directly as
+an executable element-identity allocator. The builder must issue distinct
+existing ValueRefs for every element, while reusing its array and index rules.
+
+A call consumes operands in the callee's left-port order and defines fresh
+results in its right-port order. An explicit return consumes its listed values
+in the enclosing function's right-port order. Input and output names retain
+separate namespaces. A LEFT word and RIGHT word with the same name can have
+different widths. Bindings resolve by side before flattening. Type compatibility
+uses the already accepted LOOSE predicate after the builder's consumption
+callback, matching the source's failure order.
+
+### Ownership and verification
+
+The first structural slice admits finite single-block register functions.
+Their entry arguments are the flattened left ports and their explicit return
+values match flattened right ports. The verifier must reject unknown or repeated
+function names, missing callees, repeated definitions, undefined values,
+wrong arity or dtype, stale and aliased inputs, missing explicit returns,
+unused tokens and call cycles. The cycle check includes unreachable definitions.
+Calls with conditions, parameters, literals or physical data require separate
+admission and fail closed in this slice. Multiple blocks and cross-profile
+calls also require explicit support before execution.
+
+Every `register` token has exactly one consumer, including a classical-register
+handle. The pinned builder's `_available.remove()` applies to CBit as well as
+quantum words. The source witness records that behavior. Existing `bool` SSA
+values retain fanout for dynamic measurement feedback. This narrows item 5 in
+the initial data-contract discussion, which allowed classical fanout without
+distinguishing SSA booleans from owned register handles. Numerically copying a
+classical value is a separate explicit operation and cannot excuse reusing a
+consumed source handle.
+
+Failed source calls reserve an instance index and insert the instance before
+binding inputs. Earlier consumed values and recorded connections survive a
+later missing name, dtype mismatch, alias, short array or surplus name. Failed
+returns likewise retain the consumed prefix. Retrying the same return then
+fails on its first already consumed input. The mutable native builder must make
+those effects observable through the same contract observations. Failed
+construction state is kept separate from an admitted immutable ProgramRecord.
+A verifier must inspect the actual definitions, operands and returns rather
+than trust successful callbacks or an attached canonical payload.
+
+Source `final_soqs()` returns `{}` when no RightDangle appears in the graph,
+even with a declared empty-shaped output port. Preserve the declared signature
+and empty returned-value tuple in native records. Reconstruction of an empty
+array from the signature is a native consumer decision that must be reported
+separately from source helper output equality. The test records this source
+boundary explicitly.
+
+### Compatibility and executable follow-through
+
+Append optional fields after existing dataclass fields. With all new fields at
+their defaults, preserve existing equality, hash tuples, verifier diagnostics,
+physical-profile dispatch and exact static/dynamic payload round trips. New
+non-default fields participate in identity. Gate-only records carrying callee
+or register-return metadata must fail verification instead of being silently
+restored from `canonical_payload`. Public CircuitIR schemas and root APIs keep
+their current contract throughout this internal change.
+
+This structural slice introduces no generic component-parameter bag. Exact
+integer tables and instantiated algorithm parameters remain with their existing
+Compiler-owned immutable component objects while constructing concrete function
+bodies. They must never be converted to `Operation.literal` merely to retain a
+reference. Before persisting leaf data for numerical dispatch, specify an exact
+neutral representation in a separate contract delta. An unresolved leaf is
+refused for execution. Resource models alone cannot supply a function body.
+
+The next delivery replaces the source fake with a Compiler builder that
+produces these Core records, with Core verification as an independent commit.
+The existing Add and XOR QROM consumers then exercise real gate lowering and
+Simulation traversal. Split/join, allocation and clean/dirty release need their
+own typed operations and explicit ownership rules before those consumers can
+claim graph execution. Their existing emitter tests remain required regression
+evidence. Passing the call fake alone certifies neither new primitive counts nor
+complex amplitudes, measurement branches or workspace cleanup.
