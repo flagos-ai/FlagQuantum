@@ -86,6 +86,20 @@ The focused path is `tests/unit/test_program_call_lowering.py`. Its existing
 Add/QROM append consumer is reused with hierarchical emitter replacement,
 checking unchanged source gate dependencies, all four measurement histories,
 complex amplitudes, workspace cleanup and separate primitive/model resources.
-Workspace remains explicit in the gate function's inputs and outputs. Packed
-register construction, split/join and numerical graph traversal remain in the
-next register-valued contract slice.
+Workspace remains explicit in function inputs and outputs.
+
+## Typed register expansion
+
+`register_programs.lower_register_program` validates the complete Core module,
+flattens declared words in port/row-major/MSB order and reuses the finite call
+inliner above. Owned zero-width words have no wires after verification.
+Split/join preserve ordered tuples and emit no gates. A reordered return remains
+explicit, and Core payload restoration refuses a hidden output permutation.
+Gate-only `inline_program_calls` refuses unlowered register functions.
+
+Run `pytest tests/unit/test_register_program_lowering.py` for the shortest
+contributor path. The existing Add/QROM append consumer runs unchanged with
+three-level packed hierarchy replacement, primitive equality, all measurement
+histories and independent resource checks. Source-style mutable construction,
+its failure prefixes, automatic clean/dirty allocation and direct numerical
+graph traversal retain separate acceptance work.

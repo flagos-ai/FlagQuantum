@@ -44,6 +44,10 @@ def inline_program_calls(record: ProgramRecord, entry: str = "main") -> ProgramR
     diagnostics = verify_program_record(record)
     if diagnostics:
         raise ValueError(f"invalid Program calls: {diagnostics}")
+    if any(function.registers is not None for function in record.functions):
+        raise ValueError(
+            "packed functions require lower_register_program before inlining"
+        )
     functions = {function.name: function for function in record.functions}
     if entry not in functions:
         raise ValueError(f"unknown Program entry {entry!r}")
