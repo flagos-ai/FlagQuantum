@@ -125,3 +125,9 @@ The adapter still owns source parsing, static operator data, coefficient/time
 binding, repetition/resource bounds and commutation compaction. It emits the
 same checked register effects and retains term order, identity phase and source
 locations. No native evolution entry, external type leak or new IR is introduced.
+
+Real phase polynomial expansion is owned by Compiler `_phase_polynomial.py`.
+The local `phase.py` retains Qmod's syntax callbacks, diagnostics and compatibility
+imports; it must not own a second expansion algorithm. Native Python supplies
+a different syntax implementation to the same compiler boundary. Qmod signed,
+fractional, predicate and factor-sharing behavior remains unchanged.

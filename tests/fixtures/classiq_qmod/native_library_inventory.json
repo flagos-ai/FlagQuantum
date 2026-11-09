@@ -4220,7 +4220,10 @@
         }
       ],
       "workflow_status": "pending",
-      "native_program": null,
+      "native_program": {
+        "path": "examples/synthesis/applications/optimization/adapt_qaoa/main.py",
+        "scope": "Complete retained one-layer eight-bit quantum ansatz, including every cost coefficient and the selected X mixer. Adaptive operator selection, training and complete Notebook workflow remain pending."
+      },
       "kind": "notebook_workflow"
     },
     {
@@ -7951,7 +7954,10 @@
         }
       ],
       "workflow_status": "pending",
-      "native_program": null,
+      "native_program": {
+        "path": "examples/synthesis/tutorials/workshops/combinatorial_workshop/combinatorial_qmod_workshop_for_maxcut/main.py",
+        "scope": "Complete retained five-bit four-layer quantum program, with every edge and all eight parameters. Full classical graph optimization Notebook workflow remains pending."
+      },
       "kind": "notebook_workflow"
     },
     {

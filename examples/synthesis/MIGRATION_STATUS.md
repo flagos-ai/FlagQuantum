@@ -252,7 +252,7 @@ Validated local Notebook workflows: **24/213**.
 | `applications/logistics/task_scheduling_problem/task_scheduling_problem` | notebook_workflow | Pending | pending |
 | `applications/logistics/traveling_salesman_problem/traveling_salesman_problem` | notebook_workflow | Pending | pending |
 | `applications/logistics/vehicle_routing_problem/vehicle_routing_problem` | notebook_workflow | Pending | pending |
-| `applications/optimization/adapt_qaoa/adapt_qaoa` | notebook_workflow | Pending | pending |
+| `applications/optimization/adapt_qaoa/adapt_qaoa` | notebook_workflow | [Native program](applications/optimization/adapt_qaoa/main.py) | pending |
 | `applications/optimization/electric_grid_optimization/electric_grid_optimization` | notebook_workflow | Pending | pending |
 | `applications/optimization/integer_linear_programming/integer_linear_programming` | notebook_workflow | Pending | pending |
 | `applications/optimization/kidney_exchange/kidney_exchange_problem` | notebook_workflow | Pending | pending |
@@ -420,7 +420,7 @@ Validated local Notebook workflows: **24/213**.
 | `tutorials/technology_demonstrations/qaoa/qaoa_demonstration` | notebook_workflow | Pending | pending |
 | `tutorials/workshops/algo_design_QCE_tutorial/algo_design_QCE_tutorial_part_I` | notebook_workflow | Pending | pending |
 | `tutorials/workshops/algo_design_QCE_tutorial/algo_design_QCE_tutorial_part_II` | notebook_workflow | Pending | pending |
-| `tutorials/workshops/combinatorial_workshop/combinatorial_qmod_workshop_for_maxcut` | notebook_workflow | Pending | pending |
+| `tutorials/workshops/combinatorial_workshop/combinatorial_qmod_workshop_for_maxcut` | notebook_workflow | [Native program](tutorials/workshops/combinatorial_workshop/combinatorial_qmod_workshop_for_maxcut/main.py) | pending |
 | `tutorials/workshops/finance_workshops/Option_Pricing_Workshop` | notebook_workflow | Pending | pending |
 | `tutorials/workshops/finance_workshops/combi_workshop_Inequality_constriants_PO` | notebook_workflow | Pending | pending |
 | `tutorials/workshops/finance_workshops/combi_workshop_equality_constriants_PO` | notebook_workflow | Pending | pending |

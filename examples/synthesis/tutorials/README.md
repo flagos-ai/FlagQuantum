@@ -12,6 +12,7 @@ Native FlagQuantum programs currently available:
 - [synthesis_tutorial](basics/quantum_programming/synthesis_tutorial/README.md)
 - [approximated_state_preparation](technology_demonstrations/approximated_state_preparation/README.md)
 - [auxiliary_management](technology_demonstrations/auxiliary_managment/auxiliary_management/README.md)
+- [combinatorial_qmod_workshop_for_maxcut](workshops/combinatorial_workshop/combinatorial_qmod_workshop_for_maxcut/README.md)
 
 ## Validated local Notebook workflows
 

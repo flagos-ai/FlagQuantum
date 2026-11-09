@@ -20,6 +20,7 @@ from .._hybrid.model import (
 from .frontend_classical import ClassicalValue, bind_inputs, real_number
 from .frontend_evolution import _Evolution, capture_suzuki_trotter, flush_evolutions
 from .frontend_matrix import capture_unitary
+from .frontend_phase import capture_polynomial_phase
 from .frontend_ports import (
     _annotation_node,
     _Port,
@@ -443,6 +444,7 @@ class _Body:
                     rx,
                     rz,
                     phase_gate,
+                    phase,
                     rzz,
                     cx,
                     swap,
@@ -783,6 +785,15 @@ class _Body:
                         "constant phase angle must be finite",
                     )
                 self.emit("qreg.phase", node, (), angle=radians)
+            elif self.aliases is not None or any(
+                isinstance(child, (ast.Subscript, ast.Sub, ast.USub, ast.Div))
+                or isinstance(child, ast.Name)
+                and child.id in self.classical
+                or isinstance(child, ast.Constant)
+                and type(child.value) is float
+                for child in ast.walk(expr)
+            ):
+                capture_polynomial_phase(self, expr, angle, node)
             else:
                 graph, actuals = self.capture_expression(expr, node)
                 width = _width(

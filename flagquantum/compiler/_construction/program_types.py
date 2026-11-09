@@ -47,15 +47,27 @@ class QNum(_QuantumRegister):
         _width_spec(spec)
         return GenericAlias(cls, spec)
 
-    def __add__(self, other: QNum | int) -> QNum:
+    def __add__(self, other: QNum | float) -> QNum:
         raise TypeError("quantum expressions are captured inside qfunc, not executed")
 
     __radd__ = __add__
 
-    def __mul__(self, other: QNum | int) -> QNum:
+    def __mul__(self, other: QNum | float) -> QNum:
         raise TypeError("quantum expressions are captured inside qfunc, not executed")
 
     __rmul__ = __mul__
+
+    def __sub__(self, other: QNum | float) -> QNum:
+        raise TypeError("real subtraction is captured inside phase expressions only")
+
+    def __rsub__(self, other: float) -> QNum:
+        raise TypeError("real subtraction is captured inside phase expressions only")
+
+    def __neg__(self) -> QNum:
+        raise TypeError("real negation is captured inside phase expressions only")
+
+    def __truediv__(self, divisor: float) -> QNum:
+        raise TypeError("real division is captured inside phase expressions only")
 
     def __pow__(self, exponent: int) -> QNum:
         raise TypeError("quantum expressions are captured inside qfunc, not executed")

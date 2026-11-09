@@ -3,7 +3,7 @@
 User examples contain native Python programs and independent Circuit comparisons.
 Original source files and importer launchers are test/development evidence, not examples.
 
-Validated quantum-program counterparts: **63/216**.
+Validated quantum-program counterparts: **65/216**.
 Validated local Notebook workflows: **24/213**.
 Expanded inventory: **577** source artifacts in **417** provisional path groups.
 Python groups still require main-case/helper review. A quantum-program counterpart
@@ -31,11 +31,12 @@ Validated local Notebook workflows:
 - [deutsch_jozsa](algorithms/foundational/deutsch_jozsa/README.md)
 
 
-## Applications (5 native programs)
+## Applications (6 native programs)
 
 - [quantum_volume](applications/benchmarking/quantum_volume/README.md)
 - [quantum_drude_oscillator](applications/chemistry/quantum_drude_oscillator/README.md)
 - [quantum_walk_fmo](applications/chemistry/quantum_walk_fmo/README.md)
+- [adapt_qaoa](applications/optimization/adapt_qaoa/README.md)
 - [robust_posture_optimization](applications/optimization/robust_posture_optimization/README.md)
 - [variational_quantum_imaginary_time_evolution](applications/optimization/variational_quantum_imaginary_time_evolution/README.md)
 
@@ -110,7 +111,7 @@ Validated local Notebook workflows:
 - [unitary](functions/unitary/README.md)
 
 
-## Tutorials (10 native programs)
+## Tutorials (11 native programs)
 
 - [add_bell_states](tutorials/basics/add_bell_states/README.md)
 - [entanglement](tutorials/basics/entanglement/README.md)
@@ -122,6 +123,7 @@ Validated local Notebook workflows:
 - [synthesis_tutorial](tutorials/basics/quantum_programming/synthesis_tutorial/README.md)
 - [approximated_state_preparation](tutorials/technology_demonstrations/approximated_state_preparation/README.md)
 - [auxiliary_management](tutorials/technology_demonstrations/auxiliary_managment/auxiliary_management/README.md)
+- [combinatorial_qmod_workshop_for_maxcut](tutorials/workshops/combinatorial_workshop/combinatorial_qmod_workshop_for_maxcut/README.md)
 
 Validated local Notebook workflows:
 

@@ -12,6 +12,7 @@ selection and lowering to CircuitIR.
 | `frontend_classical.py` | Snapshot typed classical integer/real bindings and interpret closed numeric expressions |
 | `frontend_statements.py` | Dispatch captured statements and specialize bounded classical branches |
 | `frontend_ports.py` | Resolve annotation identities, quantum roles and bounded port types |
+| `frontend_phase.py` | Read native real phase arithmetic and checked views for shared sparse expansion |
 | `frontend_preparation.py` | Capture bounded literal native preparation calls into existing register effects |
 | `frontend_views.py` | Resolve native bit-array locations, bounded loops and disjoint writable helper expansion |
 | `frontend_python.py` | Capture the supported scalar Python expression profile |
@@ -696,3 +697,12 @@ the selected arm is captured; neither arm may contain branch control flow.
 Run `tests/integration/test_synthesis_native_integer_control.py` for complete
 BB84 statevectors, coherent borrowed signals, ownership and resource refusals.
 See the [integer and branch contract](../../../docs/api-changes/FQ-SYNTH-NATIVE-INTEGER-CONTROL-20261109.md).
+
+Native `phase` over array elements and real arithmetic uses Compiler-owned
+`_phase_polynomial.expand_phase`, also consumed by the Qmod adapter. Source
+inspection is supplied by each frontend; shared bounded sparse expansion and
+existing indexed phase effects preserve physical reads and absolute phase.
+This is phase arithmetic, not signed/real quantum output assignment. Run
+`tests/integration/test_synthesis_native_polynomial_phase.py` and the native
+ADAPT-QAOA/MaxCut comparisons for the contributor golden path. See the
+[phase contract](../../../docs/api-changes/FQ-SYNTH-NATIVE-POLYNOMIAL-PHASE-20261109.md).
