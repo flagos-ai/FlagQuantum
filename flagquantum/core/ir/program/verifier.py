@@ -15,7 +15,10 @@ operator vocabulary the repository already owns.
 
 from __future__ import annotations
 
+from collections.abc import Mapping
+
 from ..diagnostics import LevelDiagnostic, _diagnostic
+from .call_verifier import call_signature, has_call_profile, verify_call_structure
 from .model import (
     CONSTANT_OPCODE,
     MEASURE_OPCODE,
@@ -24,6 +27,7 @@ from .model import (
     VALUE_KINDS,
     BlockRecord,
     FunctionRecord,
+    OpcodeSignature,
     Operation,
     ProgramRecord,
     ValueRef,
@@ -48,19 +52,29 @@ def verify_program_record(record: ProgramRecord) -> tuple[LevelDiagnostic, ...]:
     """
     from .physical import is_physical_record, verify_physical_program
 
-    if is_physical_record(record):
+    call_profile = has_call_profile(record)
+    if is_physical_record(record) and not call_profile:
         return verify_physical_program(record)
-    diagnostics: list[LevelDiagnostic] = []
+    diagnostics: list[LevelDiagnostic] = (
+        verify_call_structure(record) if call_profile else []
+    )
+    callees = (
+        {function.name: function for function in record.functions}
+        if call_profile
+        else None
+    )
     if not record.functions:
         diagnostics.append(
             _diagnostic("program.function_arity", "a program record needs one function")
         )
     for function in record.functions:
-        diagnostics.extend(_verify_function(function))
+        diagnostics.extend(_verify_function(function, callees))
     return tuple(diagnostics)
 
 
-def _verify_function(function: FunctionRecord) -> list[LevelDiagnostic]:
+def _verify_function(
+    function: FunctionRecord, callees: Mapping[str, FunctionRecord] | None = None
+) -> list[LevelDiagnostic]:
     diagnostics: list[LevelDiagnostic] = []
     if not function.blocks:
         diagnostics.append(
@@ -87,7 +101,7 @@ def _verify_function(function: FunctionRecord) -> list[LevelDiagnostic]:
 
     arguments = {block.name: block.arguments for block in function.blocks}
     for block in function.blocks:
-        diagnostics.extend(_verify_block(block, arguments, known))
+        diagnostics.extend(_verify_block(block, arguments, known, callees))
     return diagnostics
 
 
@@ -95,6 +109,7 @@ def _verify_block(
     block: BlockRecord,
     arguments: dict[str, tuple[ValueRef, ...]],
     known: set[str],
+    callees: Mapping[str, FunctionRecord] | None = None,
 ) -> list[LevelDiagnostic]:
     """Verify one block, including the values its operations define and consume."""
 
@@ -157,14 +172,26 @@ def _verify_block(
         for value in edge.values:
             consumers[value] = consumers.get(value, 0) + 1
 
-    owned, operation_diagnostics = _verify_operations(block, consumers)
+    for value in block.return_values or ():
+        consumers[value] = consumers.get(value, 0) + 1
+    owned, operation_diagnostics = _verify_operations(block, consumers, callees)
+    defined = set((*block.arguments, *owned))
+    for value in block.return_values or ():
+        if value not in defined:
+            diagnostics.append(
+                _diagnostic(
+                    "program.value_undefined", f"return uses undefined {value!r}"
+                )
+            )
     diagnostics.extend(operation_diagnostics)
     diagnostics.extend(_verify_linearity(block, owned, consumers))
     return diagnostics
 
 
 def _verify_operations(
-    block: BlockRecord, consumers: dict[ValueRef, int]
+    block: BlockRecord,
+    consumers: dict[ValueRef, int],
+    callees: Mapping[str, FunctionRecord] | None = None,
 ) -> tuple[tuple[ValueRef, ...], list[LevelDiagnostic]]:
     """Type every operation, and return the linear values the block owns.
 
@@ -180,7 +207,11 @@ def _verify_operations(
     live = set(block.arguments)
     results: list[ValueRef] = []
     for position, operation in enumerate(block.operations):
-        signature = opcode_signature(operation.opcode)
+        signature = (
+            call_signature(operation, callees)
+            if operation.opcode == "call" and callees is not None
+            else opcode_signature(operation.opcode)
+        )
         if signature is None:
             diagnostics.append(
                 _diagnostic(
@@ -190,7 +221,9 @@ def _verify_operations(
                 )
             )
             continue
-        diagnostics.extend(_verify_operation_shape(block, position, operation))
+        diagnostics.extend(
+            _verify_operation_shape(block, position, operation, signature)
+        )
         diagnostics.extend(_verify_conditions(block, position, operation, live))
         bound = tuple(value for _, value in operation.parameters)
         for value in (*operation.operands, *bound):
@@ -230,6 +263,7 @@ def _verify_conditions(
         return []
     diagnostics: list[LevelDiagnostic] = []
     if operation.opcode in {
+        "call",
         CONSTANT_OPCODE,
         MEASURE_OPCODE,
         RESET_OPCODE,
@@ -301,11 +335,14 @@ def _verify_conditions(
 
 
 def _verify_operation_shape(
-    block: BlockRecord, position: int, operation: Operation
+    block: BlockRecord,
+    position: int,
+    operation: Operation,
+    signature: OpcodeSignature | None = None,
 ) -> list[LevelDiagnostic]:
     """Type one operation against its opcode signature, ignoring liveness."""
 
-    signature = opcode_signature(operation.opcode)
+    signature = signature or opcode_signature(operation.opcode)
     assert signature is not None  # caller checked; narrows for the type checker
     diagnostics: list[LevelDiagnostic] = []
     if len(operation.operands) != signature.arity:
@@ -433,7 +470,9 @@ def _verify_linearity(
                     f"{count} consumers",
                 )
             )
-        elif count == 0 and block.terminator == "branch":
+        elif count == 0 and (
+            block.terminator == "branch" or block.return_values is not None
+        ):
             diagnostics.append(
                 _diagnostic(
                     "value.linear_unconsumed",

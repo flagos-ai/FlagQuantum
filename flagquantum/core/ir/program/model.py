@@ -102,12 +102,13 @@ class Operation:
     opcode that defines such a value.
 
     Attributes:
-        opcode: Either `CONSTANT_OPCODE` or a canonical circuit opcode.
+        opcode: A compile constant, finite call or canonical circuit opcode.
         operands: The values this operation consumes, positionally.
         results: The values this operation defines, positionally.
         parameters: Declared parameter name to the `scalar` value binding it.
         literal: The compile constant, present only on `CONSTANT_OPCODE`.
         condition_clauses: Disjunction of conjunctions over boolean SSA values.
+        callee: Same-module function name, present only for a finite call.
     """
 
     opcode: str
@@ -120,8 +121,10 @@ class Operation:
         RydbergTransport | RydbergPulse | RydbergPresence | IsingExchange | None
     ) = None
 
+    callee: str | None = None
+
     def __hash__(self) -> int:
-        previous = (
+        previous: tuple[object, ...] = (
             self.opcode,
             self.operands,
             self.results,
@@ -129,20 +132,37 @@ class Operation:
             self.literal,
             self.condition_clauses,
         )
-        return hash(
-            previous if self.physical_data is None else (*previous, self.physical_data)
-        )
+        if self.physical_data is not None:
+            previous = (*previous, self.physical_data)
+        return hash(previous if self.callee is None else (*previous, self.callee))
 
 
 @dataclass(frozen=True)
 class BlockRecord:
-    """A single-entry block with explicit arguments and explicit successors."""
+    """A block with arguments, successors and optional explicit returned values.
+
+    An absent return tuple retains the original gate-only implicit release. An
+    explicit tuple, including an empty one, participates in def-use and ownership.
+    """
 
     name: str
     arguments: tuple[ValueRef, ...] = ()
     terminator: str = "return"
     edges: tuple[Edge, ...] = ()
     operations: tuple[Operation, ...] = ()
+    return_values: tuple[ValueRef, ...] | None = None
+
+    def __hash__(self) -> int:
+        previous = (
+            self.name,
+            self.arguments,
+            self.terminator,
+            self.edges,
+            self.operations,
+        )
+        return hash(
+            previous if self.return_values is None else (*previous, self.return_values)
+        )
 
 
 @dataclass(frozen=True)
@@ -156,7 +176,7 @@ class FunctionRecord:
 
 @dataclass(frozen=True)
 class ProgramRecord:
-    """Program-level module: one function per record.
+    """Program-level module containing finite named function definitions.
 
     `canonical_payload` is the canonical `CircuitIR.to_dict()` this module was
     lowered from. It is excluded from identity, because the record's operation

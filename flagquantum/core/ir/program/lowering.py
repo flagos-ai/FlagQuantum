@@ -200,7 +200,9 @@ def _lower_conditions(
     )
 
 
-def _lower_instructions(circuit: CircuitIR) -> BlockRecord:
+def _lower_instructions(
+    circuit: CircuitIR, *, explicit_returns: bool = False
+) -> BlockRecord:
     """Build the entry block whose operations realize `circuit`'s instructions.
 
     The block declares one live qubit value per qubit, and each instruction
@@ -280,7 +282,12 @@ def _lower_instructions(circuit: CircuitIR) -> BlockRecord:
                 ),
             )
         )
-    return BlockRecord("entry", arguments, operations=tuple(operations))
+    return BlockRecord(
+        "entry",
+        arguments,
+        operations=tuple(operations),
+        return_values=tuple(wires) if explicit_returns else None,
+    )
 
 
 def circuit_to_program(program: Any) -> LevelConversion:
@@ -398,7 +405,12 @@ def program_to_circuit(record: Any) -> LevelConversion:
         )
     classification = classify_public_circuit(circuit)
     try:
-        expected_entry = _lower_instructions(circuit)
+        explicit_returns = (
+            len(record.functions) == 1
+            and len(record.functions[0].blocks) == 1
+            and record.functions[0].blocks[0].return_values is not None
+        )
+        expected_entry = _lower_instructions(circuit, explicit_returns=explicit_returns)
     except (KeyError, _UnmodelledOpcodeError):
         expected_entry = None
     expected_functions = (

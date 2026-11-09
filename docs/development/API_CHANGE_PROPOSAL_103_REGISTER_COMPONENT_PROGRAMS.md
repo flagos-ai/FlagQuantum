@@ -2,15 +2,16 @@
 
 ## Status and scope
 
-Draft integration proposal for G2 of PR #1084. The metadata prerequisite 0.1
-below is implemented independently of the proposed Program IR extension. This
-document does **not** declare owner approval, change the existing Program
-contract, or claim register graph execution is implemented.
+Register-valued graph proposal for G2 of PR #1084. Metadata prerequisites 0.1
+through 0.12 are implemented independently. Finite gate-call prerequisite 1.1
+implements an additive internal contract 0.6 slice over existing gate SSA.
+Packed register graph execution remains proposed. No owner approval is declared
+by this document.
 
 The repository's Core instructions require an integration contract/ADR change
-before changing IR. The existing Program contract is version 0.5 and admits
-gate-level SSA, canonical dynamic conditions and a finite physical profile.
-Its approval of dynamic lowering does not establish register call semantics.
+before changing IR. At the initial audit, contract 0.5 admitted gate-level SSA, canonical dynamic
+conditions and finite physical profiles. Contract 0.6 adds finite gate calls as
+described in prerequisite 1.1. Packed register call semantics remain separate.
 
 The user-authorized migration requires shared components to retain the logic of
 Qualtran v0.7.0, revision
@@ -664,8 +665,9 @@ source-backed fake in `tests/unit/test_register_component_calls.py` executes the
 unchanged pinned `BloqBuilder` through `from_signature`, `add_d`/`add_t`/`add`,
 `_add_binst`, `_add_cxn` and strict finalization. The scenarios establish builder
 requirements before native implementation. They currently run against that
-fake alone. Contract 0.5 remains the executable authority until the separate
-Core implementation and its checked contract delta land. No owner approval is
+fake alone. At this slice's initial contract commit, version 0.5 remained the
+executable authority. Prerequisite 1.1 below subsequently adds a narrower
+finite gate-call implementation under contract 0.6. No owner approval is
 asserted by this proposal or by passing source witnesses.
 
 ### Proposed storage in existing records
@@ -822,3 +824,11 @@ feedback, full complex measurement-branch amplitudes and clean workspace.
 Their measured primitive counts and independent upstream cost models continue
 as separate observations. No packed-register graph claim follows from this
 bit-level prerequisite.
+
+The inliner re-canonicalizes DNF after boolean argument substitution. Reversed
+argument order can reverse value identities, and aliasing can merge identical
+conditions or make a conjunction contradictory. Duplicate conditions and clauses
+are collapsed. Contradictory clauses are omitted. If every clause is false, the
+conditional gate forwards its quantum operands to its results and emits no gate.
+This is exact specialization under the native call binding, recorded separately
+from unchanged upstream decomposition parity. It requires no new boolean opcode.

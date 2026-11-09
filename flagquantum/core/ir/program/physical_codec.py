@@ -292,7 +292,10 @@ def _control_encoding(value: object) -> None:
 
 
 def _block_from_dict(value: object) -> BlockRecord:
-    payload = _keys(value, {field.name for field in fields(BlockRecord)}, "block")
+    # Physical schema fields are versioned independently of internal SSA fields.
+    payload = _keys(
+        value, {"name", "arguments", "terminator", "edges", "operations"}, "block"
+    )
     if payload["arguments"] != [] or payload["edges"] != []:
         raise SerializationError(
             "physical blocks do not admit SSA arguments or control-flow edges"
@@ -300,7 +303,17 @@ def _block_from_dict(value: object) -> BlockRecord:
     operations = []
     for value in _array(payload["operations"], "operations"):
         operation = _keys(
-            value, {field.name for field in fields(Operation)}, "operation"
+            value,
+            {
+                "opcode",
+                "operands",
+                "results",
+                "parameters",
+                "literal",
+                "condition_clauses",
+                "physical_data",
+            },
+            "operation",
         )
         if (
             any(

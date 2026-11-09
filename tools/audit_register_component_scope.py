@@ -38,6 +38,28 @@ def _operation_probe(opcode: str, kind: str) -> list[str]:
     return sorted({diagnostic.code for diagnostic in verify_program_record(record)})
 
 
+def _finite_call_probe() -> list[str]:
+    value = ValueRef("entry", 0, "qubit")
+    output = ValueRef("entry", 1, "qubit")
+    leaf = FunctionRecord(
+        "leaf", (BlockRecord("entry", (value,), return_values=(value,)),)
+    )
+    main = FunctionRecord(
+        "main",
+        (
+            BlockRecord(
+                "entry",
+                (value,),
+                operations=(Operation("call", (value,), (output,), callee="leaf"),),
+                return_values=(output,),
+            ),
+        ),
+    )
+    return sorted(
+        {item.code for item in verify_program_record(ProgramRecord((main, leaf)))}
+    )
+
+
 def _round_trip(circuit: CircuitIR) -> dict[str, object]:
     converted = circuit_to_program(circuit)
     if converted.record is None:
@@ -74,6 +96,9 @@ def audit_program_scope(root: Path) -> dict[str, object]:
         "docs/public_api_v1.json",
         "flagquantum/core/ir/program/model.py",
         "flagquantum/core/ir/program/verifier.py",
+        "flagquantum/core/ir/program/call_verifier.py",
+        "flagquantum/core/ir/program/lowering.py",
+        "flagquantum/core/ir/program/physical_codec.py",
         "flagquantum/core/operator_schema.py",
     )
     signature = opcode_signature("x")
@@ -110,6 +135,7 @@ def audit_program_scope(root: Path) -> dict[str, object]:
             "gate_on_qubit": _operation_probe("x", "qubit"),
             "gate_on_index": _operation_probe("x", "index"),
             "component_call": _operation_probe("register_call", "qubit"),
+            "finite_gate_call": _finite_call_probe(),
             "quantum_register_kind": _operation_probe("x", "quantum_register"),
         },
         "round_trips": {
@@ -120,10 +146,11 @@ def audit_program_scope(root: Path) -> dict[str, object]:
         },
         "claims": {
             "register_component_execution": False,
+            "finite_gate_call_structure": not _finite_call_probe(),
             "standalone_register_metadata": True,
             "complete_source_register_metadata_ported": False,
             "resource_dag_is_execution_graph": False,
-            "protected_contract_changed": False,
+            "protected_contract_changed": contract["version"] != "0.5",
         },
     }
 

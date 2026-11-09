@@ -21,6 +21,8 @@ def test_audit_preserves_the_existing_static_and_dynamic_boundaries():
     protected = ROOT / "contracts/multi-level-ir-internal-v1-candidate.json"
     original = protected.read_bytes()
     report = audit_program_scope(ROOT)
+    assert report["probes"]["finite_gate_call"] == []
+    assert report["claims"]["register_component_execution"] is False
     assert protected.read_bytes() == original
     assert json.loads(json.dumps(report)) == report
     for result in report["round_trips"].values():

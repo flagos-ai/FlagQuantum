@@ -109,3 +109,21 @@ this path. That is a protected public change: read
 `docs/development/PUBLIC_API_PROTECTION.md`, get an approved proposal, and treat
 the snapshot in `docs/public_api_v1.json` as an output of the change rather than
 something to edit.
+
+
+## Finite gate calls
+
+Internal contract 0.6 and proposal 103 prerequisite 1.1 add `Operation.callee`
+and `BlockRecord.return_values` on existing Program records.
+`program/call_verifier.py` resolves finite function definitions and refuses
+cycles, including unreachable ones. The existing verifier owns typed def-use,
+conditions and quantum linearity, including explicit returns. Gate-only implicit
+returns retain their original meaning. Physical codecs retain their versioned
+field sets independently of these additive internal fields.
+
+Run `tests/unit/test_program_calls.py` and
+`tests/unit/test_multi_level_ir_contract.py` for the smallest Core change.
+Compiler owns call expansion in `compiler/registers/program_calls.py`. Public
+restoration verifies the expanded graph and independently attests explicit
+returns in physical input-wire order. Packed register values and split/join
+retain their separate proposed admission in proposal 103.
