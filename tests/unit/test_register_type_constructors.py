@@ -149,3 +149,62 @@ def test_bounded_guard_short_circuits_later_checker(construct_type):
     bound = UntouchedBound()
     dtype = construct_type("bounded", N, bound)
     assert dtype.parameters[0][1] is bound
+
+
+@pytest.mark.parametrize("consumer", ["signature", "xor_qrom"])
+def test_actual_consumers_accept_factory_replacement(
+    construct_type, consumer, monkeypatch
+):
+    from flagquantum.compiler.registers.lookup import qrom_table
+    from flagquantum.core.ir.program import signatures
+
+    events = []
+
+    def bit():
+        events.append(("bit",))
+        return construct_type("bit")
+
+    def opaque(width):
+        events.append(("opaque", width))
+        return construct_type("opaque", width)
+
+    def bounded(width, bound):
+        events.append(("bounded", width, bound))
+        return construct_type("bounded", width, bound)
+
+    if consumer == "signature":
+        monkeypatch.setattr(signatures, "quantum_bit_type", bit)
+        monkeypatch.setattr(signatures, "opaque_register_type", opaque)
+        result = Signature.build(bit=1, word=3, empty=0)
+        assert [reg.dtype for reg in result] == [
+            RegisterType("bit", 1),
+            RegisterType("opaque", 3),
+        ]
+        assert events == [("bit",), ("opaque", 3)]
+    else:
+        baseline = qrom_table.QromTable.from_data([0, 1, 2, 3], num_controls=1)
+        work = tuple(range(5, 5 + baseline.workspace_size))
+        bits = tuple(range(baseline.workspace_size))
+        expected = baseline.bind_packed(tuple(range(5)), work, bits)
+        monkeypatch.setattr(qrom_table, "opaque_register_type", opaque)
+        monkeypatch.setattr(qrom_table, "bounded_unsigned_register_type", bounded)
+        table = qrom_table.QromTable.from_data([0, 1, 2, 3], num_controls=1)
+        assert table.signature == baseline.signature
+        assert table.bind_packed(tuple(range(5)), work, bits) == expected
+        assert events == [("opaque", 1), ("bounded", 2, 4), ("opaque", 2)]
+
+
+@pytest.mark.parametrize("kind", ["bit", "opaque", "uint", "bounded"])
+def test_native_concrete_factories_work_without_optional_sympy(kind, monkeypatch):
+    import builtins
+
+    original = builtins.__import__
+
+    def guarded_import(name, *args, **kwargs):
+        if name == "sympy":
+            raise ModuleNotFoundError("No module named 'sympy'", name="sympy")
+        return original(name, *args, **kwargs)
+
+    monkeypatch.setattr(builtins, "__import__", guarded_import)
+    dtype = native_factory(kind, 3)
+    assert dtype.quantum_bits == (1 if kind == "bit" else 3)

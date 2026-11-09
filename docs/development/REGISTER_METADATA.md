@@ -183,3 +183,41 @@ differential tests. With Signature, Register and internal multi-level IR
 regressions, the Core slice passes 634 tests without warnings or skips. This
 constructor comparison reads declared source width directly and excludes the
 separate lazy numerical codec construction.
+
+QROM now uses the same opaque control/target and bounded selection constructors.
+Its existing axis-fit diagnostic runs before selection construction. Two actual
+consumers accept either source-backed or native factories without consumer
+changes. The QROM replacement test compares its complete packed instruction
+tuple with the existing implementation. Four native constructor scenarios also
+run with optional Sympy imports blocked.
+
+The batch passes 2,128 concentrated tests across 45 files in 54.79 seconds, with
+no warnings or skips. The 256 constructor/consumer tests include 124 scenarios
+per constructor backend plus eight consumer/optional-dependency cases. The
+regression includes source gate streams, Add/QROM complex amplitudes, measured
+branches, zero workspace, controlled composition, bounded numerical codecs and
+separately reported logical resource costs.
+
+Concrete QROM, symbolic QROM and resource-model comparison examples execute.
+Concrete QROM reports two logical AND components, two measurements and five peak
+logical qubits, while the emitted stream has eight T/Tdag primitives. Add reports
+two logical AND components and eight peak logical qubits, with eight emitted
+T/Tdag primitives. Conversion assumptions stay explicit in the model report.
+Nine previously recorded pinned-source blobs rehash unchanged. Strict Python
+3.12 mypy passes for the three changed production modules. Ruff, Black,
+architecture, public API baseline and internal multi-level IR checks pass.
+
+Logs are retained in the existing reference environment as
+`g2-type-constructor-contract.log`, `g2-type-constructors-focused.log`,
+`g2-type-constructors-core.log`, `g2-type-constructors-consumers.log`,
+`g2-type-constructors-regression.log` and `g2-type-constructors-examples.log`.
+Other encoding families, graph-port compatibility, typed binding, explicit
+component returns and graph execution remain pending G2 work.
+
+The default smoke/unit tier with four workers stops at the previously reproduced
+`test_native_fused_rotation_layer_only_promotes_terminal_regions` assertion.
+This run reports 13,495 passed, 51 skipped, 398 warnings and one failure in
+87.89 seconds. The isolated original-baseline reproduction is retained in
+`g2-register-organization-baseline-failure.log`. The default run is recorded in
+`g2-type-constructors-default.log`. The existing Python 3.10 unused fallback-import
+suppression diagnostic in `simulation/numerics/conformance.py` remains open.
