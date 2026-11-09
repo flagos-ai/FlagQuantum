@@ -1,6 +1,7 @@
 """Native workflows cover notebook steps beyond source-file compilation."""
 
 import ast
+import math
 import runpy
 from pathlib import Path
 from typing import Literal
@@ -24,6 +25,10 @@ from examples.synthesis.algorithms.foundational.deutsch_jozsa.main import (
 )
 from examples.synthesis.community.basic_examples.superposition.main import run_example
 from examples.synthesis.compare_states import compare_states
+from examples.synthesis.functions.standard_gates.overview.main import (
+    run_example as run_standard_gates,
+)
+from examples.synthesis.tutorials.basics.add_bell_states.main import main as add_bells
 from examples.synthesis.tutorials.basics.entanglement.comparisons.circuit import (
     bell_reference_circuit,
     exercise_reference_circuit,
@@ -34,6 +39,13 @@ from examples.synthesis.tutorials.basics.entanglement.comparisons.circuit import
 from examples.synthesis.tutorials.basics.entanglement.main import bell, exercise, main
 from examples.synthesis.tutorials.basics.entanglement.main import (
     run_example as run_entanglement,
+)
+from examples.synthesis.tutorials.basics.prepare_state.comparisons.circuit import (
+    probabilities as preparation_probabilities,
+)
+from examples.synthesis.tutorials.basics.prepare_state.main import main as prepare
+from examples.synthesis.tutorials.basics.prepare_state.main import (
+    run_example as run_preparation,
 )
 from examples.synthesis.tutorials.basics.quantum_programming.classiq_overview_tutorial.main import (
     run_example as run_overview,
@@ -51,6 +63,83 @@ from flagquantum import synth
 from flagquantum.compiler import ResourceEstimate
 
 pytestmark = pytest.mark.integration
+
+
+def test_standard_gate_notebook_synthesizes_all_nine_native_functions(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    run_standard_gates()
+    output = capsys.readouterr().out.splitlines()
+    names = [
+        line.removeprefix("Gate: ") for line in output if line.startswith("Gate: ")
+    ]
+    assert names == ["X", "RZ", "R", "PHASE", "RZZ", "CX", "CRX", "SWAP", "U"]
+    distributions = [
+        ast.literal_eval(line.removeprefix("Probabilities: "))
+        for line in output
+        if line.startswith("Probabilities: ")
+    ]
+    rotated = {(0,): math.cos(0.5) ** 2, (1,): math.sin(0.5) ** 2}
+    expected = [
+        {(1,): 1.0},
+        {(0,): 1.0},
+        rotated,
+        {(0,): 1.0},
+        {(0,): 1.0},
+        {(0, 0): 1.0},
+        {(0, 0): 1.0},
+        {(0, 0): 1.0},
+        rotated,
+    ]
+    assert len(distributions) == len(expected)
+    for actual, reference in zip(distributions, expected, strict=True):
+        assert actual == pytest.approx(reference, abs=1e-12)
+
+
+def test_bell_addition_preserves_both_inputs_and_cleans_workspace() -> None:
+    program = synth.synthesize(add_bells)
+    result = fq.run(program)
+    assert dict(program.probabilities(result, registers=("a", "b", "total"))) == (
+        pytest.approx({(a, b, a + b): 0.25 for a in (0, 3) for b in (1, 2)}, abs=1e-12)
+    )
+    assert tuple(map(len, program.registers.values())) == (2, 2, 3)
+    assert program.report["workspace_qubits"] == 1
+    state = result.statevector().flatten()
+    logical = tuple(wire for wires in program.registers.values() for wire in wires)
+    hidden = tuple(wire for wire in range(8) if wire not in logical)
+    ordered = state.reshape((2,) * 8).permute((*logical, *hidden)).reshape(128, 2)
+    assert float(ordered[:, 1].abs().square().sum()) < 1e-24
+
+
+def test_probability_preparation_meets_l2_bound_without_phase_alignment() -> None:
+    program = synth.synthesize(prepare)
+    state = fq.run(program).statevector().flatten()
+    expected = preparation_probabilities()
+    torch.testing.assert_close(state.real, expected.sqrt(), atol=1e-12, rtol=0)
+    torch.testing.assert_close(
+        state.imag, torch.zeros_like(state.imag), atol=1e-12, rtol=0
+    )
+    assert float((state.abs().square() - expected).norm()) <= 0.01
+    assert program.report["workspace_qubits"] == 0
+
+
+def test_probability_preparation_draws_samples_and_shows_named_rows(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    run_preparation()
+    diagram, output = capsys.readouterr().out.split("Probabilities: ", 1)
+    assert diagram.strip()
+    probabilities, remaining = output.split("\nCounts: ", 1)
+    counts, rows = remaining.split("\nFirst five sample rows: ", 1)
+    expected = {
+        (i,): float(p) for i, p in enumerate(preparation_probabilities()) if p > 0
+    }
+    assert ast.literal_eval(probabilities) == pytest.approx(expected, abs=1e-12)
+    observed = ast.literal_eval(counts)
+    assert sum(observed.values()) == 1000
+    assert set(observed) <= set(expected)
+    assert all(count > 0 for count in observed.values())
+    assert ast.literal_eval(rows) == sorted(observed.items())[:5]
 
 
 @pytest.mark.parametrize("stage", ["bell", "exercise", "ghz"])

@@ -26,5 +26,6 @@ Native FlagQuantum programs currently available:
 - [hadamard_transform](hadamard_transform/README.md)
 - [prepare_bell_state](state_preparation/prepare_bell_state/README.md)
 - [prepare_ghz_state](state_preparation/prepare_ghz_state/README.md)
+- [overview](standard_gates/overview/README.md)
 
 See the [full migration inventory](../MIGRATION_STATUS.md).

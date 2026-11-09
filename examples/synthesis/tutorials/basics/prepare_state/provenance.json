@@ -1,0 +1,33 @@
+{
+  "upstream_path": "tutorials/basic_tutorials/prepare_state/prepare_state.qmod",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "f43e50a82c193cc79b4c20ca05342c9be47dedf63d5adc8177faf82c8119d0d1",
+  "scope": "Complete local computational Notebook workflow: original 32 probabilities, native synthesis, local text drawing, 1000 seeded samples from executed named probabilities and first-five-row inspection. Local sampling and Python rows replace cloud sampling and dataframe display; no hardware result is claimed.",
+  "native_semantic_adaptations": "Use the original five-qubit output array, probability values and 0.01 L2 bound unchanged.",
+  "notebook_path": "tutorials/basic_tutorials/prepare_state/prepare_state.ipynb",
+  "git_blob_sha1": "ef458fdc4971c07beb77c96e4b2b10b67583e123",
+  "reviewed_code_cells": [
+    {
+      "index": 2,
+      "sha256": "414daba49c60446d1b1f4212648d991a4477debbfab738ab847e0e54a9bf7c7b"
+    },
+    {
+      "index": 5,
+      "sha256": "516f0769c9c911bb15cb372f1ebc91db755d38609e7a286f1bb0ea956ce68620"
+    },
+    {
+      "index": 7,
+      "sha256": "f0799e5ce2aecde74f19b3e2a9c075aae7804e863fbb88c661422faad38a2bd6"
+    },
+    {
+      "index": 12,
+      "sha256": "b62e72102823a6662c3b09e32d6186fc943eff15756f78157682a3720fc989f7"
+    },
+    {
+      "index": 13,
+      "sha256": "5ebf239c326df1c6652df41765f1dcf7f5d9959b04c6acb91107b2c35c61fbad"
+    }
+  ],
+  "native_entrypoint": "examples.synthesis.tutorials.basics.prepare_state.main",
+  "acceptance_test": "tests/integration/test_synthesis_native_workflows.py"
+}

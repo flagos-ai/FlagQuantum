@@ -3,8 +3,8 @@
 User examples contain native Python programs and independent Circuit comparisons.
 Original source files and importer launchers are test/development evidence, not examples.
 
-Validated quantum-program counterparts: **32/216**.
-Validated local Notebook workflows: **9/213**.
+Validated quantum-program counterparts: **34/216**.
+Validated local Notebook workflows: **11/213**.
 Expanded inventory: **577** source artifacts in **417** provisional path groups.
 Python groups still require main-case/helper review. A quantum-program counterpart
 does not certify its notebook workflow. Pending entries have no runnable placeholder.
@@ -65,11 +65,14 @@ Validated local Notebook workflows:
 - [hadamard_transform](functions/hadamard_transform/README.md)
 - [prepare_bell_state](functions/state_preparation/prepare_bell_state/README.md)
 - [prepare_ghz_state](functions/state_preparation/prepare_ghz_state/README.md)
+- [overview](functions/standard_gates/overview/README.md)
 
 
-## Tutorials (6 native programs)
+## Tutorials (8 native programs)
 
+- [add_bell_states](tutorials/basics/add_bell_states/README.md)
 - [entanglement](tutorials/basics/entanglement/README.md)
+- [prepare_state](tutorials/basics/prepare_state/README.md)
 - [qml](tutorials/basics/qml/README.md)
 - [classiq_overview_tutorial](tutorials/basics/quantum_programming/classiq_overview_tutorial/README.md)
 - [execution_tutorial](tutorials/basics/quantum_programming/execution_tutorial/README.md)
@@ -79,5 +82,6 @@ Validated local Notebook workflows:
 Validated local Notebook workflows:
 
 - [entanglement](tutorials/basics/entanglement/README.md)
+- [prepare_state](tutorials/basics/prepare_state/README.md)
 - [classiq_overview_tutorial](tutorials/basics/quantum_programming/classiq_overview_tutorial/README.md)
 - [synthesis_tutorial](tutorials/basics/quantum_programming/synthesis_tutorial/README.md)

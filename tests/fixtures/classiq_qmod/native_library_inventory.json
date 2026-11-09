@@ -6363,9 +6363,63 @@
           "kind": "notebook"
         }
       ],
-      "workflow_status": "pending",
-      "native_program": null,
-      "kind": "notebook_workflow"
+      "workflow_status": "validated",
+      "native_program": {
+        "path": "examples/synthesis/functions/standard_gates/overview/main.py",
+        "scope": "Complete local computational Notebook workflow: reuse and synthesize all nine native gate examples in source order, preserving source parameters. Direct synthesize(qfunc) replaces separate create_model and synthesis calls. Local execution and named probabilities additionally check each program; independent gate Circuit comparisons retain absolute phase. No cloud or hardware result is claimed."
+      },
+      "kind": "notebook_workflow",
+      "workflow_validation": {
+        "upstream_path": "functions/qmod_library_reference/qmod_core_library/standard_gates/standard_gates.ipynb",
+        "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+        "git_blob_sha1": "9f0b23d19b34d6dbbec1cceabae2f7b416aba80c",
+        "reviewed_code_cells": [
+          {
+            "index": 1,
+            "sha256": "414daba49c60446d1b1f4212648d991a4477debbfab738ab847e0e54a9bf7c7b"
+          },
+          {
+            "index": 4,
+            "sha256": "77a18f800d9a68ea8255254755f5a43e0646025a8bddc661931e424472b485ae"
+          },
+          {
+            "index": 7,
+            "sha256": "5961348a461821e09479af0b1ff1c5937e2521dcde52324d90c797ad5af4de9c"
+          },
+          {
+            "index": 9,
+            "sha256": "bd3989a2a6e44e53040d14bc57fba4e204b3bf9a29dbdc3243a6347b5e021ee6"
+          },
+          {
+            "index": 11,
+            "sha256": "5f75ba1cd63a4d64872299dbfdf536598d933e9e940c63726882c30de95f2e3e"
+          },
+          {
+            "index": 13,
+            "sha256": "46cbebe0b9e35737212cc8aab27dac7cdbaec77e99ebe0f99da6ad6e44fe2122"
+          },
+          {
+            "index": 15,
+            "sha256": "dc8e5e1d233de84e3c62c87c8be285909c28d889d0c8e3ba5a91c31dac3df53d"
+          },
+          {
+            "index": 17,
+            "sha256": "8307d6a1bc5357bdfec1865e396c504f4b271e39027efb7d7c2fd810ce3feca7"
+          },
+          {
+            "index": 19,
+            "sha256": "d28973fcc0fda6cc0f0af7047f7876a7aaa06a711634a624fd79122ab4a6c39a"
+          },
+          {
+            "index": 21,
+            "sha256": "8c78458c1159de12f67df4fb80358c2103b309cd5f52a48acf489ff9a5638f65"
+          }
+        ],
+        "native_entrypoint": "examples.synthesis.functions.standard_gates.overview.main",
+        "acceptance_test": "tests/integration/test_synthesis_native_workflows.py",
+        "scope": "Complete local computational Notebook workflow: reuse and synthesize all nine native gate examples in source order, preserving source parameters. Direct synthesize(qfunc) replaces separate create_model and synthesis calls. Local execution and named probabilities additionally check each program; independent gate Circuit comparisons retain absolute phase. No cloud or hardware result is claimed.",
+        "native_semantic_adaptations": "Use a named two-bit QNum for the RZZ whole-register QArray; no indexing occurs. Other output names and order are unchanged."
+      }
     },
     {
       "id": "functions/qmod_library_reference/qmod_core_library/unitary/unitary",
@@ -6517,7 +6571,10 @@
         }
       ],
       "workflow_status": "pending",
-      "native_program": null,
+      "native_program": {
+        "path": "examples/synthesis/tutorials/basics/add_bell_states/main.py",
+        "scope": "Quantum program only; no additional Notebook workflow exists for this path."
+      },
       "kind": "quantum_program"
     },
     {
@@ -6669,9 +6726,45 @@
           "kind": "quantum_program"
         }
       ],
-      "workflow_status": "pending",
-      "native_program": null,
-      "kind": "notebook_workflow"
+      "workflow_status": "validated",
+      "native_program": {
+        "path": "examples/synthesis/tutorials/basics/prepare_state/main.py",
+        "scope": "Complete local computational Notebook workflow: original 32 probabilities, native synthesis, local text drawing, 1000 seeded samples from executed named probabilities and first-five-row inspection. Local sampling and Python rows replace cloud sampling and dataframe display; no hardware result is claimed."
+      },
+      "kind": "notebook_workflow",
+      "workflow_validation": {
+        "upstream_path": "tutorials/basic_tutorials/prepare_state/prepare_state.qmod",
+        "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+        "original_sha256": "f43e50a82c193cc79b4c20ca05342c9be47dedf63d5adc8177faf82c8119d0d1",
+        "scope": "Complete local computational Notebook workflow: original 32 probabilities, native synthesis, local text drawing, 1000 seeded samples from executed named probabilities and first-five-row inspection. Local sampling and Python rows replace cloud sampling and dataframe display; no hardware result is claimed.",
+        "native_semantic_adaptations": "Use the original five-qubit output array, probability values and 0.01 L2 bound unchanged.",
+        "notebook_path": "tutorials/basic_tutorials/prepare_state/prepare_state.ipynb",
+        "git_blob_sha1": "ef458fdc4971c07beb77c96e4b2b10b67583e123",
+        "reviewed_code_cells": [
+          {
+            "index": 2,
+            "sha256": "414daba49c60446d1b1f4212648d991a4477debbfab738ab847e0e54a9bf7c7b"
+          },
+          {
+            "index": 5,
+            "sha256": "516f0769c9c911bb15cb372f1ebc91db755d38609e7a286f1bb0ea956ce68620"
+          },
+          {
+            "index": 7,
+            "sha256": "f0799e5ce2aecde74f19b3e2a9c075aae7804e863fbb88c661422faad38a2bd6"
+          },
+          {
+            "index": 12,
+            "sha256": "b62e72102823a6662c3b09e32d6186fc943eff15756f78157682a3720fc989f7"
+          },
+          {
+            "index": 13,
+            "sha256": "5ebf239c326df1c6652df41765f1dcf7f5d9959b04c6acb91107b2c35c61fbad"
+          }
+        ],
+        "native_entrypoint": "examples.synthesis.tutorials.basics.prepare_state.main",
+        "acceptance_test": "tests/integration/test_synthesis_native_workflows.py"
+      }
     },
     {
       "id": "tutorials/basic_tutorials/qmci_pi_estimation/qmci_pi_estimation",

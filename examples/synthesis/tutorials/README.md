@@ -2,7 +2,9 @@
 
 Native FlagQuantum programs currently available:
 
+- [add_bell_states](basics/add_bell_states/README.md)
 - [entanglement](basics/entanglement/README.md)
+- [prepare_state](basics/prepare_state/README.md)
 - [qml](basics/qml/README.md)
 - [classiq_overview_tutorial](basics/quantum_programming/classiq_overview_tutorial/README.md)
 - [execution_tutorial](basics/quantum_programming/execution_tutorial/README.md)
@@ -12,6 +14,7 @@ Native FlagQuantum programs currently available:
 ## Validated local Notebook workflows
 
 - [entanglement](basics/entanglement/README.md)
+- [prepare_state](basics/prepare_state/README.md)
 - [classiq_overview_tutorial](basics/quantum_programming/classiq_overview_tutorial/README.md)
 - [synthesis_tutorial](basics/quantum_programming/synthesis_tutorial/README.md)
 
