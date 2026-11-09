@@ -3,7 +3,7 @@
 User examples contain native Python programs and independent Circuit comparisons.
 Original source files and importer launchers are test/development evidence, not examples.
 
-Validated quantum-program counterparts: **130/216**.
+Validated quantum-program counterparts: **131/216**.
 Validated local Notebook workflows: **24/213**.
 Expanded inventory: **577** source artifacts in **417** provisional path groups.
 Python groups still require main-case/helper review. A quantum-program counterpart
@@ -164,7 +164,7 @@ Validated local Notebook workflows:
 - [unitary](functions/unitary/README.md)
 
 
-## Tutorials (23 native programs)
+## Tutorials (24 native programs)
 
 - [add_bell_states](tutorials/basics/add_bell_states/README.md)
 - [entanglement](tutorials/basics/entanglement/README.md)
@@ -186,6 +186,7 @@ Validated local Notebook workflows:
 - [hardware_aware_mcx](tutorials/technology_demonstrations/hardware_aware_mcx/README.md)
 - [qaoa_demonstration](tutorials/technology_demonstrations/qaoa/qaoa_demonstration/README.md)
 - [algo_design_qce_tutorial_part_i](tutorials/workshops/algo_design_qce_tutorial/algo_design_qce_tutorial_part_i/README.md)
+- [algo_design_qce_tutorial_part_ii](tutorials/workshops/algo_design_qce_tutorial/algo_design_qce_tutorial_part_ii/README.md)
 - [combinatorial_qmod_workshop_for_maxcut](tutorials/workshops/combinatorial_workshop/combinatorial_qmod_workshop_for_maxcut/README.md)
 - [combi_workshop_inequality_constriants_po](tutorials/workshops/finance_workshops/combi_workshop_inequality_constriants_po/README.md)
 - [combi_workshop_equality_constriants_po](tutorials/workshops/finance_workshops/combi_workshop_equality_constriants_po/README.md)

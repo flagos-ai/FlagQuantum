@@ -8122,7 +8122,10 @@
         }
       ],
       "workflow_status": "pending",
-      "native_program": null,
+      "native_program": {
+        "path": "examples/synthesis/tutorials/workshops/algo_design_qce_tutorial/algo_design_qce_tutorial_part_ii/main.py",
+        "scope": "Quantum program only; complete associated Notebook workflow remains pending."
+      },
       "kind": "notebook_workflow"
     },
     {
