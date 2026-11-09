@@ -253,24 +253,34 @@ def test_provisioned_environment_never_logs_in_or_pulls(
 
 
 @pytest.mark.parametrize("fault", ["none", "changed_identity", "corrupt_manifest"])
+@pytest.mark.parametrize("producer", ["export", "publish"])
 def test_export_pins_oci_manifests_instead_of_local_docker_ids(
-    tmp_path: Path, fault: str
+    tmp_path: Path, fault: str, producer: str
 ) -> None:
     workflow = yaml.safe_load(
-        (ROOT / ".github/workflows/prewarm-ci-cpu.yml").read_text()
+        (
+            ROOT
+            / ".github/workflows"
+            / (
+                "prewarm-ci-cpu.yml"
+                if producer == "export"
+                else "publish-dev-container.yml"
+            )
+        ).read_text()
     )
     command = next(
         step["run"]
-        for step in workflow["jobs"]["export"]["steps"]
-        if "python3 - <<'PYTHON'" in step.get("run", "")
+        for step in workflow["jobs"][
+            "export" if producer == "export" else "publish-ci-cpu"
+        ]["steps"]
+        if "<<'PYTHON'" in step.get("run", "")
     )
-    script = command.split("python3 - <<'PYTHON'\n", 1)[1].split("\nPYTHON", 1)[0]
+    script = command.split("<<'PYTHON'\n", 1)[1].split("\nPYTHON", 1)[0]
     files: dict[str, bytes] = {}
     descriptors = []
     rows = []
-    for index, profile in enumerate(
-        ("core-py3.10", "core-py3.11", "core-py3.12", "coverage-py3.12")
-    ):
+    profiles = ("core-py3.10", "core-py3.11", "core-py3.12", "coverage-py3.12")
+    for index, profile in enumerate(profiles if producer == "export" else profiles[:1]):
         reference = str(index + 1) * 64
         payload = json.dumps(
             {"schemaVersion": 2, "config": {"digest": reference}}
@@ -284,7 +294,13 @@ def test_export_pins_oci_manifests_instead_of_local_docker_ids(
         descriptors.append(
             {
                 "digest": f"sha256:{digest}",
-                "annotations": {"org.opencontainers.image.ref.name": reference},
+                "annotations": {
+                    "org.opencontainers.image.ref.name": (
+                        "0" * 64
+                        if producer == "publish" and fault == "changed_identity"
+                        else reference
+                    )
+                },
             }
         )
         expected = "0" * 64 if fault == "changed_identity" and index == 0 else digest
@@ -303,21 +319,44 @@ def test_export_pins_oci_manifests_instead_of_local_docker_ids(
             entry.size = len(payload)
             archive.addfile(entry, io.BytesIO(payload))
     (tmp_path / "source.lock").write_text("".join(rows))
+    published_archive = io.BytesIO()
+    with tarfile.open(fileobj=published_archive, mode="w") as archive:
+        for name, payload in files.items():
+            entry = tarfile.TarInfo(name)
+            entry.size = len(payload)
+            archive.addfile(entry, io.BytesIO(payload))
     result = subprocess.run(
         [sys.executable, "-c", script],
         cwd=tmp_path,
+        env={
+            **os.environ,
+            "PROFILE": "core",
+            "PYTHON_VERSION": "3.10",
+            "FQ_CI_REGISTRY_IMAGE": "ghcr.io/flagos-ai/flagquantum-ci@sha256:"
+            + "1" * 64,
+        },
+        input=published_archive.getvalue() if producer == "publish" else None,
         capture_output=True,
-        text=True,
         timeout=10,
     )
     if fault == "none":
         assert result.returncode == 0, result.stderr
-        assert (tmp_path / "images.lock").read_text() == "".join(rows)
+        actual = (
+            (tmp_path / "images.lock").read_text()
+            if producer == "export"
+            else result.stdout.decode()
+        )
+        assert actual == "".join(rows)
     else:
         assert result.returncode != 0
         assert not (tmp_path / "images.lock").exists()
         assert (
-            "Export identity changed" in result.stderr
+            (
+                "Export identity changed"
+                if producer == "export"
+                else "Exported reference does not match"
+            )
+            in result.stderr.decode()
             if fault == "changed_identity"
-            else "Exported manifest does not match its digest" in result.stderr
+            else "Exported manifest does not match its digest" in result.stderr.decode()
         )

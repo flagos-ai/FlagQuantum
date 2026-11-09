@@ -166,6 +166,50 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Publish and report the immutable image
+        env:
+          PROFILE: ${{ matrix.profile }}
+          PYTHON_VERSION: ${{ matrix.python }}
         run: |
           docker push "$FQ_CI_IMAGE"
-          docker image inspect --format '{{index .RepoDigests 0}}' "$FQ_CI_IMAGE" | tee -a "$GITHUB_STEP_SUMMARY"
+          export FQ_CI_REGISTRY_IMAGE
+          FQ_CI_REGISTRY_IMAGE="$(docker image inspect --format '{{index .RepoDigests 0}}' "$FQ_CI_IMAGE")"
+          cache="flagquantum-ci-cache:${FQ_CI_REGISTRY_IMAGE##*:}"
+          docker tag "$FQ_CI_IMAGE" "$cache"
+          cat > "$RUNNER_TEMP/read-ci-identity.py" <<'PYTHON'
+          import hashlib
+          import json
+          import os
+          import re
+          import sys
+          import tarfile
+
+          blobs = {}
+          with tarfile.open(fileobj=sys.stdin.buffer, mode="r|") as archive:
+              for entry in archive:
+                  if entry.isfile() and entry.size <= 1024 * 1024:
+                      stream = archive.extractfile(entry)
+                      if stream is not None:
+                          blobs[entry.name] = stream.read()
+          index = json.loads(blobs["index.json"])
+          if index["mediaType"] != "application/vnd.oci.image.index.v1+json" or len(index["manifests"]) != 1:
+              raise SystemExit("Expected one OCI image in the offline export")
+          descriptor = index["manifests"][0]
+          digest = descriptor["digest"]
+          if not isinstance(digest, str) or not re.fullmatch(r"sha256:[a-f0-9]{64}", digest):
+              raise SystemExit("Invalid exported manifest digest")
+          payload = blobs["blobs/sha256/" + digest.split(":")[1]]
+          if hashlib.sha256(payload).hexdigest() != digest.split(":")[1]:
+              raise SystemExit("Exported manifest does not match its digest")
+          image = os.environ["FQ_CI_REGISTRY_IMAGE"]
+          if descriptor["annotations"]["org.opencontainers.image.ref.name"] != image.rsplit(":", 1)[1]:
+              raise SystemExit("Exported reference does not match the published image")
+          print(f"{os.environ['PROFILE']}-py{os.environ['PYTHON_VERSION']} {image} {digest}")
+          PYTHON
+          timeout --kill-after=15s 300s docker save "$cache" |
+            python3 "$RUNNER_TEMP/read-ci-identity.py" | tee image.lock
+          cat image.lock >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ci-image-lock-${{ matrix.profile }}-py${{ matrix.python }}
+          path: image.lock
+          if-no-files-found: error
