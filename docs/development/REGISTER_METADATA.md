@@ -713,3 +713,21 @@ reproduction preserves those failures as separate evidence. Persistent logs are
 `ftqc-reference-env/g2-finite-call-regression.log`,
 `g2-finite-call-checks.log`, `g2-finite-call-examples.log`,
 `g2-finite-call-default.log` and `g2-finite-call-baseline-failures.log`.
+
+
+## Packed register rebinding contract prerequisite
+
+GRAPH16 prerequisite 1.2 specifies owned packed word inputs, producer-derived
+types and typed split/join over the existing gate SSA in proposal 103. Nineteen
+new unchanged-source builder scenarios cover scalar/array words, zero width,
+empty shapes, reordered joins, zero bookkeeping gate resources and failure
+consumption prefixes. Together with the existing physical/numerical split/join
+tests, 32 cases pass. The concentrated suite passes 4520 cases without warnings
+or skips in 22.46 seconds. Eight pinned source blobs remain unchanged.
+
+This is contract evidence before native packed-register implementation. Internal
+contract 0.6 and the accepted finite gate-call profile remain the executable
+boundary. No additional capability checkbox closes in this prerequisite. Native
+Core typing and Compiler expansion follow independently. Logs are
+`ftqc-reference-env/g2-register-rebinding-contract-regression.log` and
+`g2-register-rebinding-contract-source.txt`.
