@@ -32,6 +32,7 @@ from .physical import (
     RydbergPulse,
     RydbergTransport,
 )
+from .registers import Register, RegisterType
 
 #: `IR-006`'s support states, extended to the internal levels by proposal 062
 #: section 3. There is no implicit lossy state and no `best_effort`.
@@ -41,11 +42,11 @@ INVALID_INPUT = "invalid_input"
 
 SUPPORT_STATES = (SUPPORTED_EXACT, UNSUPPORTED_WITH_DIAGNOSTICS, INVALID_INPUT)
 
-#: Closed value-kind vocabulary. `qubit` is the linear kind: a qubit value
-#: identifies one resource state at one program point, so it has one consumer.
-VALUE_KINDS = ("bool", "index", "scalar", "tensor", "qubit")
+#: Qubits and packed register words each identify one owned resource version.
+#: A zero-width word retains logical ownership until verified gate lowering.
+VALUE_KINDS = ("bool", "index", "scalar", "tensor", "qubit", "register")
 
-LINEAR_VALUE_KINDS = ("qubit",)
+LINEAR_VALUE_KINDS = ("qubit", "register")
 
 TERMINATORS = ("return", "branch")
 
@@ -109,6 +110,7 @@ class Operation:
         literal: The compile constant, present only on `CONSTANT_OPCODE`.
         condition_clauses: Disjunction of conjunctions over boolean SSA values.
         callee: Same-module function name, present only for a finite call.
+        register_type: Destination word descriptor, present only for a join.
     """
 
     opcode: str
@@ -122,6 +124,7 @@ class Operation:
     ) = None
 
     callee: str | None = None
+    register_type: RegisterType | None = None
 
     def __hash__(self) -> int:
         previous: tuple[object, ...] = (
@@ -134,7 +137,11 @@ class Operation:
         )
         if self.physical_data is not None:
             previous = (*previous, self.physical_data)
-        return hash(previous if self.callee is None else (*previous, self.callee))
+        if self.callee is not None:
+            previous = (*previous, self.callee)
+        return hash(
+            previous if self.register_type is None else (*previous, self.register_type)
+        )
 
 
 @dataclass(frozen=True)
@@ -167,11 +174,16 @@ class BlockRecord:
 
 @dataclass(frozen=True)
 class FunctionRecord:
-    """One function: a named entry block and the blocks it can reach."""
+    """One function, with optional ordered ports for owned register elements."""
 
     name: str
     blocks: tuple[BlockRecord, ...]
     entry: str = "entry"
+    registers: tuple[Register, ...] | None = None
+
+    def __hash__(self) -> int:
+        previous = (self.name, self.blocks, self.entry)
+        return hash(previous if self.registers is None else (*previous, self.registers))
 
 
 @dataclass(frozen=True)

@@ -33,6 +33,7 @@ from .model import (
     ValueRef,
     opcode_signature,
 )
+from .register_verifier import verify_register_block
 
 __all__ = ("verify_program_record",)
 
@@ -101,7 +102,11 @@ def _verify_function(
 
     arguments = {block.name: block.arguments for block in function.blocks}
     for block in function.blocks:
-        diagnostics.extend(_verify_block(block, arguments, known, callees))
+        signatures, register_diagnostics = verify_register_block(
+            function, block, callees or {}
+        )
+        diagnostics.extend(register_diagnostics)
+        diagnostics.extend(_verify_block(block, arguments, known, callees, signatures))
     return diagnostics
 
 
@@ -110,6 +115,7 @@ def _verify_block(
     arguments: dict[str, tuple[ValueRef, ...]],
     known: set[str],
     callees: Mapping[str, FunctionRecord] | None = None,
+    register_signatures: Mapping[int, OpcodeSignature] | None = None,
 ) -> list[LevelDiagnostic]:
     """Verify one block, including the values its operations define and consume."""
 
@@ -174,7 +180,9 @@ def _verify_block(
 
     for value in block.return_values or ():
         consumers[value] = consumers.get(value, 0) + 1
-    owned, operation_diagnostics = _verify_operations(block, consumers, callees)
+    owned, operation_diagnostics = _verify_operations(
+        block, consumers, callees, register_signatures
+    )
     defined = set((*block.arguments, *owned))
     for value in block.return_values or ():
         if value not in defined:
@@ -192,6 +200,7 @@ def _verify_operations(
     block: BlockRecord,
     consumers: dict[ValueRef, int],
     callees: Mapping[str, FunctionRecord] | None = None,
+    register_signatures: Mapping[int, OpcodeSignature] | None = None,
 ) -> tuple[tuple[ValueRef, ...], list[LevelDiagnostic]]:
     """Type every operation, and return the linear values the block owns.
 
@@ -212,6 +221,7 @@ def _verify_operations(
             if operation.opcode == "call" and callees is not None
             else opcode_signature(operation.opcode)
         )
+        signature = (register_signatures or {}).get(position, signature)
         if signature is None:
             diagnostics.append(
                 _diagnostic(
@@ -264,6 +274,8 @@ def _verify_conditions(
     diagnostics: list[LevelDiagnostic] = []
     if operation.opcode in {
         "call",
+        "split_register",
+        "join_register",
         CONSTANT_OPCODE,
         MEASURE_OPCODE,
         RESET_OPCODE,

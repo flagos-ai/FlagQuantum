@@ -60,6 +60,31 @@ def _finite_call_probe() -> list[str]:
     )
 
 
+def _register_rebinding_probe() -> list[str]:
+    dtype = RegisterType("uint", 1)
+    word = ValueRef("entry", 0, "register")
+    bit = ValueRef("entry", 1, "qubit")
+    returned = ValueRef("entry", 2, "register")
+    function = FunctionRecord(
+        "main",
+        (
+            BlockRecord(
+                "entry",
+                (word,),
+                operations=(
+                    Operation("split_register", (word,), (bit,)),
+                    Operation(
+                        "join_register", (bit,), (returned,), register_type=dtype
+                    ),
+                ),
+                return_values=(returned,),
+            ),
+        ),
+        registers=(Register("word", dtype),),
+    )
+    return sorted({d.code for d in verify_program_record(ProgramRecord((function,)))})
+
+
 def _round_trip(circuit: CircuitIR) -> dict[str, object]:
     converted = circuit_to_program(circuit)
     if converted.record is None:
@@ -97,6 +122,7 @@ def audit_program_scope(root: Path) -> dict[str, object]:
         "flagquantum/core/ir/program/model.py",
         "flagquantum/core/ir/program/verifier.py",
         "flagquantum/core/ir/program/call_verifier.py",
+        "flagquantum/core/ir/program/register_verifier.py",
         "flagquantum/core/ir/program/lowering.py",
         "flagquantum/core/ir/program/physical_codec.py",
         "flagquantum/core/operator_schema.py",
@@ -136,6 +162,7 @@ def audit_program_scope(root: Path) -> dict[str, object]:
             "gate_on_index": _operation_probe("x", "index"),
             "component_call": _operation_probe("register_call", "qubit"),
             "finite_gate_call": _finite_call_probe(),
+            "typed_register_rebinding": _register_rebinding_probe(),
             "quantum_register_kind": _operation_probe("x", "quantum_register"),
         },
         "round_trips": {
@@ -147,6 +174,7 @@ def audit_program_scope(root: Path) -> dict[str, object]:
         "claims": {
             "register_component_execution": False,
             "finite_gate_call_structure": not _finite_call_probe(),
+            "typed_register_structure": not _register_rebinding_probe(),
             "standalone_register_metadata": True,
             "complete_source_register_metadata_ported": False,
             "resource_dag_is_execution_graph": False,

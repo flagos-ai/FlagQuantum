@@ -364,9 +364,7 @@ def native_program_from_dict(value: Mapping[str, Any]) -> ProgramRecord:
         context = _context_from_dict(payload["physical_context"])
         functions = []
         for value in _array(payload["functions"], "functions"):
-            function = _keys(
-                value, {field.name for field in fields(FunctionRecord)}, "function"
-            )
+            function = _keys(value, {"name", "blocks", "entry"}, "function")
             functions.append(
                 FunctionRecord(
                     function["name"],

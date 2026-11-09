@@ -44,6 +44,8 @@ DIAGNOSTIC_LEVELS: dict[str, str] = {
     "level.no_canonical_payload": LEVEL_PROGRAM,
     "level.unsupported_exit": LEVEL_PROGRAM,
     "level.payload_invalid": LEVEL_PROGRAM,
+    "program.register_structure": LEVEL_PROGRAM,
+    "program.register_type": LEVEL_PROGRAM,
     "program.call_callee": LEVEL_PROGRAM,
     "program.call_structure": LEVEL_PROGRAM,
     "program.block_duplicate": LEVEL_PROGRAM,

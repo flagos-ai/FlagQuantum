@@ -17,10 +17,20 @@ from .physical import is_physical_record
 def has_call_profile(record: ProgramRecord) -> bool:
     """Whether any field requests finite-call or explicit-return semantics."""
     return any(
-        block.return_values is not None
-        or any(op.opcode == "call" or op.callee is not None for op in block.operations)
+        function.registers is not None
+        or any(
+            block.return_values is not None
+            or any(value.kind == "register" for value in block.arguments)
+            or any(
+                op.opcode in {"call", "split_register", "join_register"}
+                or op.callee is not None
+                or op.register_type is not None
+                or any(value.kind == "register" for value in op.results)
+                for op in block.operations
+            )
+            for block in function.blocks
+        )
         for function in record.functions
-        for block in function.blocks
     )
 
 

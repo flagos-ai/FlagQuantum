@@ -22,6 +22,8 @@ def test_audit_preserves_the_existing_static_and_dynamic_boundaries():
     original = protected.read_bytes()
     report = audit_program_scope(ROOT)
     assert report["probes"]["finite_gate_call"] == []
+    assert report["probes"]["typed_register_rebinding"] == []
+    assert report["claims"]["typed_register_structure"] is True
     assert report["claims"]["register_component_execution"] is False
     assert protected.read_bytes() == original
     assert json.loads(json.dumps(report)) == report

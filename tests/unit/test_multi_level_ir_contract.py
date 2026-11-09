@@ -846,12 +846,17 @@ def test_register_rebindings_preserve_zero_width_ownership():
     from tests.unit.test_program_registers import word_function
 
     function = word_function(0)
-    assert level_boundary.verify_program_record(ProgramRecord((function,))) == ()
+    assert (
+        level_boundary.verify_program_record(level_boundary.ProgramRecord((function,)))
+        == ()
+    )
     block = function.blocks[0]
     unconsumed = replace(function, blocks=(replace(block, return_values=()),))
     codes = {
         d.code
-        for d in level_boundary.verify_program_record(ProgramRecord((unconsumed,)))
+        for d in level_boundary.verify_program_record(
+            level_boundary.ProgramRecord((unconsumed,))
+        )
     }
     assert "value.linear_unconsumed" in codes
 
@@ -870,6 +875,9 @@ def test_register_rebindings_reject_declared_width_tampering():
         blocks=(replace(block, operations=(*block.operations[:-1], changed_join)),),
     )
     codes = {
-        d.code for d in level_boundary.verify_program_record(ProgramRecord((changed,)))
+        d.code
+        for d in level_boundary.verify_program_record(
+            level_boundary.ProgramRecord((changed,))
+        )
     }
     assert "program.register_type" in codes

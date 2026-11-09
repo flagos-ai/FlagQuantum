@@ -33,6 +33,11 @@ Compute, Remote, ecosystem frameworks, gateways, and infrastructure libraries.
   metadata. Proposal 103 prerequisite 0.1 admits these standalone descriptions,
   not new Program IR value kinds or executable component calls. Numerical codecs
   remain in Simulation; bound construction and lowering remain in Compiler.
+- `ir/program/register_verifier.py`: finite concrete bit/opaque/unsigned word
+  ports and producer-derived types over the existing Program SSA. Split/join
+  signatures reuse the common definition and linearity checks, including
+  zero-width word ownership. Numerical codecs and gate expansion belong to
+  Simulation and Compiler. Run `pytest tests/unit/test_program_registers.py`.
 - `rydberg.py`: the approved experimental Rydberg frontend over ProgramRecord.
   `ir/program/physical.py` owns its typed control profile and semantic checks;
   `ir/program/physical_codec.py` owns native source encoding using the existing

@@ -1,0 +1,197 @@
+"""Infer owned word types at the finite Program register boundary.
+
+Proposal 103 prerequisite 1.2 uses the existing SSA and linearity verifier.
+This module supplies only register port compatibility and rebinding signatures.
+"""
+
+from __future__ import annotations
+
+from collections.abc import Mapping
+
+from ..diagnostics import LevelDiagnostic, _diagnostic
+from .model import BlockRecord, FunctionRecord, OpcodeSignature, ValueRef
+from .register_compatibility import check_register_types_consistent
+from .registers import Register, RegisterSide, RegisterType
+from .signatures import Signature
+
+
+def executable_register_width(dtype: RegisterType) -> int:
+    """Return the concrete width admitted for a packed quantum word.
+
+    Metadata constructors have wider support. Execution currently admits only
+    unparameterized bit, opaque and unsigned quantum encodings.
+    """
+    if not isinstance(dtype, RegisterType):
+        raise ValueError("an executable word needs a neutral RegisterType")
+    width = dtype.quantum_bits
+    if (
+        dtype.encoding not in {"bit", "opaque", "uint"}
+        or type(width) is not int
+        or width < 0
+        or type(dtype.classical_bits) is not int
+        or dtype.classical_bits != 0
+        or dtype.parameters
+        or (dtype.encoding == "bit" and width != 1)
+    ):
+        raise ValueError(f"unsupported executable register descriptor {dtype!r}")
+    return width
+
+
+def register_port_types(
+    function: FunctionRecord, side: RegisterSide
+) -> tuple[RegisterType, ...]:
+    """Flatten admitted ports in declaration and row-major element order."""
+    if not isinstance(function.registers, tuple):
+        raise ValueError("a register function requires immutable declared ports")
+    if any(not isinstance(register, Register) for register in function.registers):
+        raise ValueError("register ports must use neutral Register descriptors")
+    signature = Signature(function.registers)
+    for register in signature:
+        executable_register_width(register.dtype)
+        if register.side not in (
+            RegisterSide.LEFT,
+            RegisterSide.RIGHT,
+            RegisterSide.THRU,
+        ):
+            raise ValueError(f"unsupported executable register side {register.side!r}")
+        if any(type(size) is not int or size < 0 for size in register.shape_symbolic):
+            raise ValueError("executable array dimensions must be nonnegative integers")
+    ports = signature.lefts() if side is RegisterSide.LEFT else signature.rights()
+    return tuple(register.dtype for register in ports for _ in register.all_idxs())
+
+
+def verify_register_block(
+    function: FunctionRecord,
+    block: BlockRecord,
+    functions: Mapping[str, FunctionRecord],
+) -> tuple[dict[int, OpcodeSignature], list[LevelDiagnostic]]:
+    """Derive word types from definitions and supply signatures to Core typing."""
+    signatures: dict[int, OpcodeSignature] = {}
+    diagnostics: list[LevelDiagnostic] = []
+    register_values = tuple(
+        value
+        for value in (
+            *block.arguments,
+            *(value for operation in block.operations for value in operation.results),
+            *(block.return_values or ()),
+        )
+        if value.kind == "register"
+    )
+    rebindings = any(
+        op.opcode in {"split_register", "join_register"} or op.register_type is not None
+        for op in block.operations
+    )
+    if function.registers is None:
+        if register_values or rebindings:
+            diagnostics.append(
+                _diagnostic(
+                    "program.register_structure",
+                    "word values and rebindings require declared register ports",
+                )
+            )
+        return signatures, diagnostics
+    try:
+        inputs = register_port_types(function, RegisterSide.LEFT)
+        outputs = register_port_types(function, RegisterSide.RIGHT)
+    except (ValueError, TypeError) as exc:
+        diagnostics.append(_diagnostic("program.register_type", str(exc)))
+        return signatures, diagnostics
+    _check_port_kinds(block.arguments, inputs, diagnostics)
+    types = dict(zip(block.arguments, inputs, strict=False))
+    for position, operation in enumerate(block.operations):
+        if operation.opcode == "call":
+            callee = functions.get(operation.callee or "")
+            if callee is not None and callee.registers is not None:
+                try:
+                    left = register_port_types(callee, RegisterSide.LEFT)
+                    right = register_port_types(callee, RegisterSide.RIGHT)
+                except (ValueError, TypeError):
+                    # The callee's own verification reports its invalid ports.
+                    continue
+                _check_port_types(operation.operands, left, types, diagnostics)
+                types.update(zip(operation.results, right, strict=False))
+        elif operation.opcode == "split_register":
+            dtype = types.get(operation.operands[0]) if operation.operands else None
+            if dtype is None:
+                diagnostics.append(
+                    _diagnostic(
+                        "program.register_type",
+                        "split needs a producer-defined word type",
+                    )
+                )
+            else:
+                signatures[position] = OpcodeSignature(
+                    "split_register",
+                    operand_kinds=("register",),
+                    result_kinds=("qubit",) * executable_register_width(dtype),
+                )
+        elif operation.opcode == "join_register":
+            dtype = operation.register_type
+            try:
+                if dtype is None:
+                    raise ValueError("join requires an explicit destination descriptor")
+                width = executable_register_width(dtype)
+            except ValueError as exc:
+                diagnostics.append(_diagnostic("program.register_type", str(exc)))
+            else:
+                signatures[position] = OpcodeSignature(
+                    "join_register",
+                    operand_kinds=("qubit",) * width,
+                    result_kinds=("register",),
+                )
+                types.update((value, dtype) for value in operation.results)
+        if operation.opcode in {"split_register", "join_register"}:
+            if (
+                operation.parameters
+                or operation.literal is not None
+                or operation.condition_clauses
+                or operation.physical_data is not None
+                or operation.callee is not None
+            ):
+                diagnostics.append(
+                    _diagnostic(
+                        "program.register_structure",
+                        "rebindings cannot carry gate, call or physical metadata",
+                    )
+                )
+        if operation.opcode != "join_register" and operation.register_type is not None:
+            diagnostics.append(
+                _diagnostic(
+                    "program.register_structure", "only join can state a register type"
+                )
+            )
+    returned = block.return_values or ()
+    _check_port_kinds(returned, outputs, diagnostics)
+    _check_port_types(returned, outputs, types, diagnostics)
+    return signatures, diagnostics
+
+
+def _check_port_kinds(
+    values: tuple[ValueRef, ...],
+    ports: tuple[RegisterType, ...],
+    diagnostics: list[LevelDiagnostic],
+) -> None:
+    if len(values) != len(ports) or any(value.kind != "register" for value in values):
+        diagnostics.append(
+            _diagnostic(
+                "program.register_structure",
+                "register arguments and returns need one owned word per declared element",
+            )
+        )
+
+
+def _check_port_types(
+    values: tuple[ValueRef, ...],
+    expected: tuple[RegisterType, ...],
+    types: Mapping[ValueRef, RegisterType],
+    diagnostics: list[LevelDiagnostic],
+) -> None:
+    for value, dtype in zip(values, expected, strict=False):
+        actual = types.get(value)
+        if actual is None or not check_register_types_consistent(actual, dtype):
+            diagnostics.append(
+                _diagnostic(
+                    "program.register_type",
+                    f"word {value!r} has producer type {actual!r}, expected {dtype!r}",
+                )
+            )
