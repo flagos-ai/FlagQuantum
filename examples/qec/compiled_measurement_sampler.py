@@ -1,8 +1,10 @@
-"""Sample explicit Clifford measurements and verify their b8 file."""
+"""Sample explicit Clifford measurements and write six compatible record formats."""
 
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from typing import Literal
 
+import flagquantum as fq
 from flagquantum.dynamic import DynamicCircuit
 
 
@@ -35,6 +37,31 @@ def main() -> None:
         print("records", tuple(records.shape))
         print("packed", tuple(packed.shape))
         print("b8 bytes", len(data))
+
+    program = (
+        DynamicCircuit(1)
+        .x(0)
+        .measure(0, classical_bit=0)
+        .reset(0)
+        .measure(0, classical_bit=0)
+    )
+    native = fq.Circuit.from_ir(program.to_ir())
+    expected: dict[Literal["01", "b8", "r8", "hits", "dets", "ptb64"], bytes] = {
+        "01": b"10\n" * 64,
+        "b8": b"\x01" * 64,
+        "r8": b"\x00\x01" * 64,
+        "hits": b"0\n" * 64,
+        "dets": b"shot M0\n" * 64,
+        "ptb64": b"\xff" * 8 + b"\x00" * 8,
+    }
+    with TemporaryDirectory() as directory:
+        for format, reference in expected.items():
+            path = Path(directory) / f"records.{format}"
+            native.compile_sampler(seed=7).sample_write(
+                64, filepath=path, format=format
+            )
+            assert path.read_bytes() == reference
+            print(format, path.stat().st_size)
 
 
 if __name__ == "__main__":

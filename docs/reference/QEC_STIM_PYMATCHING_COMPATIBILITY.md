@@ -25,6 +25,7 @@ qualification on one OS does not certify every OS/SDK combination.
 
 | Operation | Owner and route | Preserved boundary |
 | --- | --- | --- |
+| Compiled measurement file writing | Simulation SDK/embedded boundary | `01`, `b8`, `r8`, `hits`, `dets`, `ptb64`; explicit measurement columns; 1 GiB encoded bound; ptb64 shot alignment 64; new-head delivery pending |
 | Code/memory/noise declaration | FlagQuantum QEC | Only explicitly executed code/basis scenarios are accepted as workflows |
 | Native-memory fixed-shot report | `execution.experiments.run_memory_experiment` | Original MemoryCircuit, required noise declaration, default decoder settings; source `memory_circuit` |
 | External-text fixed-shot report | `execution.experiments.run_stim_experiment` | Text accepted by existing Stim bridge, strict DEM, at least one detector/observable; source `stim_circuit` |

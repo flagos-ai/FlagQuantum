@@ -132,9 +132,15 @@ requires all evidence for the target level to pass
 The Stim 1.16.0 path admits one CPU circuit with exact Clifford gates,
 explicit Z measurements and resets, and single-slot conditional X. It caps
 the returned tensor and the principal frame-table estimate at 64 MiB
-each, and a b8 write at 1 GiB. These limits do not bound process RSS.
+each, and a measurement-file write at 1 GiB. These limits do not bound process RSS.
 The sampler records explicit measurements in source order and requires
-a fresh destination for each b8 file.
+a fresh destination for each file. Writing accepts `01`, `b8`, `r8`, `hits`,
+`dets` and `ptb64`; the last requires shots divisible by 64. Sparse format
+admission uses conservative maximum bytes and can refuse a realized sparse
+file that would fit. `dets` writes measurement `M` indices, not detector or
+observable streams. Validation uses 64 KiB reads without a whole shot table.
+The final-file bound does not cover aggregate anonymous upstream scratch,
+reserve free space, or certify process RSS.
 
 ## Quafu multi-circuit job boundary
 

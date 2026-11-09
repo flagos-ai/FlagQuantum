@@ -630,7 +630,15 @@ def test_core_sampler_success_requires_the_explicit_embedded_profile(
             return torch.ones((shots, 1), dtype=torch.uint8)
 
         def sample_write(self, shots: int, *, filepath: Path, format: str) -> None:
-            filepath.write_bytes(b"\x01" * shots)
+            data = {
+                "01": b"10\n" * shots,
+                "b8": b"\x01" * shots,
+                "r8": b"\x00\x01" * shots,
+                "hits": b"0\n" * shots,
+                "dets": b"shot M0\n" * shots,
+                "ptb64": (b"\xff" * 8 + b"\x00" * 8) * (shots // 64),
+            }
+            filepath.write_bytes(data[format])
 
     monkeypatch.setattr(qec_installed_smoke, "_embedded_profile", lambda: embedded)
     monkeypatch.setattr(
@@ -640,6 +648,14 @@ def test_core_sampler_success_requires_the_explicit_embedded_profile(
         assert _exercise_compiled_measurement_sampler("core") == {
             "packed_samples": [[1], [1]],
             "b8_hex": "0101",
+            "file_format_sizes": {
+                "01": 192,
+                "b8": 64,
+                "r8": 128,
+                "hits": 128,
+                "dets": 512,
+                "ptb64": 16,
+            },
         }
     else:
         with pytest.raises(AssertionError, match="ignored missing Stim"):

@@ -18,6 +18,7 @@ from ...core.classical_control import (
 )
 from ...core.ir import CircuitIR
 from ...errors import CapabilityError, ValidationError
+from ._measurement_file_validation import _file_size_bound, _validate_record_file
 from ._validation import _validate_seed, _validate_shots
 from .engine import (
     CLIFFORD_GATE_NAMES,
@@ -228,14 +229,22 @@ class CompiledMeasurementSampler:
         return result
 
     def sample_write(
-        self, shots: int, *, filepath: str | os.PathLike[str], format: Literal["b8"]
+        self,
+        shots: int,
+        *,
+        filepath: str | os.PathLike[str],
+        format: Literal["01", "b8", "r8", "hits", "dets", "ptb64"],
     ) -> None:
-        """Write a complete local b8 file without replacing an existing path."""
+        """Write explicit measurement records without replacing an existing path.
+
+        Formats follow Stim 1.16.0; ``dets`` uses measurement-prefixed indices.
+        ``ptb64`` requires shots divisible by 64. File bounds are conservative
+        for sparse formats; a bound over 1 GiB is refused before sampling.
+
+        """
         sdk = self._engine()
         shots = _validate_shots(shots)
-        if format != "b8":
-            raise ValueError("prepared measurement sampling writes only format='b8'")
-        expected = shots * ((self._columns + 7) // 8)
+        expected = _file_size_bound(shots, self._columns, format)
         _require_within_limit("sample file bytes", expected, _MAX_FILE_BYTES)
         target = Path(filepath)
         if os.path.lexists(target):
@@ -246,13 +255,10 @@ class CompiledMeasurementSampler:
         if shutil.disk_usage(parent).free < expected:
             raise OSError(f"insufficient free space for {expected} sample file bytes")
         with TemporaryDirectory(prefix=".fq-sample-", dir=parent) as directory:
-            staging = Path(directory) / "records.b8"
+            staging = Path(directory) / f"records.{format}"
             try:
-                sdk.sample_write(shots, filepath=str(staging), format="b8")
-                if staging.stat().st_size != expected:
-                    raise OSError(
-                        f"sample file size disagrees with expected {expected} bytes"
-                    )
+                sdk.sample_write(shots, filepath=str(staging), format=format)
+                _validate_record_file(staging, shots, self._columns, format, expected)
                 # A same-filesystem hard link publishes the complete file without replacing it.
                 os.link(staging, parent / target.name)
             except BaseException:

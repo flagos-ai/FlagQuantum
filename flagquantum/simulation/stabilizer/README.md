@@ -291,3 +291,24 @@ without importing Stim Python. No additional upstream file is introduced. Run
 `tests/qec/test_native_detector_execution.py` and
 `tests/team/simulation/test_native_detector_execution_conformance.py`; the latter
 replaces a fake stream with the numerical stream behind one unchanged consumer.
+
+
+## Measurement record file formats
+
+The existing compiled measurement sampler writes `01`, `b8`, `r8`, `hits`,
+`dets`, and `ptb64` through Stim 1.16.0's existing codecs. See the executable
+`examples/qec/compiled_measurement_sampler.py` golden path and
+`docs/development/COMPILED_MEASUREMENT_FILE_FORMATS_PROPOSAL.md` for the byte
+bounds and acceptance scope. `dets` contains measurement `M` indices here;
+this method does not write detector/observable streams. `ptb64` requires shots
+in multiples of 64. Every explicit measurement keeps its own source-order
+column even when a classical slot is overwritten.
+
+The private file validator owns byte bounds and complete stream validation;
+it is not a public parser or a second codec. Keep `b8` exact-size admission,
+no-overwrite publication and cleanup intact when editing this workflow. Run
+`tests/unit/test_compiled_measurement_sampler_contract.py` first, followed by
+`tests/team/simulation/test_compiled_measurement_sampler_conformance.py`.
+File writing does not materialize the complete shot table in Python. The 1 GiB
+final-file bound and existing frame estimates do not impose process RSS or
+aggregate scratch-space limits.

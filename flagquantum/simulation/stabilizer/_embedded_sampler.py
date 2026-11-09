@@ -40,9 +40,10 @@ class _EmbeddedSampler:
         return torch.frombuffer(buffer, dtype=dtype).reshape(shots, width)
 
     def sample_write(self, shots: int, *, filepath: str, format: str) -> None:
-        if format != "b8":
-            raise ValueError("embedded measurement sampling writes only b8")
-        self._native.write_b8(self._handle, shots, filepath)
+        if format == "b8":
+            self._native.write_b8(self._handle, shots, filepath)
+        else:
+            self._native.write_records(self._handle, shots, filepath, format)
 
 
 class _EmbeddedRecordConverter:
