@@ -5,13 +5,17 @@
 Register-valued graph proposal for G2 of PR #1084. Metadata prerequisites 0.1
 through 0.12 are implemented independently. Finite gate-call prerequisite 1.1
 implements an additive internal contract 0.6 slice over existing gate SSA.
-Packed register graph execution remains proposed. No owner approval is declared
-by this document.
+Packed word prerequisite 1.2 implements internal contract 0.7 for concrete
+quantum bit/opaque/unsigned ports and typed rebindings through existing gate
+leaves. Source-style mutable construction, automatic work ownership and direct
+numerical register traversal remain separate proposals. No owner approval is
+declared by this document.
 
 The repository's Core instructions require an integration contract/ADR change
 before changing IR. At the initial audit, contract 0.5 admitted gate-level SSA, canonical dynamic
 conditions and finite physical profiles. Contract 0.6 adds finite gate calls as
-described in prerequisite 1.1. Packed register call semantics remain separate.
+described in prerequisite 1.1. Contract 0.7 adds the concrete word-call and
+rebinding dependency slice in prerequisite 1.2.
 
 The user-authorized migration requires shared components to retain the logic of
 Qualtran v0.7.0, revision
@@ -836,9 +840,10 @@ from unchanged upstream decomposition parity. It requires no new boolean opcode.
 
 ## Packed register and gate rebindings prerequisite 1.2
 
-This contract prerequisite fixes the representation before the next Core and
-Compiler implementation. Contract 0.6 remains the executable authority until
-that independent implementation lands. Source-backed witnesses in
+This prerequisite fixed the representation in `cd1a4e05` before independent
+implementation. The machine contract delta `2e1545d3`, Core `d1d296f9` and
+Compiler `b2877bee` now implement its concrete word profile under contract 0.7.
+Source-backed witnesses in
 `test_register_rebinding_contract.py` exercise the unchanged builder, including
 zero-width scalar ownership and failed join consumption. They do not implement
 native register execution. Existing numerical codecs and physical-wire
@@ -938,3 +943,50 @@ zero-wire graph rebinding. Existing `test_register_split_join.py` already
 records that numerical codec boundary, physical permutation amplitudes and zero
 bookkeeping gate resources. Reuse those tests without weakening their source
 exceptions or claiming numerical zero-width support from structural evidence.
+
+
+### Prerequisite 1.2 implementation evidence
+
+Core `register_verifier.py` derives types from ordered input ports, resolved
+callee output ports and join target descriptors. The existing verifier retains
+definition, arity, condition and linearity authority. Immutable function ports,
+zero-width ownership, empty arrays, unsupported descriptors, incompatible calls
+and returns, physical-profile mixing and payload tampering are checked before
+Compiler erases logical words. Default hashes and the original versioned
+physical function/operation/block JSON keys remain unchanged.
+
+Compiler `register_programs.lower_register_program` flattens each admitted
+function before invoking the existing explicit-stack finite call inliner. It
+reuses that inliner's invocation-local maps and DNF specialization. Source-style
+mutable graph construction is not implemented by this transformer. Its current
+Add/QROM acceptance replaces the existing emitter consumer with real three-level
+packed Program functions wrapping the already accepted gate bodies. All original
+primitive instructions, dependencies, operands and feedback remain identical.
+Both consumers retain all four unnormalized complex measurement histories and
+zero workspace. Reordered join outputs also match the original source tensor on
+a complex state with a spectator, with one explicit X and no rebinding gates.
+Core attestation refuses such a permutation behind an unchanged payload.
+
+The batch adds 59 Core cases, 29 Compiler cases and two contract conformance
+cases. The concentrated suite passes 4610 cases without warnings or skips in
+26.50 seconds. Eight pinned source blobs are unchanged. Strict Python 3.12
+checking covers nine production files, including the existing lowering module.
+Black/Ruff, architecture, both team scopes, Program/public API gates and four
+existing append/resource examples pass. Persistent evidence is
+`ftqc-reference-env/g2-packed-register-{regression,checks,examples}.log` and
+`g2-packed-register-source.txt`. Primitive counts and source resource estimates
+remain separately recorded in `REGISTER_METADATA.md`.
+
+The 39 original call-builder and 19 rebinding-builder scenarios continue to
+execute the source fake. Their mutable construction/failure semantics are still
+pending native replacement. Numerical zero-width codec failures, classical and
+other unadmitted descriptors, clean/dirty allocation and direct numerical graph
+traversal retain their independent acceptance boundaries.
+
+Final focused branch coverage passes all 88 cases. Both new production modules
+have 100% statement and branch coverage. The default smoke/unit run stopped
+after 5516 passes, 166 skips and 30 warnings at four QFT/rotation fusion
+failures. All four reproduce independently from the pre-batch `57081cec`
+snapshot. Default-suite acceptance remains open. Logs are
+`ftqc-reference-env/g2-packed-register-coverage.log`,
+`g2-packed-register-default.log` and `g2-packed-register-baseline-failures.log`.

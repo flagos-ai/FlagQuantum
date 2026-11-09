@@ -85,6 +85,7 @@ def test_every_declared_element_requires_its_own_owned_value(shape, width):
         ("stale_return", "value.linear_duplicate"),
         ("duplicate_bits", "value.linear_duplicate"),
         ("missing_split_bit", "program.result_kind"),
+        ("empty_split", "program.register_type"),
         ("wrong_join_width", "program.register_type"),
         ("missing_join_type", "program.register_type"),
         ("split_type", "program.register_structure"),
@@ -107,6 +108,8 @@ def test_malformed_words_fail_before_lowering(mutation, expected):
         join = replace(join, operands=(join.operands[0],) * 3)
     elif mutation == "missing_split_bit":
         split = replace(split, results=split.results[:-1])
+    elif mutation == "empty_split":
+        split = replace(split, operands=())
     elif mutation == "wrong_join_width":
         join = replace(join, register_type=RegisterType("uint", 2))
     elif mutation == "missing_join_type":
@@ -290,3 +293,34 @@ def test_physical_source_schema_keeps_original_function_and_operation_keys(field
         payload["functions"][0]["blocks"][0]["operations"][0][field] = None
     with pytest.raises(SerializationError, match="exactly fields"):
         native_program_from_dict(payload)
+
+
+@pytest.mark.parametrize("case", ["foreign_dtype", "foreign_port", "invalid_callee"])
+def test_unadmitted_nominal_objects_and_invalid_callees_report_diagnostics(case):
+    function = word_function(1)
+    block = function.blocks[0]
+    if case == "foreign_dtype":
+        split, join = block.operations
+        join = replace(join, register_type=object())
+        function = replace(function, blocks=(replace(block, operations=(split, join)),))
+        module = (function,)
+    elif case == "foreign_port":
+        module = (replace(function, registers=(object(),)),)
+    else:
+        before, after = (ValueRef("entry", i, "register") for i in range(2))
+        call = Operation("call", (before,), (after,), callee="invalid")
+        main = replace(
+            function,
+            blocks=(
+                BlockRecord(
+                    "entry", (before,), operations=(call,), return_values=(after,)
+                ),
+            ),
+        )
+        invalid = replace(
+            function,
+            name="invalid",
+            registers=(Register("word", RegisterType("signed", 1)),),
+        )
+        module = (main, invalid)
+    assert "program.register_type" in codes(*module)

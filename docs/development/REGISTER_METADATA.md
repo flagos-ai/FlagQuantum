@@ -731,3 +731,53 @@ boundary. No additional capability checkbox closes in this prerequisite. Native
 Core typing and Compiler expansion follow independently. Logs are
 `ftqc-reference-env/g2-register-rebinding-contract-regression.log` and
 `g2-register-rebinding-contract-source.txt`.
+
+
+## Owned register words and gate lowering
+
+GRAPH17 implements prerequisite 1.2 through contract `2e1545d3`, Core
+`d1d296f9` and Compiler `b2877bee`. Function ports and join target types use
+existing immutable Register descriptors. One linear word token belongs to each
+scalar/array element, including a scalar of width zero. Empty arrays contribute
+no tokens. Core derives call and return compatibility through the existing LOOSE
+policy, independently of Compiler wire expansion. The first execution profile
+admits concrete unparameterized quantum bit/opaque/unsigned types.
+
+Compiler lowers ordered word tuples to existing gate SSA and then uses the
+finite call inliner. Split/join emit no primitives or additional workspace.
+The Add/QROM binding consumer is unchanged. It accepts three levels of packed
+calls around its real emitted gate bodies, with manual and factory bindings.
+Every restored instruction equals the original instruction, including measured
+feedback. Original source gate dependencies, all four complex branches and zero
+workspace remain independently checked. The measured primitive and independent
+model counts are the same rows recorded above for GRAPH15, with zero additional
+rebinding gates. Resource estimates continue to use their own logical units.
+
+Reordered join outputs retain their exact physical mapping. Two source tensor
+comparisons cover original/reordered output on a complex state with a spectator.
+The user path remains `circuit.append(op)` using the existing bound-operation
+protocol. A permutation cannot be hidden in a canonical payload. Zero-width word
+ownership is checked before its empty wire tuple is erased.
+
+Acceptance adds 59 Core tests, 29 Compiler tests and two boundary witnesses.
+All 4610 concentrated cases pass without warnings or skips in 26.50 seconds.
+Eight pinned source blobs are unchanged. Strict Python 3.12 checking passes on
+nine production files. Black/Ruff, architecture, Program/public API gates, both
+team scopes and four existing append/resource examples pass. Evidence is
+`ftqc-reference-env/g2-packed-register-regression.log`,
+`g2-packed-register-checks.log`, `g2-packed-register-examples.log` and
+`g2-packed-register-source.txt`.
+
+Native source-like mutable construction remains pending, including its reserved
+instance IDs and partial-consumption failure semantics. The 39 call-builder and
+19 rebinding-builder source scenarios remain source-only. Automatic clean/dirty
+workspace ownership, additional descriptor families and direct numerical
+register traversal also retain separate acceptance work.
+
+Final focused branch coverage passes all 88 cases. Both new production modules
+have 100% statement and branch coverage. The default smoke/unit run stopped
+after 5516 passes, 166 skips and 30 warnings at four QFT/rotation fusion
+failures. All four reproduce independently from the pre-batch `57081cec`
+snapshot. Default-suite acceptance remains open. Logs are
+`ftqc-reference-env/g2-packed-register-coverage.log`,
+`g2-packed-register-default.log` and `g2-packed-register-baseline-failures.log`.
