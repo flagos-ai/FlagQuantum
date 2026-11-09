@@ -112,20 +112,6 @@ Do not edit this generated region. Capability boundaries come from
 | Huawei Ascend 910C native quantum workflows | `development_evidence` | Requires the exact source fixes and dependencies in the Ascend guide; published wheels alone are insufficient. The hardware record covers complex64/complex128 circuit workflows and the stated dynamics/QEC cases, with explicit CPU references, I/O and global QEC decoding boundaries. Optional JAX, CUDA-specific external simulators and quantum-cloud backends retain their own requirements. This is bounded hardware development evidence, not production, performance, capacity or hardware certification. |
 | Huawei Ascend 910C sharded quantum training | `development_evidence` | Requires pinned Torch-FL and patched pure FlagOS FlagCX builds. The statevector ladder covers 2/4/8 logical NPUs, corresponding to 1/2/4 physical 910C cards. Two-host tests use one logical NPU per host and shared LeoFS checkpoints. FP64 reductions use blocking lossless int64 broadcasts plus device arithmetic. Small correctness workloads and real owner-sharded updates do not establish capacity expansion, speedup, convergence, production support or release certification. DDP evidence is separately labeled data_parallel_replicated. |
 
-## Native synthesis classical parameters
-
-The unreleased [native classical binding profile](../api-changes/FQ-SYNTH-NATIVE-CLASSICAL-20261107.md)
-admits finite synthesis-time float scalars, one-dimensional real arrays and
-parameterized gate-only helpers through `synthesize(..., classical_inputs=...)`.
-It reuses the existing checked register IR, RX lowering and local CPU execution.
-Classical arrays are bounded to 4096 total elements; exact names, finite values,
-indices, quantum aliasing and existing resource budgets are checked. This is not
-runtime parameter binding or gradient support. Parameterized Const/Output
-helpers, mutable helper adjoint/control, nested classical arrays and arbitrary
-Python execution remain refused. The QML original has a runnable native/Circuit
-counterpart verified at two nonzero bindings with absolute phase; native catalog
-coverage is 28/216, separately from the approved Qmod execution-smoke count.
-
 ## Validated public performance claims
 
 | Claim | Maturity and scope | Artifact-derived result | Recorded environment | Evidence identity |
@@ -985,3 +971,17 @@ source = Path("tests/fixtures/classiq_qmod/gqsp.qmod")
 program = synth.synthesize(source, max_qubits=8, max_workspace=0)
 print(dict(program.probabilities(fq.run(program), registers=("ind",))))
 ```
+
+## Native synthesis classical parameters
+
+The unreleased [native classical binding profile](../api-changes/FQ-SYNTH-NATIVE-CLASSICAL-20261107.md)
+admits finite synthesis-time float scalars, one-dimensional real arrays and
+parameterized gate-only helpers through `synthesize(..., classical_inputs=...)`.
+It reuses the existing checked register IR, RX lowering and local CPU execution.
+Classical arrays are bounded to 4096 total elements; exact names, finite values,
+indices, quantum aliasing and existing resource budgets are checked. This is not
+runtime parameter binding or gradient support. Parameterized Const/Output
+helpers, mutable helper adjoint/control, nested classical arrays and arbitrary
+Python execution remain refused. The QML original has a runnable native/Circuit
+counterpart verified at two nonzero bindings with absolute phase; native catalog
+coverage is 28/216, separately from the approved Qmod execution-smoke count.
