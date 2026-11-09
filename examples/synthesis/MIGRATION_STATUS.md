@@ -7,7 +7,7 @@ quantum sources share one row. Python-only groups remain unclassified until
 main cases, helpers, data dependencies and verification criteria are reviewed.
 
 No notebook workflow is certified by a quantum-only counterpart.
-Validated local Notebook workflows: **14/213**.
+Validated local Notebook workflows: **15/213**.
 
 | Upstream group | Kind | Native quantum program | Full workflow |
 | --- | --- | --- | --- |
@@ -344,7 +344,7 @@ Validated local Notebook workflows: **14/213**.
 | `functions/qmod_library_reference/classiq_open_library/qct_qst/qct_qst_type2` | quantum_program | Pending | pending |
 | `functions/qmod_library_reference/classiq_open_library/qct_qst/qct_type2` | quantum_program | Pending | pending |
 | `functions/qmod_library_reference/classiq_open_library/qct_qst/qst_type2` | quantum_program | Pending | pending |
-| `functions/qmod_library_reference/classiq_open_library/qft/qft` | notebook_workflow | Pending | pending |
+| `functions/qmod_library_reference/classiq_open_library/qft/qft` | notebook_workflow | [Native program](functions/qft/main.py) | validated |
 | `functions/qmod_library_reference/classiq_open_library/qpe/qpe` | notebook_workflow | Pending | pending |
 | `functions/qmod_library_reference/classiq_open_library/qpe/qpe_flexible` | quantum_program | Pending | pending |
 | `functions/qmod_library_reference/classiq_open_library/qsvt/qsvt` | notebook_workflow | Pending | pending |

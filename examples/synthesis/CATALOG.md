@@ -3,8 +3,8 @@
 User examples contain native Python programs and independent Circuit comparisons.
 Original source files and importer launchers are test/development evidence, not examples.
 
-Validated quantum-program counterparts: **44/216**.
-Validated local Notebook workflows: **14/213**.
+Validated quantum-program counterparts: **45/216**.
+Validated local Notebook workflows: **15/213**.
 Expanded inventory: **577** source artifacts in **417** provisional path groups.
 Python groups still require main-case/helper review. A quantum-program counterpart
 does not certify its notebook workflow. Pending entries have no runnable placeholder.
@@ -41,7 +41,7 @@ Validated local Notebook workflows:
 - [superposition](community/basic_examples/superposition/README.md)
 
 
-## Functions (26 native programs)
+## Functions (27 native programs)
 
 - [bitwise_and_2vars_example](functions/arithmetic/bitwise_and/bitwise_and_2vars_example/README.md)
 - [bitwise_and_integer_example](functions/arithmetic/bitwise_and/bitwise_and_integer_example/README.md)
@@ -52,6 +52,7 @@ Validated local Notebook workflows:
 - [multiplication_2vars_example](functions/arithmetic/multiplication/multiplication_2vars_example/README.md)
 - [exact_amplitude_amplification](functions/amplitude_amplification/exact_amplitude_amplification/README.md)
 - [hadamard_transform](functions/hadamard_transform/README.md)
+- [qft](functions/qft/README.md)
 - [prepare_bell_state](functions/state_preparation/prepare_bell_state/README.md)
 - [prepare_ghz_state](functions/state_preparation/prepare_ghz_state/README.md)
 - [prepare_uniform_interval_state](functions/state_preparation/prepare_uniform_interval_state/README.md)
@@ -75,6 +76,7 @@ Validated local Notebook workflows:
 - [overview](functions/arithmetic/bitwise_and/overview/README.md)
 - [bitwise_invert_example](functions/arithmetic/bitwise_invert/bitwise_invert_example/README.md)
 - [hadamard_transform](functions/hadamard_transform/README.md)
+- [qft](functions/qft/README.md)
 - [prepare_bell_state](functions/state_preparation/prepare_bell_state/README.md)
 - [prepare_ghz_state](functions/state_preparation/prepare_ghz_state/README.md)
 - [prepare_state_and_amplitudes](functions/state_preparation/prepare_state_and_amplitudes/README.md)

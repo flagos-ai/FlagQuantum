@@ -642,3 +642,10 @@ checked by the existing pipeline. Quantum `~x` is finite-width complement; a
 classical-only inversion has no quantum width and is refused. Signed and
 fractional native annotations and in-place XOR are outside this extension.
 See the [native value contract](../../../docs/api-changes/FQ-SYNTH-NATIVE-EXPRESSION-VALUES-20261109.md).
+
+Native `qft` capture reuses `qreg.qft` and the shared Fourier kernel. It requires
+a complete initialized writable register, including a complete mutable-helper
+alias; partial views are rejected without changing the register schema. Run
+`python -m pytest tests/integration/test_synthesis_native_fourier.py -q` for the
+independent Fourier matrix, bit ordering, coherence and ownership checks. See the
+[Fourier admission](../../../docs/api-changes/FQ-SYNTH-NATIVE-FOURIER-20261109.md).

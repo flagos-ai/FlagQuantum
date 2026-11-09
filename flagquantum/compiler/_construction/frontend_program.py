@@ -47,6 +47,7 @@ from .program_types import (
     prepare_ghz_state,
     prepare_state,
     prepare_uniform_interval_state,
+    qft,
     r,
     rx,
     rz,
@@ -424,6 +425,7 @@ class _Body:
                     r,
                     u,
                     hadamard_transform,
+                    qft,
                 )
             )
             or isinstance(function, _QuantumFunction)
@@ -483,6 +485,21 @@ class _Body:
                     "allocation and declared width must agree",
                 )
             self.emit("qreg.allocate", node, (destination,))
+        elif function is qft:
+            if len(node.args) != 1:
+                _error(self.source, node, "program.signature", "qft takes one register")
+            targets = locations(self, node.args[0])
+            destination = targets[0][0]
+            if targets != tuple(
+                (destination, bit) for bit in range(register_width(destination))
+            ):
+                _error(
+                    self.source,
+                    node,
+                    "program.view",
+                    "qft requires a complete register in logical bit order",
+                )
+            self.emit("qreg.qft", node, (destination,))
         elif function is hadamard_transform:
             if len(node.args) != 1:
                 _error(

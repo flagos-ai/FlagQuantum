@@ -993,3 +993,12 @@ requires power-of-two length 2..256 and valid normalization; no normalization is
 repaired. Unbound global vectors, nested arrays and parameterized Output helpers
 remain refused. The [native vector workflow](../../examples/synthesis/functions/state_preparation/prepare_state_and_amplitudes/main.py)
 uses local sampling/state access; it does not claim cloud or hardware execution.
+
+## Native synthesis Fourier boundary
+
+The unreleased native `qft(target)` accepts complete initialized writable QNum
+and QArray[QBit] registers, including whole-register mutable helper aliases.
+Partial views, Const targets and uninitialized storage are refused. This
+admission does not add controlled/inverse Python helper forms. The positive-sign
+transform includes final bit reversal and uses no workspace; exact local CPU
+statevector tests establish semantics, not hardware or scalability performance.

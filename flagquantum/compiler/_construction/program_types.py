@@ -141,6 +141,15 @@ def hadamard_transform(out: QNum | QArray[QBit], /) -> None:
     raise TypeError("hadamard_transform is captured inside qfunc")
 
 
+def qft(target: QNum | QArray[QBit], /) -> None:
+    """Apply the positive-sign Fourier transform to a complete writable register.
+
+    Element zero is the least significant bit; the transform includes final bit
+    reversal. Capture this call inside qfunc and execute the synthesized program.
+    """
+    raise TypeError("qft is captured inside qfunc")
+
+
 def phase(expression: QNum | float, coefficient: float, /) -> None:
     """Apply exp(i * coefficient * expression) inside a captured qfunc."""
     raise TypeError("phase is captured inside qfunc")

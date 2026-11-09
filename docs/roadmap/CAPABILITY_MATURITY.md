@@ -545,3 +545,15 @@ No numerical kernel, public source schema or native array-QPE export is added.
 See the [source scope and runnable comparison](../../flagquantum/ecosystem/_qmod/PROFILE_HISTORY.md#bounded-ordinary-qpe-composition)
 and [limitations](../reference/KNOWN_LIMITATIONS.md#ordinary-qpe-source-boundary).
 Global corpus counts remain separate from these three original acceptance cases.
+
+## Native synthesis Fourier slice
+
+The unreleased Python qfunc entry `qft` reuses checked `qreg.qft` and the shared
+Fourier kernel. The four-qubit original and complete two-cell source Notebook
+have a native counterpart at `python -m examples.synthesis.functions.qft.main`.
+Acceptance compares all basis columns for widths 1..4 and complex coherent
+inputs against an independent dense Fourier matrix, including absolute phase,
+offset wires and zero workspace. Original/native resources remain 4 qubits,
+12 operations and depth 8. The maturity is local CPU semantic verification;
+partial views, Const targets and new controlled/inverse helper forms are outside
+this admission. See the [contract](../api-changes/FQ-SYNTH-NATIVE-FOURIER-20261109.md).

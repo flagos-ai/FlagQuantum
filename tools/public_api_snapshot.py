@@ -672,6 +672,7 @@ _SYNTH_ACTIVE_EXPORTS = (
     "H",
     "S",
     "RX",
+    "qft",
 )
 
 
@@ -1208,6 +1209,26 @@ def _validate_authorized_synthesis_python_program(contract: Any) -> list[str]:
         )
     ):
         errors.append("native bit-array operations differ from their authorized scope")
+    fourier = json.loads(
+        (ROOT / "contracts/synthesis-native-fourier-candidate.json").read_text()
+    )
+    fourier_signature = "(target: 'QNum | QArray[QBit]', /) -> 'None'"
+    if fourier != {
+        "schema": "flagquantum.synthesis_native_fourier_admission",
+        "version": "1.0",
+        "namespace": "flagquantum.synth",
+        "added_exports": ["qft"],
+        "signatures": {"qft": fourier_signature},
+        "authorization_record": "docs/api-changes/FQ-SYNTH-NATIVE-FOURIER-20261109.md",
+        "implementation_authorized": True,
+        "release_authorized": False,
+    } or (
+        type(fourier.get("implementation_authorized")) is not bool
+        or type(fourier.get("release_authorized")) is not bool
+        or not (ROOT / fourier["authorization_record"]).is_file()
+        or str(inspect.signature(synth.qft)) != fourier_signature
+    ):
+        errors.append("native Fourier operation differs from its authorized scope")
     for field, value in (
         ("synthesize_signature", synth.synthesize),
         ("run_signature", fq.run),

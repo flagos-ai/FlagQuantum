@@ -38,6 +38,7 @@ from ..services.synthesis import (
     prepare_ghz_state,
     prepare_state,
     prepare_uniform_interval_state,
+    qft,
     qfunc,
     synthesize,
     within,
@@ -80,4 +81,5 @@ __all__ = (
     "H",
     "S",
     "RX",
+    "qft",
 )

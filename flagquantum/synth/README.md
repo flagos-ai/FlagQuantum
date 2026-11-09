@@ -1008,3 +1008,10 @@ python -m examples.synthesis.algorithms.grover.predicate_oracle.main compares Qm
 qfunc phase intent and an independent Circuit. It does not add a native Python
 phase_oracle/Grover export or a Python QStruct API. The private contract is
 docs/api-changes/FQ-SYNTH-UP06-PREDICATE-ORACLE-20261105.md.
+
+Native `qft(target)` applies the positive-sign Fourier transform, including bit
+reversal, to a complete initialized writable QNum or QArray[QBit] register. It
+shares the checked Qmod lowering and adds no workspace. Whole-register mutable
+helpers are supported; partial views and Const targets are refused. See the
+[Fourier contract](../../docs/api-changes/FQ-SYNTH-NATIVE-FOURIER-20261109.md)
+and [runnable native example](../../examples/synthesis/functions/qft/README.md).

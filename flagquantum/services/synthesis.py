@@ -75,6 +75,7 @@ from ._synthesis_readout import Distribution
 from ._synthesis_readout import probabilities as _probabilities
 
 # Preserve the Qmod spelling for the captured Python operations.
+qft = program_types.qft
 H = program_types.h
 S = program_types.s
 CX = program_types.cx
@@ -131,6 +132,7 @@ __all__ = (
     "H",
     "S",
     "RX",
+    "qft",
 )
 
 
