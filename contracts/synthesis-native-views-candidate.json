@@ -1,0 +1,27 @@
+{
+  "schema": "flagquantum.synthesis_native_views_admission",
+  "version": "1.0",
+  "namespace": "flagquantum.synth",
+  "added_exports": [
+    "QArray",
+    "H",
+    "S"
+  ],
+  "expanded_signatures": {
+    "allocate": "(size_or_out: 'int | QNum | QArray[QBit]', out: 'QNum | QArray[QBit] | None' = None, /) -> 'None'",
+    "hadamard_transform": "(out: 'QNum | QArray[QBit]', /) -> 'None'",
+    "prepare_uniform_interval_state": "(start: 'int', stop: 'int', target: 'QNum | QArray[QBit]', /) -> 'None'",
+    "RZZ": "(angle: 'float', target: 'QNum | QArray[QBit]', /) -> 'None'",
+    "prepare_bell_state": "(state: 'int', target: 'QNum | QArray[QBit]', /) -> 'None'",
+    "prepare_ghz_state": "(size: 'int', target: 'QNum | QArray[QBit]', /) -> 'None'",
+    "prepare_amplitudes": "(amplitudes: 'Sequence[float]', bound: 'float', target: 'QNum | QArray[QBit]', /) -> 'None'",
+    "prepare_state": "(probabilities: 'Sequence[float]', bound: 'float', target: 'QNum | QArray[QBit]', /) -> 'None'"
+  },
+  "signatures": {
+    "H": "(target: 'QBit', /) -> 'None'",
+    "S": "(target: 'QBit', /) -> 'None'"
+  },
+  "authorization_record": "docs/api-changes/FQ-SYNTH-NATIVE-VIEWS-20261107.md",
+  "implementation_authorized": true,
+  "release_authorized": false
+}

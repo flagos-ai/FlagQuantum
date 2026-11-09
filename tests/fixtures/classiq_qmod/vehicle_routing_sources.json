@@ -1,0 +1,14 @@
+{
+  "repository": "https://github.com/Classiq/classiq-library",
+  "commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "license_file": "LICENSE.txt",
+  "license_sha256": "241f68c9f35357f97e8a2a195e447d4f80098c140f0b3b3c770a11eed96f58e0",
+  "fixtures": [
+    {
+      "file": "vehicle_routing_problem.qmod",
+      "source_path": "applications/logistics/vehicle_routing_problem/vehicle_routing_problem.qmod",
+      "git_blob_sha1": "145478f7bf78ed174907eb2e36417c2960b89704",
+      "sha256": "b88589a757a939a36a20b14ce9c062653dc595d92ced31343904f000ae1002ec"
+    }
+  ]
+}

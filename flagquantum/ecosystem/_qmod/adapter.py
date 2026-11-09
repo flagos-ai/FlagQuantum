@@ -3,835 +3,91 @@
 from __future__ import annotations
 
 import math
-import re
-from collections.abc import Callable, Mapping
-from dataclasses import dataclass
-from decimal import Decimal
+from collections.abc import Mapping, Sequence
+from dataclasses import replace
 from types import MappingProxyType
 
-from ...compiler._construction.profile import uint_type
-from ...compiler._construction.ranges import unsigned_width
 from ...compiler._construction.register_profile import (
-    equatorial_rotation,
-    euler_rotation,
-    register_type,
     verify_register_program,
 )
 from ...compiler._hybrid.model import (
-    INDEX,
-    QUANTUM_EFFECT,
-    Block,
     HybridProgram,
-    IRType,
-    Operation,
-    Region,
-    Value,
-    ValueId,
 )
 from ...compiler._hybrid.verifier import Diagnostic, HybridVerificationError
+from .adapter_model import (
+    _INTRINSICS,
+    _STATIC_GATES,
+    _bound_helper,
+    _literal_angle,
+    _pauli_support,
+    _preparation_value,
+    _sparse_width,
+)
+from .adapter_model import (
+    SUPPORTED_SOURCE_VERSION as SUPPORTED_SOURCE_VERSION,
+)
+from .adapter_model import (
+    QmodImport as QmodImport,
+)
+from .affine import snapshot_start
+from .amplification import expand_amplification
+from .array_kickback import expand_nested_array_kickbacks
+from .basis_regions import emit_closed_region, try_closed_region
+from .bindings import (
+    is_binding_scope,
+)
+from .borrowed_phase_views import expand_borrowed_phase_views
+from .clean_selector_normalization import normalize_clean_selectors, probe_source
+from .compact_quantum import candidate_tape, emit_compact_region
+from .computed_rotation import (
+    composed_rotation,
+    computed_output,
+    reinterpreted_selector,
+)
+from .consuming_preparation import fuse_consuming_preparations
+from .context import _Adapt
+from .controlled_evolution import EVOLUTION_CALLS
+from .copied_selector import slice_output
+from .cscope import QaoaWorkflow, VqeSettings, split_cscope
+from .deferred_measurement import defer_private_measurements
+from .fixed_payoff import payoff_helpers
+from .fixed_regions import (
+    FixedPreparation,
+    build_fixed_preparation,
+    emit_fixed_preparation,
+)
+from .integers import checked_integer, checked_integer_array
+from .iterations import expand_iterations
+from .matrices import validate_matrix_constant
+from .oracles import expand_static_oracles
+from .permutations import is_const_cx_permutation, verify_permutations
+from .phase_kickback import expand_phase_kickbacks
+from .predicates import expand_predicate_oracles
+from .qpe import (
+    is_modular_power,
+    power_action,
+)
+from .quantized_numeric import emit_numeric_program, try_numeric_program
+from .quantum_callbacks import (
+    specialize_quantum_callbacks,
+)
+from .selector_rotations import (
+    fold_skip_control_tables,
+    is_selector_helper,
+)
 from .syntax import (
-    ANGLE_CALLS,
     Expression,
     Function,
-    Parameter,
     Parser,
-    Statement,
     Token,
     reject,
     tokenize,
 )
-
-SUPPORTED_SOURCE_VERSION = "2bfd835e73b6882fcc515a725098b04766c238e7"
-MAX_EFFECT_OPERATIONS = 4096
-_GATE_CALLS = frozenset({"X", "H", "S", "Z", "hadamard_transform"})
-_PAIR_CALLS = frozenset({"CX", "SWAP", "CRX"})
-_UNIFORM_CALLS = frozenset(
-    {"prepare_uniform_interval_state", "prepare_uniform_trimmed_state"}
+from .unary_selection_proof import prove_annotated_selections
+from .unitary_effects import (
+    is_reversible_scope,
 )
-_INTRINSICS = (
-    _UNIFORM_CALLS
-    | _GATE_CALLS
-    | _PAIR_CALLS
-    | {"allocate", "phase", "pi", "control"}
-    | ANGLE_CALLS
-)
-
-
-def _literal_angle(angle: Expression, gate: Token) -> float:
-    if (
-        angle.children
-        or not re.fullmatch(r"[0-9]+(?:\.[0-9]+)?", angle.token.text)
-        or Decimal(angle.token.text) > 2**53
-    ):
-        reject(
-            angle.token,
-            "angle",
-            f"{gate.text} angle must be a literal in 0..2**53 radians",
-        )
-    return float(angle.token.text)
-
-
-_RELATIONS = MappingProxyType(
-    {
-        "==": ("qint.equal", False, False),
-        "!=": ("qint.equal", False, True),
-        "<": ("qint.less", False, False),
-        "<=": ("qint.less", True, True),
-        ">": ("qint.less", True, False),
-        ">=": ("qint.less", False, True),
-    }
-)
-
-
-@dataclass(frozen=True)
-class QmodImport:
-    """Private construction handoff; source_version is declared, not authenticated."""
-
-    program: HybridProgram
-    functions: tuple[HybridProgram, ...]
-    source_version: str
-    inferred_widths: Mapping[str, int]
-    source_name: str
-
-
-class _Expression:
-    """Infer unsigned arithmetic/predicate domains and emit existing qint records."""
-
-    def __init__(
-        self, node: Expression, widths: Mapping[str, int | None], name: str
-    ) -> None:
-        self.node, self.widths, self.name = node, widths, name
-        self.facts: dict[Expression, tuple[int, bool]] = {}
-        self.names: list[str] = []
-        self.bound, self.quantum = self.infer(node)
-        arguments: list[Value] = []
-        for index, key in enumerate(self.names):
-            width = widths[key]
-            assert width is not None  # infer already refuses unresolved inputs.
-            arguments.append(Value(ValueId(name, index), uint_type(width)))
-        self.arguments = tuple(arguments)
-        self.inputs = dict(zip(self.names, self.arguments, strict=True))
-        self.operations: list[Operation] = []
-
-    def infer(self, node: Expression) -> tuple[int, bool]:
-        text = node.token.text
-        if not node.children:
-            if text.isdecimal():
-                result = (int(text), False)
-            else:
-                if text not in self.widths:
-                    reject(node.token, "name", f"unknown output {text!r}")
-                width = self.widths[text]
-                if width is None:
-                    reject(
-                        node.token,
-                        "width",
-                        f"{text!r} has no initialized numeric width",
-                    )
-                if text not in self.names:
-                    self.names.append(text)
-                result = ((1 << width) - 1, True)
-        elif text == "~":
-            value, quantum = self.infer(node.children[0])
-            if value > 1:
-                reject(
-                    node.token, "width", "bitwise operands must have one-bit domains"
-                )
-            result = (1 if quantum else 1 ^ value, quantum)
-        else:
-            left, lq = self.infer(node.children[0])
-            right, rq = self.infer(node.children[1])
-            if text in {"&", "|", "^"}:
-                if left > 1 or right > 1:
-                    reject(
-                        node.token,
-                        "width",
-                        "bitwise operands must have one-bit domains",
-                    )
-                bound = (
-                    left & right
-                    if text == "&"
-                    else left | right if text == "|" else left ^ right
-                )
-                result = (1 if lq or rq else bound, lq or rq)
-            elif text in _RELATIONS:
-                opcode, swap, invert = _RELATIONS[text]
-                a, b = (right, left) if swap else (left, right)
-                bound = int(a == b if opcode == "qint.equal" else a < b) ^ int(invert)
-                result = (1 if lq or rq else bound, lq or rq)
-            else:
-                bound = (
-                    left + right
-                    if text == "+"
-                    else (
-                        left ** int(node.children[1].token.text)
-                        if text == "**"
-                        else left * right
-                    )
-                )
-                result = (bound, lq or rq)
-        if unsigned_width(result[0]) > 256:
-            reject(
-                node.token,
-                "width",
-                "expression domain exceeds the 256-bit unsigned profile",
-            )
-        self.facts[node] = result
-        return result
-
-    def operation(
-        self,
-        name: str,
-        operands: tuple[Value, ...],
-        kind: IRType,
-        token: Token,
-        **attributes: object,
-    ) -> Value:
-        result = Value(
-            ValueId(self.name, len(self.arguments) + len(self.operations)), kind
-        )
-        self.operations.append(
-            Operation(name, operands, (result,), attributes, location=token.location)
-        )
-        return result
-
-    def emit(self, node: Expression) -> Value:
-        bound, quantum = self.facts[node]
-        if not quantum:
-            return self.operation("arith.constant", (), INDEX, node.token, value=bound)
-        if not node.children:
-            return self.inputs[node.token.text]
-        left = self.emit(node.children[0])
-        if node.token.text == "~":
-            zero = self.operation("arith.constant", (), INDEX, node.token, value=0)
-            return self.operation("qint.equal", (left, zero), uint_type(1), node.token)
-        if node.token.text == "**":
-            result = left
-            base_bound = self.facts[node.children[0]][0]
-            for exponent in range(2, int(node.children[1].token.text) + 1):
-                result = self.operation(
-                    "qint.multiply",
-                    (result, left),
-                    uint_type(unsigned_width(base_bound**exponent)),
-                    node.token,
-                )
-            return result
-        right = self.emit(node.children[1])
-        if node.token.text in {"&", "|", "^"}:
-            if node.token.text == "&":
-                return self.operation(
-                    "qint.multiply", (left, right), uint_type(1), node.token
-                )
-            zero = self.operation("arith.constant", (), INDEX, node.token, value=0)
-            if node.token.text == "|":
-                total = self.operation(
-                    "qint.add", (left, right), uint_type(2), node.token
-                )
-                return self.operation(
-                    "qint.less", (zero, total), uint_type(1), node.token
-                )
-            equal = self.operation(
-                "qint.equal", (left, right), uint_type(1), node.token
-            )
-            return self.operation("qint.equal", (equal, zero), uint_type(1), node.token)
-        if node.token.text not in _RELATIONS:
-            return self.operation(
-                "qint.add" if node.token.text == "+" else "qint.multiply",
-                (left, right),
-                uint_type(unsigned_width(bound)),
-                node.token,
-            )
-        opcode, swap, invert = _RELATIONS[node.token.text]
-        result = self.operation(
-            opcode, (right, left) if swap else (left, right), uint_type(1), node.token
-        )
-        if invert:
-            zero = self.operation("arith.constant", (), INDEX, node.token, value=0)
-            result = self.operation(
-                "qint.equal", (result, zero), uint_type(1), node.token
-            )
-        return result
-
-    def function(self) -> HybridProgram:
-        returned = self.emit(self.node)
-        return HybridProgram(
-            self.name,
-            Region(
-                (
-                    Block(
-                        self.arguments,
-                        (
-                            *self.operations,
-                            Operation(
-                                "qint.return",
-                                (returned,),
-                                location=self.node.token.location,
-                            ),
-                        ),
-                    ),
-                )
-            ),
-            location=self.node.token.location,
-        )
-
-
-class _Adapt:
-    def __init__(
-        self,
-        syntax: Function,
-        resolve: Callable[[Token], tuple[Function, HybridProgram]],
-    ) -> None:
-        self.syntax = syntax
-        self.resolve = resolve
-        self.scope = syntax.name.text
-        self.parameters: dict[str, Parameter] = {}
-        for parameter in syntax.parameters:
-            name = parameter.name.text
-            if name in self.parameters:
-                reject(parameter.name, "name", f"duplicate output {name!r}")
-            self.parameters[name] = parameter
-        self.widths = {name: p.width for name, p in self.parameters.items()}
-        self.inferred: dict[str, int] = {}
-        self.registers: dict[str, Value] = {}
-        self.counter = len(self.parameters) + 1
-        self.entry = Value(ValueId(self.scope, 0), QUANTUM_EFFECT)
-        self.effect = self.entry
-        self.operations: list[Operation] = []
-        self.functions: list[HybridProgram] = []
-        self.local_scope: list[tuple[str, Token]] | None = None
-
-    def register(
-        self,
-        token: Token,
-        inferred: int | None = None,
-        *,
-        allow_qubit_array: bool = False,
-    ) -> Value:
-        name = token.text
-        if name not in self.parameters:
-            reject(token, "name", f"unknown output {name!r}")
-        if self.parameters[name].kind == "qbit[]" and not allow_qubit_array:
-            reject(
-                token,
-                "type",
-                "qubit arrays support allocation and whole-array Hadamard",
-            )
-        local = self.parameters[name].role == "local"
-        if local and self.local_scope is None:
-            reject(
-                token,
-                "scope",
-                "local references are available only inside within/apply",
-            )
-        width = self.widths[name]
-        if width is None and inferred is not None:
-            self.widths[name] = width = inferred
-            if not local:
-                self.inferred[name] = inferred
-        if width is None:
-            reject(
-                token,
-                "width",
-                f"{name!r} needs a declared width or explicit initialization size",
-            )
-        if inferred is not None and inferred > width:
-            reject(
-                token,
-                "width",
-                f"declared width {width} cannot fit the expression domain requiring {inferred} bits",
-            )
-        if name not in self.registers:
-            if local:
-                index = self.counter
-                self.counter += 1
-            else:
-                index = tuple(self.parameters).index(name) + 1
-            self.registers[name] = Value(
-                ValueId(self.scope, index), register_type(width)
-            )
-            if local:
-                assert self.local_scope is not None
-                self.local_scope.append((name, token))
-                self.append_op(
-                    token,
-                    Operation(
-                        "qreg.local",
-                        results=(self.registers[name],),
-                        attributes={"name": f"{name}.within{index}"},
-                        location=token.location,
-                    ),
-                )
-        return self.registers[name]
-
-    def append_op(self, token: Token, operation: Operation) -> None:
-        if len(self.operations) >= MAX_EFFECT_OPERATIONS:
-            reject(
-                token,
-                "budget.expansion",
-                "native expansion exceeds 4096 effect operations",
-            )
-        self.operations.append(operation)
-
-    def effect_op(
-        self, name: str, token: Token, values: tuple[Value, ...], **attributes: object
-    ) -> None:
-        effect = Value(ValueId(self.scope, self.counter), QUANTUM_EFFECT)
-        self.counter += 1
-        self.append_op(
-            token,
-            Operation(
-                name,
-                (self.effect, *values),
-                (effect,),
-                attributes,
-                location=token.location,
-            ),
-        )
-        self.effect = effect
-
-    @staticmethod
-    def atom(node: Expression) -> Token:
-        if node.children or node.token.text.isdecimal():
-            reject(node.token, "signature", "this argument must be one output variable")
-        return node.token
-
-    def call(
-        self,
-        token: Token,
-        arguments: tuple[Expression, ...],
-        *,
-        const_only: bool = False,
-        control_bit: Value | None = None,
-        condition_inputs: tuple[Value, ...] = (),
-    ) -> None:
-        if token.text in self.parameters:
-            reject(token, "call", "an output variable shadows this helper call")
-        syntax, program = self.resolve(token)
-        if control_bit is not None and any(
-            p.role != "const" for p in syntax.parameters
-        ):
-            reject(token, "control", "controlled helpers require Const-only ports")
-        if const_only and any(p.role != "const" for p in syntax.parameters):
-            reject(token, "scope", "apply helper calls require Const-only parameters")
-        if len(arguments) != len(syntax.parameters):
-            reject(token, "signature", "helper argument count disagrees")
-        const = iter(program.body.blocks[0].arguments[1:])
-        outputs = iter(
-            op.results[0]
-            for op in program.body.blocks[0].operations
-            if op.name == "qreg.declare"
-        )
-        reads: list[Value] = []
-        writes: list[Value] = []
-        for argument, parameter in zip(arguments, syntax.parameters, strict=True):
-            borrowed = parameter.role == "const"
-            formal = next(const if borrowed else outputs)
-            actual_name = self.atom(argument)
-            actual = self.register(
-                actual_name, None if borrowed else formal.type.parameters[0]
-            )
-            if (
-                self.parameters[actual_name.text].kind != parameter.kind
-                or actual.type != formal.type
-            ):
-                reject(
-                    argument.token,
-                    "signature",
-                    "helper argument kind/width must match exactly",
-                )
-            (reads if borrowed else writes).append(actual)
-        if control_bit is None:
-            self.effect_op("qreg.call", token, (*reads, *writes), callee=program.name)
-        else:
-            if len(set(reads)) != len(reads) or set(reads).intersection(
-                condition_inputs
-            ):
-                reject(token, "control", "controlled helper arguments must be disjoint")
-            self.effect_op(
-                "qreg.control_call", token, (control_bit, *reads), callee=program.name
-            )
-
-    def scalar_control(self, statement: Statement, index: str) -> None:
-        token = statement.token
-        body = statement.control_body
-        if len(statement.arguments) != 1 or body is None or len(body) != 1:
-            reject(token, "control", "control requires one condition and one operation")
-        condition = statement.arguments[0]
-        expression = _Expression(condition, self.widths, f"{self.scope}.control{index}")
-        if not expression.quantum or unsigned_width(expression.bound) != 1:
-            reject(token, "control", "control requires a quantum one-bit condition")
-        inputs = tuple(
-            self.register(self.parameters[name].name) for name in expression.names
-        )
-        if sum(value.type.parameters[0] for value in inputs) > 8:
-            reject(token, "control", "control predicate exceeds eight input bits")
-        operation = body[0]
-        args = operation.arguments
-        targets: tuple[Value, ...] = ()
-        angle = None
-        if operation.token.text in {"H", "hadamard_transform"} and len(args) == 1:
-            targets = (self.register(self.atom(args[0])),)
-            opcode = "qreg.control_h"
-        elif operation.token.text == "phase" and len(args) == 2:
-            coefficient = args[1]
-            if (
-                not coefficient.children
-                and coefficient.token.text == "pi"
-                and "pi" not in self.parameters
-            ):
-                angle = math.pi
-            else:
-                angle = _literal_angle(coefficient, operation.token)
-            value = args[0]
-            if not value.children and value.token.text in {"0", "1"}:
-                angle *= int(value.token.text)
-            else:
-                targets = (self.register(self.atom(value)),)
-            opcode = "qreg.control_phase"
-        elif operation.token.text not in _INTRINSICS and operation.token.text not in {
-            "measure",
-            "release",
-            "consume",
-        }:
-            opcode = "qreg.control_call"
-        else:
-            reject(token, "control", "expected a scalar Hadamard or phase")
-        if any(target in inputs for target in targets):
-            reject(token, "control", "condition and target must be disjoint")
-        computed = bool(condition.children)
-        if computed:
-            graph = expression.function()
-            self.functions.append(graph)
-            predicate = Value(ValueId(self.scope, self.counter), register_type(1))
-            self.counter += 1
-            self.append_op(
-                token,
-                Operation(
-                    "qreg.local",
-                    results=(predicate,),
-                    attributes={"name": f"control.{predicate.id.index}"},
-                    location=token.location,
-                ),
-            )
-            self.effect_op(
-                "qreg.compute", token, (predicate, *inputs), callee=graph.name
-            )
-        else:
-            predicate = inputs[0]
-        phase_attributes = {} if angle is None else {"angle": angle}
-        if opcode == "qreg.control_call":
-            self.call(
-                operation.token, args, control_bit=predicate, condition_inputs=inputs
-            )
-        else:
-            self.effect_op(opcode, token, (predicate, *targets), **phase_attributes)
-        if computed:
-            self.effect_op("qreg.uncompute", token, (predicate,))
-            self.effect_op("qreg.release", token, (predicate,))
-
-    def within(self, statement: Statement, index: str) -> None:
-        if not statement.within:
-            reject(
-                statement.token,
-                "scope",
-                "within requires at least one local computation",
-            )
-        parent_scope = self.local_scope
-        self.local_scope = []
-        try:
-            for position, child in enumerate(statement.within):
-                if child.token.text != "=":
-                    reject(
-                        child.token,
-                        "scope",
-                        "within admits only quantum-expression local assignments",
-                    )
-                target = self.atom(child.arguments[0])
-                if (
-                    target.text not in self.parameters
-                    or self.parameters[target.text].role != "local"
-                ):
-                    reject(target, "scope", "within prepares declared locals only")
-                self.statement(child, f"{index}.within{position}")
-            for position, child in enumerate(statement.apply):
-                if child.within is not None:
-                    self.within(child, f"{index}.apply{position}")
-                elif child.token.text == "phase":
-                    self.statement(child, f"{index}.apply{position}")
-                elif child.token.text in _INTRINSICS or child.token.text == "=":
-                    reject(
-                        child.token,
-                        "scope",
-                        "apply admits phase and Const-only helper calls",
-                    )
-                else:
-                    self.call(child.token, child.arguments, const_only=True)
-            for name, token in reversed(self.local_scope):
-                value = self.registers[name]
-                self.effect_op("qreg.uncompute", token, (value,))
-                self.effect_op("qreg.release", token, (value,))
-        finally:
-            for name, _ in self.local_scope:
-                self.registers.pop(name, None)
-            self.local_scope = parent_scope
-
-    def statement(self, statement: Statement, index: str) -> None:
-        token, args = statement.token, statement.arguments
-        if statement.declaration is not None:
-            parameter = statement.declaration
-            name = parameter.name.text
-            if name in self.parameters or name in _INTRINSICS:
-                reject(
-                    parameter.name,
-                    "name",
-                    "local names cannot shadow parameters, locals or intrinsics",
-                )
-            self.parameters[name] = parameter
-            self.widths[name] = parameter.width
-        elif statement.control_body is not None:
-            self.scalar_control(statement, index)
-        elif statement.within is not None:
-            self.within(statement, index)
-        elif token.text == "=":
-            target = self.atom(args[0])
-            expression = _Expression(args[1], self.widths, f"{self.scope}.expr{index}")
-            if self.local_scope is not None and not expression.quantum:
-                reject(
-                    token,
-                    "scope",
-                    "within preparation requires a quantum-dependent expression",
-                )
-            destination = self.register(target, unsigned_width(expression.bound))
-            if expression.quantum:
-                graph = expression.function()
-                self.functions.append(graph)
-                inputs = tuple(
-                    self.register(self.parameters[name].name)
-                    for name in expression.names
-                )
-                self.effect_op(
-                    "qreg.compute", token, (destination, *inputs), callee=graph.name
-                )
-            else:
-                self.effect_op(
-                    "qreg.initialize", token, (destination,), value=expression.bound
-                )
-        elif token.text == "phase":
-            if len(args) != 2 or "phase" in self.parameters:
-                reject(
-                    token,
-                    "signature",
-                    "phase requires an expression and unshadowed pi coefficient",
-                )
-            coefficient = args[1]
-            angle = None
-            if "." in coefficient.token.text:
-                angle = _literal_angle(coefficient, token)
-            elif (
-                coefficient.children
-                or coefficient.token.text != "pi"
-                or "pi" in self.parameters
-            ):
-                reject(
-                    coefficient.token,
-                    "coefficient",
-                    "phase requires unshadowed pi or a decimal literal",
-                )
-            expression = _Expression(args[0], self.widths, f"{self.scope}.phase{index}")
-            if not expression.quantum or (
-                angle is None and unsigned_width(expression.bound) != 1
-            ):
-                reject(
-                    args[0].token,
-                    "phase",
-                    "phase requires a quantum expression and pi requires a one-bit result",
-                )
-            graph = expression.function()
-            self.functions.append(graph)
-            inputs = tuple(
-                self.register(self.parameters[name].name) for name in expression.names
-            )
-            phase_attributes = {} if angle is None else {"angle": angle}
-            self.effect_op(
-                "qreg.phase", token, inputs, callee=graph.name, **phase_attributes
-            )
-        elif token.text == "allocate":
-            if len(args) not in {1, 2}:
-                reject(
-                    token,
-                    "signature",
-                    "allocate accepts an output or a literal size and output",
-                )
-            size = None
-            if len(args) == 2:
-                if args[0].children or not args[0].token.text.isdecimal():
-                    reject(
-                        args[0].token,
-                        "width",
-                        "allocation size must be a literal in 1..256",
-                    )
-                size = int(args[0].token.text)
-                if not 1 <= size <= 256:
-                    reject(
-                        args[0].token,
-                        "width",
-                        "allocation size must be a literal in 1..256",
-                    )
-            target = self.atom(args[-1])
-            destination = self.register(target, size, allow_qubit_array=True)
-            if size is not None and self.widths[target.text] != size:
-                reject(
-                    target,
-                    "width",
-                    "allocation size must agree with the declared width",
-                )
-            self.effect_op("qreg.allocate", token, (destination,))
-        elif token.text in _UNIFORM_CALLS:
-            trimmed = token.text == "prepare_uniform_trimmed_state"
-            if len(args) != (2 if trimmed else 3):
-                reject(token, "signature", "invalid uniform preparation arity")
-            bounds = args[:-1]
-            if any(
-                bound.children or not bound.token.text.isdecimal() for bound in bounds
-            ):
-                reject(
-                    token,
-                    "signature",
-                    "uniform preparation requires literal integer bounds",
-                )
-            start = 0 if trimmed else int(bounds[0].token.text)
-            stop = int(bounds[-1].token.text)
-            destination = self.register(self.atom(args[-1]))
-            self.effect_op(
-                "qreg.uniform_interval", token, (destination,), start=start, stop=stop
-            )
-        elif token.text == "U":
-            if len(args) != 5:
-                reject(token, "signature", "U requires four angles and a qbit target")
-            theta, phi, lam, gamma = (_literal_angle(arg, token) for arg in args[:4])
-            target = self.atom(args[4])
-            destination = self.register(target)
-            if self.parameters[target.text].kind != "qbit":
-                reject(target, "type", "U requires a scalar qbit target")
-            for gate, angle in euler_rotation(theta, phi, lam):
-                self.effect_op(
-                    "qreg.gate", token, (destination,), gate=gate, index=0, angle=angle
-                )
-            self.effect_op("qreg.phase", token, (), angle=gamma)
-        elif token.text == "R":
-            if len(args) != 3:
-                reject(token, "signature", "R requires two angles and a qbit target")
-            theta, phi = (_literal_angle(arg, token) for arg in args[:2])
-            target = self.atom(args[2])
-            destination = self.register(target)
-            if self.parameters[target.text].kind != "qbit":
-                reject(target, "type", "R requires a scalar qbit target")
-            for gate, angle in equatorial_rotation(theta, phi):
-                self.effect_op(
-                    "qreg.gate", token, (destination,), gate=gate, index=0, angle=angle
-                )
-        elif token.text in ANGLE_CALLS or token.text in _PAIR_CALLS:
-            pair = token.text in _PAIR_CALLS
-            angled = token.text in ANGLE_CALLS
-            if len(args) != (2 if pair else 1) + angled:
-                reject(
-                    token,
-                    "signature",
-                    f"{token.text} has the wrong number of arguments",
-                )
-            attributes: dict[str, str | int | float] = {"gate": token.text.lower()}
-            if angled:
-                attributes["angle"] = _literal_angle(args[0], token)
-            targets = tuple(self.atom(arg) for arg in args[int(angled) :])
-            registers = tuple(self.register(target) for target in targets)
-            for target in targets:
-                if self.parameters[target.text].kind != "qbit":
-                    reject(
-                        target, "type", f"{token.text} requires scalar qbit operands"
-                    )
-            if not pair:
-                attributes["index"] = 0
-            self.effect_op(
-                "qreg.pair_gate" if pair else "qreg.gate",
-                token,
-                registers,
-                **attributes,
-            )
-        elif token.text in _GATE_CALLS:
-            if len(args) != 1:
-                reject(token, "signature", f"{token.text} requires one output variable")
-            target = self.atom(args[0])
-            destination = self.register(
-                target, allow_qubit_array=token.text == "hadamard_transform"
-            )
-            if (
-                token.text != "hadamard_transform"
-                and self.parameters[target.text].kind != "qbit"
-            ):
-                reject(
-                    target,
-                    "type",
-                    "single-qubit gates require qbit; numeric/array views are not admitted",
-                )
-            width = self.widths[target.text]
-            assert width is not None
-            for bit in range(width if token.text == "hadamard_transform" else 1):
-                self.effect_op(
-                    "qreg.gate",
-                    token,
-                    (destination,),
-                    gate=(
-                        "h"
-                        if token.text == "hadamard_transform"
-                        else token.text.lower()
-                    ),
-                    index=bit,
-                )
-        else:
-            self.call(token, args)
-
-    def adapt(self) -> HybridProgram:
-        for index, statement in enumerate(self.syntax.statements):
-            self.statement(statement, str(index))
-        output_parameters = tuple(
-            p for p in self.syntax.parameters if p.role == "output"
-        )
-        borrowed = tuple(
-            self.register(p.name) for p in self.syntax.parameters if p.role == "const"
-        )
-        declared = tuple(
-            self.register(p.name, allow_qubit_array=True) for p in output_parameters
-        )
-        declarations = tuple(
-            Operation(
-                "qreg.declare",
-                results=(value,),
-                attributes={"name": parameter.name.text},
-                location=parameter.name.location,
-            )
-            for parameter, value in zip(output_parameters, declared, strict=True)
-        )
-        program = HybridProgram(
-            self.scope,
-            Region(
-                (
-                    Block(
-                        (self.entry, *borrowed),
-                        (
-                            *declarations,
-                            *self.operations,
-                            Operation(
-                                "qreg.return",
-                                (self.effect, *borrowed, *declared),
-                                location=self.syntax.name.location,
-                            ),
-                        ),
-                    ),
-                )
-            ),
-            location=self.syntax.name.location,
-        )
-        return program
+from .zero_walk import prove_zero_walk
 
 
 def check_source_version(source_version: str, token: Token) -> None:
@@ -843,25 +99,514 @@ def check_source_version(source_version: str, token: Token) -> None:
         )
 
 
+def _qaoa_workflow(
+    settings: VqeSettings, main: Function, constants: Mapping[str, Expression]
+) -> QaoaWorkflow:
+    token = Token("cscope", settings.location)
+    inputs = [p for p in main.parameters if p.role == "real" and p.kind == "real[]"]
+    outputs = [p for p in main.parameters if p.role == "output" and p.kind == "qbit[]"]
+    if (
+        len(main.parameters) != 2
+        or len(inputs) != 1
+        or len(outputs) != 1
+        or inputs[0].width != len(settings.initial_point)
+        or outputs[0].width is None
+        or len(main.statements) != 2
+    ):
+        reject(
+            token,
+            "cscope",
+            "VQE requires a sized QAOA parameter vector and bit-array output",
+        )
+    initial, ansatz = main.statements
+    parameter, output = inputs[0].name.text, outputs[0].name.text
+    width = outputs[0].width
+    assert width is not None
+    if (
+        initial.token.text != "allocate"
+        or not initial.arguments
+        or initial.arguments[-1].children
+        or initial.arguments[-1].token.text != output
+        or ansatz.token.text != "qaoa_penalty"
+        or len(ansatz.arguments) != 4
+        or any(arg.children for arg in ansatz.arguments[1:])
+        or tuple(arg.token.text for arg in ansatz.arguments[1:])
+        != (parameter, settings.operator, output)
+    ):
+        reject(
+            token,
+            "cscope",
+            "VQE requires fresh QAOA preparation with its declared Hamiltonian",
+        )
+    operator = constants.get(settings.operator)
+    if operator is None or operator.token.text != "PauliTerm[]":
+        reject(token, "cscope", "VQE requires a declared PauliTerm[] Hamiltonian")
+    diagonal = []
+    for term in operator.children:
+        axes, coefficient = term.children
+        support = _pauli_support(axes, width, sparse=False)
+        if any(axis != "Z" for _, axis in support):
+            reject(
+                axes.token, "cscope", "exact CVaR requires a diagonal I/Z Hamiltonian"
+            )
+        negative = coefficient.token.text == "-"
+        magnitude = coefficient.children[0] if negative else coefficient
+        value = _literal_angle(magnitude, token)
+        diagonal.append(
+            (sum(1 << bit for bit, _ in support), -value if negative else value)
+        )
+    return QaoaWorkflow(settings, parameter, output, width, tuple(diagonal))
+
+
 def parse_qmod(
-    source: str, *, filename: str = "<qmod>", source_version: str
+    source: str,
+    *,
+    filename: str = "<qmod>",
+    source_version: str,
+    classical_inputs: Mapping[str, float | Sequence[float]] | None = None,
+    machine_precision: int | None = None,
 ) -> QmodImport:
-    """Adapt the pinned unsigned scalar native subset to verified owned records.
+    """Adapt the supported pinned Qmod source to Compiler-owned records.
 
     The caller declares source_version; this does not authenticate source bytes.
     Originals are independently checked against their retained source manifest.
     No files, SDKs, synthesis, execution, eval or generated Python are involved.
     """
+    source, settings = split_cscope(source, filename)
     tokens = tokenize(source, filename)
     check_source_version(source_version, tokens[0])
     definitions: dict[str, Function] = {}
-    for syntax in Parser(tokens).parse():
+    parser = Parser(tokens)
+    token_names = {token.text for token in tokens}
+    parser.closed_fixed_point = (
+        machine_precision is not None
+        and "amplitude_amplification" in token_names
+        and bool({"SIGNED", "True"} & token_names)
+    )
+    parser.zero_walk_proof = {
+        "qstruct",
+        "lambda",
+        "bool",
+        "CCX",
+        "CRZ",
+        "SDG",
+        "free",
+        "apply_to_all",
+    } <= token_names and sum(token.text == "qstruct" for token in tokens) >= 2
+    functions_syntax, declarations = parser.parse()
+    constants: dict[str, Expression] = {}
+    constant_integers: dict[str, int] = {}
+    for name_token, operator in declarations:
+        name = name_token.text
+        if name in constants or name in _INTRINSICS or name == "main":
+            reject(name_token, "name", "duplicate or reserved top-level constant")
+        if name in parser.integer_constants:
+            constant_integers[name] = parser.integer_values[name]
+            constants[name] = operator
+            continue
+        if name in parser.matrix_constants:
+            validate_matrix_constant(name_token, operator)
+            constants[name] = operator
+            continue
+        if operator.token.text == "PauliTerm[]":
+            if not operator.children:
+                reject(operator.token, "pauli", "PauliTerm[] constant cannot be empty")
+            width = len(operator.children[0].children[0].children)
+            if not 1 <= width <= 256:
+                reject(operator.token, "pauli", "Pauli word width must be in 1..256")
+            for term in operator.children:
+                axes, coefficient = term.children
+                _pauli_support(axes, width, sparse=False)
+                if coefficient.token.text == "-":
+                    coefficient = coefficient.children[0]
+                _literal_angle(coefficient, name_token)
+            constants[name] = operator
+            continue
+        if operator.token.text != "SparsePauliOp":
+            if operator.token.text == "[":
+                for item in operator.children:
+                    _preparation_value(item)
+            else:
+                _preparation_value(operator)
+            constants[name] = operator
+            continue
+        terms, width_arg = operator.children
+        width = _sparse_width(width_arg)
+        if not terms.children:
+            reject(
+                terms.token,
+                "pauli",
+                "SparsePauliOp constant requires a nonempty Pauli sum",
+            )
+        for term in terms.children:
+            axes, coefficient = term.children
+            _pauli_support(axes, width, sparse=True)
+            if coefficient.token.text == "-":
+                coefficient = coefficient.children[0]
+            _literal_angle(coefficient, name_token)
+        constants[name] = operator
+    for syntax in functions_syntax:
         name = syntax.name.text
         if name in definitions or name in _INTRINSICS:
             reject(syntax.name, "name", "duplicate function or intrinsic redefinition")
+        if name in constants:
+            reject(syntax.name, "name", "function shadows a top-level constant")
+        for parameter in syntax.parameters:
+            if parameter.name.text in constants and parameter.role != "operator":
+                reject(parameter.name, "name", "parameter shadows a top-level constant")
         definitions[name] = syntax
     if "main" not in definitions:
         reject(tokens[0], "entry", "source requires one qfunc main")
+    compact_tape = candidate_tape(definitions, parser.records)
+    if compact_tape is not None:
+        definitions = {"main": replace(definitions["main"], statements=())}
+    if parser.zero_walk_proof:
+        if constants:
+            reject(
+                tokens[0], "zero_walk", "closed zero-walk proof needs local static data"
+            )
+        definitions = dict(prove_zero_walk(definitions, parser.records).definitions)
+    fixed_program: FixedPreparation | None = None
+    if parser.closed_fixed_point:
+        assert machine_precision is not None
+        if not 1 <= machine_precision <= 8:
+            reject(tokens[0], "precision", "machine precision must be in 1..8")
+        root = definitions["main"]
+        declared = {
+            p.name.text: p for p in root.parameters if p.role in {"real", "integer"}
+        }
+        supplied = classical_inputs or {}
+        if (
+            not isinstance(supplied, Mapping)
+            or set(declared) != set(supplied)
+            or any(p.kind != "int" for p in declared.values())
+        ):
+            reject(
+                root.name, "binding", f"classical inputs must match {sorted(declared)}"
+            )
+        integer_values = {
+            name: checked_integer(supplied[name], port.name)
+            for name, port in declared.items()
+        }
+        fixed_program = build_fixed_preparation(
+            definitions, parser.records, machine_precision, integer_values
+        )
+        definitions = {"main": replace(root, statements=())}
+    numeric_program = try_numeric_program(definitions)
+    if numeric_program is not None:
+        definitions = {"main": replace(definitions["main"], statements=())}
+    closed_region = None
+    if {"skip_control", "qft_const_adder_phase"} <= token_names:
+        closed_region = try_closed_region(definitions, parser.records)
+        if closed_region is not None:
+            definitions = {"main": replace(definitions["main"], statements=())}
+    definitions, deferred_measurements = defer_private_measurements(definitions)
+    definitions = fold_skip_control_tables(definitions)
+    definitions = expand_amplification(definitions, constants)
+    definitions = expand_iterations(definitions)
+    definitions = specialize_quantum_callbacks(definitions, constants)
+    definitions = expand_nested_array_kickbacks(definitions)
+    definitions = fuse_consuming_preparations(definitions)
+    definitions = prove_annotated_selections(definitions)
+
+    def compile_probe(
+        function: Function, proof_definitions: Mapping[str, Function]
+    ) -> HybridProgram:
+        def resolve_probe(token: Token) -> tuple[Function, HybridProgram]:
+            reject(
+                token, "ownership", "selector proof requires statically bound helpers"
+            )
+
+        probe = _Adapt(
+            probe_source(function),
+            resolve_probe,
+            proof_definitions,
+            constants,
+            parser.records,
+        )
+        probe.classical_integers.update(constant_integers)
+        return probe.adapt()
+
+    definitions = normalize_clean_selectors(definitions, compile_probe)
+    definitions = expand_borrowed_phase_views(definitions, constants)
+    definitions = expand_phase_kickbacks(definitions)
+    verify_permutations(definitions)
+    fixed_helpers = payoff_helpers(definitions)
+    definitions = expand_predicate_oracles(
+        definitions, constants, parser.records, inferred_helpers=fixed_helpers
+    )
+    definitions = expand_static_oracles(definitions, constants, parser.records)
+    main = definitions["main"]
+
+    def fractional_record(record: str) -> bool:
+        return any(
+            field.fractional_bits
+            or (field.record is not None and fractional_record(field.record))
+            for field in parser.records[record].fields
+        )
+
+    if any(
+        port.record is not None and fractional_record(port.record)
+        for port in main.parameters
+    ):
+        reject(
+            main.name,
+            "precision",
+            "fractional record fields require checked fixed-point lowering",
+        )
+    if any(port.fractional_bits for port in main.parameters):
+        reject(
+            main.name,
+            "precision",
+            "fixed-point outputs require a checked synthesis path",
+        )
+    workflow = (
+        _qaoa_workflow(settings, main, constants) if settings is not None else None
+    )
+    parameters = {
+        p.name.text: p for p in main.parameters if p.role in {"real", "integer"}
+    }
+    if classical_inputs is None and workflow is not None:
+        classical_inputs = {workflow.parameter: workflow.settings.initial_point}
+    inputs = {} if classical_inputs is None else classical_inputs
+    if not isinstance(inputs, Mapping) or set(inputs) != set(parameters):
+        reject(
+            main.name, "binding", f"classical inputs must match {sorted(parameters)}"
+        )
+    bindings: dict[str, float] = {}
+    arrays: dict[str, tuple[float, ...]] = {}
+    integer_bindings: dict[str, int] = {}
+    integer_arrays: dict[str, tuple[int, ...]] = {}
+
+    def checked_real(value: object, name: str) -> float:
+        if (
+            type(value) not in {float, int}
+            or not isinstance(value, (float, int))
+            or abs(value) > 2**53
+            or not math.isfinite(value)
+        ):
+            reject(
+                main.name,
+                "binding",
+                f"classical input {name!r} must be a finite real in ±2**53",
+            )
+        return float(value)
+
+    for name, value in inputs.items():
+        if parameters[name].role == "integer":
+            if parameters[name].kind == "int":
+                integer_bindings[name] = checked_integer(value, parameters[name].name)
+            else:
+                integer_arrays[name] = checked_integer_array(
+                    value, parameters[name].name, parameters[name].width
+                )
+            continue
+        array_width = parameters[name].width
+        if array_width is None:
+            bindings[name] = checked_real(value, name)
+        else:
+            if (
+                not isinstance(value, Sequence)
+                or isinstance(value, (str, bytes))
+                or len(value) != array_width
+            ):
+                reject(
+                    main.name,
+                    "binding",
+                    f"classical input {name!r} requires exactly {array_width} real elements",
+                )
+            arrays[name] = tuple(checked_real(item, name) for item in value)
+
+    for name, syntax in definitions.items():
+        if name == "main" or not _bound_helper(syntax) or name in fixed_helpers:
+            continue
+        if any(port.kind == "SparsePauliOp" for port in syntax.parameters):
+            power_action(syntax)
+            continue
+        if slice_output(syntax) is not None:
+            continue
+        if len({port.name.text for port in syntax.parameters}) != len(
+            syntax.parameters
+        ):
+            reject(syntax.name, "name", "duplicate helper parameter")
+        if any(port.fractional_bits for port in syntax.parameters):
+            if (
+                computed_output(syntax) is None
+                and reinterpreted_selector(syntax, definitions) is None
+            ):
+                reject(
+                    syntax.name,
+                    "precision",
+                    "fixed-point helpers require a checked computed rotation",
+                )
+            continue
+        fixed_locals = [
+            position
+            for position, statement in enumerate(syntax.statements)
+            if statement.declaration is not None
+            and statement.declaration.fractional_bits
+        ]
+        if fixed_locals and (
+            fixed_locals != [len(syntax.statements) - 3]
+            or composed_rotation(syntax.statements[-3:], definitions) is None
+        ):
+            reject(
+                syntax.name,
+                "precision",
+                "fixed-point locals require a checked computed rotation",
+            )
+        if any(
+            port.role not in {"real", "integer", "inout", "callable"}
+            and port.kind not in {"PauliTerm[]", "IndexedPauli[]"}
+            and not (
+                port.role == "output"
+                and port.kind in {"qbit", "qbit[]", "qphase", "qnum"}
+            )
+            and not (
+                port.role == "const"
+                and (
+                    port.kind == "qphase"
+                    or (
+                        port.kind in {"qbit", "qnum", "qnum_signed"}
+                        and port.record is None
+                    )
+                    or (
+                        port.record is not None
+                        and len(syntax.statements) == 1
+                        and syntax.statements[0].token.text == "$projected_rz"
+                    )
+                    or (
+                        port.kind == "qbit[]"
+                        and port.record is None
+                        and not syntax.permutation
+                        and any(p.role == "inout" for p in syntax.parameters)
+                    )
+                    or is_const_cx_permutation(syntax)
+                    or is_selector_helper(syntax)
+                    or (
+                        port.kind == "qbit[]"
+                        and port.record is None
+                        and any(p.kind == "IndexedPauli[]" for p in syntax.parameters)
+                    )
+                )
+            )
+            for port in syntax.parameters
+        ):
+            reject(
+                syntax.name,
+                "role",
+                "bound helpers require real or writable qubit array ports",
+            )
+        local_bits = {
+            statement.declaration.name.text
+            for statement in syntax.statements
+            if statement.declaration is not None
+            and statement.declaration.kind == "qbit"
+        }
+        output_names = {
+            port.name.text for port in syntax.parameters if port.role == "output"
+        }
+        snapshot = snapshot_start(syntax.statements)
+        for ordinal, statement in enumerate(syntax.statements):
+            if snapshot is not None and ordinal in {snapshot, snapshot + 1}:
+                continue
+            if statement.token.text in {"allocate", "free"} and (
+                not statement.arguments
+                or statement.arguments[-1].children
+                or statement.arguments[-1].token.text
+                not in (
+                    local_bits | output_names
+                    if statement.token.text == "allocate"
+                    else local_bits
+                )
+            ):
+                reject(
+                    statement.token,
+                    "scope",
+                    "bound allocation and free require a local qbit",
+                )
+            declaration = statement.declaration
+            if declaration is not None and declaration.kind in {
+                "qbit",
+                "qbit[]",
+                "qnum",
+            }:
+                continue
+            controlled_qft = (
+                statement.control_body is not None
+                and len(statement.control_body) == 1
+                and statement.control_body[0].token.text == "qft"
+            )
+            hadamard_within = (
+                statement.within is not None
+                and len(statement.within) == 1
+                and statement.within[0].token.text == "H"
+            )
+            called = definitions.get(statement.token.text)
+            bound_call = (
+                called is not None
+                and called.name.text != "main"
+                and _bound_helper(called)
+            ) or any(
+                port.role == "callable" and port.name.text == statement.token.text
+                for port in syntax.parameters
+            )
+            copy_output = (
+                statement.token.text == "="
+                and not any(arg.children for arg in statement.arguments)
+                and statement.arguments[0].token.text in output_names
+                and any(
+                    port.name.text == statement.arguments[1].token.text
+                    and port.kind == "qnum"
+                    and port.role in {"const", "inout"}
+                    for port in syntax.parameters
+                )
+            )
+            if statement.declaration is not None or (
+                statement.token.text
+                not in _STATIC_GATES
+                | EVOLUTION_CALLS
+                | {
+                    "swap_test",
+                    "qsvt_lcu",
+                    "exact_amplitude_amplification",
+                    "grover_diffuser",
+                    "multiswap",
+                    "unitary",
+                    "+=",
+                    "^=",
+                    "phase",
+                    "$projected_rz",
+                    "$kickback_phase",
+                    "inplace_prepare_state",
+                    "inplace_prepare_amplitudes",
+                    "prepare_amplitudes",
+                    "select_rotation",
+                    "linear_pauli_rotations",
+                    "allocate",
+                    "free",
+                    "->",
+                }
+                and not copy_output
+                and not controlled_qft
+                and not is_modular_power(statement)
+                and not hadamard_within
+                and not is_binding_scope(statement)
+                and not is_reversible_scope(statement)
+                and statement.repeat_index is None
+                and statement.static_if_body is None
+                and statement.map_callback is None
+                and statement.control_body is None
+                and statement.inverse_body is None
+                and statement.callback_index is None
+                and not bound_call
+            ):
+                reject(
+                    statement.token,
+                    "scope",
+                    "bound helper bodies admit only gates, bounded unitary and Pauli evolution, and scoped QFT",
+                )
+
     compiled: dict[str, tuple[_Adapt, HybridProgram]] = {}
     active: set[str] = set()
 
@@ -880,15 +625,30 @@ def parse_qmod(
             )
         if name not in compiled:
             active.add(name)
-            adapter = _Adapt(syntax, resolve)
+            adapter = _Adapt(syntax, resolve, definitions, constants, parser.records)
+            adapter.classical_integers.update(constant_integers)
+            if name == "main":
+                adapter.classical_values.update(bindings)
+                adapter.classical_arrays.update(arrays)
+                adapter.classical_integers.update(integer_bindings)
+                adapter.integer_arrays.update(integer_arrays)
+                if numeric_program is not None:
+                    emit_numeric_program(adapter, numeric_program)
+                if closed_region is not None:
+                    emit_closed_region(adapter, closed_region)
+                if fixed_program is not None:
+                    emit_fixed_preparation(adapter, fixed_program)
+                if compact_tape is not None:
+                    emit_compact_region(adapter, compact_tape)
             program = adapter.adapt()
             compiled[name] = adapter, program
             active.remove(name)
         return compiled[name]
 
-    # Unused definitions must obey the same contract as reachable helpers.
+    # Bound helpers are checked structurally above and specialized at call sites.
     for syntax in definitions.values():
-        build(syntax)
+        if syntax is main or not _bound_helper(syntax):
+            build(syntax)
     adapter, program = compiled["main"]
     records: dict[str, HybridProgram] = {}
     for name, (producer, model) in compiled.items():
@@ -914,5 +674,30 @@ def parse_qmod(
         )
         raise HybridVerificationError(diagnostics) from error
     return QmodImport(
-        program, functions, source_version, MappingProxyType(adapter.inferred), filename
+        program,
+        functions,
+        source_version,
+        MappingProxyType(adapter.inferred),
+        filename,
+        MappingProxyType(adapter.fractional_bits),
+        tuple(
+            name
+            for p in main.parameters
+            for name in (
+                (p.name.text,)
+                if p.name.text in adapter.signed
+                else (
+                    tuple(
+                        f"{p.name.text}.{field.name.text}"
+                        for field in parser.records[p.record].leaves(parser.records)
+                        if field.kind in {"qnum_signed", "qphase"}
+                    )
+                    if p.record is not None
+                    else ()
+                )
+            )
+        ),
+        workflow,
+        deferred_measurements,
+        exact_mps=parser.zero_walk_proof,
     )

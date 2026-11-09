@@ -11,7 +11,7 @@ Independent trials remain 0/2 and release authorization remains false.
 ## User computation
 
 Save the following in a source-retaining file, or run
-`python -m examples.synthesis_interval` for both value and phase:
+`python -m examples.synthesis.tutorials.arithmetic.interval.main` for both value and phase:
 
 ```python
 import flagquantum as fq

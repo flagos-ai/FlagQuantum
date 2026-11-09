@@ -25,7 +25,7 @@ print(dict(program.probabilities(result, registers=("x", "y", "result"))))
 # {(3, 2, 11): 1.0}
 ```
 
-Run `python -m examples.algorithms.synthesis_trial` for the documented basis,
+Run `python -m examples.synthesis.tutorials.getting_started.trial.main` for the documented basis,
 uniform and real line-profile examples. Both ordinary functions and optional
 qfunc use the same verified arithmetic profile. Users declare unsigned domains,
 known preparation, classical constants and optional constraints. They design no

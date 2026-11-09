@@ -27,7 +27,7 @@ print(program.report["resources"])
 print(program.execution.state_bytes)
 ```
 
-Run `python -m examples.synthesis_power_two_multiply`. Pairs (0,0) and
+Run `python -m examples.synthesis.tutorials.arithmetic.power_two_multiply.main`. Pairs (0,0) and
 (1,256) each have probability 1/2. Users write ordinary multiplication and
 supply quantum domains, preparation and budgets. Compiler selects the bit
 mapping, gates and cleanup; users do not supply shifts, scratch or line numbers.

@@ -6,7 +6,7 @@ from typing import Literal
 import pytest
 
 import flagquantum as fq
-from examples.synthesis_qmod_nested import SOURCE as ENERGY_SOURCE
+from examples.synthesis.tutorials.qmod.qmod_nested.main import SOURCE as ENERGY_SOURCE
 from flagquantum import synth
 from flagquantum.ecosystem import InteropConversionError
 from tests.integration.test_synthesis_register_workflow import check_state

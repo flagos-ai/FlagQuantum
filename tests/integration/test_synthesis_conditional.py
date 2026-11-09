@@ -315,7 +315,11 @@ def test_resource_and_memory_limits_still_fail_without_execution(
 
 def test_public_conditional_example_runs_without_manual_gates_or_decoding() -> None:
     completed = subprocess.run(
-        [sys.executable, "-m", "examples.synthesis_conditional"],
+        [
+            sys.executable,
+            "-m",
+            "examples.synthesis.tutorials.arithmetic.conditional.main",
+        ],
         cwd=Path(__file__).resolve().parents[2],
         capture_output=True,
         text=True,

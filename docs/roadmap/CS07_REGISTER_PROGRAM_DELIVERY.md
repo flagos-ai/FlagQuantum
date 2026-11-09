@@ -30,7 +30,7 @@ assert dict(program.probabilities(fq.run(program))) == {(11,): 1.0}
 ```
 
 Save the definition in a Python source file. Run
-`python -m examples.algorithms.synthesis_trial` for the maintained basis, uniform
+`python -m examples.synthesis.tutorials.getting_started.trial.main` for the maintained basis, uniform
 and routed examples. This stage does not ask users to construct internal records,
 write gates, assign physical ports or decode bitstrings. The new representation
 is a private adapter/compiler seam, not an additional end-user language or API.

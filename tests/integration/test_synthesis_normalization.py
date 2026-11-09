@@ -7,7 +7,7 @@ from typing import Literal
 import pytest
 
 import flagquantum as fq
-from examples.synthesis_normalization import QMOD, main
+from examples.synthesis.tutorials.arithmetic.normalization.main import QMOD, main
 from flagquantum import synth
 from flagquantum.compiler._construction.frontend_python import capture
 from flagquantum.compiler._construction.lowering import (
@@ -143,7 +143,9 @@ def test_independent_circuit_reference_matches_all_targets_and_complete_state() 
     import torch
 
     from benchmarks.synthesis.verification import classical_apply, encode
-    from examples.synthesis_normalization import circuit_reference
+    from examples.synthesis.tutorials.arithmetic.normalization.main import (
+        circuit_reference,
+    )
 
     reference = circuit_reference().to_ir()
     permutation = replace(

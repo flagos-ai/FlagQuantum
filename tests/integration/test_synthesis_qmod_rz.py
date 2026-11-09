@@ -19,7 +19,7 @@ CORPUS = Path(__file__).resolve().parents[1] / "fixtures/classiq_qmod"
 
 
 @pytest.mark.parametrize("objective", ["width", "depth"])
-@pytest.mark.parametrize("angle", ["0", "1.9", "0.25", "9007199254740992.0"])
+@pytest.mark.parametrize("angle", ["0", "1.9", "0.25", "1e-3", "9007199254740992.0"])
 def test_entangled_rz_matches_native_circuit_and_absolute_oracle(
     objective: Literal["width", "depth"], angle: str
 ) -> None:
@@ -60,10 +60,8 @@ def test_phase_decimal_extension_preserves_old_parenthesized_integers(
         "9007199254740993",
         "1.",
         ".5",
-        "1e-3",
-        "-1.9",
-        "1.9+1",
-        "pi",
+        "1e-",
+        "unknown_angle",
         "q",
         "1 .9",
         "1. 9",
@@ -172,3 +170,30 @@ def test_rz_compatibility_retains_real_plan_budgets_and_target_refusal() -> None
         synth.synthesize(source, source_format="qmod", max_operations=1)
     with pytest.raises(synth.SynthesisError):
         synth.synthesize(source, source_format="qmod", basis=("x", "h"))
+
+
+@pytest.mark.parametrize("expression,theta", [("-1.9", -1.9), ("1.9+1", 2.9)])
+def test_rz_angle_expressions_preserve_entangled_absolute_phase(
+    expression: str,
+    theta: float,
+) -> None:
+    program = synth.synthesize(
+        f"qfunc main(output q:qbit,output ref:qbit) {{allocate(q);H(q);ref=q;RZ({expression},q);}}",
+        source_format="qmod",
+    )
+    result = fq.run(program)
+    check_state(
+        program,
+        result,
+        {
+            (0, 0): cmath.exp(-0.5j * theta) * 2**-0.5,
+            (1, 1): cmath.exp(0.5j * theta) * 2**-0.5,
+        },
+    )
+    circuit = fq.Circuit(2, dtype=torch.complex128).h(0).cx(0, 1).rz(0, theta=theta)
+    torch.testing.assert_close(
+        result.statevector(),
+        fq.run(circuit).statevector(),
+        atol=1e-12,
+        rtol=0,
+    )

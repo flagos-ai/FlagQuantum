@@ -28,7 +28,7 @@ print(dict(program.probabilities(result, registers=("x", "y"))))
 
 All sixteen pairs have probability 1/16, with full amplitudes
 (-1)**int(x+y<4)/4. Only x/y are returned; energy/flag and arithmetic work are
-zero after execution. Run `python -m examples.synthesis_qmod_nested`.
+zero after execution. Run `python -m examples.synthesis.tutorials.qmod.qmod_nested.main`.
 Probabilities alone do not prove phases, so acceptance checks full amplitudes.
 
 ## Ownership and bounded semantics

@@ -453,6 +453,12 @@ def density_matrix_from_ir(
         target_dtype = _resolve_density_dtype(
             dtype, fallback=getattr(torch, get_runtime_config().complex_dtype)
         )
+        if bsz in {None, 1} and "construction_reset_repetitions" in ir.metadata:
+            from .repeated_reset import repeated_reset_density
+
+            compact = repeated_reset_density(ir, target_dtype, target_device)
+            if compact is not None:
+                return compact
         state = torch.zeros(
             bsz or 1,
             2**ir.n_wires,

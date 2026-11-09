@@ -23,7 +23,7 @@ new role/type objects. Path: single_device_fast_path, exact local CPU only.
 
 ## Runnable current user workflow
 
-Save this in a `.py` file, or run `python -m examples.synthesis_native_and_qmod_rz`:
+Save this in a `.py` file, or run `python -m examples.synthesis.tutorials.qmod.native_and_qmod_rz.main`:
 
 ```python
 import flagquantum as fq

@@ -152,7 +152,10 @@ def test_independent_manual_reference_preserves_all_256_input_target_pairs() -> 
 
 def test_primary_qfunc_example_prepares_composes_and_improves_frozen_costs() -> None:
     from benchmarks.synthesis.arithmetic_baseline import costs, workspace_of
-    from examples.synthesis_arithmetic_baseline import QMOD, main
+    from examples.synthesis.tutorials.arithmetic.arithmetic_baseline.main import (
+        QMOD,
+        main,
+    )
     from flagquantum import synth
 
     case = Case(EXPRESSIONS[4], (2, 2))

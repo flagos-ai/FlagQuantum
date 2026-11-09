@@ -23,7 +23,7 @@ unequal widths, zero products and explicit helper calls.
 Run the complete developer trial:
 
 ```bash
-python -m examples.synthesis_workspace
+python -m examples.synthesis.tutorials.workspace.workspace.main
 ```
 
 It prints both candidates for three unsigned input widths, re-emits each with
@@ -31,7 +31,7 @@ exactly its measured workspace capacity, and executes both one-bit coherent
 circuits using the existing CPU runtime. An integration test runs this command in
 a separate process and checks its table and successful execution. The advanced
 diagnostic uses explicit block ports. The normal gate-free named-input CS-04
-example remains `python -m examples.algorithms.synthesis_trial`.
+example remains `python -m examples.synthesis.tutorials.getting_started.trial.main`.
 
 All costs below come from the existing Compiler estimator over the complete
 arithmetic XOR block, including final cleanup and excluding input preparation.

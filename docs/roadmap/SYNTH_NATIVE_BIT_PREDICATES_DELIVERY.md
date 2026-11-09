@@ -21,7 +21,7 @@ print(dict(program.probabilities(result, registers=("x", "y"))))
 
 Every pair has probability 1/16; full amplitudes are
 (-1)**int(x<2 or y==3)/4. Only x/y are returned and hidden work is zero.
-Run `python -m examples.synthesis_qmod_bit_predicates`. The user writes the
+Run `python -m examples.synthesis.tutorials.qmod.qmod_bit_predicates.main`. The user writes the
 condition, preparation and constraints; no temporary flag, gate or decoding is
 required. Uniform probabilities alone do not establish the sign.
 

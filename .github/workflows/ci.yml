@@ -68,7 +68,6 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           python3 - <<'PYTHON'
-          import base64
           import hashlib
           import json
           import os
@@ -76,18 +75,35 @@ jobs:
           from pathlib import Path
           from urllib.request import Request, urlopen
 
-          api = os.environ["GITHUB_API_URL"].rstrip("/")
           repo = os.environ["GITHUB_REPOSITORY"]
           sha = os.environ["GITHUB_SHA"]
+          owner, name = repo.split("/", 1)
+          query = """query($owner:String!,$name:String!,$expression:String!){
+            repository(owner:$owner,name:$name){object(expression:$expression){
+              ... on Blob{oid byteSize isBinary isTruncated text}
+            }}
+          }"""
           request = Request(
-              f"{api}/repos/{repo}/contents/tools/ci_source_archive.py?ref={sha}",
-              headers={"Authorization": f"Bearer {os.environ['GH_TOKEN']}"},
+              os.environ["GITHUB_GRAPHQL_URL"],
+              data=json.dumps({"query": query, "variables": {
+                  "owner": owner, "name": name,
+                  "expression": f"{sha}:tools/ci_source_archive.py",
+              }}).encode(),
+              headers={
+                  "Authorization": f"Bearer {os.environ['GH_TOKEN']}",
+                  "Content-Type": "application/json",
+              },
           )
           with urlopen(request, timeout=30) as response:
-              metadata = json.load(response)
-          code = base64.b64decode(metadata["content"])
+              result = json.load(response)
+          if result.get("errors"):
+              raise ValueError("GitHub rejected the source helper query")
+          metadata = result["data"]["repository"]["object"]
+          if metadata["isBinary"] or metadata["isTruncated"]:
+              raise ValueError("The source helper text is incomplete")
+          code = metadata["text"].encode()
           digest = hashlib.sha1(b"blob " + str(len(code)).encode() + b"\0" + code)
-          if digest.hexdigest() != metadata["sha"]:
+          if len(code) != metadata["byteSize"] or digest.hexdigest() != metadata["oid"]:
               raise ValueError("The source helper does not match its Git blob SHA")
           helper = Path(os.environ["RUNNER_TEMP"]) / "ci_source_archive.py"
           helper.write_bytes(code)

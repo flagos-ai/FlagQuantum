@@ -310,7 +310,11 @@ def test_loop_constraints_and_memory_are_checked_before_execution(
 def test_complete_loop_example_uses_only_public_intent_and_named_readout() -> None:
     root = Path(__file__).resolve().parents[2]
     result = subprocess.run(
-        [sys.executable, "-m", "examples.synthesis_static_loop"],
+        [
+            sys.executable,
+            "-m",
+            "examples.synthesis.tutorials.composition.static_loop.main",
+        ],
         cwd=root,
         capture_output=True,
         text=True,
@@ -326,7 +330,9 @@ def test_complete_loop_example_uses_only_public_intent_and_named_readout() -> No
     assert ast.literal_eval(rows["phase input probabilities"]) == pytest.approx(
         {(x, y): 1 / 16 for x in range(4) for y in range(4)}, abs=1e-12
     )
-    source = (root / "examples/synthesis_static_loop.py").read_text()
+    source = (
+        root / "examples/synthesis/tutorials/composition/static_loop/main.py"
+    ).read_text()
     assert (
         "._" not in source
         and "fq.Circuit" not in source

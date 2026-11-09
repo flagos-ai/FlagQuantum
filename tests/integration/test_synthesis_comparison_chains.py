@@ -340,7 +340,7 @@ def test_budgets_and_memory_remain_checked_before_execution(
 
 def test_public_interval_cli_has_no_gate_or_decoding_requirement() -> None:
     completed = subprocess.run(
-        [sys.executable, "-m", "examples.synthesis_interval"],
+        [sys.executable, "-m", "examples.synthesis.tutorials.arithmetic.interval.main"],
         cwd=Path(__file__).resolve().parents[2],
         capture_output=True,
         text=True,

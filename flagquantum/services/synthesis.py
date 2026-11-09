@@ -26,6 +26,9 @@ from ..compiler._construction.program_types import (
     Output as Output,
 )
 from ..compiler._construction.program_types import (
+    QArray as QArray,
+)
+from ..compiler._construction.program_types import (
     QBit as QBit,
 )
 from ..compiler._construction.program_types import (
@@ -60,20 +63,20 @@ from ..compiler._construction.target import Target
 from ..compiler._hybrid.verifier import Diagnostic, HybridVerificationError
 from ..compiler.basis_conversion import require_basis
 from ..compiler.topology.coupling import CouplingMap
-from ..core.ir import CircuitIR, Instruction
-from ..core.operator_schema import get_operator_schema
-from ..core.parameters import parameter_names_in_value
+from ..core.ir import CircuitIR
 from ..errors import PlanningError
-from ..runtime.dynamic._conditions import instruction_is_dynamic
 from ..runtime.execution_plan import ExecutionPlan
-from ..runtime.execution_plan_contract import plan_execution_program
+from ..runtime.execution_plan_contract import plan_execution_program, plan_program
 from ..runtime.options import ExecutionOptions
 from ..runtime.result import ExecutionResult
 from ._synthesis_execution import CheckedExecution, inspect_execution
+from ._synthesis_preparation import prepare_inputs as _prepare_inputs
 from ._synthesis_readout import Distribution
 from ._synthesis_readout import probabilities as _probabilities
 
 # Preserve the Qmod spelling for the captured Python operations.
+H = program_types.h
+S = program_types.s
 CX = program_types.cx
 SWAP = program_types.swap
 CRX = program_types.crx
@@ -81,6 +84,14 @@ R = program_types.r
 U = program_types.u
 control = program_types.control
 prepare_uniform_interval_state = program_types.prepare_uniform_interval_state
+X = program_types.x
+RZ = program_types.rz
+PHASE = program_types.phase_gate
+RZZ = program_types.rzz
+prepare_bell_state = program_types.prepare_bell_state
+prepare_ghz_state = program_types.prepare_ghz_state
+prepare_amplitudes = program_types.prepare_amplitudes
+prepare_state = program_types.prepare_state
 
 __all__ = (
     "ConstructionBudget",
@@ -107,6 +118,17 @@ __all__ = (
     "U",
     "prepare_uniform_interval_state",
     "control",
+    "X",
+    "RZ",
+    "PHASE",
+    "RZZ",
+    "prepare_bell_state",
+    "prepare_ghz_state",
+    "prepare_amplitudes",
+    "prepare_state",
+    "QArray",
+    "H",
+    "S",
 )
 
 
@@ -207,7 +229,11 @@ class Program:
             raise ValueError(
                 "execution layout or named ports differ from the selected target"
             )
-        actual = plan_execution_program(self._checked.plan)
+        actual = (
+            plan_program(self._checked.plan)
+            if self._checked.plan.state_mode == "density_matrix"
+            else plan_execution_program(self._checked.plan)
+        )
         expected = replace(
             row.target.executable,
             metadata={
@@ -216,6 +242,23 @@ class Program:
                 if key != "runtime_config"
             },
         )
+        if self._checked.plan.state_mode == "density_matrix":
+            from ..compiler.pipeline import schedule_layers
+
+            def canonicalize(ir: CircuitIR) -> CircuitIR:
+                return replace(
+                    ir,
+                    instructions=tuple(
+                        op for layer in schedule_layers(ir) for op in layer
+                    ),
+                    metadata={
+                        key: value
+                        for key, value in ir.metadata.items()
+                        if key != "runtime_config"
+                    },
+                )
+
+            actual, expected = canonicalize(actual), canonicalize(expected)
         if actual.content_hash != expected.content_hash:
             raise ValueError(
                 "execution identity differs from the selected Compiler product"
@@ -260,103 +303,6 @@ class Program:
             max_amplitudes=max_amplitudes,
             threshold=threshold,
         )
-
-
-def _prepare(
-    inputs: Mapping[str, UInt],
-    mapping: Mapping[str, tuple[int, ...]],
-    input_state: InputState | None,
-    preparation: CircuitIR | None,
-    preparation_map: Mapping[str, Sequence[int]] | None,
-) -> tuple[tuple[Instruction, ...], str]:
-    """Validate explicit preparation before emitting the arithmetic candidate."""
-    input_count = sum(spec.width for spec in inputs.values())
-    prepared: list[Instruction] = []
-    state_name = "basis_default_zero"
-    if preparation is not None:
-        if (
-            not isinstance(preparation, CircuitIR)
-            or preparation.n_wires != input_count
-            or preparation.shape not in {(1 << input_count,), (1, 1 << input_count)}
-            or preparation.measurements
-            or preparation.observables
-        ):
-            raise ValueError(
-                "preparation must be single-batch unitary input-only CircuitIR without measurements or observables"
-            )
-        if preparation_map is None or set(preparation_map) != set(inputs):
-            raise ValueError("preparation_map must cover every named quantum input")
-        remapping: dict[int, int] = {}
-        for name, logical in mapping.items():
-            if name == "result":
-                continue
-            physical = tuple(preparation_map[name])
-            if len(physical) != len(logical):
-                raise ValueError(f"preparation map width differs for {name!r}")
-            for source, destination in zip(physical, logical, strict=True):
-                if (
-                    isinstance(source, bool)
-                    or not isinstance(source, int)
-                    or not 0 <= source < input_count
-                    or source in remapping
-                ):
-                    raise ValueError(
-                        "preparation maps must be disjoint and cover the input qubits"
-                    )
-                remapping[source] = destination
-        for instruction in preparation.instructions:
-            schema = get_operator_schema(instruction.name)
-            if (
-                schema is None
-                or schema.semantic_kind != "unitary"
-                or instruction.matrix is not None
-                or instruction_is_dynamic(instruction)
-            ):
-                raise ValueError(
-                    "use registered static unitary preparation gates; opaque matrices, measurements and reset are outside this trial"
-                )
-            if any(parameter_names_in_value(v) for v in instruction.params.values()):
-                raise ValueError(
-                    "bind symbolic preparation angles before synthesis; compose the arithmetic block for differentiable runtime bindings"
-                )
-            prepared.append(
-                replace(
-                    instruction, wires=tuple(remapping[q] for q in instruction.wires)
-                )
-            )
-        state_name = "explicit_preparation"
-    else:
-        state = input_state or InputState.basis(**dict.fromkeys(inputs, 0))
-        if not isinstance(state, InputState) or state.kind not in {"basis", "uniform"}:
-            raise TypeError(
-                "input_state must be InputState.basis(...) or InputState.uniform()"
-            )
-        if state.kind == "basis":
-            if set(state.values) != set(inputs):
-                raise ValueError("basis state must bind every declared input by name")
-            for name, number in state.values.items():
-                if (
-                    isinstance(number, bool)
-                    or not isinstance(number, int)
-                    or not 0 <= number < 1 << inputs[name].width
-                ):
-                    raise ValueError(
-                        f"basis value for {name!r} must be an integer in [0, {(1 << inputs[name].width) - 1}]"
-                    )
-                prepared.extend(
-                    Instruction("x", (q,))
-                    for bit, q in enumerate(reversed(mapping[name]))
-                    if number & (1 << bit)
-                )
-        else:
-            if state.values:
-                raise ValueError(
-                    "uniform preparation covers all input domains and accepts no basis values"
-                )
-            prepared.extend(Instruction("h", (q,)) for q in range(input_count))
-        if input_state is not None:
-            state_name = state.kind
-    return tuple(prepared), state_name
 
 
 _DEFAULT_BUDGET = ConstructionBudget()
@@ -586,6 +532,56 @@ def synthesize(
             result = fq.run(program)
             probabilities = program.probabilities(result)
     """
+    return _synthesize(
+        function,
+        inputs=inputs,
+        input_state=input_state,
+        constants=constants,
+        functions=functions,
+        max_qubits=max_qubits,
+        max_operations=max_operations,
+        max_depth=max_depth,
+        max_workspace=max_workspace,
+        construction_budget=construction_budget,
+        objective=objective,
+        basis=basis,
+        topology=topology,
+        preparation=preparation,
+        preparation_map=preparation_map,
+        source_format=source_format,
+        source_name=source_name,
+        source_version=source_version,
+        memory_limit_bytes=memory_limit_bytes,
+        output_mode=output_mode,
+    )
+
+
+def _synthesize(
+    function: Definition | str | PathLike[str],
+    *,
+    inputs: Mapping[str, UInt] | None = None,
+    input_state: InputState | None = None,
+    constants: Mapping[str, int] | None = None,
+    functions: Sequence[Definition] = (),
+    max_qubits: int | None = 256,
+    max_operations: int | None = 100_000,
+    max_depth: int | None = None,
+    max_workspace: int | None = None,
+    construction_budget: ConstructionBudget = _DEFAULT_BUDGET,
+    objective: Literal["width", "depth"] = "width",
+    basis: Iterable[str] | None = None,
+    topology: Literal["line"] | None = None,
+    preparation: CircuitIR | None = None,
+    preparation_map: Mapping[str, Sequence[int]] | None = None,
+    source_format: Literal["qmod"] | None = None,
+    source_name: str | None = None,
+    source_version: str | None = None,
+    classical_inputs: Mapping[str, float | Sequence[float]] | None = None,
+    qmod_machine_precision: int | None = None,
+    memory_limit_bytes: int | None = None,
+    output_mode: Literal["value", "phase"] = "value",
+) -> Program:
+    """Compile admitted programs, including private Qmod audit bindings."""
     if not isinstance(output_mode, str):
         raise TypeError("output_mode must be a string: value or phase")
     if output_mode not in {"value", "phase"}:
@@ -622,6 +618,10 @@ def synthesize(
     )
     is_file = isinstance(function, PathLike)
     is_native_source = isinstance(function, (PathLike, str))
+    if not is_native_source and qmod_machine_precision is not None:
+        raise ValueError("qmod_machine_precision applies only to native Qmod source")
+    if not is_native_source and classical_inputs is not None:
+        raise ValueError("classical_inputs apply only to native Qmod source")
     if not is_native_source and any(
         value is not None for value in (source_format, source_name, source_version)
     ):
@@ -629,6 +629,10 @@ def synthesize(
     owned_source: Literal["qmod", "python"]
     owned_name: str | None = None
     owned_version: str | None = None
+    fractional_bits: Mapping[str, int] | None = None
+    signed_registers: tuple[str, ...] = ()
+    deferred_measurements = False
+    exact_mps = False
     if isinstance(function, (PathLike, str)):
         if not is_file and source_format != "qmod":
             raise ValueError("text requires source_format='qmod'; use Path for files")
@@ -651,9 +655,17 @@ def synthesize(
         from ..ecosystem._qmod.source import load_qmod
 
         imported = load_qmod(
-            function, source_name=source_name, source_version=source_version
+            function,
+            source_name=source_name,
+            source_version=source_version,
+            classical_inputs=classical_inputs,
+            machine_precision=qmod_machine_precision,
         )
         owned_program, owned_functions = imported.program, imported.functions
+        fractional_bits = imported.fractional_bits
+        signed_registers = imported.signed_registers
+        deferred_measurements = imported.deferred_measurements
+        exact_mps = imported.exact_mps
         owned_source = "qmod"
         owned_name, owned_version = imported.source_name, imported.source_version
     elif isinstance(function, _QuantumFunction) and function.source.program:
@@ -701,6 +713,10 @@ def synthesize(
             source_format=owned_source,
             source_name=owned_name,
             source_version=owned_version,
+            fractional_bits=fractional_bits,
+            signed_registers=signed_registers,
+            deferred_measurements=deferred_measurements,
+            exact_mps=exact_mps,
         )
     assert not isinstance(function, (PathLike, str))
     if not isinstance(inputs, Mapping) or (
@@ -730,7 +746,7 @@ def synthesize(
     for name in names:
         mapping[name] = tuple(range(position, position + inputs[name].width))
         position += inputs[name].width
-    prepared, state_name = _prepare(
+    prepared, state_name = _prepare_inputs(
         inputs, mapping, input_state, preparation, preparation_map
     )
     target = _target(position, construction_budget, selected_basis, topology)
@@ -785,6 +801,7 @@ def _complete(
     *,
     memory_limit_bytes: int | None = None,
     memory_limit_origin: Literal["profile_default", "explicit"] = "profile_default",
+    exact_mps: bool = False,
 ) -> Program:
     """Admit either construction producer through one checked execution authority."""
     row = selection.selected
@@ -792,9 +809,12 @@ def _complete(
         raise SynthesisError(selection)
     from .._api import plan
 
+    mixed = any(
+        gate.metadata.get("is_channel") for gate in row.target.executable.instructions
+    )
     options = ExecutionOptions(
         memory_limit_bytes=memory_limit_bytes,
-        mode="statevector",
+        mode="density_matrix" if mixed else "mps" if exact_mps else "statevector",
         backend="torch",
         device="cpu",
         precision="complex128",

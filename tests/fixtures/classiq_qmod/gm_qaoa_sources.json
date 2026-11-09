@@ -1,0 +1,14 @@
+{
+  "repository": "https://github.com/Classiq/classiq-library",
+  "commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "license_file": "LICENSE.txt",
+  "license_sha256": "241f68c9f35357f97e8a2a195e447d4f80098c140f0b3b3c770a11eed96f58e0",
+  "fixtures": [
+    {
+      "file": "gm_qaoa.qmod",
+      "source_path": "algorithms/search_and_optimization/grover_mixer_qaoa/gm_qaoa.qmod",
+      "git_blob_sha1": "fe9b15ecdf807969a3dfc2a45ec1d52ed2d69427",
+      "sha256": "2cc21d5787bc600ce85865478190a8ae8ab1f7a3d581cfe99b35ca8524786d4f"
+    }
+  ]
+}

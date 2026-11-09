@@ -229,7 +229,11 @@ def test_complete_public_predicate_example_runs_without_gate_design():
     from pathlib import Path
 
     completed = subprocess.run(
-        [sys.executable, "-m", "examples.synthesis_predicate"],
+        [
+            sys.executable,
+            "-m",
+            "examples.synthesis.tutorials.arithmetic.predicate.main",
+        ],
         cwd=Path(__file__).resolve().parents[2],
         capture_output=True,
         text=True,

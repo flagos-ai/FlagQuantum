@@ -42,13 +42,27 @@ def test_namespace_reexports_one_authoritative_services_implementation() -> None
         "U",
         "prepare_uniform_interval_state",
         "control",
+        "X",
+        "RZ",
+        "PHASE",
+        "RZZ",
+        "prepare_bell_state",
+        "prepare_ghz_state",
+        "prepare_amplitudes",
+        "prepare_state",
+        "QArray",
+        "H",
+        "S",
     )
     assert all(
         getattr(synth, name) is getattr(synthesis, name) for name in synth.__all__
     )
     assert synth.Program.__module__ == "flagquantum.services.synthesis"
     assert importlib.util.find_spec("flagquantum.services._synthesis") is None
-    assert set(synth.__all__).isdisjoint(fq.__all__)
+    from flagquantum.observables import X as OBSERVABLE_X
+
+    assert set(synth.__all__).intersection(fq.__all__) == {"X"}
+    assert fq.X is OBSERVABLE_X and fq.X is not synth.X
     namespace = {}
     exec("from flagquantum.synth import *", namespace)
     assert set(namespace) - {"__builtins__"} == set(synth.__all__)

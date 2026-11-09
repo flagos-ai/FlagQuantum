@@ -9,7 +9,7 @@ withdrawn. This document's historical results are bound to head
 
 ## Current runnable user workflow
 
-Run `python -m examples.synthesis_native_and_qmod_rz`. It demonstrates:
+Run `python -m examples.synthesis.tutorials.qmod.native_and_qmod_rz.main`. It demonstrates:
 
 - Python high-level `x*x+y` with named uniform preparation and reading;
 - equivalent Qmod scalar helper with Const inputs and fresh output;
@@ -105,7 +105,7 @@ This is resource accounting, not a process peak-memory or performance claim.
 
 ## Migration and gate reference are separate levels
 
-Run `python -m examples.synthesis_native_and_qmod_rz` for an executable three-way
+Run `python -m examples.synthesis.tutorials.qmod.native_and_qmod_rz.main` for an executable three-way
 comparison. The migration equivalent is source containing H(q);RZ(1.9,q),
 passed through synth.synthesize with source_format=qmod. The existing native
 gate reference is fq.Circuit(1,dtype=torch.complex128).h(0).rz(0,theta=1.9).

@@ -1,5 +1,23 @@
 # Services
 
+## Synthesis module ownership
+
+| Module | Responsibility |
+| --- | --- |
+| `synthesis.py` | Public synthesis values, input-profile dispatch and the checked Program factory |
+| `_synthesis_preparation.py` | Validate named scalar input preparation and map its initial instructions |
+| `_synthesis_registers.py` | Submit source-adapted or Python-captured register programs to Compiler selection |
+| `_synthesis_execution.py` | Inspect the selected Runtime plan against physical constraints and layout |
+| `_synthesis_readout.py` | Bounded named result reading through the existing result contract |
+| `_qmod_workflow.py` | Compose the bounded Qmod classical optimizer workflow |
+
+Input preparation imports the existing public `InputState` value at call time.
+That keeps its canonical class identity in `synthesis.py` and avoids a module
+initialization cycle. The helper owns validation and instruction construction;
+program selection, Runtime planning and execution remain at their existing
+boundaries.
+
+
 The private `_synthesis_registers.synthesize_registers` workflow admits the
 Compiler's owned fresh-register model after external source adaptation. It uses
 the same `synthesis._complete` plan/check/Program factory as Python arithmetic,
@@ -33,7 +51,7 @@ the single implementation behind the maintained `flagquantum.synth` facade,
 currently an unreleased candidate awaiting independent developer trial records.
 The private `_synthesis` module was moved, not wrapped; live callers use the
 public facade. Runtime and Compiler gain no reverse dependency on this workflow.
-Start with [the executable workflow](../../examples/algorithms/synthesis_trial.py)
+Start with [the executable workflow](../../examples/synthesis/tutorials/getting_started/trial/main.py)
 and `tests/integration/test_synthesis_python_trial.py`. Supported syntax,
 input/output semantics, preparation composition and limitations are in the
 [CS06-C delivery record](../../docs/roadmap/CS06_USER_WORKFLOW_DELIVERY.md)
@@ -52,7 +70,7 @@ with those ceilings.
 existing sealed-plan validation, Compiler resource limits, basis membership,
 topology and replayed layout evidence. It neither plans nor executes and contains
 no numerical kernel. Start with
-`python -m examples.synthesis_execution_contract` and
+`python -m examples.synthesis.tutorials.workspace.execution_contract.main` and
 `tests/team/services/test_synthesis_plan_checks.py`, then the real scenarios in
 `tests/integration/test_synthesis_execution_contract.py`. The
 [contract](../../docs/api-changes/FQ-SYNTH-CS06-A-20261029.md) and
