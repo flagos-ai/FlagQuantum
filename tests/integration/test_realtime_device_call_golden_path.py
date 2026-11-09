@@ -34,7 +34,7 @@ def test_realtime_device_call_user_example_runs_end_to_end() -> None:
 def test_realtime_round_trip_does_not_require_qec() -> None:
     """Keep the messaging workflow usable before a QEC adapter is admitted."""
     root = Path(__file__).resolve().parents[2]
-    script = textwrap.dedent("""\
+    script = """\
         import importlib.abc
         import runpy
         import sys
@@ -50,9 +50,9 @@ def test_realtime_round_trip_does_not_require_qec() -> None:
             name == "flagquantum.qec" or name.startswith("flagquantum.qec.")
             for name in sys.modules
         )
-        """)
+        """
     completed = subprocess.run(
-        [sys.executable, "-c", script],
+        [sys.executable, "-c", textwrap.dedent(script)],
         cwd=root,
         check=True,
         capture_output=True,
