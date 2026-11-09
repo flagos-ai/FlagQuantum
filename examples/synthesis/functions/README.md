@@ -14,6 +14,7 @@ Native FlagQuantum programs currently available:
 - [modular_exp_example](arithmetic/modular_exp/modular_exp_example/README.md)
 - [modulo_example](arithmetic/modulo/modulo_example/README.md)
 - [multiplication_2vars_example](arithmetic/multiplication/multiplication_2vars_example/README.md)
+- [mcx_example](mcx/mcx_example/README.md)
 - [exact_amplitude_amplification](amplitude_amplification/exact_amplitude_amplification/README.md)
 - [hadamard_transform](hadamard_transform/README.md)
 - [qct_qst_type1](qct_qst/qct_qst_type1/README.md)

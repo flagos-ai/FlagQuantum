@@ -23,12 +23,21 @@ bounded loops and other mutable helpers, with disjoint actual bit locations.
 Root qfunc programs also support `control(bit, lambda: qft(target))`, including
 the existing bounded comparison conditions. This reuses the checked controlled
 Fourier transform; target and condition inputs must be disjoint. Mutable-helper
-control retains its phase-only scope. See the
+control supports phase and the direct controlled-X form below. See the
 [controlled Fourier admission](../../docs/api-changes/FQ-SYNTH-NATIVE-CONTROLLED-FOURIER-20261110.md)
 and the [Hadamard-test program](../../examples/synthesis/algorithms/quantum_primitives/hadamard_test/main.py).
 That program retains its entangled four-bit target as an explicit Output and
 selects the ancilla in `program.probabilities`. Selecting readout neither resets
 nor frees the target; all five physical qubits remain charged to budgets.
+
+The [all-ones control admission](../../docs/api-changes/FQ-SYNTH-NATIVE-ARRAY-CONTROL-20261110.md)
+adds `control(controls, lambda: X(target))` for a numeric register, qubit array,
+static element or nonempty slice. Every control bit must be one; a numeric
+condition here does not mean nonzero. The target is one distinct writable bit.
+The same spelling works inside static mutable helpers. Existing indexed
+control-X verification and lowering choose clean scratch and charge it to all
+resource budgets. General array-controlled unitary callbacks and the public
+native 50-control MPS execution path remain pending.
 
 
 ## Python quantum programs

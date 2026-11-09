@@ -334,7 +334,7 @@ Validated local Notebook workflows: **24/213**.
 | `functions/function_usage_examples/arithmetic/subtraction/subtraction_2vars_example` | quantum_program | Pending | pending |
 | `functions/function_usage_examples/arithmetic/subtraction/subtraction_example` | notebook_workflow | Pending | pending |
 | `functions/function_usage_examples/arithmetic/subtraction/subtraction_float_example` | quantum_program | Pending | pending |
-| `functions/function_usage_examples/mcx/mcx_example` | notebook_workflow | Pending | pending |
+| `functions/function_usage_examples/mcx/mcx_example` | notebook_workflow | [Native program](functions/mcx/mcx_example/main.py) | pending |
 | `functions/qmod_library_reference/classiq_open_library/amplitude_amplification/exact_amplitude_amplification` | notebook_workflow | [Native program](functions/amplitude_amplification/exact_amplitude_amplification/main.py) | validated |
 | `functions/qmod_library_reference/classiq_open_library/grover_operator/grover_operator` | notebook_workflow | Pending | pending |
 | `functions/qmod_library_reference/classiq_open_library/hadamard_transform/hadamard_transform` | notebook_workflow | [Native program](functions/hadamard_transform/main.py) | validated |
@@ -414,7 +414,7 @@ Validated local Notebook workflows: **24/213**.
 | `tutorials/technology_demonstrations/discrete_quantum_walk_circle/discrete_quantum_walk_circle` | notebook_workflow | Pending | pending |
 | `tutorials/technology_demonstrations/fault_tolerance_engine_end_to_end/fault_tolerance_engine_end_to_end` | notebook_workflow | Pending | pending |
 | `tutorials/technology_demonstrations/hamiltonian_evolution/hamiltonian_evolution` | notebook_workflow | [Native program](tutorials/technology_demonstrations/hamiltonian_evolution/main.py) | pending |
-| `tutorials/technology_demonstrations/hardware_aware_mcx/hardware_aware_mcx` | notebook_workflow | Pending | pending |
+| `tutorials/technology_demonstrations/hardware_aware_mcx/hardware_aware_mcx` | notebook_workflow | [Native program](tutorials/technology_demonstrations/hardware_aware_mcx/main.py) | pending |
 | `tutorials/technology_demonstrations/hhl/hhl_example` | notebook_workflow | Pending | pending |
 | `tutorials/technology_demonstrations/oracle_generation/3sat_oracles` | notebook_workflow | Pending | pending |
 | `tutorials/technology_demonstrations/qaoa/qaoa_demonstration` | notebook_workflow | [Native program](tutorials/technology_demonstrations/qaoa/qaoa_demonstration/main.py) | pending |

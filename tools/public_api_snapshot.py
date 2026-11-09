@@ -1157,12 +1157,28 @@ def _validate_authorized_synthesis_python_program(contract: Any) -> list[str]:
         or not (ROOT / "docs/api-changes/FQ-SYNTH-UNIFORM-INTERVAL.md").is_file()
     ):
         errors.append("native uniform interval differs from its authorization")
-    if (
-        str(inspect.signature(synth.control))
-        != "(condition: 'QBit', body: 'Callable[[], None]', /) -> 'None'"
+    control_signature = (
+        "(condition: 'QNum | QArray[QBit]', body: 'Callable[[], None]', /) -> 'None'"
+    )
+    control_admission = json.loads(
+        (ROOT / "contracts/synthesis-native-array-control-candidate.json").read_text()
+    )
+    if control_admission != {
+        "schema": "flagquantum.synthesis_native_array_control_admission",
+        "version": "1.0",
+        "namespace": "flagquantum.synth",
+        "changed_signatures": {"control": control_signature},
+        "authorization_record": "docs/api-changes/FQ-SYNTH-NATIVE-ARRAY-CONTROL-20261110.md",
+        "implementation_authorized": True,
+        "release_authorized": False,
+    } or (
+        type(control_admission.get("implementation_authorized")) is not bool
+        or type(control_admission.get("release_authorized")) is not bool
+        or str(inspect.signature(synth.control)) != control_signature
         or not (ROOT / "docs/api-changes/FQ-SYNTH-SCALAR-CONTROL.md").is_file()
+        or not (ROOT / control_admission["authorization_record"]).is_file()
     ):
-        errors.append("native scalar control differs from its authorization")
+        errors.append("native coherent control differs from its authorization")
     pair_signatures = {
         "CX": "(control: 'QBit', target: 'QBit', /) -> 'None'",
         "SWAP": "(first: 'QBit', second: 'QBit', /) -> 'None'",

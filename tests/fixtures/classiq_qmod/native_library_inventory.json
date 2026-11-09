@@ -5948,7 +5948,10 @@
         }
       ],
       "workflow_status": "pending",
-      "native_program": null,
+      "native_program": {
+        "path": "examples/synthesis/functions/mcx/mcx_example/main.py",
+        "scope": "Complete retained original control width and initialized input; source/native/independent Circuit absolute amplitudes and clean scratch. Supplemental coherent, active/near-active and nonzero-target inputs, helper/slice and resource-budget acceptance. Full Notebook workflow remains pending."
+      },
       "kind": "notebook_workflow"
     },
     {
@@ -7951,7 +7954,10 @@
         }
       ],
       "workflow_status": "pending",
-      "native_program": null,
+      "native_program": {
+        "path": "examples/synthesis/tutorials/technology_demonstrations/hardware_aware_mcx/main.py",
+        "scope": "Complete retained original control width and initialized input; source/native/independent Circuit absolute amplitudes and clean scratch. Supplemental coherent, active/near-active and nonzero-target inputs, helper/slice and resource-budget acceptance. Full Notebook workflow remains pending."
+      },
       "kind": "notebook_workflow"
     },
     {

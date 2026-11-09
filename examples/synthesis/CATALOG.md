@@ -3,7 +3,7 @@
 User examples contain native Python programs and independent Circuit comparisons.
 Original source files and importer launchers are test/development evidence, not examples.
 
-Validated quantum-program counterparts: **109/216**.
+Validated quantum-program counterparts: **111/216**.
 Validated local Notebook workflows: **24/213**.
 Expanded inventory: **577** source artifacts in **417** provisional path groups.
 Python groups still require main-case/helper review. A quantum-program counterpart
@@ -87,7 +87,7 @@ Validated local Notebook workflows:
 - [superposition](community/basic_examples/superposition/README.md)
 
 
-## Functions (39 native programs)
+## Functions (40 native programs)
 
 - [arithmetic_expression](functions/arithmetic/arithmetic_expression/README.md)
 - [arithmetic_expression_example](functions/arithmetic/arithmetic_expression/arithmetic_expression_example/README.md)
@@ -101,6 +101,7 @@ Validated local Notebook workflows:
 - [modular_exp_example](functions/arithmetic/modular_exp/modular_exp_example/README.md)
 - [modulo_example](functions/arithmetic/modulo/modulo_example/README.md)
 - [multiplication_2vars_example](functions/arithmetic/multiplication/multiplication_2vars_example/README.md)
+- [mcx_example](functions/mcx/mcx_example/README.md)
 - [exact_amplitude_amplification](functions/amplitude_amplification/exact_amplitude_amplification/README.md)
 - [hadamard_transform](functions/hadamard_transform/README.md)
 - [qct_qst_type1](functions/qct_qst/qct_qst_type1/README.md)
@@ -147,7 +148,7 @@ Validated local Notebook workflows:
 - [unitary](functions/unitary/README.md)
 
 
-## Tutorials (19 native programs)
+## Tutorials (20 native programs)
 
 - [add_bell_states](tutorials/basics/add_bell_states/README.md)
 - [entanglement](tutorials/basics/entanglement/README.md)
@@ -164,6 +165,7 @@ Validated local Notebook workflows:
 - [approximated_state_preparation](tutorials/technology_demonstrations/approximated_state_preparation/README.md)
 - [auxiliary_management](tutorials/technology_demonstrations/auxiliary_managment/auxiliary_management/README.md)
 - [hamiltonian_evolution](tutorials/technology_demonstrations/hamiltonian_evolution/README.md)
+- [hardware_aware_mcx](tutorials/technology_demonstrations/hardware_aware_mcx/README.md)
 - [qaoa_demonstration](tutorials/technology_demonstrations/qaoa/qaoa_demonstration/README.md)
 - [combinatorial_qmod_workshop_for_maxcut](tutorials/workshops/combinatorial_workshop/combinatorial_qmod_workshop_for_maxcut/README.md)
 - [combi_workshop_inequality_constriants_po](tutorials/workshops/finance_workshops/combi_workshop_inequality_constriants_po/README.md)
