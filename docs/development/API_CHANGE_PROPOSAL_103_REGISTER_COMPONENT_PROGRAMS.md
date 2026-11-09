@@ -990,3 +990,39 @@ failures. All four reproduce independently from the pre-batch `57081cec`
 snapshot. Default-suite acceptance remains open. Logs are
 `ftqc-reference-env/g2-packed-register-coverage.log`,
 `g2-packed-register-default.log` and `g2-packed-register-baseline-failures.log`.
+
+## Finite register construction prerequisite 1.3
+
+The next Compiler slice constructs concrete word-call functions directly in the
+existing Program records. `ComponentProgramBuilder` receives an ordered Signature,
+finite immutable function definitions and an entry name. `inputs` groups one
+fresh SSA identity per left-port element. `call_dict`, `call_tuple` and `call`
+resolve a named typed function and expose its right ports in declaration order.
+`finalize` consumes the declared right ports and returns an independently verified
+ProgramRecord. No new Core record or machine contract is required.
+
+The existing `create_register_bindings` helper accepts either its original
+ValueRef or a zero-argument allocator. An allocator is invoked once per actual
+scalar/array element, including a scalar of width zero. Empty arrays invoke it
+zero times. Existing fixed-identity callers retain their metadata semantics.
+The builder reuses that helper and `process_register_bindings`, including
+callback-before-dtype ordering. It snapshots Signature declarations as a tuple.
+
+Each resolved call reserves its operation position before visiting inputs. Its
+operand tuple records the consumed prefix even if a later name, index, alias or
+dtype check fails. Outputs are allocated only after all input checks succeed.
+Returns likewise retain their consumed prefix on failure. Such construction
+state is inspectable. Core independently verifies the complete module, including
+supplied bodies, at finalization. A failed zero-port call can leave a valid empty
+instance, as in the source. An arity-incomplete retained call is rejected by Core.
+Unknown names, conflicting definitions and unadmitted executable descriptors are
+refused explicitly. Signature-only leaves cannot substitute for numerical bodies.
+
+This slice admits the same concrete quantum bit/opaque/unsigned profile as 1.2.
+Automatic allocation/release, classical register handles, builder split/join and
+direct numerical traversal keep their own acceptance work. Existing typed split
+and join records and gate lowering remain available to real supplied callees.
+Source fake cases outside this executable profile retain their source-only
+classification. Real Add/QROM emitters remain the replacement consumers, with
+all primitive instructions, complete complex branches, workspace cleanup and
+independent resource models retained.
