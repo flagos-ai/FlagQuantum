@@ -7,6 +7,7 @@
 
 from __future__ import annotations
 
+import math
 from collections.abc import Iterable
 from typing import TYPE_CHECKING, TypeAlias, cast
 
@@ -68,3 +69,42 @@ def smax(*values: SymbolicReal | Iterable[SymbolicReal]) -> SymbolicReal:
 def smin(*values: SymbolicReal | Iterable[SymbolicReal]) -> SymbolicReal:
     """Return the source minimum, preserving singleton identity and errors."""
     return _extreme(values, maximum=False)
+
+
+def ceil(value: SymbolicReal) -> SymbolicInt:
+    """Round with the source scalar conversion and symbolic classification."""
+    if type(value) in (int, float, bool) or not is_symbolic_value(value):
+        import numpy as np
+
+        return int(np.ceil(value))
+    from sympy import ceiling
+
+    return cast("Expr", ceiling(value))
+
+
+def floor(value: SymbolicReal) -> SymbolicInt:
+    """Retain the source numeric floor conversion and symbolic expression type."""
+    if type(value) in (int, float, bool) or not is_symbolic_value(value):
+        import numpy as np
+
+        return int(np.floor(value))
+    from sympy import floor as symbolic_floor
+
+    return cast("Expr", symbolic_floor(value))
+
+
+def log2(value: SymbolicReal) -> SymbolicReal:
+    """Evaluate concrete base-two logarithms or retain the source symbolic form."""
+    if type(value) in (int, float, bool) or not is_symbolic_value(value):
+        return math.log2(value)
+    from sympy.codegen.cfunctions import log2 as symbolic_log2
+
+    return cast("Expr", symbolic_log2(value))
+
+
+def bit_length(value: SymbolicReal) -> SymbolicInt:
+    """Keep the source zero interval and ordered floor/log2/ceil calculation."""
+    concrete = type(value) in (int, float, bool) or not is_symbolic_value(value)
+    if concrete and 0 <= value < 1:
+        return 0
+    return ceil(log2(floor(value) + 1))

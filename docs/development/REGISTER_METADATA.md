@@ -382,3 +382,22 @@ multi-level IR checks pass. Logs are `g2-fixed-point-type-contract.log`,
 reports 15,061 passed, 51 skipped, 398 warnings and the independently reproduced
 rotation-layer baseline failure in 86.65 seconds. The Python 3.10 unused-ignore
 limitation remains open.
+
+## Shared scalar width arithmetic
+
+Prerequisite 0.7 moves source ceil, floor, log2 and bit_length semantics to the
+existing Core value_math owner. Concrete rounding uses the source NumPy scalar
+operation followed by int conversion. Symbolic cases retain the source Sympy
+expression classes. Bit length retains the zero interval and ordered
+floor/log2/ceil chain. The former Compiler helpers classified NumPy scalars as
+symbolic and returned Sympy integers. The new implementation preserves the
+source Python int result and integer-subclass symbolic protocols.
+
+NumPy already belongs to the required dependency set. This helper uses scalar
+mathematics and exposes int or symbolic expressions across the metadata boundary.
+Concrete native operation without optional Sympy remains supported. The source
+stand-in passes 109 cases before implementation. The native differential and
+optional-dependency slice passes 223 cases without warnings or skips. Outcome
+comparisons include scalar types, NaN, infinities, large integers, exact
+exceptions, captured warnings and symbolic protocol evaluation order. The
+source audit is retained as g2-width-math-audit.log.

@@ -105,3 +105,29 @@ def test_bit_length_zero_interval_short_circuits_rounding(calculate):
             raise AssertionError("Zero interval must bypass floor")
 
     assert calculate("bit_length", Number(0.25)) == 0
+
+
+@pytest.mark.parametrize(
+    "name,value,expected",
+    [
+        ("ceil", -1.25, -1),
+        ("floor", -1.25, -2),
+        ("log2", 2**10000, 10000),
+        ("bit_length", 1023, 10),
+        ("bit_length", 0.25, 0),
+    ],
+)
+def test_concrete_native_math_without_optional_sympy(
+    name, value, expected, monkeypatch
+):
+    import builtins
+
+    original_import = builtins.__import__
+
+    def guarded_import(module, *args, **kwargs):
+        if module == "sympy" or module.startswith("sympy."):
+            raise AssertionError("Concrete built-ins must not import optional Sympy")
+        return original_import(module, *args, **kwargs)
+
+    monkeypatch.setattr(builtins, "__import__", guarded_import)
+    assert native_math(name, value) == expected
