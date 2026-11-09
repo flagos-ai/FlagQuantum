@@ -3,6 +3,7 @@
 import importlib.util
 import math
 from pathlib import Path
+from typing import TypedDict
 
 import pytest
 import torch
@@ -26,6 +27,13 @@ from flagquantum.synth import (
 )
 
 pytestmark = pytest.mark.integration
+
+
+class _ResourceLimits(TypedDict, total=False):
+    max_qubits: int
+    max_operations: int
+    max_depth: int
+    memory_limit_bytes: int
 
 
 @pytest.mark.parametrize(("input_0", "weight_0"), [(0.37, -0.81), (1.2, 6.1)])
@@ -134,7 +142,7 @@ def _definition(
 )
 def test_invalid_root_bindings_fail_before_lowering(bindings: object) -> None:
     with pytest.raises(ValueError, match="program.binding"):
-        synth.synthesize(main, classical_inputs=bindings)  # type: ignore[arg-type]
+        synth.synthesize(main, classical_inputs=bindings)  # type: ignore[call-overload]
 
 
 @pytest.mark.parametrize(
@@ -220,7 +228,9 @@ def test_same_definition_rebinds_without_stale_specialization() -> None:
         {"memory_limit_bytes": 1},
     ],
 )
-def test_parameter_binding_preserves_resource_rejection(limits: dict[str, int]) -> None:
+def test_parameter_binding_preserves_resource_rejection(
+    limits: "_ResourceLimits",
+) -> None:
     with pytest.raises((ValueError, MemoryError)):
         synth.synthesize(
             array_program,
@@ -306,7 +316,7 @@ def test_literal_array_helper_and_interleaved_scalar_bit_ports(tmp_path: Path) -
 
 
 def test_values_are_snapshotted_and_host_calls_are_not_executed(tmp_path: Path) -> None:
-    bindings = {"angles": [0.17, -0.83], "bias": 0.29}
+    bindings: dict[str, float | list[float]] = {"angles": [0.17, -0.83], "bias": 0.29}
     program = synth.synthesize(array_program, classical_inputs=bindings)
     expected = fq.run(program).statevector().clone()
     bindings["angles"] = [0.9, 1.1]

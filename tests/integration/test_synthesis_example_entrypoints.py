@@ -82,6 +82,7 @@ def test_synthesis_source_trial_runs_text_and_local_file(
     tmp_path: Path, file_input: bool, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     monkeypatch.delenv("PYTHONPATH", raising=False)
+    expected: dict[tuple[int, ...], float]
     if file_input:
         source = tmp_path / "example.qmod"
         source.write_text(

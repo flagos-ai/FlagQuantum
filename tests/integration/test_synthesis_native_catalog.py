@@ -217,7 +217,7 @@ def test_additive_exports_follow_the_separate_unreleased_contract() -> None:
             from flagquantum.observables import X as OBSERVABLE_X
 
             assert fq.X is OBSERVABLE_X
-            assert fq.X is not synth.X
+            assert id(fq.X) != id(synth.X)
         else:
             assert name not in fq.__all__
         assert str(inspect.signature(getattr(synth, name))) == signature
