@@ -218,12 +218,19 @@ def test_locked_source_singleton_failure() -> None:
     from qualtran.bloqs.data_loading.qrom import QROM
 
     source = QROM((np.array([[0, 1]]),), (0, 1), (1,), ((),))
-    with pytest.raises(TypeError, match="0-dimensional"):
+    with pytest.raises(TypeError) as scalar_error:
+        int(np.array([0, 1]))
+    with pytest.raises(TypeError) as source_error:
         tuple(
             cirq.flatten_op_tree(
                 cirq.decompose_once(source.on(*cirq.LineQubit.range(2)))
             )
         )
+    assert str(source_error.value) == str(scalar_error.value)
+    assert any(
+        entry.name == "_load_nth_data" and entry.path.name == "qrom.py"
+        for entry in source_error.traceback
+    )
     with pytest.raises(ValueError, match="mixed singleton"):
         source_qrom_ir((), ((), (0,)), (1, 2), (((1,),),), ((0, 1),), (), ())
 
