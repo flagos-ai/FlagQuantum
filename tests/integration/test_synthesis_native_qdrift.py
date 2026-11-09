@@ -91,7 +91,7 @@ def test_independent_cdf_coherence_identity_phase_and_seed(
         ("qdrift(OPERATOR,time,2,q,-1)", "seed"),
         ("qdrift(OPERATOR,time,2,q,4294967296)", "seed"),
         ("qdrift(OPERATOR,time,2,q,True)", "integer"),
-        ("qdrift(OPERATOR,time,2,q[1:])", "complete register"),
+        ("qdrift(OPERATOR,time,2,q[1:])", "support"),
         ("qdrift(OPERATOR,q,2,q)", "classical"),
         ("qdrift(OPERATOR,1.7e308,2,q)", "finite"),
         ("qdrift(OPERATOR,time,2,q,0,1)", "signature"),

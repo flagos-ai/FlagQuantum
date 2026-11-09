@@ -1075,8 +1075,14 @@ width 1..5 and exponent width 1..10 use existing validation and lowering. See th
 and [complete native workflow](../../examples/synthesis/functions/arithmetic/modular_exp/modular_exp_example/WORKFLOW.md).
 
 `suzuki_trotter(operator,time,order,repetitions,target)` accepts a static native
-`fq.Observable` and finite classical time. Indices address target elements,
-with zero the least significant bit. Orders 1/2 and 1..256 repetitions preserve
+`fq.Observable` and finite classical time. Targets include whole registers,
+nonempty static slices and lists/tuples of distinct mutable bits in one owner.
+Observable index zero addresses the first view element, which is the least
+significant bit for a whole numeric register. Spectators retain identity action.
+The same target rules apply to fixed-seed `qdrift` calls. Cross-owner, repeated,
+invalid or Const locations refuse; zero-time calls still require initialization.
+See the [static-view contract](../../docs/api-changes/FQ-SYNTH-NATIVE-PAULI-VIEWS-20261110.md)
+and the [native Fermi-Hubbard example](../../examples/synthesis/applications/physical_systems/fermi_hubbard_model_1d/fermi_hubbard_1d/main.py). Orders 1/2 and 1..256 repetitions preserve
 declared term order and identity global phase using the shared Pauli lowering.
 The result is the specified product formula; no general exact-exponential or
 approximation-error guarantee is implied. See the

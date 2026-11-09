@@ -30,6 +30,7 @@ Native FlagQuantum programs currently available:
 - [set_cover](optimization/set_cover/README.md)
 - [set_partition](optimization/set_partition/README.md)
 - [variational_quantum_imaginary_time_evolution](optimization/variational_quantum_imaginary_time_evolution/README.md)
+- [fermi_hubbard_1d](physical_systems/fermi_hubbard_model_1d/fermi_hubbard_1d/README.md)
 - [ising_model](physical_systems/ising_model/README.md)
 - [network_traffic_optimization](telecom/network_traffic_optimization/README.md)
 - [radio_access_network_positioning_antennas](telecom/radio_access_network/radio_access_network_positioning_antennas/README.md)

@@ -1181,8 +1181,15 @@ Trotter, controlled/large-Pauli tests and frozen-source replays cover the full
 consumers. Native capture uses the same schedule and existing Pauli effects;
 it adds no alternate Hamiltonian representation or execution kernel.
 
-`_pauli_products.py` owns bounded compile-time composition for complete targets
-of at most three logical qubits. It replaces the former Qmod-private matrix
+`_pauli_products.py` owns bounded compile-time composition in owner registers
+of at most three logical qubits. Native Pauli calls also accept nonempty static
+slices or lists/tuples of distinct mutable bits within one owner. Observable
+indices address the view order; capture embeds each factor in the owner space,
+retaining spectator identity and identity-term phase. Existing initialization,
+Const, finite-angle and resource checks remain authoritative. Cross-owner,
+repeated and out-of-range views refuse. Run
+`tests/integration/test_synthesis_native_pauli_views.py` for full-state
+Fermi-Hubbard, reordered views, fixed-seed sampling and compact-owner acceptance. It replaces the former Qmod-private matrix
 implementation and is shared by the native frontend. It composes static
 operators, never user statevectors. The adapters own finite-value, width,
 term-count and repetition checks. Native capture buffers at most 256 consecutive

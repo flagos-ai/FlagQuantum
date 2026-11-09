@@ -1,8 +1,11 @@
 # Native Pauli evolution over checked static views
 
 The standing authorization for the complete native example library covers this
-bounded extension of existing suzuki_trotter/qdrift targets. It changes no public
-signature, export, IR operation or Runtime route. Classification is
+bounded extension of existing suzuki_trotter/qdrift targets. Their target
+annotation adds Sequence[QBit] to existing QNum/QArray support; all parameter
+names, positions and defaults remain unchanged. A separate pre-freeze candidate
+records this additive typing admission; historical operation contracts are
+preserved. It changes no Stable Core export, IR operation or Runtime route. Classification is
 single_device_fast_path; implementation is authorized, release is not.
 
 A target may be a nonempty static QArray slice, a mutable-helper array view or an

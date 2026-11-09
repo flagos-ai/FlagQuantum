@@ -188,7 +188,7 @@ def test_compaction_preserves_physical_resource_budget_rejections(budget: str) -
     "change,diagnostic",
     [
         ("q:Const[QArray[QBit]]", "borrow|Const|const"),
-        ("partial", "complete register"),
+        ("partial", "indices"),
         ("uninitialized", "initializ"),
     ],
 )
@@ -207,8 +207,9 @@ def test_pending_products_do_not_bypass_storage_and_view_validation(
     if change == "uninitialized":
         signature = "q:Output[QNum[2]]"
     entry = program_definition(
-        "import flagquantum as fq\nfrom flagquantum.synth import *\nOPERATOR=fq.X(0)\n"
-        f"@qfunc\ndef main({signature}):\n"
+        "import flagquantum as fq\nfrom flagquantum.synth import *\n"
+        + ("OPERATOR=fq.X(1)\n" if change == "partial" else "OPERATOR=fq.X(0)\n")
+        + f"@qfunc\ndef main({signature}):\n"
         + allocate
         + f"    for i in range(16):\n        suzuki_trotter(OPERATOR,0.3,2,256,{target})\n"
     )

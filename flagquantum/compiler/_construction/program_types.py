@@ -223,7 +223,7 @@ def suzuki_trotter(
     time: float,
     order: int,
     repetitions: int,
-    target: QNum | QArray[QBit],
+    target: QNum | QArray[QBit] | Sequence[QBit],
     /,
 ) -> None:
     """Apply an ordered first/second-order Pauli product formula inside qfunc.
@@ -239,7 +239,7 @@ def qdrift(
     operator: Observable,
     time: float,
     samples: int,
-    target: QNum | QArray[QBit],
+    target: QNum | QArray[QBit] | Sequence[QBit],
     seed: int = 0,
     /,
 ) -> None:

@@ -49,7 +49,7 @@ def test_native_evolution_has_declared_order_bit_order_and_absolute_phase(
         ("fq.X(0)", "OPERATOR,0.3,1,257,q", "repetitions"),
         ("fq.X(0)", "OPERATOR,0.3,1,True,q", "integer"),
         ("fq.X(0)", "OPERATOR,q,1,1,q", "classical"),
-        ("fq.X(0)", "OPERATOR,0.3,1,1,q[1:]", "complete register"),
+        ("fq.X(2)", "OPERATOR,0.3,1,1,q[1:]", "indices"),
         ("fq.X(0)", "fq.X(0),0.3,1,1,q", "static Observable"),
         ("fq.X(0)", "OPERATOR,0.3,1,q,q", "integer"),
     ],

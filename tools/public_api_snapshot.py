@@ -1355,7 +1355,10 @@ def _validate_authorized_synthesis_python_program(contract: Any) -> list[str]:
         type(evolution_admission.get("implementation_authorized")) is not bool
         or type(evolution_admission.get("release_authorized")) is not bool
         or not (ROOT / evolution_admission["authorization_record"]).is_file()
-        or str(inspect.signature(synth.suzuki_trotter)) != evolution_signature
+        or str(inspect.signature(synth.suzuki_trotter))
+        != evolution_signature.replace(
+            "QNum | QArray[QBit]", "QNum | QArray[QBit] | Sequence[QBit]"
+        )
     ):
         errors.append("native Pauli evolution differs from its authorized scope")
     sampled_admission = json.loads(
@@ -1374,12 +1377,46 @@ def _validate_authorized_synthesis_python_program(contract: Any) -> list[str]:
     } or (
         type(sampled_admission.get("implementation_authorized")) is not bool
         or type(sampled_admission.get("release_authorized")) is not bool
-        or str(inspect.signature(synth.qdrift)) != sampled_signature
+        or str(inspect.signature(synth.qdrift))
+        != sampled_signature.replace(
+            "QNum | QArray[QBit]", "QNum | QArray[QBit] | Sequence[QBit]"
+        )
         or not (ROOT / sampled_admission["authorization_record"]).is_file()
     ):
         errors.append(
             "native sampled Pauli evolution differs from its authorized scope"
         )
+    pauli_views = json.loads(
+        (ROOT / "contracts/synthesis-native-pauli-views-candidate.json").read_text()
+    )
+    expanded_pauli_signatures = {
+        "suzuki_trotter": evolution_signature.replace(
+            "QNum | QArray[QBit]", "QNum | QArray[QBit] | Sequence[QBit]"
+        ),
+        "qdrift": sampled_signature.replace(
+            "QNum | QArray[QBit]", "QNum | QArray[QBit] | Sequence[QBit]"
+        ),
+    }
+    if pauli_views != {
+        "schema": "flagquantum.synthesis_native_pauli_views_admission",
+        "version": "1.0",
+        "namespace": "flagquantum.synth",
+        "expanded_signatures": expanded_pauli_signatures,
+        "authorization_record": "docs/api-changes/FQ-SYNTH-NATIVE-PAULI-VIEWS-20261110.md",
+        "implementation_authorized": True,
+        "release_authorized": False,
+    } or (
+        not (ROOT / pauli_views["authorization_record"]).is_file()
+        or any(
+            type(pauli_views.get(key)) is not bool
+            for key in ("implementation_authorized", "release_authorized")
+        )
+        or any(
+            str(inspect.signature(getattr(synth, name))) != signature
+            for name, signature in expanded_pauli_signatures.items()
+        )
+    ):
+        errors.append("native Pauli views differ from their authorized scope")
     numeric_admission = json.loads(
         (ROOT / "contracts/synthesis-native-exact-numbers-candidate.json").read_text()
     )

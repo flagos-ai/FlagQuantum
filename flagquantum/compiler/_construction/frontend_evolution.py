@@ -13,7 +13,7 @@ from .._hybrid.model import Value
 from .frontend_classical import classical_number
 from .frontend_ports import _resolve
 from .frontend_python import _error
-from .frontend_views import locations, static_integer
+from .frontend_views import gate_target, locations, static_integer
 from .pauli_rotation import Support
 from .register_profile import register_width
 
@@ -108,18 +108,27 @@ def capture_qdrift(owner: _Body, node: ast.Call) -> None:
 def _pauli_inputs(
     owner: _Body, operator: ast.expr, duration: ast.expr, target: ast.expr
 ) -> tuple[Value, list[tuple[Support, float]], float]:
-    targets = locations(owner, target)
-    destination = targets[0][0]
-    if targets != tuple(
-        (destination, bit) for bit in range(register_width(destination))
+    targets = (
+        tuple(gate_target(owner, item) for item in target.elts)
+        if isinstance(target, (ast.List, ast.Tuple))
+        else locations(owner, target)
+    )
+    if (
+        not targets
+        or len(set(targets)) != len(targets)
+        or any(value != targets[0][0] for value, _ in targets)
     ):
         _error(
             owner.source,
             target,
             "program.view",
-            "Pauli evolution requires a complete register in logical bit order",
+            "Pauli evolution requires distinct static locations in one register",
         )
-    terms = _observable_terms(owner, operator, len(targets))
+    destination = targets[0][0]
+    terms = [
+        (tuple((targets[bit][1], axis) for bit, axis in support), coefficient)
+        for support, coefficient in _observable_terms(owner, operator, len(targets))
+    ]
     time = owner.phase_number(duration)
     if time is None:
         _error(
@@ -177,7 +186,7 @@ def _emit_rotations(owner: _Body, evolution: _Evolution) -> None:
 def flush_evolutions(owner: _Body) -> None:
     """Flush at effect/ownership barriers; never reorder intervening operations.
 
-    Buffer at most 256 calls on a complete one-to-three-qubit target. Preserve
+    Buffer at most 256 calls owned by one one-to-three-qubit register. Preserve
     small-program rotations. Only an otherwise over-budget sequence uses dense
     products, in the same 64-call chunks as the checked Qmod adapter.
     """

@@ -14,6 +14,7 @@ Start with a complete native program:
 ```sh
 python -m examples.synthesis.tutorials.composition.python_program.main
 python -m examples.synthesis.tutorials.basics.qml.main
+python -m examples.synthesis.applications.physical_systems.fermi_hubbard_model_1d.fermi_hubbard_1d.main
 ```
 
 Every completed upstream counterpart has native `main.py`, a provenance record,
